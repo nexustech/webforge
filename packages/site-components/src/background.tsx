@@ -5,7 +5,7 @@ import { Picture } from "./picture.js";
 import type { FieldDef, RenderContext } from "./schema.js";
 
 /** How strongly the overlay covers a section's background image, weakest first (ST-5). */
-const OVERLAYS = ["0", "20", "40", "60", "80"] as const;
+export const OVERLAYS = ["0", "20", "40", "60", "80"] as const;
 type Overlay = (typeof OVERLAYS)[number];
 
 /** The overlay's colour: the theme's page colour (`base-100`) or its neutral one. */
@@ -13,10 +13,11 @@ const OVERLAY_COLORS = ["base", "neutral"] as const;
 type OverlayColor = (typeof OVERLAY_COLORS)[number];
 
 /**
- * A new section's overlay, and the one a value it doesn't know falls back to: medium, in the
- * page's colour.
+ * A new section's overlay, and the one a value it doesn't know falls back to: strong, in the
+ * page's colour. For a section given an image without the Edit panel (a document, an AI app's
+ * command); the panel starts a first image's overlay at what the site's theme needs (ST-9).
  */
-export const BACKGROUND_DEFAULTS = { overlay: "40", overlayColor: "base" } as const;
+export const BACKGROUND_DEFAULTS = { overlay: "60", overlayColor: "base" } as const;
 
 /** The overlay's controls: in the Style tab's Appearance group, beside the background colour (2.22). */
 const IN_GROUP = { group: "style", optionGroup: APPEARANCE_GROUP } as const;

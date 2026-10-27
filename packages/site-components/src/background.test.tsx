@@ -111,13 +111,13 @@ describe("backgroundClasses (2.26)", () => {
 });
 
 describe("overlayOf and sectionOverlay (2.26)", () => {
-  it("reads the overlay, a medium one in the page colour for a value it doesn't know", () => {
+  it("reads the overlay, a strong one in the page colour for a value it doesn't know", () => {
     expect(overlayOf({ overlay: "20", overlayColor: "neutral" })).toEqual({
       opacity: "20",
       color: "neutral",
     });
     expect(overlayOf({ overlay: "55", overlayColor: "pink" })).toEqual({
-      opacity: "40",
+      opacity: "60",
       color: "base",
     });
   });
@@ -151,10 +151,10 @@ describe("the section frame's background (2.26)", () => {
     }
   });
 
-  it("gives a new section a medium overlay in the page colour, so the panel shows it", () => {
+  it("gives a new section a strong overlay in the page colour, so the panel shows it", () => {
     for (const [type, def] of sections) {
       if (type === "Hero") continue;
-      expect(def.defaults, type).toMatchObject({ overlay: "40", overlayColor: "base" });
+      expect(def.defaults, type).toMatchObject({ overlay: "60", overlayColor: "base" });
     }
   });
 

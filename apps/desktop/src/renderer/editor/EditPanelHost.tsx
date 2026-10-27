@@ -53,6 +53,7 @@ import {
   listItems,
 } from "./list-edit.js";
 import { overlayWarning } from "./overlay-warning.js";
+import { placedOverlay } from "./placed-overlay.js";
 import {
   breakpointOf,
   DEVICES,
@@ -536,10 +537,18 @@ export function EditPanelHost({
     // Typing in a field is one step per visit (D1), like typing on the canvas: a text field, or
     // an image's alt text for this placement.
     const typed = field.kind === "text" || field.kind === "media";
+    // A section's first background image brings the overlay its text needs (ST-9), in one step.
+    const overlay = placedOverlay(field, live.node.props, value, history.document.getState().theme);
+    const recipe = live.recipe(name, next);
     session.edit(
       field.kind === "text" ? "text" : "props",
       live.labelOf(name, field, at),
-      live.recipe(name, next),
+      overlay === undefined
+        ? recipe
+        : (draft) => {
+            recipe(draft);
+            live.write(draft, "overlay", () => overlay);
+          },
       { selectionAfter, ...(typed ? { coalesceKey: textKey } : {}) },
     );
     if (typed) {

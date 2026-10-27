@@ -1,5 +1,10 @@
 export { backToTopHtml } from "./back-to-top.js";
-export { BACKGROUND_FIELDS, sectionOverlay } from "./background.js";
+export {
+  BACKGROUND_DEFAULTS,
+  BACKGROUND_FIELDS,
+  OVERLAYS,
+  sectionOverlay,
+} from "./background.js";
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 export type { ColumnLayout } from "./catalogue/column-layouts.js";
 export {
