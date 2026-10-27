@@ -438,14 +438,16 @@ describe("style field renderers (1.14 part 2)", () => {
     const reached: string[] = [];
     // From the search field through the Style tab's rows: a group header, then each row's control.
     screen.getByRole("searchbox", { name: "Search options" }).focus();
-    for (let step = 0; step < 30; step += 1) {
+    const wanted = ["padding", "gap", "fullWidth"];
+    // At most 30 steps, stopping once all three are reached: each Tab is slow on a busy machine (#519).
+    for (let step = 0; step < 30 && !wanted.every((name) => reached.includes(name)); step += 1) {
       await user.tab();
       const at = document.activeElement;
       const name =
         at?.getAttribute("aria-label") ?? at?.closest("[data-field]")?.getAttribute("data-field");
       if (name !== null && name !== undefined && !reached.includes(name)) reached.push(name);
     }
-    expect(reached).toEqual(expect.arrayContaining(["padding", "gap", "fullWidth"]));
+    expect(reached).toEqual(expect.arrayContaining(wanted));
   });
 
   it("copies a group's values from one element and pastes them on another, as one step (SP-7)", async () => {
@@ -549,17 +551,20 @@ describe("style field renderers (1.14 part 2)", () => {
   it("resets a changed field from its right-click menu or with Cmd+Esc (UX-13, #290)", async () => {
     const { onResetToDefault, user } = renderStyle({ changed: true });
 
-    // A right-click on the field's label (a text field keeps its own menu, with spelling).
-    fireEvent.contextMenu(screen.getByText("Padding", { selector: "label" }));
-    await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
-    expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"]);
-
+    // The keys first: a closing menu hands focus back to the field a moment later, which a busy
+    // machine could let land after the radio is focused (#519).
     screen.getByRole("radio", { name: "Small" }).focus();
     // Ctrl + Esc opens Windows' Start menu, so only Cmd + Esc resets (#290).
     await user.keyboard("{Control>}{Escape}{/Control}");
-    expect(onResetToDefault).toHaveBeenCalledTimes(1);
+    expect(onResetToDefault).not.toHaveBeenCalled();
     await user.keyboard("{Meta>}{Escape}{/Meta}");
+    expect(onResetToDefault).toHaveBeenCalledExactlyOnceWith(["padding"]);
+
+    // A right-click on the field's label (a text field keeps its own menu, with spelling).
+    fireEvent.contextMenu(screen.getByText("Padding", { selector: "label" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Reset to Default" }));
     expect(onResetToDefault).toHaveBeenCalledTimes(2);
+    expect(onResetToDefault).toHaveBeenLastCalledWith(["padding"]);
   });
 
   it("leaves a right-click in a field to the field (its own menu: spelling, cut, copy, paste)", () => {
