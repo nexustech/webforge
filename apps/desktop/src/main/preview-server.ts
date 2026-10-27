@@ -1,0 +1,263 @@
+import { randomBytes } from "node:crypto";
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import type { AddressInfo } from "node:net";
+import { t } from "@webforge/i18n";
+import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import type { PreviewOutcome } from "../shared/export-worker-protocol.js";
+import { LIVE_RELOAD_SCRIPT } from "./preview-live-reload.js";
+
+/** A build the preview shows: the worker's answer, the files that changed and those gone. */
+export type PreviewBuild = Extract<PreviewOutcome, { type: "previewed" }>;
+
+/** Where the server listens: this computer only, or the local network too, for a phone. */
+export type PreviewScope = "local" | "network";
+
+/**
+ * The preview server (3.2, F-PV-1): serves the open site's latest preview build from memory, and
+ * tells the browsers showing it what changed, over server-sent events.
+ */
+export type PreviewServer = {
+  /** Listens on `scope`, once for each; resolves the port it listens on there. */
+  listen(scope: PreviewScope): Promise<number>;
+  /** The path every URL starts with: a secret, so only those given a link can open the preview. */
+  readonly base: string;
+  /** Takes a build: its files are served from now on, and the browsers told what changed. */
+  update(build: PreviewBuild): void;
+  /** Takes the editor to `page` (`about.html`): the browsers showing another page go there. */
+  show(page: string): void;
+  /** How many browsers are showing the preview now. */
+  watching(): number;
+  /** Called when a browser starts showing the preview, so the latest edits can be built. */
+  onWatch(listener: () => void): void;
+  /** Stops listening, closing every connection. */
+  close(): Promise<void>;
+};
+
+/** Content types by extension; anything else is served as bytes. */
+const CONTENT_TYPES: Readonly<Record<string, string>> = {
+  html: "text/html; charset=utf-8",
+  css: "text/css; charset=utf-8",
+  js: "text/javascript; charset=utf-8",
+  json: "application/json",
+  webmanifest: "application/manifest+json",
+  xml: "application/xml",
+  txt: "text/plain; charset=utf-8",
+  svg: "image/svg+xml",
+  png: "image/png",
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  gif: "image/gif",
+  webp: "image/webp",
+  avif: "image/avif",
+  ico: "image/x-icon",
+  woff2: "font/woff2",
+  pdf: "application/pdf",
+};
+
+const contentTypeOf = (path: string) =>
+  CONTENT_TYPES[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? "application/octet-stream";
+
+/** Sent with every answer: never cached, never sniffed, the preview's address never passed on. */
+const COMMON_HEADERS = {
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+} as const;
+
+/** How long a page asked for before the first build waits for it before giving up. */
+const FIRST_BUILD_WAIT_MS = 120_000;
+
+/** How often an open event stream is told the server is still there (a phone may drop it). */
+const KEEP_ALIVE_MS = 20_000;
+
+/**
+ * `html` with the live reload script before its `</body>`, or at its end: it follows the editor,
+ * swapping the stylesheet in place, reloading a changed page or going to the page shown.
+ */
+function withLiveReload(html: string, base: string): string {
+  const tag = `<script src="${base}__webforge/live.js" data-base="${base}" defer></script>`;
+  const at = html.toLowerCase().lastIndexOf("</body>");
+  return at === -1 ? `${html}${tag}` : `${html.slice(0, at)}${tag}${html.slice(at)}`;
+}
+
+/**
+ * The preview server (3.2). It serves only the files of the latest build, by their exact paths,
+ * under a secret base path (`/<32 hex digits>/`), so a site another tab opens can't read the
+ * preview, nor a device on the network that wasn't given its link; and nothing from disk. Pages get
+ * the live reload script; `__webforge/events` is the stream of what changed. Until the first build,
+ * a page asked for waits for it.
+ */
+export function createPreviewServer(): PreviewServer {
+  const base = `/${randomBytes(16).toString("hex")}/`;
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  let files = new Map<string, Uint8Array>();
+  let built = false;
+  const waiting = new Set<() => void>();
+  const streams = new Set<ServerResponse>();
+  const watchers = new Set<() => void>();
+  const servers = new Map<PreviewScope, { server: Server; port: Promise<number> }>();
+
+  const send = (event: string, data: unknown) => {
+    const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+    for (const stream of streams) stream.write(message);
+  };
+
+  const notFound = (response: ServerResponse) => {
+    response.writeHead(404, { ...COMMON_HEADERS, "Content-Type": "text/plain; charset=utf-8" });
+    response.end(t("preview.notFound"));
+  };
+
+  const serveFile = (path: string, response: ServerResponse, head: boolean) => {
+    const data = files.get(path);
+    if (data === undefined) {
+      notFound(response);
+      return;
+    }
+    const type = contentTypeOf(path);
+    const body = type.startsWith("text/html")
+      ? encoder.encode(withLiveReload(decoder.decode(data), base))
+      : data;
+    response.writeHead(200, {
+      ...COMMON_HEADERS,
+      "Content-Type": type,
+      "Content-Length": body.byteLength,
+    });
+    response.end(head ? undefined : body);
+  };
+
+  const openStream = (request: IncomingMessage, response: ServerResponse) => {
+    response.writeHead(200, {
+      ...COMMON_HEADERS,
+      "Content-Type": "text/event-stream; charset=utf-8",
+      Connection: "keep-alive",
+    });
+    // A dropped stream comes back after a second. It isn't told the page shown: a visitor who
+    // followed a link to another page stays there until the editor shows another.
+    response.write("retry: 1000\n\n");
+    streams.add(response);
+    const alive = setInterval(() => response.write(": alive\n\n"), KEEP_ALIVE_MS);
+    request.on("close", () => {
+      clearInterval(alive);
+      streams.delete(response);
+    });
+    for (const watcher of watchers) watcher();
+  };
+
+  const handle = (request: IncomingMessage, response: ServerResponse) => {
+    const head = request.method === "HEAD";
+    if (request.method !== "GET" && !head) {
+      response.writeHead(405, { ...COMMON_HEADERS, Allow: "GET, HEAD" });
+      response.end();
+      return;
+    }
+    const url = new URL(request.url ?? "/", "http://preview");
+    if (!url.pathname.startsWith(base)) {
+      notFound(response);
+      return;
+    }
+    let path: string;
+    try {
+      path = decodeURIComponent(url.pathname.slice(base.length));
+    } catch {
+      notFound(response);
+      return;
+    }
+    if (path === "__webforge/live.js") {
+      response.writeHead(200, {
+        ...COMMON_HEADERS,
+        "Content-Type": "text/javascript; charset=utf-8",
+      });
+      response.end(head ? undefined : LIVE_RELOAD_SCRIPT);
+      return;
+    }
+    if (path === "__webforge/events") {
+      openStream(request, response);
+      return;
+    }
+    const wanted = path === "" || path.endsWith("/") ? `${path}index.html` : path;
+    if (built) {
+      serveFile(wanted, response, head);
+      return;
+    }
+    // Before the first build: wait for it, then answer; a browser opened at once gets its page.
+    for (const watcher of watchers) watcher();
+    const answer = () => {
+      clearTimeout(timer);
+      waiting.delete(answer);
+      serveFile(wanted, response, head);
+    };
+    const timer = setTimeout(() => {
+      waiting.delete(answer);
+      response.writeHead(503, { ...COMMON_HEADERS, "Content-Type": "text/plain; charset=utf-8" });
+      response.end(t("preview.notReady"));
+    }, FIRST_BUILD_WAIT_MS);
+    waiting.add(answer);
+    request.on("close", () => {
+      clearTimeout(timer);
+      waiting.delete(answer);
+    });
+  };
+
+  return {
+    base,
+    listen(scope) {
+      const running = servers.get(scope);
+      if (running !== undefined) return running.port;
+      const server = createServer(handle);
+      const port = new Promise<number>((resolve, reject) => {
+        server.once("error", reject);
+        // This computer only, unless a phone is to open it: then every network the computer is on.
+        server.listen(0, scope === "local" ? "127.0.0.1" : "0.0.0.0", () => {
+          server.off("error", reject);
+          resolve((server.address() as AddressInfo).port);
+        });
+      });
+      servers.set(scope, { server, port });
+      port.catch(() => servers.delete(scope));
+      return port;
+    },
+    update(build) {
+      if (build.full) files = new Map();
+      for (const { path, data } of build.changed) files.set(path, data);
+      for (const path of build.removed) files.delete(path);
+      const changed = [...build.changed.map((file) => file.path), ...build.removed];
+      if (!built) {
+        built = true;
+        for (const answer of [...waiting]) answer();
+        return;
+      }
+      if (changed.length === 0) return;
+      if (changed.every((path) => path === PREVIEW_STYLESHEET)) {
+        send("css", { href: PREVIEW_STYLESHEET });
+        return;
+      }
+      // Pages that changed reload; anything else (an image, the script) reloads every page.
+      const pages = changed.filter((path) => path.endsWith(".html"));
+      const assets = changed.some((path) => !path.endsWith(".html") && path !== PREVIEW_STYLESHEET);
+      send("reload", { pages, all: build.full || assets });
+    },
+    show(page) {
+      send("show", { page });
+    },
+    watching: () => streams.size,
+    onWatch(listener) {
+      watchers.add(listener);
+    },
+    async close() {
+      for (const answer of [...waiting]) answer();
+      for (const stream of streams) stream.end();
+      streams.clear();
+      await Promise.all(
+        [...servers.values()].map(
+          ({ server }) =>
+            new Promise<void>((resolve) => {
+              server.close(() => resolve());
+              server.closeAllConnections();
+            }),
+        ),
+      );
+      servers.clear();
+    },
+  };
+}

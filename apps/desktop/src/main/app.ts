@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import { networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
@@ -44,12 +45,16 @@ import { logFailure } from "./log.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import { createMyThemes } from "./my-themes.js";
+import { localNetworkAddress } from "./network-address.js";
 import { shippedTemplateReader } from "./new-site.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
   registerPreferencesHandlers,
 } from "./preferences.js";
+import { createPreviewBuilder } from "./preview-builder.js";
+import { createPreview, registerPreviewHandlers } from "./preview-ipc.js";
+import { createPreviewServer } from "./preview-server.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, ProjectSession } from "./project-session.js";
 import { createRecentSites } from "./recent-sites.js";
@@ -191,8 +196,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       },
       closed: () => {
         backupSchedule.closed();
-        // The export worker goes, and the images it kept in memory with it (R15).
+        // The export worker goes, and the images it kept in memory with it (R15); the preview
+        // too, its server and its worker (3.2).
         exports.close();
+        void preview.close();
       },
     },
     // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
@@ -280,22 +287,45 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
   // One export worker while the site is open, keeping the images it encoded in memory (R15).
   const exports = createExportRunner(() => forkWorker("Webforge export"));
-  const runExport: RunExport = async (snapshot, target, { signal, onProgress }) => {
-    const families = await fonts.downloadedFamiliesOf(snapshot.theme);
-    return exports.run(
-      {
-        type: "export",
-        snapshot,
-        ...target,
-        fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
-          const data = fonts.reader.read(face);
-          return data === undefined ? [] : [{ file: face.file, data }];
-        }),
-        families,
-      },
+  /** The font files `theme` uses and the downloaded families among them, read and checked here. */
+  const fontsOf = async (theme: ThemeTokens) => {
+    const families = await fonts.downloadedFamiliesOf(theme);
+    return {
+      fonts: fontFacesFor(theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
+        const data = fonts.reader.read(face);
+        return data === undefined ? [] : [{ file: face.file, data }];
+      }),
+      families,
+    };
+  };
+  const runExport: RunExport = async (snapshot, target, { signal, onProgress }) =>
+    exports.run(
+      { type: "export", snapshot, ...target, ...(await fontsOf(snapshot.theme)) },
       { readMedia: (hash) => projectSession.readMedia(hash), signal, onProgress },
     );
-  };
+
+  // The preview server (3.2): its builds in a worker of their own while a preview is open, so an
+  // export never waits behind one; opened in the default browser, which the site's scripts run in,
+  // never in an Electron window.
+  const preview = createPreview({
+    startServer: createPreviewServer,
+    startBuilder: (onBuilt) =>
+      createPreviewBuilder(() => forkWorker("Webforge preview"), {
+        readMedia: (hash) => projectSession.readMedia(hash),
+        onBuilt,
+      }),
+    jobFor: async (snapshot) => ({ type: "preview", snapshot, ...(await fontsOf(snapshot.theme)) }),
+    // Only the preview's own address, which this process makes: never one from the renderer.
+    openInBrowser: async (url) => {
+      try {
+        await electron.shell.openExternal(url);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    networkAddress: () => localNetworkAddress(networkInterfaces()),
+  });
 
   // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
   const requestThumbnail = createWorkerRequests<ThumbnailOutcome, ThumbnailJob>(
@@ -462,6 +492,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
     exposeForE2eTests(ai, app.isPackaged);
     registerThemesHandlers(ipcMain, isTrustedSender, myThemes);
+    registerPreviewHandlers(ipcMain, isTrustedSender, preview);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

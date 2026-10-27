@@ -46,6 +46,25 @@ export const shell = {
   "shell.new": "New",
   "shell.open": "Open",
   "shell.preview": "Preview",
+  // The preview server's answers in the browser (3.2): a page it doesn't have, and one asked for
+  // before the first build was ready.
+  "preview.notFound":
+    "This page isn't in the preview. Go back to the home page, or open Preview again from Webforge.",
+  "preview.notReady": "The preview isn't ready yet. Reload this page in a moment.",
+  // Preview and Preview on Phone (3.2, F-PV-1).
+  "preview.failed": "Webforge couldn't open the preview. Try again in a moment.",
+  "preview.phone.title": "Preview on your phone",
+  "preview.phone.description":
+    "Point your phone's camera at this code. Your phone needs to be on the same Wi-Fi as this computer.",
+  "preview.phone.starting": "Starting the preview…",
+  "preview.phone.qrLabel": "QR code of the preview's address",
+  "preview.phone.address": "Or type this address in your phone's browser:",
+  "preview.phone.privacy":
+    "Anyone on this Wi-Fi who has this address can see the preview while Webforge is open.",
+  "preview.phone.offline":
+    "This computer isn't on a network, so a phone can't open the preview. Connect to Wi-Fi and try again.",
+  "preview.phone.failed":
+    "Webforge couldn't start the preview for your phone. Try again in a moment.",
   "shell.export": "Export",
   "shell.publish": "Publish",
   "shell.actions": "Site actions",
@@ -93,6 +112,7 @@ export const shell = {
   "command.openSite": "Open Site…",
   "command.exportSite": "Export Site…",
   "command.preview": "Preview",
+  "command.previewOnPhone": "Preview on Phone…",
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
   "command.about": "About Webforge",

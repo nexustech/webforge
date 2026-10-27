@@ -2,7 +2,7 @@ import type { SitePage, SiteSnapshot } from "@webforge/model";
 import * as components from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { type BuiltSite, buildSite } from "../src/build.js";
+import { type BuiltSite, buildSite, PREVIEW_STYLESHEET } from "../src/build.js";
 import { createMemoryImageCache } from "../src/memory-image-cache.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import { createPipeline, type Pipeline, type PipelineEvent } from "../src/pipeline.js";
@@ -156,5 +156,27 @@ describe("createPipeline (3.1)", () => {
 
     expect(css((await build(pipeline, base, "preview")).site)).toContain(".skew-x-12");
     expect(css((await build(pipeline, base, "export")).site)).not.toContain(".skew-x-12");
+  }, 60_000);
+
+  it("names a preview's stylesheet the same whatever it holds, so its pages don't change (3.2)", async () => {
+    const pipeline = createPipeline(components.siteLibrary);
+    const base = sampleSite();
+    const first = (await build(pipeline, base, "preview")).site;
+    const dark = (
+      await build(pipeline, { ...base, theme: { ...base.theme, preset: "dark" } }, "preview")
+    ).site;
+
+    expect(first.files.has(PREVIEW_STYLESHEET)).toBe(true);
+    expect(dark.files.get(PREVIEW_STYLESHEET)).not.toEqual(first.files.get(PREVIEW_STYLESHEET));
+    expect(new TextDecoder().decode(first.files.get("index.html"))).toContain(
+      `href="${PREVIEW_STYLESHEET}"`,
+    );
+    // An export's is named by what it holds.
+    const exported = (await build(pipeline, base, "export")).site;
+    expect(
+      [...exported.files.keys()].some((path) =>
+        /^assets\/css\/site\.[0-9a-f]{10}\.css$/.test(path),
+      ),
+    ).toBe(true);
   }, 60_000);
 });

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { AiApi } from "../../shared/ipc/ai.js";
+import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { AddItem } from "../add/index.js";
@@ -74,6 +75,8 @@ export type WindowContext = AreaContext & {
   readonly openExport: () => Promise<"opened" | "none" | "missing">;
   /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
   readonly answerAi: AiApi["onRequest"];
+  /** The preview server (3.2): the site in the default browser, and its address for a phone. */
+  readonly preview: PreviewApi;
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

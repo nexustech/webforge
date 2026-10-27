@@ -6,13 +6,11 @@ import {
   siteToSnapshot,
 } from "@webforge/model";
 import { type ComponentLibrary, documentsLinkedBy, mediaUsedBy } from "@webforge/site-components";
-import type { ExportChoices, ExportRequest } from "../../shared/ipc/site.js";
+import type { ExportChoices, ExportRequest, SiteContent } from "../../shared/ipc/site.js";
 
 /**
- * What the export command sends for `site`: its snapshot, and the images its pages, Header and
- * Footer use and the documents they link to, by hash. The main process reads only those files'
- * bytes from the site file. `choices` are the person's, to remember with the site, and `output`
- * what this export writes (3.3).
+ * What the export command sends for `site`: its content ({@link siteContentFor}), with the
+ * person's `choices`, to remember with the site, and what this export writes, `output` (3.3).
  */
 export function exportRequestFor(
   site: SiteDoc,
@@ -20,6 +18,15 @@ export function exportRequestFor(
   choices: ExportChoices,
   output: ExportRequest["output"],
 ): ExportRequest {
+  return { ...siteContentFor(site, library), choices, output };
+}
+
+/**
+ * What a build of `site` needs from the renderer (an export's, the preview's): its snapshot, and
+ * the images its pages, Header and Footer use and the documents they link to, by hash. The main
+ * process reads only those files' bytes from the site file.
+ */
+export function siteContentFor(site: SiteDoc, library: ComponentLibrary): SiteContent {
   const nodes = [
     ...site.layout.header,
     ...site.layout.footer,
@@ -60,7 +67,5 @@ export function exportRequestFor(
         ? [{ id: item.id, name: item.name, mimeType: item.mimeType, hash: item.hash }]
         : [],
     ),
-    choices,
-    output,
   };
 }

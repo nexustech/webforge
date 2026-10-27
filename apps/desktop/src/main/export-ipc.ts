@@ -2,7 +2,7 @@ import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
-import type { ExportChoices, ExportProgress, ExportRequest } from "../shared/ipc/site.js";
+import type { ExportChoices, ExportProgress, SiteContent } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
@@ -89,9 +89,10 @@ export function toExportResult(
 /**
  * The snapshot to build: the renderer's, its images and documents named by hash. The export
  * worker asks for each one's bytes from the open site's file as it reaches it (R15), so this
- * process never holds them all; one the site no longer stores is left out, with a warning.
+ * process never holds them all; one the site no longer stores is left out, with a warning. The
+ * preview builds from the same (3.2).
  */
-function snapshotOf(request: ExportRequest): SiteSnapshot {
+export function snapshotOf(request: SiteContent): SiteSnapshot {
   return {
     ...request.snapshot,
     media: request.media.map((image) => ({ ...image })),

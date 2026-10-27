@@ -129,6 +129,9 @@ export type BuildOptions = {
  */
 export type BuildMode = "preview" | "export" | "publish";
 
+/** A preview's stylesheet, by one name whatever it holds (3.2). */
+export const PREVIEW_STYLESHEET = "assets/css/site.css";
+
 /** A page's rendered regions, with the problems found rendering them. */
 type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning[] };
 
@@ -497,7 +500,10 @@ export async function* buildEvents(
       ? await buildSiteCss(resources, cssOptions)
       : await caches.styles.css(cssOptions, run.mode === "preview");
   const css = minify ? minifiedCss(readableCss) : readableCss;
-  const cssPath = `assets/css/site.${contentHash(css)}.css`;
+  // A preview's stylesheet keeps one name (3.2), so a change to the styles alone leaves every page
+  // as it was and the browser swaps the stylesheet in place; an export's is named by its content.
+  const cssPath =
+    run.mode === "preview" ? PREVIEW_STYLESHEET : `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
   for (const entry of rendered) {
     const page = {
