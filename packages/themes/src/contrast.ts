@@ -1,5 +1,5 @@
 import type { ColorRole, ThemeTokens } from "@webforge/model";
-import { contrastRatio, inverseColors } from "./colors.js";
+import { contrastRatio, inverseColors, oklchToSrgb, type Srgb, srgbContrast } from "./colors.js";
 
 /** WCAG AA: text, and large text or a coloured part (a heading, a button's edge) against its ground. */
 export const AA_TEXT = 4.5;
@@ -68,4 +68,51 @@ export function contrastIssues(tokens: ThemeTokens): ContrastIssue[] {
         : [];
     }),
   );
+}
+
+/** A section's overlay over its background image (2.26): its colour, how opaque, and its palette. */
+export type SectionOverlay = {
+  /** The page's background colour (`base-100`) or the neutral one. */
+  readonly color: "base" | "neutral";
+  /** From 0 (none) to 1. */
+  readonly opacity: number;
+  /** A section that inverts the page (2.4) has the inverse palette's colours. */
+  readonly inverse?: boolean;
+};
+
+const BLACK: Srgb = { r: 0, g: 0, b: 0 };
+const WHITE: Srgb = { r: 1, g: 1, b: 1 };
+
+/**
+ * The contrast of a section's text over its overlay (2.26, ST-5), whatever the image under it: the
+ * worse of the overlay laid over black and over white, as a browser blends it. The text is the
+ * overlay colour's own: `base-content` on the page colour, `neutral-content` on neutral.
+ */
+export function overlayContrast(tokens: ThemeTokens, overlay: SectionOverlay): number {
+  const colors = overlay.inverse === true ? inverseColors(tokens) : tokens.colors;
+  const [ground, text] =
+    overlay.color === "base"
+      ? [colors["base-100"], colors["base-content"]]
+      : [colors.neutral, colors["neutral-content"]];
+  const over = oklchToSrgb(ground);
+  const laid = (under: Srgb): Srgb => ({
+    r: over.r * overlay.opacity + under.r * (1 - overlay.opacity),
+    g: over.g * overlay.opacity + under.g * (1 - overlay.opacity),
+    b: over.b * overlay.opacity + under.b * (1 - overlay.opacity),
+  });
+  const ink = oklchToSrgb(text);
+  return Math.min(srgbContrast(ink, laid(BLACK)), srgbContrast(ink, laid(WHITE)));
+}
+
+/**
+ * Whether a section's text can fall below WCAG AA over its overlay, for the Edit panel's warning
+ * (reported, never blocking): the ratio, rounded down so it never shows as passing, and the one it
+ * needs; `null` when it passes over any image.
+ */
+export function overlayContrastIssue(
+  tokens: ThemeTokens,
+  overlay: SectionOverlay,
+): { readonly ratio: number; readonly required: number } | null {
+  const ratio = overlayContrast(tokens, overlay);
+  return ratio < AA_TEXT ? { ratio: Math.floor(ratio * 100) / 100, required: AA_TEXT } : null;
 }

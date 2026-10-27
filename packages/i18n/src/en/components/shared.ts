@@ -29,6 +29,21 @@ export const shared = {
   "field.entranceDelay.short": "Short",
   "field.entranceDelay.medium": "Medium",
   "field.entranceDelay.long": "Long",
+  // A section's background image and the overlay that keeps its text readable (2.26, ST-5).
+  "field.backgroundImage": "Background image",
+  "field.backgroundImage.help":
+    "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+  "field.overlay": "Overlay",
+  "field.overlay.help":
+    "A layer of colour over the background image, so the text on it is easier to read.",
+  "field.overlay.0": "None",
+  "field.overlay.20": "Light",
+  "field.overlay.40": "Medium",
+  "field.overlay.60": "Strong",
+  "field.overlay.80": "Very strong",
+  "field.overlayColor": "Overlay colour",
+  "field.overlayColor.base": "Page background",
+  "field.overlayColor.neutral": "Neutral",
   // What a button (and later a card) does under the pointer (2.12, F-DS-5).
   "field.hoverEffect": "Hover effect",
   "field.cardHoverEffect": "Card hover effect",
