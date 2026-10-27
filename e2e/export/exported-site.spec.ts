@@ -1,9 +1,10 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import AxeBuilder from "@axe-core/playwright";
 import { type BrowserContext, expect, type Page, test } from "@playwright/test";
 import { priceList } from "@webforge/test-utils";
-import { exportedPageUrl } from "./exported-site.js";
+import { EXPORTED_SITE_DIR, exportedPageUrl } from "./exported-site.js";
 
 // The exported fixture site, opened from disk (file://) in Chromium, Firefox and WebKit with the
 // network blocked (X1, C8): it must look and work right without any server or external request.
@@ -96,6 +97,40 @@ test.describe("exported site from disk", () => {
     const url = await link.evaluate((anchor: HTMLAnchorElement) => anchor.href);
     expect(url).toMatch(/^file:.*\/files\/price-list\.pdf$/);
     expect([...readFileSync(fileURLToPath(url))]).toEqual([...priceList()]);
+  });
+
+  test("links its favicon set, which loads from the export folder, and writes its share picture (3.4)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+
+    const icons = await page.evaluate(() =>
+      [
+        ...document.querySelectorAll<HTMLLinkElement>(
+          'link[rel="icon"], link[rel="apple-touch-icon"]',
+        ),
+      ].map((link) => link.href),
+    );
+    expect(icons.map((href) => href.split("/").at(-1))).toEqual([
+      "favicon.ico",
+      "icon-192.png",
+      "apple-touch-icon.png",
+    ]);
+    // Each one is there, and the browser reads it as an image.
+    for (const href of icons) {
+      const width = await page.evaluate(
+        (source) =>
+          new Promise<number>((resolve) => {
+            const image = new Image();
+            image.onload = () => resolve(image.naturalWidth);
+            image.onerror = () => resolve(0);
+            image.src = source;
+          }),
+        href,
+      );
+      expect(width, href).toBeGreaterThan(0);
+    }
+    expect(existsSync(join(EXPORTED_SITE_DIR, "assets", "img", "hero-share.jpg"))).toBe(true);
   });
 
   test("loads its styles, fonts, image and script from the export folder", async ({ page }) => {
