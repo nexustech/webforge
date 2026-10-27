@@ -71,7 +71,9 @@ describe("AddPanel (F-ED-1)", () => {
 
   it("closes a category with its triangle, and a search shows it open again (LF-6)", async () => {
     setUp();
-    const heroes = screen.getByRole("list", { name: "Heroes" }).closest("details") as HTMLElement;
+    const heroes = screen
+      .getByRole("list", { name: "All sections" })
+      .closest("details") as HTMLElement;
     expect(heroes.hasAttribute("open")).toBe(true);
 
     await userEvent.click(heroes.querySelector("summary") as HTMLElement);
@@ -85,7 +87,9 @@ describe("AddPanel (F-ED-1)", () => {
 
   it("keeps every category open while searching: a click on its name doesn't close it", async () => {
     setUp();
-    const heroes = screen.getByRole("list", { name: "Heroes" }).closest("details") as HTMLElement;
+    const heroes = screen
+      .getByRole("list", { name: "All sections" })
+      .closest("details") as HTMLElement;
     const name = heroes.querySelector("summary") as HTMLElement;
     const search = screen.getByRole("searchbox", { name: /Search/ });
 
@@ -97,10 +101,14 @@ describe("AddPanel (F-ED-1)", () => {
     expect(heroes.hasAttribute("open")).toBe(true);
   });
 
-  it("lists sections by category and adds the one clicked", async () => {
+  it("lists sections from A to Z, in one group, and adds the one clicked (#523)", async () => {
     const { onAdd } = setUp();
 
-    expect(screen.getByRole("list", { name: "Heroes" })).toBeTruthy();
+    const names = within(screen.getByRole("list", { name: "All sections" }))
+      .getAllByRole("button")
+      .map((each) => each.getAttribute("aria-label") ?? each.textContent ?? "");
+    expect(names).toEqual(names.toSorted((a, b) => a.localeCompare(b)));
+    expect(screen.queryByRole("list", { name: "Heroes" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Header" })).toBeNull();
     await userEvent.click(button("Hero"));
 
@@ -377,7 +385,7 @@ describe("registerAddPanel", () => {
     render(<Host panels={panels} />);
     expect(groups()[0]).toBe("Favourites");
 
-    const hero = within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", {
+    const hero = within(screen.getByRole("list", { name: "All sections" })).getByRole("button", {
       name: "Hero",
     });
     fireEvent.contextMenu(hero);
@@ -401,7 +409,7 @@ describe("registerAddPanel", () => {
       const panels = createPanelRegistry();
       registerAddPanel(panels, session, { preview: () => <span>Preview of it</span> });
       render(<Host panels={panels} />);
-      const hero = within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", {
+      const hero = within(screen.getByRole("list", { name: "All sections" })).getByRole("button", {
         name: "Hero",
       });
       // Only the pointer's own events: React reports none for a button under Puck's handle.
@@ -431,7 +439,9 @@ describe("registerAddPanel", () => {
 
     await userEvent.click(button("FAQ"));
     await userEvent.click(
-      within(screen.getByRole("list", { name: "Heroes" })).getByRole("button", { name: "Hero" }),
+      within(screen.getByRole("list", { name: "All sections" })).getByRole("button", {
+        name: "Hero",
+      }),
     );
 
     expect(preferences.getState().preferences.add.recent).toEqual(["Hero", "Faq"]);

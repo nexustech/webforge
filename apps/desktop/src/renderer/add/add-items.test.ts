@@ -56,9 +56,9 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     const sections = addItems(siteLibrary, "sections").map((item) => item.type);
     const elements = addItems(siteLibrary, "elements");
 
-    // Every section and element in the library's order, a family added later's too.
-    expect(sections).toEqual(of("section"));
-    expect(sections.slice(0, 2)).toEqual(["Section", "Hero"]);
+    // Every section and element, a family added later's too: elements in the library's order,
+    // sections from A to Z (#523).
+    expect(sections.toSorted()).toEqual(of("section").toSorted());
     expect(elements.filter((item) => !item.preset).map((item) => item.type)).toEqual(of("element"));
     expect(elements.slice(0, 2)).toEqual([
       { type: "Heading", label: "Heading", category: "Text" },
@@ -92,27 +92,43 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     });
   });
 
-  it("finds by name or group, ignoring case, and groups by category", () => {
-    const sections = addItems(siteLibrary, "sections");
+  it("finds by name or group, ignoring case, and groups elements by category", () => {
+    const elements = addItems(siteLibrary, "elements");
 
-    const groups = groupItems(sections, "");
+    const groups = groupItems(elements, "");
 
     // In the order their first items come, each holding its category's items in order.
     expect(groups.map((group) => group.category)).toEqual([
-      ...new Set(sections.map((item) => item.category)),
+      ...new Set(elements.map((item) => item.category)),
     ]);
     for (const group of groups) {
-      expect(group.items).toEqual(sections.filter((item) => item.category === group.category));
+      expect(group.items).toEqual(elements.filter((item) => item.category === group.category));
     }
-    expect(groups.slice(0, 2)).toEqual([
-      { category: "Basic", items: [sections[0]] },
-      { category: "Heroes", items: [sections[1]] },
-    ]);
-    expect(groupItems(sections, "  QUESTIONS ").map((group) => group.category)).toEqual([
-      "Questions and answers",
+    expect(groups[0]?.category).toBe("Text");
+    expect(groupItems(elements, "  MEDIA ").map((group) => group.category)).toEqual([
+      "Images and media",
     ]);
     // A word no item has.
-    expect(groupItems(sections, "zebra")).toEqual([]);
+    expect(groupItems(elements, "zebra")).toEqual([]);
+  });
+
+  it("lists sections in one group from A to Z, still found by their category (#523)", () => {
+    const sections = addItems(siteLibrary, "sections");
+    const labels = sections.map((item) => item.label);
+
+    expect(labels).toEqual(labels.toSorted((a, b) => a.localeCompare(b)));
+    expect(groupItems(sections, "").map((group) => group.category)).toEqual(["All sections"]);
+    // Its category is a word to find it by, not a heading.
+    expect(sections.find((item) => item.type === "Faq")).toMatchObject({
+      category: "All sections",
+      keywords: "Questions and answers",
+    });
+    expect(groupItems(sections, "  QUESTIONS ")).toEqual([
+      { category: "All sections", items: sections.filter((item) => item.type === "Faq") },
+    ]);
+    expect(
+      groupItems(sections, "heroes").flatMap((group) => group.items.map((item) => item.type)),
+    ).toContain("Hero");
   });
 });
 
@@ -371,7 +387,7 @@ describe("withFavourites (F-ED-26, UX-10)", () => {
   it("finds each item once while searching, in its own group", () => {
     const ordered = withFavourites(addItems(siteLibrary, "sections"), ["Hero"], ["Faq"]);
 
-    expect(groupItems(ordered, "hero").map((group) => group.category)).toEqual(["Heroes"]);
+    expect(groupItems(ordered, "hero").map((group) => group.category)).toEqual(["All sections"]);
     expect(groupItems(ordered, "favourites").map((group) => group.category)).toEqual([
       "Favourites",
     ]);

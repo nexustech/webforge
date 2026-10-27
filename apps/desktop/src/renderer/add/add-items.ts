@@ -34,6 +34,11 @@ export type AddItem = {
   readonly label: string;
   /** Its group in the panel ("Heroes"); empty when it has none. */
   readonly category: string;
+  /**
+   * Words a search finds it by besides its name and group: a section's category ("Heroes"), which
+   * the Sections tab no longer shows as a group (#523).
+   */
+  readonly keywords?: string;
   /** Set for a shared section, which a click places as a linked copy; it can't be dragged. */
   readonly sharedSectionId?: SharedSectionId;
   /** Set for an item listed again, among the favourites or recently used. */
@@ -76,25 +81,34 @@ function placed(
   return preset === undefined ? undefined : { type, values: preset.values };
 }
 
-/** The components `tab` offers, in library order, each followed by its presets. */
+/**
+ * The components `tab` offers, each followed by its presets. Elements in library order, by their
+ * categories (Basic, Text, Media…). Sections in one list from A to Z, "All sections" (#523): most
+ * categories held one section, a heading per item, so they group again only once there are enough
+ * sections for groups to help; a search still finds a section by its category.
+ */
 export function addItems(library: ComponentLibrary, tab: AddTab): AddItem[] {
-  const place = tab === "sections" ? "section" : "element";
-  return Object.entries(library.components)
+  const sections = tab === "sections";
+  const place = sections ? "section" : "element";
+  const items = Object.entries(library.components)
     .filter(([, def]) => (def.place ?? "element") === place)
     .flatMap(([type, def]) => {
-      const category = def.category ?? "";
+      const category = sections ? t("add.allSections") : (def.category ?? "");
+      const keywords = sections && def.category !== undefined ? { keywords: def.category } : {};
       const level = def.advancedOnly === true ? { advancedOnly: true as const } : {};
       return [
-        { type, label: def.label, category, ...level },
+        { type, label: def.label, category, ...keywords, ...level },
         ...(def.presets ?? []).map((preset) => ({
           type: presetKey(type, preset.id),
           label: preset.label,
           category,
+          ...keywords,
           preset: true as const,
           ...level,
         })),
       ];
     });
+  return sections ? items.sort((a, b) => a.label.localeCompare(b.label)) : items;
 }
 
 /**
@@ -138,7 +152,7 @@ export function withFavourites(
 }
 
 /**
- * `items` matching what the person typed (in the name or the group, ignoring case), grouped by
+ * `items` matching what the person typed (in the name, the group or the keywords, ignoring case), grouped by
  * category in order of first appearance. While searching, an item is found once, in its own
  * group: not again among the favourites or recently used, unless only that group matches.
  */
@@ -148,7 +162,7 @@ export function groupItems(
 ): { category: string; items: AddItem[] }[] {
   const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
   const matches = (item: AddItem) => {
-    const text = `${item.label} ${item.category}`.toLocaleLowerCase();
+    const text = `${item.label} ${item.category} ${item.keywords ?? ""}`.toLocaleLowerCase();
     return words.every((word) => text.includes(word));
   };
   const foundInOwnGroup = new Set(

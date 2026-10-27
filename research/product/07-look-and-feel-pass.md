@@ -62,6 +62,7 @@ Decided by the product owner on 2026-10-23:
 | # | Decision |
 |---|---|
 | **UI6** | ✅ **Copy Bootstrap Studio's look and feel as far as the IP rule allows:** LF-1…LF-13 as written (LF-8 optional), as plan item 1.39 (+4 days, 6 with the UI5 items moved from 1.35 and 1.36) and 2.14 (+2 days). Dialogs stay dark; the device set stays Desktop · Tablet · Mobile |
+| **LF-6** (amended 27 Oct 2026) | ✅ **The Add panel's Sections tab lists its sections from A to Z in one group, *All sections*, without categories** (product owner, #523). With 12 sections, most categories held one section, so a heading per item was noise. Favourites, Recently used and Shared sections keep their own groups above it; a search still finds a section by its category ("heroes" finds the Hero). The Elements tab keeps LF-6's categories. Sections group again once there are enough for groups to help |
 
 ## Sources
 - [Bootstrap Studio 9.0.1 screenshot pass](../bootstrap-studio/07-editor-screenshot-pass.md) and its screenshots
