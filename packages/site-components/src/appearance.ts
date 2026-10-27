@@ -5,7 +5,7 @@ import {
   type Responsive,
   resolveResponsive,
 } from "@webforge/model";
-import { colorClass } from "./library.js";
+import { colorClass, onAnyDevice } from "./library.js";
 import type { FieldDef } from "./schema.js";
 
 /**
@@ -148,10 +148,27 @@ export const APPEARANCE_FIELDS = {
   },
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
+/** The Text controls' names: a section without a title of its own has none (2.22b). */
+export const APPEARANCE_TEXT_FIELD_NAMES = [
+  "lookSize",
+  "lookWeight",
+  "lookItalic",
+  "lookUnderline",
+  "lookCase",
+  "lookAlign",
+] as const satisfies readonly (keyof typeof APPEARANCE_FIELDS)[];
+
 /** The names of {@link APPEARANCE_FIELDS}, which a component can't give a field of its own. */
 export const APPEARANCE_FIELD_NAMES = Object.keys(
   APPEARANCE_FIELDS,
 ) as readonly (keyof typeof APPEARANCE_FIELDS)[];
+
+/** The group without its Text controls: a section without a title of its own (2.22b). */
+export const APPEARANCE_FIELDS_WITHOUT_TEXT = Object.fromEntries(
+  Object.entries(APPEARANCE_FIELDS).filter(
+    ([name]) => !(APPEARANCE_TEXT_FIELD_NAMES as readonly string[]).includes(name),
+  ),
+) as Omit<typeof APPEARANCE_FIELDS, (typeof APPEARANCE_TEXT_FIELD_NAMES)[number]>;
 
 /** Each choice's classes, written in full; `default` adds none. `!` wins over the component's. */
 const SIZE_CLASSES: Readonly<Record<(typeof SIZES)[number], string>> = {
@@ -296,4 +313,33 @@ export function appearanceBoxClasses(values: AppearanceValues): string {
   ]
     .filter((part) => part !== "")
     .join(" ");
+}
+
+/** A colour of the group's own: a theme colour, not *Theme's*. */
+const ownColour = (value: unknown) => colorClass("text", value) !== "";
+
+/** Whether the group gives an item a colour or background of its own on `device`. */
+const ownColourOn = (values: AppearanceValues, device: Breakpoint) =>
+  [values.lookColor, values.lookBackground].some((value) =>
+    ownColour(
+      isResponsiveValue(value as Responsive<unknown>)
+        ? resolveResponsive(value as Responsive<unknown>, device)
+        : value,
+    ),
+  );
+
+/**
+ * `classes` on the devices where the group gives an item a colour or background of its own, and
+ * on no other, with a space before them to append to others (2.22b). A Button with one darkens when
+ * hovered unless its hover row says otherwise, as its own colours would have, which the group's
+ * (marked to win) now outrank; device by device, as the colour's own classes are.
+ */
+export function whereOwnColour(values: AppearanceValues, classes: string): string {
+  // Most items have neither, on any device.
+  if (!onAnyDevice(values.lookColor, ownColour) && !onAnyDevice(values.lookBackground, ownColour)) {
+    return "";
+  }
+  const own = Object.fromEntries(DEVICES.map((device) => [device, ownColourOn(values, device)]));
+  const drawn = perDevice({ $responsive: own }, when(classes.trim()));
+  return drawn === "" ? "" : ` ${drawn}`;
 }
