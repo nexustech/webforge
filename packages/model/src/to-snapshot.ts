@@ -21,6 +21,7 @@ export function siteToSnapshot(
     }
     const { description, hideHeader, hideFooter, hideFromNavigation, hideBackToTop } =
       page.settings;
+    const shareImage = page.settings.shareImage ?? site.settings.social.shareImage;
     return [
       {
         id: page.id,
@@ -32,6 +33,7 @@ export function siteToSnapshot(
         hideHeader,
         hideFooter,
         hideBackToTop,
+        ...(shareImage === undefined ? {} : { shareImage }),
         // Copies of shared sections are exported inline, as their shared section (F-ED-23).
         doc: { ...page.doc, content: expandSharedCopies(page.doc.content, site.sharedSections) },
       },
@@ -70,5 +72,6 @@ export function siteToSnapshot(
     formService: site.settings.forms.service,
     backToTop: site.settings.general.backToTop,
     menu: site.menu,
+    ...(site.settings.general.icon === undefined ? {} : { icon: site.settings.general.icon }),
   };
 }
