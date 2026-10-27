@@ -118,3 +118,5 @@ export function createFakeEngine(): FakeEngine {
     rightClick: menus.emit,
   };
 }
+
+export { scaledTestTimeout } from "./timeouts.js";
