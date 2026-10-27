@@ -22,7 +22,7 @@ for (const folder of readTemplates()) {
       await page.setViewportSize({ width: device.width, height: device.height });
       await withBuiltTemplate(folder, async ({ pages }) => {
         for (const [path, address] of pages) {
-          await openPage(page, address);
+          await openPage(page, address, { wholePage: true });
           const results = await new AxeBuilder({ page })
             .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
             .analyze();
