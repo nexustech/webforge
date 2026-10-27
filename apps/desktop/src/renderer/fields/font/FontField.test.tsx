@@ -35,7 +35,7 @@ function setUp(
   return { onChange, onCommit, fonts, user: userEvent.setup({ delay: null }) };
 }
 
-describe("the font field (2.3a)", { timeout: 15_000 }, () => {
+describe("the font field (2.3a)", () => {
   it("shows the font in itself, and chooses another in the picker as one change", async () => {
     const { onChange, onCommit, user } = setUp();
     const button = screen.getByRole("button", { name: "Headings Inter" });
