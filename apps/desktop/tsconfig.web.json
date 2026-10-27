@@ -25,6 +25,9 @@
       "path": "../../packages/model"
     },
     {
+      "path": "../../packages/site-check"
+    },
+    {
       "path": "../../packages/site-components"
     }
   ]

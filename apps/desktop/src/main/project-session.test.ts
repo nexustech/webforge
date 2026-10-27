@@ -376,12 +376,19 @@ describe("ProjectSession editor mode", () => {
 
     const path = join(dir, "Bakery.wforge");
     await session.create(path);
-    expect(await session.uiState()).toEqual({ editorMode: "design" });
+    expect(await session.uiState()).toEqual({ editorMode: "design", siteCheckIgnored: [] });
     expect(await session.setUiState({ editorMode: "content" })).toEqual({ status: "saved" });
+    // Each part on its own: Site Check's ignored items leave the mode as it is (3.6).
+    expect(await session.setUiState({ siteCheckIgnored: ["altText:a"] })).toEqual({
+      status: "saved",
+    });
 
     await session.close();
     await session.open(path);
-    expect(await session.uiState()).toEqual({ editorMode: "content" });
+    expect(await session.uiState()).toEqual({
+      editorMode: "content",
+      siteCheckIgnored: ["altText:a"],
+    });
   });
 
   it("reports a read-only site or a write error instead of throwing", async () => {
@@ -404,7 +411,7 @@ describe("ProjectSession editor mode", () => {
       reason: "unknown",
     });
     expect(console.error).toHaveBeenCalledWith(
-      "Webforge could not remember the editor mode (code=Error SQLITE_FULL)",
+      "Webforge could not remember the editor state (code=Error SQLITE_FULL)",
     );
   });
 });

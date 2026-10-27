@@ -356,6 +356,9 @@ importers:
       '@webforge/publish':
         specifier: workspace:*
         version: link:../../packages/publish
+      '@webforge/site-check':
+        specifier: workspace:*
+        version: link:../../packages/site-check
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../../packages/site-components
@@ -928,6 +931,28 @@ importers:
       fast-check:
         specifier: 4.10.2
         version: 4.10.2
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+
+  packages/site-check:
+    dependencies:
+      '@webforge/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      '@webforge/model':
+        specifier: workspace:*
+        version: link:../model
+      '@webforge/site-components':
+        specifier: workspace:*
+        version: link:../site-components
+      '@webforge/themes':
+        specifier: workspace:*
+        version: link:../themes
+    devDependencies:
+      '@webforge/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))

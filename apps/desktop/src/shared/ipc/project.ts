@@ -1,6 +1,7 @@
 import {
   SITE_NAME_MAX,
   type SiteDocumentChange,
+  siteCheckIgnoredSchema,
   siteDocSchema,
   siteDocumentChangeSchema,
 } from "@webforge/model";
@@ -89,11 +90,21 @@ export type CommitResult = z.infer<typeof commitResultSchema>;
 /**
  * The open site's editor state that isn't part of the site (1.10): remembered with the site, but
  * never versioned or undone. Design changes the layout; Content edits text and images only (M3).
+ * What the person ignored in Site Check (3.6) is remembered the same way.
  */
-const siteUiStateSchema = z.strictObject({ editorMode: z.enum(["design", "content"]) });
+const siteUiStateSchema = z.strictObject({
+  editorMode: z.enum(["design", "content"]),
+  siteCheckIgnored: siteCheckIgnoredSchema.optional(),
+});
 
 /** The open site's editor state that isn't part of the site. */
 export type SiteUiState = z.infer<typeof siteUiStateSchema>;
+
+/** A change to the editor state: only the parts given are remembered anew. */
+const siteUiChangeSchema = siteUiStateSchema.partial();
+
+/** A change to the open site's editor state. */
+export type SiteUiChange = z.infer<typeof siteUiChangeSchema>;
 
 /** Outcome of remembering the editor state with the open site. */
 const uiStateResultSchema = z.discriminatedUnion("status", [
@@ -211,7 +222,7 @@ export const projectChannels = {
   /** Remembers the editor state with the open site. */
   setUiState: {
     channel: "project:set-ui-state",
-    request: z.tuple([sessionIdSchema, siteUiStateSchema]),
+    request: z.tuple([sessionIdSchema, siteUiChangeSchema]),
     response: uiStateResultSchema,
   },
   /** The renderer's answer to `app:flush`: every change is saved, the window may close. */
@@ -248,5 +259,5 @@ export interface ProjectApi {
   /** Takes a site off the Recent list. */
   removeRecent(id: string): Promise<null>;
   /** Remembers the editor state with the open site, if it is still the opening `sessionId` names. */
-  setUiState(sessionId: string, state: SiteUiState): Promise<UiStateResult>;
+  setUiState(sessionId: string, change: SiteUiChange): Promise<UiStateResult>;
 }

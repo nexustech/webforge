@@ -105,6 +105,16 @@ Some kinds belong to no component, so they skip places 1–3, 6 and `FIELD_KINDS
 
 The form engine's *Every kind* story lists every kind, so a new one appears there too.
 
+## Site Check rules
+
+A rule (`packages/site-check`, [ADR 0016](adr/0016-site-check-in-the-renderer.md)) is:
+- **a `CheckRule`:** an `id`, a level (`must`, `should` or `tip`), `strictOnPublish` if publishing makes it *Must fix* (X5), and `check({ site, catalogue })`. It returns findings, each with a key that stays the same while the problem lasts (what *Ignore* remembers) and a place the panel can jump to;
+- **listed** in `SITE_CHECK_RULES` (`src/check.ts`), in the panel's order;
+- **worded** in `packages/i18n/src/en/siteCheck.ts`: `siteCheck.rule.<id>` for its name, `.pass` for its verdict when nothing is found, and `.fail.one` and `.fail.other` for its verdicts that count;
+- **tested** with a site built for it (`src/test-site.test-helper.ts`).
+
+`eachFieldValue` walks the values of fields of given kinds, as the catalogue describes them. It leaves out hidden elements and shared sections no page holds, as the export does. A one-click fix, if the rule has one, is the app's: `fixFor` in `renderer/site-check/actions.ts`, as one undo step.
+
 ## IPC domains
 
 The renderer reaches the main process only through `window.webforge`, the preload's typed API (`shared/webforge-api.ts`). A domain is:
