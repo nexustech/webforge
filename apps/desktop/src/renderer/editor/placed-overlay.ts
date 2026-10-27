@@ -2,6 +2,7 @@ import type { ThemeTokens } from "@webforge/model";
 import {
   BACKGROUND_DEFAULTS,
   BACKGROUND_FIELDS,
+  type ComponentDef,
   type FieldDef,
   OVERLAYS,
   sectionOverlay,
@@ -21,6 +22,7 @@ export function placedOverlay(
   values: Readonly<Record<string, unknown>>,
   image: unknown,
   theme: ThemeTokens,
+  component?: Pick<ComponentDef, "sectionText">,
 ): string | undefined {
   if (field !== BACKGROUND_FIELDS.backgroundImage || sectionOverlay(values) !== null) {
     return undefined;
@@ -29,7 +31,8 @@ export function placedOverlay(
   const chosen = values.overlay !== undefined && values.overlay !== BACKGROUND_DEFAULTS.overlay;
   if (chosen || sectionOverlay(placed) === null) return undefined;
   const readable = (overlay: string) => {
-    const drawn = sectionOverlay({ ...placed, overlay });
+    // In the colour the section's text has: its own, or its layout's (#544).
+    const drawn = sectionOverlay({ ...placed, overlay }, component?.sectionText?.(placed));
     return drawn !== null && overlayContrastIssue(theme, drawn) === null;
   };
   return OVERLAYS.find(readable) ?? OVERLAYS[OVERLAYS.length - 1];

@@ -136,6 +136,16 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
 };
 
 /**
+ * The text colour role a frame's `classes` set, as a colour ref (#544): `text-neutral-content`
+ * gives `neutral-content`; `undefined` when they set none, and the section's text is the page's.
+ */
+function frameText(classes: string): string | undefined {
+  return /(?:^|\s)text-((?:base|primary|secondary|accent|neutral|info|success|warning|error)-content)(?=\s|$)/.exec(
+    classes,
+  )?.[1];
+}
+
+/**
  * A section (2.19): {@link defineComponent} for a page band, which adds what every section has.
  * It gets its colours ({@link COLORS_FIELD}), a padding (from {@link SECTION_PADDING} for the sides
  * left unset) and a margin, and is drawn in one frame: `<section class="site-<name> <its frame's
@@ -177,6 +187,8 @@ export function defineSection<const F extends Fields, const Variant extends stri
         ...entranceBehaviours(stored),
       ];
     },
+    // The text colour its frame sets for a layout, if any: the overlay check reads its text so (#544).
+    sectionText: (values) => frameText(frame?.(values as ValuesOf<F & FrameFields, Variant>) ?? ""),
     // A new section has the page's colours, as one with no value has: choosing them is no change.
     // Its overlay is set too, so the Edit panel shows what a background image would get (2.26).
     defaults: {
