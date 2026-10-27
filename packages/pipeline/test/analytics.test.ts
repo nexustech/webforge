@@ -39,6 +39,21 @@ describe("Google Analytics and its consent banner (3.8, B4, B7)", () => {
     expect(text(built, fileNamed(built, /^assets\/js\/webforge\./))).toContain("webforge-consent");
   });
 
+  it("puts Cookie settings in every page's Footer, so a visitor can change their choice (#539)", async () => {
+    const settings =
+      '<button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button>';
+    // The thank-you page hides its Footer (its Page Settings), and so has none.
+    for (const path of ["index.html", "about.html"]) {
+      const html = text(built, path);
+      const at = html.indexOf(settings);
+      expect(at, path).toBeGreaterThan(html.indexOf("<footer"));
+      expect(at, path).toBeLessThan(html.indexOf("</footer>"));
+    }
+    // None without analytics: the golden files say so for every template too.
+    const plain = await buildSite(sampleSite(), siteLibrary, resources);
+    expect(text(plain, "index.html")).not.toContain("data-wf-consent-open");
+  }, 60_000);
+
   it("writes no address of Google's into a page: the script adds it once the visitor accepts", async () => {
     const plain = await buildSite(sampleSite(), siteLibrary, resources);
     const absolute = (site: BuiltSite) =>
@@ -63,6 +78,8 @@ describe("Google Analytics and its consent banner (3.8, B4, B7)", () => {
     expect(index).toContain('<section data-wf-consent="" data-measurement-id="G-ABC123DEF4"');
     expect(index).not.toContain("data-ask");
     expect(index).not.toContain("data-wf-consent-accept");
+    // Nothing to change without the banner, so no Cookie settings (#539).
+    expect(index).not.toContain("data-wf-consent-open");
   }, 60_000);
 
   it("leaves Google Analytics out of a preview, so the owner's own visits aren't counted", async () => {
@@ -74,6 +91,7 @@ describe("Google Analytics and its consent banner (3.8, B4, B7)", () => {
     if (site === undefined) throw new Error("The preview didn't finish");
 
     expect(text(site, "index.html")).not.toContain("data-wf-consent");
+    expect(text(site, "index.html")).not.toContain("Cookie settings");
     expect(text(site, fileNamed(site, /^assets\/js\/webforge\./))).not.toContain(
       "webforge-consent",
     );

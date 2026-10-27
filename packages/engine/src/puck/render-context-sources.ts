@@ -19,6 +19,8 @@ export const RENDER_CONTEXT_SOURCES = {
   previews: "setPreviews",
   // Never on the canvas, which always shows Custom Code sanitised.
   rawCustomCode: "export",
+  // The Footer's Cookie settings: only an exported site has a consent banner to reopen.
+  cookieSettings: "export",
   // The canvas loads every image as it comes into view; only the export knows the first section.
   firstSection: "export",
   setting: "setSettings",

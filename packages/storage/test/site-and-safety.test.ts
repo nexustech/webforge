@@ -8,7 +8,8 @@ import {
   SiteFormatError,
   siteDocuments,
 } from "@webforge/model";
-import { copyWforgeFixture, heroPhoto, tempDirFactory } from "@webforge/test-utils";
+import { copyWforgeFixture, heroPhoto } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import { detectSyncFolder, ProjectStore, ReadOnlyProjectError } from "../src/index.js";
 

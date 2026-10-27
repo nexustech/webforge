@@ -4,7 +4,8 @@
 // banner (the owner's choice). Opened from disk (a preview of the export), nothing is ever counted.
 // "Accept all" also loads the page's embeds: it marks the page (`data-wf-consent-all`, for a
 // returning visitor before the embed script runs) and tells the embed script
-// (`webforge:consent-all`).
+// (`webforge:consent-all`). Cookie settings in the Footer reopen the banner: declining after
+// accepting stops the counting and removes Google's cookies (#539).
 (() => {
   const banner = document.querySelector("[data-wf-consent]");
   if (!(banner instanceof HTMLElement)) {
@@ -72,26 +73,62 @@
     loadAnalytics(true);
   };
 
+  /**
+   * Removes Google Analytics' cookies for this site (`_ga`, `_ga_<id>`), as far as a page may: for
+   * this host and each domain above it, where Google sets them.
+   */
+  const forgetCookies = () => {
+    const names = document.cookie
+      .split(";")
+      .map((part) => part.split("=")[0]?.trim() ?? "")
+      .filter((name) => name === "_ga" || name.startsWith("_ga_"));
+    const parts = window.location.hostname.split(".");
+    const domains = parts.map((_, at) => parts.slice(at).join("."));
+    for (const name of names) {
+      for (const domain of ["", ...domains]) {
+        const scope = domain === "" ? "" : `; domain=${domain}`;
+        // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API isn't in every browser a site is opened in.
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${scope}`;
+      }
+    }
+  };
+
   if (!banner.hasAttribute("data-ask")) {
     loadAnalytics(true);
     return;
   }
-  const choice = stored();
-  if (choice === "granted") {
-    acceptAll();
-    return;
-  }
-  if (choice === "denied") {
-    return;
-  }
-  banner.hidden = false;
-  banner.querySelector("[data-wf-consent-accept]")?.addEventListener("click", () => {
+  const accept = banner.querySelector("[data-wf-consent-accept]");
+  const decline = banner.querySelector("[data-wf-consent-decline]");
+  accept?.addEventListener("click", () => {
     store("granted");
     banner.hidden = true;
     acceptAll();
   });
-  banner.querySelector("[data-wf-consent-decline]")?.addEventListener("click", () => {
+  decline?.addEventListener("click", () => {
     store("denied");
     banner.hidden = true;
+    if (loaded) {
+      // Declining after accepting (#539): counting stops now, Google's cookies go, and a fresh
+      // page, where gtag.js no longer loads, stops the script that was already running.
+      page.gtag?.("consent", "update", { analytics_storage: "denied" });
+      forgetCookies();
+      window.location.reload();
+    }
   });
+  // Cookie settings in the Footer: the banner again, so the visitor can change their choice (#539).
+  for (const open of document.querySelectorAll("[data-wf-consent-open]")) {
+    if (!(open instanceof HTMLElement)) continue;
+    open.hidden = false;
+    open.addEventListener("click", () => {
+      banner.hidden = false;
+      if (decline instanceof HTMLElement) decline.focus();
+    });
+  }
+
+  const choice = stored();
+  if (choice === "granted") {
+    acceptAll();
+  } else if (choice !== "denied") {
+    banner.hidden = false;
+  }
 })();

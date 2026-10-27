@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { fontFacesFor } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFontReader, createFontResponder } from "./fonts.js";
