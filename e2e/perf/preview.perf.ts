@@ -113,6 +113,17 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   await expect.poll(brand, { timeout: OPEN_WAIT }).not.toBe(initial);
   const before = await brand();
 
+  // The page notes, by its own clock, the frame its colour changes in: no test round trip in it.
+  await site.evaluate((previous) => {
+    const watch = () => {
+      const now = getComputedStyle(document.documentElement)
+        .getPropertyValue("--color-primary")
+        .trim();
+      if (now !== previous) Object.assign(window, { colourAt: Date.now() });
+      else requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+  }, before);
   let started = 0;
   const swapped = nextEvent(site.url(), "values");
   await brandColour("2a6fb0", async () => {
@@ -127,7 +138,7 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     before,
     { polling: "raf", timeout: OPEN_WAIT },
   );
-  const shown = Date.now();
+  const shown = await site.evaluate(() => (window as unknown as { colourAt: number }).colourAt);
   const edited = await lastChange();
   const took = shown - edited;
   const told = (await swapped) - edited;
