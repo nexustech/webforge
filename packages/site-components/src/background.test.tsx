@@ -62,15 +62,19 @@ describe("BACKGROUND_FIELDS (2.26)", () => {
 
 describe("SectionBackground (2.26)", () => {
   it("draws the image as a responsive picture behind the content, its focal point in view", () => {
-    const html = draw({ backgroundImage: { mediaId: "shop" }, overlay: "60" });
+    const html = draw({
+      backgroundImage: { mediaId: "shop", alt: "The shop" },
+      overlay: "60",
+    });
 
     expect(html).toContain('<source type="image/webp" srcSet="assets/img/shop-640.webp 640w');
     expect(html).toContain('sizes="100vw"');
     expect(html).toContain('loading="lazy"');
     expect(html).toContain("object-position:30% 60%");
     expect(html).toContain('class="absolute inset-0 -z-10 h-full w-full object-cover"');
-    // Decorative: the section's content says what it's about.
+    // Decorative, its alt text left out: the section's content says what it's about.
     expect(html).toContain('alt=""');
+    expect(html).not.toContain("The shop");
     expect(html).toContain(
       '<div aria-hidden="true" class="absolute inset-0 -z-10 bg-base-100/60"></div>',
     );
@@ -98,11 +102,11 @@ describe("backgroundClasses (2.26)", () => {
   it("makes a stacking context cut to the section, and takes neutral's text colour over it", () => {
     expect(backgroundClasses({})).toBe("");
     expect(backgroundClasses({ backgroundImage: { mediaId: "shop" } })).toBe(
-      " relative isolate overflow-hidden",
+      "relative isolate overflow-hidden",
     );
     expect(
       backgroundClasses({ backgroundImage: { mediaId: "shop" }, overlayColor: "neutral" }),
-    ).toBe(" relative isolate overflow-hidden text-neutral-content");
+    ).toBe("relative isolate overflow-hidden text-neutral-content");
   });
 });
 

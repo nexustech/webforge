@@ -17,9 +17,10 @@ const IN_GROUP = { group: "style", optionGroup: APPEARANCE_GROUP } as const;
 
 /**
  * A section's background image (2.26, ST-5): an image from Media behind its content (in the
- * Content tab, as images are content), with its focal point kept in view, and an overlay over it in the theme's page or neutral colour, so the
- * text on it stays readable. The same on every section (defineSection's frame); its classes come
- * from {@link backgroundClasses}, and {@link SectionBackground} draws the image and overlay.
+ * Content tab, as images are content), with its focal point kept in view, and an overlay over it
+ * in the theme's page or neutral colour, so the text on it stays readable. The same on every
+ * section (defineSection's frame); its classes come from {@link backgroundClasses}, and
+ * {@link SectionBackground} draws the image and overlay.
  */
 export const BACKGROUND_FIELDS = {
   backgroundImage: {
@@ -102,14 +103,13 @@ export const hasBackground = (values: BackgroundValues) =>
   placedImage(values.backgroundImage) !== undefined;
 
 /**
- * The frame's classes for its background, with a space before them to append to others, or "" for
- * none: a stacking context the image and overlay sit at the back of, cut to the section; over the
+ * The frame's classes for its background, or "" for none: a stacking context the image and overlay sit at the back of, cut to the section; over the
  * neutral colour, its content colour for the text.
  */
 export function backgroundClasses(values: BackgroundValues): string {
   if (!hasBackground(values)) return "";
   const { color } = overlayOf(values);
-  return ` relative isolate overflow-hidden${color === "neutral" ? " text-neutral-content" : ""}`;
+  return `relative isolate overflow-hidden${color === "neutral" ? " text-neutral-content" : ""}`;
 }
 
 /**
@@ -132,10 +132,10 @@ export function SectionBackground({
   const overlay = OVERLAY_CLASSES[color][opacity];
   return (
     <>
-      {/* Decorative: what the section says is in its content. */}
+      {/* Decorative, whatever alt text the image has: what the section says is in its content. */}
       <Picture
         image={image}
-        alt={placed?.alt ?? ""}
+        alt=""
         sizes="100vw"
         className="absolute inset-0 -z-10 h-full w-full object-cover"
       />

@@ -178,7 +178,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
         frame?.(values) ?? "",
         `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}${entranceClasses(stored)}`,
         appearanceBoxClasses(stored),
-        backgroundClasses(stored).trim(),
+        backgroundClasses(stored),
       ].filter((part) => part !== "");
       const theme = stored.colors === "inverse" ? { "data-theme": INVERSE_THEME } : {};
       return (
