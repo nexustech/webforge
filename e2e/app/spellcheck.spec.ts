@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { BACKGROUND_WAIT } from "./budget.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
 
@@ -103,6 +104,8 @@ const shownMenus = () =>
   app.evaluate(() => (globalThis as { shownMenus?: string[][] }).shownMenus ?? []);
 
 test("offers spelling suggestions for a misspelt word in a text field", async () => {
+  // The system's checker takes its time on a busy machine (#446): room for its wait.
+  test.slow();
   if (process.platform === "win32") {
     // Windows follows the site's language (English for a new site).
     const languages = await app.evaluate(({ session }) =>
@@ -127,7 +130,7 @@ test("offers spelling suggestions for a misspelt word in a text field", async ()
         await field.click({ button: "right", position: { x: 50, y: 10 } });
         return (await shownMenus()).at(-1) ?? [];
       },
-      { timeout: 15_000 },
+      { timeout: BACKGROUND_WAIT },
     )
     .toContain("Add to Dictionary");
   const menu = (await shownMenus()).at(-1) ?? [];
@@ -136,6 +139,8 @@ test("offers spelling suggestions for a misspelt word in a text field", async ()
 });
 
 test("offers spelling suggestions inside rich text on the canvas (1.23)", async () => {
+  // The system's checker takes its time on a busy machine (#446): room for its wait.
+  test.slow();
   const canvas = page.frameLocator(".editor__canvas iframe");
   const editor = canvas.locator(".site-text .ProseMirror");
   await canvas.getByText("Tell visitors what you do and why they will love it.").click();
@@ -177,7 +182,7 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
         await page.mouse.click(at.x, at.y, { button: "right" });
         return (await shownMenus()).at(-1) ?? [];
       },
-      { timeout: 15_000 },
+      { timeout: BACKGROUND_WAIT },
     )
     .toContain("Add to Dictionary");
   expect((await shownMenus()).at(-1) ?? []).toContain("bakery");
