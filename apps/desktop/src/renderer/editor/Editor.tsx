@@ -189,10 +189,12 @@ function CanvasEdges({
 }) {
   const viewport = useUi(session, (ui) => ui.viewport);
   const zoom = useSyncExternalStore(view.subscribe, () => view.getState().size?.zoom ?? 1);
+  // Desktop fills the canvas (PH2-18): its width is the one the canvas reports.
+  const shown = useSyncExternalStore(view.subscribe, () => view.getState().size?.width);
   return (
     <CanvasResizeHandles
       container={container}
-      width={widthOf(viewport)}
+      width={widthOf(viewport, shown)}
       zoom={zoom}
       devices={devices}
       onChange={(next) => session.setViewport(next)}

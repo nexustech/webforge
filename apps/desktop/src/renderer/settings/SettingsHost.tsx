@@ -10,11 +10,15 @@ export type SettingsHostProps = {
   readonly registry: SettingsRegistry;
 };
 
-/** The dialog as it was opened: its parts then (R9), and the section it opened on. */
+/**
+ * The dialog as it was opened: its parts then (R9), the section it opened on, and who to tell when
+ * it closes, for a step that opened it ({@link SettingsRegistry.show}).
+ */
 type Shown = {
   readonly open: boolean;
   readonly parts: readonly OpenSettings[];
   readonly group?: string;
+  readonly closed?: (saved: boolean) => void;
 };
 
 /**
@@ -58,19 +62,33 @@ export function SettingsHost({ registry }: SettingsHostProps) {
       }),
       // Site Settings… is on while a site's part is there, as other site-only commands are.
       registry.subscribe(() => commands.update(COMMAND_IDS.siteSettings, { enabled: hasSite() })),
+      // A step that needs a setting opens the dialog on its section, and hears how it closed.
+      registry.onShow(({ part, group, closed }) => {
+        const parts = registry.list().flatMap((entry) => entry.open() ?? []);
+        if (!parts.some((each) => each.form.id === part)) {
+          closed(false);
+          return;
+        }
+        setShown({ open: true, parts, group: `${part}:${group}`, closed });
+      }),
     ];
     return () => {
       for (const stop of stops) stop();
     };
   }, [commands, registry]);
 
+  const close = (saved: boolean) => {
+    shown.closed?.(saved);
+    setShown((current) => ({ open: false, parts: current.parts }));
+  };
+
   return (
     <SettingsDialog
       open={shown.open}
       parts={shown.parts}
       initialGroup={shown.group}
-      onSaved={() => setShown((current) => ({ ...current, open: false }))}
-      onCancel={() => setShown((current) => ({ ...current, open: false }))}
+      onSaved={() => close(true)}
+      onCancel={() => close(false)}
     />
   );
 }

@@ -1,6 +1,12 @@
 import { t } from "@webforge/i18n";
 import { INVERSE_THEME } from "@webforge/model";
 import type { ReactNode } from "react";
+import {
+  APPEARANCE_FIELD_NAMES,
+  APPEARANCE_FIELDS,
+  appearanceBoxClasses,
+  appearanceTextClasses,
+} from "./appearance.js";
 import { type ComponentSpec, defineFramedSection } from "./define.js";
 import { boxClasses, type ComponentDef } from "./library.js";
 import {
@@ -11,6 +17,7 @@ import {
   entranceClasses,
 } from "./motion.js";
 import type { DefaultsOf, FieldDef, RenderPropsOf, ValuesOf } from "./schema.js";
+import { SectionTitleAppearance } from "./typography.js";
 
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
 export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
@@ -56,15 +63,25 @@ export const COLORS_FIELD = {
   ],
 } as const satisfies FieldDef;
 
-/** The fields every section has, which {@link defineSection} adds: its entrance too (F-DS-5). */
+/**
+ * The fields every section has, which {@link defineSection} adds: its entrance too (F-DS-5), and
+ * the Appearance group (2.22).
+ */
 type FrameFields = {
   readonly colors: typeof COLORS_FIELD;
   readonly padding: typeof PADDING_FIELD;
   readonly margin: typeof MARGIN_FIELD;
-} & typeof ENTRANCE_FIELDS;
+} & typeof ENTRANCE_FIELDS &
+  typeof APPEARANCE_FIELDS;
 
 /** The names of {@link FrameFields}, which a section can't give a field of its own. */
-const FRAME_FIELDS = ["colors", "padding", "margin", ...ENTRANCE_FIELD_NAMES] as const;
+const FRAME_FIELDS = [
+  "colors",
+  "padding",
+  "margin",
+  ...ENTRANCE_FIELD_NAMES,
+  ...APPEARANCE_FIELD_NAMES,
+] as const;
 
 /** The fields of a section: its own, and its frame's. */
 type Fields = Readonly<Record<string, FieldDef>>;
@@ -75,7 +92,7 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   "place" | "fields" | "render"
 > & {
   /**
-   * Its own fields; its colours, padding, margin and entrance are added (a field of those names is
+   * Its own fields; its colours, padding, margin, entrance and Appearance group are added (a field of those names is
    * refused).
    */
   readonly fields: F & {
@@ -84,7 +101,7 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
     readonly margin?: never;
     readonly entrance?: never;
     readonly entranceDelay?: never;
-  };
+  } & { readonly [Name in keyof typeof APPEARANCE_FIELDS]?: never };
   /** Its name in the `site-<name>` class every exported page and test finds it by: "hero". */
   readonly name: string;
   /** The frame's classes from its values: its background and layout ("hero bg-base-200"). */
@@ -117,7 +134,9 @@ export function defineSection<const F extends Fields, const Variant extends stri
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
     place: "section",
+    // The Appearance group first, so the Style tab shows it before the section's own options.
     fields: {
+      ...APPEARANCE_FIELDS,
       ...fields,
       colors: COLORS_FIELD,
       padding: PADDING_FIELD,
@@ -143,6 +162,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
         `site-${name}`,
         frame?.(values) ?? "",
         `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}${entranceClasses(stored)}`,
+        appearanceBoxClasses(stored),
       ].filter((part) => part !== "");
       const theme = stored.colors === "inverse" ? { "data-theme": INVERSE_THEME } : {};
       return (
@@ -152,7 +172,9 @@ export function defineSection<const F extends Fields, const Variant extends stri
           {...theme}
           {...entranceAttributes(stored)}
         >
-          {render(props)}
+          <SectionTitleAppearance.Provider value={appearanceTextClasses(stored)}>
+            {render(props)}
+          </SectionTitleAppearance.Provider>
         </section>
       );
     },

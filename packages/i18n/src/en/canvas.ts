@@ -125,6 +125,7 @@ export const canvas = {
   "editPanel.optionGroup.spacing": "Spacing",
   "editPanel.optionGroup.colours": "Colours",
   "editPanel.optionGroup.appearance": "Appearance",
+  "editPanel.optionGroup.options": "Options",
   "editPanel.optionGroup.advanced": "Advanced",
   // A value set for one device only (F-ED-4).
   // A field's per-device dot (UX-19): grey inherits Desktop's value, the accent colour has its own.

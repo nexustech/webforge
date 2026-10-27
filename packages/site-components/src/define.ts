@@ -7,7 +7,15 @@ import {
   responsiveBoxOf,
   type TextStyle,
 } from "@webforge/model";
-import type { ComponentType, ReactNode } from "react";
+import {
+  type ComponentType,
+  cloneElement,
+  createElement,
+  Fragment,
+  isValidElement,
+  type ReactNode,
+} from "react";
+import { APPEARANCE_FIELDS, appearanceBoxClasses, appearanceTextClasses } from "./appearance.js";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 import { isIconName } from "./icons.js";
 import {
@@ -25,6 +33,7 @@ import type {
   RenderPropsOf,
   ValuesOf,
 } from "./schema.js";
+import { SectionTitleAppearance } from "./typography.js";
 
 /**
  * Field kinds whose values are design tokens (C4): a choice from the component's own options, a
@@ -178,6 +187,47 @@ function valueReader(field: FieldDef, initial: unknown): (value: unknown) => unk
 
 const EmptySlot: ComponentType = () => null;
 
+/** Whether `type` only passes its one child through: a fragment, or a context's provider. */
+function passesThrough(type: unknown): boolean {
+  if (type === Fragment) return true;
+  const kind = (type as { readonly $$typeof?: unknown } | null)?.$$typeof;
+  return kind === Symbol.for("react.context") || kind === Symbol.for("react.provider");
+}
+
+/**
+ * An element's output with its Appearance (2.22) on its root element: the Text and the other
+ * controls' classes after its own, through a fragment or a context's provider around it. What it
+ * holds is drawn without its section's title styling, so a section's Appearance reaches no title
+ * but its own. Output with no HTML element at its root is left as it is (a test checks every
+ * element's root is one).
+ */
+function withAppearance(output: ReactNode, classes: string): ReactNode {
+  if (!isValidElement(output)) return output;
+  const props = output.props as { readonly className?: unknown; readonly children?: ReactNode };
+  if (typeof output.type !== "string") {
+    return passesThrough(output.type) && isValidElement(props.children)
+      ? cloneElement(output, {}, withAppearance(props.children, classes))
+      : output;
+  }
+  const own = typeof props.className === "string" ? props.className : "";
+  const changed = (
+    classes === "" ? {} : { className: own === "" ? classes : `${own} ${classes}` }
+  ) as Record<string, unknown>;
+  // An element with nothing inside (an `<hr>`, HTML set as it is) has no title to keep it from.
+  return props.children === undefined
+    ? cloneElement(output, changed)
+    : cloneElement(
+        output,
+        changed,
+        // Spread, so several children stay a list React keys by position, as they were.
+        createElement(
+          SectionTitleAppearance.Provider,
+          { value: "" },
+          ...(Array.isArray(props.children) ? props.children : [props.children]),
+        ),
+      );
+}
+
 /**
  * A site component (05, S1), checked as it is defined. Its `fields` type its `defaults` and the
  * values its `render` and `textStyle` get (R7): a default for a field it doesn't have, or a choice
@@ -229,7 +279,15 @@ function build<const F extends Fields, const Variant extends string = never>(
   if (def.place === "section" && !framed) {
     fail("is a section: define it with defineSection, which adds its frame, padding and margin");
   }
-  let fields: Fields = def.fields;
+  // Every element has the Appearance group (2.22), first so the Style tab shows it before its own
+  // options; a section's comes from its frame. A child is an item of its parent, styled there.
+  const appearance = (def.place ?? "element") === "element";
+  if (appearance) {
+    for (const own of Object.keys(APPEARANCE_FIELDS)) {
+      if (Object.hasOwn(def.fields, own)) fail(`declares its own "${own}": every element has it`);
+    }
+  }
+  let fields: Fields = appearance ? { ...APPEARANCE_FIELDS, ...def.fields } : def.fields;
   let defaults: Readonly<Record<string, unknown>> = def.defaults;
   let variantHides: Record<string, readonly string[]> | undefined;
   if (variants !== undefined) {
@@ -326,15 +384,22 @@ function build<const F extends Fields, const Variant extends string = never>(
     fields,
     defaults,
     ...(variantHides === undefined ? {} : { variantHides }),
-    render: (props: ComponentRenderProps) =>
-      render({
+    render: (props: ComponentRenderProps) => {
+      const values = valuesOf(props.values);
+      const output = render({
         id: props.id,
-        values: valuesOf(props.values),
+        values,
         slots: Object.fromEntries(
           slotNames.map((slot) => [slot, props.slots[slot] ?? EmptySlot]),
         ) as RenderPropsOf<F, Variant>["slots"],
         context: props.context,
-      }),
+      });
+      if (!appearance) return output;
+      const classes = [appearanceTextClasses(values), appearanceBoxClasses(values)]
+        .filter((part) => part !== "")
+        .join(" ");
+      return withAppearance(output, classes);
+    },
     ...(textStyle === undefined ? {} : { textStyle: (stored) => textStyle(valuesOf(stored)) }),
     ...(behaviours === undefined
       ? {}

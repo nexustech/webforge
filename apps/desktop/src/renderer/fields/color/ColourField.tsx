@@ -90,8 +90,23 @@ const ROLE_NAMES: Partial<Record<ColorRole, MessageKey>> = {
 /** The base choice that stands for a field's own colour, off the theme. */
 const CUSTOM = "custom";
 
-/** A colour ref, read: `default` (the element's own colour) is the theme's text colour. */
-function readRef(value: unknown): ColorRef | undefined {
+/**
+ * The choice that leaves the colour as the item draws it, when a field offers it (the Appearance
+ * group's colours, 2.22): no colour of its own, so no shade or opacity either. Unset is this too.
+ */
+const THEMES = "theme";
+
+/**
+ * A colour ref, read: `default` (the element's own colour) is the theme's text colour; a field
+ * offering {@link THEMES} has none while it's that, or unset.
+ */
+function readRef(value: unknown, options: readonly string[]): ColorRef | undefined {
+  if (
+    options.includes(THEMES) &&
+    (value === THEMES || value === undefined || value === "default")
+  ) {
+    return undefined;
+  }
   if (value === "default") return { base: { role: "base-content" } };
   return typeof value === "string" ? parseColorRef(value) : undefined;
 }
@@ -158,8 +173,8 @@ export function ColourField({
   const opacityId = useId();
   const customId = useId();
   const options = field.options.map((option) => option.value);
-  const ref = readRef(value);
-  const base = baseKey(ref, options);
+  const ref = readRef(value, options);
+  const base = ref === undefined && options.includes(THEMES) ? THEMES : baseKey(ref, options);
   const hex = ref !== undefined && "hex" in ref.base ? ref.base.hex : undefined;
   const role = ref !== undefined && "role" in ref.base ? ref.base.role : undefined;
 
@@ -224,6 +239,11 @@ export function ColourField({
         options={swatches}
         value={base}
         onChoose={(next) => {
+          if (next === THEMES) {
+            onChange(THEMES);
+            onCommit();
+            return;
+          }
           if (next === CUSTOM) {
             // A colour of its own starts from the one it shows now, to adjust from there.
             const start = hex ?? hexOf(shown?.color ?? theme.colors["base-content"]);

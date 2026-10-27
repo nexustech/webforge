@@ -24,7 +24,8 @@ const WIDE_SCREENS_FROM = 768;
 
 /** Whether the canvas at `viewport` shows the site as small screens do: its menu behind a button. */
 export function showsSmallScreens(viewport: Viewport): boolean {
-  return widthOf(viewport) < WIDE_SCREENS_FROM;
+  // Desktop is always wide (PH2-18): its width doesn't matter here.
+  return widthOf(viewport, undefined) < WIDE_SCREENS_FROM;
 }
 
 /** What the canvas previews at `viewport`: the mobile menu only where the site has one. */

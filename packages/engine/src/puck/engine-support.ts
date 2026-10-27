@@ -25,15 +25,20 @@ export function flushRichText(puck: PuckApi): boolean {
 /** How long Undo or Redo waits at most for a rich-text change it asked Puck to send. */
 export const RICH_TEXT_FLUSH_TIMEOUT_MS = 500;
 
-/** The canvas width of each device view. */
+/**
+ * The canvas width of each device view. Desktop fills the canvas (PH2-18, see `canvas-view.ts`):
+ * this is its width only until the canvas is measured, and Puck's own Desktop control.
+ */
 export const VIEWPORT_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
 
-/** A canvas width as the app names it: a device view, or a custom width. */
+/**
+ * A canvas width as the app names it: Tablet or Mobile at their widths, else a fixed width.
+ * Never Desktop: a width chosen in Puck is fixed, and Desktop is whatever the canvas has room for.
+ */
 export function viewportOf(width: number): Viewport {
-  const named = (Object.keys(VIEWPORT_WIDTHS) as (keyof typeof VIEWPORT_WIDTHS)[]).find(
-    (name) => VIEWPORT_WIDTHS[name] === width,
-  );
-  return named ?? width;
+  if (width === VIEWPORT_WIDTHS.tablet) return "tablet";
+  if (width === VIEWPORT_WIDTHS.mobile) return "mobile";
+  return width;
 }
 
 /** The device views Puck's canvas controls offer: Desktop · Tablet · Mobile (until 1.15). */
