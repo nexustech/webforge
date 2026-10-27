@@ -115,7 +115,7 @@ describe("exportRequestFor", () => {
     if (home === undefined) throw new Error("no home page");
     home.settings.shareImage = "bread" as MediaId;
 
-    const request = exportRequestFor(site, siteLibrary);
+    const request = exportRequestFor(site, siteLibrary, CHOICES, OUTPUT);
 
     expect(request.media.map((item) => item.id).sort()).toEqual(["bread", "front", "logo"]);
     expect(request.snapshot.icon).toBe("logo");
