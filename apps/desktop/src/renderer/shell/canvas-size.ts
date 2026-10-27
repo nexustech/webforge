@@ -1,4 +1,5 @@
 import type { Viewport } from "@webforge/engine";
+import { DESKTOP_FROM } from "@webforge/model";
 import { type CustomDevice, DEVICE_SIZE } from "../../shared/ipc/prefs.js";
 
 /**
@@ -7,34 +8,57 @@ import { type CustomDevice, DEVICE_SIZE } from "../../shared/ipc/prefs.js";
  * an undo step (U6).
  */
 
-/** The built-in device views' canvas widths, as the canvas engine shows them. */
-export const DEVICE_WIDTHS = { desktop: 1280, tablet: 768, mobile: 375 } as const;
-
 /** A built-in device view. */
-export type DeviceView = keyof typeof DEVICE_WIDTHS;
+export type DeviceView = "desktop" | "tablet" | "mobile";
 
-/** The built-in devices' heights, which Rotate swaps with their widths. */
-const DEVICE_HEIGHTS: Record<DeviceView, number> = { desktop: 800, tablet: 1024, mobile: 812 };
+/** A view with a fixed width. */
+type FixedView = Exclude<DeviceView, "desktop">;
+
+/**
+ * Tablet's and Mobile's canvas widths, as the canvas engine shows them. Desktop has none: it fills
+ * the canvas, as a site fills a browser (PH2-18), at least {@link DESKTOP_FROM} wide.
+ */
+export const DEVICE_WIDTHS: Readonly<Record<FixedView, number>> = { tablet: 768, mobile: 375 };
 
 /** A device's size, built in or the person's own. */
 type DeviceSize = { readonly width: number; readonly height: number };
 
-/** Every device the canvas offers: the built-in ones, then the person's own. */
+/** Tablet's and Mobile's heights, which Rotate swaps with their widths. */
+const DEVICE_HEIGHTS: Readonly<Record<FixedView, number>> = { tablet: 1024, mobile: 812 };
+
+/** The fixed desktop widths the size menu offers, to check particular screens (PH2-18). */
+export const DESKTOP_SIZES: readonly DeviceSize[] = [
+  { width: 1280, height: 800 },
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+];
+
+/** Every device the canvas offers: the fixed desktops, Tablet and Mobile, then the person's own. */
 function devicesWith(custom: readonly CustomDevice[]): DeviceSize[] {
-  const builtIn = (Object.keys(DEVICE_WIDTHS) as DeviceView[]).map((view) => ({
+  const views = (Object.keys(DEVICE_WIDTHS) as FixedView[]).map((view) => ({
     width: DEVICE_WIDTHS[view],
     height: DEVICE_HEIGHTS[view],
   }));
-  return [...builtIn, ...custom];
+  return [...DESKTOP_SIZES, ...views, ...custom];
 }
 
-/** A viewport's width in CSS pixels. */
-export const widthOf = (viewport: Viewport): number =>
-  typeof viewport === "number" ? viewport : DEVICE_WIDTHS[viewport];
+/**
+ * A viewport's width in CSS pixels; Desktop's is the canvas's, `desktop` (the size the canvas
+ * reports), at least {@link DESKTOP_FROM}.
+ */
+export const widthOf = (viewport: Viewport, desktop: number | undefined): number =>
+  typeof viewport === "number"
+    ? viewport
+    : viewport === "desktop"
+      ? Math.max(DESKTOP_FROM, desktop ?? DESKTOP_FROM)
+      : DEVICE_WIDTHS[viewport];
 
-/** A width as a viewport: a device view when it is one's width, a custom width otherwise. */
+/**
+ * A width as a viewport: Tablet or Mobile at their widths, a fixed width otherwise. Never Desktop,
+ * which is whatever width the canvas has.
+ */
 export function viewportFor(width: number): Viewport {
-  const view = (Object.keys(DEVICE_WIDTHS) as DeviceView[]).find(
+  const view = (Object.keys(DEVICE_WIDTHS) as FixedView[]).find(
     (id) => DEVICE_WIDTHS[id] === width,
   );
   return view ?? width;
@@ -76,13 +100,15 @@ export function snappedWidth(width: number, custom: readonly CustomDevice[], zoo
   return clampWidth(best ?? width);
 }
 
-/** The device a canvas `width` wide is, by name: a built-in view's, or one of the person's own. */
+/** The device a canvas `width` wide is, by name: Tablet, Mobile, or one of the person's own. */
 export function deviceAt(
   width: number,
   custom: readonly CustomDevice[],
-): { readonly view: DeviceView } | { readonly name: string } | undefined {
-  const view = viewportFor(width);
-  if (typeof view === "string") return { view };
+): { readonly view: FixedView } | { readonly name: string } | undefined {
+  const view = (Object.keys(DEVICE_WIDTHS) as FixedView[]).find(
+    (id) => DEVICE_WIDTHS[id] === width,
+  );
+  if (view !== undefined) return { view };
   const own = custom.find((device) => device.width === width);
   return own === undefined ? undefined : { name: own.name };
 }

@@ -222,6 +222,8 @@ export const shell = {
   "canvasToolbar.sizeButton": "Page size {size}: choose a device",
   "canvasToolbar.deviceSize": "{name} ({width} × {height})",
   "canvasToolbar.deviceWidth": "{name} ({width})",
+  // Desktop fills the canvas, as a site fills a browser (PH2-18); fixed widths follow it.
+  "canvasToolbar.desktopFills": "Desktop (fills the canvas)",
   "canvasToolbar.addDevice": "Add device…",
   "canvasToolbar.addDevice.title": "Add a device",
   "canvasToolbar.addDevice.description":

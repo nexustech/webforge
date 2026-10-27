@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
@@ -95,6 +96,7 @@ export type AppElectron = Pick<
   | "protocol"
   | "screen"
   | "session"
+  | "shell"
   | "utilityProcess"
 >;
 
@@ -278,13 +280,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
   // One export worker while the site is open, keeping the images it encoded in memory (R15).
   const exports = createExportRunner(() => forkWorker("Webforge export"));
-  const runExport: RunExport = async (snapshot, destination, { signal, onProgress }) => {
+  const runExport: RunExport = async (snapshot, target, { signal, onProgress }) => {
     const families = await fonts.downloadedFamiliesOf(snapshot.theme);
     return exports.run(
       {
         type: "export",
         snapshot,
-        destination,
+        ...target,
         fonts: fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
           const data = fonts.reader.read(face);
           return data === undefined ? [] : [{ file: face.file, data }];
@@ -433,9 +435,28 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         if (lifecycle.quitting) app.quit();
       },
     });
-    registerExportHandlers(ipcMain, isTrustedSender, dialogs.export, runExport, (progress) =>
-      lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
-    );
+    registerExportHandlers(ipcMain, isTrustedSender, {
+      dialogs: dialogs.export,
+      runExport,
+      sendProgress: (progress) =>
+        lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
+      choices: {
+        read: () => projectSession.exportChoices(),
+        write: (choices) => projectSession.setExportChoices(choices),
+      },
+      // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
+      open: async ({ destination, format }) => {
+        if (format === "zip") {
+          if (!existsSync(destination)) return "missing";
+          electron.shell.showItemInFolder(destination);
+          return "opened";
+        }
+        // An error message, rather than a throw, when the folder was moved or deleted.
+        const failed = await electron.shell.openPath(join(destination, "index.html"));
+        return failed === "" ? "opened" : "missing";
+      },
+      currentSite: () => projectSession.currentPath(),
+    });
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());

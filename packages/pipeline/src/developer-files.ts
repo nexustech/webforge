@@ -1,4 +1,6 @@
 import type { SiteSnapshot } from "@webforge/model";
+import daisyuiPackage from "daisyui/package.json" with { type: "json" };
+import tailwindPackage from "tailwindcss/package.json" with { type: "json" };
 import { type SiteCssOptions, siteStylesheetSource } from "./css.js";
 
 /** The folder of the export the developer files go in. */
@@ -8,6 +10,8 @@ const DEVELOPER_FOLDER = "developer";
  * *Include developer files* (F-EX-4, X6): what a developer needs to rebuild or extend the site's
  * styles with the standard tools. The exported pages don't use them.
  * - `input.css`: the Tailwind v4 source, with the theme's tokens, daisyUI's theme and the fonts;
+ * - `package.json`: the exact Tailwind, Tailwind CLI and daisyUI versions this export used, and a
+ *   `build-css` script that rebuilds the stylesheet the pages link to;
  * - `design-tokens.json`: the theme;
  * - `site.json`: the Site Settings the pages show;
  * - `README.md`: how the export is laid out, and how to rebuild the stylesheet.
@@ -27,8 +31,20 @@ export function developerFiles(
     ...(site.socialProfiles === undefined ? {} : { socialProfiles: site.socialProfiles }),
     ...(site.formService === undefined ? {} : { formService: site.formService }),
   };
+  // The CLI is released with Tailwind itself, at the same version.
+  const packageJson = {
+    private: true,
+    description: `Rebuilds the stylesheet of ${site.name}: npm install, then npm run build-css.`,
+    scripts: { "build-css": `tailwindcss -i input.css -o ../${cssPath}` },
+    devDependencies: {
+      "@tailwindcss/cli": tailwindPackage.version,
+      daisyui: daisyuiPackage.version,
+      tailwindcss: tailwindPackage.version,
+    },
+  };
   return new Map([
     [`${DEVELOPER_FOLDER}/input.css`, `${siteStylesheetSource(css, "package")}\n`],
+    [`${DEVELOPER_FOLDER}/package.json`, `${JSON.stringify(packageJson, null, 2)}\n`],
     [`${DEVELOPER_FOLDER}/design-tokens.json`, `${JSON.stringify(site.theme, null, 2)}\n`],
     [`${DEVELOPER_FOLDER}/site.json`, `${JSON.stringify(settings, null, 2)}\n`],
     [`${DEVELOPER_FOLDER}/README.md`, readme(site, cssPath)],
@@ -55,20 +71,22 @@ upload the folder to any web host. These files are for a developer who wants to 
 
 ## The styles
 - \`developer/input.css\`: the stylesheet's source, with the site's theme as daisyUI and Tailwind
-  tokens, and the fonts.
+  tokens, the fonts, and the classes the pages use.
 - \`developer/design-tokens.json\`: the theme's values (colours, fonts, sizes, corners).
 - \`developer/site.json\`: the Site Settings the pages show (contact details, opening hours,
   social profiles).
+- \`developer/package.json\`: the Tailwind CSS (${tailwindPackage.version}) and daisyUI
+  (${daisyuiPackage.version}) versions this export used.
 
-To rebuild the stylesheet after changing the pages or \`input.css\`, from this folder:
+To rebuild the stylesheet after changing the pages or \`input.css\`, from the \`developer\` folder:
 
 \`\`\`sh
-npm install tailwindcss @tailwindcss/cli daisyui
-npx @tailwindcss/cli -i developer/input.css -o ${cssPath}
+npm install
+npm run build-css
 \`\`\`
 
-Tailwind reads the classes from every \`.html\` file here, so a class added to a page is compiled
-in. Keep the file name the pages link to, or change the links.
+Tailwind reads the classes from every \`.html\` file of the site as well as those \`input.css\`
+lists, so a class added to a page is compiled in. The script writes the file the pages link to.
 
 Edits made here are not read back into Webforge: the next export from Webforge writes the site
 again from the site file.

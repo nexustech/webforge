@@ -35,6 +35,8 @@ export {
   siteCodeSchema,
   themeSchema,
 } from "./documents.js";
+export type { ExportChoices } from "./export-choices.js";
+export { DEFAULT_EXPORT_CHOICES, exportChoicesSchema } from "./export-choices.js";
 export type {
   Brand,
   IdKind,
@@ -93,6 +95,7 @@ export { insertPage, pageSlugFor, pageTitle, slugsInFolder } from "./pages.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
+  DESKTOP_FROM,
   isResponsiveValue,
   resolveResponsive,
   responsiveSchema,
