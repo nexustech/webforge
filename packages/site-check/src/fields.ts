@@ -1,4 +1,11 @@
-import { type ElementPlace, eachElement, type NodeDoc } from "@webforge/model";
+import {
+  type ElementPlace,
+  eachElement,
+  isSharedCopy,
+  type NodeDoc,
+  type SharedSectionId,
+  type SiteDoc,
+} from "@webforge/model";
 import type { CatalogueField } from "@webforge/site-components/catalogue-data";
 import type { CheckInput } from "./types.js";
 
@@ -11,10 +18,33 @@ export type PlacedValue = {
   readonly value: unknown;
 };
 
+/** The shared sections a page holds a copy of: the others aren't exported (F-ED-23). */
+function placedSharedSections(site: SiteDoc): ReadonlySet<SharedSectionId> {
+  return new Set(
+    Object.values(site.pages).flatMap(({ doc }) =>
+      doc.content.filter(isSharedCopy).map((copy) => copy.props.sharedSectionId),
+    ),
+  );
+}
+
+/**
+ * Whether what is kept `on` is exported: the Header, the Footer and pages are; a shared section
+ * only while a page holds a copy of it. Made once for a check of `site`.
+ */
+export function exportedPlaces(site: SiteDoc): (on: ElementPlace | "menu") => boolean {
+  const placed = placedSharedSections(site);
+  return (on) =>
+    on === "menu" ||
+    on === "header" ||
+    on === "footer" ||
+    Object.hasOwn(site.pages, on) ||
+    placed.has(on as SharedSectionId);
+}
+
 /**
  * Calls `visit` with each value of a field of one of `kinds` on the site's elements, as the
- * catalogue describes them, list items' fields included. Hidden elements are left out: the export
- * leaves them out too.
+ * catalogue describes them, list items' fields included. Hidden elements, and shared sections no
+ * page holds, are left out: the export leaves them out too.
  */
 export function eachFieldValue(
   { site, catalogue }: CheckInput,
@@ -22,9 +52,11 @@ export function eachFieldValue(
   visit: (placed: PlacedValue) => void,
 ): void {
   const wanted = new Set<string>(kinds);
+  const exported = exportedPlaces(site);
   eachElement(
     site,
     (node, on) => {
+      if (!exported(on)) return;
       const fields = catalogue[node.type]?.fields ?? {};
       for (const [name, field] of Object.entries(fields)) {
         const value = node.props[name];

@@ -7,7 +7,14 @@ import {
   mediaItem,
 } from "@webforge/model";
 import type { Catalogue } from "@webforge/site-components/catalogue-data";
-import { eachFieldValue, elementPlace, fieldKey, type PlacedValue, plainText } from "../fields.js";
+import {
+  eachFieldValue,
+  elementPlace,
+  exportedPlaces,
+  fieldKey,
+  type PlacedValue,
+  plainText,
+} from "../fields.js";
 import type { CheckRule, Finding } from "../types.js";
 
 /**
@@ -18,14 +25,18 @@ export const brokenLinksRule: CheckRule = {
   id: "brokenLinks",
   level: "should",
   strictOnPublish: true,
-  check: ({ site }) =>
-    findBrokenLinks(site, { skipHidden: true }).map((link) => ({
-      key: `${link.on}/${link.nodeId}/${"mediaId" in link ? link.mediaId : `${link.pageId}#${link.anchor ?? ""}`}`,
-      place:
-        link.on === "menu"
-          ? { kind: "menu", itemId: link.nodeId }
-          : { kind: "element", on: link.on, nodeId: link.nodeId },
-    })),
+  check: ({ site }) => {
+    const exported = exportedPlaces(site);
+    return findBrokenLinks(site, { skipHidden: true })
+      .filter((link) => exported(link.on))
+      .map((link) => ({
+        key: `${link.on}/${link.nodeId}/${"mediaId" in link ? link.mediaId : `${link.pageId}#${link.anchor ?? ""}`}`,
+        place:
+          link.on === "menu"
+            ? { kind: "menu", itemId: link.nodeId }
+            : { kind: "element", on: link.on, nodeId: link.nodeId },
+      }));
+  },
 };
 
 /**

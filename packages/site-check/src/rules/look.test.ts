@@ -3,13 +3,13 @@ import { describe, expect, it } from "vitest";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
 import { contrastRule, underlinedTextRule } from "./look.js";
 
-/** A theme every pair of which passes AA, with `accent` light enough to fail as text. */
+/** A theme every pair of which passes AA, with Accent (`secondary`) light enough to fail as text. */
 function themeWithLightAccent() {
   const theme = themePreset("high-contrast-rounded");
   if (theme === undefined) throw new Error("no high-contrast preset");
   return {
     passing: theme,
-    light: { ...theme, colors: { ...theme.colors, accent: { l: 0.9, c: 0.05, h: 90 } } },
+    light: { ...theme, colors: { ...theme.colors, secondary: { l: 0.9, c: 0.05, h: 90 } } },
   };
 }
 
@@ -31,7 +31,7 @@ describe("contrast", () => {
     const site = siteWith(
       [
         element("Text", "accent", {
-          text: '<p><span class="text-accent">Fresh</span> <span class="text-accent">bread</span></p>',
+          text: '<p><span class="text-secondary">Fresh</span> <span class="text-secondary">bread</span></p>',
         }),
         element("Text", "washed", { text: '<p><span class="bg-accent/30">Fresh</span></p>' }),
       ],
@@ -42,9 +42,9 @@ describe("contrast", () => {
     expect(found.filter((finding) => finding.place.kind === "theme").length).toBeGreaterThan(0);
     expect(found.filter((finding) => finding.place.kind === "element")).toEqual([
       {
-        key: `${site.homePageId}/accent/text/accent`,
+        key: `${site.homePageId}/accent/text/secondary`,
         place: { kind: "element", on: site.homePageId, nodeId: "accent" },
-        values: { foreground: "accent", ratio: expect.any(Number), required: 4.5 },
+        values: { foreground: "secondary", ratio: expect.any(Number), required: 4.5 },
       },
     ]);
   });

@@ -1,5 +1,11 @@
 import { t } from "@webforge/i18n";
-import type { MediaId, MediaMeta } from "@webforge/model";
+import {
+  type MediaId,
+  type MediaMeta,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+} from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { element, findIn, image, siteWith } from "../test-site.test-helper.js";
 import { altTextRule, brokenLinksRule, missingImagesRule, placeholdersRule } from "./content.js";
@@ -34,6 +40,26 @@ describe("broken links", () => {
         key: `${site.homePageId}/shown/page-gone#`,
         place: { kind: "element", on: site.homePageId, nodeId: "shown" },
       },
+    ]);
+  });
+
+  it("counts links in a shared section only while a page holds a copy of it (F-ED-23)", () => {
+    const gone = { kind: "page", pageId: "page-gone" };
+    const shared = (copies: NodeDoc[]) => ({
+      ...siteWith(copies),
+      sharedSections: {
+        hours: {
+          id: "hours" as SharedSectionId,
+          name: "Hours",
+          section: element("Section", "s", { content: [element("Button", "in", { link: gone })] }),
+        },
+      },
+    });
+    const copy = element(SHARED_COPY_TYPE, "c1", { sharedSectionId: "hours" });
+
+    expect(findIn(brokenLinksRule, shared([]))).toEqual([]);
+    expect(findIn(brokenLinksRule, shared([copy])).map((finding) => finding.place)).toEqual([
+      { kind: "element", on: "hours", nodeId: "in" },
     ]);
   });
 

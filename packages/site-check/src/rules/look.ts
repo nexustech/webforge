@@ -1,9 +1,9 @@
 import { type ColorRole, findUnderlinedText, TEXT_COLOR_CLASSES } from "@webforge/model";
 import { AA_TEXT, contrastIssues, contrastRatio } from "@webforge/themes";
-import { eachFieldValue, elementPlace, fieldKey } from "../fields.js";
+import { eachFieldValue, elementPlace, exportedPlaces, fieldKey } from "../fields.js";
 import type { CheckRule, Finding } from "../types.js";
 
-/** The theme colour each text colour mark's class shows (2.25): `text-accent` → `accent`. */
+/** The theme colour each text colour mark's class shows (2.25): `text-secondary` → `secondary`. */
 const MARK_COLORS = new Map(
   Object.values(TEXT_COLOR_CLASSES).flatMap((name) =>
     name === undefined ? [] : [[name, name.slice("text-".length) as ColorRole] as const],
@@ -13,7 +13,7 @@ const MARK_COLORS = new Map(
 /**
  * Colours that are hard to read together (WCAG AA, 2.1): the theme's pairs the Theme panel warns
  * about, and text coloured with a theme colour (2.25) that fails 4.5:1 on the page's background
- * (an accent can pass as a heading's colour, 3:1, and fail as text). *Should fix* at most, never
+ * (an Accent can pass as a heading's colour, 3:1, and fail as text). *Should fix* at most, never
  * *Must fix* (F-CHK-1): contrast is a guideline the owner may weigh.
  */
 export const contrastRule: CheckRule = {
@@ -69,7 +69,9 @@ export const underlinedTextRule: CheckRule = {
   check: (input) => {
     const { site, catalogue } = input;
     const found = new Map<string, Finding>();
+    const exported = exportedPlaces(site);
     for (const { on, nodeId } of findUnderlinedText(site, { skipHidden: true })) {
+      if (!exported(on)) continue;
       found.set(`${on}/${nodeId}`, {
         key: `${on}/${nodeId}`,
         place: { kind: "element", on, nodeId },

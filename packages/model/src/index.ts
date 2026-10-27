@@ -145,6 +145,7 @@ export {
   sharedSectionNamed,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";
+export { siteCheckIgnoredSchema } from "./site-check-ignored.js";
 export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site-doc.js";
 export {
   createSite,
