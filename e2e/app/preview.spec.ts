@@ -41,6 +41,12 @@ test.afterAll(async () => {
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 
+/** The theme's brand colour as the page in the browser has it, from its stylesheet. */
+const brand = (site: Page) =>
+  site.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim(),
+  );
+
 /** What Preview asked the system to open. */
 const opened = () =>
   app.evaluate(() => (globalThis as unknown as { opened: string[] }).opened.slice());
@@ -55,6 +61,9 @@ test("opens the site in the browser, and every edit reaches it", async () => {
   const site = await browser.newPage();
   await site.goto(url ?? "");
   await expect(site.locator("h1")).toHaveText("Welcome to our business");
+  // Nothing without the secret path.
+  const { origin } = new URL(url ?? "");
+  expect((await (await browser.newPage()).goto(`${origin}/index.html`))?.status()).toBe(404);
 
   // A word changed on the canvas: the page reloads with it.
   await canvas().locator("h1").dblclick();
@@ -67,10 +76,7 @@ test("opens the site in the browser, and every edit reaches it", async () => {
 
   // A colour of the theme: the stylesheet is swapped in place, the page not reloaded.
   await site.evaluate(() => Object.assign(window, { stillHere: true }));
-  const before = await site
-    .locator("a.btn")
-    .first()
-    .evaluate((link) => getComputedStyle(link).backgroundColor);
+  const before = await brand(site);
   await page
     .getByRole("region", { name: "Right panels" })
     .getByRole("tab", { name: "Theme", exact: true })
@@ -84,16 +90,7 @@ test("opens the site in the browser, and every edit reaches it", async () => {
     .getByRole("button", { name: "Save Theme" })
     .click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" }).click();
-  await expect
-    .poll(
-      () =>
-        site
-          .locator("a.btn")
-          .first()
-          .evaluate((link) => getComputedStyle(link).backgroundColor),
-      { timeout: 15_000 },
-    )
-    .not.toBe(before);
+  await expect.poll(() => brand(site), { timeout: 15_000 }).not.toBe(before);
   expect(await site.evaluate(() => (window as unknown as { stillHere?: boolean }).stillHere)).toBe(
     true,
   );
@@ -107,11 +104,4 @@ test("opens the site in the browser, and every edit reaches it", async () => {
     .click();
   await expect(site).toHaveURL(/\/404\.html$/, { timeout: 15_000 });
   await expect(site.locator("h1")).toHaveText("Sorry, this page doesn't exist");
-});
-
-test("serves nothing without the preview's secret path", async () => {
-  const [url] = await opened();
-  const { origin } = new URL(url ?? "");
-  const response = await (await browser.newPage()).goto(`${origin}/index.html`);
-  expect(response?.status()).toBe(404);
 });

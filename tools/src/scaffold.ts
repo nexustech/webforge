@@ -164,6 +164,7 @@ export const STRINGS_FILES: Readonly<Record<string, string>> = {
   links: "panels",
   media: "site",
   menu: "panels",
+  preview: "shell",
   settings: "shell",
   "shared-sections": "canvas",
   site: "panels",
