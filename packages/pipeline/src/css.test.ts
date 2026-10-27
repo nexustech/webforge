@@ -106,7 +106,7 @@ describe("buildSiteCss", () => {
   });
 
   it("compiles the text marks' classes from the theme, as rich text carries them (2.25, ST-3)", async () => {
-    const html = `<p><u>Read</u> <span class="bg-accent/30">this</span> <span class="text-primary">now</span></p>`;
+    const html = `<p><u>Read</u> <span class="bg-secondary/30">this</span> <span class="text-primary">now</span></p>`;
     const css = await buildSiteCss(resources, {
       theme: DEFAULT_THEME,
       candidates: classCandidates(html),
@@ -116,7 +116,7 @@ describe("buildSiteCss", () => {
     // The theme's colours, by their variables: a theme switch changes them.
     const rule = (selector: string) =>
       css.slice(css.indexOf(selector), css.indexOf("}", css.indexOf(selector)));
-    expect(rule(String.raw`.bg-accent\/30 {`)).toContain("var(--color-accent)");
+    expect(rule(String.raw`.bg-secondary\/30 {`)).toContain("var(--color-secondary)");
     expect(rule(".text-primary {")).toContain("var(--color-primary)");
     for (const name of TEXT_MARK_CLASSES) {
       expect(classCandidates(`<span class="${name}"></span>`)).toEqual([name]);

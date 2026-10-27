@@ -137,7 +137,7 @@ test("underlines with Mod+U and colours text from the theme only, as the text's 
   await highlight.selectOption({ label: "Accent" });
   await color.selectOption({ label: "Brand" });
 
-  const marked = editor().locator('span[class="bg-accent/30"]');
+  const marked = editor().locator('span[class="bg-secondary/30"]');
   await expect(marked).toHaveText(STARTER_TEXT);
   await expect(editor().locator('span[class="text-primary"]')).toHaveText(STARTER_TEXT);
   // Drawn by the site's CSS, which compiles the classes from the theme: no style of its own.

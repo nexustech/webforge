@@ -6,7 +6,10 @@ import type { SiteDoc } from "./site-doc.js";
 // theme's roles, never a colour of its own, so a theme switch and dark sections keep them readable.
 // Each is a class on a `span` (or a `u`), which the site CSS compiles from the theme like any other.
 
-/** The theme roles a highlight or a text colour can take, as the editor names them. */
+/**
+ * The theme roles a highlight or a text colour can take, as the editor names them. The glossary's
+ * Accent is the theme's `secondary` colour (its `accent` is the Second accent, UX-25).
+ */
 export const TEXT_MARK_ROLES = ["brand", "accent", "text", "surface"] as const;
 
 /** One of {@link TEXT_MARK_ROLES}. */
@@ -18,7 +21,7 @@ export type TextMarkRole = (typeof TEXT_MARK_ROLES)[number];
  */
 export const HIGHLIGHT_CLASSES: Readonly<Record<TextMarkRole, string>> = {
   brand: "bg-primary/20",
-  accent: "bg-accent/30",
+  accent: "bg-secondary/30",
   text: "bg-base-content/10",
   surface: "bg-base-200",
 };
@@ -29,7 +32,7 @@ export const HIGHLIGHT_CLASSES: Readonly<Record<TextMarkRole, string>> = {
  */
 export const TEXT_COLOR_CLASSES: Readonly<Partial<Record<TextMarkRole, string>>> = {
   brand: "text-primary",
-  accent: "text-accent",
+  accent: "text-secondary",
   text: "text-base-content",
 };
 
