@@ -64,6 +64,8 @@ const WARNING_TEXTS = {
   "broken-link": "export.report.brokenLink",
   "missing-image": "export.report.missingImage",
   "not-minified": "export.report.notMinified",
+  "missing-icon": "export.report.missingIcon",
+  "small-icon": "export.report.smallIcon",
 } as const;
 
 /** The report of `result`, an export of `site` (07): each warning by the title of its page. */
