@@ -13,12 +13,6 @@ import { type RendererWindow, stubFileDialogs } from "./sites.js";
 // The Blank template's home page (2.15c).
 const STARTER_HEADING = "Welcome";
 
-/**
- * Closing with nothing to save must not sit out the save request's 5 s timeout: well under it on
- * any machine, as only a wait that long would pass it (ADR 0014).
- */
-const CLOSE_WITHOUT_WAITING_MS = 4_500;
-
 let dir: string;
 let userData: string;
 let app: ElectronApplication | undefined;
@@ -237,9 +231,9 @@ test("says when a site can't be opened, and removes sites from the list", async 
   await page.getByRole("button", { name: "Open a site…", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("This file isn't a Webforge site.");
 
-  // With nothing to save, closing doesn't wait for a save that never comes (5 s timeout).
-  const started = Date.now();
+  // With nothing to save, the window closes. That it doesn't sit out the save request's 5 s
+  // timeout is the unit tests': the start screen answers the request (StartScreen.test.tsx), and
+  // the window closes on the answer (flush-on-close.test.ts). Timed here, a busy disk's wait for
+  // the store gate (ADR 0013) looked the same (ADR 0014).
   await closeWindow();
-  // Under the save request's 5 s timeout, which it would otherwise sit out.
-  expect(Date.now() - started).toBeLessThan(CLOSE_WITHOUT_WAITING_MS);
 });

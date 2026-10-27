@@ -33,7 +33,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 4. **Waits are generous, so a slow run fails on its budget, never on a wait.**
    - What a timed operation shows is waited for up to `OPEN_WAIT` (30 s).
    - Work the system does in its own time, such as the spell checker, is waited for up to `BACKGROUND_WAIT` (45 s), in tests marked `test.slow()`.
-   - Closing with nothing to save must not sit out the save request's 5 s timeout, so it is checked against 4.5 s, a limit only that wait would break.
+   - Closing with nothing to save was timed against the save request's 5 s timeout. Under load, closing can also wait on the store gate (ADR 0013), behind a backup on a busy disk, and took 6–13 s with the request answered at once. The unit tests check that the start screen answers and that the window closes on the answer, so the E2E test no longer times the close.
 5. **Unit test timeouts scale to the run's workers** (`vitest.load.ts`).
    - They were set for CI's runners, where `pnpm test` runs 2 workers (4 vCPUs, `maxWorkers: "50%"`). A run with more workers gives each test as much more time: `workers / 2`, never less than 1. So CI's timeouts are as they were, and on a 12-thread machine (6 workers) they are three times as long.
    - The renderer's and editor-ui's default is 15 s, scaled. A test that sets a longer one scales it with `scaledTestTimeout()` (`@webforge/test-utils/renderer`).
@@ -43,4 +43,4 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 - **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines in a CI log and set its budget again. A developer whose machine needs more than three times CI's sets `WEBFORGE_E2E_CPU_SCALE`.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
 - **Out of scope:** storage's 30 s and the publish tests' timeouts cover slow disks and servers, not load, and stay as they are.
-- **A new check of time picks one of these:** measure the work (best), a CPU budget with a wall-clock backstop, a limit only a known wait would break, or a generous wait. A bare `expect(Date.now() - started).toBeLessThan(…)` with a target from the spec is what this replaces.
+- **A new check of time picks one of these:** measure the work (best), a CPU budget with a wall-clock backstop, a unit test of the logic a time stood in for, or a generous wait. A bare `expect(Date.now() - started).toBeLessThan(…)` with a target from the spec is what this replaces.
