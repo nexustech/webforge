@@ -74,6 +74,7 @@ describe("settings form", () => {
       url: "https://www.example.com/",
       xHandle: "rosas",
       measurementId: "g-abc123def4",
+      consentMessage: "  Cookies?  ",
       openingHours: [{ id: "a", days: ["fri", "mon"], opens: "09:00", closes: "17:00" }],
     });
 
@@ -81,12 +82,16 @@ describe("settings form", () => {
       general: { name: "Rosa's" },
       address: { url: "https://www.example.com" },
       social: { xHandle: "@rosas" },
-      analytics: { measurementId: "G-ABC123DEF4" },
+      analytics: { measurementId: "G-ABC123DEF4", consentMessage: "Cookies?" },
       contact: { openingHours: [{ days: ["mon", "fri"] }] },
       // What the dialog doesn't edit stays as it was.
       allowedExternalUrls: ["https://maps.example.com/"],
     });
     expect(fromSettingsForm(form, full)).not.toHaveProperty("contact.email");
+    // An empty banner text is the standard one (3.8).
+    expect(fromSettingsForm(edit(full, { consentMessage: " " }), full)).not.toHaveProperty(
+      "analytics.consentMessage",
+    );
   });
 
   it("sets and clears the form service", () => {

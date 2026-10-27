@@ -113,6 +113,7 @@ export {
 export type { Day, FormService, OpeningHours, SiteSettings, SocialProfile } from "./settings.js";
 export {
   BUSINESS_NAME_MAX,
+  CONSENT_MESSAGE_MAX,
   DAYS,
   defaultSiteSettings,
   formServiceSchema,
@@ -179,7 +180,13 @@ export {
 } from "./site-documents.js";
 export { type ElementPlace, eachElement } from "./site-elements.js";
 export { isDeviceName, sitePathSchema } from "./site-path.js";
-export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
+export type {
+  DocumentItem,
+  MediaItem,
+  SiteAnalytics,
+  SitePage,
+  SiteSnapshot,
+} from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
 export type { TextMarkRole, UnderlinedText } from "./text-marks.js";

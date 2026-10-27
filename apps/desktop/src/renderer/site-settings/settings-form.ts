@@ -62,6 +62,7 @@ export type SettingsForm = {
   readonly includeSitemap: boolean;
   readonly measurementId: string;
   readonly consentBanner: boolean;
+  readonly consentMessage: string;
   readonly formService: FormServiceKind;
   /** The chosen form service's one value: a form ID, an access key, an email address or a URL. */
   readonly formValue: string;
@@ -95,6 +96,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     includeSitemap: search.includeSitemap,
     measurementId: analytics.measurementId ?? "",
     consentBanner: analytics.consentBanner,
+    consentMessage: analytics.consentMessage ?? "",
     formService: service?.kind ?? "",
     formValue:
       service === undefined
@@ -177,6 +179,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
     analytics: {
       ...optional("measurementId", form.measurementId.toUpperCase()),
       consentBanner: form.consentBanner,
+      ...optional("consentMessage", form.consentMessage),
     },
     forms: service === undefined ? {} : { service },
     publish: previous.publish,
