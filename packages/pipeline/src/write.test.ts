@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import { BuildError } from "./build.js";
 import { EXPORT_MARKER, WriteError, writeSiteFolder } from "./write.js";

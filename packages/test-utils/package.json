@@ -6,7 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./renderer": "./src/renderer.ts",
-    "./vitest": "./src/timeouts.ts"
+    "./vitest": "./src/vitest.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:"

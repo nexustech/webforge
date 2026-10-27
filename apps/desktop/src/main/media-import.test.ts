@@ -1,7 +1,8 @@
 import { join } from "node:path";
 import type { MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { heroPhoto, tempDirFactory } from "@webforge/test-utils";
+import { heroPhoto } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { afterEach, describe, expect, it } from "vitest";
 import { importMediaFiles } from "./media-import.js";
 import { ProjectSession } from "./project-session.js";
