@@ -47,6 +47,31 @@ export function registerPreviewCommands(
   const page = () => previewPageOf(site(), session.ui.getState().pageId);
 
   let following: (() => void) | undefined;
+
+  // Stop Phone Preview (3.2): registered while a phone can open the preview, so the title bar
+  // shows it is on, and in the File menu; it stops only the phone's listener.
+  let stopping: (() => void) | undefined;
+  const phoneOff = () => {
+    stopping?.();
+    stopping = undefined;
+  };
+  const phoneOn = () => {
+    if (stopping !== undefined) return;
+    stopping = registry.register({
+      id: COMMAND_IDS.stopPhonePreview,
+      label: t("command.stopPhonePreview"),
+      menu: "file",
+      run: () => {
+        api
+          .stopPhone()
+          .then(() => {
+            phoneOff();
+            if (phone.getState().status === "ready") phone.setState({ status: "closed" }, true);
+          })
+          .catch((error: unknown) => reportFailure("preview.stopPhone", error));
+      },
+    });
+  };
   const follow = () => {
     if (following !== undefined) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -104,6 +129,8 @@ export function registerPreviewCommands(
         api
           .phone(content(), page())
           .then((address) => {
+            // A phone can open it now, dialog open or not: the title bar says so until it stops.
+            if (address.status === "ready") phoneOn();
             // Closed while it started: it stays closed.
             if (phone.getState().status === "starting") phone.setState(address, true);
           })
@@ -116,6 +143,7 @@ export function registerPreviewCommands(
   ];
   return () => {
     for (const remove of removers) remove();
+    phoneOff();
     following?.();
     following = undefined;
   };

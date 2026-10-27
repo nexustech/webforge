@@ -58,6 +58,12 @@ export const previewChannels = {
     request: z.tuple([siteContentSchema, pagePathSchema]),
     response: phoneAddressSchema,
   },
+  /** Stops the preview's listener on the local network; the desktop preview goes on. */
+  previewStopPhone: {
+    channel: "preview:stop-phone",
+    request: z.tuple([]),
+    response: z.null(),
+  },
 } as const;
 
 /** `window.webforge.preview`: the preview server (3.2, F-PV-1). */
@@ -70,4 +76,6 @@ export interface PreviewApi {
   show(page: PreviewPage): Promise<null>;
   /** The preview's address for a phone on the same network, at `page`. */
   phone(site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
+  /** Stops the preview on the local network: no phone can open it any more. */
+  stopPhone(): Promise<null>;
 }

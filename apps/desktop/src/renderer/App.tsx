@@ -112,6 +112,7 @@ const previewWithPreload: PreviewApi = {
   update: (site) => window.webforge.preview.update(site),
   show: (page) => window.webforge.preview.show(page),
   phone: (site, page) => window.webforge.preview.phone(site, page),
+  stopPhone: () => window.webforge.preview.stopPhone(),
 };
 
 /** The perf check's hooks (ADR 0007), loaded only in perf builds. */

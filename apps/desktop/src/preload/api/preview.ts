@@ -7,4 +7,5 @@ export const previewApi = (call: Call): PreviewApi => ({
   update: (site) => call("previewUpdate", site),
   show: (page) => call("previewShow", page),
   phone: (site, page) => call("previewPhone", site, page),
+  stopPhone: () => call("previewStopPhone"),
 });

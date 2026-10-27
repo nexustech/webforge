@@ -62,7 +62,11 @@ export const shell = {
   "preview.phone.privacy":
     "Anyone on this Wi-Fi who has this address can see the preview while Webforge is open.",
   "preview.phone.offline":
-    "This computer isn't on a network, so a phone can't open the preview. Connect to Wi-Fi and try again.",
+    "A phone can open the preview only on a home or office network. Connect this computer to your Wi-Fi and try again.",
+  // The title bar's cue while a phone can open the preview, with a button that stops it (3.2).
+  "preview.phone.on": "Phone preview on",
+  "preview.phone.onDescription":
+    "Anyone on this Wi-Fi who has the address can see the preview. Stop it when you're done.",
   "preview.phone.failed":
     "Webforge couldn't start the preview for your phone. Try again in a moment.",
   "shell.export": "Export",
@@ -113,6 +117,7 @@ export const shell = {
   "command.exportSite": "Export Site…",
   "command.preview": "Preview",
   "command.previewOnPhone": "Preview on Phone…",
+  "command.stopPhonePreview": "Stop Phone Preview",
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
   "command.about": "About Webforge",

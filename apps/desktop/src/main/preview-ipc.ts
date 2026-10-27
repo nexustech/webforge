@@ -29,6 +29,8 @@ export type Preview = {
   update(site: SiteContent): Promise<void>;
   show(page: PreviewPage): void;
   phone(site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
+  /** Stops the phone's listener only (Stop Phone Preview); the desktop preview goes on. */
+  stopPhone(): Promise<void>;
   /** Stops the server and the builder: the site closed, or the app quits. */
   close(): Promise<void>;
 };
@@ -82,9 +84,9 @@ export function createPreview(deps: PreviewDeps): Preview {
     stale = true;
   };
 
-  const listen = async (scope: PreviewScope) => {
+  const listen = async (scope: PreviewScope, host?: string) => {
     const { server } = start();
-    const port = await server.listen(scope);
+    const port = await server.listen(scope, host);
     build();
     return { port, base: server.base };
   };
@@ -116,8 +118,11 @@ export function createPreview(deps: PreviewDeps): Preview {
       const host = deps.networkAddress();
       if (host === undefined) return { status: "offline" };
       await take(site);
-      const { port, base } = await listen("network");
+      const { port, base } = await listen("network", host);
       return { status: "ready", url: pageUrl(host, port, base, page) };
+    },
+    async stopPhone() {
+      await running?.server.stop("network");
     },
     async close() {
       const stopping = running;
@@ -149,4 +154,8 @@ export function registerPreviewHandlers(
   registerIpcHandler(ipc, "previewPhone", isTrustedSender, (site, page) =>
     preview.phone(site, page),
   );
+  registerIpcHandler(ipc, "previewStopPhone", isTrustedSender, async () => {
+    await preview.stopPhone();
+    return null;
+  });
 }

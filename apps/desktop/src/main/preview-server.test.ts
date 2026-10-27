@@ -39,7 +39,7 @@ async function started() {
 
 /** A request to the server; resolves its status, headers and body. */
 function get(port: number, path: string, method = "GET", headers: Record<string, string> = {}) {
-  return new Promise<{ status: number; type: string; etag: string; body: string }>(
+  return new Promise<{ status: number; type: string; etag: string; cache: string; body: string }>(
     (resolve, reject) => {
       const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
         const chunks: Buffer[] = [];
@@ -49,6 +49,7 @@ function get(port: number, path: string, method = "GET", headers: Record<string,
             status: response.statusCode ?? 0,
             type: String(response.headers["content-type"] ?? ""),
             etag: String(response.headers.etag ?? ""),
+            cache: String(response.headers["cache-control"] ?? ""),
             body: Buffer.concat(chunks).toString("utf8"),
           }),
         );
@@ -98,6 +99,22 @@ describe("the preview server (3.2)", () => {
     expect(await preview.listen("local")).toBe(port);
   });
 
+  it("listens for a phone on the one address given, and stops that listener alone", async () => {
+    const { server: preview, port } = await started();
+    preview.update(FIRST);
+    await expect(preview.listen("network")).rejects.toThrow();
+    // Here the loopback stands in for the Wi-Fi's address: the listener is on that address only.
+    const phonePort = await preview.listen("network", "127.0.0.1");
+    expect(phonePort).not.toBe(port);
+    expect((await get(phonePort, preview.base)).status).toBe(200);
+
+    await preview.stop("network");
+
+    await expect(get(phonePort, preview.base)).rejects.toThrow();
+    // The desktop preview goes on.
+    expect((await get(port, preview.base)).status).toBe(200);
+  });
+
   it("serves the build's pages under its secret base, with the live reload script", async () => {
     const { server: preview, port } = await started();
     preview.update(FIRST);
@@ -105,6 +122,8 @@ describe("the preview server (3.2)", () => {
     const home = await get(port, preview.base);
     expect(home.status).toBe(200);
     expect(home.type).toBe("text/html; charset=utf-8");
+    // Kept by this browser only, and checked each time.
+    expect(home.cache).toBe("private, no-cache");
     expect(home.body).toContain("Home");
     expect(home.body).toContain(
       `<script src="${preview.base}__webforge/live.js" data-base="${preview.base}" defer></script></body>`,

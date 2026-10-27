@@ -18,8 +18,14 @@ export type PreviewScope = "local" | "network";
  * tells the browsers showing it what changed, over server-sent events.
  */
 export type PreviewServer = {
-  /** Listens on `scope`, once for each; resolves the port it listens on there. */
-  listen(scope: PreviewScope): Promise<number>;
+  /**
+   * Listens on `scope`, once for each, resolving the port it listens on there: this computer
+   * (`127.0.0.1`), or for a phone the one address `host` on the local network, never every
+   * network the computer is on. A new `host` for the network (another Wi-Fi) listens there instead.
+   */
+  listen(scope: PreviewScope, host?: string): Promise<number>;
+  /** Stops listening on `scope`, closing its connections: Stop Phone Preview. */
+  stop(scope: PreviewScope): Promise<void>;
   /** The path every URL starts with: a secret, so only those given a link can open the preview. */
   readonly base: string;
   /** Takes a build: its files are served from now on, and the browsers told what changed. */
@@ -60,7 +66,10 @@ const CONTENT_TYPES: Readonly<Record<string, string>> = {
 const contentTypeOf = (path: string) =>
   CONTENT_TYPES[path.slice(path.lastIndexOf(".") + 1).toLowerCase()] ?? "application/octet-stream";
 
-/** Sent with every answer: never cached, never sniffed, the preview's address never passed on. */
+/**
+ * Sent with every answer: never kept, never sniffed, the preview's address never passed on. The
+ * built files are kept by this browser only, and checked each time ({@link FILE_HEADERS}).
+ */
 const COMMON_HEADERS = {
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
@@ -68,10 +77,11 @@ const COMMON_HEADERS = {
 } as const;
 
 /**
- * A built file's: kept by the browser, but checked with the server each time it's used (its
- * version as its ETag), so a reloaded page fetches only what changed: a 304 for the rest.
+ * A built file's: kept by this browser only (`private`, never a proxy's cache), and checked with
+ * the server each time it's used (its version as its ETag), so a reloaded page fetches only what
+ * changed: a 304 for the rest.
  */
-const FILE_HEADERS = { ...COMMON_HEADERS, "Cache-Control": "no-cache" } as const;
+const FILE_HEADERS = { ...COMMON_HEADERS, "Cache-Control": "private, no-cache" } as const;
 
 /**
  * The theme's values `after` ends with, if they are all that changed from `before`: both
@@ -121,7 +131,17 @@ export function createPreviewServer(): PreviewServer {
   const waiting = new Set<(ready: boolean) => void>();
   const streams = new Set<ServerResponse>();
   const watchers = new Set<() => void>();
-  const servers = new Map<PreviewScope, { server: Server; port: Promise<number> }>();
+  const servers = new Map<
+    PreviewScope,
+    { readonly server: Server; readonly port: Promise<number>; readonly host: string }
+  >();
+
+  /** Stops `server`, closing every connection to it. */
+  const closeServer = (server: Server) =>
+    new Promise<void>((resolve) => {
+      server.close(() => resolve());
+      server.closeAllConnections();
+    });
 
   const send = (event: string, data: unknown) => {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -240,21 +260,36 @@ export function createPreviewServer(): PreviewServer {
 
   return {
     base,
-    listen(scope) {
+    async listen(scope, host) {
+      // This computer only, unless a phone is to open it: then the one local address chosen,
+      // never a VPN's or another adapter's.
+      const address = scope === "local" ? "127.0.0.1" : host;
+      if (address === undefined) throw new Error("A network preview needs its address");
       const running = servers.get(scope);
-      if (running !== undefined) return running.port;
+      if (running !== undefined && running.host === address) return running.port;
+      if (running !== undefined) {
+        servers.delete(scope);
+        await closeServer(running.server);
+      }
       const server = createServer(handle);
       const port = new Promise<number>((resolve, reject) => {
         server.once("error", reject);
-        // This computer only, unless a phone is to open it: then every network the computer is on.
-        server.listen(0, scope === "local" ? "127.0.0.1" : "0.0.0.0", () => {
+        server.listen(0, address, () => {
           server.off("error", reject);
           resolve((server.address() as AddressInfo).port);
         });
       });
-      servers.set(scope, { server, port });
-      port.catch(() => servers.delete(scope));
+      servers.set(scope, { server, port, host: address });
+      port.catch(() => {
+        if (servers.get(scope)?.server === server) servers.delete(scope);
+      });
       return port;
+    },
+    async stop(scope) {
+      const running = servers.get(scope);
+      if (running === undefined) return;
+      servers.delete(scope);
+      await closeServer(running.server);
     },
     update(build) {
       const stylesheet = files.get(PREVIEW_STYLESHEET);
@@ -301,16 +336,9 @@ export function createPreviewServer(): PreviewServer {
       for (const answer of [...waiting]) answer(false);
       for (const stream of streams) stream.end();
       streams.clear();
-      await Promise.all(
-        [...servers.values()].map(
-          ({ server }) =>
-            new Promise<void>((resolve) => {
-              server.close(() => resolve());
-              server.closeAllConnections();
-            }),
-        ),
-      );
+      const stopping = [...servers.values()];
       servers.clear();
+      await Promise.all(stopping.map(({ server }) => closeServer(server)));
     },
   };
 }

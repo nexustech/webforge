@@ -10,6 +10,7 @@ export const COMMAND_IDS = {
   redo: "edit.redo",
   preview: "site.preview",
   previewOnPhone: "site.previewOnPhone",
+  stopPhonePreview: "site.stopPhonePreview",
   exportSite: "site.export",
   siteSettings: "site.settings",
   settings: "app.settings",

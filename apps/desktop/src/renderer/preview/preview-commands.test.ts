@@ -39,6 +39,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     update: vi.fn<PreviewApi["update"]>(async () => null),
     show: vi.fn<PreviewApi["show"]>(async () => null),
     phone: vi.fn<PreviewApi["phone"]>(async () => phone),
+    stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
   };
   const phoneState = createStore<PhoneState>(() => ({ status: "closed" }));
   const notify = vi.fn();
@@ -144,6 +145,33 @@ describe("registerPreviewCommands (3.2)", () => {
     failing.api.phone.mockRejectedValueOnce(new Error("IPC failed"));
     failing.registry.run(COMMAND_IDS.previewOnPhone);
     await vi.waitFor(() => expect(failing.phoneState.getState()).toEqual({ status: "failed" }));
+  });
+
+  it("offers Stop Phone Preview while a phone can open it, which stops it (3.2)", async () => {
+    const { registry, api, phoneState } = setUp();
+    expect(registry.get(COMMAND_IDS.stopPhonePreview)).toBeUndefined();
+
+    registry.run(COMMAND_IDS.previewOnPhone);
+    await vi.waitFor(() =>
+      expect(registry.get(COMMAND_IDS.stopPhonePreview)).toMatchObject({
+        label: "Stop Phone Preview",
+        menu: "file",
+      }),
+    );
+    // Asked again while on: still one.
+    registry.run(COMMAND_IDS.previewOnPhone);
+    await vi.waitFor(() => expect(api.phone).toHaveBeenCalledTimes(2));
+
+    registry.run(COMMAND_IDS.stopPhonePreview);
+    await vi.waitFor(() => expect(registry.get(COMMAND_IDS.stopPhonePreview)).toBeUndefined());
+    expect(api.stopPhone).toHaveBeenCalledOnce();
+    expect(phoneState.getState()).toEqual({ status: "closed" });
+
+    // No network: nothing to stop.
+    const offline = setUp({ status: "offline" });
+    offline.registry.run(COMMAND_IDS.previewOnPhone);
+    await vi.waitFor(() => expect(offline.phoneState.getState()).toEqual({ status: "offline" }));
+    expect(offline.registry.get(COMMAND_IDS.stopPhonePreview)).toBeUndefined();
   });
 
   it("leaves the dialog closed when it was closed while the preview started", async () => {

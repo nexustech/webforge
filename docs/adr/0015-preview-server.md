@@ -24,9 +24,12 @@ The site's own scripts run in the preview. They must never run with the editor's
    - Anything else is a 404: another base, a step up (`..`), a file not in the build.
    - A site in another tab, or a device on the network, can't read the preview without being given its link.
    - Only GET and HEAD are answered.
-   - Every answer is `Cache-Control: no-store`, `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
+   - Every answer is `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
+   - The built files are `Cache-Control: private, no-cache` with their version as an ETag: kept by the visitor's browser only, never a proxy's, and checked each time, so a reload fetches only what changed (a 304 for the rest). Everything else (the live reload script, the event stream, a 404) is `no-store`.
 3. **This computer first.** The server listens on `127.0.0.1` on a random port.
-   - Only *Preview on Phone…* starts a second listener on every network, on its own random port, for the address in the QR code.
+   - Only *Preview on Phone…* starts a second listener, on its own random port, bound to the one private address (RFC 1918) the computer has on its local network: the address in the QR code, never `0.0.0.0`, so a VPN's or another adapter's network can't reach it. A new address (another Wi-Fi) moves it there.
+   - With no private address (no network, or only a public or VPN one), the phone is told the preview needs a home or office network, and nothing listens.
+   - While that listener is on, the title bar says *Phone preview on*, with Stop; *Stop Phone Preview* (File menu too) closes that listener alone, and the desktop preview goes on.
    - The dialog says that anyone on the Wi-Fi with the address can see the preview while Webforge is open.
    - Both stop when the site closes.
 4. **Built in its own worker, only what changed sent.**
