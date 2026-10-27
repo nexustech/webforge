@@ -87,6 +87,33 @@ test.afterEach(() => {
 });
 
 test.describe("exported site from disk", () => {
+  test("draws a section's background image from the export folder, behind its text (2.26)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+
+    const section = page.locator("section.site-text-section");
+    await expect(section).toHaveClass(/\bisolate\b/);
+    // Decorative: the section's text says what it's about.
+    const image = section.locator("picture > img");
+    await expect(image).toHaveAttribute("alt", "");
+    await image.scrollIntoViewIfNeeded();
+    await expect(image).toHaveJSProperty("complete", true);
+    expect(await image.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+    expect(await image.evaluate((img: HTMLImageElement) => img.currentSrc)).toMatch(
+      /^file:.*\/assets\/img\/hero-\d+\.(webp|jpg)$/,
+    );
+    // Behind the text: the heading is what a click there reaches.
+    await expect(section.getByRole("heading", { name: "Our story" })).toBeVisible();
+    expect(
+      await section.evaluate((frame) => {
+        const box = frame.querySelector("h2")?.getBoundingClientRect();
+        if (box === undefined) return null;
+        return document.elementFromPoint(box.x + 4, box.y + box.height / 2)?.tagName ?? null;
+      }),
+    ).toBe("H2");
+  });
+
   test("links to the price list, copied byte for byte, in a new tab (1.28)", async ({ page }) => {
     await open(page, "about.html");
 
