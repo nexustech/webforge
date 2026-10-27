@@ -38,7 +38,8 @@ describe("resetValue with a look (3.12, CT-1)", () => {
 
         // Desktop's is the look's; a device that kept a value of its own keeps it, and the others
         // take the next larger device's, as everywhere (F-ED-4).
-        const kept = typeof own === "object" ? own.$responsive : {};
+        const kept: { readonly tablet?: string; readonly mobile?: string } =
+          typeof own === "object" ? own.$responsive : {};
         const expected = {
           $responsive: {
             desktop: look,
