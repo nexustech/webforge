@@ -35,6 +35,8 @@ export {
   siteCodeSchema,
   themeSchema,
 } from "./documents.js";
+export type { ExportChoices } from "./export-choices.js";
+export { DEFAULT_EXPORT_CHOICES, exportChoicesSchema } from "./export-choices.js";
 export type {
   Brand,
   IdKind,

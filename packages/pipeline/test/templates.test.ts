@@ -4,9 +4,12 @@ import { siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { siteFromTemplate } from "@webforge/templates";
 import { readTemplates } from "@webforge/templates/node";
-import { themePreset } from "@webforge/themes";
+import { THEME_PRESETS, themePreset } from "@webforge/themes";
+import { transform } from "lightningcss";
 import { beforeAll, describe, expect, it } from "vitest";
 import { buildSite } from "../src/build.js";
+import { buildSiteCss, classCandidates } from "../src/css.js";
+import { minifiedCss } from "../src/minify.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
 
@@ -22,6 +25,21 @@ import type { ImageCache, PipelineResources } from "../src/resources.js";
 // never wrong.
 
 let resources: PipelineResources;
+
+/**
+ * `css` parsed and minified again by lightningcss: two stylesheets that mean the same give the same.
+ * lightningcss keeps what it doesn't parse fully (`color-mix(in lab, red, red)` in `@supports`) as
+ * written, so whitespace beside commas and brackets, which never matters there, is left out.
+ */
+const normalised = (css: string) =>
+  new TextDecoder()
+    .decode(
+      transform({ filename: "site.css", code: new TextEncoder().encode(css), minify: true }).code,
+    )
+    .replace(/\s*([,()])\s*/g, "$1");
+
+/** Every class the templates' pages use, gathered as each is built, for the themes' check. */
+const everyClass = new Set<string>();
 
 beforeAll(async () => {
   resources = await loadNodeResources();
@@ -93,11 +111,29 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
       expect([...built.files.keys()]).toMatchSnapshot();
       expect(built.report.warnings).toEqual([]);
       for (const [path, data] of built.files) {
+        const text = new TextDecoder().decode(data);
+        if (path.endsWith(".css")) {
+          // Minify output's stylesheet means the same (3.3).
+          expect(normalised(minifiedCss(text)), path).toBe(normalised(text));
+        }
         if (!path.endsWith(".html")) continue;
-        await expect(new TextDecoder().decode(data)).toMatchFileSnapshot(
-          `golden/templates/${id}/${path}`,
-        );
+        for (const name of classCandidates(text)) everyClass.add(name);
+        await expect(text).toMatchFileSnapshot(`golden/templates/${id}/${path}`);
       }
     }, 60_000);
   },
 );
+
+describe("every theme's stylesheet, minified (3.3)", () => {
+  it.each(THEME_PRESETS.map((theme) => [theme.preset, theme] as const))(
+    "means the same in %s",
+    async (_name, theme) => {
+      // The templates' classes, or a sample of the theme's own when this runs alone.
+      const candidates = everyClass.size > 0 ? [...everyClass] : ["btn", "card", "site-heading"];
+      const css = await buildSiteCss(resources, { theme, candidates, fontsUrl: "../fonts/" });
+
+      expect(normalised(minifiedCss(css))).toBe(normalised(css));
+    },
+    30_000,
+  );
+});

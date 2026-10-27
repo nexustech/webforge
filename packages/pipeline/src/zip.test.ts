@@ -70,6 +70,23 @@ describe("writeSiteZip", { timeout: 20_000 }, () => {
     expect(readdirSync(parent)).toEqual(["my-site.zip"]);
   });
 
+  it("refuses a site too large for a ZIP, before writing anything", async () => {
+    const parent = tempDir();
+    // Sizes only: nothing this large is made.
+    const huge = { byteLength: 2 ** 32 } as Uint8Array;
+    const tooBig = new Map([["assets/img/huge.webp", huge]]);
+    const tooMany = new Map(
+      Array.from({ length: 0xffff }, (_, at) => [`files/f${at}.txt`, new Uint8Array()] as const),
+    );
+
+    for (const files of [tooBig, tooMany]) {
+      await expect(writeSiteZip(files, join(parent, "a.zip"))).rejects.toMatchObject({
+        code: "too-large",
+      });
+    }
+    expect(readdirSync(parent)).toEqual([]);
+  });
+
   it("refuses a folder, and a file whose path leads outside the site, writing nothing", async () => {
     const parent = tempDir();
     const folder = join(parent, "photos.zip");

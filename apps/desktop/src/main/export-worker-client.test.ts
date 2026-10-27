@@ -7,6 +7,8 @@ import type { WorkerProcess } from "./worker-process.js";
 const job: ExportJob = {
   type: "export",
   destination: "/sites/my-site",
+  format: "folder",
+  output: { minify: false, developerFiles: false },
   families: [],
   snapshot: {
     name: "Bakery",
@@ -26,7 +28,8 @@ const exported = {
   pages: 1,
   files: 5,
   bytes: 10,
-  warnings: 0,
+  warnings: [],
+  warningCount: 0,
   durationMs: 5,
 } as const;
 
