@@ -20,6 +20,7 @@ import { settingsArea } from "./settings/area.js";
 import { sharedSectionCommandsArea } from "./shared-sections/area.js";
 import { viewCommandsArea } from "./shell/area.js";
 import { pageCommandsArea, sitePanelArea } from "./site/area.js";
+import { siteCheckArea } from "./site-check/area.js";
 import { canvasSettingsArea, siteSettingsArea } from "./site-settings/area.js";
 import { crashReportsArea } from "./storage/area.js";
 import { themePanelArea } from "./theme/area.js";
@@ -67,5 +68,6 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   settingsArea,
   siteSettingsArea,
   themePanelArea,
+  siteCheckArea,
   aiRequestsArea,
 ];

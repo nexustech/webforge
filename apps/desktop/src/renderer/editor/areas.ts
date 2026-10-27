@@ -77,6 +77,11 @@ export type WindowContext = AreaContext & {
   readonly answerAi: AiApi["onRequest"];
   /** The preview server (3.2): the site in the default browser, and its address for a phone. */
   readonly preview: PreviewApi;
+  /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
+  readonly siteCheckIgnored: {
+    readonly initial: readonly string[];
+    readonly save: (ignored: readonly string[]) => void;
+  };
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

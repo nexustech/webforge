@@ -15,8 +15,8 @@ export {
   responsiveBoxOf,
   SPACING_TOKENS,
 } from "./box.js";
-export type { BrokenLink } from "./broken-links.js";
-export { findBrokenLinks } from "./broken-links.js";
+export type { BrokenLink, SiteTarget } from "./broken-links.js";
+export { eachLink, findBrokenLinks } from "./broken-links.js";
 export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { ColorRef } from "./color-ref.js";
@@ -113,6 +113,7 @@ export {
 export type { Day, FormService, OpeningHours, SiteSettings, SocialProfile } from "./settings.js";
 export {
   BUSINESS_NAME_MAX,
+  CONSENT_MESSAGE_MAX,
   DAYS,
   defaultSiteSettings,
   formServiceSchema,
@@ -145,6 +146,7 @@ export {
   sharedSectionNamed,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";
+export { SITE_CHECK_IGNORED_MAX, siteCheckIgnoredSchema } from "./site-check-ignored.js";
 export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site-doc.js";
 export {
   createSite,
@@ -176,8 +178,15 @@ export {
   siteFromDocuments,
   validateSiteChanges,
 } from "./site-documents.js";
+export { type ElementPlace, eachElement } from "./site-elements.js";
 export { isDeviceName, sitePathSchema } from "./site-path.js";
-export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
+export type {
+  DocumentItem,
+  MediaItem,
+  SiteAnalytics,
+  SitePage,
+  SiteSnapshot,
+} from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
 export type { TextMarkRole, UnderlinedText } from "./text-marks.js";

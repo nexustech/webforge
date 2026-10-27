@@ -1,7 +1,9 @@
 import { toast } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import { DEFAULT_EXPORT_CHOICES, type SiteDoc, siteToSnapshot } from "@webforge/model";
+import { blockingCount, checkSite } from "@webforge/site-check";
 import type { ComponentLibrary } from "@webforge/site-components";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import type { ExportSite } from "../editor/areas.js";
@@ -108,7 +110,21 @@ export type ExportFlow = {
   readonly dialogs: ExportDialogs;
   /** Opens Settings on one section; `true` if the person saved (Site Settings' web address). */
   readonly showSettings: (part: string, group: string) => Promise<boolean>;
+  /** Shows the Site Check panel (3.6). */
+  readonly showSiteCheck: () => void;
 };
+
+/**
+ * Whether `site` can be exported (X5): nothing Site Check lists as *Must fix*. If something is, it
+ * says how many and shows Site Check, where each has its place and, often, a *Fix*.
+ */
+function passesSiteCheck(flow: ExportFlow, site: SiteDoc): boolean {
+  const blocking = blockingCount(checkSite({ site, catalogue: CATALOGUE }, "export"));
+  if (blocking === 0) return true;
+  toast.error(plural("siteCheck.exportBlocked", blocking));
+  flow.showSiteCheck();
+  return false;
+}
 
 /**
  * Exports `site` with `choices`, showing its progress as a toast whose Cancel button stops it
@@ -161,7 +177,8 @@ async function exportWithProgress(
 }
 
 /**
- * Registers File → Export Site… (3.3). While the site has no web address it first asks to add one
+ * Registers File → Export Site… (3.3). Something Site Check lists as *Must fix* stops it at once,
+ * showing Site Check (3.6, X5). While the site has no web address it first asks to add one
  * (X3), unless the person said not to for this site; *Add address* opens Site Settings there and
  * goes on once they save. Then the export dialog: a folder or a ZIP, and its options, starting from
  * the site's last choices. Main asks where to write it; the export runs in a worker, with its
@@ -172,6 +189,7 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
   const run = async () => {
     registry.update(EXPORT_COMMAND_ID, { enabled: false });
     try {
+      if (!passesSiteCheck(flow, flow.site())) return;
       // A site whose choices can't be read exports from the defaults.
       let last = await flow.choices().catch((error: unknown) => {
         reportFailure("export.choices", error);

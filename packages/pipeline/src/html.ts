@@ -27,6 +27,8 @@ export type PageDocument = {
   readonly footer: string;
   /** The back-to-top button (F-CM-9), after the Footer, or nothing when the page has none. */
   readonly backToTop?: string;
+  /** Google Analytics' consent banner (3.8), after the back-to-top button: whole, safe HTML. */
+  readonly consent?: string;
   /**
    * More lines for the `<head>`, in order, after the stylesheet: the favicon set's links first
    * (3.4), then the share and search tags (3.5). Each is whole, safe HTML that the build made.
@@ -90,7 +92,7 @@ ${sharedRegion("Header", page.header)}
 ${page.main}
 </main>
 ${sharedRegion("Footer", page.footer)}
-${page.backToTop ?? ""}
+${page.backToTop ?? ""}${page.consent ?? ""}
 </body>
 </html>`;
   return format ? formatHtml(html) : html;

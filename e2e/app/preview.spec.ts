@@ -95,9 +95,14 @@ test("opens the site in the browser, and every edit reaches it", async () => {
     true,
   );
 
-  // Another page shown in the editor: the browser goes there.
+  // Another page shown in the editor: the browser goes there. Out of the hex field first, where
+  // Ctrl/Cmd+K is the field's; the Commands dialog's own search, among the panels' many.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
   await page.keyboard.press("ControlOrMeta+k");
-  await page.getByRole("combobox").pressSequentially("page not found");
+  await page
+    .getByRole("dialog", { name: "Commands" })
+    .getByRole("combobox")
+    .pressSequentially("page not found");
   await page
     .getByRole("dialog", { name: "Commands" })
     .getByRole("option", { name: "Page not found" })
