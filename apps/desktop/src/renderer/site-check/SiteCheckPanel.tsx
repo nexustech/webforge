@@ -72,19 +72,17 @@ function FindingRow({
   const { place, detail } = props.describe(finding);
   const fix = props.fixFor(rule, finding);
   return (
-    <li className="flex items-center gap-2 py-0.5 pl-5">
+    <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-0.5 pl-4">
       <button
         type="button"
-        className="min-w-0 truncate text-left hover:underline focus-visible:underline"
+        className="text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline"
         aria-label={t("siteCheck.show.label", { item: place })}
         onClick={() => props.onJump(finding)}
       >
         {place}
       </button>
-      {detail === undefined ? null : (
-        <span className="shrink-0 text-muted-foreground">{detail}</span>
-      )}
-      <span className="ml-auto flex shrink-0 gap-1">
+      {detail === undefined ? null : <span className="text-muted-foreground">{detail}</span>}
+      <span className="ml-auto flex gap-1">
         {fix === undefined ? null : (
           <Button size="sm" variant="outline" onClick={fix}>
             {t("siteCheck.fix")}
@@ -119,8 +117,8 @@ function RuleRow({
   const verdict = count === 0 ? ruleText(`${name}.pass`) : ruleText(`${name}.fail`, count);
   return (
     <li data-rule={result.rule} data-status={status}>
-      <div className="flex items-baseline gap-2">
-        <span aria-hidden className={cn("size-2 shrink-0 rounded-full", DOT[status])} />
+      <div className="flex flex-wrap items-baseline gap-x-2">
+        <span aria-hidden className={cn("size-2 shrink-0 self-center rounded-full", DOT[status])} />
         <span className="sr-only">{t(`siteCheck.status.${status}`)}: </span>
         <span className="font-medium">{ruleText(name)}</span>
         <span className="text-muted-foreground">{verdict}</span>
@@ -152,7 +150,7 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-3 p-3 text-sm">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <p role="status" className="font-medium">
             {summary(report)}
           </p>
