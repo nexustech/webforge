@@ -1,8 +1,10 @@
 /**
  * The script the preview server adds to every page it serves (3.2), as a classic script, as the
  * site's own are (X1). It listens to the server's events:
+ * - `values`: the theme's values changed alone (a colour, a size); they go in a style element
+ *   of their own, after the stylesheet, which they win over: nothing to download;
  * - `css`: the stylesheet changed alone; the new one is loaded beside the old, which goes once the
- *   new one has loaded, so nothing flashes unstyled;
+ *   new one has loaded, with any values taken in place, so nothing flashes unstyled;
  * - `reload`: pages changed; this one reloads if it is among them, or if everything did;
  * - `show`: the editor shows another page; this one goes there.
  *
@@ -28,15 +30,29 @@ export const LIVE_RELOAD_SCRIPT = `(function () {
       run();
     }
   });
+  function valuesStyle() {
+    return document.querySelector("style[data-wf-values]");
+  }
   function swap(link, href) {
     var next = link.cloneNode(false);
     next.href = href;
     next.addEventListener("load", function () {
       if (link.parentNode) link.parentNode.removeChild(link);
+      var values = valuesStyle();
+      if (values && values.parentNode) values.parentNode.removeChild(values);
     });
     link.parentNode.insertBefore(next, link.nextSibling);
   }
   var events = new EventSource(base + "__webforge/events");
+  events.addEventListener("values", function (event) {
+    var style = valuesStyle();
+    if (!style) {
+      style = document.createElement("style");
+      style.setAttribute("data-wf-values", "");
+      document.head.appendChild(style);
+    }
+    style.textContent = JSON.parse(event.data).css;
+  });
   events.addEventListener("css", function (event) {
     var wanted = base + JSON.parse(event.data).href;
     var links = document.querySelectorAll('link[rel="stylesheet"]');

@@ -25,7 +25,7 @@ import {
   renderPage,
   UnknownComponentError,
 } from "@webforge/site-components";
-import { fontFacesFor } from "@webforge/themes";
+import { fontFacesFor, themeShape } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
 import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
@@ -471,7 +471,8 @@ export async function* buildEvents(
   };
   // Everything a page's render reads besides the page itself, hashed once for the page cache: the
   // site without its pages' content and without Media, whose images and documents a page reaches
-  // only as they were resolved above. A new input of rendering must be added here too.
+  // only as they were resolved above, and of the theme only its shape: a render reads none of its
+  // colours or sizes, which the stylesheet sets (3.2). A new input of rendering must be added here.
   const sharedKey =
     caches === undefined
       ? ""
@@ -479,6 +480,7 @@ export async function* buildEvents(
           JSON.stringify({
             site: {
               ...site,
+              theme: themeShape(site.theme),
               media: undefined,
               documents: undefined,
               pages: site.pages.map((page) => ({ ...page, doc: undefined })),

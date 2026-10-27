@@ -4,9 +4,9 @@ import type { NetworkInterfaceInfo } from "node:os";
 const PRIVATE = /^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/;
 
 /**
- * This computer's address on its local network, for a phone to open the preview at (3.2): an IPv4
- * address that isn't the computer's own loopback, a private one first (a home Wi-Fi's), else any
- * other; none when the computer isn't on a network.
+ * This computer's address on its local network, for a phone to open the preview at (3.2): a private
+ * IPv4 address (a home or office Wi-Fi's). None when it has none, on no network or only a public
+ * or VPN one: the preview is never offered there, where strangers could reach it.
  */
 export function localNetworkAddress(
   interfaces: NodeJS.Dict<NetworkInterfaceInfo[]>,
@@ -15,5 +15,5 @@ export function localNetworkAddress(
     .flatMap((each) => each ?? [])
     .filter((info) => info.family === "IPv4" && !info.internal)
     .map((info) => info.address);
-  return addresses.find((address) => PRIVATE.test(address)) ?? addresses[0];
+  return addresses.find((address) => PRIVATE.test(address));
 }

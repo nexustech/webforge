@@ -1,6 +1,7 @@
 import type { SitePage, SiteSnapshot } from "@webforge/model";
 import * as components from "@webforge/site-components";
 import { sampleSite, scaledTestTimeout } from "@webforge/test-utils";
+import * as tailwind from "tailwindcss";
 import { beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 import { type BuiltSite, buildSite, PREVIEW_STYLESHEET } from "../src/build.js";
 import { createMemoryImageCache } from "../src/memory-image-cache.js";
@@ -14,6 +15,13 @@ vi.mock("@webforge/site-components", async (original) => {
   return { ...actual, renderPage: vi.fn(actual.renderPage) };
 });
 const renderPage = vi.mocked(components.renderPage);
+
+// Counts Tailwind's compiles, to tell a kept stylesheet compiler from a new one (3.2).
+vi.mock("tailwindcss", async (original) => {
+  const actual = await original<typeof import("tailwindcss")>();
+  return { ...actual, compile: vi.fn(actual.compile) };
+});
+const compile = vi.mocked(tailwind.compile);
 
 let resources: PipelineResources;
 
@@ -140,6 +148,51 @@ describe("createPipeline (3.1)", () => {
       renderPage.mockClear();
       await build(pipeline, withPage(base, 1, { title: "Who we are" }));
       expect(renderPage).toHaveBeenCalledTimes(base.pages.length);
+    },
+    scaledTestTimeout(120_000),
+  );
+
+  it(
+    "takes a colour or a size of the theme into a preview with no new compile and no page rendered (3.2)",
+    async () => {
+      const pipeline = createPipeline(components.siteLibrary);
+      const base = sampleSite();
+      const css = (site: BuiltSite) => new TextDecoder().decode(site.files.get(PREVIEW_STYLESHEET));
+      await build(pipeline, base, "preview");
+
+      renderPage.mockClear();
+      compile.mockClear();
+      const recoloured = {
+        ...base,
+        theme: {
+          ...base.theme,
+          colors: { ...base.theme.colors, primary: { l: 0.4, c: 0.2, h: 20 } },
+          spacing: "roomy" as const,
+        },
+      };
+      const { site } = await build(pipeline, recoloured, "preview");
+
+      expect(compile).not.toHaveBeenCalled();
+      expect(renderPage).not.toHaveBeenCalled();
+      // The new values follow the compiled stylesheet, as custom properties that win over it.
+      expect(css(site)).toMatch(
+        /--color-primary: oklch\(40% 0\.2 20\);[^}]*--spacing: 0\.275rem;/s,
+      );
+      // A change of shape (here, the shadows) compiles again.
+      await build(
+        pipeline,
+        { ...recoloured, theme: { ...recoloured.theme, shadow: "strong" } },
+        "preview",
+      );
+      expect(compile).toHaveBeenCalledOnce();
+      // An export is compiled with the theme itself, as ever.
+      compile.mockClear();
+      const exported = (await build(pipeline, recoloured, "export")).site;
+      expect(
+        [...exported.files.values()].some((data) =>
+          new TextDecoder().decode(data).includes("The theme's values"),
+        ),
+      ).toBe(false);
     },
     scaledTestTimeout(120_000),
   );

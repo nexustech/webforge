@@ -89,6 +89,23 @@ export const EarlyCommands: Story = {
   render: () => <WithCommands commands={COMMANDS.filter((command) => EARLY.has(command.id))} />,
 };
 
+/** A phone can open the preview (3.2): the cue says so, with Stop beside it. */
+export const PhonePreviewOn: Story = {
+  render: () => (
+    <WithCommands
+      commands={[
+        ...COMMANDS,
+        {
+          id: COMMAND_IDS.stopPhonePreview,
+          label: "Stop Phone Preview",
+          menu: "file",
+          run: noop,
+        },
+      ]}
+    />
+  ),
+};
+
 /**
  * A command that goes with Export (LF-13), as ZIP export will (3.3): Export becomes a split
  * button, its caret open.

@@ -1,7 +1,13 @@
 import { request } from "node:http";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import { THEME_VALUES_MARKER } from "@webforge/themes";
 import { afterEach, describe, expect, it } from "vitest";
-import { createPreviewServer, type PreviewBuild, type PreviewServer } from "./preview-server.js";
+import {
+  changedValues,
+  createPreviewServer,
+  type PreviewBuild,
+  type PreviewServer,
+} from "./preview-server.js";
 
 const text = new TextEncoder();
 const page = (body: string) => text.encode(`<!doctype html><html><body>${body}</body></html>`);
@@ -33,7 +39,7 @@ async function started() {
 
 /** A request to the server; resolves its status, headers and body. */
 function get(port: number, path: string, method = "GET", headers: Record<string, string> = {}) {
-  return new Promise<{ status: number; type: string; etag: string; body: string }>(
+  return new Promise<{ status: number; type: string; etag: string; cache: string; body: string }>(
     (resolve, reject) => {
       const sent = request({ host: "127.0.0.1", port, path, method, headers }, (response) => {
         const chunks: Buffer[] = [];
@@ -43,6 +49,7 @@ function get(port: number, path: string, method = "GET", headers: Record<string,
             status: response.statusCode ?? 0,
             type: String(response.headers["content-type"] ?? ""),
             etag: String(response.headers.etag ?? ""),
+            cache: String(response.headers["cache-control"] ?? ""),
             body: Buffer.concat(chunks).toString("utf8"),
           }),
         );
@@ -92,6 +99,22 @@ describe("the preview server (3.2)", () => {
     expect(await preview.listen("local")).toBe(port);
   });
 
+  it("listens for a phone on the one address given, and stops that listener alone", async () => {
+    const { server: preview, port } = await started();
+    preview.update(FIRST);
+    await expect(preview.listen("network")).rejects.toThrow();
+    // Here the loopback stands in for the Wi-Fi's address: the listener is on that address only.
+    const phonePort = await preview.listen("network", "127.0.0.1");
+    expect(phonePort).not.toBe(port);
+    expect((await get(phonePort, preview.base)).status).toBe(200);
+
+    await preview.stop("network");
+
+    await expect(get(phonePort, preview.base)).rejects.toThrow();
+    // The desktop preview goes on.
+    expect((await get(port, preview.base)).status).toBe(200);
+  });
+
   it("serves the build's pages under its secret base, with the live reload script", async () => {
     const { server: preview, port } = await started();
     preview.update(FIRST);
@@ -99,6 +122,8 @@ describe("the preview server (3.2)", () => {
     const home = await get(port, preview.base);
     expect(home.status).toBe(200);
     expect(home.type).toBe("text/html; charset=utf-8");
+    // Kept by this browser only, and checked each time.
+    expect(home.cache).toBe("private, no-cache");
     expect(home.body).toContain("Home");
     expect(home.body).toContain(
       `<script src="${preview.base}__webforge/live.js" data-base="${preview.base}" defer></script></body>`,
@@ -213,6 +238,48 @@ describe("the preview server (3.2)", () => {
     await expect.poll(() => preview.watching(), { timeout: 2000 }).toBe(0);
   });
 
+  it("sends the theme's values alone when nothing else in the stylesheet changed", async () => {
+    const { server: preview, port } = await started();
+    const sheet = (rules: string, values: string) =>
+      text.encode(`${rules}
+${THEME_VALUES_MARKER}
+:root { ${values} }
+`);
+    const stylesheetOf = (data: Uint8Array): PreviewBuild => ({
+      type: "previewed",
+      full: false,
+      changed: [{ path: PREVIEW_STYLESHEET, data }],
+      removed: [],
+    });
+    preview.update({
+      ...FIRST,
+      changed: [
+        ...FIRST.changed.filter((file) => file.path !== PREVIEW_STYLESHEET),
+        { path: PREVIEW_STYLESHEET, data: sheet(".a{}", "--color-primary: red;") },
+      ],
+    });
+    const stream = events(port, preview.base);
+    const stop = await stream.opened;
+
+    preview.update(stylesheetOf(sheet(".a{}", "--color-primary: blue;")));
+    preview.update(stylesheetOf(sheet(".a{} .b{}", "--color-primary: blue;")));
+    await expect.poll(() => stream.received.length, { timeout: 2000 }).toBe(2);
+
+    expect(stream.received).toEqual([
+      {
+        event: "values",
+        data: {
+          css: `${THEME_VALUES_MARKER}
+:root { --color-primary: blue; }
+`,
+        },
+      },
+      // A new class too: the whole stylesheet, swapped in place.
+      { event: "css", data: { href: PREVIEW_STYLESHEET } },
+    ]);
+    stop();
+  });
+
   it("replaces every file with a full build, as a new worker's first", async () => {
     const { server: preview, port } = await started();
     preview.update(FIRST);
@@ -257,5 +324,20 @@ describe("the preview server (3.2)", () => {
     server = undefined;
 
     await expect(get(port, preview.base)).rejects.toThrow();
+  });
+});
+
+describe("changedValues (3.2)", () => {
+  const values = (colour: string) =>
+    `${THEME_VALUES_MARKER}\n:root { --color-primary: ${colour}; }`;
+
+  it("is the theme's values when they are all that changed", () => {
+    expect(changedValues(`.a{}\n${values("red")}`, `.a{}\n${values("blue")}`)).toBe(values("blue"));
+  });
+
+  it("is none when anything before them changed, or a stylesheet has none", () => {
+    expect(changedValues(`.a{}\n${values("red")}`, `.b{}\n${values("red")}`)).toBeUndefined();
+    expect(changedValues(".a{}", `.a{}\n${values("red")}`)).toBeUndefined();
+    expect(changedValues(`.a{}\n${values("red")}`, ".a{}")).toBeUndefined();
   });
 });

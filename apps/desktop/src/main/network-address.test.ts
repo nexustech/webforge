@@ -20,8 +20,9 @@ describe("localNetworkAddress (3.2)", () => {
     expect(localNetworkAddress({ eth: [v4("172.20.3.4")] })).toBe("172.20.3.4");
   });
 
-  it("is another address when there's no private one, and none off any network", () => {
-    expect(localNetworkAddress({ vpn: [v4("100.64.1.2")] })).toBe("100.64.1.2");
+  it("is none without a private address: off any network, or on a VPN's or a public one only", () => {
+    expect(localNetworkAddress({ vpn: [v4("100.64.1.2")] })).toBe(undefined);
+    expect(localNetworkAddress({ eth: [v4("81.2.69.160")] })).toBe(undefined);
     expect(localNetworkAddress({ lo: [v4("127.0.0.1", true)], wifi: [v6("fe80::1")] })).toBe(
       undefined,
     );

@@ -33,7 +33,10 @@ function previewOf(overrides: Partial<PreviewDeps> = {}) {
   let watching = 0;
   const server = {
     base: BASE,
-    listen: vi.fn(async (scope: "local" | "network") => (scope === "local" ? 5001 : 5002)),
+    listen: vi.fn(async (scope: "local" | "network", _host?: string) =>
+      scope === "local" ? 5001 : 5002,
+    ),
+    stop: vi.fn(async (_scope: "local" | "network") => undefined),
     update: vi.fn((_build: PreviewBuild) => undefined),
     show: vi.fn((_page: string) => undefined),
     watching: () => watching,
@@ -83,7 +86,7 @@ describe("createPreview (3.2)", () => {
 
     expect(await preview.open(site("Bakery"), "services/our cakes.html")).toBe("opened");
 
-    expect(server.listen).toHaveBeenCalledWith("local");
+    expect(server.listen).toHaveBeenCalledWith("local", undefined);
     expect(built()).toEqual(["Bakery"]);
     expect(deps.openInBrowser).toHaveBeenCalledWith(
       `http://127.0.0.1:5001${BASE}services/our%20cakes.html`,
@@ -167,8 +170,13 @@ describe("createPreview (3.2)", () => {
       status: "ready",
       url: `http://192.168.1.23:5002${BASE}about.html`,
     });
-    expect(server.listen).toHaveBeenCalledWith("network");
+    // On the one address chosen, never every network the computer is on.
+    expect(server.listen).toHaveBeenCalledWith("network", "192.168.1.23");
     expect(built()).toEqual(["Bakery"]);
+
+    // Stop Phone Preview stops that listener only.
+    await preview.stopPhone();
+    expect(server.stop).toHaveBeenCalledExactlyOnceWith("network");
 
     const offline = previewOf({ networkAddress: () => undefined });
     expect(await offline.preview.phone(site("Bakery"), "index.html")).toEqual({
