@@ -40,7 +40,8 @@ The cheapest plan with an own domain and no ads, for one small-business site, ov
 
 | Product | Three-year cost | Working |
 |---|---|---|
-| Bootstrap Studio Lifetime | $59 | once |
+| Bootstrap Studio Standard | $29 | once; after year one the app keeps working but upgrades, the bundled hosting and Smart Forms stop |
+| Bootstrap Studio Lifetime | $59 | once; the fair comparison with Webforge, since it keeps the upgrades for the three years |
 | **Webforge** | **$99** | once |
 | Blocs 6 Standard | $109 | once; a major upgrade would add to it |
 | Hostinger Premium | about $144 | 48 months prepaid at the intro price, so a fourth year is included; $132 a year after that |
@@ -58,7 +59,7 @@ The cheapest plan with an own domain and no ads, for one small-business site, ov
 
 - **Every hosted builder costs more than Webforge within a year**, except Hostinger's prepaid intro, which climbs at renewal. The persona's line in the spec, "hates monthly builder fees", matches the market: the cheapest own-domain hosted plans are $10–19 a month, and the ones with a store $29–39.
 - **Hosted pricing is getting more complex, not less.** Webflow and Framer bill seats and AI credits apart, Squarespace's transaction fees fall by tier, GoDaddy and Hostinger rely on the renewal uplift. One number with nothing else to read is itself a difference, as WF-6 records.
-- **Among desktop apps Webforge sits in the middle.** Bootstrap Studio undercuts everyone at $59 for life, Blocs is $109–180 per major version, and Elements and Pinegrow have moved to $99–249 a year. Bootstrap Studio's bundled hosting and forms for its Lifetime price are the one thing in these tables Webforge doesn't match; Webforge's answer is that the site works on any host and the form services are the person's own (B3).
+- **Among desktop apps Webforge sits in the middle.** Bootstrap Studio undercuts everyone at $29 once or $59 for life, Blocs is $109–180 per major version, and Elements and Pinegrow have moved to $99–249 a year. Bootstrap Studio's bundled hosting and forms for its Lifetime price are the one thing in these tables Webforge doesn't match; Webforge's answer is that the site works on any host and the form services are the person's own (B3).
 - **No desktop app has a free tier**; Mobirise's free app is funded by a $149 kit, and Pinegrow and Elements run trials. Webforge's 7-day trial is on the short side: Squarespace and Pinegrow give 14 days, and Elements limits the trial by pages rather than days. Whether to lengthen it is a decision for the licensing work after the MVP, not this note.
 
 ## 6. Sources
