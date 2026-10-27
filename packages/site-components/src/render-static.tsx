@@ -203,9 +203,14 @@ export function renderPage(
   library: ComponentLibrary,
   context: RenderContext,
 ): RenderedPage {
+  const first = regions.content.find((node) => node.props.hidden !== true)?.props.id;
   return {
     header: renderNodesToHtml(regions.header, library, context),
-    main: renderNodesToHtml(regions.content, library, context),
+    main: renderNodesToHtml(
+      regions.content,
+      library,
+      typeof first === "string" ? { ...context, firstSection: first } : context,
+    ),
     footer: renderNodesToHtml(regions.footer, library, context),
   };
 }

@@ -677,7 +677,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.23 | Your own themes: save a changed built-in theme under a name, New theme, My themes | [#485](https://github.com/nexustech/webforge/issues/485) | themes | PH2-17, F-DS-2, F-DS-7, D7 | 2.5 | 2.3 |
 | 2.24 | Canvas: the Desktop view fills the canvas, as the site fills a browser | [#486](https://github.com/nexustech/webforge/issues/486) | engine | PH2-18, F-ED-25, 1.15 | 1 | – |
 | 2.25 | Text toolbar: underline, highlight and theme-colour marks | [#495](https://github.com/nexustech/webforge/issues/495) | engine | [product/08](../research/product/08-component-styling.md) ST-3, ST-8, F-ED-3, C1 | 1 | 1.23 |
-| 2.26 | Backgrounds for every section: an image with an overlay | [#503](https://github.com/nexustech/webforge/issues/503) | components | [product/08](../research/product/08-component-styling.md) ST-5, ST-8, F-DS-3, F-ED-4 | 2 | 2.22a, 3.3 |
+| 2.26 | Backgrounds for every section: an image with an overlay | [#503](https://github.com/nexustech/webforge/issues/503) | components | [product/08](../research/product/08-component-styling.md) ST-5, ST-8, ST-9, F-DS-3, F-ED-4 | 2 | 2.22a, 3.3 |
 | 2.27 | Apply this look to every element of its kind | [#504](https://github.com/nexustech/webforge/issues/504) | components | [product/08](../research/product/08-component-styling.md) ST-4, ST-8, F-ED-4, D2, D7 | 3 | 2.22, 1.37 |
 | 2.28 | Transition and transform presets on hover | [#505](https://github.com/nexustech/webforge/issues/505) | components | [product/08](../research/product/08-component-styling.md) ST-7, ST-8, F-DS-5 | 1 | 2.22, 2.12 |
 | 2.29 | Templates use the new styling | [#506](https://github.com/nexustech/webforge/issues/506) | content | [product/08](../research/product/08-component-styling.md) ST-8, F-SITE-1, R4 | 1.5 | 2.22, 2.25, 2.26 |
@@ -915,10 +915,11 @@ Three toolbar buttons: Underline (Mod+U), Highlight and Text colour, the colours
 - [ ] Highlight and colour offer the theme roles only; the export carries classes, no inline styles
 - [ ] Site Check lists underlined non-link text as a tip
 
-**2.26 Backgrounds for every section: an image with an overlay** (added 26 Oct 2026, [product/08](../research/product/08-component-styling.md) ST-5, ST-8)  
-The section frame gains a background image with a focal point, drawn as a responsive `<picture>` behind the content, and an overlay in the theme's base or neutral colour (0–80% in steps). The colour background comes from 2.22's Colour control. The section's text is checked for contrast over the overlay; the Hero keeps working, migrated if its image moves onto the field.
+**2.26 Backgrounds for every section: an image with an overlay** (added 26 Oct 2026, [product/08](../research/product/08-component-styling.md) ST-5, ST-8, ST-9)  
+The section frame gains a background image with a focal point, drawn as a responsive `<picture>` behind the content, and an overlay in the theme's base or neutral colour (0–80% in steps). The colour background comes from 2.22's Colour control. The section's text is checked for contrast over the overlay; the Hero keeps working, migrated if its image moves onto the field. A first image's overlay starts at the weakest step that keeps the text readable in the site's theme, in the same undo step (ST-9, 27 Oct 2026); the static default is 60%.
 
 - [ ] Any section can have a background image and overlay; one labelled undo step each
+- [ ] Placing a first image sets the overlay the theme needs (Light and High contrast 60%, Dark 80%); an overlay already chosen, or a later theme change, is left as it is
 - [ ] The export draws a responsive `<picture>` from disk with no external request; a theme switch restyles the overlay
 - [ ] With no image set the export is unchanged (golden files)
 

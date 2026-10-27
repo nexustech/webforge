@@ -275,6 +275,11 @@ export type RenderContext = SiteBindings & {
   readonly href: (link: LinkValue) => string;
   /** The image for a media id, or `null` if there is none (yet). */
   readonly image: (mediaId: string) => ResolvedImage | null;
+  /**
+   * The id of the page's first section shown (2.26), set by `renderPage`: its background
+   * image is above the fold, so it loads at once rather than lazily.
+   */
+  readonly firstSection?: string;
   /** The canvas's edit-only previews (UX-26); the export renders without them. */
   readonly previews?: EditPreviews;
   /** What an Image without its image shows instead (2.9): a hint on the canvas; nothing in the export. */

@@ -30,6 +30,8 @@ const FaqLayoutContext = createContext<FaqLayout>("accordion");
 const hero = defineSection({
   label: t("section.hero"),
   name: "hero",
+  // Its image field draws its own background, behind the text, with its own overlay.
+  background: false,
   category: t("category.heroes"),
   variants: HERO_LAYOUTS.map((value) => ({
     label: t(`field.heroLayout.${value}`),

@@ -22,6 +22,35 @@ type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Pro
 // API, IPC, export utility process. The browser projects then open the result from disk. As in the
 // app, the photo's and the document's bytes come from the open site's file; the renderer names
 // them by hash.
+/** `site` with its photo behind the About page's Text section, under a strong overlay (2.26). */
+function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
+  return {
+    ...site,
+    pages: site.pages.map((page) =>
+      page.path !== "about"
+        ? page
+        : {
+            ...page,
+            doc: {
+              ...page.doc,
+              content: page.doc.content.map((node) =>
+                node.props.id === "story"
+                  ? {
+                      ...node,
+                      props: {
+                        ...node.props,
+                        backgroundImage: { mediaId: "hero-photo" },
+                        overlay: "80",
+                      },
+                    }
+                  : node,
+              ),
+            },
+          },
+    ),
+  };
+}
+
 /**
  * `site` in a theme of its own (#423): square, large, outline buttons, strong shadows and links
  * underlined only on hover, with running text that has a link in it and a Button set to Filled on the
@@ -72,7 +101,7 @@ function themed(site: SiteSnapshot): SiteSnapshot {
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
   // With its photo as the icon, and the About page's share picture (3.4).
-  const sample = sampleSite();
+  const sample = withSectionBackground(sampleSite());
   const site = {
     ...sample,
     icon: "hero-photo",
