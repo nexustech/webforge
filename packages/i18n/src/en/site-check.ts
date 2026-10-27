@@ -94,5 +94,4 @@ export const siteCheck = {
   // Export stops for what must be fixed (X5).
   "siteCheck.exportBlocked.one": "Fix 1 thing in Site Check before exporting",
   "siteCheck.exportBlocked.other": "Fix {count} things in Site Check before exporting",
-  "siteCheck.openPanel": "Show Site Check",
 } as const;

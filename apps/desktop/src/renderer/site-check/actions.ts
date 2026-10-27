@@ -5,6 +5,7 @@ import {
   isNodeDoc,
   isSharedCopy,
   type NodeDoc,
+  type PageEntry,
   type PageId,
   pageTitle,
   type SiteDoc,
@@ -114,10 +115,24 @@ function firstHeading(nodes: readonly NodeDoc[]): string | undefined {
 /** "page 'About'", for the history's labels. */
 const pageItem = (name: string) => t("pages.item", { name });
 
+/** The folders in folder `parent` (its segments): what a new name there must not be. */
+function siblingFolders(pages: readonly PageEntry[], parent: readonly string[]): Set<string> {
+  const depth = parent.length;
+  return new Set(
+    pages.flatMap((page) => {
+      const parts = page.folder?.split("/") ?? [];
+      const inParent = parent.every((segment, index) => parts[index] === segment);
+      const name = parts[depth];
+      return inParent && name !== undefined ? [name] : [];
+    }),
+  );
+}
+
 /**
- * Renames page `pageId`'s file, and its folder's, where Windows keeps the name for a device (R16):
- * `con` → `con-2`, as `uniqueSlug` makes new names. A folder is renamed for every page in it. One
- * undo step.
+ * Renames page `pageId`'s file, and its folders, where Windows keeps the name for a device (R16):
+ * `con` → `con-2`, as `uniqueSlug` makes new names. A folder is renamed for every page in it, at any
+ * depth, so its pages stay together (`aux/shop` and `aux/cakes` both move to `aux-2`). One undo
+ * step.
  */
 function renameDeviceNames({ session }: SiteCheckActions, pageId: PageId): void {
   const page = session.history.document.getState().pages[pageId];
@@ -125,32 +140,21 @@ function renameDeviceNames({ session }: SiteCheckActions, pageId: PageId): void 
   session.edit("props", t("siteCheck.history.renamed", { item: pageItem(page.title) }), (draft) => {
     const target = draft.pages[pageId];
     if (target === undefined) return;
-    const folder = target.folder;
-    if (folder?.split("/").some(isDeviceName)) {
-      const segments = folder.split("/");
-      const renamed = segments
-        .map((segment, index) => {
-          if (!isDeviceName(segment)) return segment;
-          // Free among the folders beside it.
-          const parent = segments.slice(0, index).join("/");
-          const siblings = new Set(
-            Object.values(draft.pages).flatMap((each) => {
-              const parts = each.folder?.split("/") ?? [];
-              return parts.slice(0, index).join("/") === parent && parts[index] !== undefined
-                ? [parts[index]]
-                : [];
-            }),
-          );
-          return uniqueSlug(segment, siblings);
-        })
-        .join("/");
-      for (const each of Object.values(draft.pages)) {
-        if (each.folder === folder) each.folder = renamed;
-        else if (each.folder?.startsWith(`${folder}/`)) {
-          each.folder = `${renamed}${each.folder.slice(folder.length)}`;
+    const pages = Object.values(draft.pages);
+    const segments = target.folder?.split("/") ?? [];
+    segments.forEach((segment, index) => {
+      if (!isDeviceName(segment)) return;
+      const parent = segments.slice(0, index);
+      const name = uniqueSlug(segment, siblingFolders(pages, parent));
+      for (const each of pages) {
+        const parts = each.folder?.split("/") ?? [];
+        if (parts.length > index && segments.slice(0, index + 1).every((s, i) => parts[i] === s)) {
+          parts[index] = name;
+          each.folder = parts.join("/");
         }
       }
-    }
+      segments[index] = name;
+    });
     if (isDeviceName(target.slug)) {
       target.slug = uniqueSlug(target.slug, slugsInFolder(draft, target.folder, pageId));
     }

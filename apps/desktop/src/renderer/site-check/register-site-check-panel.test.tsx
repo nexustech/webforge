@@ -107,6 +107,31 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     await waitFor(() => expect(rule("deviceNames").dataset.status).toBe("pass"));
   });
 
+  it("moves every page in a device-named folder together, deeper ones too", async () => {
+    const site = siteWith({ slug: "hours", folder: "aux/shop" });
+    const about = site.pages[ABOUT];
+    if (about === undefined) throw new Error("no About page");
+    const cakes = { ...about, id: "page-cakes" as PageId, slug: "cakes", folder: "aux" };
+    const taken = { ...about, id: "page-taken" as PageId, slug: "old", folder: "aux-2" };
+    const { session, rule } = setUp({
+      ...site,
+      pages: { ...site.pages, [cakes.id]: cakes, [taken.id]: taken },
+      pageOrder: [...site.pageOrder, cakes.id, taken.id],
+    });
+
+    const [first] = within(rule("deviceNames")).getAllByRole("button", { name: "Fix" });
+    if (first === undefined) throw new Error("no Fix");
+    await userEvent.click(first);
+
+    const pages = session.history.document.getState().pages;
+    expect([pages[ABOUT]?.folder, pages[cakes.id]?.folder, pages[taken.id]?.folder]).toEqual([
+      "aux-3/shop",
+      "aux-3",
+      "aux-2",
+    ]);
+    await waitFor(() => expect(rule("deviceNames").dataset.status).toBe("pass"));
+  });
+
   it("gives a page without a title the text of its first heading", async () => {
     const heading = { type: "Heading", props: { id: "h", text: "Our story" } };
     const { session, rule } = setUp(siteWith({ title: "", content: [heading] }));
