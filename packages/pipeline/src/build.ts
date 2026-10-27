@@ -455,6 +455,8 @@ export async function* buildEvents(
       ...(site.formService === undefined ? {} : { formService: site.formService }),
       // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
       rawCustomCode: true,
+      // The Footer's link back to the consent banner, wherever it asks (#539).
+      ...(analytics?.consentBanner === true ? { cookieSettings: true } : {}),
     };
     // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
     const regions = {
@@ -474,6 +476,8 @@ export async function* buildEvents(
           JSON.stringify({
             site: {
               ...site,
+              // As this build has it: none in a preview, whose pages have no Cookie settings.
+              analytics,
               media: undefined,
               documents: undefined,
               pages: site.pages.map((page) => ({ ...page, doc: undefined })),

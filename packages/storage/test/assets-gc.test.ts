@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

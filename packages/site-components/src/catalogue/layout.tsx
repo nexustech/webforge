@@ -236,6 +236,20 @@ const linksOf = (items: readonly NavItem[]): NavLink[] =>
   items.flatMap((item) => ("children" in item ? item.children : [item]));
 
 /**
+ * *Cookie settings* in the Footer of a site with Google Analytics and its consent banner (#539,
+ * B7): the `consent` behaviour shows it and reopens the banner with it, so a visitor can change
+ * their choice as easily as they made it. Hidden as written: without the script there is no banner
+ * to reopen, and nothing is counted.
+ */
+function CookieSettings() {
+  return (
+    <button type="button" className="link link-hover" data-wf-consent-open="" hidden>
+      {t("siteText.consent.settings")}
+    </button>
+  );
+}
+
+/**
  * The shared Footer (C5), in one of two layouts (2.6): its text centred, or in columns with the
  * site's menu as links beside it.
  */
@@ -261,17 +275,22 @@ const footer = defineComponent({
   render: ({ values, context }) => {
     const content = boundText(values, "text", context);
     const text = content === null ? null : <p>{content}</p>;
+    const cookies = context.cookieSettings === true ? <CookieSettings /> : null;
     if (values.variant === "centred") {
       return (
         <footer className="site-footer footer footer-center bg-base-200 p-8 text-base-content">
           {text}
+          {cookies}
         </footer>
       );
     }
     const links = linksOf(context.navigation);
     return (
       <footer className="site-footer footer sm:footer-horizontal bg-base-200 p-8 text-base-content">
-        <aside>{text}</aside>
+        <aside>
+          {text}
+          {cookies}
+        </aside>
         {links.length === 0 ? null : (
           <nav aria-label={t("siteText.footerNavigation")} className="flex flex-col gap-2">
             {links.map((link, index) => (
