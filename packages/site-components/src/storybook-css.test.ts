@@ -1,7 +1,8 @@
-import { BOX_SIDES, SPACING_TOKENS } from "@webforge/model";
+import { BOX_SIDES, SHADE_STEPS, SPACING_TOKENS } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import sourcesCss from "../.storybook/sources.css?raw";
+import { APPEARANCE_FIELDS, appearanceBoxClasses } from "./appearance.js";
 import { COLUMN_LAYOUT_CLASS, COLUMN_LAYOUTS } from "./catalogue/column-layouts.js";
 import { SECTION_PADDING } from "./frame.js";
 import { boxClasses, responsiveClasses } from "./library.js";
@@ -73,5 +74,19 @@ describe("the site Storybook's CSS", () => {
       }),
       { numRuns: 200 },
     );
+  });
+
+  it("compiles every theme colour the Appearance group offers, with each shade (2.22)", () => {
+    const colours = ["lookColor", "lookBackground", "lookBorderColor"] as const;
+    for (const name of colours) {
+      for (const { value } of APPEARANCE_FIELDS[name].options) {
+        for (const shade of ["", ...SHADE_STEPS.map((step) => `-${step}`)]) {
+          const classes = appearanceBoxClasses({ [name]: `${value}${shade}` });
+          for (const each of classes.split(" ").filter((part) => part !== "")) {
+            expect(inline, `${name} ${value}${shade}`).toContain(each);
+          }
+        }
+      }
+    }
   });
 });

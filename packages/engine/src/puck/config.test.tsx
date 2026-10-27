@@ -81,8 +81,14 @@ describe("toPuckConfig", () => {
         contentEditable: true,
         options: RICH_TEXT_OPTIONS,
         renderInlineMenu: FormatToolbar,
-        // The editor's name (#465).
-        tiptap: { extensions: [expect.objectContaining({ name: "webforgeEditorName" })] },
+        // The editor's name (#465), and the theme's highlight and text colour (2.25, ST-3).
+        tiptap: {
+          extensions: [
+            expect.objectContaining({ name: "webforgeEditorName" }),
+            expect.objectContaining({ name: "themeHighlight" }),
+            expect.objectContaining({ name: "themeColor" }),
+          ],
+        },
       },
       size: { type: "select", label: "Size", options: [{ label: "Large", value: "large" }] },
       any: { type: "slot", label: "Anything" },
@@ -141,7 +147,9 @@ describe("toPuckConfig", () => {
 
   it("allows only the site's rich-text formatting and safe link addresses (F-ED-3)", () => {
     const { heading, underline, strike, code, codeBlock, blockquote, link } = RICH_TEXT_OPTIONS;
-    expect([heading, underline, strike, code, codeBlock, blockquote]).toEqual(Array(6).fill(false));
+    expect([heading, strike, code, codeBlock, blockquote]).toEqual(Array(5).fill(false));
+    // Underline, with Mod+U (2.25, ST-3).
+    expect(underline).toEqual({});
     const allowed = link === false ? undefined : link?.isAllowedUri;
     const check = (url: string) =>
       allowed?.(url, { defaultValidate: () => true, protocols: [], defaultProtocol: "https" });

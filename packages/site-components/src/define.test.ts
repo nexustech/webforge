@@ -33,6 +33,10 @@ const base: LooseSpec = {
   render: () => null,
 };
 
+/** The fields a layout hides: {@link fieldsHiddenBy}, without the Appearance group's Border colour. */
+const layoutHides = (...args: Parameters<typeof fieldsHiddenBy>) =>
+  new Set([...fieldsHiddenBy(...args)].filter((name) => name !== "lookBorderColor"));
+
 describe("defineComponent (2.5)", () => {
   it("accepts a component that follows the conventions, as it is", () => {
     const def = defineComponent(base);
@@ -212,9 +216,9 @@ describe("defineComponent (2.5)", () => {
         { label: "Plain", value: "plain" },
       ],
     });
-    expect(fieldsHiddenBy(def, { ...def.defaults })).toEqual(new Set());
-    expect(fieldsHiddenBy(def, { ...def.defaults, variant: "plain" })).toEqual(new Set(["size"]));
-    expect(fieldsHiddenBy(defineComponent(base), { variant: "plain" })).toEqual(new Set());
+    expect(layoutHides(def, { ...def.defaults })).toEqual(new Set());
+    expect(layoutHides(def, { ...def.defaults, variant: "plain" })).toEqual(new Set(["size"]));
+    expect(layoutHides(defineComponent(base), { variant: "plain" })).toEqual(new Set());
     expect(() =>
       defineComponent({
         ...base,
@@ -226,9 +230,9 @@ describe("defineComponent (2.5)", () => {
   it("hides the Hero's image in its text-only layout, and its alignment when centred", () => {
     const hero = siteLibrary.components.Hero;
     if (hero === undefined) throw new Error("no Hero");
-    expect(fieldsHiddenBy(hero, { variant: "minimal" })).toEqual(new Set(["image"]));
-    expect(fieldsHiddenBy(hero, { variant: "centred" })).toEqual(new Set(["alignment"]));
-    expect(fieldsHiddenBy(hero, { variant: "split" })).toEqual(new Set());
+    expect(layoutHides(hero, { variant: "minimal" })).toEqual(new Set(["image"]));
+    expect(layoutHides(hero, { variant: "centred" })).toEqual(new Set(["alignment"]));
+    expect(layoutHides(hero, { variant: "split" })).toEqual(new Set());
   });
 
   it("knows the behaviours of behaviours/, by file name", () => {

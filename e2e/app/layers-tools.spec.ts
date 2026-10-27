@@ -74,6 +74,8 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
     "Paste as Linked Copy",
     "Copy Style",
     "Paste Style",
+    "Apply Look to Every Heading on This Page",
+    "Apply Look to Every Heading on the Site",
     "Delete",
   ]);
 
@@ -249,6 +251,8 @@ test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu t
     ["Paste as Linked Copy", false],
     ["Copy Style", false],
     ["Paste Style", false],
+    ["Apply Look to Every Heading on This Page", false],
+    ["Apply Look to Every Heading on the Site", false],
     ["Delete", false],
   ]);
 });

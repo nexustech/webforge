@@ -18,6 +18,9 @@ export const history = {
   "history.pastedStyle": "Pasted style on {item}",
   // An option group's values, copied from another element (SP-7): "Pasted Spacing on Heading".
   "history.pastedGroup": "Pasted {group} on {item}",
+  // Apply Look to Every… (2.27, ST-4): "Applied the Button look to 12 others".
+  "history.appliedLook.one": "Applied the {item} look to 1 other",
+  "history.appliedLook.other": "Applied the {item} look to {count} others",
   // A value set for one device only (F-ED-4): "Changed Section padding on Mobile".
   "history.changedOn": "Changed {item} {field} on {device}",
   // The device's own value dropped, so it uses Desktop's again.

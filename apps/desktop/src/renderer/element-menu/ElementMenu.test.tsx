@@ -198,6 +198,35 @@ describe("ElementMenu (1.35)", () => {
       ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
     ]);
   });
+
+  it("offers Apply Look to Every… after them, on this page and on the site (2.27)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const onSite = vi.fn();
+    commands.register({ id: "edit.copyStyle", label: "Copy Style", run: vi.fn() });
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.applyLookOnPage,
+      label: "Apply Look to Every Button on This Page",
+      run: vi.fn(),
+    });
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.applyLookOnSite,
+      label: "Apply Look to Every Button on the Site",
+      run: onSite,
+    });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 0, y: 0 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().slice(5, 8)).toEqual([
+      ["Copy StyleCtrl+Alt+C", false],
+      ["Apply Look to Every Button on This Page", false],
+      ["Apply Look to Every Button on the Site", false],
+    ]);
+    await userEvent.click(menu().getByRole("menuitem", { name: /on the Site/ }));
+    expect(onSite).toHaveBeenCalledOnce();
+  });
 });
 
 /** The menu with its rename dialog's state, as the editor keeps it. */
