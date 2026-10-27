@@ -150,7 +150,7 @@ export function FormField({
  * The field people never see but spam robots fill in (B6), named as the form's service reads it: a
  * submission with it filled is dropped as spam. Web3Forms asks for a checkbox.
  */
-export type Honeypot = { readonly name: string; readonly checkbox?: true };
+type Honeypot = { readonly name: string; readonly checkbox?: true };
 
 /** Formspree's honeypot, which a custom endpoint and a Newsletter's address get too. */
 const GOTCHA: Honeypot = { name: "_gotcha" };
