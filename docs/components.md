@@ -107,6 +107,7 @@ Every section and element has the same *Appearance* group (2.22, ST-1), first in
 - **What a component may still do:** keep its own style fields (a Heading's size and colour), which come after the group in the *Options* group. It can't hide the group or a control of it.
 - **As data (4.8):** `catalogue-data.json` lists the group's fields once, and marks each component that has them (`appearance: "all"`, or `"noText"` for a section without a title); `CATALOGUE` puts them back, so the commands check them as any field.
 - **The token rule (ST-6):** no free value in Simple mode; Advanced mode keeps ADR 0009's off-theme hex on the colour controls.
+- **Apply Look to Every… (2.27, ST-4):** the editor copies the group's values, every field whose `optionGroup` is `appearance`, from one item to every other of its type, on the page or the site (`apps/desktop/src/renderer/clipboard/apply-look.ts`). A field added to the group is copied with no change there.
 
 ### Titles, text and buttons
 
