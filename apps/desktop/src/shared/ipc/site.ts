@@ -54,6 +54,19 @@ const exportRequestSchema = z.strictObject({
 /** What the renderer sends to export the site. */
 export type ExportRequest = z.infer<typeof exportRequestSchema>;
 
+/**
+ * The site as a build takes it from the renderer: its snapshot, and the images and documents it
+ * may use by hash. The preview (3.2) sends this; an export adds the person's choices.
+ */
+export const siteContentSchema = exportRequestSchema.pick({
+  snapshot: true,
+  media: true,
+  documents: true,
+});
+
+/** The site as a build takes it from the renderer. */
+export type SiteContent = z.infer<typeof siteContentSchema>;
+
 /** Why an export failed; the renderer shows a translated message for each. */
 const exportFailureReasonSchema = z.enum([
   "folder-not-empty",
