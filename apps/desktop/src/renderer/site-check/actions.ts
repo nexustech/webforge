@@ -37,6 +37,13 @@ function showAddress(settings: SiteCheckActions["settings"]): void {
   });
 }
 
+/** Site Settings, open on its Forms section: where a form's service is chosen (3.7). */
+function showForms(settings: SiteCheckActions["settings"]): void {
+  settings.show("site", "forms").catch((error: unknown) => {
+    reportFailure("siteCheck.forms", error);
+  });
+}
+
 /**
  * A page holding a copy of shared section `sharedId`, and the copy's id there: where one of its
  * elements is shown. The page shown first, if it holds one.
@@ -190,6 +197,11 @@ export function fixFor(
   }
   if (rule === "webAddress") {
     return () => showAddress(actions.settings);
+  }
+  // A Contact form or Form posts to Site Settings' service; a Newsletter's address is its own,
+  // which selecting it shows.
+  if (rule === "forms" && finding.values?.form === "service") {
+    return () => showForms(actions.settings);
   }
   return undefined;
 }
