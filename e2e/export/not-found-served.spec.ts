@@ -31,12 +31,9 @@ test("shows the 'Page not found' page at a missing address two folders deep, sty
   expect(response?.status()).toBe(404);
   await expect(page).toHaveTitle("Page not found | Rosa's Bakery");
   await page.waitForLoadState("networkidle");
-  // The site's stylesheet applies, and the Hero's photo is loaded.
-  expect(
-    await page.evaluate(() =>
-      [...document.styleSheets].some((sheet) => sheet.cssRules.length > 100),
-    ),
-  ).toBe(true);
+  // The site's stylesheet applies (the body's `flex` is the site's own CSS), and the Hero's photo
+  // is loaded.
+  expect(await page.evaluate(() => getComputedStyle(document.body).display)).toBe("flex");
   const photo = page.locator("main img").first();
   await expect
     .poll(() => photo.evaluate((image: HTMLImageElement) => image.complete && image.naturalWidth))
