@@ -48,7 +48,9 @@ const after = (items: MenuItemConstructorOptions[]): MenuItemConstructorOptions[
  * Electron's default menu would take keys it uses: its View menu zooms the whole window on
  * Ctrl/Cmd + =, − and 0 (the canvas's zoom keys) and reloads it on Ctrl/Cmd + R. Windows and Linux
  * get no menu. macOS keeps what a Mac app needs from its menu bar: the app menu (About, Hide,
- * Quit), Edit's roles (which give text fields Cmd + C, V, X and A), View's full screen and Window's;
+ * Quit), Edit's roles (which give text fields Cmd + C, V, X and A), a View menu and Window's.
+ * View has no full-screen item of ours: macOS adds its own *Enter Full Screen* (⌃⌘F) to any menu
+ * titled View, so a `togglefullscreen` role showed a second one beside it (#525);
  * the editor's own menus join them there (LF-13: File, Edit, View and Help move to the menu bar),
  * their shortcuts shown but left to the editor. In development, a menu that reloads and opens the
  * developer tools stays.
@@ -72,7 +74,6 @@ export function applicationMenu(
     const edit = itemsOf(renderer, "edit");
     const view = itemsOf(renderer, "view");
     const help = itemsOf(renderer, "help");
-    const fullScreen: MenuItemConstructorOptions = { role: "togglefullscreen" };
     return [
       // The application menu, with the editor's own items (Settings…, LF-12) after About.
       appItems.length === 0
@@ -110,10 +111,8 @@ export function applicationMenu(
               ...after(edit.filter((item) => !UNDO_REDO.includes(item.id ?? ""))),
             ],
           },
-      {
-        label: t("app.menu.view"),
-        submenu: view.length === 0 ? [fullScreen] : [...view, { type: "separator" }, fullScreen],
-      },
+      // Always there, empty on the start screen: macOS adds Enter Full Screen to it (#525).
+      { label: t("app.menu.view"), submenu: view },
       ...developer,
       { role: "windowMenu" },
       ...(help.length === 0 ? [] : [{ role: "help" as const, submenu: help }]),
