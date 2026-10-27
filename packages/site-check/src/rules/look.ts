@@ -25,6 +25,7 @@ export const contrastRule: CheckRule = {
       key: `${issue.palette}/${issue.background}/${issue.foreground}`,
       place: { kind: "theme" },
       values: {
+        palette: issue.palette,
         background: issue.background,
         foreground: issue.foreground,
         ratio: issue.ratio,

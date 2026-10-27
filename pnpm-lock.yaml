@@ -356,6 +356,9 @@ importers:
       '@webforge/publish':
         specifier: workspace:*
         version: link:../../packages/publish
+      '@webforge/site-check':
+        specifier: workspace:*
+        version: link:../../packages/site-check
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../../packages/site-components
