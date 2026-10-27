@@ -5,6 +5,7 @@
     { "path": "../i18n" },
     { "path": "../model" },
     { "path": "../site-components" },
+    { "path": "../test-utils" },
     { "path": "../themes" }
   ]
 }

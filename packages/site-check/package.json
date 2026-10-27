@@ -7,6 +7,7 @@
     ".": "./src/index.ts"
   },
   "devDependencies": {
+    "@webforge/test-utils": "workspace:*",
     "vitest": "catalog:"
   },
   "dependencies": {

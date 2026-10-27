@@ -97,6 +97,8 @@ const ENTITIES: Readonly<Record<string, string>> = {
 
 /** The text of rich text's `html`, as a visitor reads it: no tags, single spaces. */
 export function plainText(html: string): string {
+  // Most values are plain already: no tags, no entities.
+  if (!html.includes("<") && !html.includes("&")) return html.replace(/\s+/g, " ").trim();
   return html
     .replace(/<\/(p|li|h[1-6])>/gi, " ")
     .replace(/<br\s*\/?>/gi, " ")

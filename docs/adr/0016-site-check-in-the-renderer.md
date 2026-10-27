@@ -1,4 +1,4 @@
-# 0015. Site Check's rules run in the renderer, from their own package
+# 0016. Site Check's rules run in the renderer, from their own package
 
 - Status: Accepted
 - Date: 2026-10-27
@@ -17,11 +17,17 @@ Site Check is also a panel that is live: it updates as the person edits, and a f
   - It never reads the components, the canvas engine or the editor.
 - **It runs in the renderer:**
   - the panel checks the site at once, then again once it has been unchanged for 400 ms;
+  - **a recheck runs in the renderer's idle time** (`requestIdleCallback`), as many rules as an idle period has room for and at least one, so no rule runs while the person types or a frame is due. A change while it runs starts it again. *Ignore* filters the latest findings again without running the rules;
   - File → Export runs `checkSite(…, "export")` before anything else, and stops on a *Must fix*.
 - **Words live in the app.** Findings carry a rule id, a stable key, a place (an element, a menu item, a page, Media, the theme or the web address) and values, never text. The panel words them from `siteCheck.*`.
 - **What the person ignored is UI state**, like the editor mode. It is kept in the site file's `meta` table, through the editor-state channel, never versioned or undone.
 
 ## Consequences
+- **What a check costs** (`check-cost.test.ts`): a site of five of ADR 0007's large pages (225 elements each). Measured as the main thread's CPU time on a development machine (27 Oct 2026):
+  - every rule together, about 27 ms;
+  - the costliest, *Placeholder text*, 7 ms, then *Broken links* 4.7 and *Underlined text* 4.0; the rest under 3.5.
+  - The test holds each rule to a frame's 16 ms on CI, three times that elsewhere (ADR 0014). A rule over it would need splitting, or work of its own across idle periods.
+  - Two fast paths brought the costliest rules down: the model's link walk only parses strings with `href=` in them, and objects with a `kind`; *Placeholder text* skips the tag and entity patterns for plain text.
 - **The export pipeline doesn't run Site Check.**
   - The build still refuses what it can't write (`reserved-name`, R16) and warns about broken links and missing images in its report.
   - The renderer's check comes first, so those refusals show up in Site Check before an export starts.

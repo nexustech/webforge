@@ -42,6 +42,8 @@ export type SiteTarget =
  */
 function walkLinks(value: unknown, visit: (link: SiteTarget) => void): void {
   if (typeof value === "string") {
+    // Most strings are plain text or ids: only one with a link in it is worth the patterns.
+    if (!value.includes("href=")) return;
     for (const link of richTextPageLinks(value)) visit({ kind: "page", ...link });
     for (const { mediaId } of richTextFileLinks(value)) visit({ kind: "file", mediaId });
     return;
@@ -53,8 +55,9 @@ function walkLinks(value: unknown, visit: (link: SiteTarget) => void): void {
   if (typeof value !== "object" || value === null || isNodeDoc(value)) {
     return;
   }
-  const link = linkValueSchema.safeParse(value);
-  if (link.success) {
+  // Every link value has a kind; anything else (a padding, a list item) is only looked inside.
+  const link = "kind" in value ? linkValueSchema.safeParse(value) : undefined;
+  if (link?.success === true) {
     if (link.data.kind === "page") visit(link.data);
     if (link.data.kind === "file") visit({ kind: "file", mediaId: link.data.mediaId });
     return;

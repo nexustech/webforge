@@ -136,6 +136,17 @@ function isPlaceholderText(text: string, prompts: ReadonlySet<string>): boolean 
   return prompts.has(text) || LOREM.test(text) || PROMPT_START.test(text);
 }
 
+/** The catalogue's defaults as plain text, each made once: they never change while it runs. */
+const DEFAULT_TEXTS = new Map<string, string>();
+function defaultText(fallback: string): string {
+  let text = DEFAULT_TEXTS.get(fallback);
+  if (text === undefined) {
+    text = plainText(fallback);
+    DEFAULT_TEXTS.set(fallback, text);
+  }
+  return text;
+}
+
 /**
  * Whether `text` is still `placed`'s field's default where that default only names the field or
  * the element (a new Heading's *Heading*, a Text's *Text*).
@@ -144,7 +155,7 @@ function isNamingDefault(text: string, placed: PlacedValue, catalogue: Catalogue
   const component = catalogue[placed.node.type];
   const fallback = component?.defaults[placed.field];
   if (component === undefined || typeof fallback !== "string") return false;
-  const named = plainText(fallback);
+  const named = defaultText(fallback);
   return (
     text === named && (named === component.label || named === component.fields[placed.field]?.label)
   );
@@ -152,6 +163,7 @@ function isNamingDefault(text: string, placed: PlacedValue, catalogue: Catalogue
 
 /** Whether `value`, a link field's value, goes to an example domain. */
 function isExampleLink(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
   const link = linkValueSchema.safeParse(value);
   if (!link.success) return false;
   if (link.data.kind === "url") return EXAMPLE_DOMAIN.test(link.data.href);
@@ -160,6 +172,7 @@ function isExampleLink(value: unknown): boolean {
 
 /** Whether rich text's `html` links to an example domain. */
 const linksToExample = (html: string) =>
+  html.includes("href=") &&
   [...html.matchAll(/href="([^"]*)"/g)].some(([, href = ""]) => EXAMPLE_DOMAIN.test(href));
 
 /**

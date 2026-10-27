@@ -13,6 +13,7 @@ import type {
   CheckMode,
   CheckReport,
   CheckRule,
+  Finding,
   RuleResult,
 } from "./types.js";
 
@@ -57,9 +58,23 @@ export function checkSite(
   ignored: ReadonlySet<string> = new Set(),
   rules: readonly CheckRule[] = SITE_CHECK_RULES,
 ): CheckReport {
+  return reportOf((rule) => rule.check(input), mode, ignored, rules);
+}
+
+/**
+ * The report for `mode` of what each of `rules` found (`found`), leaving out what the person
+ * ignored, as {@link checkSite} does. For a caller that runs the rules one by one (the panel, in
+ * idle time) or filters again after an *Ignore* without running them.
+ */
+export function reportOf(
+  found: (rule: CheckRule) => readonly Finding[],
+  mode: CheckMode,
+  ignored: ReadonlySet<string> = new Set(),
+  rules: readonly CheckRule[] = SITE_CHECK_RULES,
+): CheckReport {
   const results = rules.map((rule): RuleResult => {
     const level = levelIn(rule, mode);
-    const all = rule.check(input);
+    const all = found(rule);
     const findings =
       level === "must"
         ? all

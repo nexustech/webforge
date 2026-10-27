@@ -107,7 +107,7 @@ The form engine's *Every kind* story lists every kind, so a new one appears ther
 
 ## Site Check rules
 
-A rule (`packages/site-check`, [ADR 0015](adr/0015-site-check-in-the-renderer.md)) is:
+A rule (`packages/site-check`, [ADR 0016](adr/0016-site-check-in-the-renderer.md)) is:
 - **a `CheckRule`:** an `id`, a level (`must`, `should` or `tip`), `strictOnPublish` if publishing makes it *Must fix* (X5), and `check({ site, catalogue })`. It returns findings, each with a key that stays the same while the problem lasts (what *Ignore* remembers) and a place the panel can jump to;
 - **listed** in `SITE_CHECK_RULES` (`src/check.ts`), in the panel's order;
 - **worded** in `packages/i18n/src/en/siteCheck.ts`: `siteCheck.rule.<id>` for its name, `.pass` for its verdict when nothing is found, and `.fail.one` and `.fail.other` for its verdicts that count;
