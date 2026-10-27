@@ -2,6 +2,7 @@ import type { FormField, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BUSINESS_NAME_MAX,
+  CONSENT_MESSAGE_MAX,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
   MEASUREMENT_ID_MAX,
@@ -217,6 +218,13 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           maxLength: MEASUREMENT_ID_MAX,
         },
         { kind: "toggle", name: "consentBanner", label: t("site.settings.consentBanner") },
+        {
+          kind: "text",
+          name: "consentMessage",
+          label: t("site.settings.consentMessage"),
+          help: t("site.settings.consentMessageHint"),
+          maxLength: CONSENT_MESSAGE_MAX,
+        },
       ],
     },
     {

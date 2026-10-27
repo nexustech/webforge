@@ -227,6 +227,9 @@ export const site = {
   "site.settings.measurementId": "Google Analytics measurement ID",
   "site.settings.measurementIdHint": "Such as G-ABC123DEF4. Leave empty for no analytics.",
   "site.settings.consentBanner": "Ask visitors before counting them (cookie banner)",
+  "site.settings.consentMessage": "Banner text",
+  "site.settings.consentMessageHint":
+    "Leave empty for the standard text. Its buttons are Accept all and Decline; Accept all also loads videos and maps.",
   "site.settings.formService": "Form service",
   "site.settings.formServiceHint": "Where contact forms send their messages.",
   "site.settings.formService.none": "None yet",

@@ -54,7 +54,7 @@ function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
 /**
  * `site` in a theme of its own (#423): square, large, outline buttons, strong shadows and links
  * underlined only on hover, with running text that has a link in it and a Button set to Filled on the
- * home page.
+ * home page; and Google Analytics with its consent banner (3.8).
  */
 function themed(site: SiteSnapshot): SiteSnapshot {
   const [home, ...rest] = site.pages;
@@ -91,6 +91,8 @@ function themed(site: SiteSnapshot): SiteSnapshot {
       shadow: "strong",
       links: { underline: "hover" },
     },
+    // Google Analytics behind its consent banner (3.8): consent.spec.ts opens it from disk.
+    analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
     pages: [
       { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
       ...rest,

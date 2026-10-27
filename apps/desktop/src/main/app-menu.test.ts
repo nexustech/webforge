@@ -8,16 +8,36 @@ describe("applicationMenu (F-ED-27)", () => {
     expect(applicationMenu("linux", false)).toBeNull();
   });
 
-  it("keeps a Mac's app, Edit and Window menus and full screen, without the zoom keys", () => {
+  it("keeps a Mac's app, Edit, View and Window menus, without the zoom keys", () => {
     const menu = applicationMenu("darwin", false);
 
     expect(menu).toEqual([
       { role: "appMenu" },
       { role: "editMenu" },
-      { label: "View", submenu: [{ role: "togglefullscreen" }] },
+      { label: "View", submenu: [] },
       { role: "windowMenu" },
     ]);
     expect(JSON.stringify(menu)).not.toMatch(/zoom|reload|viewMenu/i);
+  });
+
+  it("adds no full-screen item of its own: macOS adds Enter Full Screen to View itself (#525)", () => {
+    const run = vi.fn();
+    for (const menu of [
+      applicationMenu("darwin", false),
+      applicationMenu("darwin", true, {
+        menus: [
+          {
+            id: "view",
+            label: "View",
+            items: [{ id: "view.zoomIn", label: "Zoom In", enabled: true }],
+          },
+        ],
+        run,
+      }),
+    ]) {
+      expect(menu?.find((item) => item.label === "View")).toBeDefined();
+      expect(JSON.stringify(menu)).not.toMatch(/fullscreen/i);
+    }
   });
 
   it("reloads and opens the developer tools in development only", () => {
@@ -89,7 +109,6 @@ describe("applicationMenu (F-ED-27)", () => {
       accelerator: "CmdOrCtrl+Z",
       registerAccelerator: true,
     });
-    expect(submenu("View").at(-1)).toEqual({ role: "togglefullscreen" });
     submenu("File")[0]?.click?.({} as never, undefined, {} as never);
     expect(run).toHaveBeenCalledWith("site.settings");
   });
