@@ -141,6 +141,7 @@ export const shell = {
   "shortcuts.cancelDrag": "Cancel a drag",
   "shortcuts.bold": "Bold",
   "shortcuts.italic": "Italic",
+  "shortcuts.underline": "Underline",
   "shortcuts.newLine": "New line",
   "shortcuts.link": "Link",
   "shortcuts.splitText": "Split into two elements",

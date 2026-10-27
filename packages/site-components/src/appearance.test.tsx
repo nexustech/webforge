@@ -1,10 +1,17 @@
 import type { NodeDoc } from "@webforge/model";
+import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { APPEARANCE_FIELDS, appearanceBoxClasses, appearanceTextClasses } from "./appearance.js";
+import {
+  APPEARANCE_FIELDS,
+  APPEARANCE_FIELDS_WITHOUT_TEXT,
+  appearanceBoxClasses,
+  appearanceTextClasses,
+  whereOwnColour,
+} from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
-import { defineComponent } from "./define.js";
-import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { defineComponent, LOOK_TARGET } from "./define.js";
+import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 
 const render = (nodes: NodeDoc[]) => renderNodesToHtml(nodes, siteLibrary, EDITOR_RENDER_CONTEXT);
@@ -28,9 +35,13 @@ describe("the Appearance group (2.22, ST-1)", () => {
         ).toBe(false);
         continue;
       }
-      expect(names.slice(0, Object.keys(APPEARANCE_FIELDS).length), type).toEqual(
-        Object.keys(APPEARANCE_FIELDS),
+      // A section without a title of its own has no Text controls (2.22b).
+      const group = Object.keys(
+        def.place === "section" && !Object.hasOwn(def.fields, "lookSize")
+          ? APPEARANCE_FIELDS_WITHOUT_TEXT
+          : APPEARANCE_FIELDS,
       );
+      expect(names.slice(0, group.length), type).toEqual(group);
     }
   });
 
@@ -145,8 +156,112 @@ describe("the Appearance group (2.22, ST-1)", () => {
       const inside = html.replace(/^<section[^>]*>|<\/section>$/g, "");
       if (inside !== "" && !inside.includes("opacity-50!")) missed.push(type);
       expect(html.replace(/<section[^>]*>/, ""), type).not.toContain("underline!");
+      // The mark that says where never reaches a page, whichever element sets it.
+      expect(html, type).not.toContain(LOOK_TARGET);
     }
     expect(missed).toEqual([]);
+  });
+
+  it("styles a Button's button and an Icon's drawing, not the row that aligns them (2.22b)", () => {
+    const html = render([
+      {
+        type: "Button",
+        props: { id: "b", label: "Book", link: "about", lookBackground: "accent" },
+      },
+      { type: "Icon", props: { id: "i", icon: "star", lookOpacity: "50" } },
+    ]);
+    expect(html).toMatch(/<div class="site-button [^"!]*"><a class="btn [^"]* bg-accent!"/);
+    expect(html).toMatch(/<div class="site-icon [^"!]*"><svg[^>]* class="[^"]*opacity-50!"/);
+    // The mark that says where never reaches a page.
+    expect(html).not.toContain("data-wf-look");
+  });
+
+  it("finds the marked part among several children, at any depth", () => {
+    const card = defineComponent({
+      label: "Card",
+      fields: {},
+      defaults: {},
+      lookTarget: true,
+      render: () => (
+        <div>
+          <h3>One</h3>
+          <p>
+            <span>Two</span>
+            <b {...{ [LOOK_TARGET]: "" }}>Three</b>
+          </p>
+        </div>
+      ),
+    });
+    const html = renderToStaticMarkup(
+      <>
+        {card.render({
+          id: "c",
+          values: { lookShadow: "small" },
+          slots: {},
+          context: EDITOR_RENDER_CONTEXT,
+        })}
+      </>,
+    );
+    expect(html).toBe(
+      '<div><h3>One</h3><p><span>Two</span><b class="shadow-sm!">Three</b></p></div>',
+    );
+  });
+
+  it("finds the mark on the root itself, and in a list mapped from data (2.22b)", () => {
+    const draw = (render: () => ReactNode) =>
+      renderToStaticMarkup(
+        <>
+          {defineComponent({
+            label: "Card",
+            fields: {},
+            defaults: {},
+            lookTarget: true,
+            render,
+          }).render({
+            id: "c",
+            values: { lookShadow: "small" },
+            slots: {},
+            context: EDITOR_RENDER_CONTEXT,
+          })}
+        </>,
+      );
+    expect(draw(() => <div {...{ [LOOK_TARGET]: "" }}>One</div>)).toBe(
+      '<div class="shadow-sm!">One</div>',
+    );
+    expect(
+      draw(() => (
+        <ul>
+          {["a", "b"].map((name) => (
+            <li key={name} {...(name === "b" ? { [LOOK_TARGET]: "" } : {})}>
+              {name}
+            </li>
+          ))}
+        </ul>
+      )),
+    ).toBe('<ul><li>a</li><li class="shadow-sm!">b</li></ul>');
+  });
+
+  it("looks for a mark only in an element that says it has one", () => {
+    const html = renderToStaticMarkup(
+      <>
+        {defineComponent({
+          label: "Card",
+          fields: {},
+          defaults: {},
+          render: () => (
+            <div>
+              <b>One</b>
+            </div>
+          ),
+        }).render({
+          id: "c",
+          values: { lookShadow: "small" },
+          slots: {},
+          context: EDITOR_RENDER_CONTEXT,
+        })}
+      </>,
+    );
+    expect(html).toBe('<div class="shadow-sm!"><b>One</b></div>');
   });
 
   it("keeps an element's several children a list as they were, with no key warnings", () => {
@@ -182,6 +297,95 @@ describe("the Appearance group (2.22, ST-1)", () => {
       spy.mockRestore();
     }
     expect(errors).toEqual([]);
+  });
+
+  it("has Text controls on a section only if it draws a title in some layout (2.22b)", () => {
+    for (const type of placed("section")) {
+      const def = siteLibrary.components[type];
+      if (def === undefined) continue;
+      const layouts =
+        def.fields.variant?.kind === "select" ? def.fields.variant.options.map((o) => o.value) : [];
+      const titled = (layouts.length === 0 ? [undefined] : layouts).some((variant) => {
+        const props: NodeDoc["props"] = { ...def.defaults, id: "s", lookUnderline: true };
+        if (variant !== undefined) props.variant = variant;
+        return render([{ type, props }]).includes("underline!");
+      });
+      expect(Object.hasOwn(def.fields, "lookUnderline"), type).toBe(titled);
+    }
+  });
+
+  it("shows Border colour only while a border is drawn on some device (2.22b)", () => {
+    const hero = siteLibrary.components.Hero;
+    if (hero === undefined) throw new Error("No Hero");
+    expect(fieldsHiddenBy(hero, {}).has("lookBorderColor")).toBe(true);
+    expect(fieldsHiddenBy(hero, { lookBorder: "none" }).has("lookBorderColor")).toBe(true);
+    expect(fieldsHiddenBy(hero, { lookBorder: "thin" }).has("lookBorderColor")).toBe(false);
+    expect(
+      fieldsHiddenBy(hero, {
+        lookBorder: { $responsive: { desktop: "none", mobile: "thick" } },
+      }).has("lookBorderColor"),
+    ).toBe(false);
+  });
+
+  it("darkens a Button with a colour of its own when hovered, unless its hover row says otherwise (2.22b)", () => {
+    const button = (props: Readonly<Record<string, unknown>>) =>
+      render([{ type: "Button", props: { id: "b", label: "Book", link: "about", ...props } }]);
+    expect(button({})).not.toContain("hover:brightness-90");
+    expect(button({ lookBackground: "primary-300" })).toContain("hover:brightness-90");
+    expect(
+      button({ lookColor: { $responsive: { desktop: "theme", mobile: "accent" } } }),
+    ).toContain("hover:brightness-90");
+    expect(button({ lookBackground: "primary-300", hover: "lift" })).not.toContain(
+      "hover:brightness-90",
+    );
+  });
+
+  it("darkens a Button only on the devices its colour is set for (2.22b)", () => {
+    expect(
+      whereOwnColour(
+        { lookBackground: { $responsive: { desktop: "theme", mobile: "accent" } } },
+        " transition-[filter] hover:brightness-90",
+      ),
+    ).toBe(" max-md:transition-[filter] max-md:hover:brightness-90");
+    expect(whereOwnColour({ lookColor: "primary" }, " hover:brightness-90")).toBe(
+      " hover:brightness-90",
+    );
+    expect(whereOwnColour({ lookColor: "theme" }, " hover:brightness-90")).toBe("");
+  });
+
+  it("keeps an Outline Button with a colour of its own unfilled when hovered (2.22b)", () => {
+    const outline = (props: Readonly<Record<string, unknown>>) =>
+      render([
+        {
+          type: "Button",
+          props: { id: "b", label: "Book", link: "about", style: "outline", ...props },
+        },
+      ]);
+    expect(outline({})).not.toContain("--btn-bg");
+    for (const look of [{ lookColor: "primary" }, { lookBackground: "accent" }]) {
+      const html = outline(look);
+      expect(html).toContain("hover:[--btn-bg:#0000]!");
+      expect(html).toContain("hover:[--btn-fg:var(--btn-color)]!");
+      expect(html).toContain("hover:brightness-90");
+    }
+    // A filled button with a colour of its own only darkens.
+    expect(
+      render([
+        { type: "Button", props: { id: "b", label: "Book", link: "about", lookColor: "accent" } },
+      ]),
+    ).not.toContain("--btn-bg");
+  });
+
+  it("offers Underline when hovered only where there is text of its own (2.22b)", () => {
+    const options = (type: string) => {
+      const field = siteLibrary.components[type]?.fields.hover;
+      return field?.kind === "select" ? field.options.map((option) => option.value) : [];
+    };
+    expect(options("Button")).toContain("underline");
+    for (const type of ["Image", "Icon"]) {
+      expect(options(type), type).not.toContain("underline");
+      expect(options(type), type).toContain("darken");
+    }
   });
 
   it("refuses an element that declares one of its fields itself", () => {

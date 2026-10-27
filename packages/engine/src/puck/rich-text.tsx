@@ -1,10 +1,11 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
 import { Extension, type Extensions } from "@tiptap/core";
 import { t } from "@webforge/i18n";
-import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK } from "@webforge/model";
+import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK, type TextMarkRole } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEditorState } from "./editor-state.js";
 import { type PickLink, pickLinkInto } from "./text-keys.js";
+import { markRoles, type TextMarkName, ThemeColor, ThemeHighlight } from "./text-marks.js";
 
 /** Puck's rich-text field, with the options and menus it takes. */
 type RichtextField = Extract<Field, { type: "richtext" }>;
@@ -22,10 +23,11 @@ const ALLOWED_LINK = new RegExp(
 );
 
 /**
- * The formatting rich text allows (F-ED-3, C1): bold, italic, links, bullet and numbered lists
- * and alignment, in paragraphs. The editor's schema has nothing else, so text pasted from Word or a
- * web page keeps only that: headings become paragraphs, and fonts, colours, tables, images,
- * underline and the like are dropped. Puck always adds alignment itself.
+ * The formatting rich text allows (F-ED-3, C1, ST-3): bold, italic, underline, links, bullet and
+ * numbered lists and alignment, in paragraphs, and a highlight or text colour from the theme's roles
+ * (`text-marks.ts`). The editor's schema has nothing else, so text pasted from Word or a web page
+ * keeps only that: headings become paragraphs, and fonts, colours of their own, tables, images,
+ * strikethrough and the like are dropped. Puck always adds alignment itself.
  */
 export const RICH_TEXT_OPTIONS: NonNullable<RichtextField["options"]> = {
   blockquote: false,
@@ -34,7 +36,8 @@ export const RICH_TEXT_OPTIONS: NonNullable<RichtextField["options"]> = {
   heading: false,
   horizontalRule: false,
   strike: false,
-  underline: false,
+  // Mod+U (ST-3). Site Check's tip says underlined text can be taken for a link.
+  underline: {},
   link: {
     // A click in the editor places the caret; it doesn't follow the link.
     openOnClick: false,
@@ -67,9 +70,45 @@ function LinkControl({ editor, pick }: { editor: ToolbarProps["editor"]; pick: P
 }
 
 /**
+ * A theme role's colour for the selected text, as `name`'s mark (ST-3): None or one of the roles.
+ * A native select, so it reads and works as one from the keyboard and to assistive technology.
+ */
+function RoleSelect({ editor, name }: { editor: ToolbarProps["editor"]; name: TextMarkName }) {
+  const role = (editor?.getAttributes(name).role ?? "") as TextMarkRole | "";
+  const label = t(
+    name === "themeHighlight" ? "canvas.richText.highlight" : "canvas.richText.color",
+  );
+  return (
+    <select
+      aria-label={label}
+      title={label}
+      value={role}
+      disabled={editor === null}
+      onMouseDown={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        const next = event.currentTarget.value as TextMarkRole | "";
+        if (editor === null) return;
+        const chain = editor.chain().focus();
+        (next === "" ? chain.unsetMark(name) : chain.setMark(name, { role: next })).run();
+      }}
+    >
+      <option value="">
+        {t(`canvas.richText.${name === "themeHighlight" ? "highlight" : "color"}.none`)}
+      </option>
+      {markRoles(name).map((each) => (
+        <option key={each} value={each}>
+          {t(`canvas.richText.role.${each}`)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+/**
  * The format toolbar shown over rich text being edited on the canvas (F-ED-3), in the selected
- * element's quick-action bar: bold and italic, a link and its removal (when the app picks links,
- * `picker()`), the two lists, and left, centre and right alignment.
+ * element's quick-action bar: bold, italic and underline, a highlight and a text colour from the
+ * theme (ST-3), a link and its removal (when the app picks links, `picker()`), the two lists, and
+ * left, centre and right alignment.
  */
 export function createFormatToolbar(picker: () => PickLink | null) {
   return function FormatToolbar({ editor }: ToolbarProps) {
@@ -81,6 +120,11 @@ export function createFormatToolbar(picker: () => PickLink | null) {
         <RichTextMenu.Group>
           <RichTextMenu.Bold />
           <RichTextMenu.Italic />
+          <RichTextMenu.Underline />
+        </RichTextMenu.Group>
+        <RichTextMenu.Group>
+          <RoleSelect editor={editor} name="themeHighlight" />
+          <RoleSelect editor={editor} name="themeColor" />
         </RichTextMenu.Group>
         {pick === null ? null : (
           <RichTextMenu.Group>
@@ -144,6 +188,6 @@ export function richTextField(
     contentEditable: inline,
     options: RICH_TEXT_OPTIONS,
     renderInlineMenu: toolbar,
-    tiptap: { extensions: [editorName(label), ...extensions] },
+    tiptap: { extensions: [editorName(label), ThemeHighlight, ThemeColor, ...extensions] },
   };
 }

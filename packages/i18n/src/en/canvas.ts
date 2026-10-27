@@ -35,6 +35,15 @@ export const canvas = {
   // The rich-text toolbar's links (1.23, F-ED-3).
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",
+  // A highlight or a text colour from the theme's roles (2.25, ST-3), as the glossary names them.
+  "canvas.richText.highlight": "Highlight",
+  "canvas.richText.highlight.none": "No highlight",
+  "canvas.richText.color": "Text colour",
+  "canvas.richText.color.none": "Default colour",
+  "canvas.richText.role.brand": "Brand",
+  "canvas.richText.role.accent": "Accent",
+  "canvas.richText.role.text": "Text",
+  "canvas.richText.role.surface": "Surface",
   // Alt + Enter in rich text (F-ED-27): the element splits in two at the caret.
   "canvas.splitText.notHere":
     "Only the page's own text can be split. The shared Header and Footer, and shared sections, are shown on other pages too.",
