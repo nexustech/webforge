@@ -161,6 +161,25 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(showSettings).toHaveBeenCalledWith("site", "address");
   });
 
+  it("opens Site Settings at Forms for a form with no service; a Newsletter's address is its own (3.7)", async () => {
+    const site = siteWith({
+      content: [
+        { type: "ContactForm", props: { id: "write" } },
+        { type: "Newsletter", props: { id: "news" } },
+      ],
+    });
+    const { rule, showSettings } = setUp(site);
+    expect(rule("forms").textContent).toContain("2 forms have nowhere to send their messages");
+
+    // Only the Contact form's line has a Fix: the Newsletter's is to select it.
+    const [fix, ...others] = within(rule("forms")).getAllByRole("button", { name: "Fix" });
+    expect(others).toEqual([]);
+    if (fix === undefined) throw new Error("no Fix");
+    await userEvent.click(fix);
+
+    expect(showSettings).toHaveBeenCalledWith("site", "forms");
+  });
+
   it("jumps to a shared section's element in a page's copy of it (F-ED-23)", async () => {
     const HOURS = "shared-hours" as SharedSectionId;
     const site = siteWith({
