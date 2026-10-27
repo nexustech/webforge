@@ -8,7 +8,7 @@ import {
   entranceAttributes,
   entranceBehaviours,
   entranceClasses,
-  HOVER_FIELD,
+  HOVER_FIELDS,
   hoverClasses,
 } from "../motion.js";
 import { Picture } from "../picture.js";
@@ -35,7 +35,7 @@ const buyButton = defineComponent({
     image: { kind: "media", label: t("field.image") },
     link: { kind: "text", label: t("field.paymentLink"), help: t("field.paymentLink.help") },
     alignment: ALIGNMENT_FIELD,
-    hover: HOVER_FIELD,
+    ...HOVER_FIELDS,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
@@ -53,7 +53,7 @@ const buyButton = defineComponent({
     const placed = values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
     const hint = link === undefined ? context.elementHint?.("paymentLink") : undefined;
-    const button = `${BUTTON_CLASSES.primary}${hoverClasses(values.hover)}`;
+    const button = `${BUTTON_CLASSES.primary}${hoverClasses(values)}`;
     // What the link is for, after its text ("Buy now"): the price, and the image's alt text.
     const priceId = `${id}-price`;
     const imageId = `${id}-image`;

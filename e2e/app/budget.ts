@@ -22,22 +22,34 @@ export const OPEN_WAIT = 30_000;
 export const BACKGROUND_WAIT = 45_000;
 
 /**
- * The wall-clock backstop for opening a site: on CI, twice the product's 3 s, so a busy runner
- * doesn't trip it, while a wait added to the path (a timer, a lost event) does. Twice that again
- * locally, where other work shares the machine: openings took up to 5.3 s there under load.
+ * The wall-clock backstop for opening a site on CI, by platform: at least twice the slowest opening
+ * CI measured, and never under 6 s, twice the product's 3 s. A busy runner doesn't trip it, while
+ * a wait added to the path (a timer, a lost event) does. Windows' runners stall now and then with
+ * no more CPU spent: openings that cost 2–3 CPU-s took 6.6 and 7.8 s there (#526). See ADR 0014.
  */
-const OPEN_WALL_BACKSTOP_MS = process.env.CI === "true" ? 6_000 : 12_000;
+const CI_OPEN_WALL_BACKSTOP_MS: Readonly<Record<string, number>> = {
+  linux: 6_000,
+  win32: 16_000,
+  darwin: 6_000,
+};
+
+/**
+ * The backstop locally, where other work shares the machine: openings took up to 8.4 s there under
+ * load. At least CI's for the platform.
+ */
+const LOCAL_OPEN_WALL_BACKSTOP_MS = 12_000;
 
 /**
  * The CPU time opening a site may cost on CI's runners, across Webforge's processes, by platform:
- * about 30% over the most two CI runs measured (27 Oct 2026; runs 40408131521 and 40494487950).
- * Linux 1.75–3.31 CPU-s, Windows 1.64–2.85, macOS 1.36–3.26: GitHub's runners differ from run to
- * run, so one run's numbers aren't enough. See ADR 0014.
+ * about 30% over the most CI measured in every E2E job of 26 and 27 Oct 2026 (#526: 31 runs per
+ * platform, every attempt, about 300 openings each). Linux 1.34–3.34 CPU-s, Windows 1.64–4.16,
+ * macOS 1.15–3.51. A job's openings rise and fall together with the runner it gets: the costliest
+ * were all nine of one Windows job, whose re-run cost a quarter less. See ADR 0014.
  */
 const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
-  linux: 4.3,
-  win32: 3.7,
-  darwin: 4.3,
+  linux: 4.4,
+  win32: 5.4,
+  darwin: 4.6,
 };
 
 /**
@@ -71,14 +83,17 @@ export type Budget = {
  */
 export function openBudget(): Budget {
   const ci = CI_OPEN_CPU_SECONDS[process.platform];
-  if (ci === undefined) throw new Error(`No CPU budget for opening a site on ${process.platform}`);
+  const wallMs = CI_OPEN_WALL_BACKSTOP_MS[process.platform];
+  if (ci === undefined || wallMs === undefined) {
+    throw new Error(`No budget for opening a site on ${process.platform}`);
+  }
   if (process.env.CI === "true") {
-    return { cpuSeconds: ci, wallMs: OPEN_WALL_BACKSTOP_MS, source: `CI's on ${process.platform}` };
+    return { cpuSeconds: ci, wallMs, source: `CI's on ${process.platform}` };
   }
   const scale = localCpuScale();
   return {
     cpuSeconds: Math.round(ci * scale * 100) / 100,
-    wallMs: OPEN_WALL_BACKSTOP_MS,
+    wallMs: Math.max(LOCAL_OPEN_WALL_BACKSTOP_MS, wallMs),
     source: `local on ${process.platform}, CI's × ${scale}`,
   };
 }

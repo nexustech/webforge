@@ -89,6 +89,38 @@ export const ColouredOutlineHovered: Story = {
   },
 };
 
+/**
+ * A Button that lifts with a shadow when hovered, slowly and springily (2.28, ST-7), hovered. The
+ * screenshots are taken for a visitor who prefers less motion: the shadow shows, and it doesn't
+ * move. Storybook shows it lift.
+ */
+export const LiftedButtonHovered: Story = {
+  ...holding([
+    node("Button", {
+      label: "Book a table",
+      hover: "liftShadow",
+      hoverSpeed: "slow",
+      hoverEasing: "springy",
+    }),
+  ]),
+  play: async ({ canvasElement }) => {
+    await userEvent.hover(within(canvasElement).getByRole("link", { name: "Book a table" }));
+  },
+};
+
+/**
+ * Features whose cards tilt when hovered, at Medium speed (2.28, ST-7), the first one hovered. The
+ * screenshots, taken for a visitor who prefers less motion, show it still; Storybook shows it tilt.
+ */
+export const TiltedCardHovered: Story = {
+  args: { nodes: [node("Features", { variant: "cards", hover: "tilt", hoverSpeed: "medium" })] },
+  play: async ({ canvasElement }) => {
+    // Its title: the pointer over it is over the card.
+    const [title] = within(canvasElement).getAllByText("A good reason");
+    if (title !== undefined) await userEvent.hover(title);
+  },
+};
+
 /** Sections: a Hero, its title underlined in capitals. */
 export const Sections: Story = section("Hero");
 
