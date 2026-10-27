@@ -19,6 +19,8 @@ export const SITE_DESCRIPTION_MAX = 300;
 export const BUSINESS_NAME_MAX = 200;
 export const POSTAL_ADDRESS_MAX = 500;
 export const OPENING_HOURS_NOTE_MAX = 300;
+/** The consent banner's own text (3.8), in place of the standard one. */
+export const CONSENT_MESSAGE_MAX = 300;
 /** An X handle: up to 15 letters, digits and underscores, with or without its `@`. */
 export const X_HANDLE_MAX = 16;
 /** A GA4 Measurement ID: `G-` and 4 to 12 capitals or digits (B4). */
@@ -120,6 +122,11 @@ const publishDestinationSchema = z.discriminatedUnion("kind", [
  * Site Settings (X3, F-SET-1), grouped like the dialog's sections. Components can show these values
  * through bindings, so a phone number typed once appears everywhere.
  */
+/** A GA4 Measurement ID (B4): `G-` and 4 to 12 capitals or digits. */
+export const measurementIdSchema = z
+  .string()
+  .regex(new RegExp(`^G-[A-Z0-9]{4,${MEASUREMENT_ID_MAX - 2}}$`));
+
 export const siteSettingsSchema = z.strictObject({
   general: z.strictObject({
     name: z.string().min(1).max(SITE_NAME_MAX),
@@ -155,12 +162,11 @@ export const siteSettingsSchema = z.strictObject({
   search: z.strictObject({ allowIndexing: z.boolean(), includeSitemap: z.boolean() }),
   analytics: z.strictObject({
     /** GA4 Measurement ID (B4). */
-    measurementId: z
-      .string()
-      .regex(new RegExp(`^G-[A-Z0-9]{4,${MEASUREMENT_ID_MAX - 2}}$`))
-      .optional(),
+    measurementId: measurementIdSchema.optional(),
     /** The consent banner; on by default once analytics is on (B7). */
     consentBanner: z.boolean(),
+    /** The banner's own text, in place of the standard one (3.8); none for the standard text. */
+    consentMessage: text(CONSENT_MESSAGE_MAX),
   }),
   forms: z.strictObject({ service: formServiceSchema.optional() }),
   publish: z.strictObject({ destinations: z.array(publishDestinationSchema) }),
