@@ -13,6 +13,11 @@ export type PerfHooks = {
   loadPage(page: unknown): void;
   /** Adds `count` history steps, each toggling the first heading's size (a real props edit). */
   addSteps(count: number): void;
+  /**
+   * When the site last changed (`Date.now()`), or 0: where the preview's timing starts (3.2), as
+   * the edit lands, apart from the clicks and dialogs that made it.
+   */
+  lastChange(): number;
 };
 
 declare global {
@@ -35,7 +40,12 @@ export function createPerfHooks(session: EditorSession): PerfHooks {
     },
     session.library,
   );
+  let changed = 0;
+  session.history.document.subscribe(() => {
+    changed = Date.now();
+  });
   return {
+    lastChange: () => changed,
     loadPage(raw) {
       const page = pageDocSchema.parse(raw);
       const { pageId } = session.ui.getState();

@@ -37,6 +37,18 @@ const exportJobSchema = z.strictObject({
 /** What the main process asks the export worker to do. */
 export type ExportJob = z.infer<typeof exportJobSchema>;
 
+/**
+ * Builds the open site for the preview server (3.2), in memory: the snapshot, fonts and families
+ * as an export's, and nothing written anywhere. The preview worker keeps the files of its last
+ * build, to answer with only those that changed.
+ */
+const previewJobSchema = exportJobSchema
+  .omit({ type: true, destination: true, format: true, output: true })
+  .extend({ type: z.literal("preview") });
+
+/** Builds the open site for the preview server. */
+export type PreviewJob = z.infer<typeof previewJobSchema>;
+
 /** Compiles the site CSS for the canvas; a long-lived worker answers many of these (1.12). */
 const compileCssJobSchema = z.strictObject({
   type: z.literal("compile-css"),
@@ -128,6 +140,7 @@ export type ThumbnailJob = z.infer<typeof thumbnailJobSchema>;
 /** Any job the worker accepts. */
 export const workerJobSchema = z.discriminatedUnion("type", [
   exportJobSchema,
+  previewJobSchema,
   compileCssJobSchema,
   classCatalogueJobSchema,
   classCssJobSchema,
@@ -221,3 +234,33 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
 
 /** What the export worker reports back. */
 export type ExportOutcome = z.infer<typeof exportOutcomeSchema>;
+
+/** A built file's path, as the build names them: `about.html`, `assets/css/site.css`. */
+const builtPathSchema = z
+  .string()
+  .min(1)
+  .max(1024)
+  .regex(/^(?!\/)(?!.*(?:^|\/)\.\.?(?:\/|$))[^\\\0]+$/);
+
+/** At most this many files in one preview: well above any site Webforge makes. */
+const MAX_PREVIEW_FILES = 50_000;
+
+/**
+ * The preview worker's answer to a {@link PreviewJob} (3.2): the files that changed since its last
+ * build and those gone, or every file (`full`) when it has none from before. A failure carries only
+ * a code, as an export's does.
+ */
+export const previewOutcomeSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("previewed"),
+    full: z.boolean(),
+    changed: z
+      .array(z.strictObject({ path: builtPathSchema, data: bytesSchema }))
+      .max(MAX_PREVIEW_FILES),
+    removed: z.array(builtPathSchema).max(MAX_PREVIEW_FILES),
+  }),
+  z.strictObject({ type: z.literal("preview-failed"), detail: z.string().max(200) }),
+]);
+
+/** The preview worker's answer to a {@link PreviewJob}. */
+export type PreviewOutcome = z.infer<typeof previewOutcomeSchema>;
