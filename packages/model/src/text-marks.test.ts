@@ -15,9 +15,11 @@ describe("text marks (2.25, ST-3)", () => {
     expect(hasUnderlinedNonLink("<p><u> </u></p>")).toBe(false);
   });
 
-  it("names a class for every role, highlight and colour alike, each once", () => {
-    expect(TEXT_MARK_CLASSES).toHaveLength(8);
-    expect(new Set(TEXT_MARK_CLASSES).size).toBe(8);
+  it("names a class for every highlight and every colour but Surface, each once", () => {
+    // Surface text would be the page's own background: a highlight only.
+    expect(TEXT_MARK_CLASSES).toHaveLength(7);
+    expect(new Set(TEXT_MARK_CLASSES).size).toBe(7);
+    expect(TEXT_MARK_CLASSES).not.toContain("text-base-100");
   });
 
   it("finds underlined text on pages, in the Header and Footer and in slots, as Site Check's tip", () => {

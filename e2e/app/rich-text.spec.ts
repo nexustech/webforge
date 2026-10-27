@@ -130,8 +130,12 @@ test("underlines with Mod+U and colours text from the theme only, as the text's 
   const highlight = toolbar.getByRole("combobox", { name: "Highlight" });
   const options = await highlight.locator("option").allTextContents();
   expect(options).toEqual(["No highlight", "Brand", "Accent", "Text", "Surface"]);
+  // No Surface text: the page's own background would hide it.
+  const color = toolbar.getByRole("combobox", { name: "Text colour" });
+  const colors = await color.locator("option").allTextContents();
+  expect(colors).toEqual(["Default colour", "Brand", "Accent", "Text"]);
   await highlight.selectOption({ label: "Accent" });
-  await toolbar.getByRole("combobox", { name: "Text colour" }).selectOption({ label: "Brand" });
+  await color.selectOption({ label: "Brand" });
 
   const marked = editor().locator('span[class="bg-accent/30"]');
   await expect(marked).toHaveText(STARTER_TEXT);

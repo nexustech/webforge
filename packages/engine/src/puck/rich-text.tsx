@@ -1,16 +1,11 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
 import { Extension, type Extensions } from "@tiptap/core";
 import { t } from "@webforge/i18n";
-import {
-  RICH_TEXT_FILE_LINK,
-  RICH_TEXT_PAGE_LINK,
-  TEXT_MARK_ROLES,
-  type TextMarkRole,
-} from "@webforge/model";
+import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK, type TextMarkRole } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEditorState } from "./editor-state.js";
 import { type PickLink, pickLinkInto } from "./text-keys.js";
-import { type TextMarkName, ThemeColor, ThemeHighlight } from "./text-marks.js";
+import { markRoles, type TextMarkName, ThemeColor, ThemeHighlight } from "./text-marks.js";
 
 /** Puck's rich-text field, with the options and menus it takes. */
 type RichtextField = Extract<Field, { type: "richtext" }>;
@@ -100,7 +95,7 @@ function RoleSelect({ editor, name }: { editor: ToolbarProps["editor"]; name: Te
       <option value="">
         {t(`canvas.richText.${name === "themeHighlight" ? "highlight" : "color"}.none`)}
       </option>
-      {TEXT_MARK_ROLES.map((each) => (
+      {markRoles(name).map((each) => (
         <option key={each} value={each}>
           {t(`canvas.richText.role.${each}`)}
         </option>

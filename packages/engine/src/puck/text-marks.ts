@@ -11,16 +11,22 @@ export type TextMarkName = "themeHighlight" | "themeColor";
 
 /** The class each role writes, for each mark. */
 const TEXT_MARK_CLASSES_BY_NAME: Readonly<
-  Record<TextMarkName, Readonly<Record<TextMarkRole, string>>>
+  Record<TextMarkName, Readonly<Partial<Record<TextMarkRole, string>>>>
 > = {
   themeHighlight: HIGHLIGHT_CLASSES,
   themeColor: TEXT_COLOR_CLASSES,
 };
 
+/** The roles `name`'s mark offers, in the menu's order: a text colour has no Surface. */
+export function markRoles(name: TextMarkName): readonly TextMarkRole[] {
+  const classes = TEXT_MARK_CLASSES_BY_NAME[name];
+  return TEXT_MARK_ROLES.filter((role) => classes[role] !== undefined);
+}
+
 /** The role whose class `className` is, for `name`'s mark: a span with exactly that class. */
 function roleOf(name: TextMarkName, className: string | null): TextMarkRole | undefined {
-  const classes = TEXT_MARK_CLASSES_BY_NAME[name];
-  return TEXT_MARK_ROLES.find((role) => classes[role] === className?.trim());
+  const wanted = className?.trim();
+  return markRoles(name).find((role) => TEXT_MARK_CLASSES_BY_NAME[name][role] === wanted);
 }
 
 /**

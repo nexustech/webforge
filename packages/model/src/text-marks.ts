@@ -23,18 +23,20 @@ export const HIGHLIGHT_CLASSES: Readonly<Record<TextMarkRole, string>> = {
   surface: "bg-base-200",
 };
 
-/** A text colour's class for each role. */
-export const TEXT_COLOR_CLASSES: Readonly<Record<TextMarkRole, string>> = {
+/**
+ * A text colour's class for each role it offers: not Surface, the page's own background, which
+ * would hide the text in a section on it.
+ */
+export const TEXT_COLOR_CLASSES: Readonly<Partial<Record<TextMarkRole, string>>> = {
   brand: "text-primary",
   accent: "text-accent",
   text: "text-base-content",
-  surface: "text-base-100",
 };
 
 /** Every class a text mark's `span` may carry: what the sanitiser keeps, and nothing else. */
 export const TEXT_MARK_CLASSES: readonly string[] = [
   ...Object.values(HIGHLIGHT_CLASSES),
-  ...Object.values(TEXT_COLOR_CLASSES),
+  ...Object.values(TEXT_COLOR_CLASSES).filter((name) => name !== undefined),
 ];
 
 /** Where underlined text that isn't a link is: the page (or the Header, Footer or a shared section) and its element. */

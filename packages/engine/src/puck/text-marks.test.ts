@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { Editor, Node } from "@tiptap/core";
 import { afterEach, describe, expect, it } from "vitest";
-import { ThemeColor, ThemeHighlight } from "./text-marks.js";
+import { markRoles, ThemeColor, ThemeHighlight } from "./text-marks.js";
 
 // The smallest schema rich text has: paragraphs of text, and the two marks under test.
 const Doc = Node.create({ name: "doc", topNode: true, content: "block+" });
@@ -53,5 +53,16 @@ describe("text marks (2.25, ST-3)", () => {
     expect(editor.getHTML()).toBe(
       '<p><span class="bg-primary/20">Ours</span> <span class="text-base-content">too</span> Word web</p>',
     );
+  });
+
+  it("offers Surface as a highlight only: as a text colour it would hide the text on the page", () => {
+    expect(markRoles("themeHighlight")).toEqual(["brand", "accent", "text", "surface"]);
+    expect(markRoles("themeColor")).toEqual(["brand", "accent", "text"]);
+    const editor = editorWith(
+      '<p><span class="bg-base-200">Soft</span> <span class="text-base-100">gone</span> ' +
+        '<span class="">empty</span></p>',
+    );
+
+    expect(editor.getHTML()).toBe('<p><span class="bg-base-200">Soft</span> gone empty</p>');
   });
 });
