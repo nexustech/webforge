@@ -167,6 +167,22 @@ export function fieldsHiddenBy(
   return hidden;
 }
 
+/**
+ * `values`, an element of kind `type`'s own, over the theme's look for its kind (3.12, CT-1): each
+ * field it doesn't set itself takes the look's value; one it sets, even to the theme's (`default`),
+ * keeps it. The same values on the canvas and in the export, so both draw an item alike.
+ */
+export function withLook<Values extends Readonly<Record<string, unknown>>>(
+  values: Values,
+  type: string,
+  looks: RenderContext["looks"],
+): Values {
+  const look = looks?.[type];
+  if (look === undefined) return values;
+  const own = Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined));
+  return { ...look, ...own } as Values;
+}
+
 /** The components available on the canvas and in exported sites, by component type. */
 export type ComponentLibrary = {
   readonly components: Readonly<Record<string, ComponentDef>>;

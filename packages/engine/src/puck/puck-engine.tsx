@@ -411,6 +411,13 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
     setViewOptions: frame.setViewOptions,
 
+    setLooks(looks) {
+      // A theme change that leaves its looks as they were draws nothing again.
+      if (parts.looks === looks) return;
+      const { looks: _previous, ...rest } = parts;
+      changeContext({ parts: { ...rest, ...(looks === undefined ? {} : { looks }) } });
+    },
+
     setPreviews(previews) {
       // Drawing the page again is only worth it when what it previews changes.
       if (samePreviews(parts.previews ?? {}, previews)) return;

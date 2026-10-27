@@ -330,6 +330,7 @@ export function Editor({
     const site = history.document.getState();
     // Before mounting, so the canvas is drawn with them once, not drawn again for them.
     engine.setPreviews(canvasPreviews(editPreviews.getState(), session.ui.getState().viewport));
+    engine.setLooks(site.theme.looks);
     engine.mount(element, {
       library: session.library,
       theme: site.theme,
@@ -393,6 +394,14 @@ export function Editor({
     editPreviews,
     host,
   ]);
+
+  // Each kind's look from the theme (3.12, CT-1): the canvas draws again only when they change.
+  useEffect(() => {
+    if (engine === null) return;
+    const show = () => engine.setLooks(history.document.getState().theme.looks);
+    show();
+    return history.document.subscribe(show);
+  }, [engine, history]);
 
   // The View menu's options (F-ED-25): view state, never an undo step (U6).
   useEffect(() => {

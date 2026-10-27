@@ -466,6 +466,8 @@ export async function* buildEvents(
       ...(site.formService === undefined ? {} : { formService: site.formService }),
       // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
       rawCustomCode: true,
+      // Each kind's look from the theme (3.12, CT-1), under what an element sets itself.
+      ...(site.theme.looks === undefined ? {} : { looks: site.theme.looks }),
       // A form with nowhere to send draws without an action (2.8), and the report says so (3.7).
       formHint: (reason) => {
         found.push({ code: "form-unset", page: page.path, detail: reason });
