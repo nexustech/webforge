@@ -37,6 +37,18 @@ export async function canvasAxe(page: Page): Promise<CanvasAxeResults> {
   const element = await page.locator(".editor__canvas iframe").elementHandle();
   const frame = await element?.contentFrame();
   if (frame === null || frame === undefined) throw new Error("No canvas frame");
+  // Once its transitions have finished: a colour part-way through one (the theme's arriving on a
+  // link, a button) is neither the old one nor the new. Endless animations are left running.
+  await frame.evaluate(async () => {
+    const settling = document
+      .getAnimations()
+      .filter((animation) => animation.effect?.getTiming().iterations !== Number.POSITIVE_INFINITY)
+      .map((animation) => animation.finished.catch(() => undefined));
+    await Promise.race([
+      Promise.all(settling),
+      new Promise((resolve) => setTimeout(resolve, 3_000)),
+    ]);
+  });
   await frame.evaluate(AXE_SOURCE);
   return frame.evaluate(
     async (tags) => {

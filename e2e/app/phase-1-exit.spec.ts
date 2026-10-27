@@ -118,18 +118,15 @@ test("a five-page site built from blank comes back as it was, page by page", asy
     await left().getByRole("tab", { name: tab }).click();
     await left().getByRole("button", { name, exact: true }).click();
   };
-  /** Selects the first Section of the page shown, by its bottom padding. */
+  /**
+   * Selects the first Section of the page shown, from its row in Layers. A click into its padding on
+   * the canvas missed it on CI's Linux runner, where Desktop is zoomed out on the narrow canvas
+   * (PH2-18), and this walkthrough is about building the site, not about where clicks land.
+   */
   const selectSection = async () => {
+    await showTab(left, "Layers");
+    await row("Section").first().click();
     await showTab(right, "Edit");
-    const section = canvas().locator(".site-section").first();
-    // A click's position is added to the element's box in the window's pixels, which the canvas's
-    // zoom scales (Desktop zooms out on a narrow canvas, PH2-18): 8 of the frame's pixels inside the
-    // bottom padding (64 px), at any zoom.
-    const box = await section.boundingBox();
-    if (box === null) throw new Error("Section not visible");
-    const height = await section.evaluate((element) => element.getBoundingClientRect().height);
-    const scale = box.height / height;
-    await section.click({ force: true, position: { x: 10 * scale, y: box.height - 8 * scale } });
     await expect(right().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
   };
   /** Adds a page named `name` from the Site panel; the canvas then shows it. */
