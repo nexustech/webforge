@@ -22,6 +22,17 @@ describe("perf hooks", () => {
     expect(() => hooks.loadPage({ content: "not a page" })).toThrow();
   });
 
+  it("knows when the site last changed, where the preview's timing starts (3.2)", () => {
+    const session = newSession();
+    const hooks = createPerfHooks(session);
+    expect(hooks.lastChange()).toBe(0);
+
+    const before = Date.now();
+    hooks.addSteps(1);
+
+    expect(hooks.lastChange()).toBeGreaterThanOrEqual(before);
+  });
+
   it("adds undoable steps that toggle the first heading's size, labelled like real edits", () => {
     const session = newSession();
     const hooks = createPerfHooks(session);

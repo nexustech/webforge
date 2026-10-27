@@ -7,6 +7,7 @@ import { clipboardApi } from "./api/clipboard.js";
 import { fontsApi } from "./api/fonts.js";
 import { mediaApi, type PathOfFile } from "./api/media.js";
 import { prefsApi } from "./api/prefs.js";
+import { previewApi } from "./api/preview.js";
 import { projectApi } from "./api/project.js";
 import { siteApi } from "./api/site.js";
 import { templatesApi } from "./api/templates.js";
@@ -37,5 +38,6 @@ export function createWebforgeApi(
     site: siteApi(call, subscribe),
     templates: templatesApi(call),
     themes: themesApi(call),
+    preview: previewApi(call),
   };
 }

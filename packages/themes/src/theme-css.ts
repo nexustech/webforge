@@ -1,5 +1,6 @@
 import {
   COLOR_ROLES,
+  DEFAULT_THEME,
   type FontRef,
   HIDDEN_ATTRIBUTE,
   INVERSE_THEME,
@@ -419,5 +420,108 @@ export function themeCss(tokens: ThemeTokens): string {
     "}",
     ...buttonRules(tokens),
     ...styleRules(tokens),
+  ].join("\n");
+}
+
+/**
+ * A theme's shape (3.2): everything {@link themeCss} needs Tailwind and daisyUI for, with its
+ * values (colours, corners, border, depth and noise, spacing, type scale, links, button height)
+ * set to the default theme's. Two themes of one shape compile to the same stylesheet; the values
+ * that set them apart are custom properties, which {@link themeValuesCss} declares as plain CSS.
+ * Its preset, fonts, shadow, buttons' shape and style, headings, cards, photos and sections'
+ * rhythm stay its own: they change the rules, or the fonts the stylesheet loads.
+ */
+export function themeShape(tokens: ThemeTokens): ThemeTokens {
+  const {
+    colors,
+    scheme,
+    radius,
+    border,
+    effects,
+    spacing,
+    typeScale,
+    links,
+    buttons: { size },
+  } = DEFAULT_THEME;
+  return {
+    ...tokens,
+    colors,
+    inverse: inverseColors(DEFAULT_THEME),
+    scheme,
+    radius,
+    border,
+    effects,
+    spacing,
+    typeScale,
+    links,
+    buttons: { ...tokens.buttons, size },
+  };
+}
+
+/** The custom properties one daisyUI theme of `tokens` declares, with `colors` and `scheme`. */
+function daisyValues(
+  tokens: ThemeTokens,
+  colors: ThemeTokens["colors"],
+  scheme: ThemeTokens["scheme"],
+): string[] {
+  return [
+    `  color-scheme: ${scheme};`,
+    ...COLOR_ROLES.map((role) => `  --color-${role}: ${oklchCss(colors[role])};`),
+    `  --radius-selector: ${RADIUS[tokens.radius.selector]};`,
+    `  --radius-field: ${RADIUS[tokens.radius.field]};`,
+    `  --radius-box: ${RADIUS[tokens.radius.box]};`,
+    `  --border: ${tokens.border === "thick" ? "2px" : "1px"};`,
+    `  --depth: ${tokens.effects.depth ? 1 : 0};`,
+    `  --noise: ${tokens.effects.noise ? 1 : 0};`,
+  ];
+}
+
+/**
+ * The line a preview's stylesheet starts its theme's values with ({@link themeValuesCss}): the
+ * preview server sends what follows it alone when nothing before it changed (3.2).
+ */
+export const THEME_VALUES_MARKER = "/* The theme's values (Webforge preview) */";
+
+/**
+ * The values of `tokens` that its shape ({@link themeShape}) leaves to custom properties, as plain
+ * CSS to follow the shape's compiled stylesheet (3.2): the page's theme, then the inverse one, each
+ * under its own selectors, so a change of colour or scale needs no new compile. Outside any layer,
+ * after the stylesheet, so it wins over the shape's own values (daisyUI's themes and Tailwind's
+ * `@theme` are in layers).
+ */
+export function themeValuesCss(tokens: ThemeTokens): string {
+  const inverse = inverseColors(tokens);
+  const linkColor = tokens.links.underline === "always" ? "currentColor" : "var(--color-primary)";
+  const h1 = TEXT_SIZES.indexOf(tokens.typeScale.h1.size);
+  const phoneStep = Math.min(Math.max(h1 - 1, 0), TEXT_SIZES.indexOf(PHONE_H1_MAX));
+  const phoneH1 = TEXT_SIZE[TEXT_SIZES[phoneStep] ?? tokens.typeScale.h1.size];
+  return [
+    THEME_VALUES_MARKER,
+    `:root, [data-theme="${tokens.preset}"] {`,
+    ...daisyValues(tokens, tokens.colors, tokens.scheme),
+    `  --spacing: ${SPACING_UNIT[tokens.spacing]};`,
+    ...TEXT_STYLES.flatMap((style) => {
+      const step = tokens.typeScale[style];
+      return [
+        `  --text-${style}: ${TEXT_SIZE[step.size]};`,
+        `  --text-${style}--line-height: ${LEADING[step.leading]};`,
+        `  --text-${style}--font-weight: ${step.weight};`,
+      ];
+    }),
+    `  --wf-link-decoration: ${tokens.links.underline === "always" ? "underline" : "none"};`,
+    `  --wf-link-color: ${linkColor};`,
+    `  --wf-button-height: ${BUTTON_HEIGHT[tokens.buttons.size]};`,
+    ...roleShades(tokens.colors),
+    "}",
+    `@media (width < ${PHONE_WIDTH}) {`,
+    "  :root {",
+    `    --text-h1: ${phoneH1};`,
+    "  }",
+    "}",
+    `[data-theme="${INVERSE_THEME}"] {`,
+    ...daisyValues(tokens, inverse, schemeOf(inverse)),
+    `  --wf-link-color: ${linkColor};`,
+    ...roleShades(inverse),
+    "}",
   ].join("\n");
 }

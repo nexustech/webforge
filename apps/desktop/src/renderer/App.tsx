@@ -4,6 +4,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { AiApi } from "../shared/ipc/ai.js";
+import type { PreviewApi } from "../shared/ipc/preview.js";
 import type { ExportChoices } from "../shared/ipc/site.js";
 import type {
   AppInfo,
@@ -82,6 +83,8 @@ export type AppProps = {
   readonly setSpellCheckLanguage?: (language: string) => Promise<null>;
   /** Answers AI apps' requests (F-AI-1); injectable for tests. Defaults to the preload API. */
   readonly answerAi?: AiApi["onRequest"];
+  /** The preview server (3.2); injectable for tests. Defaults to the preload API. */
+  readonly preview?: PreviewApi;
 };
 
 const exportWithPreload: ExportSite = async (request, onProgress) => {
@@ -103,6 +106,14 @@ const saveUiStateWithPreload = (change: SiteUiChange) =>
 const spellCheckWithPreload = (language: string) =>
   window.webforge.app.setSpellCheckLanguage(language);
 const answerAiWithPreload: AiApi["onRequest"] = (answer) => window.webforge.ai.onRequest(answer);
+// Looked up as each call is made: tests and stories without a preload never call it.
+const previewWithPreload: PreviewApi = {
+  open: (site, page) => window.webforge.preview.open(site, page),
+  update: (site) => window.webforge.preview.update(site),
+  show: (page) => window.webforge.preview.show(page),
+  phone: (site, page) => window.webforge.preview.phone(site, page),
+  stopPhone: () => window.webforge.preview.stopPhone(),
+};
 
 /** The perf check's hooks (ADR 0007), loaded only in perf builds. */
 const installPerf = (session: EditorSession) => {
@@ -126,6 +137,7 @@ export function App({
   saveUiState = saveUiStateWithPreload,
   setSpellCheckLanguage = spellCheckWithPreload,
   answerAi = answerAiWithPreload,
+  preview = previewWithPreload,
 }: AppProps) {
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
@@ -198,6 +210,7 @@ export function App({
     setExportChoices: (choices) => exportSiteRef.current.setExportChoices(choices),
     openExport: () => exportSiteRef.current.openExport(),
     answerAi,
+    preview,
     siteCheckIgnored: {
       initial: uiState?.siteCheckIgnored ?? [],
       save: (ignored) => {

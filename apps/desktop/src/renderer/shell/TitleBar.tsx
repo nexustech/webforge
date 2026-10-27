@@ -17,6 +17,7 @@ import { CommandButton } from "./CommandButton.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { syncNativeMenus } from "./native-menus.js";
+import { PhonePreviewCue } from "./PhonePreviewCue.js";
 
 /** Props of {@link TitleBar}. */
 export type TitleBarProps = {
@@ -91,6 +92,7 @@ export function TitleBar({ siteName, saveStatus, undoSteps, tools, menuBar }: Ti
         className={`flex items-center gap-0.5 ${NO_DRAG}`}
       >
         {tools}
+        <PhonePreviewCue />
         <CommandButton
           commandId={COMMAND_IDS.preview}
           icon={<EyeIcon className="text-info" />}
