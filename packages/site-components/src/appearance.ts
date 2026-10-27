@@ -5,7 +5,7 @@ import {
   type Responsive,
   resolveResponsive,
 } from "@webforge/model";
-import { colorClass } from "./library.js";
+import { colorClass, onAnyDevice } from "./library.js";
 import type { FieldDef } from "./schema.js";
 
 /**
@@ -335,6 +335,10 @@ const ownColourOn = (values: AppearanceValues, device: Breakpoint) =>
  * (marked to win) now outrank; device by device, as the colour's own classes are.
  */
 export function whereOwnColour(values: AppearanceValues, classes: string): string {
+  // Most items have neither, on any device.
+  if (!onAnyDevice(values.lookColor, ownColour) && !onAnyDevice(values.lookBackground, ownColour)) {
+    return "";
+  }
   const own = Object.fromEntries(DEVICES.map((device) => [device, ownColourOn(values, device)]));
   const drawn = perDevice({ $responsive: own }, when(classes.trim()));
   return drawn === "" ? "" : ` ${drawn}`;
