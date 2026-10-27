@@ -1,6 +1,6 @@
 # Styling one component in depth, and CSS in Advanced mode
 
-**Status:** ✅ Decided (CT-1…CT-9, product owner, 27 Oct 2026): CT-1…CT-5 and CT-7 join the MVP as three Phase 3 items on stream A after 3.11 (3.12 [#528](https://github.com/nexustech/webforge/issues/528), 3.13 [#529](https://github.com/nexustech/webforge/issues/529), 3.14 [#530](https://github.com/nexustech/webforge/issues/530); +12.5 days), CT-8 is v1.1, CT-6 is not adopted and CT-9 stays Later. The product owner's question: a way to click a component, see how it is styled, change specific parts of it (the layout of its icon and heading, its border, a gradient on its background, its padding), choose whether the change applies to this one or to every component of its kind, in a view or dialog with a preview, and understand how all of that relates to the theme's variables. And for Advanced mode: show the generated CSS and let people edit stylesheets by hand. This note sets those wishes against what [product/08](08-component-styling.md) decided (ST-1…8) and what has merged since, and proposes nine things, decided the same day (§4).
+**Status:** ✅ Decided (CT-1…CT-9, product owner, 27 Oct 2026): CT-1…CT-5 and CT-7 join the MVP as three Phase 3 items, 3.12 on stream B after 3.7 and 3.13 and 3.14 on stream A after 3.11 (3.12 [#528](https://github.com/nexustech/webforge/issues/528), 3.13 [#529](https://github.com/nexustech/webforge/issues/529), 3.14 [#530](https://github.com/nexustech/webforge/issues/530); +12.5 days), CT-8 is v1.1, CT-6 is not adopted and CT-9 stays Later. The product owner's question: a way to click a component, see how it is styled, change specific parts of it (the layout of its icon and heading, its border, a gradient on its background, its padding), choose whether the change applies to this one or to every component of its kind, in a view or dialog with a preview, and understand how all of that relates to the theme's variables. And for Advanced mode: show the generated CSS and let people edit stylesheets by hand. This note sets those wishes against what [product/08](08-component-styling.md) decided (ST-1…8) and what has merged since, and proposes nine things, decided the same day (§4).
 
 **Goal:** deeper styling of one section or element than the Appearance group gives, for the people who want it, without giving Simple mode a CSS inspector; and in Advanced mode, the CSS as a thing you can read and, in its own stylesheet, write.
 
@@ -49,7 +49,7 @@ What the product owner's wishes find missing:
 
 ### 3.3 Cost and place
 
-CT-1 to CT-5 and CT-7 come to **12.5 days**, as three Phase 3 items on stream A after 3.11, in this order so each builds on the last:
+CT-1 to CT-5 and CT-7 come to **12.5 days**, as three Phase 3 items, in this order so each builds on the last (3.12 on stream B after 3.7, 3.13 and 3.14 on stream A after 3.11, 3.13 once 3.12 has merged):
 1. **3.12 Component looks and provenance** (CT-1, CT-3): 4 days, [#528](https://github.com/nexustech/webforge/issues/528).
 2. **3.13 *Style this component…*** (CT-2 with CT-4 and CT-5): 6.5 days, [#529](https://github.com/nexustech/webforge/issues/529).
 3. **3.14 The CSS view** (CT-7): 2 days, [#530](https://github.com/nexustech/webforge/issues/530).
@@ -70,7 +70,7 @@ CT-8 is a v1.1 item of about 3 days; it needs CT-7's selectors and 2.18's class 
 | CT-8 | ✅ **v1.1:** the stylesheet editor for `custom.css`, with *Target this element* and *Move this look to CSS* (spec/02 §5) |
 | CT-9 | ✅ **Later**, as decided on 24 Oct 2026: no per-element CSS |
 
-The three items follow 3.11 on stream A (product owner, 27 Oct 2026): +12.5 days, Phase 3 from 37.5 to 50 days.
+3.12 goes to stream B after 3.7 and 3.13 and 3.14 to stream A after 3.11 (product owner, 27 Oct 2026, levelling the streams): +12.5 days, Phase 3 from 37.5 to 50 days.
 
 ## 5. Sources
 
