@@ -1,6 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type SiteDoc, siteToSnapshot } from "@webforge/model";
+import { DEFAULT_EXPORT_CHOICES, type SiteDoc, siteToSnapshot } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
@@ -101,6 +101,8 @@ export type ExportFlow = {
   readonly cancel: () => Promise<null>;
   /** What the person chose for this site's last export. */
   readonly choices: () => Promise<ExportChoices>;
+  /** Remembers the person's choices with the site at once. */
+  readonly saveChoices: (choices: ExportChoices) => Promise<null>;
   readonly dialogs: ExportDialogs;
   /** Opens Settings on one section; `true` if the person saved (Site Settings' web address). */
   readonly showSettings: (part: string, group: string) => Promise<boolean>;
@@ -130,6 +132,12 @@ async function exportWithProgress(
     },
   };
   const progress = toast.loading(t("export.working"), { action: cancelButton });
+  // Simple mode doesn't offer developer files, so it writes none, while the site keeps Advanced
+  // mode's choice (T2).
+  const output = {
+    minify: choices.minify,
+    developerFiles: flow.advanced() && choices.developerFiles,
+  };
   const show = (reached: ExportProgress) => {
     if (quiet) return;
     toast.loading(t("export.working"), {
@@ -139,7 +147,8 @@ async function exportWithProgress(
     });
   };
   try {
-    const result = await flow.exportSite(exportRequestFor(site, flow.library, choices), show);
+    const request = exportRequestFor(site, flow.library, choices, output);
+    const result = await flow.exportSite(request, show);
     return { result, progress };
   } catch (error) {
     reportFailure("export", error);
@@ -161,15 +170,24 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
   const run = async () => {
     registry.update(EXPORT_COMMAND_ID, { enabled: false });
     try {
-      const last = await flow.choices();
-      let askWebAddress = last.askWebAddress;
-      if (askWebAddress && !hasWebAddress(flow.site())) {
+      // A site whose choices can't be read exports from the defaults.
+      let last = await flow.choices().catch((error: unknown) => {
+        reportFailure("export.choices", error);
+        return DEFAULT_EXPORT_CHOICES;
+      });
+      if (last.askWebAddress && !hasWebAddress(flow.site())) {
         const answer = await flow.dialogs.askWebAddress();
         if (answer === "cancel") return;
-        if (answer === "skip-always") askWebAddress = false;
+        if (answer === "skip-always") {
+          // Remembered now: it holds even if the export that follows is cancelled.
+          last = { ...last, askWebAddress: false };
+          await flow.saveChoices(last).catch((error: unknown) => {
+            reportFailure("export.choices", error);
+          });
+        }
         if (answer === "add" && !(await flow.showSettings("site", "address"))) return;
       }
-      const chosen = await flow.dialogs.chooseOptions({ ...last, askWebAddress }, flow.advanced());
+      const chosen = await flow.dialogs.chooseOptions(last, flow.advanced());
       if (chosen === undefined) return;
       // As it is now: Site Settings may have just been saved.
       const site = flow.site();

@@ -67,8 +67,10 @@ export type AppProps = {
   readonly cancelExport?: () => Promise<null>;
   /** The open site's last export choices; injectable for tests. Defaults to the preload API. */
   readonly exportChoices?: () => Promise<ExportChoices>;
+  /** Remembers the export choices; injectable for tests. Defaults to the preload API. */
+  readonly setExportChoices?: (choices: ExportChoices) => Promise<null>;
   /** Opens the last export from disk; injectable for tests. Defaults to the preload API. */
-  readonly openExport?: () => Promise<"opened" | "none">;
+  readonly openExport?: () => Promise<"opened" | "none" | "missing">;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
@@ -91,6 +93,8 @@ const exportWithPreload: ExportSite = async (request, onProgress) => {
 };
 const cancelExportWithPreload = () => window.webforge.site.cancelExport();
 const exportChoicesWithPreload = () => window.webforge.site.exportChoices();
+const setExportChoicesWithPreload = (choices: ExportChoices) =>
+  window.webforge.site.setExportChoices(choices);
 const openExportWithPreload = () => window.webforge.site.openExport();
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (state: SiteUiState) =>
@@ -114,6 +118,7 @@ export function App({
   exportSite = exportWithPreload,
   cancelExport = cancelExportWithPreload,
   exportChoices = exportChoicesWithPreload,
+  setExportChoices = setExportChoicesWithPreload,
   openExport = openExportWithPreload,
   loaded,
   uiState,
@@ -160,10 +165,22 @@ export function App({
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
   // the View menu's zoom and device views, and Export, after the shell's own commands. Their
   // context is made once, so they register once: Export reads the latest exportSite as it runs.
-  const exportSiteRef = useRef({ exportSite, cancelExport, exportChoices, openExport });
+  const exportSiteRef = useRef({
+    exportSite,
+    cancelExport,
+    exportChoices,
+    setExportChoices,
+    openExport,
+  });
   useEffect(() => {
-    exportSiteRef.current = { exportSite, cancelExport, exportChoices, openExport };
-  }, [exportSite, cancelExport, exportChoices, openExport]);
+    exportSiteRef.current = {
+      exportSite,
+      cancelExport,
+      exportChoices,
+      setExportChoices,
+      openExport,
+    };
+  }, [exportSite, cancelExport, exportChoices, setExportChoices, openExport]);
   const [windowContext] = useState<WindowContext>(() => ({
     session,
     commands: registry,
@@ -177,6 +194,7 @@ export function App({
     exportSite: (request, onProgress) => exportSiteRef.current.exportSite(request, onProgress),
     cancelExport: () => exportSiteRef.current.cancelExport(),
     exportChoices: () => exportSiteRef.current.exportChoices(),
+    setExportChoices: (choices) => exportSiteRef.current.setExportChoices(choices),
     openExport: () => exportSiteRef.current.openExport(),
     answerAi,
   }));

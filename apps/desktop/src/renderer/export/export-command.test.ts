@@ -144,6 +144,7 @@ describe("registerExportCommand", () => {
       choices: async () => LAST,
       dialogs,
       showSettings: vi.fn(async () => true),
+      saveChoices: vi.fn(async () => null),
       ...overrides,
     } satisfies ExportFlow;
     registerExportCommand(registry, flow);
@@ -183,17 +184,48 @@ describe("registerExportCommand", () => {
     expect(dialogs.shown()).toMatchObject({ kind: "report", report: { name: "my-site" } });
   });
 
-  it("asks no more for the web address once told not to for this site", async () => {
-    const { registry, shown, finished } = setUp();
+  it("remembers at once not to ask for the web address, even if the export is cancelled", async () => {
+    const { registry, flow, shown, finished } = setUp();
     registry.run(EXPORT_COMMAND_ID);
 
     (await shown("web-address")).answer("skip-always");
 
-    // Remembered with the site when the export goes ahead.
     const options = await shown("options");
+    expect(flow.saveChoices).toHaveBeenCalledWith({ ...LAST, askWebAddress: false });
     expect(options.initial.askWebAddress).toBe(false);
     options.answer(undefined);
     await finished();
+    expect(flow.exportSite).not.toHaveBeenCalled();
+  });
+
+  it("exports from the defaults when the site's choices can't be read", async () => {
+    const { registry, shown, finished } = setUp({
+      choices: () => Promise.reject(new Error("IPC failed")),
+    });
+    registry.run(EXPORT_COMMAND_ID);
+
+    (await shown("web-address")).answer("skip");
+    const options = await shown("options");
+    expect(options.initial).toEqual(LAST);
+    options.answer(undefined);
+    await finished();
+  });
+
+  it("writes no developer files in Simple mode, while the site keeps Advanced mode's choice", async () => {
+    const remembered = { ...LAST, askWebAddress: false, developerFiles: true };
+    const { registry, flow, shown, finished } = setUp({ choices: async () => remembered });
+    registry.run(EXPORT_COMMAND_ID);
+
+    (await shown("options")).answer(remembered);
+    await finished();
+
+    expect(flow.exportSite).toHaveBeenCalledWith(
+      expect.objectContaining({
+        choices: remembered,
+        output: { minify: false, developerFiles: false },
+      }),
+      expect.any(Function),
+    );
   });
 
   it("asks nothing when the site has a web address, or was told not to", async () => {

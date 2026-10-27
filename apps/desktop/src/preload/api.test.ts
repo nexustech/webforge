@@ -91,6 +91,7 @@ describe("createWebforgeApi site export", () => {
     developerFiles: false,
     askWebAddress: true,
   } as const;
+  const output = { minify: false, developerFiles: false } as const;
   const exported = {
     status: "exported",
     format: "folder",
@@ -106,25 +107,36 @@ describe("createWebforgeApi site export", () => {
     const invoke = vi.fn(async () => exported);
     const api = apiWith(invoke);
 
-    await expect(api.site.export({ snapshot, media: [], choices })).resolves.toEqual(exported);
-    expect(invoke).toHaveBeenCalledWith("site:export", { snapshot, media: [], choices });
+    await expect(api.site.export({ snapshot, media: [], choices, output })).resolves.toEqual(
+      exported,
+    );
+    expect(invoke).toHaveBeenCalledWith("site:export", { snapshot, media: [], choices, output });
   });
 
   it("rejects an export result that leaks a path", async () => {
     const api = apiWith(async () => ({ ...exported, path: "C:Userssamsite" }));
 
-    await expect(api.site.export({ snapshot, media: [], choices })).rejects.toThrow();
+    await expect(api.site.export({ snapshot, media: [], choices, output })).rejects.toThrow();
   });
 
   it("reads the last export choices and opens the last export through their channels (3.3)", async () => {
     const invoke = vi.fn(async (channel: string) =>
-      channel === "site:export-choices" ? choices : "opened",
+      channel === "site:export-choices"
+        ? choices
+        : channel === "site:set-export-choices"
+          ? null
+          : "missing",
     );
     const api = apiWith(invoke);
 
     await expect(api.site.exportChoices()).resolves.toEqual(choices);
-    await expect(api.site.openExport()).resolves.toBe("opened");
-    expect(invoke.mock.calls).toEqual([["site:export-choices"], ["site:open-export"]]);
+    await expect(api.site.setExportChoices(choices)).resolves.toBeNull();
+    await expect(api.site.openExport()).resolves.toBe("missing");
+    expect(invoke.mock.calls).toEqual([
+      ["site:export-choices"],
+      ["site:set-export-choices", choices],
+      ["site:open-export"],
+    ]);
   });
 
   it("reads and remembers the editor mode through the project UI-state channels", async () => {

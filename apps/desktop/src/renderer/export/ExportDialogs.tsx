@@ -194,7 +194,8 @@ export function ExportDialogs({
             shown.answer({
               ...shown.initial,
               ...values,
-              developerFiles: shown.advanced && values.developerFiles,
+              // Not offered in Simple mode: the site keeps the choice Advanced mode made.
+              developerFiles: shown.advanced ? values.developerFiles : shown.initial.developerFiles,
             } satisfies ExportChoices)
           }
           onCancel={() => shown.answer(undefined)}

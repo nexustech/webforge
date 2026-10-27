@@ -5,6 +5,7 @@ import type { Call, Subscribe } from "./call.js";
 export const siteApi = (call: Call, subscribe: Subscribe): SiteApi => ({
   export: (request) => call("exportSite", request),
   exportChoices: () => call("exportChoices"),
+  setExportChoices: (choices) => call("setExportChoices", choices),
   openExport: () => call("openExport"),
   cancelExport: () => call("cancelExport"),
   onExportProgress: (listener) =>

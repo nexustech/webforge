@@ -68,8 +68,10 @@ export type WindowContext = AreaContext & {
   readonly cancelExport: () => Promise<null>;
   /** What the person chose for the open site's last export (3.3). */
   readonly exportChoices: () => Promise<ExportChoices>;
-  /** Opens the last export from disk (Preview from disk, 3.3). */
-  readonly openExport: () => Promise<"opened" | "none">;
+  /** Remembers the person's export choices with the open site. */
+  readonly setExportChoices: (choices: ExportChoices) => Promise<null>;
+  /** Opens the open site's last export from disk (Preview from disk, 3.3). */
+  readonly openExport: () => Promise<"opened" | "none" | "missing">;
   /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
   readonly answerAi: AiApi["onRequest"];
 };

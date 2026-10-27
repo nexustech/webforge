@@ -14,6 +14,7 @@ type ExportRequest = {
   media: { id: string; name: string; mimeType: string; hash: string; alt: string }[];
   documents: { id: string; name: string; mimeType: string; hash: string }[];
   choices: { format: "folder"; minify: false; developerFiles: false; askWebAddress: true };
+  output: { minify: false; developerFiles: false };
 };
 type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
 
@@ -111,6 +112,7 @@ setup("export the fixture site from the app", async () => {
     developerFiles: false,
     askWebAddress: true,
   } as const;
+  const output = { minify: false, developerFiles: false } as const;
   const app = await launchDesktopApp({ args: [sitePath] });
   try {
     const page = await app.firstWindow();
@@ -119,7 +121,7 @@ setup("export the fixture site from the app", async () => {
 
     const result = await page.evaluate(
       (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      { snapshot: { ...site, media: [], documents: [] }, media, documents, choices },
+      { snapshot: { ...site, media: [], documents: [] }, media, documents, choices, output },
     );
 
     expect(result).toMatchObject({ status: "exported", pages: 3, warningCount: 0 });
@@ -128,7 +130,13 @@ setup("export the fixture site from the app", async () => {
     await stubFileDialogs(app, THEMED_SITE_DIR);
     const again = await page.evaluate(
       (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      { snapshot: { ...themed(site), media: [], documents: [] }, media, documents, choices },
+      {
+        snapshot: { ...themed(site), media: [], documents: [] },
+        media,
+        documents,
+        choices,
+        output,
+      },
     );
     expect(again).toMatchObject({ status: "exported", pages: 3, warningCount: 0 });
   } finally {

@@ -2,6 +2,9 @@ import { randomUUID } from "node:crypto";
 import { existsSync, renameSync, rmSync } from "node:fs";
 import { basename, dirname, join } from "node:path";
 import {
+  DEFAULT_EXPORT_CHOICES,
+  type ExportChoices,
+  exportChoicesSchema,
   migrateSite,
   pageDocumentId,
   type SiteDoc,
@@ -53,31 +56,6 @@ export type VersionKind = "manual" | "auto";
 export type SiteEditorMode = "design" | "content";
 
 const siteEditorModeSchema = z.enum(["design", "content"]);
-
-/**
- * What the person last chose when exporting this site (3.3): a folder or a ZIP, and the options.
- * Remembered per site, but UI state, like the editor mode.
- */
-export const exportChoicesSchema = z.strictObject({
-  format: z.enum(["folder", "zip"]),
-  /** *Minify output* (X4). */
-  minify: z.boolean(),
-  /** *Include developer files* (X6, Advanced mode). */
-  developerFiles: z.boolean(),
-  /** Whether to ask for the web address before exporting while it's empty (X3). */
-  askWebAddress: z.boolean(),
-});
-
-/** What the person last chose when exporting this site. */
-export type ExportChoices = z.infer<typeof exportChoicesSchema>;
-
-/** The choices of a site that has never been exported. */
-export const DEFAULT_EXPORT_CHOICES: ExportChoices = {
-  format: "folder",
-  minify: false,
-  developerFiles: false,
-  askWebAddress: true,
-};
 
 /** A saved version of the project (snapshot of the working copy). */
 export type VersionInfo = {

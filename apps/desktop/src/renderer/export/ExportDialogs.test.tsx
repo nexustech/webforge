@@ -75,12 +75,12 @@ describe("ExportDialogs (3.3)", () => {
       await user.click(screen.getByRole("checkbox", { name: "Make the files smaller" }));
       await user.click(screen.getByRole("button", { name: "Export…" }));
 
-      // Not offered, so not included.
+      // Not offered: the choice Advanced mode made is kept.
       await expect(chosen).resolves.toEqual({
         ...LAST,
         format: "zip",
         minify: true,
-        developerFiles: false,
+        developerFiles: true,
       });
 
       act(() => {

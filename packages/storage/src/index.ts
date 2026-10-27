@@ -3,10 +3,7 @@ export { ProjectFileError, type ProjectFileErrorCode, ReadOnlyProjectError } fro
 export {
   type AssetInfo,
   type CreateProjectOptions,
-  DEFAULT_EXPORT_CHOICES,
   type DocumentChange,
-  type ExportChoices,
-  exportChoicesSchema,
   type GarbageReport,
   type JsonValue,
   type NewAsset,

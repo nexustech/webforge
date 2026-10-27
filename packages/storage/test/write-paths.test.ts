@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { createSite } from "@webforge/model";
+import { createSite, DEFAULT_EXPORT_CHOICES } from "@webforge/model";
 import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_EXPORT_CHOICES, ProjectStore } from "../src/index.js";
+import { ProjectStore } from "../src/index.js";
 
 // Opening checks a project's content against the fingerprint every write records (#295). A write
 // that changed documents, assets or versions without recording it would make a healthy file open

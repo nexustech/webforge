@@ -1,5 +1,6 @@
 import {
   cropSchema,
+  exportChoicesSchema,
   FILE_MIME_TYPES,
   focalPointSchema,
   IMAGE_MIME_TYPES,
@@ -30,24 +31,15 @@ const exportDocumentSchema = z.strictObject({
   hash: z.string().regex(/^[0-9a-f]{64}$/),
 });
 
-/**
- * What the person chose for an export (3.3): a folder or a ZIP, *Minify output* (X4), *Include
- * developer files* (X6), and whether to ask for the web address while it's empty (X3). The site
- * remembers them for its next export.
- */
-const exportChoicesSchema = z.strictObject({
-  format: z.enum(["folder", "zip"]),
-  minify: z.boolean(),
-  developerFiles: z.boolean(),
-  askWebAddress: z.boolean(),
-});
+import type { ExportChoices } from "@webforge/model";
 
-/** What the person chose for an export. */
-export type ExportChoices = z.infer<typeof exportChoicesSchema>;
+export type { ExportChoices };
 
 /**
  * What the renderer sends to export the site: its snapshot, the Media images and documents it may
- * use, and the person's choices.
+ * use, the person's choices to remember with the site, and what this export writes. The two differ
+ * where an option isn't offered: Simple mode never writes developer files, but keeps the choice
+ * Advanced mode made (3.3).
  */
 const exportRequestSchema = z.strictObject({
   /** The site, without image or document bytes (the main process fills them in). */
@@ -55,6 +47,8 @@ const exportRequestSchema = z.strictObject({
   media: z.array(exportMediaSchema).max(10_000),
   documents: z.array(exportDocumentSchema).max(10_000).optional(),
   choices: exportChoicesSchema,
+  /** *Minify output* and *Include developer files*, as this export applies them. */
+  output: z.strictObject({ minify: z.boolean(), developerFiles: z.boolean() }),
 });
 
 /** What the renderer sends to export the site. */
@@ -146,13 +140,23 @@ export const siteChannels = {
     response: exportChoicesSchema,
   },
   /**
-   * *Preview from disk* (07): opens the last export's home page in the default browser, or shows
-   * its ZIP file in the file manager. `none` when nothing was exported since the site opened.
+   * Remembers the person's export choices with the open site at once (3.3): *Don't ask again for
+   * this site* holds even if the export that follows is cancelled.
+   */
+  setExportChoices: {
+    channel: "site:set-export-choices",
+    request: z.tuple([exportChoicesSchema]),
+    response: z.null(),
+  },
+  /**
+   * *Preview from disk* (07): opens the open site's last export, its home page in the default
+   * browser or its ZIP file in the file manager. `none` when this site hasn't been exported since
+   * it opened; `missing` when the export was moved or deleted since.
    */
   openExport: {
     channel: "site:open-export",
     request: z.tuple([]),
-    response: z.enum(["opened", "none"]),
+    response: z.enum(["opened", "none", "missing"]),
   },
   /**
    * Cancels the export under way, if there is one (3.1): it stops before its next image or page
@@ -177,8 +181,10 @@ export interface SiteApi {
   export(request: ExportRequest): Promise<ExportResult>;
   /** What the person chose for the open site's last export. */
   exportChoices(): Promise<ExportChoices>;
-  /** Opens the last export from disk. */
-  openExport(): Promise<"opened" | "none">;
+  /** Remembers the person's export choices with the open site. */
+  setExportChoices(choices: ExportChoices): Promise<null>;
+  /** Opens the open site's last export from disk. */
+  openExport(): Promise<"opened" | "none" | "missing">;
   /** Cancels the export under way, if there is one. */
   cancelExport(): Promise<null>;
   /** Tells `listener` how far exports come, until the returned function is called. */

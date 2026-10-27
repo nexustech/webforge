@@ -1,3 +1,5 @@
+import { toast } from "@webforge/editor-ui";
+import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { reportFailure } from "../log.js";
@@ -14,11 +16,16 @@ export const exportCommandArea: Area<WindowContext> = {
   register: (context) => {
     const { commands, session, settings, preferences, windowDialogs } = context;
     const dialogs = createExportDialogs();
-    // Preview from disk: main opens what it exported itself.
+    // Preview from disk: main opens what it exported itself, or says it isn't there any more.
     const openExport = () => {
-      context.openExport().catch((error: unknown) => {
-        reportFailure("export.open", error);
-      });
+      context
+        .openExport()
+        .then((opened) => {
+          if (opened === "missing") toast.error(t("export.report.missing"));
+        })
+        .catch((error: unknown) => {
+          reportFailure("export.open", error);
+        });
     };
     const removeDialogs = windowDialogs.register({
       id: "export",
@@ -31,6 +38,7 @@ export const exportCommandArea: Area<WindowContext> = {
       exportSite: context.exportSite,
       cancel: context.cancelExport,
       choices: context.exportChoices,
+      saveChoices: context.setExportChoices,
       dialogs,
       showSettings: (part, group) => settings.show(part, group),
     });

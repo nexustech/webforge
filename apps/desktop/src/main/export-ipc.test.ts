@@ -46,6 +46,7 @@ const request = {
     { id: "gone", name: "gone", mimeType: "image/png", hash: "b".repeat(64), alt: "" },
   ],
   choices: folder,
+  output: { minify: false, developerFiles: false },
 } as const;
 const exported: ExportOutcome = {
   type: "exported",
@@ -74,7 +75,8 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
     runExport: vi.fn<RunExport>(typeof run === "function" ? run : async () => run),
     sendProgress: vi.fn(),
     choices: { read: vi.fn(async () => zip), write: vi.fn(async () => undefined) },
-    open: vi.fn(async () => undefined),
+    open: vi.fn(async (): Promise<"opened" | "missing"> => "opened"),
+    currentSite: vi.fn((): string | undefined => "/sites/Bakery.wforge"),
   } satisfies ExportDeps;
   registerExportHandlers(ipc, (url) => url === APP_URL, deps);
   const call =
@@ -91,6 +93,7 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
     invoke: call("site:export"),
     cancel: call("site:cancel-export"),
     choicesOf: call("site:export-choices"),
+    setChoices: call("site:set-export-choices"),
     openLast: call("site:open-export"),
   };
 }
@@ -103,7 +106,7 @@ describe("registerExportHandlers", () => {
   it("exports to the folder the person chose, returning its name and what the report needs", async () => {
     const { invoke, runExport, choices } = setUp(toFolder("/sites/my-site"));
 
-    await expect(invoke({ snapshot, media: [], choices: folder })).resolves.toEqual({
+    await expect(invoke({ ...request, media: [] })).resolves.toEqual({
       status: "exported",
       format: "folder",
       name: "my-site",
@@ -133,7 +136,9 @@ describe("registerExportHandlers", () => {
       chooseExportZip,
     });
 
-    await expect(invoke({ ...request, choices: zip })).resolves.toMatchObject({
+    await expect(
+      invoke({ ...request, choices: zip, output: { minify: true, developerFiles: true } }),
+    ).resolves.toMatchObject({
       status: "exported",
       format: "zip",
       name: "bakery.zip",
@@ -157,10 +162,39 @@ describe("registerExportHandlers", () => {
     await expect(invoke(request)).resolves.toMatchObject({ status: "exported" });
   });
 
-  it("answers the open site's last choices (3.3)", async () => {
-    const { choicesOf } = setUp(toFolder(undefined));
+  it("answers the open site's last choices, and remembers new ones at once (3.3)", async () => {
+    const { choicesOf, setChoices, choices } = setUp(toFolder(undefined));
 
     await expect(choicesOf()).resolves.toEqual(zip);
+    await expect(setChoices({ ...folder, askWebAddress: false })).resolves.toBeNull();
+    expect(choices.write).toHaveBeenCalledWith({ ...folder, askWebAddress: false });
+  });
+
+  it("writes what the export applies, and remembers the choices as they are (3.3)", async () => {
+    const { invoke, runExport, choices } = setUp(toFolder("/sites/my-site"));
+    // Simple mode: developer files not written, Advanced mode's choice kept.
+    const kept = { ...folder, developerFiles: true };
+
+    await invoke({ ...request, choices: kept, output: { minify: false, developerFiles: false } });
+
+    expect(runExport).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ output: { minify: false, developerFiles: false } }),
+      expect.anything(),
+    );
+    expect(choices.write).toHaveBeenCalledWith(kept);
+  });
+
+  it("opens only the open site's export, and says when it's gone (3.3)", async () => {
+    const { invoke, openLast, open, currentSite } = setUp(toFolder("/sites/my-site"));
+    await invoke(request);
+
+    open.mockResolvedValueOnce("missing");
+    await expect(openLast()).resolves.toBe("missing");
+    // File → Open of another site: it hasn't been exported yet.
+    currentSite.mockReturnValue("/sites/Salon.wforge");
+    await expect(openLast()).resolves.toBe("none");
+    expect(open).toHaveBeenCalledOnce();
   });
 
   it("opens the last export from disk, and nothing before there is one (3.3)", async () => {

@@ -116,11 +116,15 @@ test.describe("Export site", () => {
 
     const report = page.getByRole("dialog", { name: "Site exported" });
     await expect(report).toContainText("Saved as “my-site.zip”.", { timeout: 30_000 });
-    await report.getByRole("button", { name: "Show ZIP File" }).click();
-    await expect.poll(async () => (await opened()).at(-1)).toBe(`show ${zip}`);
-    await report.getByRole("button", { name: "Done" }).click();
     // A ZIP: its local file header's signature.
     expect(readFileSync(zip).subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
+    await report.getByRole("button", { name: "Show ZIP File" }).click();
+    await expect.poll(async () => (await opened()).at(-1)).toBe(`show ${zip}`);
+    // Moved or deleted since: it says so, rather than showing nothing.
+    rmSync(zip);
+    await report.getByRole("button", { name: "Show ZIP File" }).click();
+    await expect(page.getByText("The exported site isn't there any more")).toBeVisible();
+    await report.getByRole("button", { name: "Done" }).click();
 
     // Not asked again for the web address, and the dialog starts from the last choices.
     await startExport("not-asked");

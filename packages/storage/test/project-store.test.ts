@@ -1,14 +1,13 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_EXPORT_CHOICES, type ExportChoices } from "@webforge/model";
 import { tempDirFactory } from "@webforge/test-utils";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
 import { hardenConnection } from "../src/connection.js";
 import {
   APPLICATION_ID,
-  DEFAULT_EXPORT_CHOICES,
-  type ExportChoices,
   FORMAT_VERSION,
   ProjectFileError,
   type ProjectFileErrorCode,

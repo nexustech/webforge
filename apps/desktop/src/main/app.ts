@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
@@ -445,9 +446,16 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       },
       // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
       open: async ({ destination, format }) => {
-        if (format === "zip") electron.shell.showItemInFolder(destination);
-        else await electron.shell.openPath(join(destination, "index.html"));
+        if (format === "zip") {
+          if (!existsSync(destination)) return "missing";
+          electron.shell.showItemInFolder(destination);
+          return "opened";
+        }
+        // An error message, rather than a throw, when the folder was moved or deleted.
+        const failed = await electron.shell.openPath(join(destination, "index.html"));
+        return failed === "" ? "opened" : "missing";
       },
+      currentSite: () => projectSession.currentPath(),
     });
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.

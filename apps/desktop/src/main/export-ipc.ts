@@ -42,8 +42,15 @@ export type ExportDeps = {
     read(): Promise<ExportChoices>;
     write(choices: ExportChoices): Promise<void>;
   };
-  /** Opens an export from disk: a folder's home page in the browser, a ZIP in the file manager. */
-  readonly open: (target: Pick<ExportTarget, "destination" | "format">) => Promise<void>;
+  /**
+   * Opens an export from disk: a folder's home page in the browser, a ZIP in the file manager;
+   * `missing` when it isn't there any more.
+   */
+  readonly open: (
+    target: Pick<ExportTarget, "destination" | "format">,
+  ) => Promise<"opened" | "missing">;
+  /** The open site's file, which an export belongs to; `undefined` with none open. */
+  readonly currentSite: () => string | undefined;
 };
 
 /**
@@ -106,8 +113,8 @@ export function registerExportHandlers(
 ): void {
   // The exports under way (or waiting for the one before): a cancel stops them all.
   const underWay = new Set<AbortController>();
-  // The last export written, for Preview from disk.
-  let last: Pick<ExportTarget, "destination" | "format"> | undefined;
+  // The last export written, and the site it was of, for Preview from disk.
+  let last: { readonly target: ExportTarget; readonly site: string | undefined } | undefined;
   registerIpcHandler(ipc, "exportSite", isTrustedSender, async (request) => {
     const { choices } = request;
     const destination =
@@ -119,11 +126,7 @@ export function registerExportHandlers(
     }
     // Remembered once the person has gone ahead; a site that can't save them still exports.
     await deps.choices.write(choices).catch(() => undefined);
-    const target: ExportTarget = {
-      destination,
-      format: choices.format,
-      output: { minify: choices.minify, developerFiles: choices.developerFiles },
-    };
+    const target: ExportTarget = { destination, format: choices.format, output: request.output };
     const controller = new AbortController();
     underWay.add(controller);
     try {
@@ -131,18 +134,21 @@ export function registerExportHandlers(
         signal: controller.signal,
         onProgress: deps.sendProgress,
       });
-      if (outcome.type === "exported") last = target;
+      if (outcome.type === "exported") last = { target, site: deps.currentSite() };
       return toExportResult(outcome, target);
     } finally {
       underWay.delete(controller);
     }
   });
   registerIpcHandler(ipc, "exportChoices", isTrustedSender, () => deps.choices.read());
-  registerIpcHandler(ipc, "openExport", isTrustedSender, async () => {
-    if (last === undefined) return "none";
-    await deps.open(last);
-    return "opened";
+  registerIpcHandler(ipc, "setExportChoices", isTrustedSender, async (choices) => {
+    await deps.choices.write(choices);
+    return null;
   });
+  // Only the open site's export: after File → Open of another site, it has none yet.
+  registerIpcHandler(ipc, "openExport", isTrustedSender, async () =>
+    last === undefined || last.site !== deps.currentSite() ? "none" : deps.open(last.target),
+  );
   registerIpcHandler(ipc, "cancelExport", isTrustedSender, () => {
     for (const controller of underWay) controller.abort();
     return null;

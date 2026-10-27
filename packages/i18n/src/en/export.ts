@@ -50,6 +50,8 @@ export const exportSite = {
   "export.report.openFolder": "Open Site",
   "export.report.showZip": "Show ZIP File",
   "export.report.done": "Done",
+  "export.report.missing":
+    "The exported site isn't there any more: it was moved or deleted. Export it again to open it.",
   "export.failed.folderNotEmpty":
     "That folder already contains other files. Choose an empty folder or a previous export.",
   "export.failed.buildFailed": "Your site could not be built. Nothing was changed on disk.",

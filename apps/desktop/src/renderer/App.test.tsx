@@ -109,6 +109,7 @@ describe("App", () => {
         media: [],
         documents: [],
         choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
+        output: { minify: false, developerFiles: false },
       },
       // Told how far the export has come, for the toast (3.1).
       expect.any(Function),

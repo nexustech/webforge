@@ -5,12 +5,13 @@ import { join } from "node:path";
 import {
   changedDocuments,
   createSite,
+  DEFAULT_EXPORT_CHOICES,
   DEFAULT_THEME,
   type ImageMeta,
   type MediaId,
   pageDocumentId,
 } from "@webforge/model";
-import { DEFAULT_EXPORT_CHOICES, ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
 import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
