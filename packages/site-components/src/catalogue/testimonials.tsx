@@ -5,7 +5,7 @@ import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
-import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
 import { Picture } from "../picture.js";
 import type { RenderContext } from "../schema.js";
 import { BODY_TEXT_CLASSES, SectionTitle } from "../typography.js";
@@ -47,7 +47,7 @@ const testimonials = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.testimonials"), allow: ["Testimonial"] },
     // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
-    hover: CARD_HOVER_FIELD,
+    ...CARD_HOVER_FIELDS,
   },
   defaults: {
     title: t("starter.testimonialsTitle"),
@@ -70,7 +70,7 @@ const testimonials = defineSection({
         <div className="text-center">
           <SectionTitle>{values.title}</SectionTitle>
         </div>
-        <TestimonialsContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
+        <TestimonialsContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
           <Items className={GRID_CLASS[values.variant]} />
         </TestimonialsContext>
       </div>

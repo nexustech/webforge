@@ -1,6 +1,13 @@
 import { t } from "@webforge/i18n";
-import { APPEARANCE_GROUP } from "./appearance.js";
+import {
+  type Breakpoint,
+  isResponsiveValue,
+  type Responsive,
+  resolveResponsive,
+} from "@webforge/model";
+import { APPEARANCE_GROUP, DEVICES, perDevice } from "./appearance.js";
 import type { BehaviourName } from "./behaviours/index.js";
+import { onAnyDevice } from "./library.js";
 import type { FieldDef } from "./schema.js";
 
 /** How a section or element moves in as visitors scroll to it (F-DS-5); `none` doesn't. */
@@ -77,6 +84,9 @@ const DELAY_CLASS: Readonly<Record<Delay, string>> = {
   long: " motion-safe:wf-entering:delay-600",
 };
 
+/** The entrance's transition, only while it moves in, so a hover's (2.28) is the only one after. */
+const ENTERING = "motion-safe:wf-entering:";
+
 /**
  * An entrance's classes, with a space before them to append to others, or "" for none. It moves
  * only on the way in: while it waits it has no transition, so when the page is marked it goes from
@@ -86,7 +96,7 @@ export function entranceClasses(values: EntranceValues): string {
   const entrance = entranceOf(values);
   if (entrance === undefined) return "";
   const delay = DELAYS.find((each) => each === values.entranceDelay) ?? "none";
-  return ` motion-safe:transition-[opacity,translate,scale] motion-safe:duration-700 motion-safe:ease-out ${HIDDEN}transition-none ${ENTRANCE_START[entrance]}${DELAY_CLASS[delay]}`;
+  return ` ${ENTERING}transition-[opacity,translate,scale] ${ENTERING}duration-700 ${ENTERING}ease-out ${HIDDEN}transition-none ${ENTRANCE_START[entrance]}${DELAY_CLASS[delay]}`;
 }
 
 /** The attribute the `animate` behaviour finds an entrance by: `data-wf-entrance="fade"`. */
@@ -107,55 +117,171 @@ export function hasEntrance(values: EntranceValues): boolean {
 
 /**
  * What a button, image, icon or card does under the pointer (F-DS-5, ST-2); `none` nothing. Darken
- * and Underline came with the Appearance group's hover row (2.22).
+ * and Underline came with the Appearance group's hover row (2.22); Tilt and Lift and shadow with its
+ * transform presets (2.28, ST-7).
  */
-const HOVERS = ["none", "lift", "grow", "shadow", "darken", "underline"] as const;
+const HOVERS = [
+  "none",
+  "lift",
+  "grow",
+  "tilt",
+  "liftShadow",
+  "shadow",
+  "darken",
+  "underline",
+] as const;
 type Hover = (typeof HOVERS)[number];
+
+/** How long the hover takes (2.28): Fast is the browser's usual 150 ms, as before. */
+const SPEEDS = ["fast", "medium", "slow"] as const;
+/** How it moves (2.28): Smooth eases in and out, as before; Springy overshoots a little. */
+const EASINGS = ["smooth", "gentle", "springy"] as const;
+
+/** The hover row's place: the Style tab's Appearance group, a value per device (2.28). */
+const IN_ROW = { group: "style", optionGroup: APPEARANCE_GROUP, responsive: true } as const;
 
 /**
  * The hover row (F-DS-5, ST-2): *When hovered*, in the Appearance group under its colours and
- * shadow, on the Button, the Image and the Icon (2.22). CSS only, with no script; Lift and Grow
- * move, so only under `motion-safe`.
+ * shadow, on the Button, the Image and the Icon (2.22). CSS only, with no script; what moves does
+ * so only under `motion-safe`.
  */
-export const HOVER_FIELD = {
+const HOVER_FIELD = {
   kind: "select",
   label: t("field.hoverEffect"),
-  group: "style",
-  optionGroup: APPEARANCE_GROUP,
+  ...IN_ROW,
   options: HOVERS.map((value) => ({ label: t(`field.hoverEffect.${value}`), value })),
 } as const satisfies FieldDef;
+
+const isHover = (value: unknown): value is Hover => HOVERS.some((each) => each === value);
+
+/** An effect that changes over time, so its speed and easing count: all but None and Underline. */
+const takesTime = (value: unknown) => value !== "none" && value !== "underline" && isHover(value);
+
+/** Why the speed and easing can't be set: the effect is instant on every device. */
+const instant = (values: Readonly<Record<string, unknown>>) =>
+  onAnyDevice(values.hover, takesTime) ? undefined : t("field.hoverTiming.unavailable");
+
+/**
+ * The hover's speed and easing (2.28, ST-7), beside its effect: one transition, the effect's, timed
+ * by theme tokens (Tailwind's durations and easings, and the theme's `--ease-spring`).
+ */
+const TIMING_FIELDS = {
+  hoverSpeed: {
+    kind: "slider",
+    label: t("field.hoverSpeed"),
+    ...IN_ROW,
+    steps: SPEEDS.map((value) => ({ label: t(`field.hoverSpeed.${value}`), value })),
+    unavailable: instant,
+  },
+  hoverEasing: {
+    kind: "select",
+    label: t("field.hoverEasing"),
+    ...IN_ROW,
+    options: EASINGS.map((value) => ({ label: t(`field.hoverEasing.${value}`), value })),
+    unavailable: instant,
+  },
+} as const satisfies Readonly<Record<string, FieldDef>>;
+
+/** The hover row's fields, by the names a component keeps them under: its effect, speed, easing. */
+export const HOVER_FIELDS = { hover: HOVER_FIELD, ...TIMING_FIELDS } as const;
 
 /**
  * The hover row on an element without text of its own to underline (2.22b): the Image, whose
  * Underline would reach only its caption, and the Icon.
  */
-export const PICTURE_HOVER_FIELD = {
-  ...HOVER_FIELD,
-  options: HOVER_FIELD.options.filter((option) => option.value !== "underline"),
-} as const satisfies FieldDef;
+export const PICTURE_HOVER_FIELDS = {
+  ...HOVER_FIELDS,
+  hover: {
+    ...HOVER_FIELD,
+    options: HOVER_FIELD.options.filter((option) => option.value !== "underline"),
+  },
+} as const satisfies Readonly<Record<string, FieldDef>>;
 
 /**
- * The cards' hover effect (F-DS-5), set on a section for all its cards (2.7's Features,
+ * The cards' hover row (F-DS-5), set on a section for all its cards (2.7's Features,
  * Testimonials, Team and Pricing), so every card does the same, those added later too.
  */
-export const CARD_HOVER_FIELD = {
-  ...HOVER_FIELD,
-  label: t("field.cardHoverEffect"),
-} as const satisfies FieldDef;
+export const CARD_HOVER_FIELDS = {
+  ...HOVER_FIELDS,
+  hover: { ...HOVER_FIELD, label: t("field.cardHoverEffect") },
+} as const satisfies Readonly<Record<string, FieldDef>>;
 
+/** The shadow a hover adds: its own (`--wf-hover-shadow`), so a theme without shadows keeps it. */
+const HOVER_SHADOW = "hover:shadow-(--wf-hover-shadow)!";
+
+/**
+ * What each effect does when hovered. The shadow is marked to win, as the Appearance group's shadow
+ * is (2.22), so the hover state, written after it, beats it.
+ */
 const HOVER_CLASS: Readonly<Record<Hover, string>> = {
   none: "",
-  lift: " motion-safe:transition-all motion-safe:hover:-translate-y-1",
-  grow: " motion-safe:transition-all motion-safe:hover:scale-105",
-  // Its own shadow (`--wf-hover-shadow`), so a theme without shadows doesn't take away an
-  // effect the person chose; marked to win, as the Appearance group's shadow is (2.22), so the
-  // hover state, written after it, beats it.
-  shadow: " transition-all hover:shadow-(--wf-hover-shadow)!",
-  darken: " transition-[filter] hover:brightness-90",
-  underline: " hover:underline",
+  lift: "motion-safe:hover:-translate-y-1",
+  grow: "motion-safe:hover:scale-105",
+  tilt: "motion-safe:hover:rotate-2",
+  liftShadow: `motion-safe:hover:-translate-y-1 ${HOVER_SHADOW}`,
+  shadow: HOVER_SHADOW,
+  darken: "hover:brightness-90",
+  underline: "hover:underline",
 };
 
-/** A hover effect's classes, with a space before them to append to others, or "" for none. */
-export function hoverClasses(value: unknown): string {
-  return HOVER_CLASS[HOVERS.find((each) => each === value) ?? "none"];
+/**
+ * Each speed's and easing's classes; the first of each adds none, so a hover set before 2.28 draws
+ * as it did. Like the transition they time, only under `motion-safe`.
+ */
+const SPEED_CLASS: Readonly<Record<(typeof SPEEDS)[number], string>> = {
+  fast: "",
+  medium: " motion-safe:duration-300",
+  slow: " motion-safe:duration-500",
+};
+const EASING_CLASS: Readonly<Record<(typeof EASINGS)[number], string>> = {
+  smooth: "",
+  gentle: " motion-safe:ease-out",
+  springy: " motion-safe:ease-spring",
+};
+
+/** The hover row's values among a component's, as its render or the document has them. */
+type HoverValues = {
+  readonly hover?: unknown;
+  readonly hoverSpeed?: unknown;
+  readonly hoverEasing?: unknown;
+  readonly [field: string]: unknown;
+};
+
+/** `value` as it is on `device`, whether it is set per device or not. */
+const on = (value: unknown, device: Breakpoint) =>
+  isResponsiveValue(value as Responsive<unknown>)
+    ? resolveResponsive(value as Responsive<unknown>, device)
+    : value;
+
+/** The hover effect on `device`, `none` for no value or an unknown one. */
+export function hoverOn(values: HoverValues, device: Breakpoint): Hover {
+  const hover = on(values.hover, device);
+  return isHover(hover) ? hover : "none";
+}
+
+/**
+ * The hover row's classes on `device`, as if `effect` were its effect there: the effect, and for
+ * one that takes time a single transition with its speed and easing. Visitors who prefer less
+ * motion see the effect at once, and nothing moves for them: not even the transition a component
+ * has of its own (daisyUI's buttons fade their colours).
+ */
+export function hoverClassesOn(values: HoverValues, device: Breakpoint, effect: Hover): string {
+  if (!takesTime(effect)) return HOVER_CLASS[effect];
+  const speed = SPEEDS.find((each) => each === on(values.hoverSpeed, device)) ?? "fast";
+  const easing = EASINGS.find((each) => each === on(values.hoverEasing, device)) ?? "smooth";
+  return `motion-safe:transition-all${SPEED_CLASS[speed]}${EASING_CLASS[easing]} motion-reduce:transition-none ${HOVER_CLASS[effect]}`;
+}
+
+/**
+ * The hover row's classes, with a space before them to append to others, or "" for none: each
+ * device's only across its own widths where the row is set per device (F-ED-4).
+ */
+export function hoverClasses(values: HoverValues): string {
+  const byDevice = Object.fromEntries(
+    DEVICES.map((device) => [device, hoverClassesOn(values, device, hoverOn(values, device))]),
+  );
+  const drawn = perDevice({ $responsive: byDevice }, (value) =>
+    typeof value === "string" ? value : "",
+  );
+  return drawn === "" ? "" : ` ${drawn}`;
 }

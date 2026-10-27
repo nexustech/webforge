@@ -21,8 +21,9 @@ export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrim
 }
 
 /**
- * One tab (LF-5): bold, in sentence case; the active tab is lifted onto the panel's own background,
- * with no underline.
+ * One tab (LF-5): bold, in sentence case. The active tab is lifted out of the strip (#524): a
+ * gradient from a lighter top into the panel's own background, its text at full strength, under a
+ * 2 px accent edge.
  */
 export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsPrimitive.Trigger>) {
   return (
@@ -32,7 +33,9 @@ export function TabsTrigger({ className, ...props }: ComponentProps<typeof TabsP
         "inline-flex items-center gap-1.5 rounded-t-sm px-2.5 text-xs font-semibold",
         "text-tab-inactive outline-none hover:text-foreground",
         "focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset disabled:text-disabled",
-        "data-[state=active]:bg-panel data-[state=active]:text-foreground [&_svg]:size-3.5",
+        "data-[state=active]:bg-linear-to-b data-[state=active]:from-tab-active-top data-[state=active]:to-panel",
+        "data-[state=active]:text-foreground data-[state=active]:shadow-[inset_0_2px_0_var(--tab-active-edge)]",
+        "[&_svg]:size-3.5",
         className,
       )}
       {...props}

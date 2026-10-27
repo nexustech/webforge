@@ -12,6 +12,8 @@ We have baked in Hightown since 1998.
 
 Find us on [the map](https://example.com/map).
 
+[Order online](https://rosas.example/about.html)
+
 The best sourdough in Hightown.
 
 Sam
