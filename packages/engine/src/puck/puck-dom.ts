@@ -43,6 +43,9 @@ export const INLINE_TEXT = '[class*="_InlineTextField_"]';
 /** Puck's canvas root, whose style carries the canvas zoom (its scale and height). */
 export const CANVAS_ROOT = '[class*="PuckCanvas-root"]';
 
+/** The box Puck fits the canvas into: its content box is the room the page has (PH2-18). */
+export const CANVAS_INNER = '[class*="PuckCanvas-inner"]';
+
 /** Puck's scrolling canvas area around the canvas root (LF-2: its padding and background). */
 export const CANVAS = '[class*="_PuckCanvas_"]';
 

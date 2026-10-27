@@ -16,8 +16,10 @@ describe("canvas sizes (F-ED-25)", () => {
     expect(rotatedWidth(768, [])).toBe(1024);
     expect(rotatedWidth(1080, [KIOSK])).toBe(1920);
     expect(rotatedWidth(1920, [KIOSK])).toBe(1080);
+    // The fixed desktop widths rotate too (PH2-18).
+    expect(rotatedWidth(1440, [])).toBe(900);
     // A width that is no device's can't be rotated.
-    expect(rotatedWidth(900, [KIOSK])).toBeUndefined();
+    expect(rotatedWidth(950, [KIOSK])).toBeUndefined();
   });
 
   it("snaps a dragged width to the nearest device width within reach, by the zoom", () => {

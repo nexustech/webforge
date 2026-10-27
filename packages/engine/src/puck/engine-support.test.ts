@@ -16,6 +16,8 @@ describe("the Puck engine's helpers (R8)", () => {
   it("names a device view by its width, else gives the width", () => {
     expect(viewportOf(768)).toBe("tablet");
     expect(viewportOf(900)).toBe(900);
+    // Desktop fills the canvas: 1280 is a fixed width like any other (PH2-18).
+    expect(viewportOf(1280)).toBe(1280);
   });
 
   it("calls each listener until it is removed", () => {
