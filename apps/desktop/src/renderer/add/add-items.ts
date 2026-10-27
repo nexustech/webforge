@@ -90,25 +90,27 @@ function placed(
 export function addItems(library: ComponentLibrary, tab: AddTab): AddItem[] {
   const sections = tab === "sections";
   const place = sections ? "section" : "element";
-  const items = Object.entries(library.components)
-    .filter(([, def]) => (def.place ?? "element") === place)
-    .flatMap(([type, def]) => {
-      const category = sections ? t("add.allSections") : (def.category ?? "");
-      const keywords = sections && def.category !== undefined ? { keywords: def.category } : {};
-      const level = def.advancedOnly === true ? { advancedOnly: true as const } : {};
-      return [
-        { type, label: def.label, category, ...keywords, ...level },
-        ...(def.presets ?? []).map((preset) => ({
-          type: presetKey(type, preset.id),
-          label: preset.label,
-          category,
-          ...keywords,
-          preset: true as const,
-          ...level,
-        })),
-      ];
-    });
-  return sections ? items.sort((a, b) => a.label.localeCompare(b.label)) : items;
+  const components = Object.entries(library.components).filter(
+    ([, def]) => (def.place ?? "element") === place,
+  );
+  // Sections by name; each component's presets right after it, wherever it sorts.
+  if (sections) components.sort(([, a], [, b]) => a.label.localeCompare(b.label));
+  return components.flatMap(([type, def]) => {
+    const category = sections ? t("add.allSections") : (def.category ?? "");
+    const keywords = sections && def.category !== undefined ? { keywords: def.category } : {};
+    const level = def.advancedOnly === true ? { advancedOnly: true as const } : {};
+    return [
+      { type, label: def.label, category, ...keywords, ...level },
+      ...(def.presets ?? []).map((preset) => ({
+        type: presetKey(type, preset.id),
+        label: preset.label,
+        category,
+        ...keywords,
+        preset: true as const,
+        ...level,
+      })),
+    ];
+  });
 }
 
 /**

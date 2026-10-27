@@ -6,7 +6,7 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { type ComponentDef, type ComponentLibrary, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
@@ -110,6 +110,23 @@ describe("addItems (F-ED-1, ADR 0005)", () => {
     ]);
     // A word no item has.
     expect(groupItems(elements, "zebra")).toEqual([]);
+  });
+
+  it("keeps a section's presets right after it, wherever their names sort", () => {
+    const section = (label: string, presets: NonNullable<ComponentDef["presets"]> = []) =>
+      ({ ...siteLibrary.components.Hero, label, presets }) as ComponentDef;
+    const library: ComponentLibrary = {
+      components: {
+        Zoo: section("Zoo", [{ id: "aquarium", label: "Aquarium", values: {} }]),
+        Bakery: section("Bakery"),
+      },
+    };
+
+    expect(addItems(library, "sections").map((item) => item.label)).toEqual([
+      "Bakery",
+      "Zoo",
+      "Aquarium",
+    ]);
   });
 
   it("lists sections in one group from A to Z, still found by their category (#523)", () => {
