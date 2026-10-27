@@ -1,5 +1,5 @@
 import { configDefaults, defineProject } from "vitest/config";
-import { scaledTimeout } from "../vitest.load.js";
+import { scaledTimeout, TIMEOUT_SCALE } from "../vitest.load.js";
 
 export default defineProject({
   test: {
@@ -8,5 +8,7 @@ export default defineProject({
     // Vitest's defaults, scaled to the run's workers (ADR 0014): its checks run the compilers.
     testTimeout: scaledTimeout(5_000),
     hookTimeout: scaledTimeout(10_000),
+    // For a test that sets its own timeout: `scaledTestTimeout()` reads it.
+    provide: { timeoutScale: TIMEOUT_SCALE },
   },
 });

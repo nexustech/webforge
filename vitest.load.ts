@@ -5,8 +5,8 @@ import { availableParallelism } from "node:os";
 // machine with more threads the run has more workers, which share its CPU with each other (and
 // with whatever else it runs), so each test may take as much longer as there are more of them.
 
-/** How many workers a run has: half the CPU threads, as `vitest.config.ts` sets. */
-const WORKERS = Math.max(1, Math.floor(availableParallelism() / 2));
+/** How many workers a run has: half the CPU threads. `vitest.config.ts` runs this many. */
+export const WORKERS = Math.max(1, Math.floor(availableParallelism() / 2));
 
 /** How much longer than on CI a test may take in this run: never less. */
 export const TIMEOUT_SCALE = Math.max(1, WORKERS / 2);

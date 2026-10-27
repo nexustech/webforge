@@ -35,7 +35,6 @@ function setUp() {
   return { session, button, labels, user: userEvent.setup({ delay: null }) };
 }
 
-// Typing through a dialog, as the Picker's own tests do: slower beside the suite's other tests.
 describe("the icon field (F-ED-22)", () => {
   it("chooses an icon in the picker, searched by what it shows, as one step", async () => {
     const { button, labels, user } = setUp();

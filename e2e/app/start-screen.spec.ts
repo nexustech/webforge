@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { expectWorkWithin, measureWork, OPEN_BUDGET, OPEN_WAIT } from "./budget.js";
+import { expectWorkWithin, measureWork, OPEN_WAIT, openBudget } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -115,7 +115,7 @@ test("makes a site from a template, named as typed and in the chosen theme, with
   // here by its CPU time and a wall-clock backstop; its 3 s by `pnpm e2e:perf` (ADR 0014).
   const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
-  expectWorkWithin(await opened(), OPEN_BUDGET, "Opening the new Café site");
+  expectWorkWithin(await opened(), openBudget(), "Opening the new Café site");
   // With its photo, which came into the site's Media.
   await expect(canvas(page).locator("section img").first()).toHaveJSProperty("complete", true);
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
@@ -144,7 +144,7 @@ test("makes a Personal / CV site within its opening budget, accessible on the ca
   await newSite.getByRole("button", { name: "Create" }).click();
   const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
-  expectWorkWithin(await opened(), OPEN_BUDGET, "Opening the new Personal / CV site");
+  expectWorkWithin(await opened(), openBudget(), "Opening the new Personal / CV site");
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
 
   // The page as the canvas draws it, inside its frame, what the editor adds to it included (#465):
@@ -166,7 +166,7 @@ test("tries the example: a pre-filled site named after it, within its opening bu
   // The first example the app ships: Café / Restaurant (Trades is the second).
   const hero = canvas(page).locator("h1", { hasText: "Good coffee and proper breakfasts" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
-  expectWorkWithin(await opened(), OPEN_BUDGET, "Opening the example");
+  expectWorkWithin(await opened(), openBudget(), "Opening the example");
 
   const site = await page.evaluate(async () => {
     const read = await (window as unknown as RendererWindow).webforge.project.readSite();

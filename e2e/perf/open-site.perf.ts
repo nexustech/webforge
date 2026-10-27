@@ -2,9 +2,10 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
+import { OPEN_WAIT } from "../app/budget.js";
 import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
-import { TEMPLATES } from "../app/templates.js";
+import { createFromTemplate, TEMPLATES } from "../app/templates.js";
 
 // Opening a site in under 3 s (spec/02, F-SITE-1): each template made from New Site, timed from
 // Create to its home page's heading on the canvas. Here, on a quiet machine, rather than in
@@ -48,20 +49,13 @@ for (const template of TEMPLATES) {
     const page = await app.firstWindow();
     await expect(page.getByRole("heading", { name: "Start a site" })).toBeVisible();
     await stubFileDialogs(app, join(dir, "Site.wforge"));
-    await page.getByRole("button", { name: "New site…", exact: true }).click();
-    const newSite = page.getByRole("dialog", { name: "New Site" });
-    await newSite
-      .locator("label")
-      .filter({
-        has: page.getByRole("radio", { name: new RegExp(`^${template.title}.*pages`) }),
-      })
-      .click();
-
-    const started = Date.now();
-    await newSite.getByRole("button", { name: "Create" }).click();
+    let started = 0;
+    await createFromTemplate(page, template, async () => {
+      started = Date.now();
+    });
     await expect(
       page.frameLocator(".editor__canvas iframe").locator("h1", { hasText: template.heading }),
-    ).toBeVisible({ timeout: 30_000 });
+    ).toBeVisible({ timeout: OPEN_WAIT });
     const took = Date.now() - started;
     record(template.title, took);
     console.log(`${template.title}: opened in ${took} ms (budget ${OPEN_BUDGET_MS} ms)`);

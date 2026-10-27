@@ -46,24 +46,53 @@ const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
  */
 const LOCAL_CPU_SCALE = 3;
 
-/** The CPU budget for opening a site in this run: CI's for its platform, scaled when local. */
-function openCpuSeconds(): number {
-  const ci = CI_OPEN_CPU_SECONDS[process.platform];
-  if (ci === undefined) throw new Error(`No CPU budget for opening a site on ${process.platform}`);
-  if (process.env.CI === "true") return ci;
-  const scale = Number(process.env.WEBFORGE_E2E_CPU_SCALE ?? LOCAL_CPU_SCALE);
-  if (!(scale > 0)) throw new Error("WEBFORGE_E2E_CPU_SCALE must be a positive number");
-  return Math.round(ci * scale * 100) / 100;
+/** The local factor this run uses: `WEBFORGE_E2E_CPU_SCALE` when set (an empty one is unset). */
+function localCpuScale(): number {
+  const set = process.env.WEBFORGE_E2E_CPU_SCALE;
+  const scale = set === undefined || set.trim() === "" ? LOCAL_CPU_SCALE : Number(set);
+  if (!(scale > 0))
+    throw new Error(`WEBFORGE_E2E_CPU_SCALE must be a positive number, not "${set}"`);
+  return scale;
 }
 
-/** Opening a site's budget: its CPU time, and the wall-clock backstop. */
-export const OPEN_BUDGET = { cpuSeconds: openCpuSeconds(), wallMs: OPEN_WALL_BACKSTOP_MS } as const;
+/** A CPU budget and a wall-clock backstop, and where the CPU budget comes from. */
+export type Budget = {
+  readonly cpuSeconds: number;
+  readonly wallMs: number;
+  /** Which budget it is, for a miss to say: CI's, or the local one. */
+  readonly source: string;
+};
 
-/** CPU seconds each of Webforge's processes has used so far, by process id. */
-async function cpuSoFar(app: ElectronApplication): Promise<Map<number, number>> {
+/**
+ * Opening a site's budget in this run: CI's CPU time for its platform, scaled when local, and the
+ * wall-clock backstop. Worked out when a test checks it, so a spec that never does (spellcheck)
+ * loads whatever the platform or settings.
+ */
+export function openBudget(): Budget {
+  const ci = CI_OPEN_CPU_SECONDS[process.platform];
+  if (ci === undefined) throw new Error(`No CPU budget for opening a site on ${process.platform}`);
+  if (process.env.CI === "true") {
+    return { cpuSeconds: ci, wallMs: OPEN_WALL_BACKSTOP_MS, source: `CI's on ${process.platform}` };
+  }
+  const scale = localCpuScale();
+  return {
+    cpuSeconds: Math.round(ci * scale * 100) / 100,
+    wallMs: OPEN_WALL_BACKSTOP_MS,
+    source: `local on ${process.platform}, CI's × ${scale}`,
+  };
+}
+
+/** One of Webforge's processes: its id with its start, as a pid can be used again. */
+type ProcessKey = string;
+
+/** A process's CPU seconds so far, and its kind. */
+type ProcessCpu = { readonly type: string; readonly cpu: number };
+
+/** CPU seconds each of Webforge's processes has used so far, by process (pid and start time). */
+async function cpuSoFar(app: ElectronApplication): Promise<Map<ProcessKey, ProcessCpu>> {
   const metrics = await app.evaluate(({ app: electronApp }) =>
     electronApp.getAppMetrics().map((metric) => ({
-      pid: metric.pid,
+      key: `${metric.pid}@${metric.creationTime}`,
       type: metric.type,
       cpu: metric.cpu.cumulativeCPUUsage,
     })),
@@ -75,16 +104,27 @@ async function cpuSoFar(app: ElectronApplication): Promise<Map<number, number>> 
       `Electron gives no cumulativeCPUUsage for ${missing.map((metric) => metric.type).join(", ")} on ${process.platform}: the CPU budget can't be checked (ADR 0014)`,
     );
   }
-  return new Map(metrics.map((metric) => [metric.pid, metric.cpu ?? 0]));
+  return new Map(
+    metrics.map((metric) => [metric.key, { type: metric.type, cpu: metric.cpu ?? 0 }]),
+  );
 }
 
-/** What an operation cost: its wall-clock time and the CPU time Webforge spent on it. */
-export type Work = { readonly wallMs: number; readonly cpuSeconds: number };
+/**
+ * What an operation cost: its wall-clock time, the CPU time Webforge spent on it, and the kinds of
+ * the processes that exited meanwhile, whose time is lost.
+ */
+export type Work = {
+  readonly wallMs: number;
+  readonly cpuSeconds: number;
+  readonly exited: readonly string[];
+};
 
 /**
  * Starts measuring an operation; the returned function ends it. The CPU time is every process's
- * use between the two, a process that started meanwhile (the export worker) from 0. One that exits
- * meanwhile is lost, so the count can only come out low.
+ * use between the two: one that started meanwhile (the export worker), or reused an old one's pid,
+ * from 0. One that exits meanwhile is lost, so the count can only come out low; it is named in
+ * the result. Creating a site keeps its window's renderer (`exited` stays empty), so its work
+ * counts in full.
  */
 export async function measureWork(app: ElectronApplication): Promise<() => Promise<Work>> {
   const before = await cpuSoFar(app);
@@ -93,8 +133,9 @@ export async function measureWork(app: ElectronApplication): Promise<() => Promi
     const wallMs = Date.now() - started;
     const after = await cpuSoFar(app);
     let cpuSeconds = 0;
-    for (const [pid, cpu] of after) cpuSeconds += cpu - (before.get(pid) ?? 0);
-    return { wallMs, cpuSeconds };
+    for (const [key, { cpu }] of after) cpuSeconds += cpu - (before.get(key)?.cpu ?? 0);
+    const exited = [...before].filter(([key]) => !after.has(key)).map(([, { type }]) => type);
+    return { wallMs, cpuSeconds, exited };
   };
 }
 
@@ -102,21 +143,17 @@ export async function measureWork(app: ElectronApplication): Promise<() => Promi
  * Checks an operation's work against its CPU budget and its wall-clock backstop, and prints both
  * (in the report and the log), so CI's runs show what each costs.
  */
-export function expectWorkWithin(
-  work: Work,
-  budget: { readonly cpuSeconds: number; readonly wallMs: number },
-  what: string,
-): void {
+export function expectWorkWithin(work: Work, budget: Budget, what: string): void {
   const cpu = work.cpuSeconds.toFixed(2);
-  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds}, ${work.wallMs} ms of ${budget.wallMs} (${process.platform})`;
+  const lost =
+    work.exited.length === 0 ? "" : `; exited meanwhile, not counted: ${work.exited.join(", ")}`;
+  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds}, ${work.wallMs} ms of ${budget.wallMs} (${budget.source})${lost}`;
   test.info().annotations.push({ type: "work", description: line });
   console.log(`[work] ${line}`);
   if (work.cpuSeconds > budget.cpuSeconds) {
-    const where =
-      process.env.CI === "true"
-        ? `CI's budget on ${process.platform}`
-        : `the local budget on ${process.platform}, CI's × ${process.env.WEBFORGE_E2E_CPU_SCALE ?? LOCAL_CPU_SCALE}`;
-    throw new Error(`${what} cost ${cpu} CPU-s, over its ${budget.cpuSeconds} CPU-s (${where})`);
+    throw new Error(
+      `${what} cost ${cpu} CPU-s, over its ${budget.cpuSeconds} CPU-s (${budget.source})`,
+    );
   }
   if (work.wallMs > budget.wallMs) {
     throw new Error(`${what} took ${work.wallMs} ms, over its ${budget.wallMs} ms backstop`);
