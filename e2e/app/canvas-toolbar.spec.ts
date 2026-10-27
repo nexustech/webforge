@@ -196,6 +196,36 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   await expect(readout()).toHaveText(new RegExp(`^${frame.width} × [0-9]+ @ 100%$`));
 });
 
+test("selects a section from a click in its padding when Desktop is zoomed out (F-ED-3, PH2-18)", async () => {
+  // A window too narrow for the desktop layout: Desktop stays 1024 px and the canvas zooms out.
+  await windowWidth(1100);
+  await expect(readout()).toHaveText(/^1024 × [0-9]+ @ [1-9][0-9]%$/);
+  const right = page.getByRole("region", { name: "Right panels" });
+  await right.getByRole("tab", { name: "Edit", exact: true }).click();
+
+  // As a person clicks: on the screen, into the section's bottom padding (8 of its own pixels in),
+  // once the canvas has finished zooming (Puck animates it): where it is, not where it was.
+  const section = canvas().locator(".site-section").first();
+  const boxes: string[] = [];
+  await expect
+    .poll(
+      async () => {
+        boxes.push(JSON.stringify(await section.boundingBox()));
+        return boxes.length >= 3 && boxes.slice(-3).every((box) => box === boxes.at(-1));
+      },
+      { intervals: [100] },
+    )
+    .toBe(true);
+  const box = await section.boundingBox();
+  if (box === null) throw new Error("Section not visible");
+  const height = await section.evaluate((element) => element.getBoundingClientRect().height);
+  const scale = box.height / height;
+  expect(scale).toBeLessThan(1);
+  await page.mouse.click(box.x + 10 * scale, box.y + box.height - 8 * scale);
+
+  await expect(right.getByRole("heading", { name: "Section", exact: true })).toBeVisible();
+});
+
 /** The canvas's scale, from the size readout ("1280 × 900 @ 50%"). */
 async function zoom(): Promise<number> {
   const readout = await toolbar()
