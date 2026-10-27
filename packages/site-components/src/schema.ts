@@ -8,6 +8,7 @@ import type {
   BoxSide,
   BoxValue,
   FormService,
+  FormUnset,
   ImageValue,
   LinkValue,
   NodeDoc,
@@ -260,7 +261,7 @@ export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink";
  * (which its publisher adds, 3.7), an address that isn't `https://`, or a Newsletter without its
  * form address.
  */
-export type FormUnset = "noService" | "netlify" | "insecure" | "noAddress";
+export type { FormUnset };
 
 /** What a component may need from outside its own props while rendering. */
 export type RenderContext = SiteBindings & {
@@ -290,6 +291,11 @@ export type RenderContext = SiteBindings & {
    * stored document, so no site file can ask for its code to be written raw into the editor.
    */
   readonly rawCustomCode?: true;
+  /**
+   * The address of the site's thank-you page (3.7), set by the export when the form service can
+   * send a visitor there after sending and the site has its web address: forms tell the service.
+   */
+  readonly thanksPage?: string;
   /**
    * The Footer's *Cookie settings* (#539, B7): set by the export for a site with Google Analytics
    * and its consent banner, so a visitor can change their choice at any time.

@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
+import { httpsAddress } from "@webforge/model";
 import { defineComponent } from "../define.js";
-import { httpsAddress } from "../form.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import {

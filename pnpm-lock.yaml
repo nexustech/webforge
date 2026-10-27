@@ -848,6 +848,9 @@ importers:
       '@webforge/errors':
         specifier: workspace:*
         version: link:../errors
+      '@webforge/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       '@webforge/model':
         specifier: workspace:*
         version: link:../model

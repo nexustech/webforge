@@ -109,7 +109,12 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
       });
 
       expect([...built.files.keys()]).toMatchSnapshot();
-      expect(built.report.warnings).toEqual([]);
+      // A new site from a template has no form service yet, nor a Newsletter its address: its
+      // forms say so (3.7), and nothing else does.
+      for (const warning of built.report.warnings) {
+        expect(warning, id).toMatchObject({ code: "form-unset" });
+        expect(["noService", "noAddress"], id).toContain(warning.detail);
+      }
       for (const [path, data] of built.files) {
         const text = new TextDecoder().decode(data);
         if (path.endsWith(".css")) {

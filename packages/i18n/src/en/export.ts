@@ -42,6 +42,8 @@ export const exportSite = {
   "export.report.issues": "Worth a look",
   "export.report.brokenLink": "On “{page}”, a link goes to a page or file that isn't there.",
   "export.report.missingImage": "On “{page}”, an image deleted from Media was left out.",
+  "export.report.formUnset":
+    "On “{page}”, a form has nowhere to send its messages. Choose a form service in Site Settings, or give the Newsletter its form address.",
   "export.report.missingIcon":
     "The site icon was deleted from Media, so pages have no icon in the browser tab. Choose another in Site Settings.",
   "export.report.smallIcon":
