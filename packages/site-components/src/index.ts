@@ -49,7 +49,7 @@ export {
   ENTRANCE_FIELDS,
   entranceAttributes,
   entranceClasses,
-  HOVER_FIELD,
+  HOVER_FIELDS,
   hasEntrance,
   hoverClasses,
 } from "./motion.js";

@@ -341,7 +341,7 @@ function styleRules(tokens: ThemeTokens): string[] {
  *   inverse colours, or its fallback (`inverseColors`);
  * - Tailwind's `@theme`: the fonts (`font-sans` for body text, `font-heading`), the spacing unit
  *   every padding, margin and gap is measured in, the type scale as `text-h1` … `text-small`, each
- *   with its weight and line height;
+ *   with its weight and line height, and a hover's springy easing (`ease-spring`);
  * - shades 50–950 of the colour roles (`primary-300`), read where they're used (`@theme inline`)
  *   from variables each theme sets, so they follow inverse sections. They're fixed values: Safari
  *   16.4–17 can't compute relative colours;
@@ -387,6 +387,8 @@ export function themeCss(tokens: ThemeTokens): string {
     ...Object.entries(SHADOW_SCALE[tokens.shadow]).map(
       ([step, shadow]) => `  --shadow-${step}: ${shadow};`,
     ),
+    // A hover's Springy movement (2.28, `ease-spring`): it overshoots a little and settles.
+    "  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);",
     "}",
     `@media (width < ${PHONE_WIDTH}) {`,
     "  :root {",

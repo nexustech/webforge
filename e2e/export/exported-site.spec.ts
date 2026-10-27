@@ -429,6 +429,59 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("hover effects (2.28, ST-7)", () => {
+    /** The fixture's Button that lifts with a shadow when hovered, slowly and springily. */
+    const looks = (page: Page) =>
+      page
+        .getByRole("main")
+        .getByRole("link", { name: "Order online" })
+        .evaluate((element) => {
+          const style = getComputedStyle(element);
+          return {
+            transitions: style.transitionProperty,
+            duration: style.transitionDuration,
+            easing: style.transitionTimingFunction,
+            translate: style.translate,
+            shadow: style.boxShadow,
+          };
+        });
+
+    test("lifts a button with a shadow, at its speed and movement, with CSS only", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "index.html");
+      const before = await looks(page);
+      expect(before.duration).toBe("0.5s");
+      expect(before.easing).toBe("cubic-bezier(0.34, 1.56, 0.64, 1)");
+      expect(before.translate).toBe("none");
+
+      await page.getByRole("main").getByRole("link", { name: "Order online" }).hover();
+
+      await expect.poll(async () => (await looks(page)).translate).toBe("0px -4px");
+      expect((await looks(page)).shadow).not.toBe(before.shadow);
+    });
+
+    test("neither moves nor transitions for a visitor who prefers reduced motion", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" });
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "index.html");
+      const before = await looks(page);
+      // No transition at all, the button's own neither.
+      expect(before.transitions).toBe("none");
+
+      await page.getByRole("main").getByRole("link", { name: "Order online" }).hover();
+
+      // The shadow still shows, at once; nothing moves.
+      await expect.poll(async () => (await looks(page)).shadow).not.toBe(before.shadow);
+      const hovered = await looks(page);
+      expect(hovered.translate).toBe("none");
+      expect(hovered.transitions).toBe("none");
+    });
+  });
+
   test.describe("tabs (2.11)", () => {
     const list = (page: Page) => page.getByRole("tablist");
     const tab = (page: Page, name: string) => page.getByRole("tab", { name });

@@ -3,7 +3,7 @@ import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
-import { CARD_HOVER_FIELD, hoverClasses } from "../motion.js";
+import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
 import type { RenderContext } from "../schema.js";
 import { BodyText, ButtonLink, SectionTitle } from "../typography.js";
 
@@ -46,7 +46,7 @@ const pricing = defineSection({
     text: { kind: "richtext", label: t("field.text"), inline: true },
     items: { kind: "slot", label: t("field.plans"), allow: ["PricingPlan"] },
     // Every card alike under the pointer, those added later too (F-DS-5, 2.12).
-    hover: CARD_HOVER_FIELD,
+    ...CARD_HOVER_FIELDS,
   },
   defaults: {
     title: t("starter.pricingTitle"),
@@ -75,7 +75,7 @@ const pricing = defineSection({
           <SectionTitle>{values.title}</SectionTitle>
           <BodyText className="mt-4">{values.text}</BodyText>
         </div>
-        <PricingContext value={{ layout: values.variant, hover: hoverClasses(values.hover) }}>
+        <PricingContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
           <Items className={GRID_CLASS[values.variant]} />
         </PricingContext>
       </div>
