@@ -60,8 +60,14 @@ export const missingImagesRule: CheckRule = {
 };
 
 /**
+ * A section's background image (2.26): drawn behind its content, so decorative, with no alt text.
+ * The library knows it by this name too (`fieldsHiddenBy`).
+ */
+const BACKGROUND_IMAGE_FIELD = "backgroundImage";
+
+/**
  * An image without alt text, its own or the placement's (G15): screen readers and search engines
- * need it, and an image link has no other text.
+ * need it, and an image link has no other text. A section's background image needs none.
  */
 export const altTextRule: CheckRule = {
   id: "altText",
@@ -69,6 +75,7 @@ export const altTextRule: CheckRule = {
   check: (input) => {
     const found: Finding[] = [];
     eachFieldValue(input, ["media"], (placed) => {
+      if (placed.field === BACKGROUND_IMAGE_FIELD) return;
       const image = imageValueSchema.safeParse(placed.value);
       if (!image.success) return;
       const meta = mediaItem(input.site.media, image.data.mediaId);

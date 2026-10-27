@@ -114,6 +114,17 @@ describe("missing images and alt text", () => {
     ]);
   });
 
+  it("asks no alt text of a section's background image, which is decorative (2.26)", () => {
+    const site = siteWith(
+      [element("Section", "s", { backgroundImage: { mediaId: "bare" }, content: [] })],
+      { media: media(image("bare", { alt: "" })) },
+    );
+
+    expect(findIn(altTextRule, site)).toEqual([]);
+    // Deleted from Media, it's still a gap.
+    expect(findIn(missingImagesRule, { ...site, media: {} })).toHaveLength(1);
+  });
+
   it("checks images in a list's items too", () => {
     const site = siteWith([
       element("Testimonial", "quote", { photo: { mediaId: "bare" as MediaId } }),
