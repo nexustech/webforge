@@ -61,5 +61,12 @@ export async function withBuiltTemplate(
 export async function openPage(page: Page, address: string): Promise<void> {
   await page.goto(address);
   await page.evaluate(() => document.fonts.ready);
+  // Served over http, photos below the fold load lazily, as the page scrolls: load them all now,
+  // so a full-page screenshot never catches one half loaded.
+  await page.evaluate(async () => {
+    const images = [...document.images];
+    for (const image of images) image.loading = "eager";
+    await Promise.all(images.map((image) => image.decode().catch(() => undefined)));
+  });
   await page.waitForFunction(() => [...document.images].every((image) => image.complete));
 }
