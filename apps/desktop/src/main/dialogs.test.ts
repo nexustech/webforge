@@ -82,12 +82,28 @@ describe("createNativeDialogs", () => {
     await expect(cancelled.media.chooseMediaFiles()).resolves.toBeUndefined();
   });
 
+  it("saves an export's ZIP under the site's name, as a .zip (3.3)", async () => {
+    const { dialogs, dialog } = setUp({ save: { canceled: false, filePath: "/sites/Bakery.zip" } });
+
+    await expect(dialogs.export.chooseExportZip("Rosa's Bakery")).resolves.toBe(
+      "/sites/Bakery.zip",
+    );
+    expect(dialog.showSaveDialog.mock.calls[0]?.at(-1)).toMatchObject({
+      defaultPath: "Rosa's Bakery.zip",
+      filters: [{ extensions: ["zip"] }],
+    });
+    await expect(
+      setUp({ save: { canceled: true, filePath: "" } }).dialogs.export.chooseExportZip("Bakery"),
+    ).resolves.toBeUndefined();
+  });
+
   it("takes a test's answer instead of opening a site or export dialog (e2e builds)", async () => {
     const { dialogs, dialog } = setUp({ test: { path: "/test/Site.wforge" } });
 
     await expect(dialogs.project.chooseNewProjectPath("")).resolves.toBe("/test/Site.wforge");
     await expect(dialogs.project.chooseProjectToOpen()).resolves.toBe("/test/Site.wforge");
     await expect(dialogs.export.chooseExportFolder()).resolves.toBe("/test/Site.wforge");
+    await expect(dialogs.export.chooseExportZip("Bakery")).resolves.toBe("/test/Site.wforge");
     expect(dialog.showSaveDialog).not.toHaveBeenCalled();
     expect(dialog.showOpenDialog).not.toHaveBeenCalled();
   });

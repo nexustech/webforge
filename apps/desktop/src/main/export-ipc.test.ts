@@ -3,7 +3,9 @@ import { DEFAULT_THEME } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ExportOutcome } from "../shared/export-worker-protocol.js";
+import type { ExportChoices } from "../shared/ipc/site.js";
 import {
+  type ExportDeps,
   type ExportDialogs,
   type RunExport,
   registerExportHandlers,
@@ -23,6 +25,13 @@ const snapshot: SiteSnapshot = {
 };
 const PHOTO = "a".repeat(64);
 const PDF = "d".repeat(64);
+const folder: ExportChoices = {
+  format: "folder",
+  minify: false,
+  developerFiles: false,
+  askWebAddress: true,
+};
+const zip: ExportChoices = { ...folder, format: "zip", minify: true, developerFiles: true };
 const request = {
   snapshot,
   media: [
@@ -36,15 +45,23 @@ const request = {
     },
     { id: "gone", name: "gone", mimeType: "image/png", hash: "b".repeat(64), alt: "" },
   ],
+  choices: folder,
+  output: { minify: false, developerFiles: false },
 } as const;
 const exported: ExportOutcome = {
   type: "exported",
   pages: 1,
   files: 5,
   bytes: 1234,
-  warnings: 0,
+  warnings: [{ code: "broken-link", page: "index", detail: "contact" }],
+  warningCount: 3,
   durationMs: 900,
 };
+
+const toFolder = (path: string | undefined): ExportDialogs => ({
+  chooseExportFolder: async () => path,
+  chooseExportZip: async () => undefined,
+});
 
 function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported) {
   const handlers = new Map<string, Handler>();
@@ -53,9 +70,15 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
       handlers.set(channel, handler);
     },
   } as unknown as Pick<IpcMain, "handle">;
-  const runExport = vi.fn<RunExport>(typeof run === "function" ? run : async () => run);
-  const sendProgress = vi.fn();
-  registerExportHandlers(ipc, (url) => url === APP_URL, dialogs, runExport, sendProgress);
+  const deps = {
+    dialogs,
+    runExport: vi.fn<RunExport>(typeof run === "function" ? run : async () => run),
+    sendProgress: vi.fn(),
+    choices: { read: vi.fn(async () => zip), write: vi.fn(async () => undefined) },
+    open: vi.fn(async (): Promise<"opened" | "missing"> => "opened"),
+    currentSite: vi.fn((): string | undefined => "/sites/Bakery.wforge"),
+  } satisfies ExportDeps;
+  registerExportHandlers(ipc, (url) => url === APP_URL, deps);
   const call =
     (channel: string) =>
     (...args: unknown[]) => {
@@ -66,10 +89,12 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
       return handler({ senderFrame: { url: APP_URL } } as unknown as IpcMainInvokeEvent, ...args);
     };
   return {
+    ...deps,
     invoke: call("site:export"),
     cancel: call("site:cancel-export"),
-    runExport,
-    sendProgress,
+    choicesOf: call("site:export-choices"),
+    setChoices: call("site:set-export-choices"),
+    openLast: call("site:open-export"),
   };
 }
 
@@ -78,27 +103,123 @@ afterEach(() => {
 });
 
 describe("registerExportHandlers", () => {
-  it("exports to the folder the user chose and returns only its name", async () => {
-    const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
+  it("exports to the folder the person chose, returning its name and what the report needs", async () => {
+    const { invoke, runExport, choices } = setUp(toFolder("/sites/my-site"));
 
-    await expect(invoke({ snapshot, media: [] })).resolves.toEqual({
+    await expect(invoke({ ...request, media: [] })).resolves.toEqual({
       status: "exported",
-      folderName: "my-site",
+      format: "folder",
+      name: "my-site",
       pages: 1,
       files: 5,
-      warnings: 0,
+      bytes: 1234,
+      warnings: [{ code: "broken-link", page: "index", detail: "contact" }],
+      warningCount: 3,
     });
     expect(runExport).toHaveBeenCalledWith(
       { ...snapshot, documents: [] },
-      "/sites/my-site",
+      {
+        destination: "/sites/my-site",
+        format: "folder",
+        output: { minify: false, developerFiles: false },
+      },
+      expect.anything(),
+    );
+    // The site remembers them for its next export.
+    expect(choices.write).toHaveBeenCalledWith(folder);
+  });
+
+  it("saves a ZIP where the person chose, offering one named after the site (3.3)", async () => {
+    const chooseExportZip = vi.fn(async () => "/sites/bakery.zip");
+    const { invoke, runExport } = setUp({
+      chooseExportFolder: async () => undefined,
+      chooseExportZip,
+    });
+
+    await expect(
+      invoke({ ...request, choices: zip, output: { minify: true, developerFiles: true } }),
+    ).resolves.toMatchObject({
+      status: "exported",
+      format: "zip",
+      name: "bakery.zip",
+    });
+    expect(chooseExportZip).toHaveBeenCalledWith("Bakery");
+    expect(runExport).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        destination: "/sites/bakery.zip",
+        format: "zip",
+        output: { minify: true, developerFiles: true },
+      },
       expect.anything(),
     );
   });
 
+  it("still exports when the site can't remember the choices", async () => {
+    const { invoke, choices } = setUp(toFolder("/sites/my-site"));
+    choices.write.mockRejectedValueOnce(new Error("read-only"));
+
+    await expect(invoke(request)).resolves.toMatchObject({ status: "exported" });
+  });
+
+  it("answers the open site's last choices, and remembers new ones at once (3.3)", async () => {
+    const { choicesOf, setChoices, choices } = setUp(toFolder(undefined));
+
+    await expect(choicesOf()).resolves.toEqual(zip);
+    await expect(setChoices({ ...folder, askWebAddress: false })).resolves.toBeNull();
+    expect(choices.write).toHaveBeenCalledWith({ ...folder, askWebAddress: false });
+  });
+
+  it("writes what the export applies, and remembers the choices as they are (3.3)", async () => {
+    const { invoke, runExport, choices } = setUp(toFolder("/sites/my-site"));
+    // Simple mode: developer files not written, Advanced mode's choice kept.
+    const kept = { ...folder, developerFiles: true };
+
+    await invoke({ ...request, choices: kept, output: { minify: false, developerFiles: false } });
+
+    expect(runExport).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ output: { minify: false, developerFiles: false } }),
+      expect.anything(),
+    );
+    expect(choices.write).toHaveBeenCalledWith(kept);
+  });
+
+  it("opens only the open site's export, and says when it's gone (3.3)", async () => {
+    const { invoke, openLast, open, currentSite } = setUp(toFolder("/sites/my-site"));
+    await invoke(request);
+
+    open.mockResolvedValueOnce("missing");
+    await expect(openLast()).resolves.toBe("missing");
+    // File → Open of another site: it hasn't been exported yet.
+    currentSite.mockReturnValue("/sites/Salon.wforge");
+    await expect(openLast()).resolves.toBe("none");
+    expect(open).toHaveBeenCalledOnce();
+  });
+
+  it("opens the last export from disk, and nothing before there is one (3.3)", async () => {
+    let outcome: ExportOutcome = exported;
+    const { invoke, openLast, open } = setUp(toFolder("/sites/my-site"), async () => outcome);
+    await expect(openLast()).resolves.toBe("none");
+
+    await invoke(request);
+    // A failed export after it leaves it the last one.
+    outcome = { type: "failed", code: "write-failed", detail: "write-failed" };
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await invoke(request);
+
+    await expect(openLast()).resolves.toBe("opened");
+    expect(open).toHaveBeenCalledWith({
+      destination: "/sites/my-site",
+      format: "folder",
+      output: { minify: false, developerFiles: false },
+    });
+  });
+
   it("passes the export's progress on to the window, and cancels it when asked (3.1)", async () => {
     const { invoke, cancel, sendProgress } = setUp(
-      { chooseExportFolder: async () => "/sites/my-site" },
-      (_snapshot, _destination, { signal, onProgress }) =>
+      toFolder("/sites/my-site"),
+      (_snapshot, _target, { signal, onProgress }) =>
         new Promise((resolve) => {
           onProgress({ stage: "images", done: 0, total: 2 });
           signal.addEventListener("abort", () => resolve({ type: "cancelled" }));
@@ -117,7 +238,7 @@ describe("registerExportHandlers", () => {
   });
 
   it("names images and documents by hash: their bytes are read only as the worker asks (R15)", async () => {
-    const { invoke, runExport } = setUp({ chooseExportFolder: async () => "/sites/my-site" });
+    const { invoke, runExport } = setUp(toFolder("/sites/my-site"));
     const document = {
       id: "prices",
       name: "prices",
@@ -130,37 +251,41 @@ describe("registerExportHandlers", () => {
     // No bytes in this process: the build leaves out a file the site doesn't store, with a warning.
     expect(runExport).toHaveBeenCalledWith(
       { ...snapshot, media: request.media, documents: [document] },
-      "/sites/my-site",
+      expect.anything(),
       expect.anything(),
     );
   });
 
-  it("does nothing when the user cancels the dialog", async () => {
-    const { invoke, runExport } = setUp({ chooseExportFolder: async () => undefined });
+  it("does nothing when the person cancels the dialog, and remembers nothing", async () => {
+    const { invoke, runExport, choices } = setUp(toFolder(undefined));
 
     await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
     expect(runExport).not.toHaveBeenCalled();
+    expect(choices.write).not.toHaveBeenCalled();
   });
 
-  it("rejects a snapshot that is not a valid site before asking for a folder", async () => {
+  it("rejects a snapshot that is not a valid site, or unknown choices, before asking for a folder", async () => {
     const chooseExportFolder = vi.fn(async () => "/sites/my-site");
-    const { invoke } = setUp({ chooseExportFolder });
+    const { invoke } = setUp({ chooseExportFolder, chooseExportZip: async () => undefined });
 
-    await expect(invoke({ snapshot: { ...snapshot, pages: [] }, media: [] })).rejects.toThrow();
+    await expect(invoke({ ...request, snapshot: { ...snapshot, pages: [] } })).rejects.toThrow();
     await expect(
-      invoke({ snapshot, media: [{ ...request.media[0], hash: "../secret" }] }),
+      invoke({ ...request, media: [{ ...request.media[0], hash: "../secret" }] }),
     ).rejects.toThrow();
+    await expect(invoke({ ...request, choices: { ...folder, format: "tar" } })).rejects.toThrow();
     expect(chooseExportFolder).not.toHaveBeenCalled();
   });
 });
 
 describe("toExportResult", () => {
+  const target = { destination: "/sites/my-site", format: "folder" } as const;
+
   it("passes on the page to rename, but logs only the codes (R16)", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     const result = toExportResult(
       { type: "failed", code: "reserved-name", detail: "reserved-name", page: "Contact us" },
-      "/sites/my-site",
+      target,
     );
 
     expect(result).toEqual({ status: "failed", reason: "reserved-name", page: "Contact us" });
@@ -170,7 +295,7 @@ describe("toExportResult", () => {
   });
 
   it("reports a cancelled export as the dialog's cancel: nothing changed on disk (R15)", () => {
-    expect(toExportResult({ type: "cancelled" }, "/sites/my-site")).toEqual({ status: "canceled" });
+    expect(toExportResult({ type: "cancelled" }, target)).toEqual({ status: "canceled" });
   });
 
   it("passes on the failure reason and logs only codes", () => {
@@ -178,7 +303,7 @@ describe("toExportResult", () => {
 
     const result = toExportResult(
       { type: "failed", code: "folder-not-empty", detail: "folder-not-empty" },
-      "/Users/sam/Documents",
+      { destination: "/Users/sam/Documents", format: "folder" },
     );
 
     expect(result).toEqual({ status: "failed", reason: "folder-not-empty" });

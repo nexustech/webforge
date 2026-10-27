@@ -114,6 +114,7 @@ test.describe("desktop shell", () => {
         "project",
         "site",
         "templates",
+        "themes",
       ],
     });
   });

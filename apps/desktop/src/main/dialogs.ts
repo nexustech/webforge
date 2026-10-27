@@ -81,6 +81,17 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         });
         return result.canceled ? undefined : result.filePaths[0];
       },
+      chooseExportZip: async (siteName) => {
+        const answer = await parts.testAnswer("save");
+        if (answer !== undefined) return answer.path;
+        // The system's dialog asks before replacing a file of that name.
+        const result = await save({
+          title: t("export.zipDialogTitle"),
+          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}.zip`,
+          filters: [{ name: t("export.zipFileType"), extensions: ["zip"] }],
+        });
+        return result.canceled || result.filePath === "" ? undefined : result.filePath;
+      },
     },
     media: {
       chooseMediaFiles: async () => {

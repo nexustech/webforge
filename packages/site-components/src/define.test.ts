@@ -1,6 +1,7 @@
 import type { Responsive } from "@webforge/model";
 import { isValidElement, type ReactNode } from "react";
 import { describe, expect, expectTypeOf, it } from "vitest";
+import { APPEARANCE_FIELDS } from "./appearance.js";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { type ComponentSpec, createLibrary, defineComponent } from "./define.js";
@@ -36,7 +37,9 @@ describe("defineComponent (2.5)", () => {
   it("accepts a component that follows the conventions, as it is", () => {
     const def = defineComponent(base);
 
-    expect(def.fields).toBe(base.fields);
+    // Its own fields after the Appearance group every element has (2.22).
+    expect(def.fields).toEqual({ ...APPEARANCE_FIELDS, ...base.fields });
+    expect(Object.keys(def.fields).slice(0, 2)).toEqual(["lookSize", "lookWeight"]);
     expect(def.defaults).toBe(base.defaults);
     expect(def.label).toBe("Card");
   });
@@ -326,7 +329,12 @@ describe("defineComponent's types (R7)", () => {
     });
 
     const [values, content] = seen as [Record<string, unknown>, unknown];
-    expect(values).toEqual({
+    // Its own values, and the Appearance group's as their kinds give them (2.22).
+    expect(values).toMatchObject({ lookSize: "default", lookItalic: false, lookColor: "default" });
+    const own = Object.fromEntries(
+      Object.entries(values).filter(([name]) => !Object.hasOwn(APPEARANCE_FIELDS, name)),
+    );
+    expect(own).toEqual({
       title: 42,
       note: "",
       // Not a choice: the default.

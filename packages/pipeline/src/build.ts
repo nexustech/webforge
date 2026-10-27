@@ -25,8 +25,10 @@ import {
 } from "@webforge/site-components";
 import { fontFacesFor } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
+import { developerFiles } from "./developer-files.js";
 import { BODY_CLASS, pageDocument } from "./html.js";
 import { imageForDepth, processImage } from "./images.js";
+import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
 
 /**
@@ -65,11 +67,12 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
 }
 
 /**
- * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, or an
- * image deleted from Media that a page still places (that place is left out).
+ * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
+ * image deleted from Media that a page still places (that place is left out), or a page *Minify
+ * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3).
  */
 export type BuildWarning = {
-  readonly code: "broken-link" | "missing-image";
+  readonly code: "broken-link" | "missing-image" | "not-minified";
   /** The page path the problem is on. */
   readonly page: string;
   readonly detail: string;
@@ -95,11 +98,20 @@ export type BuildEvent =
   | { readonly stage: "images" | "pages"; readonly done: number; readonly total: number }
   | { readonly stage: "styles" | "fonts" };
 
-/** How a build is run: a signal that cancels it, and what to tell of its progress. */
+/** The person's choices for what an export writes (3.3). Both are off unless asked for. */
+export type OutputOptions = {
+  /** *Minify output* (F-EX-3, X4): HTML, CSS and JS as small as is safe, instead of readable. */
+  readonly minify?: boolean | undefined;
+  /** *Include developer files* (F-EX-4, X6): the stylesheet's source and the theme, in `developer/`. */
+  readonly developerFiles?: boolean | undefined;
+};
+
+/** How a build is run: a signal that cancels it, what to tell of its progress, what to write. */
 export type BuildOptions = {
   /** Stops the build before its next image or page; it then throws a `cancelled` {@link BuildError}. */
   readonly signal?: AbortSignal | undefined;
   readonly onProgress?: ((event: BuildEvent) => void) | undefined;
+  readonly output?: OutputOptions | undefined;
 };
 
 /**
@@ -121,10 +133,11 @@ export type BuildCaches = {
   readonly pages: Map<string, RenderedRegions>;
 };
 
-/** How {@link buildEvents} runs: what for, its cancel signal, and the caches it may use. */
+/** How {@link buildEvents} runs: what for, its cancel signal, its output, the caches it may use. */
 type BuildRun = {
   readonly mode: BuildMode;
   readonly signal?: AbortSignal | undefined;
+  readonly output?: OutputOptions | undefined;
   readonly caches?: BuildCaches | undefined;
 };
 
@@ -194,6 +207,7 @@ export async function buildSite(
   const events = buildEvents(snapshot, library, resources, {
     mode: "export",
     signal: options.signal,
+    output: options.output,
   });
   for (;;) {
     const next = await events.next();
@@ -213,6 +227,7 @@ export async function* buildEvents(
   run: BuildRun,
 ): AsyncGenerator<BuildEvent, BuiltSite> {
   const { signal, caches } = run;
+  const minify = run.output?.minify === true;
   const parsed = siteSnapshotSchema.safeParse(snapshot);
   if (!parsed.success) {
     throw new BuildError("invalid-site", parsed.error.message);
@@ -302,7 +317,7 @@ export async function* buildEvents(
     documentPaths.set(id, path);
   }
 
-  const script =
+  const readableScript =
     behaviours.length === 0
       ? undefined
       : [
@@ -311,6 +326,9 @@ export async function* buildEvents(
           ...behaviours.flatMap((name) => BEHAVIOUR_SCRIPTS[name]?.trim() ?? []),
           "",
         ].join("\n\n");
+  // Minified before it's named, so its name still changes only when it does.
+  const script =
+    readableScript !== undefined && minify ? await minifiedJs(readableScript) : readableScript;
   const scriptPath =
     script === undefined ? undefined : `assets/js/webforge.${contentHash(script)}.js`;
 
@@ -428,14 +446,15 @@ export async function* buildEvents(
     fontsUrl: "../fonts/",
     ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
   };
-  const css =
+  const readableCss =
     caches === undefined
       ? await buildSiteCss(resources, cssOptions)
       : await caches.styles.css(cssOptions, run.mode === "preview");
+  const css = minify ? minifiedCss(readableCss) : readableCss;
   const cssPath = `assets/css/site.${contentHash(css)}.css`;
   files.set(cssPath, text.encode(css));
   for (const entry of rendered) {
-    const html = pageDocument({
+    const page = {
       language: site.language,
       theme: site.theme.preset,
       title: entry.page.path === "index" ? site.name : `${entry.page.title} | ${site.name}`,
@@ -446,8 +465,22 @@ export async function* buildEvents(
       main: entry.main,
       footer: entry.footer,
       ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
-    });
+    };
+    let html = pageDocument(page);
+    if (minify) {
+      try {
+        html = await minifiedHtml(pageDocument(page, false));
+      } catch {
+        // HTML the minifier can't read (a broken tag in Custom Code): the page stays readable.
+        warnings.push({ code: "not-minified", page: entry.page.path, detail: "" });
+      }
+    }
     files.set(`${entry.page.path}.html`, text.encode(html));
+  }
+  if (run.output?.developerFiles === true) {
+    for (const [path, content] of developerFiles(site, cssOptions, cssPath)) {
+      files.set(path, text.encode(content));
+    }
   }
   if (script !== undefined && scriptPath !== undefined) {
     files.set(scriptPath, text.encode(script));

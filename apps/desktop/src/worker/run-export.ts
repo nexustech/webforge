@@ -5,10 +5,11 @@ import {
   type StoredMedia,
   WriteError,
   writeSiteFolder,
+  writeSiteZip,
 } from "@webforge/pipeline";
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
-import type { ExportProgress } from "../shared/ipc/site.js";
+import { type ExportProgress, MAX_REPORTED_WARNINGS } from "../shared/ipc/site.js";
 
 /** What an export reaches outside the worker: the site's stored bytes, a cancel, its pipeline. */
 export type ExportChannel = {
@@ -42,6 +43,7 @@ export async function runExport(
     const events = channel.pipeline.build(job.snapshot, resources, {
       mode: "export",
       signal: channel.signal,
+      output: job.output,
     });
     for await (const event of events) {
       if (event.stage !== "done") {
@@ -50,13 +52,21 @@ export async function runExport(
       }
       const built = event.site;
       channel.onProgress?.({ stage: "writing" });
-      await writeSiteFolder(built.files, job.destination, channel.signal);
+      const write = job.format === "zip" ? writeSiteZip : writeSiteFolder;
+      await write(built.files, job.destination, channel.signal);
+      const { warnings } = built.report;
       return {
         type: "exported",
         pages: built.report.pages,
         files: built.report.files,
         bytes: built.report.bytes,
-        warnings: built.report.warnings.length,
+        // For the report, within the protocol's limits.
+        warnings: warnings.slice(0, MAX_REPORTED_WARNINGS).map((warning) => ({
+          code: warning.code,
+          page: warning.page.slice(0, 1024),
+          detail: warning.detail.slice(0, 2048),
+        })),
+        warningCount: warnings.length,
         durationMs: Math.round(performance.now() - started),
       };
     }
