@@ -1,6 +1,6 @@
 # A quick start for a new site
 
-**Status:** ⏳ Proposed (QS-1…QS-8), 27 Oct 2026. The product owner's question: a wizard to create a site that asks for the site's name, a description, information about the business, the pages wanted and the preferred colours. This note compares how other builders run that first conversation, records where Webforge already stands and proposes a shape. No decision is recorded yet.
+**Status:** ✅ Decided (QS-1…QS-8, product owner, 27 Oct 2026): QS-1…QS-4 are plan item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516), 5.5 days, stream A in Phase 3), QS-5 and QS-6 are rules, QS-7 is v1.1 in place of G25c's "Later", QS-8 is noted on 5.4. The product owner's question of 27 Oct 2026: a wizard to create a site that asks for the site's name, a description, information about the business, the pages wanted and the preferred colours. This note compares how other builders run that first conversation, records where Webforge already stands and proposes a shape.
 
 **Goal:** a first-time user answers a few questions and opens the editor on a site that is already theirs: their name, their pages, their colours, their phone number, instead of a template's sample business. Within F-SITE-1's limits (the editor opens in under three seconds) and the product's: no server, no account, nothing sent anywhere (C8, B2 deferred).
 
@@ -53,20 +53,20 @@ So the deterministic wizard is almost assembled from parts that exist: New Site'
 
 ## 5. Proposals
 
-Effort is in ideal days against the current code. The target column says where the proposal would land if adopted; nothing is decided here.
+Effort is in ideal days against the current code. The target column says where each proposal landed when adopted (§6).
 
 | ID | Proposal | Effort | Target |
 |---|---|---|---|
-| QS-1 | **A four-step quick start, answers-drive-choices, no generated text.** *Your business* (type, name, what you do) → *A look* (the templates of that type as pictures, Try an example where one exists, the theme) → *Pages* (ticked list) → *Colours and details* (palettes, From my logo, brand colour; optional phone, email, address, opening hours). Every step can be skipped, every answer can be changed later, and the editor opens in under three seconds as F-SITE-1 asks. Built on the 2.21 form engine, as a dialog that follows New Site's layout (LF-11) and the start screen's reading density (SC-1) | 2.5 | MVP, a new Phase 3 item |
-| QS-2 | **The sample business is replaced on creation.** Templates mark their sample business name, phone, email, address and hours; a new site gets the person's answers in those places, in the copy as well as in Site Settings, by binding the headings and footer text that carry the name to Site Settings' business name where the component allows it and substituting the rest when the site is made. Blank and the examples are unchanged (an example is meant to be someone else's finished site) | 1 | MVP, in the same item |
-| QS-3 | **Page recipes per business type.** Each of the seven business types lists the pages it commonly adds beyond the template's (for the café: Menu, Gallery, Events; for trades: Services, Prices, Reviews, Areas we cover; for the consultant: Services, Testimonials, FAQ), each a short recipe of sections from the catalogue in the chosen theme, with placeholder copy in the glossary's voice. The Pages step builds them when ticked; the same recipes feed the Pages panel's *Add page* as suggestions later | 1.5 | MVP, in the same item |
-| QS-4 | **The start screen's primary action opens the quick start.** SC-3's welcome keeps the three ways in; *Start a site* opens the quick start and New Site stays one link away (*Choose a template yourself*) for people who know what they want. Nothing is removed from New Site | 0.5 | MVP, in the same item |
+| QS-1 | **A four-step quick start, answers-drive-choices, no generated text.** *Your business* (type, name, what you do) → *A look* (the templates of that type as pictures, Try an example where one exists, the theme) → *Pages* (ticked list) → *Colours and details* (palettes, From my logo, brand colour; optional phone, email, address, opening hours). Every step can be skipped, every answer can be changed later, and the editor opens in under three seconds as F-SITE-1 asks. Built on the 2.21 form engine, as a dialog that follows New Site's layout (LF-11) and the start screen's reading density (SC-1) | 2.5 | MVP, item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516)) |
+| QS-2 | **The sample business is replaced on creation.** Templates mark their sample business name, phone, email, address and hours; a new site gets the person's answers in those places, in the copy as well as in Site Settings, by binding the headings and footer text that carry the name to Site Settings' business name where the component allows it and substituting the rest when the site is made. Blank and the examples are unchanged (an example is meant to be someone else's finished site) | 1 | MVP, item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516)) |
+| QS-3 | **Page recipes per business type.** Each of the seven business types lists the pages it commonly adds beyond the template's (for the café: Menu, Gallery, Events; for trades: Services, Prices, Reviews, Areas we cover; for the consultant: Services, Testimonials, FAQ), each a short recipe of sections from the catalogue in the chosen theme, with placeholder copy in the glossary's voice. The Pages step builds them when ticked; the same recipes feed the Pages panel's *Add page* as suggestions later | 1.5 | MVP, item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516)) |
+| QS-4 | **The start screen's primary action opens the quick start.** SC-3's welcome keeps the three ways in; *Start a site* opens the quick start and New Site stays one link away (*Choose a template yourself*) for people who know what they want. Nothing is removed from New Site | 0.5 | MVP, item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516)) |
 | QS-5 | **The quick start never asks for anything the MVP can't use.** No long description, no goals, no audience, no selling point. These are the generative builders' questions and they have nothing to feed until QS-7 | – | Rule |
 | QS-6 | **Opening hours and contact details are optional and last.** They are the one step a person may not have to hand (a new business, no premises yet). Skipping leaves the template's placeholders, which Site Check already flags where they would be published | – | Rule, in QS-1 |
 | QS-7 | **The quick start grows a description when the assistant lands.** In v1.1, the first step gains *Tell us about your business* (a paragraph), and the assistant drafts the home page's and About page's copy from it with approve-before-apply (WF-2); G25c moves from "Later" to v1.1 as that step, not as a separate generator. Until then the field doesn't appear | – | v1.1 (replaces G25c's "Later") |
 | QS-8 | **5.4's tour starts after the quick start.** The Phase 5 onboarding's guided tour drops "pick a template" and "change the theme" (the quick start did both) and starts at editing text, then preview and publish. Its estimate is reviewed when 5.4 is planned | – | Phase 5 |
 
-**Total if QS-1…QS-4 are adopted:** 5.5 days, a new Phase 3 item (the templates and New Site are merged, 2.21 is merged, 2.3b is merged; nothing it needs is open). Phase 3's goal (preview, export and Site Check) is where the first complete sites appear, and a quick start is what turns a template into one.
+**QS-1…QS-4 together:** 5.5 days, plan item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516)) (the templates and New Site are merged, 2.21 is merged, 2.3b is merged; nothing it needs is open). Phase 3's goal (preview, export and Site Check) is where the first complete sites appear, and a quick start is what turns a template into one.
 
 **What this leaves out, and why:**
 - **Style words** (Jimdo's Modern, Minimal, Fresh…) narrow a hundred templates; Webforge has eight, shown as pictures. The business type is enough of a filter.
@@ -77,11 +77,18 @@ Effort is in ideal days against the current code. The target column says where t
 
 ## 6. Decisions
 
+All eight proposals were adopted as written by the product owner on 27 Oct 2026. The open points were settled with them: the quick start is the start screen's primary action with New Site one link away (QS-4); the last step includes the contact details (QS-6); 5.4's tour changes now and its estimate is reviewed when 5.4 is planned (QS-8).
+
 | ID | Decision |
 |---|---|
-| – | None yet. QS-1…QS-8 await the product owner's decision. |
-
-Open points for the decision: whether the quick start is the start screen's primary action with New Site one link away (QS-4), or a second door beside it; how far the last step goes (palette only, or the contact details too); and whether 5.4 changes now or when it is planned (QS-8).
+| QS-1 | ✅ **A four-step quick start** (business, look, pages, colours and details), answers drive choices, no generated text, every step skippable, the editor in < 3 s. Plan item 3.11 ([#516](https://github.com/nexustech/webforge/issues/516)), 2.5 of its 5.5 days, stream A after 3.5. F-SITE-1 |
+| QS-2 | ✅ **The sample business is replaced on creation**, in the copy as well as Site Settings; Blank and the examples unchanged. In 3.11, 1 day |
+| QS-3 | ✅ **Page recipes per business type** for the Pages step and the Pages panel's *Add page*. In 3.11, 1.5 days |
+| QS-4 | ✅ **The start screen's primary action opens the quick start**; New Site stays one link away (*Choose a template yourself*). In 3.11, 0.5 day. Amends SC-3 |
+| QS-5 | ✅ **Rule:** the quick start never asks for anything the MVP can't use (no long description, goals, audience or selling point) |
+| QS-6 | ✅ **Rule:** opening hours and contact details are optional and last |
+| QS-7 | ✅ **v1.1:** the quick start's first step gains a description the built-in assistant drafts copy from, with approve-before-apply (WF-2). Replaces G25c's "Later" in [the gap analysis](05-feature-gap-analysis.md) and MVP §5 |
+| QS-8 | ✅ **5.4's tour starts after the quick start** (editing text → preview → publish); its estimate is reviewed when 5.4 is planned. Noted on [#79](https://github.com/nexustech/webforge/issues/79) |
 
 ## 7. Sources
 
