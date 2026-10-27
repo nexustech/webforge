@@ -27,7 +27,35 @@ export type PageDocument = {
   readonly footer: string;
   /** The back-to-top button (F-CM-9), after the Footer, or nothing when the page has none. */
   readonly backToTop?: string;
+  /**
+   * More lines for the `<head>`, in order, after the stylesheet: the favicon set's links first
+   * (3.4), then the share and search tags (3.5). Each is whole, safe HTML that the build made.
+   */
+  readonly head?: readonly string[];
 };
+
+/** A file of the site's icon set (3.4): where it is, its sizes and its type, as a manifest lists it. */
+export type SiteIcon = {
+  readonly path: string;
+  /** `16x16 32x32 48x48` for the `.ico`, `180x180` for one PNG. */
+  readonly sizes: string;
+  readonly type: "image/x-icon" | "image/png";
+  /** Linked from the pages' `<head>`; the larger PNGs are the manifest's only (3.5). */
+  readonly link?: "icon" | "apple-touch-icon";
+};
+
+/** The `<link>`s to `icons` from a page `prefix` (`../` per folder) away from the site's root. */
+export function iconLinks(icons: readonly SiteIcon[], prefix: string): string[] {
+  return icons.flatMap((icon) =>
+    icon.link === undefined
+      ? []
+      : [
+          icon.type === "image/x-icon"
+            ? `<link rel="icon" href="${prefix}${icon.path}" sizes="${icon.sizes}">`
+            : `<link rel="${icon.link}" type="${icon.type}" sizes="${icon.sizes}" href="${prefix}${icon.path}">`,
+        ],
+  );
+}
 
 /** A shared region with its marker comment, or nothing when the page hides it. */
 function sharedRegion(name: "Header" | "Footer", html: string): string {
@@ -48,6 +76,7 @@ export function pageDocument(page: PageDocument, format = true): string {
       ? ""
       : `<meta name="description" content="${escapeHtml(page.description)}">`,
     `<link rel="stylesheet" href="${page.stylesheet}">`,
+    ...(page.head ?? []),
     page.script === undefined ? "" : `<script defer src="${page.script}"></script>`,
   ].filter((line) => line !== "");
   const html = `<!doctype html>

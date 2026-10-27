@@ -55,6 +55,11 @@ export type SitePage = {
   readonly hideFooter?: boolean | undefined;
   /** Rendered without the site's back-to-top button (F-CM-9, 2.9). */
   readonly hideBackToTop?: boolean | undefined;
+  /**
+   * The Media image shown when the page is shared (`og:image`, 3.4): its own from Page Settings,
+   * or the site's; none when neither is set.
+   */
+  readonly shareImage?: string | undefined;
   readonly doc: PageDoc;
 };
 
@@ -124,6 +129,8 @@ export type SiteSnapshot = {
    * pages in order.
    */
   readonly menu?: MenuDoc | undefined;
+  /** The Media image the favicon and app icons are made from (Site Settings, 3.4). */
+  readonly icon?: string | undefined;
 };
 
 const sitePageSchema = z.object({
@@ -136,6 +143,10 @@ const sitePageSchema = z.object({
   hideHeader: z.boolean().optional(),
   hideFooter: z.boolean().optional(),
   hideBackToTop: z.boolean().optional(),
+  shareImage: z
+    .string()
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .optional(),
   doc: pageDocSchema,
 });
 
@@ -192,6 +203,10 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       formService: formServiceSchema.optional(),
       backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),
+      icon: z
+        .string()
+        .regex(/^[A-Za-z0-9_-]+$/)
+        .optional(),
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);
