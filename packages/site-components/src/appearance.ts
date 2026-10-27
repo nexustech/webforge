@@ -148,6 +148,16 @@ export const APPEARANCE_FIELDS = {
   },
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
+/** The Text controls' names: a section without a title of its own has none (2.22b). */
+export const APPEARANCE_TEXT_FIELD_NAMES = [
+  "lookSize",
+  "lookWeight",
+  "lookItalic",
+  "lookUnderline",
+  "lookCase",
+  "lookAlign",
+] as const satisfies readonly (keyof typeof APPEARANCE_FIELDS)[];
+
 /** The names of {@link APPEARANCE_FIELDS}, which a component can't give a field of its own. */
 export const APPEARANCE_FIELD_NAMES = Object.keys(
   APPEARANCE_FIELDS,
@@ -296,4 +306,22 @@ export function appearanceBoxClasses(values: AppearanceValues): string {
   ]
     .filter((part) => part !== "")
     .join(" ");
+}
+
+/** Whether a value set per device, or once, is one of `on` on any device. */
+function onAnyDevice(value: unknown, on: (one: unknown) => boolean): boolean {
+  if (!isResponsiveValue(value as Responsive<unknown>)) return on(value);
+  return DEVICES.some((device) => on(resolveResponsive(value as Responsive<unknown>, device)));
+}
+
+/** A colour of the group's own: a theme colour, not *Theme's*. */
+const ownColour = (value: unknown) => colorClass("text", value) !== "";
+
+/**
+ * Whether the group gives an item a colour or background of its own on any device (2.22b): a
+ * Button with one darkens when hovered unless its hover row says otherwise, as its own colours
+ * would have, which the group's (marked to win) now outrank.
+ */
+export function setsOwnColour(values: AppearanceValues): boolean {
+  return onAnyDevice(values.lookColor, ownColour) || onAnyDevice(values.lookBackground, ownColour);
 }

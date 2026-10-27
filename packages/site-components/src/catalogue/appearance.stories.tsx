@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { NodeDoc } from "@webforge/model";
+import { userEvent, within } from "storybook/test";
 import { SiteNodes } from "../stories/site-nodes.js";
 import { siteLibrary } from "./index.js";
 
@@ -65,6 +66,17 @@ export const Elements: Story = holding([
   node("Icon", { ...ELEMENT_LOOK, lookCorners: "full", hover: "grow" }),
   node("List", { lookWeight: "bold", lookColor: "secondary" }),
 ]);
+
+/**
+ * A Button with a background of its own, hovered: it darkens, as its own colours would have (2.22b),
+ * though its hover row is left at None.
+ */
+export const ColouredButtonHovered: Story = {
+  ...holding([node("Button", { label: "Book a table", lookBackground: "primary-300" })]),
+  play: async ({ canvasElement }) => {
+    await userEvent.hover(within(canvasElement).getByRole("link", { name: "Book a table" }));
+  },
+};
 
 /** Sections: a Hero, its title underlined in capitals. */
 export const Sections: Story = section("Hero");

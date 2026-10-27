@@ -132,11 +132,23 @@ export function textStylesOf(node: NodeDoc, library: ComponentLibrary): TextStyl
  * Edit panel hides them, and shows them again with their values once a layout uses them.
  */
 export function fieldsHiddenBy(
-  def: Pick<ComponentDef, "variantHides">,
+  def: Pick<ComponentDef, "variantHides"> & { readonly fields?: ComponentDef["fields"] },
   values: Readonly<Record<string, unknown>>,
 ): ReadonlySet<string> {
   const variant = values.variant;
-  return new Set(typeof variant === "string" ? (def.variantHides?.[variant] ?? []) : []);
+  const hidden = new Set(typeof variant === "string" ? (def.variantHides?.[variant] ?? []) : []);
+  // The Appearance group's Border colour, only while it draws a border on some device (2.22b).
+  const border = values.lookBorder;
+  const borders = isResponsiveValue(border as Responsive<unknown>)
+    ? Object.values((border as { readonly $responsive: Record<string, unknown> }).$responsive)
+    : [border];
+  if (
+    Object.hasOwn(def.fields ?? {}, "lookBorderColor") &&
+    !borders.some((one) => one === "thin" || one === "thick")
+  ) {
+    hidden.add("lookBorderColor");
+  }
+  return hidden;
 }
 
 /** The components available on the canvas and in exported sites, by component type. */

@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
+import { setsOwnColour } from "../appearance.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
@@ -204,6 +205,9 @@ const button = defineComponent({
   ],
   render: ({ values, context }) => {
     const label = values.label.trim();
+    // A colour or background of its own outranks the button's hover colours (2.22b): it darkens
+    // when hovered instead, unless its hover row says otherwise.
+    const hover = values.hover === "none" && setsOwnColour(values) ? "darken" : values.hover;
     return (
       <div
         className={`site-button flex ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}${entranceClasses(values)}`}
@@ -211,7 +215,7 @@ const button = defineComponent({
       >
         {label === "" ? null : (
           <a
-            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values.hover)}`}
+            className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(hover)}`}
             {...linkAttributes(values.link, context)}
             // Its Appearance styles the button, not the row that aligns it (2.22b).
             {...{ [LOOK_TARGET]: "" }}

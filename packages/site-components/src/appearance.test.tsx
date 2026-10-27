@@ -1,10 +1,15 @@
 import type { NodeDoc } from "@webforge/model";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { APPEARANCE_FIELDS, appearanceBoxClasses, appearanceTextClasses } from "./appearance.js";
+import {
+  APPEARANCE_FIELDS,
+  APPEARANCE_TEXT_FIELD_NAMES,
+  appearanceBoxClasses,
+  appearanceTextClasses,
+} from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { defineComponent, LOOK_TARGET } from "./define.js";
-import { EDITOR_RENDER_CONTEXT } from "./library.js";
+import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
 
 const render = (nodes: NodeDoc[]) => renderNodesToHtml(nodes, siteLibrary, EDITOR_RENDER_CONTEXT);
@@ -28,9 +33,14 @@ describe("the Appearance group (2.22, ST-1)", () => {
         ).toBe(false);
         continue;
       }
-      expect(names.slice(0, Object.keys(APPEARANCE_FIELDS).length), type).toEqual(
-        Object.keys(APPEARANCE_FIELDS),
+      // A section without a title of its own has no Text controls (2.22b).
+      const group = Object.keys(APPEARANCE_FIELDS).filter(
+        (name) =>
+          def.place !== "section" ||
+          Object.hasOwn(def.fields, "lookSize") ||
+          !(APPEARANCE_TEXT_FIELD_NAMES as readonly string[]).includes(name),
       );
+      expect(names.slice(0, group.length), type).toEqual(group);
     }
   });
 
@@ -226,6 +236,47 @@ describe("the Appearance group (2.22, ST-1)", () => {
       spy.mockRestore();
     }
     expect(errors).toEqual([]);
+  });
+
+  it("has Text controls on a section only if it draws a title in some layout (2.22b)", () => {
+    for (const type of placed("section")) {
+      const def = siteLibrary.components[type];
+      if (def === undefined) continue;
+      const layouts =
+        def.fields.variant?.kind === "select" ? def.fields.variant.options.map((o) => o.value) : [];
+      const titled = (layouts.length === 0 ? [undefined] : layouts).some((variant) => {
+        const props: NodeDoc["props"] = { ...def.defaults, id: "s", lookUnderline: true };
+        if (variant !== undefined) props.variant = variant;
+        return render([{ type, props }]).includes("underline!");
+      });
+      expect(Object.hasOwn(def.fields, "lookUnderline"), type).toBe(titled);
+    }
+  });
+
+  it("shows Border colour only while a border is drawn on some device (2.22b)", () => {
+    const hero = siteLibrary.components.Hero;
+    if (hero === undefined) throw new Error("No Hero");
+    expect(fieldsHiddenBy(hero, {}).has("lookBorderColor")).toBe(true);
+    expect(fieldsHiddenBy(hero, { lookBorder: "none" }).has("lookBorderColor")).toBe(true);
+    expect(fieldsHiddenBy(hero, { lookBorder: "thin" }).has("lookBorderColor")).toBe(false);
+    expect(
+      fieldsHiddenBy(hero, {
+        lookBorder: { $responsive: { desktop: "none", mobile: "thick" } },
+      }).has("lookBorderColor"),
+    ).toBe(false);
+  });
+
+  it("darkens a Button with a colour of its own when hovered, unless its hover row says otherwise (2.22b)", () => {
+    const button = (props: Readonly<Record<string, unknown>>) =>
+      render([{ type: "Button", props: { id: "b", label: "Book", link: "about", ...props } }]);
+    expect(button({})).not.toContain("hover:brightness-90");
+    expect(button({ lookBackground: "primary-300" })).toContain("hover:brightness-90");
+    expect(
+      button({ lookColor: { $responsive: { desktop: "theme", mobile: "accent" } } }),
+    ).toContain("hover:brightness-90");
+    expect(button({ lookBackground: "primary-300", hover: "lift" })).not.toContain(
+      "hover:brightness-90",
+    );
   });
 
   it("refuses an element that declares one of its fields itself", () => {
