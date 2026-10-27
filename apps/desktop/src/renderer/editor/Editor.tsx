@@ -12,6 +12,7 @@ import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } fro
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
 import { createSectionPreviews } from "../add/index.js";
+import { APPEARANCE_GROUP_ID, LOOK_COMMANDS } from "../clipboard/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { fieldRenderers } from "../fields/index.js";
@@ -24,7 +25,7 @@ import {
 } from "../shared-sections/SharedSectionCommands.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
-import { useCommandRegistry } from "../shell/command-context.js";
+import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -137,14 +138,15 @@ function undoHistoryPanel(
 
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
- * tab only in Content mode (R9), and the option groups the person closed (UX-13).
+ * tab only in Content mode (R9), and the option groups the person closed (UX-13). The Appearance
+ * group's right-click menu has *Apply Look to Every…* (2.27), the Edit menu's own commands.
  */
 function PreferredEditPanel({
   preferences,
   ...props
 }: Omit<
   EditPanelHostProps,
-  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange"
+  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange" | "groupActions"
 > & {
   readonly preferences: PreferencesStore;
 }) {
@@ -157,9 +159,25 @@ function PreferredEditPanel({
     preferences,
     (state) => state.preferences.editPanel.closedGroups,
   );
+  const registry = useCommandRegistry();
+  // The Appearance group's own actions (2.27): its look given to every other one of the kind.
+  const onPage = useCommand(LOOK_COMMANDS.page);
+  const onSite = useCommand(LOOK_COMMANDS.site);
+  const appearance = [onPage, onSite].flatMap((command) =>
+    command === undefined
+      ? []
+      : [
+          {
+            label: command.label,
+            enabled: command.enabled !== false,
+            onSelect: () => void registry.run(command.id),
+          },
+        ],
+  );
   return (
     <EditPanelHost
       {...props}
+      groupActions={(id) => (id === APPEARANCE_GROUP_ID ? appearance : [])}
       advanced={advanced}
       contentOnly={contentOnly}
       closedGroups={closedGroups}

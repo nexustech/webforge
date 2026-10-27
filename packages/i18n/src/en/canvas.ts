@@ -136,6 +136,21 @@ export const canvas = {
   "editPanel.optionGroup.appearance": "Appearance",
   "editPanel.optionGroup.options": "Options",
   "editPanel.optionGroup.advanced": "Advanced",
+  // Apply Look to Every… (2.27, ST-4), asked before it changes other pages (D7).
+  "look.confirm.title.page": "Give every {item} on this page this look?",
+  "look.confirm.title.site": "Give every {item} on the site this look?",
+  "look.confirm.elements.one": "This gives 1 other {item} the same look.",
+  "look.confirm.elements.other": "This gives {count} other {item} elements the same look.",
+  "look.confirm.sections.one": "This gives 1 other {item} the same look.",
+  "look.confirm.sections.other": "This gives {count} other {item} sections the same look.",
+  "look.confirm.hidden.one": "1 of them is hidden in Layers.",
+  "look.confirm.hidden.other": "{count} of them are hidden in Layers.",
+  // On this page, a shared part it changes takes other pages with it.
+  "look.confirm.reach.region": "The {region} is on other pages too.",
+  "look.confirm.reach.shared": "Shared section {name} is on other pages too.",
+  "look.confirm.apply": "Apply Look",
+  "look.same.page": "Every {item} on this page has this look already.",
+  "look.same.site": "Every {item} on the site has this look already.",
   // A value set for one device only (F-ED-4).
   // A field's per-device dot (UX-19): grey inherits Desktop's value, the accent colour has its own.
   "editPanel.dot.inherits": "{field}: same as Desktop on {device}",

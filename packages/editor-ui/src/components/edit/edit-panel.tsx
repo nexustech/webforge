@@ -6,6 +6,7 @@ import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
+  ContextMenuSeparator,
   ContextMenuTrigger,
 } from "../ui/context-menu.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
@@ -70,6 +71,15 @@ type DeviceValue = {
 /** An option group (UX-13): a stable id ("spacing") and its translated name ("Spacing"). */
 export type OptionGroup = { readonly id: string; readonly label: string };
 
+/** An action the app adds to an option group's right-click menu, after the panel's own. */
+export type GroupAction = {
+  /** Translated: "Apply Look to Every Button on This Page". */
+  readonly label: string;
+  /** Shown greyed out when false. */
+  readonly enabled?: boolean;
+  onSelect(): void;
+};
+
 /** Props of {@link EditPanel}. */
 export type EditPanelProps = {
   /** The selected element's name, such as "Heading"; undefined when nothing is selected. */
@@ -97,6 +107,11 @@ export type EditPanelProps = {
    * another element (SP-7), `group` naming it ("Spacing"). No paste without it.
    */
   onPaste?(values: Readonly<Record<string, unknown>>, group: string): void;
+  /**
+   * The app's own actions for the option group `id` ("appearance"), added to its right-click menu:
+   * *Apply Look to Every…* for the Appearance group (2.27). None for a group it returns none for.
+   */
+  groupActions?(id: string): readonly GroupAction[];
   /**
    * The option groups shown closed, as `tab:id` ("style:spacing"), and how to change them: the app
    * remembers them per person (UX-13). By id, so a new language or name keeps them; per tab, as
@@ -252,11 +267,11 @@ function optionGroupOf(field: EditPanelField): OptionGroup {
  * `tab:id`: each tab's groups are its own, so closing Style's Text leaves Content's open.
  */
 function optionGroupsOf(tab: FieldGroup, fields: readonly EditPanelField[]) {
-  const groups = new Map<string, { label: string; fields: EditPanelField[] }>();
+  const groups = new Map<string, { id: string; label: string; fields: EditPanelField[] }>();
   for (const field of fields) {
     const { id, label } = optionGroupOf(field);
     const key = `${tab}:${id}`;
-    const group = groups.get(key) ?? { label, fields: [] };
+    const group = groups.get(key) ?? { id, label, fields: [] };
     group.fields.push(field);
     groups.set(key, group);
   }
@@ -270,7 +285,7 @@ type CopiedGroup = {
 };
 
 /** One of a group header's icon buttons (SP-7), shown while the header is hovered or focused. */
-function GroupAction({
+function GroupButton({
   label,
   onClick,
   children,
@@ -325,6 +340,7 @@ function FieldList({
   onReset,
   onResetToDefault,
   onPaste,
+  groupActions,
   query = "",
   closed,
   onToggle,
@@ -343,7 +359,8 @@ function FieldList({
   const all = groups.map(({ key }) => key);
   return (
     <div className="flex flex-col pb-2">
-      {groups.map(({ key, label: name, fields: inGroup }, index) => {
+      {groups.map(({ key, id, label: name, fields: inGroup }, index) => {
+        const actions = groupActions?.(id) ?? [];
         // Searching shows every group with a match open.
         const open = query !== "" || !closed.includes(key);
         const changed = inGroup.filter(resettable);
@@ -434,23 +451,33 @@ function FieldList({
                       ? t("editPanel.collapseAll")
                       : t("editPanel.expandAll")}
                   </ContextMenuItem>
+                  {actions.length === 0 ? null : <ContextMenuSeparator />}
+                  {actions.map((action) => (
+                    <ContextMenuItem
+                      key={action.label}
+                      disabled={action.enabled === false}
+                      onSelect={() => action.onSelect()}
+                    >
+                      {action.label}
+                    </ContextMenuItem>
+                  ))}
                 </ContextMenuContent>
               </ContextMenu>
-              <GroupAction label={t("editPanel.group.copy", { group: name })} onClick={copy}>
+              <GroupButton label={t("editPanel.group.copy", { group: name })} onClick={copy}>
                 <CopyIcon />
-              </GroupAction>
+              </GroupButton>
               {onPaste === undefined ? null : (
-                <GroupAction label={t("editPanel.group.paste", { group: name })} onClick={paste}>
+                <GroupButton label={t("editPanel.group.paste", { group: name })} onClick={paste}>
                   <ClipboardPasteIcon />
-                </GroupAction>
+                </GroupButton>
               )}
               {onResetToDefault === undefined ? null : (
-                <GroupAction
+                <GroupButton
                   label={t("editPanel.group.reset", { group: name })}
                   onClick={resetGroup}
                 >
                   <RotateCcwIcon />
-                </GroupAction>
+                </GroupButton>
               )}
             </div>
             {open ? (
@@ -716,6 +743,7 @@ export function EditPanel({
   onReset,
   onResetToDefault,
   onPaste,
+  groupActions,
   closedGroups,
   onClosedGroupsChange,
   advanced = false,
@@ -805,6 +833,7 @@ export function EditPanel({
         onCopy={setCopied}
         {...(onResetToDefault === undefined ? {} : { onResetToDefault })}
         {...(onPaste === undefined ? {} : { onPaste })}
+        {...(groupActions === undefined ? {} : { groupActions })}
         {...(onReset === undefined ? {} : { onReset })}
       />
     </TabsContent>
