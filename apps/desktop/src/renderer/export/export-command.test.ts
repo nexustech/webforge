@@ -110,6 +110,25 @@ describe("exportReport", () => {
     });
   });
 
+  it("says why the site has no favicon, of the site as a whole (3.4)", () => {
+    const report = exportReport(
+      {
+        ...exported,
+        warnings: [
+          { code: "missing-icon", page: "", detail: "logo" },
+          { code: "small-icon", page: "", detail: "logo" },
+        ],
+        warningCount: 2,
+      },
+      bakery(),
+    );
+
+    expect(report.issues).toEqual([
+      "The site icon was deleted from Media, so pages have no icon in the browser tab. Choose another in Site Settings.",
+      "The site icon is smaller than 16 pixels, so pages have no icon in the browser tab. Choose a larger image in Site Settings.",
+    ]);
+  });
+
   it("names a page Minify output left readable (3.3)", () => {
     const report = exportReport(
       {
