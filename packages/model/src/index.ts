@@ -180,6 +180,15 @@ export { isDeviceName, sitePathSchema } from "./site-path.js";
 export type { DocumentItem, MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
 export { slugify, uniqueSlug } from "./slugs.js";
+export type { TextMarkRole, UnderlinedText } from "./text-marks.js";
+export {
+  findUnderlinedText,
+  HIGHLIGHT_CLASSES,
+  hasUnderlinedNonLink,
+  TEXT_COLOR_CLASSES,
+  TEXT_MARK_CLASSES,
+  TEXT_MARK_ROLES,
+} from "./text-marks.js";
 export type {
   ColorRole,
   FontRef,

@@ -166,6 +166,7 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
   { label: "shortcuts.cancelDrag", group: "edit", keys: ["Escape"] },
   { label: "shortcuts.bold", group: "text", keys: ["Mod+B"] },
   { label: "shortcuts.italic", group: "text", keys: ["Mod+I"] },
+  { label: "shortcuts.underline", group: "text", keys: ["Mod+U"] },
   { label: "shortcuts.newLine", group: "text", keys: ["Shift+Enter"] },
   { label: "shortcuts.link", group: "text", keys: ["Mod+K"] },
   { label: "shortcuts.splitText", group: "text", keys: ["Alt+Enter"] },

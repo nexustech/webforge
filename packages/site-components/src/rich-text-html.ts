@@ -1,3 +1,4 @@
+import { TEXT_MARK_CLASSES } from "@webforge/model";
 import sanitizeHtml from "sanitize-html";
 import { isDocumentPath } from "./document-path.js";
 
@@ -22,8 +23,12 @@ const SANITIZE_OPTIONS: sanitizeHtml.IOptions = {
     "li",
     "blockquote",
     "code",
+    // A highlight or text colour from the theme (2.25, ST-3), by its class only.
+    "span",
   ],
   allowedAttributes: { a: ["href", "target", "rel", "download"], p: ["style"] },
+  // The text marks' classes, and no others: a span pasted with classes of its own keeps its text.
+  allowedClasses: { span: [...TEXT_MARK_CLASSES] },
   // `download` has no value: kept as a boolean attribute, not dropped as an empty one.
   nonBooleanAttributes: sanitizeHtml.defaults.nonBooleanAttributes.filter(
     (name) => name !== "download",
