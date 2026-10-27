@@ -8,8 +8,14 @@ export {
   rgbToOklch,
   shadeOf,
 } from "./colors.js";
-export type { ContrastIssue } from "./contrast.js";
-export { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
+export type { ContrastIssue, SectionOverlay } from "./contrast.js";
+export {
+  AA_LARGE,
+  AA_TEXT,
+  contrastIssues,
+  overlayContrast,
+  overlayContrastIssue,
+} from "./contrast.js";
 export {
   CURATED_BATCHES,
   CURATED_THEMES,

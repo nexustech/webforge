@@ -20,9 +20,11 @@ import {
 } from "./media.js";
 import { type MenuDoc, menuDocSchema } from "./menu.js";
 import {
+  CONSENT_MESSAGE_MAX,
   type FormService,
   formServiceSchema,
   languageTagSchema,
+  measurementIdSchema,
   type OpeningHours,
   openingHoursSchema,
   type SocialProfile,
@@ -37,6 +39,12 @@ const pagePathSchema = z
   .string()
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/)
   .refine((path) => path.split("/")[0] !== "assets", { message: "'assets' is reserved" });
+
+/** A Media item's id, as a page, the site or a file names it. */
+const mediaRefSchema = z.string().regex(/^[A-Za-z0-9_-]+$/);
+
+/** A Media item's name, in its exported file names: `shop-front`. */
+const mediaNameSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
 /** One page of a {@link SiteSnapshot}. */
 export type SitePage = {
@@ -131,6 +139,18 @@ export type SiteSnapshot = {
   readonly menu?: MenuDoc | undefined;
   /** The Media image the favicon and app icons are made from (Site Settings, 3.4). */
   readonly icon?: string | undefined;
+  /**
+   * Google Analytics (B4, 3.8), when Site Settings have a Measurement ID: whether the consent
+   * banner asks visitors first (B7), and its own text if the person wrote one.
+   */
+  readonly analytics?: SiteAnalytics | undefined;
+};
+
+/** {@link SiteSnapshot}'s Google Analytics. */
+export type SiteAnalytics = {
+  readonly measurementId: string;
+  readonly consentBanner: boolean;
+  readonly consentMessage?: string | undefined;
 };
 
 const sitePageSchema = z.object({
@@ -143,10 +163,7 @@ const sitePageSchema = z.object({
   hideHeader: z.boolean().optional(),
   hideFooter: z.boolean().optional(),
   hideBackToTop: z.boolean().optional(),
-  shareImage: z
-    .string()
-    .regex(/^[A-Za-z0-9_-]+$/)
-    .optional(),
+  shareImage: mediaRefSchema.optional(),
   doc: pageDocSchema,
 });
 
@@ -164,8 +181,8 @@ const CONTENT_MISSING = { message: "Neither the file's bytes nor its hash" };
 
 const mediaItemSchema = z
   .object({
-    id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-    name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    id: mediaRefSchema,
+    name: mediaNameSchema,
     mimeType: z.enum(IMAGE_MIME_TYPES),
     ...contentSchema,
     alt: z.string().optional(),
@@ -176,8 +193,8 @@ const mediaItemSchema = z
 
 const documentItemSchema = z
   .object({
-    id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-    name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    id: mediaRefSchema,
+    name: mediaNameSchema,
     mimeType: z.enum(FILE_MIME_TYPES),
     ...contentSchema,
   })
@@ -203,9 +220,13 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       formService: formServiceSchema.optional(),
       backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),
-      icon: z
-        .string()
-        .regex(/^[A-Za-z0-9_-]+$/)
+      icon: mediaRefSchema.optional(),
+      analytics: z
+        .strictObject({
+          measurementId: measurementIdSchema,
+          consentBanner: z.boolean(),
+          consentMessage: z.string().max(CONSENT_MESSAGE_MAX).optional(),
+        })
         .optional(),
     })
     .superRefine((site, ctx) => {

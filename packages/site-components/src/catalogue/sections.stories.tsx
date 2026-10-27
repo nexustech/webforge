@@ -55,6 +55,45 @@ export const Text: Story = {
   },
 };
 
+/** A Text section over a background image, under a strong layer of the page background (2.26). */
+export const TextBackground: Story = {
+  args: {
+    nodes: [
+      {
+        type: "TextSection",
+        props: {
+          id: "story-background",
+          title: "Our story",
+          text: "<p>Rosa opened the bakery in 1998 with one oven and a sourdough starter from her grandmother.</p>",
+          backgroundImage: { mediaId: "photo" },
+          overlay: "60",
+        },
+      },
+    ],
+  },
+};
+
+/** A Call to action over a background image, under the theme's neutral colour, very strong (2.26). */
+export const CallToActionBackground: Story = {
+  args: {
+    nodes: [
+      {
+        type: "CallToAction",
+        props: {
+          id: "cta-background",
+          title: "Order a cake",
+          text: "Tell us what you'd like two days ahead, and we'll have it ready.",
+          buttonLabel: "Get in touch",
+          buttonLink: { kind: "url", href: "https://example.com" },
+          backgroundImage: { mediaId: "photo" },
+          overlay: "80",
+          overlayColor: "neutral",
+        },
+      },
+    ],
+  },
+};
+
 const textImage = (variant: string) => ({
   type: "TextImage",
   props: {

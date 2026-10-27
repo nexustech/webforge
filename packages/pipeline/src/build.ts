@@ -14,6 +14,7 @@ import {
   backToTopHtml,
   behavioursUsedBy,
   type ComponentLibrary,
+  consentBannerHtml,
   documentsLinkedBy,
   hrefFor,
   mediaUsedBy,
@@ -70,12 +71,13 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
 
 /**
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
- * image deleted from Media that a page still places (that place is left out), or a page *Minify
- * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3).
+ * image deleted from Media that a page still places (that place is left out), a page *Minify
+ * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3), or a site
+ * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square.
  */
 export type BuildWarning = {
-  readonly code: "broken-link" | "missing-image" | "not-minified";
-  /** The page path the problem is on. */
+  readonly code: "broken-link" | "missing-image" | "not-minified" | "missing-icon" | "small-icon";
+  /** The page path the problem is on; "" for the whole site (the icon's). */
   readonly page: string;
   readonly detail: string;
 };
@@ -259,6 +261,9 @@ export async function* buildEvents(
   const files = new Map<string, Uint8Array>();
   const warnings: BuildWarning[] = [];
 
+  // Google Analytics and its consent banner (3.8, B4), never in a preview: it would count the
+  // person's own visits.
+  const analytics = run.mode === "preview" ? undefined : site.analytics;
   let behaviours: ReturnType<typeof behavioursUsedBy>;
   let mediaIds: Set<string>;
   let documentIds: Set<string>;
@@ -266,6 +271,9 @@ export async function* buildEvents(
     behaviours = behavioursUsedBy(allNodes(site), library);
     if (site.pages.some((page) => showsBackToTop(site, page))) {
       behaviours = [...behaviours, "back-to-top" as const].sort();
+    }
+    if (analytics !== undefined) {
+      behaviours = [...behaviours, "consent" as const].sort();
     }
     mediaIds = mediaUsedBy(allNodes(site), library);
     documentIds = documentsLinkedBy(allNodes(site), library);
@@ -289,24 +297,30 @@ export async function* buildEvents(
   const images = new Map<string, ResolvedImage>();
   const missing = new Set<string>();
   const imageIds = [...mediaIds].sort();
-  for (const [done, id] of imageIds.entries()) {
+  // The hash keys the cache, so an image found there is never read.
+  const originalOf = (item: MediaItem) => ({
+    hash: item.hash ?? sha256(item.data ?? new Uint8Array()),
+    read: () => bytesOf(item, resources),
+  });
+  // The stage counts the favicon set and each share picture too (3.4), made after the images.
+  const shareIds = [
+    ...new Set(
+      site.pages.flatMap((page) => (page.shareImage === undefined ? [] : [page.shareImage])),
+    ),
+  ];
+  const imagesTotal = imageIds.length + (site.icon === undefined ? 0 : 1) + shareIds.length;
+  let imagesDone = 0;
+  for (const id of imageIds) {
     stopIfCancelled(signal);
-    yield { stage: "images", done, total: imageIds.length };
+    yield { stage: "images", done: imagesDone++, total: imagesTotal };
     const item = site.media.find((media) => media.id === id);
     if (item === undefined) {
       missing.add(id);
       continue;
     }
-    // The hash keys the cache, so an image found there is never read.
-    const processed = await processImage(
-      item,
-      {
-        hash: item.hash ?? sha256(item.data ?? new Uint8Array()),
-        read: () => bytesOf(item, resources),
-      },
-      resources.codecs,
-      { cache: resources.imageCache },
-    );
+    const processed = await processImage(item, originalOf(item), resources.codecs, {
+      cache: resources.imageCache,
+    });
     if (processed === undefined) {
       missing.add(id);
       continue;
@@ -318,33 +332,40 @@ export async function* buildEvents(
   }
 
   // The favicon set from Site Settings' icon, and each page's share picture (3.4).
-  const originalOf = (item: MediaItem) => ({
-    hash: item.hash ?? sha256(item.data ?? new Uint8Array()),
-    read: () => bytesOf(item, resources),
-  });
   const mediaById = new Map(site.media.map((item) => [item.id, item]));
-  const icon = site.icon === undefined ? undefined : mediaById.get(site.icon);
   let icons: readonly SiteIcon[] = [];
-  if (icon !== undefined) {
+  if (site.icon !== undefined) {
     stopIfCancelled(signal);
-    const made = await iconFiles(icon, originalOf(icon), resources.codecs, resources.imageCache);
+    yield { stage: "images", done: imagesDone++, total: imagesTotal };
+    const icon = mediaById.get(site.icon);
+    const made =
+      icon === undefined
+        ? undefined
+        : await iconFiles(icon, originalOf(icon), resources.codecs, resources.imageCache);
     for (const file of made?.files ?? []) files.set(file.path, file.data);
     icons = made?.icons ?? [];
+    // Deleted from Media since, or too small for the smallest icon: the site has no favicon.
+    if (made === undefined) {
+      warnings.push({ code: "missing-icon", page: "", detail: site.icon });
+    } else if (made.files.length === 0) {
+      warnings.push({ code: "small-icon", page: "", detail: site.icon });
+    }
   }
   const shareFiles = new Map<string, string | undefined>();
+  for (const id of shareIds) {
+    stopIfCancelled(signal);
+    yield { stage: "images", done: imagesDone++, total: imagesTotal };
+    const item = mediaById.get(id);
+    const made =
+      item === undefined
+        ? undefined
+        : await shareImageFile(item, originalOf(item), resources.codecs, resources.imageCache);
+    if (made !== undefined) files.set(made.path, made.data);
+    shareFiles.set(id, made?.path);
+  }
   const shareImages = new Map<string, string>();
   for (const page of site.pages) {
     if (page.shareImage === undefined) continue;
-    if (!shareFiles.has(page.shareImage)) {
-      stopIfCancelled(signal);
-      const item = mediaById.get(page.shareImage);
-      const made =
-        item === undefined
-          ? undefined
-          : await shareImageFile(item, originalOf(item), resources.codecs, resources.imageCache);
-      if (made !== undefined) files.set(made.path, made.data);
-      shareFiles.set(page.shareImage, made?.path);
-    }
     const path = shareFiles.get(page.shareImage);
     if (path === undefined) {
       // Deleted from Media since: the page is shared without a picture.
@@ -483,11 +504,14 @@ export async function* buildEvents(
 
   // The back-to-top button (F-CM-9) on the pages that show it, its classes compiled with theirs.
   const backToTop = backToTopHtml();
+  // The consent banner on every page, its classes compiled too (3.8).
+  const consent = analytics === undefined ? undefined : consentBannerHtml(analytics);
   const markup = rendered.flatMap((entry) => [
     entry.header,
     entry.main,
     entry.footer,
     showsBackToTop(site, entry.page) ? backToTop : "",
+    consent ?? "",
   ]);
   stopIfCancelled(signal);
   yield { stage: "styles" };
@@ -519,6 +543,7 @@ export async function* buildEvents(
       main: entry.main,
       footer: entry.footer,
       ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
+      ...(consent === undefined ? {} : { consent }),
       // The favicon set's links first (3.4); 3.5's share and search tags follow them.
       head: iconLinks(icons, entry.prefix),
     };

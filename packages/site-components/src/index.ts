@@ -1,5 +1,11 @@
 export { APPEARANCE_FIELDS } from "./appearance.js";
 export { backToTopHtml } from "./back-to-top.js";
+export {
+  BACKGROUND_DEFAULTS,
+  BACKGROUND_FIELDS,
+  OVERLAYS,
+  sectionOverlay,
+} from "./background.js";
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 export type { ColumnLayout } from "./catalogue/column-layouts.js";
 export {
@@ -9,6 +15,7 @@ export {
   MIN_COLUMNS,
 } from "./catalogue/column-layouts.js";
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
+export { consentBannerHtml } from "./consent-banner.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";
 export { videoEmbed } from "./embed.js";

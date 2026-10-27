@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 392 working days** (≈ 78 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 404.5 working days** (≈ 81 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -103,12 +103,14 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Scope change, 27 Oct 2026 (quick start, QS-1…QS-8):** +5.5 days for 3.11 ([#516](https://github.com/nexustech/webforge/issues/516), stream A after 3.5) from [product/09](../research/product/09-quick-start-wizard.md): a four-step quick start (QS-1), the sample business replaced on creation (QS-2), page recipes per business type (QS-3) and the start screen's primary action (QS-4); QS-5 and QS-6 are rules; the description step with the v1.1 assistant replaces G25c's Later (QS-7); 5.4's tour starts after the quick start (QS-8). Phase 3 is 37.5 days and the total 392. Phase 3's exit criteria gain the quick start. The dates hold: at the measured pace (0.4–0.5), 3.11 is about 2.5 working days of stream A's time, and A's Phase 3 queue still ends by 20 Nov 2026.
 
+**Scope change, 27 Oct 2026 (component theming, CT-1…CT-9):** +12.5 days from [product/11](../research/product/11-component-theming.md), three Phase 3 items: 3.12 on stream B after 3.7 (product owner, 27 Oct 2026), 3.13 and 3.14 on stream A after 3.11. 3.12 ([#528](https://github.com/nexustech/webforge/issues/528), 4 days) component looks in the theme with Theme Studio › Components and provenance on every Appearance control (CT-1, CT-3); 3.13 ([#529](https://github.com/nexustech/webforge/issues/529), 6.5 days) *Style this component…*, a dialog for any kind with a live preview, deeper groups including a gradient token and element padding, and the choice of this one, every one of its kind or the theme's look, the deeper groups in the dialog only (CT-2, CT-4, CT-5); 3.14 ([#530](https://github.com/nexustech/webforge/issues/530), 2 days) a read-only CSS view in Advanced mode (CT-7). The stylesheet editor is v1.1 (CT-8), per-item layout switches are not adopted (CT-6) and per-element CSS stays Later (CT-9). Phase 3 goes from 37.5 to 50 days. At the measured pace of 0.4–0.5 working days per estimated day, stream A's Phase 3 queue (3.2, 3.5, 3.11, 3.13, 3.14, 3.10 and the three chores #523–525, about 27 estimated days) takes about 11–14 working days from 28 Oct, when stream A began its Phase 3 items, so Phase 3's 20 Nov holds with a few days in hand; B's 3.12 fits after 3.7 in the same window.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
-| [Phase 3: Output](#phase-3-output) | 37.5 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11) |
+| [Phase 3: Output](#phase-3-output) | 50 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13) |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
@@ -208,6 +210,9 @@ gantt
     3.9 Custom code bundling and external-resource check :t3_9, 2027-08-19, 4d
     3.10 Exported-site compatibility E2E :crit, t3_10, 2027-08-25, 2d
     3.11 Quick start – a new site from a few questions :t3_11, 2027-08-09, 5.5d
+    3.12 Component looks in the theme, provenance :t3_12, after t3_11, 4d
+    3.13 Style this component… dialog :t3_13, after t3_12, 6.5d
+    3.14 Advanced mode – read-only CSS view :t3_14, after t3_13, 2d
     section Phase 4
     4.1 Publish core – Publisher interface, manifests,… :crit, t4_1, 2027-08-27, 3d
     4.2 Netlify publisher and Netlify Forms :crit, t4_2, 2027-09-02, 4d
@@ -672,7 +677,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 | 2.23 | Your own themes: save a changed built-in theme under a name, New theme, My themes | [#485](https://github.com/nexustech/webforge/issues/485) | themes | PH2-17, F-DS-2, F-DS-7, D7 | 2.5 | 2.3 |
 | 2.24 | Canvas: the Desktop view fills the canvas, as the site fills a browser | [#486](https://github.com/nexustech/webforge/issues/486) | engine | PH2-18, F-ED-25, 1.15 | 1 | – |
 | 2.25 | Text toolbar: underline, highlight and theme-colour marks | [#495](https://github.com/nexustech/webforge/issues/495) | engine | [product/08](../research/product/08-component-styling.md) ST-3, ST-8, F-ED-3, C1 | 1 | 1.23 |
-| 2.26 | Backgrounds for every section: an image with an overlay | [#503](https://github.com/nexustech/webforge/issues/503) | components | [product/08](../research/product/08-component-styling.md) ST-5, ST-8, F-DS-3, F-ED-4 | 2 | 2.22a, 3.3 |
+| 2.26 | Backgrounds for every section: an image with an overlay | [#503](https://github.com/nexustech/webforge/issues/503) | components | [product/08](../research/product/08-component-styling.md) ST-5, ST-8, ST-9, F-DS-3, F-ED-4 | 2 | 2.22a, 3.3 |
 | 2.27 | Apply this look to every element of its kind | [#504](https://github.com/nexustech/webforge/issues/504) | components | [product/08](../research/product/08-component-styling.md) ST-4, ST-8, F-ED-4, D2, D7 | 3 | 2.22, 1.37 |
 | 2.28 | Transition and transform presets on hover | [#505](https://github.com/nexustech/webforge/issues/505) | components | [product/08](../research/product/08-component-styling.md) ST-7, ST-8, F-DS-5 | 1 | 2.22, 2.12 |
 | 2.29 | Templates use the new styling | [#506](https://github.com/nexustech/webforge/issues/506) | content | [product/08](../research/product/08-component-styling.md) ST-8, F-SITE-1, R4 | 1.5 | 2.22, 2.25, 2.26 |
@@ -910,10 +915,11 @@ Three toolbar buttons: Underline (Mod+U), Highlight and Text colour, the colours
 - [ ] Highlight and colour offer the theme roles only; the export carries classes, no inline styles
 - [ ] Site Check lists underlined non-link text as a tip
 
-**2.26 Backgrounds for every section: an image with an overlay** (added 26 Oct 2026, [product/08](../research/product/08-component-styling.md) ST-5, ST-8)  
-The section frame gains a background image with a focal point, drawn as a responsive `<picture>` behind the content, and an overlay in the theme's base or neutral colour (0–80% in steps). The colour background comes from 2.22's Colour control. The section's text is checked for contrast over the overlay; the Hero keeps working, migrated if its image moves onto the field.
+**2.26 Backgrounds for every section: an image with an overlay** (added 26 Oct 2026, [product/08](../research/product/08-component-styling.md) ST-5, ST-8, ST-9)  
+The section frame gains a background image with a focal point, drawn as a responsive `<picture>` behind the content, and an overlay in the theme's base or neutral colour (0–80% in steps). The colour background comes from 2.22's Colour control. The section's text is checked for contrast over the overlay; the Hero keeps working, migrated if its image moves onto the field. A first image's overlay starts at the weakest step that keeps the text readable in the site's theme, in the same undo step (ST-9, 27 Oct 2026); the static default is 60%.
 
 - [ ] Any section can have a background image and overlay; one labelled undo step each
+- [ ] Placing a first image sets the overlay the theme needs (Light and High contrast 60%, Dark 80%); an overlay already chosen, or a later theme change, is left as it is
 - [ ] The export draws a responsive `<picture>` from disk with no external request; a theme switch restyles the overlay
 - [ ] With no image set the export is unchanged (golden files)
 
@@ -941,7 +947,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
-**Effort:** 37.5 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
+**Effort:** 50 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -956,16 +962,19 @@ The eight templates were built before the Appearance group. A light pass uses it
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
 | 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
 | 3.11 | Quick start: a new site from a few questions | [#516](https://github.com/nexustech/webforge/issues/516) | shell | [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6, F-SITE-1, F-SET-1, SC-3, LF-11, PG-2 | 5.5 | 2.14, 2.15, 1.17, 2.21, 2.3b |
+| 3.12 | Component looks in the theme, and provenance on every Appearance control | [#528](https://github.com/nexustech/webforge/issues/528) | themes | [product/11](../research/product/11-component-theming.md) CT-1, CT-3, F-DS-7, F-ED-4, ST-1, ADR 0009 | 4 | 2.22, 2.3b, 2.23, 2.27 |
+| 3.13 | Style this component…: a dialog with a preview, deeper groups and where it applies | [#529](https://github.com/nexustech/webforge/issues/529) | shell | [product/11](../research/product/11-component-theming.md) CT-2, CT-4, CT-5, F-ED-4, F-DS-3, F-DS-7, ST-1, ST-2, ST-4, ST-5, D7 | 6.5 | 3.12, 2.26, 2.28, 2.21 |
+| 3.14 | Advanced mode: a read-only CSS view of the selected item | [#530](https://github.com/nexustech/webforge/issues/530) | shell | [product/11](../research/product/11-component-theming.md) CT-7, F-ED-11, F-ED-15, X4 | 2 | 3.13, 2.18, 3.3 |
 
 **Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. The assignment changed no days; 3.11 joined stream A's queue on 27 Oct 2026 with its own scope change (§3).
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.11 (quick start, 27 Oct) → 3.10 (compatibility E2E) |
-| B: Data & site | ~~3.1 → 3.3 → 3.4~~ → 2.26 (styling block) → 3.7 (forms, once 3.6 has merged) |
-| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
+| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.11 (quick start, 27 Oct) → 3.13 (once B's 3.12 has merged) → 3.14 (component theming, 27 Oct) → 3.10 (compatibility E2E) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26~~ → 3.8 (Google Analytics, moved from C on 27 Oct 2026 while 3.7 waits for 3.6) → 3.7 (forms, once 3.6 has merged) → 3.12 (component looks in the theme, 27 Oct) |
+| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) |
 
-Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.10 (A) on 3.3 and 3.4 (B). **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
+Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.13 (A) on 3.12 (B); 3.10 (A) waited on 3.3 and 3.4 (B), both merged. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1045,9 +1054,33 @@ A first-time user answers a few questions and opens the editor on a site that is
 - [ ] No request leaves the computer; nothing typed is logged
 - [ ] Stories per step and the E2E path pass; `pnpm visual:docker` screenshots committed
 
+**3.12 Component looks in the theme, and provenance on every Appearance control** (added 27 Oct 2026, [product/11](../research/product/11-component-theming.md) CT-1, CT-3)  
+The theme gains a look per kind of section and element: the Appearance tokens stored once in the theme (a site-format migration with fixtures), which a kind draws itself from, an item's own Appearance sitting above it; the theme's card style folds into the Card look, and presets and *My themes* carry looks. Theme Studio › Components renders each kind live with its look's controls (D7, one undo step per change). Provenance on every Appearance control in the Style tab, in words: *Theme's (Corners: Medium)*, *Theme's look for Buttons*, *Set here*, *Set on Mobile*, *Custom colour (Advanced)*, *Class (Advanced)*; a theme provenance opens that token.
+
+- [ ] A kind's look restyles every item of that kind without an override, as one labelled undo step; a theme switch replaces it
+- [ ] An item's own Appearance wins over its kind's look; *Reset to theme's look* returns to it
+- [ ] Every control says where its value comes from
+- [ ] Migration fixture; golden exports unchanged with no look set; stories, axe and screenshots
+
+**3.13 Style this component…: a dialog with a preview, deeper groups and where it applies** (added 27 Oct 2026, [product/11](../research/product/11-component-theming.md) CT-2, CT-4, CT-5)  
+*Style this ‹component›…* from the Style tab, the quick actions and the right-click menu, for any section or element, in Theme Studio's chrome on the 2.21 form engine: a live preview of the item on its own on Desktop and Mobile (the story rendering) beside groups for Background (theme colour with shade, a gradient between two theme colours with a direction (CT-4), 2.26's image with overlay), Border per side, Corners per corner, Shadow, Title, Spacing (padding for elements as the spacing token (CT-5), margin, per side, per device) and When hovered (2.28's presets); at the bottom the choice of *This one only*, *Every ‹kind› on this page*, *Every ‹kind› on the site* (2.27) or *Make it the theme's look for ‹kind›* (3.12), with the count and D7. Tokens only in Simple mode (ST-6); Advanced adds ADR 0009's hex colour. **The deeper groups live in the dialog only; the Style tab keeps the compact Appearance basics** (product owner, 27 Oct 2026), showing the same values where they overlap. No inline styles in the export.
+
+- [ ] The dialog opens for any kind with the item previewed on both devices; a change shows in the preview and on the canvas
+- [ ] Gradient, one-sided border, per-corner radius, title colour and element padding export as token classes, restyled by a theme switch
+- [ ] The four apply choices each work as one labelled undo step; site-wide ones confirm with a count
+- [ ] The Style tab keeps the compact basics; no free value in Simple mode
+- [ ] Stories, axe, an E2E path and screenshots
+
+**3.14 Advanced mode: a read-only CSS view of the selected item** (added 27 Oct 2026, [product/11](../research/product/11-component-theming.md) CT-7)  
+A *CSS* tab in Advanced mode, in 3.13's dialog and the Advanced tab: the markup the item exports, the classes each control and look produced grouped by control with the token behind each, and the matching rules from the site's stylesheet as the export writes them (the in-app Tailwind compile, X4), each with a copy button. Nothing is editable; the tab says so and points at Custom Code's stylesheet (F-ED-15). The editable stylesheet is v1.1 (CT-8); per-element CSS stays Later (CT-9).
+
+- [ ] The tab shows markup, classes by control and the export's rules, identical to the export's
+- [ ] It updates as controls change; copy works; absent in Simple mode
+- [ ] Stories and axe
+
 </details>
 
-**Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works; a site made by the quick start carries the person's name, pages, colours and contact details (3.11, QS-1…QS-4).
+**Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works; a site made by the quick start carries the person's name, pages, colours and contact details (3.11, QS-1…QS-4); a kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13).
 
 ### Phase 4: Publish & versions
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
@@ -1243,14 +1276,14 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-ED-1 | Add panel | 1.13 |
 | F-ED-2 | Select, move, duplicate, delete | 1.12 |
 | F-ED-3 | Click-to-edit text | 1.23, 2.25 |
-| F-ED-4 | Edit panel | 1.14, 2.22, 2.27 |
+| F-ED-4 | Edit panel | 1.14, 2.22, 2.27, 3.12, 3.13 |
 | F-ED-5 | Images | 1.16 |
 | F-ED-6 | Repeating lists | 1.14, 2.7 |
 | F-ED-7 | Header & Footer | 1.20 |
 | F-ED-8 | Desktop · Tablet · Mobile | 1.15 |
 | F-ED-9 | Undo / Redo + Undo History panel | 1.11 |
 | F-ED-10 | Content mode | 1.10, 1.26 |
-| F-ED-11 | Simple / Advanced mode | 1.10 |
+| F-ED-11 | Simple / Advanced mode | 1.10, 3.14 |
 | F-ED-12 | Layers | 1.24 |
 | F-ED-13 | Pages panel | 1.18 |
 | F-ED-14 | Confirmation rule | 1.26 |
@@ -1273,7 +1306,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-DS-4 | Text and button styles | 2.3 |
 | F-DS-5 | Animations | 2.12, 2.28 |
 | F-DS-6 | Sticky header | 2.6 |
-| F-DS-7 | Theme Studio | 2.3 |
+| F-DS-7 | Theme Studio | 2.3, 3.12 |
 | F-SET-1 | Site Settings | 1.17 |
 | F-SET-2 | Page Settings | 1.18 |
 | F-CHK-1 | Site Check | 3.6 |
