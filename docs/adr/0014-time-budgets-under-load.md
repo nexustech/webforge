@@ -36,7 +36,9 @@ Re-running a failed job hides all three, and each makes the next failure harder 
    - Closing with nothing to save was timed against the save request's 5 s timeout. Under load, closing can also wait on the store gate (ADR 0013), behind a backup on a busy disk, and took 6–13 s with the request answered at once. The unit tests check that the start screen answers and that the window closes on the answer, so the E2E test no longer times the close.
 5. **Unit test timeouts scale to the run's workers** (`vitest.load.ts`).
    - They were set for CI's runners, where `pnpm test` runs 2 workers (4 vCPUs, `maxWorkers: "50%"`). A run with more workers gives each test as much more time: `workers / 2`, never less than 1. So CI's timeouts are as they were, and on a 12-thread machine (6 workers) they are three times as long.
-   - The renderer's and editor-ui's default is 15 s, scaled, and the pipeline's Vitest defaults (5 s, hooks 10 s), scaled: its Tailwind compiles timed out under `pnpm check`. A renderer test that sets a longer one scales it with `scaledTestTimeout()` (`@webforge/test-utils/renderer`).
+   - **Where it applies:** the packages whose tests timed out under `pnpm check`, each in its own `vitest.config.ts`. The renderer's and editor-ui's default is 15 s, scaled. The pipeline's and tools' take Vitest's defaults (5 s, hooks 10 s), scaled: they run Tailwind and the compilers.
+   - **Not everywhere:** a package without a config of its own keeps Vitest's unscaled defaults. Vitest won't run an inline project beside directory projects with different `maxWorkers`, so the root config can't set them. Such a package gets a `vitest.config.ts` if its tests start timing out.
+   - **A test that sets a longer timeout** scales it with `scaledTestTimeout()` (`@webforge/test-utils/renderer`).
 
 ## Consequences
 - **Every run catches the opening doing more work, or waiting longer,** whatever else the machine runs. Whether it opens in 3 s is a question for a quiet machine: answer it with `pnpm e2e:perf` before a release, and after work that touches opening a site.

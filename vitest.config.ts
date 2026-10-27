@@ -1,6 +1,5 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { defineConfig } from "vitest/config";
-import { scaledTimeout } from "./vitest.load.js";
 
 type Thresholds = { lines: number; branches: number; functions: number; statements: number };
 
@@ -18,27 +17,9 @@ const workspaces = [
   { path: "tools", name: "tools" },
 ];
 
-/** A workspace's package name, as Vitest names its project (`--project @webforge/model`). */
-function packageName(path: string): string {
-  return (JSON.parse(readFileSync(`${path}/package.json`, "utf8")) as { name: string }).name;
-}
-
 export default defineConfig({
   test: {
-    // A workspace with its own vitest.config.ts runs by it. The others run with Vitest's defaults,
-    // their timeouts scaled to the run's workers (ADR 0014), under their package's name.
-    projects: workspaces.map((ws) =>
-      existsSync(`${ws.path}/vitest.config.ts`)
-        ? ws.path
-        : {
-            test: {
-              name: packageName(ws.path),
-              root: ws.path,
-              testTimeout: scaledTimeout(5_000),
-              hookTimeout: scaledTimeout(10_000),
-            },
-          },
-    ),
+    projects: workspaces.map((ws) => ws.path),
     // Half the CPU threads, not all but one. The DOM-heavy desktop tests are CPU-bound, and with a
     // worker on almost every thread they timed out whenever anything else ran beside them (another
     // session's checks or E2E). Three runs at once: 5 timeouts before, none after, at the same
