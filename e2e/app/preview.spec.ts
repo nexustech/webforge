@@ -97,7 +97,10 @@ test("opens the site in the browser, and every edit reaches it", async () => {
 
   // Another page shown in the editor: the browser goes there.
   await page.keyboard.press("ControlOrMeta+k");
-  await page.getByRole("combobox").pressSequentially("page not found");
+  await page
+    .getByRole("dialog", { name: "Commands" })
+    .getByRole("combobox")
+    .pressSequentially("page not found");
   await page
     .getByRole("dialog", { name: "Commands" })
     .getByRole("option", { name: "Page not found" })
