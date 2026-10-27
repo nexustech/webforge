@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { createContext, type ReactNode, useContext } from "react";
 import { linkAttributes } from "./library.js";
 import type { RenderContext } from "./schema.js";
 
@@ -20,6 +20,13 @@ export const TITLE_CLASSES = {
   small: "font-heading text-h3",
 } as const;
 
+/**
+ * The Text classes of the section a title is in (2.22, ST-1): a section's Appearance styles its
+ * title, the page's or the section's, never a small one. `defineSection` provides them, and every
+ * element resets them for what it holds, so they reach no title but the section's own.
+ */
+export const SectionTitleAppearance = createContext("");
+
 /** The heading level of each title size: a page has one h1. */
 const TITLE_TAG = { page: "h1", section: "h2", small: "h3" } as const;
 
@@ -32,7 +39,9 @@ export function SectionTitle({
   readonly size?: keyof typeof TITLE_CLASSES;
 }) {
   const Tag = TITLE_TAG[size];
-  return <Tag className={TITLE_CLASSES[size]}>{children}</Tag>;
+  const appearance = useContext(SectionTitleAppearance);
+  const own = size === "small" || appearance === "" ? "" : ` ${appearance}`;
+  return <Tag className={`${TITLE_CLASSES[size]}${own}`}>{children}</Tag>;
 }
 
 /**

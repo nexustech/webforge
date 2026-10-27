@@ -28,6 +28,8 @@ const canvas = () => page.frameLocator(".editor__canvas iframe");
 /** The editor's right-hand panels, where the Edit panel is (not Puck's own field UI). */
 const panel = () => page.getByRole("region", { name: "Right panels" });
 const steps = () => page.locator(".undo-history__step");
+/** The Heading's own colour field, apart from the Appearance group's colours (2.22). */
+const headingColour = () => panel().locator('[data-field="color"]');
 /** A device view in the canvas toolbar (1.15). */
 const deviceView = (name: "Desktop" | "Mobile") =>
   page.getByRole("toolbar", { name: "Canvas" }).getByRole("radio", { name });
@@ -68,12 +70,12 @@ test.describe("Edit panel", () => {
   test("offers the theme's colours by their names, one step a choice (1.37, UX-25)", async () => {
     await selectHeading();
     await panel().getByRole("tab", { name: "Style" }).click();
-    await expect(panel().getByRole("radio", { name: "Brand" })).toBeVisible();
+    await expect(headingColour().getByRole("radio", { name: "Brand" })).toBeVisible();
 
-    await panel().getByRole("radio", { name: "Second accent" }).click();
+    await headingColour().getByRole("radio", { name: "Second accent" }).click();
 
     await expect(steps().first()).toHaveText("Changed Heading colour");
-    await expect(panel().getByRole("radio", { name: "Second accent" })).toHaveAttribute(
+    await expect(headingColour().getByRole("radio", { name: "Second accent" })).toHaveAttribute(
       "aria-checked",
       "true",
     );
@@ -85,9 +87,9 @@ test.describe("Edit panel", () => {
     const heading = canvas().locator(".site-heading");
     const plain = await heading.evaluate((element) => getComputedStyle(element).color);
 
-    await panel().getByRole("radio", { name: "Brand" }).click();
-    await panel().getByRole("radio", { name: "Shade 300" }).click();
-    await panel().getByLabel("Opacity").selectOption("80");
+    await headingColour().getByRole("radio", { name: "Brand" }).click();
+    await headingColour().getByRole("radio", { name: "Shade 300" }).click();
+    await headingColour().getByLabel("Opacity").selectOption("80");
 
     await expect(heading).toHaveClass(/text-primary-300\/80/);
     await expect
@@ -233,6 +235,34 @@ test("reverses a section's colours, on the canvas too, as one step (2.4, F-DS-3)
 
   await page.keyboard.press("ControlOrMeta+z");
   await expect(section).not.toHaveAttribute("data-theme");
+});
+
+test("underlines a section's title from its Appearance group, as one step (2.22, ST-1)", async () => {
+  const title = canvas().locator(".site-hero h1");
+  const left = page.getByRole("region", { name: "Left panels" });
+  // Added with nothing selected, a Hero goes at the end of the page, and is selected.
+  await left.getByRole("tab", { name: "Add" }).click();
+  await left.getByRole("button", { name: "Hero", exact: true }).click();
+  await expect(title).toBeVisible();
+  await panel().getByRole("tab", { name: "Style" }).click();
+  await expect(panel().getByRole("button", { name: "Appearance", exact: true })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+
+  await panel().getByRole("switch", { name: "Underline" }).click();
+
+  await expect(title).toHaveClass(/(^| )underline!( |$)/);
+  await expect
+    .poll(() => title.evaluate((element) => getComputedStyle(element).textDecorationLine))
+    .toBe("underline");
+  await page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tab", { name: "Undo History" })
+    .click();
+  await expect(steps().first()).toHaveText("Changed Hero underline");
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(title).not.toHaveClass(/underline!/);
 });
 
 test("remembers the option groups closed for a kind of element, after a restart (UX-13)", async () => {
