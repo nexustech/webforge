@@ -201,11 +201,13 @@ export async function iconFiles(
 > {
   const keyOf = (path: string) =>
     `${ICON_ENCODING}/${original.hash}/${cropKey(item)}/${focalKey(item)}/${path}`;
-  // The sizes the image allows, known from its plan once it has been made.
+  // The sizes the image allows, known from its plan once it has been made. An empty plan is an
+  // image too small for any (under 16 pixels), known without reading it again (R15).
   const planKey = keyOf("plan");
   const plan = await cache?.get(planKey);
-  const paths = plan === undefined ? [] : new TextDecoder().decode(plan).split("\n");
-  const files = await cachedFiles(cache, keyOf, paths, async () => {
+  const planned = plan === undefined ? undefined : new TextDecoder().decode(plan);
+  const paths = planned === undefined || planned === "" ? [] : planned.split("\n");
+  const make = async () => {
     const image = await decoded(item, original, codecs);
     if (image === undefined) return undefined;
     const square = coverCrop(image, 1, focalInCrop(item));
@@ -220,10 +222,11 @@ export async function iconFiles(
       made.push({ path: icon.path, data: new Uint8Array(png) });
     }
     return made;
-  });
+  };
+  const files = planned === "" ? [] : await cachedFiles(cache, keyOf, paths, make);
   if (files === undefined) return undefined;
   // The plan last, so it's only ever there with all its files.
-  if (plan === undefined && cache !== undefined) {
+  if (planned === undefined && cache !== undefined) {
     await cache.set(planKey, new TextEncoder().encode(files.map((file) => file.path).join("\n")));
   }
   const ico = files.find((file) => file.path === "favicon.ico");

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { type FieldRenderers, FieldRenderersProvider } from "@webforge/editor-ui";
 import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
+import { themePreset } from "@webforge/themes";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CanvasApi } from "../../shared/ipc/canvas.js";
@@ -995,6 +996,48 @@ describe("EditPanelHost", () => {
         session.history.undo();
       });
       expect(hero()?.image).toEqual({ mediaId: "shop" });
+    });
+
+    it("places a section's first background image with the overlay the theme needs, as one step (ST-9)", async () => {
+      const { session, labels, user } = setup("faq", (session) => ({
+        image: imageFieldRenderer({
+          session,
+          media: { choose: async () => ({ status: "canceled" }) },
+          imageUrl: (item) => `test://${item.name}`,
+        }),
+      }));
+      act(() => {
+        addMedia(session, [shop]);
+        session.edit("props", "Chose the dark theme", (draft) => {
+          const dark = themePreset("dark");
+          if (dark !== undefined) draft.theme = dark;
+        });
+      });
+      const faq = () => currentPage(session)?.doc.content[2]?.props;
+      const steps = labels().length;
+
+      await user.click(screen.getByRole("tab", { name: "Content" }));
+      await user.click(screen.getByRole("button", { name: "Background image Choose an image…" }));
+      await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
+
+      // Dark's text needs a very strong overlay over any image.
+      expect(faq()?.backgroundImage).toEqual({ mediaId: "shop" });
+      expect(faq()?.overlay).toBe("80");
+      expect(labels().slice(steps)).toEqual(["Changed FAQ background image"]);
+      // Another theme later leaves it: the overlay warning covers what it changes.
+      act(() =>
+        session.edit("props", "Chose the light theme", (draft) => {
+          const light = themePreset("light");
+          if (light !== undefined) draft.theme = light;
+        }),
+      );
+      expect(faq()?.overlay).toBe("80");
+      act(() => {
+        session.history.undo();
+        session.history.undo();
+      });
+      expect(faq()?.backgroundImage).toBeUndefined();
+      expect(faq()?.overlay).toBeUndefined();
     });
   });
 });

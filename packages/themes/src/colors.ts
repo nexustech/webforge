@@ -67,6 +67,12 @@ export function oklchToSrgb({ l, c, h }: Oklch): Srgb {
 const luminance = ({ r, g, b }: Srgb) =>
   0.2126 * decode(r) + 0.7152 * decode(g) + 0.0722 * decode(b);
 
+/** The WCAG 2 contrast ratio of two gamma-encoded sRGB colours, from 1 (none) to 21. */
+export function srgbContrast(one: Srgb, other: Srgb): number {
+  const [a, b] = [luminance(one), luminance(other)];
+  return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
+}
+
 /**
  * The WCAG 2 contrast ratio of `foreground` on `background`, from 1 (none) to 21 (black on white).
  * A foreground at `opacity` (0–1) is first laid over the background, as a browser draws it.
