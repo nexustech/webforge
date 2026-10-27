@@ -67,6 +67,7 @@ test("formats rich text from its toolbar, which offers only the site's formattin
   for (const name of [
     "Bold",
     "Italic",
+    "Underline",
     "Bulleted list",
     "Numbered list",
     "Align left",
@@ -75,7 +76,7 @@ test("formats rich text from its toolbar, which offers only the site's formattin
   ]) {
     await expect(toolbar.getByRole("button", { name })).toBeVisible();
   }
-  for (const name of ["Underline", "Strikethrough", "Quote", "Code"]) {
+  for (const name of ["Strikethrough", "Quote", "Code"]) {
     await expect(toolbar.getByRole("button", { name })).toHaveCount(0);
   }
 
@@ -113,7 +114,34 @@ test("keeps only the site's formatting in text pasted from Word or a web page", 
   expect(html).toContain("<strong>Monday</strong>");
   expect(html).toContain("<em>Friday</em>");
   expect(html).toContain('<a href="https://example.com/menu">menu</a>');
-  expect(html).not.toMatch(/<h1|<u>|<table|<img|<span|style=|class="Mso|javascript:|font/);
+  // Underline is the site's formatting too (2.25, ST-3); the span's styles aren't.
+  expect(html).toContain("<u>only</u>");
+  expect(html).not.toMatch(/<h1|<table|<img|<span|style=|class="Mso|javascript:|font/);
+});
+
+test("underlines with Mod+U and colours text from the theme only, as the text's one step (2.25, ST-3)", async () => {
+  await editText();
+  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  await selectText(editor());
+  await page.keyboard.press("ControlOrMeta+u");
+  await expect(editor().locator("u")).toHaveText(STARTER_TEXT);
+
+  // The theme's roles, and no colour of their own.
+  const highlight = toolbar.getByRole("combobox", { name: "Highlight" });
+  const options = await highlight.locator("option").allTextContents();
+  expect(options).toEqual(["No highlight", "Brand", "Accent", "Text", "Surface"]);
+  await highlight.selectOption({ label: "Accent" });
+  await toolbar.getByRole("combobox", { name: "Text colour" }).selectOption({ label: "Brand" });
+
+  const marked = editor().locator('span[class="bg-accent/30"]');
+  await expect(marked).toHaveText(STARTER_TEXT);
+  await expect(editor().locator('span[class="text-primary"]')).toHaveText(STARTER_TEXT);
+  // Drawn by the site's CSS, which compiles the classes from the theme: no style of its own.
+  await expect(marked).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  expect(await editor().innerHTML()).not.toContain("style=");
+  await leaveText();
+  await expect(steps().first()).toHaveText("Edited Text text");
+  await expect(steps()).toHaveCount(2);
 });
 
 test("links selected text through the link dialog, as part of the text's one step", async () => {
