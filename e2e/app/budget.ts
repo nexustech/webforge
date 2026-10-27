@@ -30,11 +30,12 @@ const OPEN_WALL_BACKSTOP_MS = process.env.CI === "true" ? 6_000 : 12_000;
 
 /**
  * The CPU time opening a site may cost on CI's runners, across Webforge's processes, by platform:
- * about 30% over the most CI measured (run 40408131521, 27 Oct 2026: Linux 1.75–2.05 CPU-s,
- * Windows 2.23–2.85, macOS 2.09–3.26). See ADR 0014.
+ * about 30% over the most two CI runs measured (27 Oct 2026; runs 40408131521 and 40494487950).
+ * Linux 1.75–3.31 CPU-s, Windows 1.64–2.85, macOS 1.36–3.26: GitHub's runners differ from run to
+ * run, so one run's numbers aren't enough. See ADR 0014.
  */
 const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
-  linux: 2.7,
+  linux: 4.3,
   win32: 3.7,
   darwin: 4.3,
 };

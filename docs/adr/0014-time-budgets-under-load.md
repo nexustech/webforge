@@ -23,7 +23,11 @@ Re-running a failed job hides all three, and each makes the next failure harder 
    - **What is measured:** `measureWork(app)` takes each process's `cumulativeCPUUsage` (Electron's `app.getAppMetrics()`) just before Create, and again once the hero shows. A process that starts in between, such as the export worker, counts from 0. One that exits in between is lost, so the count can only come out low.
    - **The check:** `expectWorkWithin(work, OPEN_BUDGET, what)` checks the CPU budget, then the backstop, and prints both in the report and the log.
    - **The CPU budget** is about 30% over the most CI's runners measured for any opening, per platform. CPU-seconds scale with clock speed, and the runners differ.
-     - **CI** (`CI=true`): Linux 2.7, Windows 3.7, macOS 4.3 CPU-s. One CI run on 27 Oct 2026 measured Linux 1.75–2.05, Windows 2.23–2.85 and macOS 2.09–3.26 CPU-s, across the nine openings (six templates, a template from the start screen, Personal / CV and the example).
+     - **CI** (`CI=true`): Linux 4.3, Windows 3.7, macOS 4.3 CPU-s. Two CI runs on 27 Oct 2026 (40408131521, then 40494487950 after 2.22a and 2.24 merged) measured, across the nine openings (six templates, a template from the start screen, Personal / CV and the example):
+       - Linux 1.75–2.05, then 2.45–3.31;
+       - Windows 2.23–2.85, then 1.64–1.99;
+       - macOS 2.09–3.26, then 1.36–2.66.
+     - **The budgets cover the most of both runs.** GitHub's runners don't all have the same processors, so the same work costs a different number of CPU-seconds from run to run. A budget from a single run failed the next.
      - **Locally:** three times CI's, or `WEBFORGE_E2E_CPU_SCALE` times. A development machine cost 2–3 times as much: 5.3–7.8 CPU-s on Windows. Its canvas is drawn on a larger, high-DPI screen (more pixels to raster and composite), and it shares its CPU with other work, whose switching costs our processes CPU time too.
      - **A miss** says which budget applied, CI's or the local one, with what was measured.
    - **The backstop** (`OPEN_WALL_BACKSTOP_MS`) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. On CI it is 6 s, twice the target, and CI's slowest opening took 2.1 s. Locally it is 12 s: openings took up to 5.3 s on a development machine under load.
