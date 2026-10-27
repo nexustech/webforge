@@ -116,8 +116,16 @@ test.describe("exported site from disk", () => {
       "apple-touch-icon.png",
       "icon-192.png",
     ]);
-    // Each one is there, and the browser reads it as an image.
-    for (const href of icons) {
+    // Each one is there. The browser reads each PNG as an image; the .ico is checked by its bytes,
+    // as with the network blocked by a route Chromium refuses an <img> of it and WebKit's page
+    // crashes, though both show it as the tab's icon.
+    for (const href of icons) expect(existsSync(fileURLToPath(href)), href).toBe(true);
+    const ico = readFileSync(fileURLToPath(icons[0] ?? ""));
+    // An icon file (type 1) of three images, the first a PNG.
+    expect([...ico.subarray(0, 6)]).toEqual([0, 0, 1, 0, 3, 0]);
+    const first = ico.readUInt32LE(18);
+    expect(ico.subarray(first + 1, first + 4).toString("latin1")).toBe("PNG");
+    for (const href of icons.slice(1)) {
       const width = await page.evaluate(
         (source) =>
           new Promise<number>((resolve) => {
