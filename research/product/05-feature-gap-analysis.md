@@ -87,7 +87,7 @@ Bootstrap Studio 8 added an **AI Assistant** (bring-your-own key). Wix, Squaresp
 
 **Recommendation:**
 - **v1.1:** option 1, starting with G25b (meta/alt text) and G25a (rewrite text), since they're cheap and directly support Site Check.
-- **Later:** G25c (site from description).
+- ~~**Later:** G25c (site from description).~~ **v1.1** as the quick start's description step (QS-7, 2026-10-27, [product/09](09-quick-start-wizard.md)); the quick start itself is in the MVP (item 3.11).
 - **Not planned:** G25d.
 - **Design rules:**
   - The AI layer must go through `HistoryManager` (undoable, labelled "AI: Rewrote Hero text"). This avoids Bootstrap Studio's known issue of AI edits breaking linked components.
@@ -160,7 +160,7 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 | # | Topic | Decision |
 |---|---|---|
 | GA1 | **MVP additions** | ✅ **All §4 MVP items added to the MVP** (G1, G2, G3, G5, G6, G8, G9, G10, G11, G14, G15, G17, G18, G21, G27), about +4–6 weeks. The MVP spec is updated (F-ED-16…22, F-DS-4…5, F-CM-6…8) |
-| GA2 | **AI** | ✅ **Users bring their own AI account in v1.1**: G25b (meta/social descriptions, alt text) and G25a (rewrite text). Opt-in, keys in the OS keychain, every AI edit undoable via `HistoryManager`. G25c later; G25d out of scope |
+| GA2 | **AI** | ✅ **Users bring their own AI account in v1.1**: G25b (meta/social descriptions, alt text) and G25a (rewrite text). Opt-in, keys in the OS keychain, every AI edit undoable via `HistoryManager`. G25c is v1.1 as the quick start's description step (QS-7, [product/09](09-quick-start-wizard.md)); G25d out of scope |
 | GA3 | **Booking & newsletter presets** | ⏸ **Deferred.** The features stay in MVP with a generic "any https URL / form action" option. Which providers to preset is an open question (see below) |
 | GA4 | **Marketplace / plugin API** | **Long-term goal, out of scope for MVP.** Keep `site-components` and the component registry designed so a plugin API is possible later |
 | GA5 | **Connect AI apps (MCP)** (2026-10-22) | ✅ **MVP (G33).** Webforge runs a local MCP server so AI apps the user already has can read and edit the open site. Off by default; each AI app is paired with a code from Webforge and can be removed; every change is undoable and labelled (e.g. "AI (Claude): Added Hero"). It works only on the user's computer, with no publishing or credential tools. Spec F-AI-1. The built-in assistant follows in v1.1 (GA9) |
