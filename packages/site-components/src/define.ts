@@ -195,11 +195,50 @@ function passesThrough(type: unknown): boolean {
 }
 
 /**
- * An element's output with its Appearance (2.22) on its root element: the Text and the other
- * controls' classes after its own, through a fragment or a context's provider around it. What it
- * holds is drawn without its section's title styling, so a section's Appearance reaches no title
- * but its own. Output with no HTML element at its root is left as it is (a test checks every
- * element's root is one).
+ * The attribute an element puts on the part of it its Appearance belongs on, when that isn't its
+ * root: a Button's link, inside the row that aligns it; an Icon's drawing (2.22b). Never drawn: the
+ * Appearance takes it off.
+ */
+export const LOOK_TARGET = "data-wf-look";
+
+/** `node` with `classes` on its element marked {@link LOOK_TARGET}, the mark gone; and if found. */
+function onTarget(node: ReactNode, classes: string): readonly [ReactNode, boolean] {
+  if (!isValidElement(node)) return [node, false];
+  const props = node.props as {
+    readonly className?: unknown;
+    readonly children?: ReactNode;
+    readonly [LOOK_TARGET]?: unknown;
+  };
+  if (Object.hasOwn(props, LOOK_TARGET)) {
+    const own = typeof props.className === "string" ? props.className : "";
+    return [
+      cloneElement(node, {
+        [LOOK_TARGET]: undefined,
+        ...(classes === "" ? {} : { className: own === "" ? classes : `${own} ${classes}` }),
+      } as Record<string, unknown>),
+      true,
+    ];
+  }
+  const children = props.children;
+  if (children === undefined) return [node, false];
+  let found = false;
+  const placed = (Array.isArray(children) ? children : [children]).map((child: ReactNode) => {
+    if (found) return child;
+    const [next, here] = onTarget(child, classes);
+    found = here;
+    return next;
+  });
+  return found
+    ? [cloneElement(node, {}, ...(Array.isArray(children) ? placed : [placed[0]])), true]
+    : [node, false];
+}
+
+/**
+ * An element's output with its Appearance (2.22): the Text and the other controls' classes after
+ * its own, on the part it marks {@link LOOK_TARGET}, else on its root element (through a fragment
+ * or a context's provider around it). What it holds is drawn without its section's title styling,
+ * so a section's Appearance reaches no title but its own. Output with no HTML element at its root
+ * is left as it is (a test checks every element's root is one).
  */
 function withAppearance(output: ReactNode, classes: string): ReactNode {
   if (!isValidElement(output)) return output;
@@ -209,9 +248,11 @@ function withAppearance(output: ReactNode, classes: string): ReactNode {
       ? cloneElement(output, {}, withAppearance(props.children, classes))
       : output;
   }
+  const [inside, marked] =
+    props.children === undefined ? [undefined, false] : onTarget(props.children, classes);
   const own = typeof props.className === "string" ? props.className : "";
   const changed = (
-    classes === "" ? {} : { className: own === "" ? classes : `${own} ${classes}` }
+    classes === "" || marked ? {} : { className: own === "" ? classes : `${own} ${classes}` }
   ) as Record<string, unknown>;
   // An element with nothing inside (an `<hr>`, HTML set as it is) has no title to keep it from.
   return props.children === undefined
@@ -219,7 +260,7 @@ function withAppearance(output: ReactNode, classes: string): ReactNode {
     : cloneElement(
         output,
         changed,
-        createElement(SectionTitleAppearance.Provider, { value: "" }, props.children),
+        createElement(SectionTitleAppearance.Provider, { value: "" }, inside),
       );
 }
 

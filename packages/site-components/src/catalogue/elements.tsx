@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
-import { defineComponent } from "../define.js";
+import { defineComponent, LOOK_TARGET } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
 import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from "../library.js";
@@ -102,10 +102,11 @@ const image = defineComponent({
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
+    hover: HOVER_FIELD,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
-  defaults: { width: "full", alignment: "centre", rounded: false, caption: "" },
+  defaults: { width: "full", alignment: "centre", rounded: false, caption: "", hover: "none" },
   behaviours: entranceBehaviours,
   render: ({ values, context }) => {
     const placed = values.image;
@@ -126,7 +127,7 @@ const image = defineComponent({
     }
     const caption = values.caption.trim();
     return (
-      <figure className={frame} {...entrance}>
+      <figure className={`${frame}${hoverClasses(values.hover)}`} {...entrance}>
         <ImagePicture
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
@@ -212,6 +213,8 @@ const button = defineComponent({
           <a
             className={`${BUTTON_CLASSES[BUTTON_KIND[values.style][values.size]]}${hoverClasses(values.hover)}`}
             {...linkAttributes(values.link, context)}
+            // Its Appearance styles the button, not the row that aligns it (2.22b).
+            {...{ [LOOK_TARGET]: "" }}
           >
             {values.icon === undefined ? null : <LucideIcon name={values.icon} />}
             {label}
@@ -473,10 +476,18 @@ const icon = defineComponent({
       options: ICON_COLOURS.map((value) => ({ label: t(`field.color.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
+    hover: HOVER_FIELD,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
-  defaults: { icon: "star", label: "", size: "medium", color: "primary", alignment: "left" },
+  defaults: {
+    icon: "star",
+    label: "",
+    size: "medium",
+    color: "primary",
+    alignment: "left",
+    hover: "none",
+  },
   behaviours: entranceBehaviours,
   render: ({ values }) => {
     const size = responsiveClasses(values.size, (value) => ICON_SIZE_CLASS[value]);
@@ -488,8 +499,10 @@ const icon = defineComponent({
       >
         {values.icon === undefined ? null : (
           <LucideIcon
+            // Its Appearance styles the drawing, not the row that aligns it (2.22b).
+            {...{ [LOOK_TARGET]: "" }}
             name={values.icon}
-            className={colour === "" ? size : `${size} ${colour}`}
+            className={`${colour === "" ? size : `${size} ${colour}`}${hoverClasses(values.hover)}`}
             label={values.label}
           />
         )}

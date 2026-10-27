@@ -125,6 +125,20 @@ describe("the Appearance group (2.22, ST-1)", () => {
     expect(missed).toEqual([]);
   });
 
+  it("styles a Button's button and an Icon's drawing, not the row that aligns them (2.22b)", () => {
+    const html = render([
+      {
+        type: "Button",
+        props: { id: "b", label: "Book", link: "about", lookBackground: "accent" },
+      },
+      { type: "Icon", props: { id: "i", icon: "star", lookOpacity: "50" } },
+    ]);
+    expect(html).toMatch(/<div class="site-button [^"!]*"><a class="btn [^"]* bg-accent!"/);
+    expect(html).toMatch(/<div class="site-icon [^"!]*"><svg[^>]* class="[^"]*opacity-50!"/);
+    // The mark that says where never reaches a page.
+    expect(html).not.toContain("data-wf-look");
+  });
+
   it("refuses an element that declares one of its fields itself", () => {
     expect(() =>
       defineComponent({

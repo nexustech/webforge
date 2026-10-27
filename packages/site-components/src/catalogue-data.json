@@ -2129,6 +2129,41 @@
         "kind": "text",
         "label": "Caption"
       },
+      "hover": {
+        "kind": "select",
+        "label": "When hovered",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
+          }
+        ]
+      },
       "margin": {
         "kind": "box",
         "label": "Margin",
@@ -2199,7 +2234,8 @@
       "width": "full",
       "alignment": "centre",
       "rounded": false,
-      "caption": ""
+      "caption": "",
+      "hover": "none"
     }
   },
   "Button": {
@@ -2688,8 +2724,12 @@
       },
       "hover": {
         "kind": "select",
-        "label": "Hover effect",
+        "label": "When hovered",
         "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
         "options": [
           {
             "label": "None",
@@ -2706,6 +2746,14 @@
           {
             "label": "Shadow",
             "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
           }
         ]
       },
@@ -5258,6 +5306,41 @@
           }
         ]
       },
+      "hover": {
+        "kind": "select",
+        "label": "When hovered",
+        "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
+        "options": [
+          {
+            "label": "None",
+            "value": "none"
+          },
+          {
+            "label": "Lift",
+            "value": "lift"
+          },
+          {
+            "label": "Grow",
+            "value": "grow"
+          },
+          {
+            "label": "Shadow",
+            "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
+          }
+        ]
+      },
       "margin": {
         "kind": "box",
         "label": "Margin",
@@ -5329,7 +5412,8 @@
       "label": "",
       "size": "medium",
       "color": "primary",
-      "alignment": "left"
+      "alignment": "left",
+      "hover": "none"
     }
   },
   "SocialLinks": {
@@ -14227,8 +14311,12 @@
       },
       "hover": {
         "kind": "select",
-        "label": "Card hover effect",
+        "label": "Cards when hovered",
         "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
         "options": [
           {
             "label": "None",
@@ -14245,6 +14333,14 @@
           {
             "label": "Shadow",
             "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
           }
         ]
       },
@@ -14834,8 +14930,12 @@
       },
       "hover": {
         "kind": "select",
-        "label": "Card hover effect",
+        "label": "Cards when hovered",
         "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
         "options": [
           {
             "label": "None",
@@ -14852,6 +14952,14 @@
           {
             "label": "Shadow",
             "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
           }
         ]
       },
@@ -15451,8 +15559,12 @@
       },
       "hover": {
         "kind": "select",
-        "label": "Card hover effect",
+        "label": "Cards when hovered",
         "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
         "options": [
           {
             "label": "None",
@@ -15469,6 +15581,14 @@
           {
             "label": "Shadow",
             "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
           }
         ]
       },
@@ -16069,8 +16189,12 @@
       },
       "hover": {
         "kind": "select",
-        "label": "Card hover effect",
+        "label": "Cards when hovered",
         "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
         "options": [
           {
             "label": "None",
@@ -16087,6 +16211,14 @@
           {
             "label": "Shadow",
             "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
           }
         ]
       },
@@ -16736,8 +16868,12 @@
       },
       "hover": {
         "kind": "select",
-        "label": "Hover effect",
+        "label": "When hovered",
         "group": "style",
+        "optionGroup": {
+          "id": "appearance",
+          "label": "Appearance"
+        },
         "options": [
           {
             "label": "None",
@@ -16754,6 +16890,14 @@
           {
             "label": "Shadow",
             "value": "shadow"
+          },
+          {
+            "label": "Darken",
+            "value": "darken"
+          },
+          {
+            "label": "Underline",
+            "value": "underline"
           }
         ]
       },

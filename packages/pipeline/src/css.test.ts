@@ -223,6 +223,38 @@ describe("the Appearance group's classes (2.22, ST-1)", () => {
     expect(html).toMatch(/<a class="btn btn-primary[^"!]*"/);
   });
 
+  it("lets the hover row beat the group's own shadow (2.22, ST-2)", async () => {
+    const { html, css } = await cssFor([
+      {
+        type: "Section",
+        props: {
+          id: "band",
+          content: [
+            {
+              type: "Button",
+              props: {
+                id: "b",
+                label: "Book",
+                link: "about",
+                lookShadow: "small",
+                hover: "shadow",
+              },
+            },
+          ],
+        },
+      },
+    ]);
+    expect(html).toMatch(/class="[^"]*hover:shadow-\(--wf-hover-shadow\)! [^"]*shadow-sm!"/);
+    const base = css.indexOf(String.raw`.shadow-sm\!`);
+    const hover = css.indexOf(String.raw`.hover\:shadow-\(--wf-hover-shadow\)\!:hover`);
+    // Both marked to win, and the hover state written after the base: it wins while hovered.
+    expect(base).toBeGreaterThan(-1);
+    expect(hover).toBeGreaterThan(base);
+    expect(rule(css, String.raw`.hover\:shadow-\(--wf-hover-shadow\)\!:hover`)).toContain(
+      "!important",
+    );
+  });
+
   it("leaves a form's button its own disabled state: the group styles the form's root only", () => {
     const html = renderNodesToHtml(
       [
