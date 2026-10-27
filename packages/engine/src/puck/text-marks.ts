@@ -10,7 +10,7 @@ import {
 export type TextMarkName = "themeHighlight" | "themeColor";
 
 /** The class each role writes, for each mark. */
-export const TEXT_MARK_CLASSES_BY_NAME: Readonly<
+const TEXT_MARK_CLASSES_BY_NAME: Readonly<
   Record<TextMarkName, Readonly<Record<TextMarkRole, string>>>
 > = {
   themeHighlight: HIGHLIGHT_CLASSES,
