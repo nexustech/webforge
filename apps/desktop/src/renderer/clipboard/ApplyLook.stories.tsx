@@ -8,6 +8,7 @@ import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { createSiteWideConfirm, SiteWideConfirmDialog } from "../shell/confirm-site-wide.js";
 import { dialogStory } from "../testing/stories.js";
 import { LOOK_COMMANDS, lookChange, lookConfirmation, registerLookCommands } from "./apply-look.js";
+import { registerStyleCommands } from "./style-clipboard.js";
 
 // Apply Look to Every… (2.27, ST-4): in the element menu, and the question asked before it changes
 // other pages (D7). The Appearance group's right-click menu offers the same commands (a test).
@@ -59,15 +60,22 @@ function siteWithButtons(): SiteDoc {
   return site;
 }
 
-/** Registers the look commands on the story's registry, with the styled Button selected. */
+/**
+ * Registers Copy Style, Paste Style and the look commands on the story's registry, as the app does,
+ * with the styled Button selected.
+ */
 function useLookCommands(session: EditorSession) {
   const registry = useCommandRegistry();
   const [confirm] = useState(createSiteWideConfirm);
   useEffect(() => {
     session.select("styled");
-    return registerLookCommands(registry, session, () => undefined, confirm).remove;
+    const style = registerStyleCommands(registry, session, () => undefined);
+    const look = registerLookCommands(registry, session, () => undefined, confirm);
+    return () => {
+      look.remove();
+      style.remove();
+    };
   }, [registry, session, confirm]);
-  return confirm;
 }
 
 /** The element menu on the styled Button, open. */
