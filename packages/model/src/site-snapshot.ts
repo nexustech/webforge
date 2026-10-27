@@ -38,6 +38,12 @@ const pagePathSchema = z
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)*$/)
   .refine((path) => path.split("/")[0] !== "assets", { message: "'assets' is reserved" });
 
+/** A Media item's id, as a page, the site or a file names it. */
+const mediaRefSchema = z.string().regex(/^[A-Za-z0-9_-]+$/);
+
+/** A Media item's name, in its exported file names: `shop-front`. */
+const mediaNameSchema = z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+
 /** One page of a {@link SiteSnapshot}. */
 export type SitePage = {
   /** The page id (`PageId`); internal links point at it. */
@@ -143,10 +149,7 @@ const sitePageSchema = z.object({
   hideHeader: z.boolean().optional(),
   hideFooter: z.boolean().optional(),
   hideBackToTop: z.boolean().optional(),
-  shareImage: z
-    .string()
-    .regex(/^[A-Za-z0-9_-]+$/)
-    .optional(),
+  shareImage: mediaRefSchema.optional(),
   doc: pageDocSchema,
 });
 
@@ -164,8 +167,8 @@ const CONTENT_MISSING = { message: "Neither the file's bytes nor its hash" };
 
 const mediaItemSchema = z
   .object({
-    id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-    name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    id: mediaRefSchema,
+    name: mediaNameSchema,
     mimeType: z.enum(IMAGE_MIME_TYPES),
     ...contentSchema,
     alt: z.string().optional(),
@@ -176,8 +179,8 @@ const mediaItemSchema = z
 
 const documentItemSchema = z
   .object({
-    id: z.string().regex(/^[A-Za-z0-9_-]+$/),
-    name: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    id: mediaRefSchema,
+    name: mediaNameSchema,
     mimeType: z.enum(FILE_MIME_TYPES),
     ...contentSchema,
   })
@@ -203,10 +206,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       formService: formServiceSchema.optional(),
       backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),
-      icon: z
-        .string()
-        .regex(/^[A-Za-z0-9_-]+$/)
-        .optional(),
+      icon: mediaRefSchema.optional(),
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);

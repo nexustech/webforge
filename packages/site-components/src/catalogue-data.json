@@ -512,6 +512,63 @@
       "framed": true,
       "appearance": "noText",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "gap": {
           "kind": "slider",
           "label": "Space between elements",
@@ -653,6 +710,8 @@
       },
       "defaults": {
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "gap": "medium",
         "fullWidth": false,
         "content": []
@@ -2072,6 +2131,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -2171,6 +2287,8 @@
       },
       "defaults": {
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Our story",
         "text": "<p>Tell visitors who you are, what you do and why you do it.</p>"
       }
@@ -2182,6 +2300,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -2301,6 +2476,8 @@
       "defaults": {
         "variant": "imageRight",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "What we do",
         "text": "<p>Describe what you offer, and add a photo that shows it.</p>"
       }
@@ -2312,6 +2489,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -2435,6 +2669,8 @@
       "defaults": {
         "variant": "banner",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Ready to visit?",
         "text": "Tell visitors the one thing you would like them to do next.",
         "buttonLabel": "Contact us"
@@ -2447,6 +2683,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -2568,6 +2861,8 @@
       "defaults": {
         "variant": "accordion",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Frequently asked questions",
         "items": []
       }
@@ -2599,6 +2894,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -2720,6 +3072,8 @@
       "defaults": {
         "variant": "grid",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Our work",
         "images": []
       }
@@ -2859,6 +3213,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -2979,6 +3390,8 @@
       "defaults": {
         "variant": "stacked",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "See us at work",
         "text": "<p>Say what this video shows.</p>",
         "address": ""
@@ -2991,6 +3404,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -3114,6 +3584,8 @@
       "defaults": {
         "variant": "stacked",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Find us",
         "text": "<p>Tell visitors how to get here, and where to park.</p>",
         "address": ""
@@ -3303,6 +3775,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -3428,6 +3957,8 @@
       "defaults": {
         "variant": "split",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Visit us",
         "text": "<p>We'd love to see you.</p>",
         "showHours": true,
@@ -3441,6 +3972,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -3564,6 +4152,8 @@
       "defaults": {
         "variant": "stacked",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Get in touch",
         "text": "<p>Send us a message and we'll reply within a day.</p>",
         "askPhone": false,
@@ -3577,6 +4167,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -3710,6 +4357,8 @@
       "defaults": {
         "variant": "stacked",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Stay in the loop",
         "text": "<p>News and offers, once a month. Unsubscribe at any time.</p>",
         "askName": false,
@@ -3914,6 +4563,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4075,6 +4781,8 @@
       "defaults": {
         "variant": "cards",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "What we offer",
         "text": "<p>A few good reasons to choose us.</p>",
         "items": [
@@ -4139,6 +4847,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4295,6 +5060,8 @@
       "defaults": {
         "variant": "cards",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "What our customers say",
         "items": [
           {
@@ -4364,6 +5131,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4525,6 +5349,8 @@
       "defaults": {
         "variant": "cards",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Meet the team",
         "text": "<p>The people you'll see when you visit.</p>",
         "items": [
@@ -4595,6 +5421,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4752,6 +5635,8 @@
       "defaults": {
         "variant": "cards",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "Prices",
         "text": "<p>Simple prices, no surprises.</p>",
         "items": [
@@ -5162,6 +6047,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -5279,6 +6221,8 @@
       "defaults": {
         "variant": "row",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "As seen in",
         "items": [
           {
@@ -5336,6 +6280,63 @@
       "framed": true,
       "appearance": "all",
       "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -5462,6 +6463,8 @@
       "defaults": {
         "variant": "row",
         "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
         "title": "In numbers",
         "text": "<p>A few things we're proud of.</p>",
         "items": [

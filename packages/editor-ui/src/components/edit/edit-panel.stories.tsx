@@ -57,6 +57,35 @@ export const Hero: Story = {
   },
 };
 
+/**
+ * A section's overlay too weak for its text over some images: the warning sits under the slider,
+ * above its help, and never blocks the change (2.26).
+ */
+export const OverlayWarning: Story = {
+  args: {
+    heading: "Text",
+    fields: [
+      {
+        name: "overlay",
+        kind: "slider",
+        label: "Overlay",
+        group: "style",
+        value: "20",
+        steps: [
+          { label: "None", value: "0" },
+          { label: "Light", value: "20" },
+          { label: "Medium", value: "40" },
+          { label: "Strong", value: "60" },
+          { label: "Very strong", value: "80" },
+        ],
+        help: "A layer of colour over the image, so the text stays easy to read.",
+        warning:
+          "The text may be hard to read on some images: its contrast can fall to 2.1:1, below the 4.5:1 most people need. Choose a stronger overlay.",
+      },
+    ],
+  },
+};
+
 /** An element with only style fields starts on the Style tab. */
 export const StyleOnly: Story = {
   args: { heading: "Section", fields: heroFields.filter((field) => field.group === "style") },

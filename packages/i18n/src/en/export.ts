@@ -42,6 +42,10 @@ export const exportSite = {
   "export.report.issues": "Worth a look",
   "export.report.brokenLink": "On “{page}”, a link goes to a page or file that isn't there.",
   "export.report.missingImage": "On “{page}”, an image deleted from Media was left out.",
+  "export.report.missingIcon":
+    "The site icon was deleted from Media, so pages have no icon in the browser tab. Choose another in Site Settings.",
+  "export.report.smallIcon":
+    "The site icon is smaller than 16 pixels, so pages have no icon in the browser tab. Choose a larger image in Site Settings.",
   "export.report.notMinified":
     "“{page}” wasn't made smaller: its Custom Code isn't valid HTML. It was saved as it is.",
   "export.report.more": "And {count} more.",
