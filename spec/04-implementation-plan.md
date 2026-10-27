@@ -971,10 +971,10 @@ The eight templates were built before the Appearance group. A light pass uses it
 | Stream | Items, in order |
 |---|---|
 | A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.11 (quick start, 27 Oct) → 3.13 (once B's 3.12 has merged) → 3.14 (component theming, 27 Oct) → 3.10 (compatibility E2E) |
-| B: Data & site | ~~3.1 → 3.3 → 3.4~~ → 2.26 (styling block) → 3.7 (forms, once 3.6 has merged) → 3.12 (component looks in the theme, 27 Oct) |
-| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) → 3.8 (Google Analytics) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26~~ → 3.8 (Google Analytics, moved from C on 27 Oct 2026 while 3.7 waits for 3.6) → 3.7 (forms, once 3.6 has merged) → 3.12 (component looks in the theme, 27 Oct) |
+| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) |
 
-Three items wait on another stream: 3.7 (B) on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B), and 3.13 (A) on 3.12 (B). **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
+Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.13 (A) on 3.12 (B); 3.10 (A) waited on 3.3 and 3.4 (B), both merged. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
 <details><summary>Scope and acceptance criteria</summary>
 

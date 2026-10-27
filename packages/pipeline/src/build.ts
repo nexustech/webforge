@@ -14,6 +14,7 @@ import {
   backToTopHtml,
   behavioursUsedBy,
   type ComponentLibrary,
+  consentBannerHtml,
   documentsLinkedBy,
   hrefFor,
   mediaUsedBy,
@@ -255,6 +256,9 @@ export async function* buildEvents(
   const files = new Map<string, Uint8Array>();
   const warnings: BuildWarning[] = [];
 
+  // Google Analytics and its consent banner (3.8, B4), never in a preview: it would count the
+  // person's own visits.
+  const analytics = run.mode === "preview" ? undefined : site.analytics;
   let behaviours: ReturnType<typeof behavioursUsedBy>;
   let mediaIds: Set<string>;
   let documentIds: Set<string>;
@@ -262,6 +266,9 @@ export async function* buildEvents(
     behaviours = behavioursUsedBy(allNodes(site), library);
     if (site.pages.some((page) => showsBackToTop(site, page))) {
       behaviours = [...behaviours, "back-to-top" as const].sort();
+    }
+    if (analytics !== undefined) {
+      behaviours = [...behaviours, "consent" as const].sort();
     }
     mediaIds = mediaUsedBy(allNodes(site), library);
     documentIds = documentsLinkedBy(allNodes(site), library);
@@ -492,11 +499,14 @@ export async function* buildEvents(
 
   // The back-to-top button (F-CM-9) on the pages that show it, its classes compiled with theirs.
   const backToTop = backToTopHtml();
+  // The consent banner on every page, its classes compiled too (3.8).
+  const consent = analytics === undefined ? undefined : consentBannerHtml(analytics);
   const markup = rendered.flatMap((entry) => [
     entry.header,
     entry.main,
     entry.footer,
     showsBackToTop(site, entry.page) ? backToTop : "",
+    consent ?? "",
   ]);
   stopIfCancelled(signal);
   yield { stage: "styles" };
@@ -525,6 +535,7 @@ export async function* buildEvents(
       main: entry.main,
       footer: entry.footer,
       ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
+      ...(consent === undefined ? {} : { consent }),
       // The favicon set's links first (3.4); 3.5's share and search tags follow them.
       head: iconLinks(icons, entry.prefix),
     };
