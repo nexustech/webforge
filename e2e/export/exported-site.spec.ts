@@ -113,8 +113,8 @@ test.describe("exported site from disk", () => {
     );
     expect(icons.map((href) => href.split("/").at(-1))).toEqual([
       "favicon.ico",
-      "icon-192.png",
       "apple-touch-icon.png",
+      "icon-192.png",
     ]);
     // Each one is there, and the browser reads it as an image.
     for (const href of icons) {

@@ -2,6 +2,7 @@ import encodeJpeg from "@jsquash/jpeg/encode.js";
 import encodePng from "@jsquash/png/encode.js";
 import resize from "@jsquash/resize";
 import type { MediaItem } from "@webforge/model";
+import type { SiteIcon } from "./html.js";
 import {
   cropKey,
   cropPixels,
@@ -20,12 +21,42 @@ import type { CodecModules, ImageCache } from "./resources.js";
 /** One file the export writes. */
 type SiteImageFile = { readonly path: string; readonly data: Uint8Array };
 
-/** The square icons, as PNG: Apple's home-screen icon, and the web app manifest's two (3.5). */
+/**
+ * The square icons, as PNG: Apple's home-screen icon, and the web app manifest's two (3.5), the
+ * smaller linked from the pages too.
+ */
 const ICONS = [
-  { path: "apple-touch-icon.png", size: 180 },
-  { path: "assets/icons/icon-192.png", size: 192 },
+  { path: "apple-touch-icon.png", size: 180, link: "apple-touch-icon" },
+  { path: "assets/icons/icon-192.png", size: 192, link: "icon" },
   { path: "assets/icons/icon-512.png", size: 512 },
 ] as const;
+
+/**
+ * The icon set the files at `paths` make (3.4): each one's sizes and type, and how the pages link
+ * it, in the order they're linked.
+ */
+function iconSet(paths: ReadonlySet<string>, icoSizes: readonly number[]): SiteIcon[] {
+  return [
+    ...(paths.has("favicon.ico")
+      ? [
+          {
+            path: "favicon.ico",
+            sizes: icoSizes.map((size) => `${size}x${size}`).join(" "),
+            type: "image/x-icon",
+            link: "icon",
+          } as const,
+        ]
+      : []),
+    ...ICONS.filter((icon) => paths.has(icon.path)).map(
+      (icon): SiteIcon => ({
+        path: icon.path,
+        sizes: `${icon.size}x${icon.size}`,
+        type: "image/png",
+        ...("link" in icon ? { link: icon.link } : {}),
+      }),
+    ),
+  ];
+}
 
 /** The sizes `favicon.ico` holds, each a PNG inside it, as every current browser reads. */
 const ICO_SIZES = [16, 32, 48] as const;
@@ -165,7 +196,9 @@ export async function iconFiles(
   original: ImageOriginal,
   codecs: CodecModules,
   cache: ImageCache | undefined,
-): Promise<readonly SiteImageFile[] | undefined> {
+): Promise<
+  { readonly files: readonly SiteImageFile[]; readonly icons: readonly SiteIcon[] } | undefined
+> {
   const keyOf = (path: string) =>
     `${ICON_ENCODING}/${original.hash}/${cropKey(item)}/${focalKey(item)}/${path}`;
   // The sizes the image allows, known from its plan once it has been made.
@@ -188,11 +221,28 @@ export async function iconFiles(
     }
     return made;
   });
+  if (files === undefined) return undefined;
   // The plan last, so it's only ever there with all its files.
-  if (files !== undefined && plan === undefined && cache !== undefined) {
+  if (plan === undefined && cache !== undefined) {
     await cache.set(planKey, new TextEncoder().encode(files.map((file) => file.path).join("\n")));
   }
-  return files;
+  const ico = files.find((file) => file.path === "favicon.ico");
+  return {
+    files,
+    icons: iconSet(
+      new Set(files.map((file) => file.path)),
+      ico === undefined ? [] : icoSizes(ico.data),
+    ),
+  };
+}
+
+/** The sizes an `.ico` holds, from its directory: a width of 0 is 256. */
+function icoSizes(ico: Uint8Array): number[] {
+  const view = new DataView(ico.buffer, ico.byteOffset, ico.byteLength);
+  return Array.from(
+    { length: view.getUint16(4, true) },
+    (_, at) => view.getUint8(6 + 16 * at) || 256,
+  );
 }
 
 /**

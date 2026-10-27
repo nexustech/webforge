@@ -67,12 +67,28 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     expect(pngSize(built.files.get("apple-touch-icon.png"))).toEqual([180, 180]);
     expect(pngSize(built.files.get("assets/icons/icon-192.png"))).toEqual([192, 192]);
     expect(pngSize(built.files.get("assets/icons/icon-512.png"))).toEqual([512, 512]);
+    // Linked after the stylesheet, in the icon set's order.
     const head = text(built, "about.html");
-    expect(head).toContain('<link rel="icon" href="favicon.ico">');
     expect(head).toContain(
-      '<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">',
+      [
+        '<link rel="icon" href="favicon.ico" sizes="16x16 32x32 48x48">',
+        '<link rel="apple-touch-icon" type="image/png" sizes="180x180" href="apple-touch-icon.png">',
+        '<link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png">',
+      ].join("\n  "),
     );
-    expect(head).toContain('<link rel="apple-touch-icon" href="apple-touch-icon.png">');
+    expect(head).not.toContain("icon-512");
+    // The whole set, for 3.5's web app manifest.
+    expect(built.icons).toEqual([
+      { path: "favicon.ico", sizes: "16x16 32x32 48x48", type: "image/x-icon", link: "icon" },
+      {
+        path: "apple-touch-icon.png",
+        sizes: "180x180",
+        type: "image/png",
+        link: "apple-touch-icon",
+      },
+      { path: "assets/icons/icon-192.png", sizes: "192x192", type: "image/png", link: "icon" },
+      { path: "assets/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+    ]);
   }, 60_000);
 
   it("cuts each page's share picture to 1200 × 630, for 3.5's og:image", async () => {
@@ -94,6 +110,9 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     expect(built.files.has("apple-touch-icon.png")).toBe(false);
     expect(built.files.has("assets/icons/icon-192.png")).toBe(false);
     expect(text(built, "index.html")).not.toContain("apple-touch-icon");
+    expect(built.icons).toEqual([
+      { path: "favicon.ico", sizes: "16x16 32x32", type: "image/x-icon", link: "icon" },
+    ]);
     // The share picture is the cut's own size, at 1.91 : 1.
     expect(jpegSize(built.files.get("assets/img/hero-share.jpg"))).toEqual([40, 21]);
   }, 60_000);
@@ -122,6 +141,8 @@ describe("buildSite: the favicon set and share pictures (3.4)", () => {
     for (const path of ["favicon.ico", "apple-touch-icon.png", "assets/img/hero-share.jpg"]) {
       expect(second.files.get(path), path).toEqual(first.files.get(path));
     }
+    // The icon set is known from the cache too.
+    expect(second.icons).toEqual(first.icons);
     // Every icon, the share picture and the page images came from the cache.
     expect(reads).toBe(0);
   }, 60_000);
