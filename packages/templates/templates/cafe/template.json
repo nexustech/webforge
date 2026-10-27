@@ -408,7 +408,7 @@
                 "variant": "centred",
                 "colors": "page",
                 "title": "Why people come back",
-                "text": "<p>Simple food, cooked well, and a seat by the window if you're quick.</p>",
+                "text": "<p>Simple food, <span class=\"bg-secondary/30\">cooked well</span>, and a seat by the window if you're quick.</p>",
                 "items": [
                   {
                     "type": "Feature",
@@ -437,7 +437,8 @@
                       "text": "<p>Water bowls by the door, and biscuits behind the counter.</p>"
                     }
                   }
-                ]
+                ],
+                "hover": "lift"
               }
             },
             {
@@ -541,7 +542,12 @@
                 "buttonLink": {
                   "kind": "phone",
                   "number": "+44 1632 960 123"
-                }
+                },
+                "backgroundImage": {
+                  "mediaId": "cafe-riverside"
+                },
+                "overlay": "80",
+                "overlayColor": "neutral"
               }
             }
           ]

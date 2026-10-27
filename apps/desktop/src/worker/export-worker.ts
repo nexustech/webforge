@@ -11,10 +11,11 @@ import { compileCss } from "./compile-css.js";
 import { installWorkerCrashHandlers } from "./crash-handlers.js";
 import { thumbnailFor } from "./make-thumbnail.js";
 import { runExport } from "./run-export.js";
+import { createPreviewBuilds } from "./run-preview.js";
 
 // Entry of the export utility process (pipeline "where the work runs", 07). An export runs in a
-// process of its own; the canvas keeps one process for compiling its CSS (1.12), and Media one
-// for its thumbnails (1.16). Wiring only; run-export.ts, compile-css.ts and make-thumbnail.ts hold
+// process of its own; the canvas keeps one process for compiling its CSS (1.12), Media one for its
+// thumbnails (1.16), and the preview server one for its builds (3.2). Wiring only; run-export.ts, compile-css.ts and make-thumbnail.ts hold
 // the logic and E2E tests cover this file.
 
 // An error nothing caught ends the worker, with a crash report of its frames (R3).
@@ -41,6 +42,8 @@ const readMedia = (hash: string) =>
   });
 let cancelled = new AbortController();
 const pipeline = createPipeline(siteLibrary);
+// The preview server's builds (3.2), each answering with what changed since the last.
+const preview = createPreviewBuilds(loadBundledResources, { readMedia, pipeline });
 
 /** Runs one export, with a signal of its own: a late cancel of the one before can't stop it. */
 function startExport(job: ExportJob) {
@@ -69,11 +72,13 @@ process.parentPort.on("message", (event) => {
     ? Promise.resolve({ type: "failed", code: "build-failed", detail: "invalid-job" } as const)
     : job.data.type === "export"
       ? startExport(job.data)
-      : job.data.type === "thumbnail"
-        ? thumbnailFor(job.data, loadBundledResources)
-        : job.data.type === "class-catalogue" || job.data.type === "class-css"
-          ? classes(job.data)
-          : compileCss(job.data, loadStyleResources);
+      : job.data.type === "preview"
+        ? preview(job.data)
+        : job.data.type === "thumbnail"
+          ? thumbnailFor(job.data, loadBundledResources)
+          : job.data.type === "class-catalogue" || job.data.type === "class-css"
+            ? classes(job.data)
+            : compileCss(job.data, loadStyleResources);
   outcome
     .then((result) => {
       process.parentPort.postMessage(result);

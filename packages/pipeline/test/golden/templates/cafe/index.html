@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>The Copper Kettle</title>
-  <link rel="stylesheet" href="assets/css/site.7a688047a6.css">
+  <link rel="stylesheet" href="assets/css/site.4040924ed0.css">
   <script defer src="assets/js/webforge.72fb6461fc.js"></script>
 </head>
 <body class="flex min-h-screen flex-col bg-base-100 font-sans text-base-content">
@@ -49,12 +49,12 @@
           <h2 class="font-heading text-h2">Why people come back</h2>
           <div class="mt-4 text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6">
             <div class="contents">
-              <p>Simple food, cooked well, and a seat by the window if you're quick.</p>
+              <p>Simple food, <span class="bg-secondary/30">cooked well</span>, and a seat by the window if you're quick.</p>
             </div>
           </div>
         </div>
         <div class="grid gap-10 md:grid-cols-3">
-          <div class="site-feature flex flex-col gap-4 text-center"><span class="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-7" aria-hidden="true">
+          <div class="site-feature flex flex-col gap-4 text-center motion-safe:transition-all motion-reduce:transition-none motion-safe:hover:-translate-y-1"><span class="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-7" aria-hidden="true">
                 <path d="M10 2v2"></path>
                 <path d="M14 2v2"></path>
                 <path d="M16 8a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"></path>
@@ -67,7 +67,7 @@
               </div>
             </div>
           </div>
-          <div class="site-feature flex flex-col gap-4 text-center"><span class="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-7" aria-hidden="true">
+          <div class="site-feature flex flex-col gap-4 text-center motion-safe:transition-all motion-reduce:transition-none motion-safe:hover:-translate-y-1"><span class="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-7" aria-hidden="true">
                 <path d="M10.2 18H4.774a1.5 1.5 0 0 1-1.352-.97 11 11 0 0 1 .132-6.487"></path>
                 <path d="M18 10.2V4.774a1.5 1.5 0 0 0-.97-1.352 11 11 0 0 0-6.486.132"></path>
                 <path d="M18 5a4 3 0 0 1 4 3 2 2 0 0 1-2 2 10 10 0 0 0-5.139 1.42"></path>
@@ -81,7 +81,7 @@
               </div>
             </div>
           </div>
-          <div class="site-feature flex flex-col gap-4 text-center"><span class="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-7" aria-hidden="true">
+          <div class="site-feature flex flex-col gap-4 text-center motion-safe:transition-all motion-reduce:transition-none motion-safe:hover:-translate-y-1"><span class="mx-auto grid size-14 place-items-center rounded-full bg-primary text-primary-content"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="size-7" aria-hidden="true">
                 <path d="M11.25 16.25h1.5L12 17z"></path>
                 <path d="M16 14v.5"></path>
                 <path d="M4.42 11.247A13.152 13.152 0 0 0 4 14.556C4 18.728 7.582 21 12 21s8-2.272 8-6.444a11.702 11.702 0 0 0-.493-3.309"></path>
@@ -194,7 +194,11 @@
         </div>
       </div>
     </section>
-    <section class="site-cta bg-neutral text-neutral-content px-4 py-16">
+    <section class="site-cta bg-neutral text-neutral-content px-4 py-16 relative isolate overflow-hidden text-neutral-content">
+      <picture>
+        <source type="image/webp" srcSet="assets/img/riverside-640.webp 640w, assets/img/riverside-852.webp 852w" sizes="100vw" /><img src="assets/img/riverside-852.jpg" srcSet="assets/img/riverside-640.jpg 640w, assets/img/riverside-852.jpg 852w" sizes="100vw" width="852" height="639" alt="" loading="lazy" decoding="async" class="absolute inset-0 -z-10 h-full w-full object-cover" />
+      </picture>
+      <div aria-hidden="true" class="absolute inset-0 -z-10 bg-neutral/80"></div>
       <div class="mx-auto max-w-3xl text-center">
         <div>
           <h2 class="font-heading text-h2">Coming with six or more?</h2>

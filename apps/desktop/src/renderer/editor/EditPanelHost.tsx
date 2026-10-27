@@ -384,7 +384,7 @@ export function EditPanelHost({
     const responsive = field.responsive === true;
     const unavailable = field.unavailable?.(values);
     const help = unavailable ?? field.help;
-    const warning = overlayWarning(field, values, theme);
+    const warning = overlayWarning(field, values, theme, component);
     // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
     return withBindingChoice(name, field, node.props.bindings, [
       {
@@ -545,7 +545,13 @@ export function EditPanelHost({
     // an image's alt text for this placement.
     const typed = field.kind === "text" || field.kind === "media";
     // A section's first background image brings the overlay its text needs (ST-9), in one step.
-    const overlay = placedOverlay(field, live.node.props, value, history.document.getState().theme);
+    const overlay = placedOverlay(
+      field,
+      { ...component.defaults, ...live.node.props },
+      value,
+      history.document.getState().theme,
+      component,
+    );
     const recipe = live.recipe(name, next);
     session.edit(
       field.kind === "text" ? "text" : "props",

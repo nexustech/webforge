@@ -5,6 +5,7 @@ import type { ClipboardApi } from "./ipc/clipboard.js";
 import type { FontsApi } from "./ipc/fonts.js";
 import type { MediaApi } from "./ipc/media.js";
 import type { PrefsApi } from "./ipc/prefs.js";
+import type { PreviewApi } from "./ipc/preview.js";
 import type { ProjectApi } from "./ipc/project.js";
 import type { SiteApi } from "./ipc/site.js";
 import type { TemplatesApi } from "./ipc/templates.js";
@@ -27,4 +28,5 @@ export interface WebforgeApi {
   readonly templates: TemplatesApi;
   readonly ai: AiApi;
   readonly themes: ThemesApi;
+  readonly preview: PreviewApi;
 }

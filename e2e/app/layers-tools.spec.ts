@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { OPEN_WAIT } from "./budget.js";
 import { launchDesktopApp } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
@@ -14,7 +15,8 @@ let page: Page;
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
-  await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+  // A launch's first page, which a busy runner can take longer to draw (ADR 0014).
+  await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING, { timeout: OPEN_WAIT });
 });
 
 test.afterEach(async () => {

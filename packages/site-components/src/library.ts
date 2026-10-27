@@ -81,6 +81,12 @@ export type ComponentDef = {
    * hides them while it is chosen ({@link fieldsHiddenBy}). Their values stay in the document.
    */
   readonly variantHides?: Readonly<Record<string, readonly string[]>>;
+  /**
+   * The text colour a section's frame draws by itself, from its values (#544): a colour ref, such
+   * as a Call to action Banner's `neutral-content`, or `undefined` for the page's own. The check of
+   * its text over a background image's overlay (2.26) reads it against that.
+   */
+  readonly sectionText?: (values: Readonly<Record<string, unknown>>) => string | undefined;
   readonly render: (props: ComponentRenderProps) => ReactNode;
   /**
    * Scripts the exported site must include when this component is used: always, or as its values
