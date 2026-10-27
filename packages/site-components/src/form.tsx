@@ -282,9 +282,11 @@ export function SiteForm({
       method="post"
       acceptCharset="UTF-8"
       aria-label={label}
+      // A form that can send says what its status line reads while it's held (3.7): the script has
+      // no words of its own.
       {...(typeof target === "string"
         ? { "data-wf-form-unset": target }
-        : { action: target.action })}
+        : { action: target.action, "data-sending": t("siteText.form.sending") })}
     >
       {shownHint !== undefined && shownHint !== null && <p className="text-sm">{shownHint}</p>}
       {Object.entries(hidden).map(([name, value]) => (
@@ -300,6 +302,8 @@ export function SiteForm({
       >
         {submitLabel}
       </button>
+      {/* Empty until the form is held for a moment before it's sent (3.7), then read out. */}
+      {unset === undefined && <p role="status" className="text-sm" data-wf-form-status="" />}
     </form>
   );
 }

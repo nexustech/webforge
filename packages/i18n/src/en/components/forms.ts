@@ -57,4 +57,6 @@ export const forms = {
   "siteText.thanks.text": "Your message is on its way. We'll reply as soon as we can.",
   "siteText.thanks.home": "Back to the home page",
   "siteText.form.leaveEmpty": "Leave this empty",
+  // A form sent within a few seconds of the page opening is held for a moment, then sent (3.7).
+  "siteText.form.sending": "Sending…",
 } as const;

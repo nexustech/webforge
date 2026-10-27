@@ -51,7 +51,7 @@ test("sends to the service with its own honeypot, and its thank-you page's addre
   await expect(page).toHaveURL(/\/index\.html$/);
 });
 
-test("holds back a form sent in the page's first seconds, as a robot sends it (B6)", async ({
+test("holds a form sent in the page's first seconds, then sends it once, at 3 s (B6)", async ({
   page,
 }) => {
   // The page's clock stands still while the test fills the form, however long that takes.
@@ -59,23 +59,19 @@ test("holds back a form sent in the page's first seconds, as a robot sends it (B
   await page.clock.install({ time: opened });
   await page.clock.pauseAt(opened);
   const form = await filledContactForm(page);
-  // Sent the moment the page opened: the script holds it back, and nothing goes.
-  const held = await form.evaluate((element: HTMLFormElement) => {
-    let prevented = false;
-    element.addEventListener("submit", (event) => {
-      prevented = event.defaultPrevented;
-    });
-    element.requestSubmit();
-    return prevented;
-  });
-  expect(held).toBe(true);
-  expect(requests.filter((request) => request.url.includes("web3forms"))).toEqual([]);
+  const posts = () => requests.filter((request) => request.url.includes("web3forms"));
 
-  // A person takes longer: then it posts, plainly, to the service.
-  await page.clock.fastForward(3_000);
+  // Sent the moment the page opened, as a browser's autofill can: held, and the visitor told.
   await form.getByRole("button", { name: "Send message" }).click();
-  await expect
-    .poll(() => requests.filter((request) => request.url.includes("web3forms")))
-    .toEqual([{ url: "https://api.web3forms.com/submit", method: "POST" }]);
+  await expect(form.getByRole("status")).toHaveText("Sending…");
+  expect(posts()).toEqual([]);
+  // A second press meanwhile sends nothing more.
+  await page.clock.fastForward(1_000);
+  await form.getByRole("button", { name: "Send message" }).click();
+  expect(posts()).toEqual([]);
+
+  // At 3 s it goes, plainly, to the service, once.
+  await page.clock.fastForward(2_000);
+  await expect.poll(posts).toEqual([{ url: "https://api.web3forms.com/submit", method: "POST" }]);
   requests = [];
 });
