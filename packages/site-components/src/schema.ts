@@ -54,6 +54,11 @@ export type FieldDef = {
    * so it stays the same in every language ("typography"); `label` is translated ("Typography").
    */
   readonly optionGroup?: { readonly id: string; readonly label: string };
+  /**
+   * Shown only in *Style this ‹component›…*, in its group (3.13b, CT-2): the dialog's deeper
+   * styling, which the Style tab, keeping the Appearance basics, leaves out.
+   */
+  readonly inDialog?: true;
 } & (
   | {
       readonly kind: "text";

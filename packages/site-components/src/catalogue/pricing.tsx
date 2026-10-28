@@ -5,7 +5,7 @@ import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
 import type { RenderContext } from "../schema.js";
-import { BodyText, ButtonLink, SectionTitle } from "../typography.js";
+import { BodyText, ButtonLink, SectionIntro, SectionTitle } from "../typography.js";
 
 const PRICING_LAYOUTS = ["cards", "list"] as const;
 type PricingLayout = (typeof PRICING_LAYOUTS)[number];
@@ -73,7 +73,7 @@ const pricing = defineSection({
       <div className="mx-auto max-w-6xl space-y-10">
         <div className="mx-auto max-w-3xl text-center">
           <SectionTitle>{values.title}</SectionTitle>
-          <BodyText className="mt-4">{values.text}</BodyText>
+          <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         <PricingContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
           <Items className={GRID_CLASS[values.variant]} />

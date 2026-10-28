@@ -7,8 +7,9 @@ import { Picture } from "../picture.js";
 import {
   BodyText,
   ButtonLink,
-  LEAD_TEXT_CLASSES,
   RICH_TEXT_LIST_CLASSES,
+  SectionIntro,
+  SectionLead,
   SectionTitle,
 } from "../typography.js";
 
@@ -78,7 +79,7 @@ const hero = defineSection({
     const copy = (
       <div className={layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl"}>
         <SectionTitle size="page">{values.title}</SectionTitle>
-        <p className={`py-6 ${LEAD_TEXT_CLASSES}`}>{values.text}</p>
+        <SectionLead className="py-6">{values.text}</SectionLead>
         <ButtonLink label={values.buttonLabel} link={values.buttonLink} context={context} />
       </div>
     );
@@ -144,7 +145,7 @@ const textSection = defineSection({
   render: ({ values }) => (
     <div className="mx-auto max-w-3xl">
       <SectionTitle>{values.title}</SectionTitle>
-      <BodyText className="mt-4">{values.text}</BodyText>
+      <SectionIntro className="mt-4">{values.text}</SectionIntro>
     </div>
   ),
 });
@@ -180,7 +181,7 @@ const textImage = defineSection({
         {/* The text comes first, as it is read; on wide screens CSS puts the image left. */}
         <div>
           <SectionTitle>{values.title}</SectionTitle>
-          <BodyText className="mt-4">{values.text}</BodyText>
+          <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         {image !== null && (
           <div className={values.variant === "imageLeft" ? "md:order-first" : undefined}>
@@ -232,7 +233,7 @@ const callToAction = defineSection({
       >
         <div>
           <SectionTitle>{values.title}</SectionTitle>
-          <p className={`mt-4 ${LEAD_TEXT_CLASSES}`}>{values.text}</p>
+          <SectionLead className="mt-4">{values.text}</SectionLead>
         </div>
         <ButtonLink
           label={values.buttonLabel}

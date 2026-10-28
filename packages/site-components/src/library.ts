@@ -114,7 +114,10 @@ export type ComponentDef = {
  * the colour ref, `text-primary-300/80` or `bg-[#1f6feb]/50`. None for `default` (the element's
  * own colour) or anything that isn't a colour ref, so nothing else can reach a class.
  */
-export function colorClass(prefix: "text" | "bg" | "border", value: unknown): string {
+export function colorClass(
+  prefix: "text" | "bg" | "border" | "from" | "to",
+  value: unknown,
+): string {
   if (typeof value !== "string" || value === "default") return "";
   const parsed = parseColorRef(value);
   return parsed === undefined ? "" : `${prefix}-${formatColorRef(parsed)}`;

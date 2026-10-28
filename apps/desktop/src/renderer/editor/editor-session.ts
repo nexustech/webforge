@@ -93,6 +93,13 @@ export type EditorSession = {
    * acts on what the person sees. Does nothing without a canvas.
    */
   flush(): void;
+  /**
+   * Holds changes from outside the person's own (AI apps', F-AI-1) while a dialog changes the site
+   * live, so its steps are all its own (*Style this ‹kind›…*, 3.13a). Returns the release.
+   */
+  hold(): () => void;
+  /** Whether something holds outside changes ({@link hold}). */
+  held(): boolean;
   /** How the canvas ends its edit in progress on {@link flush} ({@link connectEngine}). */
   onFlush(flush: () => void): Unsubscribe;
   /**
@@ -172,6 +179,8 @@ export function createEditorSession(
   const flushCanvas = () => {
     for (const flush of flushes) flush();
   };
+  /** What holds outside changes, each released once ({@link EditorSession.hold}). */
+  const holds = new Set<object>();
   /** A canvas edit or another gesture can't wait for a gesture to end: it ends it as it is. */
   const commitGesture = () => {
     if (gesture?.active === true) {
@@ -239,6 +248,14 @@ export function createEditorSession(
       if (viewport !== ui.getState().viewport) setSelection({ ...ui.getState(), viewport });
     },
     flush: flushCanvas,
+    hold() {
+      const hold = {};
+      holds.add(hold);
+      return () => {
+        holds.delete(hold);
+      };
+    },
+    held: () => holds.size > 0,
     onFlush(flush) {
       flushes.add(flush);
       return () => {

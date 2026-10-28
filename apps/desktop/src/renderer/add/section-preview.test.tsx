@@ -4,6 +4,7 @@ import type { NodeDoc, SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
 import {
   createItemPreviews,
   createKindPreviews,
@@ -188,6 +189,9 @@ describe("createKindPreviews (3.12, CT-1)", () => {
   });
 });
 
+/** Lets `ms` pass, and what it set going. */
+const wait = (ms: number) => act(() => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+
 describe("createItemPreviews (3.13a)", () => {
   it("draws the item as it is, at each device's width, in a frame that runs no scripts", async () => {
     const { compileCss } = setUp();
@@ -195,7 +199,7 @@ describe("createItemPreviews (3.13a)", () => {
     const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
 
     const { container, rerender } = render(<>{previews(button, "mobile")}</>);
-    await act(async () => undefined);
+    await wait(0);
     const frame = () => container.querySelector("iframe");
 
     expect(frame()?.getAttribute("sandbox")).toBe("allow-same-origin");
@@ -207,12 +211,32 @@ describe("createItemPreviews (3.13a)", () => {
     expect(page).toContain("@font-face");
     expect(page).toContain(`data-theme="${theme.preset}"`);
 
-    // Drawn again as it changes.
+    // Drawn again once the change has settled, as the site CSS is.
     rerender(
       <>{previews({ ...button, props: { ...button.props, label: "Call us" } }, "mobile")}</>,
     );
-    await act(async () => undefined);
+    await wait(0);
+    expect(frame()?.getAttribute("srcdoc")).toContain("Book now");
+    await wait(SITE_CSS_DEBOUNCE_MS + 20);
     expect(frame()?.getAttribute("srcdoc")).toContain("Call us");
     expect(compileCss).toHaveBeenCalledTimes(2);
+  });
+
+  it("draws both devices from one compile of the item as it is (3.13a review)", async () => {
+    const { compileCss } = setUp();
+    const previews = createItemPreviews({ library: siteLibrary, theme: () => theme, compileCss });
+    const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
+
+    const { container } = render(
+      <>
+        {previews(button, "desktop")}
+        {previews(button, "mobile")}
+      </>,
+    );
+    await wait(0);
+
+    expect(container.querySelectorAll("iframe")).toHaveLength(2);
+    expect(container.querySelector("iframe")?.style.width).toBe("1280px");
+    expect(compileCss).toHaveBeenCalledOnce();
   });
 });

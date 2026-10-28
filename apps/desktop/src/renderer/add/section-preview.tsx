@@ -14,7 +14,7 @@ import {
   useSyncExternalStore,
 } from "react";
 import type { AddItem } from "../editor/add-item.js";
-import { type CompileCanvasCss, classesOfHtml } from "../editor/site-css.js";
+import { type CompileCanvasCss, classesOfHtml, SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
 import { reportFailure } from "../log.js";
 
 /** How wide a section is drawn for its preview, in CSS pixels, before it is scaled down. */
@@ -354,31 +354,41 @@ function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: 
   );
 }
 
-/** A preview of `node` drawn again whenever it changes, showing the last drawing meanwhile. */
+/** Draws an item: the same drawing for every device while the item and theme are the same. */
+type ItemDrawer = (node: NodeDoc) => Promise<Drawn | undefined>;
+
+/**
+ * A preview of `node`, drawn again once its changes have settled ({@link SITE_CSS_DEBOUNCE_MS}, as
+ * the canvas's site CSS is), showing the last drawing meanwhile; the first drawing at once.
+ */
 function ItemPreview({
-  source,
+  draw,
   node,
   device,
 }: {
-  readonly source: Omit<PreviewSource, "sharedSection">;
+  readonly draw: ItemDrawer;
   readonly node: NodeDoc;
   readonly device: ItemDevice;
 }) {
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
+  const drawnOnce = useRef(false);
   useEffect(() => {
     let current = true;
-    void drawNode(source, node, source.theme())
-      .catch((error: unknown) => {
-        reportFailure("style.preview", error);
-        return undefined;
-      })
-      .then((result) => {
-        if (current && result !== undefined) setDrawn(result);
-      });
+    const timer = setTimeout(
+      () => {
+        void draw(node).then((result) => {
+          if (!current || result === undefined) return;
+          drawnOnce.current = true;
+          setDrawn(result);
+        });
+      },
+      drawnOnce.current ? SITE_CSS_DEBOUNCE_MS : 0,
+    );
     return () => {
       current = false;
+      clearTimeout(timer);
     };
-  }, [source, node]);
+  }, [draw, node]);
   return drawn === undefined ? (
     <div aria-hidden style={{ width: ITEM_SHOWN[device].width, height: 80 }} />
   ) : (
@@ -388,10 +398,23 @@ function ItemPreview({
 
 /**
  * *Style this ‹kind›…*'s previews (3.13a, CT-2): the item itself, as the person is styling it, on
- * Desktop or Mobile in the site's theme with its kind's look, drawn again as it changes.
+ * Desktop or Mobile in the site's theme with its kind's look, drawn again as it changes. Both
+ * devices draw from one compile of its CSS for each state of the item and theme (3.13a review).
  */
 export function createItemPreviews(
   source: Omit<PreviewSource, "sharedSection">,
 ): (node: NodeDoc, device: ItemDevice) => ReactNode {
-  return (node, device) => <ItemPreview source={source} node={node} device={device} />;
+  const drawings = new WeakMap<NodeDoc, { theme: Theme; drawing: Promise<Drawn | undefined> }>();
+  const draw: ItemDrawer = (node) => {
+    const theme = source.theme();
+    const kept = drawings.get(node);
+    if (kept?.theme === theme) return kept.drawing;
+    const drawing = drawNode(source, node, theme).catch((error: unknown) => {
+      reportFailure("style.preview", error);
+      return undefined;
+    });
+    drawings.set(node, { theme, drawing });
+    return drawing;
+  };
+  return (node, device) => <ItemPreview draw={draw} node={node} device={device} />;
 }

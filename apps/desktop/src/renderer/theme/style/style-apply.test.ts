@@ -189,6 +189,10 @@ describe("registerStyleDialog (3.13a)", () => {
     expect(command()).toMatchObject({ label: "Style This Button…", enabled: true });
     commands.run(COMMAND_IDS.styleThis);
     expect(state.getState()).toMatchObject({ open: true, scope: "this" });
+    // AI apps' changes wait while it's open (3.13a review).
+    expect(session.held()).toBe(true);
+    state.setState({ open: false });
+    expect(session.held()).toBe(false);
 
     preferences.changeMode("content");
     expect(command()).toMatchObject({ label: "Style This Button…", enabled: false });

@@ -15,7 +15,13 @@ import {
   isValidElement,
   type ReactNode,
 } from "react";
-import { APPEARANCE_FIELDS, appearanceBoxClasses, appearanceTextClasses } from "./appearance.js";
+import {
+  APPEARANCE_FIELDS,
+  appearanceBoxClasses,
+  appearanceTextClasses,
+  DIALOG_ELEMENT_FIELDS,
+  DIALOG_FIELDS,
+} from "./appearance.js";
 import { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
 import { isIconName } from "./icons.js";
 import {
@@ -344,14 +350,16 @@ function build<const F extends Fields, const Variant extends string = never>(
     fail("is a section: define it with defineSection, which adds its frame, padding and margin");
   }
   // Every element has the Appearance group (2.22), first so the Style tab shows it before its own
-  // options; a section's comes from its frame. A child is an item of its parent, styled there.
+  // options, and Style this ‹component›…'s deeper groups (3.13b), which only the dialog shows; a
+  // section's come from its frame. A child is an item of its parent, styled there.
   const appearance = (def.place ?? "element") === "element";
+  const styling = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS, ...DIALOG_ELEMENT_FIELDS };
   if (appearance) {
-    for (const own of Object.keys(APPEARANCE_FIELDS)) {
+    for (const own of Object.keys(styling)) {
       if (Object.hasOwn(def.fields, own)) fail(`declares its own "${own}": every element has it`);
     }
   }
-  let fields: Fields = appearance ? { ...APPEARANCE_FIELDS, ...def.fields } : def.fields;
+  let fields: Fields = appearance ? { ...styling, ...def.fields } : def.fields;
   let defaults: Readonly<Record<string, unknown>> = def.defaults;
   let variantHides: Record<string, readonly string[]> | undefined;
   if (variants !== undefined) {
