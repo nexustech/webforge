@@ -212,6 +212,28 @@ describe("textStylesOf (1.37)", () => {
 
     expect(textStylesOf(node, library)).toEqual(["h1", "h4"]);
   });
+
+  it("reads a value the element doesn't set from its kind's look (3.12)", () => {
+    const library = {
+      components: {
+        Title: {
+          label: "Title",
+          fields: {},
+          defaults: { lookSize: "default" },
+          render: () => null,
+          textStyle: (values: Readonly<Record<string, unknown>>) =>
+            values.lookSize === "h1" ? ("h1" as const) : ("body" as const),
+        },
+      },
+    };
+    const looks = { Title: { lookSize: "h1" } };
+
+    expect(textStylesOf({ type: "Title", props: { id: "t" } }, library, looks)).toEqual(["h1"]);
+    // Its own value wins.
+    expect(
+      textStylesOf({ type: "Title", props: { id: "t", lookSize: "body" } }, library, looks),
+    ).toEqual(["body"]);
+  });
 });
 
 describe("colorClass (1.37, ADR 0009)", () => {
