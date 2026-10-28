@@ -1,5 +1,5 @@
 import type { Finding } from "@webforge/site-check";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import type { BundleResult } from "../../shared/ipc/site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { type BundleActions, canBundle, createBundleConfirm, downloadAndBundle } from "./bundle.js";
@@ -24,13 +24,13 @@ function bundleWith(
   answer: boolean,
   result: BundleResult,
 ): BundleActions & {
-  readonly download: ReturnType<typeof vi.fn>;
-  readonly notify: ReturnType<typeof vi.fn>;
+  readonly download: Mock<BundleActions["download"]>;
+  readonly notify: Mock<BundleActions["notify"]>;
 } {
   return {
     confirm: vi.fn(async () => answer),
-    download: vi.fn(async () => result),
-    notify: vi.fn(),
+    download: vi.fn<BundleActions["download"]>(async () => result),
+    notify: vi.fn<BundleActions["notify"]>(),
   };
 }
 

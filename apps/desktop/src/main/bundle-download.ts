@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { BUNDLE_MAX_NESTED } from "../shared/ipc/site.js";
 
 /**
  * Download and bundle (C8, 3.9): a file the site's code loads from another website, fetched once on
@@ -32,9 +33,6 @@ export const BUNDLE_MAX_BYTES = 10_000_000;
 
 /** How long a download may take. */
 const TIMEOUT_MS = 30_000;
-
-/** The most files a stylesheet may name for downloading with it (fonts, images). */
-export const BUNDLE_MAX_NESTED = 30;
 
 /** The kinds of file a page loads, by MIME type, and the extension each one's name takes. */
 const EXTENSIONS: Readonly<Record<string, string>> = {
@@ -223,7 +221,7 @@ export async function downloadForBundle(
 }
 
 /** The environment variable E2E tests launch Webforge with, to stand in for the network (3.9). */
-export const E2E_BUNDLE_VARIABLE = "WEBFORGE_E2E_BUNDLE";
+const E2E_BUNDLE_VARIABLE = "WEBFORGE_E2E_BUNDLE";
 
 /**
  * `fetch`, or in an unpackaged app launched with `WEBFORGE_E2E_BUNDLE=1`, as the E2E tests launch
