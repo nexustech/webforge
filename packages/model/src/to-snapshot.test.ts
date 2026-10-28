@@ -132,6 +132,22 @@ describe("siteToSnapshot", () => {
     expect(snapshot.search).not.toHaveProperty("verification");
   });
 
+  it("passes the kind of business, its price range and place on, for its structured data (3.15)", () => {
+    const placed = bakery();
+    placed.settings.general.businessType = "food";
+    placed.settings.general.businessKind = "Bakery";
+    placed.settings.contact.priceRange = " ££ ";
+    placed.settings.contact.geo = { latitude: 54.3, longitude: -2.7 };
+
+    expect(siteToSnapshot(placed, new Map()).business).toEqual({
+      type: "food",
+      kind: "Bakery",
+      priceRange: "££",
+      geo: { latitude: 54.3, longitude: -2.7 },
+    });
+    expect(snapshot).not.toHaveProperty("business");
+  });
+
   it("passes Google Analytics on once there is a Measurement ID, with the banner's text (3.8)", () => {
     const counted = bakery();
     counted.settings.analytics = {

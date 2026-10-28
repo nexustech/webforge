@@ -1,6 +1,8 @@
 import { type FormSchema, sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  BUSINESS_KINDS,
+  BUSINESS_TYPES,
   type BusinessType,
   DAYS,
   type Day,
@@ -43,6 +45,8 @@ export type SettingsForm = {
   readonly backToTop: boolean;
   /** The business type (SEO-9), or `""` for none chosen. */
   readonly businessType: BusinessType | "";
+  /** Its schema.org type within it (3.15, SEO-1), or `""` for the type's own. */
+  readonly businessKind: string;
   readonly url: string;
   readonly profiles: readonly {
     readonly id: string;
@@ -62,6 +66,10 @@ export type SettingsForm = {
     readonly closes: string;
   }[];
   readonly openingHoursNote: string;
+  /** The price range and the place on the map, as typed (3.15, SEO-1). */
+  readonly priceRange: string;
+  readonly latitude: string;
+  readonly longitude: string;
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
   readonly readableByAi: boolean;
@@ -87,6 +95,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     icon: general.icon,
     backToTop: general.backToTop === true,
     businessType: general.businessType ?? "",
+    businessKind: general.businessKind ?? "",
     url: address.url ?? "",
     profiles: social.profiles.map((profile, index) => ({ id: `profile-${index}`, ...profile })),
     shareImage: social.shareImage,
@@ -95,6 +104,9 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     email: contact.email ?? "",
     phone: contact.phone ?? "",
     address: contact.address ?? "",
+    priceRange: contact.priceRange ?? "",
+    latitude: contact.geo === undefined ? "" : String(contact.geo.latitude),
+    longitude: contact.geo === undefined ? "" : String(contact.geo.longitude),
     openingHours: contact.openingHours.map((hours, index) => ({
       id: `hours-${index}`,
       ...hours,
@@ -143,6 +155,29 @@ function verificationOf(form: SettingsForm): { verification?: Record<string, str
   return Object.keys(verification).length === 0 ? {} : { verification };
 }
 
+/**
+ * The kind of business (3.15, SEO-1): its type, and its schema.org type when that is one of the
+ * type's other than its first, which is what none means.
+ */
+function businessOf(form: SettingsForm): { businessType?: string; businessKind?: string } {
+  const type = BUSINESS_TYPES.find((each) => each === form.businessType);
+  if (type === undefined) return {};
+  const kinds: readonly string[] = BUSINESS_KINDS[type];
+  return kinds.indexOf(form.businessKind) > 0
+    ? { businessType: type, businessKind: form.businessKind }
+    : { businessType: type };
+}
+
+/**
+ * The place on the map (3.15, SEO-1), when either is typed: numbers, which the model checks, and
+ * a missing or unreadable one left as not a number so the field says so.
+ */
+function geoOf(form: SettingsForm): { geo?: { latitude: number; longitude: number } } {
+  if (form.latitude.trim() === "" && form.longitude.trim() === "") return {};
+  const number = (typed: string) => (typed.trim() === "" ? Number.NaN : Number(typed.trim()));
+  return { geo: { latitude: number(form.latitude), longitude: number(form.longitude) } };
+}
+
 function formServiceOf(form: SettingsForm): Record<string, string> | undefined {
   const value = form.formValue.trim();
   switch (form.formService) {
@@ -176,7 +211,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.icon === undefined ? {} : { icon: form.icon }),
       // Absent when off, as in files from before it.
       ...(form.backToTop ? { backToTop: true } : {}),
-      ...(form.businessType === "" ? {} : { businessType: form.businessType }),
+      ...businessOf(form),
     },
     address: optional("url", form.url.trim().replace(/\/$/, "")),
     social: {
@@ -199,6 +234,8 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
         closes: hours.closes,
       })),
       ...optional("openingHoursNote", form.openingHoursNote),
+      ...optional("priceRange", form.priceRange),
+      ...geoOf(form),
     },
     search: {
       allowIndexing: form.allowIndexing,
@@ -236,6 +273,8 @@ const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
   "contact.openingHours.*.opens": "site.settings.error.time",
   "contact.openingHours.*.closes": "site.settings.error.time",
   "analytics.measurementId": "site.settings.error.measurementId",
+  "contact.geo.latitude": "site.settings.error.latitude",
+  "contact.geo.longitude": "site.settings.error.longitude",
   "search.verification.google": "site.settings.error.googleVerification",
   "search.verification.bing": "site.settings.error.bingVerification",
   "forms.service.formId": "site.settings.error.formspree",
