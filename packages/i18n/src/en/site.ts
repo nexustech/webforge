@@ -117,6 +117,10 @@ export const site = {
     "The {item} is on every page, so it can't be copied or cut. Its elements can.",
   "site.clipboard.copyFailed": "Webforge couldn't copy that.",
   "site.clipboard.pasteFailed": "Webforge couldn't paste that.",
+  "site.clipboard.imagesMissing.one":
+    "1 image couldn't be pasted, as Webforge has closed since it was copied. Copy it again from its site.",
+  "site.clipboard.imagesMissing.other":
+    "{count} images couldn't be pasted, as Webforge has closed since they were copied. Copy them again from their site.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
   // Links to documents in Media (1.28), beside the link dialog's own `link.*` strings.
   "link.kind.file": "File",
