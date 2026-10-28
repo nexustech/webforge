@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 import { MANIFEST_FILE } from "./remote-folder.js";
 import { readSftpHostKey, type SftpDestination, sftpPublisher } from "./sftp.js";
-import { startSftpServer } from "./sftp-server.test-helper.js";
+import { hostKeys, startSftpServer } from "./sftp-server.test-helper.js";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const build = (files: Record<string, string>): BuildOutput => ({
@@ -171,5 +171,20 @@ describe("sftpPublisher (0.3)", { timeout: 30_000 }, () => {
 
     expect(error).toMatchObject({ code: "unauthorized" });
     expect(String((error as Error).message)).not.toContain("wrong-secret");
+  });
+});
+
+describe("the test server's host key (#588)", () => {
+  it("makes another when ssh2 can't read the one it made", () => {
+    const good = hostKeys();
+    let calls = 0;
+    const keys = hostKeys(() => {
+      calls += 1;
+      // The first unreadable, as ssh2's generator now and then makes one.
+      return calls === 1 ? { ...good, public: "ssh-ed25519 AAAA" } : good;
+    });
+
+    expect(keys.private).toBe(good.private);
+    expect(calls).toBe(2);
   });
 });
