@@ -148,4 +148,29 @@ describe("siteCodeSchema", () => {
     expect(siteCodeSchema.parse(code)).toEqual(code);
     expect(siteCodeSchema.safeParse({ ...code, php: "" }).success).toBe(false);
   });
+
+  it("accepts files kept with the site from https:// addresses, each address once (3.9)", () => {
+    const code = { css: "", js: "", head: "", bodyEnd: "" };
+    const file = {
+      url: "https://cdn.example.com/lib.js",
+      file: "lib.js",
+      hash: "a".repeat(64),
+      mime: "text/javascript",
+    };
+
+    expect(siteCodeSchema.parse({ ...code, bundled: [file] })).toEqual({
+      ...code,
+      bundled: [file],
+    });
+    // Two addresses of one file share it.
+    const mirror = { ...file, url: "https://mirror.example.com/lib.js" };
+    expect(siteCodeSchema.safeParse({ ...code, bundled: [file, mirror] }).success).toBe(true);
+    for (const bundled of [
+      [{ ...file, url: "http://cdn.example.com/lib.js" }],
+      [{ ...file, file: "../lib.js" }],
+      [file, { ...file, hash: "b".repeat(64) }],
+    ]) {
+      expect(siteCodeSchema.safeParse({ ...code, bundled }).success).toBe(false);
+    }
+  });
 });

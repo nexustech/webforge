@@ -100,5 +100,9 @@ describe("describeDetail", () => {
     expect(describeDetail(at(place, { url: "https://cdn.example.com/a.js", kind: "script" }))).toBe(
       "https://cdn.example.com/a.js",
     );
+    // One that can't be allowed, as Settings take https:// only.
+    expect(describeDetail(at(place, { url: "http://cdn.example.com/a.js", kind: "script" }))).toBe(
+      "http://cdn.example.com/a.js: change it to https://, or remove it",
+    );
   });
 });
