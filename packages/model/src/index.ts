@@ -47,6 +47,7 @@ export {
 } from "./documents.js";
 export type { ExportChoices } from "./export-choices.js";
 export { DEFAULT_EXPORT_CHOICES, exportChoicesSchema } from "./export-choices.js";
+export { exportedAddress, exportedSiteAddress, exportedTitle } from "./exported-page.js";
 export type { FormUnset } from "./forms.js";
 export {
   formServiceUnset,
