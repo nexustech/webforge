@@ -1,6 +1,8 @@
 import { t } from "@webforge/i18n";
+import type { SiteDoc } from "@webforge/model";
+import type { ComponentLibrary } from "@webforge/site-components";
 import { applyLookToAll, lookChange, lookFieldsOf } from "../../clipboard/index.js";
-import type { EditorSession } from "../../editor/editor-session.js";
+import type { EditorSelection, EditorSession } from "../../editor/editor-session.js";
 import { type FieldTarget, fieldTarget } from "../../editor/field-target.js";
 import type { SiteWideConfirm } from "../../shell/confirm-site-wide.js";
 import { setLook, type ThemeAsks } from "../theme-edits.js";
@@ -22,9 +24,20 @@ type StyleSession = Pick<
 
 /** The item selected, if it has a look to style: one element alone, with Appearance fields. */
 export function styledItem(session: StyleSession): FieldTarget | undefined {
-  const { pageId, nodeId, others = [] } = session.ui.getState();
+  return styledItemIn(session.history.document.getState(), session.library, session.ui.getState());
+}
+
+/**
+ * {@link styledItem} in `site` for `selection`: from what a component draws, so a compiled
+ * component works it out again as they change.
+ */
+export function styledItemIn(
+  site: SiteDoc,
+  library: ComponentLibrary,
+  { pageId, nodeId, others = [] }: EditorSelection,
+): FieldTarget | undefined {
   if (others.length > 0) return undefined;
-  const target = fieldTarget(session.history.document.getState(), session.library, pageId, nodeId);
+  const target = fieldTarget(site, library, pageId, nodeId);
   return target !== undefined && lookFieldsOf(target.component).length > 0 ? target : undefined;
 }
 

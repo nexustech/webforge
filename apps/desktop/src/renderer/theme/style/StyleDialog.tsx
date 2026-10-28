@@ -14,10 +14,10 @@ import type { NodeDoc } from "@webforge/model";
 import { type ReactNode, useId, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
-import { lookChange } from "../../clipboard/index.js";
+import { lookChangeIn } from "../../clipboard/index.js";
 import { EditPanelHost } from "../../editor/EditPanelHost.js";
 import type { EditorSession } from "../../editor/editor-session.js";
-import { useDocument } from "../../editor/use-document.js";
+import { useDocument, useUi } from "../../editor/use-document.js";
 import { colourField } from "../../fields/index.js";
 import type { PreferencesStore } from "../../shell/preferences-store.js";
 import {
@@ -26,7 +26,7 @@ import {
   STYLE_SCOPES,
   type StyleAsks,
   type StyleScope,
-  styledItem,
+  styledItemIn,
 } from "./style-apply.js";
 import type { StyleDialogState } from "./style-state.js";
 
@@ -59,10 +59,12 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
   const [renderers] = useState<FieldRenderers>(() => ({
     color: colourField({ session, preferences }),
   }));
-  // The item as the dialog changes it: the preview and the counts follow it.
-  const node = useDocument(session, () => styledItem(session)?.node);
-  const item = styledItem(session);
-  if (!open || item === undefined || node === undefined) return null;
+  // The item as the dialog changes it: the preview and the counts follow the site and selection.
+  const site = useDocument(session, (doc) => doc);
+  const selection = useUi(session, (ui) => ui);
+  const item = styledItemIn(site, session.library, selection);
+  if (!open || item === undefined) return null;
+  const { node } = item;
   const name = item.component.label;
   const close = () => state.setState({ open: false, since: null, scope: "this" });
   const cancel = () => {
@@ -112,7 +114,10 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
           </section>
         </div>
         <ScopeChoice
-          session={session}
+          others={(reach) =>
+            lookChangeIn(site, session.library, selection.pageId, selection.nodeId, reach)?.targets
+              .length ?? 0
+          }
           item={name}
           scope={scope}
           onChange={(next) => state.setState({ scope: next })}
@@ -135,20 +140,21 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
  * site, as 2.27 counts them, and what the theme's look does.
  */
 function ScopeChoice({
-  session,
+  others: count,
   item,
   scope,
   onChange,
 }: {
-  readonly session: EditorSession;
+  /** How many others of the kind the item's look reaches on the page or the site. */
+  readonly others: (reach: "page" | "site") => number;
   readonly item: string;
   readonly scope: StyleScope;
   readonly onChange: (scope: StyleScope) => void;
 }) {
   const id = useId();
   const others = (reach: "page" | "site") => {
-    const count = lookChange(session, reach)?.targets.length ?? 0;
-    return count === 0 ? t("style.scope.noOthers") : plural("style.scope.others", count);
+    const reached = count(reach);
+    return reached === 0 ? t("style.scope.noOthers") : plural("style.scope.others", reached);
   };
   const detail: Readonly<Record<StyleScope, string | undefined>> = {
     this: undefined,

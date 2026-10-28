@@ -9,5 +9,6 @@ export {
   applyLookToAll,
   LOOK_COMMANDS,
   lookChange,
+  lookChangeIn,
   lookFieldsOf,
 } from "./apply-look.js";
