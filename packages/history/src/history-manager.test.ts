@@ -101,6 +101,20 @@ describe("mergeSince: what a dialog changed, as one step (3.13a)", () => {
     expect(ctx.history.entries().map((entry) => entry.label)).toEqual(["Styled", "Type"]);
   });
 
+  it("merges every step after an entry the limit has dropped since (3.13a review)", () => {
+    const ctx = setup({ limit: 3 });
+    retitle(ctx, "Before");
+    const before = ctx.history.entries().at(-1)?.id ?? null;
+    for (const title of ["One", "Two", "Three"]) retitle(ctx, title);
+    expect(ctx.history.entries().some((entry) => entry.id === before)).toBe(false);
+
+    expect(ctx.history.mergeSince(before, "Styled")).toBe(true);
+
+    expect(ctx.history.entries().map((entry) => entry.label)).toEqual(["Styled"]);
+    ctx.history.undo();
+    expect(ctx.doc().title).toBe("Before");
+  });
+
   it("does nothing while a gesture is open", () => {
     const ctx = setup();
     retitle(ctx, "One");

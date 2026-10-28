@@ -24,7 +24,8 @@ type StyleDialogOptions = {
  * *Style this ‹kind›…* (3.13a, CT-2): the window's dialog, and its command in the Edit menu and the
  * command box, which the Style tab's button, the quick actions and the element menu run. Named for
  * the selected item's kind; off with nothing selected that has a look, with several selected, and
- * in Content mode (M3), which has no Style tab. Returns a function that removes them.
+ * in Content mode (M3), which has no Style tab. While it's open it holds others' changes to the
+ * site (AI apps', F-AI-1), so its steps are all its own. Returns a function that removes them.
  */
 export function registerStyleDialog(
   dialogs: WindowDialogRegistry,
@@ -66,7 +67,19 @@ export function registerStyleDialog(
     last = `${enabled}:${label}`;
     registry.update(COMMAND_IDS.styleThis, { enabled, label });
   };
+  // While it's open, nothing but the person changes the site (AI apps wait, F-AI-1): every step
+  // since it opened is its own, to merge or take back.
+  let release: (() => void) | undefined;
+  const follow = ({ open }: StyleDialogState) => {
+    if (open && release === undefined) release = session.hold();
+    if (!open && release !== undefined) {
+      release();
+      release = undefined;
+    }
+  };
   const removers = [
+    state.subscribe(follow),
+    () => follow({ ...state.getState(), open: false }),
     dialogs.register({ id: "styleThis", component: Style }),
     registry.register({
       id: COMMAND_IDS.styleThis,
