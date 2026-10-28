@@ -4,6 +4,7 @@ import { siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { siteFromTemplate } from "@webforge/templates";
 import { readTemplates } from "@webforge/templates/node";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { THEME_PRESETS, themePreset } from "@webforge/themes";
 import { transform } from "lightningcss";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -43,7 +44,7 @@ const everyClass = new Set<string>();
 
 beforeAll(async () => {
   resources = await loadNodeResources();
-}, 60_000);
+}, scaledTestTimeout(60_000));
 
 /** An image's width and height from its PNG or JPEG header; `undefined` for anything else. */
 function sizeOf(data: Uint8Array): { width: number; height: number } | undefined {
@@ -90,42 +91,46 @@ function plansOnly(images: ReadonlyMap<string, Uint8Array>): ImageCache {
 describe.each(readTemplates().map((folder) => [folder.template.id, folder] as const))(
   "the %s template's export",
   (id, { template, images, imagesDir }) => {
-    it("writes the reviewed pages and files", async () => {
-      const theme = themePreset(template.site.theme.preset) ?? template.site.theme;
-      const site = siteFromTemplate(template, images, {
-        name: template.site.settings.general.name,
-        theme,
-      });
-      const blobs = new Map(
-        images.map((image) => [
-          image.hash,
-          new Uint8Array(readFileSync(join(imagesDir, image.file))),
-        ]),
-      );
+    it(
+      "writes the reviewed pages and files",
+      async () => {
+        const theme = themePreset(template.site.theme.preset) ?? template.site.theme;
+        const site = siteFromTemplate(template, images, {
+          name: template.site.settings.general.name,
+          theme,
+        });
+        const blobs = new Map(
+          images.map((image) => [
+            image.hash,
+            new Uint8Array(readFileSync(join(imagesDir, image.file))),
+          ]),
+        );
 
-      const built = await buildSite(siteToSnapshot(site, blobs), siteLibrary, {
-        ...resources,
-        imageCache: plansOnly(blobs),
-      });
+        const built = await buildSite(siteToSnapshot(site, blobs), siteLibrary, {
+          ...resources,
+          imageCache: plansOnly(blobs),
+        });
 
-      expect([...built.files.keys()]).toMatchSnapshot();
-      // A new site from a template has no form service yet, nor a Newsletter its address: its
-      // forms say so (3.7), and nothing else does.
-      for (const warning of built.report.warnings) {
-        expect(warning, id).toMatchObject({ code: "form-unset" });
-        expect(["noService", "noAddress"], id).toContain(warning.detail);
-      }
-      for (const [path, data] of built.files) {
-        const text = new TextDecoder().decode(data);
-        if (path.endsWith(".css")) {
-          // Minify output's stylesheet means the same (3.3).
-          expect(normalised(minifiedCss(text)), path).toBe(normalised(text));
+        expect([...built.files.keys()]).toMatchSnapshot();
+        // A new site from a template has no form service yet, nor a Newsletter its address: its
+        // forms say so (3.7), and nothing else does.
+        for (const warning of built.report.warnings) {
+          expect(warning, id).toMatchObject({ code: "form-unset" });
+          expect(["noService", "noAddress"], id).toContain(warning.detail);
         }
-        if (!path.endsWith(".html")) continue;
-        for (const name of classCandidates(text)) everyClass.add(name);
-        await expect(text).toMatchFileSnapshot(`golden/templates/${id}/${path}`);
-      }
-    }, 60_000);
+        for (const [path, data] of built.files) {
+          const text = new TextDecoder().decode(data);
+          if (path.endsWith(".css")) {
+            // Minify output's stylesheet means the same (3.3).
+            expect(normalised(minifiedCss(text)), path).toBe(normalised(text));
+          }
+          if (!path.endsWith(".html")) continue;
+          for (const name of classCandidates(text)) everyClass.add(name);
+          await expect(text).toMatchFileSnapshot(`golden/templates/${id}/${path}`);
+        }
+      },
+      scaledTestTimeout(60_000),
+    );
   },
 );
 

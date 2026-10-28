@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   type NodeDoc,
@@ -15,7 +15,31 @@ import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { registerSiteCheckPanel, SITE_CHECK_PANEL_ID } from "./register-site-check-panel.js";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
+
+/**
+ * Site Check's recheck driven by the test rather than the clock (#552): the pause after a change on
+ * fake timers, and every rule in one idle period, so a busy machine can't make it late. Returns
+ * `recheck`, which runs the recheck a change has scheduled. Clicks are `fireEvent`'s then, as
+ * user-event's wait on the timers.
+ */
+function driveRecheck() {
+  vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  vi.stubGlobal("requestIdleCallback", (work: IdleRequestCallback) => {
+    work({ didTimeout: false, timeRemaining: () => Number.POSITIVE_INFINITY });
+    return 0;
+  });
+  return {
+    recheck: () =>
+      act(() => {
+        vi.runOnlyPendingTimers();
+      }),
+  };
+}
 
 const ABOUT = "page-about" as PageId;
 
@@ -90,24 +114,27 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(panels.list()).toEqual([]);
   });
 
-  it("fixes a page Windows can't save, as one undo step, and the dot turns green (R16)", async () => {
+  it("fixes a page Windows can't save, as one undo step, and the dot turns green (R16)", () => {
+    const { recheck } = driveRecheck();
     const { session, rule } = setUp(siteWith({ slug: "con", folder: "aux/shop" }));
     expect(rule("deviceNames").dataset.status).toBe("fail");
     expect(screen.getByRole("status").textContent).toMatch(/^1 must fix · /);
     // Must fix can't be ignored.
     expect(within(rule("deviceNames")).queryByRole("button", { name: /Ignore/ })).toBeNull();
 
-    await userEvent.click(within(rule("deviceNames")).getByRole("button", { name: "Fix" }));
+    fireEvent.click(within(rule("deviceNames")).getByRole("button", { name: "Fix" }));
 
     const about = session.history.document.getState().pages[ABOUT];
     expect([about?.folder, about?.slug]).toEqual(["aux-2/shop", "con-2"]);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
       "Renamed the file of page 'About'",
     ]);
-    await waitFor(() => expect(rule("deviceNames").dataset.status).toBe("pass"));
+    recheck();
+    expect(rule("deviceNames").dataset.status).toBe("pass");
   });
 
-  it("moves every page in a device-named folder together, deeper ones too", async () => {
+  it("moves every page in a device-named folder together, deeper ones too", () => {
+    const { recheck } = driveRecheck();
     const site = siteWith({ slug: "hours", folder: "aux/shop" });
     const about = site.pages[ABOUT];
     if (about === undefined) throw new Error("no About page");
@@ -121,7 +148,7 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     const [first] = within(rule("deviceNames")).getAllByRole("button", { name: "Fix" });
     if (first === undefined) throw new Error("no Fix");
-    await userEvent.click(first);
+    fireEvent.click(first);
 
     const pages = session.history.document.getState().pages;
     expect([pages[ABOUT]?.folder, pages[cakes.id]?.folder, pages[taken.id]?.folder]).toEqual([
@@ -129,7 +156,8 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
       "aux-3",
       "aux-2",
     ]);
-    await waitFor(() => expect(rule("deviceNames").dataset.status).toBe("pass"));
+    recheck();
+    expect(rule("deviceNames").dataset.status).toBe("pass");
   });
 
   it("gives a page without a title the text of its first heading", async () => {
@@ -225,7 +253,8 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(rule("underlinedText").dataset.status).toBe("warn");
   });
 
-  it("starts from what was ignored before, and checks the site again as it changes", async () => {
+  it("starts from what was ignored before, and checks the site again as it changes", () => {
+    const { recheck } = driveRecheck();
     const underlined = { type: "Text", props: { id: "t", text: "<p><u>Late</u></p>" } };
     const { session, rule } = setUp(siteWith({ content: [underlined] }), [
       `underlinedText:${ABOUT}/t`,
@@ -239,7 +268,8 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
       });
     });
 
-    await waitFor(() => expect(rule("deviceNames").dataset.status).toBe("fail"));
+    recheck();
+    expect(rule("deviceNames").dataset.status).toBe("fail");
   });
 
   it("opens the Theme panel for a colour pair", async () => {

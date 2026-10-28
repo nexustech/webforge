@@ -6,6 +6,7 @@ import {
   type ThemeTokens,
   themeTokensSchema,
 } from "@webforge/model";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { THEME_PRESETS, themeCss } from "@webforge/themes";
 import daisyThemes from "daisyui/theme/object.js";
 import fc from "fast-check";
@@ -139,32 +140,36 @@ describe("themeCss in the site's stylesheet (2.1)", () => {
     );
   });
 
-  it("compiles every theme the model accepts", async () => {
-    const color = fc.record({
-      l: fc.double({ min: 0, max: 1, noNaN: true }),
-      c: fc.double({ min: 0, max: 0.5, noNaN: true }),
-      h: fc.double({ min: 0, max: 360, noNaN: true }),
-    });
-    const theme = fc
-      .record({
-        preset: fc.stringMatching(/^[a-z][a-z0-9-]{0,20}$/),
-        colors: fc.record(Object.fromEntries(COLOR_ROLES.map((role) => [role, color]))),
-        scheme: fc.constantFrom("light", "dark"),
-        border: fc.constantFrom("thin", "thick"),
-        spacing: fc.constantFrom("compact", "normal", "roomy"),
-        shadow: fc.constantFrom("none", "soft", "strong"),
-      })
-      .map((parts) => themeTokensSchema.parse({ ...DEFAULT_THEME, ...parts }));
+  it(
+    "compiles every theme the model accepts",
+    async () => {
+      const color = fc.record({
+        l: fc.double({ min: 0, max: 1, noNaN: true }),
+        c: fc.double({ min: 0, max: 0.5, noNaN: true }),
+        h: fc.double({ min: 0, max: 360, noNaN: true }),
+      });
+      const theme = fc
+        .record({
+          preset: fc.stringMatching(/^[a-z][a-z0-9-]{0,20}$/),
+          colors: fc.record(Object.fromEntries(COLOR_ROLES.map((role) => [role, color]))),
+          scheme: fc.constantFrom("light", "dark"),
+          border: fc.constantFrom("thin", "thick"),
+          spacing: fc.constantFrom("compact", "normal", "roomy"),
+          shadow: fc.constantFrom("none", "soft", "strong"),
+        })
+        .map((parts) => themeTokensSchema.parse({ ...DEFAULT_THEME, ...parts }));
 
-    await fc.assert(
-      fc.asyncProperty(theme, async (tokens) => {
-        const compiled = await css(tokens);
-        expect(themeVariables(compiled, tokens.preset)["color-scheme"]).toBe(tokens.scheme);
-      }),
-      // Each run compiles a whole stylesheet.
-      { numRuns: 15 },
-    );
-  }, 60_000);
+      await fc.assert(
+        fc.asyncProperty(theme, async (tokens) => {
+          const compiled = await css(tokens);
+          expect(themeVariables(compiled, tokens.preset)["color-scheme"]).toBe(tokens.scheme);
+        }),
+        // Each run compiles a whole stylesheet.
+        { numRuns: 15 },
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it.each(THEME_PRESETS.map((preset) => [preset.preset, preset] as const))(
     "writes the %s preset's theme as reviewed",

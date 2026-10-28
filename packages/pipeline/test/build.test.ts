@@ -12,6 +12,7 @@ import type {
 import { createSite, DEFAULT_THEME, newSharedCopy, siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { transform } from "lightningcss";
 import { compile } from "tailwindcss";
 import { beforeAll, describe, expect, it } from "vitest";
@@ -28,7 +29,7 @@ let built: BuiltSite;
 beforeAll(async () => {
   resources = await loadNodeResources();
   built = await buildSite(sampleSite(), siteLibrary, resources);
-}, 60_000);
+}, scaledTestTimeout(60_000));
 
 const text = (site: BuiltSite, path: string) => new TextDecoder().decode(site.files.get(path));
 const fileNamed = (site: BuiltSite, pattern: RegExp) =>
@@ -56,14 +57,18 @@ describe("buildSite: golden output (X4: byte-stable, readable)", () => {
     );
   });
 
-  it("is byte-stable: building again gives identical files", async () => {
-    const again = await buildSite(sampleSite(), siteLibrary, resources);
+  it(
+    "is byte-stable: building again gives identical files",
+    async () => {
+      const again = await buildSite(sampleSite(), siteLibrary, resources);
 
-    expect([...again.files.keys()]).toEqual([...built.files.keys()]);
-    for (const [path, data] of built.files) {
-      expect(again.files.get(path), path).toEqual(data);
-    }
-  }, 60_000);
+      expect([...again.files.keys()]).toEqual([...built.files.keys()]);
+      for (const [path, data] of built.files) {
+        expect(again.files.get(path), path).toEqual(data);
+      }
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: self-contained output (X1, C8)", () => {
@@ -148,102 +153,116 @@ describe("buildSite: self-contained output (X1, C8)", () => {
 });
 
 describe("buildSite: pages in folders", () => {
-  it("prefixes every relative URL with ../ for each folder level", async () => {
-    const base = sampleSite();
-    const site: SiteSnapshot = {
-      ...base,
-      pages: [
-        ...base.pages,
-        {
-          id: "cakes",
-          path: "services/cakes",
-          title: "Cakes",
-          doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
-        },
-      ],
-      // Added to the (edited) menu, as the Pages panel adds a new page.
-      menu: {
-        follows: "custom",
-        items: [
-          ...(base.menu?.items ?? []),
-          { id: "cakes" as MenuItemId, kind: "page", pageId: "cakes" as PageId, hidden: false },
+  it(
+    "prefixes every relative URL with ../ for each folder level",
+    async () => {
+      const base = sampleSite();
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [
+          ...base.pages,
+          {
+            id: "cakes",
+            path: "services/cakes",
+            title: "Cakes",
+            doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
+          },
         ],
-      },
-    };
+        // Added to the (edited) menu, as the Pages panel adds a new page.
+        menu: {
+          follows: "custom",
+          items: [
+            ...(base.menu?.items ?? []),
+            { id: "cakes" as MenuItemId, kind: "page", pageId: "cakes" as PageId, hidden: false },
+          ],
+        },
+      };
 
-    const nested = await buildSite(site, siteLibrary, resources);
-    const html = text(nested, "services/cakes.html");
+      const nested = await buildSite(site, siteLibrary, resources);
+      const html = text(nested, "services/cakes.html");
 
-    expect(html).toMatch(/href="\.\.\/assets\/css\/site\.[0-9a-f]{10}\.css"/);
-    expect(html).toContain('<a href="../index.html">Home</a>');
-    expect(html).toContain('<a href="../services/cakes.html" aria-current="page">Cakes</a>');
-    expect(html).toContain('srcSet="../assets/img/hero-640.webp 640w');
-    expect(html).toContain('src="../assets/img/hero-1600.jpg"');
-    expect(html).toContain('<a class="btn btn-primary" href="../about.html">About us</a>');
-    expect(html).toContain("<title>Cakes | Rosa's Bakery</title>");
-  }, 60_000);
+      expect(html).toMatch(/href="\.\.\/assets\/css\/site\.[0-9a-f]{10}\.css"/);
+      expect(html).toContain('<a href="../index.html">Home</a>');
+      expect(html).toContain('<a href="../services/cakes.html" aria-current="page">Cakes</a>');
+      expect(html).toContain('srcSet="../assets/img/hero-640.webp 640w');
+      expect(html).toContain('src="../assets/img/hero-1600.jpg"');
+      expect(html).toContain('<a class="btn btn-primary" href="../about.html">About us</a>');
+      expect(html).toContain("<title>Cakes | Rosa's Bakery</title>");
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: Custom Code (2.11, F-ED-15)", () => {
-  it("writes Custom Code into the page as it is, its classes in the site's CSS", async () => {
-    const base = sampleSite();
-    const script =
-      "<script>\nconst note = `Sale\n  today`;   if (note) window.sold = true;\n</script>";
-    const code = `<div class="rounded-full bg-accent">Sale</div>${script}<style>.sale{color:red}</style>`;
-    const [home, ...rest] = base.pages;
-    if (home === undefined) throw new Error("no home page");
-    const custom: NodeDoc = { type: "CustomCode", props: { id: "custom", code } };
-    const site: SiteSnapshot = {
-      ...base,
-      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, custom] } }, ...rest],
-    };
+  it(
+    "writes Custom Code into the page as it is, its classes in the site's CSS",
+    async () => {
+      const base = sampleSite();
+      const script =
+        "<script>\nconst note = `Sale\n  today`;   if (note) window.sold = true;\n</script>";
+      const code = `<div class="rounded-full bg-accent">Sale</div>${script}<style>.sale{color:red}</style>`;
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("no home page");
+      const custom: NodeDoc = { type: "CustomCode", props: { id: "custom", code } };
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, custom] } }, ...rest],
+      };
 
-    const exported = await buildSite(site, siteLibrary, resources);
+      const exported = await buildSite(site, siteLibrary, resources);
 
-    // As written: its markup laid out as the rest of the readable HTML is (X4), and what's in its
-    // script and style exactly as typed, not reformatted.
-    const page = text(exported, "index.html");
-    expect(page.replace(/\s+/g, " ")).toContain(
-      '<div class="site-custom-code"> <div class="rounded-full bg-accent">Sale</div> <script>',
-    );
-    expect(page).toContain(script);
-    expect(page).toContain("<style>.sale{color:red}</style>");
-    expect(text(exported, fileNamed(exported, /site\.[0-9a-f]+\.css$/))).toContain(".rounded-full");
-  }, 60_000);
+      // As written: its markup laid out as the rest of the readable HTML is (X4), and what's in its
+      // script and style exactly as typed, not reformatted.
+      const page = text(exported, "index.html");
+      expect(page.replace(/\s+/g, " ")).toContain(
+        '<div class="site-custom-code"> <div class="rounded-full bg-accent">Sale</div> <script>',
+      );
+      expect(page).toContain(script);
+      expect(page).toContain("<style>.sale{color:red}</style>");
+      expect(text(exported, fileNamed(exported, /site\.[0-9a-f]+\.css$/))).toContain(
+        ".rounded-full",
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: page settings", () => {
-  it("uses navigation labels, leaves hidden pages out of the menu and hides Header or Footer", async () => {
-    const base = sampleSite();
-    const [home, about] = base.pages;
-    if (home === undefined || about === undefined) throw new Error("sample site changed");
-    const site: SiteSnapshot = {
-      ...base,
-      pages: [
-        { ...home, navLabel: "Start" },
-        { ...about, hideHeader: true, hideFooter: true },
-        {
-          ...about,
-          id: "not-found",
-          path: "404",
-          title: "Page not found",
-          hideFromNavigation: true,
-        },
-      ],
-    };
+  it(
+    "uses navigation labels, leaves hidden pages out of the menu and hides Header or Footer",
+    async () => {
+      const base = sampleSite();
+      const [home, about] = base.pages;
+      if (home === undefined || about === undefined) throw new Error("sample site changed");
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [
+          { ...home, navLabel: "Start" },
+          { ...about, hideHeader: true, hideFooter: true },
+          {
+            ...about,
+            id: "not-found",
+            path: "404",
+            title: "Page not found",
+            hideFromNavigation: true,
+          },
+        ],
+      };
 
-    const output = await buildSite(site, siteLibrary, resources);
-    const homeHtml = text(output, "index.html");
-    const aboutHtml = text(output, "about.html");
+      const output = await buildSite(site, siteLibrary, resources);
+      const homeHtml = text(output, "index.html");
+      const aboutHtml = text(output, "about.html");
 
-    expect(homeHtml).toContain('<a href="index.html" aria-current="page">Start</a>');
-    expect(homeHtml).toContain('<a href="about.html">About us</a>');
-    expect(homeHtml).not.toContain("404.html");
-    expect(homeHtml).toContain('class="site-footer');
-    expect(aboutHtml).not.toContain("<nav");
-    expect(aboutHtml).not.toContain('class="site-footer');
-    expect(output.files.has("404.html")).toBe(true);
-  }, 60_000);
+      expect(homeHtml).toContain('<a href="index.html" aria-current="page">Start</a>');
+      expect(homeHtml).toContain('<a href="about.html">About us</a>');
+      expect(homeHtml).not.toContain("404.html");
+      expect(homeHtml).toContain('class="site-footer');
+      expect(aboutHtml).not.toContain("<nav");
+      expect(aboutHtml).not.toContain('class="site-footer');
+      expect(output.files.has("404.html")).toBe(true);
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): SiteSnapshot {
@@ -622,122 +641,134 @@ describe("buildSite: documents (1.28)", () => {
 });
 
 describe("buildSite: the theme's typography (#419)", () => {
-  it("sets titles in the heading font and text at the type scale's sizes, the page title smaller on phones", async () => {
-    const site: SiteSnapshot = {
-      ...sampleSite(),
-      theme: {
-        ...DEFAULT_THEME,
-        preset: "typography",
-        fonts: {
-          heading: { family: "Lora", fallback: "serif" },
-          body: { family: "Work Sans", fallback: "sans-serif" },
+  it(
+    "sets titles in the heading font and text at the type scale's sizes, the page title smaller on phones",
+    async () => {
+      const site: SiteSnapshot = {
+        ...sampleSite(),
+        theme: {
+          ...DEFAULT_THEME,
+          preset: "typography",
+          fonts: {
+            heading: { family: "Lora", fallback: "serif" },
+            body: { family: "Work Sans", fallback: "sans-serif" },
+          },
+          typeScale: {
+            ...DEFAULT_THEME.typeScale,
+            h1: { size: "6xl", weight: 600, leading: "tight" },
+            body: { size: "base", weight: 400, leading: "normal" },
+          },
         },
-        typeScale: {
-          ...DEFAULT_THEME.typeScale,
-          h1: { size: "6xl", weight: 600, leading: "tight" },
-          body: { size: "base", weight: 400, leading: "normal" },
-        },
-      },
-    };
+      };
 
-    const exported = await buildSite(site, siteLibrary, resources);
+      const exported = await buildSite(site, siteLibrary, resources);
 
-    const page = text(exported, "index.html");
-    expect(page).toContain('<h1 class="font-heading text-h1">');
-    expect(page).toContain("text-body");
-    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
-    expect(css).toContain('--font-heading: "Lora", ui-serif, Georgia, serif;');
-    expect(css).toContain("font-family: var(--font-heading);");
-    expect(css).toContain("--text-h1: 3.75rem;");
-    expect(css).toContain("--text-h1--font-weight: 600;");
-    expect(css).toContain("font-size: var(--text-h1);");
-    expect(css).toContain("--text-body: 1rem;");
-    // A 6xl title is 4xl on phones (capped, so it fits).
-    expect(css).toContain("@media (width < 48rem) { :root { --text-h1: 2.25rem; } }");
-    // The heading font's files are part of the site.
-    expect([...exported.files.keys()].some((path) => /lora/i.test(path))).toBe(true);
-  }, 60_000);
+      const page = text(exported, "index.html");
+      expect(page).toContain('<h1 class="font-heading text-h1">');
+      expect(page).toContain("text-body");
+      const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+      expect(css).toContain('--font-heading: "Lora", ui-serif, Georgia, serif;');
+      expect(css).toContain("font-family: var(--font-heading);");
+      expect(css).toContain("--text-h1: 3.75rem;");
+      expect(css).toContain("--text-h1--font-weight: 600;");
+      expect(css).toContain("font-size: var(--text-h1);");
+      expect(css).toContain("--text-body: 1rem;");
+      // A 6xl title is 4xl on phones (capped, so it fits).
+      expect(css).toContain("@media (width < 48rem) { :root { --text-h1: 2.25rem; } }");
+      // The heading font's files are part of the site.
+      expect([...exported.files.keys()].some((path) => /lora/i.test(path))).toBe(true);
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: the theme's buttons, shadows and links (#423)", () => {
-  it("draws buttons, shadows and links in running text as the theme says", async () => {
-    const site: SiteSnapshot = {
-      ...sampleSite(),
-      theme: {
-        ...DEFAULT_THEME,
-        preset: "outline",
-        buttons: { shape: "square", size: "l", style: "outline" },
-        shadow: "none",
-        links: { underline: "hover" },
-      },
-    };
+  it(
+    "draws buttons, shadows and links in running text as the theme says",
+    async () => {
+      const site: SiteSnapshot = {
+        ...sampleSite(),
+        theme: {
+          ...DEFAULT_THEME,
+          preset: "outline",
+          buttons: { shape: "square", size: "l", style: "outline" },
+          shadow: "none",
+          links: { underline: "hover" },
+        },
+      };
 
-    const exported = await buildSite(site, siteLibrary, resources);
+      const exported = await buildSite(site, siteLibrary, resources);
 
-    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
-    // Every button's corners and the default size's height; the main buttons drawn outline.
-    expect(css).toContain("--wf-button-radius: 0rem; --wf-button-height: 3rem;");
-    expect(css).toContain(
-      ".btn:not(.btn-circle, .btn-square) { --radius-field: var(--wf-button-radius); }",
-    );
-    expect(css).toContain("--size: var(--wf-button-height);");
-    expect(css).toMatch(
-      /\.btn-primary:not\(\.btn-outline, \.btn-ghost, \.btn-link, \.wf-filled\) \{ --btn-bg: #0000;/,
-    );
-    // No shadows: Tailwind writes the theme's shadow scale into the classes that use it.
-    expect(css).toContain(".shadow-md { --tw-shadow: 0 0 var(--tw-shadow-color, #0000);");
-    // Links in running text not underlined until hovered or focused.
-    expect(css).toContain("--wf-link-decoration: none;");
-    expect(css).toContain("text-decoration-line: var(--wf-link-decoration,underline);");
-  }, 60_000);
+      const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+      // Every button's corners and the default size's height; the main buttons drawn outline.
+      expect(css).toContain("--wf-button-radius: 0rem; --wf-button-height: 3rem;");
+      expect(css).toContain(
+        ".btn:not(.btn-circle, .btn-square) { --radius-field: var(--wf-button-radius); }",
+      );
+      expect(css).toContain("--size: var(--wf-button-height);");
+      expect(css).toMatch(
+        /\.btn-primary:not\(\.btn-outline, \.btn-ghost, \.btn-link, \.wf-filled\) \{ --btn-bg: #0000;/,
+      );
+      // No shadows: Tailwind writes the theme's shadow scale into the classes that use it.
+      expect(css).toContain(".shadow-md { --tw-shadow: 0 0 var(--tw-shadow-color, #0000);");
+      // Links in running text not underlined until hovered or focused.
+      expect(css).toContain("--wf-link-decoration: none;");
+      expect(css).toContain("text-decoration-line: var(--wf-link-decoration,underline);");
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: the theme's style (2.13d)", () => {
-  it("draws headings, cards, photos and the sections' rhythm as the theme says", async () => {
-    const site: SiteSnapshot = {
-      ...sampleSite(),
-      theme: {
-        ...DEFAULT_THEME,
-        preset: "styled",
-        headings: { case: "uppercase", tracking: "wide" },
-        cards: { style: "outlined" },
-        images: { corners: "square" },
-        sections: { rhythm: "alternating" },
-      },
-    };
+  it(
+    "draws headings, cards, photos and the sections' rhythm as the theme says",
+    async () => {
+      const site: SiteSnapshot = {
+        ...sampleSite(),
+        theme: {
+          ...DEFAULT_THEME,
+          preset: "styled",
+          headings: { case: "uppercase", tracking: "wide" },
+          cards: { style: "outlined" },
+          images: { corners: "square" },
+          sections: { rhythm: "alternating" },
+        },
+      };
 
-    const exported = await buildSite(site, siteLibrary, resources);
+      const exported = await buildSite(site, siteLibrary, resources);
 
-    const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
-    expect(css).toContain(
-      ":is(h1, h2, h3, h4, h5, h6).font-heading { text-transform: uppercase; letter-spacing: 0.1em; }",
-    );
-    expect(css).toContain(
-      "section .wf-card { background-color: var(--color-base-100); border: var(--border) solid var(--color-base-300); }",
-    );
-    expect(css).toContain("img.rounded-box { border-radius: 0; }");
-    // A rule per selector, as written, never merged into a list: a browser without :has()
-    // (Firefox ESR 115) drops only the canvas's rule, and keeps the exported page's stripes.
-    const onPage = "#main > section:nth-child(even of section):not([data-theme])";
-    const canvas =
-      ".wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme])";
-    const rhythm = css.indexOf(`${onPage} { background-color: var(--color-base-200); }`);
-    expect(rhythm).toBeGreaterThan(-1);
-    expect(css).toContain(`${canvas} { background-color: var(--color-base-200); }`);
-    expect(css).not.toContain(`${onPage}, ${canvas}`);
-    // In the components layer, under the classes of sections with colours of their own, which
-    // are utilities.
-    expect(
-      css
-        .slice(0, rhythm)
-        .match(/@layer (\w+) \{/g)
-        ?.at(-1),
-    ).toBe("@layer components {");
-    expect(css).toContain("@layer theme, base, components, utilities;");
-    // And over the page's surface that any section framed on it sets by its class.
-    expect(css).toContain(`${onPage}.bg-base-100 { background-color: var(--color-base-200); }`);
-    expect(css).toContain(`${canvas}.bg-base-100 { background-color: var(--color-base-200); }`);
-  }, 60_000);
+      const css = text(exported, fileNamed(exported, /^assets\/css\//)).replace(/\s+/g, " ");
+      expect(css).toContain(
+        ":is(h1, h2, h3, h4, h5, h6).font-heading { text-transform: uppercase; letter-spacing: 0.1em; }",
+      );
+      expect(css).toContain(
+        "section .wf-card { background-color: var(--color-base-100); border: var(--border) solid var(--color-base-300); }",
+      );
+      expect(css).toContain("img.rounded-box { border-radius: 0; }");
+      // A rule per selector, as written, never merged into a list: a browser without :has()
+      // (Firefox ESR 115) drops only the canvas's rule, and keeps the exported page's stripes.
+      const onPage = "#main > section:nth-child(even of section):not([data-theme])";
+      const canvas =
+        ".wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme])";
+      const rhythm = css.indexOf(`${onPage} { background-color: var(--color-base-200); }`);
+      expect(rhythm).toBeGreaterThan(-1);
+      expect(css).toContain(`${canvas} { background-color: var(--color-base-200); }`);
+      expect(css).not.toContain(`${onPage}, ${canvas}`);
+      // In the components layer, under the classes of sections with colours of their own, which
+      // are utilities.
+      expect(
+        css
+          .slice(0, rhythm)
+          .match(/@layer (\w+) \{/g)
+          ?.at(-1),
+      ).toBe("@layer components {");
+      expect(css).toContain("@layer theme, base, components, utilities;");
+      // And over the page's surface that any section framed on it sets by its class.
+      expect(css).toContain(`${onPage}.bg-base-100 { background-color: var(--color-base-200); }`);
+      expect(css).toContain(`${canvas}.bg-base-100 { background-color: var(--color-base-200); }`);
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: cancelled, followed, and reading bytes when needed (R15)", () => {
@@ -767,322 +798,387 @@ describe("buildSite: cancelled, followed, and reading bytes when needed (R15)", 
     return { snapshot, readMedia, reads, stored };
   }
 
-  it("builds the same site from hashes, reading each file once, one at a time", async () => {
-    const { snapshot, readMedia, reads, stored } = byHash();
+  it(
+    "builds the same site from hashes, reading each file once, one at a time",
+    async () => {
+      const { snapshot, readMedia, reads, stored } = byHash();
 
-    const fromHashes = await buildSite(snapshot, siteLibrary, { ...resources, readMedia });
+      const fromHashes = await buildSite(snapshot, siteLibrary, { ...resources, readMedia });
 
-    expect([...fromHashes.files.keys()]).toEqual([...built.files.keys()]);
-    for (const [path, data] of built.files) expect(fromHashes.files.get(path), path).toEqual(data);
-    expect(reads.sort()).toEqual([...stored.keys()].sort());
-  }, 60_000);
+      expect([...fromHashes.files.keys()]).toEqual([...built.files.keys()]);
+      for (const [path, data] of built.files)
+        expect(fromHashes.files.get(path), path).toEqual(data);
+      expect(reads.sort()).toEqual([...stored.keys()].sort());
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("reads nothing and encodes nothing for images the cache has (a second export)", async () => {
-    const { snapshot, readMedia, reads } = byHash();
-    const entries = new Map<string, Uint8Array>();
-    const imageCache: ImageCache = {
-      get: async (key) => entries.get(key),
-      set: async (key, data) => {
-        entries.set(key, data);
-      },
-    };
-    const first = await buildSite(snapshot, siteLibrary, { ...resources, readMedia, imageCache });
-    const kept = entries.size;
-    reads.length = 0;
+  it(
+    "reads nothing and encodes nothing for images the cache has (a second export)",
+    async () => {
+      const { snapshot, readMedia, reads } = byHash();
+      const entries = new Map<string, Uint8Array>();
+      const imageCache: ImageCache = {
+        get: async (key) => entries.get(key),
+        set: async (key, data) => {
+          entries.set(key, data);
+        },
+      };
+      const first = await buildSite(snapshot, siteLibrary, { ...resources, readMedia, imageCache });
+      const kept = entries.size;
+      reads.length = 0;
 
-    const second = await buildSite(snapshot, siteLibrary, { ...resources, readMedia, imageCache });
+      const second = await buildSite(snapshot, siteLibrary, {
+        ...resources,
+        readMedia,
+        imageCache,
+      });
 
-    // Only the document is read again: images come from the cache, as they were encoded.
-    expect(reads).toHaveLength(snapshot.documents?.length ?? 0);
-    expect(entries.size).toBe(kept);
-    for (const [path, data] of first.files) expect(second.files.get(path), path).toEqual(data);
-  }, 60_000);
+      // Only the document is read again: images come from the cache, as they were encoded.
+      expect(reads).toHaveLength(snapshot.documents?.length ?? 0);
+      expect(entries.size).toBe(kept);
+      for (const [path, data] of first.files) expect(second.files.get(path), path).toEqual(data);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("leaves out an image or document the site no longer stores, with a warning", async () => {
-    const { snapshot, readMedia } = byHash();
+  it(
+    "leaves out an image or document the site no longer stores, with a warning",
+    async () => {
+      const { snapshot, readMedia } = byHash();
 
-    const result = await buildSite(snapshot, siteLibrary, {
-      ...resources,
-      readMedia: async (hash) => (hash === snapshot.media[0]?.hash ? undefined : readMedia?.(hash)),
-    });
+      const result = await buildSite(snapshot, siteLibrary, {
+        ...resources,
+        readMedia: async (hash) =>
+          hash === snapshot.media[0]?.hash ? undefined : readMedia?.(hash),
+      });
 
-    expect(result.report.warnings).toContainEqual(
-      expect.objectContaining({ code: "missing-image", detail: snapshot.media[0]?.id }),
-    );
-  }, 60_000);
+      expect(result.report.warnings).toContainEqual(
+        expect.objectContaining({ code: "missing-image", detail: snapshot.media[0]?.id }),
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("refuses a document stored as another type than the snapshot says", async () => {
-    const { snapshot, readMedia } = byHash();
-    const document = snapshot.documents?.[0];
+  it(
+    "refuses a document stored as another type than the snapshot says",
+    async () => {
+      const { snapshot, readMedia } = byHash();
+      const document = snapshot.documents?.[0];
 
-    const result = await buildSite(snapshot, siteLibrary, {
-      ...resources,
-      readMedia: async (hash) => {
-        const stored = await readMedia?.(hash);
-        return hash === document?.hash && stored !== undefined
-          ? { ...stored, mime: "text/html" }
-          : stored;
-      },
-    });
+      const result = await buildSite(snapshot, siteLibrary, {
+        ...resources,
+        readMedia: async (hash) => {
+          const stored = await readMedia?.(hash);
+          return hash === document?.hash && stored !== undefined
+            ? { ...stored, mime: "text/html" }
+            : stored;
+        },
+      });
 
-    expect([...result.files.keys()].some((path) => path.startsWith("files/"))).toBe(false);
-  }, 60_000);
+      expect([...result.files.keys()].some((path) => path.startsWith("files/"))).toBe(false);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("tells its progress: each image and page, then the styles and the fonts", async () => {
-    const events: BuildEvent[] = [];
+  it(
+    "tells its progress: each image and page, then the styles and the fonts",
+    async () => {
+      const events: BuildEvent[] = [];
 
-    await buildSite(sampleSite(), siteLibrary, resources, {
-      onProgress: (event) => events.push(event),
-    });
+      await buildSite(sampleSite(), siteLibrary, resources, {
+        onProgress: (event) => events.push(event),
+      });
 
-    const stages = events.map((event) => event.stage);
-    expect(stages.indexOf("pages")).toBeGreaterThan(stages.lastIndexOf("images"));
-    expect(stages.slice(-2)).toEqual(["styles", "fonts"]);
-    expect(events.filter((event) => event.stage === "pages")).toEqual(
-      sampleSite().pages.map((_page, done) => ({ stage: "pages", done, total: 3 })),
-    );
-  }, 60_000);
+      const stages = events.map((event) => event.stage);
+      expect(stages.indexOf("pages")).toBeGreaterThan(stages.lastIndexOf("images"));
+      expect(stages.slice(-2)).toEqual(["styles", "fonts"]);
+      expect(events.filter((event) => event.stage === "pages")).toEqual(
+        sampleSite().pages.map((_page, done) => ({ stage: "pages", done, total: 3 })),
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("stops at the next image or page once cancelled", async () => {
-    const controller = new AbortController();
-    const events: BuildEvent[] = [];
+  it(
+    "stops at the next image or page once cancelled",
+    async () => {
+      const controller = new AbortController();
+      const events: BuildEvent[] = [];
 
-    const building = buildSite(sampleSite(), siteLibrary, resources, {
-      signal: controller.signal,
-      onProgress: (event) => {
-        events.push(event);
-        if (event.stage === "images" && event.done === 0) controller.abort();
-      },
-    });
+      const building = buildSite(sampleSite(), siteLibrary, resources, {
+        signal: controller.signal,
+        onProgress: (event) => {
+          events.push(event);
+          if (event.stage === "images" && event.done === 0) controller.abort();
+        },
+      });
 
-    await expect(building).rejects.toMatchObject({ name: "BuildError", code: "cancelled" });
-    // The first image was under way when it was cancelled; nothing after it started.
-    expect(events).toEqual([expect.objectContaining({ stage: "images", done: 0 })]);
-  }, 60_000);
+      await expect(building).rejects.toMatchObject({ name: "BuildError", code: "cancelled" });
+      // The first image was under way when it was cancelled; nothing after it started.
+      expect(events).toEqual([expect.objectContaining({ stage: "images", done: 0 })]);
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: what the export writes (3.3)", () => {
   const css = (site: BuiltSite) =>
     text(site, fileNamed(site, /^assets\/css\/site\.[0-9a-f]{10}\.css$/));
 
-  it("writes the same site minified: CSS that means the same, HTML without comments, a shorter script", async () => {
-    const small = await buildSite(sampleSite(), siteLibrary, resources, {
-      output: { minify: true },
-    });
+  it(
+    "writes the same site minified: CSS that means the same, HTML without comments, a shorter script",
+    async () => {
+      const small = await buildSite(sampleSite(), siteLibrary, resources, {
+        output: { minify: true },
+      });
 
-    // The same files, the CSS and script under the names of their minified content.
-    const named = (site: BuiltSite) =>
-      [...site.files.keys()].map((path) => path.replace(/\.[0-9a-f]{10}\./, ".#."));
-    expect(named(small)).toEqual(named(built));
-    // Parsed and minified again, both stylesheets are the same CSS. lightningcss keeps what it
-    // doesn't parse fully (`color-mix(in lab, red, red)` in `@supports`) as written, so whitespace
-    // beside commas and brackets, which never matters there, is left out of the comparison.
-    const normalised = (code: string) =>
-      new TextDecoder()
-        .decode(
-          transform({ filename: "site.css", code: new TextEncoder().encode(code), minify: true })
-            .code,
-        )
-        .replace(/\s*([,()])\s*/g, "$1");
-    expect(normalised(css(small))).toBe(normalised(css(built)));
-    expect(css(small).length).toBeLessThan(css(built).length * 0.85);
-    const home = text(small, "index.html");
-    expect(home).not.toContain("<!--");
-    expect(home.length).toBeLessThan(text(built, "index.html").length);
-    expect(home).toContain(`href="${fileNamed(small, /^assets\/css\//)}"`);
-    expect(home).toContain(`src="${fileNamed(small, /^assets\/js\//)}"`);
-    expect(text(small, fileNamed(small, /^assets\/js\//)).length).toBeLessThan(
-      text(built, fileNamed(built, /^assets\/js\//)).length,
-    );
-  }, 60_000);
+      // The same files, the CSS and script under the names of their minified content.
+      const named = (site: BuiltSite) =>
+        [...site.files.keys()].map((path) => path.replace(/\.[0-9a-f]{10}\./, ".#."));
+      expect(named(small)).toEqual(named(built));
+      // Parsed and minified again, both stylesheets are the same CSS. lightningcss keeps what it
+      // doesn't parse fully (`color-mix(in lab, red, red)` in `@supports`) as written, so whitespace
+      // beside commas and brackets, which never matters there, is left out of the comparison.
+      const normalised = (code: string) =>
+        new TextDecoder()
+          .decode(
+            transform({ filename: "site.css", code: new TextEncoder().encode(code), minify: true })
+              .code,
+          )
+          .replace(/\s*([,()])\s*/g, "$1");
+      expect(normalised(css(small))).toBe(normalised(css(built)));
+      expect(css(small).length).toBeLessThan(css(built).length * 0.85);
+      const home = text(small, "index.html");
+      expect(home).not.toContain("<!--");
+      expect(home.length).toBeLessThan(text(built, "index.html").length);
+      expect(home).toContain(`href="${fileNamed(small, /^assets\/css\//)}"`);
+      expect(home).toContain(`src="${fileNamed(small, /^assets\/js\//)}"`);
+      expect(text(small, fileNamed(small, /^assets\/js\//)).length).toBeLessThan(
+        text(built, fileNamed(built, /^assets\/js\//)).length,
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("writes a page it can't minify readable, with a warning naming it", async () => {
-    const base = sampleSite();
-    const [home, ...rest] = base.pages;
-    if (home === undefined) throw new Error("no home page");
-    // A tag the person's Custom Code left broken.
-    const broken: NodeDoc = { type: "CustomCode", props: { id: "custom", code: "<a <b>Sale</b>" } };
-    const site: SiteSnapshot = {
-      ...base,
-      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, broken] } }, ...rest],
-    };
+  it(
+    "writes a page it can't minify readable, with a warning naming it",
+    async () => {
+      const base = sampleSite();
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("no home page");
+      // A tag the person's Custom Code left broken.
+      const broken: NodeDoc = {
+        type: "CustomCode",
+        props: { id: "custom", code: "<a <b>Sale</b>" },
+      };
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, broken] } }, ...rest],
+      };
 
-    const small = await buildSite(site, siteLibrary, resources, { output: { minify: true } });
+      const small = await buildSite(site, siteLibrary, resources, { output: { minify: true } });
 
-    expect(small.report.warnings).toEqual([
-      // The sample's second Newsletter has no form address (3.7).
-      { code: "form-unset", page: "about", detail: "noAddress" },
-      { code: "not-minified", page: "index", detail: "" },
-    ]);
-    expect(text(small, "index.html")).toContain("<!-- Header (shared) -->");
-    // The other pages are minified as asked.
-    expect(text(small, "about.html")).not.toContain("<!--");
-  }, 60_000);
+      expect(small.report.warnings).toEqual([
+        // The sample's second Newsletter has no form address (3.7).
+        { code: "form-unset", page: "about", detail: "noAddress" },
+        { code: "not-minified", page: "index", detail: "" },
+      ]);
+      expect(text(small, "index.html")).toContain("<!-- Header (shared) -->");
+      // The other pages are minified as asked.
+      expect(text(small, "about.html")).not.toContain("<!--");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("adds developer files only when asked: the stylesheet's source, the theme, the settings, a README", async () => {
-    expect([...built.files.keys()].some((path) => path.startsWith("developer/"))).toBe(false);
+  it(
+    "adds developer files only when asked: the stylesheet's source, the theme, the settings, a README",
+    async () => {
+      expect([...built.files.keys()].some((path) => path.startsWith("developer/"))).toBe(false);
 
-    const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
-      output: { developerFiles: true },
-    });
+      const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
+        output: { developerFiles: true },
+      });
 
-    expect([...withFiles.files.keys()].filter((path) => path.startsWith("developer/"))).toEqual([
-      "developer/README.md",
-      "developer/design-tokens.json",
-      "developer/input.css",
-      "developer/package.json",
-      "developer/site.json",
-    ]);
-    // Everything else is as without them.
-    for (const [path, data] of built.files) expect(withFiles.files.get(path), path).toEqual(data);
-    const input = text(withFiles, "developer/input.css");
-    expect(input.startsWith('@import "tailwindcss" source(none);\n@source "../**/*.html";\n')).toBe(
-      true,
-    );
-    expect(input).toContain('@plugin "daisyui"');
-    expect(JSON.parse(text(withFiles, "developer/design-tokens.json"))).toEqual(sampleSite().theme);
-    expect(JSON.parse(text(withFiles, "developer/site.json"))).toMatchObject({
-      name: "Rosa's Bakery",
-      settings: { "contact.phone": "+44 1234 567890" },
-    });
-    // The versions this export used, and a script that writes the file the pages link to.
-    expect(JSON.parse(text(withFiles, "developer/package.json"))).toEqual({
-      private: true,
-      description: expect.stringContaining("Rosa's Bakery"),
-      scripts: {
-        "build-css": `tailwindcss -i input.css -o ../${fileNamed(withFiles, /^assets\/css\//)}`,
-      },
-      devDependencies: {
-        "@tailwindcss/cli": requireFrom("tailwindcss/package.json").version,
-        daisyui: requireFrom("daisyui/package.json").version,
-        tailwindcss: requireFrom("tailwindcss/package.json").version,
-      },
-    });
-    expect(text(withFiles, "developer/README.md")).toContain("npm run build-css");
-  }, 60_000);
+      expect([...withFiles.files.keys()].filter((path) => path.startsWith("developer/"))).toEqual([
+        "developer/README.md",
+        "developer/design-tokens.json",
+        "developer/input.css",
+        "developer/package.json",
+        "developer/site.json",
+      ]);
+      // Everything else is as without them.
+      for (const [path, data] of built.files) expect(withFiles.files.get(path), path).toEqual(data);
+      const input = text(withFiles, "developer/input.css");
+      expect(
+        input.startsWith('@import "tailwindcss" source(none);\n@source "../**/*.html";\n'),
+      ).toBe(true);
+      expect(input).toContain('@plugin "daisyui"');
+      expect(JSON.parse(text(withFiles, "developer/design-tokens.json"))).toEqual(
+        sampleSite().theme,
+      );
+      expect(JSON.parse(text(withFiles, "developer/site.json"))).toMatchObject({
+        name: "Rosa's Bakery",
+        settings: { "contact.phone": "+44 1234 567890" },
+      });
+      // The versions this export used, and a script that writes the file the pages link to.
+      expect(JSON.parse(text(withFiles, "developer/package.json"))).toEqual({
+        private: true,
+        description: expect.stringContaining("Rosa's Bakery"),
+        scripts: {
+          "build-css": `tailwindcss -i input.css -o ../${fileNamed(withFiles, /^assets\/css\//)}`,
+        },
+        devDependencies: {
+          "@tailwindcss/cli": requireFrom("tailwindcss/package.json").version,
+          daisyui: requireFrom("daisyui/package.json").version,
+          tailwindcss: requireFrom("tailwindcss/package.json").version,
+        },
+      });
+      expect(text(withFiles, "developer/README.md")).toContain("npm run build-css");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("rebuilds, as Tailwind's CLI would from input.css, the very stylesheet the pages link to", async () => {
-    const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
-      output: { developerFiles: true },
-    });
-    // The `tailwindcss` package's stylesheet and the files it imports, as the CLI loads them.
-    const loaders = tailwindLoaders(resources);
-    const packaged = {
-      ...loaders,
-      loadStylesheet: async (id: string, base: string) =>
-        id === "tailwindcss"
-          ? {
-              path: id,
-              base,
-              content: readFileSync(requireFrom.resolve("tailwindcss/index.css"), "utf8"),
-            }
-          : loaders.loadStylesheet(id, base),
-    };
+  it(
+    "rebuilds, as Tailwind's CLI would from input.css, the very stylesheet the pages link to",
+    async () => {
+      const withFiles = await buildSite(sampleSite(), siteLibrary, resources, {
+        output: { developerFiles: true },
+      });
+      // The `tailwindcss` package's stylesheet and the files it imports, as the CLI loads them.
+      const loaders = tailwindLoaders(resources);
+      const packaged = {
+        ...loaders,
+        loadStylesheet: async (id: string, base: string) =>
+          id === "tailwindcss"
+            ? {
+                path: id,
+                base,
+                content: readFileSync(requireFrom.resolve("tailwindcss/index.css"), "utf8"),
+              }
+            : loaders.loadStylesheet(id, base),
+      };
 
-    // No pages read: the classes `input.css` lists are the stylesheet's, escaped ones included.
-    const compiler = await compile(text(withFiles, "developer/input.css"), packaged);
+      // No pages read: the classes `input.css` lists are the stylesheet's, escaped ones included.
+      const compiler = await compile(text(withFiles, "developer/input.css"), packaged);
 
-    // Tailwind's package writes its own defaults' strings in double quotes, the files the app
-    // bundles in single: the same CSS.
-    const same = (code: string) => code.replaceAll("'", '"').replace(/\s+/g, " ").trim();
-    expect(same(compiler.build([]))).toBe(same(css(withFiles)));
-    expect(text(withFiles, "developer/input.css")).toContain(
-      '@source inline("[&::-webkit-details-marker]:hidden");',
-    );
-  }, 60_000);
+      // Tailwind's package writes its own defaults' strings in double quotes, the files the app
+      // bundles in single: the same CSS.
+      const same = (code: string) => code.replaceAll("'", '"').replace(/\s+/g, " ").trim();
+      expect(same(compiler.build([]))).toBe(same(css(withFiles)));
+      expect(text(withFiles, "developer/input.css")).toContain(
+        '@source inline("[&::-webkit-details-marker]:hidden");',
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: shared sections (F-ED-23, 3.3)", () => {
-  it("writes each copy inline, as its section, a second copy on a page with anchors of its own", async () => {
-    const site = createSite({
-      name: "Bakery",
-      language: "en",
-      homeTitle: "Home",
-      notFoundTitle: "Page not found",
-    });
-    const hoursId = "shared-hours" as SharedSectionId;
-    const shared = {
-      [hoursId]: {
-        id: hoursId,
-        name: "Opening hours",
-        section: {
-          type: "Section",
-          props: {
-            id: "hours",
-            advanced: { anchorId: "opening-hours" },
-            content: [{ type: "Heading", props: { id: "title", text: "Open every day" } }],
+  it(
+    "writes each copy inline, as its section, a second copy on a page with anchors of its own",
+    async () => {
+      const site = createSite({
+        name: "Bakery",
+        language: "en",
+        homeTitle: "Home",
+        notFoundTitle: "Page not found",
+      });
+      const hoursId = "shared-hours" as SharedSectionId;
+      const shared = {
+        [hoursId]: {
+          id: hoursId,
+          name: "Opening hours",
+          section: {
+            type: "Section",
+            props: {
+              id: "hours",
+              advanced: { anchorId: "opening-hours" },
+              content: [{ type: "Heading", props: { id: "title", text: "Open every day" } }],
+            },
           },
         },
-      },
-    };
-    const [home, notFound] = Object.values(site.pages);
-    if (home === undefined || notFound === undefined) throw new Error("No pages");
-    const copies = (count: number) => {
-      const content: NodeDoc[] = [];
-      for (let made = 0; made < count; made++) {
-        content.push(newSharedCopy(content, hoursId, shared, site.layout) as NodeDoc);
-      }
-      return content;
-    };
-    const withCopies = {
-      ...site,
-      sharedSections: shared,
-      pages: {
-        [home.id]: { ...home, doc: { ...home.doc, content: copies(2) } },
-        [notFound.id]: { ...notFound, doc: { ...notFound.doc, content: copies(1) } },
-      },
-    };
+      };
+      const [home, notFound] = Object.values(site.pages);
+      if (home === undefined || notFound === undefined) throw new Error("No pages");
+      const copies = (count: number) => {
+        const content: NodeDoc[] = [];
+        for (let made = 0; made < count; made++) {
+          content.push(newSharedCopy(content, hoursId, shared, site.layout) as NodeDoc);
+        }
+        return content;
+      };
+      const withCopies = {
+        ...site,
+        sharedSections: shared,
+        pages: {
+          [home.id]: { ...home, doc: { ...home.doc, content: copies(2) } },
+          [notFound.id]: { ...notFound, doc: { ...notFound.doc, content: copies(1) } },
+        },
+      };
 
-    const exported = await buildSite(siteToSnapshot(withCopies, new Map()), siteLibrary, resources);
+      const exported = await buildSite(
+        siteToSnapshot(withCopies, new Map()),
+        siteLibrary,
+        resources,
+      );
 
-    await expect(text(exported, "index.html")).toMatchFileSnapshot(
-      "golden/shared-sections/index.html",
-    );
-    await expect(text(exported, "404.html")).toMatchFileSnapshot("golden/shared-sections/404.html");
-    expect(text(exported, "index.html")).toContain('id="opening-hours"');
-    expect(text(exported, "index.html")).toContain('id="opening-hours-2"');
-    expect(text(exported, "index.html")).not.toContain("SharedSectionCopy");
-  }, 60_000);
+      await expect(text(exported, "index.html")).toMatchFileSnapshot(
+        "golden/shared-sections/index.html",
+      );
+      await expect(text(exported, "404.html")).toMatchFileSnapshot(
+        "golden/shared-sections/404.html",
+      );
+      expect(text(exported, "index.html")).toContain('id="opening-hours"');
+      expect(text(exported, "index.html")).toContain('id="opening-hours-2"');
+      expect(text(exported, "index.html")).not.toContain("SharedSectionCopy");
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: section backgrounds (2.26)", () => {
-  it("draws a section's background image as a responsive picture, its classes in the stylesheet", async () => {
-    const base = sampleSite();
-    const [home, ...rest] = base.pages;
-    if (home === undefined) throw new Error("no home page");
-    const story: NodeDoc = {
-      type: "TextSection",
-      props: {
-        id: "story",
-        title: "Our story",
-        backgroundImage: { mediaId: "hero-photo" },
-        overlay: "60",
-        overlayColor: "neutral",
-      },
-    };
-    const site: SiteSnapshot = {
-      ...base,
-      pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, story] } }, ...rest],
-    };
+  it(
+    "draws a section's background image as a responsive picture, its classes in the stylesheet",
+    async () => {
+      const base = sampleSite();
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("no home page");
+      const story: NodeDoc = {
+        type: "TextSection",
+        props: {
+          id: "story",
+          title: "Our story",
+          backgroundImage: { mediaId: "hero-photo" },
+          overlay: "60",
+          overlayColor: "neutral",
+        },
+      };
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, story] } }, ...rest],
+      };
 
-    const exported = await buildSite(site, siteLibrary, resources);
+      const exported = await buildSite(site, siteLibrary, resources);
 
-    const page = text(exported, "index.html");
-    expect(page).toContain('sizes="100vw"');
-    expect(page).toContain(
-      '<source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="100vw" />',
-    );
-    expect(page).toContain("bg-neutral/60");
-    expect(page).not.toContain("background-image");
-    const css = text(exported, fileNamed(exported, /^assets\/css\//));
-    for (const name of ["isolate", "-z-10", "text-neutral-content", String.raw`bg-neutral\/60`]) {
-      expect(css, name).toContain(`.${name}`);
-    }
-    // Only the sample's Newsletter without its form address (3.7).
-    expect(exported.report.warnings).toEqual([
-      { code: "form-unset", page: "about", detail: "noAddress" },
-    ]);
-  }, 60_000);
+      const page = text(exported, "index.html");
+      expect(page).toContain('sizes="100vw"');
+      expect(page).toContain(
+        '<source type="image/webp" srcSet="assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w" sizes="100vw" />',
+      );
+      expect(page).toContain("bg-neutral/60");
+      expect(page).not.toContain("background-image");
+      const css = text(exported, fileNamed(exported, /^assets\/css\//));
+      for (const name of ["isolate", "-z-10", "text-neutral-content", String.raw`bg-neutral\/60`]) {
+        expect(css, name).toContain(`.${name}`);
+      }
+      // Only the sample's Newsletter without its form address (3.7).
+      expect(exported.report.warnings).toEqual([
+        { code: "form-unset", page: "about", detail: "noAddress" },
+      ]);
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: site files (3.5)", () => {
@@ -1114,98 +1210,120 @@ describe("buildSite: site files (3.5)", () => {
     }
   }
 
-  it("roots the 'Page not found' page's links and files at /, even with a web address (F-ED-20)", async () => {
-    const result = await buildSite(
-      withNotFound({ "address.url": `${ADDRESS}/` }),
-      siteLibrary,
-      resources,
-    );
-    const lost = text(result, "404.html");
+  it(
+    "roots the 'Page not found' page's links and files at /, even with a web address (F-ED-20)",
+    async () => {
+      const result = await buildSite(
+        withNotFound({ "address.url": `${ADDRESS}/` }),
+        siteLibrary,
+        resources,
+      );
+      const lost = text(result, "404.html");
 
-    // At the site's root on whatever host serves it, as the web address may not point there yet.
-    expect(lost).toMatch(/<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/);
-    expect(lost).toContain('<a href="/index.html">Home</a>');
-    expect(lost).toContain('src="/assets/img/hero-1600.jpg"');
-    expect(lost).toContain('srcSet="/assets/img/hero-640.webp 640w');
-    expect(lost).toContain('href="/about.html">About us</a>');
-    expect(lost).not.toContain(`="${ADDRESS}`);
-    expect(lost).toContain('<meta name="robots" content="noindex">');
-    // Other pages keep relative links (X1), and the web address only in their canonical and og:url.
-    const about = text(result, "about.html");
-    expect(about).toContain('<a href="index.html">Home</a>');
-    expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
-  }, 60_000);
+      // At the site's root on whatever host serves it, as the web address may not point there yet.
+      expect(lost).toMatch(/<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/);
+      expect(lost).toContain('<a href="/index.html">Home</a>');
+      expect(lost).toContain('src="/assets/img/hero-1600.jpg"');
+      expect(lost).toContain('srcSet="/assets/img/hero-640.webp 640w');
+      expect(lost).toContain('href="/about.html">About us</a>');
+      expect(lost).not.toContain(`="${ADDRESS}`);
+      expect(lost).toContain('<meta name="robots" content="noindex">');
+      // Other pages keep relative links (X1), and the web address only in their canonical and og:url.
+      const about = text(result, "about.html");
+      expect(about).toContain('<a href="index.html">Home</a>');
+      expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("roots them at / without a web address too, and leaves them relative in a preview", async () => {
-    const exported = text(await buildSite(withNotFound(), siteLibrary, resources), "404.html");
-    const previewed = text(await preview(withNotFound()), "404.html");
+  it(
+    "roots them at / without a web address too, and leaves them relative in a preview",
+    async () => {
+      const exported = text(await buildSite(withNotFound(), siteLibrary, resources), "404.html");
+      const previewed = text(await preview(withNotFound()), "404.html");
 
-    expect(exported).toMatch(
-      /<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/,
-    );
-    expect(exported).toContain('<a href="/index.html">Home</a>');
-    expect(exported).toContain('src="/assets/img/hero-1600.jpg"');
-    expect(previewed).toContain('<a href="index.html">Home</a>');
-    expect(previewed).toContain('src="assets/img/hero-1600.jpg"');
-  }, 60_000);
+      expect(exported).toMatch(
+        /<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/,
+      );
+      expect(exported).toContain('<a href="/index.html">Home</a>');
+      expect(exported).toContain('src="/assets/img/hero-1600.jpg"');
+      expect(previewed).toContain('<a href="index.html">Home</a>');
+      expect(previewed).toContain('src="assets/img/hero-1600.jpg"');
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("writes robots.txt, the sitemap with a web address, the manifest with icons, and the share tags", async () => {
-    const base = withNotFound({ "address.url": ADDRESS });
-    const site: SiteSnapshot = {
-      ...base,
-      icon: "hero-photo",
-      search: {
-        allowIndexing: true,
-        includeSitemap: true,
-        readableByAi: false,
-        xHandle: "@rosasbakery",
-      },
-    };
+  it(
+    "writes robots.txt, the sitemap with a web address, the manifest with icons, and the share tags",
+    async () => {
+      const base = withNotFound({ "address.url": ADDRESS });
+      const site: SiteSnapshot = {
+        ...base,
+        icon: "hero-photo",
+        search: {
+          allowIndexing: true,
+          includeSitemap: true,
+          readableByAi: false,
+          xHandle: "@rosasbakery",
+        },
+      };
 
-    const result = await buildSite(site, siteLibrary, resources);
+      const result = await buildSite(site, siteLibrary, resources);
 
-    expect(text(result, "robots.txt")).toContain(`Sitemap: ${ADDRESS}/sitemap.xml`);
-    expect(text(result, "sitemap.xml")).toContain(`<loc>${ADDRESS}/about.html</loc>`);
-    expect(text(result, "sitemap.xml")).not.toContain("404");
-    expect(JSON.parse(text(result, "site.webmanifest")).icons).toHaveLength(3);
-    const about = text(result, "about.html");
-    expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
-    expect(about).toContain('<meta name="twitter:site" content="@rosasbakery">');
-    // After the favicon set's links (3.4).
-    expect(about.indexOf('rel="apple-touch-icon"')).toBeLessThan(about.indexOf('rel="canonical"'));
-    expect(about).toContain('<link rel="manifest" href="site.webmanifest">');
-  }, 60_000);
+      expect(text(result, "robots.txt")).toContain(`Sitemap: ${ADDRESS}/sitemap.xml`);
+      expect(text(result, "sitemap.xml")).toContain(`<loc>${ADDRESS}/about.html</loc>`);
+      expect(text(result, "sitemap.xml")).not.toContain("404");
+      expect(JSON.parse(text(result, "site.webmanifest")).icons).toHaveLength(3);
+      const about = text(result, "about.html");
+      expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
+      expect(about).toContain('<meta name="twitter:site" content="@rosasbakery">');
+      // After the favicon set's links (3.4).
+      expect(about.indexOf('rel="apple-touch-icon"')).toBeLessThan(
+        about.indexOf('rel="canonical"'),
+      );
+      expect(about).toContain('<link rel="manifest" href="site.webmanifest">');
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("writes no sitemap and no canonical address without a web address", async () => {
-    const result = await buildSite(sampleSite(), siteLibrary, resources);
+  it(
+    "writes no sitemap and no canonical address without a web address",
+    async () => {
+      const result = await buildSite(sampleSite(), siteLibrary, resources);
 
-    expect(result.files.has("robots.txt")).toBe(true);
-    expect(result.files.has("sitemap.xml")).toBe(false);
-    expect(result.files.has("site.webmanifest")).toBe(false);
-    expect(text(result, "index.html")).not.toContain("canonical");
-  }, 60_000);
+      expect(result.files.has("robots.txt")).toBe(true);
+      expect(result.files.has("sitemap.xml")).toBe(false);
+      expect(result.files.has("site.webmanifest")).toBe(false);
+      expect(text(result, "index.html")).not.toContain("canonical");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("fills in {year} in every page's text, with no script (F-CM-8)", async () => {
-    const base = sampleSite();
-    const site: SiteSnapshot = {
-      ...base,
-      layout: {
-        ...base.layout,
-        footer: base.layout.footer.map((node) => ({
-          ...node,
-          props: { ...node.props, text: "© {year} Hightown" },
-        })),
-      },
-    };
+  it(
+    "fills in {year} in every page's text, with no script (F-CM-8)",
+    async () => {
+      const base = sampleSite();
+      const site: SiteSnapshot = {
+        ...base,
+        layout: {
+          ...base.layout,
+          footer: base.layout.footer.map((node) => ({
+            ...node,
+            props: { ...node.props, text: "© {year} Hightown" },
+          })),
+        },
+      };
 
-    const result = await buildSite(site, siteLibrary, resources, { year: 2031 });
+      const result = await buildSite(site, siteLibrary, resources, { year: 2031 });
 
-    // The Thank you page hides the Footer.
-    for (const page of ["index.html", "about.html"]) {
-      expect(text(result, page)).toContain("© 2031 Hightown");
-      expect(text(result, page)).not.toContain("{year}");
-    }
-  }, 60_000);
+      // The Thank you page hides the Footer.
+      for (const page of ["index.html", "about.html"]) {
+        expect(text(result, page)).toContain("© 2031 Hightown");
+        expect(text(result, page)).not.toContain("{year}");
+      }
+    },
+    scaledTestTimeout(60_000),
+  );
 
   describe("AI-readable copies (F-EX-5)", () => {
     const readable = (address?: string): SiteSnapshot => ({
@@ -1218,40 +1336,52 @@ describe("buildSite: site files (3.5)", () => {
       },
     });
 
-    it("writes llms.txt and a Markdown copy of each page, as the reviewed golden files", async () => {
-      const result = await buildSite(readable(ADDRESS), siteLibrary, resources);
+    it(
+      "writes llms.txt and a Markdown copy of each page, as the reviewed golden files",
+      async () => {
+        const result = await buildSite(readable(ADDRESS), siteLibrary, resources);
 
-      await expect(text(result, "llms.txt")).toMatchFileSnapshot("golden/llms.txt");
-      await expect(text(result, "index.md")).toMatchFileSnapshot("golden/index.md");
-      await expect(text(result, "about.md")).toMatchFileSnapshot("golden/about.md");
-      expect(result.files.has("thanks.md")).toBe(true);
-      // Not the "Page not found" page.
-      expect(result.files.has("404.md")).toBe(false);
-    }, 60_000);
+        await expect(text(result, "llms.txt")).toMatchFileSnapshot("golden/llms.txt");
+        await expect(text(result, "index.md")).toMatchFileSnapshot("golden/index.md");
+        await expect(text(result, "about.md")).toMatchFileSnapshot("golden/about.md");
+        expect(result.files.has("thanks.md")).toBe(true);
+        // Not the "Page not found" page.
+        expect(result.files.has("404.md")).toBe(false);
+      },
+      scaledTestTimeout(60_000),
+    );
 
-    it("links from the site's root without a web address", async () => {
-      const result = await buildSite(readable(), siteLibrary, resources);
+    it(
+      "links from the site's root without a web address",
+      async () => {
+        const result = await buildSite(readable(), siteLibrary, resources);
 
-      expect(text(result, "llms.txt")).toContain("- [About us](/about.md)");
-      expect(text(result, "index.md")).toContain("](/about.html)");
-    }, 60_000);
+        expect(text(result, "llms.txt")).toContain("- [About us](/about.md)");
+        expect(text(result, "index.md")).toContain("](/about.html)");
+      },
+      scaledTestTimeout(60_000),
+    );
 
-    it("writes none when the setting is off, or in a preview", async () => {
-      const off = await buildSite(
-        {
-          ...readable(ADDRESS),
-          search: { allowIndexing: true, includeSitemap: true, readableByAi: false },
-        },
-        siteLibrary,
-        resources,
-      );
-      const previewed = await preview(readable(ADDRESS));
-
-      for (const result of [off, previewed]) {
-        expect([...result.files.keys()].filter((path) => /\.md$|llms\.txt$/.test(path))).toEqual(
-          [],
+    it(
+      "writes none when the setting is off, or in a preview",
+      async () => {
+        const off = await buildSite(
+          {
+            ...readable(ADDRESS),
+            search: { allowIndexing: true, includeSitemap: true, readableByAi: false },
+          },
+          siteLibrary,
+          resources,
         );
-      }
-    }, 60_000);
+        const previewed = await preview(readable(ADDRESS));
+
+        for (const result of [off, previewed]) {
+          expect([...result.files.keys()].filter((path) => /\.md$|llms\.txt$/.test(path))).toEqual(
+            [],
+          );
+        }
+      },
+      scaledTestTimeout(60_000),
+    );
   });
 });
