@@ -37,6 +37,14 @@ async function started() {
   return { server, port };
 }
 
+/**
+ * Resolves once `preview` holds a page asked for before its first build: its watchers are told in
+ * the same step, so the page is waiting then, however long the request took to arrive (#565).
+ */
+function held(preview: PreviewServer): Promise<void> {
+  return new Promise((resolve) => preview.onWatch(resolve));
+}
+
 /** A request to the server; resolves its status, headers and body. */
 function get(port: number, path: string, method = "GET", headers: Record<string, string> = {}) {
   return new Promise<{ status: number; type: string; etag: string; cache: string; body: string }>(
@@ -167,9 +175,10 @@ describe("the preview server (3.2)", () => {
     const { server: preview, port } = await started();
     let watched = 0;
     preview.onWatch(() => watched++);
+    const asked = held(preview);
 
     const waiting = get(port, preview.base);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await asked;
     expect(watched).toBe(1);
     preview.update(FIRST);
 
@@ -178,8 +187,9 @@ describe("the preview server (3.2)", () => {
 
   it("tells a page waiting for the first build at once when the build failed", async () => {
     const { server: preview, port } = await started();
+    const asked = held(preview);
     const waiting = get(port, preview.base);
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await asked;
 
     preview.failed();
 
