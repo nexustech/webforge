@@ -121,8 +121,11 @@ export function createSiteCheck(
   });
   const changeIgnored = (ignored: ReadonlySet<string>) => {
     show(ignored);
-    // The latest ignored, as many as a site remembers.
-    saveIgnored([...ignored].slice(-SITE_CHECK_IGNORED_MAX));
+    // The latest ignored, as many as a site remembers; one-time tips marked *Done* first, so they
+    // never come back.
+    const done = [...ignored].filter(isDone);
+    const others = [...ignored].filter((key) => !isDone(key));
+    saveIgnored([...done, ...others.slice(-(SITE_CHECK_IGNORED_MAX - done.length))]);
   };
 
   return {
