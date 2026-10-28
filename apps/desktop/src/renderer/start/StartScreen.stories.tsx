@@ -36,6 +36,7 @@ const example: TemplateSummary = {
   category: "food",
   example: true,
   pages: 2,
+  pageList: [],
   theme: "light",
   thumbnail: null,
 };

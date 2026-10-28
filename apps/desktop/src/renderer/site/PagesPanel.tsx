@@ -49,7 +49,7 @@ import {
 } from "./page-actions.js";
 
 /** A page recipe's name in the editor (QS-3), or its page's own title should it have none. */
-function recipeName(id: string, title: string): string {
+export function recipeName(id: string, title: string): string {
   const key = `recipe.${id}`;
   return isMessageKey(key) ? t(key) : title;
 }

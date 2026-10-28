@@ -19,6 +19,7 @@ Research supporting [`ideas.md`](../ideas.md).
 | 4 | [Project file format & versions](stack/06-project-file-format.md) | Researched | Single-file **SQLite `.wforge`**, periodic autosave, named + last-20 automatic versions; ZIP fallback; 1–2 day spike |
 | 5 | [Export pipeline (build & preview)](stack/07-export-pipeline.md) | ✅ Decided (X1–X6) | **In-app pipeline** (Puck render + Tailwind v4/daisyUI + esbuild + jSquash images) in a utilityProcess; same pipeline for live preview; no SSG |
 | 6 | [Publishing](stack/08-publishing.md) | ✅ Decided (B1–B5) | **Folder/ZIP + FTP/FTPS/SFTP + Netlify**; form service presets (Formspree, Web3Forms, FormSubmit, Netlify Forms, custom); GA4 + consent banner; hosting deferred |
+| 7 | [CI minutes if the repository goes private](stack/09-ci-minutes-private-repo.md) | ℹ️ Research for a later decision (CI-1…CI-6) | Three days of CI (25–28 Oct 2026) would count about 84,000 of GitHub Free's 2,000 monthly minutes if the repository were private, three quarters of it macOS. Proposed: stay public while three streams work; before going private, drop the merge queue's schedule, stop repeating unit tests on Windows and macOS, and move macOS to a schedule; then a self-hosted runner on the developer's PC with macOS weekly (an AWS Mac for about $90 a month, or GitHub's). Scheduled-only CI and AWS runners for all three systems (about $2,000–3,250 a month) are costed too |
 
 ## Product design
 | # | Topic | Status | Outcome |

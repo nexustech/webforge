@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import {
   BUSINESS_KINDS,
   BUSINESS_TYPES,
+  type BusinessType,
   DAYS,
   type Day,
   type MediaId,
@@ -42,8 +43,9 @@ export type SettingsForm = {
   readonly icon: MediaId | undefined;
   /** A back-to-top button on every page that doesn't hide it (F-CM-9). */
   readonly backToTop: boolean;
-  /** What kind of business, and its schema.org type within it (3.15, SEO-1); "" for none. */
-  readonly businessType: string;
+  /** The business type (SEO-9), or `""` for none chosen. */
+  readonly businessType: BusinessType | "";
+  /** Its schema.org type within it (3.15, SEO-1), or `""` for the type's own. */
   readonly businessKind: string;
   readonly url: string;
   readonly profiles: readonly {
