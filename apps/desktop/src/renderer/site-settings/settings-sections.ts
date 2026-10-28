@@ -16,9 +16,6 @@ import {
   X_HANDLE_MAX,
 } from "@webforge/model";
 
-/** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
-const VERIFICATION_PASTE_MAX = 300;
-
 import {
   DAYS,
   FORM_SERVICES,
@@ -28,6 +25,9 @@ import {
   type SettingsForm,
   settingsSchema,
 } from "./settings-form.js";
+
+/** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
+const VERIFICATION_PASTE_MAX = 300;
 
 /**
  * The contact details' fields, as Site Settings' *Contact & hours* has them (F-SET-1) and the quick

@@ -258,8 +258,10 @@ export const site = {
   "site.settings.bingVerification": "Bing verification code",
   "site.settings.bingVerificationHint":
     "From Bing Webmaster Tools (bing.com/webmasters), with its meta tag method: paste the code, or the whole tag.",
-  "site.settings.error.verification":
-    "That doesn't look like a verification code. Paste the code, or the whole <meta> tag the console shows.",
+  "site.settings.error.googleVerification":
+    "That isn't Google's verification code. Paste the code, or the whole google-site-verification tag from Google Search Console.",
+  "site.settings.error.bingVerification":
+    "That isn't Bing's verification code. Paste the code, or the whole msvalidate.01 tag from Bing Webmaster Tools.",
   "site.settings.readableByAiHint":
     "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",
   "site.settings.measurementId": "Google Analytics measurement ID",

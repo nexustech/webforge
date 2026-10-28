@@ -146,6 +146,7 @@ export {
   SOCIAL_NETWORKS,
   siteSettingsSchema,
   socialProfileSchema,
+  VERIFICATION_TAGS,
   verificationCodeOf,
   verificationCodeSchema,
   webAddressSchema,

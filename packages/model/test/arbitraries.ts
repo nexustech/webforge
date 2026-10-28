@@ -111,11 +111,15 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         hideHeader: fc.boolean(),
         hideFooter: fc.boolean(),
         hideFromNavigation: fc.boolean(),
+        hideFromSearch: fc.boolean(),
+        updated: fc
+          .date({ min: new Date("2026-01-01"), max: new Date("2030-12-31"), noInvalidDate: true })
+          .map((day) => day.toISOString().slice(0, 10)),
         text: anyText(80),
       },
       { requiredKeys: ["title", "hideHeader", "hideFooter", "hideFromNavigation", "text"] },
     )
-    .map(({ title, navLabel, description, text, ...flags }): PageEntry => {
+    .map(({ title, navLabel, description, text, updated, ...flags }): PageEntry => {
       const entry: PageEntry = {
         id: pageId as PageId,
         kind,
@@ -128,6 +132,8 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         },
       };
       if (navLabel !== undefined) entry.navLabel = navLabel;
+      // The day it last changed (3.15), as an edit dates a page.
+      if (updated !== undefined) entry.updated = updated;
       if (inFolder !== undefined) entry.folder = inFolder;
       return entry;
     });
