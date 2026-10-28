@@ -58,6 +58,8 @@ export function pagePreview(
   imageUrl: (image: ImageMeta) => string = thumbnailUrl,
 ): PagePreview {
   const slug = values.slug.trim() === "" ? page.slug : slugify(values.slug);
+  // An emptied title keeps the saved one, as saving does.
+  const title = values.title.trim() === "" ? page.title : values.title.trim();
   const path = pagePath({ ...page, slug }, site.homePageId);
   const web = exportedSiteAddress(site.settings.address.url);
   const own = values.description.trim();
@@ -65,7 +67,7 @@ export function pagePreview(
   const imageId = values.shareImage ?? site.settings.social.shareImage;
   const image = imageId === undefined ? undefined : site.media[imageId];
   return {
-    title: exportedTitle(site.settings.general.name, path, values.title.trim()),
+    title: exportedTitle(site.settings.general.name, path, title),
     address: web === undefined ? `${path}.html` : exportedAddress(web, path),
     host: web === undefined ? undefined : new URL(web).host,
     description: own !== "" ? own : siteDescription !== "" ? siteDescription : undefined,

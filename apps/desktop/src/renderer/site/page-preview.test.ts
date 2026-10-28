@@ -91,6 +91,16 @@ describe("pagePreview (3.16, SEO-6)", () => {
     });
   });
 
+  it("keeps the saved title while the title field is empty, as saving does", () => {
+    const site = bakery();
+    const page = site.pages[CAKES];
+    if (page === undefined) throw new Error("no page");
+
+    expect(pagePreview(site, page, { ...valuesOf(page), title: "  " }).title).toBe(
+      "Cakes | Rosa's Bakery",
+    );
+  });
+
   it("says why a page isn't in search results instead of drawing one", () => {
     const site = bakery();
     const page = site.pages[CAKES];
