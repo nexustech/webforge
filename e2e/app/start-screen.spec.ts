@@ -144,7 +144,8 @@ test("makes a Personal / CV site within its opening budget, accessible on the ca
 
   const opened = await measureWork(running());
   await newSite.getByRole("button", { name: "Create" }).click();
-  const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
+  // The name typed, in place of the template's sample person (QS-2, 3.11a).
+  const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Sam Lee" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
   expectWorkWithin(await opened(), openBudget(), "Opening the new Personal / CV site");
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
