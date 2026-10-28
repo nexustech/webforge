@@ -148,6 +148,38 @@ describe("createKindPreviews (3.12, CT-1)", () => {
     expect(compileCss).toHaveBeenCalledTimes(2);
   });
 
+  it("draws a preview that stays shown again when the look changes (#613)", async () => {
+    let current = { ...theme, looks: { Button: { lookCorners: "full" } } };
+    const listeners = new Set<() => void>();
+    const compileCss = vi.fn(async () => ({ status: "compiled" as const, css: "", bodyClass: "" }));
+    const previews = createKindPreviews({
+      library: siteLibrary,
+      theme: () => current,
+      compileCss,
+      subscribe: (listener) => {
+        listeners.add(listener);
+        return () => listeners.delete(listener);
+      },
+    });
+    const root = await shown(previews("Button"));
+    expect(root?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-full!");
+
+    // As Theme Studio's Components does: the same preview, shown on, while the look changes.
+    current = { ...current, looks: { Button: { lookCorners: "none" } } };
+    await act(async () => {
+      for (const listener of listeners) listener();
+    });
+    await act(async () => undefined);
+
+    expect(root?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-none!");
+    expect(compileCss).toHaveBeenCalledTimes(2);
+    // Other changes to the site draw nothing again.
+    await act(async () => {
+      for (const listener of listeners) listener();
+    });
+    expect(compileCss).toHaveBeenCalledTimes(2);
+  });
+
   it("draws nothing for a type the library doesn't have", async () => {
     const compileCss = vi.fn();
     const previews = createKindPreviews({ library: siteLibrary, theme: () => theme, compileCss });
