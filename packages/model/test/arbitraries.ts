@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import type { MediaId, MenuItemId, PageId, SharedSectionId } from "../src/ids.js";
 import type { LinkValue } from "../src/link.js";
+import type { Looks } from "../src/look.js";
 import type { MediaMeta } from "../src/media.js";
 import type { MenuItem } from "../src/menu.js";
 import type { SiteSettings } from "../src/settings.js";
@@ -26,6 +27,32 @@ const link = (pageIds: readonly string[]): fc.Arbitrary<LinkValue> =>
       { requiredKeys: ["kind", "number"] },
     ),
   ) as fc.Arbitrary<LinkValue>;
+
+/**
+ * The theme's looks by kind (3.12, CT-1), or none: values set once or per device, theme colours
+ * with a shade and opacity, a toggle and a hover row.
+ */
+const looks: fc.Arbitrary<Looks | undefined> = fc.option(
+  fc.dictionary(
+    fc.constantFrom("Button", "Heading", "Hero", "CallToAction"),
+    fc.record(
+      {
+        lookCorners: fc.constantFrom("none", "full"),
+        lookShadow: fc.oneof(
+          fc.constantFrom("default", "large"),
+          fc.constant({ $responsive: { desktop: "medium", mobile: "none" } }),
+        ),
+        lookBackground: fc.constantFrom("primary", "accent-300/80"),
+        lookItalic: fc.boolean(),
+        overlay: fc.constantFrom("20", "80"),
+        hover: fc.constantFrom("lift", "none"),
+      },
+      { requiredKeys: [] },
+    ),
+    { maxKeys: 3 },
+  ),
+  { nil: undefined },
+);
 
 const settings: fc.Arbitrary<SiteSettings> = fc.record({
   general: fc.record(
@@ -181,6 +208,7 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
         media,
         menu,
         settings,
+        looks,
         order: fc.shuffledSubarray(pageIds, {
           minLength: pageIds.length,
         }),
@@ -191,11 +219,16 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           media: items,
           menu: menuDoc,
           settings: siteSettings,
+          looks: themeLooks,
           order,
         }): SiteDoc => ({
           formatVersion: SITE_FORMAT_VERSION,
           settings: siteSettings,
-          theme: { ...DEFAULT_THEME, preset: "cupcake" },
+          theme: {
+            ...DEFAULT_THEME,
+            preset: "cupcake",
+            ...(themeLooks === undefined ? {} : { looks: themeLooks }),
+          },
           layout: { header: [], footer: [{ type: "Footer", props: { id: "footer", text: "©" } }] },
           pages: Object.fromEntries(entries.map((entry) => [entry.id, entry])),
           pageOrder: order as PageId[],

@@ -65,6 +65,8 @@ export {
 } from "./ids.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
+export type { ComponentLook, LookField, Looks } from "./look.js";
+export { componentLookSchema, LOOK_FIELDS, looksSchema } from "./look.js";
 export type {
   FileMeta,
   FileMimeType,
