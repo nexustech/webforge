@@ -86,6 +86,7 @@ export function siteToSnapshot(
         ? {}
         : { xHandle: site.settings.social.xHandle }),
     },
+    ...(Object.values(site.code).every((code) => code.trim() === "") ? {} : { code: site.code }),
   };
 }
 

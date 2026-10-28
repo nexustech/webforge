@@ -227,6 +227,133 @@ describe("buildSite: Custom Code (2.11, F-ED-15)", () => {
   );
 });
 
+describe("buildSite: the site's own code (F-ED-15, 3.9)", () => {
+  /** The sample site with `code`, and a page in a folder to check the paths from. */
+  const withCode = (code: SiteSnapshot["code"]): SiteSnapshot => {
+    const base = sampleSite();
+    return {
+      ...base,
+      pages: [
+        ...base.pages,
+        {
+          id: "cakes",
+          path: "services/cakes",
+          title: "Cakes",
+          doc: { root: { props: {} }, content: [] },
+        },
+      ],
+      code,
+    };
+  };
+
+  it(
+    "adds custom.css after the stylesheet, custom.js after webforge.js, and the HTML for every page's head and body",
+    async () => {
+      const css = ".sale {\n  color: red;\n}";
+      const js = "window.sold = true;";
+      const exported = await buildSite(
+        withCode({
+          css,
+          js,
+          head: '<meta name="verify" content="abc">',
+          bodyEnd: "<p>Thanks for visiting</p>",
+        }),
+        siteLibrary,
+        resources,
+      );
+
+      const cssPath = fileNamed(exported, /^assets\/css\/custom\.[0-9a-f]{10}\.css$/);
+      const jsPath = fileNamed(exported, /^assets\/js\/custom\.[0-9a-f]{10}\.js$/);
+      // As written: readable, never compiled or minified.
+      expect(text(exported, cssPath)).toBe(`${css}\n`);
+      expect(text(exported, jsPath)).toBe(`${js}\n`);
+      for (const [path, prefix] of [
+        ["index.html", ""],
+        ["services/cakes.html", "../"],
+      ] as const) {
+        const html = text(exported, path);
+        const head = html.slice(0, html.indexOf("</head>"));
+        const site = head.search(/assets\/css\/site\./);
+        const own = head.indexOf(`<link rel="stylesheet" href="${prefix}${cssPath}">`);
+        expect(site).toBeGreaterThan(-1);
+        expect(own).toBeGreaterThan(site);
+        const behaviours = head.search(/assets\/js\/webforge\./);
+        const script = head.indexOf(`<script defer src="${prefix}${jsPath}"></script>`);
+        expect(script).toBeGreaterThan(behaviours);
+        // The page's own HTML last in its head, and at the end of its body.
+        expect(head.trimEnd().endsWith('<meta name="verify" content="abc">')).toBe(true);
+        expect(html).toMatch(/<p>Thanks for visiting<\/p>\s*<\/body>/);
+      }
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "compiles the classes used only in the site's own code, however they're written",
+    async () => {
+      const base = withCode({
+        css: "",
+        js: 'document.body.classList.add("tracking-widest");',
+        head: "",
+        bodyEnd: "<p class=italic>Bye</p>",
+      });
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("no home page");
+      const custom: NodeDoc = {
+        type: "CustomCode",
+        props: { id: "custom", code: "<div class='underline decoration-wavy'>Sale</div>" },
+      };
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [{ ...home, doc: { ...home.doc, content: [...home.doc.content, custom] } }, ...rest],
+      };
+
+      const exported = await buildSite(site, siteLibrary, resources);
+
+      const css = text(exported, fileNamed(exported, /site\.[0-9a-f]+\.css$/));
+      for (const name of ["underline", "decoration-wavy", "italic", "tracking-widest"]) {
+        expect(css, name).toContain(`.${name}`);
+      }
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "says on which line custom.js has a mistake, and saves it as written",
+    async () => {
+      const js = "const sale = true;\nif (sale {\n  window.sold = true;\n}";
+
+      const exported = await buildSite(
+        withCode({ css: "", js, head: "", bodyEnd: "" }),
+        siteLibrary,
+        resources,
+      );
+
+      expect(exported.report.warnings).toContainEqual({
+        code: "custom-script",
+        page: "",
+        detail: "2",
+      });
+      expect(text(exported, fileNamed(exported, /^assets\/js\/custom\./))).toBe(`${js}\n`);
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "writes no files of the site's own when its code is empty",
+    async () => {
+      const exported = await buildSite(
+        withCode({ css: " \n", js: "", head: "", bodyEnd: "" }),
+        siteLibrary,
+        resources,
+      );
+
+      expect([...exported.files.keys()].filter((path) => path.includes("custom."))).toEqual([]);
+    },
+    scaledTestTimeout(60_000),
+  );
+});
+
 describe("buildSite: page settings", () => {
   it(
     "uses navigation labels, leaves hidden pages out of the menu and hides Header or Footer",
