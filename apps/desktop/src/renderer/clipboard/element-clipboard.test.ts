@@ -1,3 +1,4 @@
+import { plural } from "@webforge/i18n";
 import {
   type CopiedElements,
   copiedNodeId,
@@ -53,7 +54,9 @@ function fakeClipboard(held?: ClipboardReadResult) {
     read: vi.fn(
       async (_session: string): Promise<ClipboardReadResult> =>
         held ??
-        (copied === undefined ? { status: "empty" } : { status: "elements", elements: copied }),
+        (copied === undefined
+          ? { status: "empty" }
+          : { status: "elements", elements: copied, missingImages: 0 }),
     ),
   };
 }
@@ -133,6 +136,25 @@ describe("copy and paste (1.25)", () => {
     expect(second.history.document.getState().media).toEqual({});
   });
 
+  it("pastes the elements and says how many images couldn't come along, after a restart (#459)", async () => {
+    const hero: NodeDoc = { type: "Hero", props: { id: "hero", image: { mediaId: photo.id } } };
+    const paste = async (missingImages: number) => {
+      const session = sessionWith();
+      const notify = vi.fn();
+      const clipboard = fakeClipboard({
+        status: "elements",
+        elements: { nodes: [hero], media: [] },
+        missingImages,
+      });
+      expect(await pasteElements(session, clipboard, notify)).toBe(true);
+      return notify;
+    };
+
+    expect(await paste(0)).not.toHaveBeenCalled();
+    expect(await paste(1)).toHaveBeenCalledWith(plural("site.clipboard.imagesMissing", 1));
+    expect(await paste(2)).toHaveBeenCalledWith(plural("site.clipboard.imagesMissing", 2));
+  });
+
   it("keeps an image the site already has as it is", async () => {
     const session = sessionWith();
     addMedia(session, [{ ...photo, alt: "Changed since" }]);
@@ -140,6 +162,7 @@ describe("copy and paste (1.25)", () => {
     const clipboard = fakeClipboard({
       status: "elements",
       elements: { nodes: [hero], media: [photo] },
+      missingImages: 0,
     });
 
     await pasteElements(session, clipboard, vi.fn());
@@ -164,7 +187,11 @@ describe("copy and paste (1.25)", () => {
 
     await pasteElements(
       session,
-      fakeClipboard({ status: "elements", elements: { nodes: [section], media: [] } }),
+      fakeClipboard({
+        status: "elements",
+        elements: { nodes: [section], media: [] },
+        missingImages: 0,
+      }),
       vi.fn(),
     );
 
@@ -179,7 +206,11 @@ describe("copy and paste (1.25)", () => {
     expect(
       await pasteElements(
         session,
-        fakeClipboard({ status: "elements", elements: { nodes: [question], media: [] } }),
+        fakeClipboard({
+          status: "elements",
+          elements: { nodes: [question], media: [] },
+          missingImages: 0,
+        }),
         notify,
       ),
     ).toBe(false);
@@ -207,7 +238,11 @@ describe("copy and paste (1.25)", () => {
     expect(
       await pasteElements(
         session,
-        fakeClipboard({ status: "elements", elements: { nodes: [columns], media: [] } }),
+        fakeClipboard({
+          status: "elements",
+          elements: { nodes: [columns], media: [] },
+          missingImages: 0,
+        }),
         notify,
       ),
     ).toBe(false);
