@@ -117,6 +117,10 @@ describe("the app's name in the string catalogue (#450)", () => {
     expect(checkCatalogue(CATALOGUE, CATALOGUE)).toEqual([]);
   });
 
+  it("says so for a catalogue without app.name, rather than check for nothing", () => {
+    expect(() => checkCatalogue(join(FIXTURES, "pass"), FIXTURES)).toThrow(/No "app.name" message/);
+  });
+
   it("formats one line per message", () => {
     const message = formatAppNameViolations([
       { file: "en/site.ts", line: 3, where: "site.fileType", text: "Webforge site" },

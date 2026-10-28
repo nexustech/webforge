@@ -71,9 +71,13 @@ export function withBundleName(plist: string, name: string): string {
 /**
  * Names the development Electron bundle `name` (macOS only), given the path of its executable,
  * `Electron.app/Contents/MacOS/Electron`, and signs it again, ad hoc, as the change broke its
- * signature. Returns whether its Info.plist changed.
+ * signature (`sign`, given the bundle's path). Returns whether its Info.plist changed.
  */
-function nameElectronBundle(executable: string, name: string): boolean {
+export function nameElectronBundle(
+  executable: string,
+  name: string,
+  sign: (bundle: string) => void = signAdHoc,
+): boolean {
   const contents = dirname(dirname(executable));
   const plist = join(contents, "Info.plist");
   if (!existsSync(plist)) return false;
@@ -82,13 +86,16 @@ function nameElectronBundle(executable: string, name: string): boolean {
   if (after === before) return false;
   writeFileSync(plist, after);
   try {
-    execFileSync("codesign", ["--force", "--deep", "--sign", "-", dirname(contents)], {
-      stdio: "ignore",
-    });
+    sign(dirname(contents));
   } catch {
     // Unsigned, Electron still runs in development; sign-ins may ask for the keychain again.
   }
   return true;
+}
+
+/** Signs `bundle` ad hoc, as macOS's `codesign` does for a development build. */
+function signAdHoc(bundle: string): void {
+  execFileSync("codesign", ["--force", "--deep", "--sign", "-", bundle], { stdio: "ignore" });
 }
 
 if (import.meta.main) {
