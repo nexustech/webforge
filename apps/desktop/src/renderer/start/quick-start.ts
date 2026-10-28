@@ -11,6 +11,7 @@ import {
   brandedTheme,
   brandFromImage,
   hexToOklch,
+  type ImageColour,
   THEME_PRESETS,
   themePreset,
 } from "@webforge/themes";
@@ -19,12 +20,13 @@ import type { TemplateSummary } from "../../shared/ipc/templates.js";
 
 /**
  * The colours the quick start's last step chose (QS-1): the theme's own, another preset's brand
- * colours fitted to it, those of the person's logo, or one brand colour of their own.
+ * colours fitted to it, those of the person's logo (its main colours, fitted to whichever theme is
+ * chosen, as Theme Studio's palette from an image does), or one brand colour of their own.
  */
 export type QuickStartColours =
   | { readonly kind: "theme" }
   | { readonly kind: "palette"; readonly preset: string }
-  | { readonly kind: "logo"; readonly proposal: BrandProposal }
+  | { readonly kind: "logo"; readonly colours: readonly ImageColour[] }
   | { readonly kind: "colour"; readonly hex: string };
 
 /** What the person answered in the quick start (QS-1, 3.11b); each step's answers can be left. */
@@ -74,6 +76,37 @@ export const templatesOf = (
   category: TemplateCategory | null,
 ) => (category === null ? templates : templates.filter((each) => each.category === category));
 
+/**
+ * The answers with template `template` chosen (`null` for Blank): its theme, which can then be
+ * changed, and all its pages, since those left out were another template's.
+ */
+export const withTemplate = (
+  answers: QuickStartAnswers,
+  template: TemplateSummary | null,
+): QuickStartAnswers => ({
+  ...answers,
+  template: template?.id ?? null,
+  theme: template?.theme ?? answers.theme,
+  leaveOut: [],
+});
+
+/**
+ * The answers with business type `category` (QS-1: the answers drive the choices). The type's
+ * first template is chosen in place of one of another type; a template of the type stays, as does
+ * any while no type is chosen. The recipes ticked were the old type's, so none are.
+ */
+export function withCategory(
+  answers: QuickStartAnswers,
+  category: TemplateCategory | null,
+  templates: readonly TemplateSummary[],
+): QuickStartAnswers {
+  const next = { ...answers, category, recipes: [] };
+  const current = templates.find((each) => each.id === answers.template);
+  if (category === null || current?.category === category) return next;
+  const first = templatesOf(templates, category)[0];
+  return first === undefined ? next : withTemplate(next, first);
+}
+
 /** The page recipes the Pages step offers: the business type's, or none without a type. */
 export const recipesOffered = (category: TemplateCategory | null): readonly PageRecipe[] =>
   category === null ? [] : recipesFor(category);
@@ -98,11 +131,9 @@ export function brandFor(
     case "theme":
       return undefined;
     case "logo":
-      return colours.proposal;
-    case "colour": {
-      const color = hexToOklch(colours.hex);
-      return color === undefined ? undefined : brandFromImage([{ color, share: 1 }], theme);
-    }
+      return brandFromImage(colours.colours, theme);
+    case "colour":
+      return brandFromImage([{ color: hexToOklch(colours.hex), share: 1 }], theme);
     case "palette": {
       const preset = themePreset(colours.preset);
       if (preset === undefined) return undefined;
