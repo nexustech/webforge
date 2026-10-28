@@ -30,7 +30,7 @@ type Kind = { readonly type: string; readonly label: string };
  * holds, by the Add panel's categories (its sections together, as the Add panel lists them), and
  * the theme's card style.
  */
-export function lookKinds(
+function lookKinds(
   library: ComponentLibrary,
 ): readonly { readonly category: string; readonly kinds: readonly Kind[] }[] {
   const groups = new Map<string, Kind[]>();
