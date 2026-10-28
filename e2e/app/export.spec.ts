@@ -67,8 +67,9 @@ test.describe("Export site", () => {
     const report = page.getByRole("dialog", { name: "Site exported" });
     await expect(report).toBeVisible({ timeout: 30_000 });
     await expect(report).toContainText("Saved in the folder “my-site”.");
-    // The pages and their files, robots.txt, and llms.txt with the home page's Markdown copy (3.5).
-    await expect(report).toContainText(/Pages: \d+ · Files: 11 · Size: \d+/);
+    // The pages and their files and robots.txt; no llms.txt or Markdown copies, which a new site
+    // leaves off (3.15, SEO-12).
+    await expect(report).toContainText(/Pages: \d+ · Files: 9 · Size: \d+/);
     await expect(report).toContainText("Your site has no web address");
     // The progress toast is gone, with its Cancel button (3.1).
     await expect(
@@ -84,7 +85,8 @@ test.describe("Export site", () => {
     expect(index).toContain("Welcome to our business");
     expect(index).toMatch(/<script defer src="assets\/js\/webforge\.[0-9a-f]{10}\.js">/);
     expect(readFileSync(join(folder, "404.html"), "utf8")).toContain("<title>Page not found");
-    expect(readFileSync(join(folder, "llms.txt"), "utf8")).toContain("](/index.md)");
+    expect(existsSync(join(folder, "llms.txt"))).toBe(false);
+    expect(existsSync(join(folder, "index.md"))).toBe(false);
     expect(existsSync(join(folder, "robots.txt"))).toBe(true);
     expect(readdirSync(join(folder, "assets")).sort()).toEqual(["css", "fonts", "js"]);
     expect(existsSync(join(folder, ".webforge-export"))).toBe(true);
