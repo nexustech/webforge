@@ -891,6 +891,7 @@ describe("EditPanelHost", () => {
         classCss: (_theme, classes) =>
           Promise.resolve({ status: "css", css: classes.map(() => ".x{}") }),
         compileCss: () => Promise.resolve({ status: "failed" }),
+        itemHtml: () => Promise.resolve({ status: "failed" }),
       } satisfies CanvasApi;
       render(
         <FieldRenderersProvider

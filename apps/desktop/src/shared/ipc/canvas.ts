@@ -1,6 +1,11 @@
 import { type Theme, themeSchema } from "@webforge/model";
 import { z } from "zod";
-import { classNameSchema, MAX_CLASS_CSS } from "../export-worker-protocol.js";
+import {
+  classNameSchema,
+  type ItemHtmlRequest,
+  itemHtmlRequestSchema,
+  MAX_CLASS_CSS,
+} from "../export-worker-protocol.js";
 
 /** The classes the site uses and its theme: what the canvas styles are compiled from. */
 const canvasCssRequestSchema = z.strictObject({
@@ -57,6 +62,18 @@ const classCssResultSchema = z.discriminatedUnion("status", [
 export type ClassCssResult = z.infer<typeof classCssResultSchema>;
 
 /**
+ * An item's HTML as the export writes it (3.14): `""` for a hidden item, `null` when the page or the
+ * item isn't there; or a failure.
+ */
+const itemHtmlResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("html"), html: z.string().max(1_000_000).nullable() }),
+  z.strictObject({ status: z.literal("failed") }),
+]);
+
+/** An item's HTML as the export writes it. */
+export type ItemHtmlResult = z.infer<typeof itemHtmlResultSchema>;
+
+/**
  * Where compiled canvas CSS points for its fonts (2.2): the main process serves the installer's
  * font files through this scheme, as it serves Media images through `webforge-media:`.
  */
@@ -82,6 +99,12 @@ export const canvasChannels = {
     request: z.tuple([themeSchema, z.array(classNameSchema).max(MAX_CLASS_CSS)]),
     response: classCssResultSchema,
   },
+  /** An item of a page as the export writes it, for Advanced mode's CSS tab (3.14). */
+  itemHtml: {
+    channel: "canvas:item-html",
+    request: z.tuple([itemHtmlRequestSchema]),
+    response: itemHtmlResultSchema,
+  },
 } as const;
 
 /** `window.webforge.canvas`. */
@@ -92,4 +115,6 @@ export interface CanvasApi {
   classCatalogue(theme: Theme): Promise<ClassCatalogueResult>;
   /** The CSS each of `classes` produces with `theme` (at most 200 at once). */
   classCss(theme: Theme, classes: readonly string[]): Promise<ClassCssResult>;
+  /** An item of a page as the export writes it. */
+  itemHtml(request: ItemHtmlRequest): Promise<ItemHtmlResult>;
 }

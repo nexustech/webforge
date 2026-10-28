@@ -6,4 +6,5 @@ export const canvasApi = (call: Call): CanvasApi => ({
   compileCss: (request) => call("compileCanvasCss", request),
   classCatalogue: (theme) => call("classCatalogue", theme),
   classCss: (theme, classes) => call("classCss", theme, [...classes]),
+  itemHtml: (request) => call("itemHtml", request),
 });
