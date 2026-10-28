@@ -18,6 +18,7 @@ const CONTACT: NodeDoc = { type: "ContactDetails", props: { id: "details" } };
 function site(change: Partial<SiteSnapshot> = {}): SiteSnapshot {
   return {
     name: "Rosa's Bakery",
+    language: "en-GB",
     pages: [page("index"), page("visit", [CONTACT]), page("prices")],
     layout: { header: [], footer: [] },
     settings: {
@@ -25,6 +26,7 @@ function site(change: Partial<SiteSnapshot> = {}): SiteSnapshot {
       "contact.businessName": "Rosa's Bakery Ltd",
       "contact.phone": "+44 1234 567890",
       "contact.address": "1 High Street, Hightown",
+      "contact.email": "hello@rosas.example",
     },
     openingHours: [{ days: ["tue", "wed"], opens: "07:00", closes: "15:00" }],
     socialProfiles: [{ network: "instagram", url: "https://instagram.com/rosas" }],
@@ -71,19 +73,27 @@ describe("structured data (3.15, SEO-1)", () => {
       name: "Rosa's Bakery Ltd",
       description: "Fresh bread",
       url: `${ADDRESS}/`,
-      telephone: "+44 1234 567890",
       image: `${ADDRESS}/assets/img/shop-share.jpg`,
       sameAs: ["https://instagram.com/rosas"],
       priceRange: "££",
     });
   });
 
-  it("gives the hours and address only where the page shows them", () => {
+  it("gives the hours and contact details only where the page shows them", () => {
     // The home page doesn't; the page with Opening hours and contact does.
-    expect(dataOn(site(), "index")[1]).not.toHaveProperty("address");
+    for (const field of ["address", "telephone", "email", "openingHoursSpecification"]) {
+      expect(dataOn(site(), "index")[1], field).not.toHaveProperty(field);
+    }
     expect(dataOn(site(), "visit")).toEqual([
       expect.objectContaining({
-        address: "1 High Street, Hightown",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "1 High Street",
+          addressLocality: "Hightown",
+          addressCountry: "GB",
+        },
+        telephone: "+44 1234 567890",
+        email: "hello@rosas.example",
         openingHoursSpecification: [
           {
             "@type": "OpeningHoursSpecification",
@@ -108,8 +118,33 @@ describe("structured data (3.15, SEO-1)", () => {
       library: siteLibrary,
       shareImage: undefined,
     });
-    expect(business).toContain('"address": "1 High Street, Hightown"');
+    expect(business).toContain('"streetAddress": "1 High Street"');
     expect(business).not.toContain("openingHoursSpecification");
+    expect(business).not.toContain("telephone");
+
+    // Contact details not shown, as an email kept for forms: none of them.
+    const hoursOnly: NodeDoc = { type: "ContactDetails", props: { id: "d", showContact: false } };
+    const quiet = site({ pages: [page("index"), page("visit", [hoursOnly])] });
+    const [visit] = dataOn(quiet, "visit");
+    expect(visit).toHaveProperty("openingHoursSpecification");
+    for (const field of ["address", "telephone", "email"]) {
+      expect(visit, field).not.toHaveProperty(field);
+    }
+
+    // A field bound to the telephone shows it, and nothing else.
+    const call: NodeDoc = {
+      type: "Footer",
+      props: { id: "f", text: "", bindings: { text: "contact.phone" } },
+    };
+    const [, called] = structuredData({
+      site: site(),
+      page: home,
+      nodes: [call],
+      library: siteLibrary,
+      shareImage: undefined,
+    });
+    expect(called).toContain('"telephone": "+44 1234 567890"');
+    expect(called).not.toContain("email");
   });
 
   it("takes the type's own schema.org type when the kind isn't one of its, and LocalBusiness when unknown", () => {
@@ -121,6 +156,16 @@ describe("structured data (3.15, SEO-1)", () => {
     expect(dataOn(site({ business: undefined }), "index")[1]).toMatchObject({
       "@type": "LocalBusiness",
     });
+    // With no type and no address or hours, as a CV from the blank template: a website only.
+    const cv = site({
+      business: undefined,
+      settings: { "address.url": `${ADDRESS}/` },
+      openingHours: [],
+    });
+    expect(dataOn(cv, "index")).toEqual([expect.objectContaining({ "@type": "WebSite" })]);
+    // Hours alone are a place.
+    const open = site({ business: undefined, settings: {} });
+    expect(dataOn(open, "index")[1]).toMatchObject({ "@type": "LocalBusiness" });
   });
 
   it("marks a personal site up as a website only", () => {
@@ -159,7 +204,9 @@ describe("structured data (3.15, SEO-1)", () => {
       ],
     });
     expect(dataOn(twice, "visit")).toEqual([
-      expect.objectContaining({ address: "1 High Street, Hightown" }),
+      expect.objectContaining({
+        address: expect.objectContaining({ streetAddress: "1 High Street" }),
+      }),
     ]);
   });
 

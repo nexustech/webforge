@@ -8,6 +8,7 @@ import {
 } from "@webforge/model";
 import { type ComponentLibrary, walkNodes } from "@webforge/site-components";
 import { z } from "zod";
+import { postalAddressOf, postalAddressSchema } from "./postal-address.js";
 import { pageAddress, searchable, siteAddress } from "./site-files.js";
 
 /** schema.org's names for the days the opening hours keep. */
@@ -37,7 +38,7 @@ export const businessDataSchema = z.strictObject({
   url: z.url().optional(),
   telephone: z.string().optional(),
   email: z.string().optional(),
-  address: z.string().optional(),
+  address: postalAddressSchema.optional(),
   openingHoursSpecification: z
     .array(
       z.strictObject({
@@ -69,43 +70,50 @@ export const websiteDataSchema = z.strictObject({
   url: z.url().optional(),
 });
 
-/** What a page shows of the business: its opening hours, its address. */
-type Shown = { readonly hours: boolean; readonly address: boolean };
+/** The contact details a page can show, by their Site Settings key. */
+const CONTACT_KEYS = ["contact.address", "contact.phone", "contact.email"] as const;
+
+/** What a page shows of the business: its opening hours, and which of its contact details. */
+type Shown = { readonly hours: boolean; readonly contact: ReadonlySet<string> };
 
 /**
  * What `nodes`, a page as exported with its Header and Footer, show of the business: the opening
- * hours where *Opening hours and contact* shows them, the address there or where a field is bound
- * to it (a Heading, the Footer, a Map). Only what a page shows goes in its structured data.
+ * hours where *Opening hours and contact* shows them; the address, telephone and email there or
+ * where a field is bound to one (a Heading, the Footer, a Map, a button's link). Only what a page
+ * shows goes in its structured data (Google's rule), so an email kept for forms isn't published.
  */
 function shownOn(nodes: readonly NodeDoc[], library: ComponentLibrary): Shown {
   let hours = false;
-  let address = false;
+  const contact = new Set<string>();
   walkNodes(nodes, library, (node) => {
     if (node.type === "ContactDetails") {
       if (node.props.showHours !== false) hours = true;
-      if (node.props.showContact !== false) address = true;
+      if (node.props.showContact !== false) for (const key of CONTACT_KEYS) contact.add(key);
     }
     const bindings = node.props.bindings;
-    if (
-      bindings !== undefined &&
-      Object.keys(bindings as object).some(
-        (field) => bindingOf(bindings, field) === "contact.address",
-      )
-    ) {
-      address = true;
+    if (bindings !== undefined) {
+      for (const field of Object.keys(bindings as object)) {
+        const key = bindingOf(bindings, field);
+        if (key !== undefined) contact.add(key);
+      }
     }
   });
-  return { hours, address };
+  return { hours, contact };
 }
 
 /**
  * The schema.org type the business is marked up as (3.15, SEO-1): its chosen kind when that is
- * one of its type's, else its type's first; `LocalBusiness` when its type is unknown, none for a
- * personal site, which is no business.
+ * one of its type's, else its type's first; none for a personal site, which is no business. With
+ * no type, as a site from the blank template, `LocalBusiness` only when the site has an address
+ * or opening hours, the signs of a place: a CV or a hobby site is a website only.
  */
 function businessKindOf(site: SiteSnapshot): string | undefined {
   const type = site.business?.type;
-  if (type === undefined) return "LocalBusiness";
+  if (type === undefined) {
+    const placed =
+      site.settings?.["contact.address"] !== undefined || (site.openingHours ?? []).length > 0;
+    return placed ? "LocalBusiness" : undefined;
+  }
   const kinds: readonly string[] = BUSINESS_KINDS[type];
   const kind = site.business?.kind;
   return kind !== undefined && kinds.includes(kind) ? kind : kinds[0];
@@ -141,10 +149,10 @@ const jsonLd = (data: object) =>
 
 /**
  * The structured data the home page carries, and the contact page (3.15, SEO-1): the
- * business as schema.org's type for it (its name, description, address, telephone, opening
- * hours, picture, social profiles, price range and place on the map, and for a restaurant the
+ * business as schema.org's type for it (its name, description, postal address, telephone, email,
+ * opening hours, picture, social profiles, price range and place on the map, and for a restaurant the
  * page with its prices as its menu), and the website by its name on the home page. Built from Site
- * Settings, nothing typed twice; the hours and address only where the page shows them. None on
+ * Settings, nothing typed twice; the hours and contact details only where the page shows them. None on
  * other pages, and none for a page kept from search engines.
  */
 export function structuredData({
@@ -176,6 +184,11 @@ export function structuredData({
   const kind = businessKindOf(site);
   if (kind === undefined) return tags;
   const shown = shownOn(nodes, library);
+  /** A contact detail from Site Settings, when the page shows it. */
+  const shownValue = (key: (typeof CONTACT_KEYS)[number]) =>
+    shown.contact.has(key) ? settings[key] : undefined;
+  const typed = shownValue("contact.address");
+  const postal = typed === undefined ? undefined : postalAddressOf(typed, site.language);
   const hours = shown.hours ? (site.openingHours ?? []) : [];
   const menuPage =
     kind === "Restaurant" && address !== undefined ? firstPageWith(site, "Pricing") : undefined;
@@ -186,11 +199,11 @@ export function structuredData({
     name: settings["contact.businessName"] ?? site.name,
     ...(site.search?.description === undefined ? {} : { description: site.search.description }),
     ...(address === undefined ? {} : { url: `${address}/` }),
-    ...(settings["contact.phone"] === undefined ? {} : { telephone: settings["contact.phone"] }),
-    ...(settings["contact.email"] === undefined ? {} : { email: settings["contact.email"] }),
-    ...(shown.address && settings["contact.address"] !== undefined
-      ? { address: settings["contact.address"] }
-      : {}),
+    ...(shownValue("contact.phone") === undefined
+      ? {}
+      : { telephone: shownValue("contact.phone") }),
+    ...(shownValue("contact.email") === undefined ? {} : { email: shownValue("contact.email") }),
+    ...(postal === undefined ? {} : { address: postal }),
     ...(hours.length === 0
       ? {}
       : {
