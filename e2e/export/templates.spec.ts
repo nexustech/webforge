@@ -3,13 +3,29 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, type Page, test } from "@playwright/test";
 import { readTemplates } from "@webforge/templates/node";
-import { TEMPLATES_DIR } from "./exported-site.js";
+import { CHECK_TEMPLATES, TEMPLATES_DIR } from "./exported-site.js";
 
 // Every template, exported as a site made from it starts and opened from disk (file://) in
 // Chromium, Firefox and WebKit (and Edge on Windows) with the network blocked (3.10, X1, C8): no
 // request leaves the computer, every file a page names is there, its fonts and photos load, its
 // scripts run without an error, and its menu, lightbox and carousel work. "Page not found" is
 // left out: its links start at the site's root, for a host to serve (F-ED-20).
+
+/**
+ * Scrolls `page` to its bottom a screen at a time, then waits until nothing is loading: a request
+ * a page makes late, as something scrolls into view or on a timer, is caught on the page that made
+ * it.
+ */
+async function scrollThrough(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    for (let top = 0; top < document.documentElement.scrollHeight; top += window.innerHeight) {
+      window.scrollTo(0, top);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    window.scrollTo(0, document.documentElement.scrollHeight);
+  });
+  await page.waitForLoadState("networkidle");
+}
 
 /** What a page names: its links, stylesheets, scripts, pictures and their sources, resolved. */
 function namedFiles(page: Page): Promise<string[]> {
@@ -56,6 +72,8 @@ async function loadPictures(page: Page): Promise<string[]> {
   });
 }
 
+test.skip(!CHECK_TEMPLATES, "Nothing the templates are made from has changed");
+
 for (const { template } of readTemplates()) {
   test(`${template.id}: every page works from disk, with nothing fetched from elsewhere`, async ({
     page,
@@ -78,6 +96,8 @@ for (const { template } of readTemplates()) {
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(pathToFileURL(join(dir, path)).href);
       await page.waitForLoadState("load");
+      await scrollThrough(page);
+      expect(external, `${path}'s requests that left the computer`).toEqual([]);
 
       // Every file the page names is in the export, and every anchor it links to on its pages.
       for (const url of await namedFiles(page)) {
