@@ -505,14 +505,15 @@ jobs:
     # components, on Desktop and Mobile), and screenshots compared in a pinned Linux container so
     # fonts and anti-aliasing match the committed images (R8). Linux only, always. A pull request
     # shows the site components in the three development presets; the nightly run (and a manual
-    # one) in every preset too, with axe (2.16).
+    # one) in every preset too, with axe (2.16). A pull request has 30 minutes: the stories, the
+    # template thumbnails and every template's pages take about 20 by now (#608).
     name: Storybook (axe and screenshots)
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 20 || 60 }}
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 60 }}
     steps:
       - name: Check out
         uses: actions/checkout@v7
