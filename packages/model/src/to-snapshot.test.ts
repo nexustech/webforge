@@ -246,6 +246,17 @@ describe("siteToSnapshot", () => {
     ]);
   });
 
+  it("carries the site's own code, and leaves it out while it's all empty (3.9)", () => {
+    const site = bakery();
+    expect(siteToSnapshot(site, new Map())).not.toHaveProperty("code");
+
+    site.code = { css: ".sale { color: red; }", js: "", head: "  ", bodyEnd: "<p>Bye</p>" };
+    const snapshot = siteToSnapshot(site, new Map());
+
+    expect(snapshot.code).toEqual(site.code);
+    expect(siteSnapshotSchema.parse(snapshot).code).toEqual(site.code);
+  });
+
   it("skips ids in the page order that have no page", () => {
     const broken = { ...site, pageOrder: [...site.pageOrder, "ghost" as PageId] };
 
