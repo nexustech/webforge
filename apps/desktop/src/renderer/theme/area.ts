@@ -13,14 +13,18 @@ import { registerThemeCommands } from "./theme-commands.js";
  */
 export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",
-  register: ({ panels, commands, windowDialogs, session, siteWide }) => {
+  register: ({ panels, commands, windowDialogs, session, siteWide, kindPreviews }) => {
     const studio = createStudio();
     const ownThemes = createOwnThemes(() => window.webforge.themes, {
       notify: (message) => toast.error(message),
     });
     const removePanel = registerThemePanel(panels, session, siteWide, studio, ownThemes);
     const removeCommands = registerThemeCommands(commands, panels, studio);
-    const removeStudio = registerThemeStudio(windowDialogs, session, studio, siteWide, ownThemes);
+    const removeStudio = registerThemeStudio(windowDialogs, session, studio, {
+      siteWide,
+      ownThemes,
+      kindPreviews,
+    });
     const removeOwn = registerOwnThemes(windowDialogs, session, ownThemes);
     return () => {
       removeOwn();

@@ -4,18 +4,20 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  type FieldRendererProps,
+  type FieldRenderers,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useEffect } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
-import { addFontPreviews } from "../../fields/index.js";
+import { addFontPreviews, ColourField } from "../../fields/index.js";
 import type { SiteWideConfirm } from "../../shell/confirm-site-wide.js";
 import type { OwnThemes } from "../own-themes.js";
 import { useOwnThemeList } from "../own-themes-list.js";
@@ -24,6 +26,7 @@ import {
   createOwnTheme,
   renameOwnTheme,
   setBrandColours,
+  setLook,
   setPaletteColor,
   setTextStep,
   setToken,
@@ -31,6 +34,7 @@ import {
   type ThemeAsks,
 } from "../theme-edits.js";
 import { StudioColours } from "./StudioColours.js";
+import { StudioComponents } from "./StudioComponents.js";
 import { StudioImagePalette } from "./StudioImagePalette.js";
 import { StudioStyles } from "./StudioStyles.js";
 import { StudioText } from "./StudioText.js";
@@ -51,6 +55,8 @@ export type ThemeStudioProps = {
    * the first change to a built-in theme, which is read-only.
    */
   readonly ownThemes?: OwnThemes | undefined;
+  /** Each kind of section and element drawn in the theme, for Components (3.12). */
+  readonly kindPreviews?: ((type: string) => ReactNode) | undefined;
 };
 
 /**
@@ -61,10 +67,21 @@ export type ThemeStudioProps = {
  * and shadow scales drawn as samples. A theme or a colour is asked about first (D7); every change
  * is one labelled step in the site's history, so Ctrl/Cmd+Z undoes it here too (P5). The person's
  * own themes come first; the first change to a built-in theme saves their own version of it, by a
- * name they choose (2.23, PH2-17).
+ * name they choose (2.23, PH2-17). Components shows each kind's look, which every one of its kind
+ * takes unless it has its own (3.12).
  */
-export function ThemeStudio({ session, studio, siteWide, ownThemes }: ThemeStudioProps) {
-  const { open, section } = useStore(studio);
+export function ThemeStudio({
+  session,
+  studio,
+  siteWide,
+  ownThemes,
+  kindPreviews,
+}: ThemeStudioProps) {
+  const { open, section, kind } = useStore(studio);
+  // A look's colours are the theme's (ADR 0009): the colour field as Simple mode has it.
+  const [renderers] = useState<FieldRenderers>(() => ({
+    color: (props: FieldRendererProps<"color">) => <ColourField {...props} session={session} />,
+  }));
   const theme = useDocument(session, (site) => site.theme);
   const media = useDocument(session, (site) => site.media);
   const own = useOwnThemeList(ownThemes, theme);
@@ -160,6 +177,18 @@ export function ThemeStudio({ session, studio, siteWide, ownThemes }: ThemeStudi
             <StudioStyles
               theme={theme}
               onChange={(control, value) => void setToken(session, asks, control, value)}
+            />
+          </TabsContent>
+          <TabsContent value="components" className="min-h-0 overflow-auto pr-1">
+            <StudioComponents
+              theme={theme}
+              library={session.library}
+              kind={kind}
+              onKind={(next) => studio.setState({ kind: next })}
+              onChange={(type, item, change) => void setLook(session, asks, type, item, change)}
+              onToken={(control, value) => void setToken(session, asks, control, value)}
+              preview={kindPreviews}
+              renderers={renderers}
             />
           </TabsContent>
         </Tabs>
