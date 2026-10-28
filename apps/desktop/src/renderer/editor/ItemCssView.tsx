@@ -113,9 +113,16 @@ function Part({
   );
 }
 
-/** Code as it's written, kept on its lines and scrolled sideways rather than wrapped. */
+/**
+ * Code as it's written, kept on its lines and scrolled sideways rather than wrapped. Focusable, so
+ * keyboard users can scroll it (WCAG 2.1.1), as the app's scroll areas are.
+ */
 const Code = ({ children }: { readonly children: string }) => (
-  <pre className="max-h-64 overflow-auto rounded-md border border-border bg-muted/40 p-2 font-mono text-xs">
+  <pre
+    // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region keyboards must reach.
+    tabIndex={0}
+    className="max-h-64 overflow-auto rounded-md border border-border bg-muted/40 p-2 font-mono text-xs outline-none focus-visible:ring-2 focus-visible:ring-ring"
+  >
     {children}
   </pre>
 );
