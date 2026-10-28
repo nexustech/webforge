@@ -71,7 +71,8 @@ export async function fillNewSite(
   request: NewSiteRequest,
   template: TemplateReader,
 ): Promise<void> {
-  const theme = themePreset(request.theme) ?? DEFAULT_THEME;
+  // The quick start's own colours on the preset (3.11b), or the preset as it is.
+  const theme = request.themeTokens ?? themePreset(request.theme) ?? DEFAULT_THEME;
   const folder = template(request.template ?? BLANK_TEMPLATE_ID);
   for (const image of folder.images) {
     const outcome = await target.importFile(

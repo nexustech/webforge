@@ -238,6 +238,7 @@ describe("StartScreen", () => {
       category: "food",
       example: true,
       pages: 2,
+      pageList: [],
       theme: "bistro",
       thumbnail: null,
     };
@@ -269,6 +270,7 @@ describe("StartScreen", () => {
       category: "food",
       example: true,
       pages: 2,
+      pageList: [],
       theme: "light",
       thumbnail: null,
     };
@@ -300,6 +302,7 @@ describe("StartScreen", () => {
       category: "food",
       example: true,
       pages: 2,
+      pageList: [],
       theme: "light",
       thumbnail: null,
     };
