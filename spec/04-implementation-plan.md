@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 404.5 working days** (≈ 81 weeks of effort; 335 before the 22–27 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 412 working days** (≈ 82 weeks of effort; 335 before the 22–28 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -105,12 +105,14 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Scope change, 27 Oct 2026 (component theming, CT-1…CT-9):** +12.5 days from [product/11](../research/product/11-component-theming.md), three Phase 3 items: 3.12 on stream B after 3.7 (product owner, 27 Oct 2026), 3.13 and 3.14 on stream A after 3.11. 3.12 ([#528](https://github.com/nexustech/webforge/issues/528), 4 days) component looks in the theme with Theme Studio › Components and provenance on every Appearance control (CT-1, CT-3); 3.13 ([#529](https://github.com/nexustech/webforge/issues/529), 6.5 days) *Style this component…*, a dialog for any kind with a live preview, deeper groups including a gradient token and element padding, and the choice of this one, every one of its kind or the theme's look, the deeper groups in the dialog only (CT-2, CT-4, CT-5); 3.14 ([#530](https://github.com/nexustech/webforge/issues/530), 2 days) a read-only CSS view in Advanced mode (CT-7). The stylesheet editor is v1.1 (CT-8), per-item layout switches are not adopted (CT-6) and per-element CSS stays Later (CT-9). Phase 3 goes from 37.5 to 50 days. At the measured pace of 0.4–0.5 working days per estimated day, stream A's Phase 3 queue (3.2, 3.5, 3.11, 3.13, 3.14, 3.10 and the three chores #523–525, about 27 estimated days) takes about 11–14 working days from 28 Oct, when stream A began its Phase 3 items, so Phase 3's 20 Nov holds with a few days in hand; B's 3.12 fits after 3.7 in the same window.
 
+**Scope change, 28 Oct 2026 (being found, SEO-1…SEO-12):** +7.5 days from [product/12](../research/product/12-search-visibility.md), all twelve proposals adopted by the product owner. 3.5 had merged that morning ([#548](https://github.com/nexustech/webforge/pull/548), 1.5 actual days), so the proposals meant for it become a new item instead: 3.15 ([#575](https://github.com/nexustech/webforge/issues/575), 4 days, first in stream B's queue after chore [#563](https://github.com/nexustech/webforge/issues/563)) business details as `LocalBusiness` and `WebSite` structured data with a business type in Site Settings (SEO-1), *Hide this page from search engines* (SEO-2), the robots and sitemap rules, which replace 3.5's `Disallow: /` with `noindex` alone (SEO-3), a preloaded first picture (SEO-4), a verification-tag field (SEO-8) and `llms.txt` off by default in a *For AI tools* row (SEO-12, closing MVP §7 item 12); 3.16 ([#576](https://github.com/nexustech/webforge/issues/576), 1.5 days, stream B after 3.15) a search-result preview in Page Settings that absorbs the v1.1 share preview G22 (SEO-6); 3.17 ([#577](https://github.com/nexustech/webforge/issues/577), 1.5 days, stream C after 3.9) Site Check › *Being found* (SEO-7); and 3.11 +0.5 day for the quick start filling the business type and asking for the web address (SEO-9). SEO-5 and SEO-10 stay v1.1; SEO-11 is a rule. Phase 3 goes from 50 to 57.5 days and the total from 404.5 to 412. Stream B's Phase 3 items (3.8, 3.7, 3.12) had merged, and the same day the product owner moved 3.13 and 3.14 from stream A to B, so B's queue is now #563 → 3.15 → 3.16 → 3.13 → 3.14: 3.15 first because C's 3.17 waits for it, 3.16 with it since both are Page Settings work. That is about 14 estimated days, about 6–7 working days at the measured pace, so Phase 3's 20 Nov still holds; A keeps 3.11 and 3.10.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
-| [Phase 3: Output](#phase-3-output) | 50 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13) |
+| [Phase 3: Output](#phase-3-output) | 57.5 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every template's home page carries valid `LocalBusiness` structured data from its Site Settings, and Site Check's *Being found* rules run (3.15, 3.17) |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
@@ -209,10 +211,13 @@ gantt
     3.8 Google Analytics with consent banner :t3_8, 2027-08-17, 2d
     3.9 Custom code bundling and external-resource check :t3_9, 2027-08-19, 4d
     3.10 Exported-site compatibility E2E :crit, t3_10, 2027-08-25, 2d
-    3.11 Quick start – a new site from a few questions :t3_11, 2027-08-09, 5.5d
+    3.11 Quick start – a new site from a few questions :t3_11, 2027-08-09, 6d
     3.12 Component looks in the theme, provenance :t3_12, after t3_11, 4d
     3.13 Style this component… dialog :t3_13, after t3_12, 6.5d
     3.14 Advanced mode – read-only CSS view :t3_14, after t3_13, 2d
+    3.15 Being found – structured data, noindex, preload, verification :t3_15, after t3_12, 4d
+    3.16 Search-result preview in Page Settings :t3_16, after t3_15, 1.5d
+    3.17 Site Check – Being found :t3_17, after t3_9 t3_15, 1.5d
     section Phase 4
     4.1 Publish core – Publisher interface, manifests,… :crit, t4_1, 2027-08-27, 3d
     4.2 Netlify publisher and Netlify Forms :crit, t4_2, 2027-09-02, 4d
@@ -947,7 +952,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
-**Effort:** 50 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
+**Effort:** 57.5 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -961,20 +966,23 @@ The eight templates were built before the Appearance group. A light pass uses it
 | 3.8 | Google Analytics with consent banner | [#66](https://github.com/nexustech/webforge/issues/66) | pipeline | F-CM-3, B4, B7 | 2 | 1.17, 3.1 |
 | 3.9 | Custom code bundling and external-resource check | [#67](https://github.com/nexustech/webforge/issues/67) | pipeline | F-ED-15, C7, C8, [ADR 0005](../docs/adr/0005-export-pipeline-spike.md) | 4 | 3.1, 2.11, 3.6 |
 | 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
-| 3.11 | Quick start: a new site from a few questions | [#516](https://github.com/nexustech/webforge/issues/516) | shell | [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6, F-SITE-1, F-SET-1, SC-3, LF-11, PG-2 | 5.5 | 2.14, 2.15, 1.17, 2.21, 2.3b |
+| 3.11 | Quick start: a new site from a few questions | [#516](https://github.com/nexustech/webforge/issues/516) | shell | [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6, [product/12](../research/product/12-search-visibility.md) SEO-9, F-SITE-1, F-SET-1, SC-3, LF-11, PG-2 | 6 | 2.14, 2.15, 1.17, 2.21, 2.3b |
 | 3.12 | Component looks in the theme, and provenance on every Appearance control | [#528](https://github.com/nexustech/webforge/issues/528) | themes | [product/11](../research/product/11-component-theming.md) CT-1, CT-3, F-DS-7, F-ED-4, ST-1, ADR 0009 | 4 | 2.22, 2.3b, 2.23, 2.27 |
 | 3.13 | Style this component…: a dialog with a preview, deeper groups and where it applies | [#529](https://github.com/nexustech/webforge/issues/529) | shell | [product/11](../research/product/11-component-theming.md) CT-2, CT-4, CT-5, F-ED-4, F-DS-3, F-DS-7, ST-1, ST-2, ST-4, ST-5, D7 | 6.5 | 3.12, 2.26, 2.28, 2.21 |
 | 3.14 | Advanced mode: a read-only CSS view of the selected item | [#530](https://github.com/nexustech/webforge/issues/530) | shell | [product/11](../research/product/11-component-theming.md) CT-7, F-ED-11, F-ED-15, X4 | 2 | 3.13, 2.18, 3.3 |
+| 3.15 | Being found: structured data, hide a page from search, the first picture, verification | [#575](https://github.com/nexustech/webforge/issues/575) | pipeline | [product/12](../research/product/12-search-visibility.md) SEO-1…SEO-4, SEO-8, SEO-12, F-EX-6, F-SET-1, F-SET-2, F-EX-5, X3, X4 | 4 | 3.5, 1.17, 1.18, 3.6 |
+| 3.16 | A search-result preview in Page Settings | [#576](https://github.com/nexustech/webforge/issues/576) | shell | [product/12](../research/product/12-search-visibility.md) SEO-6, F-SET-2, G22 | 1.5 | 1.18, 3.5, 2.21 |
+| 3.17 | Site Check › Being found | [#577](https://github.com/nexustech/webforge/issues/577) | site-check | [product/12](../research/product/12-search-visibility.md) SEO-7, SEO-11, F-CHK-1, X5 | 1.5 | 3.6, 3.15, 1.18 |
 
-**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. The assignment changed no days; 3.11 joined stream A's queue on 27 Oct 2026 with its own scope change (§3).
+**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. The assignment changed no days; 3.11 joined stream A's queue on 27 Oct 2026 with its own scope change (§3), and 3.15–3.17 joined B's and C's on 28 Oct 2026 with theirs; the same day the product owner moved 3.13 and 3.14 from A to B.
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | 3.2 (preview server) → 3.5 (site files) → 3.11 (quick start, 27 Oct) → 3.13 (once B's 3.12 has merged) → 3.14 (component theming, 27 Oct) → 3.10 (compatibility E2E) |
-| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26~~ → 3.8 (Google Analytics, moved from C on 27 Oct 2026 while 3.7 waits for 3.6) → 3.7 (forms, once 3.6 has merged) → 3.12 (component looks in the theme, 27 Oct) |
-| C: History & canvas | 2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) |
+| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files)~~ → 3.11 (quick start, 27 Oct; +SEO-9 on 28 Oct) → 3.10 (compatibility E2E); 3.13 and 3.14 moved to B on 28 Oct 2026 (product owner) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12~~ → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E) → 3.15 (being found, 28 Oct) → 3.16 (search-result preview, 28 Oct) → 3.13 → 3.14 (component theming, moved from A on 28 Oct) |
+| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check)~~ → 3.9 (custom code) → 3.17 (Site Check › Being found, 28 Oct, once B's 3.15 has merged) |
 
-Two items wait on another stream: 3.7 (B) on 3.6 (C), and 3.13 (A) on 3.12 (B); 3.10 (A) waited on 3.3 and 3.4 (B), both merged. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
+One item waits on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue; 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1005,7 +1013,7 @@ Responsive widths, <picture> with WebP + JPEG (PNG if transparent), width/height
 - [ ] Derivatives cached by blob hash
 
 **3.5 Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt**  
-sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.txt, site.webmanifest, 404.html from the editable 404 page with `/`-rooted links and asset URLs (not the web address, so it works on any host's address; 28 Oct 2026 review of #548), Open Graph/Twitter tags, {year} token. Added 22 Oct 2026 (GA8, +1 day): *Help AI tools read your site* in Site Settings → Search engines (default per MVP §7 item 12) writes `llms.txt` and a Markdown copy of each page, leaving out the 404 page and hidden elements.
+sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.txt, site.webmanifest, 404.html from the editable 404 page with `/`-rooted links and asset URLs (not the web address, so it works on any host's address; 28 Oct 2026 review of #548), Open Graph/Twitter tags, {year} token. Added 22 Oct 2026 (GA8, +1 day): *Help AI tools read your site* in Site Settings → Search engines (default per MVP §7 item 12) writes `llms.txt` and a Markdown copy of each page, leaving out the 404 page and hidden elements. Merged 28 Oct 2026 ([#548](https://github.com/nexustech/webforge/pull/548)); the same day's SEO-3 and SEO-12 change two of its outputs in 3.15: robots.txt no longer `Disallow`s when indexing is off (the `noindex` does the work), and `llms.txt` is off by default.
 
 - [ ] Missing web address skips sitemap/canonical with a warning
 - [ ] 404.html works at a nested missing URL on a test server
@@ -1044,7 +1052,7 @@ Every template exported and opened from disk in Chromium, Firefox, WebKit (+ Edg
 - [ ] Runs in CI on PRs touching pipeline/components
 
 **3.11 Quick start: a new site from a few questions** (added 27 Oct 2026, [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6)  
-A first-time user answers a few questions and opens the editor on a site that is already theirs. **QS-1, four steps** as a dialog on the 2.21 form engine, in New Site's layout (LF-11) at the start screen's reading density (SC-1): *Your business* (business type from the seven template categories; *Business or site name*, filling the site name and the contact business name; *What you do*, one line into Site Settings' description); *A look* (the templates of that type as pictures with Details, *Try an example* where one exists, the theme); *Pages* (the template's pages ticked, the type's extras unticked); *Colours and details* (three or four palettes derived from the theme presets, *From my logo* through PG-2's palette from an image, a brand-colour picker; then the optional phone, email, address and opening hours). Every step can be skipped, every answer can be changed later, and the editor opens in < 3 s (F-SITE-1). **QS-2:** templates mark their sample business name and contact details, and a new site gets the person's answers in the copy as well as Site Settings, by binding the headings and footer text that carry the name where the component allows it and substituting the rest on creation; Blank and the examples are unchanged. **QS-3:** page recipes per business type (catalogue sections in the chosen theme with placeholder copy in the glossary's voice), also offered by the Pages panel's *Add page*. **QS-4:** SC-3's *Start a site* opens the quick start; New Site stays one link away. Rules: nothing the MVP can't use is asked (QS-5); contact details are last and optional (QS-6). Strings through `t()`, stories per step, a Playwright path from the start screen into the editor. Stream A after 3.5 (queue order, not a dependency: everything 3.11 needs is merged).
+A first-time user answers a few questions and opens the editor on a site that is already theirs. **QS-1, four steps** as a dialog on the 2.21 form engine, in New Site's layout (LF-11) at the start screen's reading density (SC-1): *Your business* (business type from the seven template categories; *Business or site name*, filling the site name and the contact business name; *What you do*, one line into Site Settings' description); *A look* (the templates of that type as pictures with Details, *Try an example* where one exists, the theme); *Pages* (the template's pages ticked, the type's extras unticked); *Colours and details* (three or four palettes derived from the theme presets, *From my logo* through PG-2's palette from an image, a brand-colour picker; then the optional phone, email, address and opening hours). Every step can be skipped, every answer can be changed later, and the editor opens in < 3 s (F-SITE-1). **QS-2:** templates mark their sample business name and contact details, and a new site gets the person's answers in the copy as well as Site Settings, by binding the headings and footer text that carry the name where the component allows it and substituting the rest on creation; Blank and the examples are unchanged. **QS-3:** page recipes per business type (catalogue sections in the chosen theme with placeholder copy in the glossary's voice), also offered by the Pages panel's *Add page*. **QS-4:** SC-3's *Start a site* opens the quick start; New Site stays one link away. Rules: nothing the MVP can't use is asked (QS-5); contact details are last and optional (QS-6). Strings through `t()`, stories per step, a Playwright path from the start screen into the editor. Stream A after 3.5 (queue order, not a dependency: everything 3.11 needs is merged). **SEO-9 (28 Oct 2026, +0.5 day, [product/12](../research/product/12-search-visibility.md)):** the business step's answer is stored as Site Settings' business type (the field 3.15's structured data reads; whichever item lands first adds it), and the last step says in one line what Webforge writes for search engines and asks for the web address there, so the export's prompt (X3) is rarely needed. No separate SEO wizard: the quick start plus 3.17 is Webforge's answer to the hosted builders' checklists.
 
 - [ ] *Start a site* opens the quick start; each step can be skipped, and Create at any step opens the editor in < 3 s
 - [ ] The name from step 1 is the site's name and the contact business name, and replaces the template's sample business in the headings and footer; step 4's contact details appear wherever the template bound them
@@ -1052,6 +1060,7 @@ A first-time user answers a few questions and opens the editor on a site that is
 - [ ] Step 4's palettes, *From my logo* and the brand colour change the theme tokens; a later theme switch keeps working
 - [ ] Blank, *Try an example* and New Site are unchanged, and New Site is reachable from the quick start
 - [ ] No request leaves the computer; nothing typed is logged
+- [ ] The business type is stored in Site Settings, and the web address typed on the last step is the site's (SEO-9)
 - [ ] Stories per step and the E2E path pass; `pnpm visual:docker` screenshots committed
 
 **3.12 Component looks in the theme, and provenance on every Appearance control** (added 27 Oct 2026, [product/11](../research/product/11-component-theming.md) CT-1, CT-3)  
@@ -1078,9 +1087,33 @@ A *CSS* tab in Advanced mode, in 3.13's dialog and the Advanced tab: the markup 
 - [ ] It updates as controls change; copy works; absent in Simple mode
 - [ ] Stories and axe
 
+**3.15 Being found: structured data, hide a page from search, the first picture, verification** (added 28 Oct 2026, [product/12](../research/product/12-search-visibility.md) SEO-1…SEO-4, SEO-8, SEO-12)
+**SEO-1:** the home page (and the Contact page, when there is one) carries readable JSON-LD (X4): a `LocalBusiness` from Site Settings (name, description, web address, telephone, postal address, opening hours as `openingHoursSpecification`, the share image, the social profiles as `sameAs`) and a `WebSite` with the site name. A **business type** field in Site Settings › Search engines, with the quick start's list (QS-1), picks the subtype: café → `CafeOrCoffeeShop`, restaurant → `Restaurant` with `servesCuisine` and `menu` pointing at the page with a Price list section, salon → `HairSalon` or `BeautySalon`, trades → `Plumber`, `Electrician`, `HomeAndConstructionBusiness`, consultant → `ProfessionalService`, shop → `Store`, otherwise `LocalBusiness`; optional `priceRange` and `geo` in *Contact details*. Only what the page shows is written: the hours and address appear only when a bound component shows them; never `aggregateRating` or `review`. Validated with zod; golden files per template. **SEO-2:** *Hide this page from search engines* in Page Settings: `noindex` on that page, left out of the sitemap, `llms.txt` and the Markdown copies, still linked; the hint says how it differs from *Hide from navigation*. **SEO-3:** *Let search engines show the site* off writes `noindex` on every page and leaves robots.txt allowing crawling (3.5's `Disallow: /` hides the `noindex`); the sitemap gains `lastmod` and leaves out hidden pages; no keywords tag, no hreflang, no `Google-Extended` block. **SEO-4:** the first picture above the fold gets `fetchpriority="high"` (and a preload link when the chosen source is known); the rest stay lazy. **SEO-8:** a *Verification tag* field (Google's `google-site-verification`, Bing's `msvalidate.01`) written as a meta tag. **SEO-12:** *Help AI tools read your site* moves to a *For AI tools* row with a hint that says what it is and is not, off by default for every site, templates included; the Markdown copies are written only with it; the field stays optional, so no format bump. Strings through `t()`; stories for the new fields; no network, no inline scripts (C8). First in stream B's queue after chore #563, since 3.17 waits for it.
+
+- [ ] Every template's home page carries `LocalBusiness` and `WebSite` JSON-LD from its Site Settings with the type's subtype, valid against the schema and Google's rules; hours and address only when a bound component shows them
+- [ ] A hidden page carries `noindex` and is missing from the sitemap, `llms.txt` and the `.md` copies; the site-wide switch off writes `noindex` everywhere and robots.txt still allows crawling
+- [ ] The first picture has `fetchpriority="high"`, the rest stay lazy; the verification tag appears once in every head
+- [ ] A new site has `llms.txt` off, in a *For AI tools* row; golden files updated; stories, axe and screenshots
+
+**3.16 A search-result preview in Page Settings** (added 28 Oct 2026, [product/12](../research/product/12-search-visibility.md) SEO-6; G22 moved from v1.1)
+A result card under the title and description in Page Settings: the title as the export writes it (*Page | Site name*, the site name alone on the home page), the page's address under the web address (or the file name without one), and the description (the site's when the page has none, said as such), updating as you type and truncating where a phone's result would, with the hint "Google shows about this much" and no counters or hard limits, since Google documents none. A second card shows the share preview: the share image (the site's as fallback) and the Open Graph title and description (G22). A page hidden from search (3.15) says so instead of a result. Strings through `t()`; stories for empty, long, inherited, hidden and no-web-address states; axe. Stream B after 3.15.
+
+- [ ] The result card matches the exported `<title>`, address and description with and without a page description
+- [ ] A long title or description is cut where a phone's result cuts it, with no error state or counter
+- [ ] The share card shows the page's share image, or the site's
+- [ ] Stories and axe; `pnpm visual:docker` screenshots committed
+
+**3.17 Site Check › Being found** (added 28 Oct 2026, [product/12](../research/product/12-search-visibility.md) SEO-7, SEO-11)
+A group of plain-language rules in `packages/site-check` beside the existing ones: a page without a description (Should fix; Fix opens Page Settings on that page); two pages with the same title or description (Should fix); a page with no main heading or several (Tip: "Search engines take the first heading as the page's subject"); the home page titled only "Home" (Tip); the business type set but no address, phone or hours (Tip, from 3.15's data); the web address rule reworded to say what it costs (no sitemap, previews or structured data); and two one-time tips once the web address is set, each with a link and *Done*: set up or check your Google Business Profile, and verify the site in Google Search Console (3.15's tag). No rule for keywords, density, heading order or character limits, now or later (SEO-11). A unit test per rule; strings through `t()`. Stream C after 3.9, once 3.15 has merged.
+
+- [ ] Each rule fires on its failing fixture and stays quiet on its passing one; the one-time tips appear once the web address is set and stay dismissed after *Done*
+- [ ] Fix on the description rule opens Page Settings on that page
+- [ ] No rule mentions keywords, density, heading order or a character limit
+- [ ] Stories for the group in the panel; axe
+
 </details>
 
-**Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works; a site made by the quick start carries the person's name, pages, colours and contact details (3.11, QS-1…QS-4); a kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13).
+**Phase exit:** Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests; Site Check blocks only Must-fix issues on export; Preview CSS hot-swap < 100 ms; phone preview via QR works; a site made by the quick start carries the person's name, pages, colours and contact details (3.11, QS-1…QS-4); a kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13); every template's home page carries valid `LocalBusiness` structured data from its Site Settings, and Site Check's *Being found* rules run (3.15, 3.17).
 
 ### Phase 4: Publish & versions
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
@@ -1307,15 +1340,16 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-DS-5 | Animations | 2.12, 2.28 |
 | F-DS-6 | Sticky header | 2.6 |
 | F-DS-7 | Theme Studio | 2.3, 3.12 |
-| F-SET-1 | Site Settings | 1.17 |
-| F-SET-2 | Page Settings | 1.18 |
-| F-CHK-1 | Site Check | 3.6 |
+| F-SET-1 | Site Settings | 1.17, 3.15 |
+| F-SET-2 | Page Settings | 1.18, 3.15, 3.16 |
+| F-CHK-1 | Site Check | 3.6, 3.17 |
 | F-PV-1 | Preview | 3.2 |
 | F-EX-1 | Export | 3.3 |
 | F-EX-2 | Image output | 3.4 |
 | F-EX-3 | Readable output | 3.3 |
 | F-EX-4 | Include developer files | 3.3 |
-| F-EX-5 | AI-readable copies | 3.5 |
+| F-EX-5 | AI-readable copies | 3.5, 3.15 |
+| F-EX-6 | Being found | 3.15 |
 | F-PB-1 | Publish destinations | 0.2, 4.2, 4.4 |
 | F-PB-2 | Publish | 0.2, 4.5 |
 | F-PB-3 | Republish a version | 4.6 |
