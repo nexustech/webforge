@@ -21,10 +21,20 @@ export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
-export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
+export type {
+  BundledFile,
+  LayoutDoc,
+  NodeAdvanced,
+  NodeDoc,
+  PageDoc,
+  SiteCode,
+  Theme,
+} from "./documents.js";
 export {
   anchorsIn,
   attributeNameSchema,
+  BUNDLED_FILE_MAX,
+  bundledFileSchema,
   classNamesSchema,
   isNodeDoc,
   LAYER_NAME_MAX,

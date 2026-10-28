@@ -125,7 +125,12 @@ export function describeDetail(finding: Finding): string | undefined {
     return t("siteCheck.detail.size", { width: values.width, height: values.height });
   }
   if (typeof values.bytes === "number") return megabytes(values.bytes);
-  // The address of a file from another website (3.9), as the code has it.
-  if (typeof values.url === "string") return values.url;
+  // The address of a file from another website (3.9), as the code has it. An http:// one can't be
+  // allowed, as Settings take https:// addresses only, so it says what to do instead.
+  if (typeof values.url === "string") {
+    return /^http:\/\//i.test(values.url)
+      ? t("siteCheck.detail.insecure", { url: values.url })
+      : values.url;
+  }
   return undefined;
 }
