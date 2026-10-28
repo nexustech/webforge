@@ -106,8 +106,9 @@ jobs:
           # E2E isn't needed when a PR changes only unit tests, stories, screenshots, the repo's
           # tooling (tools/) or lint and test configuration.
           unit_only='(\.test\.tsx?|\.test-helper\.ts|\.stories\.tsx|\.snap|vitest\.config\.ts)$|^packages/[^/]+/test/|^e2e/visual/|^tools/|^(biome\.jsonc?|knip\.jsonc|\.dependency-cruiser\.mjs|lefthook\.yml)$'
-          # What the exported site is made from: Firefox and WebKit open it in the export tests.
-          export_site='^(packages/(site-components|pipeline|model|test-utils)/|e2e/export/|e2e/playwright\.config\.ts$|e2e/package\.json$)'
+          # What the exported sites are made from: the fixture and every template (3.10), which
+          # Firefox and WebKit open in the export tests.
+          export_site='^(packages/(site-components|pipeline|model|test-utils|templates)/|e2e/export/|e2e/playwright\.config\.ts$|e2e/package\.json$)'
           # What the editor UI's and the site components' stories render (.storybook/main.ts and
           # their imports), and the templates' thumbnails (the pipeline's export of each, 2.14b).
           storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components|themes|pipeline|templates)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
@@ -381,9 +382,12 @@ jobs:
         shell: bash
         run: |
           # With Chromium only, run the app and the Chromium export tests (Firefox and WebKit run
-          # in `export-browsers` on Linux, or not at all when the exported site can't have changed).
+          # in `export-browsers` on Linux, or not at all when the exported site can't have changed),
+          # and on Windows Edge's too, which comes with Windows (3.10).
           if [ "$BROWSERS" = chromium ]; then
-            echo "args=--project=app --project=export-setup --project=export-chromium" >> "$GITHUB_OUTPUT"
+            edge=""
+            if [ "$RUNNER_OS" = Windows ]; then edge=" --project=export-msedge"; fi
+            echo "args=--project=app --project=export-setup --project=export-chromium$edge" >> "$GITHUB_OUTPUT"
           fi
 
       # Playwright splits the tests across the matrix's shards by file (the export setup goes with

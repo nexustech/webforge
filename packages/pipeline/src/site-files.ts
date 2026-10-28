@@ -1,8 +1,10 @@
 import {
+  exportedAddress,
+  exportedSiteAddress,
+  exportedTitle,
   type SitePage,
   type SiteSnapshot,
   VERIFICATION_TAGS,
-  webAddressSchema,
 } from "@webforge/model";
 import { escapeHtml, type SiteIcon } from "./html.js";
 
@@ -15,19 +17,16 @@ export const NOT_FOUND_PATH = "404";
  * pages' links as it is.
  */
 export function siteAddress(site: SiteSnapshot): string | undefined {
-  const url = webAddressSchema.safeParse(site.settings?.["address.url"]);
-  return url.success ? url.data.replace(/\/+$/, "") : undefined;
+  return exportedSiteAddress(site.settings?.["address.url"]);
 }
 
 /** A page's title, in its browser tab and when it's shared: the site's name for the home page. */
 export function pageTitle(site: SiteSnapshot, page: SitePage): string {
-  return page.path === "index" ? site.name : `${page.title} | ${site.name}`;
+  return exportedTitle(site.name, page.path, page.title);
 }
 
 /** `page`'s address under the site's: the home page is the address itself (`…/`). */
-function pageAddress(address: string, path: string): string {
-  return path === "index" ? `${address}/` : `${address}/${path}.html`;
-}
+const pageAddress = exportedAddress;
 
 /** The site's search settings, with what a snapshot without them means. */
 export function searchOf(site: SiteSnapshot): NonNullable<SiteSnapshot["search"]> {
@@ -152,7 +151,8 @@ export function robotsTxt(site: SiteSnapshot): string {
 }
 
 /** Whether `page` is one search engines are told about: not "Page not found" nor hidden (SEO-2). */
-const searchable = (page: SitePage) => page.path !== NOT_FOUND_PATH && page.hideFromSearch !== true;
+export const searchable = (page: SitePage) =>
+  page.path !== NOT_FOUND_PATH && page.hideFromSearch !== true;
 
 /**
  * `sitemap.xml` (3.5): every page's address but the "Page not found" page's and those hidden from

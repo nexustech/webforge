@@ -10,6 +10,9 @@ function bakery(): SiteDoc {
     name: "Rosa's Bakery",
     description: "Fresh bread in Hightown",
     language: "en-GB",
+    // A bakery, more precisely than food and drink (3.15, SEO-1).
+    businessType: "food",
+    businessKind: "Bakery",
   };
   site.settings.contact = {
     email: "hello@rosasbakery.co.uk",
@@ -32,7 +35,7 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** General: name, description, language and icon. */
+/** General: name, description, language, icon and the business type. */
 export const General: Story = {};
 
 /** Contact details and opening hours. */
@@ -41,7 +44,7 @@ export const Contact: Story = { args: { initialSection: "contact" } };
 /** Social profiles and the share image. */
 export const Social: Story = { args: { initialSection: "social" } };
 
-/** Search engines: the switches, and the Google and Bing verification codes (3.15). */
+/** Search engines: the switches and the verification codes (3.15). */
 export const SearchEngines: Story = {
   args: {
     initialSection: "search",

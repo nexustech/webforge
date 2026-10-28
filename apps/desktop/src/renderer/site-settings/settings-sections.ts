@@ -1,14 +1,17 @@
 import type { FormField, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  BUSINESS_KINDS,
   BUSINESS_NAME_MAX,
   BUSINESS_TYPES,
+  type BusinessKind,
   CONSENT_MESSAGE_MAX,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,
   POSTAL_ADDRESS_MAX,
+  PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
   SITE_NAME_MAX,
   type SiteSettings,
@@ -99,12 +102,35 @@ function imageField(
   };
 }
 
+/**
+ * The schema.org type within the chosen kind of business (3.15, SEO-1): offered when the kind has
+ * more than one, its first meaning "none more precise".
+ */
+function businessKindField(typed: string): FormField[] {
+  const type = BUSINESS_TYPES.find((each) => each === typed);
+  const kinds: readonly BusinessKind[] = type === undefined ? [] : BUSINESS_KINDS[type];
+  if (kinds.length < 2) return [];
+  return [
+    {
+      kind: "select",
+      name: "businessKind",
+      path: "general.businessKind",
+      label: t("site.settings.businessKind"),
+      width: "md",
+      options: kinds.map((kind, index) => ({
+        label: t(`site.settings.businessKind.${kind}`),
+        value: index === 0 ? "" : kind,
+      })),
+    },
+  ];
+}
+
 /** Site Settings' sections, in the dialog's order, each a group of the form's fields. */
 function sections(media: SettingsMedia): readonly SettingsSection[] {
   return [
     {
       id: "general",
-      fields: () => [
+      fields: (values) => [
         { kind: "text", name: "name", label: t("site.settings.name"), maxLength: SITE_NAME_MAX },
         {
           kind: "text",
@@ -144,6 +170,16 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
               value: type,
             })),
           ],
+        },
+        // Its schema.org type, beside it (3.15, SEO-1).
+        ...businessKindField(values.businessType),
+        // For AI tools, not search engines, so not with them (3.15, SEO-12): off unless turned on.
+        {
+          kind: "toggle",
+          name: "readableByAi",
+          path: "search.readableByAi",
+          label: t("site.settings.readableByAi"),
+          help: t("site.settings.readableByAiHint"),
         },
       ],
     },
@@ -228,6 +264,32 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           help: t("site.settings.openingHoursNoteHint"),
           maxLength: OPENING_HOURS_NOTE_MAX,
         },
+        // For search engines' business details (3.15, SEO-1).
+        {
+          kind: "text",
+          name: "priceRange",
+          label: t("site.settings.priceRange"),
+          help: t("site.settings.priceRangeHint"),
+          maxLength: PRICE_RANGE_MAX,
+          width: "sm",
+        },
+        {
+          kind: "text",
+          name: "latitude",
+          path: "contact.geo.latitude",
+          label: t("site.settings.latitude"),
+          help: t("site.settings.geoHint"),
+          maxLength: 20,
+          width: "sm",
+        },
+        {
+          kind: "text",
+          name: "longitude",
+          path: "contact.geo.longitude",
+          label: t("site.settings.longitude"),
+          maxLength: 20,
+          width: "sm",
+        },
       ],
     },
     {
@@ -235,12 +297,6 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
       fields: () => [
         { kind: "toggle", name: "allowIndexing", label: t("site.settings.allowIndexing") },
         { kind: "toggle", name: "includeSitemap", label: t("site.settings.includeSitemap") },
-        {
-          kind: "toggle",
-          name: "readableByAi",
-          label: t("site.settings.readableByAi"),
-          help: t("site.settings.readableByAiHint"),
-        },
         // Proof the site is the owner's, for each console (3.15, SEO-8): no account here.
         {
           kind: "text",

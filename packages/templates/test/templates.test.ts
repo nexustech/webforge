@@ -307,6 +307,28 @@ describe("the image-licence manifest (S5)", () => {
 });
 
 describe("siteFromTemplate (2.14a)", () => {
+  it("leaves AI tools' copies off, as every new site has them (3.15, SEO-12)", () => {
+    for (const { template, images } of templates) {
+      const site = siteFromTemplate(template, images, { name: "x", theme: DEFAULT_THEME });
+      expect(site.settings.search.readableByAi === true, template.id).toBe(false);
+    }
+  });
+
+  it("gives the site its template's kind of business, for its structured data (3.15)", () => {
+    for (const { template, images } of templates) {
+      const site = siteFromTemplate(template, images, { name: "x", theme: DEFAULT_THEME });
+      expect(site.settings.general.businessType, template.id).toBe(template.category ?? undefined);
+    }
+    // One the template sets itself is kept.
+    const [{ template, images }] = templates as [(typeof templates)[number]];
+    const own = structuredClone(template);
+    own.site.settings.general.businessType = "shop";
+    expect(
+      siteFromTemplate(own, images, { name: "x", theme: DEFAULT_THEME }).settings.general
+        .businessType,
+    ).toBe("shop");
+  });
+
   it("makes the template's site, named and in the chosen theme, with its images in Media", () => {
     const [{ template, images }] = templates as [(typeof templates)[number]];
     const theme = THEME_PRESETS.find((preset) => preset.preset === "dark") ?? DEFAULT_THEME;

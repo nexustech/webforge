@@ -78,6 +78,7 @@ export function siteToSnapshot(
     settings: settingValues(site.settings),
     openingHours: site.settings.contact.openingHours,
     socialProfiles: site.settings.social.profiles,
+    ...businessOf(site),
     formService: site.settings.forms.service,
     backToTop: site.settings.general.backToTop,
     menu: site.menu,
@@ -97,7 +98,7 @@ export function siteToSnapshot(
         ? {}
         : { verification: site.settings.search.verification }),
     },
-    ...(Object.values(site.code).every((code) => code.trim() === "") ? {} : { code: site.code }),
+    ...(hasCode(site.code) ? { code: site.code } : {}),
   };
 }
 
@@ -112,4 +113,23 @@ function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "
       ...(consentMessage === undefined ? {} : { consentMessage }),
     },
   };
+}
+
+/** Whether `code` has any code of its own: the bundled files only serve it. */
+const hasCode = ({ css, js, head, bodyEnd }: SiteDoc["code"]) =>
+  [css, js, head, bodyEnd].some((code) => code.trim() !== "");
+
+/** The site's business details for its structured data (3.15, SEO-1), when it has any. */
+function businessOf(site: SiteDoc): { business?: NonNullable<SiteSnapshot["business"]> } {
+  const { businessType, businessKind } = site.settings.general;
+  const { priceRange, geo } = site.settings.contact;
+  const business = {
+    ...(businessType === undefined ? {} : { type: businessType }),
+    ...(businessKind === undefined ? {} : { kind: businessKind }),
+    ...(priceRange === undefined || priceRange.trim() === ""
+      ? {}
+      : { priceRange: priceRange.trim() }),
+    ...(geo === undefined ? {} : { geo }),
+  };
+  return Object.keys(business).length === 0 ? {} : { business };
 }

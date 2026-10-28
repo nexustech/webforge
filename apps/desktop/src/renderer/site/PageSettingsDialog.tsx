@@ -1,6 +1,7 @@
 import { FormDialog, type FormField, type FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  type ImageMeta,
   isImageMeta,
   type MediaId,
   PAGE_DESCRIPTION_MAX,
@@ -13,9 +14,9 @@ import {
   slugSchema,
 } from "@webforge/model";
 import { z } from "zod";
-import { MEDIA_SCHEME } from "../../shared/ipc/media.js";
 import "../shell/form-messages.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
+import { pagePreview, SearchResultCard, ShareCard, thumbnailUrl } from "./page-preview.js";
 
 /** Props of {@link PageSettingsDialog}. */
 export type PageSettingsDialogProps = {
@@ -25,6 +26,8 @@ export type PageSettingsDialogProps = {
   readonly page: PageEntry | undefined;
   readonly onSave: (change: PageSettingsChange) => void;
   readonly onCancel: () => void;
+  /** A Media image's thumbnail; the app's, unless a story draws its own. */
+  readonly imageUrl?: (image: ImageMeta) => string;
 };
 
 /** What the dialog edits: each value as typed. */
@@ -60,11 +63,13 @@ const pageSettingsFormSchema = z.object({
 
 /**
  * Page Settings as a form (F-SET-2, 2.21): the title and description, the file name (fixed for
- * the Home page and "Page not found"), the share image, and what the page leaves out.
+ * the Home page and "Page not found"), the share image, and what the page leaves out; with the page
+ * as a search result and as a shared link (3.16).
  */
 export function pageSettingsSpec(
   site: SiteDoc,
   page: PageEntry,
+  imageUrl: (image: ImageMeta) => string = thumbnailUrl,
 ): FormSpec<PageValues, z.infer<typeof pageSettingsFormSchema>> {
   const fixedFile =
     page.id === site.homePageId
@@ -111,7 +116,7 @@ export function pageSettingsSpec(
         options: images.map((image) => ({
           value: image.id,
           label: image.name,
-          thumbnail: `${MEDIA_SCHEME}://thumbnail/${image.hash}`,
+          thumbnail: imageUrl(image),
         })),
         ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
       },
@@ -145,6 +150,15 @@ export function pageSettingsSpec(
           ]
         : []),
     ],
+    // The page as a search result under its description, and as a shared link under its share
+    // image, as the export will write them, updating as the person types (3.16).
+    after: (values) => {
+      const preview = pagePreview(site, page, values, imageUrl);
+      return {
+        description: <SearchResultCard preview={preview} />,
+        shareImage: <ShareCard preview={preview} />,
+      };
+    },
     schema: pageSettingsFormSchema,
     toModel: (values) => ({
       ...values,
@@ -167,6 +181,7 @@ export function PageSettingsDialog({
   page,
   onSave,
   onCancel,
+  imageUrl = thumbnailUrl,
 }: PageSettingsDialogProps) {
   if (page === undefined) return null;
   const fixed = page.id === site.homePageId || page.kind === "not-found";
@@ -176,7 +191,7 @@ export function PageSettingsDialog({
       title={t("pageSettings.title", { name: page.title })}
       description={t("pageSettings.description")}
       confirm={t("pageSettings.save")}
-      spec={pageSettingsSpec(site, page)}
+      spec={pageSettingsSpec(site, page, imageUrl)}
       initial={{
         title: page.title,
         // A fixed file name shows as it is ("index.html").
