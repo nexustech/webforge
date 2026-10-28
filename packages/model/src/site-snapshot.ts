@@ -178,7 +178,7 @@ export type SiteSearch = {
 };
 
 /** {@link SiteSearch}'s verification codes, by search engine. */
-export type SiteVerification = {
+type SiteVerification = {
   readonly google?: string | undefined;
   readonly bing?: string | undefined;
 };
