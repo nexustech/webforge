@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { NodeDoc, SiteDoc } from "@webforge/model";
 import { afterEach, describe, expect, it } from "vitest";
@@ -61,6 +61,37 @@ const groups = () =>
     );
 
 describe("StyleGroups (3.13b, CT-2)", () => {
+  it("says, in the dialog, that the gradient is set under Background, not to open the dialog", () => {
+    const { session } = setUp("button", {
+      lookGradientDirection: "toBottom",
+      lookGradientFrom: "primary",
+      lookGradientTo: "accent",
+    });
+    render(<StyleGroups session={session} preferences={createPreferencesStore()} />);
+
+    const chip = document.querySelector('[data-field="lookBackground"] [data-source]');
+    expect(chip?.textContent).toBe("Gradient (set under Background)");
+    expect(chip?.tagName).not.toBe("BUTTON");
+  });
+
+  it("marks the Colour only on the devices the gradient is set for", async () => {
+    const { session, user } = setUp("button", {
+      lookGradientDirection: { $responsive: { desktop: "default", mobile: "toBottom" } },
+      lookGradientFrom: "primary",
+      lookGradientTo: "accent",
+    });
+    render(<EditPanelHost session={session} flush={() => undefined} />);
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+
+    // Desktop is shown: no gradient there, so the Colour has no gradient chip.
+    const chip = () =>
+      document.querySelector('[data-field="lookBackground"] [data-source]')?.textContent ?? "";
+    expect(chip()).not.toContain("Gradient");
+    // Mobile, where it's set: the chip.
+    act(() => session.setViewport("mobile"));
+    expect(chip()).toBe("Gradient (Style this Button…)");
+  });
+
   it("shows an element's Appearance, then the deeper groups in order, with what each holds", () => {
     const { session } = setUp("button");
     render(<StyleGroups session={session} preferences={createPreferencesStore()} />);

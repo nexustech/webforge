@@ -1,5 +1,6 @@
 import type { EditPanelField, FieldSource, OptionGroup } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { type Breakpoint, resolveResponsive } from "@webforge/model";
 import { appearanceBoxClasses, type FieldDef } from "@webforge/site-components";
 
 /** How *Style this ‹component›…* arranges an item's fields (3.13b): `EditPanelHost`'s `dialogGroups`. */
@@ -31,24 +32,27 @@ export function arranged(
 }
 
 /**
- * What the Colour of a background says while it's drawn as a gradient (CT-4, 3.13b): the Style tab
- * shows the dialog's gradient as one chip there, which opens the dialog when it can.
+ * What the Colour of a background says while it's drawn as a gradient on `breakpoint`, the device
+ * shown (CT-4, 3.13b): in the Style tab, one chip for the dialog's gradient, which opens the dialog
+ * when it can; in the dialog (`inDialog`), that it's set under Background, just below.
  */
 export function gradientSource(
   values: Readonly<Record<string, unknown>>,
-  item: string,
-  open: (() => void) | undefined,
+  breakpoint: Breakpoint,
+  where: { readonly inDialog: true } | { readonly item: string; readonly open?: () => void },
 ): { readonly source?: FieldSource } {
+  const on = (value: unknown) => resolveResponsive(value as never, breakpoint);
   const drawn = appearanceBoxClasses({
-    lookGradientDirection: values.lookGradientDirection,
-    lookGradientFrom: values.lookGradientFrom,
-    lookGradientTo: values.lookGradientTo,
+    lookGradientDirection: on(values.lookGradientDirection),
+    lookGradientFrom: on(values.lookGradientFrom),
+    lookGradientTo: on(values.lookGradientTo),
   });
   if (drawn === "") return {};
+  if ("inDialog" in where) return { source: { text: t("editPanel.gradientBelow") } };
   return {
     source: {
-      text: t("editPanel.gradientSource", { item }),
-      ...(open === undefined ? {} : { onReveal: open }),
+      text: t("editPanel.gradientSource", { item: where.item }),
+      ...(where.open === undefined ? {} : { onReveal: where.open }),
     },
   };
 }

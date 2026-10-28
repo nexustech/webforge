@@ -469,7 +469,16 @@ export function EditPanelHost({
           ? provenance(name, field.label, own, responsive)
           : {}),
         ...(name === "lookBackground"
-          ? gradientSource(values, component.label, styleAction?.onSelect)
+          ? gradientSource(
+              values,
+              breakpoint,
+              dialogGroups === undefined
+                ? {
+                    item: component.label,
+                    ...(styleAction === undefined ? {} : { open: styleAction.onSelect }),
+                  }
+                : { inDialog: true },
+            )
           : {}),
         // Its Reset leaves it to its kind's look, where the theme has one for it (3.12): on
         // Desktop, while no other device keeps a value of its own (#567).
