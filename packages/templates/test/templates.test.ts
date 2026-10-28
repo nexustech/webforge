@@ -14,16 +14,18 @@ import {
   DEFAULT_THEME,
   eachElement,
   type NodeDoc,
+  type PageId,
   SITE_FORMAT_VERSION,
   type SiteDoc,
   siteDocSchema,
 } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
-import { sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
+import { isIconName, sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { overlayContrastIssue, THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { readTemplate, readTemplates, TEMPLATES_DIR } from "../src/node.js";
+import { insertRecipePage, PAGE_RECIPES, recipesFor } from "../src/recipes.js";
 import {
   BLANK_TEMPLATE_ID,
   imageManifestSchema,
@@ -430,5 +432,105 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
         }
       });
     }
+  });
+});
+
+describe("page recipes (QS-3, 3.11)", () => {
+  it("use only the catalogue's components and icons, and link nowhere", () => {
+    for (const recipe of PAGE_RECIPES) {
+      // Throws for a component the catalogue doesn't have.
+      walkNodes(recipe.content, siteLibrary, (node) => {
+        if (typeof node.props.icon === "string") {
+          expect(isIconName(node.props.icon), `${recipe.id} ${node.props.icon}`).toBe(true);
+        }
+        for (const value of Object.values(node.props)) {
+          const kind = (value as { readonly kind?: unknown } | null)?.kind;
+          expect(kind, `${recipe.id} ${node.type}`).toBeUndefined();
+        }
+      });
+    }
+  });
+
+  it("give every business type at least two pages its template doesn't have", () => {
+    for (const { template } of templates) {
+      if (template.category === null) continue;
+      const titles = Object.values(template.site.pages).map((page) => page.title);
+      const recipes = recipesFor(template.category);
+      expect(recipes.length, template.id).toBeGreaterThanOrEqual(2);
+      for (const recipe of recipes) expect(titles, template.id).not.toContain(recipe.title);
+    }
+  });
+
+  it("add a page to a site made from their type's template, which Site Check finds nothing in", () => {
+    for (const { template, images } of templates) {
+      if (template.category === null) continue;
+      const site = siteFromTemplate(template, images, {
+        name: template.site.settings.general.name,
+        theme: template.site.theme,
+      });
+      const notFound = site.pageOrder.at(-1);
+      for (const recipe of recipesFor(template.category)) {
+        insertRecipePage(site, `recipe-${recipe.id}` as PageId, recipe);
+      }
+
+      expect(siteDocSchema.parse(site), template.id).toEqual(site);
+      // Before the "Page not found" page, named, described and holding the recipe's sections.
+      expect(site.pageOrder.at(-1), template.id).toBe(notFound);
+      const [first] = recipesFor(template.category);
+      const page = site.pages[`recipe-${first?.id}` as PageId];
+      expect(page).toMatchObject({
+        title: first?.title,
+        settings: { description: first?.description },
+        doc: { content: first?.content },
+      });
+      expect(page?.doc.content).not.toBe(first?.content);
+      const report = checkSite({ site, catalogue: CATALOGUE }, "export");
+      for (const rule of ["contrast", "underlinedText", "altText", "brokenLinks"]) {
+        const result = report.results.find((each) => each.rule === rule);
+        const found = result?.findings.filter((finding) => finding.place.kind !== "theme");
+        expect(found, `${template.id} ${rule}`).toEqual([]);
+      }
+    }
+  });
+});
+
+describe("siteFromTemplate with the Pages step's choices (QS-1, QS-3, 3.11)", () => {
+  const trades = readTemplate("trades");
+  const make = (pages: { leaveOut: string[]; recipes: string[] }) =>
+    siteFromTemplate(trades.template, trades.images, {
+      name: "Rosa's",
+      theme: DEFAULT_THEME,
+      pages,
+    });
+
+  it("leaves out the pages unticked, from the menu too, and their links go to the home page", () => {
+    const site = make({ leaveOut: ["trades-contact"], recipes: [] });
+
+    expect(siteDocSchema.parse(site)).toEqual(site);
+    expect(site.pages["trades-contact" as PageId]).toBeUndefined();
+    expect(site.pageOrder).not.toContain("trades-contact");
+    expect(JSON.stringify(site.menu)).not.toContain("trades-contact");
+    const copy = JSON.stringify([site.pages, site.layout, site.sharedSections]);
+    expect(copy).not.toContain("trades-contact");
+    expect(copy).toContain(`"pageId":"${site.homePageId}"`);
+    const report = checkSite({ site, catalogue: CATALOGUE }, "export");
+    expect(report.results.find((each) => each.rule === "brokenLinks")?.findings).toEqual([]);
+  });
+
+  it("adds a page for each recipe ticked, in that order, before 'Page not found'", () => {
+    const site = make({ leaveOut: [], recipes: ["trades-faq", "trades-reviews"] });
+
+    const titles = site.pageOrder.map((id) => site.pages[id]?.title);
+    expect(titles.slice(-3)).toEqual(["FAQ", "Reviews", "Page not found"]);
+    expect(site.pageOrder).toHaveLength(trades.template.site.pageOrder.length + 2);
+  });
+
+  it("keeps the home page and 'Page not found', and passes over ids it doesn't know", () => {
+    const site = make({
+      leaveOut: ["trades-home", "trades-not-found", "nowhere"],
+      recipes: ["no-such-recipe"],
+    });
+
+    expect(site.pageOrder).toEqual(trades.template.site.pageOrder);
   });
 });

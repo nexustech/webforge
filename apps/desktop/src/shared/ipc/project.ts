@@ -5,7 +5,7 @@ import {
   siteDocSchema,
   siteDocumentChangeSchema,
 } from "@webforge/model";
-import { businessDetailsSchema, TEMPLATE_IDS } from "@webforge/templates";
+import { businessDetailsSchema, pageChoicesSchema, TEMPLATE_IDS } from "@webforge/templates";
 import { z } from "zod";
 
 /**
@@ -152,6 +152,8 @@ const newSiteRequestSchema = z.strictObject({
   theme: z.string().min(1).max(40),
   template: z.enum(TEMPLATE_IDS).optional(),
   business: businessDetailsSchema.optional(),
+  /** The quick start's Pages step (QS-3): the template's pages left out, recipe pages added. */
+  pages: pageChoicesSchema.optional(),
 });
 
 /** See {@link newSiteRequestSchema}. */

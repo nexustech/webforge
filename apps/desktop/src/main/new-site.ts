@@ -90,6 +90,7 @@ export async function fillNewSite(
       name: request.name,
       theme,
       ...(request.business === undefined ? {} : { business: request.business }),
+      ...(request.pages === undefined ? {} : { pages: request.pages }),
     }),
   );
 }

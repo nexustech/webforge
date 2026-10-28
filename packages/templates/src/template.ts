@@ -12,6 +12,8 @@ import {
 } from "@webforge/model";
 import { z } from "zod";
 import { type BusinessDetails, withBusiness } from "./business.js";
+import { TEMPLATE_CATEGORIES } from "./categories.js";
+import { choosePages, type PageChoices } from "./page-choices.js";
 
 /**
  * The templates Webforge ships (2.14a, F-SITE-1, S2), by id: each a folder of this package's
@@ -39,20 +41,6 @@ export type TemplateId = (typeof TEMPLATE_IDS)[number];
  * no business type, so New Site shows it as its own choice, not among the templates.
  */
 export const BLANK_TEMPLATE_ID = "blank" satisfies TemplateId;
-
-/** The business types the New Site dialog's chips filter by (UX-29): `t("template.category.<id>")`. */
-export const TEMPLATE_CATEGORIES = [
-  "food",
-  "beauty",
-  "trades",
-  "services",
-  "creative",
-  "shop",
-  "personal",
-] as const;
-
-/** One of {@link TEMPLATE_CATEGORIES}. */
-export type TemplateCategory = (typeof TEMPLATE_CATEGORIES)[number];
 
 /**
  * The licences a template's image may have (Q6): free to copy into every site made from it and
@@ -153,10 +141,13 @@ export function siteFromTemplate(
      * the sample business stays: an example is someone else's finished site.
      */
     readonly business?: BusinessDetails;
+    /** The quick start's Pages step (QS-3): template pages left out, recipe pages added. */
+    readonly pages?: PageChoices;
   },
 ): SiteDoc {
   const site = structuredClone(template.site);
   if (options.business !== undefined) withBusiness(site, options.name, options.business);
+  if (options.pages !== undefined) choosePages(site, options.pages);
   site.settings.general.name = options.name;
   site.theme = copyTheme(options.theme);
   for (const image of images) {
