@@ -1,6 +1,7 @@
-import { type ChildProcess, spawn } from "node:child_process";
+import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -40,8 +41,9 @@ function electronCommand(): { executablePath: string; env: Record<string, string
         entry[1] !== undefined && entry[0] !== "ELECTRON_RENDERER_URL",
     ),
   );
-  // Main's AI bridge on its globals, for ai-commands.spec.ts (E2E_AI_VARIABLE in main's ai-ipc.ts).
-  return { executablePath, env: { ...env, WEBFORGE_E2E_AI: "1" } };
+  // Main's AI bridge on its globals, for ai-commands.spec.ts (E2E_AI_VARIABLE in main's ai-ipc.ts),
+  // and a line on stderr once it has closed (E2E_CLOSED_VARIABLE in main's e2e-closed.ts, #534).
+  return { executablePath, env: { ...env, WEBFORGE_E2E_AI: "1", WEBFORGE_E2E_CLOSED: "1" } };
 }
 
 /**
@@ -83,7 +85,7 @@ export async function launchDesktopApp(
     /** Whether to open a new, empty site when `args` name none; true by default. */
     readonly site?: boolean;
   } = {},
-): Promise<ElectronApplication> {
+): Promise<WebforgeApp> {
   const { executablePath, env } = electronCommand();
   const userData = options.userDataDir ?? newUserDataDir();
   const args = [...(options.args ?? [])];
@@ -108,11 +110,9 @@ export async function launchDesktopApp(
     app.on("close", () => {
       for (const folder of temporary) {
         // Best effort: after a killed app, its helper processes can hold files for a moment.
-        try {
-          rmSync(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
-        } catch {
+        rm(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 }).catch(() => {
           // Left in the temp folder; the OS cleans it up eventually.
-        }
+        });
       }
     });
   }
@@ -131,33 +131,98 @@ const CLOSE_TIMEOUT_MS = 30_000;
 const KILL_TIMEOUT_MS = 5_000;
 
 /**
- * `app`, its `close()` quitting it as Playwright's does, then killing its process if it hasn't
- * exited within `timeoutMs`: by then the app has long finished closing, and only the process's
- * teardown is left. A process that doesn't end when told to (SIGTERM) is killed outright (SIGKILL)
- * `killTimeoutMs` later, so one stuck in its teardown can't outlast the test either. Closing it
- * again (a test that closes it, then its `afterEach`) waits for the first close.
+ * How long the process may take to exit once Webforge says it has closed, before it is ended. All
+ * that's left by then is Electron's teardown, which took 0.4–7 s on a quiet machine and 4–80 s on
+ * a busy one (#534); the tests needn't wait for it.
+ */
+const TEARDOWN_GRACE_MS = 2_000;
+
+/** What Webforge writes to stderr once it has closed (`E2E_CLOSED_LINE` in main's e2e-closed.ts). */
+const CLOSED_LINE = "[webforge] closed";
+
+/** An app from {@link closingWithin}: its `close()`, and a wait for it to close by itself. */
+export type ClosingApp<App> = App & {
+  /**
+   * Waits until the app has closed by itself, as when its window is closed or it is told to quit
+   * (call it first, then close the window), and ends its process as `close()` does.
+   */
+  untilClosed(): Promise<void>;
+};
+
+/** A launched Webforge, as {@link launchDesktopApp} returns it. */
+export type WebforgeApp = ClosingApp<ElectronApplication>;
+
+/**
+ * Ends `child` and, on Windows, every process it started: there, ending a process leaves its
+ * children running, and an orphaned renderer or GPU process keeps the test's folders busy (EPERM).
+ * Elsewhere Electron's helpers end with their parent. `force` kills outright (SIGKILL), which
+ * Windows' `taskkill /F` always does.
+ */
+function endProcess(child: ChildProcess, force = false): void {
+  if (process.platform === "win32" && child.pid !== undefined) {
+    try {
+      execFileSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" });
+    } catch {
+      // Gone already, or exiting.
+    }
+    return;
+  }
+  child.kill(force ? "SIGKILL" : "SIGTERM");
+}
+
+/** Resolves once `child` writes Webforge's closed line to stderr; never without one. */
+function closedLine(child: ChildProcess | undefined): Promise<void> {
+  return new Promise((resolve) => {
+    let seen = "";
+    child?.stderr?.on("data", (data: Buffer) => {
+      // A line can arrive in pieces; keep only the tail a split line could start in.
+      seen = `${seen}${data.toString()}`;
+      if (seen.includes(CLOSED_LINE)) resolve();
+      seen = seen.slice(-CLOSED_LINE.length);
+    });
+  });
+}
+
+/**
+ * `app`, its `close()` quitting it as Playwright's does, then ending its process once Webforge
+ * says it has closed (its window gone, its site saved and closed) and the process hasn't exited
+ * {@link TEARDOWN_GRACE_MS} later: only Electron's teardown is left by then (#534). An app that
+ * never says so is killed once `timeoutMs` has passed. A process that doesn't end when told to
+ * (SIGTERM) is killed outright (SIGKILL) `killTimeoutMs` later, so one stuck in its teardown can't
+ * outlast the test either. Closing it again (a test that closes it, then its `afterEach`) waits for
+ * the first close.
  */
 export function closingWithin<App extends Pick<ElectronApplication, "close" | "process">>(
   app: App,
   timeoutMs = CLOSE_TIMEOUT_MS,
   killTimeoutMs = KILL_TIMEOUT_MS,
-): App {
+): ClosingApp<App> {
   const close = app.close.bind(app);
+  let started: ChildProcess | undefined;
+  try {
+    started = app.process();
+  } catch {
+    // Playwright's app has no process once it has closed by itself.
+  }
+  // Listened for from the launch on, so a line written before a test waits isn't missed.
+  const announced = closedLine(started);
   let closed: Promise<void> | undefined;
-  const closeInTime = async () => {
+
+  /** Starts `closing` and waits for it (given the process's exit), ending the process as above. */
+  const settle = async (closing: (exited: Promise<void>) => Promise<void>) => {
     let child: ChildProcess;
     try {
       child = app.process();
     } catch {
       // Playwright's app has no process once it has closed by itself (a launch that handed its
       // site to a running Webforge): there is nothing left to close.
-      return close();
+      return closing(Promise.resolve());
     }
     const exited =
       child.exitCode !== null || child.signalCode !== null
         ? Promise.resolve()
-        : once(child, "exit");
-    const closing = close();
+        : once(child, "exit").then(() => undefined);
+    const done = closing(exited);
     const timers: ReturnType<typeof setTimeout>[] = [];
     /** Resolves with true after `ms`. */
     const after = (ms: number) =>
@@ -165,24 +230,34 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
         timers.push(setTimeout(() => resolve(true), ms));
       });
     try {
-      if (await Promise.race([closing.then(() => false), after(timeoutMs)])) {
-        // Playwright's close settles once the process is gone; nothing waits on it after this.
-        closing.catch(() => undefined);
-        child.kill();
-        if (await Promise.race([exited.then(() => false), after(killTimeoutMs)])) {
-          child.kill("SIGKILL");
-          await exited;
-        }
+      const ending = await Promise.race([
+        done.then(() => "done" as const),
+        announced.then(() => after(TEARDOWN_GRACE_MS)).then(() => "torn down slowly" as const),
+        after(timeoutMs).then(() => "late" as const),
+      ]);
+      if (ending === "done") return;
+      // Playwright's close settles once the process is gone; nothing waits on it after this.
+      done.catch(() => undefined);
+      endProcess(child);
+      if (await Promise.race([exited.then(() => false), after(killTimeoutMs)])) {
+        endProcess(child, true);
+        await exited;
       }
     } finally {
       for (const timer of timers) clearTimeout(timer);
     }
   };
-  app.close = () => {
-    closed ??= closeInTime();
+  const closing = app as ClosingApp<App>;
+  closing.close = () => {
+    closed ??= settle(() => close());
     return closed;
   };
-  return app;
+  closing.untilClosed = () => {
+    // Done when the process has exited by itself.
+    closed ??= settle((exited) => exited);
+    return closed;
+  };
+  return closing;
 }
 
 /**

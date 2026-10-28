@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
@@ -145,7 +146,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 test("a downloaded font shows and exports offline, after a restart", async () => {

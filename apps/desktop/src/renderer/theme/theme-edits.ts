@@ -1,10 +1,13 @@
-import { isMessageKey, type MessageKey, t } from "@webforge/i18n";
+import { isMessageKey, type MessageKey, plural, t } from "@webforge/i18n";
 import {
   type ColorRole,
   copyTheme,
   type FontRef,
+  isNodeDoc,
+  type NodeDoc,
   newId,
   type Oklch,
+  type SiteDoc,
   type TEXT_SIZES,
   type TextStyle,
   type ThemeTokens,
@@ -183,6 +186,81 @@ export function setToken(
     t(`theme.history.${control.group}` as MessageKey),
     undefined,
     (tokens) => setTokenValue(tokens, control, value),
+  );
+}
+
+/** Every node in `nodes`, at any depth: in a section's content, a list's items. */
+function* everyNode(nodes: readonly NodeDoc[]): Generator<NodeDoc> {
+  for (const node of nodes) {
+    yield node;
+    for (const value of Object.values(node.props)) {
+      if (Array.isArray(value)) yield* everyNode(value.filter(isNodeDoc));
+    }
+  }
+}
+
+/**
+ * How many elements of `type` the site has that a change to their kind's look for `fields` restyles
+ * (3.12, CT-1): those that leave one of the fields to it. On every page, in the shared Header and
+ * Footer, and in each shared section once, which all its copies show.
+ */
+export function lookReach(site: SiteDoc, type: string, fields: readonly string[]): number {
+  const roots = [
+    ...Object.values(site.pages).flatMap((page) => page.doc.content),
+    ...site.layout.header,
+    ...site.layout.footer,
+    ...Object.values(site.sharedSections).map((shared) => shared.section),
+  ];
+  let count = 0;
+  for (const node of everyNode(roots)) {
+    if (node.type === type && fields.some((field) => node.props[field] === undefined)) count++;
+  }
+  return count;
+}
+
+/**
+ * Changes the theme's look for elements of `type`, named `item` ("Button"), by `change` (3.12,
+ * CT-1): each field to its value, or taken off for `undefined`, so the kind goes back to its
+ * defaults there. One step, "Changed the theme's look for Button"; asked first (D7) when it
+ * restyles anything, saying how many. False if nothing changed.
+ */
+export function setLook(
+  session: ThemeSession,
+  asks: ThemeAsks,
+  type: string,
+  item: string,
+  change: Readonly<Record<string, unknown>>,
+): Promise<boolean> {
+  const look: Readonly<Record<string, unknown>> = theme(session).looks?.[type] ?? {};
+  const fields = Object.keys(change).filter(
+    (field) => JSON.stringify(look[field]) !== JSON.stringify(change[field]),
+  );
+  if (fields.length === 0) return Promise.resolve(false);
+  const reach = lookReach(session.history.document.getState(), type, fields);
+  const resets = fields.every((field) => change[field] === undefined);
+  return changeTheme(
+    session,
+    asks,
+    t(resets ? "theme.history.lookReset" : "theme.history.look", { item }),
+    reach === 0
+      ? undefined
+      : {
+          action: t("theme.look.confirm", { item }),
+          description: plural("theme.look.confirm", reach),
+          confirm: t("theme.look.confirmButton"),
+        },
+    (tokens) => {
+      const next: Record<string, unknown> = { ...tokens.looks?.[type] };
+      for (const field of fields) {
+        if (change[field] === undefined) delete next[field];
+        else next[field] = structuredClone(change[field]);
+      }
+      const looks = { ...tokens.looks };
+      if (Object.keys(next).length === 0) delete looks[type];
+      else looks[type] = next as NonNullable<ThemeTokens["looks"]>[string];
+      if (Object.keys(looks).length === 0) delete tokens.looks;
+      else tokens.looks = looks;
+    },
   );
 }
 

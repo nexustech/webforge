@@ -82,6 +82,11 @@ export type WindowContext = AreaContext & {
     readonly initial: readonly string[];
     readonly save: (ignored: readonly string[]) => void;
   };
+  /**
+   * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
+   * with its look; none without a CSS compiler.
+   */
+  readonly kindPreviews?: ((type: string) => ReactNode) | undefined;
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

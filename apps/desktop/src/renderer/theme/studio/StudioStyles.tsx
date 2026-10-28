@@ -5,8 +5,11 @@ import { type CSSProperties, type ReactNode, useId } from "react";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey, tokenValue } from "../theme-controls.js";
 import { named } from "../theme-words.js";
 
-/** Groups shown elsewhere in Theme Studio: links are with the text. */
-const ELSEWHERE = new Set(["links"]);
+/**
+ * Groups shown elsewhere in Theme Studio: links are with the text; the buttons' tokens and the card
+ * style with the Button and Card looks in Components (3.12).
+ */
+const ELSEWHERE = new Set(["links", "buttons", "cards"]);
 
 /** A sample of a scale's step: a corner size or a shadow, drawn as the site draws it. */
 function sampleStyle(control: TokenControl, value: string): CSSProperties | undefined {
@@ -18,7 +21,7 @@ function sampleStyle(control: TokenControl, value: string): CSSProperties | unde
 }
 
 /** One token's row: its name and its control, a scale of samples where its values draw one. */
-function TokenRow({
+export function TokenRow({
   control,
   theme,
   onChange,

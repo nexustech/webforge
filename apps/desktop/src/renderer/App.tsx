@@ -15,6 +15,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
+import { createKindPreviews } from "./add/index.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type ExportSite, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
@@ -211,6 +212,12 @@ export function App({
     openExport: () => exportSiteRef.current.openExport(),
     answerAi,
     preview,
+    // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
+    kindPreviews: createKindPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      compileCss: compileCss ?? ((request) => window.webforge.canvas.compileCss(request)),
+    }),
     siteCheckIgnored: {
       initial: uiState?.siteCheckIgnored ?? [],
       save: (ignored) => {
