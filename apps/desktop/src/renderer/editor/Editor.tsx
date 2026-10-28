@@ -48,7 +48,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
-import type { ItemCssServices } from "./ItemCssView.js";
+import { PRELOAD_ITEM_CSS } from "./ItemCssView.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -115,14 +115,6 @@ const viewOptionsOf = ({ preferences: { canvas } }: EditorPreferences): ViewOpti
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
-/** The CSS tab's worker and clipboard (3.14), through the preload API when used. */
-const itemCssWithPreload: Omit<ItemCssServices, "onOpenCustomCode"> = {
-  api: {
-    itemHtml: (request) => window.webforge.canvas.itemHtml(request),
-    classCss: (theme, classes) => window.webforge.canvas.classCss(theme, classes),
-  },
-  copyText: (text) => window.webforge.clipboard.copyText(text),
-};
 const reportWithPreload = createErrorReporter((kind, error) =>
   window.webforge.app.reportError(kind, error),
 );
@@ -207,7 +199,7 @@ function PreferredEditPanel({
       itemCss={
         advanced
           ? {
-              ...itemCssWithPreload,
+              ...PRELOAD_ITEM_CSS,
               onOpenCustomCode:
                 customCode === undefined ? undefined : () => void registry.run(customCode.id),
             }

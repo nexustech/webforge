@@ -6,6 +6,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
@@ -14,8 +18,9 @@ import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import { lookChangeIn } from "../../clipboard/index.js";
 import type { EditorSession } from "../../editor/editor-session.js";
+import { ItemCss, type ItemCssServices } from "../../editor/ItemCssView.js";
 import { useDocument, useUi } from "../../editor/use-document.js";
-import type { PreferencesStore } from "../../shell/preferences-store.js";
+import { type PreferencesStore, usePreferences } from "../../shell/preferences-store.js";
 import { StyleGroups } from "./StyleGroups.js";
 import {
   applyStyle,
@@ -40,6 +45,8 @@ export type StyleDialogProps = {
   readonly asks?: StyleAsks | undefined;
   /** The item drawn on a device, in the site's theme; none without a CSS compiler. */
   readonly itemPreviews?: ((node: NodeDoc, device: "desktop" | "mobile") => ReactNode) | undefined;
+  /** The *CSS* tab beside the groups in Advanced mode (3.14); none without it. */
+  readonly itemCss?: ItemCssServices | undefined;
 };
 
 /**
@@ -50,8 +57,19 @@ export type StyleDialogProps = {
  * for its kind (3.12). Apply makes it one labelled step; Cancel takes it back. 3.13b adds the
  * deeper groups beside the Appearance fields.
  */
-export function StyleDialog({ session, state, preferences, asks, itemPreviews }: StyleDialogProps) {
+export function StyleDialog({
+  session,
+  state,
+  preferences,
+  asks,
+  itemPreviews,
+  itemCss,
+}: StyleDialogProps) {
   const { open, since, scope } = useStore(state);
+  const advanced = usePreferences(
+    preferences,
+    (prefs) => prefs.preferences.editorLevel === "advanced",
+  );
   const [busy, setBusy] = useState(false);
   // The item as the dialog changes it: the preview and the counts follow the site and selection.
   const site = useDocument(session, (doc) => doc);
@@ -87,9 +105,30 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
           <DialogDescription>{t("style.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-4">
-          {/* The groups' column: the Appearance fields, and 3.13b's groups in StyleGroups. */}
-          <div className="min-h-0 overflow-hidden rounded-md border border-border">
-            <StyleGroups session={session} preferences={preferences} />
+          {/* The groups' column: the Appearance fields, and 3.13b's groups in StyleGroups; in
+              Advanced mode, the item's CSS in a tab beside them (3.14). */}
+          <div className="flex min-h-0 flex-col overflow-hidden rounded-md border border-border">
+            {advanced && itemCss !== undefined ? (
+              <Tabs defaultValue="style" className="min-h-0 flex-1">
+                <TabsList aria-label={t("style.tabs")}>
+                  <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>
+                  <TabsTrigger value="css">{t("itemCss.tab")}</TabsTrigger>
+                </TabsList>
+                <TabsContent value="style" className="min-h-0 overflow-hidden">
+                  <StyleGroups session={session} preferences={preferences} />
+                </TabsContent>
+                <TabsContent value="css" className="min-h-0 overflow-auto">
+                  <ItemCss
+                    session={session}
+                    node={node}
+                    component={item.component}
+                    services={itemCss}
+                  />
+                </TabsContent>
+              </Tabs>
+            ) : (
+              <StyleGroups session={session} preferences={preferences} />
+            )}
           </div>
           <section
             aria-label={t("style.preview")}

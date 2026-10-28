@@ -285,6 +285,7 @@ export const theme = {
   "style.item": "item",
   "style.command.any": "Style This…",
   "style.title": "Style this {item}",
+  "style.tabs": "What to show",
   "style.description":
     "Changes show on the page as you make them. Choose where they apply, then select Apply.",
   "style.preview": "Preview",

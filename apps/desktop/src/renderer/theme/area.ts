@@ -1,5 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { PRELOAD_ITEM_CSS } from "../editor/ItemCssView.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
@@ -51,6 +52,7 @@ export const themePanelArea: Area<WindowContext> = {
           notify: (message) => toast(message),
         },
         itemPreviews,
+        itemCss: PRELOAD_ITEM_CSS,
       },
     );
     return () => {

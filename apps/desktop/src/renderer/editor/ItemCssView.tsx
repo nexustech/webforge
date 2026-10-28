@@ -27,6 +27,15 @@ export type ItemCssServices = {
   readonly onOpenCustomCode?: (() => void) | undefined;
 };
 
+/** The CSS tab's worker and clipboard through the preload API, reached only when used. */
+export const PRELOAD_ITEM_CSS: Omit<ItemCssServices, "onOpenCustomCode"> = {
+  api: {
+    itemHtml: (request) => window.webforge.canvas.itemHtml(request),
+    classCss: (theme, classes) => window.webforge.canvas.classCss(theme, classes),
+  },
+  copyText: (text) => window.webforge.clipboard.copyText(text),
+};
+
 /** Props of {@link ItemCssView}. */
 export type ItemCssViewProps = ItemCssServices & {
   readonly session: Pick<EditorSession, "history" | "ui">;
