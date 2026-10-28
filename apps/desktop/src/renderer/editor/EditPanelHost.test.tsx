@@ -424,6 +424,35 @@ describe("EditPanelHost", () => {
       expect(heading?.props.lookShadow).toBeUndefined();
     });
 
+    it("says where each Appearance value comes from, and shows the theme's (3.12, CT-3)", async () => {
+      const site = siteWithHero();
+      site.theme.looks = { Heading: { lookShadow: "large" } };
+      const heading = (
+        site.pages[site.homePageId]?.doc.content[0]?.props.content as PageDoc["content"] | undefined
+      )?.[0];
+      if (heading !== undefined)
+        Object.assign(heading.props, { lookCorners: "full", lookShadow: "small" });
+      const session = sessionWith(site);
+      session.select("heading-1");
+      const revealSource = vi.fn();
+      render(<EditPanelHost session={session} flush={vi.fn()} revealSource={revealSource} />);
+      const user = userEvent.setup({ delay: null });
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+      const sourceOf = (field: string) =>
+        document.querySelector(`[data-field="${field}"] [data-source]`)?.textContent;
+
+      expect(sourceOf("lookCorners")).toBe("Set here");
+      expect(sourceOf("lookShadow")).toBe("Set here");
+      expect(sourceOf("lookColor")).toBe("Theme's");
+
+      // Reset where the Heading look sets it: back to the look, which it then follows.
+      fireEvent.contextMenu(screen.getByText("Shadow", { selector: "label" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset to Theme's Look" }));
+      expect(sourceOf("lookShadow")).toBe("Theme's look for Heading");
+      await user.click(screen.getByRole("button", { name: "Theme's look for Heading" }));
+      expect(revealSource).toHaveBeenCalledWith("look:Heading");
+    });
+
     it("sets another device's value from its row, and dots the device in effect (SP-5)", async () => {
       const { session, labels, section, user } = setup("section-1");
       await user.click(screen.getByRole("button", { name: "Padding on each device" }));
