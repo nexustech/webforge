@@ -116,12 +116,20 @@ export function colorClass(prefix: "text" | "bg" | "border", value: unknown): st
 
 /**
  * The text styles `node`'s text is set in, one for each device its values differ on (a size set per
- * device, F-ED-4), else just one; none for a component that declares none.
+ * device, F-ED-4), else just one; none for a component that declares none. A value it doesn't set
+ * is its kind's look in the theme's `looks` (3.12), else its default.
  */
-export function textStylesOf(node: NodeDoc, library: ComponentLibrary): TextStyle[] {
+export function textStylesOf(
+  node: NodeDoc,
+  library: ComponentLibrary,
+  looks?: RenderContext["looks"],
+): TextStyle[] {
   const def = library.components[node.type];
   if (def?.textStyle === undefined) return [];
-  const values: Readonly<Record<string, unknown>> = { ...def.defaults, ...node.props };
+  const values: Readonly<Record<string, unknown>> = {
+    ...def.defaults,
+    ...withLook(node.props, node.type, looks),
+  };
   const responsive = Object.values(values).some((value) => isResponsiveValue(value));
   const devices: readonly Breakpoint[] = responsive ? ["desktop", "tablet", "mobile"] : ["desktop"];
   const styles = devices.map((device) =>

@@ -1,8 +1,9 @@
 import { z } from "zod";
 
 /**
- * The fields a kind's look holds (3.12, CT-1): the Appearance group's, and the hover row's, which
- * share its option group, the same fields 2.27's *Apply this look* copies.
+ * The fields a kind's look holds (3.12, CT-1): the Appearance group's, with a section's overlay over
+ * its background image and the hover row's, which share its option group: the same fields 2.27's
+ * *Apply this look* copies. The background image itself is content, so it isn't one.
  */
 export const LOOK_FIELDS = [
   "lookSize",
@@ -18,6 +19,8 @@ export const LOOK_FIELDS = [
   "lookBorderColor",
   "lookShadow",
   "lookOpacity",
+  "overlay",
+  "overlayColor",
   "hover",
   "hoverSpeed",
   "hoverEasing",

@@ -380,7 +380,10 @@ export function EditPanelHost({
     if (spec === undefined) {
       return [];
     }
-    const stored = storedOr(name, node.props[name]);
+    // What it draws with (its own value, else its kind's look, else the default), and what it
+    // sets itself: only that is set for a device or reset per device (3.12).
+    const own = node.props[name];
+    const stored = storedOr(name, own);
     const responsive = field.responsive === true;
     const unavailable = field.unavailable?.(values);
     const help = unavailable ?? field.help;
@@ -400,7 +403,7 @@ export function EditPanelHost({
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
           ? { changed: true }
           : {}),
-        ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
+        ...(responsive && isOverridden(own, breakpoint) ? { overridden: true } : {}),
         // Its value on each device, in rows of their own (SP-5).
         ...(responsive
           ? {
@@ -408,8 +411,8 @@ export function EditPanelHost({
                 id: each,
                 label: t(`device.${each}`),
                 value: valueAt(stored, each),
-                own: each === "desktop" || isOverridden(stored, each),
-                inEffect: each === sourceOf(stored, breakpoint),
+                own: each === "desktop" || isOverridden(own, each),
+                inEffect: each === sourceOf(own, breakpoint),
               })),
             }
           : {}),
@@ -547,7 +550,10 @@ export function EditPanelHost({
     // A section's first background image brings the overlay its text needs (ST-9), in one step.
     const overlay = placedOverlay(
       field,
-      { ...component.defaults, ...live.node.props },
+      {
+        ...component.defaults,
+        ...withLook(live.node.props, live.node.type, history.document.getState().theme.looks),
+      },
       value,
       history.document.getState().theme,
       component,
@@ -628,7 +634,8 @@ export function EditPanelHost({
   const reset = (name: string) => {
     const live = now();
     const field = component.fields[name];
-    if (live === undefined || field === undefined) {
+    // Nothing of its own to reset: it follows its kind's look or its default already (3.12).
+    if (live === undefined || field === undefined || live.node.props[name] === undefined) {
       return;
     }
     endRun();
