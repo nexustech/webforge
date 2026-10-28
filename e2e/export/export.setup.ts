@@ -3,12 +3,22 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test as setup } from "@playwright/test";
-import { DEFAULT_THEME, type NodeDoc, type SiteSnapshot } from "@webforge/model";
+import {
+  DEFAULT_THEME,
+  expandSharedCopies,
+  type NodeDoc,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
+  type SharedSectionsDoc,
+  type SiteSnapshot,
+} from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
+import { readTemplates } from "@webforge/templates/node";
 import { sampleSite } from "@webforge/test-utils";
 import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
-import { EXPORTED_SITE_DIR, THEMED_SITE_DIR } from "./exported-site.js";
+import { EXPORTED_SITE_DIR, TEMPLATES_DIR, THEMED_SITE_DIR } from "./exported-site.js";
+import { exportTemplate } from "./template-export.js";
 
 type ExportRequest = {
   snapshot: SiteSnapshot;
@@ -48,6 +58,57 @@ function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
               ),
             },
           },
+    ),
+  };
+}
+
+/** The fixture's shared section (F-ED-23): opening hours, with an anchor a link goes to. */
+const HOURS = "hours" as SharedSectionId;
+const SHARED_SECTIONS: SharedSectionsDoc = {
+  [HOURS]: {
+    id: HOURS,
+    name: "Opening hours",
+    section: {
+      type: "Section",
+      props: {
+        id: "hours-section",
+        advanced: { anchorId: "opening-hours" },
+        content: [
+          {
+            type: "Text",
+            props: { id: "hours-text", text: "<p>Open Tuesday to Saturday, 7am to 3pm.</p>" },
+          },
+        ],
+      },
+    },
+  },
+};
+
+/**
+ * `site` with the shared section placed on two pages (3.10), as linked copies the editor expands
+ * on its way to the export (`siteToSnapshot`): the home page and the About page show the same
+ * section, each with its anchor.
+ */
+function withSharedSection(site: SiteSnapshot): SiteSnapshot {
+  const copy = (id: string): NodeDoc => ({
+    type: SHARED_COPY_TYPE,
+    props: { id, sharedSectionId: HOURS },
+  });
+  return {
+    ...site,
+    pages: site.pages.map((page) =>
+      page.path === "index" || page.path === "about"
+        ? {
+            ...page,
+            doc: {
+              ...page.doc,
+              content: expandSharedCopies(
+                [...page.doc.content, copy(`hours-on-${page.path}`)],
+                SHARED_SECTIONS,
+              ),
+            },
+          }
+        : page,
     ),
   };
 }
@@ -118,7 +179,7 @@ setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
   // With its photo as the icon, the About page's share picture (3.4), and a "Page not found" page
   // with the home page's Hero, its photo and links (F-ED-20, 3.5).
-  const sample = withSectionBackground(sampleSite());
+  const sample = withSharedSection(withSectionBackground(sampleSite()));
   const notFound = {
     id: "lost",
     path: "404",
@@ -209,5 +270,17 @@ setup("export the fixture site from the app", async () => {
   } finally {
     await app.close();
     await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  }
+});
+
+setup("export every template, as a site made from it starts (3.10)", async () => {
+  const folders = readTemplates();
+  // Each template's photos are encoded in each size and format: up to a minute apiece on a loaded
+  // CI runner.
+  setup.setTimeout(folders.length * 60_000);
+  rmSync(TEMPLATES_DIR, { recursive: true, force: true });
+  for (const folder of folders) {
+    const pages = await exportTemplate(folder, join(TEMPLATES_DIR, folder.template.id));
+    expect(pages, folder.template.id).toContain("index.html");
   }
 });

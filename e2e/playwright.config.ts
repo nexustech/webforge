@@ -4,8 +4,9 @@ import { defineConfig } from "@playwright/test";
 // `pnpm e2e` at the repository root does both.
 //
 // - app: the Electron app itself.
-// - export-setup → export-*: the app exports the fixture site once, then Chromium, Firefox and
-//   WebKit open it from disk (file://) with the network blocked (X1, C8).
+// - export-setup → export-*: the app exports the fixture site once, and the pipeline every
+//   template (3.10), then Chromium, Firefox and WebKit, and Edge on Windows, open them from disk
+//   (file://) with the network blocked (X1, C8).
 export default defineConfig({
   // One Electron instance at a time keeps runs stable on CI machines.
   workers: 1,
@@ -27,5 +28,17 @@ export default defineConfig({
       dependencies: ["export-setup"],
       use: { browserName },
     })),
+    // Edge, installed with Windows, which has no other browser to try the exported site in (3.10).
+    ...(process.platform === "win32"
+      ? [
+          {
+            name: "export-msedge",
+            testDir: "./export",
+            testMatch: /\.spec\.ts$/,
+            dependencies: ["export-setup"],
+            use: { browserName: "chromium" as const, channel: "msedge" },
+          },
+        ]
+      : []),
   ],
 });
