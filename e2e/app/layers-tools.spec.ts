@@ -116,16 +116,8 @@ test("marks the rows a dragged layer can't go to, before it is dropped", async (
   await expect(canvas().locator(".site-section h1")).toHaveCount(1);
 });
 
-/**
- * Drags Layers row `from` onto `to` (the same row: within it), holding `keys` from the press, and
- * `added` from once the drag has started: Chromium starts no drag from a press with Shift held.
- */
-async function dragRow(
-  from: string,
-  to: string,
-  keys: readonly string[],
-  added: readonly string[] = [],
-): Promise<void> {
+/** Drags Layers row `from` onto `to` (the same row: within it), holding `keys` from the press. */
+async function dragRow(from: string, to: string, keys: readonly string[]): Promise<void> {
   const start = await row(from).first().boundingBox();
   const end = await row(to).first().boundingBox();
   if (start === null || end === null) throw new Error("rows not visible");
@@ -134,10 +126,9 @@ async function dragRow(
   await page.mouse.down();
   // Far enough for a drag to start, even within the same row.
   await page.mouse.move(start.x + start.width / 2 + 20, start.y + start.height * 0.2, { steps: 4 });
-  for (const key of added) await page.keyboard.down(key);
   await page.mouse.move(end.x + end.width / 2, end.y + end.height * 0.8, { steps: 8 });
   await page.mouse.up();
-  for (const key of [...keys, ...added].reverse()) await page.keyboard.up(key);
+  for (const key of [...keys].reverse()) await page.keyboard.up(key);
 }
 
 test("Select similar selects every element of the kind on the page, from the menu (1.35)", async () => {
@@ -179,12 +170,8 @@ test("copies a layer dragged with Ctrl/Cmd, and places another linked copy with 
   await dialog.getByRole("button", { name: "Save" }).click();
   await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toHaveCount(1);
 
-  await dragRow(
-    "Linked copy of 'Welcome'",
-    "Linked copy of 'Welcome'",
-    ["ControlOrMeta"],
-    ["Shift"],
-  );
+  // Shift held from before the press, which the browser's own drag ignored (#271).
+  await dragRow("Linked copy of 'Welcome'", "Linked copy of 'Welcome'", ["ControlOrMeta", "Shift"]);
   // Another linked copy of Welcome: Layers shows two, and the canvas two sections.
   await expect(tree().getByRole("treeitem", { name: /Welcome/ })).toHaveCount(2);
   await expect(canvas().locator(".site-section")).toHaveCount(2);

@@ -183,7 +183,7 @@ export const OTHER_SHORTCUTS: readonly OtherShortcut[] = [
     // shared; on Windows they're also the alternative where Ctrl+Alt+arrows rotate the screen.
     keys: ["Mod+Alt+ArrowUp", "Mod+Alt+ArrowDown", "Alt+ArrowUp", "Alt+ArrowDown"],
   },
-  // Held while dragging a layer (1.35). Shift for a linked copy works once the drag has started.
+  // Held while dragging a layer (1.35), from before the press too (#271).
   { label: "shortcuts.layersCopy", group: "layers", keys: ["Mod"] },
   { label: "shortcuts.layersLinkedCopy", group: "layers", keys: ["Mod+Shift"] },
   { label: "shortcuts.layersRename", group: "layers", keys: ["F2"] },
