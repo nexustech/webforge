@@ -7,5 +7,4 @@ export {
   createItemPreviews,
   createKindPreviews,
   createSectionPreviews,
-  type ItemDevice,
 } from "./section-preview.js";

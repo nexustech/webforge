@@ -247,7 +247,7 @@ function createPreviews(
 const ITEM_WIDTHS = { desktop: 1280, mobile: 375 } as const;
 
 /** A device an item's preview draws it for (3.13a). */
-export type ItemDevice = keyof typeof ITEM_WIDTHS;
+type ItemDevice = keyof typeof ITEM_WIDTHS;
 
 /** How wide each device's preview is on screen, and at most how tall. */
 const ITEM_SHOWN = { desktop: { width: 400, height: 320 }, mobile: { width: 150, height: 320 } };
