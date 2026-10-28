@@ -195,8 +195,16 @@ export function expectWorkWithin(work: Work, budget: Budget, what: string): void
 }
 
 /**
+ * The fewest openings a median is checked over. A failed test starts a fresh worker, whose
+ * `afterAll` sees only the openings after it: one stall among two or three would move their median
+ * and fail the run a second time, for nothing new.
+ */
+const MEDIAN_OPENINGS = 4;
+
+/**
  * Checks the median of `wallMs`, the wall-clock times of one spec's openings, against `budgetMs`
- * (#569), and prints it in the log beside each opening's.
+ * (#569), and prints it in the log beside each opening's. Fewer than {@link MEDIAN_OPENINGS} are
+ * only printed.
  */
 export function expectMedianWithin(
   wallMs: readonly number[],
@@ -204,7 +212,10 @@ export function expectMedianWithin(
   what: string,
 ): void {
   const sorted = wallMs.toSorted((a, b) => a - b);
-  if (sorted.length === 0) return;
+  if (sorted.length < MEDIAN_OPENINGS) {
+    console.log(`[work] ${what}: ${sorted.length} openings, too few for a median, not checked`);
+    return;
+  }
   const middle = Math.floor(sorted.length / 2);
   const median = Math.round(
     sorted.length % 2 === 1

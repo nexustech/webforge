@@ -16,3 +16,8 @@ test("passes one opening that stalled, as Windows' runners do (#561)", () => {
   const stalled = [21_547, ...USUAL.slice(1)];
   expect(() => expectMedianWithin(stalled, 6_000, "Opening")).not.toThrow();
 });
+
+test("leaves a median of too few openings unchecked: a fresh worker's, after a failed test", () => {
+  const afterFailure = [21_547, 9_000, ...USUAL.slice(0, 1)];
+  expect(() => expectMedianWithin(afterFailure, 6_000, "Opening")).not.toThrow();
+});
