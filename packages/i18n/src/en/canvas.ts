@@ -183,7 +183,8 @@ export const canvas = {
     "Read only: {appName} writes this from your choices each time the site changes, so changes here wouldn't last. For CSS of your own, use Custom Code's stylesheet.",
   "itemCss.openCustomCode": "Open Custom Code",
   "itemCss.markup": "Markup",
-  "itemCss.markup.hint": "As the export writes this item.",
+  "itemCss.markup.hint":
+    "As the export writes this item. One difference: a PNG image is shown with a .png fallback, which the export writes as a .jpg when the image has no transparency.",
   "itemCss.classes": "Classes by control",
   "itemCss.classes.none": "No Appearance control sets a class on this item.",
   "itemCss.classes.tokens": "Uses {tokens}",
