@@ -11,7 +11,7 @@ import {
 } from "../../shared/ipc/prefs.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import "../shell/form-messages.js";
-import { type SettingsRegistry, settingsPart } from "./settings-registry.js";
+import { type SettingsRegistry, settingsPart } from "../editor/settings-registry.js";
 
 type InterfaceValues = {
   readonly theme: Preferences["theme"];

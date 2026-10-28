@@ -5,9 +5,9 @@ import {
   renderNodesToHtml,
 } from "@webforge/site-components";
 import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { AddItem } from "../editor/add-item.js";
 import { type CompileCanvasCss, classesOfHtml } from "../editor/site-css.js";
 import { reportFailure } from "../log.js";
-import type { AddItem } from "./add-items.js";
 
 /** How wide a section is drawn for its preview, in CSS pixels, before it is scaled down. */
 const DRAWN_WIDTH = 1280;

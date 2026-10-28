@@ -203,15 +203,34 @@ export default {
       },
     },
     {
-      name: "renderer-editor-areas-through-index",
+      name: "renderer-editor-imports-no-area",
       severity: "error",
       comment:
-        "editor/ (what every area builds on) uses an area only through that area's index.ts " +
-        "(2.20, B8), as the areas use each other. Editor.tsx, which draws the editor's dialogs " +
-        "and menus from the areas, is the exception, as the composition root's other half.",
+        "editor/ is what every area builds on, so it imports no area (#379): what areas share " +
+        "lives in editor/ or the model. Editor.tsx, which draws the editor's dialogs and menus " +
+        "from the areas, is the exception, as the composition root's other half; so are tests " +
+        "and stories, which may bring areas together to test them.",
       from: {
         path: "^apps/desktop/src/renderer/editor/",
-        pathNot: "^apps/desktop/src/renderer/editor/Editor\\.tsx$",
+        pathNot: [
+          "^apps/desktop/src/renderer/editor/Editor\\.tsx$",
+          "\\.test\\.tsx?$",
+          "\\.stories\\.tsx$",
+        ],
+      },
+      to: {
+        path: "^apps/desktop/src/renderer/[^/]+/",
+        pathNot: "^apps/desktop/src/renderer/(shell|editor|testing)/",
+      },
+    },
+    {
+      name: "renderer-editor-tests-areas-through-index",
+      severity: "error",
+      comment:
+        "editor/'s tests and stories use an area only through that area's index.ts (2.20, B8), " +
+        "as the areas use each other.",
+      from: {
+        path: "^apps/desktop/src/renderer/editor/.*\\.(test\\.tsx?|stories\\.tsx)$",
       },
       to: {
         path: "^apps/desktop/src/renderer/[^/]+/",

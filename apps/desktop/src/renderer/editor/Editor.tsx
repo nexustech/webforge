@@ -18,11 +18,7 @@ import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { fieldRenderers } from "../fields/index.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { createImagePickRequests } from "../media/image-picks.js";
-import { sharedSection } from "../shared-sections/index.js";
-import {
-  SharedSectionNameDialog,
-  type SharedSectionNaming,
-} from "../shared-sections/SharedSectionCommands.js";
+import { SharedSectionNameDialog } from "../shared-sections/SharedSectionCommands.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
@@ -56,6 +52,7 @@ import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
+import { type SharedSectionNaming, sharedSection } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
 import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts } from "./undo-toasts.js";

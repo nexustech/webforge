@@ -1,8 +1,8 @@
 import { t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
-import { copySelection, reachOf } from "../shared-sections/index.js";
 import type { EditorSession } from "./editor-session.js";
 import { pagesShowing, sharedRegionOf, shownLayout } from "./shared-layout.js";
+import { copySelection, reachOf } from "./shared-sections.js";
 import { useDocument, useUi } from "./use-document.js";
 
 /** The banner's text while an element of a linked copy is selected, if it is (F-ED-23). */

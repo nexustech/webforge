@@ -10,7 +10,6 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import type { ComponentDef, ComponentLibrary, FieldDef } from "@webforge/site-components";
-import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
 import { updateField } from "./apply-patch.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
 import {
@@ -19,6 +18,7 @@ import {
   shownLayout,
   updateSharedField,
 } from "./shared-layout.js";
+import { type CopySelection, copySelection, updateSectionField } from "./shared-sections.js";
 
 /**
  * The element selected on the canvas, and how to change its fields: the Edit panel (1.14) and the

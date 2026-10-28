@@ -2,7 +2,7 @@ import { t } from "@webforge/i18n";
 import { ListChecksIcon } from "lucide-react";
 import { useStore } from "zustand";
 import type { EditorSession } from "../editor/editor-session.js";
-import type { SettingsRegistry } from "../settings/index.js";
+import type { SettingsRegistry } from "../editor/settings-registry.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
 import { describeDetail, describePlace } from "./describe.js";

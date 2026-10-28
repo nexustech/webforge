@@ -33,7 +33,8 @@ import {
   SearchIcon,
 } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { type AddItem, type AddTab, groupItems } from "./add-items.js";
+import type { AddItem } from "../editor/add-item.js";
+import { type AddTab, groupItems } from "./add-items.js";
 
 /** What the "…" menu of a shared section offers (1.29): each opens a dialog. */
 export type SharedSectionActions = {

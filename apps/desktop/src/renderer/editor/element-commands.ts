@@ -1,7 +1,7 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { similarTo, toggleSelectedHidden } from "../layers/index.js";
 import type { CommandRegistry } from "../shell/commands.js";
+import { similarTo, toggleSelectedHidden } from "./bulk-layers.js";
 import type { EditorSession } from "./editor-session.js";
 import { type Layer, type LayersSession, shownLayer, toggleLayerHidden } from "./layers.js";
 import { splitText } from "./split-text.js";

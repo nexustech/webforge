@@ -2,9 +2,6 @@ import { t } from "@webforge/i18n";
 import { SHARED_SECTION_NAME_MAX, type SharedSectionId } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
 import { elementName } from "../editor/labels.js";
-import type { CommandRegistry } from "../shell/commands.js";
-import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
-import { NameDialog } from "../shell/NameDialog.js";
 import {
   copySelection,
   deleteSharedSection,
@@ -12,9 +9,13 @@ import {
   nameProblem,
   reachOf,
   renameSharedSection,
+  type SharedSectionNaming,
   savableSection,
   saveAsSharedSection,
-} from "./shared-sections.js";
+} from "../editor/shared-sections.js";
+import type { CommandRegistry } from "../shell/commands.js";
+import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+import { NameDialog } from "../shell/NameDialog.js";
 
 /** The commands' ids, for the Edit menu and the command box. */
 const SHARED_SECTION_COMMANDS = {
@@ -23,14 +24,6 @@ const SHARED_SECTION_COMMANDS = {
   detach: "edit.detachSharedSection",
   delete: "edit.deleteSharedSection",
 } as const;
-
-/**
- * A name the dialog asks for: the selected section's, to save it as a shared section, or a new
- * one for shared section `id`. `suggested` is what the field starts with.
- */
-export type SharedSectionNaming =
-  | { readonly kind: "save"; readonly suggested: string }
-  | { readonly kind: "rename"; readonly id: SharedSectionId; readonly suggested: string };
 
 /**
  * Deletes shared section `id` (F-ED-23), first asking, with how many pages have a copy (D7), when

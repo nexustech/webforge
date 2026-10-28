@@ -10,8 +10,8 @@ import { useEffect, useRef, useState } from "react";
 import { ADVANCED_FIELDS, advancedFieldLabel } from "../editor/advanced-fields.js";
 import { currentPage, type EditorSession, textSessionKey } from "../editor/editor-session.js";
 import { changedLabel, labelFor } from "../editor/labels.js";
+import { applyAnchor, type LinkFieldChange } from "../editor/link-change.js";
 import { LinkDialog } from "./LinkDialog.js";
-import { applyAnchor, type LinkFieldChange } from "./link-change.js";
 import { linkTargets } from "./link-targets.js";
 
 /** A link the format toolbar asked for, waiting for the dialog. */
