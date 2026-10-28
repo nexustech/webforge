@@ -25,7 +25,7 @@ export function pageTitle(site: SiteSnapshot, page: SitePage): string {
 }
 
 /** `page`'s address under the site's: the home page is the address itself (`…/`). */
-function pageAddress(address: string, path: string): string {
+export function pageAddress(address: string, path: string): string {
   return path === "index" ? `${address}/` : `${address}/${path}.html`;
 }
 
@@ -152,7 +152,8 @@ export function robotsTxt(site: SiteSnapshot): string {
 }
 
 /** Whether `page` is one search engines are told about: not "Page not found" nor hidden (SEO-2). */
-const searchable = (page: SitePage) => page.path !== NOT_FOUND_PATH && page.hideFromSearch !== true;
+export const searchable = (page: SitePage) =>
+  page.path !== NOT_FOUND_PATH && page.hideFromSearch !== true;
 
 /**
  * `sitemap.xml` (3.5): every page's address but the "Page not found" page's and those hidden from

@@ -647,7 +647,13 @@ describe("buildSite: checks (X5)", () => {
     const result = await buildSite(siteWith([]), siteLibrary, resources);
 
     expect([...result.files.keys()].some((path) => path.startsWith("assets/js/"))).toBe(false);
-    expect(text(result, "index.html")).not.toContain("<script");
+    // Nothing that runs: the structured data is data (3.15, SEO-1).
+    expect(
+      text(result, "index.html").replace(
+        /<script type="application\/ld\+json">[\s\S]*?<\/script>/g,
+        "",
+      ),
+    ).not.toContain("<script");
   });
 
   it("refuses a page or folder named after a Windows device, naming the page (R16)", async () => {
