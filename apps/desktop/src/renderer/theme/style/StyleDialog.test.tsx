@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { NodeDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_PREFERENCES } from "../../../shared/ipc/prefs.js";
 import { starterSite } from "../../../shared/starter-site.js";
 import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { sessionWith } from "../../testing/fixtures.js";
@@ -18,7 +19,7 @@ const button = (id: string): NodeDoc => ({
 });
 
 /** The dialog open on the Button `styled` of a page with another Button, previews recorded. */
-function setUp() {
+function setUp(editorLevel: "simple" | "advanced" = "simple") {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
@@ -36,7 +37,7 @@ function setUp() {
     <StyleDialog
       session={session}
       state={state}
-      preferences={createPreferencesStore()}
+      preferences={createPreferencesStore({ preferences: { ...DEFAULT_PREFERENCES, editorLevel } })}
       itemPreviews={previews}
     />,
   );
@@ -112,6 +113,15 @@ describe("StyleDialog (3.13a, CT-2)", () => {
 
     expect(state.getState().open).toBe(false);
     expect(props("styled")?.lookShadow).toBeUndefined();
+  });
+
+  it("offers the theme's colours only in Simple mode, and a colour of its own in Advanced (ST-6, ADR 0009)", () => {
+    setUp();
+    expect(screen.queryAllByRole("radio", { name: "Custom" })).toEqual([]);
+    cleanup();
+
+    setUp("advanced");
+    expect(screen.getAllByRole("radio", { name: "Custom" }).length).toBeGreaterThan(0);
   });
 
   it("offers the four places a change applies", () => {
