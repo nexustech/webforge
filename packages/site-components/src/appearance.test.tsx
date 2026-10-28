@@ -408,11 +408,14 @@ describe("the Appearance group (2.22, ST-1)", () => {
 describe("Style this ‹component›…'s deeper groups (3.13b, CT-2)", () => {
   const deeper = { ...DIALOG_FIELDS, ...DIALOG_ELEMENT_FIELDS, ...DIALOG_TITLE_FIELDS };
 
-  it("is in the dialog only, set per device, in its groups", () => {
-    for (const [name, field] of Object.entries(deeper)) {
-      expect(field, name).toMatchObject({ group: "style", inDialog: true });
+  it("is in the dialog only, set per device, in its groups; an element's padding in the Style tab too", () => {
+    for (const [name, field] of Object.entries({ ...DIALOG_FIELDS, ...DIALOG_TITLE_FIELDS })) {
+      expect(field, name).toMatchObject({ group: "style", inDialog: true, responsive: true });
       expect(field.optionGroup.id, name).toMatch(/^style[A-Z]/);
     }
+    // CT-5: the Style tab's Appearance group, and the dialog's Spacing group (its arrangement).
+    expect(DIALOG_ELEMENT_FIELDS.lookPadding).toMatchObject({ group: "style", responsive: true });
+    expect(DIALOG_ELEMENT_FIELDS.lookPadding.optionGroup.id).toBe("appearance");
     // On every element, with its spacing; on every section, with the Title group if it's titled.
     const card = siteLibrary.components.Button;
     expect(Object.keys(card?.fields ?? {})).toEqual(

@@ -819,6 +819,7 @@
     "lookShadowInner": {
       "kind": "toggle",
       "label": "Inner shadow",
+      "help": "Draws the shadow inside the edges instead of below, at the Shadow's strength (medium when it's the theme's).",
       "group": "style",
       "optionGroup": {
         "id": "styleShadow",
@@ -879,11 +880,10 @@
       "label": "Padding",
       "group": "style",
       "optionGroup": {
-        "id": "styleSpacing",
-        "label": "Spacing"
+        "id": "appearance",
+        "label": "Appearance"
       },
       "responsive": true,
-      "inDialog": true,
       "options": [
         {
           "label": "Theme's",

@@ -137,6 +137,8 @@ export const canvas = {
   "editPanel.optionGroup.spacing": "Spacing",
   "editPanel.optionGroup.colours": "Colours",
   "editPanel.optionGroup.appearance": "Appearance",
+  // The Colour of a background drawn as a gradient (CT-4, 3.13b): the Style tab's one chip for it.
+  "editPanel.gradientSource": "Gradient (Style this {item}…)",
   "editPanel.optionGroup.options": "Options",
   "editPanel.optionGroup.advanced": "Advanced",
   // Apply Look to Every… (2.27, ST-4), asked before it changes other pages (D7).

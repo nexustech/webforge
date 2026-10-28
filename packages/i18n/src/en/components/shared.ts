@@ -198,6 +198,8 @@ export const shared = {
   "field.look.cornerBottomRight": "Bottom right corner",
   "field.look.cornerBottomLeft": "Bottom left corner",
   "field.look.shadowInner": "Inner shadow",
+  "field.look.shadowInnerHint":
+    "Draws the shadow inside the edges instead of below, at the Shadow's strength (medium when it's the theme's).",
   "field.look.titleColor": "Title colour",
   "field.look.subtitleSize": "Subtitle size",
   "field.look.subtitleWeight": "Subtitle weight",

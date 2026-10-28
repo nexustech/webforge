@@ -263,6 +263,7 @@ export const DIALOG_FIELDS = {
   lookShadowInner: {
     kind: "toggle",
     label: t("field.look.shadowInner"),
+    help: t("field.look.shadowInnerHint"),
     ...inDialog(STYLE_GROUPS.shadow),
   },
   lookHoverColor: {
@@ -274,11 +275,16 @@ export const DIALOG_FIELDS = {
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
 /**
- * An element's own spacing in the dialog (CT-5): its padding. The space above and below it is its
- * `margin` field (1.32), which the dialog's Spacing group shows beside it.
+ * An element's padding (CT-5), in the Style tab's Appearance group and the dialog's Spacing group,
+ * beside the element's `margin` field (1.32), the space above and below it.
  */
 export const DIALOG_ELEMENT_FIELDS = {
-  lookPadding: select(t("field.look.padding"), STYLE_GROUPS.spacing, SPACING_OPTIONS),
+  lookPadding: {
+    kind: "select",
+    label: t("field.look.padding"),
+    ...IN_GROUP,
+    options: SPACING_OPTIONS,
+  },
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
 /**

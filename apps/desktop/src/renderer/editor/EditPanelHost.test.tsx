@@ -216,9 +216,11 @@ describe("EditPanelHost", () => {
     await userEvent.setup({ delay: null }).click(screen.getByRole("tab", { name: "Style" }));
 
     expect(screen.getByRole("button", { name: "Appearance" })).toBeDefined();
-    for (const label of ["Gradient", "Top border", "Top left corner", "Inner shadow", "Padding"]) {
+    for (const label of ["Gradient", "Top border", "Top left corner", "Inner shadow"]) {
       expect(screen.queryByLabelText(label), label).toBeNull();
     }
+    // An element's padding is the Appearance group's too (CT-5).
+    expect(document.querySelector('[data-field="lookPadding"]')).not.toBeNull();
     expect(screen.queryByRole("button", { name: "When hovered" })).toBeNull();
   });
 
