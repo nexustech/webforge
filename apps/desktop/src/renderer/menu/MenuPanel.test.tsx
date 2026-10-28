@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MENU_LABEL_MAX } from "@webforge/model";
 import { afterEach, describe, expect, it } from "vitest";
@@ -7,6 +7,7 @@ import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { createPanelRegistry } from "../shell/panels.js";
 import { addPage, registerSitePanel, setHiddenFromNavigation } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { dragRow } from "../testing/row-drag.js";
 import { addMenuItem } from "./menu-actions.js";
 
 afterEach(cleanup);
@@ -159,19 +160,8 @@ describe("MenuPanel (F-ED-17)", () => {
     const { menu, rows, remove } = setUp();
     const row = (name: string) =>
       menu().getByRole("button", { name }).closest("li") as HTMLLIElement;
-    const store = new Map<string, string>();
-    const dataTransfer = {
-      effectAllowed: "",
-      get types() {
-        return [...store.keys()];
-      },
-      setData: (type: string, value: string) => store.set(type, value),
-      getData: (type: string) => store.get(type) ?? "",
-    };
-    // happy-dom lays nothing out: every drop lands on the lower half, "after".
-    fireEvent.dragStart(row("My site, page"), { dataTransfer });
-    fireEvent.dragOver(row("About, page"), { dataTransfer, clientY: 1 });
-    fireEvent.drop(row("About, page"), { dataTransfer, clientY: 1 });
+    // happy-dom lays nothing out: a pointer below a row's top is after it.
+    dragRow(row("My site, page"), row("About, page"), {}, "after");
 
     expect(rows()).toEqual(["About, page", "My site, page"]);
     remove();
