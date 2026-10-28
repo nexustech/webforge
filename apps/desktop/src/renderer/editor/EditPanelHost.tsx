@@ -291,6 +291,13 @@ export type EditPanelHostProps = {
    * (`look:‹type›`). Without it, the words say so but show nothing.
    */
   readonly revealSource?: (target: string) => void;
+  /**
+   * Only the Appearance group's fields, as one list without tabs or a heading: *Style this
+   * Feature…*'s (3.13a), which names the element itself.
+   */
+  readonly appearanceOnly?: boolean;
+  /** The Style tab's *Style this Feature…* button (3.13a); none without it. */
+  readonly styleAction?: { readonly label: string; readonly onSelect: () => void } | undefined;
 };
 
 /**
@@ -311,6 +318,8 @@ export function EditPanelHost({
   onClosedGroupsChange,
   groupActions,
   revealSource,
+  appearanceOnly = false,
+  styleAction,
 }: EditPanelHostProps) {
   const { history, library } = session;
   const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
@@ -472,9 +481,17 @@ export function EditPanelHost({
     ]);
   });
 
-  if (advanced) {
+  if (advanced && !appearanceOnly) {
     fields.push(...advancedFields(node.props.advanced, anchors));
   }
+  // The dialog's one list: the Appearance group, in the list a panel without tabs shows (3.13a).
+  const shown = appearanceOnly
+    ? fields.flatMap((field) =>
+        field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id
+          ? [{ ...field, group: "content" as const }]
+          : [],
+      )
+    : fields;
 
   const selectionAfter = { pageId, viewport, nodeId: id };
 
@@ -793,7 +810,8 @@ export function EditPanelHost({
   return (
     <EditPanel
       heading={component.label}
-      fields={fields}
+      headingHidden={appearanceOnly}
+      fields={shown}
       device={device}
       onChange={(name, value) => change(name, value)}
       onChangeOn={(name, device, value) => {
@@ -814,9 +832,11 @@ export function EditPanelHost({
             onClosedGroupsChange: (closed: readonly string[]) =>
               onClosedGroupsChange?.(node.type, closed),
           })}
-      advanced={advanced}
+      advanced={advanced && !appearanceOnly}
       contentOnly={contentOnly}
+      single={appearanceOnly}
       itemKey={id}
+      styleAction={styleAction}
     />
   );
 }

@@ -3,7 +3,14 @@ import { t } from "@webforge/i18n";
 import type { Breakpoint } from "@webforge/model";
 import { HIDDEN_ATTRIBUTE } from "@webforge/model";
 import { PREVIEW_ATTRIBUTE } from "@webforge/site-components";
-import { ArrowDownIcon, ArrowUpIcon, EyeIcon, EyeOffIcon, PencilIcon } from "lucide-react";
+import {
+  ArrowDownIcon,
+  ArrowUpIcon,
+  EyeIcon,
+  EyeOffIcon,
+  PaletteIcon,
+  PencilIcon,
+} from "lucide-react";
 import { type ReactNode, useLayoutEffect, useRef, useState } from "react";
 import type { FieldDrag, InsertPoint } from "../canvas-engine.js";
 
@@ -309,6 +316,10 @@ export type ElementActions = {
   readonly canHide: (id: string) => boolean;
   /** Hides element `id`, or shows it again. */
   readonly toggleHidden: (id: string) => void;
+  /** Whether an element of `componentType` has Appearance fields to style (3.13a). */
+  readonly canStyle: (componentType: string) => boolean;
+  /** Opens *Style this ‹kind›…* for element `id`. */
+  readonly style: (id: string) => void;
 };
 
 /** Props of {@link QuickActionBar}. */
@@ -364,9 +375,10 @@ function MoveActions() {
 }
 
 /**
- * *Edit* (text editing, or the image picker) and *Hide* or *Show* for the selected element (F-ED-25,
- * UX-1). Edit is content, so Content mode keeps it; Hide changes the layout, so only where elements
- * may be added (not in Content mode). Each is one undo step, or none until the text changes.
+ * *Edit* (text editing, or the image picker), *Style* and *Hide* or *Show* for the selected element
+ * (F-ED-25, UX-1, 3.13a). Edit is content, so Content mode keeps it; Style and Hide change the
+ * design, so only where elements may be added (not in Content mode). Each is one undo step, or none
+ * until something changes.
  */
 function ElementActionButtons({
   id,
@@ -387,6 +399,11 @@ function ElementActionButtons({
       {actions.canEdit(type) ? (
         <ActionBar.Action label={t("canvas.edit")} onClick={() => actions.edit(id, type)}>
           <PencilIcon size={16} />
+        </ActionBar.Action>
+      ) : null}
+      {layoutOpen && actions.canStyle(type) ? (
+        <ActionBar.Action label={t("canvas.style")} onClick={() => actions.style(id)}>
+          <PaletteIcon size={16} />
         </ActionBar.Action>
       ) : null}
       {layoutOpen && actions.canHide(id) ? (

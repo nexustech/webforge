@@ -1,5 +1,5 @@
 import { createUsePuck } from "@puckeditor/core";
-import type { ComponentLibrary } from "@webforge/site-components";
+import { APPEARANCE_FIELDS, type ComponentLibrary } from "@webforge/site-components";
 import { type ComponentProps, useSyncExternalStore } from "react";
 import type { ElementRequest, Unsubscribe } from "../canvas-engine.js";
 import { type ElementActions, QuickActionBar } from "./chrome.js";
@@ -11,6 +11,9 @@ import { startTextEditing } from "./text-editing.js";
 import { findNode } from "./tree.js";
 
 const usePuck = createUsePuck();
+
+/** The Appearance group's id (3.12), which every look field is in. */
+const APPEARANCE_GROUP_ID = APPEARANCE_FIELDS.lookShadow.optionGroup.id;
 
 /** What the selected element's bar needs from the engine. */
 export type ActionBarOptions = {
@@ -62,6 +65,10 @@ export function createActionBar(options: ActionBarOptions) {
         );
       },
       toggleHidden: (id) => options.request({ kind: "toggleHidden", nodeId: id }),
+      // Its Appearance fields, which *Style this ‹kind›…* shows (3.13a).
+      canStyle: (type) =>
+        fieldsOf(type).some((field) => field.optionGroup?.id === APPEARANCE_GROUP_ID),
+      style: (id) => options.request({ kind: "style", nodeId: id }),
     };
     return { isLocked: (id: string) => isSharedRegion(shown.layout, id), elementActions };
   });

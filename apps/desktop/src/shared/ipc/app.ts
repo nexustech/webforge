@@ -53,6 +53,15 @@ const nativeMenusSchema = z
 /** The renderer's menus, as macOS's menu bar shows them. */
 export type NativeMenus = z.infer<typeof nativeMenusSchema>;
 
+/**
+ * The pages on other websites Site Check's guides open (3.17, SEO-7), by name: main knows their
+ * fixed addresses, so the renderer can't open any other.
+ */
+const GUIDES = ["businessProfile", "searchConsole"] as const;
+
+/** One of {@link GUIDES}. */
+export type Guide = (typeof GUIDES)[number];
+
 /** IPC channels of the `app` domain (`app:*`). */
 export const appChannels = {
   getAppInfo: {
@@ -93,6 +102,15 @@ export const appChannels = {
     request: z.tuple([nativeMenusSchema]),
     response: z.null(),
   },
+  /**
+   * Opens a guide's page in the default browser (3.17): Google Business Profile or Search
+   * Console. `false` when the browser couldn't be opened.
+   */
+  openGuide: {
+    channel: "app:open-guide",
+    request: z.tuple([z.enum(GUIDES)]),
+    response: z.boolean(),
+  },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
   setSpellCheckLanguage: {
     channel: "app:set-spellcheck-language",
@@ -125,6 +143,8 @@ export interface AppApi {
   reportError(kind: RendererErrorKind, error: ErrorDetails): Promise<null>;
   /** Logs a handled failure: where (`clipboard.paste`) and the error's name and code only. */
   logFailure(context: string, code: string): Promise<null>;
+  /** Opens `guide`'s page in the default browser; `false` when it couldn't. */
+  openGuide(guide: Guide): Promise<boolean>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
   setSpellCheckLanguage(language: string): Promise<null>;
   /** Shows `menus` in macOS's menu bar; nothing elsewhere. */

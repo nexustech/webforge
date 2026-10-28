@@ -1,3 +1,4 @@
+import type { NodeDoc } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { AiApi } from "../../shared/ipc/ai.js";
@@ -87,6 +88,11 @@ export type WindowContext = AreaContext & {
    * with its look; none without a CSS compiler.
    */
   readonly kindPreviews?: ((type: string) => ReactNode) | undefined;
+  /**
+   * *Style this ‹kind›…*'s previews of the item being styled (3.13a), on Desktop or Mobile, drawn
+   * as the kind previews are; none without a CSS compiler.
+   */
+  readonly itemPreviews?: ((node: NodeDoc, device: "desktop" | "mobile") => ReactNode) | undefined;
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */
