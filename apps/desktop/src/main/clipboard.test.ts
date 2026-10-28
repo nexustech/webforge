@@ -114,7 +114,11 @@ describe("element clipboard (1.25)", () => {
     const other = fakeSite(false);
     const result = await elementClipboard(other.site).read();
 
-    expect(result).toEqual({ status: "elements", elements: { nodes: [hero], media: [photo] } });
+    expect(result).toEqual({
+      status: "elements",
+      elements: { nodes: [hero], media: [photo] },
+      missingImages: 0,
+    });
     expect(other.stored.map(({ item, data }) => [item, [...(data ?? [])]])).toEqual([
       [photo, [...bytes]],
     ]);
@@ -131,7 +135,12 @@ describe("element clipboard (1.25)", () => {
     // Changed on disk: not the copied image any more.
     writeFileSync(join(dir, photo.hash), "changed");
     const read = await elementClipboard(fakeSite(false).site).read();
-    expect(read).toEqual({ status: "elements", elements: { nodes: [hero], media: [] } });
+    // Counted, for the paste to say so (#459).
+    expect(read).toEqual({
+      status: "elements",
+      elements: { nodes: [hero], media: [] },
+      missingImages: 1,
+    });
   });
 
   it("copies an element without the image the site no longer has", async () => {
