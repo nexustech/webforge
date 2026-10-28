@@ -4,6 +4,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { registerAppSettings, SettingsDialog } from "../settings/index.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
+import { siteCodePart } from "./code-part.js";
 import { siteSettingsPart } from "./site-part.js";
 
 /** Settings as the window opens them: the app's parts with one device of the person's, and a site. */
@@ -29,6 +30,20 @@ function parts() {
       site,
       () => undefined,
       () => "",
+    ),
+    // Advanced mode's Custom code (3.9), with code of the site's own and an allowed address.
+    siteCodePart(
+      {
+        ...site,
+        code: {
+          css: ".opening-hours {\n  letter-spacing: 0.05em;\n}",
+          js: 'document.documentElement.classList.add("js");',
+          head: '<meta name="google-site-verification" content="abc123">',
+          bodyEnd: "",
+        },
+        settings: { ...site.settings, allowedExternalUrls: ["https://maps.example.com"] },
+      },
+      () => undefined,
     ),
   ];
 }
@@ -56,3 +71,6 @@ export const Devices: Story = { args: { initialGroup: "devices:" } };
 
 /** This site › General, as File → Site Settings… opens it. */
 export const ThisSite: Story = { args: { initialGroup: "site:general" } };
+
+/** This site › Custom code (3.9), in Advanced mode: the site's own code and allowed addresses. */
+export const CustomCode: Story = { args: { initialGroup: "code:code" } };

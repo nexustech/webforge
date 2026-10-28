@@ -1,7 +1,13 @@
 import type { NodeDoc, SiteSnapshot } from "@webforge/model";
 import { sampleSite } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
-import { codeCandidates, customCode, scriptMistake } from "./site-code.js";
+import {
+  codeCandidates,
+  customHtml,
+  scriptMistake,
+  scriptStrings,
+  siteCodeCandidates,
+} from "./site-code.js";
 
 describe("codeCandidates (3.9)", () => {
   it("finds class names however the code writes them", () => {
@@ -29,8 +35,8 @@ describe("codeCandidates (3.9)", () => {
   });
 });
 
-describe("customCode (3.9)", () => {
-  it("collects Custom Code from pages, Header and Footer, hidden elements left out, and the page snippets and script", () => {
+describe("customHtml and siteCodeCandidates (3.9)", () => {
+  it("collects Custom Code from pages, Header and Footer, hidden elements left out", () => {
     const base = sampleSite();
     const code = (id: string, html: string, hidden = false): NodeDoc => ({
       type: "CustomCode",
@@ -58,7 +64,37 @@ describe("customCode (3.9)", () => {
       code: { css: ".x{}", js: "go()", head: "<meta>", bodyEnd: " " },
     };
 
-    expect(customCode(site)).toEqual(["<i>F</i>", "<b>S</b>", "<meta>", "go()"]);
+    expect(customHtml(site)).toEqual(["<i>F</i>", "<b>S</b>"]);
+  });
+
+  it("takes every word of the HTML, but of custom.js only the words in its strings", () => {
+    const site: SiteSnapshot = {
+      ...sampleSite(),
+      code: {
+        css: ".own-rule { color: red; }",
+        js: 'const table = document.querySelector("table");\nif (table) table.classList.add(`sticky top-0`, "static-note");',
+        head: "",
+        bodyEnd: "<p class=italic>Bye</p>",
+      },
+    };
+
+    const words = siteCodeCandidates(site);
+
+    for (const name of ["italic", "Bye", "table", "sticky", "top-0", "static-note"]) {
+      expect(words, name).toContain(name);
+    }
+    // Not custom.js's own words, which would make rules for nothing, nor custom.css's classes.
+    for (const name of ["const", "if", "classList.add(", "own-rule"]) {
+      expect(words, name).not.toContain(name);
+    }
+  });
+});
+
+describe("scriptStrings (3.9)", () => {
+  it("gives each string and template literal's text, escaped quotes and all", () => {
+    expect(
+      scriptStrings(`a("font-bold", 'md:hidden'); b(\`bg-[#fff] p-4\`); c("say \\"hi\\"");`),
+    ).toEqual(["font-bold", "md:hidden", "bg-[#fff] p-4", 'say \\"hi\\"']);
   });
 });
 

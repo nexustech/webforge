@@ -154,6 +154,31 @@ describe("createPipeline (3.1)", () => {
   );
 
   it(
+    "takes the site's own CSS into a preview with no page rendered and no new compile (3.9)",
+    async () => {
+      const pipeline = createPipeline(components.siteLibrary);
+      const code = { css: ".sale { color: red; }", js: "", head: "", bodyEnd: "" };
+      const base = { ...sampleSite(), code };
+      await build(pipeline, base, "preview");
+
+      renderPage.mockClear();
+      compile.mockClear();
+      const { site } = await build(
+        pipeline,
+        { ...base, code: { ...code, css: ".sale { color: blue; }" } },
+        "preview",
+      );
+
+      expect(renderPage).not.toHaveBeenCalled();
+      expect(compile).not.toHaveBeenCalled();
+      const path = [...site.files.keys()].find((file) => /custom\.[0-9a-f]+\.css$/.test(file));
+      expect(new TextDecoder().decode(site.files.get(path ?? ""))).toContain("blue");
+      expect(new TextDecoder().decode(site.files.get("index.html"))).toContain(path);
+    },
+    scaledTestTimeout(120_000),
+  );
+
+  it(
     "takes a colour or a size of the theme into a preview with no new compile and no page rendered (3.2)",
     async () => {
       const pipeline = createPipeline(components.siteLibrary);

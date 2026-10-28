@@ -1,6 +1,10 @@
-import { combineForms, FormDialog } from "@webforge/editor-ui";
+import { combineForms, FieldRenderersProvider, FormDialog } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { OpenSettings } from "../editor/settings-registry.js";
+import { codeField } from "../fields/index.js";
+
+/** The fields Settings draws the app's way: the site's code (3.9). */
+const RENDERERS = { code: codeField() };
 
 /** Props of {@link SettingsDialog}. */
 export type SettingsDialogProps = {
@@ -28,21 +32,23 @@ export function SettingsDialog({
 }: SettingsDialogProps) {
   const { spec, initial } = combineForms(parts.map((part) => part.form));
   return (
-    <FormDialog
-      open={open}
-      title={t("settings.title")}
-      description={t("settings.description")}
-      confirm={t("settings.save")}
-      spec={spec}
-      initial={initial}
-      groupsLabel={t("settings.sections")}
-      {...(initialGroup === undefined ? {} : { initialGroup })}
-      size="xl"
-      onSave={(output) => {
-        for (const part of parts) part.save(output[part.form.id]);
-        onSaved();
-      }}
-      onCancel={onCancel}
-    />
+    <FieldRenderersProvider renderers={RENDERERS}>
+      <FormDialog
+        open={open}
+        title={t("settings.title")}
+        description={t("settings.description")}
+        confirm={t("settings.save")}
+        spec={spec}
+        initial={initial}
+        groupsLabel={t("settings.sections")}
+        {...(initialGroup === undefined ? {} : { initialGroup })}
+        size="xl"
+        onSave={(output) => {
+          for (const part of parts) part.save(output[part.form.id]);
+          onSaved();
+        }}
+        onCancel={onCancel}
+      />
+    </FieldRenderersProvider>
   );
 }
