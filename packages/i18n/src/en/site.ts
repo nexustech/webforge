@@ -183,7 +183,7 @@ export const site = {
   "site.code.allowedAddress": "Address",
   "site.code.allowedAdd": "Add an address",
   "site.code.allowedRemove": "Remove this address",
-  "site.code.error.address": "Enter a web address that starts with https:// or http://.",
+  "site.code.error.address": "Enter a web address that starts with https://.",
   "site.code.history": "Changed Custom Code",
   "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.section.general": "General",

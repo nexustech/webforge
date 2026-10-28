@@ -43,13 +43,16 @@ describe("the Custom code section (F-ED-15, 3.9)", () => {
     });
   });
 
-  it("says when an allowed address isn't a web address, in its own words", async () => {
+  it("says when an allowed address isn't an https:// address, in its own words", async () => {
     const form = toCodeForm(sessionWith().history.document.getState());
 
+    // http:// too: a published site is https, where a browser blocks an http:// script.
+    expect(
+      (await checked({ ...form, allowed: [{ id: "a", url: "http://maps.example.com/x.js" }] }))
+        .issues,
+    ).toHaveLength(1);
     expect(await checked({ ...form, allowed: [{ id: "a", url: "maps.example.com" }] })).toEqual({
-      issues: [
-        ["allowedExternalUrls.0", "Enter a web address that starts with https:// or http://."],
-      ],
+      issues: [["allowedExternalUrls.0", "Enter a web address that starts with https://."]],
     });
   });
 });
@@ -81,7 +84,7 @@ describe("saveSiteCode", () => {
 });
 
 describe("registerSiteCode", () => {
-  it("shows the section in Advanced mode only (T2)", () => {
+  it("shows the section in Advanced mode (T2)", () => {
     const settings = createSettingsRegistry();
     const preferences = createPreferencesStore();
     registerSiteCode(settings, sessionWith(), preferences);
@@ -90,6 +93,20 @@ describe("registerSiteCode", () => {
     expect(entry?.heading).toBe("site");
     expect(entry?.open()).toBeUndefined();
     preferences.change({ editorLevel: "advanced" });
+    expect(entry?.open()?.form.id).toBe("code");
+  });
+
+  it("shows it in Simple mode too once the site has code of its own, for Site Check to show (3.9)", () => {
+    const settings = createSettingsRegistry();
+    const session = sessionWith();
+    registerSiteCode(settings, session, createPreferencesStore());
+    const entry = settings.list().find((item) => item.id === "code");
+
+    expect(entry?.open()).toBeUndefined();
+    saveSiteCode(session, {
+      code: { ...CODE, js: "", head: "", bodyEnd: "" },
+      allowedExternalUrls: [],
+    });
     expect(entry?.open()?.form.id).toBe("code");
   });
 });

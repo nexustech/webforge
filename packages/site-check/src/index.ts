@@ -15,4 +15,5 @@ export type {
   Finding,
   FindingPlace,
   RuleResult,
+  SiteCodePart,
 } from "./types.js";

@@ -26,6 +26,9 @@ export type SiteCheckActions = {
   readonly settings: Pick<SettingsRegistry, "show">;
 };
 
+/** Settings' Custom Code: its part's id and its one section's, as site-settings registers it. */
+const CODE_SETTINGS = "code";
+
 /** The Pages panel's and the Media panel's ids (1.8, 1.9). */
 const SITE_PANEL_ID = "site";
 const MEDIA_PANEL_ID = "media";
@@ -34,6 +37,13 @@ const MEDIA_PANEL_ID = "media";
 function showAddress(settings: SiteCheckActions["settings"]): void {
   settings.show("site", "address").catch((error: unknown) => {
     reportFailure("siteCheck.address", error);
+  });
+}
+
+/** Settings, open on Custom Code (3.9): the site's own code, and the addresses it may load from. */
+function showCode(settings: SiteCheckActions["settings"]): void {
+  settings.show(CODE_SETTINGS, CODE_SETTINGS).catch((error: unknown) => {
+    reportFailure("siteCheck.code", error);
   });
 }
 
@@ -65,7 +75,7 @@ function pageWithCopy(
 /**
  * Shows where `place` is (F-CHK-1, click to jump): an element selected on its page (the Header's
  * and Footer's on the page shown, a shared section's in a copy of it), a page in the Pages panel,
- * Media, the Theme panel, or Site Settings at the web address.
+ * Media, the Theme panel, Site Settings at the web address, or Settings' Custom Code.
  */
 export function jumpTo(place: FindingPlace, { session, panels, settings }: SiteCheckActions): void {
   const site = session.history.document.getState();
@@ -100,6 +110,9 @@ export function jumpTo(place: FindingPlace, { session, panels, settings }: SiteC
       return;
     case "address":
       showAddress(settings);
+      return;
+    case "code":
+      showCode(settings);
       return;
   }
 }
