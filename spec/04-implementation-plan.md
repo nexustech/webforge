@@ -123,6 +123,8 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Split, 28 Oct 2026 (3.11):** 3.11 is over 5 days, so it is split into 3.11a ([#582](https://github.com/nexustech/webforge/issues/582), 2.5 days) and 3.11b ([#583](https://github.com/nexustech/webforge/issues/583), 3.5 days, with SEO-9). Days are unchanged, so there is no scope change.
 
+**Split, 28 Oct 2026 (3.13):** 3.13 is over 5 days, so it is split into 3.13a ([#578](https://github.com/nexustech/webforge/issues/578), 3 days) and 3.13b ([#579](https://github.com/nexustech/webforge/issues/579), 3.5 days), and moved with 3.14 from stream A to B, which had built 3.12 (product owner). The Phase 3 re-plan the same day then gives 3.13b to A and 3.14 to C, both after 3.13a. Days are unchanged, so there is no scope change.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
@@ -230,8 +232,9 @@ gantt
     3.11a Quick start – the business, page recipes :t3_11a, 2027-08-09, 2.5d
     3.11b Quick start – the dialog, Start a site :t3_11, after t3_11a, 3.5d
     3.12 Component looks in the theme, provenance :t3_12, after t3_11, 4d
-    3.13 Style this component… dialog :t3_13, after t3_12, 6.5d
-    3.14 Advanced mode – read-only CSS view :t3_14, after t3_13, 2d
+    3.13a Style this component… – the dialog, preview, where it applies :t3_13a, after t3_12, 3d
+    3.13b Style this component… – the deeper groups :t3_13, after t3_13a, 3.5d
+    3.14 Advanced mode – read-only CSS view :t3_14, after t3_13a, 2d
     3.15 Being found – structured data, noindex, preload, verification :t3_15, after t3_12, 4d
     3.16 Search-result preview in Page Settings :t3_16, after t3_15, 1.5d
     3.17 Site Check – Being found :t3_17, after t3_9 t3_15, 1.5d
@@ -985,8 +988,8 @@ The eight templates were built before the Appearance group. A light pass uses it
 | 3.10 | Exported-site compatibility E2E | [#68](https://github.com/nexustech/webforge/issues/68) | pipeline | X1, C8, MVP §6 Phase 3 exit | 2 | 3.3, 3.4, 3.5, 2.15 |
 | 3.11 | Quick start: a new site from a few questions (3.11a [#582](https://github.com/nexustech/webforge/issues/582), 3.11b [#583](https://github.com/nexustech/webforge/issues/583)) | [#516](https://github.com/nexustech/webforge/issues/516) | shell | [product/09](../research/product/09-quick-start-wizard.md) QS-1…QS-6, [product/12](../research/product/12-search-visibility.md) SEO-9, F-SITE-1, F-SET-1, SC-3, LF-11, PG-2 | 6 | 2.14, 2.15, 1.17, 2.21, 2.3b |
 | 3.12 | Component looks in the theme, and provenance on every Appearance control | [#528](https://github.com/nexustech/webforge/issues/528) | themes | [product/11](../research/product/11-component-theming.md) CT-1, CT-3, F-DS-7, F-ED-4, ST-1, ADR 0009 | 4 | 2.22, 2.3b, 2.23, 2.27 |
-| 3.13 | Style this component…: a dialog with a preview, deeper groups and where it applies | [#529](https://github.com/nexustech/webforge/issues/529) | shell | [product/11](../research/product/11-component-theming.md) CT-2, CT-4, CT-5, F-ED-4, F-DS-3, F-DS-7, ST-1, ST-2, ST-4, ST-5, D7 | 6.5 | 3.12, 2.26, 2.28, 2.21 |
-| 3.14 | Advanced mode: a read-only CSS view of the selected item | [#530](https://github.com/nexustech/webforge/issues/530) | shell | [product/11](../research/product/11-component-theming.md) CT-7, F-ED-11, F-ED-15, X4 | 2 | 3.13, 2.18, 3.3 |
+| 3.13 | Style this component…: a dialog with a preview, deeper groups and where it applies (3.13a [#578](https://github.com/nexustech/webforge/issues/578), 3.13b [#579](https://github.com/nexustech/webforge/issues/579)) | [#529](https://github.com/nexustech/webforge/issues/529) | shell | [product/11](../research/product/11-component-theming.md) CT-2, CT-4, CT-5, F-ED-4, F-DS-3, F-DS-7, ST-1, ST-2, ST-4, ST-5, D7 | 6.5 | 3.12, 2.26, 2.28, 2.21 |
+| 3.14 | Advanced mode: a read-only CSS view of the selected item | [#530](https://github.com/nexustech/webforge/issues/530) | shell | [product/11](../research/product/11-component-theming.md) CT-7, F-ED-11, F-ED-15, X4 | 2 | 3.13a, 2.18, 3.3 |
 | 3.15 | Being found: structured data, hide a page from search, the first picture, verification | [#575](https://github.com/nexustech/webforge/issues/575) | pipeline | [product/12](../research/product/12-search-visibility.md) SEO-1…SEO-4, SEO-8, SEO-12, F-EX-6, F-SET-1, F-SET-2, F-EX-5, X3, X4 | 4 | 3.5, 1.17, 1.18, 3.6 |
 | 3.16 | A search-result preview in Page Settings | [#576](https://github.com/nexustech/webforge/issues/576) | shell | [product/12](../research/product/12-search-visibility.md) SEO-6, F-SET-2, G22 | 1.5 | 1.18, 3.5, 2.21 |
 | 3.17 | Site Check › Being found | [#577](https://github.com/nexustech/webforge/issues/577) | site-check | [product/12](../research/product/12-search-visibility.md) SEO-7, SEO-11, F-CHK-1, X5 | 1.5 | 3.6, 3.15, 1.18 |
@@ -1090,6 +1093,7 @@ The theme gains a look per kind of section and element: the Appearance tokens st
 - [ ] Migration fixture; golden exports unchanged with no look set; stories, axe and screenshots
 
 **3.13 Style this component…: a dialog with a preview, deeper groups and where it applies** (added 27 Oct 2026, [product/11](../research/product/11-component-theming.md) CT-2, CT-4, CT-5)  
+Split on 28 Oct 2026 into two sub-issues (items over 5 days are split from Phase 2), days unchanged: **3.13a** ([#578](https://github.com/nexustech/webforge/issues/578), 3 days, stream B after 3.15) the dialog from the Style tab, the quick actions and the right-click menu, its live preview on Desktop and Mobile, the Style tab's Appearance fields with their provenance, and where a change applies with its four choices; **3.13b** ([#579](https://github.com/nexustech/webforge/issues/579), 3.5 days: CT-2's rest 2, CT-4 1, CT-5 0.5, stream A after 3.13a) the deeper groups, from Background with the gradient to When hovered. Actual days go on the sub-issues.  
 *Style this ‹component›…* from the Style tab, the quick actions and the right-click menu, for any section or element, in Theme Studio's chrome on the 2.21 form engine: a live preview of the item on its own on Desktop and Mobile (the story rendering) beside groups for Background (theme colour with shade, a gradient between two theme colours with a direction (CT-4), 2.26's image with overlay), Border per side, Corners per corner, Shadow, Title, Spacing (padding for elements as the spacing token (CT-5), margin, per side, per device) and When hovered (2.28's presets); at the bottom the choice of *This one only*, *Every ‹kind› on this page*, *Every ‹kind› on the site* (2.27) or *Make it the theme's look for ‹kind›* (3.12), with the count and D7. Tokens only in Simple mode (ST-6); Advanced adds ADR 0009's hex colour. **The deeper groups live in the dialog only; the Style tab keeps the compact Appearance basics** (product owner, 27 Oct 2026), showing the same values where they overlap. No inline styles in the export.
 
 - [ ] The dialog opens for any kind with the item previewed on both devices; a change shows in the preview and on the canvas
@@ -1099,7 +1103,7 @@ The theme gains a look per kind of section and element: the Appearance tokens st
 - [ ] Stories, axe, an E2E path and screenshots
 
 **3.14 Advanced mode: a read-only CSS view of the selected item** (added 27 Oct 2026, [product/11](../research/product/11-component-theming.md) CT-7)  
-A *CSS* tab in Advanced mode, in 3.13's dialog and the Advanced tab: the markup the item exports, the classes each control and look produced grouped by control with the token behind each, and the matching rules from the site's stylesheet as the export writes them (the in-app Tailwind compile, X4), each with a copy button. Nothing is editable; the tab says so and points at Custom Code's stylesheet (F-ED-15). The editable stylesheet is v1.1 (CT-8); per-element CSS stays Later (CT-9).
+A *CSS* tab in Advanced mode, in 3.13a's dialog (stream C, once 3.13a has merged) and the Advanced tab: the markup the item exports, the classes each control and look produced grouped by control with the token behind each, and the matching rules from the site's stylesheet as the export writes them (the in-app Tailwind compile, X4), each with a copy button. Nothing is editable; the tab says so and points at Custom Code's stylesheet (F-ED-15). The editable stylesheet is v1.1 (CT-8); per-element CSS stays Later (CT-9).
 
 - [ ] The tab shows markup, classes by control and the export's rules, identical to the export's
 - [ ] It updates as controls change; copy works; absent in Simple mode
