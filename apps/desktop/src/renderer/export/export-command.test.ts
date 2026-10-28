@@ -144,6 +144,21 @@ describe("exportReport", () => {
     ]);
   });
 
+  it("says on which line the site's custom.js has a mistake (3.9)", () => {
+    const report = exportReport(
+      {
+        ...exported,
+        warnings: [{ code: "custom-script", page: "", detail: "12" }],
+        warningCount: 1,
+      },
+      bakery(),
+    );
+
+    expect(report.issues).toEqual([
+      "Your site's script, custom.js, has a mistake on line 12, so browsers will stop there. It was saved as you wrote it.",
+    ]);
+  });
+
   it("names a page Minify output left readable (3.3)", () => {
     const report = exportReport(
       {

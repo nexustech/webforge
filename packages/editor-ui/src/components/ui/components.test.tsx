@@ -134,6 +134,41 @@ describe("Tabs", () => {
     expect(screen.getByRole("tabpanel").textContent).toBe("Layers content");
     expect(screen.getByRole("tab", { name: "Layers" }).getAttribute("data-state")).toBe("active");
   });
+
+  it("lifts a strip's active tab, and fills a side list's chosen row with the accent (#524, #564)", () => {
+    const list = (orientation: "horizontal" | "vertical") =>
+      render(
+        <Tabs defaultValue="a" orientation={orientation}>
+          <TabsList>
+            <TabsTrigger value="a">{orientation}</TabsTrigger>
+          </TabsList>
+        </Tabs>,
+      );
+    list("horizontal");
+    list("vertical");
+    const strip = screen.getByRole("tab", { name: "horizontal" });
+    const side = screen.getByRole("tab", { name: "vertical" });
+
+    // Each style answers to its own orientation only: a side list's accent fill must not be
+    // painted over by the strip's gradient, a background image (#564).
+    expect(strip.getAttribute("data-orientation")).toBe("horizontal");
+    expect(side.getAttribute("data-orientation")).toBe("vertical");
+    for (const tab of [strip, side]) {
+      const active = tab.className.split(" ").filter((name) => name.includes("[state=active]"));
+      expect(
+        active.every(
+          (name) =>
+            name.startsWith("data-[orientation=horizontal]:") ||
+            name.startsWith("data-[orientation=vertical]:"),
+        ),
+        tab.className,
+      ).toBe(true);
+    }
+    expect(side.className).toContain("data-[orientation=vertical]:data-[state=active]:bg-accent");
+    expect(strip.className).toContain(
+      "data-[orientation=horizontal]:data-[state=active]:bg-linear-to-b",
+    );
+  });
 });
 
 describe("ToggleGroup", () => {
