@@ -20,8 +20,14 @@ export function siteToSnapshot(
     if (page === undefined) {
       return [];
     }
-    const { description, hideHeader, hideFooter, hideFromNavigation, hideBackToTop } =
-      page.settings;
+    const {
+      description,
+      hideHeader,
+      hideFooter,
+      hideFromNavigation,
+      hideBackToTop,
+      hideFromSearch,
+    } = page.settings;
     const shareImage = page.settings.shareImage ?? site.settings.social.shareImage;
     return [
       {
@@ -34,6 +40,7 @@ export function siteToSnapshot(
         hideHeader,
         hideFooter,
         hideBackToTop,
+        ...(hideFromSearch === true ? { hideFromSearch } : {}),
         ...(shareImage === undefined ? {} : { shareImage }),
         // Copies of shared sections are exported inline, as their shared section (F-ED-23).
         doc: { ...page.doc, content: expandSharedCopies(page.doc.content, site.sharedSections) },
@@ -85,6 +92,9 @@ export function siteToSnapshot(
       ...(site.settings.social.xHandle === undefined
         ? {}
         : { xHandle: site.settings.social.xHandle }),
+      ...(site.settings.search.verification === undefined
+        ? {}
+        : { verification: site.settings.search.verification }),
     },
   };
 }

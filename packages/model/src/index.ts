@@ -138,6 +138,8 @@ export {
   SOCIAL_NETWORKS,
   siteSettingsSchema,
   socialProfileSchema,
+  verificationCodeOf,
+  verificationCodeSchema,
   webAddressSchema,
   X_HANDLE_MAX,
 } from "./settings.js";

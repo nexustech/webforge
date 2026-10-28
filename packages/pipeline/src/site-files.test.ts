@@ -7,6 +7,7 @@ import {
   llmsTxt,
   markdownPage,
   markdownUrl,
+  readablePages,
   robotsTxt,
   shareTags,
   siteAddress,
@@ -40,6 +41,14 @@ function site(
     ],
   };
 }
+
+/** `snapshot` with its About page hidden from search engines (3.15, SEO-2). */
+const withHiddenAbout = (snapshot: SiteSnapshot): SiteSnapshot => ({
+  ...snapshot,
+  pages: snapshot.pages.map((each) =>
+    each.path === "about" ? { ...each, hideFromSearch: true } : each,
+  ),
+});
 
 const page = (snapshot: SiteSnapshot, path: string): SitePage => {
   const found = snapshot.pages.find((candidate) => candidate.path === path);
@@ -142,6 +151,47 @@ describe("shareTags (3.5)", () => {
     expect(tagsOf(open, "404")).not.toContain("og:url");
   });
 
+  it("keeps search engines away from a page hidden from them, which keeps its address (3.15)", () => {
+    const snapshot = withHiddenAbout(site());
+    const tags = shareTags({
+      site: snapshot,
+      page: page(snapshot, "about"),
+      prefix: `${ADDRESS}/`,
+      shareImage: undefined,
+      manifest: false,
+    }).join("\n");
+
+    expect(tags).toContain('<meta name="robots" content="noindex">');
+    // Still on the site, and linked: only search engines leave it out.
+    expect(tags).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
+  });
+
+  it("writes the search engines' verification codes on every page (3.15, SEO-8)", () => {
+    const snapshot = site({ verification: { google: "abcDEF123_-xyz", bing: "0123456789ABCDEF" } });
+    for (const path of ["index", "about", "404"]) {
+      const tags = shareTags({
+        site: snapshot,
+        page: page(snapshot, path),
+        prefix: "",
+        shareImage: undefined,
+        manifest: false,
+      });
+      expect(tags, path).toContain(
+        '<meta name="google-site-verification" content="abcDEF123_-xyz">',
+      );
+      expect(tags, path).toContain('<meta name="msvalidate.01" content="0123456789ABCDEF">');
+    }
+    const none = shareTags({
+      site: site(),
+      page: page(site(), "index"),
+      prefix: "",
+      shareImage: undefined,
+      manifest: false,
+    }).join("\n");
+    expect(none).not.toContain("verification");
+    expect(none).not.toContain("msvalidate");
+  });
+
   it("escapes what a person wrote", () => {
     const snapshot = { ...site(), name: 'Tom & "Jerry"' };
 
@@ -192,9 +242,18 @@ describe("robots.txt and sitemap.xml (3.5)", () => {
     expect(hasSitemap(site({ includeSitemap: false }))).toBe(false);
   });
 
-  it("keeps search engines out of the whole site when Site Settings say so", () => {
-    expect(robotsTxt(site({ allowIndexing: false }))).toBe("User-agent: *\nDisallow: /\n");
+  it("still lets search engines fetch the pages that say noindex when the site is hidden (3.15)", () => {
+    // A page they may not fetch is one whose noindex they never read (SEO-3).
+    expect(robotsTxt(site({ allowIndexing: false }))).toBe("User-agent: *\nAllow: /\n");
     expect(hasSitemap(site({ allowIndexing: false }))).toBe(false);
+  });
+
+  it("leaves out a page hidden from search engines, from the sitemap and the AI files (3.15)", () => {
+    const snapshot = withHiddenAbout(site());
+
+    expect(sitemapXml(snapshot, ADDRESS)).not.toContain("about.html");
+    expect(readablePages(snapshot).map((each) => each.path)).not.toContain("about");
+    expect(llmsTxt(snapshot)).not.toContain("about");
   });
 
   it("lists every page's address but the 'Page not found' page's", () => {
