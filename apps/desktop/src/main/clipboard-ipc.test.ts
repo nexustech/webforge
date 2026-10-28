@@ -33,12 +33,13 @@ afterEach(() => {
 function handlers(
   clipboard: ElementClipboard,
   session: Parameters<typeof registerClipboardHandlers>[3],
+  writeText: (text: string) => void = vi.fn(),
 ) {
   const registered = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => registered.set(channel, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerClipboardHandlers(ipc, () => true, clipboard, session);
+  registerClipboardHandlers(ipc, () => true, clipboard, session, writeText);
   return (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
@@ -66,6 +67,15 @@ describe("registerClipboardHandlers (1.25)", () => {
     await expect(invoke("clipboard:read", SESSION)).resolves.toEqual({ status: "empty" });
     expect(fake.write).toHaveBeenCalledWith(site, elements);
     expect(fake.read).toHaveBeenCalledWith(site, expect.any(Object));
+  });
+
+  it("copies text, the CSS tab's (3.14)", async () => {
+    const writeText = vi.fn();
+    const invoke = handlers(clipboard(), session, writeText);
+
+    expect(await invoke("clipboard:copy-text", ".p-4 { padding: 1rem; }")).toBeNull();
+    expect(writeText).toHaveBeenCalledWith(".p-4 { padding: 1rem; }");
+    await expect(invoke("clipboard:copy-text", 42)).rejects.toThrow("ipc-failed");
   });
 
   it("refuses a renderer loaded for a site another one has replaced (R6)", async () => {

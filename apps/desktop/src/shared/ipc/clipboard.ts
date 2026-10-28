@@ -82,6 +82,15 @@ export const clipboardChannels = {
     request: z.tuple([sessionIdSchema]),
     response: readResultSchema,
   },
+  /**
+   * Puts text on the system clipboard: what Advanced mode's CSS tab copies (3.14). The renderer
+   * has no web permissions, so no `navigator.clipboard`; never logged, as it's site content.
+   */
+  copyText: {
+    channel: "clipboard:copy-text",
+    request: z.tuple([z.string().max(1_000_000)]),
+    response: z.null(),
+  },
 } as const;
 
 /** `window.webforge.clipboard`. */
@@ -93,4 +102,6 @@ export interface ClipboardApi {
    * into the open site only if it is still the opening `sessionId` names.
    */
   read(sessionId: string): Promise<ClipboardReadResult>;
+  /** Puts `text` on the system clipboard. */
+  copyText(text: string): Promise<null>;
 }

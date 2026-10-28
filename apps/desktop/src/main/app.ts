@@ -492,7 +492,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         app.isPackaged,
       ),
     );
-    registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession);
+    registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession, (text) =>
+      electron.clipboard.writeText(text),
+    );
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
