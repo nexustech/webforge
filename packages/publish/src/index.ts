@@ -29,11 +29,14 @@ export {
   PublishError,
   type PublishErrorCode,
   type PublishEvent,
+  type PublishedEvent,
   type Publisher,
   type TestResult,
   throwIfCancelled,
+  type Verification,
 } from "./publisher.js";
 export { MANIFEST_FILE } from "./remote-folder.js";
+export { type PublishRunEvent, type PublishRunOptions, publishSite } from "./run.js";
 export {
   hostKeyFingerprint,
   readSftpHostKey,
@@ -41,3 +44,4 @@ export {
   type SftpOptions,
   sftpPublisher,
 } from "./sftp.js";
+export { type VerifyOptions, verifyPublished } from "./verify.js";
