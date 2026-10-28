@@ -51,6 +51,7 @@ import {
   withYear,
 } from "./site-files.js";
 import { iconFiles, shareImageFile } from "./site-images.js";
+import { structuredData } from "./structured-data.js";
 import { withThanksPage } from "./thanks-page.js";
 
 /**
@@ -666,6 +667,18 @@ export async function* buildEvents(
           prefix: entry.prefix,
           shareImage: shareImages.get(entry.page.path),
           manifest: icons.length > 0,
+        }),
+        // The business as structured data, from what the page shows (3.15, SEO-1).
+        ...structuredData({
+          site,
+          page: entry.page,
+          nodes: [
+            ...(entry.page.hideHeader === true ? [] : site.layout.header),
+            ...entry.page.doc.content,
+            ...(entry.page.hideFooter === true ? [] : site.layout.footer),
+          ],
+          library,
+          shareImage: shareImages.get(entry.page.path),
         }),
       ],
     };

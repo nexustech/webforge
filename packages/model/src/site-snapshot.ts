@@ -22,6 +22,8 @@ import {
 } from "./media.js";
 import { type MenuDoc, menuDocSchema } from "./menu.js";
 import {
+  BUSINESS_TYPES,
+  type BusinessType,
   CONSENT_MESSAGE_MAX,
   type FormService,
   formServiceSchema,
@@ -29,6 +31,7 @@ import {
   measurementIdSchema,
   type OpeningHours,
   openingHoursSchema,
+  PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
   type SocialProfile,
   socialProfileSchema,
@@ -140,6 +143,11 @@ export type SiteSnapshot = {
   readonly openingHours?: readonly OpeningHours[] | undefined;
   /** Site Settings' social profiles, which the Social links element links to (2.9b). */
   readonly socialProfiles?: readonly SocialProfile[] | undefined;
+  /**
+   * What kind of business it is, for its structured data (3.15, SEO-1): its type and schema.org
+   * kind, its price range and where it is. None for a site that hasn't said.
+   */
+  readonly business?: SiteBusiness | undefined;
   /** Where Site Settings send form submissions (F-CM-1), for the Contact form (2.8). */
   readonly formService?: FormService | undefined;
   /** Site Settings' back-to-top button (F-CM-9, 2.9), on pages that don't hide it. */
@@ -168,6 +176,14 @@ export type SiteSnapshot = {
    * `<head>` and the end of its `<body>`. Left out when all four are empty.
    */
   readonly code?: SiteCode | undefined;
+};
+
+/** {@link SiteSnapshot}'s business details beyond its contact details (3.15, SEO-1). */
+export type SiteBusiness = {
+  readonly type?: BusinessType | undefined;
+  readonly kind?: string | undefined;
+  readonly priceRange?: string | undefined;
+  readonly geo?: { readonly latitude: number; readonly longitude: number } | undefined;
 };
 
 /** {@link SiteSnapshot}'s search engines and sharing. */
@@ -265,6 +281,19 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),
       openingHours: z.array(openingHoursSchema).optional(),
       socialProfiles: z.array(socialProfileSchema).optional(),
+      business: z
+        .strictObject({
+          type: z.enum(BUSINESS_TYPES).optional(),
+          kind: z.string().max(64).optional(),
+          priceRange: z.string().max(PRICE_RANGE_MAX).optional(),
+          geo: z
+            .strictObject({
+              latitude: z.number().min(-90).max(90),
+              longitude: z.number().min(-180).max(180),
+            })
+            .optional(),
+        })
+        .optional(),
       formService: formServiceSchema.optional(),
       backToTop: z.boolean().optional(),
       menu: menuDocSchema.optional(),

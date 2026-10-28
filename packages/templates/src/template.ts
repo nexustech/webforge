@@ -1,4 +1,5 @@
 import {
+  BUSINESS_TYPES,
   copyTheme,
   IMAGE_MIME_TYPES,
   type ImageMeta,
@@ -39,16 +40,11 @@ export type TemplateId = (typeof TEMPLATE_IDS)[number];
  */
 export const BLANK_TEMPLATE_ID = "blank" satisfies TemplateId;
 
-/** The business types the New Site dialog's chips filter by (UX-29): `t("template.category.<id>")`. */
-export const TEMPLATE_CATEGORIES = [
-  "food",
-  "beauty",
-  "trades",
-  "services",
-  "creative",
-  "shop",
-  "personal",
-] as const;
+/**
+ * The business types the New Site dialog's chips filter by (UX-29): `t("template.category.<id>")`.
+ * The model's {@link BUSINESS_TYPES}, which Site Settings keeps for the structured data (3.15).
+ */
+export const TEMPLATE_CATEGORIES = BUSINESS_TYPES;
 
 /** One of {@link TEMPLATE_CATEGORIES}. */
 export type TemplateCategory = (typeof TEMPLATE_CATEGORIES)[number];
@@ -149,6 +145,8 @@ export function siteFromTemplate(
   site.settings.general.name = options.name;
   // A new site helps AI tools read it unless its template says otherwise (F-EX-5, 3.5).
   site.settings.search.readableByAi ??= true;
+  // Its kind of business is its template's (3.15, SEO-1): what its structured data says it is.
+  if (template.category !== null) site.settings.general.businessType ??= template.category;
   site.theme = copyTheme(options.theme);
   for (const image of images) {
     const meta: ImageMeta = {

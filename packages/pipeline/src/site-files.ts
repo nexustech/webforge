@@ -25,7 +25,7 @@ export function pageTitle(site: SiteSnapshot, page: SitePage): string {
 }
 
 /** `page`'s address under the site's: the home page is the address itself (`…/`). */
-function pageAddress(address: string, path: string): string {
+export function pageAddress(address: string, path: string): string {
   return path === "index" ? `${address}/` : `${address}/${path}.html`;
 }
 

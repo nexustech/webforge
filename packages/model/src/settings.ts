@@ -156,6 +156,54 @@ export function verificationCodeOf(pasted: string, engine: keyof typeof VERIFICA
     : pasted.trim();
 }
 
+/**
+ * The kinds of business a site can be for (3.11's quick start, QS-1; 3.15's structured data,
+ * SEO-1): the New Site dialog's categories, which a template's category is one of.
+ */
+export const BUSINESS_TYPES = [
+  "food",
+  "beauty",
+  "trades",
+  "services",
+  "creative",
+  "shop",
+  "personal",
+] as const;
+
+/** One of {@link BUSINESS_TYPES}. */
+export type BusinessType = (typeof BUSINESS_TYPES)[number];
+
+/**
+ * The schema.org types a business of each type can be marked up as (3.15, SEO-1), the first its
+ * default. A personal site is no business: it has none, and is marked up as a website only.
+ */
+export const BUSINESS_KINDS = {
+  food: ["FoodEstablishment", "CafeOrCoffeeShop", "Restaurant", "Bakery", "BarOrPub"],
+  beauty: ["HealthAndBeautyBusiness", "HairSalon", "BeautySalon", "NailSalon", "DaySpa"],
+  trades: [
+    "HomeAndConstructionBusiness",
+    "Plumber",
+    "Electrician",
+    "GeneralContractor",
+    "HousePainter",
+    "Locksmith",
+    "RoofingContractor",
+  ],
+  services: ["ProfessionalService", "AccountingService", "LegalService", "FinancialService"],
+  creative: ["LocalBusiness"],
+  shop: ["Store", "ClothingStore", "BookStore", "Florist", "GiftShop", "HomeGoodsStore"],
+  personal: [],
+} as const satisfies Readonly<Record<BusinessType, readonly string[]>>;
+
+/** Every schema.org type in {@link BUSINESS_KINDS}. */
+const ALL_BUSINESS_KINDS = Object.values(BUSINESS_KINDS).flat() as [string, ...string[]];
+
+/** One of {@link BUSINESS_KINDS}' types. */
+export type BusinessKind = (typeof BUSINESS_KINDS)[BusinessType][number];
+
+/** The longest price range a business may give (Google's `priceRange`): "££", "£10–£30". */
+export const PRICE_RANGE_MAX = 30;
+
 export const siteSettingsSchema = z.strictObject({
   general: z.strictObject({
     name: z.string().min(1).max(SITE_NAME_MAX),
@@ -163,6 +211,16 @@ export const siteSettingsSchema = z.strictObject({
     language: languageTagSchema,
     /** Source image for the favicon and app icons. */
     icon: mediaIdSchema.optional(),
+    /**
+     * What kind of business it is (3.11, QS-1; 3.15, SEO-1): the quick start's choice, which
+     * picks the structured data's type. Unknown when absent (ADR 0012).
+     */
+    businessType: z.enum(BUSINESS_TYPES).optional(),
+    /**
+     * Its schema.org type within {@link BUSINESS_KINDS}' list for its type (3.15, SEO-1); the
+     * type's first when absent, or when it isn't one of that type's.
+     */
+    businessKind: z.enum(ALL_BUSINESS_KINDS).optional(),
     /**
      * A back-to-top button on every page (F-CM-9, 2.9), shown once the visitor has scrolled down;
      * a page can leave it out (`hideBackToTop`). Off when absent, as in files from before it.
@@ -187,6 +245,15 @@ export const siteSettingsSchema = z.strictObject({
     openingHours: z.array(openingHoursSchema),
     /** E.g. "Closed on bank holidays". */
     openingHoursNote: text(OPENING_HOURS_NOTE_MAX),
+    /** How much it costs, as people say it (3.15, SEO-1): "££", "£10–£30". */
+    priceRange: text(PRICE_RANGE_MAX),
+    /** Where it is on a map (3.15, SEO-1), for the structured data; typed or from a map link. */
+    geo: z
+      .strictObject({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+      })
+      .optional(),
   }),
   search: z.strictObject({
     allowIndexing: z.boolean(),
