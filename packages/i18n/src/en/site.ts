@@ -166,7 +166,7 @@ export const site = {
   "site.settings.save": "Save",
   "site.settings.history": "Changed Site Settings",
   // Custom code in Settings (F-ED-15, C7, 3.9): Advanced mode only, where technical words may appear.
-  "site.code.title": "Custom code",
+  "site.code.title": "Custom Code",
   "site.code.css": "Stylesheet (custom.css)",
   "site.code.cssHint":
     "CSS for every page, after the site's own styles, so it wins over the theme.",
@@ -184,7 +184,7 @@ export const site = {
   "site.code.allowedAdd": "Add an address",
   "site.code.allowedRemove": "Remove this address",
   "site.code.error.address": "Enter a web address that starts with https:// or http://.",
-  "site.code.history": "Changed custom code",
+  "site.code.history": "Changed Custom Code",
   "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.section.general": "General",
   "site.settings.section.address": "Web address",

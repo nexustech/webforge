@@ -72,7 +72,7 @@ describe("saveSiteCode", () => {
     expect(after.code).toEqual(CODE);
     expect(after.settings.allowedExternalUrls).toEqual(["https://maps.example.com"]);
     expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
-      "Changed custom code",
+      "Changed Custom Code",
     ]);
     session.history.undo();
     expect(session.history.document.getState().code).toEqual(before.code);
