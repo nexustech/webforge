@@ -39,10 +39,16 @@ function List({
 const setUp = () => {
   const onDrop = vi.fn();
   const onClick = vi.fn();
-  render(<List onDrop={onDrop} onClick={onClick} />);
+  const view = render(<List onDrop={onDrop} onClick={onClick} />);
   const row = (name: string) => screen.getByRole("button", { name }).closest("li") as HTMLElement;
-  return { onDrop, onClick, row };
+  return { onDrop, onClick, row, view };
 };
+
+/** The style that forces the cursor while a row is dragged, if one is. */
+const dragStyle = () =>
+  [...document.head.querySelectorAll("style")].find((style) =>
+    style.textContent?.includes("cursor"),
+  );
 
 describe("useRowDrag (#271)", () => {
   it("drops a row with the keys held from before the press, as the browser's own drag can't", () => {
@@ -99,5 +105,35 @@ describe("useRowDrag (#271)", () => {
     expect(row("c").getAttribute("data-row-draggable")).toBe("false");
     // Never the browser's own drag, which would carry the row's text instead.
     expect(row("a").getAttribute("draggable")).toBe("false");
+  });
+
+  it("ends a drag let go where it wasn't seen: a move with no button down, or the window left (review)", () => {
+    const { onDrop, row } = setUp();
+
+    pickUp(row("a"), row("b"));
+    expect(row("a").textContent).toContain("dragging");
+    expect(dragStyle()?.textContent).toContain("cursor: grabbing !important");
+    fireEvent.pointerMove(row("b"), { pointerId: 1, clientX: 30, clientY: 0, buttons: 0 });
+    expect(row("a").textContent).not.toContain("dragging");
+    expect(dragStyle()).toBeUndefined();
+
+    pickUp(row("a"), row("b"));
+    fireEvent.blur(window);
+    expect(row("a").textContent).not.toContain("dragging");
+    expect(onDrop).not.toHaveBeenCalled();
+  });
+
+  it("drops with the list's callbacks as they are when it's let go, not as they were at the press", () => {
+    const first = vi.fn();
+    const latest = vi.fn();
+    const view = render(<List onDrop={first} onClick={vi.fn()} />);
+    const row = (name: string) => screen.getByRole("button", { name }).closest("li") as HTMLElement;
+
+    const drag = pickUp(row("a"), row("b"));
+    view.rerender(<List onDrop={latest} onClick={vi.fn()} />);
+    drag.drop();
+
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledWith("a", "b", expect.anything());
   });
 });

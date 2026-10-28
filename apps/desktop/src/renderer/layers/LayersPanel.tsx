@@ -29,7 +29,7 @@ import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
 import { isMac } from "../shell/commands.js";
-import { type RowDragKeys, useRowDrag } from "../shell/use-row-drag.js";
+import { DRAGGABLE_ROW_CLASS, type RowDragKeys, useRowDrag } from "../shell/use-row-drag.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
 export type LayersPanelActions = {
@@ -395,6 +395,10 @@ export function LayersPanel({
             const notAllowed =
               dragging !== null && dragging.layer.id !== layer.id && !canDropAt(dragging, row);
             const hasChildren = layer.children.length > 0;
+            // One drag moving several selected layers is for later (1.31): until then a
+            // selected row can't be dragged while others are selected too.
+            const draggable =
+              !layoutLocked && renaming !== layer.id && !(isSelected && alsoSelected.length > 0);
             return (
               <div
                 key={layer.id}
@@ -407,15 +411,9 @@ export function LayersPanel({
                 aria-posinset={row.index + 1}
                 aria-expanded={hasChildren ? row.expanded : undefined}
                 tabIndex={focusable ? 0 : -1}
-                // One drag moving several selected layers is for later (1.31): until then a
-                // selected row can't be dragged while others are selected too.
-                {...rowDrag.rowProps(
-                  row,
-                  !layoutLocked &&
-                    renaming !== layer.id &&
-                    !(isSelected && alsoSelected.length > 0),
-                )}
+                {...rowDrag.rowProps(row, draggable)}
                 className={cn(
+                  draggable && DRAGGABLE_ROW_CLASS,
                   "group relative flex h-6 items-center gap-1 rounded-sm pr-1 text-xs outline-none",
                   "hover:bg-hover focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                   isSelected && "bg-accent text-accent-foreground",

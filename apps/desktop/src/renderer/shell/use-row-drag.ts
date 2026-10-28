@@ -62,6 +62,12 @@ export type RowDrag<R> = {
   readonly indicatorClass: (row: R) => string | undefined;
 };
 
+/**
+ * The class a row that can be dragged needs: a touch or a pen on it drags the row, and doesn't
+ * scroll the list (which would cancel the drag).
+ */
+export const DRAGGABLE_ROW_CLASS = "touch-none";
+
 /** How far the pointer moves, held down on a row, before the row is picked up: a click is not. */
 const DRAG_DISTANCE = 4;
 
@@ -88,6 +94,8 @@ function sameDrop(a: RowDrop | null, b: RowDrop | null): boolean {
 /** A row press that may become a drag. */
 type Press<R> = {
   readonly row: R;
+  /** The row's element, which captures the pointer once the row is picked up. */
+  readonly element: HTMLElement;
   readonly x: number;
   readonly y: number;
   readonly pointerId: number;
@@ -101,42 +109,45 @@ type Press<R> = {
  * press count, as the browser's own drag would ignore them (Ctrl/Cmd + Shift, a linked copy).
  * Rows of another list are ignored. Keyboard moves (Alt+↑/↓) are each list's.
  */
-export function useRowDrag<R>({
-  type,
-  rows,
-  keyOf,
-  place = halves,
-  allowed = () => true,
-  copying = () => false,
-  onDrop,
-}: RowDragOptions<R>): RowDrag<R> {
+export function useRowDrag<R>(options: RowDragOptions<R>): RowDrag<R> {
+  const { type, keyOf } = options;
   // In state too, so the rows it can't go to are marked while it moves.
   const [dragging, setDragging] = useState<R | null>(null);
   const [drop, setDrop] = useState<RowDrop | null>(null);
+  // The list's rows and callbacks as they are now: a drag outlives the render it started in.
+  const latest = useRef(options);
+  useEffect(() => {
+    latest.current = options;
+  });
   // Ends the drag going on: the window's listeners outlive a render.
   const stop = useRef<(() => void) | null>(null);
   // A drag still going when the list goes ends with it.
   useEffect(() => () => stop.current?.(), []);
 
-  /** The row of this list under `target`, its element, and its key. */
+  /** The row of this list at `element` (or in it), its element, and its key. */
   const rowAt = (target: EventTarget | null) => {
     const element =
       target instanceof Element ? target.closest<HTMLElement>("[data-row-drag]") : null;
-    if (element === null || element.dataset.rowDrag !== type) return undefined;
+    if (element === null || element.dataset.rowDrag !== latest.current.type) return undefined;
     const key = element.dataset.rowKey ?? "";
-    const row = rows.find((each) => keyOf(each) === key);
+    const { rows, keyOf: keyOfNow } = latest.current;
+    const row = rows.find((each) => keyOfNow(each) === key);
     return row === undefined ? undefined : { element, key, row };
   };
 
-  /** Where the dragged row `from` would land under `event`, and whether it may. */
+  /**
+   * Where the dragged row `from` would land under the pointer, and whether it may. The row is
+   * found where the pointer is: a captured pointer's events all go to the row it pressed.
+   */
   const landing = (from: R, event: PointerEvent) => {
-    const over = rowAt(event.target);
+    const over = rowAt(document.elementFromPoint(event.clientX, event.clientY));
     if (over === undefined) return null;
     // How far down the row the pointer is: 0 at its top, 1 at its bottom (below a row with no
     // height, as without a layout, anywhere under its top counts as its bottom).
     const box = over.element.getBoundingClientRect();
     const y = (event.clientY - box.top) / box.height;
     const keys = keysOf(event);
+    const { place = halves, allowed = () => true } = latest.current;
     const at = place(from, over.row, y, keys);
     return at === null ? null : { ...over, place: at, allowed: allowed(from, over.row), keys };
   };
@@ -146,9 +157,10 @@ export function useRowDrag<R>({
     stop.current?.();
     let picked = false;
     let shown: RowDrop | null = null;
-    const body = document.body;
-    const cursor = body.style.cursor;
-    const userSelect = body.style.userSelect;
+    // The cursor over everything while it moves (the rows' own would win), and no text selected.
+    const style = document.createElement("style");
+    const cursorFor = (cursor: string) =>
+      `* { cursor: ${cursor} !important; user-select: none !important; }`;
     const show = (next: RowDrop | null) => {
       if (sameDrop(next, shown)) return;
       shown = next;
@@ -159,26 +171,38 @@ export function useRowDrag<R>({
       window.removeEventListener("pointerup", up, true);
       window.removeEventListener("pointercancel", end, true);
       window.removeEventListener("keydown", key, true);
+      window.removeEventListener("blur", end);
       stop.current = null;
       if (!picked) return;
-      body.style.cursor = cursor;
-      body.style.userSelect = userSelect;
+      if (press.element.hasPointerCapture?.(press.pointerId)) {
+        press.element.releasePointerCapture(press.pointerId);
+      }
+      style.remove();
       setDragging(null);
       setDrop(null);
     };
     const move = (event: PointerEvent) => {
       if (event.pointerId !== press.pointerId) return;
+      // Let go where nothing told us (outside the window): the drag is over, and drops nothing.
+      if (event.buttons === 0) {
+        end();
+        return;
+      }
       if (!picked) {
         if (Math.hypot(event.clientX - press.x, event.clientY - press.y) < DRAG_DISTANCE) return;
         picked = true;
         setDragging(press.row);
-        body.style.userSelect = "none";
+        // Its moves and its letting go come here, wherever the pointer goes.
+        press.element.setPointerCapture?.(press.pointerId);
+        document.head.append(style);
         window.getSelection()?.removeAllRanges();
       }
       const at = landing(press.row, event);
       show(at === null ? null : { key: at.key, place: at.place, allowed: at.allowed });
-      body.style.cursor =
-        at !== null && !at.allowed ? "not-allowed" : copying(keysOf(event)) ? "copy" : "grabbing";
+      const copying = latest.current.copying ?? (() => false);
+      style.textContent = cursorFor(
+        at !== null && !at.allowed ? "not-allowed" : copying(keysOf(event)) ? "copy" : "grabbing",
+      );
     };
     const up = (event: PointerEvent) => {
       if (event.pointerId !== press.pointerId) return;
@@ -200,7 +224,7 @@ export function useRowDrag<R>({
       window.addEventListener("click", swallow, true);
       window.addEventListener("pointerdown", forget, true);
       setTimeout(forget, 0);
-      if (at?.allowed) onDrop(press.row, at.row, at.place, at.keys);
+      if (at?.allowed) latest.current.onDrop(press.row, at.row, at.place, at.keys);
     };
     const key = (event: KeyboardEvent) => {
       if (event.key !== "Escape" || !picked) return;
@@ -213,6 +237,8 @@ export function useRowDrag<R>({
     window.addEventListener("pointerup", up, true);
     window.addEventListener("pointercancel", end, true);
     window.addEventListener("keydown", key, true);
+    // Another window took the focus: the button may be let go there, unseen.
+    window.addEventListener("blur", end);
     stop.current = end;
   };
 
@@ -229,7 +255,13 @@ export function useRowDrag<R>({
         onPointerDown: (event) => {
           // The main button on this row itself, not on a row inside it (a dropdown's items).
           if (!draggable || event.button !== 0 || rowAt(event.target)?.key !== key) return;
-          follow({ row, x: event.clientX, y: event.clientY, pointerId: event.pointerId });
+          follow({
+            row,
+            element: event.currentTarget,
+            x: event.clientX,
+            y: event.clientY,
+            pointerId: event.pointerId,
+          });
         },
       };
     },

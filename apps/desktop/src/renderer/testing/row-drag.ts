@@ -12,18 +12,36 @@ type Place = "before" | "after";
 
 /**
  * Presses on row `from` and moves over row `to` (as `useRowDrag` follows a drag, with pointer
- * events), picking `from` up. With no layout, a pointer level with a row's top is before it and
- * one below it after it. Returns what lets it go there, and what puts it back (Escape).
+ * events, the button held), picking `from` up. happy-dom lays nothing out: the row under the
+ * pointer is the one the pointer is said to be over, and a pointer level with a row's top is
+ * before it, one below it after it. Returns what moves on, lets go and puts the row back.
  */
 export function pickUp(from: Element, to: Element, keys: Keys = {}, place: Place = "before") {
   const at = { pointerId: 1, clientX: 10, clientY: place === "before" ? 0 : 10, ...keys };
-  fireEvent.pointerDown(from, { pointerId: 1, button: 0, clientX: 0, clientY: 0, ...keys });
-  fireEvent.pointerMove(to, at);
+  const over = (element: Element) => {
+    document.elementFromPoint = () => element;
+  };
+  fireEvent.pointerDown(from, {
+    pointerId: 1,
+    button: 0,
+    buttons: 1,
+    clientX: 0,
+    clientY: 0,
+    ...keys,
+  });
+  over(to);
+  fireEvent.pointerMove(to, { ...at, buttons: 1 });
   return {
-    /** Moves on over row `over`. */
-    over: (over: Element) => fireEvent.pointerMove(over, at),
-    /** Lets go over row `over`, `to` unless given. */
-    drop: (over: Element = to) => fireEvent.pointerUp(over, at),
+    /** Moves on over row `element`. */
+    over: (element: Element) => {
+      over(element);
+      fireEvent.pointerMove(element, { ...at, buttons: 1 });
+    },
+    /** Lets go over row `element`, `to` unless given. */
+    drop: (element: Element = to) => {
+      over(element);
+      fireEvent.pointerUp(element, { ...at, buttons: 0 });
+    },
     /** Puts the row back. */
     cancel: () => fireEvent.keyDown(window, { key: "Escape" }),
   };
