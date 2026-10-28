@@ -40,17 +40,20 @@ export type PanelRegistry = {
   /** The registered panels, in registration order. Stable until something changes. */
   list(): readonly Panel[];
   subscribe(listener: () => void): () => void;
-  /** Brings the panel `id` to the front of its column, opening the column if it is collapsed. */
-  show(id: string): void;
-  /** Calls `listener` with the id of each panel {@link show} asks for. */
-  onShow(listener: (id: string) => void): () => void;
+  /**
+   * Brings the panel `id` to the front of its column, opening the column if it is collapsed;
+   * `reveal` names what in it to show, for the panel's own listener: a Theme tab field (3.12).
+   */
+  show(id: string, reveal?: string): void;
+  /** Calls `listener` with the id of each panel {@link show} asks for, and what to reveal there. */
+  onShow(listener: (id: string, reveal?: string) => void): () => void;
 };
 
 /** Creates an empty registry. */
 export function createPanelRegistry(): PanelRegistry {
   const panels = new Map<string, Panel>();
   const listeners = new Set<() => void>();
-  const showListeners = new Set<(id: string) => void>();
+  const showListeners = new Set<(id: string, reveal?: string) => void>();
   let snapshot: readonly Panel[] = [];
 
   const changed = () => {
@@ -79,8 +82,8 @@ export function createPanelRegistry(): PanelRegistry {
         listeners.delete(listener);
       };
     },
-    show(id) {
-      for (const listener of showListeners) listener(id);
+    show(id, reveal) {
+      for (const listener of showListeners) listener(id, reveal);
     },
     onShow(listener) {
       showListeners.add(listener);

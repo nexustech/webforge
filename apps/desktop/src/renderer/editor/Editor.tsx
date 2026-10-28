@@ -136,6 +136,9 @@ function undoHistoryPanel(
   };
 }
 
+/** The Theme tab's panel id (`theme/`'s THEME_PANEL_ID), which the editor area doesn't import. */
+const THEME_PANEL = "theme";
+
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
  * tab only in Content mode (R9), and the option groups the person closed (UX-13). The Appearance
@@ -480,6 +483,9 @@ export function Editor({
             session={session}
             preferences={preferences}
             flush={() => host.flush()}
+            // An Appearance field's source shows in the Theme tab, or a kind's look in Theme
+            // Studio, which the Theme tab's registration opens (3.12, CT-3).
+            revealSource={(target) => panels.show(THEME_PANEL, target)}
           />
         </FieldRenderersProvider>
       );
