@@ -57,13 +57,14 @@ describe("SiteSettingsDialog", () => {
         screen.getByText("Shows on the published site once visitors scroll down.").id,
       );
       await user.click(backToTop);
+      // AI tools' copies are off for a new site, and their switch is in General (3.15, SEO-12).
+      await user.click(screen.getByLabelText("Help AI tools read your site"));
       await user.click(screen.getByRole("tab", { name: "Contact & hours" }));
       await user.type(screen.getByLabelText("Phone number"), "+44 1234 567890");
       await user.click(screen.getByRole("button", { name: "Add opening hours" }));
       await user.click(screen.getByText("Tue"));
       await user.click(screen.getByRole("tab", { name: "Search engines" }));
       await user.click(screen.getByLabelText("Include a sitemap for search engines"));
-      await user.click(screen.getByLabelText("Help AI tools read your site"));
       await user.click(screen.getByRole("button", { name: "Save" }));
 
       expect(onSave).toHaveBeenCalledTimes(1);
@@ -73,7 +74,7 @@ describe("SiteSettingsDialog", () => {
           phone: "+44 1234 567890",
           openingHours: [{ days: ["tue"], opens: "09:00", closes: "17:00" }],
         },
-        search: { includeSitemap: false, readableByAi: false },
+        search: { includeSitemap: false, readableByAi: true },
       });
     },
     SLOW,
