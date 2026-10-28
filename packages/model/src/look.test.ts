@@ -20,6 +20,29 @@ describe("looks (3.12, CT-1)", () => {
     expect(themeTokensSchema.parse(DEFAULT_THEME).looks).toBeUndefined();
   });
 
+  it("holds Style this ‹component›…'s deeper values too, in a theme as before (3.13b, ADR 0012)", () => {
+    // A theme saved before 3.13b has none of them, and reads as it did: no new format.
+    const looks = {
+      Card: {
+        lookGradientDirection: "toBottomRight",
+        lookGradientFrom: "primary",
+        lookGradientTo: "secondary-300",
+        lookBorderBottom: "thick",
+        lookBorderStyle: "dashed",
+        lookCornerTopLeft: "large",
+        lookShadowInner: true,
+        lookHoverColor: "accent-200",
+        lookPadding: { $responsive: { desktop: "l", mobile: "s" } },
+      },
+      Hero: { lookTitleColor: "primary", lookSubtitleSize: "h5", lookSubtitleAlign: "centre" },
+    };
+
+    expect(themeTokensSchema.parse({ ...DEFAULT_THEME, looks }).looks).toEqual(looks);
+    // Their colours are the theme's only, as the basics' are.
+    expect(looksSchema.safeParse({ Card: { lookGradientFrom: "[#1f6feb]" } }).success).toBe(false);
+    expect(looksSchema.safeParse({ Hero: { lookSubtitleColor: "[#1f6feb]" } }).success).toBe(false);
+  });
+
   it("holds the theme's colours only: a custom colour belongs to its item (ADR 0009)", () => {
     expect(looksSchema.safeParse({ Button: { lookColor: "[#1f6feb]" } }).success).toBe(false);
     expect(

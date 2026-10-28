@@ -6,7 +6,10 @@ import {
   APPEARANCE_FIELDS,
   APPEARANCE_FIELDS_WITHOUT_TEXT,
   appearanceBoxClasses,
+  appearanceSubtitleClasses,
   appearanceTextClasses,
+  DIALOG_FIELDS,
+  DIALOG_TITLE_FIELDS,
 } from "./appearance.js";
 import {
   BACKGROUND_DEFAULTS,
@@ -25,7 +28,7 @@ import {
   entranceClasses,
 } from "./motion.js";
 import type { DefaultsOf, FieldDef, RenderPropsOf, ValuesOf } from "./schema.js";
-import { SectionTitleAppearance } from "./typography.js";
+import { SectionSubtitleAppearance, SectionTitleAppearance } from "./typography.js";
 
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
 export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
@@ -81,6 +84,8 @@ type FrameFields = {
   readonly margin: typeof MARGIN_FIELD;
 } & typeof ENTRANCE_FIELDS &
   typeof APPEARANCE_FIELDS &
+  typeof DIALOG_FIELDS &
+  Partial<typeof DIALOG_TITLE_FIELDS> &
   Partial<typeof BACKGROUND_FIELDS>;
 
 /** The names of {@link FrameFields}, which a section can't give a field of its own. */
@@ -90,6 +95,8 @@ const FRAME_FIELDS = [
   "margin",
   ...ENTRANCE_FIELD_NAMES,
   ...APPEARANCE_FIELD_NAMES,
+  ...(Object.keys(DIALOG_FIELDS) as (keyof typeof DIALOG_FIELDS)[]),
+  ...(Object.keys(DIALOG_TITLE_FIELDS) as (keyof typeof DIALOG_TITLE_FIELDS)[]),
   ...BACKGROUND_FIELD_NAMES,
 ] as const;
 
@@ -172,6 +179,10 @@ export function defineSection<const F extends Fields, const Variant extends stri
     // The Appearance group first, so the Style tab shows it before the section's own options.
     fields: {
       ...(appearance as typeof APPEARANCE_FIELDS),
+      // Style this ‹component›…'s deeper groups (3.13b), which only the dialog shows, the Title
+      // group's for a section with a title of its own.
+      ...DIALOG_FIELDS,
+      ...(titled === false ? {} : DIALOG_TITLE_FIELDS),
       // A background image and its overlay (2.26), in the Appearance group too.
       ...(background === false ? {} : BACKGROUND_FIELDS),
       ...fields,
@@ -225,7 +236,9 @@ export function defineSection<const F extends Fields, const Variant extends stri
             eager={props.id === props.context.firstSection}
           />
           <SectionTitleAppearance.Provider value={appearanceTextClasses(stored)}>
-            {render(props)}
+            <SectionSubtitleAppearance.Provider value={appearanceSubtitleClasses(stored)}>
+              {render(props)}
+            </SectionSubtitleAppearance.Provider>
           </SectionTitleAppearance.Provider>
         </section>
       );
