@@ -118,9 +118,9 @@ export const site = {
   "site.clipboard.copyFailed": "{appName} couldn't copy that.",
   "site.clipboard.pasteFailed": "{appName} couldn't paste that.",
   "site.clipboard.imagesMissing.one":
-    "1 image couldn't be pasted, as {appName} has closed since it was copied. Copy it again from its site.",
+    "1 image couldn't be pasted with it. Copy it again from its site.",
   "site.clipboard.imagesMissing.other":
-    "{count} images couldn't be pasted, as {appName} has closed since they were copied. Copy them again from their site.",
+    "{count} images couldn't be pasted with them. Copy them again from their site.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
   // Links to documents in Media (1.28), beside the link dialog's own `link.*` strings.
   "link.kind.file": "File",
