@@ -83,7 +83,7 @@ function FindingRow({
         type="button"
         className={cn(
           "text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline",
-          guide && "inline-flex items-center gap-1 text-primary",
+          guide && "inline-flex items-center gap-1 underline underline-offset-2",
         )}
         aria-label={guide ? undefined : t("siteCheck.show.label", { item: place })}
         onClick={() => props.onJump(finding)}
