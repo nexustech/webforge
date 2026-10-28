@@ -12,9 +12,13 @@
 // On macOS the first menu, the Dock and the About panel take their name from the running bundle,
 // which in development is Electron's own `Electron.app`. So it is named after the product, from
 // `productName` in electron-builder.yml (#450): each time, so a reinstalled Electron is named again.
+// Editing its Info.plist breaks the bundle's signature, which the keychain items safeStorage keeps
+// sign-ins in are tied to, so the bundle is signed again, ad hoc, after each change. Not yet run on
+// a Mac.
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
+import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
@@ -31,9 +35,15 @@ export function ensureElectron(env: NodeJS.ProcessEnv, loadElectron: () => unkno
   return true;
 }
 
-/** The `productName` electron-builder's config gives the installers and the app bundle. */
+/**
+ * The `productName` electron-builder's config gives the installers and the app bundle: a plain or
+ * quoted YAML scalar, without a trailing `# comment`.
+ */
 export function productNameOf(config: string): string | undefined {
-  return /^productName:\s*(.+?)\s*$/m.exec(config)?.[1];
+  const value = /^productName:[ \t]*(.*)$/m.exec(config)?.[1] ?? "";
+  const quoted = /^(["'])(.*?)\1/.exec(value);
+  const name = quoted === null ? value.replace(/(^|\s)#.*$/, "").trim() : quoted[2];
+  return name === undefined || name === "" ? undefined : name;
 }
 
 /** An XML text, escaped for a plist's `<string>`. */
@@ -60,15 +70,24 @@ export function withBundleName(plist: string, name: string): string {
 
 /**
  * Names the development Electron bundle `name` (macOS only), given the path of its executable,
- * `Electron.app/Contents/MacOS/Electron`. Returns whether its Info.plist changed.
+ * `Electron.app/Contents/MacOS/Electron`, and signs it again, ad hoc, as the change broke its
+ * signature. Returns whether its Info.plist changed.
  */
 function nameElectronBundle(executable: string, name: string): boolean {
-  const plist = join(dirname(dirname(executable)), "Info.plist");
+  const contents = dirname(dirname(executable));
+  const plist = join(contents, "Info.plist");
   if (!existsSync(plist)) return false;
   const before = readFileSync(plist, "utf8");
   const after = withBundleName(before, name);
   if (after === before) return false;
   writeFileSync(plist, after);
+  try {
+    execFileSync("codesign", ["--force", "--deep", "--sign", "-", dirname(contents)], {
+      stdio: "ignore",
+    });
+  } catch {
+    // Unsigned, Electron still runs in development; sign-ins may ask for the keychain again.
+  }
   return true;
 }
 

@@ -56,6 +56,11 @@ describe("the development Electron bundle's name", () => {
     );
     expect(productNameOf(config)).toBe("Webforge");
     expect(productNameOf("appId: x\n")).toBeUndefined();
+    // Quoted, or with a comment after it, as YAML allows.
+    expect(productNameOf('productName: "Web Forge" # the brand\n')).toBe("Web Forge");
+    expect(productNameOf("productName: 'Webforge'\n")).toBe("Webforge");
+    expect(productNameOf("productName: Webforge   # working title\n")).toBe("Webforge");
+    expect(productNameOf("productName:\n")).toBeUndefined();
   });
 
   it("names the bundle and gives it a display name, leaving the rest", () => {

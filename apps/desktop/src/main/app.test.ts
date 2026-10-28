@@ -90,6 +90,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
   const app = {
     isPackaged: false,
     setName: vi.fn(),
+    setPath: vi.fn(),
     requestSingleInstanceLock: vi.fn(() => options.primary ?? true),
     releaseSingleInstanceLock: vi.fn(),
     quit: vi.fn(),
@@ -231,15 +232,32 @@ describe("startApp", () => {
     void fake.start();
 
     expect(fake.app.requestSingleInstanceLock).toHaveBeenCalled();
-    // Named for the app in development, before the lock that its user data folder keeps (#450).
+    // Named for the app in development (#450), keeping the user data folder it had: named after
+    // the app, it would be the installed app's, and so would the single-instance lock kept there.
     expect(fake.app.setName).toHaveBeenCalledWith("Webforge");
-    expect(fake.app.setName.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(fake.app.setPath).toHaveBeenCalledWith("userData", fake.userData);
+    expect(fake.app.setPath.mock.invocationCallOrder[0]).toBeLessThan(
       fake.app.requestSingleInstanceLock.mock.invocationCallOrder[0] ?? 0,
     );
     expect(fake.startCrashReports).toHaveBeenCalledWith(true);
     expect(fake.app.enableSandbox).toHaveBeenCalled();
     expect(fake.app.quit).not.toHaveBeenCalled();
     expect(fake.appEvents.has("web-contents-created")).toBe(true);
+  });
+
+  it("leaves the packaged app's name and user data folder to its bundle (#450)", () => {
+    const fake = fakeElectron();
+    fake.app.isPackaged = true;
+    // Where a packaged app keeps its bundled fonts.
+    Object.defineProperty(process, "resourcesPath", { value: fake.userData, configurable: true });
+    try {
+      void fake.start();
+    } finally {
+      Reflect.deleteProperty(process, "resourcesPath");
+    }
+
+    expect(fake.app.setName).not.toHaveBeenCalled();
+    expect(fake.app.setPath).not.toHaveBeenCalled();
   });
 
   it("opens the editor in its window, shown once it is ready, and tells of a crash", async () => {
