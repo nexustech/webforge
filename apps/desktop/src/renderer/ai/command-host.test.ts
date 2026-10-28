@@ -60,6 +60,13 @@ describe("commandHost (4.8)", () => {
     expect(host.editing()).toBe(true);
     siteWide.answer(false);
     expect(host.editing()).toBe(false);
+
+    // A dialog changing the site live holds others' changes until it is done (3.13a).
+    const release = session.hold();
+    expect(host.editing()).toBe(true);
+    release();
+    release();
+    expect(host.editing()).toBe(false);
   });
 
   it("asks in the window's site-wide question, and closes it when the time is up", async () => {

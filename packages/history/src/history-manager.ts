@@ -121,10 +121,11 @@ export interface HistoryManager<D, S> {
    */
   endSession(coalesceKey: string): void;
   /**
-   * Merges the applied entries after `entryId` (every applied entry for `null`) into one entry
-   * labelled `label`, and stops later runs from merging into it: what a dialog changed live while
-   * it was open becomes one step once it is done (3.13a). The document is unchanged. False with
-   * nothing to merge, for an unknown id or while a gesture is open.
+   * Merges the applied entries made after `entryId` (every applied entry for `null`) into one
+   * entry labelled `label`, and stops later runs from merging into it: what a dialog changed live
+   * while it was open becomes one step once it is done (3.13a). `entryId` may have been dropped for
+   * the limit since: the entries after it are those made later. The document is unchanged. False
+   * with nothing to merge, for an id this history never made, or while a gesture is open.
    */
   mergeSince(entryId: string | null, label: string): boolean;
   /** Forgets all entries; the document is unchanged. */
@@ -596,11 +597,16 @@ export function createHistoryManager<D extends Objectish, S>(
     ];
   };
 
+  /** An entry's place in the order entries are made: its id's number (`h12`). */
+  const madeAt = (id: string) => (/^h\d+$/.test(id) ? Number(id.slice(1)) : Number.NaN);
+
   const mergeSince = (entryId: string | null, label: string) =>
     exclusively(() => {
       if (transaction !== null) return false;
-      const start = entryId === null ? 0 : entries.findIndex((entry) => entry.id === entryId) + 1;
-      if ((start === 0 && entryId !== null) || start >= cursor) return false;
+      const after = entryId === null ? 0 : madeAt(entryId);
+      if (Number.isNaN(after) || after >= nextId) return false;
+      const start = entries.findIndex((entry) => madeAt(entry.id) > after);
+      if (start === -1 || start >= cursor) return false;
       const merged = mergedEntry(entries.slice(start, cursor), label);
       entries = [...entries.slice(0, start), ...merged, ...entries.slice(cursor)];
       cursor = start + merged.length;

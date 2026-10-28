@@ -18,9 +18,13 @@ export type CommandApi = {
   run(name: string, input: unknown, actor: Actor): Promise<CommandResult>;
 };
 
-const BUSY = "The person is editing (a drag, a slider, typing or a question): try again shortly.";
+const BUSY =
+  "The person is editing (a drag, a slider, typing, a dialog or a question): try again shortly.";
 
-/** Whether the person is in the middle of a gesture, typing or a question: nothing else may change. */
+/**
+ * Whether the person is in the middle of a gesture, typing, a dialog or a question: nothing else
+ * may change.
+ */
 const busy = (host: CommandHost) =>
   host.history.state.getState().transaction !== null || host.editing();
 
