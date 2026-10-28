@@ -1,4 +1,5 @@
 import { defineConfig } from "@playwright/test";
+import { SCREENSHOT_TOLERANCE } from "./visual/tolerance.js";
 
 // The editor UI's and the site components' stories (packages/editor-ui, packages/site-components):
 // axe on every story in each theme (and, for site components, on Desktop and Mobile), and
@@ -24,7 +25,7 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   snapshotPathTemplate: "{testDir}/__screenshots__/{arg}{ext}",
   expect: {
-    toHaveScreenshot: { animations: "disabled", caret: "hide", maxDiffPixelRatio: 0.001 },
+    toHaveScreenshot: { animations: "disabled", caret: "hide", ...SCREENSHOT_TOLERANCE },
   },
   use: {
     browserName: "chromium",
@@ -34,7 +35,8 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "stories", testMatch: /stories\.spec\.ts$/ },
+    // The stories, and the check that the screenshot tolerance sees a missing panel (#281).
+    { name: "stories", testMatch: /(?:stories|tolerance)\.spec\.ts$/ },
     {
       name: "template-thumbnails",
       testMatch: /template-thumbnails\.spec\.ts$/,
