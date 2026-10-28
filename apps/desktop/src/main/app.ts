@@ -25,6 +25,7 @@ import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
+import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import { type RunExport, registerExportHandlers } from "./export-ipc.js";
 import { createExportRunner } from "./export-worker-client.js";
@@ -528,7 +529,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       releaseLock: () => {
         if (primaryInstance) app.releaseSingleInstanceLock();
       },
-      exit: (code) => app.exit(code),
+      exit: (code) => {
+        // Closed: what's left is Electron's teardown, which the E2E tests needn't wait for (#534).
+        announceClosedForE2eTests(app.isPackaged);
+        app.exit(code);
+      },
     });
   });
 

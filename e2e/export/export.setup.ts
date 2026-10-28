@@ -1,4 +1,5 @@
 import { mkdtempSync, rmSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test as setup } from "@playwright/test";
@@ -187,6 +188,6 @@ setup("export the fixture site from the app", async () => {
     expect(again).toMatchObject({ status: "exported", pages: 4, warningCount: 1 });
   } finally {
     await app.close();
-    rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
 });
