@@ -13,6 +13,8 @@ export const SiteCheck: Story = panelStory((panels, session) =>
   registerSiteCheckPanel(panels, {
     session,
     settings: createSettingsRegistry(),
+    commands: { run: () => false },
+    openGuide: () => undefined,
     ignored: [],
     saveIgnored: () => undefined,
   }),

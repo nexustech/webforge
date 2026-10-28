@@ -3,7 +3,7 @@ import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
 import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
-import { BodyText, SectionTitle } from "../typography.js";
+import { SectionIntro, SectionTitle } from "../typography.js";
 
 const STATS_LAYOUTS = ["row", "cards", "split"] as const;
 type StatsLayout = (typeof STATS_LAYOUTS)[number];
@@ -50,7 +50,7 @@ const stats = defineSection({
     const intro = (
       <>
         <SectionTitle>{values.title}</SectionTitle>
-        <BodyText className="mt-4">{values.text}</BodyText>
+        <SectionIntro className="mt-4">{values.text}</SectionIntro>
       </>
     );
     return (

@@ -83,7 +83,16 @@ function setUp(site: SiteDoc = siteWith(), ignored: readonly string[] = []) {
   const showSettings = vi.spyOn(settings, "show").mockResolvedValue(true);
   const showPanel = vi.spyOn(panels, "show");
   const saveIgnored = vi.fn();
-  const remove = registerSiteCheckPanel(panels, { session, settings, ignored, saveIgnored });
+  const commands = { run: vi.fn(() => true) };
+  const openGuide = vi.fn();
+  const remove = registerSiteCheckPanel(panels, {
+    session,
+    settings,
+    commands,
+    openGuide,
+    ignored,
+    saveIgnored,
+  });
   const panel = panels.list()[0];
   if (panel === undefined) throw new Error("not registered");
   const SiteCheck = panel.component;
@@ -93,7 +102,17 @@ function setUp(site: SiteDoc = siteWith(), ignored: readonly string[] = []) {
     if (row === null) throw new Error(`no rule ${id}`);
     return row;
   };
-  return { session, panels, remove, saveIgnored, showSettings, showPanel, rule };
+  return {
+    session,
+    panels,
+    remove,
+    saveIgnored,
+    showSettings,
+    showPanel,
+    commands,
+    openGuide,
+    rule,
+  };
 }
 
 describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
@@ -286,6 +305,79 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     recheck();
     expect(rule("deviceNames").dataset.status).toBe("fail");
+  });
+
+  it("lists Being found after the levels, each rule with its level (3.17)", () => {
+    const { rule } = setUp();
+
+    const found = screen.getByRole("region", { name: "Being found" });
+    expect(
+      within(found).getByText("What helps people find your site with a search engine."),
+    ).toBeDefined();
+    expect(found.contains(rule("webAddress"))).toBe(true);
+    expect(within(rule("pageDescriptions")).getByText("Should fix")).toBeDefined();
+    expect(within(rule("mainHeading")).getByText("Tip")).toBeDefined();
+    // Not under the levels as well.
+    const tips = screen.getByRole("region", { name: "Tips" });
+    expect(tips.contains(rule("mainHeading"))).toBe(false);
+  });
+
+  it("opens Page Settings on a page without a description (3.17)", async () => {
+    const { session, commands, rule } = setUp();
+
+    const line = within(rule("pageDescriptions")).getByRole("button", { name: "Show About" });
+    const finding = line.closest("li");
+    if (finding === null) throw new Error("no finding");
+    await userEvent.click(within(finding).getByRole("button", { name: "Fix" }));
+
+    expect(session.ui.getState().pageId).toBe(ABOUT);
+    expect(commands.run).toHaveBeenCalledWith("page.settings");
+  });
+
+  it("opens Site Settings at Contact for a missing business detail (3.17)", async () => {
+    const site = siteWith();
+    const { rule, showSettings } = setUp({
+      ...site,
+      settings: {
+        ...site.settings,
+        general: { ...site.settings.general, businessType: "food" },
+        contact: { ...site.settings.contact, phone: undefined },
+      },
+    });
+
+    await userEvent.click(
+      within(rule("businessDetails")).getByRole("button", {
+        name: "Show Site Settings › Phone number",
+      }),
+    );
+    expect(showSettings).toHaveBeenCalledWith("site", "contact");
+  });
+
+  it("opens a guide's page, and keeps a one-time tip done once marked Done (3.17)", async () => {
+    const { rule, openGuide, saveIgnored } = setUp();
+
+    await userEvent.click(
+      within(rule("businessProfile")).getByRole("button", { name: "Open Google Business Profile" }),
+    );
+    expect(openGuide).toHaveBeenCalledWith("businessProfile");
+
+    await userEvent.click(
+      within(rule("businessProfile")).getByRole("button", {
+        name: "Done: Open Google Business Profile",
+      }),
+    );
+    expect(saveIgnored).toHaveBeenLastCalledWith(["businessProfile:businessProfile"]);
+    expect(document.querySelector('[data-rule="businessProfile"]')).toBeNull();
+    // Done isn't ignoring: nothing to bring back.
+    expect(screen.queryByRole("button", { name: /ignored/ })).toBeNull();
+
+    // Bringing back what was ignored leaves it done.
+    await userEvent.click(
+      within(rule("pageDescriptions")).getByRole("button", { name: "Ignore: About" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Show 1 ignored item again" }));
+    expect(saveIgnored).toHaveBeenLastCalledWith(["businessProfile:businessProfile"]);
+    expect(document.querySelector('[data-rule="businessProfile"]')).toBeNull();
   });
 
   it("opens the Theme panel for a colour pair", async () => {

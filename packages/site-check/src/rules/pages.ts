@@ -50,13 +50,15 @@ export const pageTitlesRule: CheckRule = {
 };
 
 /**
- * The site's web address is in Site Settings (X3, X5): search engines and shared links need it
- * for the sitemap, canonical links and share pictures. *Must fix* to publish.
+ * The site's web address is in Site Settings (X3, X5): without it the export writes no sitemap,
+ * no canonical links, no share pictures in link previews and no structured data. In *Being found*
+ * (3.17). *Must fix* to publish.
  */
 export const webAddressRule: CheckRule = {
   id: "webAddress",
   level: "should",
   strictOnPublish: true,
+  group: "found",
   check: ({ site }) =>
     (site.settings.address.url ?? "") === ""
       ? [{ key: "address", place: { kind: "address" } }]

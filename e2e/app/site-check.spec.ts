@@ -59,3 +59,11 @@ test("opens Site Settings at the web address from its Fix", async () => {
 
   await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toBeVisible();
 });
+
+test("opens Page Settings on a page without a description, in Being found (3.17)", async () => {
+  await expect(drawer().getByRole("region", { name: "Being found" })).toBeVisible();
+  // The new site's home page has no description, nor has the site.
+  await rule("pageDescriptions").getByRole("button", { name: "Fix" }).first().click();
+
+  await expect(page.getByRole("dialog", { name: /^Settings for '/ })).toBeVisible();
+});

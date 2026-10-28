@@ -20,7 +20,7 @@ import {
   entranceClasses,
 } from "../motion.js";
 import type { FormUnset } from "../schema.js";
-import { BodyText, SectionTitle } from "../typography.js";
+import { SectionIntro, SectionTitle } from "../typography.js";
 
 const FORM_LAYOUTS = ["stacked", "split"] as const;
 const layoutVariants = FORM_LAYOUTS.map((value) => ({
@@ -52,7 +52,7 @@ function FormSection({
       <div className="mx-auto grid max-w-6xl items-start gap-10 md:grid-cols-2">
         <div>
           <SectionTitle>{title}</SectionTitle>
-          <BodyText className="mt-4">{text}</BodyText>
+          <SectionIntro className="mt-4">{text}</SectionIntro>
         </div>
         {form}
       </div>
@@ -62,7 +62,7 @@ function FormSection({
     <div className="mx-auto max-w-xl space-y-8">
       <div className="text-center">
         <SectionTitle>{title}</SectionTitle>
-        <BodyText className="mt-4">{text}</BodyText>
+        <SectionIntro className="mt-4">{text}</SectionIntro>
       </div>
       {form}
     </div>

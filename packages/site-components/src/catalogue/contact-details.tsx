@@ -5,7 +5,7 @@ import { defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { openingHoursLines } from "../opening-hours.js";
 import type { RenderContext } from "../schema.js";
-import { BodyText, SectionTitle } from "../typography.js";
+import { SectionIntro, SectionTitle } from "../typography.js";
 
 const CONTACT_LAYOUTS = ["split", "stacked"] as const;
 
@@ -154,7 +154,7 @@ const contactDetails = defineSection({
       <div className="mx-auto max-w-4xl space-y-8">
         <div>
           <SectionTitle>{values.title}</SectionTitle>
-          <BodyText className="mt-4">{values.text}</BodyText>
+          <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         {parts.length > 0 && (
           <div
