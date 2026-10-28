@@ -58,6 +58,28 @@ describe("the Custom code section (F-ED-15, 3.9)", () => {
 });
 
 describe("saveSiteCode", () => {
+  it("keeps the files kept with the site, which the form doesn't show (3.9)", () => {
+    const session = sessionWith();
+    const file = {
+      url: "https://cdn.example.com/w.js",
+      file: "w-1.js",
+      hash: "d".repeat(64),
+      mime: "text/javascript",
+    };
+    session.edit("props", "Kept a file", (draft) => {
+      draft.code.bundled = [file];
+    });
+    const site = session.history.document.getState();
+    const { bundled: _kept, ...code } = site.code;
+
+    // The form's own values, as it opened: nothing to save.
+    expect(saveSiteCode(session, { code, allowedExternalUrls: [] })).toBe(false);
+    expect(saveSiteCode(session, { code: { ...code, css: "a{}" }, allowedExternalUrls: [] })).toBe(
+      true,
+    );
+    expect(session.history.document.getState().code.bundled).toEqual([file]);
+  });
+
   it("saves the code and allowed addresses as one undo step, and nothing when nothing changed", () => {
     const session = sessionWith();
     const before = session.history.document.getState();

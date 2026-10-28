@@ -352,6 +352,115 @@ describe("buildSite: the site's own code (F-ED-15, 3.9)", () => {
     },
     scaledTestTimeout(60_000),
   );
+
+  it(
+    "keeps the address of a kept file whose bytes are missing, and says so (3.9)",
+    async () => {
+      const exported = await buildSite(
+        withCode({
+          css: "",
+          js: "",
+          head: '<script src="https://cdn.example.com/w.js"></script>',
+          bodyEnd: "",
+          bundled: [
+            {
+              url: "https://cdn.example.com/w.js",
+              file: "w-11111111.js",
+              hash: "e".repeat(64),
+              mime: "text/javascript",
+            },
+          ],
+        }),
+        siteLibrary,
+        { ...resources, readMedia: async () => undefined },
+      );
+
+      expect(exported.report.warnings).toContainEqual({
+        code: "missing-kept-file",
+        page: "",
+        detail: "w-11111111.js",
+      });
+      expect(text(exported, "index.html")).toContain(
+        '<script src="https://cdn.example.com/w.js"></script>',
+      );
+      expect([...exported.files.keys()].some((path) => path.startsWith("assets/vendor/"))).toBe(
+        false,
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "writes the files kept with the site to assets/vendor/ and points HTML and CSS at them, but not custom.js (3.9)",
+    async () => {
+      const kept = new Map([
+        [
+          "e".repeat(64),
+          { data: new TextEncoder().encode("window.w = 1;"), mime: "text/javascript" },
+        ],
+        ["f".repeat(64), { data: new TextEncoder().encode("PNGDATA"), mime: "image/png" }],
+      ]);
+      const base = withCode({
+        css: ".hero { background: url(//img.example.com/hero.png); }",
+        js: 'load("https://cdn.example.com/w.js");',
+        head: '<script src="https://cdn.example.com/w.js"></script>',
+        bodyEnd: "",
+        bundled: [
+          {
+            url: "https://cdn.example.com/w.js",
+            file: "w-11111111.js",
+            hash: "e".repeat(64),
+            mime: "text/javascript",
+          },
+          {
+            url: "https://img.example.com/hero.png",
+            file: "hero-22222222.png",
+            hash: "f".repeat(64),
+            mime: "image/png",
+          },
+        ],
+      });
+      const custom: NodeDoc = {
+        type: "CustomCode",
+        // A longer address that starts with a kept one stays as it is.
+        props: {
+          id: "custom",
+          code: '<img src="https://img.example.com/hero.png"><a href="https://cdn.example.com/w.js.map">map</a>',
+        },
+      };
+      const site: SiteSnapshot = {
+        ...base,
+        pages: base.pages.map((page) =>
+          page.path === "services/cakes"
+            ? { ...page, doc: { ...page.doc, content: [custom] } }
+            : page,
+        ),
+      };
+
+      const exported = await buildSite(site, siteLibrary, {
+        ...resources,
+        readMedia: async (hash) => kept.get(hash),
+      });
+
+      expect(text(exported, "assets/vendor/w-11111111.js")).toBe("window.w = 1;");
+      expect(text(exported, "assets/vendor/hero-22222222.png")).toBe("PNGDATA");
+      const page = text(exported, "services/cakes.html");
+      expect(page).toContain('<script src="../assets/vendor/w-11111111.js"></script>');
+      expect(page).toContain('<img src="../assets/vendor/hero-22222222.png">');
+      expect(page).toContain("https://cdn.example.com/w.js.map");
+      expect(text(exported, "index.html")).toContain(
+        '<script src="assets/vendor/w-11111111.js"></script>',
+      );
+      // custom.css is in assets/css/; custom.js stays as written.
+      expect(text(exported, fileNamed(exported, /^assets\/css\/custom\./))).toContain(
+        "url(../../assets/vendor/hero-22222222.png)",
+      );
+      expect(text(exported, fileNamed(exported, /^assets\/js\/custom\./))).toContain(
+        'load("https://cdn.example.com/w.js");',
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
 describe("buildSite: page settings", () => {

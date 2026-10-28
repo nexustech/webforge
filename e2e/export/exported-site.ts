@@ -25,3 +25,9 @@ export const THEMED_SITE_DIR = join(EXPORTED_SITE_DIR, "themed");
 export function themedPageUrl(page: string): string {
   return pathToFileURL(join(THEMED_SITE_DIR, page)).href;
 }
+
+/**
+ * Where the setup exports every template, one folder each by its id (3.10), inside the fixture's
+ * folder so CI uploads them with it.
+ */
+export const TEMPLATES_DIR = join(EXPORTED_SITE_DIR, "templates");
