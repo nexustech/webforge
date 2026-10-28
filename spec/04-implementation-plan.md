@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 412 working days** (≈ 82 weeks of effort; 335 before the 22–28 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**.
+**Total: 412 working days** (≈ 82 weeks of effort; 335 before the 22–28 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -71,6 +71,20 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 **Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling below and the 24 Oct building-block items (26 Nov and 4 Dec before them); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
 **Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
+
+**Re-plan, 28 Oct 2026 (Phase 3 first, product owner):** all three streams work on Phase 3 before Phase 4, so the phase ends when its work is spread evenly rather than when stream B's long queue does. 3.10 goes back to stream A, 3.13b moves from B to A and 3.14 from B to C, both after B's 3.13a, the dialog they build on. Stream A starts 4.1 only in the gaps. The longest queue drops from about 8.5 to about 6 estimated days, so Phase 3 should end about 3 Nov 2026, within its 6 Nov milestone. Days are unchanged, so there is no scope change.
+
+**Re-plan, 28 Oct 2026 (Phase 2 exit):** Phase 2's exit criteria are met, with evidence, and the milestone is closed on the product owner's sign-off (28 Oct 2026), 9 days before its 6 Nov date: all 109 issues closed, none out of plan left open.
+- **Evidence:**
+  - every catalogue component has stories (a test fails if one has none), axe-checked in 3 themes on Desktop and Mobile on PRs and in every theme nightly (`e2e/visual/stories.spec.ts`);
+  - every page of every template passes axe and screenshots (`e2e/visual/template-pages.spec.ts`);
+  - New Site makes each of the 8 templates within its budget (`e2e/app/templates.spec.ts`), and the product owner signed them off as distinct from their thumbnails;
+  - a theme switch asks first and restyles the site as one step, and a hard-to-read colour says so (`e2e/app/theme.spec.ts`, `contrastIssues`);
+  - the Appearance group is on every section and element (`appearance.test.tsx`).
+  - The nightly run of 28 Oct passed every job on all three systems.
+- **Pace:** plan items ran at **0.60** of their estimates (78.5 actual days against 131.5, parents with sub-issues counted once), out-of-plan work at 0.86. 14 closed issues have no `Actual days` and are left out.
+- **New dates:** Phase 3 **6 Nov 2026**; Phase 4 **13 Nov**; the Phase 0 Netlify spike (0.2) by 13 Nov, before 4.2; Phase 5's hardening by late November, then the 4-week beta, so v1.0 about **23 Dec 2026**, as long as code signing (0.1, enrolment by 13 Nov) is in place in time. The milestones carry these due dates.
+- **Streams:** 3.16 and 3.10 move to stream C, and 0.2 (#12) to stream A after 3.11b, before Phase 4's 4.1, so the three Phase 3 queues end together. Days are unchanged, so there is no scope change.
 
 **Re-plan, 25 Oct 2026 (Phase 1 exit):** Phase 1's exit criteria are met, with evidence: the three-page round trip in `e2e/app/phase-1-exit.spec.ts` ([#440](https://github.com/nexustech/webforge/pull/440)), the undo invariants (fast-check), every edit's label (`labels.test.ts`) and the shell's screenshots in dark and light. The phase closes once the product owner has signed off those screenshots. 51 plan issues and the exit test ([#436](https://github.com/nexustech/webforge/issues/436)) are closed.
 - **Pace:** Phase 1's actuals ran at **0.43** of the estimates (53.25 actual days against 125 over the 43 issues with an `Actual days` comment). Phase 2's so far run at **0.58** (50.5 against 86.5, parents with sub-issues counted once). Across the three streams that is about 19 actual days per calendar day.
@@ -113,10 +127,10 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
-| [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 6 Nov 2026 (code-complete) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
-| [Phase 3: Output](#phase-3-output) | 57.5 | 9 Nov 2026 | 20 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every template's home page carries valid `LocalBusiness` structured data from its Site Settings, and Site Check's *Being found* rules run (3.15, 3.17) |
-| [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 23 Nov 2026 | 4 Dec 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
-| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 7 Dec 2026 | 22 Jan 2027 (hardening by mid-December, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
+| [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
+| [Phase 3: Output](#phase-3-output) | 57.5 | 27 Oct 2026 | 6 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every template's home page carries valid `LocalBusiness` structured data from its Site Settings, and Site Check's *Being found* rules run (3.15, 3.17) |
+| [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 2 Nov 2026 | 13 Nov 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
+| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
 The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
@@ -263,7 +277,7 @@ Each item becomes one GitHub issue (title prefixed with its ID) in its phase mil
 
 ### Phase 0: Prototype (finish)
 **Goal:** Close the remaining spikes: publishing and Puck performance. Signed installers, auto-update and the wrap-up (0.1, 0.5, 0.6) moved to [Phase 5](#phase-5-beta-hardening) on 25 Oct 2026.  
-**Effort:** 7 days · **Scheduled:** 26 Oct 2026 → 13 Nov 2026 (Phase 1 exit re-plan; 0.2 and 0.3 in stream B after R13d; 0.1, 0.5 and 0.6 moved to Phase 5 on 25 Oct 2026)
+**Effort:** 7 days · **Scheduled:** 26 Oct 2026 → 13 Nov 2026 (Phase 1 exit re-plan; 0.2 and 0.3 in stream B after R13d, 0.2 moved to stream A after 3.11b at the Phase 2 exit; 0.1, 0.5 and 0.6 moved to Phase 5 on 25 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -655,7 +669,7 @@ Close the visible gap to Bootstrap Studio 9.0.1 within the IP rule ([product/07]
 
 ### Phase 2: Design & components
 **Goal:** The full component catalogue (19 sections with ~45 layout variants, 17 elements), 10–12 curated themes, fonts and the 8 templates, all accessible and visually tested.  
-**Effort:** 145.5 days · **Scheduled:** 23 Oct 2026 → 6 Nov 2026 (Phase 1 exit re-plan; baseline 2 Mar → 14 Jul 2027; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3; 25 Oct: 2.13 +3 for 2.13d, PH2-15; 2.3c +1.5; 26 Oct: 2.22 added, ST-1 and ST-2; 27 Oct: 2.23 and 2.24 added, PH2-17 and PH2-18; 26 Oct: the styling block, 2.22 split and 2.25–2.29 added, ST-8)  
+**Effort:** 145.5 days · **Scheduled:** 23 Oct 2026 → 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off; planned at the Phase 1 exit for 6 Nov; baseline 2 Mar → 14 Jul 2027; 22 Oct 2026: 2.6 and 2.9 +1 day each, 2.3 +2, 2.14 +1, 2.17 added; 23 Oct: 2.9 +1, 2.14 +2, 2.18 added; 24 Oct: 2.19–2.21 added, 2.3 +1 and 2.14 +1 for PG-2 and PG-3; 25 Oct: 2.13 +3 for 2.13d, PH2-15; 2.3c +1.5; 26 Oct: 2.22 added, ST-1 and ST-2; 27 Oct: 2.23 and 2.24 added, PH2-17 and PH2-18; 26 Oct: the styling block, 2.22 split and 2.25–2.29 added, ST-8)  
 **Re-plan, 23 Oct 2026:** three streams, each starting as soon as its queue allows, Phase 1 items included (stream A takes 2.9 before 1.39). Phase 1's actuals run at 0.39 of the estimates; this plan uses 0.5 for engineering items and 0.7 for content (2.13, 2.15; risk R4). Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling and the 24 Oct building-block items; Phase 1's exit review about 9 Nov 2026.
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
@@ -955,7 +969,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
-**Effort:** 57.5 days · **Scheduled:** 9 Nov 2026 → 20 Nov 2026 (Phase 1 exit re-plan; baseline 15 Jul → 26 Aug 2027)
+**Effort:** 57.5 days · **Scheduled:** 27 Oct 2026 → 6 Nov 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 9 → 20 Nov; baseline 15 Jul → 26 Aug 2027)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -981,11 +995,11 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files)~~ → 3.11 (quick start, 27 Oct; +SEO-9 on 28 Oct) → 3.10 (compatibility E2E); 3.13 and 3.14 moved to B on 28 Oct 2026 (product owner) |
-| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12~~ → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E) → 3.15 (being found, 28 Oct) → 3.16 (search-result preview, 28 Oct) → 3.13 → 3.14 (component theming, moved from A on 28 Oct) |
-| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check)~~ → 3.9 (custom code) → 3.17 (Site Check › Being found, 28 Oct, once B's 3.15 has merged) |
+| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files) → 3.11 (quick start)~~ → 3.10 (compatibility E2E, back from C) → 3.13b (Style this component's deeper groups, from B, once 3.13a has merged); then 0.2 (Netlify spike, once the product owner has run it) and Phase 4 from 4.1. Rebalanced 28 Oct 2026 (product owner: all three streams on Phase 3 first) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12 → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E)~~ → 3.15 (being found, 28 Oct) → 3.13a (Style this component…: the dialog). 3.16 moved to C at the Phase 2 exit; 3.13b to A and 3.14 to C on 28 Oct 2026 (product owner) |
+| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check)~~ → 3.9 (custom code) → 3.16 (search-result preview, from B) → 3.17 (Site Check › Being found, once B's 3.15 has merged) → 3.14 (read-only CSS view, from B, once 3.13a has merged) |
 
-One item waits on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue; 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
+Three items wait on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue, and 3.13b (A) and 3.14 (C) on 3.13a (B); 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1121,7 +1135,7 @@ A group of plain-language rules in `packages/site-check` beside the existing one
 
 ### Phase 4: Publish & versions
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
-**Effort:** 30 days · **Scheduled:** 23 Nov 2026 → 4 Dec 2026 (Phase 1 exit re-plan; baseline 27 Aug → 28 Sep 2027; 4.8 and 4.9 added 22 Oct 2026)
+**Effort:** 30 days · **Scheduled:** 2 Nov 2026 → 13 Nov 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 23 Nov → 4 Dec; baseline 27 Aug → 28 Sep 2027; 4.8 and 4.9 added 22 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -1205,7 +1219,7 @@ ADR on the transport (Q9). The MCP server runs in main on the official TypeScrip
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
-**Effort:** 44 days · **Scheduled:** 7 Dec 2026 → 22 Jan 2027 (Phase 1 exit re-plan; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days)
+**Effort:** 44 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|

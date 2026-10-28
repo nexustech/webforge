@@ -32,6 +32,13 @@ describe("registerTemplatesHandlers (2.14a)", () => {
       category: "food",
       example: true,
       pages: 4,
+      // Its pages for the quick start's Pages step (3.11b), "Page not found" left out.
+      pageList: [
+        { id: "cafe-home", title: "Home", home: true },
+        { id: "cafe-menu", title: "Menu", home: false },
+        { id: "cafe-about", title: "About us", home: false },
+        { id: "cafe-visit", title: "Visit us", home: false },
+      ],
       theme: "bistro",
       thumbnail: `data:image/png;base64,${readFileSync(cafe?.thumbnail ?? "").toString("base64")}`,
     });
