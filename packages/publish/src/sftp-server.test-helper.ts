@@ -109,15 +109,29 @@ function serve(sftp: SFTPWrapper, root: string): void {
 }
 
 /**
+ * A host key for the test server that ssh2 can read back: now and then its generator makes an
+ * ed25519 key whose public half its own parser refuses ("Malformed OpenSSH public key", #588), so
+ * one is made again until it reads, a few times at most.
+ */
+export function hostKeys(generate = () => utils.generateKeyPairSync("ed25519")) {
+  let failure: Error | undefined;
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const keys = generate();
+    const parsed = utils.parseKey(keys.public);
+    if (!(parsed instanceof Error)) return { ...keys, parsed };
+    failure = parsed;
+  }
+  throw failure ?? new Error("No host key");
+}
+
+/**
  * A local SFTP server whose root is a temporary folder with a `site` folder in it, for one user
  * signing in with a password, under a host key made for the test. Closed by `stop`.
  */
 export async function startSftpServer(options: { user: string; password: string }) {
   const root = mkdtempSync(join(tmpdir(), "webforge-sftp-"));
   mkdirSync(join(root, "site"));
-  const keys = utils.generateKeyPairSync("ed25519");
-  const parsed = utils.parseKey(keys.public);
-  if (parsed instanceof Error) throw parsed;
+  const keys = hostKeys();
   const server = new Server({ hostKeys: [keys.private] }, (client) => {
     client
       .on("authentication", (context) => {
@@ -139,7 +153,7 @@ export async function startSftpServer(options: { user: string; password: string 
   return {
     port: (server.address() as AddressInfo).port,
     /** The host key the server presents, as OpenSSH shows it. */
-    hostKey: hostKeyFingerprint(parsed.getPublicSSH()),
+    hostKey: hostKeyFingerprint(keys.parsed.getPublicSSH()),
     /** The site's folder on disk, as the SFTP user sees `/site`. */
     site: join(root, "site"),
     async stop() {
