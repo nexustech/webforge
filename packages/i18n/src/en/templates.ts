@@ -73,7 +73,7 @@ export const templates = {
   "quickStart.detailsText":
     "Optional. Anything left empty keeps the template's sample, which Site Check points out before you publish.",
   "quickStart.searchNote":
-    "Webforge writes these details into the site so search engines can show them. With the web address, it adds a sitemap too.",
+    "{appName} writes these details into the site so search engines can show them. With the web address, it adds a sitemap too.",
   // The business types templates are grouped by (UX-29).
   "template.category.food": "Food and drink",
   "template.category.beauty": "Beauty",

@@ -517,19 +517,19 @@ function DetailsStep({
     event.currentTarget.value = "";
     if (picture === undefined) return;
     const url = URL.createObjectURL(picture);
-    try {
-      const colours = imageColours(await read(url));
-      if (colours.length === 0) {
-        setProblem(t("quickStart.colours.noColours"));
-        return;
-      }
-      setProblem(undefined);
-      onLogo(colours);
-    } catch {
-      setProblem(t("quickStart.colours.unreadable"));
-    } finally {
-      URL.revokeObjectURL(url);
+    const colours = await read(url).then(
+      (pixels) => imageColours(pixels),
+      () => null,
+    );
+    URL.revokeObjectURL(url);
+    if (colours === null || colours.length === 0) {
+      setProblem(
+        t(colours === null ? "quickStart.colours.unreadable" : "quickStart.colours.noColours"),
+      );
+      return;
     }
+    setProblem(undefined);
+    onLogo(colours);
   };
 
   return (
