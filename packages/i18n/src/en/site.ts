@@ -165,6 +165,26 @@ export const site = {
   "site.settings.sections": "Site Settings sections",
   "site.settings.save": "Save",
   "site.settings.history": "Changed Site Settings",
+  // Custom code in Settings (F-ED-15, C7, 3.9): Advanced mode only, where technical words may appear.
+  "site.code.title": "Custom code",
+  "site.code.css": "Stylesheet (custom.css)",
+  "site.code.cssHint":
+    "CSS for every page, after the site's own styles, so it wins over the theme.",
+  "site.code.js": "Script (custom.js)",
+  "site.code.jsHint":
+    "JavaScript for every page of the exported site, after Webforge's own. It never runs in the editor.",
+  "site.code.head": "HTML in every page's head",
+  "site.code.headHint": "Added at the end of each page's <head>, as you write it.",
+  "site.code.bodyEnd": "HTML at the end of every page",
+  "site.code.bodyEndHint": "Added at the end of each page's <body>, as you write it.",
+  "site.code.allowed": "Allowed outside addresses",
+  "site.code.allowedHint":
+    "Your site works from any folder or host because it loads nothing from elsewhere. Add an address here only if your code must load a file from it.",
+  "site.code.allowedAddress": "Address",
+  "site.code.allowedAdd": "Add an address",
+  "site.code.allowedRemove": "Remove this address",
+  "site.code.error.address": "Enter a web address that starts with https:// or http://.",
+  "site.code.history": "Changed custom code",
   "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.section.general": "General",
   "site.settings.section.address": "Web address",
