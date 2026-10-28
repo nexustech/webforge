@@ -48,6 +48,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
+import { PRELOAD_ITEM_CSS } from "./ItemCssView.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -171,6 +172,8 @@ function PreferredEditPanel({
   const onSite = useCommand(LOOK_COMMANDS.site);
   // The Style tab's *Style this ‹kind›…* (3.13a), while the selection has a look to style.
   const styleThis = useCommand(COMMAND_IDS.styleThis);
+  // The Advanced tab's CSS points at Custom Code (3.14).
+  const customCode = useCommand(COMMAND_IDS.customCode);
   const appearance = [onPage, onSite].flatMap((command) =>
     command === undefined
       ? []
@@ -193,6 +196,15 @@ function PreferredEditPanel({
       }
       advanced={advanced}
       contentOnly={contentOnly}
+      itemCss={
+        advanced
+          ? {
+              ...PRELOAD_ITEM_CSS,
+              onOpenCustomCode:
+                customCode === undefined ? undefined : () => void registry.run(customCode.id),
+            }
+          : undefined
+      }
       closedGroups={closedGroups}
       onClosedGroupsChange={(type, closed) =>
         preferences.change({

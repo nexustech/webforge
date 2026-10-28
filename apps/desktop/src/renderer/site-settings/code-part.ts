@@ -8,6 +8,8 @@ import {
   type SettingsRegistry,
   settingsPart,
 } from "../editor/settings-registry.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
+import type { CommandRegistry } from "../shell/commands.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 
 /**
@@ -196,19 +198,44 @@ const hasOwnCode = ({ code, settings }: SiteDoc) =>
 export function registerSiteCode(
   registry: SettingsRegistry,
   session: EditorSession,
-  preferences: Pick<PreferencesStore, "getState">,
+  preferences: Pick<PreferencesStore, "getState" | "subscribe">,
+  commands: Pick<CommandRegistry, "register" | "update">,
 ): () => void {
-  return registry.register({
+  /** Whether Settings shows Custom Code: in Advanced mode, or once the site has code of its own. */
+  const shown = () =>
+    preferences.getState().preferences.editorLevel === "advanced" ||
+    hasOwnCode(session.history.document.getState());
+  // *Custom Code…* (3.14): where the CSS tab sends CSS of the person's own, and the palette too.
+  // On only while Settings shows it, as the mode or the site's code changes.
+  let enabled = shown();
+  const removeCommand = commands.register({
+    id: COMMAND_IDS.customCode,
+    label: t("site.code.open"),
+    enabled,
+    run: async () => {
+      await registry.show(CODE_SECTION, CODE_SECTION);
+    },
+  });
+  const follow = () => {
+    if (shown() === enabled) return;
+    enabled = !enabled;
+    commands.update(COMMAND_IDS.customCode, { enabled });
+  };
+  const stops = [preferences.subscribe(follow), session.history.document.subscribe(follow)];
+  const removePart = registry.register({
     id: CODE_SECTION,
     heading: "site",
     order: 1,
-    open: () => {
-      const site = session.history.document.getState();
-      return preferences.getState().preferences.editorLevel === "advanced" || hasOwnCode(site)
-        ? siteCodePart(site, (saved) => {
+    open: () =>
+      shown()
+        ? siteCodePart(session.history.document.getState(), (saved) => {
             saveSiteCode(session, saved);
           })
-        : undefined;
-    },
+        : undefined,
   });
+  return () => {
+    for (const stop of stops) stop();
+    removeCommand();
+    removePart();
+  };
 }

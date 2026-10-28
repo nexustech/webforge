@@ -15,6 +15,7 @@ export const COMMAND_IDS = {
   exportSite: "site.export",
   siteSettings: "site.settings",
   pageSettings: "page.settings",
+  customCode: "site.customCode",
   settings: "app.settings",
   publish: "site.publish",
   saveVersion: "site.saveVersion",

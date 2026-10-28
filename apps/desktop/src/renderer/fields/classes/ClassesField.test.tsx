@@ -26,6 +26,7 @@ function fakeCanvas(): CanvasApi {
       Promise.resolve({ status: "css" as const, css: classes.map((name) => KNOWN[name] ?? null) }),
     ),
     compileCss: () => Promise.resolve({ status: "failed" as const }),
+    itemHtml: () => Promise.resolve({ status: "failed" as const }),
   };
 }
 

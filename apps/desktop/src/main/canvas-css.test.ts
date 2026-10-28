@@ -1,4 +1,5 @@
 import { DEFAULT_THEME } from "@webforge/model";
+import { sampleSite } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
@@ -172,6 +173,35 @@ describe("createCanvasStyles' class catalogue (#276)", () => {
   });
 });
 
+describe("createCanvasStyles' item HTML (3.14)", () => {
+  const item = { snapshot: sampleSite(), sizes: {}, pageId: "home", nodeId: "hero" };
+
+  it("asks the worker for an item as the export writes it", async () => {
+    const fake = fakeWorker();
+    const styles = createCanvasStyles(() => fake.worker);
+
+    const html = styles.itemHtml(item);
+    const missing = styles.itemHtml({ ...item, nodeId: "gone" });
+    const [a, b] = fake.jobs;
+    fake.answer({ type: "item-html", id: a?.id, html: "<section></section>" });
+    fake.answer({ type: "item-html", id: b?.id, html: null });
+
+    expect(fake.jobs[0]).toMatchObject({ type: "item-html", pageId: "home", nodeId: "hero" });
+    expect(await html).toEqual({ status: "html", html: "<section></section>" });
+    expect(await missing).toEqual({ status: "html", html: null });
+  });
+
+  it("fails a failed job", async () => {
+    const fake = fakeWorker();
+    const styles = createCanvasStyles(() => fake.worker);
+
+    const html = styles.itemHtml(item);
+    fake.answer({ type: "item-html-failed", id: fake.jobs[0]?.id });
+
+    expect(await html).toEqual({ status: "failed" });
+  });
+});
+
 describe("registerCanvasHandlers", () => {
   it("compiles for the app's own page only", async () => {
     type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -184,6 +214,7 @@ describe("registerCanvasHandlers", () => {
       compileCss: compile,
       classCatalogue: vi.fn(),
       classCss: vi.fn(),
+      itemHtml: vi.fn(),
     });
     const handler = handlers.get("canvas:compile-css");
     const from = (url: string) => ({ senderFrame: { url } }) as unknown as IpcMainInvokeEvent;

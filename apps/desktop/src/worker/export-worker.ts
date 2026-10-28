@@ -9,6 +9,7 @@ import { loadBundledResources, loadStyleResources } from "./bundled-resources.js
 import { createClassCatalogues } from "./class-catalogue.js";
 import { compileCss } from "./compile-css.js";
 import { installWorkerCrashHandlers } from "./crash-handlers.js";
+import { itemHtmlFor } from "./item-html.js";
 import { thumbnailFor } from "./make-thumbnail.js";
 import { runExport } from "./run-export.js";
 import { createPreviewBuilds } from "./run-preview.js";
@@ -78,7 +79,9 @@ process.parentPort.on("message", (event) => {
           ? thumbnailFor(job.data, loadBundledResources)
           : job.data.type === "class-catalogue" || job.data.type === "class-css"
             ? classes(job.data)
-            : compileCss(job.data, loadStyleResources);
+            : job.data.type === "item-html"
+              ? Promise.resolve(itemHtmlFor(job.data))
+              : compileCss(job.data, loadStyleResources);
   outcome
     .then((result) => {
       process.parentPort.postMessage(result);

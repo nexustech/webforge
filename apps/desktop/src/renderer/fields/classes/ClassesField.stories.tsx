@@ -25,6 +25,7 @@ const CANVAS: CanvasApi = {
   classCss: (_theme, classes) =>
     Promise.resolve({ status: "css", css: classes.map((name) => CLASSES[name] ?? null) }),
   compileCss: () => Promise.resolve({ status: "failed" }),
+  itemHtml: () => Promise.resolve({ status: "failed" }),
 };
 
 /** The field, as the Edit panel's Advanced tab draws it, showing `value`. */

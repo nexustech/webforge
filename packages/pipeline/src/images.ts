@@ -296,35 +296,75 @@ export async function processImage(
   }
 
   const { plan, encoded } = encodings;
-  const fallbackType = plan.transparent ? "image/png" : "image/jpeg";
-  const fallbackExtension = fallbackExtensionOf(plan);
-  const files: ImageFile[] = [];
-  const webp: string[] = [];
-  const fallback: string[] = [];
-  let largest = { width: plan.width, height: plan.height };
-  for (const entry of encoded) {
-    const webpName = `${item.name}-${entry.width}.webp`;
-    const fallbackName = `${item.name}-${entry.width}.${fallbackExtension}`;
-    files.push({ path: webpName, data: entry.webp }, { path: fallbackName, data: entry.fallback });
-    webp.push(`${assetsUrl}${webpName} ${entry.width}w`);
-    fallback.push(`${assetsUrl}${fallbackName} ${entry.width}w`);
-    largest = { width: entry.width, height: entry.height };
-  }
+  const files = encoded.flatMap((entry) => [
+    { path: fileNameOf(item, entry.width, "webp"), data: entry.webp },
+    { path: fileNameOf(item, entry.width, fallbackExtensionOf(plan)), data: entry.fallback },
+  ]);
+  return { files, image: resolvedImage(item, plan, encoded, assetsUrl) };
+}
 
-  const fallbackSource: ImageSource = { type: fallbackType, srcset: fallback.join(", ") };
+/** An exported image file's name: `cakes-800.webp`. */
+const fileNameOf = (item: MediaItem, width: number, extension: string) =>
+  `${item.name}-${width}.${extension}`;
+
+/**
+ * `item` as pages place it, from its plan and the sizes it's exported at (smallest first): a WebP
+ * source and a JPEG or PNG fallback, each with every width, under `assetsUrl`.
+ */
+function resolvedImage(
+  item: MediaItem,
+  plan: Plan,
+  sizes: readonly { readonly width: number; readonly height: number }[],
+  assetsUrl: string,
+): ResolvedImage {
+  const fallbackExtension = fallbackExtensionOf(plan);
+  const srcset = (extension: string) =>
+    sizes
+      .map(({ width }) => `${assetsUrl}${fileNameOf(item, width, extension)} ${width}w`)
+      .join(", ");
+  const largest = sizes.at(-1) ?? plan;
+  const fallback: ImageSource = {
+    type: plan.transparent ? "image/png" : "image/jpeg",
+    srcset: srcset(fallbackExtension),
+  };
   const objectPosition = objectPositionOf(item);
   return {
-    files,
-    image: {
-      sources: [{ type: "image/webp", srcset: webp.join(", ") }],
-      src: `${assetsUrl}${item.name}-${largest.width}.${fallbackExtension}`,
-      fallback: fallbackSource,
-      width: largest.width,
-      height: largest.height,
-      alt: item.alt ?? "",
-      ...(objectPosition === undefined ? {} : { objectPosition }),
-    },
+    sources: [{ type: "image/webp", srcset: srcset("webp") }],
+    src: `${assetsUrl}${fileNameOf(item, largest.width, fallbackExtension)}`,
+    fallback,
+    width: largest.width,
+    height: largest.height,
+    alt: item.alt ?? "",
+    ...(objectPosition === undefined ? {} : { objectPosition }),
   };
+}
+
+/**
+ * `item` as the export names and sizes it, worked out from its size in Media (`size`, before any
+ * crop) rather than from its pixels, so nothing is read or encoded: what Advanced mode's CSS tab
+ * shows (3.14). The crop and widths are the export's own; only the fallback's type is assumed, as
+ * the export tells it from the pixels: a PNG's is taken to be a PNG, for its transparency, where an
+ * opaque one is exported with a JPEG.
+ */
+export function plannedImage(
+  item: MediaItem,
+  size: { readonly width: number; readonly height: number },
+  assetsUrl = "assets/img/",
+): ResolvedImage {
+  // As `cropPixels` cuts it.
+  const crop = item.crop ?? { x: 0, y: 0, width: 1, height: 1 };
+  const x = Math.min(Math.round(crop.x * size.width), size.width - 1);
+  const y = Math.min(Math.round(crop.y * size.height), size.height - 1);
+  const plan: Plan = {
+    width: Math.max(1, Math.min(Math.round(crop.width * size.width), size.width - x)),
+    height: Math.max(1, Math.min(Math.round(crop.height * size.height), size.height - y)),
+    transparent: item.mimeType === "image/png",
+  };
+  const sizes = widthsFor(plan).map((width) => ({
+    width,
+    height: Math.round((plan.height * width) / plan.width),
+  }));
+  return resolvedImage(item, plan, sizes, assetsUrl);
 }
 
 /**

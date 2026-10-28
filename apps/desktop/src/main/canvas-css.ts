@@ -8,12 +8,16 @@ import {
   type CompileCssJob,
   type CompileCssOutcome,
   canvasStylesOutcomeSchema,
+  type ItemHtmlJob,
+  type ItemHtmlOutcome,
+  type ItemHtmlRequest,
 } from "../shared/export-worker-protocol.js";
 import type {
   CanvasCssRequest,
   CanvasCssResult,
   ClassCatalogueResult,
   ClassCssResult,
+  ItemHtmlResult,
 } from "../shared/ipc/canvas.js";
 import { registerIpcHandler } from "./ipc.js";
 import type { WorkerProcess } from "./worker-process.js";
@@ -27,6 +31,8 @@ export type CanvasStyles = {
   readonly classCatalogue: (theme: Theme) => Promise<ClassCatalogueResult>;
   /** The CSS each of `classes` produces with `theme`. */
   readonly classCss: (theme: Theme, classes: readonly string[]) => Promise<ClassCssResult>;
+  /** An item of a page as the export writes it, for the CSS tab (3.14). */
+  readonly itemHtml: (request: ItemHtmlRequest) => Promise<ItemHtmlResult>;
 };
 
 /** How long one job may take before it counts as failed (a cold start loads the pipeline). */
@@ -45,8 +51,8 @@ export function createCanvasStyles(
   families?: (theme: ThemeTokens) => Promise<CatalogueFont[]>,
 ): CanvasStyles {
   const request = createWorkerRequests<
-    CompileCssOutcome | ClassesOutcome,
-    CompileCssJob | ClassCatalogueJob | ClassCssJob
+    CompileCssOutcome | ClassesOutcome | ItemHtmlOutcome,
+    CompileCssJob | ClassCatalogueJob | ClassCssJob | ItemHtmlJob
   >(startWorker, canvasStylesOutcomeSchema, timeoutMs);
   return {
     compileCss: async (css) => {
@@ -71,6 +77,12 @@ export function createCanvasStyles(
         ? { status: "css", css: outcome.css }
         : { status: "failed" };
     },
+    itemHtml: async (item) => {
+      const outcome = await request({ type: "item-html", ...item });
+      return outcome?.type === "item-html"
+        ? { status: "html", html: outcome.html }
+        : { status: "failed" };
+    },
   };
 }
 
@@ -83,4 +95,5 @@ export function registerCanvasHandlers(
   registerIpcHandler(ipc, "compileCanvasCss", isTrustedSender, styles.compileCss);
   registerIpcHandler(ipc, "classCatalogue", isTrustedSender, styles.classCatalogue);
   registerIpcHandler(ipc, "classCss", isTrustedSender, styles.classCss);
+  registerIpcHandler(ipc, "itemHtml", isTrustedSender, styles.itemHtml);
 }

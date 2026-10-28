@@ -176,6 +176,27 @@ export const canvas = {
   "editPanel.box.same": "Same on every side",
   // The Advanced tab (Advanced mode, F-ED-11): technical words are fine here, clearly labelled.
   "editPanel.advanced": "Advanced",
+  // Advanced mode's CSS tab (3.14): the selected item as the export writes it, read only.
+  "itemCss.tab": "CSS",
+  "itemCss.title": "This item's CSS",
+  "itemCss.note":
+    "Read only: {appName} writes this from your choices each time the site changes, so changes here wouldn't last. For CSS of your own, use Custom Code's stylesheet.",
+  "itemCss.openCustomCode": "Open Custom Code",
+  "itemCss.markup": "Markup",
+  "itemCss.markup.hint":
+    "As the export writes this item. One difference: a PNG image is shown with a .png fallback, which the export writes as a .jpg when the image has no transparency.",
+  "itemCss.classes": "Classes by control",
+  "itemCss.classes.none": "No Appearance control sets a class on this item.",
+  "itemCss.classes.tokens": "Uses {tokens}",
+  "itemCss.classes.fromLook": "(the theme's look)",
+  "itemCss.rules": "Stylesheet rules",
+  "itemCss.rules.none": "This item's classes add no rules to the stylesheet.",
+  "itemCss.copy": "Copy",
+  "itemCss.copy.label": "Copy {part}",
+  "itemCss.copied": "Copied",
+  "itemCss.loading": "Writing the CSS…",
+  "itemCss.hidden": "This item is hidden here, so the export leaves it out.",
+  "itemCss.failed": "The CSS couldn't be written. It's tried again after your next change.",
   "editPanel.advanced.className": "CSS classes",
   "editPanel.advanced.classNamePlaceholder": "e.g. shadow-lg rounded-box",
   "editPanel.advanced.classNameInvalid": "Use class names separated by spaces",

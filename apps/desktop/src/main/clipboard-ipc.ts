@@ -14,6 +14,8 @@ export function registerClipboardHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   clipboard: ElementClipboard,
   session: Pick<ProjectSession, "staleReason" | "forSession">,
+  /** Puts text on the system clipboard (`clipboard.writeText`). */
+  writeText: (text: string) => void,
 ): void {
   registerIpcHandler(ipc, "writeClipboard", isTrustedSender, (sessionId, elements) => {
     const reason = session.staleReason(sessionId);
@@ -30,5 +32,9 @@ export function registerClipboardHandlers(
       files: (paths) => importFilesAt(site, paths),
       image: (file) => importMediaFiles(site, [file]),
     });
+  });
+  registerIpcHandler(ipc, "copyText", isTrustedSender, (text) => {
+    writeText(text);
+    return null;
   });
 }
