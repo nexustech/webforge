@@ -8,6 +8,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
+import { createStudio } from "./studio/studio-state.js";
 import { ThemePanel } from "./ThemePanel.js";
 
 afterEach(cleanup);
@@ -146,5 +147,40 @@ describe("the Theme tab's own themes (2.23, PH2-17)", () => {
     await vi.waitFor(() => expect(labels(session)).toEqual(["Saved theme 'Light, roomier'"]));
     expect(askName).toHaveBeenCalledOnce();
     expect(screen.getByRole("heading", { name: /Light, roomier/ })).toBeDefined();
+  });
+});
+
+describe("the Theme tab's reveal (3.12, CT-3)", () => {
+  it("scrolls to the field a request names and focuses it, once drawn", () => {
+    const { panels } = registriesForTest();
+    const remove = registerThemePanel(panels, sessionWith());
+    const Theme = panels.list()[0]?.component;
+    if (Theme === undefined) throw new Error("not registered");
+    // Asked for before the tab is drawn, as the Edit panel's provenance does.
+    panels.show("theme", "token.shadow");
+    render(<Theme />);
+
+    const row = document.querySelector('[data-field="token.shadow"]');
+    expect(row?.contains(document.activeElement)).toBe(true);
+    remove();
+  });
+
+  it("opens Theme Studio's Components at a kind's look", () => {
+    const { panels } = registriesForTest();
+    const studio = createStudio();
+    const remove = registerThemePanel(panels, sessionWith(), undefined, studio);
+
+    panels.show("theme", "look:Button");
+
+    expect(studio.getState()).toMatchObject({
+      open: true,
+      section: "components",
+      kind: "Button",
+    });
+    remove();
+    // Removed, it no longer listens.
+    studio.setState({ open: false });
+    panels.show("theme", "look:Hero");
+    expect(studio.getState().open).toBe(false);
   });
 });

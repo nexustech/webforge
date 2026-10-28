@@ -156,6 +156,9 @@ export const theme = {
   "theme.studio.section.components": "Components",
   "theme.components.kinds": "Sections and elements",
   "theme.components.sections": "Sections",
+  "theme.components.otherElements": "Other elements",
+  "theme.components.perDevice":
+    "Set per device: a change here changes Desktop's, and Tablet and Mobile keep theirs.",
   "theme.components.card": "Card",
   "theme.components.cardHelp": "The cards in Features, Stats, Team and Testimonials.",
   "theme.components.help":

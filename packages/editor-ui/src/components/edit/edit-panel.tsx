@@ -55,6 +55,17 @@ export type EditPanelField = FieldSpec & {
    */
   readonly warning?: string;
   /**
+   * Where its value comes from (3.12, CT-3), in words under its control: *Set here*, *Theme's look
+   * for Buttons*, *Theme's (Corners: Medium)*. With `onReveal`, the words are a link that shows
+   * where it comes from: the token in the Theme tab, the kind's look in Theme Studio.
+   */
+  readonly source?: FieldSource;
+  /**
+   * What its *Reset* is called where it isn't the default it goes back to (translated): *Reset to
+   * Theme's Look* where its kind's look sets it (3.12).
+   */
+  readonly resetLabel?: string;
+  /**
    * Its value on each device, for a field that may differ per device (SP-5): expanding it shows a
    * row per device, in this order.
    */
@@ -65,6 +76,14 @@ export type EditPanelField = FieldSpec & {
    * that is a part of a page (glossary).
    */
   readonly optionGroup?: OptionGroup;
+};
+
+/** Where a field's value comes from (CT-3); see {@link EditPanelField.source}. */
+export type FieldSource = {
+  /** What it says (translated). */
+  readonly text: string;
+  /** Shows where it comes from; without it the words are plain text. */
+  readonly onReveal?: (() => void) | undefined;
 };
 
 /** A field's value on one device (SP-5). */
@@ -560,7 +579,10 @@ function FieldRow({
   const id = `${idPrefix}-${field.name}`;
   const labelId = `${id}-label`;
   // The help and the warning, read together as the control's description.
-  const helpId = field.help === undefined && field.warning === undefined ? undefined : `${id}-help`;
+  const helpId =
+    field.help === undefined && field.warning === undefined && field.source === undefined
+      ? undefined
+      : `${id}-help`;
   const errorId = field.error === undefined ? undefined : `${id}-error`;
   const resetField =
     resettable(field) && onResetToDefault !== undefined
@@ -627,7 +649,7 @@ function FieldRow({
         </ContextMenuTrigger>
         <ContextMenuContent>
           <ContextMenuItem disabled={resetField === undefined} onSelect={resetField}>
-            {t("editPanel.resetField")}
+            {field.resetLabel ?? t("editPanel.resetField")}
           </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
@@ -661,6 +683,7 @@ function FieldRow({
           {field.help === undefined ? null : (
             <p className="text-xs text-muted-foreground">{field.help}</p>
           )}
+          {field.source === undefined ? null : <SourceLine source={field.source} />}
         </div>
       )}
       {devices === undefined || !perDevice ? null : (
@@ -685,6 +708,27 @@ function FieldRow({
         </fieldset>
       )}
     </div>
+  );
+}
+
+/** Where a field's value comes from (CT-3): plain words, or a link that shows it. */
+function SourceLine({ source }: { readonly source: FieldSource }) {
+  const { text, onReveal } = source;
+  return (
+    <p data-source className="text-2xs text-muted-foreground">
+      {onReveal === undefined ? (
+        text
+      ) : (
+        <button
+          type="button"
+          title={t("editPanel.source.reveal")}
+          className="cursor-pointer text-left text-ring underline-offset-2 hover:underline focus-visible:underline"
+          onClick={onReveal}
+        >
+          {text}
+        </button>
+      )}
+    </p>
   );
 }
 

@@ -43,10 +43,12 @@ describe("createPanelRegistry", () => {
     const stop = registry.onShow(listener);
 
     registry.show("add");
+    // With what to reveal in it, for the panel's own listener (3.12, CT-3).
+    registry.show("theme", "token.shadow");
     stop();
     registry.show("layers");
 
-    expect(listener.mock.calls).toEqual([["add"]]);
+    expect(listener.mock.calls).toEqual([["add"], ["theme", "token.shadow"]]);
   });
 
   it("stops telling a listener once it unsubscribes", () => {
