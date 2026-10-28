@@ -12,10 +12,12 @@ import {
   slugsInFolder,
   uniqueSlug,
 } from "@webforge/model";
-import type { Finding, FindingPlace } from "@webforge/site-check";
+import type { Finding, FindingPlace, SearchGuide } from "@webforge/site-check";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { reportFailure } from "../log.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
+import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { THEME_PANEL_ID } from "../theme/index.js";
 
@@ -24,6 +26,10 @@ export type SiteCheckActions = {
   readonly session: Pick<EditorSession, "history" | "ui" | "edit" | "showPage" | "select">;
   readonly panels: Pick<PanelRegistry, "show">;
   readonly settings: Pick<SettingsRegistry, "show">;
+  /** Runs Page Settings… for the page shown (3.17). */
+  readonly commands: Pick<CommandRegistry, "run">;
+  /** Opens a guide's page on another website in the browser (3.17). */
+  readonly openGuide: (guide: SearchGuide) => void;
 };
 
 /** Settings' Custom Code: its part's id and its one section's, as site-settings registers it. */
@@ -33,10 +39,13 @@ const CODE_SETTINGS = "code";
 const SITE_PANEL_ID = "site";
 const MEDIA_PANEL_ID = "media";
 
-/** Opens Site Settings at the web address. */
-function showAddress(settings: SiteCheckActions["settings"]): void {
-  settings.show("site", "address").catch((error: unknown) => {
-    reportFailure("siteCheck.address", error);
+/** Opens Site Settings at `section`: the web address, the forms' service, Contact or Search engines. */
+function showSiteSettings(
+  settings: SiteCheckActions["settings"],
+  section: "address" | "forms" | "contact" | "search",
+): void {
+  settings.show("site", section).catch((error: unknown) => {
+    reportFailure(`siteCheck.${section}`, error);
   });
 }
 
@@ -44,13 +53,6 @@ function showAddress(settings: SiteCheckActions["settings"]): void {
 function showCode(settings: SiteCheckActions["settings"]): void {
   settings.show(CODE_SETTINGS, CODE_SETTINGS).catch((error: unknown) => {
     reportFailure("siteCheck.code", error);
-  });
-}
-
-/** Site Settings, open on its Forms section: where a form's service is chosen (3.7). */
-function showForms(settings: SiteCheckActions["settings"]): void {
-  settings.show("site", "forms").catch((error: unknown) => {
-    reportFailure("siteCheck.forms", error);
   });
 }
 
@@ -75,9 +77,11 @@ function pageWithCopy(
 /**
  * Shows where `place` is (F-CHK-1, click to jump): an element selected on its page (the Header's
  * and Footer's on the page shown, a shared section's in a copy of it), a page in the Pages panel,
- * Media, the Theme panel, Site Settings at the web address, or Settings' Custom Code.
+ * Media, the Theme panel, Site Settings at the web address, Contact or Search engines, or Settings'
+ * Custom Code. A guide opens its page in the browser.
  */
-export function jumpTo(place: FindingPlace, { session, panels, settings }: SiteCheckActions): void {
+export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
+  const { session, panels, settings } = actions;
   const site = session.history.document.getState();
   switch (place.kind) {
     case "element": {
@@ -109,10 +113,19 @@ export function jumpTo(place: FindingPlace, { session, panels, settings }: SiteC
       panels.show(THEME_PANEL_ID);
       return;
     case "address":
-      showAddress(settings);
+      showSiteSettings(settings, "address");
+      return;
+    case "contact":
+      showSiteSettings(settings, "contact");
+      return;
+    case "search":
+      showSiteSettings(settings, "search");
       return;
     case "code":
       showCode(settings);
+      return;
+    case "guide":
+      actions.openGuide(place.guide);
       return;
   }
 }
@@ -192,7 +205,9 @@ function giveTitle({ session }: SiteCheckActions, pageId: PageId, title: string)
 /**
  * The *Fix* for `finding` of `rule`, if it has one (F-CHK-1): a page's Windows device name renamed
  * (R16), a missing title taken from the page's first heading, the web address asked for in Site
- * Settings. `undefined` when Site Check can only show where it is.
+ * Settings, Page Settings opened on a page without a description, Site Settings opened where a
+ * search engine's setting or a business detail goes. `undefined` when Site Check can only show
+ * where it is.
  */
 export function fixFor(
   rule: string,
@@ -209,12 +224,25 @@ export function fixFor(
     return title === undefined ? undefined : () => giveTitle(actions, place.pageId, title);
   }
   if (rule === "webAddress") {
-    return () => showAddress(actions.settings);
+    return () => showSiteSettings(actions.settings, "address");
   }
   // A Contact form or Form posts to Site Settings' service; a Newsletter's address is its own,
   // which selecting it shows.
   if (rule === "forms" && finding.values?.form === "service") {
-    return () => showForms(actions.settings);
+    return () => showSiteSettings(actions.settings, "forms");
+  }
+  if (rule === "pageDescriptions" && place.kind === "page") {
+    return () => {
+      actions.session.showPage(place.pageId);
+      actions.commands.run(COMMAND_IDS.pageSettings);
+    };
+  }
+  if (rule === "businessDetails") {
+    return () => showSiteSettings(actions.settings, "contact");
+  }
+  // Search engines: whether they may list the site, and where Search Console's code goes.
+  if (rule === "searchHidden" || rule === "searchConsole") {
+    return () => showSiteSettings(actions.settings, "search");
   }
   return undefined;
 }

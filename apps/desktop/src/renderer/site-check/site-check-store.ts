@@ -44,7 +44,7 @@ export type SiteCheck = {
   readonly state: ReadonlyStore<SiteCheckState>;
   /** Ignores one finding of `rule`, for this site; remembered with it. */
   ignore(rule: string, key: string): void;
-  /** Brings back everything ignored. */
+  /** Brings back everything ignored, but not the one-time tips marked *Done* (3.17). */
   restoreIgnored(): void;
   /** Stops checking. */
   dispose(): void;
@@ -76,6 +76,11 @@ export function createSiteCheck(
   const report = (ignored: ReadonlySet<string>) =>
     reportOf((rule) => found.get(rule) ?? [], "export", ignored);
   const firstIgnored = new Set(initial);
+  /** What *Done* marked: one-time tips' findings (3.17), which stay done. */
+  const isDone = (key: string) =>
+    SITE_CHECK_RULES.some(
+      (rule) => rule.oneTime === true && key.startsWith(ignoreKey(rule.id, "")),
+    );
   const state = createStore<SiteCheckState>()(() => ({
     report: report(firstIgnored),
     ignored: firstIgnored,
@@ -128,7 +133,9 @@ export function createSiteCheck(
       if (!ignored.has(added)) changeIgnored(new Set([...ignored, added]));
     },
     restoreIgnored() {
-      if (state.getState().ignored.size > 0) changeIgnored(new Set());
+      const { ignored } = state.getState();
+      const kept = [...ignored].filter(isDone);
+      if (kept.length < ignored.size) changeIgnored(new Set(kept));
     },
     dispose() {
       pass++;

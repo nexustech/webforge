@@ -6,6 +6,16 @@ import {
 } from "./rules/content.js";
 import { externalResourcesRule } from "./rules/external.js";
 import { formsRule } from "./rules/forms.js";
+import {
+  businessDetailsRule,
+  businessProfileRule,
+  mainHeadingRule,
+  pageDescriptionsRule,
+  sameDescriptionsRule,
+  sameTitlesRule,
+  searchConsoleRule,
+  searchHiddenRule,
+} from "./rules/found.js";
 import { contrastRule, underlinedTextRule } from "./rules/look.js";
 import { largeFilesRule, largeImagesRule } from "./rules/media.js";
 import { deviceNamesRule, homePageRule, pageTitlesRule, webAddressRule } from "./rules/pages.js";
@@ -19,14 +29,16 @@ import type {
   RuleResult,
 } from "./types.js";
 
-/** Site Check's rules (F-CHK-1, X5), in the panel's order within each level. */
+/**
+ * Site Check's rules (F-CHK-1, X5), in the panel's order within each level, then *Being found*'s
+ * (3.17) in the order of that group.
+ */
 export const SITE_CHECK_RULES: readonly CheckRule[] = [
   deviceNamesRule,
   homePageRule,
   brokenLinksRule,
   placeholdersRule,
   pageTitlesRule,
-  webAddressRule,
   externalResourcesRule,
   formsRule,
   missingImagesRule,
@@ -35,6 +47,15 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   largeImagesRule,
   largeFilesRule,
   underlinedTextRule,
+  searchHiddenRule,
+  webAddressRule,
+  pageDescriptionsRule,
+  sameTitlesRule,
+  sameDescriptionsRule,
+  mainHeadingRule,
+  businessDetailsRule,
+  businessProfileRule,
+  searchConsoleRule,
 ];
 
 /** A rule's level in `mode`: publishing turns the publish-strict rules into *Must fix* (X5). */
@@ -80,7 +101,14 @@ export function reportOf(
       level === "must"
         ? all
         : all.filter((finding) => !ignored.has(ignoreKey(rule.id, finding.key)));
-    return { rule: rule.id, level, findings, ignored: all.length - findings.length };
+    return {
+      rule: rule.id,
+      level,
+      ...(rule.group === undefined ? {} : { group: rule.group }),
+      ...(rule.oneTime === undefined ? {} : { oneTime: rule.oneTime }),
+      findings,
+      ignored: all.length - findings.length,
+    };
   });
   return { mode, results };
 }

@@ -1,6 +1,8 @@
 import { Button, cn, ScrollArea } from "@webforge/editor-ui";
 import { isMessageKey, plural, t } from "@webforge/i18n";
 import type { CheckLevel, CheckReport, Finding, RuleResult } from "@webforge/site-check";
+import { ExternalLinkIcon } from "lucide-react";
+import type { ReactNode } from "react";
 
 /** A finding as the panel writes it: where it is, and anything else worth saying. */
 type DescribedFinding = { readonly place: string; readonly detail?: string | undefined };
@@ -57,29 +59,37 @@ function summary(report: CheckReport): string {
   }).join(" · ");
 }
 
-/** One finding: where it is (click to jump), then its *Fix* and *Ignore*. */
+/**
+ * One finding: where it is (click to jump), then its *Fix* and *Ignore*. A guide's (3.17) is a link
+ * to its page on another website, and a one-time tip's *Ignore* is *Done*.
+ */
 function FindingRow({
-  rule,
+  result,
   finding,
-  level,
   props,
 }: {
-  readonly rule: string;
+  readonly result: RuleResult;
   readonly finding: Finding;
-  readonly level: CheckLevel;
   readonly props: SiteCheckPanelProps;
 }) {
+  const { rule, level } = result;
   const { place, detail } = props.describe(finding);
   const fix = props.fixFor(rule, finding);
+  const guide = finding.place.kind === "guide";
+  const done = result.oneTime === true;
   return (
     <li className="flex flex-wrap items-center gap-x-2 gap-y-0.5 py-0.5 pl-4">
       <button
         type="button"
-        className="text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline"
-        aria-label={t("siteCheck.show.label", { item: place })}
+        className={cn(
+          "text-left [overflow-wrap:anywhere] hover:underline focus-visible:underline",
+          guide && "inline-flex items-center gap-1 text-primary",
+        )}
+        aria-label={guide ? undefined : t("siteCheck.show.label", { item: place })}
         onClick={() => props.onJump(finding)}
       >
         {place}
+        {guide ? <ExternalLinkIcon aria-hidden className="size-3.5 shrink-0" /> : null}
       </button>
       {detail === undefined ? null : <span className="text-muted-foreground">{detail}</span>}
       <span className="ml-auto flex gap-1">
@@ -92,10 +102,12 @@ function FindingRow({
           <Button
             size="sm"
             variant="ghost"
-            aria-label={t("siteCheck.ignore.label", { item: place })}
+            aria-label={t(done ? "siteCheck.done.label" : "siteCheck.ignore.label", {
+              item: place,
+            })}
             onClick={() => props.onIgnore(rule, finding)}
           >
-            {t("siteCheck.ignore")}
+            {t(done ? "siteCheck.done" : "siteCheck.ignore")}
           </Button>
         )}
       </span>
@@ -103,13 +115,18 @@ function FindingRow({
   );
 }
 
-/** One rule: its dot, name and one-line verdict (SP-13), then what it found. */
+/**
+ * One rule: its dot, name and one-line verdict (SP-13), then what it found. With `badge`, its
+ * level too, as *Being found* mixes them.
+ */
 function RuleRow({
   result,
   props,
+  badge = false,
 }: {
   readonly result: RuleResult;
   readonly props: SiteCheckPanelProps;
+  readonly badge?: boolean;
 }) {
   const status = statusOf(result);
   const count = result.findings.length;
@@ -121,18 +138,17 @@ function RuleRow({
         <span aria-hidden className={cn("size-2 shrink-0 self-center rounded-full", DOT[status])} />
         <span className="sr-only">{t(`siteCheck.status.${status}`)}: </span>
         <span className="font-medium">{ruleText(name)}</span>
+        {badge ? (
+          <span className="rounded border px-1 text-xs text-muted-foreground">
+            {t(`siteCheck.badge.${result.level}`)}
+          </span>
+        ) : null}
         <span className="text-muted-foreground">{verdict}</span>
       </div>
       {count === 0 ? null : (
         <ul>
           {result.findings.map((finding) => (
-            <FindingRow
-              key={finding.key}
-              rule={result.rule}
-              finding={finding}
-              level={result.level}
-              props={props}
-            />
+            <FindingRow key={finding.key} result={result} finding={finding} props={props} />
           ))}
         </ul>
       )}
@@ -140,13 +156,40 @@ function RuleRow({
   );
 }
 
+/** A section of the panel: its heading, maybe a line under it, then its rules. */
+function RuleSection({
+  id,
+  title,
+  intro,
+  children,
+}: {
+  readonly id: string;
+  readonly title: string;
+  readonly intro?: string;
+  readonly children: ReactNode;
+}) {
+  return (
+    <section aria-labelledby={id}>
+      <h3 id={id} className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+        {title}
+      </h3>
+      {intro === undefined ? null : <p className="mb-1 text-muted-foreground">{intro}</p>}
+      <ul className="flex flex-col gap-1">{children}</ul>
+    </section>
+  );
+}
+
 /**
  * The Site Check panel (F-CHK-1, SP-13): a summary, then the rules under *Must fix*, *Should fix*
- * and *Tips*, each with a green, amber or red dot and its verdict, and what it found. A finding
- * jumps to where it is; some have a *Fix*; all but a *Must fix* can be ignored.
+ * and *Tips*, each with a green, amber or red dot and its verdict, and what it found, then *Being
+ * found*'s (3.17), each with its level. A finding jumps to where it is; some have a *Fix*; all but
+ * a *Must fix* can be ignored. A one-time tip is listed only while it has something to say.
  */
 export function SiteCheckPanel(props: SiteCheckPanelProps) {
   const { report, ignored, onRestore } = props;
+  const found = report.results.filter(
+    (result) => result.group === "found" && (result.oneTime !== true || result.findings.length > 0),
+  );
   return (
     <ScrollArea className="h-full">
       <div className="flex flex-col gap-3 p-3 text-sm">
@@ -161,24 +204,33 @@ export function SiteCheckPanel(props: SiteCheckPanelProps) {
           )}
         </div>
         {LEVELS.map((level) => {
-          const results = report.results.filter((result) => result.level === level);
+          const results = report.results.filter(
+            (result) => result.group === undefined && result.level === level,
+          );
           if (results.length === 0) return null;
           return (
-            <section key={level} aria-labelledby={`site-check-${level}`}>
-              <h3
-                id={`site-check-${level}`}
-                className="mb-1 text-xs font-semibold uppercase text-muted-foreground"
-              >
-                {t(`siteCheck.level.${level}`)}
-              </h3>
-              <ul className="flex flex-col gap-1">
-                {results.map((result) => (
-                  <RuleRow key={result.rule} result={result} props={props} />
-                ))}
-              </ul>
-            </section>
+            <RuleSection
+              key={level}
+              id={`site-check-${level}`}
+              title={t(`siteCheck.level.${level}`)}
+            >
+              {results.map((result) => (
+                <RuleRow key={result.rule} result={result} props={props} />
+              ))}
+            </RuleSection>
           );
         })}
+        {found.length === 0 ? null : (
+          <RuleSection
+            id="site-check-found"
+            title={t("siteCheck.group.found")}
+            intro={t("siteCheck.group.found.intro")}
+          >
+            {found.map((result) => (
+              <RuleRow key={result.rule} result={result} props={props} badge />
+            ))}
+          </RuleSection>
+        )}
       </div>
     </ScrollArea>
   );

@@ -103,6 +103,12 @@ export function describePlace(finding: Finding, site: SiteDoc, library: Componen
       return t("siteCheck.place.address");
     case "code":
       return t(`siteCheck.place.code.${place.part}`);
+    case "contact":
+      return t(`siteCheck.place.contact.${place.field}`);
+    case "search":
+      return t("siteCheck.place.search");
+    case "guide":
+      return t(`siteCheck.place.guide.${place.guide}`);
   }
 }
 
@@ -127,5 +133,13 @@ export function describeDetail(finding: Finding): string | undefined {
   if (typeof values.bytes === "number") return megabytes(values.bytes);
   // The address of a file from another website (3.9), as the code has it.
   if (typeof values.url === "string") return values.url;
+  // Being found (3.17): a page's main headings, and the page whose title or description it shares.
+  if (typeof values.headings === "number") {
+    return values.headings === 0
+      ? t("siteCheck.detail.noHeading")
+      : t("siteCheck.detail.headings", { count: values.headings });
+  }
+  if (typeof values.sameAs === "string")
+    return t("siteCheck.detail.sameAs", { file: values.sameAs });
   return undefined;
 }

@@ -40,6 +40,7 @@ import {
   FONT_SCHEME,
   type FontReader,
 } from "./fonts.js";
+import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
@@ -482,6 +483,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession);
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
+    registerGuideHandlers(ipcMain, isTrustedSender, (url) => electron.shell.openExternal(url));
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
       // The flush has just run; capture the canvas for the Recent list before the window goes.
       beforeClose: () => siteSwitch.leaveSite(),
