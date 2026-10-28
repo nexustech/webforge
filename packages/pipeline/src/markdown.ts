@@ -25,6 +25,9 @@ const SKIPPED = new Set([
   "dialog",
 ]);
 
+/** What a reader would come to a section for, left out: a section with only its headings besides. */
+const LEFT_OUT_CONTENT = new Set(["form", "iframe", "video", "audio", "object"]);
+
 /** Elements that stand on their own: each one starts a new paragraph. */
 const BLOCKS = new Set([
   "address",
@@ -115,7 +118,7 @@ function blocksOf(nodes: readonly Node[], options: MarkdownOptions): string[] {
   const blocks: string[] = [];
   let run = "";
   const endRun = () => {
-    const paragraph = tidy(run);
+    const paragraph = escapeLineStarts(tidy(run));
     if (paragraph !== "") blocks.push(paragraph);
     run = "";
   };
@@ -143,19 +146,74 @@ function block(element: Element, options: MarkdownOptions): string[] {
     case "ul":
     case "ol":
       return list(element, options);
+    case "dl":
+      return definitions(element, options);
     case "blockquote": {
       const quoted = blocksOf(element.children, options).join("\n\n");
       return quoted === "" ? [] : [quoted.replace(/^/gm, "> ").replace(/^> $/gm, ">")];
     }
     case "pre": {
       const code = textOf(element).replace(/\n+$/, "");
-      return code === "" ? [] : [`\`\`\`\n${code}\n\`\`\``];
+      // A fence longer than any run of backticks in the code (CommonMark), and at least three.
+      const fence = "`".repeat(Math.max(3, longestBackticks(code) + 1));
+      return code === "" ? [] : [`${fence}\n${code}\n${fence}`];
     }
     case "hr":
       return ["---"];
-    default:
-      return blocksOf(element.children, options);
+    default: {
+      const blocks = blocksOf(element.children, options);
+      // A section left with only its headings, its form or embed left out (a contact form's
+      // "Write to us"), says nothing: its headings go too.
+      return blocks.every((text) => text.startsWith("#")) && leavesOutContent(element)
+        ? []
+        : blocks;
+    }
   }
+}
+
+/** Whether `element` holds a form or an embed, which the copy leaves out. */
+function leavesOutContent(element: Element): boolean {
+  return element.children.some(
+    (child) =>
+      typeof child !== "string" && (LEFT_OUT_CONTENT.has(child.name) || leavesOutContent(child)),
+  );
+}
+
+/**
+ * A description list as a list, each term with its descriptions on one line: "Tuesday to Friday:
+ * 7:00–15:00". Its pairs may each be in a `<div>`, as HTML allows.
+ */
+function definitions(element: Element, options: MarkdownOptions): string[] {
+  const parts = element.children.flatMap((child): Element[] =>
+    typeof child === "string" || isHidden(child)
+      ? []
+      : child.name === "div"
+        ? child.children.filter(
+            (inner): inner is Element => typeof inner !== "string" && !isHidden(inner),
+          )
+        : [child],
+  );
+  const lines: string[] = [];
+  let term: string | undefined;
+  let details: string[] = [];
+  const endPair = () => {
+    const text = [term, details.join("; ")].filter((part) => part !== undefined && part !== "");
+    if (text.length > 0) lines.push(`- ${text.join(": ")}`);
+    term = undefined;
+    details = [];
+  };
+  for (const part of parts) {
+    const text = tidy(inlineOf(part.children, options)).replaceAll("\n", " ");
+    if (part.name === "dt") {
+      // A second term starts a new pair once the first has its descriptions.
+      if (details.length > 0 || term !== undefined) endPair();
+      term = text;
+    } else if (part.name === "dd" && text !== "") {
+      details.push(text);
+    }
+  }
+  endPair();
+  return lines.length === 0 ? [] : [lines.join("\n")];
 }
 
 /** A list, each item's marker before its first line and the rest of it indented under it. */
@@ -193,7 +251,7 @@ function inline(node: Node, options: MarkdownOptions): string {
     case "i":
       return wrap(text(), "*");
     case "code":
-      return `\`${textOf(node).replaceAll("`", "")}\``;
+      return codeSpan(textOf(node).replace(/\s+/g, " "));
     case "img": {
       const alt = node.attributes.alt?.trim() ?? "";
       const src = node.attributes.src;
@@ -238,6 +296,32 @@ function tidy(text: string): string {
     .join("\n")
     .replace(/\n{2,}/g, "\n")
     .trim();
+}
+
+/** The longest run of backticks in `text`. */
+function longestBackticks(text: string): number {
+  return Math.max(0, ...[...text.matchAll(/`+/g)].map((run) => run[0].length));
+}
+
+/**
+ * Code as written, between runs of backticks longer than any in it, with a space inside each when
+ * it starts or ends with a backtick or a space, which CommonMark then takes away (CommonMark 6.1).
+ */
+function codeSpan(code: string): string {
+  if (code === "") return "";
+  const fence = "`".repeat(longestBackticks(code) + 1);
+  const pad = /^[` ]|[` ]$/.test(code) ? " " : "";
+  return `${fence}${pad}${code}${pad}${fence}`;
+}
+
+/**
+ * A paragraph with what would start a heading, a quote, a list or a rule at the start of a line
+ * escaped: "# 1 bakery in town" stays text.
+ */
+function escapeLineStarts(paragraph: string): string {
+  return paragraph
+    .replace(/^(?:[#>]|[-+](?=\s|$)|-(?=-))/gm, "\\$&")
+    .replace(/^(\d+)([.)])(?=\s|$)/gm, "$1\\$2");
 }
 
 /** Text with the characters Markdown would read as formatting escaped. */

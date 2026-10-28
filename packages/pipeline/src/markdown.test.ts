@@ -45,11 +45,46 @@ describe("htmlToMarkdown (F-EX-5)", () => {
       markdown(
         "<p>Mon–Fri<br>7–3</p><blockquote><p>Best bread</p><p>– Sam</p></blockquote><pre>a  b\n</pre><hr><p><code>x`y</code></p>",
       ),
-    ).toBe("Mon–Fri\n7–3\n\n> Best bread\n>\n> – Sam\n\n```\na  b\n```\n\n---\n\n`xy`\n");
+    ).toBe("Mon–Fri\n7–3\n\n> Best bread\n>\n> – Sam\n\n```\na  b\n```\n\n---\n\n``x`y``\n");
   });
 
   it("escapes what Markdown would read as formatting, and decodes entities", () => {
     expect(markdown("<p>2 * 3 &amp; [a_b]</p>")).toBe("2 \\* 3 & \\[a\\_b\\]\n");
+  });
+
+  it("keeps code's backticks, in fences longer than any run of them inside (CommonMark)", () => {
+    expect(markdown("<p><code>a`b</code> and <code>``x``</code></p>")).toBe(
+      "``a`b`` and ``` ``x`` ```\n",
+    );
+    expect(markdown("<pre>run ```this```\n</pre>")).toBe("````\nrun ```this```\n````\n");
+  });
+
+  it("escapes what would start a heading, quote, list or rule at the start of a line", () => {
+    expect(
+      markdown(
+        "<p># 1 bakery in town</p><p>&gt; quoted</p><p>- dash<br>+ plus<br>--- rule<br>1. first<br>2) second</p><p>A - B, 3.5 stars</p>",
+      ),
+    ).toBe(
+      "\\# 1 bakery in town\n\n\\> quoted\n\n\\- dash\n\\+ plus\n\\--- rule\n1\\. first\n2\\) second\n\nA - B, 3.5 stars\n",
+    );
+  });
+
+  it("writes each term of a description list with its descriptions on one line", () => {
+    expect(
+      markdown(
+        '<dl><div class="contents"><dt>Tuesday to Friday</dt><dd><time>7:00</time>–<time>15:00</time></dd></div><dt>Sunday</dt><dd>Closed</dd><dd>Except in December</dd></dl>',
+      ),
+    ).toBe("- Tuesday to Friday: 7:00–15:00\n- Sunday: Closed; Except in December\n");
+  });
+
+  it("drops the headings of a section whose form or embed is all it holds besides", () => {
+    expect(
+      markdown(
+        "<section><h2>Write to us</h2><div><form><label>Name</label><input></form></div></section>" +
+          "<section><h2>Find us</h2><p>Opposite the library.</p><iframe></iframe></section>" +
+          "<section><h2>Our story</h2></section>",
+      ),
+    ).toBe("## Find us\n\nOpposite the library.\n\n## Our story\n");
   });
 
   it("writes nothing for a page with no text", () => {

@@ -38,13 +38,8 @@ Pop in, or call ahead.
 
 ### Opening hours
 
-Tuesday to Friday
-
-7:00–15:00
-
-Saturday and Sunday
-
-8:00–13:00
+- Tuesday to Friday: 7:00–15:00
+- Saturday and Sunday: 8:00–13:00
 
 Closed on bank holidays.
 
@@ -63,9 +58,3 @@ Email: [hello@rosas-bakery.example](mailto:hello@rosas-bakery.example)
 On the high street, opposite the library.
 
 [Open in Google Maps](https://www.google.com/maps/search/?api=1&query=1%20High%20Street%2C%20Hightown%2C%20HT1%202AB)
-
-## Write to us
-
-## Our newsletter
-
-## Cake club

@@ -1114,7 +1114,7 @@ describe("buildSite: site files (3.5)", () => {
     }
   }
 
-  it("roots the 'Page not found' page's links and files at the web address (F-ED-20)", async () => {
+  it("roots the 'Page not found' page's links and files at /, even with a web address (F-ED-20)", async () => {
     const result = await buildSite(
       withNotFound({ "address.url": `${ADDRESS}/` }),
       siteLibrary,
@@ -1122,19 +1122,21 @@ describe("buildSite: site files (3.5)", () => {
     );
     const lost = text(result, "404.html");
 
-    expect(lost).toMatch(
-      new RegExp(`<link rel="stylesheet" href="${ADDRESS}/assets/css/site.[0-9a-f]{10}.css">`),
-    );
-    expect(lost).toContain(`<a href="${ADDRESS}/index.html">Home</a>`);
-    expect(lost).toContain(`src="${ADDRESS}/assets/img/hero-1600.jpg"`);
-    expect(lost).toContain(`srcSet="${ADDRESS}/assets/img/hero-640.webp 640w`);
-    expect(lost).toContain(`href="${ADDRESS}/about.html">About us</a>`);
+    // At the site's root on whatever host serves it, as the web address may not point there yet.
+    expect(lost).toMatch(/<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/);
+    expect(lost).toContain('<a href="/index.html">Home</a>');
+    expect(lost).toContain('src="/assets/img/hero-1600.jpg"');
+    expect(lost).toContain('srcSet="/assets/img/hero-640.webp 640w');
+    expect(lost).toContain('href="/about.html">About us</a>');
+    expect(lost).not.toContain(`="${ADDRESS}`);
     expect(lost).toContain('<meta name="robots" content="noindex">');
-    // Other pages keep relative links (X1).
-    expect(text(result, "about.html")).toContain('<a href="index.html">Home</a>');
+    // Other pages keep relative links (X1), and the web address only in their canonical and og:url.
+    const about = text(result, "about.html");
+    expect(about).toContain('<a href="index.html">Home</a>');
+    expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
   }, 60_000);
 
-  it("roots them at / without a web address, and leaves them relative in a preview", async () => {
+  it("roots them at / without a web address too, and leaves them relative in a preview", async () => {
     const exported = text(await buildSite(withNotFound(), siteLibrary, resources), "404.html");
     const previewed = text(await preview(withNotFound()), "404.html");
 

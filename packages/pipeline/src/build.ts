@@ -550,9 +550,11 @@ export async function* buildEvents(
           }),
         );
   // A page links to the others and its files `../` per folder up. The "Page not found" page is
-  // served at any missing address, folders deep too, so its links start at the site's root: the
-  // web address, or `/` (F-ED-20). Not in a preview, which serves the site below a path of its own.
-  const rootPrefix = run.mode === "preview" ? "" : `${siteAddress(site) ?? ""}/`;
+  // served at any missing address, folders deep too, so its links start at the site's root, `/`
+  // (F-ED-20): never the web address, so it works on whatever host serves it (a host's own
+  // address before the domain points there too). Not in a preview, which serves the site below a
+  // path of its own.
+  const rootPrefix = run.mode === "preview" ? "" : "/";
   const prefixOf = (page: SitePage) =>
     page.path === NOT_FOUND_PATH ? rootPrefix : "../".repeat(depthOf(page.path));
   const keptPages = new Map<string, RenderedRegions>();
