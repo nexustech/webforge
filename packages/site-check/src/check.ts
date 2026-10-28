@@ -4,6 +4,7 @@ import {
   missingImagesRule,
   placeholdersRule,
 } from "./rules/content.js";
+import { externalResourcesRule } from "./rules/external.js";
 import { formsRule } from "./rules/forms.js";
 import { contrastRule, underlinedTextRule } from "./rules/look.js";
 import { largeFilesRule, largeImagesRule } from "./rules/media.js";
@@ -18,10 +19,7 @@ import type {
   RuleResult,
 } from "./types.js";
 
-/**
- * Site Check's rules (F-CHK-1, X5), in the panel's order within each level. Later items add
- * theirs here: external resources (3.9).
- */
+/** Site Check's rules (F-CHK-1, X5), in the panel's order within each level. */
 export const SITE_CHECK_RULES: readonly CheckRule[] = [
   deviceNamesRule,
   homePageRule,
@@ -29,6 +27,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   placeholdersRule,
   pageTitlesRule,
   webAddressRule,
+  externalResourcesRule,
   formsRule,
   missingImagesRule,
   altTextRule,

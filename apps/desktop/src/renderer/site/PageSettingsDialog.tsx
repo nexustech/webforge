@@ -37,6 +37,7 @@ type PageValues = {
   readonly hideFooter: boolean;
   readonly hideFromNavigation: boolean;
   readonly hideBackToTop: boolean;
+  readonly hideFromSearch: boolean;
 };
 
 const settings = pageEntrySchema.shape.settings.shape;
@@ -54,6 +55,7 @@ const pageSettingsFormSchema = z.object({
   hideFooter: settings.hideFooter,
   hideFromNavigation: settings.hideFromNavigation,
   hideBackToTop: z.boolean(),
+  hideFromSearch: z.boolean(),
 });
 
 /**
@@ -115,13 +117,20 @@ export function pageSettingsSpec(
       },
       { kind: "toggle", name: "hideHeader", label: t("pageSettings.hideHeader") },
       { kind: "toggle", name: "hideFooter", label: t("pageSettings.hideFooter") },
-      // "Page not found" is never in navigation.
+      // "Page not found" is never in navigation, nor shown by search engines.
       ...(page.kind === "page"
         ? [
             {
               kind: "toggle" as const,
               name: "hideFromNavigation",
               label: t("pageSettings.hideFromNavigation"),
+            },
+            // One is the menu, the other is search (3.15, SEO-2).
+            {
+              kind: "toggle" as const,
+              name: "hideFromSearch",
+              label: t("pageSettings.hideFromSearch"),
+              help: t("pageSettings.hideFromSearchHint"),
             },
           ]
         : []),
@@ -178,6 +187,7 @@ export function PageSettingsDialog({
         hideFooter: page.settings.hideFooter,
         hideFromNavigation: page.settings.hideFromNavigation,
         hideBackToTop: page.settings.hideBackToTop === true,
+        hideFromSearch: page.settings.hideFromSearch === true,
       }}
       onSave={(change) => onSave({ ...change, shareImage: change.shareImage })}
       onCancel={onCancel}

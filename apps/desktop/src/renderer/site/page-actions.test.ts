@@ -411,6 +411,24 @@ describe("Page Settings (F-SET-2)", () => {
     expect(site().pages[about]?.settings).not.toHaveProperty("hideBackToTop");
   });
 
+  it("hides a page from search engines, storing nothing when shown, never 'Page not found' (3.15)", () => {
+    const { session, site, add, labels } = setUp();
+    const about = add("About");
+
+    changePageSettings(session, about, settingsOf(site(), about, { hideFromSearch: true }));
+    expect(site().pages[about]?.settings.hideFromSearch).toBe(true);
+    expect(labels().at(-1)).toBe("Changed page settings");
+
+    changePageSettings(session, about, settingsOf(site(), about, { hideFromSearch: false }));
+    expect(site().pages[about]?.settings).not.toHaveProperty("hideFromSearch");
+
+    // "Page not found" is always kept out of search engines: nothing to store.
+    const lost = Object.values(site().pages).find((page) => page.kind === "not-found");
+    if (lost === undefined) throw new Error("no 'Page not found'");
+    changePageSettings(session, lost.id, settingsOf(site(), lost.id, { hideFromSearch: true }));
+    expect(site().pages[lost.id]?.settings).not.toHaveProperty("hideFromSearch");
+  });
+
   it("keeps a file name set by hand when the page is renamed, and when the field is emptied", () => {
     const { session, site, add } = setUp();
     const about = add("About");

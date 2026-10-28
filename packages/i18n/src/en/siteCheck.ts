@@ -46,6 +46,12 @@ export const siteCheck = {
   "siteCheck.rule.webAddress.pass": "The site's web address is in Site Settings",
   "siteCheck.rule.webAddress.fail.one": "Add the web address your site will have",
   "siteCheck.rule.webAddress.fail.other": "Add the web address your site will have",
+  "siteCheck.rule.externalResources": "Files from other websites",
+  "siteCheck.rule.externalResources.pass": "Your site loads nothing from other websites",
+  "siteCheck.rule.externalResources.fail.one":
+    "1 file comes from another website, so your site won't work offline. Remove it, or allow its address in Settings › Custom Code",
+  "siteCheck.rule.externalResources.fail.other":
+    "{count} files come from other websites, so your site won't work offline. Remove them, or allow their addresses in Settings › Custom Code",
   "siteCheck.rule.forms": "Forms",
   "siteCheck.rule.forms.pass": "Every form has somewhere to send its messages",
   "siteCheck.rule.forms.fail.one": "1 form has nowhere to send its messages",
@@ -85,6 +91,10 @@ export const siteCheck = {
   "siteCheck.place.shared": "{element} in the shared section {name}",
   "siteCheck.place.menu": "Menu item {name}",
   "siteCheck.place.address": "Site Settings › Web address",
+  "siteCheck.place.code.css": "Custom Code › Stylesheet",
+  "siteCheck.place.code.js": "Custom Code › Script",
+  "siteCheck.place.code.head": "Custom Code › HTML in every page's head",
+  "siteCheck.place.code.bodyEnd": "Custom Code › HTML at the end of every page",
   "siteCheck.place.theme": "{foreground} on {background}",
   "siteCheck.place.reversed": "{foreground} on {background}, in reversed sections",
   "siteCheck.place.untitled": "Untitled page ({file})",

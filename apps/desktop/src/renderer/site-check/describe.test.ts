@@ -84,6 +84,7 @@ describe("describePlace", () => {
       ),
     ).toBe("Brand on Surface, in reversed sections");
     expect(name(at({ kind: "address" }))).toBe("Site Settings › Web address");
+    expect(name(at({ kind: "code", part: "css" }))).toBe("Custom Code › Stylesheet");
   });
 });
 
@@ -95,5 +96,9 @@ describe("describeDetail", () => {
     expect(describeDetail(at(place, { bytes: 12_500_000 }))).toMatch(/12\.5/);
     expect(describeDetail(at(place))).toBeUndefined();
     expect(describeDetail(at(place, { name: "x" }))).toBeUndefined();
+    // A file from another website, by its address (3.9).
+    expect(describeDetail(at(place, { url: "https://cdn.example.com/a.js", kind: "script" }))).toBe(
+      "https://cdn.example.com/a.js",
+    );
   });
 });

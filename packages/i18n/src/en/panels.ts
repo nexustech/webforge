@@ -224,6 +224,9 @@ export const panels = {
   "pageSettings.hideHeader": "Hide the Header on this page",
   "pageSettings.hideFooter": "Hide the Footer on this page",
   "pageSettings.hideFromNavigation": "Hide from navigation",
+  "pageSettings.hideFromSearch": "Hide this page from search engines",
+  "pageSettings.hideFromSearchHint":
+    "Search engines won't show it, but it stays on your site and its links still work. Hide from navigation is for your menu; this is for search.",
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
   "pageSettings.save": "Save",
   // Undo steps; "Added {item}", "Moved {item}"… use pages.item.
