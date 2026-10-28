@@ -15,7 +15,7 @@ import { sampleSite } from "@webforge/test-utils";
 import { transform } from "lightningcss";
 import { compile } from "tailwindcss";
 import { beforeAll, describe, expect, it } from "vitest";
-import { type BuildEvent, type BuiltSite, buildSite } from "../src/build.js";
+import { type BuildEvent, type BuiltSite, buildEvents, buildSite } from "../src/build.js";
 import { tailwindLoaders } from "../src/css.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
@@ -39,8 +39,9 @@ describe("buildSite: golden output (X4: byte-stable, readable)", () => {
     expect([...built.files.keys()]).toMatchSnapshot();
     expect({ ...built.report, bytes: undefined }).toEqual({
       pages: 3,
-      // The price list the About page links to is one of them (files/price-list.pdf, 1.28).
-      files: 16,
+      // The price list the About page links to is one of them (files/price-list.pdf, 1.28), and
+      // robots.txt (3.5).
+      files: 17,
       bytes: undefined,
       // The second Newsletter has no form address (3.7).
       warnings: [{ code: "form-unset", page: "about", detail: "noAddress" }],
@@ -1082,4 +1083,175 @@ describe("buildSite: section backgrounds (2.26)", () => {
       { code: "form-unset", page: "about", detail: "noAddress" },
     ]);
   }, 60_000);
+});
+
+describe("buildSite: site files (3.5)", () => {
+  const ADDRESS = "https://rosas.example";
+  /** sampleSite with a "Page not found" page holding the home page's Hero, and `settings`. */
+  function withNotFound(settings: SiteSnapshot["settings"] = {}): SiteSnapshot {
+    const base = sampleSite();
+    return {
+      ...base,
+      settings: { ...base.settings, ...settings },
+      pages: [
+        ...base.pages,
+        {
+          id: "lost",
+          path: "404",
+          title: "Page not found",
+          hideFromNavigation: true,
+          doc: { root: { props: {} }, content: base.pages[0]?.doc.content.slice(0, 1) ?? [] },
+        },
+      ],
+    };
+  }
+  /** `snapshot` built as a preview builds it (3.2). */
+  async function preview(snapshot: SiteSnapshot): Promise<BuiltSite> {
+    const events = buildEvents(snapshot, siteLibrary, resources, { mode: "preview" });
+    for (;;) {
+      const next = await events.next();
+      if (next.done === true) return next.value;
+    }
+  }
+
+  it("roots the 'Page not found' page's links and files at /, even with a web address (F-ED-20)", async () => {
+    const result = await buildSite(
+      withNotFound({ "address.url": `${ADDRESS}/` }),
+      siteLibrary,
+      resources,
+    );
+    const lost = text(result, "404.html");
+
+    // At the site's root on whatever host serves it, as the web address may not point there yet.
+    expect(lost).toMatch(/<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/);
+    expect(lost).toContain('<a href="/index.html">Home</a>');
+    expect(lost).toContain('src="/assets/img/hero-1600.jpg"');
+    expect(lost).toContain('srcSet="/assets/img/hero-640.webp 640w');
+    expect(lost).toContain('href="/about.html">About us</a>');
+    expect(lost).not.toContain(`="${ADDRESS}`);
+    expect(lost).toContain('<meta name="robots" content="noindex">');
+    // Other pages keep relative links (X1), and the web address only in their canonical and og:url.
+    const about = text(result, "about.html");
+    expect(about).toContain('<a href="index.html">Home</a>');
+    expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
+  }, 60_000);
+
+  it("roots them at / without a web address too, and leaves them relative in a preview", async () => {
+    const exported = text(await buildSite(withNotFound(), siteLibrary, resources), "404.html");
+    const previewed = text(await preview(withNotFound()), "404.html");
+
+    expect(exported).toMatch(
+      /<link rel="stylesheet" href="\/assets\/css\/site\.[0-9a-f]{10}\.css">/,
+    );
+    expect(exported).toContain('<a href="/index.html">Home</a>');
+    expect(exported).toContain('src="/assets/img/hero-1600.jpg"');
+    expect(previewed).toContain('<a href="index.html">Home</a>');
+    expect(previewed).toContain('src="assets/img/hero-1600.jpg"');
+  }, 60_000);
+
+  it("writes robots.txt, the sitemap with a web address, the manifest with icons, and the share tags", async () => {
+    const base = withNotFound({ "address.url": ADDRESS });
+    const site: SiteSnapshot = {
+      ...base,
+      icon: "hero-photo",
+      search: {
+        allowIndexing: true,
+        includeSitemap: true,
+        readableByAi: false,
+        xHandle: "@rosasbakery",
+      },
+    };
+
+    const result = await buildSite(site, siteLibrary, resources);
+
+    expect(text(result, "robots.txt")).toContain(`Sitemap: ${ADDRESS}/sitemap.xml`);
+    expect(text(result, "sitemap.xml")).toContain(`<loc>${ADDRESS}/about.html</loc>`);
+    expect(text(result, "sitemap.xml")).not.toContain("404");
+    expect(JSON.parse(text(result, "site.webmanifest")).icons).toHaveLength(3);
+    const about = text(result, "about.html");
+    expect(about).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
+    expect(about).toContain('<meta name="twitter:site" content="@rosasbakery">');
+    // After the favicon set's links (3.4).
+    expect(about.indexOf('rel="apple-touch-icon"')).toBeLessThan(about.indexOf('rel="canonical"'));
+    expect(about).toContain('<link rel="manifest" href="site.webmanifest">');
+  }, 60_000);
+
+  it("writes no sitemap and no canonical address without a web address", async () => {
+    const result = await buildSite(sampleSite(), siteLibrary, resources);
+
+    expect(result.files.has("robots.txt")).toBe(true);
+    expect(result.files.has("sitemap.xml")).toBe(false);
+    expect(result.files.has("site.webmanifest")).toBe(false);
+    expect(text(result, "index.html")).not.toContain("canonical");
+  }, 60_000);
+
+  it("fills in {year} in every page's text, with no script (F-CM-8)", async () => {
+    const base = sampleSite();
+    const site: SiteSnapshot = {
+      ...base,
+      layout: {
+        ...base.layout,
+        footer: base.layout.footer.map((node) => ({
+          ...node,
+          props: { ...node.props, text: "© {year} Hightown" },
+        })),
+      },
+    };
+
+    const result = await buildSite(site, siteLibrary, resources, { year: 2031 });
+
+    // The Thank you page hides the Footer.
+    for (const page of ["index.html", "about.html"]) {
+      expect(text(result, page)).toContain("© 2031 Hightown");
+      expect(text(result, page)).not.toContain("{year}");
+    }
+  }, 60_000);
+
+  describe("AI-readable copies (F-EX-5)", () => {
+    const readable = (address?: string): SiteSnapshot => ({
+      ...withNotFound(address === undefined ? {} : { "address.url": address }),
+      search: {
+        allowIndexing: true,
+        includeSitemap: true,
+        readableByAi: true,
+        description: "Fresh bread and cakes in Hightown.",
+      },
+    });
+
+    it("writes llms.txt and a Markdown copy of each page, as the reviewed golden files", async () => {
+      const result = await buildSite(readable(ADDRESS), siteLibrary, resources);
+
+      await expect(text(result, "llms.txt")).toMatchFileSnapshot("golden/llms.txt");
+      await expect(text(result, "index.md")).toMatchFileSnapshot("golden/index.md");
+      await expect(text(result, "about.md")).toMatchFileSnapshot("golden/about.md");
+      expect(result.files.has("thanks.md")).toBe(true);
+      // Not the "Page not found" page.
+      expect(result.files.has("404.md")).toBe(false);
+    }, 60_000);
+
+    it("links from the site's root without a web address", async () => {
+      const result = await buildSite(readable(), siteLibrary, resources);
+
+      expect(text(result, "llms.txt")).toContain("- [About us](/about.md)");
+      expect(text(result, "index.md")).toContain("](/about.html)");
+    }, 60_000);
+
+    it("writes none when the setting is off, or in a preview", async () => {
+      const off = await buildSite(
+        {
+          ...readable(ADDRESS),
+          search: { allowIndexing: true, includeSitemap: true, readableByAi: false },
+        },
+        siteLibrary,
+        resources,
+      );
+      const previewed = await preview(readable(ADDRESS));
+
+      for (const result of [off, previewed]) {
+        expect([...result.files.keys()].filter((path) => /\.md$|llms\.txt$/.test(path))).toEqual(
+          [],
+        );
+      }
+    }, 60_000);
+  });
 });

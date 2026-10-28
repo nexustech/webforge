@@ -75,6 +75,17 @@ export function siteToSnapshot(
     menu: site.menu,
     ...(site.settings.general.icon === undefined ? {} : { icon: site.settings.general.icon }),
     ...analyticsOf(site.settings.analytics),
+    search: {
+      allowIndexing: site.settings.search.allowIndexing,
+      includeSitemap: site.settings.search.includeSitemap,
+      readableByAi: site.settings.search.readableByAi ?? false,
+      ...(site.settings.general.description === undefined
+        ? {}
+        : { description: site.settings.general.description }),
+      ...(site.settings.social.xHandle === undefined
+        ? {}
+        : { xHandle: site.settings.social.xHandle }),
+    },
   };
 }
 

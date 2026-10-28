@@ -131,6 +131,24 @@ describe("siteToSnapshot", () => {
     expect(snapshot.analytics).toBeUndefined();
   });
 
+  it("passes the search and sharing settings on, AI files off for a site from before them (3.5)", () => {
+    const shared = bakery();
+    shared.settings.social.xHandle = "@rosasbakery";
+    shared.settings.search = { allowIndexing: false, includeSitemap: true, readableByAi: true };
+
+    expect(siteToSnapshot(shared, new Map()).search).toEqual({
+      allowIndexing: false,
+      includeSitemap: true,
+      readableByAi: true,
+      description: "Fresh bread in Hightown",
+      xHandle: "@rosasbakery",
+    });
+    // A site from before the setting: no llms.txt until the person turns it on.
+    const older = bakery();
+    older.settings.search = { allowIndexing: true, includeSitemap: true };
+    expect(siteToSnapshot(older, new Map()).search?.readableByAi).toBe(false);
+  });
+
   it("falls back to the site description and keeps the 'Page not found' page out of navigation", () => {
     expect(snapshot.pages[0]?.description).toBe("Fresh bread in Hightown");
     expect(snapshot.pages[2]?.hideFromNavigation).toBe(true);

@@ -1,0 +1,9 @@
+# Rosa's Bakery
+
+> Fresh bread and cakes in Hightown.
+
+## Pages
+
+- [Home](https://rosas.example/index.md): Fresh bread and cakes, baked every morning in Hightown.
+- [About us](https://rosas.example/about.md)
+- [Thank you](https://rosas.example/thanks.md)

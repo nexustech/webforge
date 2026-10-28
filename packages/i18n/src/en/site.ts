@@ -228,6 +228,9 @@ export const site = {
   "site.settings.openingHoursNoteHint": 'Such as "Closed on bank holidays".',
   "site.settings.allowIndexing": "Let search engines show the site",
   "site.settings.includeSitemap": "Include a sitemap for search engines",
+  "site.settings.readableByAi": "Help AI tools read your site",
+  "site.settings.readableByAiHint":
+    "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",
   "site.settings.measurementId": "Google Analytics measurement ID",
   "site.settings.measurementIdHint": "Such as G-ABC123DEF4. Leave empty for no analytics.",
   "site.settings.consentBanner": "Ask visitors before counting them (cookie banner)",

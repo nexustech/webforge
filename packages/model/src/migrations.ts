@@ -53,6 +53,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   5: sectionPaddingBoxes,
   6: themeStyleTokens,
   7: ownThemes,
+  8: componentLooks,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -264,6 +265,15 @@ function themeStyleTokens(site: RawSite): RawSite {
  */
 function ownThemes(site: RawSite): RawSite {
   return { ...site, formatVersion: 8 };
+}
+
+/**
+ * Format 8 → 9 (3.12, CT-1): a theme may hold a look for each kind of section and element
+ * (`looks`). No older site's theme has one, so nothing changes but the version: a build that reads
+ * only format 8 refuses a site with looks as from a newer version, rather than drop them.
+ */
+function componentLooks(site: RawSite): RawSite {
+  return { ...site, formatVersion: 9 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

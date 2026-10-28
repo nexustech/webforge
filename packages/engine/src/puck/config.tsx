@@ -8,6 +8,7 @@ import {
   type FieldDef,
   type RenderContext,
   withAdvanced,
+  withLook,
 } from "@webforge/site-components";
 import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
 import { FormatToolbar, richTextField } from "./rich-text.js";
@@ -62,6 +63,7 @@ function toPuckField(field: FieldDef, richText: RichTextTools): Field {
 export type EditorRevision = (nodeId: string) => number;
 
 function toPuckComponent(
+  type: string,
   def: ComponentDef,
   revision: EditorRevision,
   context: () => RenderContext,
@@ -87,7 +89,9 @@ function toPuckComponent(
     fields,
     defaultProps: withoutChildIds(def.defaults),
     render: (props: Record<string, unknown>) => {
-      const { puck: _puck, id: rawId, ...values } = props;
+      const { puck: _puck, id: rawId, ...own } = props;
+      // The theme's look for its kind under what it sets itself (3.12, CT-1), as the export does.
+      const values = withLook(own, type, context().looks);
       const id = typeof rawId === "string" ? rawId : "";
       for (const name of richTextNames) {
         values[name] = <Fragment key={revision(id)}>{values[name] as ReactNode}</Fragment>;
@@ -182,7 +186,7 @@ export function toPuckConfig(
     components: Object.fromEntries(
       Object.entries(library.components).map(([type, def]) => [
         type,
-        toPuckComponent(def, revision, context, richText),
+        toPuckComponent(type, def, revision, context, richText),
       ]),
     ),
   };

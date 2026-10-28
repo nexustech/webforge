@@ -17,6 +17,7 @@ exports[`buildSite: golden output (X4: byte-stable, readable) > writes the expec
   "assets/js/webforge.a99d94cc97.js",
   "files/price-list.pdf",
   "index.html",
+  "robots.txt",
   "thanks.html",
 ]
 `;

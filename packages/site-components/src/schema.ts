@@ -11,6 +11,7 @@ import type {
   FormUnset,
   ImageValue,
   LinkValue,
+  Looks,
   NodeDoc,
   OpeningHours,
   Responsive,
@@ -291,6 +292,11 @@ export type RenderContext = SiteBindings & {
    * stored document, so no site file can ask for its code to be written raw into the editor.
    */
   readonly rawCustomCode?: true;
+  /**
+   * The theme's looks by kind (3.12, CT-1): an element takes its kind's look for each field it
+   * doesn't set itself (`withLook`). None for a theme without looks.
+   */
+  readonly looks?: Looks;
   /**
    * The address of the site's thank-you page (3.7), set by the export when the form service can
    * send a visitor there after sending and the site has its web address: forms tell the service.

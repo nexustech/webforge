@@ -72,6 +72,17 @@ CT-8 is a v1.1 item of about 3 days; it needs CT-7's selectors and 2.18's class 
 
 3.12 goes to stream B after 3.7 and 3.13 and 3.14 to stream A after 3.11 (product owner, 27 Oct 2026, levelling the streams): +12.5 days, Phase 3 from 37.5 to 50 days.
 
+### 3.12 implementation notes (27 Oct 2026)
+Choices within CT-1 and CT-3, agreed with the coordinator as following existing rules (ADR 0009, 2.27, ADR 0012):
+
+1. **Kinds (CT-1):** every component with an Appearance group has a look, keyed by its type (`Button`, `Hero`, `CallToAction`…). Theme Studio › Components lists them by the Add panel's categories.
+2. **A look's fields (CT-1):** the Appearance group's thirteen, a section's overlay over its background image (strength and colour, which share the group), and the hover row where the kind has one (hover, speed, easing): what 2.27's *Apply this look* copies, so "apply to every Button" and "the theme's look for Buttons" agree; a catalogue test keeps the two the same. The background image itself is content (C4), so no look holds it.
+3. **Colours (CT-1):** a look holds the theme's colours only, never a custom hex: a custom colour belongs to the one item it's set on (ADR 0009).
+4. **Precedence (CT-1):** per field, whole values. An item's own value (set once or per device) wins; a field it doesn't set takes its kind's look; else the component's default. *Reset* deletes the item's value, so it follows the look again, as 2.27 deletes the values it sets to the theme's. A look can be set per device as an item's can.
+5. **Cards and buttons (CT-1):** the theme's card style and button tokens fold into the Card and Button looks in what the person sees: the Components page shows `cards.style` as the Card look, and `buttons` (shape, size, style) beside the Button look's fields. Both stay where they are in the theme, so every preset's golden CSS stays byte-identical and saved themes in *My themes* stay valid. Cards are list items without an Appearance group of their own, so their look stays the theme's card style.
+6. **Format (CT-1):** `looks` is a new optional theme field. Format 9 bumps the version only (as 2.23's 7 → 8 did), so an older build opens a site with looks read-only rather than drop them; a v9 fixture with looks and the inverse step.
+7. **Provenance (CT-3):** *Theme's (‹token›: ‹value›)* names a token only where one theme token decides the value: corners from `radius.box` for sections and cards and `radius.field` for Buttons and fields, shadow from `theme.shadow`, border from `border.thin`, size from the type scale's style; elsewhere plain *Theme's*. Clicking it opens the Theme tab at that token (a reveal-field request). *Class (Advanced)* shows only when the item's Advanced classes include a utility for that property (`rounded-`, `shadow-`, `border-`, `opacity-`, `text-`, `bg-`, `font-`).
+
 ## 5. Sources
 
 - [product/08](08-component-styling.md): the competitor models (§2), the comparison table (§3), ST-1…ST-8.
