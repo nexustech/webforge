@@ -325,7 +325,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
           const stored = await site.storeCopiedMedia(item, () => readKept(item));
           if (stored.status === "failed") return stored;
           if (stored.status === "stored") media.push(item);
-          else missingImages += 1;
+          else if (stored.status === "missing") missingImages += 1;
         }
         const { nodes, sharedSectionId } = copied.data;
         const shared = sharedSectionId === undefined ? {} : { sharedSectionId };
