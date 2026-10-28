@@ -1,6 +1,7 @@
 import type { SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
@@ -10,7 +11,7 @@ let resources: PipelineResources;
 
 beforeAll(async () => {
   resources = await loadNodeResources();
-}, 120_000);
+}, scaledTestTimeout(120_000));
 
 const text = (site: BuiltSite, path: string) => new TextDecoder().decode(site.files.get(path));
 const stylesheet = (site: BuiltSite) =>
@@ -37,27 +38,35 @@ const buttonTag = (html: string, label: string) =>
   new RegExp(`<a [^>]*>(?:(?!</a>).)*${label}`, "s").exec(html)?.[0] ?? "";
 
 describe("each kind's look in the export (3.12, CT-1)", () => {
-  it("draws every Button that doesn't set its corners in the theme's look for Buttons, styled", async () => {
-    const built = await buildSite(
-      withButtons({ Button: { lookCorners: "full" } }),
-      siteLibrary,
-      resources,
-    );
-    const index = text(built, "index.html");
+  it(
+    "draws every Button that doesn't set its corners in the theme's look for Buttons, styled",
+    async () => {
+      const built = await buildSite(
+        withButtons({ Button: { lookCorners: "full" } }),
+        siteLibrary,
+        resources,
+      );
+      const index = text(built, "index.html");
 
-    expect(buttonTag(index, "Follows the look")).toContain("rounded-full!");
-    // A Button's own corners win over its kind's look.
-    expect(buttonTag(index, "Its own")).toContain("rounded-none!");
-    expect(buttonTag(index, "Its own")).not.toContain("rounded-full!");
-    // The look's classes are compiled into the site's stylesheet with the page's own.
-    expect(stylesheet(built)).toContain(String.raw`.rounded-full\!`);
-  }, 60_000);
+      expect(buttonTag(index, "Follows the look")).toContain("rounded-full!");
+      // A Button's own corners win over its kind's look.
+      expect(buttonTag(index, "Its own")).toContain("rounded-none!");
+      expect(buttonTag(index, "Its own")).not.toContain("rounded-full!");
+      // The look's classes are compiled into the site's stylesheet with the page's own.
+      expect(stylesheet(built)).toContain(String.raw`.rounded-full\!`);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("exports a site exactly as before when its theme has no looks", async () => {
-    const without = await buildSite(withButtons(), siteLibrary, resources);
-    const empty = await buildSite(withButtons({}), siteLibrary, resources);
+  it(
+    "exports a site exactly as before when its theme has no looks",
+    async () => {
+      const without = await buildSite(withButtons(), siteLibrary, resources);
+      const empty = await buildSite(withButtons({}), siteLibrary, resources);
 
-    expect(text(empty, "index.html")).toBe(text(without, "index.html"));
-    expect(stylesheet(empty)).toBe(stylesheet(without));
-  }, 60_000);
+      expect(text(empty, "index.html")).toBe(text(without, "index.html"));
+      expect(stylesheet(empty)).toBe(stylesheet(without));
+    },
+    scaledTestTimeout(60_000),
+  );
 });

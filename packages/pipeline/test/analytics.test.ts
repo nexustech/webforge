@@ -1,6 +1,7 @@
 import type { SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
@@ -20,7 +21,7 @@ const withAnalytics = (consentBanner = true): SiteSnapshot => ({
 beforeAll(async () => {
   resources = await loadNodeResources();
   built = await buildSite(withAnalytics(), siteLibrary, resources);
-}, 120_000);
+}, scaledTestTimeout(120_000));
 
 const text = (site: BuiltSite, path: string) => new TextDecoder().decode(site.files.get(path));
 const fileNamed = (site: BuiltSite, pattern: RegExp) =>
@@ -39,29 +40,37 @@ describe("Google Analytics and its consent banner (3.8, B4, B7)", () => {
     expect(text(built, fileNamed(built, /^assets\/js\/webforge\./))).toContain("webforge-consent");
   });
 
-  it("puts Cookie settings in every page's Footer, so a visitor can change their choice (#539)", async () => {
-    const settings =
-      '<button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button>';
-    // The thank-you page hides its Footer (its Page Settings), and so has none.
-    for (const path of ["index.html", "about.html"]) {
-      const html = text(built, path);
-      const at = html.indexOf(settings);
-      expect(at, path).toBeGreaterThan(html.indexOf("<footer"));
-      expect(at, path).toBeLessThan(html.indexOf("</footer>"));
-    }
-    // None without analytics: the golden files say so for every template too.
-    const plain = await buildSite(sampleSite(), siteLibrary, resources);
-    expect(text(plain, "index.html")).not.toContain("data-wf-consent-open");
-  }, 60_000);
+  it(
+    "puts Cookie settings in every page's Footer, so a visitor can change their choice (#539)",
+    async () => {
+      const settings =
+        '<button type="button" class="link link-hover" data-wf-consent-open="" hidden="">Cookie settings</button>';
+      // The thank-you page hides its Footer (its Page Settings), and so has none.
+      for (const path of ["index.html", "about.html"]) {
+        const html = text(built, path);
+        const at = html.indexOf(settings);
+        expect(at, path).toBeGreaterThan(html.indexOf("<footer"));
+        expect(at, path).toBeLessThan(html.indexOf("</footer>"));
+      }
+      // None without analytics: the golden files say so for every template too.
+      const plain = await buildSite(sampleSite(), siteLibrary, resources);
+      expect(text(plain, "index.html")).not.toContain("data-wf-consent-open");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("writes no address of Google's into a page: the script adds it once the visitor accepts", async () => {
-    const plain = await buildSite(sampleSite(), siteLibrary, resources);
-    const absolute = (site: BuiltSite) =>
-      text(site, "index.html").match(/(?:src|href|srcSet)="[a-z]+:/gi);
+  it(
+    "writes no address of Google's into a page: the script adds it once the visitor accepts",
+    async () => {
+      const plain = await buildSite(sampleSite(), siteLibrary, resources);
+      const absolute = (site: BuiltSite) =>
+        text(site, "index.html").match(/(?:src|href|srcSet)="[a-z]+:/gi);
 
-    expect(absolute(built)).toEqual(absolute(plain));
-    expect(text(built, "index.html")).not.toContain("googletagmanager");
-  }, 60_000);
+      expect(absolute(built)).toEqual(absolute(plain));
+      expect(text(built, "index.html")).not.toContain("googletagmanager");
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("compiles the banner's classes into the site's stylesheet", () => {
     const css = text(built, fileNamed(built, /^assets\/css\/site\./));
@@ -71,29 +80,37 @@ describe("Google Analytics and its consent banner (3.8, B4, B7)", () => {
     }
   });
 
-  it("writes the banner without its buttons when the owner turned it off, Google's script then loading at once", async () => {
-    const unasked = await buildSite(withAnalytics(false), siteLibrary, resources);
-    const index = text(unasked, "index.html");
+  it(
+    "writes the banner without its buttons when the owner turned it off, Google's script then loading at once",
+    async () => {
+      const unasked = await buildSite(withAnalytics(false), siteLibrary, resources);
+      const index = text(unasked, "index.html");
 
-    expect(index).toContain('<section data-wf-consent="" data-measurement-id="G-ABC123DEF4"');
-    expect(index).not.toContain("data-ask");
-    expect(index).not.toContain("data-wf-consent-accept");
-    // Nothing to change without the banner, so no Cookie settings (#539).
-    expect(index).not.toContain("data-wf-consent-open");
-  }, 60_000);
+      expect(index).toContain('<section data-wf-consent="" data-measurement-id="G-ABC123DEF4"');
+      expect(index).not.toContain("data-ask");
+      expect(index).not.toContain("data-wf-consent-accept");
+      // Nothing to change without the banner, so no Cookie settings (#539).
+      expect(index).not.toContain("data-wf-consent-open");
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("leaves Google Analytics out of a preview, so the owner's own visits aren't counted", async () => {
-    const pipeline = createPipeline(siteLibrary);
-    let site: BuiltSite | undefined;
-    for await (const event of pipeline.build(withAnalytics(), resources, { mode: "preview" })) {
-      if (event.stage === "done") site = event.site;
-    }
-    if (site === undefined) throw new Error("The preview didn't finish");
+  it(
+    "leaves Google Analytics out of a preview, so the owner's own visits aren't counted",
+    async () => {
+      const pipeline = createPipeline(siteLibrary);
+      let site: BuiltSite | undefined;
+      for await (const event of pipeline.build(withAnalytics(), resources, { mode: "preview" })) {
+        if (event.stage === "done") site = event.site;
+      }
+      if (site === undefined) throw new Error("The preview didn't finish");
 
-    expect(text(site, "index.html")).not.toContain("data-wf-consent");
-    expect(text(site, "index.html")).not.toContain("Cookie settings");
-    expect(text(site, fileNamed(site, /^assets\/js\/webforge\./))).not.toContain(
-      "webforge-consent",
-    );
-  }, 60_000);
+      expect(text(site, "index.html")).not.toContain("data-wf-consent");
+      expect(text(site, "index.html")).not.toContain("Cookie settings");
+      expect(text(site, fileNamed(site, /^assets\/js\/webforge\./))).not.toContain(
+        "webforge-consent",
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 });
