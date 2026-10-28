@@ -1,14 +1,5 @@
 // @vitest-environment happy-dom
-import {
-  act,
-  cleanup,
-  createEvent,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
   copiedNodeId,
@@ -25,6 +16,7 @@ import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { dragRow } from "../testing/row-drag.js";
 import { registerLayersPanel } from "./register-layers-panel.js";
 
 afterEach(cleanup);
@@ -106,18 +98,10 @@ describe("registerLayersPanel", () => {
       );
     const drag = (from: number, to: number, copy = false) => {
       const rows = screen.getAllByRole("treeitem");
-      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
-      const target = rows[to] as HTMLElement;
-      // happy-dom's drag events don't take the keys from their init: they are set on the event.
-      const withKeys = (event: Event) => {
-        for (const key of ["ctrlKey", "metaKey"])
-          Object.defineProperty(event, key, { value: copy });
-        return event;
-      };
-      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
-      fireEvent(target, withKeys(createEvent.dragOver(target, { dataTransfer })));
-      fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
-      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
+      dragRow(rows[from] as HTMLElement, rows[to] as HTMLElement, {
+        ctrlKey: copy,
+        metaKey: copy,
+      });
     };
     act(() => session.selectElements(["section-1", "heading-1"]));
 
