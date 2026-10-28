@@ -5,7 +5,14 @@ import {
   EDITOR_RENDER_CONTEXT,
   renderNodesToHtml,
 } from "@webforge/site-components";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { AddItem } from "../editor/add-item.js";
 import { type CompileCanvasCss, classesOfHtml } from "../editor/site-css.js";
 import { reportFailure } from "../log.js";
@@ -66,7 +73,15 @@ export type PreviewSource = {
   /** The section a shared section stores, by its id, if the site has it. */
   readonly sharedSection: (id: SharedSectionId) => NodeDoc | undefined;
   readonly compileCss: CompileCanvasCss;
+  /**
+   * Calls `listener` after each change to the site, so a preview shown draws again once its theme
+   * or shared section has changed (#613); without it, only when drawn anew.
+   */
+  readonly subscribe?: ((listener: () => void) => () => void) | undefined;
 };
+
+/** A subscription that never calls: for a source without one. */
+const NO_CHANGES = () => () => undefined;
 
 /**
  * Shows `drawn` scaled into the preview's size, in a shadow root: the site's CSS applies to the
@@ -140,18 +155,35 @@ async function drawNode(
   };
 }
 
-/** A preview that draws its section the first time it is shown, then keeps it. */
-function SectionPreview({ draw }: { readonly draw: () => Promise<Drawn | undefined> }) {
+/**
+ * A preview that draws its section as it is shown, then keeps it, and draws it again once what it
+ * is drawn from (`theme`, `node`) has changed while it is shown (#613): Theme Studio's kinds as
+ * their look changes, the Add panel's as the theme does.
+ */
+function SectionPreview({
+  draw,
+  subscribe,
+  theme,
+  node,
+}: {
+  readonly draw: (node: NodeDoc | undefined, theme: Theme) => Promise<Drawn | undefined>;
+  readonly subscribe: (listener: () => void) => () => void;
+  readonly theme: () => Theme;
+  readonly node: () => NodeDoc | undefined;
+}) {
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
+  // The same objects until they change: the site is immutable.
+  const shownTheme = useSyncExternalStore(subscribe, theme);
+  const shownNode = useSyncExternalStore(subscribe, node);
   useEffect(() => {
     let current = true;
-    void draw().then((result) => {
+    void draw(shownNode, shownTheme).then((result) => {
       if (current) setDrawn(result);
     });
     return () => {
       current = false;
     };
-  }, [draw]);
+  }, [draw, shownTheme, shownNode]);
   return drawn === undefined ? (
     <div aria-hidden style={{ width: PREVIEW.width, height: PREVIEW.height / 2 }} />
   ) : (
@@ -204,7 +236,10 @@ function createPreviews(
       readonly drawing: Promise<Drawn | undefined>;
     }
   >();
-  const drawers = new Map<string, () => Promise<Drawn | undefined>>();
+  const drawers = new Map<
+    string,
+    (node: NodeDoc | undefined, theme: Theme) => Promise<Drawn | undefined>
+  >();
   // A library section's node, with its defaults: made once, so its drawing is kept.
   const defaults = new Map<string, NodeDoc>();
   const nodeOf = (item: PreviewItem): NodeDoc | undefined => {
@@ -222,10 +257,8 @@ function createPreviews(
   const drawerFor = (item: PreviewItem) => {
     let drawer = drawers.get(item.type);
     if (drawer === undefined) {
-      drawer = () => {
-        const node = nodeOf(item);
+      drawer = (node, theme) => {
         if (node === undefined) return Promise.resolve(undefined);
-        const theme = source.theme();
         const kept = drawings.get(item.type);
         if (kept !== undefined && kept.node === node && kept.theme === theme) return kept.drawing;
         const drawing = drawNode(source, node, theme).catch((error: unknown) => {
@@ -240,7 +273,26 @@ function createPreviews(
     }
     return drawer;
   };
-  return (item) => (nodeOf(item) === undefined ? null : <SectionPreview draw={drawerFor(item)} />);
+  // What each item is drawn from, read the same way each time, for its preview to follow.
+  const nodeGetters = new Map<string, () => NodeDoc | undefined>();
+  const nodeFor = (item: PreviewItem) => {
+    let get = nodeGetters.get(item.type);
+    if (get === undefined) {
+      get = () => nodeOf(item);
+      nodeGetters.set(item.type, get);
+    }
+    return get;
+  };
+  const subscribe = source.subscribe ?? NO_CHANGES;
+  return (item) =>
+    nodeOf(item) === undefined ? null : (
+      <SectionPreview
+        draw={drawerFor(item)}
+        subscribe={subscribe}
+        theme={source.theme}
+        node={nodeFor(item)}
+      />
+    );
 }
 
 /** The widths an item's preview draws it at, in CSS pixels: the canvas's Desktop and Mobile. */
