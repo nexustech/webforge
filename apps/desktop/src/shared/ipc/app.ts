@@ -57,7 +57,7 @@ export type NativeMenus = z.infer<typeof nativeMenusSchema>;
  * The pages on other websites Site Check's guides open (3.17, SEO-7), by name: main knows their
  * fixed addresses, so the renderer can't open any other.
  */
-export const GUIDES = ["businessProfile", "searchConsole"] as const;
+const GUIDES = ["businessProfile", "searchConsole"] as const;
 
 /** One of {@link GUIDES}. */
 export type Guide = (typeof GUIDES)[number];
