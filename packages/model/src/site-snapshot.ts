@@ -73,6 +73,8 @@ export type SitePage = {
    * and the Markdown copies. The form's thank-you page is too.
    */
   readonly hideFromSearch?: boolean | undefined;
+  /** The day it last changed, `2026-10-28` (3.15): the sitemap's `lastmod`; none when unknown. */
+  readonly updated?: string | undefined;
   /**
    * The Media image shown when the page is shared (`og:image`, 3.4): its own from Page Settings,
    * or the site's; none when neither is set.
@@ -208,6 +210,7 @@ const sitePageSchema = z.object({
   hideFooter: z.boolean().optional(),
   hideBackToTop: z.boolean().optional(),
   hideFromSearch: z.boolean().optional(),
+  updated: z.iso.date().optional(),
   shareImage: mediaRefSchema.optional(),
   doc: pageDocSchema,
 });

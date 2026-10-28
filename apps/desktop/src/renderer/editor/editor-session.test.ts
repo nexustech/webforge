@@ -239,6 +239,8 @@ describe("connectEngine", () => {
     expect(doc()).toEqual(withHeadingText(before, "Hello"));
     expect(session.history.entries()[0]?.forward).toEqual([
       expect.objectContaining({ op: "replace", value: "Hello" }),
+      // The page's last-changed date, in the same step (3.15).
+      expect.objectContaining({ path: expect.arrayContaining(["updated"]) }),
     ]);
   });
 

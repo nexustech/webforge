@@ -90,6 +90,12 @@ export const pageEntrySchema = z.strictObject({
   navLabel: z.string().min(1).max(MENU_LABEL_MAX).optional(),
   settings: pageSettingsSchema,
   doc: pageDocSchema,
+  /**
+   * The day the page itself last changed (3.15, SEO-3), `2026-10-28`: set by every edit to it,
+   * not by site-wide ones (the theme, Header and Footer, shared sections), and undone with it. The
+   * sitemap's `lastmod`. Absent until it first changes (ADR 0012: absent leaves `lastmod` out).
+   */
+  updated: z.iso.date().optional(),
 });
 
 /** See {@link pageEntrySchema}. */

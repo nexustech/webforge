@@ -151,7 +151,7 @@ describe("shareTags (3.5)", () => {
     expect(tagsOf(open, "404")).not.toContain("og:url");
   });
 
-  it("keeps search engines away from a page hidden from them, which keeps its address (3.15)", () => {
+  it("keeps search engines away from a page hidden from them, with no address for them (3.15)", () => {
     const snapshot = withHiddenAbout(site());
     const tags = shareTags({
       site: snapshot,
@@ -162,8 +162,9 @@ describe("shareTags (3.5)", () => {
     }).join("\n");
 
     expect(tags).toContain('<meta name="robots" content="noindex">');
-    // Still on the site, and linked: only search engines leave it out.
-    expect(tags).toContain(`<link rel="canonical" href="${ADDRESS}/about.html">`);
+    // No address of its own for them beside it: Google calls that conflicting signals.
+    expect(tags).not.toContain("canonical");
+    expect(tags).not.toContain("og:url");
   });
 
   it("writes the search engines' verification codes on every page (3.15, SEO-8)", () => {
@@ -254,6 +255,24 @@ describe("robots.txt and sitemap.xml (3.5)", () => {
     expect(sitemapXml(snapshot, ADDRESS)).not.toContain("about.html");
     expect(readablePages(snapshot).map((each) => each.path)).not.toContain("about");
     expect(llmsTxt(snapshot)).not.toContain("about");
+  });
+
+  it("gives each page the day it last changed, and none where that's unknown (3.15, SEO-3)", () => {
+    const sample = site();
+    const dated = {
+      ...sample,
+      pages: sample.pages.map((each) =>
+        each.path === "about" ? { ...each, updated: "2026-10-28" } : each,
+      ),
+    };
+    const xml = sitemapXml(dated, ADDRESS);
+
+    expect(xml).toContain(
+      `    <loc>${ADDRESS}/about.html</loc>
+    <lastmod>2026-10-28</lastmod>
+  </url>`,
+    );
+    expect(xml.match(/<lastmod>/g)).toHaveLength(1);
   });
 
   it("lists every page's address but the 'Page not found' page's", () => {

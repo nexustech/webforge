@@ -133,8 +133,8 @@ function optional<K extends string>(key: K, value: string): { [P in K]?: string 
  */
 function verificationOf(form: SettingsForm): { verification?: Record<string, string> } {
   const verification = {
-    ...optional("google", verificationCodeOf(form.googleVerification)),
-    ...optional("bing", verificationCodeOf(form.bingVerification)),
+    ...optional("google", verificationCodeOf(form.googleVerification, "google")),
+    ...optional("bing", verificationCodeOf(form.bingVerification, "bing")),
   };
   return Object.keys(verification).length === 0 ? {} : { verification };
 }
@@ -231,8 +231,8 @@ const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
   "contact.openingHours.*.opens": "site.settings.error.time",
   "contact.openingHours.*.closes": "site.settings.error.time",
   "analytics.measurementId": "site.settings.error.measurementId",
-  "search.verification.google": "site.settings.error.verification",
-  "search.verification.bing": "site.settings.error.verification",
+  "search.verification.google": "site.settings.error.googleVerification",
+  "search.verification.bing": "site.settings.error.bingVerification",
   "forms.service.formId": "site.settings.error.formspree",
   "forms.service.accessKey": "site.settings.error.web3forms",
   "forms.service.email": "site.settings.error.email",

@@ -1,4 +1,9 @@
-import { type SitePage, type SiteSnapshot, webAddressSchema } from "@webforge/model";
+import {
+  type SitePage,
+  type SiteSnapshot,
+  VERIFICATION_TAGS,
+  webAddressSchema,
+} from "@webforge/model";
 import { escapeHtml, type SiteIcon } from "./html.js";
 
 /** The "Page not found" page's path: its file is `404.html`, which hosts serve for missing pages. */
@@ -67,6 +72,9 @@ export function shareTags({ site, page, prefix, shareImage, manifest }: ShareOpt
   const address = siteAddress(site);
   const search = searchOf(site);
   const notFound = page.path === NOT_FOUND_PATH;
+  // Kept from search engines: no canonical address beside its noindex, which Google takes as
+  // conflicting signals (3.15, SEO-2), as "Page not found" has none.
+  const unlisted = notFound || page.hideFromSearch === true;
   const image =
     shareImage === undefined
       ? undefined
@@ -74,25 +82,23 @@ export function shareTags({ site, page, prefix, shareImage, manifest }: ShareOpt
         ? `${prefix}${shareImage}`
         : `${address}/${shareImage}`;
   return [
-    ...(address === undefined || notFound
+    ...(address === undefined || unlisted
       ? []
       : [`<link rel="canonical" href="${escapeHtml(pageAddress(address, page.path))}">`]),
-    ...(!search.allowIndexing || notFound || page.hideFromSearch === true
-      ? [meta("name", "robots", "noindex")]
-      : []),
+    ...(!search.allowIndexing || unlisted ? [meta("name", "robots", "noindex")] : []),
     ...(search.verification?.google === undefined
       ? []
-      : [meta("name", "google-site-verification", search.verification.google)]),
+      : [meta("name", VERIFICATION_TAGS.google, search.verification.google)]),
     ...(search.verification?.bing === undefined
       ? []
-      : [meta("name", "msvalidate.01", search.verification.bing)]),
+      : [meta("name", VERIFICATION_TAGS.bing, search.verification.bing)]),
     meta("property", "og:type", "website"),
     meta("property", "og:site_name", site.name),
     meta("property", "og:title", pageTitle(site, page)),
     ...(page.description === undefined
       ? []
       : [meta("property", "og:description", page.description)]),
-    ...(address === undefined || notFound
+    ...(address === undefined || unlisted
       ? []
       : [meta("property", "og:url", pageAddress(address, page.path))]),
     ...(image === undefined ? [] : [meta("property", "og:image", image)]),
@@ -150,14 +156,20 @@ const searchable = (page: SitePage) => page.path !== NOT_FOUND_PATH && page.hide
 
 /**
  * `sitemap.xml` (3.5): every page's address but the "Page not found" page's and those hidden from
- * search (3.15, SEO-2); pages hidden from the navigation are in it (they are on the site). Only
- * with a web address ({@link hasSitemap}).
+ * search (3.15, SEO-2); pages hidden from the navigation are in it (they are on the site). Each
+ * with the day it last changed, where that's known (`lastmod`, SEO-3). Only with a web address
+ * ({@link hasSitemap}).
  */
 export function sitemapXml(site: SiteSnapshot, address: string): string {
   const urls = site.pages
     .filter(searchable)
-    .map(
-      (page) => `  <url>\n    <loc>${escapeHtml(pageAddress(address, page.path))}</loc>\n  </url>`,
+    .map((page) =>
+      [
+        "  <url>",
+        `    <loc>${escapeHtml(pageAddress(address, page.path))}</loc>`,
+        ...(page.updated === undefined ? [] : [`    <lastmod>${page.updated}</lastmod>`]),
+        "  </url>",
+      ].join("\n"),
     );
   return [
     '<?xml version="1.0" encoding="UTF-8"?>',
