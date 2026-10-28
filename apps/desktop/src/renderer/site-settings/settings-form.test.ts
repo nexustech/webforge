@@ -121,6 +121,46 @@ describe("settings form", () => {
     expect(!wrong.ok && wrong.errors["search.verification.google"]).toBeDefined();
   });
 
+  it("keeps the kind of business, its more precise type only when it's one of the kind's (3.15)", () => {
+    const bakery = checkSettings(
+      edit(full, { businessType: "food", businessKind: "Bakery" }),
+      full,
+    );
+    expect(bakery.ok && bakery.settings.general).toMatchObject({
+      businessType: "food",
+      businessKind: "Bakery",
+    });
+    expect(bakery.ok && toSettingsForm(bakery.settings).businessKind).toBe("Bakery");
+
+    // The kind's first, or another kind's, is "none more precise": nothing stored.
+    for (const businessKind of ["", "FoodEstablishment", "Plumber"]) {
+      const saved = checkSettings(edit(full, { businessType: "food", businessKind }), full);
+      expect(saved.ok && saved.settings.general, businessKind).not.toHaveProperty("businessKind");
+    }
+    const none = checkSettings(edit(full, { businessType: "", businessKind: "Bakery" }), full);
+    expect(none.ok && none.settings.general).not.toHaveProperty("businessType");
+  });
+
+  it("keeps the price range and the place on the map, saying which number is wrong (3.15)", () => {
+    const placed = checkSettings(
+      edit(full, { priceRange: " ££ ", latitude: "54.326", longitude: "-2.747" }),
+      full,
+    );
+    expect(placed.ok && placed.settings.contact).toMatchObject({
+      priceRange: "££",
+      geo: { latitude: 54.326, longitude: -2.747 },
+    });
+
+    const half = checkSettings(edit(full, { latitude: "54.326", longitude: "" }), full);
+    expect(!half.ok && half.errors["contact.geo.longitude"]).toBe(
+      "Type the longitude as a number between -180 and 180, such as -2.7470.",
+    );
+    const far = checkSettings(edit(full, { latitude: "95", longitude: "1" }), full);
+    expect(!far.ok && far.errors["contact.geo.latitude"]).toBeDefined();
+    const empty = checkSettings(edit(full, { latitude: "", longitude: "" }), full);
+    expect(empty.ok && empty.settings.contact).not.toHaveProperty("geo");
+  });
+
   it("leaves empty fields out, trims what was typed and tidies addresses and handles", () => {
     const form = edit(defaultSiteSettings("My site", "en"), {
       name: "  Rosa's  ",

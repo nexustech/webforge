@@ -77,9 +77,9 @@ async function wheelDown(page: Page, by: number): Promise<void> {
     .toBe(true);
 }
 
-async function open(page: Page, name: string): Promise<void> {
+async function open(page: Page, name: string, anchor = ""): Promise<void> {
   await blockNetwork(page.context());
-  await page.goto(exportedPageUrl(name));
+  await page.goto(`${exportedPageUrl(name)}${anchor}`);
   await page.waitForLoadState("load");
 }
 
@@ -218,6 +218,18 @@ test.describe("exported site from disk", () => {
     const width = await page.evaluate(() => document.documentElement.clientWidth);
     expect((await band.boundingBox())?.width).toBe(width);
     expect((await band.getByRole("heading").boundingBox())?.width).toBeLessThanOrEqual(896);
+  });
+
+  test("shows the shared section on both pages it's placed on, each with its anchor (3.10)", async ({
+    page,
+  }) => {
+    for (const name of ["index.html", "about.html"]) {
+      await open(page, name, "#opening-hours");
+      const hours = page.locator("#opening-hours");
+      await expect(hours, name).toHaveCount(1);
+      await expect(hours).toContainText("Open Tuesday to Saturday, 7am to 3pm.");
+      await expect(hours).toBeInViewport();
+    }
   });
 
   test("navigates between pages with relative links", async ({ page }) => {
