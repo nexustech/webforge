@@ -86,6 +86,17 @@ function setUp(form: FormSpec<Values, z.infer<typeof schema>> = spec) {
 }
 
 describe("Form (2.21)", () => {
+  it("draws what the form shows after a field, from the values as typed (3.16)", async () => {
+    const { user } = setUp({
+      ...spec,
+      after: (values) => ({ name: <p>Shown as {values.name}</p> }),
+    });
+
+    expect(screen.getByText("Shown as Rosa")).toBeTruthy();
+    await user.type(screen.getByRole("textbox", { name: "Site name" }), "'s");
+    expect(screen.getByText("Shown as Rosa's")).toBeTruthy();
+  });
+
   it("draws its fields by kind on its tabs, an on/off field as a labelled checkbox", async () => {
     const { user } = setUp();
 

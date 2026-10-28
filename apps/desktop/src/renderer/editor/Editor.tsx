@@ -139,14 +139,20 @@ const THEME_PANEL = "theme";
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
  * tab only in Content mode (R9), and the option groups the person closed (UX-13). The Appearance
- * group's right-click menu has *Apply Look to Every…* (2.27), the Edit menu's own commands.
+ * group's right-click menu has *Apply Look to Every…* (2.27), the Edit menu's own commands, and the
+ * Style tab *Style this ‹kind›…* (3.13a).
  */
 function PreferredEditPanel({
   preferences,
   ...props
 }: Omit<
   EditPanelHostProps,
-  "advanced" | "contentOnly" | "closedGroups" | "onClosedGroupsChange" | "groupActions"
+  | "advanced"
+  | "contentOnly"
+  | "closedGroups"
+  | "onClosedGroupsChange"
+  | "groupActions"
+  | "styleAction"
 > & {
   readonly preferences: PreferencesStore;
 }) {
@@ -163,6 +169,8 @@ function PreferredEditPanel({
   // The Appearance group's own actions (2.27): its look given to every other one of the kind.
   const onPage = useCommand(LOOK_COMMANDS.page);
   const onSite = useCommand(LOOK_COMMANDS.site);
+  // The Style tab's *Style this ‹kind›…* (3.13a), while the selection has a look to style.
+  const styleThis = useCommand(COMMAND_IDS.styleThis);
   const appearance = [onPage, onSite].flatMap((command) =>
     command === undefined
       ? []
@@ -178,6 +186,11 @@ function PreferredEditPanel({
     <EditPanelHost
       {...props}
       groupActions={(id) => (id === APPEARANCE_GROUP_ID ? appearance : [])}
+      styleAction={
+        styleThis === undefined || styleThis.enabled === false
+          ? undefined
+          : { label: styleThis.label, onSelect: () => void registry.run(styleThis.id) }
+      }
       advanced={advanced}
       contentOnly={contentOnly}
       closedGroups={closedGroups}

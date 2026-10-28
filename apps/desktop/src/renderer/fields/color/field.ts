@@ -7,12 +7,12 @@ import { colourFieldRenderer } from "./ColourField.js";
 /**
  * The Edit panel's colour fields (1.37, UX-25): the theme's own colours and a contrast warning, for
  * the selected element's text styles wherever it is (the page, the shared Header or Footer, a
- * linked copy), as the Edit panel finds it.
+ * linked copy), as the Edit panel finds it; *Style this ‹kind›…*'s too (3.13a).
  */
 export const colourField = ({
   session,
   preferences,
-}: FieldRendererContext): FieldRenderer<"color"> =>
+}: Pick<FieldRendererContext, "session" | "preferences">): FieldRenderer<"color"> =>
   colourFieldRenderer({
     session,
     preferences,

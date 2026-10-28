@@ -2,6 +2,7 @@ import {
   BUSINESS_KINDS,
   bindingOf,
   type Day,
+  exportedAddress,
   type NodeDoc,
   type SitePage,
   type SiteSnapshot,
@@ -9,7 +10,7 @@ import {
 import { type ComponentLibrary, walkNodes } from "@webforge/site-components";
 import { z } from "zod";
 import { postalAddressOf, postalAddressSchema } from "./postal-address.js";
-import { pageAddress, searchable, siteAddress } from "./site-files.js";
+import { searchable, siteAddress } from "./site-files.js";
 
 /** schema.org's names for the days the opening hours keep. */
 const DAYS_OF_WEEK: Readonly<Record<Day, string>> = {
@@ -231,7 +232,7 @@ export function structuredData({
         }),
     ...(menuPage === undefined || address === undefined
       ? {}
-      : { menu: pageAddress(address, menuPage.path) }),
+      : { menu: exportedAddress(address, menuPage.path) }),
   });
   // A value the checks refuse leaves the business out rather than write something wrong.
   if (business.success) tags.push(jsonLd(business.data));

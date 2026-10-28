@@ -50,6 +50,8 @@ describe("netlifyPublisher.publish", () => {
       uploaded: 4,
       unchanged: 0,
       removed: 0,
+      // The deploy, for the check that follows.
+      version: expect.any(String),
     });
     expect(netlify.live(siteId, "index.html")).toBe(site["index.html"]);
   });
@@ -283,6 +285,30 @@ describe("netlifyClient", () => {
         ssl_url: "https://rosas-bakery.netlify.app",
       }),
     ]);
+  });
+
+  it("checks through Netlify that the deploy just made is the one the site serves (#600 review)", async () => {
+    const { netlify, client, publisher, siteId } = await setUp();
+    const last = async (files: Record<string, string>) => {
+      const event = (await collect(publisher.publish(build(files), { siteId }, signal()))).at(-1);
+      if (event?.type !== "published") throw new Error("not published");
+      return event;
+    };
+    const first = await last(site);
+    const second = await last({ ...site, "about.html": "<h1>About us, again</h1>" });
+
+    expect(second.version).toBeDefined();
+    expect(await publisher.verify?.(second, { siteId }, signal())).toEqual({ status: "live" });
+    // Another deploy published since: the one just made isn't what the site serves.
+    await client.restoreDeploy(siteId, first.version ?? "");
+    expect(await publisher.verify?.(second, { siteId }, signal())).toEqual({
+      status: "different",
+    });
+    // Netlify not answering, whatever the retries.
+    netlify.failNext("GET", /^\/sites\//, "network", { times: 20 });
+    expect(await publisher.verify?.(second, { siteId }, signal())).toEqual({
+      status: "unreachable",
+    });
   });
 
   it("restores an earlier deploy", async () => {
