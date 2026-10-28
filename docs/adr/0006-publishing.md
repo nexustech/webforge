@@ -1,6 +1,6 @@
 # 0006. Publishing: publisher core, Netlify, credentials
 
-- Status: Proposed. Started in spec/04 item 0.2 (Netlify, #12); item 0.3 (FTP/FTPS/SFTP, #13) added its part (decision 7). It is accepted once 0.2's live Netlify check is recorded
+- Status: Proposed. Started in spec/04 item 0.2 (Netlify, #12); item 0.3 (FTP/FTPS/SFTP, #13) added its part (decision 7), and item 4.1 (#69) the publish run and its check of the live site (decision 8). It is accepted once 0.2's live Netlify check is recorded
 - Date: 2026-10-20
 - Related: [research 08](../../research/stack/08-publishing.md) (B1, B5, B6), [architecture §6, §7, §9](../../spec/01-architecture.md#6-key-interfaces), `packages/publish`, `apps/desktop/src/main/credential-store.ts`, `apps/desktop/src/main/netlify-auth.ts`
 
@@ -104,6 +104,22 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   They cover a second publish sending only the changed file, removals that leave other people's files alone, cancel mid-publish, a wrong password, a missing folder, an unreachable host, and an untrusted certificate or host key.
 - **Not yet run against real hosts.** The live checks with cPanel or Plesk FTP and an OpenSSH host are for the Phase 4 E2E (local FTP and SFTP servers in CI, 4.3).
 - **`safeStorage` round trip:** `e2e/app/credentials.spec.ts` encrypts a test secret in one run and decrypts it in the next, on Windows (DPAPI) and macOS (Keychain), in CI.
+
+### 8. The publish run and the live check (4.1)
+`publishSite` (`packages/publish/src/run.ts`) runs any publisher and then checks the live site, research 08's step 5. The publisher's events pass through unchanged, and after `published` the run adds `verifying` and `verified`.
+- **What is checked:** `verifyPublished` asks the `https:` address the publisher reports for its home page and compares it with the built `index.html` by SHA-1. Nothing of the page is kept or logged.
+  - **No build marker in the page**, unlike research 08's wording: the digest already says whether the page is the one just built, and it adds nothing to the exported HTML (X4).
+  - **Past caches:** a `webforge-check` query named after the digest. A CDN still serving the old deploy, or a 404 while it arrives, is asked again up to 5 times, 2 s apart.
+- **What it can find:**
+  - `live`: the new home page is there;
+  - `different`: the address answers with another page (an old cache, a host that changes the pages it serves, or an address that isn't this destination's);
+  - `unreachable`, with the HTTP status when there was one;
+  - `unchecked`: no `https:` address (an FTP destination without its web address), no home page, or cancelled.
+
+  The check never throws. The publish is done whatever it finds, and 4.5 words each result.
+- **Cancelling:** while uploading, it ends the run as the publisher's own cancel does, with the previous site usable and nothing checked. While checking, it ends only the check (`unchecked`).
+- **Tests:** `run.test.ts` puts the Netlify, FTPS and SFTP publishers through the run on the tests' own servers, the address answered from what each server holds. Each publish is checked as `live`. A publish cancelled at its first upload leaves the old home page, and the stylesheet it names, in place.
+- **Not here:** building with the publish-strict checks, the progress and result UI, and recording a version are 4.5 and 4.6. Destinations and their credentials are 4.4.
 
 ## Consequences
 - `packages/publish` is the shared core for 0.3 (FTP/FTPS/SFTP use `diffManifest`, `uploadOrder` and `manifestSchema` for `.webforge-publish.json`) and for the Phase 4 publish UI.
