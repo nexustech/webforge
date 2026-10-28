@@ -15,7 +15,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
-import { createKindPreviews } from "./add/index.js";
+import { createItemPreviews, createKindPreviews } from "./add/index.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type ExportSite, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
@@ -195,38 +195,45 @@ export function App({
       openExport,
     };
   }, [exportSite, cancelExport, exportChoices, setExportChoices, openExport]);
-  const [windowContext] = useState<WindowContext>(() => ({
-    session,
-    commands: registry,
-    panels,
-    preferences,
-    siteWide,
-    canvasView,
-    canvasPointer,
-    settings,
-    windowDialogs,
-    exportSite: (request, onProgress) => exportSiteRef.current.exportSite(request, onProgress),
-    cancelExport: () => exportSiteRef.current.cancelExport(),
-    exportChoices: () => exportSiteRef.current.exportChoices(),
-    setExportChoices: (choices) => exportSiteRef.current.setExportChoices(choices),
-    openExport: () => exportSiteRef.current.openExport(),
-    answerAi,
-    preview,
-    // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
-    kindPreviews: createKindPreviews({
+  const [windowContext] = useState<WindowContext>(() => {
+    // What the kind and item previews draw with: the canvas's CSS compiler, as the Add panel's.
+    const previewSource = {
       library: session.library,
       theme: () => session.history.document.getState().theme,
       compileCss: compileCss ?? ((request) => window.webforge.canvas.compileCss(request)),
-    }),
-    siteCheckIgnored: {
-      initial: uiState?.siteCheckIgnored ?? [],
-      save: (ignored) => {
-        saveUiState({ siteCheckIgnored: [...ignored] }).catch((error: unknown) => {
-          reportFailure("siteCheck.ignored", error);
-        });
+      // A preview shown draws again as the theme changes (#613).
+      subscribe: (listener: () => void) => session.history.document.subscribe(listener),
+    } satisfies Parameters<typeof createKindPreviews>[0];
+    return {
+      session,
+      commands: registry,
+      panels,
+      preferences,
+      siteWide,
+      canvasView,
+      canvasPointer,
+      settings,
+      windowDialogs,
+      exportSite: (request, onProgress) => exportSiteRef.current.exportSite(request, onProgress),
+      cancelExport: () => exportSiteRef.current.cancelExport(),
+      exportChoices: () => exportSiteRef.current.exportChoices(),
+      setExportChoices: (choices) => exportSiteRef.current.setExportChoices(choices),
+      openExport: () => exportSiteRef.current.openExport(),
+      answerAi,
+      preview,
+      // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
+      kindPreviews: createKindPreviews(previewSource),
+      itemPreviews: createItemPreviews(previewSource),
+      siteCheckIgnored: {
+        initial: uiState?.siteCheckIgnored ?? [],
+        save: (ignored) => {
+          saveUiState({ siteCheckIgnored: [...ignored] }).catch((error: unknown) => {
+            reportFailure("siteCheck.ignored", error);
+          });
+        },
       },
-    },
-  }));
+    };
+  });
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
 
   // View → Use Light/Dark Appearance (the editor's look, not the site's theme), labelled for the theme shown; it reads that when it runs.

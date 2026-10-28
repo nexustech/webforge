@@ -5,7 +5,7 @@ import { defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
 import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
-import { BodyText, SectionTitle } from "../typography.js";
+import { BodyText, SectionIntro, SectionTitle } from "../typography.js";
 
 const FEATURES_LAYOUTS = ["cards", "centred", "list"] as const;
 type FeaturesLayout = (typeof FEATURES_LAYOUTS)[number];
@@ -65,7 +65,7 @@ const features = defineSection({
       <div className="mx-auto max-w-6xl space-y-10">
         <div className="mx-auto max-w-3xl text-center">
           <SectionTitle>{values.title}</SectionTitle>
-          <BodyText className="mt-4">{values.text}</BodyText>
+          <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         <FeaturesContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
           <Items className={GRID_CLASS[values.variant]} />

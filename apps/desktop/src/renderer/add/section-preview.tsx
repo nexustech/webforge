@@ -1,12 +1,20 @@
+import { t } from "@webforge/i18n";
 import type { NodeDoc, SharedSectionId, Theme } from "@webforge/model";
 import {
   type ComponentLibrary,
   EDITOR_RENDER_CONTEXT,
   renderNodesToHtml,
 } from "@webforge/site-components";
-import { type ReactNode, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import type { AddItem } from "../editor/add-item.js";
-import { type CompileCanvasCss, classesOfHtml } from "../editor/site-css.js";
+import { type CompileCanvasCss, classesOfHtml, SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
 import { reportFailure } from "../log.js";
 
 /** How wide a section is drawn for its preview, in CSS pixels, before it is scaled down. */
@@ -65,7 +73,15 @@ export type PreviewSource = {
   /** The section a shared section stores, by its id, if the site has it. */
   readonly sharedSection: (id: SharedSectionId) => NodeDoc | undefined;
   readonly compileCss: CompileCanvasCss;
+  /**
+   * Calls `listener` after each change to the site, so a preview shown draws again once its theme
+   * or shared section has changed (#613); without it, only when drawn anew.
+   */
+  readonly subscribe?: ((listener: () => void) => () => void) | undefined;
 };
+
+/** A subscription that never calls: for a source without one. */
+const NO_CHANGES = () => () => undefined;
 
 /**
  * Shows `drawn` scaled into the preview's size, in a shadow root: the site's CSS applies to the
@@ -108,18 +124,66 @@ function PreviewFrame({ drawn }: { readonly drawn: Drawn }) {
   );
 }
 
-/** A preview that draws its section the first time it is shown, then keeps it. */
-function SectionPreview({ draw }: { readonly draw: () => Promise<Drawn | undefined> }) {
+/** `node` as the export writes it, in `theme` with its kind's look, with the CSS its classes need. */
+async function drawNode(
+  source: Pick<PreviewSource, "library" | "compileCss">,
+  node: NodeDoc,
+  theme: Theme,
+): Promise<Drawn | undefined> {
+  // With the theme's look for its kind, as the canvas will draw it once added (3.12).
+  const context =
+    theme.looks === undefined
+      ? EDITOR_RENDER_CONTEXT
+      : { ...EDITOR_RENDER_CONTEXT, looks: theme.looks };
+  const html = renderNodesToHtml([node], source.library, context);
+  const result = await source.compileCss({
+    theme,
+    candidates: [...new Set(classesOfHtml(html))].sort(),
+  });
+  if (result.status === "failed") return undefined;
+  const { css } = result;
+  return {
+    html,
+    css: css.replace(FONT_FACE, ""),
+    // One per line: registerFontFaces keeps them a line each.
+    fontFaces: (css.match(FONT_FACE) ?? []).map((face) => face.replace(/\s*\n\s*/g, " ")),
+    pageClass: result.bodyClass
+      .split(/\s+/)
+      .filter((name) => name !== "" && !WHOLE_PAGE_CLASSES.has(name))
+      .join(" "),
+    theme: theme.preset,
+  };
+}
+
+/**
+ * A preview that draws its section as it is shown, then keeps it, and draws it again once what it
+ * is drawn from (`theme`, `node`) has changed while it is shown (#613): Theme Studio's kinds as
+ * their look changes, the Add panel's as the theme does.
+ */
+function SectionPreview({
+  draw,
+  subscribe,
+  theme,
+  node,
+}: {
+  readonly draw: (node: NodeDoc | undefined, theme: Theme) => Promise<Drawn | undefined>;
+  readonly subscribe: (listener: () => void) => () => void;
+  readonly theme: () => Theme;
+  readonly node: () => NodeDoc | undefined;
+}) {
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
+  // The same objects until they change: the site is immutable.
+  const shownTheme = useSyncExternalStore(subscribe, theme);
+  const shownNode = useSyncExternalStore(subscribe, node);
   useEffect(() => {
     let current = true;
-    void draw().then((result) => {
+    void draw(shownNode, shownTheme).then((result) => {
       if (current) setDrawn(result);
     });
     return () => {
       current = false;
     };
-  }, [draw]);
+  }, [draw, shownTheme, shownNode]);
   return drawn === undefined ? (
     <div aria-hidden style={{ width: PREVIEW.width, height: PREVIEW.height / 2 }} />
   ) : (
@@ -172,7 +236,10 @@ function createPreviews(
       readonly drawing: Promise<Drawn | undefined>;
     }
   >();
-  const drawers = new Map<string, () => Promise<Drawn | undefined>>();
+  const drawers = new Map<
+    string,
+    (node: NodeDoc | undefined, theme: Theme) => Promise<Drawn | undefined>
+  >();
   // A library section's node, with its defaults: made once, so its drawing is kept.
   const defaults = new Map<string, NodeDoc>();
   const nodeOf = (item: PreviewItem): NodeDoc | undefined => {
@@ -187,41 +254,14 @@ function createPreviews(
     }
     return node;
   };
-  const draw = async (node: NodeDoc, theme: Theme): Promise<Drawn | undefined> => {
-    // With the theme's look for its kind, as the canvas will draw it once added (3.12).
-    const context =
-      theme.looks === undefined
-        ? EDITOR_RENDER_CONTEXT
-        : { ...EDITOR_RENDER_CONTEXT, looks: theme.looks };
-    const html = renderNodesToHtml([node], source.library, context);
-    const result = await source.compileCss({
-      theme,
-      candidates: [...new Set(classesOfHtml(html))].sort(),
-    });
-    if (result.status === "failed") return undefined;
-    const { css } = result;
-    return {
-      html,
-      css: css.replace(FONT_FACE, ""),
-      // One per line: registerFontFaces keeps them a line each.
-      fontFaces: (css.match(FONT_FACE) ?? []).map((face) => face.replace(/\s*\n\s*/g, " ")),
-      pageClass: result.bodyClass
-        .split(/\s+/)
-        .filter((name) => name !== "" && !WHOLE_PAGE_CLASSES.has(name))
-        .join(" "),
-      theme: theme.preset,
-    };
-  };
   const drawerFor = (item: PreviewItem) => {
     let drawer = drawers.get(item.type);
     if (drawer === undefined) {
-      drawer = () => {
-        const node = nodeOf(item);
+      drawer = (node, theme) => {
         if (node === undefined) return Promise.resolve(undefined);
-        const theme = source.theme();
         const kept = drawings.get(item.type);
         if (kept !== undefined && kept.node === node && kept.theme === theme) return kept.drawing;
-        const drawing = draw(node, theme).catch((error: unknown) => {
+        const drawing = drawNode(source, node, theme).catch((error: unknown) => {
           // No preview: the Add panel shows the section's name alone.
           reportFailure("add.preview", error);
           return undefined;
@@ -233,5 +273,148 @@ function createPreviews(
     }
     return drawer;
   };
-  return (item) => (nodeOf(item) === undefined ? null : <SectionPreview draw={drawerFor(item)} />);
+  // What each item is drawn from, read the same way each time, for its preview to follow.
+  const nodeGetters = new Map<string, () => NodeDoc | undefined>();
+  const nodeFor = (item: PreviewItem) => {
+    let get = nodeGetters.get(item.type);
+    if (get === undefined) {
+      get = () => nodeOf(item);
+      nodeGetters.set(item.type, get);
+    }
+    return get;
+  };
+  const subscribe = source.subscribe ?? NO_CHANGES;
+  return (item) =>
+    nodeOf(item) === undefined ? null : (
+      <SectionPreview
+        draw={drawerFor(item)}
+        subscribe={subscribe}
+        theme={source.theme}
+        node={nodeFor(item)}
+      />
+    );
+}
+
+/** The widths an item's preview draws it at, in CSS pixels: the canvas's Desktop and Mobile. */
+const ITEM_WIDTHS = { desktop: 1280, mobile: 375 } as const;
+
+/** A device an item's preview draws it for (3.13a). */
+type ItemDevice = keyof typeof ITEM_WIDTHS;
+
+/** How wide each device's preview is on screen, and at most how tall. */
+const ITEM_SHOWN = { desktop: { width: 400, height: 320 }, mobile: { width: 150, height: 320 } };
+
+/**
+ * `drawn` at `device`'s width, scaled into the preview's size, in a frame of its own: its media
+ * queries see the device's width, as the canvas's do, so a value set for Mobile shows on Mobile.
+ * The frame runs no scripts (an empty `sandbox` but for reading its height); the markup is the
+ * site library's static HTML, as the export writes it.
+ */
+function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: ItemDevice }) {
+  const frame = useRef<HTMLIFrameElement>(null);
+  const [height, setHeight] = useState(0);
+  const width = ITEM_WIDTHS[device];
+  const shown = ITEM_SHOWN[device];
+  const scale = shown.width / width;
+  const page = [
+    "<!doctype html>",
+    `<html data-theme="${drawn.theme}"><head><meta charset="utf-8"><style>`,
+    [...drawn.fontFaces, drawn.css, "body { margin: 0; }"].join("\n"),
+    `</style></head><body class="${drawn.pageClass}">${drawn.html}</body></html>`,
+  ].join("");
+  // Its height once drawn, and again once its fonts have loaded.
+  const measure = () => {
+    const body = frame.current?.contentDocument?.body;
+    if (body === undefined || body === null) return;
+    setHeight(body.scrollHeight);
+    void frame.current?.contentDocument?.fonts?.ready.then(() => setHeight(body.scrollHeight));
+  };
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none overflow-hidden rounded-sm border border-border"
+      style={{ width: shown.width, height: Math.min(height * scale, shown.height) || undefined }}
+    >
+      <iframe
+        ref={frame}
+        title={t(`device.${device}`)}
+        tabIndex={-1}
+        sandbox="allow-same-origin"
+        srcDoc={page}
+        onLoad={measure}
+        style={{
+          width,
+          height: height || shown.height / scale,
+          border: 0,
+          transform: `scale(${scale})`,
+          transformOrigin: "top left",
+        }}
+      />
+    </div>
+  );
+}
+
+/** Draws an item: the same drawing for every device while the item and theme are the same. */
+type ItemDrawer = (node: NodeDoc) => Promise<Drawn | undefined>;
+
+/**
+ * A preview of `node`, drawn again once its changes have settled ({@link SITE_CSS_DEBOUNCE_MS}, as
+ * the canvas's site CSS is), showing the last drawing meanwhile; the first drawing at once.
+ */
+function ItemPreview({
+  draw,
+  node,
+  device,
+}: {
+  readonly draw: ItemDrawer;
+  readonly node: NodeDoc;
+  readonly device: ItemDevice;
+}) {
+  const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
+  const drawnOnce = useRef(false);
+  useEffect(() => {
+    let current = true;
+    const timer = setTimeout(
+      () => {
+        void draw(node).then((result) => {
+          if (!current || result === undefined) return;
+          drawnOnce.current = true;
+          setDrawn(result);
+        });
+      },
+      drawnOnce.current ? SITE_CSS_DEBOUNCE_MS : 0,
+    );
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [draw, node]);
+  return drawn === undefined ? (
+    <div aria-hidden style={{ width: ITEM_SHOWN[device].width, height: 80 }} />
+  ) : (
+    <ItemFrame drawn={drawn} device={device} />
+  );
+}
+
+/**
+ * *Style this ‹kind›…*'s previews (3.13a, CT-2): the item itself, as the person is styling it, on
+ * Desktop or Mobile in the site's theme with its kind's look, drawn again as it changes. Both
+ * devices draw from one compile of its CSS for each state of the item and theme (3.13a review).
+ */
+export function createItemPreviews(
+  source: Omit<PreviewSource, "sharedSection">,
+): (node: NodeDoc, device: ItemDevice) => ReactNode {
+  const drawings = new WeakMap<NodeDoc, { theme: Theme; drawing: Promise<Drawn | undefined> }>();
+  const draw: ItemDrawer = (node) => {
+    const theme = source.theme();
+    const kept = drawings.get(node);
+    if (kept?.theme === theme) return kept.drawing;
+    const drawing = drawNode(source, node, theme).catch((error: unknown) => {
+      reportFailure("style.preview", error);
+      return undefined;
+    });
+    drawings.set(node, { theme, drawing });
+    return drawing;
+  };
+  return (node, device) => <ItemPreview draw={draw} node={node} device={device} />;
 }

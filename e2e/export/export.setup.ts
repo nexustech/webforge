@@ -17,7 +17,12 @@ import { readTemplates } from "@webforge/templates/node";
 import { sampleSite } from "@webforge/test-utils";
 import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
-import { EXPORTED_SITE_DIR, TEMPLATES_DIR, THEMED_SITE_DIR } from "./exported-site.js";
+import {
+  CHECK_TEMPLATES,
+  EXPORTED_SITE_DIR,
+  TEMPLATES_DIR,
+  THEMED_SITE_DIR,
+} from "./exported-site.js";
 import { exportTemplate } from "./template-export.js";
 
 type ExportRequest = {
@@ -274,6 +279,7 @@ setup("export the fixture site from the app", async () => {
 });
 
 setup("export every template, as a site made from it starts (3.10)", async () => {
+  setup.skip(!CHECK_TEMPLATES, "Nothing the templates are made from has changed");
   const folders = readTemplates();
   // Each template's photos are encoded in each size and format: up to a minute apiece on a loaded
   // CI runner.

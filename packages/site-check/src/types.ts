@@ -25,7 +25,22 @@ export type FindingPlace =
   /** The web address in Site Settings. */
   | { readonly kind: "address" }
   /** A part of the site's own code, in Settings' Custom Code (3.9). */
-  | { readonly kind: "code"; readonly part: SiteCodePart };
+  | { readonly kind: "code"; readonly part: SiteCodePart }
+  /** A detail of the business in Site Settings' Contact section (3.17). */
+  | { readonly kind: "contact"; readonly field: ContactField }
+  /** Site Settings' Search engines section (3.17). */
+  | { readonly kind: "search" }
+  /** Something only the person can do, on another website (3.17): see {@link SearchGuide}. */
+  | { readonly kind: "guide"; readonly guide: SearchGuide };
+
+/** A detail of the business that search engines show with it (3.15's structured data). */
+export type ContactField = "address" | "phone" | "openingHours";
+
+/**
+ * A step only the person can take, outside Webforge (3.17, SEO-7): setting up or checking the
+ * business's Google Business Profile, and verifying the site in Google Search Console.
+ */
+export type SearchGuide = "businessProfile" | "searchConsole";
 
 /** A part of the site's own code (`SiteCode`): its stylesheet, its script, or its page HTML. */
 export type SiteCodePart = "css" | "js" | "head" | "bodyEnd";
@@ -55,6 +70,13 @@ export type CheckRule = {
   readonly level: CheckLevel;
   /** *Must fix* when publishing (X5's publish-strict rules), whatever its level for an export. */
   readonly strictOnPublish?: true;
+  /** *Being found* (3.17, SEO-7): what stops people finding the site, a group of its own. */
+  readonly group?: "found";
+  /**
+   * A one-time tip (3.17): listed only while it has something to say, and its finding is
+   * *Done* rather than ignored.
+   */
+  readonly oneTime?: true;
   readonly check: (input: CheckInput) => readonly Finding[];
 };
 
@@ -62,6 +84,10 @@ export type CheckRule = {
 export type RuleResult = {
   readonly rule: string;
   readonly level: CheckLevel;
+  /** The rule's group, if it has one. */
+  readonly group?: "found";
+  /** A one-time tip: see {@link CheckRule.oneTime}. */
+  readonly oneTime?: true;
   /** What it found, but not what the person ignored. */
   readonly findings: readonly Finding[];
   /** How many of its findings the person ignored. */

@@ -1,5 +1,6 @@
 import { DEFAULT_THEME, TEXT_MARK_CLASSES } from "@webforge/model";
 import {
+  appearanceBoxClasses,
   EDITOR_RENDER_CONTEXT,
   entranceClasses,
   hoverClasses,
@@ -75,6 +76,45 @@ describe("siteStylesheetSource", () => {
 });
 
 describe("buildSiteCss", () => {
+  it("styles Style this ‹component›…'s deeper choices from the theme's tokens (3.13b)", async () => {
+    const candidates = appearanceBoxClasses({
+      lookGradientDirection: "toBottomRight",
+      lookGradientFrom: "primary",
+      lookGradientTo: "secondary-300",
+      lookBorderBottom: "thick",
+      lookBorderStyle: "dashed",
+      lookCornerTopLeft: "large",
+      lookShadow: "medium",
+      lookShadowInner: true,
+      lookPadding: "l",
+      lookHoverColor: "accent",
+    }).split(" ");
+    const css = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates,
+      fontsUrl: "../fonts/",
+    });
+
+    // Every class has its rule, and none is a style written on the element.
+    for (const name of candidates) {
+      expect(css, name).toContain(`.${name.replaceAll(":", "\\:").replaceAll("!", "\\!")}`);
+    }
+    // The colours and corners are the theme's variables: a theme switch restyles them.
+    expect(css).toMatch(/--tw-gradient-from: var\(--color-primary\)/);
+    expect(css).toMatch(/border-top-left-radius: var\(--radius-box\)/);
+    expect(css).toMatch(/background-color: var\(--color-accent\)/);
+
+    // A theme without shadows has no inner ones either.
+    const flat = await buildSiteCss(resources, {
+      theme: { ...DEFAULT_THEME, shadow: "none" },
+      candidates,
+      fontsUrl: "../fonts/",
+    });
+    // Tailwind writes the theme's value into the rule: an inner shadow of nothing.
+    expect(flat).toContain("--tw-inset-shadow: inset 0 0 var(--tw-inset-shadow-color, #0000)");
+    expect(css).not.toContain("--tw-inset-shadow: inset 0 0 var(--tw-inset-shadow-color, #0000)");
+  });
+
   it("hides an entrance only once the page is marked, and only where motion is welcome (2.12)", async () => {
     const candidates =
       `${entranceClasses({ entrance: "slideLeft", entranceDelay: "long" })}${hoverClasses({ hover: "lift", hoverSpeed: "slow", hoverEasing: "springy" })}`

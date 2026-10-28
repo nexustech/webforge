@@ -7,6 +7,7 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   openCrashReports: () => call("openCrashReports"),
   reportError: (kind, error) => call("reportError", kind, error),
   logFailure: (context, code) => call("logFailure", context, code),
+  openGuide: (guide) => call("openGuide", guide),
   setSpellCheckLanguage: (language) => call("setSpellCheckLanguage", language),
   setNativeMenus: (menus) => call("setNativeMenus", menus),
   onRunCommand: (run) =>

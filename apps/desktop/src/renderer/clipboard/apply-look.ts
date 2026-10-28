@@ -4,12 +4,18 @@ import {
   findNode,
   isNodeDoc,
   isSharedCopy,
+  LOOK_FIELDS,
   type NodeDoc,
   type PageId,
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { APPEARANCE_FIELDS, type ComponentDef, withLook } from "@webforge/site-components";
+import {
+  APPEARANCE_FIELDS,
+  type ComponentDef,
+  type ComponentLibrary,
+  withLook,
+} from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type FieldTarget, fieldTarget } from "../editor/field-target.js";
 import { type SharedRegion, shownLayout } from "../editor/shared-layout.js";
@@ -25,11 +31,15 @@ export type LookScope = "page" | "site";
 /** What the look commands need of the editor session. */
 export type LookSession = Pick<EditorSession, "history" | "ui" | "library" | "edit">;
 
-/** The fields of `component`'s Appearance group (2.22, ST-1): the look it can pass on. */
+/**
+ * The fields of `component` a look holds (2.22, ST-1; CT-1): its Appearance group's, with its hover
+ * row, and *Style this ‹component›…*'s deeper groups (3.13b), the look it can pass on. In the order
+ * the component has them.
+ */
 export function lookFieldsOf(component: ComponentDef): string[] {
-  return Object.entries(component.fields)
-    .filter(([, field]) => field.optionGroup?.id === APPEARANCE_GROUP_ID)
-    .map(([name]) => name);
+  return Object.keys(component.fields).filter((name) =>
+    (LOOK_FIELDS as readonly string[]).includes(name),
+  );
 }
 
 /** Where an element is kept: a page's own content, the shared Header or Footer, a shared section. */
@@ -183,9 +193,22 @@ const drawnWith = (
  * leaves it, 1.37).
  */
 export function lookChange(session: LookSession, scope: LookScope): LookChange | undefined {
-  const site = session.history.document.getState();
   const { pageId, nodeId } = session.ui.getState();
-  const source = fieldTarget(site, session.library, pageId, nodeId);
+  return lookChangeIn(session.history.document.getState(), session.library, pageId, nodeId, scope);
+}
+
+/**
+ * {@link lookChange} for element `nodeId` of page `pageId` of `site`: from what a component draws,
+ * so a compiled component works it out again as they change (3.13a).
+ */
+export function lookChangeIn(
+  site: SiteDoc,
+  library: ComponentLibrary,
+  pageId: PageId,
+  nodeId: string | null,
+  scope: LookScope,
+): LookChange | undefined {
+  const source = fieldTarget(site, library, pageId, nodeId);
   if (source === undefined) return undefined;
   const names = lookFieldsOf(source.component);
   if (names.length === 0) return undefined;

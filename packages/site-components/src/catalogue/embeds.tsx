@@ -13,7 +13,7 @@ import {
   entranceClasses,
 } from "../motion.js";
 import type { ElementHint, RenderContext } from "../schema.js";
-import { BodyText, SectionTitle } from "../typography.js";
+import { SectionIntro, SectionTitle } from "../typography.js";
 
 const EMBED_LAYOUTS = ["stacked", "split"] as const;
 const layoutVariants = EMBED_LAYOUTS.map((value) => ({
@@ -50,7 +50,7 @@ function EmbedSection({
       <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
         <div>
           <SectionTitle>{title}</SectionTitle>
-          <BodyText className="mt-4">{text}</BodyText>
+          <SectionIntro className="mt-4">{text}</SectionIntro>
         </div>
         {frame}
       </div>
@@ -60,7 +60,7 @@ function EmbedSection({
     <div className="mx-auto max-w-4xl space-y-8">
       <div className="text-center">
         <SectionTitle>{title}</SectionTitle>
-        <BodyText className="mt-4">{text}</BodyText>
+        <SectionIntro className="mt-4">{text}</SectionIntro>
       </div>
       {frame}
     </div>

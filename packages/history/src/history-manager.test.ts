@@ -33,6 +33,98 @@ function setup(options: { limit?: number; coalesceWindowMs?: number; maxBytes?: 
   };
 }
 
+describe("mergeSince: what a dialog changed, as one step (3.13a)", () => {
+  const retitle = (ctx: ReturnType<typeof setup>, title: string) =>
+    ctx.history.run(`Title ${title}`, (draft) => {
+      draft.title = title;
+    });
+
+  it("merges the steps after an entry into one, with its own label, undone and redone at once", () => {
+    const ctx = setup();
+    retitle(ctx, "Before");
+    const before = ctx.history.entries().at(-1)?.id ?? null;
+    retitle(ctx, "One");
+    ctx.tick(5_000);
+    ctx.history.run("Item", (draft) => {
+      draft.items.push({ id: "b", text: "Two" });
+    });
+
+    expect(ctx.history.mergeSince(before, "Styled Feature")).toBe(true);
+
+    expect(ctx.history.entries().map((entry) => entry.label)).toEqual([
+      "Title Before",
+      "Styled Feature",
+    ]);
+    expect(ctx.doc()).toMatchObject({ title: "One", items: [{ id: "a" }, { id: "b" }] });
+    ctx.history.undo();
+    expect(ctx.doc()).toMatchObject({ title: "Before", items: [{ id: "a" }] });
+    ctx.history.redo();
+    expect(ctx.doc()).toMatchObject({ title: "One", items: [{ id: "a" }, { id: "b" }] });
+  });
+
+  it("merges from the start for null, and nothing for nothing after the entry", () => {
+    const ctx = setup();
+    expect(ctx.history.mergeSince(null, "Nothing")).toBe(false);
+    retitle(ctx, "One");
+    const last = ctx.history.entries().at(-1)?.id ?? null;
+    expect(ctx.history.mergeSince(last, "Nothing")).toBe(false);
+    retitle(ctx, "Two");
+
+    expect(ctx.history.mergeSince(null, "Both")).toBe(true);
+    expect(ctx.history.entries().map((entry) => entry.label)).toEqual(["Both"]);
+    expect(ctx.history.mergeSince("unknown", "Never")).toBe(false);
+  });
+
+  it("keeps later runs from merging into it, and leaves what was undone redoable", () => {
+    const ctx = setup();
+    ctx.history.run(
+      "Type",
+      (draft) => {
+        draft.title = "A";
+      },
+      { coalesceKey: "title" },
+    );
+    ctx.history.run("Item", (draft) => {
+      draft.items.push({ id: "b", text: "Two" });
+    });
+    ctx.history.undo();
+
+    expect(ctx.history.mergeSince(null, "Styled")).toBe(true);
+    expect(ctx.history.state.getState()).toMatchObject({ cursor: 1, canRedo: true });
+    ctx.history.run(
+      "Type",
+      (draft) => {
+        draft.title = "AB";
+      },
+      { coalesceKey: "title" },
+    );
+    expect(ctx.history.entries().map((entry) => entry.label)).toEqual(["Styled", "Type"]);
+  });
+
+  it("merges every step after an entry the limit has dropped since (3.13a review)", () => {
+    const ctx = setup({ limit: 3 });
+    retitle(ctx, "Before");
+    const before = ctx.history.entries().at(-1)?.id ?? null;
+    for (const title of ["One", "Two", "Three"]) retitle(ctx, title);
+    expect(ctx.history.entries().some((entry) => entry.id === before)).toBe(false);
+
+    expect(ctx.history.mergeSince(before, "Styled")).toBe(true);
+
+    expect(ctx.history.entries().map((entry) => entry.label)).toEqual(["Styled"]);
+    ctx.history.undo();
+    expect(ctx.doc().title).toBe("Before");
+  });
+
+  it("does nothing while a gesture is open", () => {
+    const ctx = setup();
+    retitle(ctx, "One");
+    const gesture = ctx.history.begin("Drag");
+
+    expect(ctx.history.mergeSince(null, "Styled")).toBe(false);
+    gesture.cancel();
+  });
+});
+
 describe("createHistoryManager", () => {
   it("starts with the initial document and no entries", () => {
     const { history, doc } = setup();

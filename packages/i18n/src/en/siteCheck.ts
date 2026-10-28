@@ -44,8 +44,10 @@ export const siteCheck = {
   "siteCheck.rule.pageTitles.fail.other": "{count} pages have no title",
   "siteCheck.rule.webAddress": "Web address",
   "siteCheck.rule.webAddress.pass": "The site's web address is in Site Settings",
-  "siteCheck.rule.webAddress.fail.one": "Add the web address your site will have",
-  "siteCheck.rule.webAddress.fail.other": "Add the web address your site will have",
+  "siteCheck.rule.webAddress.fail.one":
+    "Add your web address: without it, the site has no sitemap, no picture when it's shared and no business details for search engines",
+  "siteCheck.rule.webAddress.fail.other":
+    "Add your web address: without it, the site has no sitemap, no picture when it's shared and no business details for search engines",
   "siteCheck.rule.externalResources": "Files from other websites",
   "siteCheck.rule.externalResources.pass": "Your site loads nothing from other websites",
   "siteCheck.rule.externalResources.fail.one":
@@ -84,6 +86,65 @@ export const siteCheck = {
   "siteCheck.rule.underlinedText.fail.other":
     "{count} underlined texts aren't links, which visitors may click",
 
+  // Being found (3.17): what stops people finding the site. Nothing on keywords or lengths (SEO-11).
+  "siteCheck.group.found": "Being found",
+  "siteCheck.group.found.intro": "What helps people find your site with a search engine.",
+  "siteCheck.badge.must": "Must fix",
+  "siteCheck.badge.should": "Should fix",
+  "siteCheck.badge.tip": "Tip",
+  "siteCheck.rule.searchHidden": "Search engines",
+  "siteCheck.rule.searchHidden.pass": "Search engines may list your site",
+  "siteCheck.rule.searchHidden.fail.one":
+    "Your site is hidden from search engines, so people won't find it there",
+  "siteCheck.rule.searchHidden.fail.other":
+    "Your site is hidden from search engines, so people won't find it there",
+  "siteCheck.rule.pageDescriptions": "Page descriptions",
+  "siteCheck.rule.pageDescriptions.pass": "Every page has a description",
+  "siteCheck.rule.pageDescriptions.fail.one":
+    "1 page has no description, so search engines pick words from it for its result",
+  "siteCheck.rule.pageDescriptions.fail.other":
+    "{count} pages have no description, so search engines pick words from them for their results",
+  "siteCheck.rule.sameTitles": "Different titles",
+  "siteCheck.rule.sameTitles.pass": "Every page has a title of its own",
+  "siteCheck.rule.sameTitles.fail.one":
+    "1 page has the same title as another, so search results can't tell them apart",
+  "siteCheck.rule.sameTitles.fail.other":
+    "{count} pages have the same title as another, so search results can't tell them apart",
+  "siteCheck.rule.sameDescriptions": "Different descriptions",
+  "siteCheck.rule.sameDescriptions.pass": "Every page has a description of its own",
+  "siteCheck.rule.sameDescriptions.fail.one":
+    "1 page has the same description as another, so search results can't tell them apart",
+  "siteCheck.rule.sameDescriptions.fail.other":
+    "{count} pages have the same description as another, so search results can't tell them apart",
+  "siteCheck.rule.mainHeading": "Main heading",
+  "siteCheck.rule.mainHeading.pass": "Every page has one main heading",
+  "siteCheck.rule.mainHeading.fail.one":
+    "1 page doesn't have one main heading. Search engines take the first heading as the page's subject",
+  "siteCheck.rule.mainHeading.fail.other":
+    "{count} pages don't have one main heading. Search engines take the first heading as the page's subject",
+  "siteCheck.rule.businessDetails": "Business details",
+  "siteCheck.rule.businessDetails.pass":
+    "Nothing is missing that search engines show with a business",
+  "siteCheck.rule.businessDetails.fail.one":
+    "1 detail search engines show with a business is missing from Site Settings",
+  "siteCheck.rule.businessDetails.fail.other":
+    "{count} details search engines show with a business are missing from Site Settings",
+  "siteCheck.rule.businessProfile": "Google Business Profile",
+  "siteCheck.rule.businessProfile.pass": "Done",
+  "siteCheck.rule.businessProfile.fail.one":
+    "Set up or check your Google Business Profile: it's what ranks a local business on Google",
+  "siteCheck.rule.businessProfile.fail.other":
+    "Set up or check your Google Business Profile: it's what ranks a local business on Google",
+  "siteCheck.rule.searchConsole": "Google Search Console",
+  "siteCheck.rule.searchConsole.pass": "Done",
+  "siteCheck.rule.searchConsole.fail.one":
+    "Verify your site in Google Search Console to see how people find it, then paste its code in Site Settings",
+  "siteCheck.rule.searchConsole.fail.other":
+    "Verify your site in Google Search Console to see how people find it, then paste its code in Site Settings",
+  "siteCheck.done": "Done",
+  "siteCheck.done.label": "Done: {item}",
+  "siteCheck.guide.failed": "Your web browser didn't open. Try again in a moment.",
+
   // Where each finding is.
   "siteCheck.place.page": "{element} on {page}",
   "siteCheck.place.header": "{element} in the Header",
@@ -98,9 +159,18 @@ export const siteCheck = {
   "siteCheck.place.theme": "{foreground} on {background}",
   "siteCheck.place.reversed": "{foreground} on {background}, in reversed sections",
   "siteCheck.place.untitled": "Untitled page ({file})",
+  "siteCheck.place.contact.address": "Site Settings › Address",
+  "siteCheck.place.contact.phone": "Site Settings › Phone number",
+  "siteCheck.place.contact.openingHours": "Site Settings › Opening hours",
+  "siteCheck.place.search": "Site Settings › Search engines",
+  "siteCheck.place.guide.businessProfile": "Open Google Business Profile",
+  "siteCheck.place.guide.searchConsole": "Open Google Search Console",
   "siteCheck.detail.contrast": "{ratio}:1, needs {required}:1",
   "siteCheck.detail.size": "{width} × {height} pixels",
   "siteCheck.detail.insecure": "{url}: change it to https://, or remove it",
+  "siteCheck.detail.noHeading": "No main heading: add a large Heading or a Hero",
+  "siteCheck.detail.headings": "{count} main headings: keep one large Heading or Hero",
+  "siteCheck.detail.sameAs": "The same as {file}",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",

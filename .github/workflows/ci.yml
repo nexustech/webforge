@@ -245,6 +245,9 @@ jobs:
       electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
       # Where export.setup.ts exports the fixture site (e2e/export/exported-site.ts).
       WEBFORGE_EXPORTED_SITE_DIR: ${{ github.workspace }}/.ci-cache/exported-site
+      # Every template exported and opened from disk (3.10) only when what they're made from can
+      # have changed, as Firefox and WebKit: several minutes a shard otherwise. Always, nightly.
+      WEBFORGE_EXPORT_TEMPLATES: ${{ needs.changes.outputs.all-browsers == 'true' && '1' || '0' }}
     steps: &e2e-steps
       - name: Check out
         uses: actions/checkout@v7

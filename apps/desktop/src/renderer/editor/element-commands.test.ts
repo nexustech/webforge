@@ -9,6 +9,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { currentPage } from "./editor-session.js";
@@ -110,6 +111,16 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(hidden()).toBe(true);
     expect(labels()).toEqual(["Hid Heading"]);
     expect(pickImage).toHaveBeenCalledExactlyOnceWith("a");
+  });
+
+  it("opens Style this ‹kind›… when the chip asks, through its command (3.13a)", () => {
+    const { engine, registry } = setUp();
+    const style = vi.fn();
+    registry.register({ id: COMMAND_IDS.styleThis, label: "Style This Heading…", run: style });
+
+    engine.requestFromElement({ kind: "style", nodeId: "a" });
+
+    expect(style).toHaveBeenCalledOnce();
   });
 
   it("hides only a layer: a linked copy as a whole, not what is inside it or the Header", () => {

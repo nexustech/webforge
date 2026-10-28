@@ -10,15 +10,17 @@ import type { PreferencesStore } from "../shell/preferences-store.js";
  * the window's site-wide question (D7), which an AI app's change to more than one page asks.
  */
 export function commandHost(
-  session: Pick<EditorSession, "history" | "edit">,
+  session: Pick<EditorSession, "history" | "edit" | "held">,
   preferences: Pick<PreferencesStore, "getState">,
   siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "current" | "answer">,
 ): CommandHost {
   return {
     history: session.history,
     run: (label, recipe, kind) => session.edit(kind, label, recipe),
-    // The person's own question isn't replaced by an AI app's: asking again would cancel it.
-    editing: () => textSessionOpen(session.history) || siteWide.current() !== null,
+    // The person's own question isn't replaced by an AI app's: asking again would cancel it. A
+    // dialog changing the site live holds others' changes, so its steps are all its own (3.13a).
+    editing: () =>
+      textSessionOpen(session.history) || session.held() || siteWide.current() !== null,
     mode: () => preferences.getState().mode,
     confirm(confirmation, signal) {
       const action: SiteWideAction = { ...confirmation };

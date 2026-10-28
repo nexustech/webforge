@@ -199,6 +199,39 @@ describe("ElementMenu (1.35)", () => {
     ]);
   });
 
+  it("offers Style this ‹kind›… first among the style items, opened once it has closed (3.13a)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const style = vi.fn();
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.styleThis,
+      label: "Style This Button…",
+      run: style,
+    });
+    commands.register({ id: "edit.copyStyle", label: "Copy Style", run: vi.fn() });
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return (
+        <ElementMenu
+          at={open ? { x: 0, y: 0 } : null}
+          onClose={() => setOpen(false)}
+          onRename={vi.fn()}
+        />
+      );
+    }
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <Host />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().slice(5, 7)).toEqual([
+      ["Style This Button…", false],
+      ["Copy StyleCtrl+Alt+C", false],
+    ]);
+    await userEvent.click(menu().getByRole("menuitem", { name: "Style This Button…" }));
+    await waitFor(() => expect(style).toHaveBeenCalledOnce());
+  });
+
   it("offers Apply Look to Every… after them, on this page and on the site (2.27)", async () => {
     const { commands } = registry({ save: true, detach: false });
     const onSite = vi.fn();

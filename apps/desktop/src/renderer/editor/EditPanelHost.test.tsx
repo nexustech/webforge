@@ -210,6 +210,18 @@ describe("EditPanelHost", () => {
     );
   });
 
+  it("leaves Style this ‹component›…'s deeper groups to the dialog (3.13b)", async () => {
+    setup();
+
+    await userEvent.setup({ delay: null }).click(screen.getByRole("tab", { name: "Style" }));
+
+    expect(screen.getByRole("button", { name: "Appearance" })).toBeDefined();
+    for (const label of ["Gradient", "Top border", "Top left corner", "Inner shadow", "Padding"]) {
+      expect(screen.queryByLabelText(label), label).toBeNull();
+    }
+    expect(screen.queryByRole("button", { name: "When hovered" })).toBeNull();
+  });
+
   it("records a choice as one labelled step that keeps the element selected", async () => {
     const { session, flush, labels, heading, user } = setup();
     await user.click(screen.getByRole("tab", { name: "Style" }));

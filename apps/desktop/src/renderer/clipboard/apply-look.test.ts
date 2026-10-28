@@ -1,4 +1,11 @@
-import { LOOK_FIELDS, type NodeDoc, newId, type PageId, type SiteDoc } from "@webforge/model";
+import {
+  findNode,
+  LOOK_FIELDS,
+  type NodeDoc,
+  newId,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -8,6 +15,7 @@ import { createCommandRegistry } from "../shell/commands.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
+  APPEARANCE_GROUP_ID,
   applyLook,
   applyLookToAll,
   LOOK_COMMANDS,
@@ -107,6 +115,21 @@ describe("lookFieldsOf (2.27)", () => {
     expect(fields.every((name) => name.startsWith("look") || name.startsWith("hover"))).toBe(true);
   });
 
+  it("holds Style this ‹component›…'s deeper fields too, in the dialog's groups (3.13b)", () => {
+    const buttonDef = siteLibrary.components.Button;
+    if (buttonDef === undefined) throw new Error("no Button");
+
+    expect(lookFieldsOf(buttonDef)).toEqual(
+      expect.arrayContaining(["lookGradientFrom", "lookBorderTop", "lookPadding"]),
+    );
+    // Every Appearance field is one, as before.
+    for (const [name, field] of Object.entries(buttonDef.fields)) {
+      if (field.optionGroup?.id === APPEARANCE_GROUP_ID) {
+        expect(lookFieldsOf(buttonDef), name).toContain(name);
+      }
+    }
+  });
+
   it("is, for every component, fields a kind's look in the theme holds (3.12, CT-1)", () => {
     // What *Apply this look* copies is what the theme's look for the kind can hold.
     for (const [type, def] of Object.entries(siteLibrary.components)) {
@@ -150,6 +173,27 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     expect(lookOf(props(home, "plain"))).toEqual({});
     expect(lookOf(props(about, "other"))).toEqual({});
     expect(lookOf(props(home, "styled"))).toEqual(LOOK);
+  });
+
+  it("copies a gradient and borders on one side, as the dialog sets them (3.13b)", async () => {
+    const deeper = {
+      lookGradientDirection: "toRight",
+      lookGradientFrom: "primary",
+      lookGradientTo: "accent-300",
+      lookBorderBottom: "thick",
+      lookBorderStyle: "dashed",
+    };
+    const { session, home, props } = setUp((site) => {
+      const styled = findNode(
+        site.pages[site.homePageId]?.doc.content ?? [],
+        (node) => node.props.id === "styled",
+      );
+      if (styled !== undefined) Object.assign(styled.props, deeper);
+    });
+
+    expect(await applyLookToAll(session, "page", confirmer(true))).toBe(true);
+
+    expect(props(home, "plain")).toMatchObject(deeper);
   });
 
   it("changes nothing when the question is cancelled", async () => {

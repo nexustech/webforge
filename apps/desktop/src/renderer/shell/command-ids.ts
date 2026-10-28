@@ -14,10 +14,13 @@ export const COMMAND_IDS = {
   stopPhonePreview: "site.stopPhonePreview",
   exportSite: "site.export",
   siteSettings: "site.settings",
+  pageSettings: "page.settings",
   settings: "app.settings",
   publish: "site.publish",
   saveVersion: "site.saveVersion",
   pasteLinked: "edit.pasteLinked",
+  // Style this ‹kind›… (3.13a): the Style tab's button, the quick actions and the element menu.
+  styleThis: "edit.styleThis",
   commandBox: "view.commandBox",
   zoomIn: "view.zoomIn",
   zoomOut: "view.zoomOut",

@@ -2,8 +2,9 @@ import { z } from "zod";
 
 /**
  * The fields a kind's look holds (3.12, CT-1): the Appearance group's, with a section's overlay over
- * its background image and the hover row's, which share its option group: the same fields 2.27's
- * *Apply this look* copies. The background image itself is content, so it isn't one.
+ * its background image and the hover row's, which share its option group, and *Style this
+ * ‹component›…*'s deeper groups (3.13b): the same fields 2.27's *Apply this look* copies. The
+ * background image itself is content, so it isn't one.
  */
 export const LOOK_FIELDS = [
   "lookSize",
@@ -24,6 +25,29 @@ export const LOOK_FIELDS = [
   "hover",
   "hoverSpeed",
   "hoverEasing",
+  // Style this ‹component›…'s deeper groups (3.13b). Optional, absent meaning as before, so a look
+  // holding them needs no new format (ADR 0012).
+  "lookGradientDirection",
+  "lookGradientFrom",
+  "lookGradientTo",
+  "lookBorderTop",
+  "lookBorderRight",
+  "lookBorderBottom",
+  "lookBorderLeft",
+  "lookBorderStyle",
+  "lookCornerTopLeft",
+  "lookCornerTopRight",
+  "lookCornerBottomRight",
+  "lookCornerBottomLeft",
+  "lookShadowInner",
+  "lookHoverColor",
+  "lookPadding",
+  "lookTitleColor",
+  "lookSubtitleSize",
+  "lookSubtitleWeight",
+  "lookSubtitleCase",
+  "lookSubtitleColor",
+  "lookSubtitleAlign",
 ] as const;
 
 /** A field of a kind's look. */
@@ -34,6 +58,11 @@ const COLOUR_FIELDS: ReadonlySet<LookField> = new Set([
   "lookColor",
   "lookBackground",
   "lookBorderColor",
+  "lookGradientFrom",
+  "lookGradientTo",
+  "lookHoverColor",
+  "lookTitleColor",
+  "lookSubtitleColor",
 ]);
 
 /** One value as an item stores it: a token's name, or a toggle. */
