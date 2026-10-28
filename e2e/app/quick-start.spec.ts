@@ -51,7 +51,9 @@ test("starts a site from the quick start's answers: the business, a look, pages,
 
   // Colours and details.
   // Another curated theme's brand colours, fitted to Bistro's surfaces.
-  await quickStart.getByRole("radio", { name: "Workshop" }).check();
+  // Its label: the radio itself is visually hidden.
+  await quickStart.getByText("Workshop", { exact: true }).click();
+  await expect(quickStart.getByRole("radio", { name: "Workshop" })).toBeChecked();
   await quickStart.getByRole("textbox", { name: "Phone" }).fill("+44 113 496 0000");
   await quickStart.getByRole("textbox", { name: "Web address" }).fill("https://rosas.example");
   await quickStart.getByRole("button", { name: "Create site" }).click();
