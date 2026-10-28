@@ -228,6 +228,23 @@ export const panels = {
   "pageSettings.hideFromSearchHint":
     "Search engines won't show it, but it stays on your site and its links still work. Hide from navigation is for your menu; this is for search.",
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
+  // The page as a search result and when shared, as the export writes it (3.16, SEO-6, G22).
+  "pageSettings.preview.search": "In search results",
+  "pageSettings.preview.hint":
+    "Google shows about this much on a phone. It may show more or less, or words of its own.",
+  "pageSettings.preview.inherited":
+    "This is the site's description, as the page has none of its own.",
+  "pageSettings.preview.noDescription": "No description: search engines pick words from the page.",
+  "pageSettings.preview.hidden.page":
+    "This page is hidden from search engines, so it isn't shown in their results.",
+  "pageSettings.preview.hidden.site":
+    "Your site is hidden from search engines (Site Settings › Search engines), so this page isn't shown in their results.",
+  "pageSettings.preview.hidden.not-found":
+    "The 'Page not found' page isn't shown in search results.",
+  "pageSettings.preview.share": "When shared",
+  "pageSettings.preview.noAddress":
+    "Add your site's web address in Site Settings, so shared links show its picture and address.",
+  "pageSettings.preview.noImage": "No share image",
   "pageSettings.save": "Save",
   // Undo steps; "Added {item}", "Moved {item}"… use pages.item.
   "pages.item": "page '{name}'",
