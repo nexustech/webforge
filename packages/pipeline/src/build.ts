@@ -33,6 +33,7 @@ import { imageAt, processImage } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
+import { codeCandidates, customCode, scriptMistake } from "./site-code.js";
 import {
   hasSitemap,
   llmsTxt,
@@ -87,6 +88,15 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
   }
 }
 
+/** The site's own `custom.css` or `custom.js` as its file holds it, or nothing when it's empty. */
+function ownCode(code: string | undefined): string | undefined {
+  const trimmed = code?.trim() ?? "";
+  return trimmed === ""
+    ? undefined
+    : `${trimmed}
+`;
+}
+
 /**
  * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
  * image deleted from Media that a page still places (that place is left out), a page *Minify
@@ -94,7 +104,8 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
  * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; or a
  * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
  * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
- * which).
+ * which), or the site's `custom.js` with a mistake that stops browsers running it
+ * (`custom-script`, 3.9; `detail` is its line).
  */
 export type BuildWarning = {
   readonly code:
@@ -103,7 +114,8 @@ export type BuildWarning = {
     | "not-minified"
     | "missing-icon"
     | "small-icon"
-    | "form-unset";
+    | "form-unset"
+    | "custom-script";
   /** The page path the problem is on; "" for the whole site (the icon's). */
   readonly page: string;
   readonly detail: string;
@@ -453,6 +465,20 @@ export async function* buildEvents(
   const scriptPath =
     script === undefined ? undefined : `assets/js/webforge.${contentHash(script)}.js`;
 
+  // The site's own code (F-ED-15, 3.9): custom.css after the site's stylesheet and custom.js after
+  // webforge.js, each a file of its own and as the person wrote it, *Minify output* or not, as
+  // Custom Code's scripts and styles are.
+  const customCss = ownCode(site.code?.css);
+  const customCssPath =
+    customCss === undefined ? undefined : `assets/css/custom.${contentHash(customCss)}.css`;
+  const customJs = ownCode(site.code?.js);
+  const customJsPath =
+    customJs === undefined ? undefined : `assets/js/custom.${contentHash(customJs)}.js`;
+  if (customJs !== undefined) {
+    const line = await scriptMistake(customJs);
+    if (line !== undefined) warnings.push({ code: "custom-script", page: "", detail: `${line}` });
+  }
+
   // Render every page, then compile one stylesheet from all the classes they use.
   const paths = new Set(site.pages.map((page) => page.path));
   const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
@@ -589,7 +615,14 @@ export async function* buildEvents(
   yield { stage: "styles" };
   const cssOptions: SiteCssOptions = {
     theme: site.theme,
-    candidates: classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
+    // The classes in the pages' markup, and the words of the code the person wrote that can be
+    // classes: in Custom Code, the page snippets and custom.js (3.9).
+    candidates: [
+      ...new Set([
+        ...classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
+        ...customCode(site).flatMap(codeCandidates),
+      ]),
+    ].sort(),
     fontsUrl: "../fonts/",
     ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
   };
@@ -611,7 +644,14 @@ export async function* buildEvents(
       title: pageTitle(site, entry.page),
       description: entry.page.description,
       stylesheet: `${entry.prefix}${cssPath}`,
+      ...(customCssPath === undefined
+        ? {}
+        : { customStylesheet: `${entry.prefix}${customCssPath}` }),
       script: scriptPath === undefined ? undefined : `${entry.prefix}${scriptPath}`,
+      ...(customJsPath === undefined ? {} : { customScript: `${entry.prefix}${customJsPath}` }),
+      ...(site.code === undefined
+        ? {}
+        : { customHead: site.code.head, customBodyEnd: site.code.bodyEnd }),
       header: entry.header,
       main: entry.main,
       footer: entry.footer,
@@ -662,6 +702,12 @@ export async function* buildEvents(
   }
   if (script !== undefined && scriptPath !== undefined) {
     files.set(scriptPath, text.encode(script));
+  }
+  if (customCss !== undefined && customCssPath !== undefined) {
+    files.set(customCssPath, text.encode(customCss));
+  }
+  if (customJs !== undefined && customJsPath !== undefined) {
+    files.set(customJsPath, text.encode(customJs));
   }
   // Only the fonts the theme uses (2.2), each exactly the file the catalogue (or the download) lists.
   stopIfCancelled(signal);

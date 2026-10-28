@@ -48,6 +48,8 @@ export const exportSite = {
     "The site icon was deleted from Media, so pages have no icon in the browser tab. Choose another in Site Settings.",
   "export.report.smallIcon":
     "The site icon is smaller than 16 pixels, so pages have no icon in the browser tab. Choose a larger image in Site Settings.",
+  "export.report.customScript":
+    "Your site's script, custom.js, has a mistake on line {line}, so browsers will stop there. It was saved as you wrote it.",
   "export.report.notMinified":
     "“{page}” wasn't made smaller: its Custom Code isn't valid HTML. It was saved as it is.",
   "export.report.more": "And {count} more.",

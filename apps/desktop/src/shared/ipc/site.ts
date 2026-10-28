@@ -83,6 +83,7 @@ const exportFailureReasonSchema = z.enum([
  * file that isn't there, or an image deleted from Media. `page` is the page's path ("" for the
  * whole site); `detail` what the link pointed at, or the image's id. `not-minified`: *Minify
  * output* left the page readable. `missing-icon`, `small-icon`: the site icon gave no favicon.
+ * `custom-script`: the site's `custom.js` has a mistake; `detail` is its line (3.9).
  */
 export const exportWarningSchema = z.strictObject({
   code: z.enum([
@@ -92,6 +93,7 @@ export const exportWarningSchema = z.strictObject({
     "missing-icon",
     "small-icon",
     "form-unset",
+    "custom-script",
   ]),
   page: z.string().max(1024),
   detail: z.string().max(2048),
