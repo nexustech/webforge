@@ -6,8 +6,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  type FieldRenderers,
-  FieldRenderersProvider,
 } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
@@ -15,11 +13,10 @@ import { type ReactNode, useId, useState } from "react";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import { lookChangeIn } from "../../clipboard/index.js";
-import { EditPanelHost } from "../../editor/EditPanelHost.js";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument, useUi } from "../../editor/use-document.js";
-import { colourField } from "../../fields/index.js";
 import type { PreferencesStore } from "../../shell/preferences-store.js";
+import { StyleGroups } from "./StyleGroups.js";
 import {
   applyStyle,
   cancelStyle,
@@ -56,9 +53,6 @@ export type StyleDialogProps = {
 export function StyleDialog({ session, state, preferences, asks, itemPreviews }: StyleDialogProps) {
   const { open, since, scope } = useStore(state);
   const [busy, setBusy] = useState(false);
-  const [renderers] = useState<FieldRenderers>(() => ({
-    color: colourField({ session, preferences }),
-  }));
   // The item as the dialog changes it: the preview and the counts follow the site and selection.
   const site = useDocument(session, (doc) => doc);
   const selection = useUi(session, (ui) => ui);
@@ -93,11 +87,9 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
           <DialogDescription>{t("style.description")}</DialogDescription>
         </DialogHeader>
         <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-4">
-          {/* The groups' column: the Appearance fields now; 3.13b's groups join them here. */}
+          {/* The groups' column: the Appearance fields, and 3.13b's groups in StyleGroups. */}
           <div className="min-h-0 overflow-hidden rounded-md border border-border">
-            <FieldRenderersProvider renderers={renderers}>
-              <EditPanelHost session={session} flush={() => session.flush()} appearanceOnly />
-            </FieldRenderersProvider>
+            <StyleGroups session={session} preferences={preferences} />
           </div>
           <section
             aria-label={t("style.preview")}
