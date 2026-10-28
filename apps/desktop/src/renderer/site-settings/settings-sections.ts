@@ -15,9 +15,6 @@ import {
   X_HANDLE_MAX,
 } from "@webforge/model";
 
-/** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
-const VERIFICATION_PASTE_MAX = 300;
-
 import {
   DAYS,
   FORM_SERVICES,
@@ -27,6 +24,9 @@ import {
   type SettingsForm,
   settingsSchema,
 } from "./settings-form.js";
+
+/** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
+const VERIFICATION_PASTE_MAX = 300;
 
 /** One of Site Settings' sections (F-SET-1): its fields, for the values the dialog holds. */
 type SettingsSection = {

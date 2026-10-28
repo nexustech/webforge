@@ -16,6 +16,9 @@ enablePatches();
 /** A mutation of the document, written against an Immer draft. */
 export type Recipe<D> = (draft: Draft<D>) => void;
 
+/** What every change brings with it; see {@link BaseOptions.finish}. */
+export type Finish<D> = (draft: Draft<D>, changes: readonly Patch[]) => void;
+
 /** A Zustand store that can be read and watched but not written. */
 export type ReadonlyStore<T> = Pick<StoreApi<T>, "getState" | "getInitialState" | "subscribe">;
 
@@ -142,6 +145,12 @@ type BaseOptions<D> = {
   readonly coalesceWindowMs?: number;
   /** Clock, injectable for tests. */
   readonly now?: () => number;
+  /**
+   * What every change to the document brings with it, in the same step: called after each recipe
+   * that changed something, with that recipe's patches, on a draft of the changed document. What
+   * it changes is undone and redone with the step: a page's last-changed date (3.15, SEO-3).
+   */
+  readonly finish?: Finish<D>;
 };
 
 /**
@@ -219,6 +228,20 @@ export function createHistoryManager<D extends Objectish, S>(
   const maxBytes = options.maxBytes ?? 50 * 1024 * 1024;
   const defaultWindow = options.coalesceWindowMs ?? 1000;
   const now = options.now ?? Date.now;
+
+  const { finish } = options;
+  /** `recipe` on `base`, then {@link BaseOptions.finish} on what it changed: one set of patches. */
+  const produce = (base: D, recipe: Recipe<D>): [D, Patch[], Patch[]] => {
+    const [next, forward, inverse] = produceWithPatches(base, (draft) => {
+      // Ignore a value returned by mistake (e.g. `draft => draft.list.push(x)`): recipes only mutate.
+      recipe(draft);
+    });
+    if (forward.length === 0 || finish === undefined) return [next as D, forward, inverse];
+    const [finished, more, undoMore] = produceWithPatches(next, (draft) => {
+      finish(draft, forward);
+    });
+    return [finished as D, [...forward, ...more], [...undoMore, ...inverse]];
+  };
 
   const documentStore = createTellingStore<D>(freeze(options.initial, true));
   const stateStore = createTellingStore<HistoryState<S>>({
@@ -333,16 +356,11 @@ export function createHistoryManager<D extends Objectish, S>(
     exclusively(() => {
       assertNoTransaction();
       const selectionBefore = selection.get();
-      const [next, forward, inverse] = produceWithPatches(documentStore.getState(), (draft) => {
-        // Ignore a value returned by mistake (e.g. `draft => draft.list.push(x)`): recipes only mutate.
-        recipe(draft);
-      });
+      const [next, forward, inverse] = produce(documentStore.getState(), recipe);
       if (forward.length === 0) {
         return;
       }
-      setDocumentThen(next as D, () =>
-        record(label, forward, inverse, selectionBefore, runOptions),
-      );
+      setDocumentThen(next, () => record(label, forward, inverse, selectionBefore, runOptions));
     });
 
   /** Records a run's step: a new entry, or merged into the current one while they coalesce. */
@@ -425,10 +443,8 @@ export function createHistoryManager<D extends Objectish, S>(
         update(recipe) {
           exclusively(() => {
             assertActive();
-            const [next, f, i] = produceWithPatches(documentStore.getState(), (draft) => {
-              recipe(draft);
-            });
-            setDocumentThen(next as D, () => {
+            const [next, f, i] = produce(documentStore.getState(), recipe);
+            setDocumentThen(next, () => {
               forward.push(...f);
               inverse = [...i, ...inverse];
             });

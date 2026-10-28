@@ -2,6 +2,7 @@ export type { Patch } from "immer";
 export { compactPatches } from "./compact-patches.js";
 export type {
   CommitOptions,
+  Finish,
   HistoryEntry,
   HistoryErrorCode,
   HistoryManager,
