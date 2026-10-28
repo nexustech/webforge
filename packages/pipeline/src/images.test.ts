@@ -4,7 +4,7 @@ import type { MediaItem } from "@webforge/model";
 import type { ResolvedImage } from "@webforge/site-components";
 import { heroPhoto } from "@webforge/test-utils";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { imageForDepth, makeThumbnail, processImage } from "./images.js";
+import { imageAt, makeThumbnail, processImage } from "./images.js";
 import { loadNodeResources } from "./node-resources.js";
 import type { CodecModules, ImageCache } from "./resources.js";
 
@@ -218,7 +218,7 @@ describe("processImage with alt text, focal point and crop", () => {
   }, 60_000);
 });
 
-describe("imageForDepth", () => {
+describe("imageAt", () => {
   const image: ResolvedImage = {
     sources: [
       { type: "image/webp", srcset: "assets/img/a-640.webp 640w, assets/img/a-1280.webp 1280w" },
@@ -231,17 +231,24 @@ describe("imageForDepth", () => {
   };
 
   it("keeps URLs for pages at the site root", () => {
-    expect(imageForDepth(image, 0)).toBe(image);
+    expect(imageAt(image, "")).toBe(image);
   });
 
   it("adds ../ per folder level to every URL", () => {
-    const moved = imageForDepth(image, 2);
+    const moved = imageAt(image, "../../");
 
     expect(moved.src).toBe("../../assets/img/a-1280.jpg");
     expect(moved.sources[0]?.srcset).toBe(
       "../../assets/img/a-640.webp 640w, ../../assets/img/a-1280.webp 1280w",
     );
     expect(moved.fallback.srcset).toBe("../../assets/img/a-640.jpg 640w");
+  });
+
+  it("roots every URL at the web address, for the 'Page not found' page (F-ED-20)", () => {
+    const moved = imageAt(image, "https://rosas.example/");
+
+    expect(moved.src).toBe("https://rosas.example/assets/img/a-1280.jpg");
+    expect(moved.fallback.srcset).toBe("https://rosas.example/assets/img/a-640.jpg 640w");
   });
 });
 

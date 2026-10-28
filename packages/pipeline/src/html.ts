@@ -1,7 +1,7 @@
 import beautify from "js-beautify";
 
 /** Escapes text for use in HTML content and double-quoted attributes. */
-function escapeHtml(text: string): string {
+export function escapeHtml(text: string): string {
   return text
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")

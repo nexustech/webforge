@@ -161,7 +161,12 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
     return node;
   };
   const draw = async (node: NodeDoc, theme: Theme): Promise<Drawn | undefined> => {
-    const html = renderNodesToHtml([node], source.library, EDITOR_RENDER_CONTEXT);
+    // With the theme's look for its kind, as the canvas will draw it once added (3.12).
+    const context =
+      theme.looks === undefined
+        ? EDITOR_RENDER_CONTEXT
+        : { ...EDITOR_RENDER_CONTEXT, looks: theme.looks };
+    const html = renderNodesToHtml([node], source.library, context);
     const result = await source.compileCss({
       theme,
       candidates: [...new Set(classesOfHtml(html))].sort(),

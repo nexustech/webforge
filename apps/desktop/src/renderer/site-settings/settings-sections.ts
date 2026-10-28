@@ -205,6 +205,12 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
       fields: () => [
         { kind: "toggle", name: "allowIndexing", label: t("site.settings.allowIndexing") },
         { kind: "toggle", name: "includeSitemap", label: t("site.settings.includeSitemap") },
+        {
+          kind: "toggle",
+          name: "readableByAi",
+          label: t("site.settings.readableByAi"),
+          help: t("site.settings.readableByAiHint"),
+        },
       ],
     },
     {

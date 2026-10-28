@@ -1,7 +1,14 @@
 import type { RenderContext, SiteBindings } from "@webforge/site-components";
 
 /** Where a part of the canvas's render context comes from. */
-type Source = "editor" | "setNavigation" | "setImages" | "setPreviews" | "setSettings" | "export";
+type Source =
+  | "editor"
+  | "setNavigation"
+  | "setImages"
+  | "setPreviews"
+  | "setLooks"
+  | "setSettings"
+  | "export";
 
 /**
  * Which `CanvasEngine` method gives each part of the canvas's render context (#367): the editor's
@@ -17,6 +24,8 @@ export const RENDER_CONTEXT_SOURCES = {
   image: "setImages",
   emptyImage: "setImages",
   previews: "setPreviews",
+  // The theme's looks (3.12): the editor sets them again when the theme changes.
+  looks: "setLooks",
   // Never on the canvas, which always shows Custom Code sanitised.
   rawCustomCode: "export",
   // The Footer's Cookie settings: only an exported site has a consent banner to reopen.

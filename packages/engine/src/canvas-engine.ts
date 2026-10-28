@@ -337,6 +337,11 @@ export interface CanvasEngine {
    */
   setPreviews(previews: EditPreviews): void;
   /**
+   * Draws each element with its kind's look from the theme (3.12, CT-1) under what it sets itself,
+   * as the export does. Called again when the theme's looks change; the page is drawn again.
+   */
+  setLooks(looks: RenderContext["looks"]): void;
+  /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:
    * no selection, the end of the list, or an action Content mode doesn't allow.

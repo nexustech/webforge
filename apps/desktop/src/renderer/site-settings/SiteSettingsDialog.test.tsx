@@ -63,6 +63,7 @@ describe("SiteSettingsDialog", () => {
       await user.click(screen.getByText("Tue"));
       await user.click(screen.getByRole("tab", { name: "Search engines" }));
       await user.click(screen.getByLabelText("Include a sitemap for search engines"));
+      await user.click(screen.getByLabelText("Help AI tools read your site"));
       await user.click(screen.getByRole("button", { name: "Save" }));
 
       expect(onSave).toHaveBeenCalledTimes(1);
@@ -72,7 +73,7 @@ describe("SiteSettingsDialog", () => {
           phone: "+44 1234 567890",
           openingHours: [{ days: ["tue"], opens: "09:00", closes: "17:00" }],
         },
-        search: { includeSitemap: false },
+        search: { includeSitemap: false, readableByAi: false },
       });
     },
     SLOW,

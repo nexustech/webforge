@@ -1,53 +1,22 @@
-import { readFile } from "node:fs/promises";
-import { createServer, type Server } from "node:http";
-import { extname, join, normalize, sep } from "node:path";
 import { expect, test } from "@playwright/test";
 import { THEMED_SITE_DIR } from "./exported-site.js";
+import { type ServedSite, serveSite } from "./served-site.js";
 
 // Changing one's mind about cookies (#539, B7) on the themed export (export.setup.ts), served over
 // http as a host would serve it: from disk Google's script never loads, so there would be nothing
 // to stop. Google's address answers with an empty script, counted; every other address outside the
 // site is blocked.
 
-const TYPES: Readonly<Record<string, string>> = {
-  ".html": "text/html; charset=utf-8",
-  ".css": "text/css",
-  ".js": "text/javascript",
-  ".webp": "image/webp",
-  ".jpg": "image/jpeg",
-  ".png": "image/png",
-  ".ico": "image/x-icon",
-  ".svg": "image/svg+xml",
-  ".woff2": "font/woff2",
-  ".pdf": "application/pdf",
-};
-
-let server: Server;
+let served: ServedSite;
 let origin = "";
 
 test.beforeAll(async () => {
-  server = createServer((request, response) => {
-    const path = normalize(new URL(request.url ?? "/", "http://site").pathname.slice(1));
-    // Only files of the export: nothing above its folder.
-    if (path.split(sep).includes("..")) {
-      response.writeHead(403).end();
-      return;
-    }
-    readFile(join(THEMED_SITE_DIR, path === "." ? "index.html" : path)).then(
-      (body) => {
-        const type = TYPES[extname(path)] ?? "application/octet-stream";
-        response.writeHead(200, { "content-type": type }).end(body);
-      },
-      () => response.writeHead(404).end(),
-    );
-  });
-  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const address = server.address();
-  origin = `http://127.0.0.1:${typeof address === "object" && address !== null ? address.port : 0}`;
+  served = await serveSite(THEMED_SITE_DIR);
+  origin = served.origin;
 });
 
 test.afterAll(async () => {
-  await new Promise((resolve) => server.close(resolve));
+  await served.close();
 });
 
 test("Cookie settings, then Decline after accepting: Google's requests stop and the choice is kept (#539)", async ({
