@@ -133,7 +133,7 @@ All decided by the product owner on 28 Oct 2026 ("adopt all proposals"), with th
 | SEO-9 | ✅ MVP, 3.11 (+0.5 day, [#516](https://github.com/nexustech/webforge/issues/516)): the quick start fills the business type and asks for the web address at the end |
 | SEO-10 | ✅ v1.1 as planned (G25b) |
 | SEO-11 | ✅ Rule: none of the listed controls is added, in the MVP or later |
-| SEO-12 | ✅ Decision, answers MVP §7 item 12: `llms.txt` off by default for every site, in a *For AI tools* row, the Markdown copies only with it; the change ships in 3.15 |
+| SEO-12 | ✅ Decision, answers MVP §7 item 12: `llms.txt` off by default for every site, in a *For AI tools* row, the Markdown copies only with it; the change ships in 3.15. As built: the switch is in General (the proposal's "or General"), its hint beginning "For AI tools"; a site made between 3.5 and 3.15 keeps the value it stored |
 
 Recorded in [spec/02 §7 item 27](../../spec/02-mvp-spec.md#7-open-items-to-confirm) (and item 12 for SEO-12), the [plan's](../../spec/04-implementation-plan.md) scope-change line of 28 Oct 2026, F-EX-6, F-SET-1, F-SET-2, F-CHK-1 and F-EX-5, and the issues above.
 
