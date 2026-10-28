@@ -137,12 +137,30 @@ describe("structured data (3.15, SEO-1)", () => {
     });
 
     expect(dataOn(restaurant, "index")[1]).toMatchObject({ menu: `${ADDRESS}/prices.html` });
+    // Never a page kept from search engines.
+    const unlisted = site({
+      business: { type: "food", kind: "Restaurant" },
+      pages: [page("index"), { ...prices, hideFromSearch: true }],
+    });
+    expect(dataOn(unlisted, "index")[1]).not.toHaveProperty("menu");
   });
 
   it("writes none on other pages, or on a page kept from search engines", () => {
     expect(dataOn(site(), "prices")).toEqual([]);
     const hidden = site({ pages: [{ ...page("index"), hideFromSearch: true }] });
     expect(dataOn(hidden, "index")).toEqual([]);
+
+    // The contact page is the first search engines may show: not one kept from them.
+    const twice = site({
+      pages: [
+        page("index"),
+        { ...page("old", [CONTACT]), hideFromSearch: true },
+        page("visit", [CONTACT]),
+      ],
+    });
+    expect(dataOn(twice, "visit")).toEqual([
+      expect.objectContaining({ address: "1 High Street, Hightown" }),
+    ]);
   });
 
   it("can't be closed early by what was typed, and leaves the business out if a value is refused", () => {
