@@ -72,6 +72,8 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 **Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
 
+**Re-plan, 28 Oct 2026 (Phase 3 first, product owner):** all three streams work on Phase 3 before Phase 4, so the phase ends when its work is spread evenly rather than when stream B's long queue does. 3.10 goes back to stream A, 3.13b moves from B to A and 3.14 from B to C, both after B's 3.13a, the dialog they build on. Stream A starts 4.1 only in the gaps. The longest queue drops from about 8.5 to about 6 estimated days, so Phase 3 should end about 3 Nov 2026, within its 6 Nov milestone. Days are unchanged, so there is no scope change.
+
 **Re-plan, 28 Oct 2026 (Phase 2 exit):** Phase 2's exit criteria are met, with evidence, and the milestone is closed on the product owner's sign-off (28 Oct 2026), 9 days before its 6 Nov date: all 109 issues closed, none out of plan left open.
 - **Evidence:**
   - every catalogue component has stories (a test fails if one has none), axe-checked in 3 themes on Desktop and Mobile on PRs and in every theme nightly (`e2e/visual/stories.spec.ts`);
@@ -993,11 +995,11 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files)~~ → 3.11 (quick start, 27 Oct; +SEO-9 on 28 Oct) → 0.2 (Netlify spike, from B, Phase 2 exit re-plan) → Phase 4 from 4.1; 3.13 and 3.14 moved to B on 28 Oct 2026 (product owner), 3.10 to C at the Phase 2 exit |
-| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12~~ → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E) → 3.15 (being found, 28 Oct) → 3.13 → 3.14 (component theming, moved from A on 28 Oct); 3.16 moved to C at the Phase 2 exit |
-| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check)~~ → 3.9 (custom code) → 3.17 (Site Check › Being found, 28 Oct, once B's 3.15 has merged) → 3.16 (search-result preview, from B) → 3.10 (compatibility E2E, from A), both moved at the Phase 2 exit re-plan (28 Oct 2026) |
+| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files) → 3.11 (quick start)~~ → 3.10 (compatibility E2E, back from C) → 3.13b (Style this component's deeper groups, from B, once 3.13a has merged); then 0.2 (Netlify spike, once the product owner has run it) and Phase 4 from 4.1. Rebalanced 28 Oct 2026 (product owner: all three streams on Phase 3 first) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12 → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E)~~ → 3.15 (being found, 28 Oct) → 3.13a (Style this component…: the dialog). 3.16 moved to C at the Phase 2 exit; 3.13b to A and 3.14 to C on 28 Oct 2026 (product owner) |
+| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check)~~ → 3.9 (custom code) → 3.16 (search-result preview, from B) → 3.17 (Site Check › Being found, once B's 3.15 has merged) → 3.14 (read-only CSS view, from B, once 3.13a has merged) |
 
-One item waits on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue; 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
+Three items wait on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue, and 3.13b (A) and 3.14 (C) on 3.13a (B); 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
 <details><summary>Scope and acceptance criteria</summary>
 

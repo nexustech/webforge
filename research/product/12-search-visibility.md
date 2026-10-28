@@ -122,7 +122,7 @@ All decided by the product owner on 28 Oct 2026 ("adopt all proposals"), with th
 
 | ID | Decision |
 |---|---|
-| SEO-1 | ✅ MVP, item 3.15 ([#575](https://github.com/nexustech/webforge/issues/575)): `LocalBusiness` and `WebSite` JSON-LD from Site Settings, with a business type field that picks the subtype |
+| SEO-1 | ✅ MVP, item 3.15 ([#575](https://github.com/nexustech/webforge/issues/575)): `LocalBusiness` and `WebSite` JSON-LD from Site Settings, with a business type field that picks the subtype. As built: the type is the templates' and the quick start's list (food and drink, beauty, trades, services, creative, shop, personal), in Site Settings › General (3.11b's *Business type*, which the quick start sets), with a *More precisely* list beside it of the schema.org types within the type (Bakery, HairSalon, Plumber…), the type's own when none is chosen; a personal site is a `WebSite` only, and so is a site with no type and no address or hours (a CV from the blank template). The telephone and email follow the address's rule, written only where the page shows them, so an email kept for forms isn't published. The address is a `PostalAddress` read from what was typed: the street from the parts before the last, the postcode by pattern (the UK's, a ZIP code, or four to six digits), the town from what's left, the country from the language's region (`en-GB`); what can't be found is left out. No `servesCuisine`, as there is no field for it |
 | SEO-2 | ✅ MVP, 3.15: *Hide this page from search engines* in Page Settings |
 | SEO-3 | ✅ MVP, 3.15: the switches' rules; 3.5's `Disallow: /` is replaced by `noindex` alone, and the sitemap gains `lastmod` |
 | SEO-4 | ✅ MVP, 3.15: the first picture preloaded, the rest lazy |
