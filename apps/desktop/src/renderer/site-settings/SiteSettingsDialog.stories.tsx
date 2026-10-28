@@ -41,13 +41,16 @@ export const Contact: Story = { args: { initialSection: "contact" } };
 /** Social profiles and the share image. */
 export const Social: Story = { args: { initialSection: "social" } };
 
-/** Search engines: the switches, and the Google and Bing verification codes (3.15). */
+/** Search engines: the kind of business, the switches, and the verification codes (3.15). */
 export const SearchEngines: Story = {
   args: {
     initialSection: "search",
     site: (() => {
       const site = bakery();
       site.settings.search.verification = { google: "abcDEF123_-xyzVerification" };
+      // A bakery, more precisely than food and drink (3.15, SEO-1).
+      site.settings.general.businessType = "food";
+      site.settings.general.businessKind = "Bakery";
       return site;
     })(),
   },
