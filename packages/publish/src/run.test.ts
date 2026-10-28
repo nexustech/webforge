@@ -35,6 +35,8 @@ type Harness = {
   readonly publisher: Publisher<unknown>;
   readonly dest: unknown;
   readonly live: (path: string) => string | undefined;
+  /** Whether the run asks the address (FTP, SFTP); Netlify checks through its API instead. */
+  readonly asksAddress: boolean;
 };
 
 /** A web server's answer at `url` for a host serving `live`: the home page for `/`. */
@@ -50,9 +52,13 @@ async function run(harness: Harness, site: BuildOutput, signal: AbortSignal) {
   const events: PublishRunEvent[] = [];
   const verify = (url: string, built: BuildOutput, cancel: AbortSignal) =>
     verifyPublished(url, built, { fetch: served(harness.live), delayMs: 0, signal: cancel });
-  for await (const event of publishSite(harness.publisher, site, harness.dest, signal, {
-    verify,
-  })) {
+  for await (const event of publishSite(
+    harness.publisher,
+    site,
+    harness.dest,
+    signal,
+    harness.asksAddress ? { verify } : {},
+  )) {
     events.push(event);
   }
   return events;
@@ -84,6 +90,7 @@ const harnesses: Record<string, () => Promise<Harness>> = {
       publisher: netlifyPublisher(options) as Publisher<unknown>,
       dest: { siteId },
       live: (path) => netlify.live(siteId, path),
+      asksAddress: false,
     };
   },
   [TEST_TLS === undefined ? "ftp" : "ftps"]: async () => ({
@@ -101,6 +108,7 @@ const harnesses: Record<string, () => Promise<Harness>> = {
       url: "https://bakery.example/",
     },
     live: onDisk(ftp.site),
+    asksAddress: true,
   }),
   sftp: async () => ({
     publisher: sftpPublisher({
@@ -116,6 +124,7 @@ const harnesses: Record<string, () => Promise<Harness>> = {
       url: "https://bakery.example/",
     },
     live: onDisk(sftp.site),
+    asksAddress: true,
   }),
 };
 

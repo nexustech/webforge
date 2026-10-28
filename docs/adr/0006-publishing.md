@@ -106,19 +106,28 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
 - **`safeStorage` round trip:** `e2e/app/credentials.spec.ts` encrypts a test secret in one run and decrypts it in the next, on Windows (DPAPI) and macOS (Keychain), in CI.
 
 ### 8. The publish run and the live check (4.1)
-`publishSite` (`packages/publish/src/run.ts`) runs any publisher and then checks the live site, research 08's step 5. The publisher's events pass through unchanged, and after `published` the run adds `verifying` and `verified`.
-- **What is checked:** `verifyPublished` asks the `https:` address the publisher reports for its home page and compares it with the built `index.html` by SHA-1. Nothing of the page is kept or logged.
-  - **No build marker in the page**, unlike research 08's wording: the digest already says whether the page is the one just built, and it adds nothing to the exported HTML (X4).
-  - **Past caches:** a `webforge-check` query named after the digest. A CDN still serving the old deploy, or a 404 while it arrives, is asked again up to 5 times, 2 s apart.
+`publishSite` (`packages/publish/src/run.ts`) runs any publisher and then checks the new version is the one served, research 08's step 5. The publisher's events pass through unchanged, and after `published` the run adds `verifying` and `verified`.
+- **Netlify: through its API** (`Publisher.verify`). The deploy just made, named in `published.version`, is `live` once it is `ready` and the site's `published_deploy`.
+  - Nothing is fetched from the site, so Netlify's own rewriting of pages can't mislead the check. It drops `data-netlify` from forms and adds a hidden `form-name` input.
+  - A CDN still on the old deploy can't mislead it either.
+- **FTP, FTPS and SFTP: the address** (`verifyPublished`). It asks the `https:` address for the home page.
+  - **The page as built, byte for byte, is `live` at once.**
+  - **A page that names the build's hashed stylesheet** (`assets/css/site.<hash>.css`, in every home page) is this site rewritten by its host, which may add a snippet. It is asked for again until the attempts run out, then counts as `live`.
+    - The hash follows the styles, not the words. So an earlier version with the same styles still in a cache reads the same, and the attempts give that cache time to move on.
+    - No new build marker goes into the page (X4).
+  - **Past caches:** a `webforge-check` query named after the page's digest. Up to 5 attempts, 2 s apart.
+  - **Bounds:** each answer has 15 s, or it counts as `unreachable`. It is read up to twice the page's size (1 MB at least), and past that it counts as `different`. Nothing of the page is kept or logged.
 - **What it can find:**
-  - `live`: the new home page is there;
-  - `different`: the address answers with another page (an old cache, a host that changes the pages it serves, or an address that isn't this destination's);
+  - `live`;
+  - `different`: another version, another site, or another deploy published since;
   - `unreachable`, with the HTTP status when there was one;
   - `unchecked`: no `https:` address (an FTP destination without its web address), no home page, or cancelled.
 
   The check never throws. The publish is done whatever it finds, and 4.5 words each result.
 - **Cancelling:** while uploading, it ends the run as the publisher's own cancel does, with the previous site usable and nothing checked. While checking, it ends only the check (`unchecked`).
-- **Tests:** `run.test.ts` puts the Netlify, FTPS and SFTP publishers through the run on the tests' own servers, the address answered from what each server holds. Each publish is checked as `live`. A publish cancelled at its first upload leaves the old home page, and the stylesheet it names, in place.
+- **Tests:**
+  - `run.test.ts` puts the Netlify, FTPS and SFTP publishers through the run on the tests' own servers: Netlify's API check, and the address answered from what the FTP and SFTP servers hold. Each publish is checked as `live`. A publish cancelled at its first upload leaves the old home page, and the stylesheet it names, in place.
+  - `verify.test.ts` covers a page rewritten as Netlify and hosts do, an answer that never comes, and one that runs on.
 - **Not here:** building with the publish-strict checks, the progress and result UI, and recording a version are 4.5 and 4.6. Destinations and their credentials are 4.4.
 
 ## Consequences
