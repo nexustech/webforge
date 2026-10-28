@@ -14,6 +14,7 @@ export const COMMAND_IDS = {
   stopPhonePreview: "site.stopPhonePreview",
   exportSite: "site.export",
   siteSettings: "site.settings",
+  pageSettings: "page.settings",
   settings: "app.settings",
   publish: "site.publish",
   saveVersion: "site.saveVersion",

@@ -1,8 +1,10 @@
 import { t } from "@webforge/i18n";
+import type { SearchGuide } from "@webforge/site-check";
 import { ListChecksIcon } from "lucide-react";
 import { useStore } from "zustand";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
+import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
 import type { BundleActions } from "./bundle.js";
@@ -17,6 +19,10 @@ export const SITE_CHECK_PANEL_ID = "siteCheck";
 type SiteCheckPanelOptions = {
   readonly session: EditorSession;
   readonly settings: SettingsRegistry;
+  /** Where Page Settings… is, for a page without a description (3.17). */
+  readonly commands: Pick<CommandRegistry, "run">;
+  /** Opens a guide's page on another website in the browser (3.17). */
+  readonly openGuide: (guide: SearchGuide) => void;
   /** What the person ignored for the open site, as main loaded it. */
   readonly ignored: readonly string[];
   /** Remembers what is ignored with the open site. */
@@ -32,10 +38,17 @@ type SiteCheckPanelOptions = {
  */
 export function registerSiteCheckPanel(
   panels: PanelRegistry,
-  { session, settings, ignored, saveIgnored, bundle }: SiteCheckPanelOptions,
+  { session, settings, commands, openGuide, ignored, saveIgnored, bundle }: SiteCheckPanelOptions,
 ): () => void {
   const siteCheck = createSiteCheck(session.history.document, { ignored, saveIgnored });
-  const actions = { session, panels, settings, ...(bundle === undefined ? {} : { bundle }) };
+  const actions = {
+    session,
+    panels,
+    settings,
+    commands,
+    openGuide,
+    ...(bundle === undefined ? {} : { bundle }),
+  };
 
   function SiteCheck() {
     const report = useStore(siteCheck.state, (state) => state.report);
@@ -43,7 +56,11 @@ export function registerSiteCheckPanel(
     return (
       <SiteCheckPanel
         report={report}
-        ignored={report.results.reduce((count, result) => count + result.ignored, 0)}
+        // One-time tips marked *Done* aren't brought back, so they aren't counted.
+        ignored={report.results.reduce(
+          (count, result) => count + (result.oneTime === true ? 0 : result.ignored),
+          0,
+        )}
         describe={(finding) => ({
           place: describePlace(finding, site, session.library),
           detail: describeDetail(finding),

@@ -1,4 +1,4 @@
-import type { PageId, SiteDoc } from "@webforge/model";
+import { type PageId, SITE_CHECK_IGNORED_MAX, type SiteDoc } from "@webforge/model";
 import { SITE_CHECK_RULES } from "@webforge/site-check";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
@@ -105,5 +105,26 @@ describe("Site Check's recheck in idle time (ADR 0016)", () => {
     idlePeriod(50);
 
     expect(failing(check)).toBe(0);
+  });
+});
+
+describe("what Site Check remembers as ignored (3.17)", () => {
+  it("keeps one-time tips marked Done, however many other things are ignored", () => {
+    const document = createStore<SiteDoc>()(() => starterSite());
+    const others = Array.from({ length: SITE_CHECK_IGNORED_MAX }, (_, n) => `placeholders:${n}`);
+    const saveIgnored = vi.fn();
+    const check = createSiteCheck(document, {
+      ignored: ["searchConsole:searchConsole", ...others],
+      saveIgnored,
+    });
+
+    check.ignore("altText", "new");
+    const saved: string[] = saveIgnored.mock.calls.at(-1)?.[0] ?? [];
+    expect(saved).toHaveLength(SITE_CHECK_IGNORED_MAX);
+    expect(saved[0]).toBe("searchConsole:searchConsole");
+    expect(saved.at(-1)).toBe("altText:new");
+
+    check.restoreIgnored();
+    expect(saveIgnored).toHaveBeenLastCalledWith(["searchConsole:searchConsole"]);
   });
 });
