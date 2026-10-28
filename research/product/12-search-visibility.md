@@ -1,6 +1,6 @@
 # Being found: search engines and the exported site
 
-**Status:** ⏳ Proposed (SEO-1…SEO-12, 28 Oct 2026); no decisions recorded. The product owner's question: what Webforge has planned for search engine optimisation, and what the gaps are.
+**Status:** ✅ Decided (SEO-1…SEO-12, product owner, 28 Oct 2026): all twelve adopted as proposed (§6). 3.5 had merged the same morning ([#548](https://github.com/nexustech/webforge/pull/548)), so SEO-1…SEO-4, SEO-8 and SEO-12 become item 3.15 ([#575](https://github.com/nexustech/webforge/issues/575), 4 days, stream B) rather than scope on 3.5; SEO-6 is 3.16 ([#576](https://github.com/nexustech/webforge/issues/576), 1.5 days, stream B) and SEO-7 is 3.17 ([#577](https://github.com/nexustech/webforge/issues/577), 1.5 days, stream C); SEO-9 adds 0.5 day to 3.11; +7.5 days in all. SEO-5 and SEO-10 stay v1.1, SEO-11 is a rule and SEO-12 answers MVP §7 item 12. The product owner's question: what Webforge has planned for search engine optimisation, and what the gaps are.
 
 **Goal:** a small business's exported site should be as findable as the same site made in Wix or Squarespace, without Webforge growing an "SEO panel" of controls that Google itself says do nothing. The owner is not an SEO specialist; the builder gets the mechanics right from the details they have already typed, and tells them the two things only they can do (a Google Business Profile, and real content).
 
@@ -11,7 +11,7 @@ Three passes on 28 Oct 2026, from the vendors' own help centres and Google's Sea
 - **Hosted builders:** Wix, Squarespace, Webflow, Hostinger, Jimdo, GoDaddy, Framer and Durable (§3.1).
 - **Desktop builders:** Bootstrap Studio 8.0, Blocs 6.4, Pinegrow 9.3, RapidWeaver Elements 3.1 and Mobirise 6.1 (§3.2).
 
-Read against `main` of 28 Oct 2026: Site Settings and Page Settings (1.17, 1.18), the export's head and pictures (3.3, 3.4), Site Check's thirteen rules (3.6), the scope of 3.5 ([#63](https://github.com/nexustech/webforge/issues/63)) and the quick start (3.11, [product/09](09-quick-start-wizard.md)). Where a vendor page would not load, the fact comes from the search engine's rendering of it and is marked *(snippet)* in the sources. Effort is in ideal days against today's code. Nothing here is a code change.
+Read against `main` of 28 Oct 2026: Site Settings and Page Settings (1.17, 1.18), the export's head and pictures (3.3, 3.4), Site Check's thirteen rules (3.6), the scope of 3.5 ([#63](https://github.com/nexustech/webforge/issues/63); it merged later that morning as [#548](https://github.com/nexustech/webforge/pull/548), and §4 says what it wrote) and the quick start (3.11, [product/09](09-quick-start-wizard.md)). Where a vendor page would not load, the fact comes from the search engine's rendering of it and is marked *(snippet)* in the sources. Effort is in ideal days against today's code. Nothing here is a code change.
 
 ## 2. What search engines actually use
 
@@ -69,15 +69,15 @@ Google's documentation is unusually explicit about what matters and what does no
 - The exported head: charset, viewport, `lang`, `<title>` as *Page | Site name*, `<meta name="description">`, the favicon set (3.3, 3.4). Pictures as above (§2).
 - Site Check (3.6): page titles missing (*Should fix*, an error on publish), the web address missing (the same), alt text, broken links, missing images, placeholder text, large images, large files, contrast, underlined text, device names, the home page, and forms.
 
-**Planned.** 3.5 ([#63](https://github.com/nexustech/webforge/issues/63), stream A after 3.2, 3 days): sitemap.xml with canonical links and absolute Open Graph URLs when the web address is set, robots.txt, the web manifest, Open Graph and Twitter tags, 404.html, `{year}`, and `llms.txt` with Markdown copies (F-EX-5, default open in MVP §7 item 12). v1.1: page-rename redirects (G7), a social share preview in Page Settings (G22), AI-written descriptions and alt text with the person's own account (G25b). v1.2+: multilingual (M4), which is where hreflang belongs.
+**Merged the same morning.** 3.5 ([#63](https://github.com/nexustech/webforge/issues/63), [#548](https://github.com/nexustech/webforge/pull/548), 1.5 actual days): sitemap.xml with canonical links and absolute Open Graph URLs when the web address is set, robots.txt, the web manifest, Open Graph and Twitter tags, `noindex` on every page when *Let search engines show the site* is off (and `Disallow: /` in robots.txt with it), 404.html, `{year}`, and `llms.txt` with Markdown copies behind *Help AI tools read your site*, on for new sites and off for existing ones (F-EX-5, MVP §7 item 12's proposed default). v1.1: page-rename redirects (G7), a social share preview in Page Settings (G22), AI-written descriptions and alt text with the person's own account (G25b). v1.2+: multilingual (M4), which is where hreflang belongs.
 
 **Gaps**, against §2 and §3:
 1. **No structured data.** The one output that three hosted builders write silently from the business profile, and that Google documents a rich result for, is absent, although every field it needs is in Site Settings and the templates show the hours and address on the page already.
 2. **No way to hide one page from search.** *Allow indexing* is site-wide; *Hide from navigation* is a menu matter. Every competitor has the per-page switch.
 3. **No search-result preview** and no sign of how long is too long. Every hosted builder and Bootstrap Studio show one.
 4. **Site Check reads as quality control**, not as "will people find this": no rule for a missing description, duplicate titles, a page without a main heading, or a business with no address or hours; no pointer to the Business Profile or Search Console, the two actions that move a local business most.
-5. **The robots semantics of *Allow indexing* are unstated**, and the obvious implementation (a `Disallow` line) is the one Google says hides the `noindex`.
-6. **`llms.txt` is filed under *Search engines*** and MVP §7 item 12 still asks whether it should default on, while Google's documented position since 2026 is that it has no effect on search.
+5. **Turning indexing off writes both `noindex` and `Disallow: /`**, and the `Disallow` is the line Google says hides the `noindex`: a crawler that may not fetch the page never reads the tag, so the page can stay indexed from its links alone.
+6. **`llms.txt` is filed under *Search engines* and on by default for new sites**, while Google's documented position since 2026 is that it has no effect on search; MVP §7 item 12 was still open when 3.5 shipped the proposed default.
 
 Everything else on Google's list Webforge already does by construction, and better than most of the hosted builders' exports: flat HTML, real links, responsive pictures with dimensions and lazy loading, one small stylesheet, no third-party scripts.
 
@@ -114,13 +114,28 @@ The thread through them: generate the mechanics from what the owner has already 
 
 ### 5.4 Cost and place
 
-SEO-1 to SEO-4 and SEO-8 add **3.5 days** to 3.5, taking it from 3 to 6.5 days (or SEO-1 becomes an item of its own, 2 days, after 3.5). SEO-6 is 1.5 days and SEO-7 is 1.5 days, as two small Phase 3 items; SEO-9 is 0.5 day on 3.11. Total **7 days** of new MVP work, less the 0.5 day G22 would have cost in v1.1. Everything is static output or editor UI: no network, no CDN, no change to the self-contained export (X1, C8). The structured data is readable JSON in the page, like the rest of the HTML (X4).
+As proposed, SEO-1 to SEO-4 and SEO-8 would have added **3.5 days** to 3.5. 3.5 merged before the decision, so they become **3.15** ([#575](https://github.com/nexustech/webforge/issues/575), 4 days: the 3.5 days plus 0.5 to correct two of 3.5's outputs, the `Disallow` for SEO-3 and the default and row for SEO-12), on stream B, whose Phase 3 queue had emptied. SEO-6 is **3.16** ([#576](https://github.com/nexustech/webforge/issues/576), 1.5 days, stream B after 3.15) and SEO-7 is **3.17** ([#577](https://github.com/nexustech/webforge/issues/577), 1.5 days, stream C after 3.9); SEO-9 is 0.5 day on 3.11. Total **7.5 days** of new MVP work, less the 0.5 day G22 would have cost in v1.1. 3.17's business-type tip reads 3.15's data, so C's item waits for B's. Everything is static output or editor UI: no network, no CDN, no change to the self-contained export (X1, C8). The structured data is readable JSON in the page, like the rest of the HTML (X4).
 
 ## 6. Decisions
 
+All decided by the product owner on 28 Oct 2026 ("adopt all proposals"), with the placement adjusted because 3.5 had merged that morning.
+
 | ID | Decision |
 |---|---|
-| SEO-1…SEO-12 | ⏳ Proposed, 28 Oct 2026 |
+| SEO-1 | ✅ MVP, item 3.15 ([#575](https://github.com/nexustech/webforge/issues/575)): `LocalBusiness` and `WebSite` JSON-LD from Site Settings, with a business type field that picks the subtype |
+| SEO-2 | ✅ MVP, 3.15: *Hide this page from search engines* in Page Settings |
+| SEO-3 | ✅ MVP, 3.15: the switches' rules; 3.5's `Disallow: /` is replaced by `noindex` alone, and the sitemap gains `lastmod` |
+| SEO-4 | ✅ MVP, 3.15: the first picture preloaded, the rest lazy |
+| SEO-5 | ✅ v1.1 as planned (G7), the redirect shape recorded here |
+| SEO-6 | ✅ MVP, item 3.16 ([#576](https://github.com/nexustech/webforge/issues/576)): the search-result preview, with the share card (G22 moves from v1.1) |
+| SEO-7 | ✅ MVP, item 3.17 ([#577](https://github.com/nexustech/webforge/issues/577)): Site Check › *Being found* |
+| SEO-8 | ✅ MVP, 3.15: the verification-tag field |
+| SEO-9 | ✅ MVP, 3.11 (+0.5 day, [#516](https://github.com/nexustech/webforge/issues/516)): the quick start fills the business type and asks for the web address at the end |
+| SEO-10 | ✅ v1.1 as planned (G25b) |
+| SEO-11 | ✅ Rule: none of the listed controls is added, in the MVP or later |
+| SEO-12 | ✅ Decision, answers MVP §7 item 12: `llms.txt` off by default for every site, in a *For AI tools* row, the Markdown copies only with it; the change ships in 3.15 |
+
+Recorded in [spec/02 §7 item 27](../../spec/02-mvp-spec.md#7-open-items-to-confirm) (and item 12 for SEO-12), the [plan's](../../spec/04-implementation-plan.md) scope-change line of 28 Oct 2026, F-EX-6, F-SET-1, F-SET-2, F-CHK-1 and F-EX-5, and the issues above.
 
 ## 7. Sources
 
