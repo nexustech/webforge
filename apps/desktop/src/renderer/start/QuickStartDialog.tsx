@@ -56,7 +56,7 @@ import {
 } from "./quick-start-form.js";
 
 /** The quick start's steps, in order (QS-1). */
-export const QUICK_START_STEPS = ["business", "look", "pages", "details"] as const;
+const QUICK_START_STEPS = ["business", "look", "pages", "details"] as const;
 
 /** One of {@link QUICK_START_STEPS}. */
 export type QuickStartStep = (typeof QUICK_START_STEPS)[number];

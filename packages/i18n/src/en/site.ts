@@ -228,6 +228,9 @@ export const site = {
   "site.settings.openingHoursNoteHint": 'Such as "Closed on bank holidays".',
   "site.settings.allowIndexing": "Let search engines show the site",
   "site.settings.includeSitemap": "Include a sitemap for search engines",
+  "site.settings.businessType": "Business type",
+  "site.settings.businessTypeHint": "Tells search engines what kind of business the site is for.",
+  "site.settings.businessType.none": "Not chosen",
   "site.settings.readableByAi": "Help AI tools read your site",
   "site.settings.readableByAiHint":
     "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",

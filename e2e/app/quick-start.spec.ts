@@ -69,6 +69,7 @@ test("starts a site from the quick start's answers: the business, a look, pages,
         general: { name: string; description?: string };
         address: { url?: string };
         contact: { phone?: string };
+        search: { businessType?: string };
       };
       theme: { preset: string };
       pages: Record<string, { title: string }>;
@@ -80,6 +81,8 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   });
   expect(site.settings.contact.phone).toBe("+44 113 496 0000");
   expect(site.settings.address.url).toBe("https://rosas.example");
+  // The business type, for search engines (SEO-9).
+  expect(site.settings.search.businessType).toBe("food");
   expect(site.theme.preset).toBe("bistro");
   const titles = Object.values(site.pages).map((each) => each.title);
   expect(titles).toContain("Private hire");

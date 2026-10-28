@@ -175,6 +175,7 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
         description: "Bread and cakes",
         phone: "+44 1234 567890",
         webAddress: "https://rosas.example",
+        businessType: "food",
       },
       pages: { leaveOut: ["cafe-visit"], recipes: ["food-private-hire"] },
     });

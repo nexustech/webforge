@@ -1,6 +1,7 @@
 import { type FormSchema, sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  type BusinessType,
   DAYS,
   type Day,
   type MediaId,
@@ -61,6 +62,8 @@ export type SettingsForm = {
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
   readonly readableByAi: boolean;
+  /** The business type (SEO-9), or `""` for none chosen. */
+  readonly businessType: BusinessType | "";
   readonly measurementId: string;
   readonly consentBanner: boolean;
   readonly consentMessage: string;
@@ -96,6 +99,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     allowIndexing: search.allowIndexing,
     includeSitemap: search.includeSitemap,
     readableByAi: search.readableByAi === true,
+    businessType: search.businessType ?? "",
     measurementId: analytics.measurementId ?? "",
     consentBanner: analytics.consentBanner,
     consentMessage: analytics.consentMessage ?? "",
@@ -184,6 +188,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.readableByAi || previous.search.readableByAi !== undefined
         ? { readableByAi: form.readableByAi }
         : {}),
+      ...(form.businessType === "" ? {} : { businessType: form.businessType }),
     },
     analytics: {
       ...optional("measurementId", form.measurementId.toUpperCase()),

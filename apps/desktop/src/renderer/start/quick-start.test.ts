@@ -54,6 +54,7 @@ describe("the quick start's request (QS-1, 3.11b)", () => {
         phone: "+44 1234 567890",
         openingHours: [{ days: ["tue"], opens: "07:00", closes: "15:00" }],
         webAddress: "https://rosas.example",
+        businessType: "food",
       },
       pages: { leaveOut: ["cafe-visit"], recipes: ["food-events"] },
     });

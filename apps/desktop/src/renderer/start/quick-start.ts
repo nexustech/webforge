@@ -123,10 +123,7 @@ export function palettesFor(theme: string): readonly string[] {
 }
 
 /** The brand colours `colours` give `theme`, or none for the theme's own. */
-export function brandFor(
-  colours: QuickStartColours,
-  theme: ThemeTokens,
-): BrandProposal | undefined {
+function brandFor(colours: QuickStartColours, theme: ThemeTokens): BrandProposal | undefined {
   switch (colours.kind) {
     case "theme":
       return undefined;
@@ -183,6 +180,7 @@ export function quickStartRequest(answers: QuickStartAnswers, untitled: string):
       ...(address === undefined ? {} : { address }),
       ...(answers.openingHours.length === 0 ? {} : { openingHours: [...answers.openingHours] }),
       ...(webAddress === undefined ? {} : { webAddress }),
+      ...(answers.category === null ? {} : { businessType: answers.category }),
     },
     pages: { leaveOut: [...answers.leaveOut], recipes: [...answers.recipes] },
     ...(answers.colours.kind === "theme" ? {} : { themeTokens: themeOf(answers) }),

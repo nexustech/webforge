@@ -24,6 +24,7 @@ import { isIconName, sectionOverlay, siteLibrary, walkNodes } from "@webforge/si
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { overlayContrastIssue, THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
+import { businessDetailsSchema } from "../src/business.js";
 import { readTemplate, readTemplates, TEMPLATES_DIR } from "../src/node.js";
 import { insertRecipePage, PAGE_RECIPES, recipesFor } from "../src/recipes.js";
 import {
@@ -406,6 +407,20 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
     expect(skipped.settings.contact.openingHours).toEqual(sample.openingHours);
     expect(copyOf(skipped)).toContain(`"number":"${sample.phone}"`);
     expect(copyOf(skipped)).not.toContain("The Copper Kettle");
+  });
+
+  it("keeps the quick start's web address and business type in Site Settings (SEO-9)", () => {
+    const cafe = readTemplate("cafe");
+
+    const site = siteFromTemplate(cafe.template, cafe.images, {
+      name: "Rosa's",
+      theme,
+      business: { webAddress: "https://rosas.example/", businessType: "food" },
+    });
+
+    expect(site.settings.address.url).toBe("https://rosas.example");
+    expect(site.settings.search.businessType).toBe("food");
+    expect(businessDetailsSchema.safeParse({ businessType: "garage" }).success).toBe(false);
   });
 
   it("leaves an example's sample business as it is, when no business is given (Try an example)", () => {

@@ -2,6 +2,7 @@ import type { FormField, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BUSINESS_NAME_MAX,
+  BUSINESS_TYPES,
   CONSENT_MESSAGE_MAX,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
@@ -215,6 +216,21 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
       fields: () => [
         { kind: "toggle", name: "allowIndexing", label: t("site.settings.allowIndexing") },
         { kind: "toggle", name: "includeSitemap", label: t("site.settings.includeSitemap") },
+        {
+          kind: "select",
+          name: "businessType",
+          path: "search.businessType",
+          label: t("site.settings.businessType"),
+          help: t("site.settings.businessTypeHint"),
+          width: "md",
+          options: [
+            { label: t("site.settings.businessType.none"), value: "" },
+            ...BUSINESS_TYPES.map((type) => ({
+              label: t(`template.category.${type}`),
+              value: type,
+            })),
+          ],
+        },
         {
           kind: "toggle",
           name: "readableByAi",

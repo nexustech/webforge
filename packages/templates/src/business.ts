@@ -18,6 +18,8 @@ export const businessDetailsSchema = siteSettingsSchema.shape.contact
     description: z.string().trim().max(SITE_DESCRIPTION_MAX).optional(),
     /** The site's web address (SEO-9), asked at the quick start's end: Site Settings' address. */
     webAddress: webAddressSchema.optional(),
+    /** The quick start's business type (SEO-9): Site Settings › Search engines' own. */
+    businessType: siteSettingsSchema.shape.search.shape.businessType,
   });
 
 /** See {@link businessDetailsSchema}. */
@@ -65,6 +67,8 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
   if (business.webAddress !== undefined) {
     site.settings.address.url = business.webAddress.replace(/\/$/, "");
   }
+  if (business.businessType !== undefined)
+    site.settings.search.businessType = business.businessType;
   if (business.openingHours !== undefined && business.openingHours.length > 0) {
     contact.openingHours = structuredClone(business.openingHours);
   }

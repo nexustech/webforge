@@ -42,7 +42,7 @@ const full: SiteSettings = {
     openingHours: [{ days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" }],
     openingHoursNote: "Closed on bank holidays",
   },
-  search: { allowIndexing: true, includeSitemap: false, readableByAi: true },
+  search: { allowIndexing: true, includeSitemap: false, readableByAi: true, businessType: "food" },
   analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
   forms: { service: { kind: "formspree", formId: "mzbqwxyz" } },
   publish: { destinations: [] },
@@ -76,6 +76,14 @@ describe("settings form", () => {
     expect(checkSettings(toSettingsForm(older), older)).toEqual({ ok: true, settings: older });
     const on = checkSettings(edit(older, { readableByAi: true }), older);
     expect(on.ok && on.settings.search.readableByAi).toBe(true);
+  });
+
+  it("sets and clears the business type, storing nothing while none is chosen (SEO-9)", () => {
+    const shop = checkSettings(edit(full, { businessType: "shop" }), full);
+    expect(shop.ok && shop.settings.search.businessType).toBe("shop");
+
+    const none = checkSettings(edit(full, { businessType: "" }), full);
+    expect(none.ok && "businessType" in none.settings.search).toBe(false);
   });
 
   it("leaves empty fields out, trims what was typed and tidies addresses and handles", () => {
