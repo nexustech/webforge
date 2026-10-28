@@ -722,7 +722,7 @@ function SourceLine({ source }: { readonly source: FieldSource }) {
         <button
           type="button"
           title={t("editPanel.source.reveal")}
-          className="cursor-pointer text-left text-ring underline-offset-2 hover:underline focus-visible:underline"
+          className="cursor-pointer text-left! text-ring underline-offset-2 hover:underline focus-visible:underline"
           onClick={onReveal}
         >
           {text}
