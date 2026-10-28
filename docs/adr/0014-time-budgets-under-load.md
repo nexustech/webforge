@@ -40,7 +40,11 @@ Re-running a failed job hides all three, and each makes the next failure harder 
      - **A miss** says which budget applied, CI's or the local one, with what was measured.
    - **The backstop** (`CI_OPEN_WALL_BACKSTOP_MS`) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. On CI it is at least twice the slowest opening measured, and never under 6 s, twice the target:
      - Linux and macOS: 6 s (slowest 1.6 and 2.6 s);
-     - Windows: 16 s (slowest 7.8 s). Windows' runners stall now and then without spending more CPU: #515's 6.6 s and #520's 7.8 s openings cost 2.1 and 2.7 CPU-s, well within the CPU budget.
+     - Windows: 30 s, which is `OPEN_WAIT`, so on Windows it catches a hang only. Windows' runners stall now and then without spending more CPU:
+       - #515's 6.6 s and #520's 7.8 s openings cost 2.1 and 2.7 CPU-s, well within the CPU budget, and the first backstop of 16 s allowed for them.
+       - On 28 Oct 2026 a Café opening took 21.5 s at 2.26 CPU-s (#561). In the same hour, the unit test that makes the same site without Electron took 18.3 s, where it takes 0.3–1.8 s.
+       - Twice that is past `OPEN_WAIT`. An added wait still fails on Linux and macOS, which run the same code.
+       - **Making a site from a template didn't get slower** (#561). Across every Windows E2E job of 26–28 Oct, the Café opening's median was 1.38 s and 2.54 CPU-s before 2.29's templates merged (48 openings), and 1.35 s and 2.43 CPU-s after (21). The unit test's median was 0.57 s before and 0.55 s after (95 runs).
      - Locally it is 12 s, or CI's for the platform if more: openings took up to 8.4 s on a development machine under load.
    - **If a platform's Electron gives no `cumulativeCPUUsage`** (it is optional in Electron's types), the test fails and says so. It never skips.
    - **Nothing is retried.**
