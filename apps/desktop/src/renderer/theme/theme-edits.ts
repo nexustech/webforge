@@ -201,7 +201,8 @@ function* everyNode(nodes: readonly NodeDoc[]): Generator<NodeDoc> {
 
 /**
  * How many elements of `type` the site has that a change to their kind's look for `fields` restyles
- * (3.12, CT-1): those that leave one of the fields to it. On every page, in the shared Header and
+ * (3.12, CT-1): those that leave one of the fields to it, its whole value unset (on every device),
+ * as decision 4 has it. On every page, in the shared Header and
  * Footer, and in each shared section once, which all its copies show.
  */
 export function lookReach(site: SiteDoc, type: string, fields: readonly string[]): number {
