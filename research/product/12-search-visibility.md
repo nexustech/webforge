@@ -122,7 +122,7 @@ All decided by the product owner on 28 Oct 2026 ("adopt all proposals"), with th
 
 | ID | Decision |
 |---|---|
-| SEO-1 | ✅ MVP, item 3.15 ([#575](https://github.com/nexustech/webforge/issues/575)): `LocalBusiness` and `WebSite` JSON-LD from Site Settings, with a business type field that picks the subtype |
+| SEO-1 | ✅ MVP, item 3.15 ([#575](https://github.com/nexustech/webforge/issues/575)): `LocalBusiness` and `WebSite` JSON-LD from Site Settings, with a business type field that picks the subtype. As built: the type is the templates' and the quick start's list (food and drink, beauty, trades, services, creative, shop, personal), in *Search engines*, with a *More precisely* list of the schema.org types within it (Bakery, HairSalon, Plumber…), the type's own when none is chosen; a personal site is a `WebSite` only. No `servesCuisine`, as there is no field for it |
 | SEO-2 | ✅ MVP, 3.15: *Hide this page from search engines* in Page Settings |
 | SEO-3 | ✅ MVP, 3.15: the switches' rules; 3.5's `Disallow: /` is replaced by `noindex` alone, and the sitemap gains `lastmod` |
 | SEO-4 | ✅ MVP, 3.15: the first picture preloaded, the rest lazy |
