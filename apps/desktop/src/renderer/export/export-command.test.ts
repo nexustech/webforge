@@ -144,6 +144,21 @@ describe("exportReport", () => {
     ]);
   });
 
+  it("names a kept file the site file is missing (3.9)", () => {
+    const report = exportReport(
+      {
+        ...exported,
+        warnings: [{ code: "missing-kept-file", page: "", detail: "kit-1a2b3c4d.css" }],
+        warningCount: 1,
+      },
+      bakery(),
+    );
+
+    expect(report.issues).toEqual([
+      "The copy of kit-1a2b3c4d.css kept with your site is missing from its file, so your site loads it from the other website again. Download and bundle it again from Site Check.",
+    ]);
+  });
+
   it("says on which line the site's custom.js has a mistake (3.9)", () => {
     const report = exportReport(
       {

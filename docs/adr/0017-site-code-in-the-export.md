@@ -28,6 +28,30 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
 - **The snapshot carries the code** (`SiteSnapshot.code`), left out while all four parts are empty, so a site without code builds as before.
 - **The page cache leaves the code out of its key**, since it goes into each page's document after rendering. A change to the site's own CSS renders no page and compiles nothing, as 3.2 asks of the theme's values.
 
+- **Download and bundle** (C8, 3.9) is Site Check's *Fix* for such a file. It keeps a copy with the site, so the export loads its own.
+  - **Only on the person's click, after a yes.** The confirmation says the file's licence is theirs to check. It is the editor's one download besides fonts (architecture §9).
+  - **Main downloads it** (`bundle-download.ts`). The address comes from a site file, which may come from anyone, so:
+    - **`https://` at every hop.** Main follows redirects itself, at most five, so a redirect to `http://` is refused.
+      - The fetch is `net.request` in manual mode (`bundle-net.ts`), not `net.fetch`. In Electron 44, `net.fetch` with `redirect: "manual"` throws "Redirect was cancelled" rather than giving the 3xx, so no redirect could be followed.
+      - `net.request` gives the redirect's target, which the downloader checks like any address.
+      - Checked on 28 Oct 2026 against unpkg, whose `htmx.org@1` redirects to a versioned file: it downloaded through the checked hop.
+    - **Never this computer or its network.** Each host is resolved before its request and refused if any address is loopback, private, link-local, carrier-grade NAT or reserved, as are `localhost` and IP addresses of those kinds.
+      - This narrows DNS rebinding but can't close it, as the request resolves the host again.
+      - `https://` with its certificate checked is what stands between a rebound name and a local server.
+    - **At most 10 MB, however it's sent.** The body is read as a stream and cancelled past the limit, so a response with no length can't fill main's memory.
+    - **A script, stylesheet, font, image, sound or video, by its type** (or its name, for `application/octet-stream`).
+    - **One deadline:** 30 s a request, and 60 s for a file and the files it names.
+  - **A stylesheet's own files come with it.** Its `url()`s and `@import`s, relative ones from where it came from, are fetched one level deep, five at a time, and pointed at their copies.
+  - **The log names a failed download's host and reason,** never its address.
+  - **The bytes go in the site file as blobs**, and the site's code lists them: `SiteCode.bundled`, each with its address, its name in `assets/vendor/` (its own name and the start of its hash), its hash and its type.
+    - Adding them is one undo step. Garbage collection keeps a blob while a document names its hash, so an undone download's bytes go at the next open or close.
+    - The list is optional, its absence meaning none, so the format needs no new version (ADR 0012).
+  - **A kept file whose bytes the site file lacks** keeps its address, and the export report says so (`missing-kept-file`).
+  - **The export writes each file to `assets/vendor/`.** It points Custom Code, the page HTML and `custom.css` at the copies: each address whole, its `//` form too, from each page's depth.
+    - **Not `custom.js`.** One script serves pages at every depth, and an address in it can't be rewritten without running it. A file a script names can't be fixed this way, so Site Check offers no Fix there; it must be removed or allowed.
+    - Not a frame either: a page from another website isn't a file to copy.
+  - **The E2E tests stand in for the network** (`WEBFORGE_E2E_BUNDLE=1`, unpackaged only), so no test reaches another website.
+
 ## Consequences
 - **Site Check's external-resource rule runs in the renderer with the others** (ADR 0016), though ADR 0016 thought it might need the rendered site. The export writes the site's own code and Custom Code's HTML as written, so the rule reads the same text.
   - It finds each file they load from another website (`packages/site-check/src/external.ts`): scripts, stylesheets, fonts, images, sounds and videos, and frames.

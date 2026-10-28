@@ -20,6 +20,7 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { THEME_PANEL_ID } from "../theme/index.js";
+import { type BundleActions, canBundle, downloadAndBundle } from "./bundle.js";
 
 /** What Site Check's jumps and fixes reach. */
 export type SiteCheckActions = {
@@ -30,6 +31,8 @@ export type SiteCheckActions = {
   readonly commands: Pick<CommandRegistry, "run">;
   /** Opens a guide's page on another website in the browser (3.17). */
   readonly openGuide: (guide: SearchGuide) => void;
+  /** Download and bundle (3.9), where the window offers it. */
+  readonly bundle?: BundleActions;
 };
 
 /** Settings' Custom Code: its part's id and its one section's, as site-settings registers it. */
@@ -205,9 +208,9 @@ function giveTitle({ session }: SiteCheckActions, pageId: PageId, title: string)
 /**
  * The *Fix* for `finding` of `rule`, if it has one (F-CHK-1): a page's Windows device name renamed
  * (R16), a missing title taken from the page's first heading, the web address asked for in Site
- * Settings, Page Settings opened on a page without a description, Site Settings opened where a
- * search engine's setting or a business detail goes. `undefined` when Site Check can only show
- * where it is.
+ * Settings, a file from another website kept with the site, Page Settings opened on a page
+ * without a description, Site Settings opened where a search engine's setting or a business
+ * detail goes. `undefined` when Site Check can only show where it is.
  */
 export function fixFor(
   rule: string,
@@ -243,6 +246,17 @@ export function fixFor(
   // Search engines: whether they may list the site, and where Search Console's code goes.
   if (rule === "searchHidden" || rule === "searchConsole") {
     return () => showSiteSettings(actions.settings, "search");
+  }
+  // A file from another website: Download and bundle keeps a copy with the site (3.9), once the
+  // person says yes.
+  const { bundle } = actions;
+  const url = finding.values?.url;
+  if (rule === "externalResources" && bundle !== undefined && typeof url === "string") {
+    return canBundle(finding)
+      ? () => {
+          void downloadAndBundle(actions.session, bundle, url);
+        }
+      : undefined;
   }
   return undefined;
 }

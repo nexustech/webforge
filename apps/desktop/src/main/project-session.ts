@@ -32,6 +32,7 @@ import type {
 } from "../shared/ipc-contract.js";
 import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
 import { createImportJobs } from "../worker/store-import.js";
+import { BUNDLE_MIME_TYPES } from "./bundle-download.js";
 import { log, logFailure } from "./log.js";
 import { type NewSiteFill, newSiteImporter } from "./new-site.js";
 import {
@@ -59,8 +60,16 @@ export type StoreAssetResult =
  */
 export type SessionSite = Pick<
   ProjectSession,
-  "current" | "readMedia" | "importFile" | "storeCopiedMedia"
+  "current" | "readMedia" | "importFile" | "storeCopiedMedia" | "storeBlobs"
 >;
+
+/** What came of storing files' bytes in the open site: their hashes, in order, or why not. */
+export type StoreBlobsResult =
+  | { readonly status: "stored"; readonly hashes: readonly string[] }
+  | {
+      readonly status: "failed";
+      readonly reason: "no-site" | "stale-session" | "read-only" | "unknown";
+    };
 
 /**
  * What came of importing a file into the open site (R13b): stored, with what the storage writer
@@ -230,6 +239,7 @@ export class ProjectSession {
       importFile: (mediaId, fileName, source) =>
         this.#importFile(mediaId, fileName, source, sessionId),
       storeCopiedMedia: (item, read) => this.#storeCopiedMedia(item, read, sessionId),
+      storeBlobs: (files) => this.#storeBlobs(files, sessionId),
     };
   }
 
@@ -376,6 +386,17 @@ export class ProjectSession {
     return this.#storeCopiedMedia(item, read);
   }
 
+  /**
+   * Stores files' bytes in the open site (Download and bundle, 3.9), all or none. Like an import,
+   * they stay once the renderer commits the site's code that names their hashes; until then, and
+   * after an Undo, garbage collection at the next open or close removes them again.
+   */
+  storeBlobs(
+    files: readonly { readonly data: Uint8Array; readonly mime: string }[],
+  ): Promise<StoreBlobsResult> {
+    return this.#storeBlobs(files);
+  }
+
   /** The bytes of a Media file in the open site, by hash; never a site document. */
   readMedia(hash: string): Promise<StoredBlob | undefined> {
     return this.#readMedia(hash);
@@ -514,7 +535,11 @@ export class ProjectSession {
     return this.#shared(
       (store) => {
         const blob = store.readBlob(hash);
-        return blob !== undefined && MEDIA_MIME_TYPES.has(blob.mime) ? blob : undefined;
+        // Media's files, and those kept for the site's code (3.9); never a site document.
+        return blob !== undefined &&
+          (MEDIA_MIME_TYPES.has(blob.mime) || BUNDLE_MIME_TYPES.has(blob.mime))
+          ? blob
+          : undefined;
       },
       () => undefined,
       sessionId,
@@ -572,6 +597,30 @@ export class ProjectSession {
   #importFailed(): ImportFileResult {
     log.error("Webforge could not store an imported file");
     return { status: "failed", reason: "unknown" };
+  }
+
+  #storeBlobs(
+    files: readonly { readonly data: Uint8Array; readonly mime: string }[],
+    sessionId?: string,
+  ): Promise<StoreBlobsResult> {
+    return this.#shared<StoreBlobsResult>(
+      (store) => {
+        try {
+          return {
+            status: "stored",
+            hashes: files.map(({ data, mime }) => store.putBlob(data, mime)),
+          };
+        } catch (error) {
+          if (error instanceof ReadOnlyProjectError) {
+            return { status: "failed", reason: "read-only" };
+          }
+          logFailure("Webforge could not store a downloaded file", error);
+          return { status: "failed", reason: "unknown" };
+        }
+      },
+      (reason) => ({ status: "failed", reason }),
+      sessionId,
+    );
   }
 
   #storeCopiedMedia(

@@ -77,11 +77,11 @@ describe("siteSettingsSchema", () => {
     expect(siteSettingsSchema.parse(full)).toEqual(full);
     const defaults = defaultSiteSettings("Rosa's Bakery", "en");
     expect(siteSettingsSchema.parse(defaults)).toEqual(defaults);
-    // A new site helps AI tools read it (F-EX-5, 3.5).
+    // AI tools' copies are off until the person turns them on (3.15, SEO-12).
     expect(defaults.search).toEqual({
       allowIndexing: true,
       includeSitemap: true,
-      readableByAi: true,
+      readableByAi: false,
     });
     expect(defaults.analytics.consentBanner).toBe(true);
   });

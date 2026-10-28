@@ -167,12 +167,38 @@ export const siteCheck = {
   "siteCheck.place.guide.searchConsole": "Open Google Search Console",
   "siteCheck.detail.contrast": "{ratio}:1, needs {required}:1",
   "siteCheck.detail.size": "{width} × {height} pixels",
+  "siteCheck.detail.insecure": "{url}: change it to https://, or remove it",
   "siteCheck.detail.noHeading": "No main heading: add a large Heading or a Hero",
   "siteCheck.detail.headings": "{count} main headings: keep one large Heading or Hero",
   "siteCheck.detail.sameAs": "The same as {file}",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",
+  "siteCheck.history.bundled": "Kept a copy of a file from {host}",
+
+  // Download and bundle (C8, 3.9): asked first, nothing downloaded without the person's yes.
+  "siteCheck.bundle.title": "Keep a copy of this file with your site?",
+  "siteCheck.bundle.description":
+    "{appName} downloads {url} now and keeps it in your site, so the exported site loads its own copy and works offline.",
+  "siteCheck.bundle.licence":
+    "The file comes from someone else's website. Make sure its licence lets you share it with your site.",
+  "siteCheck.bundle.confirm": "Download and Bundle",
+  "siteCheck.bundle.cancel": "Cancel",
+  "siteCheck.bundle.failed.not-https":
+    "Only a file from an https:// address can be kept with your site.",
+  "siteCheck.bundle.failed.local":
+    "That address is on this computer or its network, not another website, so it can't be kept with your site.",
+  "siteCheck.bundle.failed.offline":
+    "The file couldn't be downloaded. Check your internet connection and try again.",
+  "siteCheck.bundle.failed.not-found": "There's no file at that address any more.",
+  "siteCheck.bundle.failed.too-large": "The file is over 10 MB, too large to keep with your site.",
+  "siteCheck.bundle.failed.not-a-file":
+    "That address isn't a script, stylesheet, font, image, sound or video, so it can't be kept with your site.",
+  "siteCheck.bundle.failed.no-site": "The file couldn't be kept: no site is open.",
+  "siteCheck.bundle.failed.stale-session":
+    "The file couldn't be kept: another site was opened meanwhile.",
+  "siteCheck.bundle.failed.read-only": "The file couldn't be kept: the site file can't be changed.",
+  "siteCheck.bundle.failed.unknown": "The file couldn't be kept with your site.",
   "siteCheck.history.titled": "Gave {item} a title",
 
   // Export stops for what must be fixed (X5).

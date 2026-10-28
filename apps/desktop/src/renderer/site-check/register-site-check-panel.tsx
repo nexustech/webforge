@@ -7,6 +7,7 @@ import type { SettingsRegistry } from "../editor/settings-registry.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
+import type { BundleActions } from "./bundle.js";
 import { describeDetail, describePlace } from "./describe.js";
 import { SiteCheckPanel } from "./SiteCheckPanel.js";
 import { createSiteCheck } from "./site-check-store.js";
@@ -26,6 +27,8 @@ type SiteCheckPanelOptions = {
   readonly ignored: readonly string[];
   /** Remembers what is ignored with the open site. */
   readonly saveIgnored: (ignored: readonly string[]) => void;
+  /** Download and bundle (3.9): its *Fix* for a file from another website. */
+  readonly bundle?: BundleActions;
 };
 
 /**
@@ -35,10 +38,17 @@ type SiteCheckPanelOptions = {
  */
 export function registerSiteCheckPanel(
   panels: PanelRegistry,
-  { session, settings, commands, openGuide, ignored, saveIgnored }: SiteCheckPanelOptions,
+  { session, settings, commands, openGuide, ignored, saveIgnored, bundle }: SiteCheckPanelOptions,
 ): () => void {
   const siteCheck = createSiteCheck(session.history.document, { ignored, saveIgnored });
-  const actions = { session, panels, settings, commands, openGuide };
+  const actions = {
+    session,
+    panels,
+    settings,
+    commands,
+    openGuide,
+    ...(bundle === undefined ? {} : { bundle }),
+  };
 
   function SiteCheck() {
     const report = useStore(siteCheck.state, (state) => state.report);

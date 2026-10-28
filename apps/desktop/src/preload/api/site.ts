@@ -8,6 +8,7 @@ export const siteApi = (call: Call, subscribe: Subscribe): SiteApi => ({
   setExportChoices: (choices) => call("setExportChoices", choices),
   openExport: () => call("openExport"),
   cancelExport: () => call("cancelExport"),
+  bundleFile: (sessionId, url) => call("bundleFile", sessionId, url),
   onExportProgress: (listener) =>
     subscribe(siteEvents.exportProgress.channel, (...args) => {
       const parsed = siteEvents.exportProgress.args.safeParse(args);

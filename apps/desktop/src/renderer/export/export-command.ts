@@ -70,6 +70,7 @@ const WARNING_TEXTS = {
   "small-icon": "export.report.smallIcon",
   "form-unset": "export.report.formUnset",
   "custom-script": "export.report.customScript",
+  "missing-kept-file": "export.report.missingKeptFile",
 } as const;
 
 /** The report of `result`, an export of `site` (07): each warning by the title of its page. */
@@ -91,8 +92,10 @@ export function exportReport(
     issues: result.warnings.map((warning) =>
       t(WARNING_TEXTS[warning.code], {
         page: titles.get(warning.page) ?? warning.page,
-        // The line of custom.js's mistake; the other warnings' texts don't use it.
+        // The line of custom.js's mistake, the name of a missing kept file; the other warnings'
+        // texts use neither.
         line: warning.detail,
+        file: warning.detail,
       }),
     ),
     more: Math.max(0, result.warningCount - result.warnings.length),

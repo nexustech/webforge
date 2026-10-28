@@ -1,4 +1,4 @@
-import { isNodeDoc, type NodeDoc, type SiteSnapshot } from "@webforge/model";
+import { type BundledFile, isNodeDoc, type NodeDoc, type SiteSnapshot } from "@webforge/model";
 import { type MinifyOptions, type MinifyOutput, minify } from "terser";
 
 /** The Custom Code element's type (2.11): HTML the person wrote, exported as it is. */
@@ -17,6 +17,56 @@ function customCodeIn(nodes: readonly NodeDoc[], found: string[]): string[] {
     }
   }
   return found;
+}
+
+/**
+ * `nodes` with each Custom Code element's code passed through `rewrite`, in slots too, as the
+ * export draws them (3.9: the files kept with the site in place of their addresses).
+ */
+export function withCustomCode(
+  nodes: readonly NodeDoc[],
+  rewrite: (code: string) => string,
+): NodeDoc[] {
+  return nodes.map((node) => {
+    const props: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(node.props)) {
+      props[key] = Array.isArray(value)
+        ? value.map((item) =>
+            isNodeDoc(item) ? (withCustomCode([item], rewrite)[0] ?? item) : item,
+          )
+        : value;
+    }
+    if (node.type === CUSTOM_CODE && typeof node.props.code === "string") {
+      props.code = rewrite(node.props.code);
+    }
+    return { ...node, props: props as NodeDoc["props"] };
+  });
+}
+
+/** `text` with the characters a regular expression gives a meaning to escaped. */
+const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/**
+ * The site's own code with each address it names that is kept with the site (Download and bundle,
+ * 3.9) pointing at the copy in `assets/vendor/`, from a file `prefix` away from the site's root. An
+ * address is taken whole only: not where it is the start of a longer one. One that starts `//`
+ * is the same file as its `https://` form.
+ */
+export function toBundled(
+  bundled: readonly BundledFile[],
+  prefix: string,
+): (code: string) => string {
+  if (bundled.length === 0) return (code) => code;
+  const copies = new Map<string, string>();
+  for (const { url, file } of bundled) {
+    const copy = `${prefix}assets/vendor/${file}`;
+    copies.set(url, copy);
+    if (url.startsWith("https:")) copies.set(url.slice("https:".length), copy);
+  }
+  const addresses = [...copies.keys()].sort((a, b) => b.length - a.length).map(escapeRegExp);
+  // Ends where an address in HTML, CSS or a script string does: a quote, a space, `)`, `<`, `>`.
+  const pattern = new RegExp(`(?:${addresses.join("|")})(?=["'\`\\s)<>]|$)`, "g");
+  return (code) => code.replace(pattern, (url) => copies.get(url) ?? url);
 }
 
 /** Each Custom Code element's HTML in `site`: the Header's, the Footer's, then each page's. */
