@@ -79,6 +79,12 @@ const keysOf = (event: {
   altKey: event.altKey,
 });
 
+/** Whether two drops mark the same place, so the marks needn't change. */
+function sameDrop(a: RowDrop | null, b: RowDrop | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.key === b.key && a.place === b.place && a.allowed === b.allowed;
+}
+
 /** A row press that may become a drag. */
 type Press<R> = {
   readonly row: R;
@@ -144,14 +150,9 @@ export function useRowDrag<R>({
     const cursor = body.style.cursor;
     const userSelect = body.style.userSelect;
     const show = (next: RowDrop | null) => {
-      if (
-        next?.key !== shown?.key ||
-        next?.place !== shown?.place ||
-        next?.allowed !== shown?.allowed
-      ) {
-        shown = next;
-        setDrop(next);
-      }
+      if (sameDrop(next, shown)) return;
+      shown = next;
+      setDrop(next);
     };
     const end = () => {
       window.removeEventListener("pointermove", move, true);
