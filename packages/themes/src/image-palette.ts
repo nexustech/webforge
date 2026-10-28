@@ -202,3 +202,23 @@ export function reversedBrand(
   });
   return fitted([at("primary"), at("secondary"), at("accent")], reversed["base-100"]);
 }
+
+/**
+ * `theme` with the brand colours `proposal` gives (PG-2, F-DS-7): Brand, Accent and Second accent,
+ * each with its text, on the page; on reversed sections, each in its own hue and chroma at their
+ * lightness ({@link reversedBrand}), for a theme with reversed colours of its own. A new theme:
+ * `theme` is left as it is. Theme Studio's palette from an image and the quick start's colours
+ * (3.11b) both use it.
+ */
+export function brandedTheme(theme: ThemeTokens, proposal: BrandProposal): ThemeTokens {
+  // Copied by hand, colour by colour: `theme` may be an undo step's draft, which can't be cloned.
+  const copied = (colors: ThemeTokens["colors"]) =>
+    Object.fromEntries(
+      Object.entries(colors).map(([role, color]) => [role, { ...color }]),
+    ) as ThemeTokens["colors"];
+  const colors = { ...copied(theme.colors), ...proposal };
+  const reversed = reversedBrand(proposal, theme);
+  const inverse =
+    theme.inverse === undefined ? undefined : { ...copied(theme.inverse), ...(reversed ?? {}) };
+  return { ...theme, colors, ...(inverse === undefined ? {} : { inverse }) };
+}

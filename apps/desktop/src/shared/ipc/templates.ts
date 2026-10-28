@@ -1,3 +1,4 @@
+import { PAGE_TITLE_MAX } from "@webforge/model";
 import { TEMPLATE_CATEGORIES, TEMPLATE_IDS } from "@webforge/templates";
 import { z } from "zod";
 
@@ -11,6 +12,20 @@ const templateSummarySchema = z.strictObject({
   category: z.enum(TEMPLATE_CATEGORIES),
   example: z.boolean(),
   pages: z.int().min(1).max(100),
+  /**
+   * Its pages as the quick start's Pages step lists them (QS-1, 3.11b), in the Pages panel's
+   * order: each page's id and title, and whether it is the home page, which can't be left out.
+   * "Page not found" isn't listed: every site has one.
+   */
+  pageList: z
+    .array(
+      z.strictObject({
+        id: z.string().max(100),
+        title: z.string().max(PAGE_TITLE_MAX),
+        home: z.boolean(),
+      }),
+    )
+    .max(100),
   theme: z.string().max(40),
   /** Its home page as a PNG data URL (2.14b); `null` for a template without one. */
   thumbnail: z

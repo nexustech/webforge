@@ -52,7 +52,7 @@ for (const template of TEMPLATES) {
   test(`makes a ${template.title} site within its opening budget, accessible on the canvas (2.15)`, async () => {
     app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
     const page = await app.firstWindow();
-    await expect(page.getByRole("heading", { name: "Start a site" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
     await stubFileDialogs(app, join(dir, "Site.wforge"));
 
     let opened: (() => Promise<Work>) | undefined;

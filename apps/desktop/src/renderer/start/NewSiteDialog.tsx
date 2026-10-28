@@ -60,7 +60,7 @@ export function arrangeTemplates<T extends { readonly category: string }>(
 export const templateName = (id: TemplateId): string => t(`template.${id}.name`);
 
 /** A theme preset's name; the preset's own name for one the catalogue hasn't named yet. */
-function presetLabel(preset: string): string {
+export function presetLabel(preset: string): string {
   const key = `theme.preset.${preset}`;
   return isMessageKey(key) ? t(key) : preset;
 }
@@ -173,7 +173,7 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
           <div className="flex flex-col gap-4 p-3">
             <section className="flex flex-col gap-2">
               <h3 className="m-0 text-sm font-semibold">{t("newSite.blankHeading")}</h3>
-              <div className={GRID}>
+              <div className={TEMPLATE_GRID}>
                 <Card
                   name={choiceName}
                   checked={chosen === null}
@@ -225,7 +225,7 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
               {shown.length === 0 ? (
                 <p className="m-0 text-sm text-muted-foreground">{t("newSite.noTemplates")}</p>
               ) : (
-                <div className={GRID}>
+                <div className={TEMPLATE_GRID}>
                   {shown.map((template) => (
                     <Card
                       key={template.id}
@@ -256,13 +256,13 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
   );
 }
 
-const GRID = "grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-3";
+export const TEMPLATE_GRID = "grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-3";
 
 /** The colours a theme's swatch row shows: its page, then its brand colours. */
 const SWATCHES = ["base-100", "primary", "secondary", "accent"] as const;
 
 /** A theme preset to choose: its name and a row of its main colours. */
-function ThemeOption({
+export function ThemeOption({
   preset,
   name,
   checked,
@@ -305,7 +305,7 @@ function ThemeOption({
 }
 
 /** A starting point to choose (Blank, or a template): a radio drawn as a card. */
-function Card({
+export function Card({
   name,
   checked,
   onChoose,
@@ -362,7 +362,7 @@ function Card({
  * A template's picture: its thumbnail (2.14b), its home page at desktop width; or, for one without,
  * its theme's colours, so cards in different themes still look different.
  */
-function TemplatePreview({ template }: { readonly template: TemplateSummary }) {
+export function TemplatePreview({ template }: { readonly template: TemplateSummary }) {
   if (template.thumbnail !== null) {
     return (
       <img
@@ -394,7 +394,7 @@ function TemplatePreview({ template }: { readonly template: TemplateSummary }) {
 }
 
 /** A template's larger preview, its description, and Use this template. */
-function TemplateDetails({
+export function TemplateDetails({
   template,
   onUse,
   onClose,

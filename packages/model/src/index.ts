@@ -121,9 +121,17 @@ export {
   richTextLinkValue,
   richTextPageLinks,
 } from "./rich-text-links.js";
-export type { Day, FormService, OpeningHours, SiteSettings, SocialProfile } from "./settings.js";
+export type {
+  BusinessType,
+  Day,
+  FormService,
+  OpeningHours,
+  SiteSettings,
+  SocialProfile,
+} from "./settings.js";
 export {
   BUSINESS_NAME_MAX,
+  BUSINESS_TYPES,
   CONSENT_MESSAGE_MAX,
   DAYS,
   defaultSiteSettings,
