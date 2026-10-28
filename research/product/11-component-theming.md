@@ -70,7 +70,7 @@ CT-8 is a v1.1 item of about 3 days; it needs CT-7's selectors and 2.18's class 
 | CT-8 | ✅ **v1.1:** the stylesheet editor for `custom.css`, with *Target this element* and *Move this look to CSS* (spec/02 §5) |
 | CT-9 | ✅ **Later**, as decided on 24 Oct 2026: no per-element CSS |
 
-3.12 goes to stream B after 3.7 and 3.13 and 3.14 to stream A after 3.11 (product owner, 27 Oct 2026, levelling the streams): +12.5 days, Phase 3 from 37.5 to 50 days.
+3.12 goes to stream B after 3.7 and 3.13 and 3.14 to stream A after 3.11 (product owner, 27 Oct 2026, levelling the streams): +12.5 days, Phase 3 from 37.5 to 50 days. On 28 Oct 2026 3.13 was split into 3.13a ([#578](https://github.com/nexustech/webforge/issues/578), 3 days: the dialog, its preview and where a change applies) and 3.13b ([#579](https://github.com/nexustech/webforge/issues/579), 3.5 days: the deeper groups with CT-4 and CT-5). 3.13a is on stream B after 3.15; 3.13b on stream A and 3.14 on stream C, both after 3.13a (product owner: all three streams on Phase 3 first).
 
 ### 3.12 implementation notes (27 Oct 2026)
 Choices within CT-1 and CT-3, agreed with the coordinator as following existing rules (ADR 0009, 2.27, ADR 0012):

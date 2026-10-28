@@ -21,6 +21,8 @@ export const canvas = {
   "canvas.edit": "Edit",
   // A hovered element's name chip with its size, while spacing on hover shows (SP-2).
   "canvas.chipSize": "{name} · {size}",
+  // Opens Style this ‹kind›… for the selected element (3.13a).
+  "canvas.style": "Style",
   "canvas.hide": "Hide",
   "canvas.show": "Show",
   "canvas.toggleHidden": "Hide or show",

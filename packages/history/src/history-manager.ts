@@ -120,6 +120,13 @@ export interface HistoryManager<D, S> {
    * the current step into one entry, and stops later runs from merging into it.
    */
   endSession(coalesceKey: string): void;
+  /**
+   * Merges the applied entries after `entryId` (every applied entry for `null`) into one entry
+   * labelled `label`, and stops later runs from merging into it: what a dialog changed live while
+   * it was open becomes one step once it is done (3.13a). The document is unchanged. False with
+   * nothing to merge, for an unknown id or while a gesture is open.
+   */
+  mergeSince(entryId: string | null, label: string): boolean;
   /** Forgets all entries; the document is unchanged. */
   clear(): void;
   /**
@@ -565,27 +572,42 @@ export function createHistoryManager<D extends Objectish, S>(
     // session of the same field never merges into this one.
     const close = (entry: HistoryEntry<S>): HistoryEntry<S> =>
       entry.coalesceKey === coalesceKey ? { ...entry, coalesceKey: null } : entry;
-    const session = entries.slice(start, cursor);
-    const first = session[0];
-    const last = session.at(-1);
-    const merged: HistoryEntry<S>[] =
-      first === undefined || last === undefined
-        ? []
-        : [
-            {
-              ...first,
-              label: last.label,
-              forward: compactPatches(session.flatMap((entry) => entry.forward)),
-              inverse: compactPatches(session.toReversed().flatMap((entry) => entry.inverse)),
-              coalesceKey: null,
-              selectionAfter: last.selectionAfter,
-              updatedAt: last.updatedAt,
-            },
-          ];
+    const merged = mergedEntry(entries.slice(start, cursor));
     entries = [...entries.slice(0, start), ...merged, ...later.map(close)];
     cursor = start + merged.length;
     publish();
   };
+
+  /** `list` as one entry, labelled as its last unless `label` says otherwise; none for none. */
+  const mergedEntry = (list: readonly HistoryEntry<S>[], label?: string): HistoryEntry<S>[] => {
+    const first = list[0];
+    const last = list.at(-1);
+    if (first === undefined || last === undefined) return [];
+    return [
+      {
+        ...first,
+        label: label ?? last.label,
+        forward: compactPatches(list.flatMap((entry) => entry.forward)),
+        inverse: compactPatches(list.toReversed().flatMap((entry) => entry.inverse)),
+        coalesceKey: null,
+        selectionAfter: last.selectionAfter,
+        updatedAt: last.updatedAt,
+      },
+    ];
+  };
+
+  const mergeSince = (entryId: string | null, label: string) =>
+    exclusively(() => {
+      if (transaction !== null) return false;
+      const start = entryId === null ? 0 : entries.findIndex((entry) => entry.id === entryId) + 1;
+      if ((start === 0 && entryId !== null) || start >= cursor) return false;
+      const merged = mergedEntry(entries.slice(start, cursor), label);
+      entries = [...entries.slice(0, start), ...merged, ...entries.slice(cursor)];
+      cursor = start + merged.length;
+      openChain = null;
+      publish();
+      return true;
+    });
 
   return {
     document: documentStore.store,
@@ -595,6 +617,7 @@ export function createHistoryManager<D extends Objectish, S>(
     undo,
     redo,
     jumpTo,
+    mergeSince,
     entries: () => entries,
     breakCoalescing: () => {
       openChain = null;

@@ -57,6 +57,27 @@ describe("EditPanel", () => {
     expect(screen.getByLabelText("Size")).toBeDefined();
   });
 
+  it("opens the fuller styling from the Style tab's button, and can leave the heading out (3.13a)", async () => {
+    const onSelect = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <EditPanel
+        heading="Feature"
+        headingHidden
+        fields={fields}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+        styleAction={{ label: "Style This Feature…", onSelect }}
+      />,
+    );
+
+    expect(screen.queryByRole("heading", { name: "Feature" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Style This Feature…" })).toBeNull();
+    await user.click(screen.getByRole("tab", { name: t("editPanel.style") }));
+    await user.click(screen.getByRole("button", { name: "Style This Feature…" }));
+    expect(onSelect).toHaveBeenCalledOnce();
+  });
+
   it("shows the Content tab only in Content mode, without Style or Advanced (M3)", () => {
     render(
       <EditPanel

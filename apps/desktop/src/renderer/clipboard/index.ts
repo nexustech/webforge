@@ -6,7 +6,9 @@
 export {
   APPEARANCE_GROUP_ID,
   applyLook,
+  applyLookToAll,
   LOOK_COMMANDS,
   lookChange,
+  lookChangeIn,
   lookFieldsOf,
 } from "./apply-look.js";
