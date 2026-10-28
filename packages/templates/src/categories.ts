@@ -2,7 +2,7 @@ import { BUSINESS_TYPES } from "@webforge/model";
 
 /**
  * The business types the New Site dialog's chips filter by (UX-29): `t("template.category.<id>")`.
- * The model's {@link BUSINESS_TYPES}, which Site Settings keeps for the structured data (3.15).
+ * Site Settings' own (SEO-9), so a template's is a site's.
  */
 export const TEMPLATE_CATEGORIES = BUSINESS_TYPES;
 

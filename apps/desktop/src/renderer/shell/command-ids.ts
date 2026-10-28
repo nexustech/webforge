@@ -5,6 +5,7 @@
  */
 export const COMMAND_IDS = {
   newSite: "site.new",
+  quickStart: "site.quickStart",
   openSite: "site.open",
   undo: "edit.undo",
   redo: "edit.redo",

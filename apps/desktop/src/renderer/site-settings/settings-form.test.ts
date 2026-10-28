@@ -28,6 +28,7 @@ const full: SiteSettings = {
     description: "Fresh bread",
     language: "en-GB",
     backToTop: true,
+    businessType: "food",
   },
   address: { url: "https://www.rosasbakery.co.uk" },
   social: {
@@ -76,6 +77,14 @@ describe("settings form", () => {
     expect(checkSettings(toSettingsForm(older), older)).toEqual({ ok: true, settings: older });
     const on = checkSettings(edit(older, { readableByAi: true }), older);
     expect(on.ok && on.settings.search.readableByAi).toBe(true);
+  });
+
+  it("sets and clears the business type, storing nothing while none is chosen (SEO-9)", () => {
+    const shop = checkSettings(edit(full, { businessType: "shop" }), full);
+    expect(shop.ok && shop.settings.general.businessType).toBe("shop");
+
+    const none = checkSettings(edit(full, { businessType: "" }), full);
+    expect(none.ok && "businessType" in none.settings.general).toBe(false);
   });
 
   it("keeps the search engines' verification codes, from the whole tags pasted too (3.15)", () => {

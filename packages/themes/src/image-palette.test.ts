@@ -3,8 +3,14 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { contrastRatio, hexToOklch, inverseColors } from "./colors.js";
 import { AA_LARGE, AA_TEXT } from "./contrast.js";
-import { brandFromImage, type ImageColour, imageColours, reversedBrand } from "./image-palette.js";
-import { themePreset } from "./presets.js";
+import {
+  brandedTheme,
+  brandFromImage,
+  type ImageColour,
+  imageColours,
+  reversedBrand,
+} from "./image-palette.js";
+import { THEME_PRESETS, themePreset } from "./presets.js";
 
 /** RGBA pixels: `count` of each `[r, g, b, a]`, in order. */
 function pixels(
@@ -137,3 +143,46 @@ describe("reversed sections' brand colours from an image (#462 review)", () => {
 function never(): never {
   throw new Error("expected a proposal");
 }
+
+describe("a theme with brand colours (PG-2, 3.11b)", () => {
+  it("gives every preset's reversed sections the brand hues, and a theme without them none (#593 review)", () => {
+    const red: Oklch = { l: 0.55, c: 0.2, h: 25 };
+    for (const theme of THEME_PRESETS) {
+      const proposal = brandFromImage([{ color: red, share: 1 }], theme) ?? never();
+      const branded = brandedTheme(theme, proposal);
+      // A theme's reversed colours are all there or none (the model's schema), so reversedBrand
+      // gives them whenever the theme has them: no brand role keeps the old hue.
+      expect(branded.inverse === undefined).toBe(theme.inverse === undefined);
+      for (const role of ["primary", "secondary", "accent"] as const) {
+        if (branded.inverse === undefined) continue;
+        const hue = branded.inverse[role].h;
+        expect(Math.abs(hue - proposal[role].h) % 360, `${theme.preset} ${role}`).toBeLessThan(1);
+      }
+    }
+    const { inverse: _inverse, ...plain } = DEFAULT_THEME;
+    expect(
+      brandedTheme(plain, brandFromImage([{ color: red, share: 1 }], plain) ?? never()),
+    ).not.toHaveProperty("inverse");
+  });
+
+  it("sets Brand, Accent and Second accent with their text, reversed sections following, in a new theme", () => {
+    const theme = themePreset("dark") ?? DEFAULT_THEME;
+    const before = JSON.stringify(theme);
+    const red: Oklch = { l: 0.55, c: 0.2, h: 25 };
+    const proposal = brandFromImage([{ color: red, share: 1 }], theme);
+    if (proposal === undefined) throw new Error("no proposal");
+
+    const branded = brandedTheme(theme, proposal);
+
+    expect(JSON.stringify(theme)).toBe(before);
+    for (const role of ["primary", "primary-content", "secondary", "accent-content"] as const) {
+      expect(branded.colors[role]).toEqual(proposal[role]);
+    }
+    expect(branded.colors["base-100"]).toEqual(theme.colors["base-100"]);
+    const reversed = reversedBrand(proposal, theme);
+    if (theme.inverse !== undefined) expect(branded.inverse?.primary).toEqual(reversed?.primary);
+    expect(
+      contrastRatio(branded.colors["primary-content"], branded.colors.primary),
+    ).toBeGreaterThanOrEqual(AA_TEXT);
+  });
+});

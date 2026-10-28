@@ -13,7 +13,7 @@ import {
   type ThemeTokens,
 } from "@webforge/model";
 import type { BrandProposal, FontPairing } from "@webforge/themes";
-import { catalogueFont, fontRefOf, inverseColors, reversedBrand } from "@webforge/themes";
+import { brandedTheme, catalogueFont, fontRefOf, inverseColors } from "@webforge/themes";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -378,14 +378,9 @@ export async function setBrandColours(
       confirm: t("theme.image.confirmButton"),
     },
     (tokens) => {
-      const reversed = reversedBrand(proposal, tokens);
-      for (const [role, color] of Object.entries(proposal) as [keyof BrandProposal, Oklch][]) {
-        setPageColor(tokens, role, color);
-      }
-      if (reversed === undefined || tokens.inverse === undefined) return;
-      for (const [role, color] of Object.entries(reversed) as [keyof BrandProposal, Oklch][]) {
-        tokens.inverse[role] = { ...color };
-      }
+      const branded = brandedTheme(tokens, proposal);
+      tokens.colors = branded.colors;
+      if (branded.inverse !== undefined) tokens.inverse = branded.inverse;
     },
   );
 }

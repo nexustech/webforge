@@ -8,6 +8,7 @@ import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { NewSiteDialog, templateName } from "./NewSiteDialog.js";
 import { openSiteWith } from "./open-site.js";
+import { QuickStartDialog } from "./QuickStartDialog.js";
 
 /** Props of {@link SiteCommands}. */
 export type SiteCommandsProps = {
@@ -22,10 +23,11 @@ export type SiteCommandsProps = {
 };
 
 /**
- * File → New Site… (Ctrl/Cmd+N) and Open Site… (Ctrl/Cmd+O), the title bar's New and Open
- * buttons (F-SITE-1, F-SITE-2), and on the start screen Help → Try an Example (PG-3). New Site shows its dialog (2.14a) with the templates main lists;
- * then main shows the save dialog and saves the open site before switching. A failure appears as
- * a toast.
+ * File → New Site… (Ctrl/Cmd+N), Start a Site… (the quick start, QS-1) and Open Site…
+ * (Ctrl/Cmd+O), the title bar's New and Open buttons (F-SITE-1, F-SITE-2), and on the start screen
+ * Help → Try an Example (PG-3). New Site and the quick start show their dialogs (2.14a, 3.11b) with
+ * the templates main lists; then main shows the save dialog and saves the open site before
+ * switching. A failure appears as a toast.
  */
 export function SiteCommands({
   project,
@@ -34,20 +36,30 @@ export function SiteCommands({
   example: offer = false,
 }: SiteCommandsProps) {
   const registry = useCommandRegistry();
-  // The templates New Site shows while it is open; `null` while it is closed.
-  const [newSite, setNewSite] = useState<readonly TemplateSummary[] | null>(null);
+  // The dialog open, New Site or the quick start, with the templates it shows; `null` for none.
+  const [open, setOpen] = useState<{
+    readonly dialog: "newSite" | "quickStart";
+    readonly templates: readonly TemplateSummary[];
+  } | null>(null);
 
   useEffect(() => {
+    // Without the templates, a Blank site can still be made.
+    const listed = () =>
+      (templates ?? window.webforge.templates).list().catch((error: unknown) => {
+        reportFailure("site.templates", error);
+        return [];
+      });
     const removeNew = registry.register({
       id: COMMAND_IDS.newSite,
       label: t("command.newSite"),
       menu: "file",
-      run: () =>
-        (templates ?? window.webforge.templates).list().then(setNewSite, (error: unknown) => {
-          // Without the templates, a Blank site can still be made.
-          reportFailure("site.templates", error);
-          setNewSite([]);
-        }),
+      run: () => listed().then((list) => setOpen({ dialog: "newSite", templates: list })),
+    });
+    const removeQuick = registry.register({
+      id: COMMAND_IDS.quickStart,
+      label: t("command.quickStart"),
+      menu: "file",
+      run: () => listed().then((list) => setOpen({ dialog: "quickStart", templates: list })),
     });
     const removeOpen = registry.register({
       id: COMMAND_IDS.openSite,
@@ -57,6 +69,7 @@ export function SiteCommands({
     });
     return () => {
       removeNew();
+      removeQuick();
       removeOpen();
     };
   }, [registry, project, templates, restart]);
@@ -85,29 +98,44 @@ export function SiteCommands({
       menu: "help",
       run: () =>
         openWith(restart, () =>
-          (project ?? window.webforge.project).create({
-            name: templateName(example.id),
-            theme: example.theme,
-            template: example.id,
-          }),
+          (project ?? window.webforge.project).create(exampleRequest(example)),
         ),
     });
   }, [registry, example, project, restart]);
 
   const create = (request: NewSiteRequest) => {
-    setNewSite(null);
+    setOpen(null);
     openWith(restart, () => (project ?? window.webforge.project).create(request));
   };
+  const listedTemplates = open?.templates ?? [];
 
   return (
-    <NewSiteDialog
-      open={newSite !== null}
-      templates={newSite ?? []}
-      onCreate={create}
-      onCancel={() => setNewSite(null)}
-    />
+    <>
+      <NewSiteDialog
+        open={open?.dialog === "newSite"}
+        templates={listedTemplates}
+        onCreate={create}
+        onCancel={() => setOpen(null)}
+      />
+      <QuickStartDialog
+        open={open?.dialog === "quickStart"}
+        templates={listedTemplates}
+        onCreate={create}
+        onTryExample={(template) => create(exampleRequest(template))}
+        // New Site, with the templates already listed: one click away (QS-4).
+        onChooseTemplate={() => setOpen({ dialog: "newSite", templates: listedTemplates })}
+        onCancel={() => setOpen(null)}
+      />
+    </>
   );
 }
+
+/** A template's finished example (PG-3): pre-filled and named after it, its sample business kept. */
+const exampleRequest = (template: TemplateSummary): NewSiteRequest => ({
+  name: templateName(template.id),
+  theme: template.theme,
+  template: template.id,
+});
 
 /** Runs a create or open request, showing why it failed as a toast. */
 function openWith(restart: (() => void) | undefined, request: () => Promise<ProjectResult>) {

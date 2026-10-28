@@ -24,6 +24,56 @@ export const templates = {
   "newSite.create": "Create",
   "newSite.cancel": "Cancel",
   "newSite.noTemplates": "No templates of this type yet.",
+  // The quick start (QS-1, 3.11b): four steps, each optional, then the site.
+  "quickStart.title": "Start a site",
+  "quickStart.description":
+    "A few questions, each one optional. You can change every answer later.",
+  "quickStart.steps": "Steps",
+  "quickStart.step.business": "Your business",
+  "quickStart.step.look": "A look",
+  "quickStart.step.pages": "Pages",
+  "quickStart.step.details": "Colours and details",
+  "quickStart.stepOf": "Step {step} of {count}",
+  "quickStart.back": "Back",
+  "quickStart.next": "Next",
+  "quickStart.create": "Create site",
+  "quickStart.cancel": "Cancel",
+  "quickStart.chooseTemplate": "Choose a template yourself",
+  // Your business.
+  "quickStart.businessType": "What kind of business is it?",
+  "quickStart.name": "Business or site name",
+  "quickStart.whatYouDo": "What you do",
+  "quickStart.whatYouDoHint":
+    "One line, such as “Bread and cakes, baked every morning”. Search engines show it under your site's name.",
+  // A look.
+  "quickStart.templates": "Templates",
+  "quickStart.templatesFor": "Templates for {type}",
+  "quickStart.exampleText": "Want to look around first? Open a finished {name} site to explore.",
+  "quickStart.tryExample": "Try an example",
+  "quickStart.theme": "Theme",
+  // Pages.
+  "quickStart.pagesText":
+    "Untick a page to leave it out. You can add pages later in the Pages panel.",
+  "quickStart.templatePages": "Pages in {name}",
+  "quickStart.blankPages": "A Blank site has Home, About and Contact pages.",
+  "quickStart.homePage": "{title} (home page)",
+  "quickStart.suggested": "More pages for {type}",
+  "quickStart.noType": "Choose a business type on the first step to see pages suggested for it.",
+  // Colours and details.
+  "quickStart.colours": "Colours",
+  "quickStart.colours.theme": "The theme's own",
+  "quickStart.colours.logo": "From my logo…",
+  "quickStart.colours.logoChosen": "From my logo",
+  "quickStart.colours.logoHint":
+    "Colours are taken from the picture on this computer. The picture isn't added to the site.",
+  "quickStart.colours.unreadable": "That picture couldn't be read. Try a PNG, JPEG or WebP file.",
+  "quickStart.colours.noColours": "No colours could be found in that picture. Try another one.",
+  "quickStart.colours.colour": "My brand colour",
+  "quickStart.details": "Contact details",
+  "quickStart.detailsText":
+    "Optional. Anything left empty keeps the template's sample, which Site Check points out before you publish.",
+  "quickStart.searchNote":
+    "{appName} writes these details into the site so search engines can show them. With the web address, it adds a sitemap too.",
   // The business types templates are grouped by (UX-29).
   "template.category.food": "Food and drink",
   "template.category.beauty": "Beauty",
