@@ -137,12 +137,34 @@ describe("registerSiteCode", () => {
     const settings = createSettingsRegistry();
     const show = vi.spyOn(settings, "show").mockResolvedValue(true);
     const commands = createCommandRegistry();
-    const remove = registerSiteCode(settings, sessionWith(), createPreferencesStore(), commands);
+    const preferences = createPreferencesStore();
+    preferences.change({ editorLevel: "advanced" });
+    const remove = registerSiteCode(settings, sessionWith(), preferences, commands);
 
     expect(commands.run("site.customCode")).toBe(true);
     expect(show).toHaveBeenCalledWith("code", "code");
     remove();
     expect(commands.list().map((command) => command.id)).not.toContain("site.customCode");
     expect(settings.list().map((item) => item.id)).not.toContain("code");
+  });
+
+  it("offers Custom Code… only while Settings shows it: Advanced mode, or a site with code (3.14)", () => {
+    const commands = createCommandRegistry();
+    const preferences = createPreferencesStore();
+    const session = sessionWith();
+    registerSiteCode(createSettingsRegistry(), session, preferences, commands);
+    const enabled = () =>
+      commands.list().find((command) => command.id === "site.customCode")?.enabled !== false;
+
+    expect(enabled()).toBe(false);
+    preferences.change({ editorLevel: "advanced" });
+    expect(enabled()).toBe(true);
+    preferences.change({ editorLevel: "simple" });
+    expect(enabled()).toBe(false);
+    saveSiteCode(session, {
+      code: { ...CODE, js: "", head: "", bodyEnd: "" },
+      allowedExternalUrls: [],
+    });
+    expect(enabled()).toBe(true);
   });
 });

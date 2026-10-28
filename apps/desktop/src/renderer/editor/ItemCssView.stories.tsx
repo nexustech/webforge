@@ -101,5 +101,5 @@ export const Hidden: Story = {
   ...dialogStory((session) => <Panel session={session} css={services("")} />, {
     site: siteWithHeading({}),
   }),
-  play: advancedTab("This item is hidden, so the export leaves it out."),
+  play: advancedTab("This item is hidden here, so the export leaves it out."),
 };

@@ -195,7 +195,7 @@ export const canvas = {
   "itemCss.copy.label": "Copy {part}",
   "itemCss.copied": "Copied",
   "itemCss.loading": "Writing the CSS…",
-  "itemCss.hidden": "This item is hidden, so the export leaves it out.",
+  "itemCss.hidden": "This item is hidden here, so the export leaves it out.",
   "itemCss.failed": "The CSS couldn't be written. It's tried again after your next change.",
   "editPanel.advanced.className": "CSS classes",
   "editPanel.advanced.classNamePlaceholder": "e.g. shadow-lg rounded-box",

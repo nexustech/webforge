@@ -1,3 +1,4 @@
+import type { SitePage } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
@@ -71,6 +72,38 @@ describe("itemHtml (3.14)", () => {
     expect(itemHtml(hidden, siteLibrary, SIZES, "home", "hero")).toBe("");
     expect(itemHtml(site, siteLibrary, SIZES, "nowhere", "hero")).toBeUndefined();
     expect(itemHtml(site, siteLibrary, SIZES, "home", "nothing")).toBeUndefined();
+  });
+});
+
+describe("itemHtml: what the export leaves out (3.14)", () => {
+  /** The sample site with its home page changed by `change`. */
+  const withHome = (change: (home: SitePage) => SitePage) => {
+    const site = sampleSite();
+    return { ...site, pages: site.pages.map((page) => (page.id === "home" ? change(page) : page)) };
+  };
+
+  it("writes nothing for an item inside a hidden section", () => {
+    const hidden = withHome((home) => ({
+      ...home,
+      doc: {
+        ...home.doc,
+        content: home.doc.content.map((node) =>
+          node.props.id === "intro" ? { ...node, props: { ...node.props, hidden: true } } : node,
+        ),
+      },
+    }));
+
+    expect(itemHtml(hidden, siteLibrary, SIZES, "home", "intro-heading")).toBe("");
+    expect(itemHtml(sampleSite(), siteLibrary, SIZES, "home", "intro-heading")).not.toBe("");
+  });
+
+  it("writes nothing for the Header or Footer on a page that hides it", () => {
+    const hides = withHome((home) => ({ ...home, hideHeader: true, hideFooter: true }));
+
+    expect(itemHtml(hides, siteLibrary, SIZES, "home", "header")).toBe("");
+    expect(itemHtml(hides, siteLibrary, SIZES, "home", "footer")).toBe("");
+    // The About page still shows them.
+    expect(itemHtml(hides, siteLibrary, SIZES, "about", "footer")).toContain("<footer");
   });
 });
 

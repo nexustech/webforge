@@ -105,7 +105,7 @@ describe("ItemCssView (3.14)", () => {
     setUp(fakeApi(""));
 
     expect(
-      await screen.findByText("This item is hidden, so the export leaves it out."),
+      await screen.findByText("This item is hidden here, so the export leaves it out."),
     ).toBeDefined();
   });
 });

@@ -25,7 +25,7 @@ export type ItemCssState =
       /** In the order the markup has them; a class that makes no rule is left out. */
       readonly rules: readonly { readonly className: string; readonly css: string }[];
     }
-  /** Hidden in Layers: the export leaves it out (F-ED-12). */
+  /** Left out by the export: hidden in Layers (F-ED-12), or in a Header or Footer the page hides. */
   | { readonly status: "hidden" }
   /** The worker couldn't answer, or the item is gone. */
   | { readonly status: "failed" };
