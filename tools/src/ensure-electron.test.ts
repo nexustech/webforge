@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { ensureElectron } from "./ensure-electron.js";
+import { ensureElectron, productNameOf, withBundleName } from "./ensure-electron.js";
 
 describe("ensureElectron", () => {
   it("loads Electron so its binary is downloaded", () => {
@@ -35,5 +35,42 @@ describe("desktop scripts", () => {
 
   it.each(["dev", "preview"])("ensures Electron before electron-vite %s starts it", (name) => {
     expect(scripts[name]).toBe(`pnpm run ensure-electron && electron-vite ${name}`);
+  });
+});
+
+// #450: in development, macOS names the app after the running bundle, Electron's own.
+describe("the development Electron bundle's name", () => {
+  const PLIST = [
+    "<plist><dict>",
+    "\t<key>CFBundleExecutable</key>",
+    "\t<string>Electron</string>",
+    "\t<key>CFBundleName</key>",
+    "\t<string>Electron</string>",
+    "</dict></plist>",
+  ].join("\n");
+
+  it("reads the product name from electron-builder's config", () => {
+    const config = readFileSync(
+      new URL("../../apps/desktop/electron-builder.yml", import.meta.url),
+      "utf8",
+    );
+    expect(productNameOf(config)).toBe("Webforge");
+    expect(productNameOf("appId: x\n")).toBeUndefined();
+  });
+
+  it("names the bundle and gives it a display name, leaving the rest", () => {
+    const named = withBundleName(PLIST, "Webforge");
+
+    expect(named).toContain("<key>CFBundleName</key>\n\t<string>Webforge</string>");
+    expect(named).toContain("<key>CFBundleDisplayName</key>\n\t<string>Webforge</string>");
+    expect(named).toContain("<key>CFBundleExecutable</key>\n\t<string>Electron</string>");
+  });
+
+  it("is the same when named again, and escapes the name", () => {
+    const named = withBundleName(PLIST, "Webforge");
+    expect(withBundleName(named, "Webforge")).toBe(named);
+    expect(withBundleName(named, "Forge & $1 <Co>")).toContain(
+      "<string>Forge &amp; $1 &lt;Co&gt;</string>",
+    );
   });
 });

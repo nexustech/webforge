@@ -11,8 +11,11 @@ type Placeholders<S extends string> = S extends `${string}{${infer Name}}${infer
   ? Name | Placeholders<Rest>
   : never;
 
-/** The placeholders of message `K` (of every message, for a union of keys). */
-export type ParamsOf<K extends MessageKey> = Placeholders<(typeof en)[K]>;
+/**
+ * The placeholders of message `K` (of every message, for a union of keys) that its caller fills:
+ * `{appName}`, the app's name, is filled in by {@link t} itself.
+ */
+export type ParamsOf<K extends MessageKey> = Exclude<Placeholders<(typeof en)[K]>, "appName">;
 
 /**
  * What `t(key, …)` takes after the key (B10, E11): the message's placeholders, every one of them,
@@ -28,6 +31,13 @@ type ParamsArg<K extends MessageKey> = MessageKey extends K
 const PLACEHOLDER = /\{(\w+)\}/g;
 
 /**
+ * `message` with every `{appName}` replaced by the app's name, `app.name`: the one place the name is
+ * written (#450), so a rename changes it there, and `productName` for the installers, and nothing
+ * else. `pnpm ui-strings` refuses a message that spells the name out.
+ */
+const withAppName = (message: string) => message.replaceAll("{appName}", en["app.name"]);
+
+/**
  * Returns the UI string for `key`, with `{placeholder}`s replaced by `params`. The params are
  * checked against the message's placeholders as the code compiles (B10): a missing one is a type
  * error. At run time a placeholder without a matching param is left as is, so a missing value is
@@ -36,7 +46,7 @@ const PLACEHOLDER = /\{(\w+)\}/g;
  * @example t("app.version", { version: "1.2.0" }) // "Version 1.2.0"
  */
 export function t<K extends MessageKey>(key: K, ...[params]: ParamsArg<K>): string {
-  const message: string = en[key];
+  const message = withAppName(en[key]);
   if (params === undefined) {
     return message;
   }
@@ -48,10 +58,11 @@ export function t<K extends MessageKey>(key: K, ...[params]: ParamsArg<K>): stri
 
 /**
  * The message for `key` with its `{placeholder}`s left in, for code that fills them in itself: a
- * site's script (the Carousel's "{n} of {total}"), or Puck's own dictionary.
+ * site's script (the Carousel's "{n} of {total}"), or Puck's own dictionary. The app's name is
+ * filled in, as {@link t} fills it.
  */
 export function template(key: MessageKey): string {
-  return en[key];
+  return withAppName(en[key]);
 }
 
 /**

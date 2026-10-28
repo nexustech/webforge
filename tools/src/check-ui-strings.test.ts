@@ -1,8 +1,11 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  checkCatalogue,
   checkFolders,
+  findAppNames,
   findUiStrings,
+  formatAppNameViolations,
   formatUiStringViolations,
   isCheckedFile,
   isUserFacingAttribute,
@@ -85,5 +88,40 @@ describe("check-ui-strings", () => {
     ]);
     expect(message).toContain("Found 1 hard-coded UI string(s)");
     expect(message).toContain('a/Panel.tsx:3  title: "Pages"');
+  });
+});
+
+describe("the app's name in the string catalogue (#450)", () => {
+  const CATALOGUE = join(import.meta.dirname, "../../packages/i18n/src/en");
+
+  it("reports a message that spells the name out, but not app.name or one that takes {appName}", () => {
+    const source = [
+      "export const shell = {",
+      '  "app.name": "Webforge",',
+      '  "command.about": "About {appName}",',
+      '  "site.openFailed.unknown": "Webforge couldn\'t open the site.",',
+      "} as const;",
+    ].join("\n");
+
+    expect(findAppNames(source, "en/shell.ts", "Webforge")).toEqual([
+      {
+        file: "en/shell.ts",
+        line: 4,
+        where: "site.openFailed.unknown",
+        text: "Webforge couldn't open the site.",
+      },
+    ]);
+  });
+
+  it("finds none in the catalogue: each message takes {appName}, so a rename changes app.name alone", () => {
+    expect(checkCatalogue(CATALOGUE, CATALOGUE)).toEqual([]);
+  });
+
+  it("formats one line per message", () => {
+    const message = formatAppNameViolations([
+      { file: "en/site.ts", line: 3, where: "site.fileType", text: "Webforge site" },
+    ]);
+    expect(message).toContain("Write {appName} instead");
+    expect(message).toContain('en/site.ts:3  site.fileType: "Webforge site"');
   });
 });

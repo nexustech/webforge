@@ -89,6 +89,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
 
   const app = {
     isPackaged: false,
+    setName: vi.fn(),
     requestSingleInstanceLock: vi.fn(() => options.primary ?? true),
     releaseSingleInstanceLock: vi.fn(),
     quit: vi.fn(),
@@ -230,6 +231,11 @@ describe("startApp", () => {
     void fake.start();
 
     expect(fake.app.requestSingleInstanceLock).toHaveBeenCalled();
+    // Named for the app in development, before the lock that its user data folder keeps (#450).
+    expect(fake.app.setName).toHaveBeenCalledWith("Webforge");
+    expect(fake.app.setName.mock.invocationCallOrder[0]).toBeLessThan(
+      fake.app.requestSingleInstanceLock.mock.invocationCallOrder[0] ?? 0,
+    );
     expect(fake.startCrashReports).toHaveBeenCalledWith(true);
     expect(fake.app.enableSandbox).toHaveBeenCalled();
     expect(fake.app.quit).not.toHaveBeenCalled();

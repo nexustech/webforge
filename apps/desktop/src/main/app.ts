@@ -148,6 +148,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const appUrl = devServerUrl ?? pathToFileURL(rendererHtml).href;
   const isTrustedSender = (senderUrl: string) => isAppUrl(senderUrl, appUrl);
 
+  // In development the running bundle is Electron's own, named after the package: the app's name,
+  // for the About panel and the user data folder (which the single-instance lock below is kept in),
+  // as the packaged app has it from its bundle (#450).
+  if (!app.isPackaged) {
+    app.setName(t("app.name"));
+  }
+
   // One Webforge at a time (1.8): a second launch, e.g. a .wforge double-clicked in Explorer while
   // Webforge is open, hands its command line to this one ("second-instance") and quits.
   const primaryInstance = app.requestSingleInstanceLock();
