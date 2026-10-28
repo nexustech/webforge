@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { themePreset } from "@webforge/themes";
 import type { OwnTheme } from "../../../shared/ipc/themes.js";
+import { starterSite } from "../../../shared/starter-site.js";
 import { dialogStory } from "../../testing/stories.js";
 import { createOwnThemes } from "../own-themes.js";
 import { createStudio, type StudioSection } from "./studio-state.js";
@@ -55,3 +56,28 @@ export const MyThemes: Story = dialogStory((session) => {
   }));
   return <ThemeStudio session={session} studio={studio} ownThemes={ownThemes} />;
 });
+
+/** Components on `kind`, for a site whose theme has a look for Buttons. */
+const componentsOn = (kind: string): Story =>
+  dialogStory(
+    (session) => {
+      const studio = createStudio();
+      studio.setState({ open: true, section: "components", kind });
+      return <ThemeStudio session={session} studio={studio} />;
+    },
+    {
+      site: {
+        ...starterSite(),
+        theme: {
+          ...starterSite().theme,
+          looks: { Button: { lookCorners: "full", lookShadow: "large", lookWeight: "bold" } },
+        },
+      },
+    },
+  );
+
+/** Each kind with a look, by category; the Button's look set, beside the theme's button tokens. */
+export const Components: Story = componentsOn("Button");
+
+/** The theme's card style, as the Card look. */
+export const ComponentsCard: Story = componentsOn("Card");

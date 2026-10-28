@@ -2,10 +2,10 @@ import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import type { SharedSectionId } from "@webforge/model";
 import { removeNode } from "@webforge/model";
-import { copySelection, reachOf } from "../shared-sections/index.js";
 import type { SiteWideAction, SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { EditorSession } from "./editor-session.js";
 import { pagesShowing, type SharedRegion, sharedRegionOf, shownLayout } from "./shared-layout.js";
+import { copySelection, reachOf } from "./shared-sections.js";
 
 type Session = Pick<EditorSession, "history" | "ui" | "library">;
 type Confirm = Pick<SiteWideConfirm, "confirmSiteWide">;

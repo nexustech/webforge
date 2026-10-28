@@ -320,14 +320,16 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       }
       try {
         const media: MediaMeta[] = [];
+        let missingImages = 0;
         for (const item of copied.data.media) {
           const stored = await site.storeCopiedMedia(item, () => readKept(item));
           if (stored.status === "failed") return stored;
           if (stored.status === "stored") media.push(item);
+          else if (stored.status === "missing") missingImages += 1;
         }
         const { nodes, sharedSectionId } = copied.data;
         const shared = sharedSectionId === undefined ? {} : { sharedSectionId };
-        return { status: "elements", elements: { nodes, media, ...shared } };
+        return { status: "elements", elements: { nodes, media, ...shared }, missingImages };
       } catch (error) {
         failed("paste elements", error);
         return { status: "failed", reason: "unknown" };

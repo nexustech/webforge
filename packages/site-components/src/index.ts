@@ -44,6 +44,7 @@ export {
   textStylesOf,
   textValue,
   withAdvanced,
+  withLook,
 } from "./library.js";
 export { hrefFor } from "./links.js";
 export {

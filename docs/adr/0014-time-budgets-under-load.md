@@ -40,7 +40,11 @@ Re-running a failed job hides all three, and each makes the next failure harder 
      - **A miss** says which budget applied, CI's or the local one, with what was measured.
    - **The backstop** (`CI_OPEN_WALL_BACKSTOP_MS`) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. On CI it is at least twice the slowest opening measured, and never under 6 s, twice the target:
      - Linux and macOS: 6 s (slowest 1.6 and 2.6 s);
-     - Windows: 16 s (slowest 7.8 s). Windows' runners stall now and then without spending more CPU: #515's 6.6 s and #520's 7.8 s openings cost 2.1 and 2.7 CPU-s, well within the CPU budget.
+     - Windows: 30 s, which is `OPEN_WAIT`, so on Windows it catches a hang only, and the median of a spec's openings a wait added to each (see Consequences). Windows' runners stall now and then without spending more CPU:
+       - #515's 6.6 s and #520's 7.8 s openings cost 2.1 and 2.7 CPU-s, well within the CPU budget, and the first backstop of 16 s allowed for them.
+       - On 28 Oct 2026 a Café opening took 21.5 s at 2.26 CPU-s (#561). In the same hour, the unit test that makes the same site without Electron took 18.3 s, where it takes 0.3–1.8 s.
+       - Twice that is past `OPEN_WAIT`. An added wait still fails on Linux and macOS, which run the same code.
+       - **Making a site from a template didn't get slower** (#561). Across every Windows E2E job of 26–28 Oct, the Café opening's median was 1.38 s and 2.54 CPU-s before 2.29's templates merged (48 openings), and 1.35 s and 2.43 CPU-s after (21). The unit test's median was 0.57 s before and 0.55 s after (95 runs).
      - Locally it is 12 s, or CI's for the platform if more: openings took up to 8.4 s on a development machine under load.
    - **If a platform's Electron gives no `cumulativeCPUUsage`** (it is optional in Electron's types), the test fails and says so. It never skips.
    - **Nothing is retried.**
@@ -59,5 +63,10 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 - **Every run catches the opening doing more work, or waiting longer,** whatever else the machine runs. Whether it opens in 3 s is a question for a quiet machine: answer it with `pnpm e2e:perf` before a release, and after work that touches opening a site.
 - **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines of every E2E job over a day or two, every attempt included (a re-run job's first attempt is only in `actions/runs/<id>/attempts/<n>/jobs`), and set its budget again at the most plus 30%. One or two runs aren't enough (#526). A developer whose machine needs more than three times CI's sets `WEBFORGE_E2E_CPU_SCALE`.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
+- **On Windows, each opening's wall time is checked for hangs only** (#561), so a wait in a Windows-only branch of the open path (a retry with a delay after `EBUSY`, say) gets past it: Linux and macOS never run that branch.
+  - **The median of templates.spec's openings catches it instead** (#569, `expectMedianWithin` in its `afterAll`).
+  - On CI the median may take 6 s (`CI_OPEN_MEDIAN_MS`), twice the 3 s target as Linux's and macOS's backstops. Locally it is the local backstop.
+  - One stall doesn't move a median. Windows' usual median was 1.36 s, and its slowest 3.85 s, in a job whose every opening was slow (69 jobs, 26–28 Oct 2026).
+  - It catches a wait of about 5 s added to every opening. A shorter one still needs code review.
 - **Out of scope:** storage's 30 s and the publish tests' timeouts cover slow disks and servers, not load, and stay as they are.
 - **A new check of time picks one of these:** measure the work (best), a CPU budget with a wall-clock backstop, a unit test of the logic a time stood in for, or a generous wait. A bare `expect(Date.now() - started).toBeLessThan(…)` with a target from the spec is what this replaces.

@@ -20,7 +20,10 @@ export const SITE_CSS_DEBOUNCE_MS = 300;
  * The classes of each list of nodes rendered so far. The document shares unchanged lists between
  * versions, so after an edit only the changed page is rendered again.
  */
-const classesOfList = new WeakMap<readonly NodeDoc[], readonly string[]>();
+const classesOfList = new WeakMap<
+  readonly NodeDoc[],
+  { readonly looks: RenderContext["looks"]; readonly classes: readonly string[] }
+>();
 
 /** The image every placed image renders as while classes are collected: which one never matters. */
 const PLACEHOLDER_IMAGE: ResolvedImage = {
@@ -69,15 +72,26 @@ export function classesOfHtml(html: string): string[] {
   return found.filter((name) => name !== "");
 }
 
-function listClasses(nodes: readonly NodeDoc[], session: EditorSession): readonly string[] {
-  let classes = classesOfList.get(nodes);
-  if (classes === undefined) {
-    // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
-    classes = CLASS_CONTEXTS.flatMap((context) =>
-      classesOfHtml(renderNodesToHtml(nodes, session.library, context, { includeHidden: true })),
-    );
-    classesOfList.set(nodes, classes);
-  }
+function listClasses(
+  nodes: readonly NodeDoc[],
+  session: EditorSession,
+  looks: RenderContext["looks"],
+): readonly string[] {
+  const kept = classesOfList.get(nodes);
+  // Drawn with the theme's looks (3.12): a change to them collects the list's classes again.
+  if (kept !== undefined && kept.looks === looks) return kept.classes;
+  // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
+  const classes = CLASS_CONTEXTS.flatMap((context) =>
+    classesOfHtml(
+      renderNodesToHtml(
+        nodes,
+        session.library,
+        looks === undefined ? context : { ...context, looks },
+        { includeHidden: true },
+      ),
+    ),
+  );
+  classesOfList.set(nodes, { looks, classes });
   return classes;
 }
 
@@ -92,7 +106,10 @@ export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
     ...Object.values(site.pages).map((page) => page.doc.content),
   ];
   return [
-    ...new Set([...lists.flatMap((nodes) => listClasses(nodes, session)), ...BOX_CLASS_SAFELIST]),
+    ...new Set([
+      ...lists.flatMap((nodes) => listClasses(nodes, session, site.theme.looks)),
+      ...BOX_CLASS_SAFELIST,
+    ]),
   ].sort();
 }
 

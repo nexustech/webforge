@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, test } from "@playwright/test";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
 
@@ -17,7 +17,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  await rm(userData, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 });
 
 test("a secret encrypted by one run decrypts in the next (safeStorage, 0.3)", async () => {

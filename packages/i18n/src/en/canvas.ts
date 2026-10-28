@@ -119,6 +119,7 @@ export const canvas = {
   "editPanel.noMatches": "No options match your search.",
   // Back to the element's defaults (UX-13, UX-18): a field's right-click menu, and Ctrl/Cmd + Esc.
   "editPanel.resetField": "Reset to Default",
+  "editPanel.resetToLook": "Reset to Theme's Look",
   "editPanel.resetGroup": "Reset Group to Defaults",
   // An option group's header, on hover (SP-7): "Copy Spacing", "Paste Spacing", "Reset Spacing".
   "editPanel.group.copy": "Copy {group}",
@@ -156,6 +157,14 @@ export const canvas = {
   "editPanel.dot.inherits": "{field}: same as Desktop on {device}",
   "editPanel.dot.set": "{field}: set for {device} only",
   "editPanel.dot.clear": "{field}: set for {device} only. Use the Desktop value instead",
+  "editPanel.source.here": "Set here",
+  "editPanel.source.device": "Set on {device}",
+  "editPanel.source.custom": "Custom colour (Advanced)",
+  "editPanel.source.class": "Class (Advanced)",
+  "editPanel.source.look": "Theme's look for {item}",
+  "editPanel.source.themeToken": "Theme's ({token}: {value})",
+  "editPanel.source.themeTokenChosen": "Theme's ({token}: {value}), chosen here",
+  "editPanel.source.reveal": "Show where it comes from",
   // A field that may differ per device (SP-5): its rows, one per device.
   "editPanel.devices.show": "{field} on each device",
   // After the device's name, for screen readers: "Tablet, its own value".

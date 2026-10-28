@@ -18,12 +18,11 @@ export const colourField = ({
     preferences,
     textStyles: () => {
       const { pageId, nodeId } = session.ui.getState();
-      const target = fieldTarget(
-        session.history.document.getState(),
-        session.library,
-        pageId,
-        nodeId,
-      );
-      return target === undefined ? [] : textStylesOf(target.node, session.library);
+      const site = session.history.document.getState();
+      const target = fieldTarget(site, session.library, pageId, nodeId);
+      // With its kind's look (3.12): a look's size or weight sets the large-text threshold too.
+      return target === undefined
+        ? []
+        : textStylesOf(target.node, session.library, site.theme.looks);
     },
   });

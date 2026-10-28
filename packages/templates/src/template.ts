@@ -149,6 +149,8 @@ export function siteFromTemplate(
   if (options.business !== undefined) withBusiness(site, options.name, options.business);
   if (options.pages !== undefined) choosePages(site, options.pages);
   site.settings.general.name = options.name;
+  // A new site helps AI tools read it unless its template says otherwise (F-EX-5, 3.5).
+  site.settings.search.readableByAi ??= true;
   site.theme = copyTheme(options.theme);
   for (const image of images) {
     const meta: ImageMeta = {

@@ -4,9 +4,6 @@ import type { AiApi } from "../../shared/ipc/ai.js";
 import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
-import type { AddItem } from "../add/index.js";
-import type { SettingsRegistry } from "../settings/index.js";
-import type { SharedSectionNaming } from "../shared-sections/index.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -14,11 +11,14 @@ import type { ContextualToolbarRegistry } from "../shell/contextual-toolbars.js"
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
+import type { AddItem } from "./add-item.js";
 import type { CanvasPointer } from "./canvas-pointer.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
 import type { Layer } from "./layers.js";
+import type { SettingsRegistry } from "./settings-registry.js";
+import type { SharedSectionNaming } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
 
 /**
@@ -82,6 +82,11 @@ export type WindowContext = AreaContext & {
     readonly initial: readonly string[];
     readonly save: (ignored: readonly string[]) => void;
   };
+  /**
+   * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
+   * with its look; none without a CSS compiler.
+   */
+  readonly kindPreviews?: ((type: string) => ReactNode) | undefined;
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

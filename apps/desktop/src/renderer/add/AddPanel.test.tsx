@@ -13,7 +13,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
-import { saveAsSharedSection } from "../shared-sections/index.js";
+import { saveAsSharedSection } from "../editor/shared-sections.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";

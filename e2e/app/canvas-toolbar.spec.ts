@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
 
@@ -294,7 +294,7 @@ test("keeps a device the person added, after a restart (F-ED-25)", async () => {
     await expect.poll(pageWidth).toBe(1920);
   } finally {
     await app.close();
-    rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
 });
 

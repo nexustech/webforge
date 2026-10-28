@@ -18,11 +18,7 @@ import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { fieldRenderers } from "../fields/index.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { createImagePickRequests } from "../media/image-picks.js";
-import { sharedSection } from "../shared-sections/index.js";
-import {
-  SharedSectionNameDialog,
-  type SharedSectionNaming,
-} from "../shared-sections/SharedSectionCommands.js";
+import { SharedSectionNameDialog } from "../shared-sections/SharedSectionCommands.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
@@ -56,6 +52,7 @@ import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
+import { type SharedSectionNaming, sharedSection } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
 import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts } from "./undo-toasts.js";
@@ -135,6 +132,9 @@ function undoHistoryPanel(
     return <UndoHistoryPanel history={{ jumpTo }} state={state} />;
   };
 }
+
+/** The Theme tab's panel id (`theme/`'s THEME_PANEL_ID), which the editor area doesn't import. */
+const THEME_PANEL = "theme";
 
 /**
  * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
@@ -330,6 +330,7 @@ export function Editor({
     const site = history.document.getState();
     // Before mounting, so the canvas is drawn with them once, not drawn again for them.
     engine.setPreviews(canvasPreviews(editPreviews.getState(), session.ui.getState().viewport));
+    engine.setLooks(site.theme.looks);
     engine.mount(element, {
       library: session.library,
       theme: site.theme,
@@ -393,6 +394,14 @@ export function Editor({
     editPreviews,
     host,
   ]);
+
+  // Each kind's look from the theme (3.12, CT-1): the canvas draws again only when they change.
+  useEffect(() => {
+    if (engine === null) return;
+    const show = () => engine.setLooks(history.document.getState().theme.looks);
+    show();
+    return history.document.subscribe(show);
+  }, [engine, history]);
 
   // The View menu's options (F-ED-25): view state, never an undo step (U6).
   useEffect(() => {
@@ -471,6 +480,9 @@ export function Editor({
             session={session}
             preferences={preferences}
             flush={() => host.flush()}
+            // An Appearance field's source shows in the Theme tab, or a kind's look in Theme
+            // Studio, which the Theme tab's registration opens (3.12, CT-3).
+            revealSource={(target) => panels.show(THEME_PANEL, target)}
           />
         </FieldRenderersProvider>
       );

@@ -1,10 +1,10 @@
 import { copiedNodeId, type PageDoc } from "@webforge/model";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
-import { saveAsSharedSection } from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { currentPage, runHistoryCommand } from "./editor-session.js";
 import { connectFieldDrags } from "./field-drag.js";
+import { saveAsSharedSection } from "./shared-sections.js";
 
 function setup() {
   const session = sessionWith();

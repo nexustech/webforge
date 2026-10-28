@@ -21,10 +21,11 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { type KeyboardEvent, useRef, useState } from "react";
-import type { LinkFieldChange, PageTarget } from "../links/index.js";
+import type { LinkFieldChange } from "../editor/link-change.js";
+import type { PageTarget } from "../links/index.js";
 import { LinkDialog } from "../links/index.js";
 import { NameDialog } from "../shell/NameDialog.js";
-import { useRowDrag } from "../shell/use-row-drag.js";
+import { DRAGGABLE_ROW_CLASS, useRowDrag } from "../shell/use-row-drag.js";
 import { itemLabel, type MenuPosition, type NewMenuItem } from "./menu-actions.js";
 
 /** What the menu editor can do; the host binds them to the editor session. */
@@ -139,6 +140,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
 
   const rowDrag = useRowDrag<Row>({
     type: DRAG_TYPE,
+    rows,
     keyOf: (row) => row.item.id,
     // Before or after a row, or into a dropdown from the middle of its row; nowhere else.
     place: (from, row, y) => {
@@ -176,7 +178,11 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
     return (
       <li
         key={item.id}
-        className={cn("group relative rounded-sm", rowDrag.indicatorClass(row))}
+        className={cn(
+          "group relative rounded-sm",
+          DRAGGABLE_ROW_CLASS,
+          rowDrag.indicatorClass(row),
+        )}
         {...rowDrag.rowProps(row)}
       >
         <button

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OwnTheme, ThemesApi } from "../../../shared/ipc/themes.js";
+import { starterSite } from "../../../shared/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { OwnThemeDialogs } from "../OwnThemeDialogs.js";
 import { createOwnThemes } from "../own-themes.js";
@@ -48,7 +49,7 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
       within(dialog)
         .getAllByRole("tab")
         .map((tab) => tab.textContent),
-    ).toEqual(["Themes", "Colours", "Text", "Styles"]);
+    ).toEqual(["Themes", "Colours", "Text", "Styles", "Components"]);
     await userEvent.keyboard("{Escape}");
     expect(studio.getState().open).toBe(false);
   });
@@ -106,12 +107,12 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
     const corners = dialog().getByRole("radiogroup", { name: "Corners of boxes and cards" });
     await user.click(within(corners).getByRole("radio", { name: "Extra large" }));
     await user.click(dialog().getByRole("checkbox", { name: "Grain on surfaces" }));
-    await user.selectOptions(dialog().getByRole("combobox", { name: "Card style" }), "raised");
 
     expect(theme().radius.box).toBe("xl");
     expect(theme().effects.noise).toBe(true);
-    expect(theme().cards.style).toBe("raised");
-    expect(labels()).toEqual(["Changed corner style", "Changed effects", "Changed card style"]);
+    expect(labels()).toEqual(["Changed corner style", "Changed effects"]);
+    // The buttons' tokens and the card style are in Components, with their looks (3.12).
+    expect(dialog().queryByRole("combobox", { name: "Card style" })).toBeNull();
   });
 });
 
@@ -203,5 +204,63 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
     expect(api.remove).toHaveBeenCalledWith("theme0000000000n");
     expect(theme().own?.name).toBe("Late night");
     expect(labels()).toHaveLength(2);
+  });
+});
+
+describe("Theme Studio's Components (3.12, CT-1)", () => {
+  it("lists each kind with a look by category, and sets one's look as one step", async () => {
+    const { dialog, labels, theme, user } = setUp("components");
+    const kinds = within(dialog().getByRole("navigation", { name: "Sections and elements" }));
+    expect(kinds.getByRole("region", { name: "Sections" })).toBeDefined();
+    expect(kinds.getByRole("button", { name: "Card" })).toBeDefined();
+
+    await user.click(kinds.getByRole("button", { name: "Button" }));
+    const button = within(dialog().getByRole("region", { name: "Button" }));
+    // The theme's button tokens beside the Button look, as in the Theme tab.
+    expect(button.getByText("Every button")).toBeDefined();
+    await user.selectOptions(button.getByRole("combobox", { name: "Corners" }), "full");
+
+    expect(theme().looks).toEqual({ Button: { lookCorners: "full" } });
+    expect(labels()).toEqual(["Changed the theme's look for Button"]);
+
+    await user.click(button.getByRole("button", { name: "Reset to Theme's Defaults" }));
+    expect(theme().looks).toBeUndefined();
+    expect(labels()).toEqual([
+      "Changed the theme's look for Button",
+      "Reset the theme's look for Button",
+    ]);
+  });
+
+  it("changes Desktop's value of a look set per device, keeping Tablet's and Mobile's", async () => {
+    const site = starterSite();
+    site.theme.looks = {
+      Button: { lookShadow: { $responsive: { desktop: "large", mobile: "none" } } },
+    };
+    const session = sessionWith(site);
+    const studio = createStudio();
+    studio.setState({ open: true, section: "components", kind: "Button" });
+    render(<ThemeStudio session={session} studio={studio} />);
+    const button = within(screen.getByRole("region", { name: "Button" }));
+
+    expect(button.getByText(/^Set per device/)).toBeDefined();
+    await userEvent
+      .setup({ delay: null })
+      .selectOptions(button.getByRole("combobox", { name: "Shadow" }), "medium");
+
+    expect(session.history.document.getState().theme.looks).toEqual({
+      Button: { lookShadow: { $responsive: { desktop: "medium", mobile: "none" } } },
+    });
+  });
+
+  it("shows the card style as the Card look", async () => {
+    const { dialog, labels, theme, user } = setUp("components");
+
+    await user.click(dialog().getByRole("button", { name: "Card" }));
+    const card = within(dialog().getByRole("region", { name: "Card" }));
+    expect(card.getByText("The cards in Features, Stats, Team and Testimonials.")).toBeDefined();
+    await user.selectOptions(card.getByRole("combobox", { name: "Card style" }), "raised");
+
+    expect(theme().cards.style).toBe("raised");
+    expect(labels()).toEqual(["Changed card style"]);
   });
 });

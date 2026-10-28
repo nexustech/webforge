@@ -3,7 +3,12 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import userEvent from "@testing-library/user-event";
 import { type FieldRenderers, FieldRenderersProvider } from "@webforge/editor-ui";
 import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
-import { type ComponentLibrary, type FieldDef, siteLibrary } from "@webforge/site-components";
+import {
+  BACKGROUND_FIELDS,
+  type ComponentLibrary,
+  type FieldDef,
+  siteLibrary,
+} from "@webforge/site-components";
 import { themePreset } from "@webforge/themes";
 import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -12,7 +17,6 @@ import { starterSite } from "../../shared/starter-site.js";
 import { classesFieldRenderer } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
-import { saveAsSharedSection } from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -21,6 +25,8 @@ import {
   type EditorSession,
   runHistoryCommand,
 } from "./editor-session.js";
+import { placedOverlay } from "./placed-overlay.js";
+import { saveAsSharedSection } from "./shared-sections.js";
 
 afterEach(cleanup);
 
@@ -395,6 +401,63 @@ describe("EditPanelHost", () => {
       expect(
         screen.getByRole("img", { name: /^Padding: same as Desktop on Mobile/ }),
       ).toBeDefined();
+    });
+
+    it("shows a kind's look set per device as the look's, not as the element's own (3.12)", async () => {
+      const site = siteWithHero();
+      site.theme.looks = {
+        Heading: { lookShadow: { $responsive: { desktop: "large", mobile: "none" } } },
+      };
+      const session = sessionWith(site);
+      session.select("heading-1");
+      render(<EditPanelHost session={session} flush={vi.fn()} />);
+      act(() => session.setViewport("mobile"));
+      await userEvent.setup({ delay: null }).click(screen.getByRole("tab", { name: "Style" }));
+
+      // The look's Mobile value, marked as following Desktop: not set for Mobile on this Heading,
+      // so there's no per-device Reset to write the look into it.
+      expect(screen.getByRole("img", { name: /^Shadow: same as Desktop on Mobile/ })).toBeDefined();
+      expect(screen.queryByRole("button", { name: /^Shadow: set for Mobile only/ })).toBeNull();
+      const heading = (
+        currentPage(session)?.doc.content[0]?.props.content as PageDoc["content"] | undefined
+      )?.[0];
+      expect(heading?.props.lookShadow).toBeUndefined();
+    });
+
+    it("says where each Appearance value comes from, and shows the theme's (3.12, CT-3)", async () => {
+      const site = siteWithHero();
+      site.theme.looks = { Heading: { lookShadow: "large" } };
+      const heading = (
+        site.pages[site.homePageId]?.doc.content[0]?.props.content as PageDoc["content"] | undefined
+      )?.[0];
+      if (heading !== undefined)
+        Object.assign(heading.props, { lookCorners: "full", lookShadow: "small" });
+      const session = sessionWith(site);
+      session.select("heading-1");
+      const revealSource = vi.fn();
+      render(<EditPanelHost session={session} flush={vi.fn()} revealSource={revealSource} />);
+      const user = userEvent.setup({ delay: null });
+      await user.click(screen.getByRole("tab", { name: "Style" }));
+      const sourceOf = (field: string) =>
+        document.querySelector(`[data-field="${field}"] [data-source]`)?.textContent;
+
+      expect(sourceOf("lookCorners")).toBe("Set here");
+      expect(sourceOf("lookShadow")).toBe("Set here");
+      // Nothing to add to the control's own *Theme's* (#567).
+      expect(sourceOf("lookColor")).toBeUndefined();
+
+      // Reset where the Heading look sets it: back to the look, which it then follows.
+      fireEvent.contextMenu(screen.getByText("Shadow", { selector: "label" }));
+      await user.click(await screen.findByRole("menuitem", { name: "Reset to Theme's Look" }));
+      expect(sourceOf("lookShadow")).toBe("Theme's look for Heading");
+      await user.click(screen.getByRole("button", { name: "Theme's look for Heading" }));
+      expect(revealSource).toHaveBeenCalledWith("look:Heading");
+
+      // On Mobile, Reset makes the device follow Desktop: not the look's (#567).
+      act(() => session.setViewport("mobile"));
+      fireEvent.contextMenu(screen.getByText("Shadow", { selector: "label" }));
+      expect(await screen.findByRole("menuitem", { name: "Reset to Default" })).toBeDefined();
+      expect(screen.queryByRole("menuitem", { name: "Reset to Theme's Look" })).toBeNull();
     });
 
     it("sets another device's value from its row, and dots the device in effect (SP-5)", async () => {
@@ -1038,6 +1101,37 @@ describe("EditPanelHost", () => {
       });
       expect(faq()?.backgroundImage).toBeUndefined();
       expect(faq()?.overlay).toBeUndefined();
+    });
+
+    it("chooses that overlay for the text colour the section's kind's look gives it (3.12)", async () => {
+      const look = { lookColor: "neutral-content" };
+      const { session, user } = setup("faq", (session) => ({
+        image: imageFieldRenderer({
+          session,
+          media: { choose: async () => ({ status: "canceled" }) },
+          imageUrl: (item) => `test://${item.name}`,
+        }),
+      }));
+      act(() => {
+        addMedia(session, [shop]);
+        session.edit("props", "Gave FAQs a look", (draft) => {
+          draft.theme.looks = { Faq: look };
+        });
+      });
+      const faq = () => currentPage(session)?.doc.content[2]?.props;
+      const def = siteLibrary.components.Faq;
+      if (def === undefined) throw new Error("no FAQ");
+      const { theme } = session.history.document.getState();
+      const overlayFor = (values: Readonly<Record<string, unknown>>) =>
+        placedOverlay(BACKGROUND_FIELDS.backgroundImage, values, { mediaId: "shop" }, theme, def);
+      // The look's light text needs another overlay than the FAQ's own text would.
+      expect(overlayFor({ ...def.defaults, ...look })).not.toBe(overlayFor(def.defaults));
+
+      await user.click(screen.getByRole("tab", { name: "Content" }));
+      await user.click(screen.getByRole("button", { name: "Background image Choose an image…" }));
+      await user.dblClick(screen.getByRole("option", { name: "shop.jpg" }));
+
+      expect(faq()?.overlay).toBe(overlayFor({ ...def.defaults, ...look }));
     });
   });
 });

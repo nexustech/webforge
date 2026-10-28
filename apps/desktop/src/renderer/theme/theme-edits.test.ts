@@ -6,10 +6,12 @@ import { sessionWith } from "../testing/fixtures.js";
 import { TOKEN_CONTROLS, tokenKey } from "./theme-controls.js";
 import {
   createOwnTheme,
+  lookReach,
   renameOwnTheme,
   setBrandColours,
   setColor,
   setFont,
+  setLook,
   setPairing,
   setPaletteColor,
   setTextSize,
@@ -375,5 +377,91 @@ describe("your own themes (2.23, PH2-17)", () => {
 
     expect(theme()).toEqual(mine);
     expect(labels()).toEqual(["Changed theme to 'Night'"]);
+  });
+});
+
+describe("the theme's looks (3.12, CT-1)", () => {
+  /** The starter site with three Buttons: two on the home page, one with corners of its own, and one in the Footer. */
+  function withButtons(): SiteDoc {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content.push({
+      type: "Section",
+      props: {
+        id: "band",
+        content: [
+          { type: "Button", props: { id: "plain", label: "Book" } },
+          { type: "Button", props: { id: "own", label: "Call", lookCorners: "none" } },
+        ],
+      },
+    });
+    site.layout.footer.push({ type: "Button", props: { id: "foot", label: "Top" } });
+    return site;
+  }
+
+  it("counts the elements of a kind that leave a field to its look, wherever they are", () => {
+    const site = withButtons();
+
+    expect(lookReach(site, "Button", ["lookCorners"])).toBe(2);
+    expect(lookReach(site, "Button", ["lookCorners", "lookShadow"])).toBe(3);
+    expect(lookReach(site, "Gallery", ["lookCorners"])).toBe(0);
+  });
+
+  it("sets a kind's look as one step, after asking how many it restyles (D7)", async () => {
+    const { session, labels, theme } = setUp(withButtons());
+    const { siteWide, confirmSiteWide } = answering(true);
+
+    expect(await setLook(session, { siteWide }, "Button", "Button", { lookCorners: "full" })).toBe(
+      true,
+    );
+
+    expect(theme().looks).toEqual({ Button: { lookCorners: "full" } });
+    expect(labels()).toEqual(["Changed the theme's look for Button"]);
+    expect(confirmSiteWide).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "Change how every Button looks?",
+        description: "This restyles the 2 on the site that have no look of their own.",
+      }),
+    );
+    session.history.undo();
+    expect(theme().looks).toBeUndefined();
+  });
+
+  it("changes nothing when the question is cancelled, or the look has the value", async () => {
+    const { session, labels, theme } = setUp(withButtons());
+
+    expect(
+      await setLook(session, answering(false), "Button", "Button", { lookCorners: "full" }),
+    ).toBe(false);
+    await setLook(session, undefined, "Button", "Button", { lookCorners: "full" });
+    expect(await setLook(session, undefined, "Button", "Button", { lookCorners: "full" })).toBe(
+      false,
+    );
+
+    expect(theme().looks).toEqual({ Button: { lookCorners: "full" } });
+    expect(labels()).toEqual(["Changed the theme's look for Button"]);
+  });
+
+  it("takes a look off as a reset, leaving no empty look behind", async () => {
+    const { session, labels, theme } = setUp(withButtons());
+    await setLook(session, undefined, "Button", "Button", {
+      lookCorners: "full",
+      lookShadow: "large",
+    });
+    await setLook(session, undefined, "Heading", "Heading", { lookItalic: true });
+
+    await setLook(session, undefined, "Button", "Button", {
+      lookCorners: undefined,
+      lookShadow: undefined,
+    });
+    expect(theme().looks).toEqual({ Heading: { lookItalic: true } });
+    await setLook(session, undefined, "Heading", "Heading", { lookItalic: undefined });
+
+    expect(theme().looks).toBeUndefined();
+    expect(labels().slice(2)).toEqual([
+      "Reset the theme's look for Button",
+      "Reset the theme's look for Heading",
+    ]);
   });
 });

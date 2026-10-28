@@ -1,8 +1,17 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
-import { expectWorkWithin, measureWork, OPEN_WAIT, openBudget, type Work } from "./budget.js";
+import {
+  expectMedianWithin,
+  expectWorkWithin,
+  measureWork,
+  OPEN_WAIT,
+  openBudget,
+  openMedianBudgetMs,
+  type Work,
+} from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
 import { launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
@@ -15,6 +24,8 @@ import { createFromTemplate, TEMPLATES } from "./templates.js";
 
 let dir: string;
 let app: ElectronApplication | undefined;
+/** Each opening's wall-clock time, for their median (#569). */
+const openings: number[] = [];
 
 /** The app this test launched. */
 function running(): ElectronApplication {
@@ -26,10 +37,15 @@ test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-templates-"));
 });
 
+// A wait added to every opening, which Windows' backstop lets through (#561, #569).
+test.afterAll(() => {
+  expectMedianWithin(openings, openMedianBudgetMs(), "Opening the templates' sites");
+});
+
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 for (const template of TEMPLATES) {
@@ -48,7 +64,9 @@ for (const template of TEMPLATES) {
       timeout: OPEN_WAIT,
     });
     if (opened === undefined) throw new Error("Not measured");
-    expectWorkWithin(await opened(), openBudget(), `Opening the ${template.title} site`);
+    const work = await opened();
+    openings.push(work.wallMs);
+    expectWorkWithin(work, openBudget(), `Opening the ${template.title} site`);
     await expect(canvas.locator("main img, section img").first()).not.toHaveJSProperty(
       "naturalWidth",
       0,

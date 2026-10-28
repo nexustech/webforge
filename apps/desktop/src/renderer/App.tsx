@@ -15,15 +15,16 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
+import { createKindPreviews } from "./add/index.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type ExportSite, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
+import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { reportFailure } from "./log.js";
 import { SettingsHost } from "./settings/SettingsHost.js";
-import { createSettingsRegistry } from "./settings/settings-registry.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";
@@ -211,6 +212,12 @@ export function App({
     openExport: () => exportSiteRef.current.openExport(),
     answerAi,
     preview,
+    // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
+    kindPreviews: createKindPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      compileCss: compileCss ?? ((request) => window.webforge.canvas.compileCss(request)),
+    }),
     siteCheckIgnored: {
       initial: uiState?.siteCheckIgnored ?? [],
       save: (ignored) => {

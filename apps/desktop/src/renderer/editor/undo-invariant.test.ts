@@ -23,13 +23,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { applyLook, lookChange } from "../clipboard/index.js";
 import {
-  deleteSelected,
-  duplicateSelected,
-  moveSelected,
-  similarTo,
-  toggleSelectedHidden,
-} from "../layers/index.js";
-import {
   addMenuItem,
   editMenuLink,
   followPages,
@@ -38,14 +31,14 @@ import {
   renameMenuItem,
   setMenuItemHidden,
 } from "../menu/index.js";
-import {
-  deleteSharedSection,
-  detachCopy,
-  renameSharedSection,
-  saveAsSharedSection,
-  updateSectionField,
-} from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
+import {
+  deleteSelected,
+  duplicateSelected,
+  moveSelected,
+  similarTo,
+  toggleSelectedHidden,
+} from "./bulk-layers.js";
 import {
   connectEngine,
   type EditorSession,
@@ -56,6 +49,13 @@ import {
 import { copyLayer } from "./layers.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
+import {
+  deleteSharedSection,
+  detachCopy,
+  renameSharedSection,
+  saveAsSharedSection,
+  updateSectionField,
+} from "./shared-sections.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
 // switches, site settings, the shared layout and the menu editor, interleaved with undo, redo and
@@ -347,6 +347,20 @@ const themeCommands: fc.Arbitrary<Command>[] = [
         ctx.session.edit("root", `Saved theme '${name}'`, (draft) => {
           draft.theme.colors.primary = { l, c: 0.1, h: 30 };
           draft.theme.own = { id: OWN_THEME_ID, name };
+        }),
+    })),
+  // A kind's look in the theme (3.12, CT-1), set or taken away, each one step.
+  fc
+    .record({
+      kind: fc.constantFrom("Button", "Heading"),
+      corners: fc.option(fc.constantFrom("none", "full"), { nil: undefined }),
+    })
+    .map(({ kind, corners }) => ({
+      name: `theme look ${kind} ${corners ?? "none"}`,
+      run: (ctx) =>
+        ctx.session.edit("root", "Changed the theme's look for Buttons", (draft) => {
+          if (corners === undefined) delete draft.theme.looks?.[kind];
+          else draft.theme.looks = { ...draft.theme.looks, [kind]: { lookCorners: corners } };
         }),
     })),
   fc.constant<Command>({

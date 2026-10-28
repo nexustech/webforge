@@ -1,13 +1,20 @@
 import { createStore, type StoreApi } from "zustand/vanilla";
 
-/** Theme Studio's sections, in its list (F-DS-7). */
-export const STUDIO_SECTIONS = ["themes", "colors", "text", "styles"] as const;
+/** Theme Studio's sections, in its list (F-DS-7); Components shows each kind's look (3.12). */
+export const STUDIO_SECTIONS = ["themes", "colors", "text", "styles", "components"] as const;
 
 /** One of {@link STUDIO_SECTIONS}. */
 export type StudioSection = (typeof STUDIO_SECTIONS)[number];
 
-/** Whether Theme Studio is open, and the section it shows. */
-export type StudioState = { readonly open: boolean; readonly section: StudioSection };
+/**
+ * Whether Theme Studio is open, the section it shows, and the kind Components shows (a component
+ * type, `Button`; its first kind while none is chosen).
+ */
+export type StudioState = {
+  readonly open: boolean;
+  readonly section: StudioSection;
+  readonly kind?: string | undefined;
+};
 
 /**
  * Theme Studio's state, made once for the window: the Theme tab's button and View → Theme Studio…

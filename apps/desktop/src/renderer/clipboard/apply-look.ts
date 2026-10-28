@@ -9,7 +9,7 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import { APPEARANCE_FIELDS, type ComponentDef } from "@webforge/site-components";
+import { APPEARANCE_FIELDS, type ComponentDef, withLook } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type FieldTarget, fieldTarget } from "../editor/field-target.js";
 import { type SharedRegion, shownLayout } from "../editor/shared-layout.js";
@@ -165,9 +165,16 @@ const samePlace = (a: Place, b: Place) =>
   (a.kind === "layout" && b.kind === "layout" && a.region === b.region) ||
   (a.kind === "shared" && b.kind === "shared" && a.id === b.id);
 
-/** A field's value as stored, or the component's default where it was never set. */
-const storedOr = (component: ComponentDef, node: NodeDoc, name: string) =>
-  node.props[name] ?? component.defaults[name];
+/**
+ * What a field draws with: its value as stored, else its kind's look in the theme (3.12), else the
+ * component's default.
+ */
+const drawnWith = (
+  component: ComponentDef,
+  look: Readonly<Record<string, unknown>> | undefined,
+  value: unknown,
+  name: string,
+) => value ?? look?.[name] ?? component.defaults[name];
 
 /**
  * What giving every other element of the selected one's kind its look would change, in `scope`
@@ -183,14 +190,14 @@ export function lookChange(session: LookSession, scope: LookScope): LookChange |
   const names = lookFieldsOf(source.component);
   if (names.length === 0) return undefined;
   const { component } = source;
-  const values = Object.fromEntries(
-    names.map((name) => [name, storedOr(component, source.node, name)]),
-  );
+  // As the source stores them: a field it leaves to its kind's look or its default is undefined,
+  // so the targets are left to them too.
+  const values = Object.fromEntries(names.map((name) => [name, source.node.props[name]]));
   const from = placeOf(source, pageId);
   const targets = elementsOfType(site, source.node.type, pageId, scope).filter(
     ({ place, node }) =>
       !(samePlace(place, from) && node.props.id === source.node.props.id) &&
-      changedFields(component, node, values).length > 0,
+      changedFields(component, site.theme.looks, node, values).length > 0,
   );
   return {
     item: component.label,
@@ -203,18 +210,29 @@ export function lookChange(session: LookSession, scope: LookScope): LookChange |
   };
 }
 
-/** The fields of `values` that `node` has otherwise, and can take with its own values. */
+/**
+ * The fields of `values` that `node` draws otherwise, with the theme's `looks` for its kind (3.12),
+ * or sets where the source leaves them unset, and can take with its own values.
+ */
 function changedFields(
   component: ComponentDef,
+  looks: SiteDoc["theme"]["looks"],
   node: NodeDoc,
   values: Readonly<Record<string, unknown>>,
 ): string[] {
-  const own = { ...component.defaults, ...node.props };
+  const look = looks?.[node.type] as Readonly<Record<string, unknown>> | undefined;
+  const own = { ...component.defaults, ...withLook(node.props, node.type, looks) };
   return Object.entries(values)
     .filter(
       ([name, value]) =>
         component.fields[name]?.unavailable?.(own) === undefined &&
-        !sameValue(storedOr(component, node, name), value),
+        // A field the source leaves to its kind's look or its default is taken off one that sets
+        // it, even to what it draws anyway, so it follows later changes to the look too (3.12).
+        ((value === undefined && node.props[name] !== undefined) ||
+          !sameValue(
+            drawnWith(component, look, node.props[name], name),
+            drawnWith(component, look, value, name),
+          )),
     )
     .map(([name]) => name);
 }
@@ -243,13 +261,15 @@ function nodesAt(site: SiteDoc, place: Place): readonly NodeDoc[] {
  */
 export function applyLook(session: LookSession, change: LookChange): boolean {
   if (change.targets.length === 0) return false;
-  const component = session.library.components[change.targets[0]?.node.type ?? ""];
+  const type = change.targets[0]?.node.type ?? "";
+  const component = session.library.components[type];
   if (component === undefined) return false;
+  const { looks } = session.history.document.getState().theme;
   session.edit("props", appliedLookLabel(change), (draft) => {
     for (const { place, node } of change.targets) {
       const into = findNode(nodesAt(draft, place), (each) => each.props.id === node.props.id);
       if (into === undefined) continue;
-      for (const name of changedFields(component, node, change.values)) {
+      for (const name of changedFields(component, looks, node, change.values)) {
         const value = change.values[name];
         if (value === undefined) delete into.props[name];
         else into.props[name] = structuredClone(value);

@@ -26,6 +26,7 @@ import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
+import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import { type RunExport, registerExportHandlers } from "./export-ipc.js";
 import { createExportRunner } from "./export-worker-client.js";
@@ -147,6 +148,17 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
   const appUrl = devServerUrl ?? pathToFileURL(rendererHtml).href;
   const isTrustedSender = (senderUrl: string) => isAppUrl(senderUrl, appUrl);
+
+  // In development the running bundle is Electron's own, named after the package: the app's name
+  // for the About panel and menus, as the packaged app has it from its bundle (#450). Its user data
+  // folder stays the one it had, named after the package (or `--user-data-dir`'s): named after the
+  // app, it would be the installed app's, sharing its single-instance lock below, its backups,
+  // recent sites, own themes and preferences.
+  if (!app.isPackaged) {
+    const userData = app.getPath("userData");
+    app.setName(t("app.name"));
+    app.setPath("userData", userData);
+  }
 
   // One Webforge at a time (1.8): a second launch, e.g. a .wforge double-clicked in Explorer while
   // Webforge is open, hands its command line to this one ("second-instance") and quits.
@@ -571,7 +583,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       releaseLock: () => {
         if (primaryInstance) app.releaseSingleInstanceLock();
       },
-      exit: (code) => app.exit(code),
+      exit: (code) => {
+        // Closed: what's left is Electron's teardown, which the E2E tests needn't wait for (#534).
+        announceClosedForE2eTests(app.isPackaged);
+        app.exit(code);
+      },
     });
   });
 

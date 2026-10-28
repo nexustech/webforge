@@ -1,4 +1,4 @@
-import { rmSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
 
@@ -116,6 +116,6 @@ test("keeps the person's favourite sections first, after a restart", async () =>
     await expect(groups().first().getByRole("button")).toHaveAccessibleName("FAQ");
   } finally {
     await app.close();
-    rmSync(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+    await rm(userData, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
 });

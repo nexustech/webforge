@@ -1,10 +1,16 @@
-import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, launchSecondInstance, waitForCanvas } from "./launch.js";
+import {
+  launchDesktopApp,
+  launchSecondInstance,
+  type WebforgeApp,
+  waitForCanvas,
+} from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
 // One Webforge at a time (1.8, P1): a .wforge double-clicked while Webforge runs opens in the
@@ -15,7 +21,7 @@ const STARTER_HEADING = "Welcome to our business";
 let dir: string;
 let userData: string;
 let bakery: string;
-let app: ElectronApplication | undefined;
+let app: WebforgeApp | undefined;
 
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-instance-"));
@@ -27,7 +33,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
@@ -150,7 +156,8 @@ test("quitting saves the last edit, then closes the site file", async () => {
   const page = await openBakery();
   await typeIntoHeading(page, "!");
 
-  const closed = app?.waitForEvent("close");
+  // Once it has closed, not once Electron has torn its process down (#534).
+  const closed = app?.untilClosed();
   // As Quit from the macOS app menu, Cmd+Q, or the OS ending the session would.
   await app?.evaluate(({ app: electronApp }) => {
     electronApp.quit();

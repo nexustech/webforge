@@ -1,6 +1,6 @@
 /** Sites: new, open, settings (stream B). */
 export const site = {
-  "site.fileType": "Webforge site",
+  "site.fileType": "{appName} site",
   "site.newDialogTitle": "New Site",
   "site.openDialogTitle": "Open Site",
   "site.untitledName": "My site",
@@ -82,7 +82,7 @@ export const site = {
   "site.media.rejected.tooLarge":
     "{name} is too large. Media takes files up to 50 MB and images up to 50 megapixels.",
   "site.media.failed.readOnly": "This site is read-only, so nothing can be added to it.",
-  "site.media.failed.unknown": "Webforge couldn't add the files.",
+  "site.media.failed.unknown": "{appName} couldn't add the files.",
   // The icon field and its picker (F-ED-22).
   "site.icon.choose": "Choose an icon…",
   "site.icon.change": "Change icon ({name})…",
@@ -115,8 +115,12 @@ export const site = {
     "That {item} can't go here. Select a place that takes it, then paste.",
   "site.clipboard.sharedRegion":
     "The {item} is on every page, so it can't be copied or cut. Its elements can.",
-  "site.clipboard.copyFailed": "Webforge couldn't copy that.",
-  "site.clipboard.pasteFailed": "Webforge couldn't paste that.",
+  "site.clipboard.copyFailed": "{appName} couldn't copy that.",
+  "site.clipboard.pasteFailed": "{appName} couldn't paste that.",
+  "site.clipboard.imagesMissing.one":
+    "1 image couldn't be pasted with it. Copy it again from its site.",
+  "site.clipboard.imagesMissing.other":
+    "{count} images couldn't be pasted with them. Copy them again from their site.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
   // Links to documents in Media (1.28), beside the link dialog's own `link.*` strings.
   "link.kind.file": "File",
@@ -224,6 +228,9 @@ export const site = {
   "site.settings.openingHoursNoteHint": 'Such as "Closed on bank holidays".',
   "site.settings.allowIndexing": "Let search engines show the site",
   "site.settings.includeSitemap": "Include a sitemap for search engines",
+  "site.settings.readableByAi": "Help AI tools read your site",
+  "site.settings.readableByAiHint":
+    "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",
   "site.settings.measurementId": "Google Analytics measurement ID",
   "site.settings.measurementIdHint": "Such as G-ABC123DEF4. Leave empty for no analytics.",
   "site.settings.consentBanner": "Ask visitors before counting them (cookie banner)",
@@ -286,10 +293,10 @@ export const site = {
   "site.start.help": "Help",
   "site.start.help.shortcuts": "Every keyboard shortcut, by what it does.",
   "site.start.help.example": "Open a finished example site to look around and change.",
-  "site.openFailed.notASite": "This file isn't a Webforge site.",
+  "site.openFailed.notASite": "This file isn't a {appName} site.",
   "site.openFailed.damaged": "This site file is damaged and can't be opened.",
   "site.openFailed.newer":
-    "This site was saved by a newer version of Webforge. Update Webforge to open it.",
+    "This site was saved by a newer version of {appName}. Update {appName} to open it.",
   "site.openFailed.missing": "The site file is no longer there. It may have been moved or deleted.",
-  "site.openFailed.unknown": "Webforge couldn't open the site.",
+  "site.openFailed.unknown": "{appName} couldn't open the site.",
 } as const;

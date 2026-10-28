@@ -19,8 +19,8 @@ import {
   type SiteDoc,
   sharedSectionNamed,
 } from "@webforge/model";
-import { updateField } from "../editor/apply-patch.js";
-import type { EditorSession } from "../editor/editor-session.js";
+import { updateField } from "./apply-patch.js";
+import type { EditorSession } from "./editor-session.js";
 
 /**
  * Shared sections in the editor (1.29, F-ED-23): saving a section as one, finding the copy an
@@ -316,3 +316,11 @@ export function deleteSharedSection(session: SharedSectionSession, id: SharedSec
   );
   return true;
 }
+
+/**
+ * A name the dialog asks for: the selected section's, to save it as a shared section, or a new
+ * one for shared section `id`. `suggested` is what the field starts with.
+ */
+export type SharedSectionNaming =
+  | { readonly kind: "save"; readonly suggested: string }
+  | { readonly kind: "rename"; readonly id: SharedSectionId; readonly suggested: string };

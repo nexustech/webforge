@@ -11,7 +11,7 @@ import {
 } from "@webforge/model";
 import { z } from "zod";
 import "../shell/form-messages.js";
-import type { LinkFieldChange } from "./link-change.js";
+import type { LinkFieldChange } from "../editor/link-change.js";
 import { type PageTarget, sectionAnchor } from "./link-targets.js";
 
 /** The kinds of link the dialog makes; a file is a document in Media (1.28). */

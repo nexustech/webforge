@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import {
   copiedNodeId,
   findNode,
@@ -29,9 +29,13 @@ import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor, quotedElementName } from "../editor/labels.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
+import {
+  type CopySelection,
+  copySelection,
+  updateSectionField,
+} from "../editor/shared-sections.js";
 import { reportFailure } from "../log.js";
 import { addMedia, importMessages, putInMedia } from "../media/index.js";
-import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
 import { siteSession } from "../storage/index.js";
 
 /**
@@ -338,6 +342,11 @@ export async function pasteElements(
     },
     { selectionAfter: { ...ui, nodeId: firstId }, apply: true },
   );
+  // Images whose copies Webforge no longer keeps (it quit since the copy): the elements came
+  // without them (#459).
+  if (result.missingImages > 0) {
+    notify(plural("site.clipboard.imagesMissing", result.missingImages));
+  }
   return true;
 }
 
