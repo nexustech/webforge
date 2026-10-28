@@ -114,20 +114,33 @@ export const BeingFound: Story = {
     ignored: 0,
     report: {
       mode: "export",
-      results: FOUND.map((result): RuleResult => {
-        switch (result.rule) {
-          case "webAddress":
-            return { ...result, findings: [] };
-          case "businessDetails":
-            return { ...result, findings: [at("phone")] };
-          case "businessProfile":
-            return { ...result, findings: [guide("businessProfile")] };
-          case "searchConsole":
-            return { ...result, findings: [guide("searchConsole")] };
-          default:
-            return result;
-        }
-      }),
+      // The rules this story is about, so they fit in the drawer.
+      results: [
+        { rule: "webAddress", level: "should", group: "found", findings: [], ignored: 0 },
+        {
+          rule: "businessDetails",
+          level: "tip",
+          group: "found",
+          findings: [at("phone")],
+          ignored: 0,
+        },
+        {
+          rule: "businessProfile",
+          level: "tip",
+          group: "found",
+          oneTime: true,
+          findings: [guide("businessProfile")],
+          ignored: 0,
+        },
+        {
+          rule: "searchConsole",
+          level: "tip",
+          group: "found",
+          oneTime: true,
+          findings: [guide("searchConsole")],
+          ignored: 0,
+        },
+      ],
     },
     describe: (finding) =>
       finding.key === "phone"
