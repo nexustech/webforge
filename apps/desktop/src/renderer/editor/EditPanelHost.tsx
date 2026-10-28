@@ -4,6 +4,7 @@ import {
   type FieldSpec,
   type GroupAction,
   type ListChange,
+  type OptionGroup,
   type PlainFieldKind,
   sameValue,
 } from "@webforge/editor-ui";
@@ -43,6 +44,7 @@ import {
   withBinding,
   withBindingChoice,
 } from "./binding-fields.js";
+import { arranged, gradientSource } from "./dialog-fields.js";
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { type FieldTarget, fieldTarget } from "./field-target.js";
@@ -297,6 +299,17 @@ export type EditPanelHostProps = {
    * Feature…*'s (3.13a), which names the element itself.
    */
   readonly appearanceOnly?: boolean;
+  /**
+   * With {@link appearanceOnly}, how *Style this ‹component›…* arranges the fields (3.13b): its
+   * groups in order, and each field's group, or none to leave it out. The deeper groups' fields,
+   * which the Style tab leaves out, show then. Without it, the Appearance group alone.
+   */
+  readonly dialogGroups?:
+    | {
+        readonly order: readonly OptionGroup[];
+        readonly of: (name: string, field: FieldDef) => OptionGroup | undefined;
+      }
+    | undefined;
   /** The Style tab's *Style this Feature…* button (3.13a); none without it. */
   readonly styleAction?: { readonly label: string; readonly onSelect: () => void } | undefined;
   /** The Advanced tab's read-only *CSS* of the item (3.14); none without it. */
@@ -322,6 +335,7 @@ export function EditPanelHost({
   groupActions,
   revealSource,
   appearanceOnly = false,
+  dialogGroups,
   styleAction,
   itemCss,
 }: EditPanelHostProps) {
@@ -425,7 +439,7 @@ export function EditPanelHost({
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     // Style this ‹component›…'s deeper groups (3.13b) are the dialog's own: the Style tab keeps
     // the Appearance basics.
-    if (hidden.has(name) || field.inDialog === true) return [];
+    if (hidden.has(name) || (field.inDialog === true && dialogGroups === undefined)) return [];
     const list = editableList(field, library);
     if (list !== undefined) {
       return [listField(name, field, list, node.props[name])];
@@ -452,8 +466,23 @@ export function EditPanelHost({
         ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
         ...(help === undefined ? {} : { help }),
         ...(warning === undefined ? {} : { warning }),
-        ...(field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id
+        // Where its value comes from (CT-3), on the Appearance basics and the dialog's deeper
+        // groups; and, on the Colour of a background drawn as a gradient, that (CT-4).
+        ...(field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id ||
+        field.inDialog === true
           ? provenance(name, field.label, own, responsive)
+          : {}),
+        ...(name === "lookBackground"
+          ? gradientSource(
+              values,
+              breakpoint,
+              dialogGroups === undefined
+                ? {
+                    item: component.label,
+                    ...(styleAction === undefined ? {} : { open: styleAction.onSelect }),
+                  }
+                : { inDialog: true },
+            )
           : {}),
         // Its Reset leaves it to its kind's look, where the theme has one for it (3.12): on
         // Desktop, while no other device keeps a value of its own (#567).
@@ -490,11 +519,13 @@ export function EditPanelHost({
   }
   // The dialog's one list: the Appearance group, in the list a panel without tabs shows (3.13a).
   const shown = appearanceOnly
-    ? fields.flatMap((field) =>
-        field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id
-          ? [{ ...field, group: "content" as const }]
-          : [],
-      )
+    ? dialogGroups === undefined
+      ? fields.flatMap((field) =>
+          field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id
+            ? [{ ...field, group: "content" as const }]
+            : [],
+        )
+      : arranged(fields, dialogGroups, component.fields)
     : fields;
 
   const selectionAfter = { pageId, viewport, nodeId: id };

@@ -4,6 +4,7 @@ import { EditPanelHost } from "../../editor/EditPanelHost.js";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { colourField } from "../../fields/index.js";
 import type { PreferencesStore } from "../../shell/preferences-store.js";
+import { STYLE_DIALOG_GROUPS } from "./style-groups.js";
 
 /** Props of {@link StyleGroups}. */
 export type StyleGroupsProps = {
@@ -13,9 +14,10 @@ export type StyleGroupsProps = {
 };
 
 /**
- * What *Style this ‹kind›…* edits (3.13a): the selected item's Appearance fields as the Style tab
- * has them, with their provenance (3.12). 3.13b's deeper groups join them here; the dialog around
- * it (`StyleDialog`) keeps the preview and where the changes apply.
+ * What *Style this ‹kind›…* edits: the selected item's Appearance fields as the Style tab has them
+ * (3.13a), then the deeper groups (3.13b, CT-2): Background, Border, Corners, Shadow, Title,
+ * Spacing and When hovered, each with its provenance (3.12). The dialog around it (`StyleDialog`)
+ * keeps the preview and where the changes apply.
  */
 export function StyleGroups({ session, preferences }: StyleGroupsProps) {
   const [renderers] = useState<FieldRenderers>(() => ({
@@ -23,7 +25,12 @@ export function StyleGroups({ session, preferences }: StyleGroupsProps) {
   }));
   return (
     <FieldRenderersProvider renderers={renderers}>
-      <EditPanelHost session={session} flush={() => session.flush()} appearanceOnly />
+      <EditPanelHost
+        session={session}
+        flush={() => session.flush()}
+        appearanceOnly
+        dialogGroups={STYLE_DIALOG_GROUPS}
+      />
     </FieldRenderersProvider>
   );
 }
