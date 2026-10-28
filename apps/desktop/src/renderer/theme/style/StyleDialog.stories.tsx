@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { NodeDoc, SiteDoc } from "@webforge/model";
+import { userEvent, within } from "storybook/test";
+import { DEFAULT_PREFERENCES } from "../../../shared/ipc/prefs.js";
 import { starterSite } from "../../../shared/starter-site.js";
 import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { dialogStory } from "../../testing/stories.js";
@@ -56,3 +58,53 @@ export const ThisOne: Story = openWith("this");
 
 /** *Every Button on the site*, with how many others it reaches. */
 export const EveryOne: Story = openWith("site");
+
+/**
+ * In Advanced mode, the *CSS* tab beside the groups (3.14), open: the Button as the export writes
+ * it. Storybook has no canvas styles worker: a stand-in writes the item and its rules.
+ */
+export const CssTab: Story = {
+  ...dialogStory(
+    (session) => {
+      session.select("styled");
+      const state = createStyleDialog();
+      state.setState({ open: true, since: openStyle(session), scope: "this" });
+      return (
+        <StyleDialog
+          session={session}
+          state={state}
+          preferences={createPreferencesStore({
+            preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },
+          })}
+          itemCss={{
+            api: {
+              itemHtml: async () => ({
+                status: "html",
+                html: '<a class="btn btn-primary rounded-full! shadow-lg!" href="#">Book a table</a>\n',
+              }),
+              classCss: async (_theme, classes) => ({
+                status: "css",
+                css: classes.map((name) =>
+                  name === "rounded-full!"
+                    ? ".rounded-full\\! {\n  border-radius: calc(infinity * 1px) !important;\n}"
+                    : name === "shadow-lg!"
+                      ? ".shadow-lg\\! {\n  box-shadow: var(--shadow-lg) !important;\n}"
+                      : null,
+                ),
+              }),
+            },
+            copyText: async () => null,
+            onOpenCustomCode: () => undefined,
+          }}
+        />
+      );
+    },
+    { site: site() },
+  ),
+  play: async () => {
+    // The dialog draws outside the story's root.
+    const dialog = within(document.body);
+    await userEvent.click(await dialog.findByRole("tab", { name: "CSS" }));
+    await dialog.findByText("Stylesheet rules", {}, { timeout: 5000 });
+  },
+};
