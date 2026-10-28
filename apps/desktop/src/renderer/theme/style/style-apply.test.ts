@@ -191,7 +191,7 @@ describe("registerStyleDialog (3.13a)", () => {
     expect(state.getState()).toMatchObject({ open: true, scope: "this" });
 
     preferences.changeMode("content");
-    expect(command()?.enabled).toBe(false);
+    expect(command()).toMatchObject({ label: "Style This Button…", enabled: false });
     session.select(null);
     preferences.changeMode("design");
     expect(command()).toMatchObject({ label: "Style This…", enabled: false });

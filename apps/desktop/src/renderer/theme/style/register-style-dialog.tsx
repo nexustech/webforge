@@ -44,9 +44,10 @@ export function registerStyleDialog(
   }
   let locked = false;
   const update = () => {
-    const item = locked ? undefined : styledItem(session);
+    // Named for the kind in Content mode too, as Apply Look's commands are, and off there.
+    const item = styledItem(session);
     registry.update(COMMAND_IDS.styleThis, {
-      enabled: item !== undefined,
+      enabled: !locked && item !== undefined,
       label:
         item === undefined
           ? t("style.command.any")
