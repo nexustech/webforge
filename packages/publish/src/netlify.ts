@@ -9,6 +9,7 @@ import {
   type Publisher,
   type TestResult,
   throwIfCancelled,
+  type Verification,
 } from "./publisher.js";
 
 // Netlify publishing (research 08, spec/04 item 0.2) over its REST API, without the Netlify SDK:
@@ -38,6 +39,9 @@ export type NetlifyOptions = {
   readonly retryBaseMs?: number;
 };
 
+/** How long the check after a publish may wait for Netlify's answers. */
+const VERIFY_TIMEOUT_MS = 15_000;
+
 /** Retries per request after a 429, a network error or a 5xx. */
 const MAX_RETRIES = 3;
 /** The longest we wait before a retry, whatever Netlify's headers ask for. */
@@ -49,6 +53,8 @@ const siteSchema = z.object({
   /** The site's live address, e.g. `https://rosas-bakery.netlify.app`. */
   ssl_url: z.string().nullish(),
   url: z.string().nullish(),
+  /** The deploy the site serves. */
+  published_deploy: z.object({ id: z.string() }).nullish(),
 });
 
 /** A Netlify site, as far as Webforge needs it. */
@@ -309,7 +315,30 @@ export function netlifyPublisher(options: NetlifyOptions): Publisher<NetlifyDest
         unchanged: build.files.size - toUpload.length,
         // A Netlify deploy is a whole new version of the site: files it lacks are simply gone.
         removed: 0,
+        version: deploy.id,
       };
+    },
+
+    /**
+     * Netlify says itself which deploy a site serves: the one just made is live once it's ready
+     * and the site's published deploy. Nothing is fetched from the site, so a page Netlify
+     * rewrote (its forms) or a CDN still on the old one can't mislead the check.
+     */
+    async verify(published, dest, signal): Promise<Verification> {
+      const { version } = published;
+      if (version === undefined || signal.aborted) return { status: "unchecked" };
+      const within = AbortSignal.any([signal, AbortSignal.timeout(VERIFY_TIMEOUT_MS)]);
+      try {
+        const [deploy, site] = await Promise.all([
+          client.getDeploy(version, within),
+          client.getSite(dest.siteId, within),
+        ]);
+        return deploy.state === "ready" && site.published_deploy?.id === version
+          ? { status: "live" }
+          : { status: "different" };
+      } catch {
+        return signal.aborted ? { status: "unchecked" } : { status: "unreachable" };
+      }
     },
   };
 }

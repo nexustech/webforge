@@ -72,7 +72,29 @@ export type PublishEvent =
       readonly unchanged: number;
       /** Files removed because the site no longer has them. */
       readonly removed: number;
+      /** The destination's own name for this version, where it has one: a Netlify deploy's id. */
+      readonly version?: string;
     };
+
+/** The event a publish ends with. */
+export type PublishedEvent = Extract<PublishEvent, { readonly type: "published" }>;
+
+/** What checking the live site found once a publish is done (08, step 5). */
+export type Verification =
+  /** The address serves the site just published. */
+  | { readonly status: "live" }
+  /**
+   * The address answers, but with another site or an earlier version of this one: a cache still
+   * holding it, another deploy published since, or an address that isn't this destination's.
+   */
+  | { readonly status: "different" }
+  /**
+   * The address or the host's API didn't answer in time, or answered with an error
+   * (`httpStatus`, when it answered).
+   */
+  | { readonly status: "unreachable"; readonly httpStatus?: number }
+  /** Not checked: no `https:` address, no home page in the build, or cancelled. */
+  | { readonly status: "unchecked" };
 
 /**
  * Publishes builds to one kind of destination (architecture §6). `D` holds the destination's
@@ -87,4 +109,10 @@ export interface Publisher<D> {
    * no longer has. Throws {@link PublishError}; cancelling leaves the previous site usable.
    */
   publish(build: BuildOutput, dest: D, signal: AbortSignal): AsyncIterable<PublishEvent>;
+  /**
+   * Checks that `published` is the version the destination serves, where the host can say so
+   * itself (Netlify, through its API). Without it, the live address is asked for the home page
+   * (`verifyPublished`). Never throws.
+   */
+  verify?(published: PublishedEvent, dest: D, signal: AbortSignal): Promise<Verification>;
 }
