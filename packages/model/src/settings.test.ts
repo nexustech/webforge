@@ -9,12 +9,15 @@ import {
 
 describe("verification codes (3.15, SEO-8)", () => {
   it("takes the code from what was pasted: the code, or the whole tag", () => {
-    expect(verificationCodeOf(" abcDEF123_-xyz ")).toBe("abcDEF123_-xyz");
-    expect(
-      verificationCodeOf('<meta name="google-site-verification" content="abcDEF123_-xyz" />'),
-    ).toBe("abcDEF123_-xyz");
-    expect(verificationCodeOf("<meta name='msvalidate.01' content='0123456789ABCDEF'>")).toBe(
-      "0123456789ABCDEF",
+    expect(verificationCodeOf(" abcDEF123_-xyz ", "google")).toBe("abcDEF123_-xyz");
+    const google = '<meta name="google-site-verification" content="abcDEF123_-xyz" />';
+    expect(verificationCodeOf(google, "google")).toBe("abcDEF123_-xyz");
+    const bing = "<meta name='msvalidate.01' content='0123456789ABCDEF'>";
+    expect(verificationCodeOf(bing, "bing")).toBe("0123456789ABCDEF");
+    // Another engine's tag stays as pasted, which isn't a code: the field says so.
+    expect(verificationCodeOf(google, "bing")).toBe(google);
+    expect(verificationCodeSchema.safeParse(verificationCodeOf(google, "bing")).success).toBe(
+      false,
     );
   });
 

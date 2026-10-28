@@ -855,3 +855,54 @@ describe("createHistoryManager", () => {
     expect(history.entries()).toEqual([]);
   });
 });
+
+describe("finish: what every change brings with it (3.15)", () => {
+  type Stamped = Doc & { changed?: string[] };
+  /** A history that records, in the same step, which top-level parts each change touched. */
+  function stamping() {
+    const finish = vi.fn((draft: Stamped, changes: readonly { path: (string | number)[] }[]) => {
+      const parts = [...new Set(changes.map((change) => String(change.path[0])))];
+      draft.changed = parts.filter((part) => part !== "changed");
+    });
+    const history = createHistoryManager<Stamped>({ initial, finish });
+    return { history, finish, doc: () => history.document.getState() };
+  }
+
+  it("changes the document in the same step, which undo and redo take with it", () => {
+    const { history, doc } = stamping();
+
+    history.run("Retitle", (draft) => {
+      draft.title = "About";
+    });
+    expect(doc()).toMatchObject({ title: "About", changed: ["title"] });
+    expect(history.entries()).toHaveLength(1);
+
+    history.undo();
+    expect(doc()).toEqual(initial);
+    history.redo();
+    expect(doc()).toMatchObject({ title: "About", changed: ["title"] });
+  });
+
+  it("isn't asked about a change that changed nothing", () => {
+    const { history, finish } = stamping();
+
+    history.run("Nothing", () => undefined);
+
+    expect(finish).not.toHaveBeenCalled();
+    expect(history.entries()).toHaveLength(0);
+  });
+
+  it("follows each update of a transaction, which cancelling takes back", () => {
+    const { history, doc } = stamping();
+
+    const typing = history.begin("Typing");
+    typing.update((draft) => {
+      const item = draft.items[0];
+      if (item !== undefined) item.text = "Hi";
+    });
+    expect(doc().changed).toEqual(["items"]);
+    typing.cancel();
+
+    expect(doc()).toEqual(initial);
+  });
+});

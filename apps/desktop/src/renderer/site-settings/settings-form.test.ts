@@ -92,6 +92,17 @@ describe("settings form", () => {
     });
     expect(saved.ok && toSettingsForm(saved.settings).googleVerification).toBe("abcDEF123_-xyz");
 
+    // Google's tag in Bing's field isn't saved under Bing's name: the field says what it is.
+    const swapped = checkSettings(
+      edit(full, {
+        bingVerification: '<meta name="google-site-verification" content="abcDEF123_-xyz" />',
+      }),
+      full,
+    );
+    expect(!swapped.ok && swapped.errors["search.verification.bing"]).toBe(
+      "That isn't Bing's verification code. Paste the code, or the whole msvalidate.01 tag from Bing Webmaster Tools.",
+    );
+
     // Emptied, nothing is stored.
     const none = checkSettings(edit(full, { googleVerification: "", bingVerification: "" }), full);
     expect(none.ok && none.settings.search).not.toHaveProperty("verification");

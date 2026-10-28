@@ -133,13 +133,27 @@ export const measurementIdSchema = z
  */
 export const verificationCodeSchema = z.string().regex(/^[A-Za-z0-9_-]{8,100}$/);
 
+/** The `<meta name>` each search engine's verification tag has (3.15, SEO-8). */
+export const VERIFICATION_TAGS = {
+  google: "google-site-verification",
+  bing: "msvalidate.01",
+} as const;
+
 /**
- * The verification code in what the person pasted (3.15, SEO-8): the code itself, or the whole
- * `<meta … content="…">` tag the console shows, from which its `content` is taken.
+ * The verification code in what the person pasted for search engine `engine` (3.15, SEO-8): the
+ * code itself, or the whole `<meta … content="…">` tag the console shows, from which its `content`
+ * is taken when its `name` is that engine's. Another engine's tag is left as pasted, which isn't a
+ * code, so the field says so rather than save it under the wrong name.
  */
-export function verificationCodeOf(pasted: string): string {
-  const content = /content\s*=\s*["']([^"']*)["']/i.exec(pasted)?.[1];
-  return (content ?? pasted).trim();
+export function verificationCodeOf(pasted: string, engine: keyof typeof VERIFICATION_TAGS): string {
+  const tag = /<meta\b[^>]*>/i.exec(pasted)?.[0];
+  if (tag === undefined) return pasted.trim();
+  const attribute = (name: string) =>
+    new RegExp(`\\b${name}\\s*=\\s*["']([^"']*)["']`, "i").exec(tag)?.[1];
+  const content = attribute("content");
+  return attribute("name")?.toLowerCase() === VERIFICATION_TAGS[engine] && content !== undefined
+    ? content.trim()
+    : pasted.trim();
 }
 
 export const siteSettingsSchema = z.strictObject({
