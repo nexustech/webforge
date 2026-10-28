@@ -22,6 +22,7 @@ import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
 import { registerBundleHandlers } from "./bundle-ipc.js";
+import { electronBundleFetch } from "./bundle-net.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
@@ -487,7 +488,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       isTrustedSender,
       projectSession,
       bundleNetworkFor(
-        { fetch: (url, init) => electron.net.fetch(url, init), resolve: resolveHost },
+        { fetch: electronBundleFetch(electron.net), resolve: resolveHost },
         app.isPackaged,
       ),
     );

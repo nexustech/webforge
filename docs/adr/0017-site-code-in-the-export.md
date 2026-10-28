@@ -32,6 +32,9 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
   - **Only on the person's click, after a yes.** The confirmation says the file's licence is theirs to check. It is the editor's one download besides fonts (architecture §9).
   - **Main downloads it** (`bundle-download.ts`). The address comes from a site file, which may come from anyone, so:
     - **`https://` at every hop.** Main follows redirects itself, at most five, so a redirect to `http://` is refused.
+      - The fetch is `net.request` in manual mode (`bundle-net.ts`), not `net.fetch`. In Electron 44, `net.fetch` with `redirect: "manual"` throws "Redirect was cancelled" rather than giving the 3xx, so no redirect could be followed.
+      - `net.request` gives the redirect's target, which the downloader checks like any address.
+      - Checked on 28 Oct 2026 against unpkg, whose `htmx.org@1` redirects to a versioned file: it downloaded through the checked hop.
     - **Never this computer or its network.** Each host is resolved before its request and refused if any address is loopback, private, link-local, carrier-grade NAT or reserved, as are `localhost` and IP addresses of those kinds.
       - This narrows DNS rebinding but can't close it, as the request resolves the host again.
       - `https://` with its certificate checked is what stands between a rebound name and a local server.
