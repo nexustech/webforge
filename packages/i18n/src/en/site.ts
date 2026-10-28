@@ -172,7 +172,7 @@ export const site = {
     "CSS for every page, after the site's own styles, so it wins over the theme.",
   "site.code.js": "Script (custom.js)",
   "site.code.jsHint":
-    "JavaScript for every page of the exported site, after Webforge's own. It never runs in the editor.",
+    "JavaScript for every page of the exported site, after {appName}'s own. It never runs in the editor.",
   "site.code.head": "HTML in every page's head",
   "site.code.headHint": "Added at the end of each page's <head>, as you write it.",
   "site.code.bodyEnd": "HTML at the end of every page",
