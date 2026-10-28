@@ -13,7 +13,7 @@ import {
   ScrollArea,
   useMenuDialog,
 } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { isMessageKey, t } from "@webforge/i18n";
 import {
   PAGE_FOLDER_MAX,
   PAGE_TITLE_MAX,
@@ -21,6 +21,7 @@ import {
   type PageId,
   type SiteDoc,
 } from "@webforge/model";
+import { recipesFor, TEMPLATE_CATEGORIES } from "@webforge/templates";
 import {
   EllipsisIcon,
   EyeOffIcon,
@@ -47,10 +48,18 @@ import {
   renamedFileName,
 } from "./page-actions.js";
 
+/** A page recipe's name in the editor (QS-3), or its page's own title should it have none. */
+function recipeName(id: string, title: string): string {
+  const key = `recipe.${id}`;
+  return isMessageKey(key) ? t(key) : title;
+}
+
 /** What the Pages panel can do; {@link SitePanel} binds them to the editor session. */
 export type PagesPanelActions = {
   show(pageId: PageId): void;
   add(name: string): void;
+  /** Adds a page made from page recipe `recipeId` (QS-3, 3.11a). */
+  addSuggested(recipeId: string): void;
   rename(pageId: PageId, name: string): void;
   duplicate(pageId: PageId): void;
   move(pageId: PageId, direction: -1 | 1): void;
@@ -170,15 +179,47 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
     <div className="flex h-full flex-col">
       <div className="flex h-7 shrink-0 items-center justify-between pr-1 pl-2">
         <h2 className="text-xs font-medium text-muted-foreground">{t("pages.title")}</h2>
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label={t("pages.add")}
-          title={t("pages.add")}
-          onClick={() => openDialog({ kind: "add" })}
-        >
-          <PlusIcon />
-        </Button>
+        <DropdownMenu modal={false}>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label={t("pages.add")}
+              title={t("pages.add")}
+            >
+              <PlusIcon />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onCloseAutoFocus={menuDialog.onCloseAutoFocus}>
+            <DropdownMenuItem onSelect={() => menuDialog.choose({ kind: "add" })}>
+              {t("pages.addBlank")}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuSub>
+              <DropdownMenuSubTrigger>{t("pages.addSuggested")}</DropdownMenuSubTrigger>
+              <DropdownMenuSubContent>
+                {/* By business type: the site doesn't keep the template it started from. */}
+                {TEMPLATE_CATEGORIES.map((category) => (
+                  <DropdownMenuSub key={category}>
+                    <DropdownMenuSubTrigger>
+                      {t(`template.category.${category}`)}
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {recipesFor(category).map((recipe) => (
+                        <DropdownMenuItem
+                          key={recipe.id}
+                          onSelect={() => actions.addSuggested(recipe.id)}
+                        >
+                          {recipeName(recipe.id, recipe.title)}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                ))}
+              </DropdownMenuSubContent>
+            </DropdownMenuSub>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <ScrollArea className="min-h-0 flex-1">
         <ul aria-label={t("pages.title")} className="p-1">

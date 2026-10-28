@@ -90,6 +90,28 @@ describe("fillNewSite (2.14a)", () => {
     scaledTestTimeout(30_000),
   );
 
+  it("puts the person's business in place of the template's sample, when it is given (QS-2)", async () => {
+    const into = target();
+
+    await fillNewSite(
+      into,
+      {
+        name: "Rosa's Bakery",
+        theme: "atelier",
+        template: "cafe",
+        business: { phone: "+44 1234 567890" },
+      },
+      shipped,
+    );
+
+    const site = store.readSite();
+    expect(site.settings.contact).toMatchObject({
+      businessName: "Rosa's Bakery",
+      phone: "+44 1234 567890",
+    });
+    expect(JSON.stringify(site.layout.footer)).toContain("Rosa's Bakery ·");
+  });
+
   it("refuses a template whose image isn't as its manifest says, writing no site", async () => {
     const [folder] = templates as [TemplateFolder];
     const [first] = folder.images;

@@ -120,7 +120,13 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
       onSubmit={(event) => {
         event.preventDefault();
         if (trimmed === "") return;
-        onCreate({ name: trimmed, theme, ...(chosen === null ? {} : { template: chosen }) });
+        // The name replaces the template's sample business (QS-2), in its copy as well.
+        onCreate({
+          name: trimmed,
+          theme,
+          business: {},
+          ...(chosen === null ? {} : { template: chosen }),
+        });
       }}
     >
       <DialogHeader>

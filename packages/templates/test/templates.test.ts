@@ -14,16 +14,18 @@ import {
   DEFAULT_THEME,
   eachElement,
   type NodeDoc,
+  type PageId,
   SITE_FORMAT_VERSION,
   type SiteDoc,
   siteDocSchema,
 } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
-import { sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
+import { isIconName, sectionOverlay, siteLibrary, walkNodes } from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { overlayContrastIssue, THEME_PRESETS } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { readTemplate, readTemplates, TEMPLATES_DIR } from "../src/node.js";
+import { insertRecipePage, PAGE_RECIPES, recipesFor } from "../src/recipes.js";
 import {
   BLANK_TEMPLATE_ID,
   imageManifestSchema,
@@ -319,5 +321,216 @@ describe("siteFromTemplate (2.14a)", () => {
     );
     // The template itself is left as it was.
     expect(Object.keys(template.site.media)).toHaveLength(0);
+  });
+});
+
+describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
+  const theme = DEFAULT_THEME;
+  const business = {
+    description: "Bread and cakes from our own oven",
+    phone: "+44 1234 567890",
+    email: "rosa@rosas.example",
+    address: "1 High Street, Hightown",
+    openingHours: [{ days: ["tue" as const], opens: "07:00", closes: "15:00" }],
+  };
+  /** Every string the site's copy has: its pages, Header and Footer, shared sections and menu. */
+  const copyOf = (site: SiteDoc) =>
+    JSON.stringify([site.pages, site.layout, site.sharedSections, site.menu]);
+
+  it("puts the person's business in place of every template's sample business", () => {
+    for (const { template, images } of templates) {
+      const sample = template.site.settings;
+      const site = siteFromTemplate(template, images, {
+        name: "Rosa's Bakery",
+        theme,
+        business,
+      });
+
+      expect(siteDocSchema.parse(site), template.id).toEqual(site);
+      expect(site.settings.general).toMatchObject({
+        name: "Rosa's Bakery",
+        description: business.description,
+      });
+      expect(site.settings.contact).toMatchObject({
+        businessName: "Rosa's Bakery",
+        phone: business.phone,
+        email: business.email,
+        address: business.address,
+        openingHours: business.openingHours,
+      });
+      const copy = copyOf(site);
+      for (const said of [
+        sample.general.name,
+        sample.contact.phone,
+        sample.contact.email,
+        sample.contact.address,
+      ]) {
+        if (said !== undefined) expect(copy, `${template.id}: ${said}`).not.toContain(said);
+      }
+    }
+  });
+
+  it("writes the name into the Footer's text and the pages' own, escaped in rich text", () => {
+    const shop = readTemplate("shop");
+
+    const site = siteFromTemplate(shop.template, shop.images, {
+      name: "Rosa & Sons",
+      theme,
+      business: {},
+    });
+
+    const footer = JSON.stringify(site.layout.footer);
+    expect(footer).toContain("Rosa & Sons · Handmade pots");
+    expect(copyOf(site)).toContain("<p>Rosa &amp; Sons started on a kitchen table");
+    expect(copyOf(site)).not.toContain("Fern &");
+  });
+
+  it("calls the person's number from the template's buttons, and keeps what they skipped", () => {
+    const cafe = readTemplate("cafe");
+    const sample = cafe.template.site.settings.contact;
+
+    const called = siteFromTemplate(cafe.template, cafe.images, {
+      name: "Rosa's",
+      theme,
+      business: { phone: business.phone },
+    });
+    const skipped = siteFromTemplate(cafe.template, cafe.images, {
+      name: "Rosa's",
+      theme,
+      business: {},
+    });
+
+    expect(copyOf(called)).toContain(`"number":"${business.phone}"`);
+    // Skipped: the template's placeholders stay, for Site Check to flag (QS-6).
+    expect(skipped.settings.contact.phone).toBe(sample.phone);
+    expect(skipped.settings.contact.openingHours).toEqual(sample.openingHours);
+    expect(copyOf(skipped)).toContain(`"number":"${sample.phone}"`);
+    expect(copyOf(skipped)).not.toContain("The Copper Kettle");
+  });
+
+  it("leaves an example's sample business as it is, when no business is given (Try an example)", () => {
+    const cafe = readTemplate("cafe");
+
+    const site = siteFromTemplate(cafe.template, cafe.images, { name: "The Copper Kettle", theme });
+
+    expect(copyOf(site)).toBe(copyOf(cafe.template.site));
+    expect(site.settings.contact).toEqual(cafe.template.site.settings.contact);
+  });
+
+  it("binds each element whose text is the sample business's name, where the element can (QS-2)", () => {
+    for (const { template } of templates) {
+      const name = template.site.settings.general.name;
+      eachElement(template.site, (node) => {
+        const fields = CATALOGUE[node.type]?.fields ?? {};
+        for (const [field, value] of Object.entries(node.props)) {
+          const declared = fields[field];
+          const bindable =
+            declared !== undefined && "bindable" in declared ? declared.bindable : [];
+          if (value !== name || !bindable?.includes("general.name")) continue;
+          const bindings = node.props.bindings as Record<string, string> | undefined;
+          expect(bindings?.[field], `${template.id} ${node.type}.${field}`).toBe("general.name");
+        }
+      });
+    }
+  });
+});
+
+describe("page recipes (QS-3, 3.11)", () => {
+  it("use only the catalogue's components and icons, and link nowhere", () => {
+    for (const recipe of PAGE_RECIPES) {
+      // Throws for a component the catalogue doesn't have.
+      walkNodes(recipe.content, siteLibrary, (node) => {
+        if (typeof node.props.icon === "string") {
+          expect(isIconName(node.props.icon), `${recipe.id} ${node.props.icon}`).toBe(true);
+        }
+        for (const value of Object.values(node.props)) {
+          const kind = (value as { readonly kind?: unknown } | null)?.kind;
+          expect(kind, `${recipe.id} ${node.type}`).toBeUndefined();
+        }
+      });
+    }
+  });
+
+  it("give every business type at least two pages its template doesn't have", () => {
+    for (const { template } of templates) {
+      if (template.category === null) continue;
+      const titles = Object.values(template.site.pages).map((page) => page.title);
+      const recipes = recipesFor(template.category);
+      expect(recipes.length, template.id).toBeGreaterThanOrEqual(2);
+      for (const recipe of recipes) expect(titles, template.id).not.toContain(recipe.title);
+    }
+  });
+
+  it("add a page to a site made from their type's template, which Site Check finds nothing in", () => {
+    for (const { template, images } of templates) {
+      if (template.category === null) continue;
+      const site = siteFromTemplate(template, images, {
+        name: template.site.settings.general.name,
+        theme: template.site.theme,
+      });
+      const notFound = site.pageOrder.at(-1);
+      for (const recipe of recipesFor(template.category)) {
+        insertRecipePage(site, `recipe-${recipe.id}` as PageId, recipe);
+      }
+
+      expect(siteDocSchema.parse(site), template.id).toEqual(site);
+      // Before the "Page not found" page, named, described and holding the recipe's sections.
+      expect(site.pageOrder.at(-1), template.id).toBe(notFound);
+      const [first] = recipesFor(template.category);
+      const page = site.pages[`recipe-${first?.id}` as PageId];
+      expect(page).toMatchObject({
+        title: first?.title,
+        settings: { description: first?.description },
+        doc: { content: first?.content },
+      });
+      expect(page?.doc.content).not.toBe(first?.content);
+      const report = checkSite({ site, catalogue: CATALOGUE }, "export");
+      for (const rule of ["contrast", "underlinedText", "altText", "brokenLinks"]) {
+        const result = report.results.find((each) => each.rule === rule);
+        const found = result?.findings.filter((finding) => finding.place.kind !== "theme");
+        expect(found, `${template.id} ${rule}`).toEqual([]);
+      }
+    }
+  });
+});
+
+describe("siteFromTemplate with the Pages step's choices (QS-1, QS-3, 3.11)", () => {
+  const trades = readTemplate("trades");
+  const make = (pages: { leaveOut: string[]; recipes: string[] }) =>
+    siteFromTemplate(trades.template, trades.images, {
+      name: "Rosa's",
+      theme: DEFAULT_THEME,
+      pages,
+    });
+
+  it("leaves out the pages unticked, from the menu too, and their links go to the home page", () => {
+    const site = make({ leaveOut: ["trades-contact"], recipes: [] });
+
+    expect(siteDocSchema.parse(site)).toEqual(site);
+    expect(site.pages["trades-contact" as PageId]).toBeUndefined();
+    expect(site.pageOrder).not.toContain("trades-contact");
+    expect(JSON.stringify(site.menu)).not.toContain("trades-contact");
+    const copy = JSON.stringify([site.pages, site.layout, site.sharedSections]);
+    expect(copy).not.toContain("trades-contact");
+    expect(copy).toContain(`"pageId":"${site.homePageId}"`);
+    const report = checkSite({ site, catalogue: CATALOGUE }, "export");
+    expect(report.results.find((each) => each.rule === "brokenLinks")?.findings).toEqual([]);
+  });
+
+  it("adds a page for each recipe ticked, in that order, before 'Page not found'", () => {
+    const site = make({ leaveOut: [], recipes: ["trades-faq", "trades-reviews"] });
+
+    const titles = site.pageOrder.map((id) => site.pages[id]?.title);
+    expect(titles.slice(-3)).toEqual(["FAQ", "Reviews", "Page not found"]);
+    expect(site.pageOrder).toHaveLength(trades.template.site.pageOrder.length + 2);
+  });
+
+  it("keeps the home page and 'Page not found', and passes over ids it doesn't know", () => {
+    const site = make({
+      leaveOut: ["trades-home", "trades-not-found", "nowhere"],
+      recipes: ["no-such-recipe"],
+    });
+
+    expect(site.pageOrder).toEqual(trades.template.site.pageOrder);
   });
 });
