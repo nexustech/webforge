@@ -5,6 +5,8 @@ import {
   layoutDocSchema,
   type PageDoc,
   pageDocSchema,
+  type SiteCode,
+  siteCodeSchema,
   type Theme,
   themeSchema,
   withoutUnsafeKeys,
@@ -159,6 +161,11 @@ export type SiteSnapshot = {
    * files when left out.
    */
   readonly search?: SiteSearch | undefined;
+  /**
+   * The site's own code (F-ED-15, 3.9): `custom.css` and `custom.js`, and HTML for every page's
+   * `<head>` and the end of its `<body>`. Left out when all four are empty.
+   */
+  readonly code?: SiteCode | undefined;
 };
 
 /** {@link SiteSnapshot}'s search engines and sharing. */
@@ -284,6 +291,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
             .optional(),
         })
         .optional(),
+      code: siteCodeSchema.optional(),
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);

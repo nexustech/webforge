@@ -20,8 +20,12 @@ export type PageDocument = {
   readonly description: string | undefined;
   /** Relative URL of the stylesheet. */
   readonly stylesheet: string;
+  /** Relative URL of the site's own `custom.css` (3.9), after the stylesheet, if it has one. */
+  readonly customStylesheet?: string;
   /** Relative URL of `webforge.js`, if the page needs it. */
   readonly script: string | undefined;
+  /** Relative URL of the site's own `custom.js` (3.9), after `webforge.js`, if it has one. */
+  readonly customScript?: string;
   readonly header: string;
   readonly main: string;
   readonly footer: string;
@@ -34,6 +38,10 @@ export type PageDocument = {
    * (3.4), then the share and search tags (3.5). Each is whole, safe HTML that the build made.
    */
   readonly head?: readonly string[];
+  /** The site's own HTML for every page's `<head>` (3.9), last in it, as the person wrote it. */
+  readonly customHead?: string;
+  /** The site's own HTML for the end of every page's `<body>` (3.9), as the person wrote it. */
+  readonly customBodyEnd?: string;
 };
 
 /** A file of the site's icon set (3.4): where it is, its sizes and its type, as a manifest lists it. */
@@ -65,9 +73,9 @@ function sharedRegion(name: "Header" | "Footer", html: string): string {
 }
 
 /**
- * A complete, readable HTML document (X4): classic deferred script only, no modules (X1), and
- * comments marking the shared Header and Footer. Without `format`, as it is before pretty-printing,
- * for *Minify output*.
+ * A complete, readable HTML document (X4): classic deferred scripts only, no modules (X1), and
+ * comments marking the shared Header and Footer. The site's own code (3.9) goes in as the person
+ * wrote it. Without `format`, as it is before pretty-printing, for *Minify output*.
  */
 export function pageDocument(page: PageDocument, format = true): string {
   const head = [
@@ -78,8 +86,13 @@ export function pageDocument(page: PageDocument, format = true): string {
       ? ""
       : `<meta name="description" content="${escapeHtml(page.description)}">`,
     `<link rel="stylesheet" href="${page.stylesheet}">`,
+    page.customStylesheet === undefined
+      ? ""
+      : `<link rel="stylesheet" href="${page.customStylesheet}">`,
     ...(page.head ?? []),
     page.script === undefined ? "" : `<script defer src="${page.script}"></script>`,
+    page.customScript === undefined ? "" : `<script defer src="${page.customScript}"></script>`,
+    page.customHead?.trim() ?? "",
   ].filter((line) => line !== "");
   const html = `<!doctype html>
 <html lang="${escapeHtml(page.language)}" data-theme="${escapeHtml(page.theme)}">
@@ -92,7 +105,7 @@ ${sharedRegion("Header", page.header)}
 ${page.main}
 </main>
 ${sharedRegion("Footer", page.footer)}
-${page.backToTop ?? ""}${page.consent ?? ""}
+${page.backToTop ?? ""}${page.consent ?? ""}${page.customBodyEnd?.trim() ?? ""}
 </body>
 </html>`;
   return format ? formatHtml(html) : html;

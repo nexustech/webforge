@@ -96,6 +96,7 @@ export function siteToSnapshot(
         ? {}
         : { verification: site.settings.search.verification }),
     },
+    ...(Object.values(site.code).every((code) => code.trim() === "") ? {} : { code: site.code }),
   };
 }
 

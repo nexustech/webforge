@@ -56,7 +56,7 @@ function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
  * `site` in a theme of its own (#423): square, large, outline buttons, strong shadows and links
  * underlined only on hover, with running text that has a link in it and a Button set to Filled on the
  * home page; Google Analytics with its consent banner (3.8); and Web3Forms with the web address,
- * so its forms send visitors to a thank-you page (3.7).
+ * so its forms send visitors to a thank-you page (3.7); and code of its own (3.9).
  */
 function themed(site: SiteSnapshot): SiteSnapshot {
   const [home, ...rest] = site.pages;
@@ -99,6 +99,14 @@ function themed(site: SiteSnapshot): SiteSnapshot {
     // to (3.7): forms.spec.ts opens them from disk.
     formService: { kind: "web3forms", accessKey: "0f8fad5b-d9cb-469f-a165-70867728950e" },
     settings: { ...site.settings, "address.url": "https://rosas-bakery.example" },
+    // The site's own code (3.9): site-code.spec.ts checks each part runs from disk. The note's
+    // classes are single-quoted, and `tracking-widest` is used nowhere else.
+    code: {
+      css: "#own-note {\n  outline: 3px solid rgb(255, 0, 0);\n}",
+      js: 'function ownGreeting() {\n  return "Hello";\n}\ndocument.documentElement.dataset.ownScript = "ran";',
+      head: '<meta name="own-head" content="yes">',
+      bodyEnd: "<p id='own-note' class='tracking-widest'>Thanks for visiting</p>",
+    },
     pages: [
       { ...home, doc: { ...home.doc, content: [...home.doc.content, linked, filled, reversed] } },
       ...rest,
