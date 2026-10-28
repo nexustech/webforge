@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { DEFAULT_THEME } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { readTemplates, TEMPLATES_DIR, type TemplateFolder } from "@webforge/templates/node";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { themePreset } from "@webforge/themes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "../worker/store-import.js";
@@ -45,38 +46,49 @@ const target = () => ({
 });
 
 describe("fillNewSite (2.14a)", () => {
-  it("writes a template's site, named and in the chosen theme, its images in Media", async () => {
-    const into = target();
+  // Its eight photos through the storage writer: 0.3–1.8 s on CI's Windows runners, and twice 3–4.2 s,
+  // in 95 runs of 26–28 Oct 2026. One runner stalled for 18.3 s with no more work (#561), past the
+  // 15 s default; the E2E test that makes the same site stalled for 21.5 s that hour.
+  it(
+    "writes a template's site, named and in the chosen theme, its images in Media",
+    async () => {
+      const into = target();
 
-    await fillNewSite(into, { name: "Rosa's Bakery", theme: "atelier", template: "cafe" }, shipped);
-
-    const site = store.readSite();
-    const [{ template, images, imagesDir }] = templates as [TemplateFolder];
-    expect(site.settings.general.name).toBe("Rosa's Bakery");
-    expect(site.theme).toEqual(themePreset("atelier"));
-    expect(site.pageOrder).toHaveLength(template.site.pageOrder.length);
-    expect(site.layout).toEqual(template.site.layout);
-    expect(Object.keys(site.media).toSorted()).toEqual(
-      images.map((image) => image.mediaId).toSorted(),
-    );
-    for (const image of images) {
-      // Through the storage writer, by path, off the main thread (R13b).
-      expect(into.importFile).toHaveBeenCalledWith(
-        image.mediaId,
-        image.file,
-        join(imagesDir, image.file),
+      await fillNewSite(
+        into,
+        { name: "Rosa's Bakery", theme: "atelier", template: "cafe" },
+        shipped,
       );
-      expect(store.readAsset(image.mediaId), image.file).toMatchObject({
-        hash: image.hash,
-        mime: image.mimeType,
-        width: image.width,
-        height: image.height,
-        originalName: image.file,
-      });
-      const bytes = store.readBlob(image.hash)?.data ?? new Uint8Array();
-      expect(createHash("sha256").update(bytes).digest("hex")).toBe(image.hash);
-    }
-  });
+
+      const site = store.readSite();
+      const [{ template, images, imagesDir }] = templates as [TemplateFolder];
+      expect(site.settings.general.name).toBe("Rosa's Bakery");
+      expect(site.theme).toEqual(themePreset("atelier"));
+      expect(site.pageOrder).toHaveLength(template.site.pageOrder.length);
+      expect(site.layout).toEqual(template.site.layout);
+      expect(Object.keys(site.media).toSorted()).toEqual(
+        images.map((image) => image.mediaId).toSorted(),
+      );
+      for (const image of images) {
+        // Through the storage writer, by path, off the main thread (R13b).
+        expect(into.importFile).toHaveBeenCalledWith(
+          image.mediaId,
+          image.file,
+          join(imagesDir, image.file),
+        );
+        expect(store.readAsset(image.mediaId), image.file).toMatchObject({
+          hash: image.hash,
+          mime: image.mimeType,
+          width: image.width,
+          height: image.height,
+          originalName: image.file,
+        });
+        const bytes = store.readBlob(image.hash)?.data ?? new Uint8Array();
+        expect(createHash("sha256").update(bytes).digest("hex")).toBe(image.hash);
+      }
+    },
+    scaledTestTimeout(30_000),
+  );
 
   it("refuses a template whose image isn't as its manifest says, writing no site", async () => {
     const [folder] = templates as [TemplateFolder];
