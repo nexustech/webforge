@@ -17,7 +17,6 @@ import { starterSite } from "../../shared/starter-site.js";
 import { classesFieldRenderer } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
-import { saveAsSharedSection } from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -27,6 +26,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { placedOverlay } from "./placed-overlay.js";
+import { saveAsSharedSection } from "./shared-sections.js";
 
 afterEach(cleanup);
 
@@ -443,7 +443,8 @@ describe("EditPanelHost", () => {
 
       expect(sourceOf("lookCorners")).toBe("Set here");
       expect(sourceOf("lookShadow")).toBe("Set here");
-      expect(sourceOf("lookColor")).toBe("Theme's");
+      // Nothing to add to the control's own *Theme's* (#567).
+      expect(sourceOf("lookColor")).toBeUndefined();
 
       // Reset where the Heading look sets it: back to the look, which it then follows.
       fireEvent.contextMenu(screen.getByText("Shadow", { selector: "label" }));
@@ -451,6 +452,12 @@ describe("EditPanelHost", () => {
       expect(sourceOf("lookShadow")).toBe("Theme's look for Heading");
       await user.click(screen.getByRole("button", { name: "Theme's look for Heading" }));
       expect(revealSource).toHaveBeenCalledWith("look:Heading");
+
+      // On Mobile, Reset makes the device follow Desktop: not the look's (#567).
+      act(() => session.setViewport("mobile"));
+      fireEvent.contextMenu(screen.getByText("Shadow", { selector: "label" }));
+      expect(await screen.findByRole("menuitem", { name: "Reset to Default" })).toBeDefined();
+      expect(screen.queryByRole("menuitem", { name: "Reset to Theme's Look" })).toBeNull();
     });
 
     it("sets another device's value from its row, and dots the device in effect (SP-5)", async () => {

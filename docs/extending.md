@@ -53,7 +53,9 @@ export const bookingsPanelArea: Area<EditorContext> = {
 `pnpm deps` checks them:
 - **Another area only through its `index.ts`** (`renderer-areas-through-index`, B2): the index says what an area offers the others; everything else in its folder is its own.
 - **No cycles between areas** (`tools/src/check-area-cycles.ts`): two areas needing each other move what both need into `editor/` or `shell/`.
-- **`shell/`, `editor/` and `testing/` are what every area builds on,** not areas. `editor/` reaches an area only through its `index.ts` too (`renderer-editor-areas-through-index`); `Editor.tsx`, which draws the editor's dialogs and menus, is the exception.
+- **`shell/`, `editor/` and `testing/` are what every area builds on,** not areas.
+  - `editor/` imports no area (`renderer-editor-imports-no-area`, #379). What two areas share, such as the shared sections' and Layers' commands, the links' changes or the settings registry, lives in `editor/`, or in `@webforge/model` when it is a pure function of the document.
+  - `Editor.tsx`, which draws the editor's dialogs and menus from the areas, is the exception. `editor/`'s tests and stories may use areas too, through their `index.ts`.
 - **`renderer/testing/` is for tests and stories only** (`renderer-testing-only-in-tests`).
 - **The renderer never imports Node or Electron,** and only `packages/engine` imports Puck.
 
