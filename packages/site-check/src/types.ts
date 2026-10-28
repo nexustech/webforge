@@ -23,7 +23,12 @@ export type FindingPlace =
   /** The theme's colours. */
   | { readonly kind: "theme" }
   /** The web address in Site Settings. */
-  | { readonly kind: "address" };
+  | { readonly kind: "address" }
+  /** A part of the site's own code, in Settings' Custom Code (3.9). */
+  | { readonly kind: "code"; readonly part: SiteCodePart };
+
+/** A part of the site's own code (`SiteCode`): its stylesheet, its script, or its page HTML. */
+export type SiteCodePart = "css" | "js" | "head" | "bodyEnd";
 
 /** One thing a rule found. */
 export type Finding = {

@@ -111,7 +111,7 @@ describe("StartScreen", () => {
       (element) => element.textContent === "Create",
     );
     await act(async () => create?.click());
-    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light" });
+    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light", business: {} });
     expect(restart).toHaveBeenCalled();
     await act(async () => button("Open a site…")?.click());
     expect(project.open).toHaveBeenCalled();
@@ -129,7 +129,7 @@ describe("StartScreen", () => {
       (element) => element.textContent === "Create",
     );
     await act(async () => create?.click());
-    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light" });
+    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light", business: {} });
   });
 
   it("lists recent sites with thumbnail, file name and when they were edited or opened", async () => {

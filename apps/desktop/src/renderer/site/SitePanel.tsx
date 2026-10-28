@@ -20,6 +20,7 @@ import type { PanelRegistry } from "../shell/panels.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
   addPage,
+  addSuggestedPage,
   changePageSettings,
   deletePage,
   duplicatePage,
@@ -43,6 +44,9 @@ export function pagesPanelActions(
     show: (pageId) => session.showPage(pageId),
     add: (name) => {
       addPage(session, name);
+    },
+    addSuggested: (recipeId) => {
+      addSuggestedPage(session, recipeId);
     },
     rename: (pageId, name) => renamePage(session, pageId, name),
     duplicate: (pageId) => {

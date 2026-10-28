@@ -208,6 +208,22 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(showSettings).toHaveBeenCalledWith("site", "forms");
   });
 
+  it("stops the export for a file from another website, shown in Settings' Custom Code (3.9)", async () => {
+    const site = siteWith({ content: [] });
+    const { rule, showSettings } = setUp({
+      ...site,
+      code: { ...site.code, css: ".hero { background: url(https://img.example.com/hero.jpg); }" },
+    });
+    expect(rule("externalResources").textContent).toContain("https://img.example.com/hero.jpg");
+
+    await userEvent.click(
+      within(rule("externalResources")).getByRole("button", {
+        name: "Show Custom Code › Stylesheet",
+      }),
+    );
+    expect(showSettings).toHaveBeenCalledWith("code", "code");
+  });
+
   it("jumps to a shared section's element in a page's copy of it (F-ED-23)", async () => {
     const HOURS = "shared-hours" as SharedSectionId;
     const site = siteWith({

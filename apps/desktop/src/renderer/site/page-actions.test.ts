@@ -1,10 +1,12 @@
 import { type MediaId, type PageId, pagePath, type SiteDoc, siteDocSchema } from "@webforge/model";
+import { PAGE_RECIPES } from "@webforge/templates";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { EditorSession } from "../editor/editor-session.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   addPage,
+  addSuggestedPage,
   canDelete,
   changePageSettings,
   deletePage,
@@ -90,6 +92,27 @@ describe("page actions (F-ED-13)", () => {
     session.history.redo();
     expect(shown()).toBe(id);
     expect(addPage(session, "   ")).toBeNull();
+  });
+
+  it("adds a suggested page from its recipe, as one step, and shows it (QS-3)", () => {
+    const { session, site, labels, titles, shown } = setUp();
+    const recipe = PAGE_RECIPES.find((each) => each.id === "trades-areas");
+    if (recipe === undefined) throw new Error("no recipe");
+
+    const id = addSuggestedPage(session, recipe.id);
+
+    expect(titles()).toEqual(["My site", "Areas we cover", "Page not found"]);
+    expect(site().pages[id as PageId]).toMatchObject({
+      slug: "areas-we-cover",
+      settings: { description: recipe.description },
+      doc: { content: recipe.content },
+    });
+    expect(siteDocSchema.parse(site())).toEqual(site());
+    expect(shown()).toBe(id);
+    expect(labels()).toEqual(["Added page 'Areas we cover'"]);
+    session.history.undo();
+    expect(site().pages[id as PageId]).toBeUndefined();
+    expect(addSuggestedPage(session, "no-such-recipe")).toBeNull();
   });
 
   it("gives every page a unique, valid file name", () => {

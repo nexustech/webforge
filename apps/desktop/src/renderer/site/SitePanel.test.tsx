@@ -22,6 +22,7 @@ describe("Site panel", () => {
     const pages = () => within(screen.getByRole("list", { name: "Pages" }));
 
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Blank Page…" }));
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
 
     const added = pages().getByRole("button", { name: /^New page/ });

@@ -33,7 +33,7 @@ import { imageAt, processImage } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
-import { codeCandidates, customCode, scriptMistake } from "./site-code.js";
+import { scriptMistake, siteCodeCandidates } from "./site-code.js";
 import {
   hasSitemap,
   llmsTxt,
@@ -558,7 +558,9 @@ export async function* buildEvents(
   // Everything a page's render reads besides the page itself, hashed once for the page cache: the
   // site without its pages' content and without Media, whose images and documents a page reaches
   // only as they were resolved above, and of the theme only its shape: a render reads none of its
-  // colours or sizes, which the stylesheet sets (3.2). A new input of rendering must be added here.
+  // colours or sizes, which the stylesheet sets (3.2). Not the site's own code either, which goes
+  // into each page's document after it is rendered (3.9). A new input of rendering must be added
+  // here.
   const sharedKey =
     caches === undefined
       ? ""
@@ -571,6 +573,7 @@ export async function* buildEvents(
               theme: themeShape(site.theme),
               media: undefined,
               documents: undefined,
+              code: undefined,
               pages: site.pages.map((page) => ({ ...page, doc: undefined })),
             },
             images: [...images],
@@ -621,7 +624,7 @@ export async function* buildEvents(
     candidates: [
       ...new Set([
         ...classCandidates([`<body class="${BODY_CLASS}">`, ...markup].join("\n")),
-        ...customCode(site).flatMap(codeCandidates),
+        ...siteCodeCandidates(site),
       ]),
     ].sort(),
     fontsUrl: "../fonts/",

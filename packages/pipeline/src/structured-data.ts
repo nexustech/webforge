@@ -8,7 +8,7 @@ import {
 } from "@webforge/model";
 import { type ComponentLibrary, walkNodes } from "@webforge/site-components";
 import { z } from "zod";
-import { pageAddress, siteAddress } from "./site-files.js";
+import { pageAddress, searchable, siteAddress } from "./site-files.js";
 
 /** schema.org's names for the days the opening hours keep. */
 const DAYS_OF_WEEK: Readonly<Record<Day, string>> = {
@@ -112,12 +112,15 @@ function businessKindOf(site: SiteSnapshot): string | undefined {
 }
 
 /**
- * The site's contact page: the first that shows *Opening hours and contact*, whatever it is
- * called ("Visit us", "Contact"), which carries the business's details too.
+ * The first page search engines may show that has a section of type `type`, not hidden: the
+ * contact page by its *Opening hours and contact*, whatever it is called ("Visit us", "Contact"),
+ * and a restaurant's menu by its price list.
  */
-function contactPageOf(site: SiteSnapshot): SitePage | undefined {
-  return site.pages.find((page) =>
-    page.doc.content.some((node) => node.type === "ContactDetails" && node.props.hidden !== true),
+function firstPageWith(site: SiteSnapshot, type: string): SitePage | undefined {
+  return site.pages.find(
+    (page) =>
+      searchable(page) &&
+      page.doc.content.some((node) => node.type === type && node.props.hidden !== true),
   );
 }
 
@@ -152,7 +155,7 @@ export function structuredData({
   shareImage,
 }: StructuredDataOptions): string[] {
   const home = page.path === "index";
-  if ((!home && page.path !== contactPageOf(site)?.path) || page.hideFromSearch === true) {
+  if ((!home && page.path !== firstPageWith(site, "ContactDetails")?.path) || !searchable(page)) {
     return [];
   }
   const address = siteAddress(site);
@@ -175,11 +178,7 @@ export function structuredData({
   const shown = shownOn(nodes, library);
   const hours = shown.hours ? (site.openingHours ?? []) : [];
   const menuPage =
-    kind === "Restaurant" && address !== undefined
-      ? site.pages.find((each) =>
-          each.doc.content.some((node) => node.type === "Pricing" && node.props.hidden !== true),
-        )
-      : undefined;
+    kind === "Restaurant" && address !== undefined ? firstPageWith(site, "Pricing") : undefined;
   const sameAs = (site.socialProfiles ?? []).map((profile) => profile.url);
   const business = businessDataSchema.safeParse({
     "@context": "https://schema.org",
