@@ -70,6 +70,22 @@ function localCpuScale(): number {
   return scale;
 }
 
+/**
+ * The most the median of one spec's openings may take on CI (#569). Windows' backstop catches a
+ * hang only, as its runners stall now and then (#561); the median of the six templates' openings,
+ * which one stall doesn't move, catches a wait added to every opening there too. 6 s, twice the
+ * product's 3 s, as Linux's and macOS's backstops: Windows' usual median was 1.36 s, and its
+ * slowest 3.85 s, on a runner whose every opening was slow (69 jobs, 26–28 Oct 2026).
+ */
+const CI_OPEN_MEDIAN_MS = 6_000;
+
+/** The median opening's budget in this run: CI's, or locally the local backstop. */
+export function openMedianBudgetMs(): number {
+  return process.env.CI === "true"
+    ? CI_OPEN_MEDIAN_MS
+    : Math.max(LOCAL_OPEN_WALL_BACKSTOP_MS, CI_OPEN_MEDIAN_MS);
+}
+
 /** A CPU budget and a wall-clock backstop, and where the CPU budget comes from. */
 export type Budget = {
   readonly cpuSeconds: number;
@@ -175,5 +191,39 @@ export function expectWorkWithin(work: Work, budget: Budget, what: string): void
   }
   if (work.wallMs > budget.wallMs) {
     throw new Error(`${what} took ${work.wallMs} ms, over its ${budget.wallMs} ms backstop`);
+  }
+}
+
+/**
+ * The fewest openings a median is checked over. A failed test starts a fresh worker, whose
+ * `afterAll` sees only the openings after it: one stall among two or three would move their median
+ * and fail the run a second time, for nothing new.
+ */
+const MEDIAN_OPENINGS = 4;
+
+/**
+ * Checks the median of `wallMs`, the wall-clock times of one spec's openings, against `budgetMs`
+ * (#569), and prints it in the log beside each opening's. Fewer than {@link MEDIAN_OPENINGS} are
+ * only printed.
+ */
+export function expectMedianWithin(
+  wallMs: readonly number[],
+  budgetMs: number,
+  what: string,
+): void {
+  const sorted = wallMs.toSorted((a, b) => a - b);
+  if (sorted.length < MEDIAN_OPENINGS) {
+    console.log(`[work] ${what}: ${sorted.length} openings, too few for a median, not checked`);
+    return;
+  }
+  const middle = Math.floor(sorted.length / 2);
+  const median = Math.round(
+    sorted.length % 2 === 1
+      ? (sorted[middle] ?? 0)
+      : ((sorted[middle - 1] ?? 0) + (sorted[middle] ?? 0)) / 2,
+  );
+  console.log(`[work] ${what}: median ${median} ms of ${budgetMs}, of ${sorted.length}`);
+  if (median > budgetMs) {
+    throw new Error(`${what}: the median took ${median} ms, over its ${budgetMs} ms`);
   }
 }
