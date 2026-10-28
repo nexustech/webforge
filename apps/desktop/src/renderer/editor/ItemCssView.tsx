@@ -1,27 +1,39 @@
 import { Button } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import type { NodeDoc } from "@webforge/model";
+import { appearanceClassGroups, type ComponentDef, withLook } from "@webforge/site-components";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
 import type { EditorSession } from "./editor-session.js";
-import { type ClassGroup, type ItemCss, type ItemCssApi, itemCssOf, tokensIn } from "./item-css.js";
+import {
+  type ClassGroup,
+  type ItemCssApi,
+  type ItemCssState,
+  itemCssOf,
+  tokensIn,
+} from "./item-css.js";
 import { useDocument, useUi } from "./use-document.js";
 
 /** How long the document must stay unchanged before the tab asks for the CSS again. */
 const REFRESH_DELAY_MS = 300;
 
-/** Props of {@link ItemCssView}. */
-export type ItemCssViewProps = {
-  readonly session: Pick<EditorSession, "history" | "ui">;
+/** What the CSS tab uses besides the document: the canvas styles worker, the clipboard, Settings. */
+export type ItemCssServices = {
   /** The canvas styles worker, which writes the item as the export does. */
   readonly api: ItemCssApi;
   /** Puts text on the system clipboard (through main: the renderer has no web permissions). */
   readonly copyText: (text: string) => Promise<unknown>;
+  /** Opens Settings at Custom Code, where CSS of the person's own goes (F-ED-15). */
+  readonly onOpenCustomCode?: (() => void) | undefined;
+};
+
+/** Props of {@link ItemCssView}. */
+export type ItemCssViewProps = ItemCssServices & {
+  readonly session: Pick<EditorSession, "history" | "ui">;
   /** The selected item's classes, by the Appearance control that set them. */
   readonly groups: readonly ClassGroup[];
   /** A control's name, as the Style tab labels it. */
   readonly labelOf: (field: string) => string;
-  /** Opens Settings at Custom Code, where CSS of the person's own goes (F-ED-15). */
-  readonly onOpenCustomCode?: (() => void) | undefined;
 };
 
 /** A part's Copy button, which says so for a moment once it has copied. */
@@ -114,13 +126,13 @@ export function ItemCssView({
   const site = useDocument(session, (doc) => doc);
   const pageId = useUi(session, (ui) => ui.pageId);
   const nodeId = useUi(session, (ui) => ui.nodeId);
-  const [css, setCss] = useState<ItemCss | "loading">("loading");
+  const [css, setCss] = useState<ItemCssState | "loading">("loading");
   useEffect(() => {
     if (nodeId === null) return;
     let current = true;
     const timer = setTimeout(() => {
       void itemCssOf(site, pageId, nodeId, api)
-        .catch((): ItemCss => ({ status: "failed" }))
+        .catch((): ItemCssState => ({ status: "failed" }))
         .then((next) => {
           if (current) setCss(next);
         });
@@ -188,7 +200,15 @@ export function ItemCssView({
                   const tokens = tokensIn(cssOf(group.classes));
                   return (
                     <div key={group.field} className="flex flex-col">
-                      <dt className="font-medium">{labelOf(group.field)}</dt>
+                      <dt className="font-medium">
+                        {labelOf(group.field)}
+                        {group.fromLook === true ? (
+                          <span className="font-normal text-muted-foreground">
+                            {" "}
+                            {t("itemCss.classes.fromLook")}
+                          </span>
+                        ) : null}
+                      </dt>
                       <dd className="font-mono text-xs [overflow-wrap:anywhere]">
                         {group.classes}
                       </dd>
@@ -217,5 +237,36 @@ export function ItemCssView({
         </>
       )}
     </div>
+  );
+}
+
+/**
+ * The CSS tab for `node` (3.14): its classes grouped by the Appearance control that set them, from
+ * its own values with its kind's look in the theme under them (3.12), as it renders; each named as
+ * `component`'s Style tab names it.
+ */
+export function ItemCss({
+  session,
+  node,
+  component,
+  services,
+}: {
+  readonly session: Pick<EditorSession, "history" | "ui">;
+  readonly node: NodeDoc;
+  readonly component: ComponentDef;
+  readonly services: ItemCssServices;
+}) {
+  const looks = useDocument(session, (site) => site.theme.looks);
+  const groups = appearanceClassGroups(withLook(node.props, node.type, looks)).map((group) => ({
+    ...group,
+    fromLook: node.props[group.field] === undefined,
+  }));
+  return (
+    <ItemCssView
+      session={session}
+      {...services}
+      groups={groups}
+      labelOf={(field) => component.fields[field]?.label ?? field}
+    />
   );
 }

@@ -8,6 +8,8 @@ import {
   type SettingsRegistry,
   settingsPart,
 } from "../editor/settings-registry.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
+import type { CommandRegistry } from "../shell/commands.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 
 /**
@@ -197,8 +199,17 @@ export function registerSiteCode(
   registry: SettingsRegistry,
   session: EditorSession,
   preferences: Pick<PreferencesStore, "getState">,
+  commands: Pick<CommandRegistry, "register">,
 ): () => void {
-  return registry.register({
+  // *Custom Code…* (3.14): where the CSS tab sends CSS of the person's own, and the palette too.
+  const removeCommand = commands.register({
+    id: COMMAND_IDS.customCode,
+    label: t("site.code.open"),
+    run: async () => {
+      await registry.show(CODE_SECTION, CODE_SECTION);
+    },
+  });
+  const removePart = registry.register({
     id: CODE_SECTION,
     heading: "site",
     order: 1,
@@ -211,4 +222,8 @@ export function registerSiteCode(
         : undefined;
     },
   });
+  return () => {
+    removeCommand();
+    removePart();
+  };
 }

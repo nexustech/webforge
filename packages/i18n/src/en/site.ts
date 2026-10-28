@@ -167,6 +167,7 @@ export const site = {
   "site.settings.history": "Changed Site Settings",
   // Custom code in Settings (F-ED-15, C7, 3.9): Advanced mode only, where technical words may appear.
   "site.code.title": "Custom Code",
+  "site.code.open": "Custom Code…",
   "site.code.css": "Stylesheet (custom.css)",
   "site.code.cssHint":
     "CSS for every page, after the site's own styles, so it wins over the theme.",

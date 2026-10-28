@@ -12,8 +12,8 @@ export const siteSettingsArea: Area<WindowContext> = {
 /** The site's own code under *This site*, in Advanced mode (F-ED-15, 3.9). */
 export const siteCodeArea: Area<WindowContext> = {
   id: "siteCode",
-  register: ({ settings, session, preferences }) =>
-    registerSiteCode(settings, session, preferences),
+  register: ({ settings, session, preferences, commands }) =>
+    registerSiteCode(settings, session, preferences, commands),
 };
 
 /** The Site Settings the canvas's elements show, such as the opening hours (2.20, B1). */

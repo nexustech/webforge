@@ -188,6 +188,7 @@ export const canvas = {
   "itemCss.classes": "Classes by control",
   "itemCss.classes.none": "No Appearance control sets a class on this item.",
   "itemCss.classes.tokens": "Uses {tokens}",
+  "itemCss.classes.fromLook": "(the theme's look)",
   "itemCss.rules": "Stylesheet rules",
   "itemCss.rules.none": "This item's classes add no rules to the stylesheet.",
   "itemCss.copy": "Copy",

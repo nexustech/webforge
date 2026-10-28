@@ -6,13 +6,18 @@ import { classesOfHtml } from "./site-css.js";
 const CLASSES_PER_CALL = 200;
 
 /** One Appearance control's classes on an item, as the control set them (`appearanceClassGroups`). */
-export type ClassGroup = { readonly field: string; readonly classes: string };
+export type ClassGroup = {
+  readonly field: string;
+  readonly classes: string;
+  /** Set by its kind's look in the theme (3.12), not by the item itself. */
+  readonly fromLook?: boolean;
+};
 
 /** What the CSS tab reads (3.14): the canvas styles worker's answers. */
 export type ItemCssApi = Pick<CanvasApi, "itemHtml" | "classCss">;
 
 /** An item's CSS, as the tab shows it (3.14). */
-export type ItemCss =
+export type ItemCssState =
   /** The item as the export writes it, and each of its classes' rules in the site's stylesheet. */
   | {
       readonly status: "ready";
@@ -44,7 +49,7 @@ export async function itemCssOf(
   pageId: PageId,
   nodeId: string,
   api: ItemCssApi,
-): Promise<ItemCss> {
+): Promise<ItemCssState> {
   const answer = await api.itemHtml({
     snapshot: siteToSnapshot(site, new Map()),
     sizes: imageSizes(site),

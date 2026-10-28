@@ -48,6 +48,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
+import type { ItemCssServices } from "./ItemCssView.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -114,6 +115,14 @@ const viewOptionsOf = ({ preferences: { canvas } }: EditorPreferences): ViewOpti
 
 const compileWithPreload: CompileCanvasCss = (request) =>
   window.webforge.canvas.compileCss(request);
+/** The CSS tab's worker and clipboard (3.14), through the preload API when used. */
+const itemCssWithPreload: Omit<ItemCssServices, "onOpenCustomCode"> = {
+  api: {
+    itemHtml: (request) => window.webforge.canvas.itemHtml(request),
+    classCss: (theme, classes) => window.webforge.canvas.classCss(theme, classes),
+  },
+  copyText: (text) => window.webforge.clipboard.copyText(text),
+};
 const reportWithPreload = createErrorReporter((kind, error) =>
   window.webforge.app.reportError(kind, error),
 );
@@ -171,6 +180,8 @@ function PreferredEditPanel({
   const onSite = useCommand(LOOK_COMMANDS.site);
   // The Style tab's *Style this ‹kind›…* (3.13a), while the selection has a look to style.
   const styleThis = useCommand(COMMAND_IDS.styleThis);
+  // The Advanced tab's CSS points at Custom Code (3.14).
+  const customCode = useCommand(COMMAND_IDS.customCode);
   const appearance = [onPage, onSite].flatMap((command) =>
     command === undefined
       ? []
@@ -193,6 +204,15 @@ function PreferredEditPanel({
       }
       advanced={advanced}
       contentOnly={contentOnly}
+      itemCss={
+        advanced
+          ? {
+              ...itemCssWithPreload,
+              onOpenCustomCode:
+                customCode === undefined ? undefined : () => void registry.run(customCode.id),
+            }
+          : undefined
+      }
       closedGroups={closedGroups}
       onClosedGroupsChange={(type, closed) =>
         preferences.change({
