@@ -96,8 +96,11 @@ export function scriptResources(script: string): ExternalResource[] {
 /** An HTML comment. */
 const HTML_COMMENT = /<!--[\s\S]*?-->/g;
 
-/** A start tag: its name and its attributes' text. */
-const START_TAG = /<([a-z][a-z0-9-]*)\b([^>]*)>/gi;
+/**
+ * A start tag: its name and its attributes' text. A quoted value is taken whole, so a `>` in it
+ * (`alt="Price > £5"`) doesn't end the tag.
+ */
+const START_TAG = /<([a-z][a-z0-9-]*)\b((?:[^>"']|"[^"]*"|'[^']*')*)>/gi;
 
 /** One attribute: its name, and its value however it is quoted. */
 const ATTRIBUTE = /([^\s=/>"']+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'>]+)))?/g;

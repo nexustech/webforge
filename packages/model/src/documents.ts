@@ -229,12 +229,49 @@ export type SiteCode = {
   head: string;
   /** HTML added at the end of every page's `<body>`. */
   bodyEnd: string;
+  /**
+   * Files the code loads from other websites, kept with the site (Download and bundle, C8, 3.9):
+   * the export writes them to `assets/vendor/` and points the code at them there. None when left
+   * out, as in files from before it.
+   */
+  bundled?: BundledFile[] | undefined;
 };
 
-/** Validates {@link SiteCode}. */
-export const siteCodeSchema: z.ZodType<SiteCode> = z.strictObject({
-  css: z.string(),
-  js: z.string(),
-  head: z.string(),
-  bodyEnd: z.string(),
+/**
+ * A file from another website kept with the site (3.9): the address the code names, the file's name
+ * in `assets/vendor/`, and its bytes' hash and type in the site file.
+ */
+export type BundledFile = {
+  url: string;
+  file: string;
+  hash: string;
+  mime: string;
+};
+
+/** The longest name of a bundled file. */
+export const BUNDLED_FILE_MAX = 100;
+
+/** Validates {@link BundledFile}: an https:// address, and a plain file name of its own. */
+export const bundledFileSchema: z.ZodType<BundledFile> = z.strictObject({
+  url: z.url({ protocol: /^https$/ }),
+  file: z.string().regex(new RegExp(`^[a-z0-9][a-z0-9._-]{0,${BUNDLED_FILE_MAX - 1}}$`)),
+  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  mime: z.string().regex(/^[a-z]+\/[a-z0-9.+-]+$/),
 });
+
+/**
+ * Validates {@link SiteCode}. Each address is kept once; two may share a file, whose name comes
+ * from its bytes, when they serve the same one.
+ */
+export const siteCodeSchema: z.ZodType<SiteCode> = z
+  .strictObject({
+    css: z.string(),
+    js: z.string(),
+    head: z.string(),
+    bodyEnd: z.string(),
+    bundled: z.array(bundledFileSchema).optional(),
+  })
+  .refine(
+    (code) => new Set(code.bundled?.map((file) => file.url)).size === (code.bundled?.length ?? 0),
+    { message: "An address is kept twice", path: ["bundled"] },
+  );

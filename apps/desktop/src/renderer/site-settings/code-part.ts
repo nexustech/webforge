@@ -33,8 +33,12 @@ const CODE_SECTION = "code";
 
 /** The form for `site`'s code, as the dialog opens with it. */
 export function toCodeForm(site: SiteDoc): CodeForm {
+  const { css, js, head, bodyEnd } = site.code;
   return {
-    ...site.code,
+    css,
+    js,
+    head,
+    bodyEnd,
     allowed: site.settings.allowedExternalUrls.map((url, index) => ({
       id: `allowed-${index}`,
       url,
@@ -149,14 +153,19 @@ export function saveSiteCode(
   saved: SavedCode,
 ): boolean {
   const site = session.history.document.getState();
+  const { bundled, ...code } = site.code;
   if (
-    sameValue(site.code, saved.code) &&
+    sameValue(code, saved.code) &&
     sameValue(site.settings.allowedExternalUrls, saved.allowedExternalUrls)
   ) {
     return false;
   }
   session.edit("props", t("site.code.history"), (draft) => {
-    draft.code = { ...saved.code };
+    // The files kept with the site (Download and bundle) aren't the form's: they stay.
+    draft.code = {
+      ...saved.code,
+      ...(bundled === undefined ? {} : { bundled: draft.code.bundled }),
+    };
     draft.settings.allowedExternalUrls = [...saved.allowedExternalUrls];
   });
   return true;
@@ -175,9 +184,9 @@ export function siteCodePart(site: SiteDoc, save: (saved: SavedCode) => void): O
 }
 
 /** Whether `site` has code of its own, or addresses its code may load from. */
-const hasOwnCode = (site: SiteDoc) =>
-  Object.values(site.code).some((code) => code.trim() !== "") ||
-  site.settings.allowedExternalUrls.length > 0;
+const hasOwnCode = ({ code, settings }: SiteDoc) =>
+  [code.css, code.js, code.head, code.bodyEnd].some((part) => part.trim() !== "") ||
+  settings.allowedExternalUrls.length > 0;
 
 /**
  * The open site's Custom Code in Settings, after Site Settings: shown in Advanced mode (T2), as

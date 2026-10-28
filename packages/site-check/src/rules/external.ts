@@ -22,8 +22,9 @@ const SITE_CODE_PARTS: readonly (readonly [SiteCodePart, (code: string) => Exter
  * A file the site's own code loads from another website (C8, 3.9): a script, a stylesheet, a font,
  * an image, a sound or video, or a frame, in a Custom Code element or in Settings' Custom Code. The
  * exported site would depend on that website, and wouldn't work from disk or offline: *Must fix*,
- * unless Settings allow its address. Each finding names the address (`url`) and what it is
- * (`kind`).
+ * unless Settings allow its address, or the site keeps a copy of the file (Download and bundle),
+ * which the export points HTML and CSS at; a script's addresses it can't rewrite. Each finding
+ * names the address (`url`) and what it is (`kind`).
  */
 export const externalResourcesRule: CheckRule = {
   id: "externalResources",
@@ -31,9 +32,11 @@ export const externalResourcesRule: CheckRule = {
   check: ({ site }) => {
     const found: Finding[] = [];
     const allowed = site.settings.allowedExternalUrls;
+    const kept = (site.code.bundled ?? []).map((file) => file.url);
     const report = (place: FindingPlace, at: string, resources: readonly ExternalResource[]) => {
+      const rewritten = !(place.kind === "code" && place.part === "js");
       for (const { url, kind } of resources) {
-        if (isAllowed(url, allowed)) continue;
+        if (isAllowed(url, allowed) || (rewritten && isAllowed(url, kept))) continue;
         found.push({ key: `${at}/${url}`, place, values: { url, kind } });
       }
     };

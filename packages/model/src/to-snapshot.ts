@@ -96,7 +96,7 @@ export function siteToSnapshot(
         ? {}
         : { verification: site.settings.search.verification }),
     },
-    ...(Object.values(site.code).every((code) => code.trim() === "") ? {} : { code: site.code }),
+    ...(hasCode(site.code) ? { code: site.code } : {}),
   };
 }
 
@@ -112,3 +112,7 @@ function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "
     },
   };
 }
+
+/** Whether `code` has any code of its own: the bundled files only serve it. */
+const hasCode = ({ css, js, head, bodyEnd }: SiteDoc["code"]) =>
+  [css, js, head, bodyEnd].some((code) => code.trim() !== "");

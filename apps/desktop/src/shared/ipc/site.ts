@@ -1,4 +1,5 @@
 import {
+  bundledFileSchema,
   cropSchema,
   exportChoicesSchema,
   FILE_MIME_TYPES,
@@ -8,6 +9,7 @@ import {
   siteSnapshotSchema,
 } from "@webforge/model";
 import { z } from "zod";
+import { sessionIdSchema } from "./project.js";
 
 /**
  * An image the export needs, named by its hash: the main process reads its bytes from the open
@@ -145,6 +147,41 @@ export const exportProgressSchema = z.discriminatedUnion("stage", [
 /** How far an export has come. */
 export type ExportProgress = z.infer<typeof exportProgressSchema>;
 
+/** The most files a stylesheet kept with the site may name, downloaded with it (3.9). */
+export const BUNDLE_MAX_NESTED = 30;
+
+/**
+ * What came of Download and bundle (C8, 3.9): the files to keep with the site, the asked-for one
+ * first and then those it names if it's a stylesheet, their bytes stored in the site file; or why
+ * not. See `DownloadFailure` in main's bundle-download.ts; the rest are the site's own reasons.
+ */
+const bundleResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("bundled"),
+    files: z
+      .array(bundledFileSchema)
+      .min(1)
+      .max(BUNDLE_MAX_NESTED + 1),
+  }),
+  z.strictObject({
+    status: z.literal("failed"),
+    reason: z.enum([
+      "not-https",
+      "offline",
+      "not-found",
+      "too-large",
+      "not-a-file",
+      "no-site",
+      "stale-session",
+      "read-only",
+      "unknown",
+    ]),
+  }),
+]);
+
+/** What came of Download and bundle. */
+export type BundleResult = z.infer<typeof bundleResultSchema>;
+
 /** IPC channels of the `site` domain (`site:*`). */
 export const siteChannels = {
   /**
@@ -190,6 +227,16 @@ export const siteChannels = {
     request: z.tuple([]),
     response: z.null(),
   },
+  /**
+   * Download and bundle (C8, 3.9): downloads the file at an address the site's code names, on the
+   * person's click only, and stores it in the open site's file, if it is still the opening
+   * `sessionId` names. The renderer then keeps it in the site's code, as one undo step.
+   */
+  bundleFile: {
+    channel: "site:bundle-file",
+    request: z.tuple([sessionIdSchema, z.string().max(2048)]),
+    response: bundleResultSchema,
+  },
 } as const;
 
 /** Messages the main process sends to the renderer in the `site` domain. */
@@ -210,6 +257,8 @@ export interface SiteApi {
   openExport(): Promise<"opened" | "none" | "missing">;
   /** Cancels the export under way, if there is one. */
   cancelExport(): Promise<null>;
+  /** Downloads the file at `url` to keep with the site opened as `sessionId`. */
+  bundleFile(sessionId: string, url: string): Promise<BundleResult>;
   /** Tells `listener` how far exports come, until the returned function is called. */
   onExportProgress(listener: (progress: ExportProgress) => void): () => void;
 }

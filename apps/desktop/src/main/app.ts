@@ -20,6 +20,8 @@ import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
+import { bundleFetchFor } from "./bundle-download.js";
+import { registerBundleHandlers } from "./bundle-ipc.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
@@ -479,6 +481,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       app.getPreferredSystemLanguages(),
     );
     registerMediaHandlers(ipcMain, isTrustedSender, projectSession, dialogs.media);
+    // Download and bundle (3.9): the only download besides fonts, on the person's click.
+    registerBundleHandlers(
+      ipcMain,
+      isTrustedSender,
+      projectSession,
+      bundleFetchFor((url, init) => electron.net.fetch(url, init), app.isPackaged),
+    );
     registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession);
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);

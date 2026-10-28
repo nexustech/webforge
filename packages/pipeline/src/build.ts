@@ -33,7 +33,7 @@ import { imageAt, processImage } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
-import { scriptMistake, siteCodeCandidates } from "./site-code.js";
+import { scriptMistake, siteCodeCandidates, toBundled, withCustomCode } from "./site-code.js";
 import {
   hasSitemap,
   llmsTxt,
@@ -468,7 +468,12 @@ export async function* buildEvents(
   // The site's own code (F-ED-15, 3.9): custom.css after the site's stylesheet and custom.js after
   // webforge.js, each a file of its own and as the person wrote it, *Minify output* or not, as
   // Custom Code's scripts and styles are.
-  const customCss = ownCode(site.code?.css);
+  // The files kept with the site (Download and bundle, 3.9), which its code names by address.
+  const bundled = site.code?.bundled ?? [];
+  // custom.css is in assets/css/, two folders from the site's root.
+  const customCssText = ownCode(site.code?.css);
+  const customCss =
+    customCssText === undefined ? undefined : toBundled(bundled, "../../")(customCssText);
   const customCssPath =
     customCss === undefined ? undefined : `assets/css/custom.${contentHash(customCss)}.css`;
   const customJs = ownCode(site.code?.js);
@@ -547,10 +552,13 @@ export async function* buildEvents(
       ...(analytics?.consentBanner === true ? { cookieSettings: true } : {}),
     };
     // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
+    // Custom Code pointing at the files kept with the site, `prefix` away (3.9).
+    const own = (nodes: readonly NodeDoc[]) =>
+      bundled.length === 0 ? nodes : withCustomCode(nodes, toBundled(bundled, prefix));
     const regions = {
-      header: page.hideHeader === true ? [] : site.layout.header,
-      content: page.doc.content,
-      footer: page.hideFooter === true ? [] : site.layout.footer,
+      header: page.hideHeader === true ? [] : own(site.layout.header),
+      content: own(page.doc.content),
+      footer: page.hideFooter === true ? [] : own(site.layout.footer),
     };
     return { ...renderPage(regions, library, context), warnings: found };
   };
@@ -572,7 +580,8 @@ export async function* buildEvents(
               theme: themeShape(site.theme),
               media: undefined,
               documents: undefined,
-              code: undefined,
+              // But the files kept with it, which Custom Code is drawn pointing at.
+              code: bundled,
               pages: site.pages.map((page) => ({ ...page, doc: undefined })),
             },
             images: [...images],
@@ -654,7 +663,10 @@ export async function* buildEvents(
       ...(customJsPath === undefined ? {} : { customScript: `${entry.prefix}${customJsPath}` }),
       ...(site.code === undefined
         ? {}
-        : { customHead: site.code.head, customBodyEnd: site.code.bodyEnd }),
+        : {
+            customHead: toBundled(bundled, entry.prefix)(site.code.head),
+            customBodyEnd: toBundled(bundled, entry.prefix)(site.code.bodyEnd),
+          }),
       header: entry.header,
       main: entry.main,
       footer: entry.footer,
@@ -705,6 +717,12 @@ export async function* buildEvents(
   }
   if (script !== undefined && scriptPath !== undefined) {
     files.set(scriptPath, text.encode(script));
+  }
+  // Each file kept with the site, as it was downloaded (3.9).
+  for (const file of bundled) {
+    stopIfCancelled(signal);
+    const data = await bytesOf({ hash: file.hash }, resources, file.mime);
+    if (data !== undefined) files.set(`assets/vendor/${file.file}`, data);
   }
   if (customCss !== undefined && customCssPath !== undefined) {
     files.set(customCssPath, text.encode(customCss));
