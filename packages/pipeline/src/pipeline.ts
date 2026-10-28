@@ -22,6 +22,8 @@ export type PipelineBuildOptions = {
   readonly signal?: AbortSignal | undefined;
   /** What the export writes besides the site: minified files, developer files. */
   readonly output?: OutputOptions | undefined;
+  /** The year `{year}` stands for (F-CM-8): this year when left out. */
+  readonly year?: number | undefined;
 };
 
 /** Builds one open site, as often as asked, keeping between builds what it can (3.1). */
@@ -59,13 +61,13 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
   const images = createMemoryImageCache(options.imageCacheBytes ?? IMAGE_CACHE_BYTES);
   let caches: BuildCaches | undefined;
   return {
-    async *build(snapshot, resources, { mode, signal, output }) {
-      caches ??= { styles: createStyleCompiler(resources), pages: new Map() };
+    async *build(snapshot, resources, { mode, signal, output, year }) {
+      caches ??= { styles: createStyleCompiler(resources), pages: new Map(), fonts: new Map() };
       const site = yield* buildEvents(
         snapshot,
         library,
         { ...resources, imageCache: resources.imageCache ?? images },
-        { mode, signal, output, caches },
+        { mode, signal, output, caches, year },
       );
       yield { stage: "done", site };
     },

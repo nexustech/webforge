@@ -129,6 +129,20 @@ describe("overlayOf and sectionOverlay (2.26)", () => {
     ).toEqual({ color: "base", opacity: 0.6, inverse: true, text: [undefined] });
   });
 
+  it("gives the check the text its layout draws where the person set none (#544)", () => {
+    const placed = { backgroundImage: { mediaId: "shop" } };
+
+    expect(sectionOverlay(placed, "neutral-content")?.text).toEqual(["neutral-content"]);
+    expect(
+      sectionOverlay({ ...placed, lookColor: "primary-700" }, "neutral-content")?.text,
+    ).toEqual(["primary-700"]);
+    // What each section's frame draws: a Call to action Banner sets neutral-content; others none.
+    const { CallToAction, TextSection } = siteLibrary.components;
+    expect(CallToAction?.sectionText?.({ variant: "banner" })).toBe("neutral-content");
+    expect(CallToAction?.sectionText?.({ variant: "split" })).toBeUndefined();
+    expect(TextSection?.sectionText?.({})).toBeUndefined();
+  });
+
   it("gives the check the text colour the person set, on each device where they set it", () => {
     const placed = { backgroundImage: { mediaId: "shop" } };
 

@@ -169,10 +169,15 @@ export function SectionBackground({
 /**
  * The overlay a section's values draw, for the contrast check of its text over it (2.26: the
  * themes package's `overlayContrastIssue`), or `null` without a background image. A reversed
- * section (2.4) is checked in the reversed colours, and a text colour the person set (the
- * Appearance group's Colour, on any device) as well as the overlay colour's own.
+ * section (2.4) is checked in the reversed colours, and its text in the colour it has on each
+ * device: the person's (the Appearance group's Colour), else the one its frame `draws` for its
+ * layout (`ComponentDef.sectionText`, #544: a Call to action Banner's `neutral-content`), else the
+ * overlay colour's own.
  */
-export function sectionOverlay(values: BackgroundValues): {
+export function sectionOverlay(
+  values: BackgroundValues,
+  draws?: string,
+): {
   readonly color: OverlayColor;
   readonly opacity: number;
   readonly inverse: boolean;
@@ -184,7 +189,7 @@ export function sectionOverlay(values: BackgroundValues): {
     color,
     opacity: Number(opacity) / 100,
     inverse: values.colors === "inverse",
-    text: textColorsOf(values.lookColor),
+    text: textColorsOf(values.lookColor).map((ref) => ref ?? draws),
   };
 }
 

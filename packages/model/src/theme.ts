@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { themeIdSchema } from "./ids.js";
+import { looksSchema } from "./look.js";
 
 /**
  * A site's theme (2.1, F-DS-1): the design tokens every page is styled from, which the themes
@@ -220,6 +221,12 @@ export const themeTokensSchema = z.strictObject({
   cards: z.strictObject({ style: z.enum(CARD_STYLES) }),
   /** The corners of photos (2.13d). */
   images: z.strictObject({ corners: z.enum(IMAGE_CORNERS) }),
+  /**
+   * Each kind's look (3.12, CT-1): the Appearance values every Button, Hero or Call to action takes
+   * for the fields it doesn't set itself. None for a kind that draws itself as it is. A theme
+   * switch brings the new theme's looks with it.
+   */
+  looks: looksSchema.optional(),
   /** How a page's sections follow one another (2.13d). */
   sections: z.strictObject({ rhythm: z.enum(SECTION_RHYTHMS) }),
   /**

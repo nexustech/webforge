@@ -1,4 +1,4 @@
-import { type NodeDoc, newId, type PageId, type SiteDoc } from "@webforge/model";
+import { LOOK_FIELDS, type NodeDoc, newId, type PageId, type SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -106,6 +106,15 @@ describe("lookFieldsOf (2.27)", () => {
     expect(fields).toEqual(expect.arrayContaining(["hover", "hoverSpeed", "hoverEasing"]));
     expect(fields.every((name) => name.startsWith("look") || name.startsWith("hover"))).toBe(true);
   });
+
+  it("is, for every component, fields a kind's look in the theme holds (3.12, CT-1)", () => {
+    // What *Apply this look* copies is what the theme's look for the kind can hold.
+    for (const [type, def] of Object.entries(siteLibrary.components)) {
+      for (const name of lookFieldsOf(def)) {
+        expect(LOOK_FIELDS, `${type}.${name}`).toContain(name);
+      }
+    }
+  });
 });
 
 describe("Apply Look to Every… (2.27, ST-4)", () => {
@@ -180,6 +189,32 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     expect(Object.hasOwn(props(about, "other") ?? {}, "lookShadow")).toBe(false);
     expect(Object.hasOwn(props(home, "styled") ?? {}, "lookShadow")).toBe(false);
     expect(lookOf(props(home, "styled"))).toEqual({});
+  });
+
+  it("leaves a field the source leaves to its kind's look to the look on every other (3.12)", async () => {
+    const { session, home, about, props } = setUp((site, aboutId) => {
+      site.theme.looks = { Button: { lookBorder: "thick" } };
+      const other = site.pages[aboutId]?.doc.content[0]?.props.content as NodeDoc[];
+      Object.assign(other[0]?.props ?? {}, { lookBorder: "none" });
+    });
+
+    await applyLookToAll(session, "site", confirmer(true));
+
+    // Not the component's default written in: each follows the theme's look for Buttons.
+    expect(Object.hasOwn(props(home, "plain") ?? {}, "lookBorder")).toBe(false);
+    expect(Object.hasOwn(props(about, "other") ?? {}, "lookBorder")).toBe(false);
+    expect(lookOf(props(home, "plain"))).toEqual(LOOK);
+  });
+
+  it("leaves out an element that already draws the look through its kind's (3.12)", () => {
+    const { session } = setUp((site) => {
+      site.theme.looks = { Button: LOOK };
+    });
+    session.select("plain");
+
+    // Every other Button draws the theme's look for Buttons, as the plain one does: the styled one
+    // with values of its own that are the look's.
+    expect(lookChange(session, "site")?.targets).toEqual([]);
   });
 
   it("changes a shared section's element once, which all its copies show, asking first", async () => {

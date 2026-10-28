@@ -159,7 +159,16 @@ export const siteSettingsSchema = z.strictObject({
     /** E.g. "Closed on bank holidays". */
     openingHoursNote: text(OPENING_HOURS_NOTE_MAX),
   }),
-  search: z.strictObject({ allowIndexing: z.boolean(), includeSitemap: z.boolean() }),
+  search: z.strictObject({
+    allowIndexing: z.boolean(),
+    includeSitemap: z.boolean(),
+    /**
+     * *Help AI tools read your site* (F-EX-5, 3.5): `llms.txt` and a Markdown copy of each page in
+     * the export. On for new sites; off when absent, as in sites from before it (ADR 0012: an
+     * optional field whose absence keeps the old meaning needs no new format).
+     */
+    readableByAi: z.boolean().optional(),
+  }),
   analytics: z.strictObject({
     /** GA4 Measurement ID (B4). */
     measurementId: measurementIdSchema.optional(),
@@ -177,14 +186,17 @@ export const siteSettingsSchema = z.strictObject({
 /** See {@link siteSettingsSchema}. */
 export type SiteSettings = z.infer<typeof siteSettingsSchema>;
 
-/** Settings of a new site: everything optional left empty, search engines allowed. */
+/**
+ * Settings of a new site: everything optional left empty, search engines allowed, and AI tools
+ * helped to read it (F-EX-5).
+ */
 export function defaultSiteSettings(name: string, language: string): SiteSettings {
   return {
     general: { name, language },
     address: {},
     social: { profiles: [] },
     contact: { openingHours: [] },
-    search: { allowIndexing: true, includeSitemap: true },
+    search: { allowIndexing: true, includeSitemap: true, readableByAi: true },
     analytics: { consentBanner: true },
     forms: {},
     publish: { destinations: [] },

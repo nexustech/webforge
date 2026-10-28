@@ -4,14 +4,19 @@ exports[`the blank template's export > writes the reviewed pages and files 1`] =
 [
   "404.html",
   "about.html",
-  "assets/css/site.4624a5265b.css",
+  "about.md",
+  "assets/css/site.e57ee7cfda.css",
   "assets/fonts/inter-latin-ext-wght-italic.woff2",
   "assets/fonts/inter-latin-ext-wght-normal.woff2",
   "assets/fonts/inter-latin-wght-italic.woff2",
   "assets/fonts/inter-latin-wght-normal.woff2",
   "assets/js/webforge.bac2808f5e.js",
   "contact.html",
+  "contact.md",
   "index.html",
+  "index.md",
+  "llms.txt",
+  "robots.txt",
 ]
 `;
 
@@ -19,7 +24,8 @@ exports[`the cafe template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.7a688047a6.css",
+  "about.md",
+  "assets/css/site.4040924ed0.css",
   "assets/fonts/playfair-display-latin-ext-wght-normal.woff2",
   "assets/fonts/playfair-display-latin-wght-normal.woff2",
   "assets/fonts/source-sans-3-latin-ext-wght-italic.woff2",
@@ -56,8 +62,13 @@ exports[`the cafe template's export > writes the reviewed pages and files 1`] = 
   "assets/img/sam-640.webp",
   "assets/js/webforge.72fb6461fc.js",
   "index.html",
+  "index.md",
+  "llms.txt",
   "menu.html",
+  "menu.md",
+  "robots.txt",
   "visit.html",
+  "visit.md",
 ]
 `;
 
@@ -65,7 +76,8 @@ exports[`the consultant template's export > writes the reviewed pages and files 
 [
   "404.html",
   "about.html",
-  "assets/css/site.91bc11cbb1.css",
+  "about.md",
+  "assets/css/site.7741381986.css",
   "assets/fonts/lora-latin-ext-wght-normal.woff2",
   "assets/fonts/lora-latin-wght-normal.woff2",
   "assets/fonts/work-sans-latin-ext-wght-italic.woff2",
@@ -84,8 +96,13 @@ exports[`the consultant template's export > writes the reviewed pages and files 
   "assets/img/portrait-640.webp",
   "assets/js/webforge.cd3c30d6a0.js",
   "contact.html",
+  "contact.md",
   "index.html",
+  "index.md",
+  "llms.txt",
+  "robots.txt",
   "services.html",
+  "services.md",
 ]
 `;
 
@@ -93,7 +110,8 @@ exports[`the personal template's export > writes the reviewed pages and files 1`
 [
   "404.html",
   "about.html",
-  "assets/css/site.38b4379f4c.css",
+  "about.md",
+  "assets/css/site.d08821d385.css",
   "assets/fonts/dm-sans-latin-ext-wght-italic.woff2",
   "assets/fonts/dm-sans-latin-ext-wght-normal.woff2",
   "assets/fonts/dm-sans-latin-wght-italic.woff2",
@@ -136,8 +154,13 @@ exports[`the personal template's export > writes the reviewed pages and files 1`
   "assets/img/work-6-640.webp",
   "assets/js/webforge.72fb6461fc.js",
   "contact.html",
+  "contact.md",
   "index.html",
+  "index.md",
+  "llms.txt",
+  "robots.txt",
   "work.html",
+  "work.md",
 ]
 `;
 
@@ -145,7 +168,8 @@ exports[`the photographer template's export > writes the reviewed pages and file
 [
   "404.html",
   "about.html",
-  "assets/css/site.77230e02e8.css",
+  "about.md",
+  "assets/css/site.ea1f868681.css",
   "assets/fonts/figtree-latin-ext-wght-italic.woff2",
   "assets/fonts/figtree-latin-ext-wght-normal.woff2",
   "assets/fonts/figtree-latin-wght-italic.woff2",
@@ -196,9 +220,15 @@ exports[`the photographer template's export > writes the reviewed pages and file
   "assets/img/work-6-640.webp",
   "assets/js/webforge.72fb6461fc.js",
   "contact.html",
+  "contact.md",
   "index.html",
+  "index.md",
+  "llms.txt",
   "portfolio.html",
+  "portfolio.md",
+  "robots.txt",
   "sessions.html",
+  "sessions.md",
 ]
 `;
 
@@ -206,7 +236,8 @@ exports[`the salon template's export > writes the reviewed pages and files 1`] =
 [
   "404.html",
   "about.html",
-  "assets/css/site.81a032df4f.css",
+  "about.md",
+  "assets/css/site.067f719259.css",
   "assets/fonts/montserrat-latin-ext-wght-normal.woff2",
   "assets/fonts/montserrat-latin-wght-normal.woff2",
   "assets/fonts/open-sans-latin-ext-wght-italic.woff2",
@@ -239,8 +270,13 @@ exports[`the salon template's export > writes the reviewed pages and files 1`] =
   "assets/img/work-4-512.webp",
   "assets/js/webforge.72fb6461fc.js",
   "book.html",
+  "book.md",
   "index.html",
+  "index.md",
+  "llms.txt",
+  "robots.txt",
   "treatments.html",
+  "treatments.md",
 ]
 `;
 
@@ -248,7 +284,8 @@ exports[`the shop template's export > writes the reviewed pages and files 1`] = 
 [
   "404.html",
   "about.html",
-  "assets/css/site.3e9c66ae44.css",
+  "about.md",
+  "assets/css/site.993405dbda.css",
   "assets/fonts/caveat-latin-ext-wght-normal.woff2",
   "assets/fonts/caveat-latin-wght-normal.woff2",
   "assets/fonts/rubik-latin-ext-wght-italic.woff2",
@@ -299,8 +336,13 @@ exports[`the shop template's export > writes the reviewed pages and files 1`] = 
   "assets/img/studio-640.webp",
   "assets/js/webforge.cd3c30d6a0.js",
   "index.html",
+  "index.md",
+  "llms.txt",
+  "robots.txt",
   "shop.html",
+  "shop.md",
   "visit.html",
+  "visit.md",
 ]
 `;
 
@@ -308,7 +350,8 @@ exports[`the trades template's export > writes the reviewed pages and files 1`] 
 [
   "404.html",
   "about.html",
-  "assets/css/site.00e71665bc.css",
+  "about.md",
+  "assets/css/site.2e6aa6370d.css",
   "assets/fonts/bebas-neue-latin-400-normal.woff2",
   "assets/fonts/bebas-neue-latin-ext-400-normal.woff2",
   "assets/fonts/roboto-latin-ext-wght-italic.woff2",
@@ -351,8 +394,14 @@ exports[`the trades template's export > writes the reviewed pages and files 1`] 
   "assets/img/van-852.webp",
   "assets/js/webforge.72fb6461fc.js",
   "contact.html",
+  "contact.md",
   "index.html",
+  "index.md",
+  "llms.txt",
   "our-work.html",
+  "our-work.md",
+  "robots.txt",
   "services.html",
+  "services.md",
 ]
 `;

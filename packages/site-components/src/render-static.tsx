@@ -9,7 +9,7 @@ import {
 } from "@webforge/model";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { type ComponentDef, type ComponentLibrary, withAdvanced } from "./library.js";
+import { type ComponentDef, type ComponentLibrary, withAdvanced, withLook } from "./library.js";
 import { RichText } from "./rich-text.js";
 import type { BehaviourName, RenderContext, SlotComponent } from "./schema.js";
 
@@ -148,7 +148,9 @@ type Rendering = {
 function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
   const { library, context } = rendering;
   const def = definitionOf(library, node);
-  const { id, ...props } = node.props;
+  const { id, ...own } = node.props;
+  // The theme's look for its kind under what it sets itself (3.12, CT-1).
+  const props = withLook(own, node.type, context.looks);
   const values: Record<string, unknown> = { ...props };
   const slots: Record<string, SlotComponent> = {};
   for (const [name, field] of Object.entries(def.fields)) {

@@ -349,6 +349,20 @@ const themeCommands: fc.Arbitrary<Command>[] = [
           draft.theme.own = { id: OWN_THEME_ID, name };
         }),
     })),
+  // A kind's look in the theme (3.12, CT-1), set or taken away, each one step.
+  fc
+    .record({
+      kind: fc.constantFrom("Button", "Heading"),
+      corners: fc.option(fc.constantFrom("none", "full"), { nil: undefined }),
+    })
+    .map(({ kind, corners }) => ({
+      name: `theme look ${kind} ${corners ?? "none"}`,
+      run: (ctx) =>
+        ctx.session.edit("root", "Changed the theme's look for Buttons", (draft) => {
+          if (corners === undefined) delete draft.theme.looks?.[kind];
+          else draft.theme.looks = { ...draft.theme.looks, [kind]: { lookCorners: corners } };
+        }),
+    })),
   fc.constant<Command>({
     name: "built-in theme",
     run: (ctx) =>

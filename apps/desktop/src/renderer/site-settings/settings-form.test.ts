@@ -42,7 +42,7 @@ const full: SiteSettings = {
     openingHours: [{ days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" }],
     openingHoursNote: "Closed on bank holidays",
   },
-  search: { allowIndexing: true, includeSitemap: false },
+  search: { allowIndexing: true, includeSitemap: false, readableByAi: true },
   analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
   forms: { service: { kind: "formspree", formId: "mzbqwxyz" } },
   publish: { destinations: [] },
@@ -65,6 +65,17 @@ describe("settings form", () => {
     expect(toSettingsForm(full).backToTop).toBe(true);
     const off = checkSettings(edit(full, { backToTop: false }), full);
     expect(off.ok && off.settings.general).not.toHaveProperty("backToTop");
+  });
+
+  it("turns AI tools' copies off, and leaves a site from before them as it was (F-EX-5)", () => {
+    const off = checkSettings(edit(full, { readableByAi: false }), full);
+    expect(off.ok && off.settings.search.readableByAi).toBe(false);
+
+    const older: SiteSettings = { ...full, search: { allowIndexing: true, includeSitemap: true } };
+    expect(toSettingsForm(older).readableByAi).toBe(false);
+    expect(checkSettings(toSettingsForm(older), older)).toEqual({ ok: true, settings: older });
+    const on = checkSettings(edit(older, { readableByAi: true }), older);
+    expect(on.ok && on.settings.search.readableByAi).toBe(true);
   });
 
   it("leaves empty fields out, trims what was typed and tidies addresses and handles", () => {

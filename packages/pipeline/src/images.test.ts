@@ -3,8 +3,9 @@ import encodePng from "@jsquash/png/encode.js";
 import type { MediaItem } from "@webforge/model";
 import type { ResolvedImage } from "@webforge/site-components";
 import { heroPhoto } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { beforeAll, describe, expect, it, vi } from "vitest";
-import { imageForDepth, makeThumbnail, processImage } from "./images.js";
+import { imageAt, makeThumbnail, processImage } from "./images.js";
 import { loadNodeResources } from "./node-resources.js";
 import type { CodecModules, ImageCache } from "./resources.js";
 
@@ -39,7 +40,7 @@ beforeAll(async () => {
   codecs = (await loadNodeResources()).codecs;
   // Initialise the codecs (and the ImageData stand-in) before building test images.
   await process({ id: "x", name: "x", mimeType: "image/jpeg", data: heroPhoto() });
-}, 60_000);
+}, scaledTestTimeout(60_000));
 
 async function png(width: number, height: number, alpha: number): Promise<Uint8Array> {
   const data = new Uint8ClampedArray(width * height * 4).fill(200);
@@ -48,41 +49,45 @@ async function png(width: number, height: number, alpha: number): Promise<Uint8A
 }
 
 describe("processImage", () => {
-  it("makes WebP and JPEG files at each width up to the original's", async () => {
-    const result = await process({
-      id: "a",
-      name: "hero",
-      mimeType: "image/jpeg",
-      data: heroPhoto(),
-    });
+  it(
+    "makes WebP and JPEG files at each width up to the original's",
+    async () => {
+      const result = await process({
+        id: "a",
+        name: "hero",
+        mimeType: "image/jpeg",
+        data: heroPhoto(),
+      });
 
-    expect(result.files.map((file) => file.path)).toEqual([
-      "hero-640.webp",
-      "hero-640.jpg",
-      "hero-1280.webp",
-      "hero-1280.jpg",
-      "hero-1600.webp",
-      "hero-1600.jpg",
-    ]);
-    expect(result.image).toEqual({
-      sources: [
-        {
-          type: "image/webp",
+      expect(result.files.map((file) => file.path)).toEqual([
+        "hero-640.webp",
+        "hero-640.jpg",
+        "hero-1280.webp",
+        "hero-1280.jpg",
+        "hero-1600.webp",
+        "hero-1600.jpg",
+      ]);
+      expect(result.image).toEqual({
+        sources: [
+          {
+            type: "image/webp",
+            srcset:
+              "assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w",
+          },
+        ],
+        src: "assets/img/hero-1600.jpg",
+        fallback: {
+          type: "image/jpeg",
           srcset:
-            "assets/img/hero-640.webp 640w, assets/img/hero-1280.webp 1280w, assets/img/hero-1600.webp 1600w",
+            "assets/img/hero-640.jpg 640w, assets/img/hero-1280.jpg 1280w, assets/img/hero-1600.jpg 1600w",
         },
-      ],
-      src: "assets/img/hero-1600.jpg",
-      fallback: {
-        type: "image/jpeg",
-        srcset:
-          "assets/img/hero-640.jpg 640w, assets/img/hero-1280.jpg 1280w, assets/img/hero-1600.jpg 1600w",
-      },
-      width: 1600,
-      height: 1000,
-      alt: "",
-    });
-  }, 60_000);
+        width: 1600,
+        height: 1000,
+        alt: "",
+      });
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("never upscales a small image", async () => {
     const result = await process({
@@ -119,54 +124,66 @@ describe("processImage with a cache (R15)", () => {
     data: heroPhoto(),
   });
 
-  it("takes an image encoded before from the cache, reading and encoding nothing", async () => {
-    const { cache, entries } = memoryCache();
-    const first = await process(hero(), cache);
-    const kept = entries.size;
+  it(
+    "takes an image encoded before from the cache, reading and encoding nothing",
+    async () => {
+      const { cache, entries } = memoryCache();
+      const first = await process(hero(), cache);
+      const kept = entries.size;
 
-    const read = vi.fn(async () => undefined);
-    const second = await process({ ...hero(), name: "photo" }, cache, read);
+      const read = vi.fn(async () => undefined);
+      const second = await process({ ...hero(), name: "photo" }, cache, read);
 
-    expect(read).not.toHaveBeenCalled();
-    expect(entries.size).toBe(kept);
-    // The same bytes, under the name the item has now.
-    expect(second.files.map((file) => file.path)).toEqual(
-      first.files.map((file) => file.path.replace("hero", "photo")),
-    );
-    expect(second.files.map((file) => file.data)).toEqual(first.files.map((file) => file.data));
-    expect(second.image).toMatchObject({ width: first.image.width, height: first.image.height });
-  }, 60_000);
+      expect(read).not.toHaveBeenCalled();
+      expect(entries.size).toBe(kept);
+      // The same bytes, under the name the item has now.
+      expect(second.files.map((file) => file.path)).toEqual(
+        first.files.map((file) => file.path.replace("hero", "photo")),
+      );
+      expect(second.files.map((file) => file.data)).toEqual(first.files.map((file) => file.data));
+      expect(second.image).toMatchObject({ width: first.image.width, height: first.image.height });
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("encodes the image again for another crop, or when a file has gone from the cache", async () => {
-    const { cache, entries } = memoryCache();
-    await process(hero(), cache);
+  it(
+    "encodes the image again for another crop, or when a file has gone from the cache",
+    async () => {
+      const { cache, entries } = memoryCache();
+      await process(hero(), cache);
 
-    const read = vi.fn(async () => heroPhoto());
-    const cropped = await process(
-      { ...hero(), crop: { x: 0, y: 0, width: 0.5, height: 1 } },
-      cache,
-      read,
-    );
-    expect(read).toHaveBeenCalledTimes(1);
-    expect(cropped.image.width).toBe(800);
+      const read = vi.fn(async () => heroPhoto());
+      const cropped = await process(
+        { ...hero(), crop: { x: 0, y: 0, width: 0.5, height: 1 } },
+        cache,
+        read,
+      );
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(cropped.image.width).toBe(800);
 
-    const webp = [...entries.keys()].find((key) => key.endsWith("/whole/640.webp"));
-    if (webp !== undefined) entries.delete(webp);
-    await process(hero(), cache, read);
-    expect(read).toHaveBeenCalledTimes(2);
-  }, 60_000);
+      const webp = [...entries.keys()].find((key) => key.endsWith("/whole/640.webp"));
+      if (webp !== undefined) entries.delete(webp);
+      await process(hero(), cache, read);
+      expect(read).toHaveBeenCalledTimes(2);
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("treats a damaged plan in the cache as nothing there", async () => {
-    const { cache, entries } = memoryCache();
-    await process(hero(), cache);
-    const plan = [...entries.keys()].find((key) => key.endsWith("/whole/plan"));
-    if (plan !== undefined) entries.set(plan, new TextEncoder().encode("{not json"));
+  it(
+    "treats a damaged plan in the cache as nothing there",
+    async () => {
+      const { cache, entries } = memoryCache();
+      await process(hero(), cache);
+      const plan = [...entries.keys()].find((key) => key.endsWith("/whole/plan"));
+      if (plan !== undefined) entries.set(plan, new TextEncoder().encode("{not json"));
 
-    const read = vi.fn(async () => heroPhoto());
-    await process(hero(), cache, read);
+      const read = vi.fn(async () => heroPhoto());
+      await process(hero(), cache, read);
 
-    expect(read).toHaveBeenCalledTimes(1);
-  }, 60_000);
+      expect(read).toHaveBeenCalledTimes(1);
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("gives nothing for an original that can't be read", async () => {
     const item = hero();
@@ -177,48 +194,56 @@ describe("processImage with a cache (R15)", () => {
 });
 
 describe("processImage with alt text, focal point and crop", () => {
-  it("cuts the crop before resizing and moves the focal point into the cut image", async () => {
-    const result = await process({
-      id: "a",
-      name: "hero",
-      mimeType: "image/jpeg",
-      data: heroPhoto(),
-      alt: "Green hills",
-      focal: { x: 0.3, y: 0.5 },
-      crop: { x: 0.1875, y: 0, width: 0.625, height: 1 },
-    });
+  it(
+    "cuts the crop before resizing and moves the focal point into the cut image",
+    async () => {
+      const result = await process({
+        id: "a",
+        name: "hero",
+        mimeType: "image/jpeg",
+        data: heroPhoto(),
+        alt: "Green hills",
+        focal: { x: 0.3, y: 0.5 },
+        crop: { x: 0.1875, y: 0, width: 0.625, height: 1 },
+      });
 
-    // 1600 × 1000 cut to its centre 1000 × 1000: exported at 640 and 1000 wide.
-    expect(result.files.map((file) => file.path)).toEqual([
-      "hero-640.webp",
-      "hero-640.jpg",
-      "hero-1000.webp",
-      "hero-1000.jpg",
-    ]);
-    expect(result.image).toMatchObject({
-      width: 1000,
-      height: 1000,
-      alt: "Green hills",
-      // 0.3 of the original is (0.3 - 0.1875) / 0.625 = 18% of the cut image.
-      objectPosition: "18% 50%",
-    });
-    // Encoding the photo takes seconds on a busy machine, as in the tests above.
-  }, 60_000);
+      // 1600 × 1000 cut to its centre 1000 × 1000: exported at 640 and 1000 wide.
+      expect(result.files.map((file) => file.path)).toEqual([
+        "hero-640.webp",
+        "hero-640.jpg",
+        "hero-1000.webp",
+        "hero-1000.jpg",
+      ]);
+      expect(result.image).toMatchObject({
+        width: 1000,
+        height: 1000,
+        alt: "Green hills",
+        // 0.3 of the original is (0.3 - 0.1875) / 0.625 = 18% of the cut image.
+        objectPosition: "18% 50%",
+      });
+      // Encoding the photo takes seconds on a busy machine, as in the tests above.
+    },
+    scaledTestTimeout(60_000),
+  );
 
-  it("has empty alt text and no position without them", async () => {
-    const result = await process({
-      id: "a",
-      name: "hero",
-      mimeType: "image/jpeg",
-      data: heroPhoto(),
-    });
+  it(
+    "has empty alt text and no position without them",
+    async () => {
+      const result = await process({
+        id: "a",
+        name: "hero",
+        mimeType: "image/jpeg",
+        data: heroPhoto(),
+      });
 
-    expect(result.image.alt).toBe("");
-    expect(result.image).not.toHaveProperty("objectPosition");
-  }, 60_000);
+      expect(result.image.alt).toBe("");
+      expect(result.image).not.toHaveProperty("objectPosition");
+    },
+    scaledTestTimeout(60_000),
+  );
 });
 
-describe("imageForDepth", () => {
+describe("imageAt", () => {
   const image: ResolvedImage = {
     sources: [
       { type: "image/webp", srcset: "assets/img/a-640.webp 640w, assets/img/a-1280.webp 1280w" },
@@ -231,17 +256,24 @@ describe("imageForDepth", () => {
   };
 
   it("keeps URLs for pages at the site root", () => {
-    expect(imageForDepth(image, 0)).toBe(image);
+    expect(imageAt(image, "")).toBe(image);
   });
 
   it("adds ../ per folder level to every URL", () => {
-    const moved = imageForDepth(image, 2);
+    const moved = imageAt(image, "../../");
 
     expect(moved.src).toBe("../../assets/img/a-1280.jpg");
     expect(moved.sources[0]?.srcset).toBe(
       "../../assets/img/a-640.webp 640w, ../../assets/img/a-1280.webp 1280w",
     );
     expect(moved.fallback.srcset).toBe("../../assets/img/a-640.jpg 640w");
+  });
+
+  it("roots every URL at the web address, for the 'Page not found' page (F-ED-20)", () => {
+    const moved = imageAt(image, "https://rosas.example/");
+
+    expect(moved.src).toBe("https://rosas.example/assets/img/a-1280.jpg");
+    expect(moved.fallback.srcset).toBe("https://rosas.example/assets/img/a-640.jpg 640w");
   });
 });
 

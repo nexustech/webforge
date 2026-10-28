@@ -46,6 +46,29 @@ export const shell = {
   "shell.new": "New",
   "shell.open": "Open",
   "shell.preview": "Preview",
+  // The preview server's answers in the browser (3.2): a page it doesn't have, and one asked for
+  // before the first build was ready.
+  "preview.notFound":
+    "This page isn't in the preview. Go back to the home page, or open Preview again from {appName}.",
+  "preview.notReady": "The preview isn't ready yet. Reload this page in a moment.",
+  // Preview and Preview on Phone (3.2, F-PV-1).
+  "preview.failed": "{appName} couldn't open the preview. Try again in a moment.",
+  "preview.phone.title": "Preview on your phone",
+  "preview.phone.description":
+    "Point your phone's camera at this code. Your phone needs to be on the same Wi-Fi as this computer.",
+  "preview.phone.starting": "Starting the preview…",
+  "preview.phone.qrLabel": "QR code of the preview's address",
+  "preview.phone.address": "Or type this address in your phone's browser:",
+  "preview.phone.privacy":
+    "Anyone on this Wi-Fi who has this address can see the preview while {appName} is open.",
+  "preview.phone.offline":
+    "A phone can open the preview only on a home or office network. Connect this computer to your Wi-Fi and try again.",
+  // The title bar's cue while a phone can open the preview, with a button that stops it (3.2).
+  "preview.phone.on": "Phone preview on",
+  "preview.phone.onDescription":
+    "Anyone on this Wi-Fi who has the address can see the preview. Stop it when you're done.",
+  "preview.phone.failed":
+    "{appName} couldn't start the preview for your phone. Try again in a moment.",
   "shell.export": "Export",
   "shell.publish": "Publish",
   "shell.actions": "Site actions",
@@ -55,7 +78,7 @@ export const shell = {
   // Settings (LF-12): one dialog for the app and the open site.
   "settings.command": "Settings…",
   "settings.title": "Settings",
-  "settings.description": "How Webforge works for you, and the open site's details.",
+  "settings.description": "How {appName} works for you, and the open site's details.",
   "settings.save": "Save",
   "settings.sections": "Settings sections",
   "settings.heading.app": "App",
@@ -93,9 +116,11 @@ export const shell = {
   "command.openSite": "Open Site…",
   "command.exportSite": "Export Site…",
   "command.preview": "Preview",
+  "command.previewOnPhone": "Preview on Phone…",
+  "command.stopPhonePreview": "Stop Phone Preview",
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
-  "command.about": "About Webforge",
+  "command.about": "About {appName}",
   "command.toggleLeftPanels": "Show or Hide Left Panels",
   "command.toggleRightPanels": "Show or Hide Right Panels",
   "command.toggleDrawer": "Show or Hide Bottom Panel",

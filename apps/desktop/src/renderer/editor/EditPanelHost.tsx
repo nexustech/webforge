@@ -25,6 +25,7 @@ import {
   type FieldDef,
   fieldsHiddenBy,
   isIconName,
+  withLook,
 } from "@webforge/site-components";
 import { useEffect, useRef } from "react";
 import { applyAnchor, asLinkFieldChange } from "../links/index.js";
@@ -55,6 +56,7 @@ import {
 } from "./list-edit.js";
 import { overlayWarning } from "./overlay-warning.js";
 import { placedOverlay } from "./placed-overlay.js";
+import { resetValue } from "./reset-value.js";
 import {
   breakpointOf,
   DEVICES,
@@ -363,8 +365,9 @@ export function EditPanelHost({
   // element has gone, a change still on its way does nothing.
   const now = () => fieldTarget(history.document.getState(), library, pageId, nodeId);
 
-  // What a field's `unavailable` is asked about: the element's values, with its defaults.
-  const values = { ...component.defaults, ...node.props };
+  // What a field's `unavailable` is asked about: the element's values, over its kind's look from
+  // the theme (3.12) and its defaults.
+  const values = { ...component.defaults, ...withLook(node.props, node.type, theme.looks) };
   // A layout that doesn't use a field hides it; its value stays for the layouts that do (#311).
   const hidden = fieldsHiddenBy(component, values);
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
@@ -377,11 +380,14 @@ export function EditPanelHost({
     if (spec === undefined) {
       return [];
     }
-    const stored = storedOr(name, node.props[name]);
+    // What it draws with (its own value, else its kind's look, else the default), and what it
+    // sets itself: only that is set for a device or reset per device (3.12).
+    const own = node.props[name];
+    const stored = storedOr(name, own);
     const responsive = field.responsive === true;
     const unavailable = field.unavailable?.(values);
     const help = unavailable ?? field.help;
-    const warning = overlayWarning(field, values, theme);
+    const warning = overlayWarning(field, values, theme, component);
     // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
     return withBindingChoice(name, field, node.props.bindings, [
       {
@@ -397,7 +403,7 @@ export function EditPanelHost({
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
           ? { changed: true }
           : {}),
-        ...(responsive && isOverridden(stored, breakpoint) ? { overridden: true } : {}),
+        ...(responsive && isOverridden(own, breakpoint) ? { overridden: true } : {}),
         // Its value on each device, in rows of their own (SP-5).
         ...(responsive
           ? {
@@ -405,8 +411,8 @@ export function EditPanelHost({
                 id: each,
                 label: t(`device.${each}`),
                 value: valueAt(stored, each),
-                own: each === "desktop" || isOverridden(stored, each),
-                inEffect: each === sourceOf(stored, breakpoint),
+                own: each === "desktop" || isOverridden(own, each),
+                inEffect: each === sourceOf(own, breakpoint),
               })),
             }
           : {}),
@@ -542,7 +548,16 @@ export function EditPanelHost({
     // an image's alt text for this placement.
     const typed = field.kind === "text" || field.kind === "media";
     // A section's first background image brings the overlay its text needs (ST-9), in one step.
-    const overlay = placedOverlay(field, live.node.props, value, history.document.getState().theme);
+    const overlay = placedOverlay(
+      field,
+      {
+        ...component.defaults,
+        ...withLook(live.node.props, live.node.type, history.document.getState().theme.looks),
+      },
+      value,
+      history.document.getState().theme,
+      component,
+    );
     const recipe = live.recipe(name, next);
     session.edit(
       field.kind === "text" ? "text" : "props",
@@ -619,7 +634,8 @@ export function EditPanelHost({
   const reset = (name: string) => {
     const live = now();
     const field = component.fields[name];
-    if (live === undefined || field === undefined) {
+    // Nothing of its own to reset: it follows its kind's look or its default already (3.12).
+    if (live === undefined || field === undefined || live.node.props[name] === undefined) {
       return;
     }
     endRun();
@@ -666,15 +682,18 @@ export function EditPanelHost({
       "props",
       label,
       (draft) => {
+        const look = draft.theme.looks?.[live.node.type] as
+          | Readonly<Record<string, unknown>>
+          | undefined;
         for (const name of known) {
           const responsive = component.fields[name]?.responsive === true;
-          const initial = component.defaults[name];
           live.write(draft, name, (stored) =>
-            !responsive
-              ? initial
-              : breakpoint === "desktop"
-                ? withValueAt(stored, "desktop", valueAt(initial, "desktop"))
-                : withoutOverride(stored, breakpoint),
+            resetValue(stored, {
+              responsive,
+              breakpoint,
+              initial: component.defaults[name],
+              look: look?.[name],
+            }),
           );
         }
       },
