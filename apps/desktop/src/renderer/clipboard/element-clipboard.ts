@@ -29,9 +29,13 @@ import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor, quotedElementName } from "../editor/labels.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
 import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
+import {
+  type CopySelection,
+  copySelection,
+  updateSectionField,
+} from "../editor/shared-sections.js";
 import { reportFailure } from "../log.js";
 import { addMedia, importMessages, putInMedia } from "../media/index.js";
-import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
 import { siteSession } from "../storage/index.js";
 
 /**

@@ -212,7 +212,7 @@ export function lookChange(session: LookSession, scope: LookScope): LookChange |
 
 /**
  * The fields of `values` that `node` draws otherwise, with the theme's `looks` for its kind (3.12),
- * and can take with its own values.
+ * or sets where the source leaves them unset, and can take with its own values.
  */
 function changedFields(
   component: ComponentDef,
@@ -226,10 +226,13 @@ function changedFields(
     .filter(
       ([name, value]) =>
         component.fields[name]?.unavailable?.(own) === undefined &&
-        !sameValue(
-          drawnWith(component, look, node.props[name], name),
-          drawnWith(component, look, value, name),
-        ),
+        // A field the source leaves to its kind's look or its default is taken off one that sets
+        // it, even to what it draws anyway, so it follows later changes to the look too (3.12).
+        ((value === undefined && node.props[name] !== undefined) ||
+          !sameValue(
+            drawnWith(component, look, node.props[name], name),
+            drawnWith(component, look, value, name),
+          )),
     )
     .map(([name]) => name);
 }

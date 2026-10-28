@@ -9,8 +9,8 @@ import {
 } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { currentPage, type EditorSession } from "./editor-session.js";
 import {
   anchorsTakenInSection,
   copySelection,

@@ -21,32 +21,33 @@ import {
   SPACING_TOKENS,
 } from "@webforge/model";
 import {
+  APPEARANCE_FIELDS,
   type ComponentLibrary,
   type FieldDef,
   fieldsHiddenBy,
   isIconName,
+  textStylesOf,
   withLook,
 } from "@webforge/site-components";
 import { useEffect, useRef } from "react";
-import { applyAnchor, asLinkFieldChange } from "../links/index.js";
-import { anchorsTakenInSection } from "../shared-sections/index.js";
-import {
-  bindingLabel,
-  boundFieldOf,
-  isBindingField,
-  withBinding,
-  withBindingChoice,
-} from "../site-settings/index.js";
 import {
   advancedFieldLabel,
   advancedFields,
   isAdvancedField,
   withAdvancedChange,
 } from "./advanced-fields.js";
+import {
+  bindingLabel,
+  boundFieldOf,
+  isBindingField,
+  withBinding,
+  withBindingChoice,
+} from "./binding-fields.js";
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { type FieldTarget, fieldTarget } from "./field-target.js";
 import { changedLabel, labelFor, pasteGroupLabel, resetGroupLabel, resetLabel } from "./labels.js";
+import { applyAnchor, asLinkFieldChange } from "./link-change.js";
 import {
   applyListChange,
   type EditableList,
@@ -56,6 +57,7 @@ import {
 } from "./list-edit.js";
 import { overlayWarning } from "./overlay-warning.js";
 import { placedOverlay } from "./placed-overlay.js";
+import { provenanceOf } from "./provenance.js";
 import { resetValue } from "./reset-value.js";
 import {
   breakpointOf,
@@ -68,6 +70,7 @@ import {
   withValueAt,
 } from "./responsive-value.js";
 import { shownLayout } from "./shared-layout.js";
+import { anchorsTakenInSection } from "./shared-sections.js";
 import { useDocument, useUi } from "./use-document.js";
 
 /**
@@ -283,6 +286,11 @@ export type EditPanelHostProps = {
   readonly onClosedGroupsChange?: (type: string, closed: readonly string[]) => void;
   /** The app's actions in an option group's right-click menu: Apply Look to Every… (2.27). */
   readonly groupActions?: (id: string) => readonly GroupAction[];
+  /**
+   * Shows where an Appearance field's value comes from (CT-3): a Theme tab field, or a kind's look
+   * (`look:‹type›`). Without it, the words say so but show nothing.
+   */
+  readonly revealSource?: (target: string) => void;
 };
 
 /**
@@ -302,6 +310,7 @@ export function EditPanelHost({
   closedGroups,
   onClosedGroupsChange,
   groupActions,
+  revealSource,
 }: EditPanelHostProps) {
   const { history, library } = session;
   const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
@@ -370,6 +379,32 @@ export function EditPanelHost({
   const values = { ...component.defaults, ...withLook(node.props, node.type, theme.looks) };
   // A layout that doesn't use a field hides it; its value stays for the layouts that do (#311).
   const hidden = fieldsHiddenBy(component, values);
+  // What the Appearance group's words say its values come from (3.12, CT-3).
+  const look: Readonly<Record<string, unknown>> = theme.looks?.[node.type] ?? {};
+  const textStyles = textStylesOf(node, library, theme.looks);
+  const provenance = (name: string, label: string, own: unknown, responsive: boolean) => {
+    const { text, reveal } = provenanceOf({
+      name,
+      label,
+      own,
+      look: look[name],
+      initial: component.defaults[name],
+      responsive,
+      breakpoint,
+      type: node.type,
+      item: component.label,
+      section: component.place === "section",
+      classes: node.props.advanced?.className ?? "",
+      textStyle: textStyles.length === 1 ? textStyles[0] : undefined,
+      theme,
+    });
+    return {
+      text,
+      ...(reveal === undefined || revealSource === undefined
+        ? {}
+        : { onReveal: () => revealSource(reveal) }),
+    };
+  };
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
     if (hidden.has(name)) return [];
     const list = editableList(field, library);
@@ -398,6 +433,11 @@ export function EditPanelHost({
         ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
         ...(help === undefined ? {} : { help }),
         ...(warning === undefined ? {} : { warning }),
+        ...(field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id
+          ? { source: provenance(name, field.label, own, responsive) }
+          : {}),
+        // Its Reset goes back to its kind's look, where the theme has one for it (3.12).
+        ...(look[name] === undefined ? {} : { resetLabel: t("editPanel.resetToLook") }),
         ...(unavailable === undefined ? {} : { disabled: true }),
         ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
         ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)

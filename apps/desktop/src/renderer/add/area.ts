@@ -1,6 +1,7 @@
 import type { CanvasEngine } from "@webforge/engine";
 import type { Area, EditorContext } from "../editor/areas.js";
-import { removeSharedSection, sharedSection } from "../shared-sections/index.js";
+import { sharedSection } from "../editor/shared-sections.js";
+import { removeSharedSection } from "../shared-sections/index.js";
 import { followLayoutLock } from "../shell/preferences-store.js";
 import { type AddPanelRegistration, registerAddPanel } from "./register-add-panel.js";
 

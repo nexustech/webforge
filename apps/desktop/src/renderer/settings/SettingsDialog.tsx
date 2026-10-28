@@ -1,6 +1,6 @@
 import { combineForms, FormDialog } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { OpenSettings } from "./settings-registry.js";
+import type { OpenSettings } from "../editor/settings-registry.js";
 
 /** Props of {@link SettingsDialog}. */
 export type SettingsDialogProps = {

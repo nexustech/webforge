@@ -4,6 +4,7 @@ import type { SharedSectionsDoc } from "@webforge/model";
 import { SquarePlusIcon } from "lucide-react";
 import { type ReactNode, useSyncExternalStore } from "react";
 import { type AddPreferences, MAX_FAVOURITES, MAX_RECENT } from "../../shared/ipc/prefs.js";
+import type { AddItem } from "../editor/add-item.js";
 import { currentPage } from "../editor/editor-session.js";
 import { quotedElementName } from "../editor/labels.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -11,7 +12,6 @@ import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import { AddPanel, type AddPanelProps, type SharedSectionActions } from "./AddPanel.js";
 import {
-  type AddItem,
   type AddSession,
   type AddTab,
   addComponent,

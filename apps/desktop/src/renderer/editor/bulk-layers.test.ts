@@ -7,9 +7,6 @@ import {
 } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { currentPage } from "../editor/editor-session.js";
-import { copyLayer } from "../editor/layers.js";
-import { selectedIds } from "../editor/selection.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   deleteSelected,
@@ -18,6 +15,9 @@ import {
   similarTo,
   toggleSelectedHidden,
 } from "./bulk-layers.js";
+import { currentPage } from "./editor-session.js";
+import { copyLayer } from "./layers.js";
+import { selectedIds } from "./selection.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
 const heading = (id: string, extra: Record<string, unknown> = {}): NodeDoc => ({

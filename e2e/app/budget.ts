@@ -24,12 +24,14 @@ export const BACKGROUND_WAIT = 45_000;
 /**
  * The wall-clock backstop for opening a site on CI, by platform: at least twice the slowest opening
  * CI measured, and never under 6 s, twice the product's 3 s. A busy runner doesn't trip it, while
- * a wait added to the path (a timer, a lost event) does. Windows' runners stall now and then with
- * no more CPU spent: openings that cost 2–3 CPU-s took 6.6 and 7.8 s there (#526). See ADR 0014.
+ * a wait added to the path (a timer, a lost event) does, on Linux and macOS. Windows' runners stall
+ * now and then with no more CPU spent: openings that cost 2–3 CPU-s took 6.6 and 7.8 s there
+ * (#526), and once 21.5 s (#561). Its backstop catches a hang only, as the same code's added wait
+ * fails on the other two. See ADR 0014.
  */
 const CI_OPEN_WALL_BACKSTOP_MS: Readonly<Record<string, number>> = {
   linux: 6_000,
-  win32: 16_000,
+  win32: 30_000,
   darwin: 6_000,
 };
 
