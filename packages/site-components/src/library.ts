@@ -101,6 +101,12 @@ export type ComponentDef = {
    * needs (WCAG AA's large text, 1.37).
    */
   readonly textStyle?: (values: Readonly<Record<string, unknown>>) => TextStyle | undefined;
+  /**
+   * The theme's corner token its own corners come from while its Appearance leaves them to the
+   * theme: `field` for a Button (daisyUI's buttons and fields), `box` for a section. None where no
+   * one token decides them. The Edit panel names it (3.12, CT-3).
+   */
+  readonly themeCorners?: "box" | "field";
 };
 
 /**

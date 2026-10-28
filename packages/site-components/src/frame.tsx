@@ -167,6 +167,8 @@ export function defineSection<const F extends Fields, const Variant extends stri
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
     place: "section",
+    // Its corners, left to the theme, are a box's (product/11, 3.12 note 7).
+    themeCorners: "box",
     // The Appearance group first, so the Style tab shows it before the section's own options.
     fields: {
       ...(appearance as typeof APPEARANCE_FIELDS),
