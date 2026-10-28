@@ -179,7 +179,7 @@ export type SiteSnapshot = {
 };
 
 /** {@link SiteSnapshot}'s business details beyond its contact details (3.15, SEO-1). */
-export type SiteBusiness = {
+type SiteBusiness = {
   readonly type?: BusinessType | undefined;
   readonly kind?: string | undefined;
   readonly priceRange?: string | undefined;
