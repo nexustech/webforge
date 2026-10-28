@@ -32,6 +32,28 @@ export const templates = {
   "template.category.creative": "Creative",
   "template.category.shop": "Shop",
   "template.category.personal": "Personal",
+  // The page recipes each business type offers (QS-3, 3.11a): Add Page's suggestions, and the
+  // quick start's Pages step. Each names the page its recipe makes.
+  "recipe.food-events": "Events",
+  "recipe.food-private-hire": "Private hire",
+  "recipe.food-reviews": "Reviews",
+  "recipe.beauty-prices": "Prices",
+  "recipe.beauty-reviews": "Reviews",
+  "recipe.beauty-gift-vouchers": "Gift vouchers",
+  "recipe.trades-reviews": "Reviews",
+  "recipe.trades-areas": "Areas we cover",
+  "recipe.trades-faq": "FAQ",
+  "recipe.services-how-we-work": "How we work",
+  "recipe.services-client-stories": "Client stories",
+  "recipe.services-faq": "FAQ",
+  "recipe.creative-kind-words": "Kind words",
+  "recipe.creative-workshops": "Workshops",
+  "recipe.creative-faq": "FAQ",
+  "recipe.shop-delivery": "Delivery and returns",
+  "recipe.shop-reviews": "Reviews",
+  "recipe.shop-faq": "FAQ",
+  "recipe.personal-services": "Services",
+  "recipe.personal-kind-words": "Kind words",
   // The templates, by id (packages/templates).
   "template.consultant.name": "Consultant",
   "template.consultant.description":

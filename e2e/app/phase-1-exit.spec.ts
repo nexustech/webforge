@@ -135,6 +135,7 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   const addPage = async (name: string) => {
     await showTab(right, "Site");
     await page.getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("menuitem", { name: "Blank Page…" }).click();
     await page.getByRole("textbox", { name: "Page name" }).fill(name);
     await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
     await expect(pages().getByRole("button", { name: startsWith(name) })).toHaveAttribute(

@@ -45,6 +45,7 @@ function setUp({ backToTop = false } = {}) {
   const actions: PagesPanelActions = {
     show: vi.fn(),
     add: vi.fn(),
+    addSuggested: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),
@@ -89,6 +90,7 @@ describe("PagesPanel (F-ED-13)", () => {
     const { actions } = setUp();
 
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Blank Page…" }));
     const field = screen.getByRole("textbox", { name: "Page name" });
     expect((field as HTMLInputElement).value).toBe("New page");
     await userEvent.clear(field);
@@ -101,6 +103,22 @@ describe("PagesPanel (F-ED-13)", () => {
 
     expect(actions.add).toHaveBeenCalledWith("Opening Times");
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("adds a suggested page for a business type, from Add Page's menu (QS-3)", async () => {
+    const { actions } = setUp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Suggested Pages" }));
+    // Every business type, as the site doesn't keep the template it started from.
+    for (const type of ["Food and drink", "Beauty", "Trades", "Personal"]) {
+      expect(screen.getByRole("menuitem", { name: type })).toBeTruthy();
+    }
+    await userEvent.click(screen.getByRole("menuitem", { name: "Trades" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Areas we cover" }));
+
+    expect(actions.addSuggested).toHaveBeenCalledWith("trades-areas");
+    expect(actions.add).not.toHaveBeenCalled();
   });
 
   it("renames a page from its menu, typing straight into the dialog", async () => {

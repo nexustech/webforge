@@ -16,6 +16,7 @@ import {
   syncMenuWithPages,
   uniqueSlug,
 } from "@webforge/model";
+import { insertRecipePage, PAGE_RECIPES } from "@webforge/templates";
 import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-session.js";
 
 /**
@@ -107,6 +108,27 @@ export function addPage(session: PagesSession, name: string): PageId | null {
   const id = newId("page");
   editShowing(session, "insert", t("history.added", { item: pageItem(title) }), id, (draft) =>
     insertPage(draft, id, title),
+  );
+  return id;
+}
+
+/**
+ * Adds a page made from page recipe `recipeId` (QS-3, 3.11a): its sections, in the site's theme,
+ * named and described as the recipe says. Shows it. Returns its id, or null for a recipe there
+ * isn't.
+ */
+export function addSuggestedPage(session: PagesSession, recipeId: string): PageId | null {
+  const recipe = PAGE_RECIPES.find((each) => each.id === recipeId);
+  if (recipe === undefined) {
+    return null;
+  }
+  const id = newId("page");
+  editShowing(
+    session,
+    "insert",
+    t("history.added", { item: pageItem(recipe.title) }),
+    id,
+    (draft) => insertRecipePage(draft, id, recipe),
   );
   return id;
 }
