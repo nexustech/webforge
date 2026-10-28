@@ -31,3 +31,9 @@ export function themedPageUrl(page: string): string {
  * folder so CI uploads them with it.
  */
 export const TEMPLATES_DIR = join(EXPORTED_SITE_DIR, "templates");
+
+/**
+ * Whether the templates are exported and checked (3.10): always, but in CI only when what they're
+ * made from can have changed (`WEBFORGE_EXPORT_TEMPLATES=0` otherwise, from `changes`' output).
+ */
+export const CHECK_TEMPLATES = process.env.WEBFORGE_EXPORT_TEMPLATES !== "0";
