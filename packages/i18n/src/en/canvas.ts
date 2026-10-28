@@ -162,8 +162,8 @@ export const canvas = {
   "editPanel.source.custom": "Custom colour (Advanced)",
   "editPanel.source.class": "Class (Advanced)",
   "editPanel.source.look": "Theme's look for {item}",
-  "editPanel.source.theme": "Theme's",
   "editPanel.source.themeToken": "Theme's ({token}: {value})",
+  "editPanel.source.themeTokenChosen": "Theme's ({token}: {value}), chosen here",
   "editPanel.source.reveal": "Show where it comes from",
   // A field that may differ per device (SP-5): its rows, one per device.
   "editPanel.devices.show": "{field} on each device",
