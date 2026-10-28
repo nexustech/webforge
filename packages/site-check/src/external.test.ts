@@ -61,6 +61,14 @@ describe("htmlResources (C8, 3.9)", () => {
     ]);
   });
 
+  it("reads a tag to its end past a > in a quoted value", () => {
+    const html = `<img alt="Price > £5" title='a > b' src="https://img.example.com/cake.jpg">`;
+
+    expect(htmlResources(html)).toEqual([
+      { url: "https://img.example.com/cake.jpg", kind: "image" },
+    ]);
+  });
+
   it("leaves out links, the site's own files, data and what's in comments", () => {
     const html = `
       <a href="https://example.com/about">About us</a>

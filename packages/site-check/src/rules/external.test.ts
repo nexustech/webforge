@@ -51,6 +51,23 @@ describe("externalResources (C8, 3.9)", () => {
     ]);
   });
 
+  it("finds nothing the site keeps a copy of, but in custom.js, whose addresses stay as they are", () => {
+    const kept = {
+      url: "https://cdn.example.com/widget.js",
+      file: "widget-1a2b3c4d.js",
+      hash: "c".repeat(64),
+      mime: "text/javascript",
+    };
+    const site = withCode(siteWith([widget]), {
+      js: 'loadScript("//cdn.example.com/widget.js");',
+      bundled: [kept],
+    });
+
+    expect(findIn(externalResourcesRule, site).map((found) => found.key)).toEqual([
+      "code/js///cdn.example.com/widget.js",
+    ]);
+  });
+
   it("finds nothing Settings allow, and stops the export for the rest", () => {
     const site = withCode(siteWith([widget]), {}, ["https://cdn.example.com/"]);
 

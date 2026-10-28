@@ -21,10 +21,20 @@ export type { CopiedElements } from "./clipboard.js";
 export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
-export type { LayoutDoc, NodeAdvanced, NodeDoc, PageDoc, SiteCode, Theme } from "./documents.js";
+export type {
+  BundledFile,
+  LayoutDoc,
+  NodeAdvanced,
+  NodeDoc,
+  PageDoc,
+  SiteCode,
+  Theme,
+} from "./documents.js";
 export {
   anchorsIn,
   attributeNameSchema,
+  BUNDLED_FILE_MAX,
+  bundledFileSchema,
   classNamesSchema,
   isNodeDoc,
   LAYER_NAME_MAX,
@@ -121,6 +131,7 @@ export {
   richTextPageLinks,
 } from "./rich-text-links.js";
 export type {
+  BusinessKind,
   BusinessType,
   Day,
   FormService,
@@ -129,6 +140,7 @@ export type {
   SocialProfile,
 } from "./settings.js";
 export {
+  BUSINESS_KINDS,
   BUSINESS_NAME_MAX,
   BUSINESS_TYPES,
   CONSENT_MESSAGE_MAX,
@@ -141,6 +153,7 @@ export {
   OPENING_HOURS_NOTE_MAX,
   openingHoursSchema,
   POSTAL_ADDRESS_MAX,
+  PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
   SITE_NAME_MAX,
   SOCIAL_NETWORKS,

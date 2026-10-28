@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { WebforgeError } from "@webforge/errors";
 import {
+  type BundledFile,
   DOCUMENT_EXTENSIONS,
   isDeviceName,
   type MediaItem,
@@ -33,7 +34,7 @@ import { imageAt, processImage } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
-import { scriptMistake, siteCodeCandidates } from "./site-code.js";
+import { scriptMistake, siteCodeCandidates, toBundled, withCustomCode } from "./site-code.js";
 import {
   hasSitemap,
   llmsTxt,
@@ -51,6 +52,7 @@ import {
   withYear,
 } from "./site-files.js";
 import { iconFiles, shareImageFile } from "./site-images.js";
+import { structuredData } from "./structured-data.js";
 import { withThanksPage } from "./thanks-page.js";
 
 /**
@@ -104,8 +106,9 @@ function ownCode(code: string | undefined): string | undefined {
  * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; or a
  * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
  * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
- * which), or the site's `custom.js` with a mistake that stops browsers running it
- * (`custom-script`, 3.9; `detail` is its line).
+ * which), the site's `custom.js` with a mistake that stops browsers running it (`custom-script`,
+ * 3.9; `detail` is its line), or a file kept with the site whose bytes the site file doesn't have
+ * (`missing-kept-file`, 3.9; `detail` is its name), whose address its code keeps.
  */
 export type BuildWarning = {
   readonly code:
@@ -115,7 +118,8 @@ export type BuildWarning = {
     | "missing-icon"
     | "small-icon"
     | "form-unset"
-    | "custom-script";
+    | "custom-script"
+    | "missing-kept-file";
   /** The page path the problem is on; "" for the whole site (the icon's). */
   readonly page: string;
   readonly detail: string;
@@ -468,7 +472,24 @@ export async function* buildEvents(
   // The site's own code (F-ED-15, 3.9): custom.css after the site's stylesheet and custom.js after
   // webforge.js, each a file of its own and as the person wrote it, *Minify output* or not, as
   // Custom Code's scripts and styles are.
-  const customCss = ownCode(site.code?.css);
+  // The files kept with the site (Download and bundle, 3.9), which its code names by address. One
+  // whose bytes the site file doesn't have keeps its address, and the report says so.
+  const vendorFiles = new Map<string, Uint8Array>();
+  const bundled: BundledFile[] = [];
+  for (const file of site.code?.bundled ?? []) {
+    stopIfCancelled(signal);
+    const data = await bytesOf({ hash: file.hash }, resources, file.mime);
+    if (data === undefined) {
+      warnings.push({ code: "missing-kept-file", page: "", detail: file.file });
+      continue;
+    }
+    bundled.push(file);
+    vendorFiles.set(`assets/vendor/${file.file}`, data);
+  }
+  // custom.css is in assets/css/, two folders from the site's root.
+  const customCssText = ownCode(site.code?.css);
+  const customCss =
+    customCssText === undefined ? undefined : toBundled(bundled, "../../")(customCssText);
   const customCssPath =
     customCss === undefined ? undefined : `assets/css/custom.${contentHash(customCss)}.css`;
   const customJs = ownCode(site.code?.js);
@@ -547,10 +568,13 @@ export async function* buildEvents(
       ...(analytics?.consentBanner === true ? { cookieSettings: true } : {}),
     };
     // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
+    // Custom Code pointing at the files kept with the site, `prefix` away (3.9).
+    const own = (nodes: readonly NodeDoc[]) =>
+      bundled.length === 0 ? nodes : withCustomCode(nodes, toBundled(bundled, prefix));
     const regions = {
-      header: page.hideHeader === true ? [] : site.layout.header,
-      content: page.doc.content,
-      footer: page.hideFooter === true ? [] : site.layout.footer,
+      header: page.hideHeader === true ? [] : own(site.layout.header),
+      content: own(page.doc.content),
+      footer: page.hideFooter === true ? [] : own(site.layout.footer),
     };
     return { ...renderPage(regions, library, context), warnings: found };
   };
@@ -572,7 +596,8 @@ export async function* buildEvents(
               theme: themeShape(site.theme),
               media: undefined,
               documents: undefined,
-              code: undefined,
+              // But the files kept with it, which Custom Code is drawn pointing at.
+              code: bundled,
               pages: site.pages.map((page) => ({ ...page, doc: undefined })),
             },
             images: [...images],
@@ -654,7 +679,10 @@ export async function* buildEvents(
       ...(customJsPath === undefined ? {} : { customScript: `${entry.prefix}${customJsPath}` }),
       ...(site.code === undefined
         ? {}
-        : { customHead: site.code.head, customBodyEnd: site.code.bodyEnd }),
+        : {
+            customHead: toBundled(bundled, entry.prefix)(site.code.head),
+            customBodyEnd: toBundled(bundled, entry.prefix)(site.code.bodyEnd),
+          }),
       header: entry.header,
       main: entry.main,
       footer: entry.footer,
@@ -669,6 +697,18 @@ export async function* buildEvents(
           prefix: entry.prefix,
           shareImage: shareImages.get(entry.page.path),
           manifest: icons.length > 0,
+        }),
+        // The business as structured data, from what the page shows (3.15, SEO-1).
+        ...structuredData({
+          site,
+          page: entry.page,
+          nodes: [
+            ...(entry.page.hideHeader === true ? [] : site.layout.header),
+            ...entry.page.doc.content,
+            ...(entry.page.hideFooter === true ? [] : site.layout.footer),
+          ],
+          library,
+          shareImage: shareImages.get(entry.page.path),
         }),
       ],
     };
@@ -706,6 +746,8 @@ export async function* buildEvents(
   if (script !== undefined && scriptPath !== undefined) {
     files.set(scriptPath, text.encode(script));
   }
+  // Each file kept with the site, as it was downloaded (3.9).
+  for (const [path, data] of vendorFiles) files.set(path, data);
   if (customCss !== undefined && customCssPath !== undefined) {
     files.set(customCssPath, text.encode(customCss));
   }

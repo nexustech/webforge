@@ -18,12 +18,15 @@ import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { reportFailure } from "../log.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { THEME_PANEL_ID } from "../theme/index.js";
+import { type BundleActions, canBundle, downloadAndBundle } from "./bundle.js";
 
 /** What Site Check's jumps and fixes reach. */
 export type SiteCheckActions = {
   readonly session: Pick<EditorSession, "history" | "ui" | "edit" | "showPage" | "select">;
   readonly panels: Pick<PanelRegistry, "show">;
   readonly settings: Pick<SettingsRegistry, "show">;
+  /** Download and bundle (3.9), where the window offers it. */
+  readonly bundle?: BundleActions;
 };
 
 /** Settings' Custom Code: its part's id and its one section's, as site-settings registers it. */
@@ -192,7 +195,8 @@ function giveTitle({ session }: SiteCheckActions, pageId: PageId, title: string)
 /**
  * The *Fix* for `finding` of `rule`, if it has one (F-CHK-1): a page's Windows device name renamed
  * (R16), a missing title taken from the page's first heading, the web address asked for in Site
- * Settings. `undefined` when Site Check can only show where it is.
+ * Settings, a file from another website kept with the site. `undefined` when Site Check can only
+ * show where it is.
  */
 export function fixFor(
   rule: string,
@@ -215,6 +219,17 @@ export function fixFor(
   // which selecting it shows.
   if (rule === "forms" && finding.values?.form === "service") {
     return () => showForms(actions.settings);
+  }
+  // A file from another website: Download and bundle keeps a copy with the site (3.9), once the
+  // person says yes.
+  const { bundle } = actions;
+  const url = finding.values?.url;
+  if (rule === "externalResources" && bundle !== undefined && typeof url === "string") {
+    return canBundle(finding)
+      ? () => {
+          void downloadAndBundle(actions.session, bundle, url);
+        }
+      : undefined;
   }
   return undefined;
 }
