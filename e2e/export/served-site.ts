@@ -56,6 +56,12 @@ export async function serveSite(dir: string): Promise<ServedSite> {
   const port = typeof address === "object" && address !== null ? address.port : 0;
   return {
     origin: `http://127.0.0.1:${port}`,
-    close: () => new Promise((resolve) => server.close(() => resolve())),
+    // The browser keeps its connections open for its next request, and `close` would wait for
+    // them, as long as the browser cares to: it ends them first.
+    close: () =>
+      new Promise((resolve) => {
+        server.close(() => resolve());
+        server.closeAllConnections();
+      }),
   };
 }
