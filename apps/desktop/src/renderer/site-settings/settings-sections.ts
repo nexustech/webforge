@@ -126,6 +126,21 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           // The canvas doesn't show it: only the published site has it.
           help: t("site.settings.backToTopHint"),
         },
+        {
+          kind: "select",
+          name: "businessType",
+          path: "general.businessType",
+          label: t("site.settings.businessType"),
+          help: t("site.settings.businessTypeHint"),
+          width: "md",
+          options: [
+            { label: t("site.settings.businessType.none"), value: "" },
+            ...BUSINESS_TYPES.map((type) => ({
+              label: t(`template.category.${type}`),
+              value: type,
+            })),
+          ],
+        },
       ],
     },
     {
@@ -216,21 +231,6 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
       fields: () => [
         { kind: "toggle", name: "allowIndexing", label: t("site.settings.allowIndexing") },
         { kind: "toggle", name: "includeSitemap", label: t("site.settings.includeSitemap") },
-        {
-          kind: "select",
-          name: "businessType",
-          path: "search.businessType",
-          label: t("site.settings.businessType"),
-          help: t("site.settings.businessTypeHint"),
-          width: "md",
-          options: [
-            { label: t("site.settings.businessType.none"), value: "" },
-            ...BUSINESS_TYPES.map((type) => ({
-              label: t(`template.category.${type}`),
-              value: type,
-            })),
-          ],
-        },
         {
           kind: "toggle",
           name: "readableByAi",

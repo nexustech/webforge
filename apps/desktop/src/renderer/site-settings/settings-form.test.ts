@@ -28,6 +28,7 @@ const full: SiteSettings = {
     description: "Fresh bread",
     language: "en-GB",
     backToTop: true,
+    businessType: "food",
   },
   address: { url: "https://www.rosasbakery.co.uk" },
   social: {
@@ -42,7 +43,7 @@ const full: SiteSettings = {
     openingHours: [{ days: ["tue", "wed", "thu", "fri"], opens: "07:00", closes: "15:00" }],
     openingHoursNote: "Closed on bank holidays",
   },
-  search: { allowIndexing: true, includeSitemap: false, readableByAi: true, businessType: "food" },
+  search: { allowIndexing: true, includeSitemap: false, readableByAi: true },
   analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
   forms: { service: { kind: "formspree", formId: "mzbqwxyz" } },
   publish: { destinations: [] },
@@ -80,10 +81,10 @@ describe("settings form", () => {
 
   it("sets and clears the business type, storing nothing while none is chosen (SEO-9)", () => {
     const shop = checkSettings(edit(full, { businessType: "shop" }), full);
-    expect(shop.ok && shop.settings.search.businessType).toBe("shop");
+    expect(shop.ok && shop.settings.general.businessType).toBe("shop");
 
     const none = checkSettings(edit(full, { businessType: "" }), full);
-    expect(none.ok && "businessType" in none.settings.search).toBe(false);
+    expect(none.ok && "businessType" in none.settings.general).toBe(false);
   });
 
   it("leaves empty fields out, trims what was typed and tidies addresses and handles", () => {

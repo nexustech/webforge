@@ -39,7 +39,7 @@ export const webAddressSchema = z
 
 /**
  * The kinds of business a site can be for (UX-29, QS-1): the templates' business types, which the
- * quick start asks first and Site Settings › Search engines keeps for search engines (SEO-1, SEO-9).
+ * quick start asks first and Site Settings keeps for search engines (SEO-1, SEO-9).
  */
 export const BUSINESS_TYPES = [
   "food",
@@ -156,6 +156,12 @@ export const siteSettingsSchema = z.strictObject({
      * a page can leave it out (`hideBackToTop`). Off when absent, as in files from before it.
      */
     backToTop: z.boolean().optional(),
+    /**
+     * The kind of business the site is for (SEO-9, 3.11b): the quick start's first answer, which
+     * search engines' structured data starts from (SEO-1, 3.15). Unknown when absent, so no new
+     * format.
+     */
+    businessType: z.enum(BUSINESS_TYPES).optional(),
   }),
   address: z.strictObject({ url: webAddressSchema.optional() }),
   social: z.strictObject({
@@ -185,11 +191,6 @@ export const siteSettingsSchema = z.strictObject({
      * optional field whose absence keeps the old meaning needs no new format).
      */
     readableByAi: z.boolean().optional(),
-    /**
-     * The kind of business the site is for (SEO-9, 3.11b): the quick start's first answer, which
-     * the structured data's subtype follows (SEO-1, 3.15). Absent until chosen, so no new format.
-     */
-    businessType: z.enum(BUSINESS_TYPES).optional(),
   }),
   analytics: z.strictObject({
     /** GA4 Measurement ID (B4). */

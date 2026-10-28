@@ -40,6 +40,8 @@ export type SettingsForm = {
   readonly icon: MediaId | undefined;
   /** A back-to-top button on every page that doesn't hide it (F-CM-9). */
   readonly backToTop: boolean;
+  /** The business type (SEO-9), or `""` for none chosen. */
+  readonly businessType: BusinessType | "";
   readonly url: string;
   readonly profiles: readonly {
     readonly id: string;
@@ -62,8 +64,6 @@ export type SettingsForm = {
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
   readonly readableByAi: boolean;
-  /** The business type (SEO-9), or `""` for none chosen. */
-  readonly businessType: BusinessType | "";
   readonly measurementId: string;
   readonly consentBanner: boolean;
   readonly consentMessage: string;
@@ -82,6 +82,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     language: general.language,
     icon: general.icon,
     backToTop: general.backToTop === true,
+    businessType: general.businessType ?? "",
     url: address.url ?? "",
     profiles: social.profiles.map((profile, index) => ({ id: `profile-${index}`, ...profile })),
     shareImage: social.shareImage,
@@ -99,7 +100,6 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     allowIndexing: search.allowIndexing,
     includeSitemap: search.includeSitemap,
     readableByAi: search.readableByAi === true,
-    businessType: search.businessType ?? "",
     measurementId: analytics.measurementId ?? "",
     consentBanner: analytics.consentBanner,
     consentMessage: analytics.consentMessage ?? "",
@@ -158,6 +158,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.icon === undefined ? {} : { icon: form.icon }),
       // Absent when off, as in files from before it.
       ...(form.backToTop ? { backToTop: true } : {}),
+      ...(form.businessType === "" ? {} : { businessType: form.businessType }),
     },
     address: optional("url", form.url.trim().replace(/\/$/, "")),
     social: {
@@ -188,7 +189,6 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.readableByAi || previous.search.readableByAi !== undefined
         ? { readableByAi: form.readableByAi }
         : {}),
-      ...(form.businessType === "" ? {} : { businessType: form.businessType }),
     },
     analytics: {
       ...optional("measurementId", form.measurementId.toUpperCase()),

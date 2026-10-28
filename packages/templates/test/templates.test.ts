@@ -409,6 +409,19 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
     expect(copyOf(skipped)).not.toContain("The Copper Kettle");
   });
 
+  it("writes what was typed as it is, `$` patterns included (#586 review)", () => {
+    const shop = readTemplate("shop");
+
+    const site = siteFromTemplate(shop.template, shop.images, {
+      name: "$$ Saver $& Co",
+      theme,
+      business: {},
+    });
+
+    expect(copyOf(site)).toContain("$$ Saver $&amp; Co");
+    expect(JSON.stringify(site.layout.footer)).toContain("$$ Saver $& Co");
+  });
+
   it("keeps the quick start's web address and business type in Site Settings (SEO-9)", () => {
     const cafe = readTemplate("cafe");
 
@@ -419,7 +432,7 @@ describe("siteFromTemplate with the person's business (QS-2, 3.11)", () => {
     });
 
     expect(site.settings.address.url).toBe("https://rosas.example");
-    expect(site.settings.search.businessType).toBe("food");
+    expect(site.settings.general.businessType).toBe("food");
     expect(businessDetailsSchema.safeParse({ businessType: "garage" }).success).toBe(false);
   });
 
