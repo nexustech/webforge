@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import {
   copiedNodeId,
   findNode,
@@ -338,6 +338,11 @@ export async function pasteElements(
     },
     { selectionAfter: { ...ui, nodeId: firstId }, apply: true },
   );
+  // Images whose copies Webforge no longer keeps (it quit since the copy): the elements came
+  // without them (#459).
+  if (result.missingImages > 0) {
+    notify(plural("site.clipboard.imagesMissing", result.missingImages));
+  }
   return true;
 }
 
