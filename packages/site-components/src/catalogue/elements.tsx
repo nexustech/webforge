@@ -211,6 +211,8 @@ const button = defineComponent({
     },
   ],
   lookTarget: true,
+  // Its corners are daisyUI's buttons' and fields' (3.12, CT-3).
+  themeCorners: "field",
   render: ({ values, context }) => {
     const label = values.label.trim();
     // A colour or background of its own outranks the button's hover colours (2.22b): on the devices

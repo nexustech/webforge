@@ -64,7 +64,7 @@ upload the folder to any web host. These files are for a developer who wants to 
   the pages use.
 - \`assets/js/\`: \`webforge.*.js\`, the behaviours the pages' components use (only if any do).
   A classic script, loaded with \`defer\`.
-- \`assets/fonts/\`, \`assets/img/\`: the theme's fonts (self-hosted) and each image as WebP with a
+${ownCodeLine(site)}- \`assets/fonts/\`, \`assets/img/\`: the theme's fonts (self-hosted) and each image as WebP with a
   JPEG or PNG fallback, at several widths.
 - \`files/\`: documents the pages link to, as they were added.
 - \`developer/\`: these files. Nothing on the pages refers to them.
@@ -91,4 +91,16 @@ lists, so a class added to a page is compiled in. The script writes the file the
 Edits made here are not read back into Webforge: the next export from Webforge writes the site
 again from the site file.
 `;
+}
+
+/** The README's line on the site's own `custom.css` and `custom.js` (3.9), if it has either. */
+function ownCodeLine(site: SiteSnapshot): string {
+  const css = (site.code?.css.trim() ?? "") !== "";
+  const js = (site.code?.js.trim() ?? "") !== "";
+  if (!css && !js) return "";
+  const files = [
+    ...(css ? ["`assets/css/custom.*.css`"] : []),
+    ...(js ? ["`assets/js/custom.*.js`"] : []),
+  ].join(", ");
+  return `- ${files}: the site's own code, as written in Webforge, loaded after the stylesheet and\n  \`webforge.js\`.\n`;
 }

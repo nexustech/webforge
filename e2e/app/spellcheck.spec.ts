@@ -85,7 +85,10 @@ test.beforeEach(async () => {
     !checksEnglish,
     "this computer's spell checker has no English dictionary (GitHub's Windows runners)",
   );
-  await expect(page.getByRole("region", { name: "Right panels" })).toBeVisible();
+  // The window starts slowly on a busy machine, after the probe's own window.
+  await expect(page.getByRole("region", { name: "Right panels" })).toBeVisible({
+    timeout: BACKGROUND_WAIT,
+  });
   // Record the context menu instead of showing a native one the test can't close.
   await app.evaluate(({ Menu }) => {
     const shown: string[][] = [];
@@ -123,10 +126,18 @@ test("offers spelling suggestions for a misspelt word in a text field", async ()
   await field.fill("");
   await field.pressSequentially("Our bakkery ", { delay: 20 });
 
-  // The checker works in the background: right-click until it has looked at the word.
+  // The checker works in the background: right-click until it has looked at the word. A check
+  // the busy system drops isn't asked for again until the text changes, as when someone types on:
+  // after the first look, each try types a space at the end and takes it away again (#563).
+  let tries = 0;
   await expect
     .poll(
       async () => {
+        if (tries++ > 0) {
+          await field.press("End");
+          await field.press("Space");
+          await field.press("Backspace");
+        }
         await field.click({ button: "right", position: { x: 50, y: 10 } });
         return (await shownMenus()).at(-1) ?? [];
       },
@@ -151,9 +162,17 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
   // Electron's checker only looks at an editable that doesn't turn it off.
   await expect(editor).not.toHaveAttribute("spellcheck", "false");
 
+  let tries = 0;
   await expect
     .poll(
       async () => {
+        // As in a text field: after the first look, the text changes so a dropped check is asked
+        // for again (#563).
+        if (tries++ > 0) {
+          await placeCaret(editor, "end");
+          await page.keyboard.press("Space");
+          await page.keyboard.press("Backspace");
+        }
         // Right-click the misspelt word itself: its place on the page, from a range over it.
         const at = await editor.evaluate((element) => {
           const walker = element.ownerDocument.createTreeWalker(element, NodeFilter.SHOW_TEXT);

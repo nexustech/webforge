@@ -69,6 +69,7 @@ const WARNING_TEXTS = {
   "missing-icon": "export.report.missingIcon",
   "small-icon": "export.report.smallIcon",
   "form-unset": "export.report.formUnset",
+  "custom-script": "export.report.customScript",
 } as const;
 
 /** The report of `result`, an export of `site` (07): each warning by the title of its page. */
@@ -88,7 +89,11 @@ export function exportReport(
       size: sizeText(result.bytes),
     }),
     issues: result.warnings.map((warning) =>
-      t(WARNING_TEXTS[warning.code], { page: titles.get(warning.page) ?? warning.page }),
+      t(WARNING_TEXTS[warning.code], {
+        page: titles.get(warning.page) ?? warning.page,
+        // The line of custom.js's mistake; the other warnings' texts don't use it.
+        line: warning.detail,
+      }),
     ),
     more: Math.max(0, result.warningCount - result.warnings.length),
     noWebAddress: !hasWebAddress(site),
