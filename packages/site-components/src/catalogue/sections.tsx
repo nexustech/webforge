@@ -7,8 +7,8 @@ import { Picture } from "../picture.js";
 import {
   BodyText,
   ButtonLink,
-  LEAD_TEXT_CLASSES,
   RICH_TEXT_LIST_CLASSES,
+  SectionLead,
   SectionTitle,
 } from "../typography.js";
 
@@ -78,7 +78,7 @@ const hero = defineSection({
     const copy = (
       <div className={layout === "centred" ? "mx-auto max-w-2xl" : "max-w-xl"}>
         <SectionTitle size="page">{values.title}</SectionTitle>
-        <p className={`py-6 ${LEAD_TEXT_CLASSES}`}>{values.text}</p>
+        <SectionLead className="py-6">{values.text}</SectionLead>
         <ButtonLink label={values.buttonLabel} link={values.buttonLink} context={context} />
       </div>
     );
@@ -232,7 +232,7 @@ const callToAction = defineSection({
       >
         <div>
           <SectionTitle>{values.title}</SectionTitle>
-          <p className={`mt-4 ${LEAD_TEXT_CLASSES}`}>{values.text}</p>
+          <SectionLead className="mt-4">{values.text}</SectionLead>
         </div>
         <ButtonLink
           label={values.buttonLabel}

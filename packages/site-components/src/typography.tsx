@@ -27,6 +27,12 @@ export const TITLE_CLASSES = {
  */
 export const SectionTitleAppearance = createContext("");
 
+/**
+ * The subtitle classes of the section a lead is in (3.13b): its Title group's subtitle controls,
+ * which {@link SectionLead} takes. `defineSection` provides them, as it does the title's.
+ */
+export const SectionSubtitleAppearance = createContext("");
+
 /** The heading level of each title size: a page has one h1. */
 const TITLE_TAG = { page: "h1", section: "h2", small: "h3" } as const;
 
@@ -60,6 +66,25 @@ export const RICH_TEXT_LIST_CLASSES =
  */
 const LINK_CLASSES =
   "[&_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&_a:not(.btn)]:[color:var(--wf-link-color,currentColor)]";
+
+/**
+ * A section's lead, the line under its title (a Hero's, a Call to action's), at the body size with
+ * the section's subtitle look (3.13b); `className` places it ("py-6").
+ */
+export function SectionLead({
+  children,
+  className,
+}: {
+  readonly children: ReactNode;
+  readonly className: string;
+}) {
+  const look = useContext(SectionSubtitleAppearance);
+  return (
+    <p className={`${className} ${LEAD_TEXT_CLASSES}${look === "" ? "" : ` ${look}`}`}>
+      {children}
+    </p>
+  );
+}
 
 /**
  * Running text at the type scale's body size (#419): paragraphs, links underlined as the theme

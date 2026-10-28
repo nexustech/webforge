@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { APPEARANCE_FIELDS, APPEARANCE_TEXT_FIELD_NAMES } from "./appearance.js";
+import { APPEARANCE_FIELDS, APPEARANCE_TEXT_FIELD_NAMES, DIALOG_FIELDS } from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
 import {
   APPEARANCE_TEXT_FIELDS,
@@ -9,18 +9,28 @@ import {
   fieldValueSchema,
 } from "./catalogue-data.js";
 
+/** The styling fields every section and element has: the Appearance group's and the dialog's. */
+const STYLING = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS };
+
 /**
  * The library as data: every component without what only rendering needs (its render, frame and
- * behaviours) and without functions (a field's `unavailable`), as JSON keeps it; the Appearance
- * group's fields once, each component marked as having them (2.22b).
+ * behaviours) and without functions (a field's `unavailable`), as JSON keeps it; the styling
+ * fields every component has once, each component marked as having them (2.22b, 3.13b).
  */
 function libraryAsData(): unknown {
-  const group = Object.keys(APPEARANCE_FIELDS);
+  const group = Object.keys(STYLING);
   const entries = Object.entries(siteLibrary.components).map(([type, def]) => {
     const { label, place, category, advancedOnly, framed, presets, fields, defaults } = def;
     const has = group.filter((name) => Object.hasOwn(fields, name));
     const appearance =
-      has.length === 0 ? undefined : has.length === group.length ? "all" : "noText";
+      has.length === 0
+        ? undefined
+        : has.length === group.length
+          ? "all"
+          : // Without the Text controls only: anything else isn't the group.
+            has.length === group.length - APPEARANCE_TEXT_FIELD_NAMES.length
+            ? "noText"
+            : "partial";
     const own = Object.fromEntries(Object.entries(fields).filter(([name]) => !has.includes(name)));
     return [
       type,
@@ -39,7 +49,7 @@ function libraryAsData(): unknown {
   });
   // Through JSON: functions and undefined go, as they would from the file.
   return JSON.parse(
-    JSON.stringify({ appearance: APPEARANCE_FIELDS, components: Object.fromEntries(entries) }),
+    JSON.stringify({ appearance: STYLING, components: Object.fromEntries(entries) }),
   );
 }
 

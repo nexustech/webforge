@@ -410,7 +410,9 @@ export function EditPanelHost({
     };
   };
   const fields = Object.entries(component.fields).flatMap(([name, field]): EditPanelField[] => {
-    if (hidden.has(name)) return [];
+    // Style this ‹component›…'s deeper groups (3.13b) are the dialog's own: the Style tab keeps
+    // the Appearance basics.
+    if (hidden.has(name) || field.inDialog === true) return [];
     const list = editableList(field, library);
     if (list !== undefined) {
       return [listField(name, field, list, node.props[name])];

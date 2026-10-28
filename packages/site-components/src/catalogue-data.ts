@@ -26,6 +26,8 @@ const common = {
   help: z.string().optional(),
   responsive: z.boolean().optional(),
   optionGroup: z.strictObject({ id: z.string(), label: z.string() }).optional(),
+  /** Shown only in *Style this ‹component›…* (3.13b): the dialog's deeper groups. */
+  inDialog: z.literal(true).optional(),
 };
 
 const listItemFieldSchema = z.discriminatedUnion("kind", [
@@ -124,9 +126,10 @@ export const APPEARANCE_TEXT_FIELDS = [
 ] as const;
 
 /**
- * `catalogue-data.json` as written: the Appearance group's fields once (2.22), and each component
- * with `appearance`, `"all"` or `"noText"` (a section without a title), in place of the 13 fields
- * repeated in it. {@link CATALOGUE} puts them back.
+ * `catalogue-data.json` as written: the styling fields every section and element has once, the
+ * Appearance group's (2.22) and *Style this ‹component›…*'s deeper ones (3.13b), and each component
+ * with `appearance`, `"all"` or `"noText"` (a section without a title), in place of them repeated
+ * in it. {@link CATALOGUE} puts them back.
  */
 export const catalogueFileSchema = z.strictObject({
   appearance: z.record(z.string(), catalogueFieldSchema),
