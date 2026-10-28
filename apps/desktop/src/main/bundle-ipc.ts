@@ -1,6 +1,6 @@
 import type { IpcMain } from "electron";
 import type { BundleResult } from "../shared/ipc/site.js";
-import { type BundleFetch, downloadForBundle } from "./bundle-download.js";
+import { type BundleNetwork, downloadForBundle } from "./bundle-download.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
 import type { ProjectSession } from "./project-session.js";
@@ -25,7 +25,7 @@ export function registerBundleHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   session: Pick<ProjectSession, "staleReason" | "forSession">,
-  fetch: BundleFetch,
+  network: BundleNetwork,
 ): void {
   registerIpcHandler(
     ipc,
@@ -34,7 +34,7 @@ export function registerBundleHandlers(
     async (sessionId, url): Promise<BundleResult> => {
       const stale = session.staleReason(sessionId);
       if (stale !== undefined) return { status: "failed", reason: stale };
-      const downloaded = await downloadForBundle(fetch, url);
+      const downloaded = await downloadForBundle(network, url);
       if (downloaded.status === "failed") {
         log.warn("Webforge could not download a file to keep with the site", {
           host: hostOf(url),

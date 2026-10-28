@@ -96,6 +96,7 @@ export const exportWarningSchema = z.strictObject({
     "small-icon",
     "form-unset",
     "custom-script",
+    "missing-kept-file",
   ]),
   page: z.string().max(1024),
   detail: z.string().max(2048),
@@ -167,6 +168,7 @@ const bundleResultSchema = z.discriminatedUnion("status", [
     status: z.literal("failed"),
     reason: z.enum([
       "not-https",
+      "local",
       "offline",
       "not-found",
       "too-large",

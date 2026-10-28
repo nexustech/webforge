@@ -20,7 +20,7 @@ import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
-import { bundleFetchFor } from "./bundle-download.js";
+import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
 import { registerBundleHandlers } from "./bundle-ipc.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
@@ -486,7 +486,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       ipcMain,
       isTrustedSender,
       projectSession,
-      bundleFetchFor((url, init) => electron.net.fetch(url, init), app.isPackaged),
+      bundleNetworkFor(
+        { fetch: (url, init) => electron.net.fetch(url, init), resolve: resolveHost },
+        app.isPackaged,
+      ),
     );
     registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession);
     crashReports.registerHandlers(ipcMain, isTrustedSender);

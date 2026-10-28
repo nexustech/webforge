@@ -47,6 +47,8 @@ test.beforeEach(async () => {
     };
     Object.assign(globalThis, {
       bundleAsked: asked,
+      // No DNS query either: every host is another website's.
+      webforgeBundleResolve: async () => ["198.51.100.1"],
       webforgeBundleFetch: async (url: string) => {
         asked.push(url);
         const file = files[url];

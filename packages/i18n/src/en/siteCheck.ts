@@ -116,6 +116,8 @@ export const siteCheck = {
   "siteCheck.bundle.cancel": "Cancel",
   "siteCheck.bundle.failed.not-https":
     "Only a file from an https:// address can be kept with your site.",
+  "siteCheck.bundle.failed.local":
+    "That address is on this computer or its network, not another website, so it can't be kept with your site.",
   "siteCheck.bundle.failed.offline":
     "The file couldn't be downloaded. Check your internet connection and try again.",
   "siteCheck.bundle.failed.not-found": "There's no file at that address any more.",

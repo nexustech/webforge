@@ -354,6 +354,43 @@ describe("buildSite: the site's own code (F-ED-15, 3.9)", () => {
   );
 
   it(
+    "keeps the address of a kept file whose bytes are missing, and says so (3.9)",
+    async () => {
+      const exported = await buildSite(
+        withCode({
+          css: "",
+          js: "",
+          head: '<script src="https://cdn.example.com/w.js"></script>',
+          bodyEnd: "",
+          bundled: [
+            {
+              url: "https://cdn.example.com/w.js",
+              file: "w-11111111.js",
+              hash: "e".repeat(64),
+              mime: "text/javascript",
+            },
+          ],
+        }),
+        siteLibrary,
+        { ...resources, readMedia: async () => undefined },
+      );
+
+      expect(exported.report.warnings).toContainEqual({
+        code: "missing-kept-file",
+        page: "",
+        detail: "w-11111111.js",
+      });
+      expect(text(exported, "index.html")).toContain(
+        '<script src="https://cdn.example.com/w.js"></script>',
+      );
+      expect([...exported.files.keys()].some((path) => path.startsWith("assets/vendor/"))).toBe(
+        false,
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
     "writes the files kept with the site to assets/vendor/ and points HTML and CSS at them, but not custom.js (3.9)",
     async () => {
       const kept = new Map([

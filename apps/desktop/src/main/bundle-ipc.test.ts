@@ -1,6 +1,6 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { BundleFetch } from "./bundle-download.js";
+import type { BundleFetch, BundleNetwork } from "./bundle-download.js";
 import { registerBundleHandlers } from "./bundle-ipc.js";
 import { setLogSink } from "./log.js";
 import type { ProjectSession, StoreBlobsResult } from "./project-session.js";
@@ -29,7 +29,8 @@ function setUp(fetch: BundleFetch, stored: StoreBlobsResult = { status: "stored"
     ),
     forSession: vi.fn(() => site),
   } as unknown as Pick<ProjectSession, "staleReason" | "forSession">;
-  registerBundleHandlers(ipc, (url) => url === APP_URL, session, fetch);
+  const network: BundleNetwork = { fetch, resolve: async () => ["93.184.215.14"] };
+  registerBundleHandlers(ipc, (url) => url === APP_URL, session, network);
   const bundle = (sessionId: string, url: string) =>
     handlers.get("site:bundle-file")?.(
       { senderFrame: { url: APP_URL } } as IpcMainInvokeEvent,
