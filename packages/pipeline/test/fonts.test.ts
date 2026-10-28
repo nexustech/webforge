@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { DEFAULT_THEME, type SiteSnapshot, type ThemeTokens } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { type CatalogueFont, FONT_CATALOGUE, type FontFace, fontFacesFor } from "@webforge/themes";
 import { beforeAll, describe, expect, it } from "vitest";
 import { BuildError, buildSite } from "../src/build.js";
@@ -16,7 +17,7 @@ let resources: PipelineResources;
 
 beforeAll(async () => {
   resources = await loadNodeResources();
-}, 60_000);
+}, scaledTestTimeout(60_000));
 
 function siteWithFonts(heading: string, body: string): SiteSnapshot {
   const theme: ThemeTokens = {
@@ -143,14 +144,18 @@ describe("the bundled font packages", () => {
     }
   });
 
-  it("hold every file the catalogue lists, byte for byte", () => {
-    for (const font of FONT_CATALOGUE) {
-      for (const file of font.files) {
-        const data = readFileSync(require.resolve(`${font.package}/files/${file.file}`));
-        expect(data.byteLength, file.file).toBe(file.bytes);
-        expect(createHash("sha256").update(data).digest("hex"), file.file).toBe(file.sha256);
+  it(
+    "hold every file the catalogue lists, byte for byte",
+    () => {
+      for (const font of FONT_CATALOGUE) {
+        for (const file of font.files) {
+          const data = readFileSync(require.resolve(`${font.package}/files/${file.file}`));
+          expect(data.byteLength, file.file).toBe(file.bytes);
+          expect(createHash("sha256").update(data).digest("hex"), file.file).toBe(file.sha256);
+        }
       }
-    }
-    // Reads and hashes all 206 files.
-  }, 30_000);
+      // Reads and hashes all 206 files.
+    },
+    scaledTestTimeout(30_000),
+  );
 });
