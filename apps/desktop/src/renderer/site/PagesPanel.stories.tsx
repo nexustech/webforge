@@ -40,6 +40,7 @@ const noop = () => undefined;
 const actions: PagesPanelActions = {
   show: noop,
   add: noop,
+  addSuggested: noop,
   rename: noop,
   duplicate: noop,
   move: noop,
@@ -79,6 +80,23 @@ export const PageMenu: Story = {
 export const AddPage: Story = {
   play: async ({ canvasElement }) => {
     await userEvent.click(within(canvasElement).getByRole("button", { name: "Add Page" }));
+    // The menu opens outside the story's root, as menus do.
+    await userEvent.click(
+      await within(canvasElement.ownerDocument.body).findByRole("menuitem", {
+        name: "Blank Page…",
+      }),
+    );
+  },
+};
+
+/** Add Page's menu: a blank page, or a page suggested for a business type (QS-3, 3.11a). */
+export const AddPageMenu: Story = {
+  play: async ({ canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "Add Page" }));
+    await userEvent.click(await body.findByRole("menuitem", { name: "Suggested Pages" }));
+    await userEvent.click(await body.findByRole("menuitem", { name: "Food and drink" }));
+    await body.findByRole("menuitem", { name: "Private hire" });
   },
 };
 

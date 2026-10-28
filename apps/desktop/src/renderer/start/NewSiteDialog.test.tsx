@@ -82,7 +82,7 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
     await typeName("  Rosa's Bakery ");
     await create();
 
-    expect(onCreate).toHaveBeenCalledWith({ name: "Rosa's Bakery", theme: "light" });
+    expect(onCreate).toHaveBeenCalledWith({ name: "Rosa's Bakery", theme: "light", business: {} });
   });
 
   it("makes nothing without a name", async () => {
@@ -105,6 +105,7 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
     expect(onCreate).toHaveBeenLastCalledWith({
       name: t("site.untitledName"),
       theme: "bistro",
+      business: {},
       template: "cafe",
     });
 
@@ -113,13 +114,18 @@ describe("NewSiteDialog (2.14a, LF-11)", () => {
     expect(onCreate).toHaveBeenLastCalledWith({
       name: t("site.untitledName"),
       theme: "dark",
+      business: {},
       template: "cafe",
     });
 
     // Back to Blank: no template, and the theme stays as chosen.
     await act(async () => radio(t("newSite.blank"))?.click());
     await create();
-    expect(onCreate).toHaveBeenLastCalledWith({ name: t("site.untitledName"), theme: "dark" });
+    expect(onCreate).toHaveBeenLastCalledWith({
+      name: t("site.untitledName"),
+      theme: "dark",
+      business: {},
+    });
   });
 
   it("shows a template's thumbnail, on its card and in its details (2.14b)", async () => {

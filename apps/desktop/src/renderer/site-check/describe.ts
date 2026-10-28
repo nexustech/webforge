@@ -101,6 +101,8 @@ export function describePlace(finding: Finding, site: SiteDoc, library: Componen
       );
     case "address":
       return t("siteCheck.place.address");
+    case "code":
+      return t(`siteCheck.place.code.${place.part}`);
   }
 }
 
@@ -123,5 +125,7 @@ export function describeDetail(finding: Finding): string | undefined {
     return t("siteCheck.detail.size", { width: values.width, height: values.height });
   }
   if (typeof values.bytes === "number") return megabytes(values.bytes);
+  // The address of a file from another website (3.9), as the code has it.
+  if (typeof values.url === "string") return values.url;
   return undefined;
 }

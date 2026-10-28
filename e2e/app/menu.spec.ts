@@ -32,6 +32,7 @@ const steps = () => page.locator(".undo-history__step");
 test("adds a button, reorders by keyboard and drag, and undoes it all", async () => {
   // A new page joins the menu while it follows the pages.
   await page.getByRole("button", { name: "Add Page" }).click();
+  await page.getByRole("menuitem", { name: "Blank Page…" }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
   await expect(rows()).toHaveText(["My site", "New page"]);
 

@@ -1,0 +1,792 @@
+[
+  {
+    "id": "food-events",
+    "category": "food",
+    "title": "Events",
+    "description": "Quiz nights, live music and tastings.",
+    "content": [
+      {
+        "type": "Features",
+        "props": {
+          "id": "events",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What's on",
+          "text": "<p>Something most weeks. Come along, bring a friend.</p>",
+          "items": [
+            {
+              "type": "Feature",
+              "props": {
+                "id": "event-0",
+                "icon": "calendar",
+                "title": "Quiz night",
+                "text": "<p>First Thursday of the month, 7pm. Teams of up to six.</p>"
+              }
+            },
+            {
+              "type": "Feature",
+              "props": {
+                "id": "event-1",
+                "icon": "mic",
+                "title": "Live music",
+                "text": "<p>Local players on Friday evenings. Free entry.</p>"
+              }
+            },
+            {
+              "type": "Feature",
+              "props": {
+                "id": "event-2",
+                "icon": "wine",
+                "title": "Tasting evenings",
+                "text": "<p>A few times a year. Tickets from the counter.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "food-private-hire",
+    "category": "food",
+    "title": "Private hire",
+    "description": "Book the whole place for a party or a meeting.",
+    "content": [
+      {
+        "type": "TextSection",
+        "props": {
+          "id": "private-hire",
+          "colors": "page",
+          "title": "Have the place to yourselves",
+          "text": "<p>Birthdays, christenings, team breakfasts or a book club: we can close for the evening and cook for up to 30.</p><p>Tell us the date, how many of you there are and what you'd like to eat, and we'll come back with a price.</p>"
+        }
+      },
+      {
+        "type": "ContactForm",
+        "props": {
+          "id": "hire-form",
+          "colors": "inverse",
+          "title": "Ask about a date",
+          "text": "<p>We reply within a day.</p>",
+          "askPhone": true,
+          "buttonLabel": "Send"
+        }
+      }
+    ]
+  },
+  {
+    "id": "food-reviews",
+    "category": "food",
+    "title": "Reviews",
+    "description": "What our customers say.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "reviews",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What people say",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-0",
+                "quote": "Lovely food and a warm welcome every time.",
+                "name": "Sarah",
+                "role": "A regular"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-1",
+                "quote": "We came for coffee and stayed for lunch.",
+                "name": "Tom",
+                "role": "First visit"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-2",
+                "quote": "The staff always remember our order.",
+                "name": "Priya",
+                "role": "Comes in on Fridays"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "beauty-prices",
+    "category": "beauty",
+    "title": "Prices",
+    "description": "Our treatments and what they cost.",
+    "content": [
+      {
+        "type": "Pricing",
+        "props": {
+          "id": "prices",
+          "variant": "cards",
+          "colors": "page",
+          "title": "Prices",
+          "text": "<p>Every price includes a consultation. Ask us if you're not sure what to book.</p>",
+          "items": [
+            {
+              "type": "PricingPlan",
+              "props": {
+                "id": "price-0",
+                "name": "Cut and finish",
+                "price": "£45",
+                "period": "about an hour",
+                "details": "<p>A wash, a cut and a blow-dry.</p>",
+                "buttonLabel": "Book",
+                "featured": false,
+                "badge": ""
+              }
+            },
+            {
+              "type": "PricingPlan",
+              "props": {
+                "id": "price-1",
+                "name": "Colour",
+                "price": "from £70",
+                "period": "about two hours",
+                "details": "<p>Full colour or highlights, with a patch test first.</p>",
+                "buttonLabel": "Book",
+                "featured": true,
+                "badge": "Most booked"
+              }
+            },
+            {
+              "type": "PricingPlan",
+              "props": {
+                "id": "price-2",
+                "name": "Nails",
+                "price": "£30",
+                "period": "45 minutes",
+                "details": "<p>Shape, tidy and a long-lasting polish.</p>",
+                "buttonLabel": "Book",
+                "featured": false,
+                "badge": ""
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "beauty-reviews",
+    "category": "beauty",
+    "title": "Reviews",
+    "description": "What our clients say.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "reviews",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What our clients say",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-0",
+                "quote": "I always leave feeling like a new person.",
+                "name": "Emma",
+                "role": "Client for three years"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-1",
+                "quote": "They listened to what I wanted, and got it right.",
+                "name": "Jade",
+                "role": "First visit"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-2",
+                "quote": "Relaxed, friendly and never rushed.",
+                "name": "Laura",
+                "role": "Comes in every month"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "beauty-gift-vouchers",
+    "category": "beauty",
+    "title": "Gift vouchers",
+    "description": "Give someone a treat.",
+    "content": [
+      {
+        "type": "TextSection",
+        "props": {
+          "id": "vouchers",
+          "colors": "page",
+          "title": "Give someone a treat",
+          "text": "<p>Our gift vouchers come in any amount and can be spent on any treatment. They last for a year.</p><p>Buy one at the salon, or call us and we'll post it out.</p>"
+        }
+      }
+    ]
+  },
+  {
+    "id": "trades-reviews",
+    "category": "trades",
+    "title": "Reviews",
+    "description": "What our customers say about our work.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "reviews",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What our customers say",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-0",
+                "quote": "Turned up when they said they would, and left the place tidy.",
+                "name": "David",
+                "role": "Kitchen job"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-1",
+                "quote": "A fair price, and the work was done in a day.",
+                "name": "Helen",
+                "role": "Repair"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-2",
+                "quote": "Explained everything clearly. I'd use them again.",
+                "name": "Mark",
+                "role": "Landlord"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "trades-areas",
+    "category": "trades",
+    "title": "Areas we cover",
+    "description": "The towns and villages we work in.",
+    "content": [
+      {
+        "type": "TextSection",
+        "props": {
+          "id": "areas",
+          "colors": "page",
+          "title": "Areas we cover",
+          "text": "<p>We work across the town and the villages around it, usually within 20 miles.</p><p>Not sure if we come to you? Give us a call and ask.</p>"
+        }
+      }
+    ]
+  },
+  {
+    "id": "trades-faq",
+    "category": "trades",
+    "title": "FAQ",
+    "description": "Answers to the questions we're asked most.",
+    "content": [
+      {
+        "type": "Faq",
+        "props": {
+          "id": "faq",
+          "variant": "accordion",
+          "colors": "page",
+          "title": "Questions we're often asked",
+          "items": [
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-0",
+                "question": "Do you give free quotes?",
+                "answer": "<p>Yes. We'll come and look, then send you a written price.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-1",
+                "question": "Are you insured?",
+                "answer": "<p>Yes, fully insured, and we're happy to show you the certificate.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-2",
+                "question": "Is the work guaranteed?",
+                "answer": "<p>Yes. If something we did goes wrong, we'll come back and put it right.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "services-how-we-work",
+    "category": "services",
+    "title": "How we work",
+    "description": "What happens when you get in touch.",
+    "content": [
+      {
+        "type": "Features",
+        "props": {
+          "id": "steps",
+          "variant": "centred",
+          "colors": "page",
+          "title": "How we work",
+          "text": "<p>Three steps, and no surprises.</p>",
+          "items": [
+            {
+              "type": "Feature",
+              "props": {
+                "id": "step-0",
+                "icon": "phone",
+                "title": "A first call",
+                "text": "<p>Free and with no obligation. Tell us what you need.</p>"
+              }
+            },
+            {
+              "type": "Feature",
+              "props": {
+                "id": "step-1",
+                "icon": "clipboard-check",
+                "title": "A clear proposal",
+                "text": "<p>What we'll do, when, and what it costs, in writing.</p>"
+              }
+            },
+            {
+              "type": "Feature",
+              "props": {
+                "id": "step-2",
+                "icon": "handshake",
+                "title": "The work",
+                "text": "<p>Regular updates until it's done, and support afterwards.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "services-client-stories",
+    "category": "services",
+    "title": "Client stories",
+    "description": "What our clients say about working with us.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "stories",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What our clients say",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "story-0",
+                "quote": "Practical advice we could act on the same week.",
+                "name": "Claire",
+                "role": "Owner, a local shop"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "story-1",
+                "quote": "Clear, honest and always on time.",
+                "name": "James",
+                "role": "Director, a small firm"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "story-2",
+                "quote": "Worth every penny. We'd recommend them to anyone.",
+                "name": "Nadia",
+                "role": "Founder"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "services-faq",
+    "category": "services",
+    "title": "FAQ",
+    "description": "Answers to the questions we're asked most.",
+    "content": [
+      {
+        "type": "Faq",
+        "props": {
+          "id": "faq",
+          "variant": "accordion",
+          "colors": "page",
+          "title": "Questions we're often asked",
+          "items": [
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-0",
+                "question": "How much does a first meeting cost?",
+                "answer": "<p>Nothing. The first conversation is free.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-1",
+                "question": "Do you work with small businesses?",
+                "answer": "<p>Yes, most of our clients have fewer than ten people.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-2",
+                "question": "Can we meet online?",
+                "answer": "<p>Yes, online or in person, whichever suits you.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "creative-kind-words",
+    "category": "creative",
+    "title": "Kind words",
+    "description": "What people say about working with me.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "kind-words",
+          "variant": "cards",
+          "colors": "page",
+          "title": "Kind words",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "words-0",
+                "quote": "Made us feel at ease, and the results were beautiful.",
+                "name": "Sophie and Ben",
+                "role": "Couple"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "words-1",
+                "quote": "Understood exactly what we wanted.",
+                "name": "Ravi",
+                "role": "Business owner"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "words-2",
+                "quote": "Fast, friendly and a real eye for detail.",
+                "name": "Grace",
+                "role": "Client"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "creative-workshops",
+    "category": "creative",
+    "title": "Workshops",
+    "description": "Learn with me, in small groups.",
+    "content": [
+      {
+        "type": "TextSection",
+        "props": {
+          "id": "workshops",
+          "colors": "page",
+          "title": "Workshops",
+          "text": "<p>Small groups of up to six, for beginners and anyone who wants to get better.</p><p>Each workshop is half a day, with everything you need provided. Get in touch for the next dates.</p>"
+        }
+      }
+    ]
+  },
+  {
+    "id": "creative-faq",
+    "category": "creative",
+    "title": "FAQ",
+    "description": "Answers to the questions I'm asked most.",
+    "content": [
+      {
+        "type": "Faq",
+        "props": {
+          "id": "faq",
+          "variant": "accordion",
+          "colors": "page",
+          "title": "Questions I'm often asked",
+          "items": [
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-0",
+                "question": "How far ahead should I book?",
+                "answer": "<p>A month or two is usually enough. Ask anyway if it's sooner.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-1",
+                "question": "Do you travel?",
+                "answer": "<p>Yes, for a small travel fee outside the local area.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-2",
+                "question": "When will I see the results?",
+                "answer": "<p>Usually within two weeks.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "shop-delivery",
+    "category": "shop",
+    "title": "Delivery and returns",
+    "description": "How we send your order, and how to send it back.",
+    "content": [
+      {
+        "type": "TextSection",
+        "props": {
+          "id": "delivery",
+          "colors": "page",
+          "title": "Delivery",
+          "text": "<p>We post orders within two working days. Delivery in the UK usually takes two to three days more.</p><p>Or collect your order from the shop for free.</p>"
+        }
+      },
+      {
+        "type": "TextSection",
+        "props": {
+          "id": "returns",
+          "colors": "page",
+          "title": "Returns",
+          "text": "<p>Changed your mind? Send it back within 30 days, unused, and we'll refund you.</p><p>If something arrives damaged, tell us and we'll replace it.</p>"
+        }
+      }
+    ]
+  },
+  {
+    "id": "shop-reviews",
+    "category": "shop",
+    "title": "Reviews",
+    "description": "What our customers say.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "reviews",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What our customers say",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-0",
+                "quote": "Beautifully made, and it arrived well packed.",
+                "name": "Lucy",
+                "role": "Customer"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-1",
+                "quote": "Even better than the photos.",
+                "name": "Sam",
+                "role": "Customer"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "review-2",
+                "quote": "My third order, and it won't be my last.",
+                "name": "Anna",
+                "role": "Regular customer"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "shop-faq",
+    "category": "shop",
+    "title": "FAQ",
+    "description": "Answers to the questions we're asked most.",
+    "content": [
+      {
+        "type": "Faq",
+        "props": {
+          "id": "faq",
+          "variant": "accordion",
+          "colors": "page",
+          "title": "Questions we're often asked",
+          "items": [
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-0",
+                "question": "Do you post abroad?",
+                "answer": "<p>Not yet, sorry. We send to UK addresses only.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-1",
+                "question": "Can I order something made for me?",
+                "answer": "<p>Often, yes. Get in touch and tell us what you have in mind.</p>"
+              }
+            },
+            {
+              "type": "FaqItem",
+              "props": {
+                "id": "faq-2",
+                "question": "Do you gift-wrap?",
+                "answer": "<p>Yes, for free. Add a note to your order.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "personal-services",
+    "category": "personal",
+    "title": "Services",
+    "description": "What I can do for you.",
+    "content": [
+      {
+        "type": "Features",
+        "props": {
+          "id": "services",
+          "variant": "cards",
+          "colors": "page",
+          "title": "What I can do for you",
+          "text": "<p>Get in touch about any of these, or something else.</p>",
+          "items": [
+            {
+              "type": "Feature",
+              "props": {
+                "id": "service-0",
+                "icon": "pen-tool",
+                "title": "Design",
+                "text": "<p>Logos, posters and anything printed.</p>"
+              }
+            },
+            {
+              "type": "Feature",
+              "props": {
+                "id": "service-1",
+                "icon": "monitor",
+                "title": "Websites",
+                "text": "<p>Simple sites for small businesses and makers.</p>"
+              }
+            },
+            {
+              "type": "Feature",
+              "props": {
+                "id": "service-2",
+                "icon": "message-circle",
+                "title": "Advice",
+                "text": "<p>An hour to talk through your idea.</p>"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "id": "personal-kind-words",
+    "category": "personal",
+    "title": "Kind words",
+    "description": "What people say about working with me.",
+    "content": [
+      {
+        "type": "Testimonials",
+        "props": {
+          "id": "kind-words",
+          "variant": "cards",
+          "colors": "page",
+          "title": "Kind words",
+          "items": [
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "words-0",
+                "quote": "A pleasure to work with, and the result was spot on.",
+                "name": "Chris",
+                "role": "Client"
+              }
+            },
+            {
+              "type": "Testimonial",
+              "props": {
+                "id": "words-1",
+                "quote": "Quick, thoughtful and easy to talk to.",
+                "name": "Mei",
+                "role": "Client"
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+]

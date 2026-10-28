@@ -1,5 +1,4 @@
 import {
-  BUSINESS_TYPES,
   copyTheme,
   IMAGE_MIME_TYPES,
   type ImageMeta,
@@ -12,6 +11,9 @@ import {
   type ThemeTokens,
 } from "@webforge/model";
 import { z } from "zod";
+import { type BusinessDetails, withBusiness } from "./business.js";
+import { TEMPLATE_CATEGORIES } from "./categories.js";
+import { choosePages, type PageChoices } from "./page-choices.js";
 
 /**
  * The templates Webforge ships (2.14a, F-SITE-1, S2), by id: each a folder of this package's
@@ -39,15 +41,6 @@ export type TemplateId = (typeof TEMPLATE_IDS)[number];
  * no business type, so New Site shows it as its own choice, not among the templates.
  */
 export const BLANK_TEMPLATE_ID = "blank" satisfies TemplateId;
-
-/**
- * The business types the New Site dialog's chips filter by (UX-29): `t("template.category.<id>")`.
- * The model's {@link BUSINESS_TYPES}, which Site Settings keeps for the structured data (3.15).
- */
-export const TEMPLATE_CATEGORIES = BUSINESS_TYPES;
-
-/** One of {@link TEMPLATE_CATEGORIES}. */
-export type TemplateCategory = (typeof TEMPLATE_CATEGORIES)[number];
 
 /**
  * The licences a template's image may have (Q6): free to copy into every site made from it and
@@ -139,9 +132,22 @@ export type Template = z.infer<typeof templateSchema>;
 export function siteFromTemplate(
   template: Template,
   images: readonly TemplateImage[],
-  options: { readonly name: string; readonly theme: ThemeTokens },
+  options: {
+    readonly name: string;
+    readonly theme: ThemeTokens;
+    /**
+     * The person's business (QS-2), from the quick start or New Site: it replaces the template's
+     * sample business in Site Settings and the copy. Without it, as *Try an example* makes a site,
+     * the sample business stays: an example is someone else's finished site.
+     */
+    readonly business?: BusinessDetails;
+    /** The quick start's Pages step (QS-3): template pages left out, recipe pages added. */
+    readonly pages?: PageChoices;
+  },
 ): SiteDoc {
   const site = structuredClone(template.site);
+  if (options.business !== undefined) withBusiness(site, options.name, options.business);
+  if (options.pages !== undefined) choosePages(site, options.pages);
   site.settings.general.name = options.name;
   // A new site helps AI tools read it unless its template says otherwise (F-EX-5, 3.5).
   site.settings.search.readableByAi ??= true;

@@ -41,12 +41,19 @@ export function siteCodeCandidates(site: SiteSnapshot): string[] {
   ];
 }
 
-/** A string or template literal: its quote, then anything but that quote unless escaped. */
-const STRING_LITERAL = /(["'`])((?:\\[\s\S]|(?!\1)[^\\])*)\1/g;
+/**
+ * A string or template literal: its quote, then anything but that quote unless escaped. A `"…"` or
+ * `'…'` string ends with its line, so an apostrophe in a comment or a regular expression is tried
+ * to its line's end only, never to the end of a long script.
+ */
+const STRING_LITERAL = /"((?:\\.|[^"\\\n])*)"|'((?:\\.|[^'\\\n])*)'|`((?:\\[\s\S]|[^`\\])*)`/g;
 
 /** The text of each string and template literal in `script`, as written. */
 export function scriptStrings(script: string): string[] {
-  return Array.from(script.matchAll(STRING_LITERAL), (match) => match[2] ?? "");
+  return Array.from(
+    script.matchAll(STRING_LITERAL),
+    (match) => match[1] ?? match[2] ?? match[3] ?? "",
+  );
 }
 
 /** What can't be in a class name, so a word ends there: whitespace, quotes, `<`, `>`, `=`, `;`. */
