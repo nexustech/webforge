@@ -201,6 +201,8 @@ export function App({
       library: session.library,
       theme: () => session.history.document.getState().theme,
       compileCss: compileCss ?? ((request) => window.webforge.canvas.compileCss(request)),
+      // A preview shown draws again as the theme changes (#613).
+      subscribe: (listener: () => void) => session.history.document.subscribe(listener),
     } satisfies Parameters<typeof createKindPreviews>[0];
     return {
       session,

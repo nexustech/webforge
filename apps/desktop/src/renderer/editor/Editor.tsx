@@ -265,6 +265,7 @@ export function Editor({
       theme: () => session.history.document.getState().theme,
       sharedSection: (id) => sharedSection(session.history.document.getState(), id)?.section,
       compileCss,
+      subscribe: (listener) => session.history.document.subscribe(listener),
     }),
   );
   // The canvas engine as the areas see it, while one is mounted (2.20, B1).
