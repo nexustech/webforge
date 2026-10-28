@@ -1,4 +1,9 @@
-import { SITE_DESCRIPTION_MAX, type SiteDoc, siteSettingsSchema } from "@webforge/model";
+import {
+  SITE_DESCRIPTION_MAX,
+  type SiteDoc,
+  siteSettingsSchema,
+  webAddressSchema,
+} from "@webforge/model";
 import { z } from "zod";
 
 /**
@@ -11,6 +16,8 @@ export const businessDetailsSchema = siteSettingsSchema.shape.contact
   .extend({
     /** *What you do*: one line, for Site Settings' description. */
     description: z.string().trim().max(SITE_DESCRIPTION_MAX).optional(),
+    /** The site's web address (SEO-9), asked at the quick start's end: Site Settings' address. */
+    webAddress: webAddressSchema.optional(),
   });
 
 /** See {@link businessDetailsSchema}. */
@@ -55,6 +62,9 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
   if (phone !== undefined) contact.phone = phone;
   if (email !== undefined) contact.email = email;
   if (address !== undefined) contact.address = address;
+  if (business.webAddress !== undefined) {
+    site.settings.address.url = business.webAddress.replace(/\/$/, "");
+  }
   if (business.openingHours !== undefined && business.openingHours.length > 0) {
     contact.openingHours = structuredClone(business.openingHours);
   }
