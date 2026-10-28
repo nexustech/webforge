@@ -16,7 +16,7 @@ import {
   ToggleGroupItem,
   useForm,
 } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import { DEFAULT_THEME, SITE_DESCRIPTION_MAX, SITE_NAME_MAX } from "@webforge/model";
 import { type BusinessDetails, TEMPLATE_CATEGORIES } from "@webforge/templates";
 import { type ImageColour, imageColours, oklchCss, THEME_PRESETS } from "@webforge/themes";
@@ -361,7 +361,12 @@ function LookStep({
                 onChoose={() => onTemplate(template)}
                 preview={<TemplatePreview template={template} />}
                 title={templateName(template.id)}
-                subtitle={`${t(`template.category.${template.category}`)} · ${presetLabel(template.theme)}`}
+                // Its business type only while every type's are shown: the heading names it otherwise.
+                subtitle={
+                  answers.category === null
+                    ? `${t(`template.category.${template.category}`)} · ${plural("newSite.pages", template.pages)}`
+                    : plural("newSite.pages", template.pages)
+                }
                 details={() => setDetails(template)}
               />
             ))}
@@ -544,13 +549,15 @@ function DetailsStep({
           />
         ))}
         <div className="flex items-center gap-1">
-          <ColoursOption
-            name={choiceName}
-            label={t("quickStart.colours.colour")}
-            answers={answers}
-            colours={{ kind: "colour", hex }}
-            onChoose={() => onHex(hex)}
-          />
+          <div className="min-w-0 flex-1">
+            <ColoursOption
+              name={choiceName}
+              label={t("quickStart.colours.colour")}
+              answers={answers}
+              colours={{ kind: "colour", hex }}
+              onChoose={() => onHex(hex)}
+            />
+          </div>
           <input
             type="color"
             aria-label={t("quickStart.colours.colour")}
@@ -615,7 +622,7 @@ function ColoursOption({
   return (
     <label
       className={cn(
-        "flex min-w-0 flex-1 cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 py-1.5 text-sm",
+        "flex min-w-0 cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 py-1.5 text-sm",
         "hover:bg-hover has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground",
         "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
       )}

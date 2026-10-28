@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { t } from "@webforge/i18n";
-import { userEvent, within } from "storybook/test";
+import { fireEvent, userEvent, within } from "storybook/test";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { QuickStartDialog } from "./QuickStartDialog.js";
 
@@ -106,10 +106,9 @@ export const DetailsProblem: Story = {
   args: { initialStep: "details" },
   play: async ({ canvasElement }) => {
     const body = dialog(canvasElement);
-    await userEvent.type(
-      await body.findByLabelText(t("site.settings.webAddress")),
-      "http://rosas.example",
-    );
+    fireEvent.change(await body.findByLabelText(t("site.settings.webAddress")), {
+      target: { value: "http://rosas.example" },
+    });
     await userEvent.click(body.getByRole("button", { name: t("quickStart.create") }));
     await body.findByText(t("site.settings.error.webAddress"));
   },
