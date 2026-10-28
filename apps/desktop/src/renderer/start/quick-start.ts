@@ -92,8 +92,9 @@ export const withTemplate = (
 
 /**
  * The answers with business type `category` (QS-1: the answers drive the choices). The type's
- * first template is chosen in place of one of another type; a template of the type stays, as does
- * any while no type is chosen. The recipes ticked were the old type's, so none are.
+ * first template (Blank for a type without one) is chosen in place of one of another type; a
+ * template of the type stays, as does any while no type is chosen. The recipes ticked were the old
+ * type's, so none are.
  */
 export function withCategory(
   answers: QuickStartAnswers,
@@ -103,8 +104,7 @@ export function withCategory(
   const next = { ...answers, category, recipes: [] };
   const current = templates.find((each) => each.id === answers.template);
   if (category === null || current?.category === category) return next;
-  const first = templatesOf(templates, category)[0];
-  return first === undefined ? next : withTemplate(next, first);
+  return withTemplate(next, templatesOf(templates, category)[0] ?? null);
 }
 
 /** The page recipes the Pages step offers: the business type's, or none without a type. */

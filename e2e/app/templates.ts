@@ -25,8 +25,11 @@ export async function createFromTemplate(
   template: Template,
   beforeCreate: () => Promise<void> = async () => undefined,
 ): Promise<void> {
-  // Exactly: the title bar's New Site… button has the same name in another case.
-  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  // The start screen's own (the welcome offers it too), not the title bar's New Site….
+  await page
+    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .first()
+    .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   // The card (its radio is visually hidden, so its label), named with its pages: not the business
   // type's chip of the same name.

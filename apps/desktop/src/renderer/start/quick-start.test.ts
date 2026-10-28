@@ -1,5 +1,6 @@
 import { contrastRatio, THEME_PRESETS, themePreset } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
+import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import {
   emptyAnswers,
   palettesFor,
@@ -7,6 +8,8 @@ import {
   quickStartRequest,
   recipesOffered,
   themeOf,
+  withCategory,
+  withTemplate,
 } from "./quick-start.js";
 
 const answers = (change: Partial<QuickStartAnswers> = {}): QuickStartAnswers => ({
@@ -59,6 +62,57 @@ describe("the quick start's request (QS-1, 3.11b)", () => {
   it("offers the business type's page recipes, and none before a type is chosen", () => {
     expect(recipesOffered(null)).toEqual([]);
     expect(recipesOffered("trades").map((recipe) => recipe.id)).toContain("trades-areas");
+  });
+});
+
+describe("the quick start's choices, driven by the answers (QS-1)", () => {
+  const template = (id: "cafe" | "salon" | "trades", category: "food" | "beauty" | "trades") =>
+    ({
+      id,
+      category,
+      example: false,
+      pages: 1,
+      pageList: [],
+      theme: `${id}-theme`,
+      thumbnail: null,
+    }) satisfies TemplateSummary;
+  const templates = [template("cafe", "food"), template("salon", "beauty")];
+
+  it("chooses the business type's first template, in its theme, and clears the old type's choices", () => {
+    const before = answers({ leaveOut: ["x"], recipes: ["food-events"] });
+
+    expect(withCategory(before, "beauty", templates)).toMatchObject({
+      category: "beauty",
+      template: "salon",
+      theme: "salon-theme",
+      leaveOut: [],
+      recipes: [],
+    });
+  });
+
+  it("keeps a template of the type, or any while no type is chosen, and Blank for a type without one", () => {
+    const chosen = withTemplate(answers(), templates[0] ?? null);
+    const themed = { ...chosen, theme: "dark" };
+
+    expect(withCategory(themed, "food", templates)).toMatchObject({
+      template: "cafe",
+      theme: "dark",
+    });
+    expect(withCategory(themed, null, templates)).toMatchObject({
+      template: "cafe",
+      theme: "dark",
+    });
+    expect(withCategory(themed, "trades", templates)).toMatchObject({
+      category: "trades",
+      template: null,
+      theme: "dark",
+    });
+  });
+
+  it("takes a template's theme and all its pages, and keeps the theme for Blank", () => {
+    const blank = withTemplate(answers({ theme: "dark", leaveOut: ["x"] }), null);
+
+    expect(blank).toMatchObject({ template: null, theme: "dark", leaveOut: [] });
   });
 });
 
