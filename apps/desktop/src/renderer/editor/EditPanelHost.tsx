@@ -48,6 +48,7 @@ import { arranged, gradientSource } from "./dialog-fields.js";
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { type FieldTarget, fieldTarget } from "./field-target.js";
+import { ItemCss, type ItemCssServices } from "./ItemCssView.js";
 import { changedLabel, labelFor, pasteGroupLabel, resetGroupLabel, resetLabel } from "./labels.js";
 import { applyAnchor, asLinkFieldChange } from "./link-change.js";
 import {
@@ -311,6 +312,8 @@ export type EditPanelHostProps = {
     | undefined;
   /** The Style tab's *Style this Feature…* button (3.13a); none without it. */
   readonly styleAction?: { readonly label: string; readonly onSelect: () => void } | undefined;
+  /** The Advanced tab's read-only *CSS* of the item (3.14); none without it. */
+  readonly itemCss?: ItemCssServices | undefined;
 };
 
 /**
@@ -334,6 +337,7 @@ export function EditPanelHost({
   appearanceOnly = false,
   dialogGroups,
   styleAction,
+  itemCss,
 }: EditPanelHostProps) {
   const { history, library } = session;
   const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
@@ -868,6 +872,11 @@ export function EditPanelHost({
       single={appearanceOnly}
       itemKey={id}
       styleAction={styleAction}
+      advancedFooter={
+        itemCss === undefined ? undefined : (
+          <ItemCss session={session} node={node} component={component} services={itemCss} />
+        )
+      }
     />
   );
 }

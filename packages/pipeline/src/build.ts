@@ -17,10 +17,7 @@ import {
   type ComponentLibrary,
   consentBannerHtml,
   documentsLinkedBy,
-  hrefFor,
   mediaUsedBy,
-  navigationFor,
-  type RenderContext,
   type RenderedPage,
   type ResolvedImage,
   renderPage,
@@ -29,18 +26,18 @@ import {
 import { fontFacesFor, themeShape } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
+import { type BuildWarning, pagePrefix, pageRender } from "./export-context.js";
 import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
-import { imageAt, processImage } from "./images.js";
+import { processImage } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
-import { scriptMistake, siteCodeCandidates, toBundled, withCustomCode } from "./site-code.js";
+import { scriptMistake, siteCodeCandidates, toBundled } from "./site-code.js";
 import {
   hasSitemap,
   llmsTxt,
   markdownPage,
   markdownUrl,
-  NOT_FOUND_PATH,
   pageTitle,
   readablePages,
   robotsTxt,
@@ -99,31 +96,7 @@ function ownCode(code: string | undefined): string | undefined {
 `;
 }
 
-/**
- * A problem that does not stop the build (X5 warnings): a link to a page that isn't there, an
- * image deleted from Media that a page still places (that place is left out), a page *Minify
- * output* couldn't make smaller, as its HTML can't be read (it's written readable, 3.3), or a site
- * icon that gives no favicon (3.4): deleted from Media, or under 16 pixels once cut square; or a
- * form with nowhere to send (`form-unset`, 3.7: no form service, Netlify Forms before its
- * publisher, an address that isn't `https://`, or a Newsletter without its address; `detail` says
- * which), the site's `custom.js` with a mistake that stops browsers running it (`custom-script`,
- * 3.9; `detail` is its line), or a file kept with the site whose bytes the site file doesn't have
- * (`missing-kept-file`, 3.9; `detail` is its name), whose address its code keeps.
- */
-export type BuildWarning = {
-  readonly code:
-    | "broken-link"
-    | "missing-image"
-    | "not-minified"
-    | "missing-icon"
-    | "small-icon"
-    | "form-unset"
-    | "custom-script"
-    | "missing-kept-file";
-  /** The page path the problem is on; "" for the whole site (the icon's). */
-  readonly page: string;
-  readonly detail: string;
-};
+export type { BuildWarning } from "./export-context.js";
 
 /** The output of a build: every file of the site by relative path, plus a report. */
 export type BuiltSite = {
@@ -206,16 +179,10 @@ type BuildRun = {
   readonly year?: number | undefined;
 };
 
-const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
-
 const sha256 = (data: string | Uint8Array) => createHash("sha256").update(data).digest("hex");
 
 function contentHash(data: string | Uint8Array): string {
   return sha256(data).slice(0, 10);
-}
-
-function depthOf(pagePath: string): number {
-  return pagePath.split("/").length - 1;
 }
 
 /**
@@ -501,81 +468,18 @@ export async function* buildEvents(
   }
 
   // Render every page, then compile one stylesheet from all the classes they use.
-  const paths = new Set(site.pages.map((page) => page.path));
-  const pathById = new Map(site.pages.map((page) => [page.id as string, page.path]));
-  /** Renders `page`'s regions: its Header, content and Footer. */
+  /** Renders `page`'s regions: its Header, content and Footer, as `pageRender` sets them up. */
+  const renderFiles = {
+    images,
+    missing,
+    documentPaths,
+    bundled,
+    thanksPage,
+    cookieSettings: analytics?.consentBanner === true,
+  };
   const render = (page: SitePage, prefix: string): RenderedRegions => {
-    const found: BuildWarning[] = [];
-    const navigation = navigationFor(
-      site,
-      page,
-      prefix,
-      (detail) => found.push({ code: "broken-link", page: page.path, detail }),
-      (id) => documentPaths.get(id),
-    );
-    const context: RenderContext = {
-      navigation,
-      link: (target) => {
-        if (EXTERNAL_LINK.test(target)) {
-          return target;
-        }
-        if (paths.has(target)) {
-          return `${prefix}${target}.html`;
-        }
-        found.push({ code: "broken-link", page: page.path, detail: target });
-        return "#";
-      },
-      href: (link) => {
-        const href = hrefFor(
-          link,
-          (id) => pathById.get(id),
-          prefix,
-          (id) => documentPaths.get(id),
-        );
-        if (href === undefined) {
-          const detail =
-            link.kind === "page" ? link.pageId : link.kind === "file" ? link.mediaId : link.kind;
-          found.push({ code: "broken-link", page: page.path, detail });
-          return "#";
-        }
-        return href;
-      },
-      image: (id) => {
-        const image = images.get(id);
-        if (image === undefined) {
-          if (missing.has(id)) found.push({ code: "missing-image", page: page.path, detail: id });
-          return null;
-        }
-        return imageAt(image, prefix);
-      },
-      // An empty binding has no emptySetting here: the export leaves it out (1.17).
-      setting: (key) => site.settings?.[key],
-      openingHours: site.openingHours ?? [],
-      socialProfiles: site.socialProfiles ?? [],
-      language: site.language,
-      ...(site.formService === undefined ? {} : { formService: site.formService }),
-      // Custom Code as written (F-ED-15): the export is the one place it runs (3.9 checks it).
-      rawCustomCode: true,
-      // Each kind's look from the theme (3.12, CT-1), under what an element sets itself.
-      ...(site.theme.looks === undefined ? {} : { looks: site.theme.looks }),
-      // A form with nowhere to send draws without an action (2.8), and the report says so (3.7).
-      formHint: (reason) => {
-        found.push({ code: "form-unset", page: page.path, detail: reason });
-        return null;
-      },
-      ...(thanksPage === undefined ? {} : { thanksPage }),
-      // The Footer's link back to the consent banner, wherever it asks (#539).
-      ...(analytics?.consentBanner === true ? { cookieSettings: true } : {}),
-    };
+    const { context, regions, warnings: found } = pageRender(site, page, prefix, renderFiles);
     // The one static renderer (ADR 0005), whose render functions the canvas draws with too.
-    // Custom Code pointing at the files kept with the site, `prefix` away (3.9).
-    const own = (nodes: readonly NodeDoc[]) =>
-      bundled.length === 0 ? nodes : withCustomCode(nodes, toBundled(bundled, prefix));
-    const regions = {
-      header: page.hideHeader === true ? [] : own(site.layout.header),
-      content: own(page.doc.content),
-      footer: page.hideFooter === true ? [] : own(site.layout.footer),
-    };
     return { ...renderPage(regions, library, context), warnings: found };
   };
   // Everything a page's render reads besides the page itself, hashed once for the page cache: the
@@ -611,8 +515,7 @@ export async function* buildEvents(
   // address before the domain points there too). Not in a preview, which serves the site below a
   // path of its own.
   const rootPrefix = run.mode === "preview" ? "" : "/";
-  const prefixOf = (page: SitePage) =>
-    page.path === NOT_FOUND_PATH ? rootPrefix : "../".repeat(depthOf(page.path));
+  const prefixOf = (page: SitePage) => pagePrefix(page, rootPrefix);
   const keptPages = new Map<string, RenderedRegions>();
   const rendered: (RenderedRegions & { readonly page: SitePage; readonly prefix: string })[] = [];
   for (const [done, page] of site.pages.entries()) {

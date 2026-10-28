@@ -115,7 +115,7 @@ ${page.backToTop ?? ""}${page.consent ?? ""}${page.customBodyEnd?.trim() ?? ""}
  * Pretty-prints HTML with two-space indentation and no line wrapping (X4). What's in a script or
  * style element (Custom Code's, 2.11), a `pre` or a `textarea` is left as written.
  */
-function formatHtml(html: string): string {
+export function formatHtml(html: string): string {
   return `${beautify.html(html, {
     indent_size: 2,
     wrap_line_length: 0,

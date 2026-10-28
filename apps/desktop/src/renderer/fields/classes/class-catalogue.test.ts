@@ -22,6 +22,7 @@ function canvasAnswering(...answers: ("loaded" | "failed")[]): CanvasApi {
     classCatalogue,
     classCss: () => Promise.resolve({ status: "failed" }),
     compileCss: () => Promise.resolve({ status: "failed" }),
+    itemHtml: () => Promise.resolve({ status: "failed" }),
   };
 }
 

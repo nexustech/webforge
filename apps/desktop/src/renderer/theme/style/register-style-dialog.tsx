@@ -3,6 +3,7 @@ import type { NodeDoc } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../../editor/editor-session.js";
+import type { ItemCssServices } from "../../editor/ItemCssView.js";
 import { COMMAND_IDS } from "../../shell/command-ids.js";
 import type { CommandRegistry } from "../../shell/commands.js";
 import { followLayoutLock, type PreferencesStore } from "../../shell/preferences-store.js";
@@ -15,6 +16,8 @@ import type { StyleDialogState } from "./style-state.js";
 type StyleDialogOptions = {
   readonly asks?: StyleAsks | undefined;
   readonly itemPreviews?: ((node: NodeDoc, device: "desktop" | "mobile") => ReactNode) | undefined;
+  /** The worker and clipboard for the *CSS* tab in Advanced mode (3.14); no tab without them. */
+  readonly itemCss?: Omit<ItemCssServices, "onOpenCustomCode"> | undefined;
 };
 
 /**
@@ -30,8 +33,13 @@ export function registerStyleDialog(
   session: EditorSession,
   preferences: PreferencesStore,
   state: StoreApi<StyleDialogState>,
-  { asks, itemPreviews }: StyleDialogOptions = {},
+  { asks, itemPreviews, itemCss }: StyleDialogOptions = {},
 ): () => void {
+  // The CSS tab points at Custom Code (3.14), through its command.
+  const css: ItemCssServices | undefined =
+    itemCss === undefined
+      ? undefined
+      : { ...itemCss, onOpenCustomCode: () => void registry.run(COMMAND_IDS.customCode) };
   function Style() {
     return (
       <StyleDialog
@@ -40,6 +48,7 @@ export function registerStyleDialog(
         preferences={preferences}
         asks={asks}
         itemPreviews={itemPreviews}
+        itemCss={css}
       />
     );
   }

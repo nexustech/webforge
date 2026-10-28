@@ -19,7 +19,7 @@ const button = (id: string): NodeDoc => ({
 });
 
 /** The dialog open on the Button `styled` of a page with another Button, previews recorded. */
-function setUp(editorLevel: "simple" | "advanced" = "simple") {
+function setUp(editorLevel: "simple" | "advanced" = "simple", css = false) {
   const site = starterSite();
   const home = site.pages[site.homePageId];
   if (home === undefined) throw new Error("no home page");
@@ -39,6 +39,20 @@ function setUp(editorLevel: "simple" | "advanced" = "simple") {
       state={state}
       preferences={createPreferencesStore({ preferences: { ...DEFAULT_PREFERENCES, editorLevel } })}
       itemPreviews={previews}
+      itemCss={
+        css
+          ? {
+              api: {
+                itemHtml: async () => ({ status: "html", html: '<a class="btn">Book</a>' }),
+                classCss: async (_theme, classes) => ({
+                  status: "css",
+                  css: classes.map((name) => `.${name} {}`),
+                }),
+              },
+              copyText: async () => null,
+            }
+          : undefined
+      }
     />,
   );
   const props = (id: string) => {
@@ -122,6 +136,19 @@ describe("StyleDialog (3.13a, CT-2)", () => {
 
     setUp("advanced");
     expect(screen.getAllByRole("radio", { name: "Custom" }).length).toBeGreaterThan(0);
+  });
+
+  it("has a CSS tab beside the groups in Advanced mode only (3.14)", async () => {
+    const { dialog, user } = setUp("advanced", true);
+
+    await user.click(dialog().getByRole("tab", { name: "CSS" }));
+    expect(await dialog().findByText('<a class="btn">Book</a>')).toBeTruthy();
+    await user.click(dialog().getByRole("tab", { name: "Style" }));
+    expect(dialog().getByRole("button", { name: "Appearance" })).toBeTruthy();
+
+    cleanup();
+    const simple = setUp("simple", true);
+    expect(simple.dialog().queryByRole("tab")).toBeNull();
   });
 
   it("offers the four places a change applies", () => {

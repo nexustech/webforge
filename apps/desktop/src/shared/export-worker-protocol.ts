@@ -92,6 +92,32 @@ const classCssJobSchema = z.strictObject({
 /** The CSS each class produces. */
 export type ClassCssJob = z.infer<typeof classCssJobSchema>;
 
+/** An image's size in Media, before any crop. */
+const imageSizeSchema = z.strictObject({ width: z.int().positive(), height: z.int().positive() });
+
+/**
+ * What Advanced mode's CSS tab asks for (3.14): one item of a page as the export writes it. The
+ * canvas styles worker answers it with the pipeline's own rendering. The snapshot has no image
+ * sizes, so they come with it, by Media id: no image is read.
+ */
+export const itemHtmlRequestSchema = z.strictObject({
+  snapshot: siteSnapshotSchema,
+  sizes: z.record(z.string().min(1).max(64), imageSizeSchema),
+  pageId: z.string().min(1).max(64),
+  nodeId: z.string().min(1).max(200),
+});
+
+/** An item of a page to write as the export would. */
+export type ItemHtmlRequest = z.infer<typeof itemHtmlRequestSchema>;
+
+const itemHtmlJobSchema = itemHtmlRequestSchema.extend({
+  type: z.literal("item-html"),
+  id: z.int().nonnegative(),
+});
+
+/** An item of a page to write as the export would, in the canvas styles worker. */
+export type ItemHtmlJob = z.infer<typeof itemHtmlJobSchema>;
+
 /** Bytes of any buffer kind (a Node `Buffer` too), which `z.instanceof` would narrow. */
 const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
 
@@ -144,6 +170,7 @@ export const workerJobSchema = z.discriminatedUnion("type", [
   compileCssJobSchema,
   classCatalogueJobSchema,
   classCssJobSchema,
+  itemHtmlJobSchema,
   thumbnailJobSchema,
 ]);
 
@@ -196,8 +223,29 @@ const classesOutcomeSchema = z.discriminatedUnion("type", [
 /** The worker's answer to a {@link ClassCatalogueJob} or a {@link ClassCssJob}. */
 export type ClassesOutcome = z.infer<typeof classesOutcomeSchema>;
 
-/** Everything the canvas styles worker answers: CSS for the canvas, and the class catalogue. */
-export const canvasStylesOutcomeSchema = z.union([compileCssOutcomeSchema, classesOutcomeSchema]);
+/** An item's HTML as the export writes it (3.14), or a failure: always without details. */
+const itemHtmlOutcomeSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("item-html"),
+    id: z.int().nonnegative(),
+    /** `""` for a hidden item; `null` when the page or the item isn't there. */
+    html: z.string().max(1_000_000).nullable(),
+  }),
+  z.strictObject({ type: z.literal("item-html-failed"), id: z.int().nonnegative() }),
+]);
+
+/** The worker's answer to an {@link ItemHtmlJob}. */
+export type ItemHtmlOutcome = z.infer<typeof itemHtmlOutcomeSchema>;
+
+/**
+ * Everything the canvas styles worker answers: CSS for the canvas, the class catalogue, and an
+ * item's HTML for the CSS tab.
+ */
+export const canvasStylesOutcomeSchema = z.union([
+  compileCssOutcomeSchema,
+  classesOutcomeSchema,
+  itemHtmlOutcomeSchema,
+]);
 
 /**
  * What the export worker reports back. Failures carry only a code: no paths, no site content
