@@ -1,11 +1,12 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { heroPhoto } from "@webforge/test-utils";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
@@ -16,7 +17,7 @@ import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 let dir: string;
 let userData: string;
-let app: ElectronApplication | undefined;
+let app: WebforgeApp | undefined;
 
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-exit-"));
@@ -26,7 +27,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 /** The running app; the test calls it once it has launched one. */
@@ -45,7 +46,8 @@ async function startWithoutSite(): Promise<Page> {
 
 /** Closes the window as the person does, which saves the site and lists it in Recent. */
 async function closeWindow(): Promise<void> {
-  const closed = app?.waitForEvent("close");
+  // Once it has closed, not once Electron has torn its process down, which can take a minute (#534).
+  const closed = app?.untilClosed();
   await app?.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0]?.close();
   });

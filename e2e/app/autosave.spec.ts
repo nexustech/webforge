@@ -1,12 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
 import { ProjectStore } from "@webforge/storage";
 import { placeCaret } from "./caret.js";
 import { largeSiteEdits } from "./large-site.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
 import type { RendererWindow } from "./sites.js";
 
 // Periodic autosave (P2, F-SITE-3): the site is saved about 2 s after editing pauses and when the
@@ -16,7 +17,7 @@ const STARTER_HEADING = "Welcome to our business";
 
 let dir: string;
 let sitePath: string;
-let app: ElectronApplication | undefined;
+let app: WebforgeApp | undefined;
 
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-autosave-"));
@@ -28,7 +29,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 /**
@@ -49,7 +50,8 @@ async function killApp(): Promise<void> {
 
 /** Closes the window as the user does (the title bar's close button), then waits for the app. */
 async function closeWindow(): Promise<void> {
-  const closed = app?.waitForEvent("close");
+  // Once it has closed, not once Electron has torn its process down, which can take a minute (#534).
+  const closed = app?.untilClosed();
   await app?.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0]?.close();
   });
