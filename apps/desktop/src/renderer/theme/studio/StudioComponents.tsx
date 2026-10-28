@@ -126,8 +126,12 @@ export function StudioComponents({
   });
   const tokens = tokensOf(shown.type);
   return (
-    <div className="grid min-h-0 grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-4">
-      <nav aria-label={t("theme.components.kinds")} className="flex flex-col gap-2">
+    // The kinds and the chosen one's look scroll on their own: the list is long.
+    <div className="grid h-full min-h-0 grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-4">
+      <nav
+        aria-label={t("theme.components.kinds")}
+        className="flex min-h-0 flex-col gap-2 overflow-auto pr-1"
+      >
         {groups.map(({ category, kinds }) => (
           <section key={category} aria-label={category}>
             <h3 className="m-0 mb-1 text-2xs font-semibold text-muted-foreground uppercase">
@@ -153,7 +157,10 @@ export function StudioComponents({
           </section>
         ))}
       </nav>
-      <section aria-label={shown.label} className="flex min-w-0 flex-col gap-3">
+      <section
+        aria-label={shown.label}
+        className="flex min-h-0 min-w-0 flex-col gap-3 overflow-auto pr-1"
+      >
         <h3 className="m-0 text-sm font-semibold">{shown.label}</h3>
         <p className="m-0 text-xs text-muted-foreground">
           {shown.type === CARD_KIND

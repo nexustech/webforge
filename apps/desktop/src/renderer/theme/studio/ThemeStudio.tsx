@@ -179,7 +179,7 @@ export function ThemeStudio({
               onChange={(control, value) => void setToken(session, asks, control, value)}
             />
           </TabsContent>
-          <TabsContent value="components" className="min-h-0 overflow-auto pr-1">
+          <TabsContent value="components" className="min-h-0">
             <StudioComponents
               theme={theme}
               library={session.library}
