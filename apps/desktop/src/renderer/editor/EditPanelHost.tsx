@@ -75,7 +75,7 @@ import { useDocument, useUi } from "./use-document.js";
  * for fields edited elsewhere. Rich text is edited on the canvas (1.23), slots by dragging elements
  * in. Lists, and slots of one type, are drawn as lists by {@link listField} (see editableList).
  */
-function specOf(field: FieldDef): FieldSpec | undefined {
+export function specOf(field: FieldDef): FieldSpec | undefined {
   const { label } = field;
   switch (field.kind) {
     case "text":

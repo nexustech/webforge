@@ -4,7 +4,7 @@ import type { NodeDoc, SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { createSectionPreviews } from "./section-preview.js";
+import { createKindPreviews, createSectionPreviews } from "./section-preview.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -124,5 +124,30 @@ describe("createSectionPreviews (UX-10)", () => {
       }),
     ).toBeNull();
     expect(await shown(previews({ type: "Hero", label: "Hero", category: "Heroes" }))).toBeNull();
+  });
+});
+
+describe("createKindPreviews (3.12, CT-1)", () => {
+  it("draws an element too, with its kind's look, and again once the theme changes", async () => {
+    let current = { ...theme, looks: { Button: { lookCorners: "full" } } };
+    const compileCss = vi.fn(async () => ({ status: "compiled" as const, css: "", bodyClass: "" }));
+    const previews = createKindPreviews({ library: siteLibrary, theme: () => current, compileCss });
+
+    const root = await shown(previews("Button"));
+    expect(root?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-full!");
+
+    current = { ...current, looks: { Button: { lookCorners: "none" } } };
+    cleanup();
+    const again = await shown(previews("Button"));
+    expect(again?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-none!");
+    expect(compileCss).toHaveBeenCalledTimes(2);
+  });
+
+  it("draws nothing for a type the library doesn't have", async () => {
+    const compileCss = vi.fn();
+    const previews = createKindPreviews({ library: siteLibrary, theme: () => theme, compileCss });
+
+    expect(await shown(previews("Nothing"))).toBeNull();
+    expect(compileCss).not.toHaveBeenCalled();
   });
 });

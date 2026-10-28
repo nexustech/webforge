@@ -83,6 +83,8 @@ Choices within CT-1 and CT-3, agreed with the coordinator as following existing 
 6. **Format (CT-1):** `looks` is a new optional theme field. Format 9 bumps the version only (as 2.23's 7 → 8 did), so an older build opens a site with looks read-only rather than drop them; a v9 fixture with looks and the inverse step.
 7. **Provenance (CT-3):** *Theme's (‹token›: ‹value›)* names a token only where one theme token decides the value: corners from `radius.box` for sections and cards and `radius.field` for Buttons and fields, shadow from `theme.shadow`, border from `border.thin`, size from the type scale's style; elsewhere plain *Theme's*. Clicking it opens the Theme tab at that token (a reveal-field request). *Class (Advanced)* shows only when the item's Advanced classes include a utility for that property (`rounded-`, `shadow-`, `border-`, `opacity-`, `text-`, `bg-`, `font-`).
 
+8. **Theme Studio › Components (CT-1, 28 Oct 2026):** a look is set once there, for every device; a look per device stays in the format, and CT-2's dialog (3.13) can set one. The theme's button tokens and card style move from Styles to Components, beside the Button look and as the Card look, and stay where they are in the theme (note 5).
+
 ## 5. Sources
 
 - [product/08](08-component-styling.md): the competitor models (§2), the comparison table (§3), ST-1…ST-8.
