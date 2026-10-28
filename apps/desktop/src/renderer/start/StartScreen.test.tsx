@@ -99,19 +99,32 @@ describe("StartScreen", () => {
     await expect(save?.()).resolves.toBeUndefined();
   });
 
-  it("offers New Site and Open, and says when there are no recent sites", async () => {
+  it("offers the quick start first, then New Site and Open, and says when there are no recent sites", async () => {
     const project = api([]);
     const restart = await render(project);
 
-    expect(container.textContent).toContain("Start a site");
+    expect(container.textContent).toContain("Get started");
     expect(container.textContent).toContain("Sites you open or create appear here.");
-    await act(async () => button("New site…")?.click());
+    // The quick start (QS-4): every step skipped makes the untitled Blank site.
+    await act(async () => button("Start a site…")?.click());
+    const createSite = [...document.querySelectorAll("button")].find(
+      (element) => element.textContent === "Create site",
+    );
+    await act(async () => createSite?.click());
+    expect(project.create).toHaveBeenCalledWith({
+      name: "My site",
+      theme: "light",
+      business: {},
+      pages: { leaveOut: [], recipes: [] },
+    });
+
+    await act(async () => button("Choose a template yourself…")?.click());
     // New Site's dialog, in a portal on the body (2.14a).
     const create = [...document.querySelectorAll("button")].find(
       (element) => element.textContent === "Create",
     );
     await act(async () => create?.click());
-    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light" });
+    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light", business: {} });
     expect(restart).toHaveBeenCalled();
     await act(async () => button("Open a site…")?.click());
     expect(project.open).toHaveBeenCalled();
@@ -123,13 +136,13 @@ describe("StartScreen", () => {
       throw new Error("templates folder missing");
     });
 
-    await act(async () => button("New site…")?.click());
+    await act(async () => button("Choose a template yourself…")?.click());
     expect(document.body.textContent).toContain("No templates of this type yet.");
     const create = [...document.querySelectorAll("button")].find(
       (element) => element.textContent === "Create",
     );
     await act(async () => create?.click());
-    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light" });
+    expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light", business: {} });
   });
 
   it("lists recent sites with thumbnail, file name and when they were edited or opened", async () => {
@@ -238,6 +251,7 @@ describe("StartScreen", () => {
       category: "food",
       example: true,
       pages: 2,
+      pageList: [],
       theme: "bistro",
       thumbnail: null,
     };
@@ -269,6 +283,7 @@ describe("StartScreen", () => {
       category: "food",
       example: true,
       pages: 2,
+      pageList: [],
       theme: "light",
       thumbnail: null,
     };
@@ -300,28 +315,32 @@ describe("StartScreen", () => {
       category: "food",
       example: true,
       pages: 2,
+      pageList: [],
       theme: "light",
       thumbnail: null,
     };
     const project = api([]);
     await render(project, vi.fn(), async () => [example]);
 
-    expect(container.querySelector("h2")?.textContent).toBe("Start a site");
+    expect(container.querySelector("h2")?.textContent).toBe("Get started");
     expect(container.textContent).toContain("Welcome to Webforge");
     const choices = [...container.querySelectorAll('[role="tabpanel"] li')].map(
       (item) => item.textContent,
     );
     expect(choices).toEqual([
-      expect.stringContaining("A blank site, or one from a template"),
+      expect.stringContaining("Answer a few questions about your business"),
       expect.stringContaining("A finished example site"),
       expect.stringContaining("A site you've saved on this computer."),
     ]);
+    const welcome = [...container.querySelectorAll<HTMLButtonElement>('[role="tabpanel"] button')];
 
-    const open = [...container.querySelectorAll<HTMLButtonElement>('[role="tabpanel"] button')].at(
-      -1,
+    await act(async () =>
+      welcome.find((each) => each.textContent?.includes("Open a site"))?.click(),
     );
-    await act(async () => open?.click());
     expect(project.open).toHaveBeenCalled();
+    // New Site one click away (QS-4).
+    await act(async () => welcome.at(-1)?.click());
+    expect(document.body.textContent).toContain("Start from scratch");
   });
 
   it("lists the recent sites instead of the welcome once there are some", async () => {

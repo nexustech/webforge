@@ -114,17 +114,20 @@ describe("siteToSnapshot", () => {
     expect(snapshot.backToTop).toBeUndefined();
   });
 
-  it("passes a page hidden from search engines on, and the verification codes (3.15)", () => {
+  it("passes a page hidden from search engines on, its date, and the verification codes (3.15)", () => {
     const found = bakery();
     const page = found.pages["cakes" as PageId];
     if (page === undefined) throw new Error("no page");
     page.settings.hideFromSearch = true;
+    page.updated = "2026-10-28";
     found.settings.search.verification = { google: "abcDEF123_-xyz" };
 
     const shown = siteToSnapshot(found, new Map([[HASH, bytes]]));
 
     expect(shown.pages[1]?.hideFromSearch).toBe(true);
+    expect(shown.pages[1]?.updated).toBe("2026-10-28");
     expect(shown.pages[0]).not.toHaveProperty("hideFromSearch");
+    expect(shown.pages[0]).not.toHaveProperty("updated");
     expect(shown.search?.verification).toEqual({ google: "abcDEF123_-xyz" });
     expect(snapshot.search).not.toHaveProperty("verification");
   });

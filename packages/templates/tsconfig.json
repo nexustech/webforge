@@ -3,7 +3,7 @@
   "compilerOptions": {
     "types": ["node"]
   },
-  "include": ["src", "test"],
+  "include": ["src", "src/recipes.json", "test"],
   "references": [
     { "path": "../model" },
     { "path": "../site-check" },

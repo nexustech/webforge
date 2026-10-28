@@ -113,6 +113,7 @@ export const shell = {
 
   // Commands (menus and the command box).
   "command.newSite": "New Site…",
+  "command.quickStart": "Start a Site…",
   "command.openSite": "Open Site…",
   "command.exportSite": "Export Site…",
   "command.preview": "Preview",

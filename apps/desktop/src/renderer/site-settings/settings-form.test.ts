@@ -28,6 +28,7 @@ const full: SiteSettings = {
     description: "Fresh bread",
     language: "en-GB",
     backToTop: true,
+    businessType: "food",
   },
   address: { url: "https://www.rosasbakery.co.uk" },
   social: {
@@ -78,6 +79,14 @@ describe("settings form", () => {
     expect(on.ok && on.settings.search.readableByAi).toBe(true);
   });
 
+  it("sets and clears the business type, storing nothing while none is chosen (SEO-9)", () => {
+    const shop = checkSettings(edit(full, { businessType: "shop" }), full);
+    expect(shop.ok && shop.settings.general.businessType).toBe("shop");
+
+    const none = checkSettings(edit(full, { businessType: "" }), full);
+    expect(none.ok && "businessType" in none.settings.general).toBe(false);
+  });
+
   it("keeps the search engines' verification codes, from the whole tags pasted too (3.15)", () => {
     const saved = checkSettings(
       edit(full, {
@@ -91,6 +100,17 @@ describe("settings form", () => {
       bing: "0123456789ABCDEF",
     });
     expect(saved.ok && toSettingsForm(saved.settings).googleVerification).toBe("abcDEF123_-xyz");
+
+    // Google's tag in Bing's field isn't saved under Bing's name: the field says what it is.
+    const swapped = checkSettings(
+      edit(full, {
+        bingVerification: '<meta name="google-site-verification" content="abcDEF123_-xyz" />',
+      }),
+      full,
+    );
+    expect(!swapped.ok && swapped.errors["search.verification.bing"]).toBe(
+      "That isn't Bing's verification code. Paste the code, or the whole msvalidate.01 tag from Bing Webmaster Tools.",
+    );
 
     // Emptied, nothing is stored.
     const none = checkSettings(edit(full, { googleVerification: "", bingVerification: "" }), full);
