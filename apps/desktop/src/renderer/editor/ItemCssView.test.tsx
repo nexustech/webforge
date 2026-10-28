@@ -89,6 +89,18 @@ describe("ItemCssView (3.14)", () => {
     expect(await screen.findByText("<h2>Cakes</h2>")).toBeDefined();
   });
 
+  it("shows another item's CSS only once it has it, not the last item's", async () => {
+    const { session, api } = setUp();
+    await screen.findByText('<h2 class="text-primary p-4">Fresh bread</h2>');
+    vi.mocked(api.itemHtml).mockResolvedValue({ status: "html", html: "<p>Other</p>" });
+
+    act(() => session.select("other"));
+
+    expect(screen.getByText("Writing the CSS…")).toBeDefined();
+    expect(screen.queryByText('<h2 class="text-primary p-4">Fresh bread</h2>')).toBeNull();
+    expect(await screen.findByText("<p>Other</p>")).toBeDefined();
+  });
+
   it("says when the item is hidden", async () => {
     setUp(fakeApi(""));
 

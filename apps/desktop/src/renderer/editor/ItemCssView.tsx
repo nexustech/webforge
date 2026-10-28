@@ -4,6 +4,7 @@ import type { NodeDoc } from "@webforge/model";
 import { appearanceClassGroups, type ComponentDef, withLook } from "@webforge/site-components";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
+import { reportFailure } from "../log.js";
 import type { EditorSession } from "./editor-session.js";
 import {
   type ClassGroup,
@@ -67,7 +68,9 @@ function CopyButton({
       variant="ghost"
       aria-label={t("itemCss.copy.label", { part })}
       onClick={() => {
-        void copyText(text).then(() => setCopied(true));
+        copyText(text)
+          .then(() => setCopied(true))
+          .catch((error: unknown) => reportFailure("itemCss.copy", error));
       }}
     >
       {copied ? <CheckIcon aria-hidden /> : <CopyIcon aria-hidden />}
@@ -135,7 +138,10 @@ export function ItemCssView({
   const site = useDocument(session, (doc) => doc);
   const pageId = useUi(session, (ui) => ui.pageId);
   const nodeId = useUi(session, (ui) => ui.nodeId);
-  const [css, setCss] = useState<ItemCssState | "loading">("loading");
+  // Each answer with the item it's for: another item's shows as loading, not as this one's.
+  const item = `${pageId}/${nodeId ?? ""}`;
+  const [answer, setAnswer] = useState<{ readonly item: string; readonly css: ItemCssState }>();
+  const css = answer?.item === item ? answer.css : "loading";
   useEffect(() => {
     if (nodeId === null) return;
     let current = true;
@@ -143,7 +149,7 @@ export function ItemCssView({
       void itemCssOf(site, pageId, nodeId, api)
         .catch((): ItemCssState => ({ status: "failed" }))
         .then((next) => {
-          if (current) setCss(next);
+          if (current) setAnswer({ item: `${pageId}/${nodeId}`, css: next });
         });
     }, REFRESH_DELAY_MS);
     return () => {
