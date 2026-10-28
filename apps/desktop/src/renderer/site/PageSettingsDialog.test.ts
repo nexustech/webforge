@@ -30,6 +30,7 @@ describe("Page Settings checked by the model (2.21, decision 5)", () => {
               hideFooter: !hidden,
               hideFromNavigation: hidden,
               hideBackToTop: hidden,
+              hideFromSearch: false,
             }),
           );
           expect(result).not.toBeInstanceOf(Promise);
@@ -54,6 +55,7 @@ describe("Page Settings checked by the model (2.21, decision 5)", () => {
         hideFooter: false,
         hideFromNavigation: false,
         hideBackToTop: false,
+        hideFromSearch: false,
       }),
     );
     expect("issues" in result ? result.issues : []).toEqual([

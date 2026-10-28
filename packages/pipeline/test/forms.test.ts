@@ -48,6 +48,9 @@ describe("forms' thank-you page (3.7, B3)", () => {
       // With the site's Header and Footer, and out of its navigation.
       expect(thanks).toContain("<!-- Header (shared) -->");
       expect(text(built, "index.html")).not.toContain("thank-you.html");
+      // Only reached by sending a form, so nothing for search engines (3.15, SEO-2).
+      expect(thanks).toContain('<meta name="robots" content="noindex">');
+      expect(text(built, "sitemap.xml")).not.toContain("thank-you.html");
       expect(contactForm(built)).toContain(
         `<input type="hidden" name="redirect" value="${ADDRESS}/thank-you.html" />`,
       );

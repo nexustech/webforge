@@ -7,6 +7,7 @@ import {
   type SiteSettings,
   type SOCIAL_NETWORKS,
   siteSettingsSchema,
+  verificationCodeOf,
 } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
 import "../shell/form-messages.js";
@@ -61,6 +62,9 @@ export type SettingsForm = {
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
   readonly readableByAi: boolean;
+  /** Google's and Bing's verification codes, or the tags they come in (3.15, SEO-8). */
+  readonly googleVerification: string;
+  readonly bingVerification: string;
   readonly measurementId: string;
   readonly consentBanner: boolean;
   readonly consentMessage: string;
@@ -96,6 +100,8 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     allowIndexing: search.allowIndexing,
     includeSitemap: search.includeSitemap,
     readableByAi: search.readableByAi === true,
+    googleVerification: search.verification?.google ?? "",
+    bingVerification: search.verification?.bing ?? "",
     measurementId: analytics.measurementId ?? "",
     consentBanner: analytics.consentBanner,
     consentMessage: analytics.consentMessage ?? "",
@@ -119,6 +125,18 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
 function optional<K extends string>(key: K, value: string): { [P in K]?: string } {
   const trimmed = value.trim();
   return (trimmed === "" ? {} : { [key]: trimmed }) as { [P in K]?: string };
+}
+
+/**
+ * The search engines' verification codes (3.15, SEO-8), each the code alone though the whole tag
+ * was pasted; absent when neither is set.
+ */
+function verificationOf(form: SettingsForm): { verification?: Record<string, string> } {
+  const verification = {
+    ...optional("google", verificationCodeOf(form.googleVerification)),
+    ...optional("bing", verificationCodeOf(form.bingVerification)),
+  };
+  return Object.keys(verification).length === 0 ? {} : { verification };
 }
 
 function formServiceOf(form: SettingsForm): Record<string, string> | undefined {
@@ -184,6 +202,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.readableByAi || previous.search.readableByAi !== undefined
         ? { readableByAi: form.readableByAi }
         : {}),
+      ...verificationOf(form),
     },
     analytics: {
       ...optional("measurementId", form.measurementId.toUpperCase()),
@@ -212,6 +231,8 @@ const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
   "contact.openingHours.*.opens": "site.settings.error.time",
   "contact.openingHours.*.closes": "site.settings.error.time",
   "analytics.measurementId": "site.settings.error.measurementId",
+  "search.verification.google": "site.settings.error.verification",
+  "search.verification.bing": "site.settings.error.verification",
   "forms.service.formId": "site.settings.error.formspree",
   "forms.service.accessKey": "site.settings.error.web3forms",
   "forms.service.email": "site.settings.error.email",

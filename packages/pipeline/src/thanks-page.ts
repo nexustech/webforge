@@ -58,6 +58,8 @@ function madeThanksPage(site: SiteSnapshot, library: ComponentLibrary): SitePage
     path: THANKS_PATH,
     title: t("siteText.thanks.title"),
     hideFromNavigation: true,
+    // Nothing for search engines: it is only reached by sending a form (3.15, SEO-2).
+    hideFromSearch: true,
     doc: {
       root: { props: {} },
       content: [

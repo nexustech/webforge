@@ -64,6 +64,12 @@ const pageSettingsSchema = z.strictObject({
    * when absent, as in files from before it.
    */
   hideBackToTop: z.boolean().optional(),
+  /**
+   * *Hide this page from search engines* (3.15, SEO-2): `noindex` on it, and left out of the
+   * sitemap, `llms.txt` and the Markdown copies; still linked. Shown when absent, as before
+   * (ADR 0012).
+   */
+  hideFromSearch: z.boolean().optional(),
 });
 
 /** See {@link pageSettingsSchema}. */
