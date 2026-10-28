@@ -9,6 +9,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { type Command, formatShortcut } from "../shell/commands.js";
 
 /** Where a menu opens, in the editor window's coordinates. */
@@ -24,6 +25,7 @@ export const ELEMENT_MENU_COMMANDS = {
   copy: "edit.copy",
   paste: "edit.paste",
   pasteLinked: "edit.pasteLinked",
+  styleThis: COMMAND_IDS.styleThis,
   copyStyle: "edit.copyStyle",
   pasteStyle: "edit.pasteStyle",
   applyLookOnPage: "edit.applyLookOnPage",
@@ -57,14 +59,15 @@ export type ElementMenuProps = {
  * The selected element's right-click menu (1.35, UX-24): the same on the canvas and in Layers.
  * Rename, Duplicate, Save as shared section (or Detach, for a linked copy), Select similar, Select
  * parent (SP-9); Cut,
- * Copy, Paste and Paste as Linked Copy (F-ED-23); Copy Style and Paste Style (1.37), and Apply Look
- * to Every… on this page or the site (2.27); and Delete.
+ * Copy, Paste and Paste as Linked Copy (F-ED-23); Style this ‹kind›… (3.13a), Copy Style and Paste
+ * Style (1.37), and Apply Look to Every… on this page or the site (2.27); and Delete.
  * The element is selected before it opens, so each item acts on it.
  */
 export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenuProps) {
   const registry = useCommandRegistry();
-  // Rename opens its dialog as the other menus open theirs: once the menu has closed.
-  const renameDialog = useMenuDialog<() => void>((rename) => rename());
+  // Rename and Style this… open their dialogs as the other menus open theirs: once the menu has
+  // closed.
+  const menuDialog = useMenuDialog<() => void>((open) => open());
   const duplicate = useCommand(ELEMENT_MENU_COMMANDS.duplicate);
   const save = useCommand(ELEMENT_MENU_COMMANDS.saveShared);
   const detach = useCommand(ELEMENT_MENU_COMMANDS.detachShared);
@@ -80,7 +83,8 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
   const pasteStyle = useCommand(ELEMENT_MENU_COMMANDS.pasteStyle);
   const applyLookOnPage = useCommand(ELEMENT_MENU_COMMANDS.applyLookOnPage);
   const applyLookOnSite = useCommand(ELEMENT_MENU_COMMANDS.applyLookOnSite);
-  const style = [copyStyle, pasteStyle, applyLookOnPage, applyLookOnSite];
+  const styleThis = useCommand(ELEMENT_MENU_COMMANDS.styleThis);
+  const style = [styleThis, copyStyle, pasteStyle, applyLookOnPage, applyLookOnSite];
   // A linked copy can be detached; anything else can be saved, if it is a section.
   const shared = detach !== undefined && detach.enabled !== false ? detach : save;
 
@@ -119,7 +123,7 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         aria-label={t("elementMenu.label")}
         aria-labelledby={undefined}
         onCloseAutoFocus={(event) => {
-          renameDialog.onCloseAutoFocus(event);
+          menuDialog.onCloseAutoFocus(event);
           if (event.defaultPrevented) return;
           event.preventDefault();
           onCloseFocus?.();
@@ -128,7 +132,7 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         <DropdownMenuItem
           disabled={onRename === undefined}
           onSelect={() => {
-            if (onRename !== undefined) renameDialog.choose(onRename);
+            if (onRename !== undefined) menuDialog.choose(onRename);
           }}
         >
           {t("layers.rename")}
@@ -143,6 +147,14 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         {item(paste)}
         {item(pasteLinked)}
         {style.every((command) => command === undefined) ? null : <DropdownMenuSeparator />}
+        {styleThis === undefined ? null : (
+          <DropdownMenuItem
+            disabled={styleThis.enabled === false}
+            onSelect={() => menuDialog.choose(() => void registry.run(styleThis.id))}
+          >
+            {styleThis.label}
+          </DropdownMenuItem>
+        )}
         {item(copyStyle)}
         {item(pasteStyle)}
         {item(applyLookOnPage)}

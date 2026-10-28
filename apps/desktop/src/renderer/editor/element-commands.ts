@@ -1,5 +1,6 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import { similarTo, toggleSelectedHidden } from "./bulk-layers.js";
 import type { EditorSession } from "./editor-session.js";
@@ -9,7 +10,8 @@ import { splitText } from "./split-text.js";
 /**
  * *Hide or show* for the selected element (F-ED-27: Mod + /) in the Edit menu and the command
  * box, and what the canvas's quick actions ask of the app (F-ED-25): hiding or showing an element,
- * and the image picker for *Edit* on an image (`pickImage`). Hiding is Layers' own step ("Hid
+ * the image picker for *Edit* on an image (`pickImage`), and *Style this ‹kind›…* (3.13a), the
+ * command of that name, for the element the bar is on, which is the one selected. Hiding is Layers' own step ("Hid
  * Heading"), so it reads the same wherever it is done, and only a layer can be hidden: not an
  * element of the shared Header or Footer, nor one inside a linked copy. Content mode's lock (M3)
  * turns it off. *Rename…* (F2, 1.30) asks for a layer's name (`rename`), in Content mode too: names
@@ -90,6 +92,7 @@ export function registerElementCommands(
   });
   const stopRequests = engine.onElementRequest((request) => {
     if (request.kind === "pickImage") pickImage(request.nodeId);
+    else if (request.kind === "style") void registry.run(COMMAND_IDS.styleThis);
     else hide(request.nodeId);
   });
   // Alt + Enter in rich text (F-ED-27): adding an element changes the layout, which Content mode

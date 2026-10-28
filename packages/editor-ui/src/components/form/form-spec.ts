@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { FieldSpec } from "../edit/field-spec.js";
 
 /** A form's values by field name, as the person edits them: text as typed, lists with ids. */
@@ -73,4 +74,10 @@ export type FormSpec<V extends FormValues, Out> = {
    * they fix them.
    */
   readonly validateOn?: "change" | "save";
+  /**
+   * What the form shows after a field besides it, by the field's name, from the values as typed:
+   * Page Settings' search result under its title and description (3.16). Drawn in the form only;
+   * a part of Settings (`combineForms`) has none.
+   */
+  readonly after?: (values: V) => Readonly<Partial<Record<string, ReactNode>>>;
 };

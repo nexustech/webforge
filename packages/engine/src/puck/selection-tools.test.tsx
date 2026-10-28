@@ -6,7 +6,12 @@ import {
   SHARED_COPY_TYPE,
   type SharedSectionId,
 } from "@webforge/model";
-import { type ComponentLibrary, slotComponent, textValue } from "@webforge/site-components";
+import {
+  APPEARANCE_FIELDS,
+  type ComponentLibrary,
+  slotComponent,
+  textValue,
+} from "@webforge/site-components";
 import { act } from "react";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CanvasEngine, ElementRequest } from "../canvas-engine.js";
@@ -40,7 +45,11 @@ const library: ComponentLibrary = {
     },
     Heading: {
       label: "Heading",
-      fields: { text: { kind: "text", label: "Text", inline: true } },
+      // A look to style, as every Heading has (3.13a).
+      fields: {
+        text: { kind: "text", label: "Text", inline: true },
+        lookShadow: APPEARANCE_FIELDS.lookShadow,
+      },
       defaults: { text: "Heading" },
       render: ({ values }) => <p className="t-heading">{textValue(values.text)}</p>,
     },
@@ -217,6 +226,8 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => 
       "plaintext-only",
     );
     await act(async () => button("Hide")?.click());
+    // Style this ‹kind›… for an element with a look (3.13a).
+    await act(async () => button("Style")?.click());
 
     await select("picture");
     await act(async () => button("Edit")?.click());
@@ -226,6 +237,7 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => 
 
     expect(requests).toEqual([
       { kind: "toggleHidden", nodeId: "first" },
+      { kind: "style", nodeId: "first" },
       { kind: "pickImage", nodeId: "picture" },
     ]);
   });

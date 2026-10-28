@@ -279,4 +279,29 @@ export const theme = {
   "theme.own.keepFailed":
     "The theme '{name}' couldn't be saved in My themes. The site keeps it, and it's saved there with your next change.",
   "theme.own.removeFailed": "The theme couldn't be removed from My themes. Try again.",
+  // Style this ‹kind›… (3.13a, CT-2): the selected item's Appearance, previewed, and where it applies.
+  "style.command": "Style This {item}…",
+  // The selected item, named so when it has no kind to name.
+  "style.item": "item",
+  "style.command.any": "Style This…",
+  "style.title": "Style this {item}",
+  "style.description":
+    "Changes show on the page as you make them. Choose where they apply, then select Apply.",
+  "style.preview": "Preview",
+  "style.scope": "Where it applies",
+  "style.scope.this": "This {item} only",
+  "style.scope.page": "Every {item} on this page",
+  "style.scope.site": "Every {item} on the site",
+  "style.scope.theme": "Make it the theme's look for {item}",
+  "style.scope.noOthers": "No others",
+  "style.scope.others.one": "1 other",
+  "style.scope.others.other": "{count} others",
+  "style.scope.theme.hint":
+    "Every {item} without a look of its own follows the theme, on every page.",
+  "style.apply": "Apply",
+  "style.cancel": "Cancel",
+  "style.history.this": "Styled {item}",
+  "style.history.page": "Styled every {item} on this page",
+  "style.history.site": "Styled every {item} on the site",
+  "style.history.theme": "Made the theme's look for {item}",
 } as const;

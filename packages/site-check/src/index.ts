@@ -12,8 +12,10 @@ export type {
   CheckMode,
   CheckReport,
   CheckRule,
+  ContactField,
   Finding,
   FindingPlace,
   RuleResult,
+  SearchGuide,
   SiteCodePart,
 } from "./types.js";

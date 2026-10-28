@@ -4,7 +4,11 @@ import type { NodeDoc, SharedSectionId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { createKindPreviews, createSectionPreviews } from "./section-preview.js";
+import {
+  createItemPreviews,
+  createKindPreviews,
+  createSectionPreviews,
+} from "./section-preview.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -149,5 +153,34 @@ describe("createKindPreviews (3.12, CT-1)", () => {
 
     expect(await shown(previews("Nothing"))).toBeNull();
     expect(compileCss).not.toHaveBeenCalled();
+  });
+});
+
+describe("createItemPreviews (3.13a)", () => {
+  it("draws the item as it is, at each device's width, in a frame that runs no scripts", async () => {
+    const { compileCss } = setUp();
+    const previews = createItemPreviews({ library: siteLibrary, theme: () => theme, compileCss });
+    const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
+
+    const { container, rerender } = render(<>{previews(button, "mobile")}</>);
+    await act(async () => undefined);
+    const frame = () => container.querySelector("iframe");
+
+    expect(frame()?.getAttribute("sandbox")).toBe("allow-same-origin");
+    expect(frame()?.style.width).toBe("375px");
+    const page = frame()?.getAttribute("srcdoc") ?? "";
+    expect(page).toContain("Book now");
+    expect(page).toContain(".wf-hero{color:red}");
+    // Its own font faces: a frame is a document of its own.
+    expect(page).toContain("@font-face");
+    expect(page).toContain(`data-theme="${theme.preset}"`);
+
+    // Drawn again as it changes.
+    rerender(
+      <>{previews({ ...button, props: { ...button.props, label: "Call us" } }, "mobile")}</>,
+    );
+    await act(async () => undefined);
+    expect(frame()?.getAttribute("srcdoc")).toContain("Call us");
+    expect(compileCss).toHaveBeenCalledTimes(2);
   });
 });

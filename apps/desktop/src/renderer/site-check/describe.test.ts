@@ -85,6 +85,12 @@ describe("describePlace", () => {
     ).toBe("Brand on Surface, in reversed sections");
     expect(name(at({ kind: "address" }))).toBe("Site Settings › Web address");
     expect(name(at({ kind: "code", part: "css" }))).toBe("Custom Code › Stylesheet");
+    // Being found (3.17).
+    expect(name(at({ kind: "contact", field: "openingHours" }))).toBe(
+      "Site Settings › Opening hours",
+    );
+    expect(name(at({ kind: "search" }))).toBe("Site Settings › Search engines");
+    expect(name(at({ kind: "guide", guide: "searchConsole" }))).toBe("Open Google Search Console");
   });
 });
 
@@ -103,6 +109,19 @@ describe("describeDetail", () => {
     // One that can't be allowed, as Settings take https:// only.
     expect(describeDetail(at(place, { url: "http://cdn.example.com/a.js", kind: "script" }))).toBe(
       "http://cdn.example.com/a.js: change it to https://, or remove it",
+    );
+  });
+
+  it("gives a page's main headings, and the page it shares a title or description with (3.17)", () => {
+    const place = { kind: "page", pageId: "page-about" as PageId } as const;
+    expect(describeDetail(at(place, { headings: 0 }))).toBe(
+      "No main heading: add a large Heading or a Hero",
+    );
+    expect(describeDetail(at(place, { headings: 3 }))).toBe(
+      "3 main headings: keep one large Heading or Hero",
+    );
+    expect(describeDetail(at(place, { sameAs: "menu/cakes.html" }))).toBe(
+      "The same as menu/cakes.html",
     );
   });
 });

@@ -193,11 +193,11 @@ export type FieldDrag = {
 
 /**
  * What the selected element's quick actions ask the app to do (F-ED-25), since the app owns it:
- * hide or show the element (as Layers does), or open the image picker for its image (*Edit* on an
- * element with an image and no text).
+ * hide or show the element (as Layers does), open the image picker for its image (*Edit* on an
+ * element with an image and no text), or open *Style this ‹kind›…* for it (3.13a).
  */
 export type ElementRequest = {
-  readonly kind: "toggleHidden" | "pickImage";
+  readonly kind: "toggleHidden" | "pickImage" | "style";
   readonly nodeId: string;
 };
 

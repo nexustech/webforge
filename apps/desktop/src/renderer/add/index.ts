@@ -3,4 +3,8 @@
  * here is the area's own.
  */
 export { type AddTarget, addTarget, insertAt } from "./add-items.js";
-export { createKindPreviews, createSectionPreviews } from "./section-preview.js";
+export {
+  createItemPreviews,
+  createKindPreviews,
+  createSectionPreviews,
+} from "./section-preview.js";
