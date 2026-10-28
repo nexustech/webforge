@@ -173,6 +173,8 @@ export type EditPanelProps = {
   readonly styleAction?: { readonly label: string; readonly onSelect: () => void } | undefined;
   /** Leaves the element's name out: what holds the panel names it (*Style this Feature…*, 3.13a). */
   readonly headingHidden?: boolean | undefined;
+  /** Drawn after the Advanced tab's fields: the item's CSS, read only (3.14). */
+  readonly advancedFooter?: ReactNode | undefined;
 };
 
 /**
@@ -826,6 +828,7 @@ export function EditPanel({
   itemKey,
   styleAction,
   headingHidden = false,
+  advancedFooter,
 }: EditPanelProps) {
   const idPrefix = useId();
   // The option group copied last (SP-7): kept while other elements are selected, to paste there.
@@ -886,7 +889,12 @@ export function EditPanel({
       onResetToDefault([name]);
     }
   };
-  const list = (group: FieldGroup, groupFields: readonly EditPanelField[], top?: ReactNode) => (
+  const list = (
+    group: FieldGroup,
+    groupFields: readonly EditPanelField[],
+    top?: ReactNode,
+    bottom?: ReactNode,
+  ) => (
     <TabsContent
       value={group}
       className="overflow-auto"
@@ -913,6 +921,7 @@ export function EditPanel({
         {...(groupActions === undefined ? {} : { groupActions })}
         {...(onReset === undefined ? {} : { onReset })}
       />
+      {bottom}
     </TabsContent>
   );
   return (
@@ -981,7 +990,9 @@ export function EditPanel({
                   </div>
                 ),
               )}
-          {advanced && !contentOnly && !single ? list("advanced", advancedFields) : null}
+          {advanced && !contentOnly && !single
+            ? list("advanced", advancedFields, undefined, advancedFooter)
+            : null}
         </Tabs>
       </div>
     </FieldRenderersProvider>
