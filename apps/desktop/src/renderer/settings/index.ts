@@ -6,9 +6,3 @@
 export { registerAppSettings } from "./app-settings.js";
 export { SettingsDialog } from "./SettingsDialog.js";
 export { SettingsHost } from "./SettingsHost.js";
-export {
-  createSettingsRegistry,
-  type OpenSettings,
-  type SettingsRegistry,
-  settingsPart,
-} from "./settings-registry.js";

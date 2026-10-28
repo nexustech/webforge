@@ -23,8 +23,9 @@ import {
   themePreset,
 } from "@webforge/themes";
 import { PaletteIcon } from "lucide-react";
-import { useEffect } from "react";
-import type { StoreApi } from "zustand/vanilla";
+import { useEffect, useRef } from "react";
+import { useStore } from "zustand";
+import { createStore, type StoreApi } from "zustand/vanilla";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
@@ -211,7 +212,15 @@ export type ThemePanelProps = {
    * theme, which is read-only. Without them, a built-in theme changes in place.
    */
   readonly ownThemes?: OwnThemes | undefined;
+  /**
+   * A field to reveal (CT-3): scrolled to and focused once drawn, then cleared. The Edit panel's
+   * *Theme's (Corners: Medium)* asks for its token's.
+   */
+  readonly reveal?: StoreApi<{ readonly field?: string | undefined }> | undefined;
 };
+
+/** No field to reveal: the tab drawn without a registration's requests. */
+const NO_REVEAL = createStore<{ readonly field?: string | undefined }>()(() => ({}));
 
 /**
  * The Theme tab (2.3a, F-DS-2): the site's theme as the Edit panel's rows. Its preset; its colours
@@ -221,8 +230,17 @@ export type ThemePanelProps = {
  * person's own themes are listed first; the first change to a built-in one saves their own version
  * of it, by a name they choose (2.23, PH2-17).
  */
-export function ThemePanel({ session, siteWide, studio, ownThemes }: ThemePanelProps) {
+export function ThemePanel({ session, siteWide, studio, ownThemes, reveal }: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);
+  const root = useRef<HTMLDivElement>(null);
+  const field = useStore(reveal ?? NO_REVEAL, (state) => state.field);
+  useEffect(() => {
+    if (field === undefined) return;
+    const row = root.current?.querySelector<HTMLElement>(`[data-field="${CSS.escape(field)}"]`);
+    row?.scrollIntoView({ block: "center" });
+    row?.querySelector<HTMLElement>("input, select, button, [tabindex]")?.focus();
+    reveal?.setState({ field: undefined });
+  }, [field, reveal]);
   const own = useOwnThemeList(ownThemes, theme);
   useEffect(() => {
     void ownThemes?.refresh();
@@ -259,7 +277,7 @@ export function ThemePanel({ session, siteWide, studio, ownThemes }: ThemePanelP
   };
   return (
     <FieldRenderersProvider renderers={RENDERERS}>
-      <div className="flex h-full flex-col">
+      <div ref={root} className="flex h-full flex-col">
         {studio === undefined ? null : (
           <div className="px-3 pt-2">
             <Button

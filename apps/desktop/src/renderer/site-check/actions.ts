@@ -14,8 +14,8 @@ import {
 } from "@webforge/model";
 import type { Finding, FindingPlace } from "@webforge/site-check";
 import type { EditorSession } from "../editor/editor-session.js";
+import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { reportFailure } from "../log.js";
-import type { SettingsRegistry } from "../settings/index.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { THEME_PANEL_ID } from "../theme/index.js";
 

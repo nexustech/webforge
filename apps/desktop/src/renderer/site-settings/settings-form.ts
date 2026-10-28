@@ -60,6 +60,7 @@ export type SettingsForm = {
   readonly openingHoursNote: string;
   readonly allowIndexing: boolean;
   readonly includeSitemap: boolean;
+  readonly readableByAi: boolean;
   readonly measurementId: string;
   readonly consentBanner: boolean;
   readonly consentMessage: string;
@@ -94,6 +95,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     openingHoursNote: contact.openingHoursNote ?? "",
     allowIndexing: search.allowIndexing,
     includeSitemap: search.includeSitemap,
+    readableByAi: search.readableByAi === true,
     measurementId: analytics.measurementId ?? "",
     consentBanner: analytics.consentBanner,
     consentMessage: analytics.consentMessage ?? "",
@@ -175,7 +177,14 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       })),
       ...optional("openingHoursNote", form.openingHoursNote),
     },
-    search: { allowIndexing: form.allowIndexing, includeSitemap: form.includeSitemap },
+    search: {
+      allowIndexing: form.allowIndexing,
+      includeSitemap: form.includeSitemap,
+      // Absent means off (F-EX-5): a site from before it keeps it absent until it's turned on.
+      ...(form.readableByAi || previous.search.readableByAi !== undefined
+        ? { readableByAi: form.readableByAi }
+        : {}),
+    },
     analytics: {
       ...optional("measurementId", form.measurementId.toUpperCase()),
       consentBanner: form.consentBanner,

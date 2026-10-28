@@ -14,6 +14,13 @@ describe("t", () => {
     expect(t("app.name")).toBe("Webforge");
   });
 
+  it("fills in the app's name for {appName}, which no caller passes (#450)", () => {
+    expect(t("command.about")).toBe("About Webforge");
+    expect(t("storage.recovery.detail", { when: "today" })).toMatch(/^Webforge keeps backups/);
+    expect(template("site.fileType")).toBe("Webforge site");
+    expectTypeOf<ParamsOf<"command.about">>().toEqualTypeOf<never>();
+  });
+
   it("substitutes placeholders when params are given", () => {
     expect(t("app.version", { version: "1.2.0" })).toBe("Version 1.2.0");
   });

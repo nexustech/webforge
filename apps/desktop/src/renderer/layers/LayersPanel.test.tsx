@@ -1,18 +1,11 @@
 // @vitest-environment happy-dom
-import {
-  act,
-  cleanup,
-  createEvent,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Layer } from "../editor/layers.js";
 import { isMac } from "../shell/commands.js";
+import { dragRow, pickUp } from "../testing/row-drag.js";
 import {
   dropIndex,
   LayersPanel,
@@ -119,7 +112,7 @@ describe("LayersPanel (F-ED-12)", () => {
     const { actions } = setUp("a", false, true);
     const rows = screen.getAllByRole("treeitem");
 
-    expect(rows.every((row) => row.getAttribute("draggable") === "false")).toBe(true);
+    expect(rows.every((row) => row.getAttribute("data-row-draggable") === "false")).toBe(true);
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
     for (const hide of screen.getAllByRole("button", { name: /^Hide/, hidden: true })) {
       fireEvent.click(hide);
@@ -249,13 +242,8 @@ describe("LayersPanel (F-ED-12)", () => {
   it("moves a dragged layer among its siblings only", () => {
     const { actions } = setUp();
     const rows = screen.getAllByRole("treeitem");
-    const drag = (from: number, to: number) => {
-      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
-      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
-      fireEvent.dragOver(rows[to] as HTMLElement, { dataTransfer });
-      fireEvent.drop(rows[to] as HTMLElement, { dataTransfer });
-      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
-    };
+    const drag = (from: number, to: number) =>
+      dragRow(rows[from] as HTMLElement, rows[to] as HTMLElement);
 
     // happy-dom lays nothing out, so every drop lands before the row it is on.
     drag(1, 3);
@@ -282,18 +270,16 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(canvas.outline.mock.calls).toEqual([["b"], [null]]);
 
     // "Hours" over its sibling a: before it, as happy-dom lays nothing out.
-    const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
-    fireEvent.dragStart(rows[2] as HTMLElement, { dataTransfer });
-    fireEvent.dragOver(rows[1] as HTMLElement, { dataTransfer });
+    const drag = pickUp(rows[2] as HTMLElement, rows[1] as HTMLElement);
     expect(canvas.markDrop).toHaveBeenLastCalledWith({
       nodeId: "a",
       place: "before",
       name: "Hours",
     });
     // Over a row it can't go to: no mark.
-    fireEvent.dragOver(rows[4] as HTMLElement, { dataTransfer });
+    drag.over(rows[4] as HTMLElement);
     expect(canvas.markDrop).toHaveBeenLastCalledWith(null);
-    fireEvent.dragEnd(rows[2] as HTMLElement, { dataTransfer });
+    drag.cancel();
 
     view.unmount();
     expect(canvas.outline).toHaveBeenLastCalledWith(null);
@@ -325,20 +311,9 @@ describe("LayersPanel (F-ED-12)", () => {
       from: number,
       to: number,
       keys: { ctrlKey?: boolean; metaKey?: boolean; shiftKey?: boolean },
-    ) => {
-      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
-      const target = rows[to] as HTMLElement;
-      // happy-dom's drag events don't take the keys from their init: they are set on the event.
-      const withKeys = (event: Event) => {
-        for (const [key, value] of Object.entries(keys))
-          Object.defineProperty(event, key, { value });
-        return event;
-      };
-      fireEvent.dragStart(rows[from] as HTMLElement, { dataTransfer });
-      fireEvent(target, withKeys(createEvent.dragOver(target, { dataTransfer })));
-      fireEvent(target, withKeys(createEvent.drop(target, { dataTransfer })));
-      fireEvent.dragEnd(rows[from] as HTMLElement, { dataTransfer });
-    };
+    ) =>
+      // The keys held from before the press, as the browser's own drag couldn't take them (#271).
+      dragRow(rows[from] as HTMLElement, rows[to] as HTMLElement, keys);
 
     // happy-dom lays nothing out: each drop lands before its row, counted with the original there.
     drag(1, 3, { ctrlKey: true });
@@ -359,7 +334,7 @@ describe("LayersPanel (F-ED-12)", () => {
     setUp("a", true, false, ["b"]);
     const draggable = screen
       .getAllByRole("treeitem")
-      .map((row) => [row.getAttribute("data-layer"), row.getAttribute("draggable")]);
+      .map((row) => [row.getAttribute("data-layer"), row.getAttribute("data-row-draggable")]);
 
     expect(draggable).toEqual([
       ["s1", "true"],
@@ -509,9 +484,9 @@ describe("LayersPanel (F-ED-12)", () => {
     it("marks the rows a dragged layer can't go to, before anything is dropped", () => {
       const { actions } = setUp();
       const rows = screen.getAllByRole("treeitem");
-      const dataTransfer = { setData: vi.fn(), effectAllowed: "" };
 
-      fireEvent.dragStart(rows[1] as HTMLElement, { dataTransfer });
+      // Picked up over itself, where it changes nothing.
+      const drag = pickUp(rows[1] as HTMLElement, rows[1] as HTMLElement);
 
       expect(screen.getAllByRole("treeitem").map((row) => row.getAttribute("data-drop"))).toEqual([
         "not-allowed",
@@ -520,16 +495,13 @@ describe("LayersPanel (F-ED-12)", () => {
         null,
         "not-allowed",
       ]);
-      // Over one of them, it isn't a drop target (the event isn't taken), and the row and the
-      // panel say so: browsers show no tooltips in a drag.
-      const over = fireEvent.dragOver(rows[4] as HTMLElement, { dataTransfer });
-      expect(over).toBe(true);
+      // Over one of them, the row and the panel say it can't go there.
+      drag.over(rows[4] as HTMLElement);
       expect(screen.getAllByRole("treeitem")[4]?.className).toContain("var(--destructive)");
       expect(screen.getByRole("status").textContent).toBe(
         "Heading can only move among its own section's elements",
       );
-      fireEvent.drop(rows[4] as HTMLElement, { dataTransfer });
-      fireEvent.dragEnd(rows[1] as HTMLElement, { dataTransfer });
+      drag.drop(rows[4] as HTMLElement);
 
       expect(actions.move).not.toHaveBeenCalled();
       expect(screen.getAllByRole("treeitem").some((row) => row.hasAttribute("data-drop"))).toBe(

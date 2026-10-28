@@ -30,10 +30,15 @@ export type ClipboardWriteResult = z.infer<typeof writeResultSchema>;
 /**
  * Outcome of reading the clipboard for a paste. Copied images the open site doesn't have yet are
  * stored in its file first, so the renderer only adds their Media items, in the paste's undo step.
- * An image whose bytes are no longer kept is left out of `media`; the element then shows none.
+ * An image whose bytes are no longer kept (Webforge has quit since the copy, R13d) is left out of
+ * `media`, and the element then shows none; `missingImages` counts them, for the paste to say so.
  */
 const readResultSchema = z.discriminatedUnion("status", [
-  z.strictObject({ status: z.literal("elements"), elements: copiedElementsSchema }),
+  z.strictObject({
+    status: z.literal("elements"),
+    elements: copiedElementsSchema,
+    missingImages: z.int().min(0),
+  }),
   /**
    * Image files copied in the file manager, or a copied image (a screenshot), imported into the
    * open site's file as for a drop: the renderer adds the items to Media and places them, as one

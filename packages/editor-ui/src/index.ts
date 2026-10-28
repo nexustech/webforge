@@ -7,6 +7,7 @@ export type {
   EditPanelField,
   EditPanelProps,
   FieldGroup,
+  FieldSource,
   GroupAction,
   OptionGroup,
 } from "./components/edit/edit-panel.js";

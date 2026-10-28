@@ -12,7 +12,7 @@ import {
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { applyAnchor, asLinkFieldChange } from "./link-change.js";
+import { applyAnchor, asLinkFieldChange } from "../editor/link-change.js";
 import {
   createLinkTargets,
   describeLink,

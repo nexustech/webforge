@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { tempDirFactory } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, tempDirFactory } from "@webforge/test-utils/vitest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { writeSiteFolder } from "./write.js";
 
@@ -54,18 +54,22 @@ describe("writeSiteFolder rollback", () => {
     expect(readdirSync(parent)).toEqual(["my-site"]);
   });
 
-  it("gives up after retrying a folder Windows keeps locked", async () => {
-    const parent = tempDir();
-    const destination = join(parent, "my-site");
-    await writeSiteFolder(site("v1"), destination);
-    failures.matching = /my-site -> .*webforge-old-/;
-    failures.code = "EBUSY";
+  it(
+    "gives up after retrying a folder Windows keeps locked",
+    async () => {
+      const parent = tempDir();
+      const destination = join(parent, "my-site");
+      await writeSiteFolder(site("v1"), destination);
+      failures.matching = /my-site -> .*webforge-old-/;
+      failures.code = "EBUSY";
 
-    await expect(writeSiteFolder(site("v2"), destination)).rejects.toMatchObject({
-      code: "write-failed",
-    });
-    expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
-  }, 10_000);
+      await expect(writeSiteFolder(site("v2"), destination)).rejects.toMatchObject({
+        code: "write-failed",
+      });
+      expect(readFileSync(join(destination, "index.html"), "utf8")).toBe("<p>v1</p>");
+    },
+    scaledTestTimeout(10_000),
+  );
 
   it("reports success when only deleting the old copy fails", async () => {
     const parent = tempDir();

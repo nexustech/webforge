@@ -10,7 +10,6 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import type { ComponentDef, ComponentLibrary, FieldDef } from "@webforge/site-components";
-import { type CopySelection, copySelection, updateSectionField } from "../shared-sections/index.js";
 import { updateField } from "./apply-patch.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
 import {
@@ -19,6 +18,7 @@ import {
   shownLayout,
   updateSharedField,
 } from "./shared-layout.js";
+import { type CopySelection, copySelection, updateSectionField } from "./shared-sections.js";
 
 /**
  * The element selected on the canvas, and how to change its fields: the Edit panel (1.14) and the
@@ -85,8 +85,10 @@ export function fieldTarget(
   }
   const id = nodeId;
 
+  // The theme's look for the element's kind (3.12, CT-1): what a field it doesn't set takes.
+  const look = site.theme.looks?.[node.type] as Readonly<Record<string, unknown>> | undefined;
   const storedOr = (name: string, stored: unknown) => {
-    const value = stored ?? component.defaults[name];
+    const value = stored ?? look?.[name] ?? component.defaults[name];
     return component.fields[name]?.kind === "box" ? responsiveBoxOf(value) : value;
   };
   const editOf = (kind: EngineEdit["kind"], field: string): EngineEdit => ({

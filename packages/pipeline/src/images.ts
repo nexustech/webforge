@@ -327,12 +327,14 @@ export async function processImage(
   };
 }
 
-/** Rewrites an image's URLs for a page `depth` folders below the site root (`../` per level). */
-export function imageForDepth(image: ResolvedImage, depth: number): ResolvedImage {
-  if (depth === 0) {
+/**
+ * Rewrites an image's URLs for a page `prefix` away from the site root: `../` per folder level, or
+ * the root itself for the "Page not found" page (`/` or the web address, F-ED-20).
+ */
+export function imageAt(image: ResolvedImage, prefix: string): ResolvedImage {
+  if (prefix === "") {
     return image;
   }
-  const prefix = "../".repeat(depth);
   const relocate = (srcset: string) =>
     srcset
       .split(", ")

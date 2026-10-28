@@ -1,10 +1,11 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { type ElectronApplication, expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, type WebforgeApp } from "./launch.js";
 
 // Local crash reports (F-SITE-7): a crash or uncaught error leaves a JSON report in the user-data
 // folder, with no site content or paths, and nothing is sent anywhere.
@@ -13,7 +14,7 @@ const SECRET = "Secret Bakery 4711";
 
 let dir: string;
 let userData: string;
-let app: ElectronApplication | undefined;
+let app: WebforgeApp | undefined;
 
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-crash-"));
@@ -23,11 +24,11 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close().catch(() => undefined);
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 /** Starts Webforge with a site whose name and text are {@link SECRET}. */
-async function openSecretSite(): Promise<ElectronApplication> {
+async function openSecretSite(): Promise<WebforgeApp> {
   const sitePath = join(dir, `${SECRET}.wforge`);
   const store = ProjectStore.create(sitePath, { name: SECRET });
   store.saveSite(

@@ -1,11 +1,12 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { expectWorkWithin, measureWork, OPEN_WAIT, openBudget } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
@@ -15,7 +16,7 @@ const STARTER_HEADING = "Welcome";
 
 let dir: string;
 let userData: string;
-let app: ElectronApplication | undefined;
+let app: WebforgeApp | undefined;
 
 test.beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), "webforge-start-"));
@@ -25,7 +26,7 @@ test.beforeEach(() => {
 test.afterEach(async () => {
   await app?.close();
   app = undefined;
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 const canvas = (page: Page) => page.frameLocator(".editor__canvas iframe");
@@ -45,7 +46,8 @@ async function startWithoutSite(): Promise<Page> {
 
 /** Closes the window as the user does, which saves and captures the Recent thumbnail. */
 async function closeWindow(): Promise<void> {
-  const closed = app?.waitForEvent("close");
+  // Once it has closed, not once Electron has torn its process down, which can take a minute (#534).
+  const closed = app?.untilClosed();
   await app?.evaluate(({ BrowserWindow }) => {
     BrowserWindow.getAllWindows()[0]?.close();
   });
