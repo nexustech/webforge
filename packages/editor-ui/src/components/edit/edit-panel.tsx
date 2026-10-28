@@ -3,11 +3,13 @@ import {
   ChevronRightIcon,
   ClipboardPasteIcon,
   CopyIcon,
+  PaletteIcon,
   RotateCcwIcon,
   TriangleAlertIcon,
 } from "lucide-react";
 import { type KeyboardEvent, type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
+import { Button } from "../ui/button.js";
 import {
   ContextMenu,
   ContextMenuContent,
@@ -164,6 +166,13 @@ export type EditPanelProps = {
    * nothing typed for one (an unfinished anchor) shows up on the next.
    */
   readonly itemKey?: string | undefined;
+  /**
+   * A button at the top of the Style tab that opens the element's fuller styling: *Style this
+   * Feature…* (3.13a). None without it.
+   */
+  readonly styleAction?: { readonly label: string; readonly onSelect: () => void } | undefined;
+  /** Leaves the element's name out: what holds the panel names it (*Style this Feature…*, 3.13a). */
+  readonly headingHidden?: boolean | undefined;
 };
 
 /**
@@ -815,6 +824,8 @@ export function EditPanel({
   contentOnly = false,
   single = false,
   itemKey,
+  styleAction,
+  headingHidden = false,
 }: EditPanelProps) {
   const idPrefix = useId();
   // The option group copied last (SP-7): kept while other elements are selected, to paste there.
@@ -875,12 +886,13 @@ export function EditPanel({
       onResetToDefault([name]);
     }
   };
-  const list = (group: FieldGroup, groupFields: readonly EditPanelField[]) => (
+  const list = (group: FieldGroup, groupFields: readonly EditPanelField[], top?: ReactNode) => (
     <TabsContent
       value={group}
       className="overflow-auto"
       onKeyDown={(event) => resetFromKeys(event, groupFields)}
     >
+      {top}
       <FieldList
         key={itemKey}
         idPrefix={`${idPrefix}${group}`}
@@ -906,7 +918,9 @@ export function EditPanel({
   return (
     <FieldRenderersProvider renderers={renderers}>
       <div className="flex h-full flex-col">
-        <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
+        {headingHidden ? null : (
+          <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
+        )}
         <div className="px-3 pt-2">
           <input
             type="search"
@@ -948,7 +962,25 @@ export function EditPanel({
             </TabsList>
           )}
           {list("content", content)}
-          {contentOnly || single ? null : list("style", style)}
+          {contentOnly || single
+            ? null
+            : list(
+                "style",
+                style,
+                styleAction === undefined ? undefined : (
+                  <div className="px-3 pt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={styleAction.onSelect}
+                    >
+                      <PaletteIcon aria-hidden />
+                      {styleAction.label}
+                    </Button>
+                  </div>
+                ),
+              )}
           {advanced && !contentOnly && !single ? list("advanced", advancedFields) : null}
         </Tabs>
       </div>
