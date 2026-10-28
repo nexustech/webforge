@@ -1,15 +1,10 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import type { Page } from "@playwright/test";
-import { siteToSnapshot } from "@webforge/model";
-import { buildSite } from "@webforge/pipeline";
-import { loadNodeResources } from "@webforge/pipeline/node";
-import { siteLibrary } from "@webforge/site-components";
-import { siteFromTemplate } from "@webforge/templates";
 import type { TemplateFolder } from "@webforge/templates/node";
-import { themePreset } from "@webforge/themes";
 import { serveSite } from "../export/served-site.js";
+import { exportTemplate } from "../export/template-export.js";
 
 /** A template built as a site and served: each page's address, by its path in the export. */
 export type BuiltTemplate = { readonly pages: ReadonlyMap<string, string> };
@@ -21,33 +16,15 @@ export type BuiltTemplate = { readonly pages: ReadonlyMap<string, string> };
  * from disk. Removes the folder afterwards.
  */
 export async function withBuiltTemplate(
-  { template, images, imagesDir }: TemplateFolder,
+  folder: TemplateFolder,
   use: (site: BuiltTemplate) => Promise<void>,
 ): Promise<void> {
-  const theme = themePreset(template.site.theme.preset) ?? template.site.theme;
-  const site = siteFromTemplate(template, images, {
-    name: template.site.settings.general.name,
-    theme,
-  });
-  const blobs = new Map(
-    images.map((image) => [image.hash, new Uint8Array(readFileSync(join(imagesDir, image.file)))]),
-  );
-  const built = await buildSite(
-    siteToSnapshot(site, blobs),
-    siteLibrary,
-    await loadNodeResources(),
-  );
   const dir = mkdtempSync(join(tmpdir(), "webforge-template-"));
   try {
-    for (const [path, bytes] of built.files) {
-      mkdirSync(dirname(join(dir, path)), { recursive: true });
-      writeFileSync(join(dir, path), bytes);
-    }
+    const paths = await exportTemplate(folder, dir);
     const served = await serveSite(dir);
     try {
-      const pages = [...built.files.keys()]
-        .filter((path) => path.endsWith(".html"))
-        .map((path): [string, string] => [path, `${served.origin}/${path}`]);
+      const pages = paths.map((path): [string, string] => [path, `${served.origin}/${path}`]);
       await use({ pages: new Map(pages) });
     } finally {
       await served.close();
