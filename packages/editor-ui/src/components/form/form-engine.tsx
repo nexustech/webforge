@@ -1,4 +1,4 @@
-import { type ReactNode, useId, useState } from "react";
+import { Fragment, type ReactNode, useId, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { BoxField } from "../edit/box-field.js";
 import { ChoiceField } from "../edit/choice-field.js";
@@ -84,20 +84,23 @@ export function Form<V extends FormValues, Out>({
     if (first !== undefined && !hasIssue(tab)) setTab(first.id);
   }
 
+  const after = form.spec.after?.(form.values) ?? {};
   const draw = (shown: readonly FormField[]) => (
     <div className="grid gap-3">
       {shown.map((field) => (
-        <FormFieldRow
-          key={field.name}
-          field={field}
-          value={form.values[field.name]}
-          error={issueOf(field, issues)}
-          {...(field.kind === "list"
-            ? { itemErrors: itemIssuesOf(field, itemsOf(form.values[field.name]), issues) }
-            : {})}
-          renderers={renderers}
-          onChange={(value) => form.change(field.name, value)}
-        />
+        <Fragment key={field.name}>
+          <FormFieldRow
+            field={field}
+            value={form.values[field.name]}
+            error={issueOf(field, issues)}
+            {...(field.kind === "list"
+              ? { itemErrors: itemIssuesOf(field, itemsOf(form.values[field.name]), issues) }
+              : {})}
+            renderers={renderers}
+            onChange={(value) => form.change(field.name, value)}
+          />
+          {after[field.name]}
+        </Fragment>
       ))}
     </div>
   );

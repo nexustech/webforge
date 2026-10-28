@@ -40,10 +40,18 @@ export function fakeNetlify() {
       status,
       headers: { "Content-Type": "application/json" },
     });
-  const siteJson = (site: { id: string; name: string }) => ({
+  const siteJson = ({
+    current,
+    ...site
+  }: {
+    id: string;
+    name: string;
+    current: string | null;
+  }) => ({
     ...site,
     ssl_url: `https://${site.name}.netlify.app`,
     url: `http://${site.name}.netlify.app`,
+    published_deploy: current === null ? null : { id: current },
   });
   const deployJson = (d: FakeDeploy) => {
     const site = sites.get(d.site_id);
