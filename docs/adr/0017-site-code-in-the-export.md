@@ -22,10 +22,11 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
 - **The head HTML goes last in every page's `<head>`**, after Webforge's scripts. **The body HTML goes last in its `<body>`**, after the consent banner. Both go in as the person wrote them.
 - **The site's own CSS and JS go out as written, *Minify output* or not**, as Custom Code's scripts and styles already do (3.3).
 - **Classes:**
-  - The words of the site's own code that can be classes go to Tailwind, beside the classes of the pages' markup. That code is each Custom Code element's HTML, the page HTML and `custom.js`.
+  - The words of the site's own code that can be classes go to Tailwind, beside the classes of the pages' markup: every word of each Custom Code element's HTML and of the page HTML, and of `custom.js` only the words in its strings and template literals, where `classList` and `className` take theirs. Its keywords and names (`static`, `table`, `visible`) would make rules for nothing.
   - A word is a run of characters between whitespace, quotes, `<`, `>`, `=` and `;`, as Tailwind's own scanner reads a file. So a class in `class='…'`, an unquoted one, or one that `custom.js` adds compiles too.
   - Tailwind makes CSS only for the words that are classes. A word of text costs nothing unless it is one (`hidden`), which costs a rule.
 - **The snapshot carries the code** (`SiteSnapshot.code`), left out while all four parts are empty, so a site without code builds as before.
+- **The page cache leaves the code out of its key**, since it goes into each page's document after rendering. A change to the site's own CSS renders no page and compiles nothing, as 3.2 asks of the theme's values.
 
 ## Consequences
 - A site without code exports byte for byte as before: no new files, no new lines.
