@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { createSettingsRegistry } from "../settings/index.js";
+import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { panelStory } from "../testing/stories.js";
 import { registerSiteCheckPanel } from "./register-site-check-panel.js";
 

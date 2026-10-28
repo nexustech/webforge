@@ -12,7 +12,7 @@ import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components
 import type { ReactNode } from "react";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import { specOf } from "../../editor/EditPanelHost.js";
-import { valueAt } from "../../editor/responsive-value.js";
+import { isOverridden, valueAt, withValueAt } from "../../editor/responsive-value.js";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey } from "../theme-controls.js";
 import { TokenRow } from "./StudioStyles.js";
 
@@ -40,14 +40,23 @@ function lookKinds(
     if (!lookFieldsOf(def).some((name) => (LOOK_FIELDS as readonly string[]).includes(name))) {
       continue;
     }
-    add(def.place === "section" ? t("theme.components.sections") : (def.category ?? ""), {
-      type,
-      label: def.label,
-    });
+    add(
+      def.place === "section"
+        ? t("theme.components.sections")
+        : (def.category ?? t("theme.components.otherElements")),
+      {
+        type,
+        label: def.label,
+      },
+    );
   }
   add(t("theme.components.sections"), { type: CARD_KIND, label: t("theme.components.card") });
   return [...groups].map(([category, kinds]) => ({ category, kinds }));
 }
+
+/** Whether a look's `value` differs on Tablet or Mobile. */
+const perDevice = (value: unknown) =>
+  isOverridden(value, "tablet") || isOverridden(value, "mobile");
 
 /** The theme's tokens drawn beside a kind's look: the buttons' for Button, the card style. */
 const tokensOf = (type: string): readonly TokenControl[] =>
@@ -121,6 +130,8 @@ export function StudioComponents({
         value,
         ...(field?.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
         ...(look[name] === undefined ? {} : { changed: true }),
+        // A look set per device (from a file, or CT-2's dialog): this page changes Desktop's alone.
+        ...(perDevice(look[name]) ? { help: t("theme.components.perDevice") } : {}),
       },
     ];
   });
@@ -197,7 +208,11 @@ export function StudioComponents({
               single
               itemKey={shown.type}
               fields={fields}
-              onChange={(name, value) => onChange(shown.type, shown.label, { [name]: value })}
+              onChange={(name, value) =>
+                onChange(shown.type, shown.label, {
+                  [name]: withValueAt(look[name], "desktop", value),
+                })
+              }
               onCommit={() => undefined}
               onResetToDefault={(reset) =>
                 onChange(

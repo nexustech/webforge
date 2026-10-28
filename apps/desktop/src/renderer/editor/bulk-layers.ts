@@ -10,16 +10,9 @@ import {
   pastedCopies,
 } from "@webforge/model";
 import { holdsOverfullSlot, overfillsSlots } from "@webforge/site-components";
-import {
-  type Layer,
-  type LayersSession,
-  layerItem,
-  ownId,
-  placeOf,
-  shownLayer,
-} from "../editor/layers.js";
-import { selectedIds } from "../editor/selection.js";
-import { shownLayout } from "../editor/shared-layout.js";
+import { type Layer, type LayersSession, layerItem, ownId, placeOf, shownLayer } from "./layers.js";
+import { selectedIds } from "./selection.js";
+import { shownLayout } from "./shared-layout.js";
 
 /**
  * Move, duplicate, delete and hide for several selected elements at once (1.31, UX-3): each one

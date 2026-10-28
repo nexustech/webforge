@@ -86,6 +86,51 @@ export const OverlayWarning: Story = {
   },
 };
 
+/** A select in the Appearance group, with where its value comes from (CT-3). */
+const appearance = (
+  name: string,
+  label: string,
+  value: string,
+  source: EditPanelField["source"],
+): EditPanelField => ({
+  name,
+  kind: "select",
+  label,
+  group: "style",
+  value,
+  options: [
+    { label: "Theme's", value: "default" },
+    { label: "None", value: "none" },
+    { label: "Large", value: "large" },
+    { label: "Full", value: "full" },
+  ],
+  optionGroup: { id: "appearance", label: "Appearance" },
+  ...(source === undefined ? {} : { source }),
+});
+
+/**
+ * Where each Appearance value comes from (3.12, CT-3): the element's own, here or on the device
+ * shown; a class of its own; its kind's look and the theme's token, each a link that shows it.
+ */
+export const Provenance: Story = {
+  args: {
+    heading: "Button",
+    fields: [
+      appearance("lookCorners", "Corners", "default", {
+        text: "Theme's (Corners: Medium)",
+        onReveal: () => undefined,
+      }),
+      appearance("lookShadow", "Shadow", "large", {
+        text: "Theme's look for Button",
+        onReveal: () => undefined,
+      }),
+      appearance("lookBorder", "Border", "none", { text: "Set here" }),
+      appearance("lookOpacity", "Opacity", "full", { text: "Set on Mobile" }),
+      appearance("lookBackground", "Background", "default", { text: "Class (Advanced)" }),
+    ],
+  },
+};
+
 /** An element with only style fields starts on the Style tab. */
 export const StyleOnly: Story = {
   args: { heading: "Section", fields: heroFields.filter((field) => field.group === "style") },

@@ -4,6 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { OwnTheme, ThemesApi } from "../../../shared/ipc/themes.js";
+import { starterSite } from "../../../shared/starter-site.js";
 import { sessionWith } from "../../testing/fixtures.js";
 import { OwnThemeDialogs } from "../OwnThemeDialogs.js";
 import { createOwnThemes } from "../own-themes.js";
@@ -228,6 +229,27 @@ describe("Theme Studio's Components (3.12, CT-1)", () => {
       "Changed the theme's look for Button",
       "Reset the theme's look for Button",
     ]);
+  });
+
+  it("changes Desktop's value of a look set per device, keeping Tablet's and Mobile's", async () => {
+    const site = starterSite();
+    site.theme.looks = {
+      Button: { lookShadow: { $responsive: { desktop: "large", mobile: "none" } } },
+    };
+    const session = sessionWith(site);
+    const studio = createStudio();
+    studio.setState({ open: true, section: "components", kind: "Button" });
+    render(<ThemeStudio session={session} studio={studio} />);
+    const button = within(screen.getByRole("region", { name: "Button" }));
+
+    expect(button.getByText(/^Set per device/)).toBeDefined();
+    await userEvent
+      .setup({ delay: null })
+      .selectOptions(button.getByRole("combobox", { name: "Shadow" }), "medium");
+
+    expect(session.history.document.getState().theme.looks).toEqual({
+      Button: { lookShadow: { $responsive: { desktop: "medium", mobile: "none" } } },
+    });
   });
 
   it("shows the card style as the Card look", async () => {

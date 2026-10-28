@@ -3,7 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { saveAsSharedSection } from "../shared-sections/index.js";
+import { saveAsSharedSection } from "../editor/shared-sections.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { sessionWith } from "../testing/fixtures.js";
@@ -206,15 +206,19 @@ describe("Apply Look to Every… (2.27, ST-4)", () => {
     expect(lookOf(props(home, "plain"))).toEqual(LOOK);
   });
 
-  it("leaves out an element that already draws the look through its kind's (3.12)", () => {
-    const { session } = setUp((site) => {
+  it("takes values off one that draws its kind's look with its own, so it follows the look (3.12)", async () => {
+    const { session, home, props } = setUp((site) => {
       site.theme.looks = { Button: LOOK };
     });
     session.select("plain");
 
-    // Every other Button draws the theme's look for Buttons, as the plain one does: the styled one
-    // with values of its own that are the look's.
-    expect(lookChange(session, "site")?.targets).toEqual([]);
+    // The styled Button draws the theme's look for Buttons too, but with values of its own, which
+    // a later change to the look wouldn't reach; the others leave it to the look already.
+    expect(lookChange(session, "site")?.targets.map((target) => target.node.props.id)).toEqual([
+      "styled",
+    ]);
+    await applyLookToAll(session, "site", confirmer(true));
+    expect(lookOf(props(home, "styled"))).toEqual({});
   });
 
   it("changes a shared section's element once, which all its copies show, asking first", async () => {

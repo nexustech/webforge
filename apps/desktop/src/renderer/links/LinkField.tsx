@@ -5,9 +5,9 @@ import { linkValue } from "@webforge/site-components";
 import { LinkIcon } from "lucide-react";
 import { useState } from "react";
 import type { EditorSession } from "../editor/editor-session.js";
+import type { LinkFieldChange } from "../editor/link-change.js";
 import { useDocument } from "../editor/use-document.js";
 import { LinkDialog } from "./LinkDialog.js";
-import type { LinkFieldChange } from "./link-change.js";
 import { createLinkTargets, describeLink, type PageTarget } from "./link-targets.js";
 
 /** Props of {@link LinkField}, besides the renderer's own. */
