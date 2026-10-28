@@ -23,13 +23,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { applyLook, lookChange } from "../clipboard/index.js";
 import {
-  deleteSelected,
-  duplicateSelected,
-  moveSelected,
-  similarTo,
-  toggleSelectedHidden,
-} from "../layers/index.js";
-import {
   addMenuItem,
   editMenuLink,
   followPages,
@@ -38,14 +31,14 @@ import {
   renameMenuItem,
   setMenuItemHidden,
 } from "../menu/index.js";
-import {
-  deleteSharedSection,
-  detachCopy,
-  renameSharedSection,
-  saveAsSharedSection,
-  updateSectionField,
-} from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
+import {
+  deleteSelected,
+  duplicateSelected,
+  moveSelected,
+  similarTo,
+  toggleSelectedHidden,
+} from "./bulk-layers.js";
 import {
   connectEngine,
   type EditorSession,
@@ -56,6 +49,13 @@ import {
 import { copyLayer } from "./layers.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
+import {
+  deleteSharedSection,
+  detachCopy,
+  renameSharedSection,
+  saveAsSharedSection,
+  updateSectionField,
+} from "./shared-sections.js";
 
 // Undo invariant (U8) over the editor as wired: canvas edits of every kind on any page, page
 // switches, site settings, the shared layout and the menu editor, interleaved with undo, redo and

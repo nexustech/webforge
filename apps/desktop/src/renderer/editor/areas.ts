@@ -4,9 +4,6 @@ import type { AiApi } from "../../shared/ipc/ai.js";
 import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
-import type { AddItem } from "../add/index.js";
-import type { SettingsRegistry } from "../settings/index.js";
-import type { SharedSectionNaming } from "../shared-sections/index.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -14,11 +11,14 @@ import type { ContextualToolbarRegistry } from "../shell/contextual-toolbars.js"
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
+import type { AddItem } from "./add-item.js";
 import type { CanvasPointer } from "./canvas-pointer.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
 import type { Layer } from "./layers.js";
+import type { SettingsRegistry } from "./settings-registry.js";
+import type { SharedSectionNaming } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
 
 /**

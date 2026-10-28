@@ -4,7 +4,6 @@ import userEvent from "@testing-library/user-event";
 import { copiedNodeId, type NodeDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { saveAsSharedSection } from "../shared-sections/index.js";
 import { CanvasToolbarHost } from "../shell/CanvasToolbarHost.js";
 import { createCanvasView } from "../shell/canvas-view.js";
 import { ContextualToolbarsProvider } from "../shell/contextual-toolbar-context.js";
@@ -13,6 +12,7 @@ import { createPreferencesStore } from "../shell/preferences-store.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { currentPage } from "./editor-session.js";
 import { listToolbar } from "./ListToolbar.js";
+import { saveAsSharedSection } from "./shared-sections.js";
 
 afterEach(cleanup);
 

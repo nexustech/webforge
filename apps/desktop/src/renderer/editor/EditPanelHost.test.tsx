@@ -17,7 +17,6 @@ import { starterSite } from "../../shared/starter-site.js";
 import { classesFieldRenderer } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
-import { saveAsSharedSection } from "../shared-sections/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -27,6 +26,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { placedOverlay } from "./placed-overlay.js";
+import { saveAsSharedSection } from "./shared-sections.js";
 
 afterEach(cleanup);
 
