@@ -1,11 +1,13 @@
 // UI-string guard: user-facing text in editor components must come from t() (CLAUDE.md, standards §4).
 //
 // Usage (see the root "ui-strings" script):
-//   node tools/src/check-ui-strings.ts <folder>...
+//   node tools/src/check-ui-strings.ts [--catalogue <folder>] <folder>...
 //
 // Fails on JSX text and on literal text in user-facing attributes and props (aria-label, title,
 // placeholder, emptyText…), including inside `?:`, `&&`, `??` and template literals, in the .tsx
-// files under the given folders. Tests and stories are skipped. TypeScript 7 has no
+// files under the given folders. Tests and stories are skipped. With `--catalogue <folder>`, it
+// also fails on a message of the string catalogue that spells out the app's name (`app.name`)
+// rather than taking `{appName}` (#450). TypeScript 7 has no
 // JavaScript compiler API, so the files are parsed with swc, as dependency-cruiser does (ADR 0001).
 //
 // This file has no relative imports so Node can run it directly with type stripping.
@@ -132,13 +134,11 @@ function* walk(node: unknown): Generator<AstNode> {
   }
 }
 
-/**
- * Finds hard-coded user-facing strings in one TSX source file. `file` is used for reporting only.
- */
-export function findUiStrings(source: string, file: string): UiStringViolation[] {
+/** `source` parsed, with the line each span starts on. */
+function parsed(source: string, tsx: boolean) {
   // swc reports UTF-8 byte offsets that keep counting across parses. A leading `;` gives the
   // module a first token at byte 0, so offsets can be made relative to the file.
-  const ast = parseSync(`;${source}`, { syntax: "typescript", tsx: true });
+  const ast = parseSync(`;${source}`, { syntax: "typescript", tsx });
   const base = ast.span.start + 1;
   const bytes = Buffer.from(source);
   const lineAt = (span: Span | undefined): number =>
@@ -148,7 +148,14 @@ export function findUiStrings(source: string, file: string): UiStringViolation[]
           .subarray(0, Math.max(0, span.start - base))
           .toString()
           .split("\n").length;
+  return { ast, lineAt };
+}
 
+/**
+ * Finds hard-coded user-facing strings in one TSX source file. `file` is used for reporting only.
+ */
+export function findUiStrings(source: string, file: string): UiStringViolation[] {
+  const { ast, lineAt } = parsed(source, true);
   const violations: UiStringViolation[] = [];
   const report = (node: AstNode, where: string, text: string) => {
     if (READABLE.test(text)) {
@@ -177,6 +184,54 @@ export function findUiStrings(source: string, file: string): UiStringViolation[]
     }
   }
   return violations.toSorted((a, b) => a.line - b.line);
+}
+
+/** The catalogue's messages in one file of it: each property's key, text and line. */
+function messagesIn(source: string): { key: string; text: string; line: number }[] {
+  const { ast, lineAt } = parsed(source, false);
+  return [...walk(ast)].flatMap((node) => {
+    if (node.type !== "KeyValueProperty" || !isNode(node.key)) return [];
+    const { key } = node;
+    if (key.type !== "StringLiteral" || typeof key.value !== "string") return [];
+    const name = key.value;
+    return literalTexts(node.value).map((text) => ({ key: name, text, line: lineAt(key.span) }));
+  });
+}
+
+/** The key of the one message that holds the app's name, which every other takes as `{appName}`. */
+const APP_NAME_KEY = "app.name";
+
+/**
+ * Finds the messages in one file of the string catalogue that spell out the app's name, `name`,
+ * rather than take `{appName}` (#450), so a rename stays a change to `app.name` alone. `file` is used
+ * for reporting only.
+ */
+export function findAppNames(source: string, file: string, name: string): UiStringViolation[] {
+  return messagesIn(source)
+    .filter(({ key, text }) => key !== APP_NAME_KEY && text.includes(name))
+    .map(({ key, text, line }) => ({ file, line, where: key, text }));
+}
+
+/**
+ * Checks every file of the string catalogue under `folder` with {@link findAppNames}, the name read
+ * from its `app.name`. Paths in the result are relative to `root`.
+ */
+export function checkCatalogue(folder: string, root: string): UiStringViolation[] {
+  const files = readdirSync(folder, { withFileTypes: true, recursive: true })
+    .filter(
+      (entry) => entry.isFile() && entry.name.endsWith(".ts") && !entry.name.endsWith(".test.ts"),
+    )
+    .map((entry) => join(entry.parentPath, entry.name))
+    .toSorted();
+  const name = files
+    .flatMap((path) => messagesIn(readFileSync(path, "utf8")))
+    .find((message) => message.key === APP_NAME_KEY)?.text;
+  if (name === undefined) {
+    throw new Error(`No "${APP_NAME_KEY}" message in ${folder}`);
+  }
+  return files.flatMap((path) =>
+    findAppNames(readFileSync(path, "utf8"), relative(root, path).replaceAll("\\", "/"), name),
+  );
 }
 
 /** Whether a file is checked: component sources, not their tests or stories. */
@@ -214,10 +269,25 @@ export function formatUiStringViolations(violations: readonly UiStringViolation[
   ].join("\n");
 }
 
+/** One line per message that spells out the app's name, for the terminal. */
+export function formatAppNameViolations(violations: readonly UiStringViolation[]): string {
+  const lines = violations.map(
+    (violation) =>
+      `  ${violation.file}:${violation.line}  ${violation.where}: ${JSON.stringify(violation.text)}`,
+  );
+  return [
+    `Found ${violations.length} message(s) that spell out the app's name. Write {appName} instead, which t() fills in from app.name:`,
+    ...lines,
+  ].join("\n");
+}
+
 function main(): void {
-  const folders = process.argv.slice(2);
-  if (folders.length === 0) {
-    console.error("Usage: node tools/src/check-ui-strings.ts <folder>...");
+  const args = process.argv.slice(2);
+  const at = args.indexOf("--catalogue");
+  const catalogue = at === -1 ? undefined : args[at + 1];
+  const folders = args.filter((_, index) => at === -1 || (index !== at && index !== at + 1));
+  if (folders.length === 0 || (at !== -1 && catalogue === undefined)) {
+    console.error("Usage: node tools/src/check-ui-strings.ts [--catalogue <folder>] <folder>...");
     process.exitCode = 2;
     return;
   }
@@ -227,7 +297,16 @@ function main(): void {
     process.exitCode = 1;
     return;
   }
+  const named = catalogue === undefined ? [] : checkCatalogue(catalogue, process.cwd());
+  if (named.length > 0) {
+    console.error(formatAppNameViolations(named));
+    process.exitCode = 1;
+    return;
+  }
   console.log(`No hard-coded UI strings in ${folders.join(", ")}.`);
+  if (catalogue !== undefined) {
+    console.log(`No message in ${catalogue} spells out the app's name.`);
+  }
 }
 
 if (import.meta.main) {
