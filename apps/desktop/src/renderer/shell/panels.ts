@@ -83,7 +83,10 @@ export function createPanelRegistry(): PanelRegistry {
       };
     },
     show(id, reveal) {
-      for (const listener of showListeners) listener(id, reveal);
+      for (const listener of showListeners) {
+        if (reveal === undefined) listener(id);
+        else listener(id, reveal);
+      }
     },
     onShow(listener) {
       showListeners.add(listener);
