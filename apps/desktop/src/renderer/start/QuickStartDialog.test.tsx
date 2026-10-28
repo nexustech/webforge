@@ -211,6 +211,8 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
     expect(onCreate).not.toHaveBeenCalled();
     expect(shownStep()).toContain(t("quickStart.step.details"));
     expect(document.body.textContent).toContain(t("site.settings.error.webAddress"));
+    // Shown where it is: the field with the problem has the focus.
+    expect(document.activeElement).toBe(field(t("site.settings.webAddress")));
   });
 
   it("takes the logo's colours, read here, and says when a picture can't be read", async () => {

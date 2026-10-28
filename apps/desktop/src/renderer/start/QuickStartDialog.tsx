@@ -21,7 +21,7 @@ import { DEFAULT_THEME, SITE_DESCRIPTION_MAX, SITE_NAME_MAX } from "@webforge/mo
 import { type BusinessDetails, TEMPLATE_CATEGORIES } from "@webforge/templates";
 import { type ImageColour, imageColours, oklchCss, THEME_PRESETS } from "@webforge/themes";
 import { FileIcon, ImageIcon } from "lucide-react";
-import { type ChangeEvent, useId, useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useId, useRef, useState } from "react";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { hexOf } from "../fields/index.js";
@@ -494,6 +494,12 @@ function DetailsStep({
   const coloursId = useId();
   const choiceName = useId();
   const file = useRef<HTMLInputElement>(null);
+  const fields = useRef<HTMLDivElement>(null);
+  // After a Create that the details stopped, the first field with a problem, scrolled into view.
+  const { attempts } = details;
+  useEffect(() => {
+    if (attempts > 0) fields.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [attempts]);
   const [problem, setProblem] = useState<string>();
   const options: readonly { readonly colours: QuickStartColours; readonly label: string }[] = [
     { colours: { kind: "theme" }, label: t("quickStart.colours.theme") },
@@ -596,7 +602,9 @@ function DetailsStep({
             <h3 className="m-0 text-sm font-semibold">{t("quickStart.details")}</h3>
             <p className="m-0 text-xs text-muted-foreground">{t("quickStart.detailsText")}</p>
           </div>
-          <Form form={details} />
+          <div ref={fields}>
+            <Form form={details} />
+          </div>
           <p className="m-0 text-xs text-muted-foreground">{t("quickStart.searchNote")}</p>
         </div>
       </ScrollArea>
