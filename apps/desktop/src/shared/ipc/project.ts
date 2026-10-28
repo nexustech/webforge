@@ -5,7 +5,7 @@ import {
   siteDocSchema,
   siteDocumentChangeSchema,
 } from "@webforge/model";
-import { TEMPLATE_IDS } from "@webforge/templates";
+import { businessDetailsSchema, TEMPLATE_IDS } from "@webforge/templates";
 import { z } from "zod";
 
 /**
@@ -144,11 +144,14 @@ export type RecentSite = z.infer<typeof recentSiteSchema>;
 /**
  * What New Site makes (2.14a, F-SITE-1): a site named `name` (the save dialog's file name too), in
  * theme preset `theme`, from `template`, or the Blank site without one. Main checks the preset.
+ * With `business`, the person's own (QS-2, 3.11), the template's sample business is replaced by
+ * it and the name; *Try an example* sends none, and keeps the example's.
  */
 const newSiteRequestSchema = z.strictObject({
   name: z.string().trim().min(1).max(SITE_NAME_MAX),
   theme: z.string().min(1).max(40),
   template: z.enum(TEMPLATE_IDS).optional(),
+  business: businessDetailsSchema.optional(),
 });
 
 /** See {@link newSiteRequestSchema}. */

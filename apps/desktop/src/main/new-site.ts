@@ -86,6 +86,10 @@ export async function fillNewSite(
     }
   }
   target.store.saveSite(
-    siteFromTemplate(folder.template, folder.images, { name: request.name, theme }),
+    siteFromTemplate(folder.template, folder.images, {
+      name: request.name,
+      theme,
+      ...(request.business === undefined ? {} : { business: request.business }),
+    }),
   );
 }

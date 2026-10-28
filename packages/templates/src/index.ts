@@ -1,3 +1,4 @@
+export { type BusinessDetails, businessDetailsSchema } from "./business.js";
 export type { Template, TemplateCategory, TemplateId, TemplateImage } from "./template.js";
 export {
   BLANK_TEMPLATE_ID,

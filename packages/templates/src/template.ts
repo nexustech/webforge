@@ -11,6 +11,7 @@ import {
   type ThemeTokens,
 } from "@webforge/model";
 import { z } from "zod";
+import { type BusinessDetails, withBusiness } from "./business.js";
 
 /**
  * The templates Webforge ships (2.14a, F-SITE-1, S2), by id: each a folder of this package's
@@ -143,9 +144,19 @@ export type Template = z.infer<typeof templateSchema>;
 export function siteFromTemplate(
   template: Template,
   images: readonly TemplateImage[],
-  options: { readonly name: string; readonly theme: ThemeTokens },
+  options: {
+    readonly name: string;
+    readonly theme: ThemeTokens;
+    /**
+     * The person's business (QS-2), from the quick start or New Site: it replaces the template's
+     * sample business in Site Settings and the copy. Without it, as *Try an example* makes a site,
+     * the sample business stays: an example is someone else's finished site.
+     */
+    readonly business?: BusinessDetails;
+  },
 ): SiteDoc {
   const site = structuredClone(template.site);
+  if (options.business !== undefined) withBusiness(site, options.name, options.business);
   site.settings.general.name = options.name;
   site.theme = copyTheme(options.theme);
   for (const image of images) {
