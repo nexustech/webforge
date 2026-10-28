@@ -4,6 +4,7 @@ import {
   siteCheckIgnoredSchema,
   siteDocSchema,
   siteDocumentChangeSchema,
+  themeTokensSchema,
 } from "@webforge/model";
 import { businessDetailsSchema, pageChoicesSchema, TEMPLATE_IDS } from "@webforge/templates";
 import { z } from "zod";
@@ -154,6 +155,11 @@ const newSiteRequestSchema = z.strictObject({
   business: businessDetailsSchema.optional(),
   /** The quick start's Pages step (QS-3): the template's pages left out, recipe pages added. */
   pages: pageChoicesSchema.optional(),
+  /**
+   * The whole theme, when the quick start changed the preset's colours (QS-1, 3.11b): used in place
+   * of `theme`'s preset, which still names it.
+   */
+  themeTokens: themeTokensSchema.optional(),
 });
 
 /** See {@link newSiteRequestSchema}. */

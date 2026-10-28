@@ -37,6 +37,23 @@ export const webAddressSchema = z
   .url({ protocol: /^https$/, hostname: z.regexes.domain })
   .regex(/^https:\/\/[^/?#@]+\/?$/, "Use only the address, without a page or folder");
 
+/**
+ * The kinds of business a site can be for (UX-29, QS-1): the templates' business types, which the
+ * quick start asks first and Site Settings keeps for search engines (SEO-1, SEO-9).
+ */
+export const BUSINESS_TYPES = [
+  "food",
+  "beauty",
+  "trades",
+  "services",
+  "creative",
+  "shop",
+  "personal",
+] as const;
+
+/** One of {@link BUSINESS_TYPES}. */
+export type BusinessType = (typeof BUSINESS_TYPES)[number];
+
 /** Social networks with their own icon; anything else is `custom`. */
 export const SOCIAL_NETWORKS = [
   "facebook",
@@ -168,6 +185,12 @@ export const siteSettingsSchema = z.strictObject({
      * a page can leave it out (`hideBackToTop`). Off when absent, as in files from before it.
      */
     backToTop: z.boolean().optional(),
+    /**
+     * The kind of business the site is for (SEO-9, 3.11b): the quick start's first answer, which
+     * search engines' structured data starts from (SEO-1, 3.15). Unknown when absent, so no new
+     * format.
+     */
+    businessType: z.enum(BUSINESS_TYPES).optional(),
   }),
   address: z.strictObject({ url: webAddressSchema.optional() }),
   social: z.strictObject({

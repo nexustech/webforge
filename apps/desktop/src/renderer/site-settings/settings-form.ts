@@ -1,6 +1,7 @@
 import { type FormSchema, sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  type BusinessType,
   DAYS,
   type Day,
   type MediaId,
@@ -40,6 +41,8 @@ export type SettingsForm = {
   readonly icon: MediaId | undefined;
   /** A back-to-top button on every page that doesn't hide it (F-CM-9). */
   readonly backToTop: boolean;
+  /** The business type (SEO-9), or `""` for none chosen. */
+  readonly businessType: BusinessType | "";
   readonly url: string;
   readonly profiles: readonly {
     readonly id: string;
@@ -83,6 +86,7 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     language: general.language,
     icon: general.icon,
     backToTop: general.backToTop === true,
+    businessType: general.businessType ?? "",
     url: address.url ?? "",
     profiles: social.profiles.map((profile, index) => ({ id: `profile-${index}`, ...profile })),
     shareImage: social.shareImage,
@@ -172,6 +176,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...(form.icon === undefined ? {} : { icon: form.icon }),
       // Absent when off, as in files from before it.
       ...(form.backToTop ? { backToTop: true } : {}),
+      ...(form.businessType === "" ? {} : { businessType: form.businessType }),
     },
     address: optional("url", form.url.trim().replace(/\/$/, "")),
     social: {

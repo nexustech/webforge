@@ -248,6 +248,9 @@ export const site = {
   "site.settings.openingHoursNoteHint": 'Such as "Closed on bank holidays".',
   "site.settings.allowIndexing": "Let search engines show the site",
   "site.settings.includeSitemap": "Include a sitemap for search engines",
+  "site.settings.businessType": "Business type",
+  "site.settings.businessTypeHint": "Tells search engines what kind of business the site is for.",
+  "site.settings.businessType.none": "Not chosen",
   "site.settings.readableByAi": "Help AI tools read your site",
   "site.settings.googleVerification": "Google verification code",
   "site.settings.googleVerificationHint":
@@ -294,8 +297,10 @@ export const site = {
   "site.settings.error.formspree": "Use the form ID from your Formspree form, such as mzbqwxyz.",
   "site.settings.error.web3forms": "Use the access key from Web3Forms.",
   "site.settings.error.formUrl": "Use a full web address, starting with https://.",
-  "site.start.title": "Start a site",
-  "site.start.new": "New site…",
+  "site.start.title": "Get started",
+  // The primary way in opens the quick start (QS-4, 3.11b); New Site stays one click away.
+  "site.start.quickStart": "Start a site…",
+  "site.start.new": "Choose a template yourself…",
   "site.start.open": "Open a site…",
   "site.start.recent": "Recent sites",
   "site.start.noRecent": "Sites you open or create appear here.",
@@ -317,7 +322,8 @@ export const site = {
   // The first start, with no recent sites yet (2.14b, SC-3): what to do next.
   "site.start.welcome": "Welcome to {name}",
   "site.start.welcomeText": "Start your website in a few clicks.",
-  "site.start.new.description": "A blank site, or one from a template for your kind of business.",
+  "site.start.quickStart.description":
+    "Answer a few questions about your business, and start from a site that's already yours.",
   "site.start.tryExample.description": "A finished example site, to look around and change.",
   "site.start.open.description": "A site you've saved on this computer.",
   "site.start.help": "Help",

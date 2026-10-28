@@ -2,6 +2,7 @@ import type { FormField, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BUSINESS_NAME_MAX,
+  BUSINESS_TYPES,
   CONSENT_MESSAGE_MAX,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
@@ -27,6 +28,43 @@ import {
 
 /** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
 const VERIFICATION_PASTE_MAX = 300;
+
+/**
+ * The contact details' fields, as Site Settings' *Contact & hours* has them (F-SET-1) and the quick
+ * start's last step asks them (QS-6, 3.11b): email, phone, postal address and opening hours.
+ */
+export function contactDetailFields(): FormField[] {
+  return [
+    { kind: "text", name: "email", label: t("site.settings.email"), inputType: "email" },
+    { kind: "text", name: "phone", label: t("site.settings.phone"), inputType: "tel" },
+    {
+      kind: "text",
+      name: "address",
+      label: t("site.settings.address"),
+      multiline: true,
+      maxLength: POSTAL_ADDRESS_MAX,
+    },
+    {
+      kind: "list",
+      name: "openingHours",
+      label: t("site.settings.openingHours"),
+      itemLabel: t("site.settings.openingHours"),
+      addLabel: t("site.settings.addHours"),
+      removeLabel: t("site.settings.removeHours"),
+      itemFields: [
+        {
+          kind: "multiChoice",
+          name: "days",
+          label: t("site.settings.days"),
+          options: DAYS.map((day) => ({ label: t(`site.settings.day.${day}`), value: day })),
+        },
+        { kind: "time", name: "opens", label: t("site.settings.opens") },
+        { kind: "time", name: "closes", label: t("site.settings.closes") },
+      ],
+      newItem: () => ({ days: [], opens: "09:00", closes: "17:00" }),
+    },
+  ];
+}
 
 /** One of Site Settings' sections (F-SET-1): its fields, for the values the dialog holds. */
 type SettingsSection = {
@@ -91,6 +129,21 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           label: t("site.settings.backToTop"),
           // The canvas doesn't show it: only the published site has it.
           help: t("site.settings.backToTopHint"),
+        },
+        {
+          kind: "select",
+          name: "businessType",
+          path: "general.businessType",
+          label: t("site.settings.businessType"),
+          help: t("site.settings.businessTypeHint"),
+          width: "md",
+          options: [
+            { label: t("site.settings.businessType.none"), value: "" },
+            ...BUSINESS_TYPES.map((type) => ({
+              label: t(`template.category.${type}`),
+              value: type,
+            })),
+          ],
         },
       ],
     },
@@ -167,34 +220,7 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           label: t("site.settings.businessName"),
           maxLength: BUSINESS_NAME_MAX,
         },
-        { kind: "text", name: "email", label: t("site.settings.email"), inputType: "email" },
-        { kind: "text", name: "phone", label: t("site.settings.phone"), inputType: "tel" },
-        {
-          kind: "text",
-          name: "address",
-          label: t("site.settings.address"),
-          multiline: true,
-          maxLength: POSTAL_ADDRESS_MAX,
-        },
-        {
-          kind: "list",
-          name: "openingHours",
-          label: t("site.settings.openingHours"),
-          itemLabel: t("site.settings.openingHours"),
-          addLabel: t("site.settings.addHours"),
-          removeLabel: t("site.settings.removeHours"),
-          itemFields: [
-            {
-              kind: "multiChoice",
-              name: "days",
-              label: t("site.settings.days"),
-              options: DAYS.map((day) => ({ label: t(`site.settings.day.${day}`), value: day })),
-            },
-            { kind: "time", name: "opens", label: t("site.settings.opens") },
-            { kind: "time", name: "closes", label: t("site.settings.closes") },
-          ],
-          newItem: () => ({ days: [], opens: "09:00", closes: "17:00" }),
-        },
+        ...contactDetailFields(),
         {
           kind: "text",
           name: "openingHoursNote",

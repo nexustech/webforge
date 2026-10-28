@@ -10,6 +10,7 @@ const bakery: TemplateSummary = {
   category: "food",
   example: true,
   pages: 2,
+  pageList: [],
   theme: "bistro",
   thumbnail: null,
 };
