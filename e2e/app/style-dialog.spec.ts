@@ -36,8 +36,13 @@ async function styleNewHero() {
 test("styles a Hero in the dialog, live on the canvas, as one step on Apply (3.13a)", async () => {
   const title = canvas().locator(".site-hero h1");
   await styleNewHero();
-  await expect(dialog().getByText("Desktop", { exact: true })).toBeVisible();
-  await expect(dialog().getByText("Mobile", { exact: true })).toBeVisible();
+  // The Hero drawn on its own on each device, in a frame of its width: the app lets it draw.
+  for (const device of ["Desktop", "Mobile"]) {
+    await expect(dialog().getByText(device, { exact: true })).toBeVisible();
+    await expect(
+      dialog().frameLocator(`iframe[title="${device}"]`).locator(".site-hero h1"),
+    ).toBeVisible();
+  }
 
   await dialog().getByRole("switch", { name: "Underline" }).click();
   // On the canvas at once, while the dialog is open.

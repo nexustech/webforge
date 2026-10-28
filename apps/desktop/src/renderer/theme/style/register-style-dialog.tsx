@@ -43,16 +43,19 @@ export function registerStyleDialog(
     );
   }
   let locked = false;
+  // What the command was last set to: set again only when that changes, not on every keystroke.
+  let last = "";
   const update = () => {
     // Named for the kind in Content mode too, as Apply Look's commands are, and off there.
     const item = styledItem(session);
-    registry.update(COMMAND_IDS.styleThis, {
-      enabled: !locked && item !== undefined,
-      label:
-        item === undefined
-          ? t("style.command.any")
-          : t("style.command", { item: item.component.label }),
-    });
+    const enabled = !locked && item !== undefined;
+    const label =
+      item === undefined
+        ? t("style.command.any")
+        : t("style.command", { item: item.component.label });
+    if (`${enabled}:${label}` === last) return;
+    last = `${enabled}:${label}`;
+    registry.update(COMMAND_IDS.styleThis, { enabled, label });
   };
   const removers = [
     dialogs.register({ id: "styleThis", component: Style }),

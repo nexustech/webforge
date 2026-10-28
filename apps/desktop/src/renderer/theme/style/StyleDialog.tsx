@@ -69,13 +69,14 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
     cancelStyle(session, since);
     close();
   };
-  const apply = async () => {
+  // Closed once applied; open still, with its changes, after a declined question.
+  const apply = () => {
     setBusy(true);
-    try {
-      if (await applyStyle(session, since, scope, asks)) close();
-    } finally {
-      setBusy(false);
-    }
+    void applyStyle(session, since, scope, asks)
+      .then((done) => {
+        if (done) close();
+      })
+      .finally(() => setBusy(false));
   };
   return (
     <Dialog
@@ -120,7 +121,7 @@ export function StyleDialog({ session, state, preferences, asks, itemPreviews }:
           <Button variant="ghost" disabled={busy} onClick={cancel}>
             {t("style.cancel")}
           </Button>
-          <Button disabled={busy} onClick={() => void apply()}>
+          <Button disabled={busy} onClick={apply}>
             {t("style.apply")}
           </Button>
         </DialogFooter>
