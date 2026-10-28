@@ -90,6 +90,46 @@ describe("fillNewSite (2.14a)", () => {
     scaledTestTimeout(30_000),
   );
 
+  it("makes the site in the quick start's own colours, on the preset it names (3.11b)", async () => {
+    const into = target();
+    const preset = themePreset("atelier");
+    if (preset === undefined) throw new Error("no preset");
+    const themeTokens = {
+      ...preset,
+      colors: { ...preset.colors, primary: { l: 0.5, c: 0.2, h: 25 } },
+    };
+
+    await fillNewSite(
+      into,
+      { name: "Rosa's Bakery", theme: "atelier", template: "cafe", themeTokens },
+      shipped,
+    );
+
+    expect(store.readSite().theme).toEqual(themeTokens);
+  });
+
+  it("puts the person's business in place of the template's sample, when it is given (QS-2)", async () => {
+    const into = target();
+
+    await fillNewSite(
+      into,
+      {
+        name: "Rosa's Bakery",
+        theme: "atelier",
+        template: "cafe",
+        business: { phone: "+44 1234 567890" },
+      },
+      shipped,
+    );
+
+    const site = store.readSite();
+    expect(site.settings.contact).toMatchObject({
+      businessName: "Rosa's Bakery",
+      phone: "+44 1234 567890",
+    });
+    expect(JSON.stringify(site.layout.footer)).toContain("Rosa's Bakery ·");
+  });
+
   it("refuses a template whose image isn't as its manifest says, writing no site", async () => {
     const [folder] = templates as [TemplateFolder];
     const [first] = folder.images;

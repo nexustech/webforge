@@ -122,6 +122,7 @@ test("offers spelling suggestions for a misspelt word in a text field", async ()
     .getByRole("tab", { name: "Site" })
     .click();
   await page.getByRole("button", { name: "Add Page" }).click();
+  await page.getByRole("menuitem", { name: "Blank Page…" }).click();
   const field = page.getByRole("textbox", { name: "Page name" });
   await field.fill("");
   await field.pressSequentially("Our bakkery ", { delay: 20 });

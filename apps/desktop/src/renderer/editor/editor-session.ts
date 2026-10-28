@@ -20,6 +20,7 @@ import type { PageDoc, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { applyPatch } from "./apply-patch.js";
 import { labelFor } from "./labels.js";
+import { datePages, localDay } from "./page-updated.js";
 import {
   createSelectionStore,
   type EditorSelection,
@@ -132,11 +133,15 @@ export function createEditorSession(
   library: ComponentLibrary,
   site: SiteDoc,
   pageId: PageId = site.homePageId,
+  /** Today, as a page's last-changed date is written (3.15); injectable for tests. */
+  today: () => string = () => localDay(),
 ): EditorSession {
   const ui = createSelectionStore({ pageId, nodeId: null, viewport: "desktop" });
   const history = createHistoryManager<SiteDoc, EditorSelection>({
     initial: site,
     selection: { get: () => ui.getState(), restore: (selection) => ui.setState(selection, true) },
+    // Each change to a page dates it, in its own step (the sitemap's lastmod, 3.15).
+    finish: datePages(today),
   });
   const listeners = new Set<EntryListener>();
   const currentEntry = () => {

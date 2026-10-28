@@ -41,6 +41,7 @@ export function siteToSnapshot(
         hideFooter,
         hideBackToTop,
         ...(hideFromSearch === true ? { hideFromSearch } : {}),
+        ...(page.updated === undefined ? {} : { updated: page.updated }),
         ...(shareImage === undefined ? {} : { shareImage }),
         // Copies of shared sections are exported inline, as their shared section (F-ED-23).
         doc: { ...page.doc, content: expandSharedCopies(page.doc.content, site.sharedSections) },

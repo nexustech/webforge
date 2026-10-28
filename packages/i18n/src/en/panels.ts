@@ -25,6 +25,8 @@ export const panels = {
   "panels.site": "Site",
   "pages.title": "Pages",
   "pages.add": "Add Page",
+  "pages.addBlank": "Blank Page…",
+  "pages.addSuggested": "Suggested Pages",
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
   "pages.hiddenFromNavigation": "Hidden from navigation",

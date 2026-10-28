@@ -13,12 +13,21 @@ function templateSummary(
   { template, thumbnail }: TemplateFolder,
   category: TemplateCategory,
 ): TemplateSummary {
-  const pages = Object.values(template.site.pages).filter((page) => page.kind === "page");
+  const { site } = template;
+  const pages = site.pageOrder.flatMap((id) => {
+    const page = site.pages[id];
+    return page?.kind === "page" ? [page] : [];
+  });
   return {
     id: template.id,
     category,
     example: template.example,
     pages: pages.length,
+    pageList: pages.map((page) => ({
+      id: page.id,
+      title: page.title,
+      home: page.id === site.homePageId,
+    })),
     theme: template.site.theme.preset,
     thumbnail: existsSync(thumbnail)
       ? `data:image/png;base64,${readFileSync(thumbnail).toString("base64")}`

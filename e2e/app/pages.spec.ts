@@ -53,6 +53,7 @@ test.describe("Pages panel", () => {
 
   test("adds a page, deletes it after confirming, and undo brings it back", async () => {
     await page.getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("menuitem", { name: "Blank Page…" }).click();
     const field = page.getByRole("textbox", { name: "Page name" });
     await field.fill("About us");
     await expect(page.getByText("File name: about-us.html")).toBeVisible();
@@ -89,6 +90,7 @@ test.describe("Pages panel", () => {
 
   test("changes a page's settings as one undo step (F-SET-2)", async () => {
     await page.getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("menuitem", { name: "Blank Page…" }).click();
     await page.getByRole("textbox", { name: "Page name" }).fill("About us");
     await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
 

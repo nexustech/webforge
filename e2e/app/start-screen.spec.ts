@@ -40,7 +40,7 @@ function running(): ElectronApplication {
 async function startWithoutSite(): Promise<Page> {
   app = await launchDesktopApp({ userDataDir: userData, site: false });
   const page = await app.firstWindow();
-  await expect(page.getByRole("heading", { name: "Start a site" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
   return page;
 }
 
@@ -62,8 +62,11 @@ test("creates a blank site, keeps an edit and reopens it from the Recent list", 
   // New Site, Blank: the save dialog (stubbed) names the file, and the editor opens on it.
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
-  // Exactly: the title bar's New Site… button has the same name in another case.
-  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  // The start screen's own (the welcome offers it too), not the title bar's New Site….
+  await page
+    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .first()
+    .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
   await newSite.getByRole("button", { name: "Create" }).click();
@@ -102,8 +105,11 @@ test("makes a site from a template, named as typed and in the chosen theme, with
   await stubFileDialogs(running(), join(dir, "Rosa's Bakery.wforge"));
 
   // New Site (2.14a, F-SITE-1): the name, a template (which brings its theme), then another theme.
-  // Exactly: the title bar's New Site… button has the same name in another case.
-  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  // The start screen's own (the welcome offers it too), not the title bar's New Site….
+  await page
+    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .first()
+    .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
   await newSite.getByText("Café / Restaurant", { exact: true }).click();
@@ -136,7 +142,10 @@ test("makes a Personal / CV site within its opening budget, accessible on the ca
   const page = await startWithoutSite();
   await stubFileDialogs(running(), join(dir, "Sam Lee.wforge"));
 
-  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .first()
+    .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Sam Lee");
   await newSite.getByText("Personal / CV", { exact: true }).click();
@@ -144,7 +153,8 @@ test("makes a Personal / CV site within its opening budget, accessible on the ca
 
   const opened = await measureWork(running());
   await newSite.getByRole("button", { name: "Create" }).click();
-  const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Alex Morgan" });
+  // The name typed, in place of the template's sample person (QS-2, 3.11a).
+  const hero = canvas(page).locator("h1", { hasText: "Hello, I'm Sam Lee" });
   await expect(hero).toBeVisible({ timeout: OPEN_WAIT });
   expectWorkWithin(await opened(), openBudget(), "Opening the new Personal / CV site");
   await expect(canvas(page).locator("section img").first()).not.toHaveJSProperty("naturalWidth", 0);
@@ -188,7 +198,10 @@ test("pins a site to the top of the Recent list, which it keeps after a restart 
     app = await launchDesktopApp({ userDataDir: userData, site: false });
     const page = await app.firstWindow();
     await stubFileDialogs(running(), join(dir, `${name}.wforge`));
-    await page.getByRole("button", { name: "New site…", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Choose a template yourself…", exact: true })
+      .first()
+      .click();
     const newSite = page.getByRole("dialog", { name: "New Site" });
     await newSite.getByRole("textbox", { name: "Site name" }).fill(name);
     await newSite.getByRole("button", { name: "Create" }).click();
