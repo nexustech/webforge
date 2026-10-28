@@ -95,6 +95,23 @@ const SHADOW_SCALE: Readonly<Record<ThemeTokens["shadow"], Readonly<Record<strin
 };
 
 /**
+ * Tailwind's inner shadow scale for each shadow token, which every `inset-shadow-*` class draws
+ * from (the dialog's inner shadow, 3.13b): none at all for a theme without shadows, Tailwind's own,
+ * or twice as dark, as {@link SHADOW_SCALE}.
+ */
+const INSET_SHADOW_SCALE: Readonly<
+  Record<ThemeTokens["shadow"], Readonly<Record<string, string>>>
+> = {
+  none: { "2xs": "inset 0 0 #0000", xs: "inset 0 0 #0000", sm: "inset 0 0 #0000" },
+  soft: {},
+  strong: {
+    "2xs": "inset 0 1px rgb(0 0 0 / 0.1)",
+    xs: "inset 0 1px 1px rgb(0 0 0 / 0.1)",
+    sm: "inset 0 2px 4px rgb(0 0 0 / 0.1)",
+  },
+};
+
+/**
  * The Shadow hover effect's shadow (2.12), which a person chooses for an element: the theme's
  * large shadow, or Tailwind's own where the theme has none, so the effect never disappears.
  */
@@ -387,6 +404,9 @@ export function themeCss(tokens: ThemeTokens): string {
     ...typeScale,
     ...Object.entries(SHADOW_SCALE[tokens.shadow]).map(
       ([step, shadow]) => `  --shadow-${step}: ${shadow};`,
+    ),
+    ...Object.entries(INSET_SHADOW_SCALE[tokens.shadow]).map(
+      ([step, shadow]) => `  --inset-shadow-${step}: ${shadow};`,
     ),
     // A hover's Springy movement (2.28, `ease-spring`): it overshoots a little and settles.
     "  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);",

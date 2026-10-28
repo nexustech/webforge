@@ -7,7 +7,7 @@ import type { ComponentDef } from "../library.js";
 import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
 import { Picture } from "../picture.js";
 import type { RenderContext } from "../schema.js";
-import { BodyText, SectionTitle } from "../typography.js";
+import { BodyText, SectionIntro, SectionTitle } from "../typography.js";
 
 const TEAM_LAYOUTS = ["cards", "round", "list"] as const;
 type TeamLayout = (typeof TEAM_LAYOUTS)[number];
@@ -64,7 +64,7 @@ const team = defineSection({
       <div className="mx-auto max-w-6xl space-y-10">
         <div className="mx-auto max-w-3xl text-center">
           <SectionTitle>{values.title}</SectionTitle>
-          <BodyText className="mt-4">{values.text}</BodyText>
+          <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         <TeamContext value={{ layout: values.variant, hover: hoverClasses(values) }}>
           <Items className={GRID_CLASS[values.variant]} />

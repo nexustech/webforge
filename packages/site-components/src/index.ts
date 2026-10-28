@@ -1,4 +1,14 @@
-export { APPEARANCE_FIELDS } from "./appearance.js";
+export {
+  APPEARANCE_FIELDS,
+  appearanceBoxClasses,
+  appearanceClassGroups,
+  appearanceSubtitleClasses,
+  appearanceTextClasses,
+  DIALOG_ELEMENT_FIELDS,
+  DIALOG_FIELDS,
+  DIALOG_TITLE_FIELDS,
+  STYLE_GROUPS,
+} from "./appearance.js";
 export { backToTopHtml } from "./back-to-top.js";
 export {
   BACKGROUND_DEFAULTS,
