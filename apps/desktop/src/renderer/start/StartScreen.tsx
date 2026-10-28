@@ -8,7 +8,7 @@ import {
   TooltipProvider,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { FilePlusIcon, FolderOpenIcon, SparklesIcon } from "lucide-react";
+import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
@@ -51,8 +51,8 @@ export type StartScreenProps = {
 
 /**
  * The window when no site is open (F-SITE-1, F-SITE-2), as Bootstrap Studio's (LF-10): on the left,
- * start a site (New Site's dialog, 2.14a), open one or try an example (PG-3); on the right, the
- * recent sites, searchable, pinned ones first, and a Help tab.
+ * start a site (the quick start, QS-4, or New Site's dialog, 2.14a), open one or try an example
+ * (PG-3); on the right, the recent sites, searchable, pinned ones first, and a Help tab.
  */
 export function StartScreen({ info, project, templates, app, restart, locale }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
@@ -165,8 +165,9 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
 const ACTION = "h-10 justify-start px-4 text-base [&_svg:not([class*='size-'])]:size-5";
 
 /**
- * The start screen's left column (LF-10, SC-2): Webforge's mark, name and version, then New Site,
- * Open and, when the app ships an example, Try an Example; and why something couldn't be done.
+ * The start screen's left column (LF-10, SC-2): Webforge's mark, name and version, then Start a
+ * site (the quick start, QS-4), New Site, Open and, when the app ships an example, Try an Example;
+ * and why something couldn't be done.
  */
 function StartActions({
   info,
@@ -191,7 +192,16 @@ function StartActions({
         </div>
       </div>
       <h2 className="m-0 text-base font-medium text-muted-foreground">{t("site.start.title")}</h2>
-      <Button type="button" className={ACTION} onClick={() => registry.run(COMMAND_IDS.newSite)}>
+      <Button type="button" className={ACTION} onClick={() => registry.run(COMMAND_IDS.quickStart)}>
+        <WandSparklesIcon />
+        {t("site.start.quickStart")}
+      </Button>
+      <Button
+        type="button"
+        variant="outline"
+        className={ACTION}
+        onClick={() => registry.run(COMMAND_IDS.newSite)}
+      >
         <FilePlusIcon />
         {t("site.start.new")}
       </Button>
@@ -228,11 +238,11 @@ function Welcome({ info, onOpen }: { readonly info: AppInfo; readonly onOpen: ()
   const example = useCommand(COMMAND_IDS.tryExample);
   const choices = [
     {
-      id: "new",
-      label: t("site.start.new"),
-      description: t("site.start.new.description"),
-      icon: <FilePlusIcon className="size-6 text-primary" />,
-      run: () => registry.run(COMMAND_IDS.newSite),
+      id: "quickStart",
+      label: t("site.start.quickStart"),
+      description: t("site.start.quickStart.description"),
+      icon: <WandSparklesIcon className="size-6 text-primary" />,
+      run: () => registry.run(COMMAND_IDS.quickStart),
     },
     ...(example === undefined
       ? []
@@ -276,6 +286,15 @@ function Welcome({ info, onOpen }: { readonly info: AppInfo; readonly onOpen: ()
           </li>
         ))}
       </ul>
+      {/* New Site, for people who know what they want (QS-4). */}
+      <Button
+        type="button"
+        variant="link"
+        className="self-start px-0 text-base"
+        onClick={() => registry.run(COMMAND_IDS.newSite)}
+      >
+        {t("site.start.new")}
+      </Button>
       <p className="m-0 text-sm text-muted-foreground">{t("site.start.noRecent")}</p>
     </div>
   );

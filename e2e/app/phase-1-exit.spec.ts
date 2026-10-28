@@ -40,7 +40,7 @@ function running(): ElectronApplication {
 async function startWithoutSite(): Promise<Page> {
   app = await launchDesktopApp({ userDataDir: userData, site: false });
   const page = await app.firstWindow();
-  await expect(page.getByRole("heading", { name: "Start a site" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
   return page;
 }
 
@@ -95,7 +95,10 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   const sitePath = join(dir, "Rosa's Bakery.wforge");
   await stubFileDialogs(running(), sitePath);
   // New Site, Blank (2.14a); exactly, as the title bar's New Site… has the same name in another case.
-  await page.getByRole("button", { name: "New site…", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Choose a template yourself…", exact: true })
+    .first()
+    .click();
   const newSite = page.getByRole("dialog", { name: "New Site" });
   await newSite.getByRole("textbox", { name: "Site name" }).fill("Rosa's Bakery");
   await newSite.getByRole("button", { name: "Create" }).click();

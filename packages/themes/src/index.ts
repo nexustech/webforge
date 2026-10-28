@@ -58,7 +58,7 @@ export {
   planFamily,
 } from "./fonts/plan.js";
 export type { BrandProposal, ImageColour } from "./image-palette.js";
-export { brandFromImage, imageColours, reversedBrand } from "./image-palette.js";
+export { brandedTheme, brandFromImage, imageColours, reversedBrand } from "./image-palette.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
 export {
   oklchCss,
