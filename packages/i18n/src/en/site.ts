@@ -284,7 +284,7 @@ export const site = {
   "site.settings.error.bingVerification":
     "That isn't Bing's verification code. Paste the code, or the whole msvalidate.01 tag from Bing Webmaster Tools.",
   "site.settings.readableByAiHint":
-    "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",
+    "For AI tools: adds llms.txt and a plain-text copy of each page when you export. Some AI tools read these; search engines don't.",
   "site.settings.measurementId": "Google Analytics measurement ID",
   "site.settings.measurementIdHint": "Such as G-ABC123DEF4. Leave empty for no analytics.",
   "site.settings.consentBanner": "Ask visitors before counting them (cookie banner)",

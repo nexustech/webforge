@@ -119,6 +119,14 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           // The canvas doesn't show it: only the published site has it.
           help: t("site.settings.backToTopHint"),
         },
+        // For AI tools, not search engines, so not with them (3.15, SEO-12): off unless turned on.
+        {
+          kind: "toggle",
+          name: "readableByAi",
+          path: "search.readableByAi",
+          label: t("site.settings.readableByAi"),
+          help: t("site.settings.readableByAiHint"),
+        },
       ],
     },
     {
@@ -279,12 +287,6 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
         ...businessKindField(values.businessType),
         { kind: "toggle", name: "allowIndexing", label: t("site.settings.allowIndexing") },
         { kind: "toggle", name: "includeSitemap", label: t("site.settings.includeSitemap") },
-        {
-          kind: "toggle",
-          name: "readableByAi",
-          label: t("site.settings.readableByAi"),
-          help: t("site.settings.readableByAiHint"),
-        },
         // Proof the site is the owner's, for each console (3.15, SEO-8): no account here.
         {
           kind: "text",

@@ -260,8 +260,9 @@ export const siteSettingsSchema = z.strictObject({
     includeSitemap: z.boolean(),
     /**
      * *Help AI tools read your site* (F-EX-5, 3.5): `llms.txt` and a Markdown copy of each page in
-     * the export. On for new sites; off when absent, as in sites from before it (ADR 0012: an
-     * optional field whose absence keeps the old meaning needs no new format).
+     * the export. Off unless the person turns it on (3.15, SEO-12): search engines don't read
+     * them. Off when absent (ADR 0012: an optional field whose absence keeps the old meaning
+     * needs no new format); a site made since 3.5 keeps the value it stored.
      */
     readableByAi: z.boolean().optional(),
     /**
@@ -303,7 +304,7 @@ export function defaultSiteSettings(name: string, language: string): SiteSetting
     address: {},
     social: { profiles: [] },
     contact: { openingHours: [] },
-    search: { allowIndexing: true, includeSitemap: true, readableByAi: true },
+    search: { allowIndexing: true, includeSitemap: true, readableByAi: false },
     analytics: { consentBanner: true },
     forms: {},
     publish: { destinations: [] },
