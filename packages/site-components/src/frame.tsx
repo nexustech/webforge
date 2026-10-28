@@ -180,11 +180,11 @@ export function defineSection<const F extends Fields, const Variant extends stri
     fields: {
       ...(appearance as typeof APPEARANCE_FIELDS),
       // Style this ‹component›…'s deeper groups (3.13b), which only the dialog shows, the Title
-      // group's (below) for a section with a title of its own.
+      // group's for a section with a title of its own.
       ...DIALOG_FIELDS,
+      ...(titled === false ? {} : DIALOG_TITLE_FIELDS),
       // A background image and its overlay (2.26), in the Appearance group too.
       ...(background === false ? {} : BACKGROUND_FIELDS),
-      ...(titled === false ? {} : DIALOG_TITLE_FIELDS),
       ...fields,
       colors: COLORS_FIELD,
       padding: PADDING_FIELD,

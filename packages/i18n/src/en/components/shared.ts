@@ -205,8 +205,6 @@ export const shared = {
   "field.look.subtitleColor": "Subtitle colour",
   "field.look.subtitleAlign": "Subtitle alignment",
   "field.look.padding": "Padding",
-  "field.look.marginTop": "Space above",
-  "field.look.marginBottom": "Space below",
   "field.look.spacing.default": "Theme's",
   "field.look.hoverColor": "Background when hovered",
   // Where an element or a section's content sits across it.

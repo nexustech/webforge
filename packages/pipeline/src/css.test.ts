@@ -103,6 +103,16 @@ describe("buildSiteCss", () => {
     expect(css).toMatch(/--tw-gradient-from: var\(--color-primary\)/);
     expect(css).toMatch(/border-top-left-radius: var\(--radius-box\)/);
     expect(css).toMatch(/background-color: var\(--color-accent\)/);
+
+    // A theme without shadows has no inner ones either.
+    const flat = await buildSiteCss(resources, {
+      theme: { ...DEFAULT_THEME, shadow: "none" },
+      candidates,
+      fontsUrl: "../fonts/",
+    });
+    // Tailwind writes the theme's value into the rule: an inner shadow of nothing.
+    expect(flat).toContain("--tw-inset-shadow: inset 0 0 var(--tw-inset-shadow-color, #0000)");
+    expect(css).not.toContain("--tw-inset-shadow: inset 0 0 var(--tw-inset-shadow-color, #0000)");
   });
 
   it("hides an entrance only once the page is marked, and only where motion is welcome (2.12)", async () => {

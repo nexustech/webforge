@@ -153,8 +153,8 @@ describe("the section frame (2.19)", () => {
     expect(Object.keys(band.fields)).toEqual([
       ...Object.keys(APPEARANCE_FIELDS),
       ...Object.keys(DIALOG_FIELDS),
-      ...Object.keys(BACKGROUND_FIELDS),
       ...Object.keys(DIALOG_TITLE_FIELDS),
+      ...Object.keys(BACKGROUND_FIELDS),
       "colors",
       "padding",
       "margin",

@@ -64,7 +64,7 @@ const GRADIENT_DIRECTIONS = [
   "toTopRight",
 ] as const;
 const BORDER_STYLES = ["default", "solid", "dashed", "dotted"] as const;
-/** Spacing tokens (C4): an element's padding and the space above and below it (CT-5). */
+/** Spacing tokens (C4): an element's padding (CT-5); its margin is its own `margin` field. */
 const SPACINGS = ["default", "none", "s", "m", "l", "xl"] as const;
 
 /** What every control in the group shares: the Style tab, the group, a value per device. */
@@ -273,11 +273,12 @@ export const DIALOG_FIELDS = {
   },
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
-/** An element's own spacing in the dialog (CT-5): its padding, and the space above and below it. */
+/**
+ * An element's own spacing in the dialog (CT-5): its padding. The space above and below it is its
+ * `margin` field (1.32), which the dialog's Spacing group shows beside it.
+ */
 export const DIALOG_ELEMENT_FIELDS = {
   lookPadding: select(t("field.look.padding"), STYLE_GROUPS.spacing, SPACING_OPTIONS),
-  lookMarginTop: select(t("field.look.marginTop"), STYLE_GROUPS.spacing, SPACING_OPTIONS),
-  lookMarginBottom: select(t("field.look.marginBottom"), STYLE_GROUPS.spacing, SPACING_OPTIONS),
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
 /**
@@ -432,9 +433,6 @@ const spacingClasses = (
 });
 /** An element's padding (CT-5): smaller steps than a section's. */
 const PADDING_CLASSES = spacingClasses("p", { none: 0, s: 2, m: 4, l: 6, xl: 8 });
-/** The space above and below an element, on the margins' scale (1.32). */
-const MARGIN_TOP_CLASSES = spacingClasses("mt", { none: 0, s: 4, m: 8, l: 16, xl: 24 });
-const MARGIN_BOTTOM_CLASSES = spacingClasses("mb", { none: 0, s: 4, m: 8, l: 16, xl: 24 });
 
 /** The class of one choice in `table`, or none for a value it doesn't have. */
 const pick =
@@ -530,16 +528,25 @@ const borderAllRound: FieldClasses = (value, values) =>
     return styled(values) ? classes.replace(" border-solid!", "") : classes;
   });
 
-/** The line's style: the dialog's, or solid for a side set without one or a width all round. */
+/** A side with a line: Thin or Thick, not None. */
+const drawnSide = (value: unknown) =>
+  onAnyDevice(value, (one) => one === "thin" || one === "thick");
+
+/** The line's style: the dialog's, or solid for a side drawn without one or a width all round. */
 const borderLine: FieldClasses = (value, values) => {
   if (styled(values)) return perDevice(value, pick(BORDER_STYLE_CLASSES));
-  const sides = SIDES.some((side) => anyChoice(sideBorderClasses("t"))(values[side]));
+  const sides = SIDES.some((side) => drawnSide(values[side]));
   return sides && !anyChoice(BORDER_CLASSES)(values.lookBorder) ? "border-solid!" : "";
 };
 
-/** The shadow, outer or (with the dialog's toggle) inner, at its strength. */
+/**
+ * The shadow, outer or (with the dialog's toggle) inner, at its strength. An inner shadow replaces
+ * the outer one; at the theme's strength it is the medium one, so the toggle always draws one.
+ */
 const shadow: FieldClasses = (value, values) =>
-  perDevice(value, pick(values.lookShadowInner === true ? INNER_SHADOW_CLASSES : SHADOW_CLASSES));
+  values.lookShadowInner === true
+    ? perDevice(value, (one) => pick(INNER_SHADOW_CLASSES)(one) || INNER_SHADOW_CLASSES.medium)
+    : perDevice(value, pick(SHADOW_CLASSES));
 
 /**
  * The Text controls' classes, by field, in the order they're written (2.22): for an element its
@@ -589,9 +596,12 @@ const BOX_CLASSES = {
   lookShadow: shadow,
   lookOpacity: onDevices(pick(OPACITY_CLASSES)),
   lookPadding: onDevices(pick(PADDING_CLASSES)),
-  lookMarginTop: onDevices(pick(MARGIN_TOP_CLASSES)),
-  lookMarginBottom: onDevices(pick(MARGIN_BOTTOM_CLASSES)),
-  lookHoverColor: onDevices(colourOf("bg", "hover:")),
+  lookHoverColor: (value, values) =>
+    perDevice(value, (one) => {
+      const colour = colourOf("bg", "hover:")(one);
+      // A gradient is a background image, which a colour alone would stay under.
+      return colour !== "" && hasGradient(values) ? `${colour} hover:bg-none!` : colour;
+    }),
 } as const satisfies Readonly<Record<string, FieldClasses>>;
 
 /** Each field's classes in `table` for `values`, those that draw something, in the table's order. */

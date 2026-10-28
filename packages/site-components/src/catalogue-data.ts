@@ -127,15 +127,24 @@ export const APPEARANCE_TEXT_FIELDS = [
 
 /**
  * `catalogue-data.json` as written: the styling fields every section and element has once, the
- * Appearance group's (2.22) and *Style this ‹component›…*'s deeper ones (3.13b), and each component
+ * Appearance group's (2.22) and *Style this ‹component›…*'s deeper ones (3.13b), each component
  * with `appearance`, `"all"` or `"noText"` (a section without a title), in place of them repeated
- * in it. {@link CATALOGUE} puts them back.
+ * in it; and the dialog's fields for elements and for titled sections once too, each component
+ * with `deeper` naming which it has. {@link CATALOGUE} puts them back.
  */
 export const catalogueFileSchema = z.strictObject({
   appearance: z.record(z.string(), catalogueFieldSchema),
+  /** The dialog's Spacing for elements (3.13b): every element has it. */
+  element: z.record(z.string(), catalogueFieldSchema),
+  /** The dialog's Title group (3.13b): every section with a title of its own has it. */
+  titled: z.record(z.string(), catalogueFieldSchema),
   components: z.record(
     z.string(),
-    catalogueComponentSchema.extend({ appearance: z.enum(["all", "noText"]).optional() }),
+    catalogueComponentSchema.extend({
+      appearance: z.enum(["all", "noText"]).optional(),
+      /** Which of `element` and `titled` it has, after the shared group. */
+      deeper: z.enum(["element", "titled"]).optional(),
+    }),
   ),
 });
 
@@ -145,7 +154,7 @@ export type CatalogueFile = z.infer<typeof catalogueFileSchema>;
 /** The catalogue `file` holds, each component's Appearance fields first, as the library has them. */
 export function expandCatalogue(file: CatalogueFile): Catalogue {
   return Object.fromEntries(
-    Object.entries(file.components).map(([type, { appearance, ...component }]) => {
+    Object.entries(file.components).map(([type, { appearance, deeper, ...component }]) => {
       const group =
         appearance === undefined
           ? {}
@@ -156,7 +165,8 @@ export function expandCatalogue(file: CatalogueFile): Catalogue {
                   !(APPEARANCE_TEXT_FIELDS as readonly string[]).includes(name),
               ),
             );
-      return [type, { ...component, fields: { ...group, ...component.fields } }];
+      const own = deeper === undefined ? {} : file[deeper];
+      return [type, { ...component, fields: { ...group, ...own, ...component.fields } }];
     }),
   );
 }

@@ -42,8 +42,6 @@ export const LOOK_FIELDS = [
   "lookShadowInner",
   "lookHoverColor",
   "lookPadding",
-  "lookMarginTop",
-  "lookMarginBottom",
   "lookTitleColor",
   "lookSubtitleSize",
   "lookSubtitleWeight",

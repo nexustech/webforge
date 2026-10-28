@@ -8,6 +8,7 @@ import {
   BodyText,
   ButtonLink,
   RICH_TEXT_LIST_CLASSES,
+  SectionIntro,
   SectionLead,
   SectionTitle,
 } from "../typography.js";
@@ -144,7 +145,7 @@ const textSection = defineSection({
   render: ({ values }) => (
     <div className="mx-auto max-w-3xl">
       <SectionTitle>{values.title}</SectionTitle>
-      <BodyText className="mt-4">{values.text}</BodyText>
+      <SectionIntro className="mt-4">{values.text}</SectionIntro>
     </div>
   ),
 });
@@ -180,7 +181,7 @@ const textImage = defineSection({
         {/* The text comes first, as it is read; on wide screens CSS puts the image left. */}
         <div>
           <SectionTitle>{values.title}</SectionTitle>
-          <BodyText className="mt-4">{values.text}</BodyText>
+          <SectionIntro className="mt-4">{values.text}</SectionIntro>
         </div>
         {image !== null && (
           <div className={values.variant === "imageLeft" ? "md:order-first" : undefined}>

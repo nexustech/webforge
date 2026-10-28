@@ -4,6 +4,7 @@ import {
   findNode,
   isNodeDoc,
   isSharedCopy,
+  LOOK_FIELDS,
   type NodeDoc,
   type PageId,
   type SharedSectionId,
@@ -25,11 +26,15 @@ export type LookScope = "page" | "site";
 /** What the look commands need of the editor session. */
 export type LookSession = Pick<EditorSession, "history" | "ui" | "library" | "edit">;
 
-/** The fields of `component`'s Appearance group (2.22, ST-1): the look it can pass on. */
+/**
+ * The fields of `component` a look holds (2.22, ST-1; CT-1): its Appearance group's, with its hover
+ * row, and *Style this ‹component›…*'s deeper groups (3.13b), the look it can pass on. In the order
+ * the component has them.
+ */
 export function lookFieldsOf(component: ComponentDef): string[] {
-  return Object.entries(component.fields)
-    .filter(([, field]) => field.optionGroup?.id === APPEARANCE_GROUP_ID)
-    .map(([name]) => name);
+  return Object.keys(component.fields).filter((name) =>
+    (LOOK_FIELDS as readonly string[]).includes(name),
+  );
 }
 
 /** Where an element is kept: a page's own content, the shared Header or Footer, a shared section. */

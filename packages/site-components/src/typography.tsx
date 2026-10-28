@@ -117,6 +117,23 @@ export function BodyText({
 }
 
 /**
+ * A section's intro, the running text under its title (a Features', a Pricing's…), as
+ * {@link BodyText} with the section's subtitle look (3.13b); `className` places it ("mt-4").
+ */
+export function SectionIntro({
+  children,
+  className,
+}: {
+  readonly children: ReactNode;
+  readonly className: string;
+}) {
+  const look = useContext(SectionSubtitleAppearance);
+  return (
+    <BodyText className={look === "" ? className : `${className} ${look}`}>{children}</BodyText>
+  );
+}
+
+/**
  * The catalogue's buttons: the main colour's at three sizes, and icon buttons (round, or square
  * for the Header's menu). Placing classes come after these ("btn btn-primary btn-lg mt-8"). The
  * main ones take the theme's button style (#423); `filled` is the main colour filled whatever the

@@ -873,6 +873,257 @@
       ]
     }
   },
+  "element": {
+    "lookPadding": {
+      "kind": "select",
+      "label": "Padding",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleSpacing",
+        "label": "Spacing"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "default"
+        },
+        {
+          "label": "None",
+          "value": "none"
+        },
+        {
+          "label": "S",
+          "value": "s"
+        },
+        {
+          "label": "M",
+          "value": "m"
+        },
+        {
+          "label": "L",
+          "value": "l"
+        },
+        {
+          "label": "XL",
+          "value": "xl"
+        }
+      ]
+    }
+  },
+  "titled": {
+    "lookTitleColor": {
+      "kind": "color",
+      "label": "Title colour",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleTitle",
+        "label": "Title"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "theme"
+        },
+        {
+          "label": "Text",
+          "value": "base-content"
+        },
+        {
+          "label": "Brand",
+          "value": "primary"
+        },
+        {
+          "label": "Accent",
+          "value": "secondary"
+        },
+        {
+          "label": "Second accent",
+          "value": "accent"
+        }
+      ]
+    },
+    "lookSubtitleSize": {
+      "kind": "select",
+      "label": "Subtitle size",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleTitle",
+        "label": "Title"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "default"
+        },
+        {
+          "label": "Small",
+          "value": "small"
+        },
+        {
+          "label": "Body",
+          "value": "body"
+        },
+        {
+          "label": "Heading 6",
+          "value": "h6"
+        },
+        {
+          "label": "Heading 5",
+          "value": "h5"
+        },
+        {
+          "label": "Heading 4",
+          "value": "h4"
+        },
+        {
+          "label": "Heading 3",
+          "value": "h3"
+        },
+        {
+          "label": "Heading 2",
+          "value": "h2"
+        },
+        {
+          "label": "Heading 1",
+          "value": "h1"
+        }
+      ]
+    },
+    "lookSubtitleWeight": {
+      "kind": "select",
+      "label": "Subtitle weight",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleTitle",
+        "label": "Title"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "default"
+        },
+        {
+          "label": "Regular",
+          "value": "normal"
+        },
+        {
+          "label": "Medium",
+          "value": "medium"
+        },
+        {
+          "label": "Semibold",
+          "value": "semibold"
+        },
+        {
+          "label": "Bold",
+          "value": "bold"
+        }
+      ]
+    },
+    "lookSubtitleCase": {
+      "kind": "select",
+      "label": "Subtitle case",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleTitle",
+        "label": "Title"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "default"
+        },
+        {
+          "label": "As typed",
+          "value": "normal"
+        },
+        {
+          "label": "CAPITALS",
+          "value": "uppercase"
+        },
+        {
+          "label": "lower case",
+          "value": "lowercase"
+        },
+        {
+          "label": "Each Word",
+          "value": "capitalize"
+        }
+      ]
+    },
+    "lookSubtitleColor": {
+      "kind": "color",
+      "label": "Subtitle colour",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleTitle",
+        "label": "Title"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "theme"
+        },
+        {
+          "label": "Text",
+          "value": "base-content"
+        },
+        {
+          "label": "Brand",
+          "value": "primary"
+        },
+        {
+          "label": "Accent",
+          "value": "secondary"
+        },
+        {
+          "label": "Second accent",
+          "value": "accent"
+        }
+      ]
+    },
+    "lookSubtitleAlign": {
+      "kind": "select",
+      "label": "Subtitle alignment",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleTitle",
+        "label": "Title"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "Theme's",
+          "value": "default"
+        },
+        {
+          "label": "Left",
+          "value": "left"
+        },
+        {
+          "label": "Centre",
+          "value": "centre"
+        },
+        {
+          "label": "Right",
+          "value": "right"
+        }
+      ]
+    }
+  },
   "components": {
     "Header": {
       "label": "Header",
@@ -1194,118 +1445,8 @@
       "place": "element",
       "category": "Text",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "text": {
           "kind": "text",
           "label": "Text",
@@ -1436,118 +1577,8 @@
       "place": "element",
       "category": "Text",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "text": {
           "kind": "richtext",
           "label": "Text",
@@ -1628,118 +1659,8 @@
       "place": "element",
       "category": "Images and media",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "image": {
           "kind": "media",
           "label": "Image"
@@ -1976,118 +1897,8 @@
         }
       ],
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "label": {
           "kind": "text",
           "label": "Button text"
@@ -2328,118 +2139,8 @@
       "place": "element",
       "category": "Basic",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "height": {
           "kind": "slider",
           "label": "Height",
@@ -2473,118 +2174,8 @@
       "place": "element",
       "category": "Basic",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "text": {
           "kind": "text",
           "label": "Text on the line"
@@ -2609,118 +2200,8 @@
       "place": "element",
       "category": "Layout",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "columns": {
           "kind": "slot",
           "label": "Columns",
@@ -2921,118 +2402,8 @@
       "place": "element",
       "category": "Text",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "items": {
           "kind": "slot",
           "label": "Items",
@@ -3175,118 +2546,8 @@
       "place": "element",
       "category": "Basic",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "icon": {
           "kind": "icon",
           "label": "Icon"
@@ -3527,118 +2788,8 @@
       "place": "element",
       "category": "Basic",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "size": {
           "kind": "slider",
           "label": "Size",
@@ -3721,217 +2872,8 @@
       "category": "Heroes",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
-            }
-          ]
-        },
         "title": {
           "kind": "text",
           "label": "Title",
@@ -4093,6 +3035,7 @@
       "category": "Text",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -4148,216 +3091,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -4472,6 +3205,7 @@
       "category": "Text",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -4527,216 +3261,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -4871,6 +3395,7 @@
       "category": "Calls to action",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -4926,216 +3451,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -5275,6 +3590,7 @@
       "category": "Questions and answers",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -5330,216 +3646,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -5696,6 +3802,7 @@
       "category": "Galleries",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -5751,216 +3858,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -6114,118 +4011,8 @@
       "place": "element",
       "category": "Images and media",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "label": {
           "kind": "text",
           "label": "Name for screen readers"
@@ -6336,6 +4123,7 @@
       "category": "Images and media",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -6391,216 +4179,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -6737,6 +4315,7 @@
       "category": "Contact",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -6792,216 +4371,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -7140,118 +4509,8 @@
       "place": "element",
       "category": "Images and media",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "address": {
           "kind": "text",
           "label": "Video address",
@@ -7338,118 +4597,8 @@
       "place": "element",
       "category": "Contact",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "address": {
           "kind": "text",
           "label": "Address",
@@ -7540,6 +4689,7 @@
       "category": "Contact",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -7595,216 +4745,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -7947,6 +4887,7 @@
       "category": "Contact",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -8002,216 +4943,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -8352,6 +5083,7 @@
       "category": "Contact",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -8407,216 +5139,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -8768,118 +5290,8 @@
       "place": "element",
       "category": "Contact",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "fields": {
           "kind": "slot",
           "label": "Fields",
@@ -9069,6 +5481,7 @@
       "category": "Features and services",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -9124,216 +5537,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -9620,6 +5823,7 @@
       "category": "Testimonials",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -9675,216 +5879,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -10171,6 +6165,7 @@
       "category": "Team",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -10226,216 +6221,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -10728,6 +6513,7 @@
       "category": "Prices",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -10783,216 +6569,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -11315,118 +6891,8 @@
       "place": "element",
       "category": "Shop",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "label": {
           "kind": "text",
           "label": "Button text"
@@ -11633,118 +7099,8 @@
       "place": "element",
       "category": "Layout",
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "tabs": {
           "kind": "slot",
           "label": "Tabs",
@@ -11900,6 +7256,7 @@
       "category": "Logos",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -11955,216 +7312,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -12343,6 +7490,7 @@
       "category": "Numbers",
       "framed": true,
       "appearance": "all",
+      "deeper": "titled",
       "fields": {
         "backgroundImage": {
           "kind": "media",
@@ -12398,216 +7546,6 @@
             {
               "label": "Neutral",
               "value": "neutral"
-            }
-          ]
-        },
-        "lookTitleColor": {
-          "kind": "color",
-          "label": "Title colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleSize": {
-          "kind": "select",
-          "label": "Subtitle size",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Small",
-              "value": "small"
-            },
-            {
-              "label": "Body",
-              "value": "body"
-            },
-            {
-              "label": "Heading 6",
-              "value": "h6"
-            },
-            {
-              "label": "Heading 5",
-              "value": "h5"
-            },
-            {
-              "label": "Heading 4",
-              "value": "h4"
-            },
-            {
-              "label": "Heading 3",
-              "value": "h3"
-            },
-            {
-              "label": "Heading 2",
-              "value": "h2"
-            },
-            {
-              "label": "Heading 1",
-              "value": "h1"
-            }
-          ]
-        },
-        "lookSubtitleWeight": {
-          "kind": "select",
-          "label": "Subtitle weight",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Regular",
-              "value": "normal"
-            },
-            {
-              "label": "Medium",
-              "value": "medium"
-            },
-            {
-              "label": "Semibold",
-              "value": "semibold"
-            },
-            {
-              "label": "Bold",
-              "value": "bold"
-            }
-          ]
-        },
-        "lookSubtitleCase": {
-          "kind": "select",
-          "label": "Subtitle case",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "As typed",
-              "value": "normal"
-            },
-            {
-              "label": "CAPITALS",
-              "value": "uppercase"
-            },
-            {
-              "label": "lower case",
-              "value": "lowercase"
-            },
-            {
-              "label": "Each Word",
-              "value": "capitalize"
-            }
-          ]
-        },
-        "lookSubtitleColor": {
-          "kind": "color",
-          "label": "Subtitle colour",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "theme"
-            },
-            {
-              "label": "Text",
-              "value": "base-content"
-            },
-            {
-              "label": "Brand",
-              "value": "primary"
-            },
-            {
-              "label": "Accent",
-              "value": "secondary"
-            },
-            {
-              "label": "Second accent",
-              "value": "accent"
-            }
-          ]
-        },
-        "lookSubtitleAlign": {
-          "kind": "select",
-          "label": "Subtitle alignment",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleTitle",
-            "label": "Title"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "Left",
-              "value": "left"
-            },
-            {
-              "label": "Centre",
-              "value": "centre"
-            },
-            {
-              "label": "Right",
-              "value": "right"
             }
           ]
         },
@@ -12795,118 +7733,8 @@
       "category": "Advanced",
       "advancedOnly": true,
       "appearance": "all",
+      "deeper": "element",
       "fields": {
-        "lookPadding": {
-          "kind": "select",
-          "label": "Padding",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginTop": {
-          "kind": "select",
-          "label": "Space above",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
-        "lookMarginBottom": {
-          "kind": "select",
-          "label": "Space below",
-          "group": "style",
-          "optionGroup": {
-            "id": "styleSpacing",
-            "label": "Spacing"
-          },
-          "responsive": true,
-          "inDialog": true,
-          "options": [
-            {
-              "label": "Theme's",
-              "value": "default"
-            },
-            {
-              "label": "None",
-              "value": "none"
-            },
-            {
-              "label": "S",
-              "value": "s"
-            },
-            {
-              "label": "M",
-              "value": "m"
-            },
-            {
-              "label": "L",
-              "value": "l"
-            },
-            {
-              "label": "XL",
-              "value": "xl"
-            }
-          ]
-        },
         "code": {
           "kind": "code",
           "label": "HTML",

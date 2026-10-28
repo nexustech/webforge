@@ -449,6 +449,8 @@ describe("Style this ‹component›…'s deeper groups (3.13b, CT-2)", () => {
 
   it("draws a border on one side, its line solid unless set, and each corner of its own", () => {
     expect(appearanceBoxClasses({ lookBorderBottom: "thick" })).toBe("border-b-2! border-solid!");
+    // A side taken away has no line to draw.
+    expect(appearanceBoxClasses({ lookBorderTop: "none" })).toBe("border-t-0!");
     expect(appearanceBoxClasses({ lookBorderLeft: "thin", lookBorderStyle: "dashed" })).toBe(
       "border-l! border-dashed!",
     );
@@ -461,18 +463,28 @@ describe("Style this ‹component›…'s deeper groups (3.13b, CT-2)", () => {
     ).toBe("rounded-tl-box! rounded-br-none!");
   });
 
-  it("draws an inner shadow at its strength, padding and space as spacing tokens, and a colour when hovered", () => {
+  it("draws an inner shadow at its strength, padding as spacing tokens, and a colour when hovered", () => {
     expect(appearanceBoxClasses({ lookShadow: "medium", lookShadowInner: true })).toBe(
       "inset-shadow-xs!",
     );
     expect(appearanceBoxClasses({ lookShadow: "medium" })).toBe("shadow-md!");
+    // At the theme's strength, the toggle still draws one: the medium.
+    expect(appearanceBoxClasses({ lookShadowInner: true })).toBe("inset-shadow-xs!");
     expect(
       appearanceBoxClasses({
         lookPadding: { $responsive: { desktop: "l", mobile: "s" } },
-        lookMarginBottom: "m",
       }),
-    ).toBe("max-md:p-2! md:p-6! mb-8!");
+    ).toBe("max-md:p-2! md:p-6!");
     expect(appearanceBoxClasses({ lookHoverColor: "accent-200" })).toBe("hover:bg-accent-200!");
+    // Over a gradient, the colour takes its place.
+    expect(
+      appearanceBoxClasses({
+        lookGradientDirection: "toRight",
+        lookGradientFrom: "primary",
+        lookGradientTo: "accent",
+        lookHoverColor: "neutral",
+      }),
+    ).toBe("bg-linear-to-r! from-primary! to-accent! hover:bg-neutral! hover:bg-none!");
   });
 
   it("colours a section's title, and styles its subtitle (a Hero's lead) apart from it", () => {
@@ -493,6 +505,25 @@ describe("Style this ‹component›…'s deeper groups (3.13b, CT-2)", () => {
     expect(html).toMatch(/<h1 class="[^"]*text-primary![^"]*">Rosa&#x27;s<\/h1>/);
     expect(html).toMatch(
       /<p class="py-6 text-body text-h5! text-accent!">Fresh every morning<\/p>/,
+    );
+  });
+
+  it("styles every titled section's intro as its subtitle, a Features' too", () => {
+    const html = render([
+      {
+        type: "Features",
+        props: {
+          id: "f",
+          title: "Why us",
+          text: "<p>Three reasons</p>",
+          lookSubtitleCase: "uppercase",
+        },
+      },
+    ]);
+
+    // Its rich text in its wrapper, as every rich text field is drawn.
+    expect(html).toMatch(
+      /<div class="mt-4 uppercase! text-body[^"]*"><div class="contents"><p>Three reasons<\/p>/,
     );
   });
 

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { APPEARANCE_FIELDS, DIALOG_FIELDS } from "./appearance.js";
+import { APPEARANCE_FIELDS, DIALOG_FIELDS, DIALOG_TITLE_FIELDS } from "./appearance.js";
 import {
   BACKGROUND_FIELD_NAMES,
   BACKGROUND_FIELDS,
@@ -176,9 +176,12 @@ describe("the section frame's background (2.26)", () => {
       const at = names.indexOf("backgroundImage");
       expect(names.slice(at, at + 3), type).toEqual([...BACKGROUND_FIELD_NAMES]);
       // Straight after the Appearance group's own fields (fewer for a section without a title)
-      // and the dialog's deeper ones every section has (3.13b).
+      // and the dialog's deeper ones (3.13b), its Title group's for a titled section.
       const styling = names.filter(
-        (name) => Object.hasOwn(APPEARANCE_FIELDS, name) || Object.hasOwn(DIALOG_FIELDS, name),
+        (name) =>
+          Object.hasOwn(APPEARANCE_FIELDS, name) ||
+          Object.hasOwn(DIALOG_FIELDS, name) ||
+          Object.hasOwn(DIALOG_TITLE_FIELDS, name),
       );
       expect(names.slice(0, at), type).toEqual(styling);
     }

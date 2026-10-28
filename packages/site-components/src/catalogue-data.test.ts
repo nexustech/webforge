@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { APPEARANCE_FIELDS, APPEARANCE_TEXT_FIELD_NAMES, DIALOG_FIELDS } from "./appearance.js";
+import {
+  APPEARANCE_FIELDS,
+  APPEARANCE_TEXT_FIELD_NAMES,
+  DIALOG_ELEMENT_FIELDS,
+  DIALOG_FIELDS,
+  DIALOG_TITLE_FIELDS,
+} from "./appearance.js";
 import { siteLibrary } from "./catalogue/index.js";
 import {
   APPEARANCE_TEXT_FIELDS,
@@ -31,7 +37,19 @@ function libraryAsData(): unknown {
             has.length === group.length - APPEARANCE_TEXT_FIELD_NAMES.length
             ? "noText"
             : "partial";
-    const own = Object.fromEntries(Object.entries(fields).filter(([name]) => !has.includes(name)));
+    // The dialog's fields for elements, or for titled sections, written once too (3.13b).
+    const deeper = Object.hasOwn(fields, "lookPadding")
+      ? "element"
+      : Object.hasOwn(fields, "lookTitleColor")
+        ? "titled"
+        : undefined;
+    const shared =
+      deeper === "element" ? DIALOG_ELEMENT_FIELDS : deeper === "titled" ? DIALOG_TITLE_FIELDS : {};
+    const own = Object.fromEntries(
+      Object.entries(fields).filter(
+        ([name]) => !has.includes(name) && !Object.hasOwn(shared, name),
+      ),
+    );
     return [
       type,
       {
@@ -42,6 +60,7 @@ function libraryAsData(): unknown {
         framed,
         presets,
         appearance,
+        deeper,
         fields: own,
         defaults,
       },
@@ -49,7 +68,12 @@ function libraryAsData(): unknown {
   });
   // Through JSON: functions and undefined go, as they would from the file.
   return JSON.parse(
-    JSON.stringify({ appearance: STYLING, components: Object.fromEntries(entries) }),
+    JSON.stringify({
+      appearance: STYLING,
+      element: DIALOG_ELEMENT_FIELDS,
+      titled: DIALOG_TITLE_FIELDS,
+      components: Object.fromEntries(entries),
+    }),
   );
 }
 
