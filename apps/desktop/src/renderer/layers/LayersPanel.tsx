@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import {
   type ComponentType,
-  type DragEvent,
   type KeyboardEvent,
   type ReactNode,
   useEffect,
@@ -30,7 +29,7 @@ import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import { type Layer, layerItem } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
 import { isMac } from "../shell/commands.js";
-import { useRowDrag } from "../shell/use-row-drag.js";
+import { type RowDragKeys, useRowDrag } from "../shell/use-row-drag.js";
 
 /** What the Layers panel can do; the host binds them to the editor session and its commands. */
 export type LayersPanelActions = {
@@ -301,23 +300,24 @@ export function LayersPanel({
   const canDropAt = (from: Row, row: Row) => from.parent === row.parent;
 
   /** Whether a drag copies what it drags: Ctrl or Cmd held, as on the canvas (UX-4). */
-  const copying = (event: DragEvent) =>
-    actions.copy !== undefined && (event.ctrlKey || event.metaKey);
+  const copying = (keys: RowDragKeys) =>
+    actions.copy !== undefined && (keys.ctrlKey || keys.metaKey);
 
   const rowDrag = useRowDrag<Row>({
     type: DRAG_TYPE,
+    rows,
     keyOf: (row) => row.layer.id,
     // A copy may go next to the layer it copies; a move to its own place changes nothing.
     place: (from, row, y, event) =>
       from.layer.id === row.layer.id && !copying(event) ? null : y > 0.5 ? "after" : "before",
     allowed: canDropAt,
-    copies: actions.copy !== undefined,
     copying,
-    onDrop: (from, row, place, event) => {
+    onDrop: (from, row, place, keys) => {
       const after = place === "after";
-      if (copying(event)) {
-        // Next to the row it was dropped on, counted with the original still there.
-        actions.copy?.(from.layer.id, row.index + (after ? 1 : 0), event.shiftKey === true);
+      if (copying(keys)) {
+        // Next to the row it was dropped on, counted with the original still there; Shift held
+        // from before the press too, as the browser's own drag couldn't (#271).
+        actions.copy?.(from.layer.id, row.index + (after ? 1 : 0), keys.shiftKey);
       } else if (from.layer.id !== row.layer.id) {
         actions.move(from.layer.id, dropIndex(from.index, row.index, after));
       }

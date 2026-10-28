@@ -139,6 +139,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
 
   const rowDrag = useRowDrag<Row>({
     type: DRAG_TYPE,
+    rows,
     keyOf: (row) => row.item.id,
     // Before or after a row, or into a dropdown from the middle of its row; nowhere else.
     place: (from, row, y) => {
