@@ -1,13 +1,17 @@
 import type { FormField, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  BUSINESS_KINDS,
   BUSINESS_NAME_MAX,
+  BUSINESS_TYPES,
+  type BusinessKind,
   CONSENT_MESSAGE_MAX,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
   MEASUREMENT_ID_MAX,
   OPENING_HOURS_NOTE_MAX,
   POSTAL_ADDRESS_MAX,
+  PRICE_RANGE_MAX,
   SITE_DESCRIPTION_MAX,
   SITE_NAME_MAX,
   type SiteSettings,
@@ -59,6 +63,29 @@ function imageField(
       thumbnail: imageUrl(image),
     })),
   };
+}
+
+/**
+ * The schema.org type within the chosen kind of business (3.15, SEO-1): offered when the kind has
+ * more than one, its first meaning "none more precise".
+ */
+function businessKindField(typed: string): FormField[] {
+  const type = BUSINESS_TYPES.find((each) => each === typed);
+  const kinds: readonly BusinessKind[] = type === undefined ? [] : BUSINESS_KINDS[type];
+  if (kinds.length < 2) return [];
+  return [
+    {
+      kind: "select",
+      name: "businessKind",
+      path: "general.businessKind",
+      label: t("site.settings.businessKind"),
+      width: "md",
+      options: kinds.map((kind, index) => ({
+        label: t(`site.settings.businessKind.${kind}`),
+        value: index === 0 ? "" : kind,
+      })),
+    },
+  ];
 }
 
 /** Site Settings' sections, in the dialog's order, each a group of the form's fields. */
@@ -202,11 +229,54 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           help: t("site.settings.openingHoursNoteHint"),
           maxLength: OPENING_HOURS_NOTE_MAX,
         },
+        // For search engines' business details (3.15, SEO-1).
+        {
+          kind: "text",
+          name: "priceRange",
+          label: t("site.settings.priceRange"),
+          help: t("site.settings.priceRangeHint"),
+          maxLength: PRICE_RANGE_MAX,
+          width: "sm",
+        },
+        {
+          kind: "text",
+          name: "latitude",
+          path: "contact.geo.latitude",
+          label: t("site.settings.latitude"),
+          help: t("site.settings.geoHint"),
+          maxLength: 20,
+          width: "sm",
+        },
+        {
+          kind: "text",
+          name: "longitude",
+          path: "contact.geo.longitude",
+          label: t("site.settings.longitude"),
+          maxLength: 20,
+          width: "sm",
+        },
       ],
     },
     {
       id: "search",
-      fields: () => [
+      fields: (values) => [
+        // What kind of business it is, which its structured data says (3.15, SEO-1).
+        {
+          kind: "select",
+          name: "businessType",
+          path: "general.businessType",
+          label: t("site.settings.businessType"),
+          help: t("site.settings.businessTypeHint"),
+          width: "md",
+          options: [
+            { label: t("site.settings.businessType.none"), value: "" },
+            ...BUSINESS_TYPES.map((type) => ({
+              label: t(`template.category.${type}`),
+              value: type,
+            })),
+          ],
+        },
+        ...businessKindField(values.businessType),
         { kind: "toggle", name: "allowIndexing", label: t("site.settings.allowIndexing") },
         { kind: "toggle", name: "includeSitemap", label: t("site.settings.includeSitemap") },
         {
