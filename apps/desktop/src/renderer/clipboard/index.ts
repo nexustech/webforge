@@ -3,4 +3,10 @@
  * from this file (`pnpm deps`, B2); everything else here is the area's own.
  */
 
-export { APPEARANCE_GROUP_ID, applyLook, LOOK_COMMANDS, lookChange } from "./apply-look.js";
+export {
+  APPEARANCE_GROUP_ID,
+  applyLook,
+  LOOK_COMMANDS,
+  lookChange,
+  lookFieldsOf,
+} from "./apply-look.js";

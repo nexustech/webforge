@@ -58,7 +58,7 @@ function registerFontFaces(document: Document, faces: readonly string[]): void {
 }
 
 /** What the previews need of the editor: the library, the site's theme, its CSS compiler. */
-type PreviewSource = {
+export type PreviewSource = {
   readonly library: ComponentLibrary;
   /** The site's theme now, so a preview looks as the section will on this site. */
   readonly theme: () => Theme;
@@ -127,6 +127,9 @@ function SectionPreview({ draw }: { readonly draw: () => Promise<Drawn | undefin
   );
 }
 
+/** What a preview draws: a component type, or a shared section by its id. */
+type PreviewItem = Pick<AddItem, "type" | "sharedSectionId">;
+
 /**
  * The Add panel's larger previews (F-ED-26, UX-10): a section, drawn with its defaults (or a
  * shared section as the site holds it) by the site library's static renderer, with the CSS its
@@ -134,6 +137,29 @@ function SectionPreview({ draw }: { readonly draw: () => Promise<Drawn | undefin
  * the theme or the shared section has changed.
  */
 export function createSectionPreviews(source: PreviewSource): (item: AddItem) => ReactNode {
+  return createPreviews(source, new Set(["section"]));
+}
+
+/**
+ * Theme Studio's previews of each kind (3.12, CT-1): a section or an element of `type`, drawn with
+ * its defaults in the site's theme, with the theme's look for its kind, as the Add panel's are.
+ * Drawn again once the theme has changed, so a change to the look shows at once.
+ */
+export function createKindPreviews(
+  source: Omit<PreviewSource, "sharedSection">,
+): (type: string) => ReactNode {
+  const previews = createPreviews(
+    { ...source, sharedSection: () => undefined },
+    new Set(["section", "element"]),
+  );
+  return (type) => previews({ type });
+}
+
+/** Previews of the library's components placed as `places`, and of shared sections. */
+function createPreviews(
+  source: PreviewSource,
+  places: ReadonlySet<string>,
+): (item: PreviewItem) => ReactNode {
   /**
    * Each item's drawing, with the node and theme it was drawn from: drawn again once either
    * changes (a shared section or the theme edited; both are new objects then).
@@ -149,10 +175,11 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
   const drawers = new Map<string, () => Promise<Drawn | undefined>>();
   // A library section's node, with its defaults: made once, so its drawing is kept.
   const defaults = new Map<string, NodeDoc>();
-  const nodeOf = (item: AddItem): NodeDoc | undefined => {
+  const nodeOf = (item: PreviewItem): NodeDoc | undefined => {
     if (item.sharedSectionId !== undefined) return source.sharedSection(item.sharedSectionId);
     const definition = source.library.components[item.type];
-    if (definition === undefined || definition.place !== "section") return undefined;
+    // An element when its place is left out.
+    if (definition === undefined || !places.has(definition.place ?? "element")) return undefined;
     let node = defaults.get(item.type);
     if (node === undefined) {
       node = { type: item.type, props: { ...structuredClone(definition.defaults), id: "preview" } };
@@ -185,7 +212,7 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
       theme: theme.preset,
     };
   };
-  const drawerFor = (item: AddItem) => {
+  const drawerFor = (item: PreviewItem) => {
     let drawer = drawers.get(item.type);
     if (drawer === undefined) {
       drawer = () => {
