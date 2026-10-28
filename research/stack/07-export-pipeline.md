@@ -357,7 +357,7 @@ Effort: roughly **2–3 days**. Exported HTML keeps working as-is.
 5. Export folder opens correctly via `file://` (double-click `index.html`) in Chrome, Edge, Firefox and Safari, including fonts and scripts, **and** after upload to a plain static host. Confirm no external requests (block all network in a test browser).
 
 ## Open questions
-1. ~~Clean URLs vs file-friendly links~~ → **Decided X1: flat `about.html` files, relative links, no server needed.** Optional host-specific clean URLs post-MVP.
+1. ~~Clean URLs vs file-friendly links~~ → **Decided X1: flat `about.html` files, relative links, no server needed.** Optional host-specific clean URLs post-MVP. One exception, `404.html` (F-ED-20, 3.5): a host serves it at any missing address, so its links and files start at `/`. It works only over http, and misses its styles on a site hosted in a folder (a GitHub project page); every other page is unaffected ([pipeline README](../../packages/pipeline/README.md)).
 2. ~~Image formats~~ → **Decided X2: WebP + JPEG fallback** (PNG fallback for transparent images) via `<picture>`; JPEG for social images; AVIF not by default.
 3. ~~Site URL setting~~ → **Decided X3: Site Settings dialog** (editable any time; URL, social links, contact details, SEO), with a prompt before export if the web address is missing.
 4. ~~HTML minification~~ → **Decided X4: keep HTML, CSS (and JS) readable**; optional "Minify output" setting, off by default.

@@ -18,10 +18,10 @@ type ExportRequest = {
 };
 type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
 
-// Exports the three-page fixture site (with its photo and price list) through the real app: preload
-// API, IPC, export utility process. The browser projects then open the result from disk. As in the
-// app, the photo's and the document's bytes come from the open site's file; the renderer names
-// them by hash.
+// Exports the three-page fixture site, and its "Page not found" page, (with its photo and price list)
+// through the real app: preload API, IPC, export utility process. The browser projects then open
+// the result from disk. As in the app, the photo's and the document's bytes come from the open
+// site's file; the renderer names them by hash.
 /** `site` with its photo behind the About page's Text section, under a strong overlay (2.26). */
 function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
   return {
@@ -107,14 +107,25 @@ function themed(site: SiteSnapshot): SiteSnapshot {
 
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
-  // With its photo as the icon, and the About page's share picture (3.4).
+  // With its photo as the icon, the About page's share picture (3.4), and a "Page not found" page
+  // with the home page's Hero, its photo and links (F-ED-20, 3.5).
   const sample = withSectionBackground(sampleSite());
+  const notFound = {
+    id: "lost",
+    path: "404",
+    title: "Page not found",
+    hideFromNavigation: true,
+    doc: { root: { props: {} }, content: sample.pages[0]?.doc.content.slice(0, 1) ?? [] },
+  };
   const site = {
     ...sample,
     icon: "hero-photo",
-    pages: sample.pages.map((page) =>
-      page.path === "about" ? { ...page, shareImage: "hero-photo" } : page,
-    ),
+    pages: [
+      ...sample.pages.map((page) =>
+        page.path === "about" ? { ...page, shareImage: "hero-photo" } : page,
+      ),
+      notFound,
+    ],
   };
   const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-fixture-"));
   const sitePath = join(dir, "Fixture.wforge");
@@ -168,8 +179,9 @@ setup("export the fixture site from the app", async () => {
       { snapshot: { ...site, media: [], documents: [] }, media, documents, choices, output },
     );
 
-    // One warning: the fixture's second Newsletter has no form address, on purpose (3.7).
-    expect(result).toMatchObject({ status: "exported", pages: 3, warningCount: 1 });
+    // With "Page not found" (3.5). One warning: the fixture's second Newsletter has no form address,
+    // on purpose (3.7).
+    expect(result).toMatchObject({ status: "exported", pages: 4, warningCount: 1 });
 
     // Again in a theme of its own, into a folder inside the first.
     await stubFileDialogs(app, THEMED_SITE_DIR);
@@ -184,7 +196,7 @@ setup("export the fixture site from the app", async () => {
       },
     );
     // With the thank-you page Web3Forms sends visitors to (3.7).
-    expect(again).toMatchObject({ status: "exported", pages: 4, warningCount: 1 });
+    expect(again).toMatchObject({ status: "exported", pages: 5, warningCount: 1 });
   } finally {
     await app.close();
     rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });

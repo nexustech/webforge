@@ -88,7 +88,10 @@ const settings: fc.Arbitrary<SiteSettings> = fc.record({
     },
     { requiredKeys: ["openingHours"] },
   ),
-  search: fc.record({ allowIndexing: fc.boolean(), includeSitemap: fc.boolean() }),
+  search: fc.record(
+    { allowIndexing: fc.boolean(), includeSitemap: fc.boolean(), readableByAi: fc.boolean() },
+    { requiredKeys: ["allowIndexing", "includeSitemap"] },
+  ),
   analytics: fc.record(
     { consentBanner: fc.boolean(), consentMessage: fc.string({ maxLength: 40 }) },
     { requiredKeys: ["consentBanner"] },

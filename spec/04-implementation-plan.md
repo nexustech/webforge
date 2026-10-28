@@ -1005,7 +1005,7 @@ Responsive widths, <picture> with WebP + JPEG (PNG if transparent), width/height
 - [ ] Derivatives cached by blob hash
 
 **3.5 Site files: sitemap, robots, manifest, 404, meta tags, {year}, llms.txt**  
-sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.txt, site.webmanifest, 404.html from the editable 404 page with absolute links and asset URLs (based on the web address, or `/`-rooted when none is set), Open Graph/Twitter tags, {year} token. Added 22 Oct 2026 (GA8, +1 day): *Help AI tools read your site* in Site Settings → Search engines (default per MVP §7 item 12) writes `llms.txt` and a Markdown copy of each page, leaving out the 404 page and hidden elements.
+sitemap.xml + canonical + absolute OG URLs when the web address is set, robots.txt, site.webmanifest, 404.html from the editable 404 page with `/`-rooted links and asset URLs (not the web address, so it works on any host's address; 28 Oct 2026 review of #548), Open Graph/Twitter tags, {year} token. Added 22 Oct 2026 (GA8, +1 day): *Help AI tools read your site* in Site Settings → Search engines (default per MVP §7 item 12) writes `llms.txt` and a Markdown copy of each page, leaving out the 404 page and hidden elements.
 
 - [ ] Missing web address skips sitemap/canonical with a warning
 - [ ] 404.html works at a nested missing URL on a test server

@@ -195,6 +195,7 @@ export type {
   MediaItem,
   SiteAnalytics,
   SitePage,
+  SiteSearch,
   SiteSnapshot,
 } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";

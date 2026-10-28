@@ -27,8 +27,10 @@ import {
   measurementIdSchema,
   type OpeningHours,
   openingHoursSchema,
+  SITE_DESCRIPTION_MAX,
   type SocialProfile,
   socialProfileSchema,
+  X_HANDLE_MAX,
 } from "./settings.js";
 
 /**
@@ -144,6 +146,24 @@ export type SiteSnapshot = {
    * banner asks visitors first (B7), and its own text if the person wrote one.
    */
   readonly analytics?: SiteAnalytics | undefined;
+  /**
+   * Site Settings' search engines and sharing (3.5): whether search engines may index the site and
+   * get a sitemap, whether AI tools get `llms.txt` and Markdown copies (F-EX-5), the site's own
+   * description, and its X handle for share cards. Search engines allowed, a sitemap and no AI
+   * files when left out.
+   */
+  readonly search?: SiteSearch | undefined;
+};
+
+/** {@link SiteSnapshot}'s search engines and sharing. */
+export type SiteSearch = {
+  readonly allowIndexing: boolean;
+  readonly includeSitemap: boolean;
+  readonly readableByAi: boolean;
+  /** The site's description (Site Settings), for `llms.txt`; a page's own falls back to it. */
+  readonly description?: string | undefined;
+  /** `@name`, for `twitter:site`. */
+  readonly xHandle?: string | undefined;
 };
 
 /** {@link SiteSnapshot}'s Google Analytics. */
@@ -226,6 +246,18 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
           measurementId: measurementIdSchema,
           consentBanner: z.boolean(),
           consentMessage: z.string().max(CONSENT_MESSAGE_MAX).optional(),
+        })
+        .optional(),
+      search: z
+        .strictObject({
+          allowIndexing: z.boolean(),
+          includeSitemap: z.boolean(),
+          readableByAi: z.boolean(),
+          description: z.string().max(SITE_DESCRIPTION_MAX).optional(),
+          xHandle: z
+            .string()
+            .regex(new RegExp(`^@?[A-Za-z0-9_]{1,${X_HANDLE_MAX - 1}}$`))
+            .optional(),
         })
         .optional(),
     })
