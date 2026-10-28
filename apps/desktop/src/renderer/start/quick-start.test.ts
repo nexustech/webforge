@@ -1,4 +1,4 @@
-import { contrastRatio, THEME_PRESETS, themePreset } from "@webforge/themes";
+import { CURATED_THEMES, contrastRatio, themePreset } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import {
@@ -118,14 +118,17 @@ describe("the quick start's choices, driven by the answers (QS-1)", () => {
 });
 
 describe("the quick start's colours (QS-1)", () => {
-  it("offers three other presets' colours for the theme", () => {
-    const palettes = palettesFor("light");
+  it("offers three curated presets' colours, other than the theme's and different for each", () => {
+    const curated = CURATED_THEMES.map((each) => each.preset);
 
-    expect(palettes).toHaveLength(3);
-    expect(palettes).not.toContain("light");
-    for (const preset of palettes) {
-      expect(THEME_PRESETS.map((each) => each.preset)).toContain(preset);
+    for (const theme of ["light", ...curated]) {
+      const palettes = palettesFor(theme);
+      expect(palettes).toHaveLength(3);
+      expect(palettes).not.toContain(theme);
+      expect(new Set(palettes).size).toBe(3);
+      for (const preset of palettes) expect(curated).toContain(preset);
     }
+    expect(palettesFor("bistro")).not.toEqual(palettesFor("atelier"));
   });
 
   it("keeps the theme's own colours, or puts a palette's, a logo's or one colour's on it, readable", () => {

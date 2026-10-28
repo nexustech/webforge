@@ -10,9 +10,9 @@ import {
   type BrandProposal,
   brandedTheme,
   brandFromImage,
+  CURATED_THEMES,
   hexToOklch,
   type ImageColour,
-  THEME_PRESETS,
   themePreset,
 } from "@webforge/themes";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
@@ -112,14 +112,15 @@ export const recipesOffered = (category: TemplateCategory | null): readonly Page
   category === null ? [] : recipesFor(category);
 
 /**
- * The palettes the last step offers for `theme` (QS-1): three other presets' brand colours, fitted
- * to the theme's own surfaces as a logo's would be, so each stays readable on it. Different presets
- * from the theme's own, in the presets' order.
+ * The palettes the last step offers for `theme` (QS-1): three curated presets' brand colours (2.13),
+ * fitted to the theme's own surfaces as a logo's would be, so each stays readable on it. The three
+ * after the theme in the curated order (the first three for a theme that isn't one), so each theme
+ * offers different ones and never its own.
  */
 export function palettesFor(theme: string): readonly string[] {
-  return THEME_PRESETS.filter((preset) => preset.preset !== theme)
-    .slice(0, 3)
-    .map((preset) => preset.preset);
+  const curated = CURATED_THEMES.map((preset) => preset.preset);
+  const at = curated.indexOf(theme);
+  return [1, 2, 3].flatMap((step) => curated[(at + step) % curated.length] ?? []);
 }
 
 /** The brand colours `colours` give `theme`, or none for the theme's own. */

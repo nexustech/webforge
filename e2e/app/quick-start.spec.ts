@@ -50,7 +50,8 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   await quickStart.getByRole("button", { name: "Next" }).click();
 
   // Colours and details.
-  await quickStart.getByRole("radio", { name: "Light" }).check();
+  // Another curated theme's brand colours, fitted to Bistro's surfaces.
+  await quickStart.getByRole("radio", { name: "Workshop" }).check();
   await quickStart.getByRole("textbox", { name: "Phone" }).fill("+44 113 496 0000");
   await quickStart.getByRole("textbox", { name: "Web address" }).fill("https://rosas.example");
   await quickStart.getByRole("button", { name: "Create site" }).click();
