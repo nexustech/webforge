@@ -1,4 +1,5 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, test } from "@playwright/test";
@@ -33,7 +34,7 @@ test.beforeAll(() => {
 
 test.afterEach(async () => {
   await app?.close();
-  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 /** Adds `name`'s result to the results file, keeping the other case's from this run. */

@@ -1,7 +1,8 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
@@ -128,7 +129,7 @@ test.afterAll(async () => {
     await exited;
   }
   // On Windows the app's helper processes can hold the folder for a moment after it exits.
-  rmSync(siteDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  await rm(siteDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 test("ships every catalogue font beside app.asar, byte for byte, within the font budget (2.2)", () => {
