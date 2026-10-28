@@ -1,6 +1,6 @@
 import { type FormField, type FormSchema, type FormSpec, sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type SiteCode, type SiteDoc, siteCodeSchema, webUrlSchema } from "@webforge/model";
+import { type SiteCode, type SiteDoc, siteCodeSchema } from "@webforge/model";
 import { z } from "zod";
 import type { EditorSession } from "../editor/editor-session.js";
 import {
@@ -42,9 +42,15 @@ export function toCodeForm(site: SiteDoc): CodeForm {
   };
 }
 
+/**
+ * An address the site's code may load from: `https://` only, since a published site is served over
+ * https, where a browser blocks an `http://` script or stylesheet as mixed content.
+ */
+const allowedAddressSchema = z.url({ protocol: /^https$/, hostname: z.regexes.domain });
+
 const savedCodeSchema = z.strictObject({
   code: siteCodeSchema,
-  allowedExternalUrls: z.array(webUrlSchema),
+  allowedExternalUrls: z.array(allowedAddressSchema),
 });
 
 /** Checks what the form describes, an allowed address that isn't a web address in its own words. */
@@ -168,9 +174,15 @@ export function siteCodePart(site: SiteDoc, save: (saved: SavedCode) => void): O
   });
 }
 
+/** Whether `site` has code of its own, or addresses its code may load from. */
+const hasOwnCode = (site: SiteDoc) =>
+  Object.values(site.code).some((code) => code.trim() !== "") ||
+  site.settings.allowedExternalUrls.length > 0;
+
 /**
- * The open site's Custom code in Settings, after Site Settings: shown in Advanced mode only (T2),
- * as technical words are, and saved as one undo step.
+ * The open site's Custom Code in Settings, after Site Settings: shown in Advanced mode (T2), as
+ * technical words are, and in Simple mode too once the site has code of its own, so a Site Check
+ * finding in it can be shown and fixed (3.9). Saved as one undo step.
  */
 export function registerSiteCode(
   registry: SettingsRegistry,
@@ -181,11 +193,13 @@ export function registerSiteCode(
     id: CODE_SECTION,
     heading: "site",
     order: 1,
-    open: () =>
-      preferences.getState().preferences.editorLevel === "advanced"
-        ? siteCodePart(session.history.document.getState(), (saved) => {
+    open: () => {
+      const site = session.history.document.getState();
+      return preferences.getState().preferences.editorLevel === "advanced" || hasOwnCode(site)
+        ? siteCodePart(site, (saved) => {
             saveSiteCode(session, saved);
           })
-        : undefined,
+        : undefined;
+    },
   });
 }
