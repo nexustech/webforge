@@ -249,6 +249,14 @@ export const site = {
   "site.settings.allowIndexing": "Let search engines show the site",
   "site.settings.includeSitemap": "Include a sitemap for search engines",
   "site.settings.readableByAi": "Help AI tools read your site",
+  "site.settings.googleVerification": "Google verification code",
+  "site.settings.googleVerificationHint":
+    "From Google Search Console (search.google.com/search-console), with its HTML tag method: paste the code, or the whole tag. It shows Google the site is yours; nothing is sent from here.",
+  "site.settings.bingVerification": "Bing verification code",
+  "site.settings.bingVerificationHint":
+    "From Bing Webmaster Tools (bing.com/webmasters), with its meta tag method: paste the code, or the whole tag.",
+  "site.settings.error.verification":
+    "That doesn't look like a verification code. Paste the code, or the whole <meta> tag the console shows.",
   "site.settings.readableByAiHint":
     "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",
   "site.settings.measurementId": "Google Analytics measurement ID",

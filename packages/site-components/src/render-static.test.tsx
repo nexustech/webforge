@@ -397,7 +397,8 @@ describe("renderNodesToHtml", () => {
       },
     ];
 
-    const html = renderNodesToHtml(nodes, siteLibrary, context);
+    // The page's first section: its picture loads at once, and first (3.15, SEO-4).
+    const html = renderNodesToHtml(nodes, siteLibrary, { ...context, firstSection: "hero" });
 
     expect(html).toContain(
       '<div class="hero-content max-w-6xl flex-col gap-10 lg:flex-row-reverse text-left">',
@@ -405,7 +406,13 @@ describe("renderNodesToHtml", () => {
     expect(html).toContain(
       '<source type="image/webp" srcSet="assets/img/hero-640.webp 640w" sizes="(min-width: 1024px) 50vw, 100vw"/>',
     );
-    expect(html).toContain('alt="Loaves on a shelf" loading="eager" decoding="async"');
+    expect(html).toContain(
+      'alt="Loaves on a shelf" loading="eager" fetchPriority="high" decoding="async"',
+    );
+    // Lower down the page, it waits until it's scrolled to, as every other picture does.
+    expect(renderNodesToHtml(nodes, siteLibrary, context)).toContain(
+      'alt="Loaves on a shelf" loading="lazy" decoding="async"',
+    );
     // The focal point keeps the important part in view where CSS cuts the image (G14).
     expect(html).toContain('style="object-position:30% 50%"');
     expect(html).toContain('width="640" height="427"');

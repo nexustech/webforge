@@ -58,7 +58,9 @@ type ShareOptions = {
  * - Open Graph and Twitter's tags: its title, description and share picture, absolute with a web
  *   address and relative to the page without one (social previews may show no picture then, which
  *   the export report says), and the site's X handle;
- * - `noindex` when search engines aren't allowed, and on the "Page not found" page always;
+ * - `noindex` when search engines aren't allowed, on a page hidden from them (3.15, SEO-2), and on
+ *   the "Page not found" page always;
+ * - the verification codes Google's and Bing's consoles gave, on every page (3.15, SEO-8);
  * - the web app manifest, when the site has its icons.
  */
 export function shareTags({ site, page, prefix, shareImage, manifest }: ShareOptions): string[] {
@@ -75,7 +77,15 @@ export function shareTags({ site, page, prefix, shareImage, manifest }: ShareOpt
     ...(address === undefined || notFound
       ? []
       : [`<link rel="canonical" href="${escapeHtml(pageAddress(address, page.path))}">`]),
-    ...(!search.allowIndexing || notFound ? [meta("name", "robots", "noindex")] : []),
+    ...(!search.allowIndexing || notFound || page.hideFromSearch === true
+      ? [meta("name", "robots", "noindex")]
+      : []),
+    ...(search.verification?.google === undefined
+      ? []
+      : [meta("name", "google-site-verification", search.verification.google)]),
+    ...(search.verification?.bing === undefined
+      ? []
+      : [meta("name", "msvalidate.01", search.verification.bing)]),
     meta("property", "og:type", "website"),
     meta("property", "og:site_name", site.name),
     meta("property", "og:title", pageTitle(site, page)),
@@ -122,10 +132,10 @@ export function webManifest(site: SiteSnapshot, icons: readonly SiteIcon[]): str
 
 /**
  * `robots.txt` (3.5): every page open to search engines, with the sitemap's address when there is
- * one, or none when Site Settings keep the site out of them.
+ * one. Crawling stays allowed when Site Settings keep the site out of search: its pages say
+ * `noindex`, which a search engine only reads on a page it may fetch (3.15, SEO-3).
  */
 export function robotsTxt(site: SiteSnapshot): string {
-  if (!searchOf(site).allowIndexing) return "User-agent: *\nDisallow: /\n";
   const address = siteAddress(site);
   return [
     "User-agent: *",
@@ -135,13 +145,17 @@ export function robotsTxt(site: SiteSnapshot): string {
   ].join("\n");
 }
 
+/** Whether `page` is one search engines are told about: not "Page not found" nor hidden (SEO-2). */
+const searchable = (page: SitePage) => page.path !== NOT_FOUND_PATH && page.hideFromSearch !== true;
+
 /**
- * `sitemap.xml` (3.5): every page's address but the "Page not found" page's, pages hidden from
- * the navigation too (they are on the site). Only with a web address ({@link hasSitemap}).
+ * `sitemap.xml` (3.5): every page's address but the "Page not found" page's and those hidden from
+ * search (3.15, SEO-2); pages hidden from the navigation are in it (they are on the site). Only
+ * with a web address ({@link hasSitemap}).
  */
 export function sitemapXml(site: SiteSnapshot, address: string): string {
   const urls = site.pages
-    .filter((page) => page.path !== NOT_FOUND_PATH)
+    .filter(searchable)
     .map(
       (page) => `  <url>\n    <loc>${escapeHtml(pageAddress(address, page.path))}</loc>\n  </url>`,
     );
@@ -162,9 +176,12 @@ export function withYear(html: string, year: number): string {
   );
 }
 
-/** The pages AI tools get a Markdown copy of (F-EX-5): every page but "Page not found". */
+/**
+ * The pages AI tools get a Markdown copy of (F-EX-5): every page but "Page not found" and those
+ * hidden from search (3.15, SEO-2).
+ */
 export function readablePages(site: SiteSnapshot): readonly SitePage[] {
-  return site.pages.filter((page) => page.path !== NOT_FOUND_PATH);
+  return site.pages.filter(searchable);
 }
 
 /** Stands for the site's root while a page's links are resolved; never written. */
