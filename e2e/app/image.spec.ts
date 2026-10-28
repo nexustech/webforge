@@ -1,4 +1,4 @@
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The Image element on the canvas (2.9), and its width handles (2.17): a grip on each edge of the
@@ -20,6 +20,38 @@ test.afterEach(async () => {
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 const left = () => page.getByRole("region", { name: "Left panels" });
+
+/**
+ * Waits until `grip` stays put across two animation frames and is what a press at its centre hits
+ * (#616): as the Image's frame and the selection's overlay settle it moves, or is covered, and a
+ * press then lands on the Image and drags it instead (macOS CI).
+ */
+async function settled(grip: Locator) {
+  let last = "";
+  await expect
+    .poll(async () => {
+      const now = await grip.evaluate(
+        (element) =>
+          new Promise<string>((resolve) => {
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                const { x, y, width, height } = element.getBoundingClientRect();
+                const hit = element.ownerDocument.elementFromPoint(x + width / 2, y + height / 2);
+                resolve(
+                  hit !== null && element.contains(hit)
+                    ? `${x},${y},${width},${height}`
+                    : "covered",
+                );
+              }),
+            );
+          }),
+      );
+      const steady = now !== "covered" && now === last;
+      last = now;
+      return steady;
+    })
+    .toBe(true);
+}
 
 test("shows an Image without its image as a hint to choose one, as the editor opens (#367)", async () => {
   await left().getByRole("tab", { name: "Elements" }).click();
@@ -51,6 +83,7 @@ test("narrows an Image by dragging a grip on its edge, snapping to a width, as o
   expect(full).toBeGreaterThan(672);
 
   // Dragged in close to its middle: as narrow as it goes, Small (320 px).
+  await settled(grip);
   const from = await grip.boundingBox();
   const box = await image.boundingBox();
   if (from === null || box === null) throw new Error("not shown");
@@ -73,6 +106,7 @@ test("narrows an Image by dragging a grip on its edge, snapping to a width, as o
     return shown === null ? 0 : Math.round(shown.x + shown.width);
   };
   await expect.poll(async () => Math.abs((await centreOf()).x - (await edge()))).toBeLessThan(6);
+  await settled(grip);
   const start = await centreOf();
   await page.mouse.move(start.x, start.y);
   await page.mouse.down();
