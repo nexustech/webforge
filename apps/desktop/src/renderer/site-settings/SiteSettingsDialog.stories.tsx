@@ -40,3 +40,15 @@ export const Contact: Story = { args: { initialSection: "contact" } };
 
 /** Social profiles and the share image. */
 export const Social: Story = { args: { initialSection: "social" } };
+
+/** Search engines: the switches, and the Google and Bing verification codes (3.15). */
+export const SearchEngines: Story = {
+  args: {
+    initialSection: "search",
+    site: (() => {
+      const site = bakery();
+      site.settings.search.verification = { google: "abcDEF123_-xyzVerification" };
+      return site;
+    })(),
+  },
+};

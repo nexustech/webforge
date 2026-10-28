@@ -14,6 +14,10 @@ import {
   SOCIAL_NETWORKS,
   X_HANDLE_MAX,
 } from "@webforge/model";
+
+/** Room for a verification code pasted with its whole `<meta>` tag (3.15, SEO-8). */
+const VERIFICATION_PASTE_MAX = 300;
+
 import {
   DAYS,
   FORM_SERVICES,
@@ -210,6 +214,23 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           name: "readableByAi",
           label: t("site.settings.readableByAi"),
           help: t("site.settings.readableByAiHint"),
+        },
+        // Proof the site is the owner's, for each console (3.15, SEO-8): no account here.
+        {
+          kind: "text",
+          name: "googleVerification",
+          path: "search.verification.google",
+          label: t("site.settings.googleVerification"),
+          help: t("site.settings.googleVerificationHint"),
+          maxLength: VERIFICATION_PASTE_MAX,
+        },
+        {
+          kind: "text",
+          name: "bingVerification",
+          path: "search.verification.bing",
+          label: t("site.settings.bingVerification"),
+          help: t("site.settings.bingVerificationHint"),
+          maxLength: VERIFICATION_PASTE_MAX,
         },
       ],
     },

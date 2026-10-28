@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest";
-import { defaultSiteSettings, siteSettingsSchema, webAddressSchema } from "./settings.js";
+import {
+  defaultSiteSettings,
+  siteSettingsSchema,
+  verificationCodeOf,
+  verificationCodeSchema,
+  webAddressSchema,
+} from "./settings.js";
+
+describe("verification codes (3.15, SEO-8)", () => {
+  it("takes the code from what was pasted: the code, or the whole tag", () => {
+    expect(verificationCodeOf(" abcDEF123_-xyz ")).toBe("abcDEF123_-xyz");
+    expect(
+      verificationCodeOf('<meta name="google-site-verification" content="abcDEF123_-xyz" />'),
+    ).toBe("abcDEF123_-xyz");
+    expect(verificationCodeOf("<meta name='msvalidate.01' content='0123456789ABCDEF'>")).toBe(
+      "0123456789ABCDEF",
+    );
+  });
+
+  it("accepts Google's and Bing's codes, and nothing that could break out of the tag", () => {
+    expect(verificationCodeSchema.safeParse("abcDEF123_-xyz").success).toBe(true);
+    expect(verificationCodeSchema.safeParse("0123456789ABCDEF").success).toBe(true);
+    for (const wrong of ["", "short", 'a"><script>', "has spaces in it"]) {
+      expect(verificationCodeSchema.safeParse(wrong).success, wrong).toBe(false);
+    }
+  });
+});
 
 const full = {
   general: {

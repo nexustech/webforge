@@ -78,6 +78,29 @@ describe("settings form", () => {
     expect(on.ok && on.settings.search.readableByAi).toBe(true);
   });
 
+  it("keeps the search engines' verification codes, from the whole tags pasted too (3.15)", () => {
+    const saved = checkSettings(
+      edit(full, {
+        googleVerification: '<meta name="google-site-verification" content="abcDEF123_-xyz" />',
+        bingVerification: " 0123456789ABCDEF ",
+      }),
+      full,
+    );
+    expect(saved.ok && saved.settings.search.verification).toEqual({
+      google: "abcDEF123_-xyz",
+      bing: "0123456789ABCDEF",
+    });
+    expect(saved.ok && toSettingsForm(saved.settings).googleVerification).toBe("abcDEF123_-xyz");
+
+    // Emptied, nothing is stored.
+    const none = checkSettings(edit(full, { googleVerification: "", bingVerification: "" }), full);
+    expect(none.ok && none.settings.search).not.toHaveProperty("verification");
+    // Something that isn't a code says so, at its field.
+    const wrong = checkSettings(edit(full, { googleVerification: "not a code!" }), full);
+    expect(wrong.ok).toBe(false);
+    expect(!wrong.ok && wrong.errors["search.verification.google"]).toBeDefined();
+  });
+
   it("leaves empty fields out, trims what was typed and tidies addresses and handles", () => {
     const form = edit(defaultSiteSettings("My site", "en"), {
       name: "  Rosa's  ",
