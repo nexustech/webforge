@@ -19,16 +19,41 @@ function customCodeIn(nodes: readonly NodeDoc[], found: string[]): string[] {
   return found;
 }
 
-/**
- * Everything in `site` the person wrote as code, where class names can be (3.9): each Custom Code
- * element's HTML, the HTML for every page's `<head>` and `<body>`, and `custom.js`, which can add
- * classes to the page. Not `custom.css`, whose class names are its own.
- */
-export function customCode(site: SiteSnapshot): string[] {
+/** Each Custom Code element's HTML in `site`: the Header's, the Footer's, then each page's. */
+export function customHtml(site: SiteSnapshot): string[] {
   const found = customCodeIn([...site.layout.header, ...site.layout.footer], []);
   for (const page of site.pages) customCodeIn(page.doc.content, found);
+  return found;
+}
+
+/**
+ * The words of the code the person wrote that can be classes (3.9): every word of each Custom Code
+ * element's HTML and of the HTML for every page's `<head>` and `<body>`, and of `custom.js` only
+ * the words in its strings, where `classList` and `className` take theirs. Its keywords and names
+ * (`static`, `table`, `visible`) would make rules for nothing. Not `custom.css`, whose class names
+ * are its own.
+ */
+export function siteCodeCandidates(site: SiteSnapshot): string[] {
   const { head = "", bodyEnd = "", js = "" } = site.code ?? {};
-  return [...found, head, bodyEnd, js].filter((code) => code.trim() !== "");
+  return [
+    ...[...customHtml(site), head, bodyEnd].flatMap(codeCandidates),
+    ...scriptStrings(js).flatMap(codeCandidates),
+  ];
+}
+
+/**
+ * A string or template literal: its quote, then anything but that quote unless escaped. A `"…"` or
+ * `'…'` string ends with its line, so an apostrophe in a comment or a regular expression is tried
+ * to its line's end only, never to the end of a long script.
+ */
+const STRING_LITERAL = /"((?:\\.|[^"\\\n])*)"|'((?:\\.|[^'\\\n])*)'|`((?:\\[\s\S]|[^`\\])*)`/g;
+
+/** The text of each string and template literal in `script`, as written. */
+export function scriptStrings(script: string): string[] {
+  return Array.from(
+    script.matchAll(STRING_LITERAL),
+    (match) => match[1] ?? match[2] ?? match[3] ?? "",
+  );
 }
 
 /** What can't be in a class name, so a word ends there: whitespace, quotes, `<`, `>`, `=`, `;`. */

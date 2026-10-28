@@ -165,6 +165,26 @@ export const site = {
   "site.settings.sections": "Site Settings sections",
   "site.settings.save": "Save",
   "site.settings.history": "Changed Site Settings",
+  // Custom code in Settings (F-ED-15, C7, 3.9): Advanced mode only, where technical words may appear.
+  "site.code.title": "Custom Code",
+  "site.code.css": "Stylesheet (custom.css)",
+  "site.code.cssHint":
+    "CSS for every page, after the site's own styles, so it wins over the theme.",
+  "site.code.js": "Script (custom.js)",
+  "site.code.jsHint":
+    "JavaScript for every page of the exported site, after {appName}'s own. It never runs in the editor.",
+  "site.code.head": "HTML in every page's head",
+  "site.code.headHint": "Added at the end of each page's <head>, as you write it.",
+  "site.code.bodyEnd": "HTML at the end of every page",
+  "site.code.bodyEndHint": "Added at the end of each page's <body>, as you write it.",
+  "site.code.allowed": "Allowed outside addresses",
+  "site.code.allowedHint":
+    "Your site works from any folder or host because it loads nothing from elsewhere. Add an address here only if your code must load a file from it.",
+  "site.code.allowedAddress": "Address",
+  "site.code.allowedAdd": "Add an address",
+  "site.code.allowedRemove": "Remove this address",
+  "site.code.error.address": "Enter a web address that starts with https://.",
+  "site.code.history": "Changed Custom Code",
   "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.section.general": "General",
   "site.settings.section.address": "Web address",
@@ -229,6 +249,14 @@ export const site = {
   "site.settings.allowIndexing": "Let search engines show the site",
   "site.settings.includeSitemap": "Include a sitemap for search engines",
   "site.settings.readableByAi": "Help AI tools read your site",
+  "site.settings.googleVerification": "Google verification code",
+  "site.settings.googleVerificationHint":
+    "From Google Search Console (search.google.com/search-console), with its HTML tag method: paste the code, or the whole tag. It shows Google the site is yours; nothing is sent from here.",
+  "site.settings.bingVerification": "Bing verification code",
+  "site.settings.bingVerificationHint":
+    "From Bing Webmaster Tools (bing.com/webmasters), with its meta tag method: paste the code, or the whole tag.",
+  "site.settings.error.verification":
+    "That doesn't look like a verification code. Paste the code, or the whole <meta> tag the console shows.",
   "site.settings.readableByAiHint":
     "Adds llms.txt and a plain-text copy of each page when you export, so AI assistants can describe your site accurately.",
   "site.settings.measurementId": "Google Analytics measurement ID",

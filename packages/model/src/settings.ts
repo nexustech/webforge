@@ -127,6 +127,21 @@ export const measurementIdSchema = z
   .string()
   .regex(new RegExp(`^G-[A-Z0-9]{4,${MEASUREMENT_ID_MAX - 2}}$`));
 
+/**
+ * A search engine's site verification code (3.15, SEO-8): what Google's `google-site-verification`
+ * or Bing's `msvalidate.01` tag holds as its `content`.
+ */
+export const verificationCodeSchema = z.string().regex(/^[A-Za-z0-9_-]{8,100}$/);
+
+/**
+ * The verification code in what the person pasted (3.15, SEO-8): the code itself, or the whole
+ * `<meta … content="…">` tag the console shows, from which its `content` is taken.
+ */
+export function verificationCodeOf(pasted: string): string {
+  const content = /content\s*=\s*["']([^"']*)["']/i.exec(pasted)?.[1];
+  return (content ?? pasted).trim();
+}
+
 export const siteSettingsSchema = z.strictObject({
   general: z.strictObject({
     name: z.string().min(1).max(SITE_NAME_MAX),
@@ -168,6 +183,17 @@ export const siteSettingsSchema = z.strictObject({
      * optional field whose absence keeps the old meaning needs no new format).
      */
     readableByAi: z.boolean().optional(),
+    /**
+     * The codes Google Search Console and Bing Webmaster Tools give to prove the site is the
+     * owner's (3.15, SEO-8), written as their `<meta>` tags: no account or network here. None when
+     * absent (ADR 0012).
+     */
+    verification: z
+      .strictObject({
+        google: verificationCodeSchema.optional(),
+        bing: verificationCodeSchema.optional(),
+      })
+      .optional(),
   }),
   analytics: z.strictObject({
     /** GA4 Measurement ID (B4). */

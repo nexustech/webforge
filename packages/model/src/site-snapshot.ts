@@ -32,6 +32,7 @@ import {
   SITE_DESCRIPTION_MAX,
   type SocialProfile,
   socialProfileSchema,
+  verificationCodeSchema,
   X_HANDLE_MAX,
 } from "./settings.js";
 
@@ -67,6 +68,11 @@ export type SitePage = {
   readonly hideFooter?: boolean | undefined;
   /** Rendered without the site's back-to-top button (F-CM-9, 2.9). */
   readonly hideBackToTop?: boolean | undefined;
+  /**
+   * Kept out of search engines (3.15, SEO-2): `noindex`, and left out of the sitemap, `llms.txt`
+   * and the Markdown copies. The form's thank-you page is too.
+   */
+  readonly hideFromSearch?: boolean | undefined;
   /**
    * The Media image shown when the page is shared (`og:image`, 3.4): its own from Page Settings,
    * or the site's; none when neither is set.
@@ -171,6 +177,17 @@ export type SiteSearch = {
   readonly description?: string | undefined;
   /** `@name`, for `twitter:site`. */
   readonly xHandle?: string | undefined;
+  /**
+   * The codes Google Search Console and Bing Webmaster Tools gave to prove the site is the
+   * owner's (3.15, SEO-8), each written as its `<meta>` on every page.
+   */
+  readonly verification?: SiteVerification | undefined;
+};
+
+/** {@link SiteSearch}'s verification codes, by search engine. */
+type SiteVerification = {
+  readonly google?: string | undefined;
+  readonly bing?: string | undefined;
 };
 
 /** {@link SiteSnapshot}'s Google Analytics. */
@@ -190,6 +207,7 @@ const sitePageSchema = z.object({
   hideHeader: z.boolean().optional(),
   hideFooter: z.boolean().optional(),
   hideBackToTop: z.boolean().optional(),
+  hideFromSearch: z.boolean().optional(),
   shareImage: mediaRefSchema.optional(),
   doc: pageDocSchema,
 });
@@ -264,6 +282,12 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
           xHandle: z
             .string()
             .regex(new RegExp(`^@?[A-Za-z0-9_]{1,${X_HANDLE_MAX - 1}}$`))
+            .optional(),
+          verification: z
+            .strictObject({
+              google: verificationCodeSchema.optional(),
+              bing: verificationCodeSchema.optional(),
+            })
             .optional(),
         })
         .optional(),

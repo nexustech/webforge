@@ -22,12 +22,17 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
 - **The head HTML goes last in every page's `<head>`**, after Webforge's scripts. **The body HTML goes last in its `<body>`**, after the consent banner. Both go in as the person wrote them.
 - **The site's own CSS and JS go out as written, *Minify output* or not**, as Custom Code's scripts and styles already do (3.3).
 - **Classes:**
-  - The words of the site's own code that can be classes go to Tailwind, beside the classes of the pages' markup. That code is each Custom Code element's HTML, the page HTML and `custom.js`.
+  - The words of the site's own code that can be classes go to Tailwind, beside the classes of the pages' markup: every word of each Custom Code element's HTML and of the page HTML, and of `custom.js` only the words in its strings and template literals, where `classList` and `className` take theirs. Its keywords and names (`static`, `table`, `visible`) would make rules for nothing.
   - A word is a run of characters between whitespace, quotes, `<`, `>`, `=` and `;`, as Tailwind's own scanner reads a file. So a class in `class='…'`, an unquoted one, or one that `custom.js` adds compiles too.
   - Tailwind makes CSS only for the words that are classes. A word of text costs nothing unless it is one (`hidden`), which costs a rule.
 - **The snapshot carries the code** (`SiteSnapshot.code`), left out while all four parts are empty, so a site without code builds as before.
+- **The page cache leaves the code out of its key**, since it goes into each page's document after rendering. A change to the site's own CSS renders no page and compiles nothing, as 3.2 asks of the theme's values.
 
 ## Consequences
+- **Site Check's external-resource rule runs in the renderer with the others** (ADR 0016), though ADR 0016 thought it might need the rendered site. The export writes the site's own code and Custom Code's HTML as written, so the rule reads the same text.
+  - It finds each file they load from another website (`packages/site-check/src/external.ts`): scripts, stylesheets, fonts, images, sounds and videos, and frames.
+  - Each is *Must fix* unless Settings' Custom Code allows its address, either the address itself or a folder ending in `/`.
+  - Links aren't loaded files, so they pass. An address a script only goes to (`fetch`, `location`) passes too: a script can't be read for what it loads without running it.
 - A site without code exports byte for byte as before: no new files, no new lines.
 - Custom Code's classes no longer depend on how its HTML quotes them.
 - **The developer files' README** lists `custom.*.css` and `custom.*.js` when the site has them.

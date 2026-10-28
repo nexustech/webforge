@@ -66,8 +66,10 @@ const hero = defineSection({
       : values.variant === "minimal"
         ? "bg-base-200"
         : "hero bg-base-200",
-  render: ({ values, context }) => {
+  render: ({ id, values, context }) => {
     const layout = values.variant;
+    // Its image is the page's first picture when it is the page's first section (3.15, SEO-4).
+    const first = id === context.firstSection;
     const aligned =
       values.alignment === "centre" || layout === "centred" ? "text-center" : "text-left";
     const placed = layout === "minimal" ? undefined : values.image;
@@ -89,7 +91,7 @@ const hero = defineSection({
               image={image}
               alt={alt}
               sizes="100vw"
-              eager
+              eager={first}
               className="absolute inset-0 h-full w-full object-cover"
             />
           )}
@@ -114,7 +116,7 @@ const hero = defineSection({
             image={image}
             alt={alt}
             sizes={centred ? "(min-width: 896px) 896px, 100vw" : "(min-width: 1024px) 50vw, 100vw"}
-            eager
+            eager={first}
             className={
               centred
                 ? "h-auto w-full rounded-box shadow-lg"

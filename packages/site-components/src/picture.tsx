@@ -18,7 +18,10 @@ export type PictureProps = {
   readonly alt: string;
   /** The `sizes` attribute: how wide the image is shown, e.g. `(min-width: 1024px) 50vw, 100vw`. */
   readonly sizes: string;
-  /** Load immediately (above the fold) instead of lazily. */
+  /**
+   * The page's first picture, above the fold: loaded at once and first (`fetchpriority="high"`,
+   * 3.15, SEO-4), instead of lazily.
+   */
   readonly eager?: boolean;
   readonly className?: string;
   /** The image's id, for a link it describes (a Buy button's). */
@@ -44,6 +47,7 @@ export function Picture({ image, alt, sizes, eager = false, className, id }: Pic
         height={image.height}
         alt={alt}
         loading={eager ? "eager" : "lazy"}
+        {...(eager ? { fetchPriority: "high" } : {})}
         decoding="async"
         className={className}
         style={pictureStyle(image)}

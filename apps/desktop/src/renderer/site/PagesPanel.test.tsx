@@ -213,6 +213,7 @@ describe("PagesPanel (F-ED-13)", () => {
       hideFooter: true,
       hideFromNavigation: false,
       hideBackToTop: false,
+      hideFromSearch: false,
     });
     // The site has no back-to-top button to leave off.
     expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();

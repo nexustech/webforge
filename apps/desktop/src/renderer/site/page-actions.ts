@@ -364,6 +364,8 @@ export type PageSettingsChange = {
   readonly hideFromNavigation: boolean;
   /** Leaves the site's back-to-top button off this page (F-CM-9). */
   readonly hideBackToTop: boolean;
+  /** Keeps search engines from showing this page (3.15, SEO-2); absent from older callers. */
+  readonly hideFromSearch?: boolean;
 };
 
 /**
@@ -392,6 +394,9 @@ export function changePageSettings(
       ? change.shareImage
       : undefined;
   const hideFromNavigation = page.kind === "not-found" || change.hideFromNavigation;
+  // "Page not found" is kept out of search engines whatever this says.
+  const hideFromSearch =
+    page.kind === "page" && (change.hideFromSearch ?? page.settings.hideFromSearch === true);
   const { settings } = page;
   if (
     title === page.title &&
@@ -401,7 +406,8 @@ export function changePageSettings(
     change.hideHeader === settings.hideHeader &&
     change.hideFooter === settings.hideFooter &&
     hideFromNavigation === settings.hideFromNavigation &&
-    change.hideBackToTop === (settings.hideBackToTop === true)
+    change.hideBackToTop === (settings.hideBackToTop === true) &&
+    hideFromSearch === (settings.hideFromSearch === true)
   ) {
     return;
   }
@@ -418,8 +424,9 @@ export function changePageSettings(
       hideHeader: change.hideHeader,
       hideFooter: change.hideFooter,
       hideFromNavigation,
-      // Absent when shown, as in files from before it.
+      // Absent when shown, as in files from before them.
       ...(change.hideBackToTop ? { hideBackToTop: true } : {}),
+      ...(hideFromSearch ? { hideFromSearch: true } : {}),
     };
   });
 }
