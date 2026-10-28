@@ -10,7 +10,7 @@ import {
 } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { createSettingsRegistry } from "../settings/index.js";
+import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { registerSiteCheckPanel, SITE_CHECK_PANEL_ID } from "./register-site-check-panel.js";

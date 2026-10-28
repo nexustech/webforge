@@ -21,10 +21,10 @@ import { connectAreas, type ExportSite, type WindowContext } from "./editor/area
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
+import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { reportFailure } from "./log.js";
 import { SettingsHost } from "./settings/SettingsHost.js";
-import { createSettingsRegistry } from "./settings/settings-registry.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
 import { CanvasToolbarHost } from "./shell/CanvasToolbarHost.js";
 import { CommandButton } from "./shell/CommandButton.js";

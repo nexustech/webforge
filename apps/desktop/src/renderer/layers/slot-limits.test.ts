@@ -2,10 +2,10 @@ import type { NodeDoc } from "@webforge/model";
 import { MAX_COLUMNS } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { duplicateSelected } from "../editor/bulk-layers.js";
 import { currentPage } from "../editor/editor-session.js";
 import { copyLayer } from "../editor/layers.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { duplicateSelected } from "./bulk-layers.js";
 
 // A Columns holds four columns at most (2.9, slot `max`): duplicate and a copy-drag in Layers
 // refuse a fifth, changing nothing, as the Add panel, paste and the canvas do.

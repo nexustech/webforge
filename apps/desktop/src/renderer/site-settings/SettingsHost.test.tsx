@@ -2,7 +2,8 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
-import { createSettingsRegistry, registerAppSettings, SettingsHost } from "../settings/index.js";
+import { createSettingsRegistry } from "../editor/settings-registry.js";
+import { registerAppSettings, SettingsHost } from "../settings/index.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";

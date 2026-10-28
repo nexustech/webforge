@@ -1,9 +1,9 @@
 import { t } from "@webforge/i18n";
 import { useEffect, useState } from "react";
+import type { OpenSettings, SettingsRegistry } from "../editor/settings-registry.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { SettingsDialog } from "./SettingsDialog.js";
-import type { OpenSettings, SettingsRegistry } from "./settings-registry.js";
 
 /** Props of {@link SettingsHost}. */
 export type SettingsHostProps = {

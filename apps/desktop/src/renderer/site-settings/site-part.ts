@@ -2,7 +2,11 @@ import { t } from "@webforge/i18n";
 import { type ImageMeta, isImageMeta, type SiteDoc, type SiteSettings } from "@webforge/model";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { type OpenSettings, type SettingsRegistry, settingsPart } from "../settings/index.js";
+import {
+  type OpenSettings,
+  type SettingsRegistry,
+  settingsPart,
+} from "../editor/settings-registry.js";
 import { saveSiteSettings, toSettingsForm } from "./settings-form.js";
 import { siteSettingsSpec } from "./settings-sections.js";
 

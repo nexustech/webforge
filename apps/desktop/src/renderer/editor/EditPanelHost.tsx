@@ -28,25 +28,24 @@ import {
   withLook,
 } from "@webforge/site-components";
 import { useEffect, useRef } from "react";
-import { applyAnchor, asLinkFieldChange } from "../links/index.js";
-import { anchorsTakenInSection } from "../shared-sections/index.js";
-import {
-  bindingLabel,
-  boundFieldOf,
-  isBindingField,
-  withBinding,
-  withBindingChoice,
-} from "../site-settings/index.js";
 import {
   advancedFieldLabel,
   advancedFields,
   isAdvancedField,
   withAdvancedChange,
 } from "./advanced-fields.js";
+import {
+  bindingLabel,
+  boundFieldOf,
+  isBindingField,
+  withBinding,
+  withBindingChoice,
+} from "./binding-fields.js";
 import type { EditorSession } from "./editor-session.js";
 import { fieldGroupOf } from "./field-group.js";
 import { type FieldTarget, fieldTarget } from "./field-target.js";
 import { changedLabel, labelFor, pasteGroupLabel, resetGroupLabel, resetLabel } from "./labels.js";
+import { applyAnchor, asLinkFieldChange } from "./link-change.js";
 import {
   applyListChange,
   type EditableList,
@@ -68,6 +67,7 @@ import {
   withValueAt,
 } from "./responsive-value.js";
 import { shownLayout } from "./shared-layout.js";
+import { anchorsTakenInSection } from "./shared-sections.js";
 import { useDocument, useUi } from "./use-document.js";
 
 /**

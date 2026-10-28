@@ -21,7 +21,8 @@ import {
   PlusIcon,
 } from "lucide-react";
 import { type KeyboardEvent, useRef, useState } from "react";
-import type { LinkFieldChange, PageTarget } from "../links/index.js";
+import type { LinkFieldChange } from "../editor/link-change.js";
+import type { PageTarget } from "../links/index.js";
 import { LinkDialog } from "../links/index.js";
 import { NameDialog } from "../shell/NameDialog.js";
 import { DRAGGABLE_ROW_CLASS, useRowDrag } from "../shell/use-row-drag.js";
