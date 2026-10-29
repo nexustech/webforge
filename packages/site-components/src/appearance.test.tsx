@@ -145,12 +145,24 @@ describe("the Appearance group (2.22, ST-1)", () => {
     expect(html).toMatch(/<section class="site-hero [^"]* shadow-lg!"/);
   });
 
+  /** An address for each embed element, which draws nothing without one. */
+  const EMBED_ADDRESSES: Readonly<Record<string, Readonly<Record<string, unknown>>>> = {
+    EmbedVideo: { address: "https://www.youtube.com/watch?v=aqz-KE-bpKQ" },
+    EmbedMap: { address: "1 High Street, Hightown" },
+  };
+
   it("styles every element's own root, and keeps a section's title styling out of it", () => {
     const missed: string[] = [];
     for (const type of placed("element")) {
       const def = siteLibrary.components[type];
-      // Each with its defaults and a photo, so it draws something.
-      const props: NodeDoc["props"] = { ...def?.defaults, id: "el", lookOpacity: "50" };
+      // Each with its defaults, a photo and an embed's address, so it draws something: the embeds
+      // drew nothing without one, which hid that their Appearance was dropped (#622).
+      const props: NodeDoc["props"] = {
+        ...def?.defaults,
+        ...EMBED_ADDRESSES[type],
+        id: "el",
+        lookOpacity: "50",
+      };
       for (const [name, field] of Object.entries(def?.fields ?? {})) {
         if (field.kind === "media") props[name] = { mediaId: "photo" };
       }
