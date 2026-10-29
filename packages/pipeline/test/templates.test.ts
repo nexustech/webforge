@@ -89,6 +89,10 @@ function plansOnly(images: ReadonlyMap<string, Uint8Array>): ImageCache {
   };
 }
 
+/** An exported page as visitors see it: without its structured data, which repeats its values. */
+const visibleOf = (html: string) =>
+  html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, "");
+
 /** The JSON-LD objects an exported page carries, parsed (3.15, SEO-1). */
 function structuredDataOf(html: string): unknown[] {
   const tags = html.matchAll(/<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/g);
@@ -171,23 +175,34 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
           "@type": general.businessKind ?? kinds[0],
           name: contact.businessName ?? general.name,
         });
-        // Only what the page shows, and as its Site Settings say it.
-        if (data.telephone !== undefined) expect(data.telephone).toBe(contact.phone);
-        if (data.email !== undefined) expect(data.email).toBe(contact.email);
-        if (data.address !== undefined) {
-          expect(contact.address).toContain(data.address.streetAddress);
-        }
+        // What the page shows is there, as Site Settings say it; what it doesn't show isn't.
+        const home = visibleOf((await page("index.html")) ?? "");
+        const street = contact.address?.split(/[\n,]/)[0]?.trim();
+        const shows = (value: string | undefined) => value !== undefined && home.includes(value);
+        expect(data.telephone, `${id}: telephone`).toBe(
+          shows(contact.phone) ? contact.phone : undefined,
+        );
+        expect(data.email, `${id}: email`).toBe(shows(contact.email) ? contact.email : undefined);
+        if (shows(street)) expect(data.address?.streetAddress, id).toContain(street);
+        else expect(data.address, `${id}: address`).toBeUndefined();
 
-        // The page with its opening hours and contact details carries all of them.
+        // The page with *Opening hours and contact* carries all of them: required wherever the
+        // template has one, found by what it shows, not by its structured data.
         const built = await build();
         const contactPage = [...built.files.keys()].find(
           (path) =>
             path.endsWith(".html") &&
             path !== "index.html" &&
-            structuredDataOf(new TextDecoder().decode(built.files.get(path))).length > 0,
+            /class="site-contact[ "]/.test(new TextDecoder().decode(built.files.get(path))),
         );
-        if (contactPage === undefined) return;
-        const [shown] = structuredDataOf((await page(contactPage)) ?? "");
+        const hasDetails =
+          contact.phone !== undefined ||
+          contact.address !== undefined ||
+          contact.openingHours.length > 0;
+        if (contactPage === undefined || !hasDetails) return;
+        const [shown, ...others] = structuredDataOf((await page(contactPage)) ?? "");
+        expect(shown, `${id}: ${contactPage} has no structured data`).toBeDefined();
+        expect(others).toEqual([]);
         const details = businessDataSchema.parse(shown);
         expect(details.telephone, contactPage).toBe(contact.phone);
         expect(details.email, contactPage).toBe(contact.email);
@@ -195,9 +210,9 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
           expect(details.address).toBeUndefined();
         } else {
           // The street, the town and the postcode, from the address as typed.
-          const street = details.address?.streetAddress ?? "";
-          expect(street.length, contactPage).toBeGreaterThan(0);
-          expect(contact.address.startsWith(street), contactPage).toBe(true);
+          const parsed = details.address?.streetAddress ?? "";
+          expect(parsed.length, contactPage).toBeGreaterThan(0);
+          expect(contact.address.startsWith(parsed), contactPage).toBe(true);
           expect(details.address?.addressLocality, contactPage).toBeDefined();
           expect(details.address?.postalCode, contactPage).toBeDefined();
         }
