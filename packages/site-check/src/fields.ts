@@ -41,10 +41,58 @@ export function exportedPlaces(site: SiteDoc): (on: ElementPlace | "menu") => bo
     placed.has(on as SharedSectionId);
 }
 
+/** Which of a component's fields a walk for some kinds visits: its own, and its lists' items'. */
+type FieldPlan = {
+  readonly fields: readonly string[];
+  readonly lists: readonly { readonly name: string; readonly fields: readonly string[] }[];
+};
+
+/**
+ * Each catalogue's plans, by the kinds asked for and the component type: worked out once, so a
+ * check walks only the fields it reads, as the panel's frame budget needs (ADR 0016, #628).
+ */
+const PLANS = new WeakMap<CheckInput["catalogue"], Map<string, Map<string, FieldPlan>>>();
+
+/** The fields of `type` of one of `wanted`'s kinds, and its list fields' items' such fields. */
+function planFor(
+  catalogue: CheckInput["catalogue"],
+  wanted: ReadonlySet<string>,
+  kindsKey: string,
+  type: string,
+): FieldPlan {
+  let byKinds = PLANS.get(catalogue);
+  if (byKinds === undefined) {
+    byKinds = new Map();
+    PLANS.set(catalogue, byKinds);
+  }
+  let byType = byKinds.get(kindsKey);
+  if (byType === undefined) {
+    byType = new Map();
+    byKinds.set(kindsKey, byType);
+  }
+  let plan = byType.get(type);
+  if (plan === undefined) {
+    const entries = Object.entries(catalogue[type]?.fields ?? {});
+    plan = {
+      fields: entries.filter(([, field]) => wanted.has(field.kind)).map(([name]) => name),
+      lists: entries.flatMap(([name, field]) => {
+        if (field.kind !== "list") return [];
+        const items = Object.entries(field.fields)
+          .filter(([, item]) => wanted.has(item.kind))
+          .map(([item]) => item);
+        return items.length === 0 ? [] : [{ name, fields: items }];
+      }),
+    };
+    byType.set(type, plan);
+  }
+  return plan;
+}
+
 /**
  * Calls `visit` with each value of a field of one of `kinds` on the site's elements, as the
  * catalogue describes them, list items' fields included. Hidden elements, and shared sections no
- * page holds, are left out: the export leaves them out too.
+ * page holds, are left out: the export leaves them out too. Only the fields of those kinds are
+ * read, as each type's plan has them (#628).
  */
 export function eachFieldValue(
   { site, catalogue }: CheckInput,
@@ -52,24 +100,26 @@ export function eachFieldValue(
   visit: (placed: PlacedValue) => void,
 ): void {
   const wanted = new Set<string>(kinds);
+  const kindsKey = [...wanted].sort().join(",");
   const exported = exportedPlaces(site);
   eachElement(
     site,
     (node, on) => {
       if (!exported(on)) return;
-      const fields = catalogue[node.type]?.fields ?? {};
-      for (const [name, field] of Object.entries(fields)) {
+      const plan = planFor(catalogue, wanted, kindsKey, node.type);
+      for (const name of plan.fields) {
         const value = node.props[name];
-        if (value === undefined) continue;
-        if (wanted.has(field.kind)) visit({ on, node, field: name, value });
-        if (field.kind !== "list" || !Array.isArray(value)) continue;
-        value.forEach((item: unknown, index) => {
+        if (value !== undefined) visit({ on, node, field: name, value });
+      }
+      for (const list of plan.lists) {
+        const items = node.props[list.name];
+        if (!Array.isArray(items)) continue;
+        items.forEach((item: unknown, index) => {
           if (typeof item !== "object" || item === null) return;
-          for (const [itemName, itemField] of Object.entries(field.fields)) {
-            const itemValue = (item as Record<string, unknown>)[itemName];
-            if (itemValue !== undefined && wanted.has(itemField.kind)) {
-              visit({ on, node, field: `${name}.${index}.${itemName}`, value: itemValue });
-            }
+          for (const name of list.fields) {
+            const value = (item as Record<string, unknown>)[name];
+            if (value !== undefined)
+              visit({ on, node, field: `${list.name}.${index}.${name}`, value });
           }
         });
       }
