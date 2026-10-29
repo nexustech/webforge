@@ -45,6 +45,19 @@ describe("provenanceOf (3.12, CT-3)", () => {
     });
   });
 
+  it("names the token for a field with no default, as the Appearance group's are (#622)", () => {
+    // What the Edit panel passes: the components keep no default for these fields.
+    expect(provenanceOf(input({ initial: undefined }))).toEqual({
+      text: "Theme's (Corners: Medium)",
+      reveal: "token.radius.field",
+    });
+    expect(textOf({ name: "lookShadow", label: "Shadow", initial: undefined })).toMatch(
+      /^Theme's \(Shadow: /,
+    );
+    // Still nothing for a field no token decides.
+    expect(textOf({ name: "lookColor", label: "Colour", initial: undefined })).toBeUndefined();
+  });
+
   it("says nothing where it would only repeat the control's Theme's (#567)", () => {
     // An element whose corners no one token decides, a colour, a text size without a style.
     expect(

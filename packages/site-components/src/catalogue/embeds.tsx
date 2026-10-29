@@ -161,9 +161,11 @@ const ELEMENT_FIELDS = {
 /**
  * An embed element's frame (2.11): the sections' click-to-load player or map, among a section's
  * other elements. Without an address it shows nothing in the export, and on the canvas a hint
- * saying what to fill in, so it can still be found and selected.
+ * saying what to fill in, so it can still be found and selected. Called as a function, not drawn as
+ * a component: its `<div>` must be the element's root, where the Appearance group's classes go
+ * (2.22, `withAppearance`); a component at the root would be left without them (#622).
  */
-function EmbedElement({
+function embedElement({
   name,
   embed,
   kind,
@@ -240,16 +242,15 @@ const embedVideo = defineComponent({
     ...(videoEmbed(plainText(values.address) ?? "") === null ? [] : (["embed"] as const)),
     ...entranceBehaviours(values),
   ],
-  render: ({ values, context }) => (
-    <EmbedElement
-      name="embed-video"
-      embed={videoEmbed(plainText(values.address) ?? "")}
-      kind="video"
-      missing="videoAddress"
-      values={values}
-      context={context}
-    />
-  ),
+  render: ({ values, context }) =>
+    embedElement({
+      name: "embed-video",
+      embed: videoEmbed(plainText(values.address) ?? ""),
+      kind: "video",
+      missing: "videoAddress",
+      values,
+      context,
+    }),
 });
 
 /**
@@ -278,16 +279,15 @@ const embedMap = defineComponent({
       : []),
     ...entranceBehaviours(values),
   ],
-  render: ({ values, context }) => (
-    <EmbedElement
-      name="embed-map"
-      embed={mapEmbed(mapAddress(values, context))}
-      kind="map"
-      missing="mapAddress"
-      values={values}
-      context={context}
-    />
-  ),
+  render: ({ values, context }) =>
+    embedElement({
+      name: "embed-map",
+      embed: mapEmbed(mapAddress(values, context)),
+      kind: "map",
+      missing: "mapAddress",
+      values,
+      context,
+    }),
 });
 
 /** The embeds family: a video or a map from another site, as a section or as an element. */
