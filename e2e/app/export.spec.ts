@@ -2,8 +2,10 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSy
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
-import { stubFileDialogs } from "./sites.js";
+import { createSite, newId, type PageId } from "@webforge/model";
+import { ProjectStore } from "@webforge/storage";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Export from the editor (3.3): the web address prompt, the export dialog, the site built in the
 // export utility process and written to the folder or ZIP chosen in the (stubbed) dialog, and the
@@ -138,5 +140,64 @@ test.describe("Export site", () => {
     await expect(again.getByRole("checkbox", { name: "Make the files smaller" })).toBeChecked();
     await again.getByRole("button", { name: "Cancel" }).click();
     await expect(again).toBeHidden();
+  });
+});
+
+test.describe("Export site with Site Check (3.6, X5)", () => {
+  test("stops for a Must fix and writes nothing; once fixed, exports with a Should fix still open", async () => {
+    // A site whose About page is called "con", a name Windows keeps for a device (Must fix), and
+    // with a page without a title (Should fix, which only publishing must have fixed).
+    const dir = mkdtempSync(join(parent, "checked-"));
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const page = (slug: string, title: string) => {
+      const id = newId("page") as PageId;
+      site.pages[id] = { ...structuredClone(home), id, slug, title };
+      site.pageOrder.splice(1, 0, id);
+    };
+    page("con", "About us");
+    page("menu", "");
+    const sitePath = join(dir, "Rosa's Bakery.wforge");
+    const store = ProjectStore.create(sitePath, { name: "Rosa's Bakery" });
+    store.saveSite(site);
+    store.close();
+    const checked = await launchDesktopApp({
+      userDataDir: join(dir, "user-data"),
+      args: [sitePath],
+    });
+    try {
+      const editor = await checked.firstWindow();
+      await waitForCanvas(editor);
+      const folder = join(dir, "exported");
+      await stubFileDialogs(checked, folder);
+      const rule = (id: string) =>
+        editor.getByRole("region", { name: "Bottom panel" }).locator(`[data-rule="${id}"]`);
+
+      // Stopped before anything is asked or written, with Site Check shown at what to fix.
+      await editor.getByRole("button", { name: "Export Site…", exact: true }).click();
+      await expect(editor.getByText("Fix 1 thing in Site Check before exporting")).toBeVisible();
+      await expect(rule("deviceNames")).toHaveAttribute("data-status", "fail");
+      await expect(editor.getByRole("dialog", { name: "Export Site" })).toBeHidden();
+      expect(existsSync(folder)).toBe(false);
+
+      // Fixed: the page renamed. The page without a title is still to look at.
+      await rule("deviceNames").getByRole("button", { name: "Fix" }).click();
+      await expect(rule("deviceNames")).toHaveAttribute("data-status", "pass");
+      await expect(rule("pageTitles")).toHaveAttribute("data-status", "warn");
+
+      // Now it exports, every page written, the one without a title too.
+      await exportFromEditor(editor);
+      expect(existsSync(join(folder, "index.html"))).toBe(true);
+      expect(readdirSync(folder).filter((name) => name.endsWith(".html")).length).toBe(4);
+      expect(readdirSync(folder)).not.toContain("con.html");
+    } finally {
+      await checked.close();
+    }
   });
 });
