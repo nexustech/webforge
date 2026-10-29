@@ -207,7 +207,8 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
 /**
  * Theme Studio's previews of each kind (3.12, CT-1): a section or an element of `type`, drawn with
  * its defaults in the site's theme, with the theme's look for its kind, as the Add panel's are.
- * Drawn again once the theme has changed, so a change to the look shows at once.
+ * Drawn again once the theme has changed, so a change to the look shows at once. Each takes its
+ * whole size before it's drawn, so Theme Studio's fields under it stay put (#626).
  */
 export function createKindPreviews(
   source: Omit<PreviewSource, "sharedSection">,
@@ -216,7 +217,20 @@ export function createKindPreviews(
     { ...source, sharedSection: () => undefined },
     new Set(["section", "element"]),
   );
-  return (type) => previews({ type });
+  // Its whole size from the start, drawn or not: what follows it never moves as it draws, so a
+  // click on a control below lands where it was aimed (#626).
+  return (type) => {
+    const preview = previews({ type });
+    return preview === null ? null : (
+      <div
+        data-kind-preview
+        className="flex items-start"
+        style={{ width: PREVIEW.width, height: PREVIEW.height }}
+      >
+        {preview}
+      </div>
+    );
+  };
 }
 
 /** Previews of the library's components placed as `places`, and of shared sections. */

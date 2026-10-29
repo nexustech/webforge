@@ -49,7 +49,8 @@ function setUp(status: "compiled" | "failed" = "compiled") {
 async function shown(node: ReturnType<ReturnType<typeof createSectionPreviews>>) {
   const { container } = render(<>{node}</>);
   await act(async () => undefined);
-  return container.firstElementChild?.shadowRoot ?? null;
+  // Theme Studio's are in a box of their size (#626): the drawing's host is inside it.
+  return [...container.querySelectorAll("div")].find((each) => each.shadowRoot)?.shadowRoot ?? null;
 }
 
 describe("createSectionPreviews (UX-10)", () => {
@@ -146,6 +147,28 @@ describe("createKindPreviews (3.12, CT-1)", () => {
     const again = await shown(previews("Button"));
     expect(again?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-none!");
     expect(compileCss).toHaveBeenCalledTimes(2);
+  });
+
+  it("takes its whole size before it's drawn, so what follows it doesn't move (#626)", async () => {
+    let finish: (value: { status: "compiled"; css: string; bodyClass: string }) => void = () =>
+      undefined;
+    const compileCss = vi.fn(
+      () =>
+        new Promise<{ status: "compiled"; css: string; bodyClass: string }>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const previews = createKindPreviews({ library: siteLibrary, theme: () => theme, compileCss });
+    const { container } = render(<>{previews("Features")}</>);
+    const box = () => container.querySelector<HTMLElement>("[data-kind-preview]");
+
+    // Not drawn yet: its place is the preview's whole size already.
+    expect(box()?.style.height).toBe("200px");
+    expect(box()?.style.width).toBe("320px");
+    await act(async () => finish({ status: "compiled", css: "", bodyClass: "" }));
+
+    expect([...(box()?.querySelectorAll("div") ?? [])].some((each) => each.shadowRoot)).toBe(true);
+    expect(box()?.style.height).toBe("200px");
   });
 
   it("draws a preview that stays shown again when the look changes (#613)", async () => {
