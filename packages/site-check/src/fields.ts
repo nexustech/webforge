@@ -41,11 +41,15 @@ export function exportedPlaces(site: SiteDoc): (on: ElementPlace | "menu") => bo
     placed.has(on as SharedSectionId);
 }
 
-/** Which of a component's fields a walk for some kinds visits: its own, and its lists' items'. */
-type FieldPlan = {
-  readonly fields: readonly string[];
-  readonly lists: readonly { readonly name: string; readonly fields: readonly string[] }[];
-};
+/**
+ * Which of a component's fields a walk for some kinds visits, in the component's order: a field of
+ * one of the kinds, and a list field whose items have such fields (`items`), or both.
+ */
+type FieldPlan = readonly {
+  readonly name: string;
+  readonly visit: boolean;
+  readonly items: readonly string[];
+}[];
 
 /**
  * Each catalogue's plans, by the kinds asked for and the component type: worked out once, so a
@@ -72,17 +76,16 @@ function planFor(
   }
   let plan = byType.get(type);
   if (plan === undefined) {
-    const entries = Object.entries(catalogue[type]?.fields ?? {});
-    plan = {
-      fields: entries.filter(([, field]) => wanted.has(field.kind)).map(([name]) => name),
-      lists: entries.flatMap(([name, field]) => {
-        if (field.kind !== "list") return [];
-        const items = Object.entries(field.fields)
-          .filter(([, item]) => wanted.has(item.kind))
-          .map(([item]) => item);
-        return items.length === 0 ? [] : [{ name, fields: items }];
-      }),
-    };
+    plan = Object.entries(catalogue[type]?.fields ?? {}).flatMap(([name, field]) => {
+      const visit = wanted.has(field.kind);
+      const items =
+        field.kind === "list"
+          ? Object.entries(field.fields)
+              .filter(([, item]) => wanted.has(item.kind))
+              .map(([item]) => item)
+          : [];
+      return visit || items.length > 0 ? [{ name, visit, items }] : [];
+    });
     byType.set(type, plan);
   }
   return plan;
@@ -107,19 +110,19 @@ export function eachFieldValue(
     (node, on) => {
       if (!exported(on)) return;
       const plan = planFor(catalogue, wanted, kindsKey, node.type);
-      for (const name of plan.fields) {
+      // In the component's order, a list's items where the list is, as before the plans (#628).
+      for (const { name, visit: wantedField, items } of plan) {
         const value = node.props[name];
-        if (value !== undefined) visit({ on, node, field: name, value });
-      }
-      for (const list of plan.lists) {
-        const items = node.props[list.name];
-        if (!Array.isArray(items)) continue;
-        items.forEach((item: unknown, index) => {
+        if (value === undefined) continue;
+        if (wantedField) visit({ on, node, field: name, value });
+        if (items.length === 0 || !Array.isArray(value)) continue;
+        value.forEach((item: unknown, index) => {
           if (typeof item !== "object" || item === null) return;
-          for (const name of list.fields) {
-            const value = (item as Record<string, unknown>)[name];
-            if (value !== undefined)
-              visit({ on, node, field: `${list.name}.${index}.${name}`, value });
+          for (const itemName of items) {
+            const itemValue = (item as Record<string, unknown>)[itemName];
+            if (itemValue !== undefined) {
+              visit({ on, node, field: `${name}.${index}.${itemName}`, value: itemValue });
+            }
           }
         });
       }
