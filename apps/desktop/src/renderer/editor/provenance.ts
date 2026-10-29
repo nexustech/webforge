@@ -17,7 +17,10 @@ export type ProvenanceInput = {
   readonly own: unknown;
   /** Its kind's look in the theme for the field, if the look sets it. */
   readonly look: unknown;
-  /** The component's default for the field. */
+  /**
+   * The component's default for the field; none for the Appearance group's, which draw the
+   * theme's until set.
+   */
   readonly initial: unknown;
   readonly responsive: boolean;
   /** The device shown. */
@@ -147,5 +150,7 @@ export function provenanceOf(input: ProvenanceInput): Provenance | undefined {
   if (look !== undefined) {
     return { text: t("editPanel.source.look", { item: input.item }), reveal: `look:${input.type}` };
   }
-  return isTheme(valueAt(input.initial, breakpoint)) ? themeToken(input, false) : undefined;
+  // No default is the theme's too: the Appearance group's fields have none (#622).
+  const initial = valueAt(input.initial, breakpoint);
+  return initial === undefined || isTheme(initial) ? themeToken(input, false) : undefined;
 }
