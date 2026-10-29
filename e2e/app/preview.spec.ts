@@ -1,3 +1,6 @@
+// CommonJS: the module is the function, with `default` pointing at itself. TypeScript sees the
+// module as the namespace's `default`, so the function is its `default` again.
+import { networkInterfaces } from "node:os";
 import {
   type Browser,
   chromium,
@@ -6,8 +9,6 @@ import {
   type Page,
   test,
 } from "@playwright/test";
-// CommonJS: the module is the function, with `default` pointing at itself. TypeScript sees the
-// module as the namespace's `default`, so the function is its `default` again.
 import * as jsqr from "jsqr";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -137,6 +138,19 @@ function decode(path: string, size: number): string | undefined {
 }
 
 test("shows the preview's address on the local network as a QR code a phone reads (3.2)", async () => {
+  // A phone reaches the preview only on a private network (a home or office one, as main checks),
+  // as CI runners have; a machine on none says so instead of showing a code.
+  test.skip(
+    !Object.values(networkInterfaces())
+      .flatMap((each) => each ?? [])
+      .some(
+        (info) =>
+          info.family === "IPv4" &&
+          !info.internal &&
+          /^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(info.address),
+      ),
+    "This machine has no private network address for a phone to reach",
+  );
   await chooseFromMenu(app, page, "File", "Preview on Phone…");
   const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
   const code = dialog.getByRole("img", { name: "QR code of the preview's address" });

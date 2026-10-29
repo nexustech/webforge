@@ -94,6 +94,8 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   const workshop = themePreset("workshop");
   if (bistro === undefined || workshop === undefined) throw new Error("no preset");
   const roles = ["primary", "secondary", "accent"] as const;
+  // Shares 3, 2, 1: the quick start weights a palette's Brand, Accent and Second accent that way
+  // (`brandFor` in quick-start.ts), so a change there shows here as a weighting, not a theme bug.
   const proposal = brandFromImage(
     roles.map((role, index) => ({ color: workshop.colors[role], share: 3 - index })),
     bistro,
