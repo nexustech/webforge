@@ -3,6 +3,8 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
+import type { Oklch } from "@webforge/model";
+import { brandedTheme, brandFromImage, themePreset } from "@webforge/themes";
 import { OPEN_WAIT } from "./budget.js";
 import { launchDesktopApp, type WebforgeApp } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
@@ -45,7 +47,7 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   await quickStart.getByRole("button", { name: "Next" }).click();
 
   // Pages: one of the template's left out, one suggested page added.
-  await quickStart.getByRole("checkbox", { name: "Visit us" }).uncheck();
+  await quickStart.getByRole("checkbox", { name: "About us" }).uncheck();
   await quickStart.getByRole("checkbox", { name: "Private hire" }).check();
   await quickStart.getByRole("button", { name: "Next" }).click();
 
@@ -73,7 +75,7 @@ test("starts a site from the quick start's answers: the business, a look, pages,
         address: { url?: string };
         contact: { phone?: string };
       };
-      theme: { preset: string };
+      theme: { preset: string; colors: Record<string, Oklch> };
       pages: Record<string, { title: string }>;
     };
   };
@@ -86,7 +88,44 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   // The business type, for search engines (SEO-9).
   expect(site.settings.general.businessType).toBe("food");
   expect(site.theme.preset).toBe("bistro");
+  // Workshop's brand colours fitted to Bistro's surfaces, as the palette's swatches showed them:
+  // its Brand, Accent and Second accent, as an image of those three would give them.
+  const bistro = themePreset("bistro");
+  const workshop = themePreset("workshop");
+  if (bistro === undefined || workshop === undefined) throw new Error("no preset");
+  const roles = ["primary", "secondary", "accent"] as const;
+  const proposal = brandFromImage(
+    roles.map((role, index) => ({ color: workshop.colors[role], share: 3 - index })),
+    bistro,
+  );
+  if (proposal === undefined) throw new Error("no palette");
+  const expected = brandedTheme(bistro, proposal);
+  for (const role of [...roles, "primary-content"] as const) {
+    expect(site.theme.colors[role], role).toEqual(expected.colors[role]);
+  }
+  expect(site.theme.colors.primary).not.toEqual(bistro.colors.primary);
+  // The name on the canvas, and the phone where the café writes it out: Visit us's contact
+  // details. The café's own, not its sample business's.
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  // The first shown: the phone menu keeps a copy of the name, hidden on a wide screen.
+  const shown = async (text: string) => {
+    const first = canvas.getByText(text).filter({ visible: true }).first();
+    await first.scrollIntoViewIfNeeded();
+    await expect(first, text).toBeVisible();
+  };
+  await shown("Rosa's Bakery");
+  await page
+    .getByRole("region", { name: "Right panels" })
+    .getByRole("tab", { name: "Site", exact: true })
+    .click();
+  await page
+    .getByRole("list", { name: "Pages" })
+    .getByRole("button", { name: /^Visit us/ })
+    .click();
+  await shown("+44 113 496 0000");
+  await expect(canvas.getByText("The Copper Kettle")).toHaveCount(0);
   const titles = Object.values(site.pages).map((each) => each.title);
   expect(titles).toContain("Private hire");
-  expect(titles).not.toContain("Visit us");
+  expect(titles).not.toContain("About us");
+  expect(titles).toContain("Visit us");
 });

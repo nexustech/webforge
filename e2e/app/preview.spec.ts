@@ -6,7 +6,11 @@ import {
   type Page,
   test,
 } from "@playwright/test";
+// CommonJS: the module is the function, with `default` pointing at itself. TypeScript sees the
+// module as the namespace's `default`, so the function is its `default` again.
+import * as jsqr from "jsqr";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 
 // Preview (3.2, F-PV-1): the title bar's Preview opens the site in the default browser (stubbed:
 // the address it would open is kept, and opened here in Chromium), served by the preview server
@@ -109,4 +113,48 @@ test("opens the site in the browser, and every edit reaches it", async () => {
     .click();
   await expect(site).toHaveURL(/\/404\.html$/, { timeout: 15_000 });
   await expect(site.locator("h1")).toHaveText("Sorry, this page doesn't exist");
+});
+
+/** Pixels per module when a drawn code is read back: a camera sees it larger than one pixel. */
+const SCALE = 4;
+
+/**
+ * What a QR code drawn as `path` (one `M‹x› ‹y›h1v1h-1z` square per dark module, on white) in a
+ * `size`-module square says, as a reader decodes it from its pixels; undefined if it can't.
+ */
+function decode(path: string, size: number): string | undefined {
+  const width = size * SCALE;
+  const pixels = new Uint8ClampedArray(width * width * 4).fill(255);
+  for (const [, x, y] of path.matchAll(/M(\d+) (\d+)h1v1h-1z/g)) {
+    for (let dy = 0; dy < SCALE; dy++) {
+      for (let dx = 0; dx < SCALE; dx++) {
+        const at = ((Number(y) * SCALE + dy) * width + Number(x) * SCALE + dx) * 4;
+        pixels.fill(0, at, at + 3);
+      }
+    }
+  }
+  return jsqr.default.default(pixels, width, width)?.data;
+}
+
+test("shows the preview's address on the local network as a QR code a phone reads (3.2)", async () => {
+  await chooseFromMenu(app, page, "File", "Preview on Phone…");
+  const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
+  const code = dialog.getByRole("img", { name: "QR code of the preview's address" });
+  await expect(code).toBeVisible({ timeout: 15_000 });
+  const drawn = await code.evaluate((svg) => ({
+    size: Number(svg.getAttribute("viewBox")?.split(" ")[2]),
+    path: svg.querySelector("path")?.getAttribute("d") ?? "",
+  }));
+
+  const read = decode(drawn.path, drawn.size);
+  // What the camera reads is the address written under it: this computer's on the local network,
+  // under the preview's secret path, at the page shown, which it serves.
+  await expect(dialog).toContainText(read ?? "(unreadable)");
+  expect(read).toMatch(
+    /^http:\/\/(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)[\d.]+:\d+\/[0-9a-f]{32}\/[\w/-]+\.html$/,
+  );
+  const served = await fetch(read ?? "");
+  expect(served.status).toBe(200);
+  expect(await served.text()).toContain("<html");
+  await page.keyboard.press("Escape");
 });
