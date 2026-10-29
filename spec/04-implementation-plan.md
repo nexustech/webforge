@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 412 working days** (≈ 82 weeks of effort; 335 before the 22–28 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
+**Total: 419 working days** (≈ 84 weeks of effort; 335 before the 22–29 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -125,12 +125,14 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Split, 28 Oct 2026 (3.13):** 3.13 is over 5 days, so it is split into 3.13a ([#578](https://github.com/nexustech/webforge/issues/578), 3 days) and 3.13b ([#579](https://github.com/nexustech/webforge/issues/579), 3.5 days), and moved with 3.14 from stream A to B, which had built 3.12 (product owner). The Phase 3 re-plan the same day then gives 3.13b to A and 3.14 to C, both after 3.13a. Days are unchanged, so there is no scope change.
 
+**Scope change, 29 Oct 2026 (Phase 3 feedback, PF-1…PF-4):** +7 days from the product owner's hands-on review at the end of Phase 3 ([product/13](../research/product/13-phase-3-feedback.md)), each the recommended option, as four items before Phase 4: 3.18 ([#632](https://github.com/nexustech/webforge/issues/632), 1.5 days, stream A) *File › Open Recent* with the 5 most recent sites, and submenus in the editor's menus for it (PF-1); 3.19 ([#633](https://github.com/nexustech/webforge/issues/633), 2 days, stream B) a *Shape* and a set height for the Image element, tokens only (PF-2); 3.20 ([#634](https://github.com/nexustech/webforge/issues/634), 1.5 days, stream B after 3.19) *Open larger when clicked* on an Image, one picture in the Gallery's lightbox (PF-3); and 3.21 ([#635](https://github.com/nexustech/webforge/issues/635), 2 days, stream C) *Content width* on every section, which fixes the empty Section being narrower than Features (PF-4). Every other Phase 3 item had merged, so each stream takes its part at once. Phase 3 goes from 57.5 to 64.5 days and the total from 412 to 419. At the measured pace of about 0.6, that is about 4 working days across the three streams, so Phase 3's 6 Nov and Phase 4's 13 Nov hold.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
-| [Phase 3: Output](#phase-3-output) | 57.5 | 27 Oct 2026 | 6 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17) |
+| [Phase 3: Output](#phase-3-output) | 64.5 | 27 Oct 2026 | 6 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17) |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 2 Nov 2026 | 13 Nov 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
@@ -238,6 +240,10 @@ gantt
     3.15 Being found – structured data, noindex, preload, verification :t3_15, after t3_12, 4d
     3.16 Search-result preview in Page Settings :t3_16, after t3_15, 1.5d
     3.17 Site Check – Being found :t3_17, after t3_9 t3_15, 1.5d
+    3.18 File – Open Recent :t3_18, after t3_11, 1.5d
+    3.19 Image – a shape and a set height :t3_19, after t3_13, 2d
+    3.20 Image – open larger when clicked :t3_20, after t3_19, 1.5d
+    3.21 Content width for every section :t3_21, after t3_14, 2d
     section Phase 4
     4.1 Publish core – Publisher interface, manifests,… :crit, t4_1, 2027-08-27, 3d
     4.2 Netlify publisher and Netlify Forms :crit, t4_2, 2027-09-02, 4d
@@ -972,7 +978,7 @@ The eight templates were built before the Appearance group. A light pass uses it
 
 ### Phase 3: Output
 **Goal:** Preview, export and Site Check: every template exports to a self-contained site that opens from disk in all browsers with zero external requests.  
-**Effort:** 57.5 days · **Scheduled:** 27 Oct 2026 → 6 Nov 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 9 → 20 Nov; baseline 15 Jul → 26 Aug 2027)
+**Effort:** 64.5 days · **Scheduled:** 27 Oct 2026 → 6 Nov 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 3 feedback, 29 Oct 2026; Phase 1 exit re-plan 9 → 20 Nov; baseline 15 Jul → 26 Aug 2027)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -993,16 +999,20 @@ The eight templates were built before the Appearance group. A light pass uses it
 | 3.15 | Being found: structured data, hide a page from search, the first picture, verification | [#575](https://github.com/nexustech/webforge/issues/575) | pipeline | [product/12](../research/product/12-search-visibility.md) SEO-1…SEO-4, SEO-8, SEO-12, F-EX-6, F-SET-1, F-SET-2, F-EX-5, X3, X4 | 4 | 3.5, 1.17, 1.18, 3.6 |
 | 3.16 | A search-result preview in Page Settings | [#576](https://github.com/nexustech/webforge/issues/576) | shell | [product/12](../research/product/12-search-visibility.md) SEO-6, F-SET-2, G22 | 1.5 | 1.18, 3.5, 2.21 |
 | 3.17 | Site Check › Being found | [#577](https://github.com/nexustech/webforge/issues/577) | site-check | [product/12](../research/product/12-search-visibility.md) SEO-7, SEO-11, F-CHK-1, X5 | 1.5 | 3.6, 3.15, 1.18 |
+| 3.18 | File › Open Recent: the five most recent sites | [#632](https://github.com/nexustech/webforge/issues/632) | shell | [product/13](../research/product/13-phase-3-feedback.md) PF-1, F-SITE-2, F-ED-27, LF-13 | 1.5 | 1.8, 1.2, 1.39 |
+| 3.19 | Image: a shape and a set height | [#633](https://github.com/nexustech/webforge/issues/633) | components | [product/13](../research/product/13-phase-3-feedback.md) PF-2, F-ED-5, F-ED-21, F-ED-4 | 2 | 1.16, 2.17, 2.22 |
+| 3.20 | Image: open a larger picture when clicked | [#634](https://github.com/nexustech/webforge/issues/634) | components | [product/13](../research/product/13-phase-3-feedback.md) PF-3, F-ED-5, F-EX-2, G10, X2 | 1.5 | 2.7, 3.4, 3.19 |
+| 3.21 | Content width for every section | [#635](https://github.com/nexustech/webforge/issues/635) | components | [product/13](../research/product/13-phase-3-feedback.md) PF-4, F-DS-3, F-ED-4 | 2 | 2.5, 2.6, 2.7, 2.22 |
 
-**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. The assignment changed no days; 3.11 joined stream A's queue on 27 Oct 2026 with its own scope change (§3), and 3.15–3.17 joined B's and C's on 28 Oct 2026 with theirs; the same day the product owner moved 3.13 and 3.14 from A to B.
+**Streams (assigned 27 Oct 2026, after 3.1).** 3.1 unblocks the rest of the phase, so its items are shared across the three streams, each after its Phase 2 items. The Phase 1 and Phase 2 stream rules carry over. The assignment changed no days; 3.11 joined stream A's queue on 27 Oct 2026 with its own scope change (§3), 3.15–3.17 joined B's and C's on 28 Oct 2026 with theirs, and 3.18–3.21 all three on 29 Oct 2026 (Phase 3 feedback); the same day the product owner moved 3.13 and 3.14 from A to B.
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files) → 3.11 (quick start)~~ → 3.10 (compatibility E2E, back from C) → 3.13b (Style this component's deeper groups, from B, once 3.13a has merged); then 0.2 (Netlify spike, once the product owner has run it) and Phase 4 from 4.1. Rebalanced 28 Oct 2026 (product owner: all three streams on Phase 3 first) |
-| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12 → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E)~~ → 3.15 (being found, 28 Oct) → 3.13a (Style this component…: the dialog). 3.16 moved to C at the Phase 2 exit; 3.13b to A and 3.14 to C on 28 Oct 2026 (product owner) |
-| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check)~~ → 3.9 (custom code) → 3.16 (search-result preview, from B) → 3.17 (Site Check › Being found, once B's 3.15 has merged) → 3.14 (read-only CSS view, from B, once 3.13a has merged) |
+| A: Shell & panels | ~~3.2 (preview server) → 3.5 (site files) → 3.11 (quick start) → 3.10 (compatibility E2E, back from C) → 3.13b (Style this component's deeper groups, from B, once 3.13a has merged)~~ → 3.18 (File › Open Recent, 29 Oct); then 0.2 (Netlify spike, once the product owner has run it) and Phase 4 from 4.1. Rebalanced 28 Oct 2026 (product owner: all three streams on Phase 3 first) |
+| B: Data & site | ~~3.1 → 3.3 → 3.4 → 2.26 → 3.8 → 3.7 → 3.12 → [#563](https://github.com/nexustech/webforge/issues/563) (spell check E2E) → 3.15 (being found, 28 Oct) → 3.13a (Style this component…: the dialog)~~ → 3.19 (Image: a shape and a set height, 29 Oct) → 3.20 (Image: open larger). 3.16 moved to C at the Phase 2 exit; 3.13b to A and 3.14 to C on 28 Oct 2026 (product owner) |
+| C: History & canvas | ~~2.24 ([#486](https://github.com/nexustech/webforge/issues/486)) → the E2E timing fix ([#446](https://github.com/nexustech/webforge/issues/446), [#489](https://github.com/nexustech/webforge/issues/489)) → the styling block (2.25 → 2.28 → 2.29) → 3.6 (Site Check) → 3.9 (custom code) → 3.16 (search-result preview, from B) → 3.17 (Site Check › Being found, once B's 3.15 has merged) → 3.14 (read-only CSS view, from B, once 3.13a has merged)~~ → 3.21 (content width for every section, 29 Oct) |
 
-Three items wait on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue, and 3.13b (A) and 3.14 (C) on 3.13a (B); 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
+Every Phase 3 item before 3.18 has merged, so 3.18–3.21 wait on no other stream (3.20 follows 3.19 in B). Three items waited on another stream: 3.17 (C) on 3.15 (B), which is why 3.15 leads B's queue, and 3.13b (A) and 3.14 (C) on 3.13a (B); 3.7 (B) waited on 3.6 (C), 3.10 (A) on 3.3 and 3.4 (B) and 3.13 on 3.12, all merged or now in one stream. **Styling first (ST-8, 26 Oct 2026):** streams A and C finish Phase 2's styling block before their Phase 3 items, and B does 2.26 after 3.3.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1132,6 +1142,38 @@ A group of plain-language rules in `packages/site-check` beside the existing one
 - [ ] Fix on the description rule opens Page Settings on that page
 - [ ] No rule mentions keywords, density, heading order or a character limit
 - [ ] Stories for the group in the panel; axe
+
+**3.18 File › Open Recent: the five most recent sites** (added 29 Oct 2026, [product/13](../research/product/13-phase-3-feedback.md) PF-1)
+The editor's menus gain submenus, drawn in the title bar's menus (Windows) and mirrored to the macOS menu bar (LF-13), keyboard-navigable in the title bar. *File › Open Recent* lists the 5 most recently opened sites from the recent-sites list, most recent first, by name (with the folder when two share one), pinned sites not treated differently; choosing one opens it as the start screen's Recent list does, saving the open site first, and a missing file shows the start screen's "can't find" message. *Clear Recent* empties the unpinned list after asking; with none, a disabled *No recent sites*. The renderer still sees site ids only, never paths. Strings through `t()`. Stream A.
+
+- [ ] File › Open Recent lists at most 5 sites, most recent first, on Windows and macOS
+- [ ] Choosing one opens it after saving the open site; a missing file shows the "can't find" message
+- [ ] Clear Recent empties the list after asking, and the start screen agrees
+- [ ] The submenu works from the keyboard in the title bar; stories and axe; an E2E test opens a site from it
+
+**3.19 Image: a shape and a set height** (added 29 Oct 2026, [product/13](../research/product/13-phase-3-feedback.md) PF-2)
+*Shape* on the Image element's Style tab: Original (the default, as today), Square, Landscape (4:3), Wide (16:9), Portrait (3:4) and *Set height*, which shows *Height* (Small, Medium, Large). Every shape but Original crops the picture to fill (`aspect-ratio`, `object-fit: cover`) on its focal point (F-ED-21); nothing is stretched. Both can differ per device (F-ED-4); width, alignment, corners, caption and the canvas's width handles (2.17) work as before; tokens only, no pixel values. Existing Images read as Original. Only the Image element: pictures inside sections keep their own settings. Strings through `t()`; `pnpm catalogue-data` regenerated. Stream B.
+
+- [ ] Each shape gives the picture its proportions on the canvas and in the export, the focal point in view
+- [ ] *Set height* shows Height, and the three heights apply, per device where set
+- [ ] An existing site's Images look the same; two Images in Columns with the same shape line up
+- [ ] Stories and axe; `pnpm visual:docker` screenshots committed
+
+**3.20 Image: open a larger picture when clicked** (added 29 Oct 2026, [product/13](../research/product/13-phase-3-feedback.md) PF-3)
+*Open larger when clicked*, a toggle on the Image element (off by default). On the site the picture links to its large file, so it works without JavaScript; with `webforge.js` the Gallery's lightbox behaviour (G10) opens it in the native `<dialog>`: that one picture and its caption, a close button, no next, previous or count; Esc closes it and focus returns. The export adds a large copy of each such picture (WebP with a JPEG or PNG fallback, at most 1920 px wide, never wider than the original, X2). On the canvas a click still selects. Strings through `t()`; `pnpm behaviours` and `pnpm catalogue-data` regenerated if they change. Stream B after 3.19.
+
+- [ ] In Preview and the exported site opened from disk, the toggle opens the one picture larger; Esc and close shut it and focus returns
+- [ ] Without JavaScript the picture opens as its large file
+- [ ] The export holds a large copy only for Images with the toggle on
+- [ ] `e2e/export/` covers it in Chromium, Firefox and WebKit; stories and axe
+
+**3.21 Content width for every section** (added 29 Oct 2026, [product/13](../research/product/13-phase-3-feedback.md) PF-4)
+*Content width* in every section's Style tab: Narrow (768 px), Medium (896 px), Wide (1152 px) and Full; it sets the content's width, and the background still spans the page. Each kind's default is the width it used before (the text-led sections Narrow, the grids Wide), so existing sites and templates don't change; where an intro sits above a grid (Features, Pricing) the setting moves the grid and the intro keeps its reading width. The Section's *Full width* toggle becomes *Full*; a Section added from the Add panel starts at Wide, and one already in a site stays Medium (a model migration). Header and Footer unchanged. Strings through `t()`; `pnpm catalogue-data` regenerated. Stream C.
+
+- [ ] A new Section with a heading lines up with a Features section on Desktop
+- [ ] Each width applies on the canvas and in the export, the background full-width
+- [ ] Templates and an existing site with a Section look the same (no screenshot or thumbnail changes); *Full width* opens as Full
+- [ ] Stories and axe; `pnpm visual:docker` screenshots committed
 
 </details>
 
@@ -1322,7 +1364,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | Feature | Name | Items |
 |---|---|---|
 | F-SITE-1 | New Site from Template | 1.8, 2.14, 2.15, 3.11 (quick start) |
-| F-SITE-2 | Open / Recent Sites | 1.8 |
+| F-SITE-2 | Open / Recent Sites | 1.8, 3.18 |
 | F-SITE-3 | Periodic autosave | 1.6 |
 | F-SITE-4 | Version History | 4.6 |
 | F-SITE-5 | Export as .zip | 4.7 |
@@ -1332,7 +1374,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-ED-2 | Select, move, duplicate, delete | 1.12 |
 | F-ED-3 | Click-to-edit text | 1.23, 2.25 |
 | F-ED-4 | Edit panel | 1.14, 2.22, 2.27, 3.12, 3.13 |
-| F-ED-5 | Images | 1.16 |
+| F-ED-5 | Images | 1.16, 3.19, 3.20 |
 | F-ED-6 | Repeating lists | 1.14, 2.7 |
 | F-ED-7 | Header & Footer | 1.20 |
 | F-ED-8 | Desktop · Tablet · Mobile | 1.15 |
@@ -1357,7 +1399,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-ED-27 | Keyboard shortcuts | 1.30, 1.38 |
 | F-DS-1 | Theme picker | 2.1, 2.13 |
 | F-DS-2 | Brand colours, fonts, roundness | 2.3 |
-| F-DS-3 | Section themes | 2.4, 2.26 |
+| F-DS-3 | Section themes | 2.4, 2.26, 3.21 |
 | F-DS-4 | Text and button styles | 2.3 |
 | F-DS-5 | Animations | 2.12, 2.28 |
 | F-DS-6 | Sticky header | 2.6 |
