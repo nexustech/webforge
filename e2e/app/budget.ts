@@ -79,6 +79,18 @@ function localCpuScale(): number {
  */
 const CI_OPEN_MEDIAN_MS = 6_000;
 
+/**
+ * The most the preview's stylesheet swap may take, from its event reaching the page to the new
+ * rules applying (spec/04 Phase 3 exit, #622): the product's 100 ms on CI's runners, checked on
+ * the median of several swaps. Locally it scales as the CPU budgets do, by the local factor.
+ */
+const CI_HOT_SWAP_MS = 100;
+
+/** The stylesheet swap's budget in this run: CI's, or CI's times the local factor. */
+export function hotSwapBudgetMs(): number {
+  return process.env.CI === "true" ? CI_HOT_SWAP_MS : CI_HOT_SWAP_MS * localCpuScale();
+}
+
 /** The median opening's budget in this run: CI's, or locally the local backstop. */
 export function openMedianBudgetMs(): number {
   return process.env.CI === "true"
