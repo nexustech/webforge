@@ -52,7 +52,10 @@ export function registerProjectHandlers(
       readonly dialogs: RecoveryDialogs;
     };
     /** The start screen's Recent list (1.8). */
-    readonly recent?: Pick<RecentSites, "list" | "pathOf" | "remove" | "setPinned">;
+    readonly recent?: Pick<
+      RecentSites,
+      "list" | "pathOf" | "remove" | "setPinned" | "clearUnpinned"
+    >;
     /**
      * Runs before another site replaces the open one: the renderer saves its last changes and
      * the canvas is captured for the Recent list.
@@ -109,6 +112,10 @@ export function registerProjectHandlers(
   });
   registerIpcHandler(ipc, "removeRecentSite", isTrustedSender, (id) => {
     recent?.remove(id);
+    return null;
+  });
+  registerIpcHandler(ipc, "clearRecentSites", isTrustedSender, () => {
+    recent?.clearUnpinned();
     return null;
   });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());

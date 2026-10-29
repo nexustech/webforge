@@ -28,6 +28,7 @@ const project = (sites: readonly RecentSite[]): NonNullable<StartScreenProps["pr
   openRecent: async () => ({ status: "canceled" }),
   pinRecent: async () => null,
   removeRecent: async () => null,
+  clearRecent: async () => null,
 });
 
 /** The development example, so Try an example shows. */

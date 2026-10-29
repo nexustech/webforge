@@ -197,6 +197,14 @@ export function createRecentSites(options: {
         write(sites.filter((site) => site.id !== id));
       }
     },
+
+    /** Takes every site off the list but the pinned ones: File › Open Recent › Clear Recent (3.18). */
+    clearUnpinned(): void {
+      const sites = read();
+      if (sites.some((site) => !site.pinned)) {
+        write(sites.filter((site) => site.pinned));
+      }
+    },
   };
 }
 

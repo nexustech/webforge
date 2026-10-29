@@ -17,7 +17,12 @@ import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { type Command as AppCommand, formatShortcut, type PaletteGroup } from "./commands.js";
+import {
+  type Command as AppCommand,
+  formatShortcut,
+  type PaletteGroup,
+  submenuOpeners,
+} from "./commands.js";
 
 /** The palette's groups, in order: the app's commands, pages to go to, things to add. */
 const GROUPS = [
@@ -56,10 +61,14 @@ export function CommandBox({ siteName }: CommandBoxProps) {
     [registry],
   );
 
-  // The app's own commands only when they can run; an Add with nowhere to go is shown, off.
+  // The app's own commands only when they can run; an Add with nowhere to go is shown, off. A
+  // submenu's (Open Recent's sites, 3.18) stay in their menu.
+  const openers = submenuOpeners(commands);
   const shown = commands.filter(
     (command) =>
       command.id !== COMMAND_IDS.commandBox &&
+      command.submenu === undefined &&
+      !openers.has(command.id) &&
       (command.palette === "add" || command.enabled !== false),
   );
   const inGroup = (group: PaletteGroup | "commands") =>

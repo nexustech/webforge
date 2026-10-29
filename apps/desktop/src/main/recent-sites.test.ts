@@ -154,6 +154,26 @@ describe("createRecentSites", () => {
 describe("pinned recent sites (2.14b, LF-10)", () => {
   const names = (list: ReturnType<typeof recent>) => list.list().map((each) => each.name);
 
+  it("stay when the rest are cleared (Clear Recent, 3.18)", () => {
+    const list = recent();
+    for (const name of ["Bakery", "Florist", "Plumber"]) list.opened(site(name), name);
+    list.saveThumbnail(site("Florist"), new Uint8Array([1]));
+    list.setPinned(recentSiteId(site("Plumber")), true);
+
+    list.clearUnpinned();
+    expect(names(list)).toEqual(["Plumber"]);
+    // Their thumbnails go with them.
+    expect(
+      existsSync(
+        join(dir, "user-data", "recent-thumbnails", `${recentSiteId(site("Florist"))}.jpg`),
+      ),
+    ).toBe(false);
+
+    // With only pinned sites left, there is nothing more to clear.
+    list.clearUnpinned();
+    expect(names(list)).toEqual(["Plumber"]);
+  });
+
   it("come first, stay pinned when reopened, and unpin", () => {
     const list = recent();
     for (const [at, name] of ["Bakery", "Florist", "Plumber"].entries()) {

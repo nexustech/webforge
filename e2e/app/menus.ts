@@ -64,3 +64,79 @@ export async function hasMenuItem(
   await page.keyboard.press("Escape");
   return found;
 }
+
+/** In the menu bar's menu `menu`, the labels of the submenu `submenu` opens, separators left out. */
+function submenuInMenuBar(
+  app: ElectronApplication,
+  menu: string,
+  submenu: string,
+): Promise<{ readonly label: string; readonly enabled: boolean }[]> {
+  return app.evaluate(
+    ({ Menu }, [menuLabel, submenuLabel]) => {
+      const top = Menu.getApplicationMenu()?.items.find((each) => each.label === menuLabel);
+      const opener = top?.submenu?.items.find((each) => each.label === submenuLabel);
+      return (opener?.submenu?.items ?? [])
+        .filter((each) => each.type !== "separator")
+        .map((each) => ({ label: each.label, enabled: each.enabled }));
+    },
+    [menu, submenu] as const,
+  );
+}
+
+/**
+ * The items of the submenu `submenu` in the editor's menu `menu` (File › Open Recent, 3.18): their
+ * labels, and whether each can be chosen.
+ */
+export async function submenuItems(
+  app: ElectronApplication,
+  page: Page,
+  menu: string,
+  submenu: string,
+): Promise<{ readonly label: string; readonly enabled: boolean }[]> {
+  if (nativeMenus) return submenuInMenuBar(app, menu, submenu);
+  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await page.getByRole("menuitem", { name: submenu, exact: true }).click();
+  const items = page.getByRole("menu", { name: submenu }).getByRole("menuitem");
+  await expect(items.first()).toBeVisible();
+  const found = await items.evaluateAll((elements) =>
+    elements.map((element) => ({
+      label: element.textContent ?? "",
+      enabled: element.getAttribute("aria-disabled") !== "true",
+    })),
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toHaveCount(0);
+  return found;
+}
+
+/** Chooses `item` in the submenu `submenu` of the editor's menu `menu` (File › Open Recent). */
+export async function chooseFromSubmenu(
+  app: ElectronApplication,
+  page: Page,
+  menu: string,
+  submenu: string,
+  item: string,
+): Promise<void> {
+  if (nativeMenus) {
+    // The renderer sends its menus once its commands are registered.
+    await expect
+      .poll(() =>
+        app.evaluate(
+          ({ Menu }, [menuLabel, submenuLabel, itemLabel]) => {
+            const top = Menu.getApplicationMenu()?.items.find((each) => each.label === menuLabel);
+            const opener = top?.submenu?.items.find((each) => each.label === submenuLabel);
+            const found = opener?.submenu?.items.find((each) => each.label === itemLabel);
+            if (found === undefined || !found.enabled) return false;
+            found.click();
+            return true;
+          },
+          [menu, submenu, item] as const,
+        ),
+      )
+      .toBe(true);
+    return;
+  }
+  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await page.getByRole("menuitem", { name: submenu, exact: true }).click();
+  await page.getByRole("menu", { name: submenu }).getByRole("menuitem", { name: item }).click();
+}

@@ -115,6 +115,11 @@ export const shell = {
   "command.newSite": "New Site…",
   "command.quickStart": "Start a Site…",
   "command.openSite": "Open Site…",
+  // File › Open Recent (3.18): the latest sites, by name, with the folder when two share one.
+  "command.openRecent": "Open Recent",
+  "command.openRecent.inFolder": "{name} ({folder})",
+  "command.noRecent": "No recent sites",
+  "command.clearRecent": "Clear Recent",
   "command.exportSite": "Export Site…",
   "command.preview": "Preview",
   "command.previewOnPhone": "Preview on Phone…",

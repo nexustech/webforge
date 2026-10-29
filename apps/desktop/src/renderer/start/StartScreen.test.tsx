@@ -65,6 +65,7 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
     openRecent: vi.fn(async (_id: string) => result),
     pinRecent: vi.fn(async (_id: string, _pinned: boolean) => null),
     removeRecent: vi.fn(async (_id: string) => null),
+    clearRecent: vi.fn(async () => null),
   };
 }
 

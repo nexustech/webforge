@@ -9,7 +9,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
@@ -37,7 +37,7 @@ export type StartScreenProps = {
   /** The preload API's site calls; injectable for tests. */
   readonly project?: Pick<
     ProjectApi,
-    "create" | "open" | "listRecent" | "openRecent" | "pinRecent" | "removeRecent"
+    "create" | "open" | "listRecent" | "openRecent" | "pinRecent" | "removeRecent" | "clearRecent"
   >;
   /** Lists the templates New Site offers; injectable for tests. */
   readonly templates?: Pick<TemplatesApi, "list">;
@@ -82,6 +82,11 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
     return () => {
       current = false;
     };
+  }, [api]);
+
+  // Stable, so File › Open Recent's commands aren't registered again on every render.
+  const relist = useCallback(() => {
+    api.listRecent().then(setRecent, () => undefined);
   }, [api]);
 
   const run = async (request: () => ReturnType<ProjectApi["open"]>) => {
@@ -150,6 +155,8 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
         <SiteCommands
           example
           project={api}
+          // File › Open Recent lists what the Recent list shows, and Clear Recent updates it (3.18).
+          recent={{ sites: recent, changed: relist }}
           {...(templates === undefined ? {} : { templates })}
           {...(restart === undefined ? {} : { restart })}
         />

@@ -360,6 +360,12 @@ export const site = {
   "site.start.pinTip": "Pin {name} to the top",
   "site.start.unpin": "Unpin {name}",
   "site.start.listFailed": "The list of recent sites couldn't be changed. Try again.",
+  // File › Open Recent › Clear Recent (3.18): pinned sites stay.
+  "site.clearRecent.title": "Clear the list of recent sites?",
+  "site.clearRecent.description":
+    "Sites you've pinned stay, in this menu and on the start screen. No site files are deleted.",
+  "site.clearRecent.confirm": "Clear Recent",
+  "site.clearRecent.cancel": "Cancel",
   // The first start, with no recent sites yet (2.14b, SC-3): what to do next.
   "site.start.welcome": "Welcome to {name}",
   "site.start.welcomeText": "Start your website in a few clicks.",

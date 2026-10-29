@@ -126,6 +126,63 @@ export const SplitButton: Story = {
   },
 };
 
+/** File › Open Recent open (3.18): the latest sites, the folder where two share a name. */
+export const OpenRecent: Story = {
+  render: () => (
+    <WithCommands
+      commands={[
+        ...COMMANDS.slice(0, 2),
+        { id: COMMAND_IDS.openRecent, label: "Open Recent", menu: "file", run: noop },
+        ...["Bloom Bakery (Sites)", "Bloom Bakery (Old sites)", "Rosa's Florist", "Sam Lee"].map(
+          (label, index) => ({
+            id: `${COMMAND_IDS.openRecent}.${String(index).repeat(32)}`,
+            label,
+            submenu: COMMAND_IDS.openRecent,
+            run: noop,
+          }),
+        ),
+        {
+          id: COMMAND_IDS.clearRecent,
+          label: "Clear Recent",
+          submenu: COMMAND_IDS.openRecent,
+          separated: true,
+          run: noop,
+        },
+        ...COMMANDS.slice(2),
+      ]}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("menuitem", { name: "File" }));
+    // The menus are in a portal on the body; the arrow key opens the submenu.
+    const page = within(canvasElement.ownerDocument.body);
+    page.getByRole("menuitem", { name: "Open Recent" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await page.findByRole("menu", { name: "Open Recent" });
+  },
+};
+
+/** No recent sites yet: the submenu says so, its one item off. */
+export const OpenRecentEmpty: Story = {
+  render: () => (
+    <WithCommands
+      commands={[
+        ...COMMANDS.slice(0, 2),
+        { id: COMMAND_IDS.openRecent, label: "Open Recent", menu: "file", run: noop },
+        {
+          id: COMMAND_IDS.noRecent,
+          label: "No recent sites",
+          submenu: COMMAND_IDS.openRecent,
+          enabled: false,
+          run: noop,
+        },
+      ]}
+    />
+  ),
+  play: OpenRecent.play,
+};
+
 /** A site's steps so far; the last was undone. */
 const STEPS = createStore<HistoryState<unknown>>()(() => ({
   entries: [

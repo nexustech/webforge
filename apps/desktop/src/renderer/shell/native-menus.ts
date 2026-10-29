@@ -3,10 +3,12 @@ import type { AppApi, NativeMenus } from "../../shared/ipc/app.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import {
+  type Command,
   type CommandRegistry,
   electronAccelerator,
   hasModalOpen,
   type MenuId,
+  menuEntries,
 } from "./commands.js";
 
 /**
@@ -27,24 +29,36 @@ const MENUS: readonly {
   { id: "help", label: () => t("shell.menu.help") },
 ];
 
-/** The registry's menus as macOS's menu bar shows them: each menu's commands, with their keys. */
+/** A command as an item of macOS's menu bar: its label, whether it can run, and its keys. */
+const nativeItem = (command: Command) => ({
+  id: command.id,
+  label: command.label,
+  enabled: command.enabled !== false,
+  ...(command.shortcut === undefined ? {} : { accelerator: electronAccelerator(command.shortcut) }),
+});
+
+/**
+ * The registry's menus as macOS's menu bar shows them: each menu's commands, with their keys, and
+ * the submenus they open (File › Open Recent, 3.18).
+ */
 export function nativeMenusOf(registry: Pick<CommandRegistry, "list">): NativeMenus {
   const commands = registry.list();
   return MENUS.map(({ id, label }) => ({
     id,
     label: label(),
-    items: commands
-      .filter((command) =>
-        id === "app" ? APP_MENU.has(command.id) : command.menu === id && !APP_MENU.has(command.id),
-      )
-      .map((command) => ({
-        id: command.id,
-        label: command.label,
-        enabled: command.enabled !== false,
-        ...(command.shortcut === undefined
-          ? {}
-          : { accelerator: electronAccelerator(command.shortcut) }),
-      })),
+    items: menuEntries(commands, (command) =>
+      id === "app" ? APP_MENU.has(command.id) : command.menu === id && !APP_MENU.has(command.id),
+    ).map(({ command, submenu }) => ({
+      ...nativeItem(command),
+      ...(submenu.length === 0
+        ? {}
+        : {
+            submenu: submenu.map((each) => ({
+              ...nativeItem(each),
+              ...(each.separated === true ? { separated: true as const } : {}),
+            })),
+          }),
+    })),
   })).filter((menu) => menu.items.length > 0);
 }
 

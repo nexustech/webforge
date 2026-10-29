@@ -113,6 +113,46 @@ describe("applicationMenu (F-ED-27)", () => {
     expect(run).toHaveBeenCalledWith("site.settings");
   });
 
+  it("shows a submenu of the editor's, with its separators (File › Open Recent, 3.18)", () => {
+    const run = vi.fn();
+    const site = "site.openRecent.".padEnd(48, "a");
+    const menu = applicationMenu("darwin", false, {
+      menus: [
+        {
+          id: "file",
+          label: "File",
+          items: [
+            { id: "site.open", label: "Open Site…", enabled: true },
+            {
+              id: "site.openRecent",
+              label: "Open Recent",
+              enabled: true,
+              submenu: [
+                { id: site, label: "Rosa's Bakery", enabled: true },
+                { id: "site.clearRecent", label: "Clear Recent", enabled: true, separated: true },
+              ],
+            },
+          ],
+        },
+      ],
+      run,
+    });
+
+    const file = (menu?.find((each) => each.label === "File")?.submenu ??
+      []) as MenuItemConstructorOptions[];
+    expect(file.map((each) => each.label)).toEqual(["Open Site…", "Open Recent"]);
+    // The item that opens the submenu runs nothing itself.
+    expect(file[1]?.click).toBeUndefined();
+    const recent = (file[1]?.submenu ?? []) as MenuItemConstructorOptions[];
+    expect(recent.map((each) => each.label ?? each.type)).toEqual([
+      "Rosa's Bakery",
+      "separator",
+      "Clear Recent",
+    ]);
+    recent[0]?.click?.({} as never, undefined, {} as never);
+    expect(run).toHaveBeenCalledWith(site);
+  });
+
   it("puts the editor's Settings… in a Mac's application menu, after About (LF-12)", () => {
     const run = vi.fn();
     const menu = applicationMenu("darwin", false, {
