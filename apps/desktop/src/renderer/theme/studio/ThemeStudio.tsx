@@ -10,6 +10,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { type ReactNode, useEffect, useState } from "react";
@@ -85,7 +86,8 @@ export function ThemeStudio({
   const theme = useDocument(session, (site) => site.theme);
   const media = useDocument(session, (site) => site.media);
   const own = useOwnThemeList(ownThemes, theme);
-  const asks: ThemeAsks = { siteWide, names: ownThemes };
+  // A change cancelled at a question says so (#614).
+  const asks: ThemeAsks = { siteWide, names: ownThemes, notify: (message) => toast(message) };
   // The cards and text styles show each font in itself; My themes is read again as it opens.
   useEffect(() => {
     if (!open) return;

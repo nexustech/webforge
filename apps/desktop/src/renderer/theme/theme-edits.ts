@@ -34,6 +34,11 @@ export type ThemeAsks =
   | {
       readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
       readonly names?: OwnThemeNames | undefined;
+      /**
+       * Says that a change was cancelled at one of its questions ("Not changed", #614): an Escape
+       * meant for the dialog behind can answer one, and the control goes back as it was.
+       */
+      readonly notify?: ((message: string) => void) | undefined;
     }
   | undefined;
 
@@ -131,14 +136,22 @@ async function confirmed(
   action: SiteWideQuestion,
 ): Promise<boolean> {
   if (asks?.siteWide === undefined) return true;
-  return asks.siteWide.confirmSiteWide({ ...action, affectedPages: pageCount(session) });
+  const ok = await asks.siteWide.confirmSiteWide({ ...action, affectedPages: pageCount(session) });
+  if (!ok) sayNotChanged(asks);
+  return ok;
+}
+
+/** Says that a change was cancelled at a question, so nothing changed (#614). */
+function sayNotChanged(asks: ThemeAsks): void {
+  asks?.notify?.(t("theme.notChanged"));
 }
 
 /**
  * Changes the theme by `recipe`: one step, `label`. A built-in theme is read-only (2.23, PH2-17):
  * with `asks.names`, the first change to one asks for a name for the person's own version, and
- * the same step makes it theirs ("Saved theme 'Light (my version)'"); cancelling changes nothing.
- * A change to every page asks `question` first too (D7). False if nothing changed.
+ * the same step makes it theirs ("Saved theme 'Light (my version)'"). A change to every page asks
+ * `question` first too (D7). Cancelling either changes nothing, and says so (#614). False if nothing
+ * changed.
  */
 async function changeTheme(
   session: ThemeSession,
@@ -157,7 +170,10 @@ async function changeTheme(
       initial: t("theme.own.defaultName", { name }),
       confirm: t("theme.own.save"),
     });
-    if (chosen === undefined) return false;
+    if (chosen === undefined) {
+      sayNotChanged(asks);
+      return false;
+    }
     own = { id: newId("theme"), name: chosen };
   }
   if (question !== undefined && !(await confirmed(session, asks, question))) return false;
