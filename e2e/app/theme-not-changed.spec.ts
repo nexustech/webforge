@@ -38,17 +38,21 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
     .getByRole("navigation", { name: "Sections and elements" })
     .getByRole("button", { name: "Features", exact: true })
     .click();
-  await expect(studio().getByRole("region", { name: "Features" })).toBeVisible();
   // The section's own Background, not its cards'.
   const field = studio().locator('[data-field="lookBackground"]');
   const accent = field.getByRole("radio", { name: "Accent", exact: true });
-  // A built-in theme asks for a name for the person's own version first (2.23). A click while
-  // the look is still being drawn can go unanswered: clicked again until it asks.
+  // It stays where it first shows while the look's preview draws, so one click lands (#626).
+  await expect(accent).toBeVisible();
+  const shownAt = await accent.boundingBox();
+  // Drawn: the preview's figure holds the drawing's host.
+  await page.waitForFunction(() =>
+    [...document.querySelectorAll('[role="dialog"] figure div')].some((each) => each.shadowRoot),
+  );
+  expect(await accent.boundingBox()).toEqual(shownAt);
+  // One click: a built-in theme asks for a name for the person's own version first (2.23).
+  await accent.click();
   const naming = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
-  await expect(async () => {
-    if (!(await naming.isVisible())) await accent.click();
-    await expect(naming).toBeVisible({ timeout: 2_000 });
-  }).toPass();
+  await expect(naming).toBeVisible();
   await naming.getByRole("button", { name: "Save Theme" }).click();
   const question = page.getByRole("alertdialog", { name: "Change how every Features looks?" });
   await expect(question).toBeVisible();
@@ -57,9 +61,8 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await page.keyboard.press("Escape");
 
   await expect(question).toBeHidden();
-  await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Not changed" }).first(),
-  ).toBeVisible();
+  const notChanged = page.locator("[data-sonner-toast]", { hasText: "Not changed" });
+  await expect(notChanged).toHaveCount(1);
   await expect(accent).toHaveAttribute("aria-checked", "false");
   await expect(studio()).toBeVisible();
 
@@ -69,9 +72,8 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await corners.selectOption({ label: "Round" });
   await naming.getByRole("button", { name: "Cancel" }).click();
   await expect(naming).toBeHidden();
-  await expect(
-    page.locator("[data-sonner-toast]", { hasText: "Not changed" }).first(),
-  ).toBeVisible();
+  // A second note, for this change: the first may still be showing.
+  await expect(notChanged).toHaveCount(2);
   await expect(corners).toHaveValue(theirs);
   await page.keyboard.press("Escape");
   await expect(studio()).toBeHidden();
