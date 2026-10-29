@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { siteToSnapshot } from "@webforge/model";
+import { BUSINESS_KINDS, siteToSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { siteFromTemplate } from "@webforge/templates";
 import { readTemplates } from "@webforge/templates/node";
@@ -13,6 +13,7 @@ import { buildSiteCss, classCandidates } from "../src/css.js";
 import { minifiedCss } from "../src/minify.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
+import { businessDataSchema, websiteDataSchema } from "../src/structured-data.js";
 
 // Every template's export, as a site made from it starts (3.3): its pages as reviewed golden files,
 // and the files it writes. A change to a component, a theme or the pipeline that changes an
@@ -88,28 +89,44 @@ function plansOnly(images: ReadonlyMap<string, Uint8Array>): ImageCache {
   };
 }
 
+/** The JSON-LD objects an exported page carries, parsed (3.15, SEO-1). */
+function structuredDataOf(html: string): unknown[] {
+  const tags = html.matchAll(/<script type="application\/ld\+json">\n([\s\S]*?)\n<\/script>/g);
+  return [...tags].map((match) => JSON.parse(match[1] ?? "null") as unknown);
+}
+
 describe.each(readTemplates().map((folder) => [folder.template.id, folder] as const))(
   "the %s template's export",
   (id, { template, images, imagesDir }) => {
+    const theme = themePreset(template.site.theme.preset) ?? template.site.theme;
+    const site = siteFromTemplate(template, images, {
+      name: template.site.settings.general.name,
+      theme,
+    });
+    /** The site built once for both tests, as a new site from the template exports. */
+    let building: ReturnType<typeof buildSite> | undefined;
+    const build = () => {
+      const blobs = new Map(
+        images.map((image) => [
+          image.hash,
+          new Uint8Array(readFileSync(join(imagesDir, image.file))),
+        ]),
+      );
+      building ??= buildSite(siteToSnapshot(site, blobs), siteLibrary, {
+        ...resources,
+        imageCache: plansOnly(blobs),
+      });
+      return building;
+    };
+    const page = async (path: string) => {
+      const data = (await build()).files.get(path);
+      return data === undefined ? undefined : new TextDecoder().decode(data);
+    };
+
     it(
       "writes the reviewed pages and files",
       async () => {
-        const theme = themePreset(template.site.theme.preset) ?? template.site.theme;
-        const site = siteFromTemplate(template, images, {
-          name: template.site.settings.general.name,
-          theme,
-        });
-        const blobs = new Map(
-          images.map((image) => [
-            image.hash,
-            new Uint8Array(readFileSync(join(imagesDir, image.file))),
-          ]),
-        );
-
-        const built = await buildSite(siteToSnapshot(site, blobs), siteLibrary, {
-          ...resources,
-          imageCache: plansOnly(blobs),
-        });
+        const built = await build();
 
         expect([...built.files.keys()]).toMatchSnapshot();
         // A new site from a template has no form service yet, nor a Newsletter its address: its
@@ -128,6 +145,65 @@ describe.each(readTemplates().map((folder) => [folder.template.id, folder] as co
           for (const name of classCandidates(text)) everyClass.add(name);
           await expect(text).toMatchFileSnapshot(`golden/templates/${id}/${path}`);
         }
+      },
+      scaledTestTimeout(60_000),
+    );
+
+    it(
+      "marks up its home page for search engines from its Site Settings (SEO-1, #621)",
+      async () => {
+        const { general, contact } = site.settings;
+        const [website, business, ...more] = structuredDataOf((await page("index.html")) ?? "");
+        expect(websiteDataSchema.parse(website)).toMatchObject({
+          "@type": "WebSite",
+          name: general.name,
+        });
+        expect(more).toEqual([]);
+        // A personal site, and Blank with no type, address or hours, is a website only.
+        const type = general.businessType;
+        if (type === undefined || type === "personal") {
+          expect(business, id).toBeUndefined();
+          return;
+        }
+        const kinds: readonly string[] = BUSINESS_KINDS[type];
+        const data = businessDataSchema.parse(business);
+        expect(data, id).toMatchObject({
+          "@type": general.businessKind ?? kinds[0],
+          name: contact.businessName ?? general.name,
+        });
+        // Only what the page shows, and as its Site Settings say it.
+        if (data.telephone !== undefined) expect(data.telephone).toBe(contact.phone);
+        if (data.email !== undefined) expect(data.email).toBe(contact.email);
+        if (data.address !== undefined) {
+          expect(contact.address).toContain(data.address.streetAddress);
+        }
+
+        // The page with its opening hours and contact details carries all of them.
+        const built = await build();
+        const contactPage = [...built.files.keys()].find(
+          (path) =>
+            path.endsWith(".html") &&
+            path !== "index.html" &&
+            structuredDataOf(new TextDecoder().decode(built.files.get(path))).length > 0,
+        );
+        if (contactPage === undefined) return;
+        const [shown] = structuredDataOf((await page(contactPage)) ?? "");
+        const details = businessDataSchema.parse(shown);
+        expect(details.telephone, contactPage).toBe(contact.phone);
+        expect(details.email, contactPage).toBe(contact.email);
+        if (contact.address === undefined) {
+          expect(details.address).toBeUndefined();
+        } else {
+          // The street, the town and the postcode, from the address as typed.
+          const street = details.address?.streetAddress ?? "";
+          expect(street.length, contactPage).toBeGreaterThan(0);
+          expect(contact.address.startsWith(street), contactPage).toBe(true);
+          expect(details.address?.addressLocality, contactPage).toBeDefined();
+          expect(details.address?.postalCode, contactPage).toBeDefined();
+        }
+        expect(details.openingHoursSpecification?.length ?? 0, contactPage).toBe(
+          contact.openingHours.length,
+        );
       },
       scaledTestTimeout(60_000),
     );
