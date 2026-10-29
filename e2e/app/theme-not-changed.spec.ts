@@ -66,14 +66,15 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await expect(accent).toHaveAttribute("aria-checked", "false");
   await expect(studio()).toBeVisible();
 
-  // A select goes back too, cancelled at the name it asks for first.
+  // A select goes back too, cancelled at the name it asks for first. The first note goes on its own
+  // after a few seconds: gone, the select's own is then the one shown.
+  await expect(notChanged).toHaveCount(0, { timeout: 15_000 });
   const corners = studio().getByRole("combobox", { name: "Corners" }).first();
   const theirs = await corners.inputValue();
   await corners.selectOption({ label: "Round" });
   await naming.getByRole("button", { name: "Cancel" }).click();
   await expect(naming).toBeHidden();
-  // A second note, for this change: the first may still be showing.
-  await expect(notChanged).toHaveCount(2);
+  await expect(notChanged).toHaveCount(1);
   await expect(corners).toHaveValue(theirs);
   await page.keyboard.press("Escape");
   await expect(studio()).toBeHidden();
