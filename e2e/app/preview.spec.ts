@@ -182,16 +182,20 @@ test("swaps the stylesheet in place in under 100 ms, the median of five (#622)",
   for (const style of ["Outline", "Filled", "Outline", "Filled", "Outline"]) {
     const done = await swaps();
     await page.getByRole("combobox", { name: "Button style" }).selectOption({ label: style });
-    // A change of a built-in theme first names the person's own copy of it (2.23), and one that
-    // reaches every page may ask (D7): each answered as it comes, until the swap does.
+    // A change of a built-in theme first names the person's own copy of it (2.23): the only
+    // question a token change asks (`setToken` asks no D7 question). Any other fails the test,
+    // named, rather than being answered.
     const save = page.getByRole("dialog", { name: /^Save your own version of/ });
     const ask = page.getByRole("alertdialog");
     await expect
       .poll(
         async () => {
-          if (await save.isVisible())
+          if (await ask.isVisible()) {
+            throw new Error(`An unexpected question: ${await ask.textContent()}`);
+          }
+          if (await save.isVisible()) {
             await save.getByRole("button", { name: "Save Theme" }).click();
-          else if (await ask.isVisible()) await ask.getByRole("button").last().click();
+          }
           return swaps();
         },
         { timeout: 15_000 },
