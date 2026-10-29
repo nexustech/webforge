@@ -20,6 +20,7 @@
     "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "jsqr": "1.4.0",
     "zod": "catalog:"
   }
 }
