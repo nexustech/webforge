@@ -4,6 +4,7 @@ import {
   type EditPanelField,
   FieldRenderersProvider,
   type OptionGroup,
+  toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -245,7 +246,8 @@ export function ThemePanel({ session, siteWide, studio, ownThemes, reveal }: The
   useEffect(() => {
     void ownThemes?.refresh();
   }, [ownThemes]);
-  const asks: ThemeAsks = { siteWide, names: ownThemes };
+  // A change cancelled at a question says so (#614).
+  const asks: ThemeAsks = { siteWide, names: ownThemes, notify: (message) => toast(message) };
   const onChange = (name: string, value: unknown) => {
     const [kind, rest = ""] = name.split(/\.(.*)/s);
     if (kind === "preset") {

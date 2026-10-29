@@ -48,7 +48,7 @@ export const themePanelArea: Area<WindowContext> = {
       {
         asks: {
           siteWide,
-          theme: { siteWide, names: ownThemes },
+          theme: { siteWide, names: ownThemes, notify: (message) => toast(message) },
           notify: (message) => toast(message),
         },
         itemPreviews,
