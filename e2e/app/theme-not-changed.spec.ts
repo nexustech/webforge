@@ -57,7 +57,9 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   const question = page.getByRole("alertdialog", { name: "Change how every Features looks?" });
   await expect(question).toBeVisible();
 
-  // Meant for Theme Studio, the Escape cancels the question.
+  // It opens with Cancel focused (the owner's decision). Meant for Theme Studio, the Escape
+  // cancels the question.
+  await expect(question.getByRole("button", { name: "Cancel" })).toBeFocused();
   await page.keyboard.press("Escape");
 
   await expect(question).toBeHidden();
