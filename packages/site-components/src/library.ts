@@ -187,6 +187,14 @@ export function fieldsHiddenBy(
     hidden.add("overlay");
     hidden.add("overlayColor");
   }
+  // An Image's Height, only while its Shape is Set height on some device (3.19).
+  if (
+    Object.hasOwn(def.fields ?? {}, "shape") &&
+    Object.hasOwn(def.fields ?? {}, "height") &&
+    !onAnyDevice(values.shape, (one) => one === "height")
+  ) {
+    hidden.add("height");
+  }
   return hidden;
 }
 

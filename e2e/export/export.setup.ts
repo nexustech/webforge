@@ -67,6 +67,53 @@ function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
   };
 }
 
+/**
+ * `site` with two Images of its photo cut to shapes (3.19) on the About page, side by side: a
+ * Medium one in a Portrait frame and a Small one at a Large set height.
+ */
+function withShapedImages(site: SiteSnapshot): SiteSnapshot {
+  const image = (id: string, props: Record<string, unknown>): NodeDoc => ({
+    type: "Column",
+    props: { id: `${id}-column`, content: [{ type: "Image", props: { id, ...props } }] },
+  });
+  const shapes: NodeDoc = {
+    type: "Section",
+    props: {
+      id: "shapes",
+      advanced: { anchorId: "shapes" },
+      content: [
+        {
+          type: "Columns",
+          props: {
+            id: "shapes-columns",
+            columns: [
+              image("portrait-image", {
+                image: { mediaId: "hero-photo", alt: "Hills in a portrait frame" },
+                width: "medium",
+                shape: "portrait",
+              }),
+              image("tall-image", {
+                image: { mediaId: "hero-photo", alt: "Hills at a set height" },
+                width: "small",
+                shape: "height",
+                height: "large",
+              }),
+            ],
+          },
+        },
+      ],
+    },
+  };
+  return {
+    ...site,
+    pages: site.pages.map((page) =>
+      page.path !== "about"
+        ? page
+        : { ...page, doc: { ...page.doc, content: [...page.doc.content, shapes] } },
+    ),
+  };
+}
+
 /** The fixture's shared section (F-ED-23): opening hours, with an anchor a link goes to. */
 const HOURS = "hours" as SharedSectionId;
 const SHARED_SECTIONS: SharedSectionsDoc = {
@@ -182,9 +229,10 @@ function themed(site: SiteSnapshot): SiteSnapshot {
 
 setup("export the fixture site from the app", async () => {
   rmSync(EXPORTED_SITE_DIR, { recursive: true, force: true });
-  // With its photo as the icon, the About page's share picture (3.4), and a "Page not found" page
-  // with the home page's Hero, its photo and links (F-ED-20, 3.5).
-  const sample = withSharedSection(withSectionBackground(sampleSite()));
+  // With its photo as the icon, the About page's share picture (3.4) and Images cut to shapes
+  // (3.19), and a "Page not found" page with the home page's Hero, its photo and links (F-ED-20,
+  // 3.5).
+  const sample = withSharedSection(withShapedImages(withSectionBackground(sampleSite())));
   const notFound = {
     id: "lost",
     path: "404",

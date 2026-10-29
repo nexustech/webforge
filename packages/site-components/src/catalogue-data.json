@@ -1694,6 +1694,57 @@
             "full": null
           }
         },
+        "shape": {
+          "kind": "select",
+          "label": "Shape",
+          "help": "Every shape but Original crops the picture to fill it, keeping its focal point in view.",
+          "responsive": true,
+          "options": [
+            {
+              "label": "Original",
+              "value": "original"
+            },
+            {
+              "label": "Square",
+              "value": "square"
+            },
+            {
+              "label": "Landscape (4:3)",
+              "value": "landscape"
+            },
+            {
+              "label": "Wide (16:9)",
+              "value": "wide"
+            },
+            {
+              "label": "Portrait (3:4)",
+              "value": "portrait"
+            },
+            {
+              "label": "Set height",
+              "value": "height"
+            }
+          ]
+        },
+        "height": {
+          "kind": "slider",
+          "label": "Height",
+          "responsive": true,
+          "steps": [
+            {
+              "label": "Small",
+              "value": "small"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Large",
+              "value": "large"
+            }
+          ]
+        },
         "alignment": {
           "kind": "select",
           "label": "Alignment",
@@ -1877,6 +1928,8 @@
       },
       "defaults": {
         "width": "full",
+        "shape": "original",
+        "height": "medium",
         "alignment": "centre",
         "rounded": false,
         "caption": "",

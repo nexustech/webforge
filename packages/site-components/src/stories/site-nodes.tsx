@@ -23,6 +23,50 @@ const photo: ResolvedImage = {
   alt: "Green hills under a morning sun",
 };
 
+/**
+ * A drawn picture for stories, `width` × `height`, inline (C8), with its subject off centre, so a
+ * story shows where a crop cuts it and that the focal point stays in view.
+ */
+function drawing(
+  width: number,
+  height: number,
+  objectPosition: string,
+  shapes: string,
+  alt: string,
+): ResolvedImage {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${shapes}</svg>`;
+  const src = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  return {
+    sources: [],
+    src,
+    fallback: { type: "image/png", srcset: `${src} ${width}w` },
+    width,
+    height,
+    alt,
+    objectPosition,
+  };
+}
+
+/** Pictures of either shape for the Image's shapes (3.19): `landscape` and `portrait`. */
+const DRAWINGS: Readonly<Record<string, ResolvedImage>> = {
+  // A sun a quarter of the way across, over hills.
+  landscape: drawing(
+    640,
+    427,
+    "25% 35%",
+    '<rect width="640" height="427" fill="#bfe3f2"/><circle cx="160" cy="150" r="60" fill="#f2b632"/><path d="M0 330 Q160 250 320 320 T640 300 V427 H0Z" fill="#5c9e5a"/><path d="M0 380 Q200 330 400 380 T640 370 V427 H0Z" fill="#3f7a40"/>',
+    "A sun over green hills",
+  ),
+  // A tree on the right, near the top.
+  portrait: drawing(
+    400,
+    600,
+    "70% 30%",
+    '<rect width="400" height="600" fill="#f4e6d0"/><rect x="270" y="200" width="20" height="300" fill="#7a5230"/><circle cx="280" cy="180" r="80" fill="#4f8f4c"/><rect y="500" width="400" height="100" fill="#c9b18a"/>',
+    "A tree on a sandy hill",
+  ),
+};
+
 /** The Site Settings values stories show (1.17). */
 const STORY_SETTINGS: Partial<Record<BindableSetting, string>> = {
   "general.name": "Rosa's Bakery",
@@ -41,7 +85,7 @@ const storyContext: RenderContext = {
     { id: "book", label: "Book a table", href: "#", current: false, button: true },
   ],
   link: () => "#",
-  image: (id) => (id === "photo" ? photo : null),
+  image: (id) => (id === "photo" ? photo : (DRAWINGS[id] ?? null)),
   setting: (key) => STORY_SETTINGS[key],
   language: "en-GB",
   formService: { kind: "formspree", formId: "xyzAbc12" },
