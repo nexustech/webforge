@@ -173,6 +173,8 @@ export const theme = {
   "theme.look.confirm.other":
     "This restyles the {count} on the site that have no look of their own.",
   "theme.look.confirmButton": "Change Look",
+  // A theme change cancelled at its question, for a name or before every page changes (#614).
+  "theme.notChanged": "Not changed",
   "theme.studio.current": "In use",
   "theme.studio.cardHeading": "Welcome",
   "theme.studio.cardText": "Fresh bread every morning, from seven.",

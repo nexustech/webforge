@@ -301,6 +301,25 @@ describe("your own themes (2.23, PH2-17)", () => {
     expect(labels()).toEqual([]);
   });
 
+  it("says 'Not changed' when either question is cancelled, and nothing when answered (#614)", async () => {
+    const { session, labels } = setUp();
+    const notify = vi.fn();
+
+    // The name for the person's own version, cancelled.
+    expect(await setTextSize(session, { ...naming(undefined), notify }, "h1", "6xl")).toBe(false);
+    expect(notify).toHaveBeenLastCalledWith("Not changed");
+    // Every page's question, cancelled after the name was given: as an Escape answers it.
+    const refused = { ...naming("Mine"), siteWide: answering(false).siteWide, notify };
+    expect(await setColor(session, refused, "primary", BRAND)).toBe(false);
+    expect(notify).toHaveBeenCalledTimes(2);
+    expect(labels()).toEqual([]);
+
+    // Answered, it changes and says nothing.
+    const answered = { ...naming("Mine"), siteWide: answering(true).siteWide, notify };
+    expect(await setColor(session, answered, "primary", BRAND)).toBe(true);
+    expect(notify).toHaveBeenCalledTimes(2);
+  });
+
   it("creates one from a built-in theme, the site's or one of the person's own", async () => {
     const { session, labels, theme } = setUp();
     const bistro = themePreset("bistro");
