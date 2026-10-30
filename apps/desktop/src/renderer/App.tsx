@@ -10,6 +10,7 @@ import type {
   AppInfo,
   Preferences,
   PreferencesChange,
+  SaveSiteZipResult,
   SiteUiChange,
   SiteUiState,
   UiStateResult,
@@ -74,6 +75,8 @@ export type AppProps = {
   readonly setExportChoices?: (choices: ExportChoices) => Promise<null>;
   /** Opens the last export from disk; injectable for tests. Defaults to the preload API. */
   readonly openExport?: () => Promise<"opened" | "none" | "missing">;
+  /** Saves a copy of the site as a ZIP (4.7); injectable for tests. Defaults to the preload API. */
+  readonly saveSiteZip?: () => Promise<SaveSiteZipResult>;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
@@ -101,6 +104,7 @@ const exportChoicesWithPreload = () => window.webforge.site.exportChoices();
 const setExportChoicesWithPreload = (choices: ExportChoices) =>
   window.webforge.site.setExportChoices(choices);
 const openExportWithPreload = () => window.webforge.site.openExport();
+const saveSiteZipWithPreload = () => window.webforge.project.saveZip();
 const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
 const saveUiStateWithPreload = (change: SiteUiChange) =>
   window.webforge.project.setUiState(siteSession(), change);
@@ -133,6 +137,7 @@ export function App({
   exportChoices = exportChoicesWithPreload,
   setExportChoices = setExportChoicesWithPreload,
   openExport = openExportWithPreload,
+  saveSiteZip = saveSiteZipWithPreload,
   loaded,
   uiState,
   saveUiState = saveUiStateWithPreload,
@@ -185,6 +190,7 @@ export function App({
     exportChoices,
     setExportChoices,
     openExport,
+    saveSiteZip,
   });
   useEffect(() => {
     exportSiteRef.current = {
@@ -193,8 +199,9 @@ export function App({
       exportChoices,
       setExportChoices,
       openExport,
+      saveSiteZip,
     };
-  }, [exportSite, cancelExport, exportChoices, setExportChoices, openExport]);
+  }, [exportSite, cancelExport, exportChoices, setExportChoices, openExport, saveSiteZip]);
   const [windowContext] = useState<WindowContext>(() => {
     // What the kind and item previews draw with: the canvas's CSS compiler, as the Add panel's.
     const previewSource = {
@@ -219,6 +226,7 @@ export function App({
       exportChoices: () => exportSiteRef.current.exportChoices(),
       setExportChoices: (choices) => exportSiteRef.current.setExportChoices(choices),
       openExport: () => exportSiteRef.current.openExport(),
+      saveSiteZip: () => exportSiteRef.current.saveSiteZip(),
       answerAi,
       preview,
       // Drawn by the canvas's CSS compiler, as the Add panel's previews are.

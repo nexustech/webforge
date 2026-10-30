@@ -42,6 +42,8 @@ const projectFailureReasonSchema = z.enum([
   "corrupt",
   "unexpected-schema",
   "newer-format",
+  /** A site's ZIP (4.7) larger than a ZIP file holds. */
+  "too-large",
   "unknown",
 ]);
 
@@ -57,6 +59,21 @@ const projectResultSchema = z.discriminatedUnion("status", [
 
 /** Outcome of asking the main process to create or open a site. */
 export type ProjectResult = z.infer<typeof projectResultSchema>;
+
+/** Outcome of saving a copy of the open site as a ZIP (4.7). */
+const saveSiteZipResultSchema = z.discriminatedUnion("status", [
+  /** Saved as `fileName`, never the full path. */
+  z.strictObject({ status: z.literal("saved"), fileName: z.string().min(1) }),
+  z.strictObject({ status: z.literal("canceled") }),
+  z.strictObject({
+    status: z.literal("failed"),
+    /** No site open, one larger than a ZIP file holds, or a write error. */
+    reason: z.enum(["no-site", "too-large", "unknown"]),
+  }),
+]);
+
+/** Outcome of saving a copy of the open site as a ZIP. */
+export type SaveSiteZipResult = z.infer<typeof saveSiteZipResultSchema>;
 
 /** Outcome of reading the open site's documents. */
 const readSiteResultSchema = z.discriminatedUnion("status", [
@@ -181,6 +198,24 @@ export const projectChannels = {
     request: z.tuple([]),
     response: projectResultSchema,
   },
+  /**
+   * Saves a copy of the open site as a ZIP (4.7, F-SITE-5): its last changes first, then where
+   * the person chooses in a save dialog.
+   */
+  saveSiteZip: {
+    channel: "project:save-zip",
+    request: z.tuple([]),
+    response: saveSiteZipResultSchema,
+  },
+  /**
+   * Asks which site's ZIP to open (open dialog in main), checks it, asks where to save it as a new
+   * site (save dialog) and makes that current (4.7).
+   */
+  openSiteZip: {
+    channel: "project:open-zip",
+    request: z.tuple([]),
+    response: projectResultSchema,
+  },
   /** The site that is open, or `null`. */
   getCurrentProject: {
     channel: "project:get-current",
@@ -258,6 +293,10 @@ export interface ProjectApi {
   create(request: NewSiteRequest): Promise<ProjectResult>;
   /** Shows an open dialog, then opens the chosen site. */
   open(): Promise<ProjectResult>;
+  /** Saves a copy of the open site as a ZIP, where the person chooses (4.7). */
+  saveZip(): Promise<SaveSiteZipResult>;
+  /** Opens a site's ZIP the person chooses as a new site, saved where they choose (4.7). */
+  openZip(): Promise<ProjectResult>;
   /** The site that is open, or `null`. */
   getCurrent(): Promise<ProjectSummary | null>;
   /** The open site's documents as one validated site. */

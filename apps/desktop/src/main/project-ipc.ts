@@ -1,6 +1,10 @@
+import { readFile, stat } from "node:fs/promises";
+import { fillFromSiteZip, readSiteZip, type SiteZip, SiteZipError } from "@webforge/storage";
 import type { IpcMain } from "electron";
+import type { ProjectFailureReason } from "../shared/ipc-contract.js";
 import type { Backups } from "./backups.js";
 import { registerIpcHandler } from "./ipc.js";
+import { logFailure } from "./log.js";
 import { fillNewSite, type TemplateReader } from "./new-site.js";
 import type { ProjectSession } from "./project-session.js";
 import type { RecentSites } from "./recent-sites.js";
@@ -15,6 +19,13 @@ export type ProjectDialogs = {
   chooseNewProjectPath(siteName: string): Promise<string | undefined>;
   /** Asks which site to open; `undefined` if the user cancels. */
   chooseProjectToOpen(): Promise<string | undefined>;
+  /**
+   * Asks where to save a copy of the site called `siteName` as a ZIP (4.7), offering a file named
+   * after it; `undefined` if the user cancels.
+   */
+  chooseSiteZipToSave(siteName: string): Promise<string | undefined>;
+  /** Asks which site's ZIP to open (4.7); `undefined` if the user cancels. */
+  chooseSiteZipToOpen(): Promise<string | undefined>;
 };
 
 /** Characters no file name may have on Windows, macOS or Linux. */
@@ -34,6 +45,33 @@ export function siteFileName(name: string, fallback: string): string {
     .trim()
     .replace(/[. ]+$/, "");
   return cleaned === "" || RESERVED_FILE_NAMES.test(cleaned) ? fallback : cleaned;
+}
+
+/** The most a site's ZIP can be (what a ZIP holds without ZIP64), checked before it is read. */
+const SITE_ZIP_MAX_FILE_BYTES = 0xffff_ffff;
+
+/** Why a site's ZIP can't be opened, as the open dialog's failure says it. */
+const SITE_ZIP_FAILURES = {
+  "not-a-site-zip": "not-a-project",
+  damaged: "corrupt",
+  "newer-format": "newer-format",
+  "too-large": "too-large",
+} as const satisfies Record<SiteZipError["code"], ProjectFailureReason>;
+
+/** The site in the ZIP at `path`, read and checked, or why it can't be opened. */
+async function readSiteZipFile(
+  path: string,
+): Promise<SiteZip | { readonly reason: ProjectFailureReason }> {
+  try {
+    const { size } = await stat(path);
+    if (size > SITE_ZIP_MAX_FILE_BYTES) return { reason: "too-large" };
+    return readSiteZip(await readFile(path));
+  } catch (error) {
+    if (error instanceof SiteZipError) return { reason: SITE_ZIP_FAILURES[error.code] };
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { reason: "not-found" };
+    logFailure("Webforge could not read a site's ZIP", error);
+    return { reason: "unknown" };
+  }
 }
 
 /**
@@ -63,12 +101,15 @@ export function registerProjectHandlers(
     readonly beforeSwitch?: () => Promise<void>;
     /** Reads a template the app ships, which New Site makes a site from (2.14a, 2.15c). */
     readonly template?: TemplateReader;
+    /** Asks the renderer to save its last changes, before a copy of the site is saved (4.7). */
+    readonly flush?: () => Promise<void>;
   } = {},
 ): void {
   const {
     recovery,
     recent,
     beforeSwitch,
+    flush,
     template = (id) => {
       throw new Error(`No template ${id}`);
     },
@@ -93,6 +134,30 @@ export function registerProjectHandlers(
   registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {
     const path = await dialogs.chooseProjectToOpen();
     return path === undefined ? { status: "canceled" } : open(path);
+  });
+  // Save a Copy as ZIP… (4.7): the site with its last changes, where the person chooses.
+  registerIpcHandler(ipc, "saveSiteZip", isTrustedSender, async () => {
+    const current = session.current();
+    if (current === null) return { status: "failed", reason: "no-site" };
+    const path = await dialogs.chooseSiteZipToSave(current.name);
+    if (path === undefined) return { status: "canceled" };
+    await flush?.();
+    return session.saveSiteZip(path);
+  });
+  // Open Site from ZIP… (4.7): the ZIP checked before anything else is asked, then saved as a new
+  // site where the person chooses, named as it was.
+  registerIpcHandler(ipc, "openSiteZip", isTrustedSender, async () => {
+    const zipPath = await dialogs.chooseSiteZipToOpen();
+    if (zipPath === undefined) return { status: "canceled" };
+    const site = await readSiteZipFile(zipPath);
+    if ("reason" in site) return { status: "failed", reason: site.reason };
+    const path = await dialogs.chooseNewProjectPath(site.name);
+    if (path === undefined) return { status: "canceled" };
+    await beforeSwitch?.();
+    return session.create(path, {
+      name: site.name,
+      fill: async ({ store }) => fillFromSiteZip(store, site),
+    });
   });
   registerIpcHandler(
     ipc,

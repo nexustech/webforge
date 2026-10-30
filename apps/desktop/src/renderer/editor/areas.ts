@@ -4,7 +4,7 @@ import type { StoreApi } from "zustand/vanilla";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
-import type { ExportResult } from "../../shared/ipc-contract.js";
+import type { ExportResult, SaveSiteZipResult } from "../../shared/ipc-contract.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -74,6 +74,8 @@ export type WindowContext = AreaContext & {
   readonly setExportChoices: (choices: ExportChoices) => Promise<null>;
   /** Opens the open site's last export from disk (Preview from disk, 3.3). */
   readonly openExport: () => Promise<"opened" | "none" | "missing">;
+  /** Saves a copy of the open site as a ZIP, where the person chooses (4.7). */
+  readonly saveSiteZip: () => Promise<SaveSiteZipResult>;
   /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
   readonly answerAi: AiApi["onRequest"];
   /** The preview server (3.2): the site in the default browser, and its address for a phone. */

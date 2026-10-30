@@ -200,7 +200,7 @@ function toAssetInfo(row: unknown): AssetInfo {
  * document only has to mention a hash anywhere (media metadata, a future field) to keep its blob,
  * so garbage collection can only ever keep too much, never remove a blob something uses.
  */
-function collectHashes(value: JsonValue, into: Set<string>): void {
+export function collectHashes(value: JsonValue, into: Set<string>): void {
   // Iterative: a document nested very deeply (a crafted file) can't overflow the stack (R14).
   const pending: JsonValue[] = [value];
   while (pending.length > 0) {
@@ -621,6 +621,32 @@ export class ProjectStore {
       );
     });
     return version;
+  }
+
+  /**
+   * Adds a saved version as it was in another project, with its own id, name, kind and time and
+   * its documents: a version brought in from a site's ZIP (4.7). It goes after the versions this
+   * project has, so add them oldest first.
+   */
+  addVersion(version: VersionInfo, documents: readonly StoredDocument[]): void {
+    this.#write(() => {
+      const manifest: Manifest["documents"] = documents.map(({ id, kind, content }) => ({
+        id,
+        kind,
+        hash: this.#insertBlob(Buffer.from(JSON.stringify(content), "utf8"), JSON_MIME),
+      }));
+      this.#prepare(
+        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        version.id,
+        version.name,
+        version.kind,
+        version.createdAt,
+        FORMAT_VERSION,
+        JSON.stringify({ documents: manifest }),
+      );
+    });
   }
 
   /** Saved versions, newest first. */

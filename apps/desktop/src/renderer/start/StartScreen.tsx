@@ -37,7 +37,14 @@ export type StartScreenProps = {
   /** The preload API's site calls; injectable for tests. */
   readonly project?: Pick<
     ProjectApi,
-    "create" | "open" | "listRecent" | "openRecent" | "pinRecent" | "removeRecent" | "clearRecent"
+    | "create"
+    | "open"
+    | "openZip"
+    | "listRecent"
+    | "openRecent"
+    | "pinRecent"
+    | "removeRecent"
+    | "clearRecent"
   >;
   /** Lists the templates New Site offers; injectable for tests. */
   readonly templates?: Pick<TemplatesApi, "list">;

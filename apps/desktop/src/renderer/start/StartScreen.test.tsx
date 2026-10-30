@@ -62,6 +62,7 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
   return {
     create: vi.fn(async (_request: NewSiteRequest) => result),
     open: vi.fn(async () => result),
+    openZip: vi.fn(async () => result),
     listRecent: vi.fn(async () => recent),
     openRecent: vi.fn(async (_id: string) => result),
     pinRecent: vi.fn(async (_id: string, _pinned: boolean) => null),

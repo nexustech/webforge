@@ -13,6 +13,8 @@ export function openFailureMessage(reason: ProjectFailureReason): string {
       return t("site.openFailed.newer");
     case "not-found":
       return t("site.openFailed.missing");
+    case "too-large":
+      return t("site.zip.tooLarge");
     case "unknown":
       return t("site.openFailed.unknown");
   }

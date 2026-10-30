@@ -223,12 +223,14 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   );
 
   // Before another site replaces the open one: save it, and capture its canvas for Recent.
+  /** The renderer saves its last changes (`app:flush`). */
+  const requestFlush = async () => {
+    const window = lifecycle.mainWindow();
+    if (window !== undefined) await lifecycle.flushOnClose?.requestFlush(window);
+  };
   const siteSwitch = createSiteSwitch({
     currentPath: () => projectSession.currentPath(),
-    requestFlush: async () => {
-      const window = lifecycle.mainWindow();
-      if (window !== undefined) await lifecycle.flushOnClose?.requestFlush(window);
-    },
+    requestFlush,
     capture: () => captureCanvas(lifecycle.mainWindow()),
     recent: recentSites,
   });
@@ -479,6 +481,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
       template: shippedTemplateReader(templatesDir),
+      flush: requestFlush,
     });
     registerCanvasHandlers(ipcMain, isTrustedSender, canvasStyles);
     registerFontHandlers(ipcMain, isTrustedSender, fonts.downloaded());

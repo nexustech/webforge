@@ -34,6 +34,7 @@ export type NativeDialogs = {
 export function createNativeDialogs(parts: DialogParts): NativeDialogs {
   const { dialog } = parts;
   const projectFilters = [{ name: t("site.fileType"), extensions: [PROJECT_EXTENSION.slice(1)] }];
+  const siteZipFilters = [{ name: t("site.zip.fileType"), extensions: ["zip"] }];
 
   const save = (options: SaveDialogOptions) => {
     const parent = parts.focusedWindow();
@@ -66,6 +67,27 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         const result = await open({
           title: t("site.openDialogTitle"),
           filters: projectFilters,
+          properties: ["openFile"],
+        });
+        return result.canceled ? undefined : result.filePaths[0];
+      },
+      chooseSiteZipToSave: async (siteName) => {
+        const answer = await parts.testAnswer("save");
+        if (answer !== undefined) return answer.path;
+        // The system's dialog asks before replacing a file of that name.
+        const result = await save({
+          title: t("site.zip.saveDialogTitle"),
+          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}.zip`,
+          filters: siteZipFilters,
+        });
+        return result.canceled || result.filePath === "" ? undefined : result.filePath;
+      },
+      chooseSiteZipToOpen: async () => {
+        const answer = await parts.testAnswer("open");
+        if (answer !== undefined) return answer.path;
+        const result = await open({
+          title: t("site.zip.openDialogTitle"),
+          filters: siteZipFilters,
           properties: ["openFile"],
         });
         return result.canceled ? undefined : result.filePaths[0];

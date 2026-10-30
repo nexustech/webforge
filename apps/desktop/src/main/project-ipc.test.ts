@@ -1,3 +1,8 @@
+import { writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
+import { createSite } from "@webforge/model";
+import { ProjectStore, writeSiteZip } from "@webforge/storage";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectResult } from "../shared/ipc-contract.js";
@@ -7,6 +12,7 @@ import type { ProjectSession } from "./project-session.js";
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
 const APP_URL = "file:///app/index.html";
+const tempDir = tempDirFactory();
 const project = {
   name: "Bakery",
   fileName: "Bakery.wforge",
@@ -36,6 +42,7 @@ function setUp(
     commit: vi.fn(() => ({ status: "saved" })),
     uiState: vi.fn(() => ({ editorMode: "content" })),
     setUiState: vi.fn(() => ({ status: "saved" })),
+    saveSiteZip: vi.fn(async (path: string) => ({ status: "saved", fileName: basename(path) })),
     staleReason: vi.fn((sessionId: string) =>
       sessionId === project.sessionId ? undefined : "stale-session",
     ),
@@ -47,6 +54,8 @@ function setUp(
     {
       chooseNewProjectPath: async () => "/sites/Bakery.wforge",
       chooseProjectToOpen: async () => "/sites/Bakery.wforge",
+      chooseSiteZipToSave: async () => "/backups/Bakery.zip",
+      chooseSiteZipToOpen: async () => "/backups/Bakery.zip",
       ...dialogs,
     },
     options,
@@ -281,6 +290,121 @@ describe("registerProjectHandlers", () => {
     await expect(
       invoke("project:set-ui-state", APP_URL, project.sessionId, { editorMode: "zoom" }),
     ).rejects.toThrow();
+  });
+});
+
+describe("a site's ZIP (4.7)", () => {
+  /** A ZIP of a new site called `name`, with a version, written as Save a Copy as ZIP writes it. */
+  async function siteZip(name: string): Promise<string> {
+    const dir = tempDir();
+    const store = ProjectStore.create(join(dir, "source.wforge"), { name });
+    store.saveSite(createSite({ name, language: "en", homeTitle: "Home", notFoundTitle: "Oops" }));
+    store.saveVersion("Before the change", "manual");
+    const path = join(dir, "Rosa's Bakery.zip");
+    await writeSiteZip(store, path);
+    store.close();
+    return path;
+  }
+
+  it("saves a copy of the open site where the person chooses, its last changes first", async () => {
+    const order: string[] = [];
+    const chooseSiteZipToSave = vi.fn(async (_name: string) => {
+      order.push("dialog");
+      return "/backups/Bakery.zip";
+    });
+    const { invoke, session } = setUp(
+      { chooseSiteZipToSave },
+      {
+        flush: async () => {
+          order.push("flush");
+        },
+      },
+    );
+    session.saveSiteZip.mockImplementation(async (path: string) => {
+      order.push("save");
+      return { status: "saved", fileName: basename(path) };
+    });
+
+    await expect(invoke("project:save-zip")).resolves.toEqual({
+      status: "saved",
+      fileName: "Bakery.zip",
+    });
+    expect(chooseSiteZipToSave).toHaveBeenCalledWith("Bakery");
+    expect(session.saveSiteZip).toHaveBeenCalledWith("/backups/Bakery.zip");
+    expect(order).toEqual(["dialog", "flush", "save"]);
+  });
+
+  it("saves nothing without an open site, or when the person cancels", async () => {
+    const closed = setUp();
+    closed.session.current.mockReturnValue(null as unknown as typeof project);
+    await expect(closed.invoke("project:save-zip")).resolves.toEqual({
+      status: "failed",
+      reason: "no-site",
+    });
+
+    const canceled = setUp({ chooseSiteZipToSave: async () => undefined });
+    await expect(canceled.invoke("project:save-zip")).resolves.toEqual({ status: "canceled" });
+    expect(canceled.session.saveSiteZip).not.toHaveBeenCalled();
+  });
+
+  it("opens a site's ZIP as a new site, named as it was, where the person chooses", async () => {
+    const zip = await siteZip("Rosa's Bakery");
+    const chooseNewProjectPath = vi.fn(async (_name: string) => "/sites/Rosa.wforge");
+    const beforeSwitch = vi.fn(async () => undefined);
+    const { invoke, session } = setUp(
+      { chooseSiteZipToOpen: async () => zip, chooseNewProjectPath },
+      { beforeSwitch },
+    );
+
+    await expect(invoke("project:open-zip")).resolves.toEqual(opened);
+    expect(chooseNewProjectPath).toHaveBeenCalledWith("Rosa's Bakery");
+    expect(beforeSwitch).toHaveBeenCalled();
+    expect(session.create).toHaveBeenCalledWith("/sites/Rosa.wforge", {
+      name: "Rosa's Bakery",
+      fill: expect.any(Function),
+    });
+
+    // Its fill writes the site, with its version, into the new file.
+    const fill = (session.create.mock.calls[0] as unknown[] | undefined)?.[1] as {
+      fill: (target: { store: ProjectStore }) => Promise<void>;
+    };
+    const target = ProjectStore.create(join(tempDir(), "new.wforge"), { name: "Rosa's Bakery" });
+    await fill.fill({ store: target });
+    expect(target.readSite().settings.general.name).toBe("Rosa's Bakery");
+    expect(target.listVersions().map((version) => version.name)).toEqual(["Before the change"]);
+    target.close();
+  });
+
+  it("says why a ZIP can't be opened before asking where to save it", async () => {
+    const dir = tempDir();
+    const notAZip = join(dir, "photo.zip");
+    writeFileSync(notAZip, "not a zip");
+    const chooseNewProjectPath = vi.fn(async () => "/sites/Rosa.wforge");
+
+    for (const [path, reason] of [
+      [notAZip, "not-a-project"],
+      [join(dir, "gone.zip"), "not-found"],
+    ] as const) {
+      const { invoke, session } = setUp({
+        chooseSiteZipToOpen: async () => path,
+        chooseNewProjectPath,
+      });
+      await expect(invoke("project:open-zip")).resolves.toEqual({ status: "failed", reason });
+      expect(session.create).not.toHaveBeenCalled();
+    }
+    expect(chooseNewProjectPath).not.toHaveBeenCalled();
+  });
+
+  it("does nothing when the person cancels either dialog", async () => {
+    const zip = await siteZip("Rosa's Bakery");
+    for (const dialogs of [
+      { chooseSiteZipToOpen: async () => undefined },
+      { chooseSiteZipToOpen: async () => zip, chooseNewProjectPath: async () => undefined },
+    ]) {
+      const { invoke, session } = setUp(dialogs);
+      await expect(invoke("project:open-zip")).resolves.toEqual({ status: "canceled" });
+      expect(session.create).not.toHaveBeenCalled();
+    }
   });
 });
 
