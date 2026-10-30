@@ -18,7 +18,7 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import { openSiteWith } from "./open-site.js";
 
 /** How many sites File › Open Recent lists (PF-1). */
-export const OPEN_RECENT_MAX = 5;
+const OPEN_RECENT_MAX = 5;
 
 /** The Recent list as the window shows it too (the start screen), which lists it again on a change. */
 export type ShownRecentSites = {

@@ -70,12 +70,13 @@ export function menuEntries(
   commands: readonly Command[],
   inMenu: (command: Command) => boolean,
 ): MenuEntry[] {
+  const submenus = Map.groupBy(
+    commands.filter((command) => command.submenu !== undefined),
+    (command) => command.submenu,
+  );
   return commands
     .filter((command) => command.submenu === undefined && inMenu(command))
-    .map((command) => ({
-      command,
-      submenu: commands.filter((each) => each.submenu === command.id),
-    }));
+    .map((command) => ({ command, submenu: submenus.get(command.id) ?? [] }));
 }
 
 /** The ids of the commands that open a submenu (3.18): some command names them as its `submenu`. */

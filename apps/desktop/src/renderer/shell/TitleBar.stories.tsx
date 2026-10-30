@@ -126,6 +126,17 @@ export const SplitButton: Story = {
   },
 };
 
+/** Opens File › Open Recent, from the keyboard as the arrow key opens a submenu. */
+const openRecent = async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+  const canvas = within(canvasElement);
+  await userEvent.click(canvas.getByRole("menuitem", { name: "File" }));
+  // The menus are in a portal on the body; the arrow key opens the submenu.
+  const page = within(canvasElement.ownerDocument.body);
+  page.getByRole("menuitem", { name: "Open Recent" }).focus();
+  await userEvent.keyboard("{ArrowRight}");
+  await page.findByRole("menu", { name: "Open Recent" });
+};
+
 /** File › Open Recent open (3.18): the latest sites, the folder where two share a name. */
 export const OpenRecent: Story = {
   render: () => (
@@ -152,15 +163,7 @@ export const OpenRecent: Story = {
       ]}
     />
   ),
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole("menuitem", { name: "File" }));
-    // The menus are in a portal on the body; the arrow key opens the submenu.
-    const page = within(canvasElement.ownerDocument.body);
-    page.getByRole("menuitem", { name: "Open Recent" }).focus();
-    await userEvent.keyboard("{ArrowRight}");
-    await page.findByRole("menu", { name: "Open Recent" });
-  },
+  play: openRecent,
 };
 
 /** No recent sites yet: the submenu says so, its one item off. */
@@ -180,7 +183,7 @@ export const OpenRecentEmpty: Story = {
       ]}
     />
   ),
-  play: OpenRecent.play,
+  play: openRecent,
 };
 
 /** A site's steps so far; the last was undone. */
