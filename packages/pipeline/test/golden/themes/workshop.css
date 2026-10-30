@@ -68,6 +68,7 @@
 @theme {
   --font-sans: "Roboto", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Bebas Neue", ui-sans-serif, system-ui, sans-serif;
+  --font-accent: "Bebas Neue", ui-sans-serif, system-ui, sans-serif;
   --spacing: 0.225rem;
   --text-h1: 3.75rem;
   --text-h1--line-height: 1.25;

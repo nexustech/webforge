@@ -14,6 +14,20 @@ type Stored =
 /** What keeping a theme did: kept it, or not, because My themes holds as many as it may. */
 export type KeepOutcome = "kept" | "full";
 
+/**
+ * `entry` with an accent font (3.22): one kept before there was one has its headings' font, as a
+ * site's theme does when it opens in format 10, so it looks the same. Anything else as it is, for
+ * the schema to check.
+ */
+function withAccent(entry: unknown): unknown {
+  if (typeof entry !== "object" || entry === null) return entry;
+  const fonts = (entry as { fonts?: unknown }).fonts;
+  if (typeof fonts !== "object" || fonts === null || "accent" in fonts || !("heading" in fonts)) {
+    return entry;
+  }
+  return { ...entry, fonts: { ...fonts, accent: fonts.heading } };
+}
+
 const idOf = (entry: unknown): string | undefined => {
   const own = (entry as { own?: { id?: unknown } } | null)?.own;
   return typeof own?.id === "string" ? own.id : undefined;
@@ -114,7 +128,7 @@ export function createMyThemes(options: {
     list(): Promise<OwnTheme[]> {
       return inTurn(async () =>
         entries(await read()).flatMap((entry) => {
-          const theme = ownThemeSchema.safeParse(entry);
+          const theme = ownThemeSchema.safeParse(withAccent(entry));
           return theme.success ? [theme.data] : [];
         }),
       );

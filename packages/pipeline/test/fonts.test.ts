@@ -25,6 +25,7 @@ function siteWithFonts(heading: string, body: string): SiteSnapshot {
     fonts: {
       heading: { family: heading, fallback: "serif" },
       body: { family: body, fallback: "sans-serif" },
+      accent: { family: heading, fallback: "serif" },
     },
   };
   return {
@@ -61,6 +62,39 @@ describe("exported fonts (2.2)", () => {
     expect(files).toContain("poppins-latin-700-italic.woff2");
     expect(files).not.toContain("poppins-latin-300-normal.woff2");
     expect(files).not.toContain("inter");
+  });
+
+  it("exports the accent font's files only when something is set in it (3.22, C8)", async () => {
+    const site = siteWithFonts("Playfair Display", "Poppins");
+    const theme = {
+      ...site.theme,
+      fonts: { ...site.theme.fonts, accent: { family: "Pacifico", fallback: "sans-serif" } },
+    } as const;
+    const text = (lookFont?: string) => ({
+      type: "Heading",
+      props: { id: "h", text: "Fresh bread", ...(lookFont === undefined ? {} : { lookFont }) },
+    });
+    const built = async (lookFont?: string) => {
+      const home = site.pages[0];
+      if (home === undefined) throw new Error("no home page");
+      const page = { ...home, doc: { ...home.doc, content: [text(lookFont)] } };
+      const result = await buildSite({ ...site, theme, pages: [page] }, siteLibrary, resources);
+      return {
+        fonts: fontFiles(result.files).join(" "),
+        css: new TextDecoder().decode(
+          [...result.files].find(([path]) => path.endsWith(".css") && path.includes("site"))?.[1],
+        ),
+        html: new TextDecoder().decode(result.files.get("index.html")),
+      };
+    };
+
+    const without = await built();
+    expect(without.fonts).not.toContain("pacifico");
+    expect(without.css).not.toContain('font-family: "Pacifico"');
+    const accent = await built("accent");
+    expect(accent.html).toContain("font-accent!");
+    expect(accent.fonts).toContain("pacifico-latin-400-normal.woff2");
+    expect(accent.css).toContain('font-family: "Pacifico"');
   });
 
   it("exports no font for a family the catalogue doesn't have: the site shows its fallback", async () => {

@@ -35,6 +35,7 @@ const bistro: ThemeTokens = {
   fonts: {
     heading: { family: "Playfair Display", fallback: "serif" },
     body: { family: "Source Sans 3", fallback: "sans-serif" },
+    accent: { family: "Playfair Display", fallback: "serif" },
   },
   radius: { box: "l", field: "full", selector: "m" },
   border: "thin",
@@ -84,6 +85,7 @@ const atelier: ThemeTokens = {
   fonts: {
     heading: { family: "Montserrat", fallback: "sans-serif" },
     body: { family: "Open Sans", fallback: "sans-serif" },
+    accent: { family: "Montserrat", fallback: "sans-serif" },
   },
   radius: { box: "none", field: "none", selector: "none" },
   border: "thin",
@@ -133,6 +135,7 @@ const workshop: ThemeTokens = {
   fonts: {
     heading: { family: "Bebas Neue", fallback: "sans-serif" },
     body: { family: "Roboto", fallback: "sans-serif" },
+    accent: { family: "Bebas Neue", fallback: "sans-serif" },
   },
   radius: { box: "s", field: "s", selector: "s" },
   border: "thick",
@@ -183,6 +186,7 @@ const clarity: ThemeTokens = {
   fonts: {
     heading: { family: "Inter", fallback: "sans-serif" },
     body: { family: "Inter", fallback: "sans-serif" },
+    accent: { family: "Inter", fallback: "sans-serif" },
   },
   radius: { box: "m", field: "s", selector: "s" },
   border: "thin",

@@ -20,6 +20,8 @@ export const APPEARANCE_GROUP = {
   label: t("editPanel.optionGroup.appearance"),
 } as const;
 
+/** The theme's fonts (3.22, PF-5): `default` keeps the item's own, a title's Heading font. */
+const FONTS = ["default", "heading", "body", "accent"] as const;
 /** The type scale's text styles, smallest first, as the theme sets them (#419). */
 const SIZES = ["default", "small", "body", "h6", "h5", "h4", "h3", "h2", "h1"] as const;
 const WEIGHTS = ["default", "normal", "medium", "semibold", "bold"] as const;
@@ -89,6 +91,15 @@ const colourOptions = (values: readonly (keyof typeof COLOUR_NAMES)[]) =>
 
 /** The group's fields, by the names they're stored under: `look…`, clear of any component's own. */
 export const APPEARANCE_FIELDS = {
+  // One font for every device (3.22): a font doesn't change with the screen's size.
+  lookFont: {
+    kind: "select",
+    label: t("field.look.font"),
+    help: t("field.look.font.help"),
+    group: "style",
+    optionGroup: APPEARANCE_GROUP,
+    options: FONTS.map((value) => ({ label: t(`field.look.font.${value}`), value })),
+  },
   lookSize: {
     kind: "select",
     label: t("field.look.size"),
@@ -161,6 +172,7 @@ export const APPEARANCE_FIELDS = {
 
 /** The Text controls' names: a section without a title of its own has none (2.22b). */
 export const APPEARANCE_TEXT_FIELD_NAMES = [
+  "lookFont",
   "lookSize",
   "lookWeight",
   "lookItalic",
@@ -327,6 +339,12 @@ export const DIALOG_TITLE_FIELDS = {
 } as const satisfies Readonly<Record<string, FieldDef>>;
 
 /** Each choice's classes, written in full; `default` adds none. `!` wins over the component's. */
+const FONT_CLASSES: Readonly<Record<(typeof FONTS)[number], string>> = {
+  default: "",
+  heading: "font-heading!",
+  body: "font-sans!",
+  accent: "font-accent!",
+};
 const SIZE_CLASSES: Readonly<Record<(typeof SIZES)[number], string>> = {
   default: "",
   small: "text-small!",
@@ -559,6 +577,7 @@ const shadow: FieldClasses = (value, values) =>
  * own, for a section its title's, with the title's colour from the dialog (3.13b).
  */
 const TEXT_CLASSES = {
+  lookFont: onDevices(pick(FONT_CLASSES)),
   lookSize: onDevices(pick(SIZE_CLASSES)),
   lookWeight: onDevices(pick(WEIGHT_CLASSES)),
   lookItalic: onDevices(when("italic!")),

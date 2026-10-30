@@ -183,7 +183,11 @@ export const themeTokensSchema = z.strictObject({
    * as the surface and `neutral-content` as the text, its other colours as they are.
    */
   inverse: z.record(colorRoleSchema, oklchSchema).optional(),
-  fonts: z.strictObject({ heading: fontRefSchema, body: fontRefSchema }),
+  /**
+   * Headings', body text's and the accent's fonts (3.22, PF-5). An element or a section's title can
+   * take any of the three (`lookFont`); none takes the accent until someone picks it.
+   */
+  fonts: z.strictObject({ heading: fontRefSchema, body: fontRefSchema, accent: fontRefSchema }),
   /** Corners: of boxes (cards), fields (inputs, buttons) and selectors (checkboxes, badges). */
   radius: z.strictObject({ box: radiusSchema, field: radiusSchema, selector: radiusSchema }),
   /** How wide borders are: 1 or 2 pixels. */
@@ -319,6 +323,7 @@ export const DEFAULT_THEME: ThemeTokens = frozen({
   fonts: {
     heading: { family: "Inter", fallback: "sans-serif" },
     body: { family: "Inter", fallback: "sans-serif" },
+    accent: { family: "Inter", fallback: "sans-serif" },
   },
   radius: { box: "m", field: "s", selector: "m" },
   border: "thin",

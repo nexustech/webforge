@@ -54,7 +54,8 @@ describe("the Appearance group (2.22, ST-1)", () => {
     for (const [name, field] of Object.entries(APPEARANCE_FIELDS)) {
       expect(["select", "toggle", "color"], name).toContain(field.kind);
       expect(field.group, name).toBe("style");
-      expect(field.responsive, name).toBe(true);
+      // But a font, which doesn't change with the screen's size (3.22).
+      expect("responsive" in field && field.responsive, name).toBe(name !== "lookFont");
       expect(field.optionGroup, name).toEqual({ id: "appearance", label: "Appearance" });
     }
   });
@@ -143,6 +144,35 @@ describe("the Appearance group (2.22, ST-1)", () => {
     expect(html).toMatch(/<h1 class="font-heading text-h1 underline!">Fresh bread<\/h1>/);
     // The section's own frame takes the rest of the group.
     expect(html).toMatch(/<section class="site-hero [^"]* shadow-lg!"/);
+  });
+
+  it("sets an element's text or a section's title in the theme's Heading, Body or Accent font (3.22)", () => {
+    expect(appearanceTextClasses({ lookFont: "default" })).toBe("");
+    expect(appearanceTextClasses({ lookFont: "heading" })).toBe("font-heading!");
+    expect(appearanceTextClasses({ lookFont: "body" })).toBe("font-sans!");
+    expect(appearanceTextClasses({ lookFont: "accent", lookSize: "h3" })).toBe(
+      "font-accent! text-h3!",
+    );
+    expect(appearanceTextClasses({ lookFont: "comic sans" })).toBe("");
+
+    const html = render([
+      { type: "Hero", props: { id: "hero", title: "Fresh bread", lookFont: "accent" } },
+      { type: "Features", props: { id: "features", title: "Our cakes", lookFont: "body" } },
+      {
+        type: "Section",
+        props: {
+          id: "band",
+          content: [
+            { type: "Heading", props: { id: "h", text: "Opening hours", lookFont: "heading" } },
+          ],
+        },
+      },
+    ]);
+    expect(html).toMatch(/<h1 class="font-heading text-h1 font-accent!">Fresh bread<\/h1>/);
+    expect(html).toMatch(/<h2 class="[^"]*font-sans![^"]*">Our cakes<\/h2>/);
+    // A section's title takes it, not the section's frame.
+    expect(html).not.toMatch(/<section[^>]*font-(accent|sans)!/);
+    expect(html).toMatch(/class="[^"]*font-heading![^"]*">Opening hours</);
   });
 
   /** An address for each embed element, which draws nothing without one. */

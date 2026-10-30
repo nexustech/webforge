@@ -6,6 +6,7 @@ import {
   themeCss,
   themeShape,
   themeValuesCss,
+  usesAccentFont,
 } from "@webforge/themes";
 import { compile } from "tailwindcss";
 import type { PipelineResources } from "./resources.js";
@@ -83,7 +84,13 @@ export function siteStylesheetSource(
     // ...and while it moves in, which its delay applies to, not to later changes.
     "@custom-variant wf-entering (&[data-wf-shown]:not([data-wf-done]));",
     themeCss(options.theme),
-    fontFaces(fontFacesFor(options.theme, options.fonts), options.fontsUrl),
+    // The accent font's files only when something is set in it (3.22, C8).
+    fontFaces(
+      fontFacesFor(options.theme, options.fonts, {
+        accent: usesAccentFont(options.candidates),
+      }),
+      options.fontsUrl,
+    ),
   ]
     .filter((part) => part !== "")
     .join("\n");

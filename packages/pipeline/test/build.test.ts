@@ -894,6 +894,7 @@ describe("buildSite: the theme's typography (#419)", () => {
           fonts: {
             heading: { family: "Lora", fallback: "serif" },
             body: { family: "Work Sans", fallback: "sans-serif" },
+            accent: { family: "Lora", fallback: "serif" },
           },
           typeScale: {
             ...DEFAULT_THEME.typeScale,

@@ -109,6 +109,7 @@ function createSiteInTestScript(path: string): void {
     fonts: {
       heading: { family: "Test Script", fallback: "serif" },
       body: { family: "Test Script", fallback: "serif" },
+      accent: { family: "Test Script", fallback: "serif" },
     },
   };
   site.pages[site.homePageId]?.doc.content.push({

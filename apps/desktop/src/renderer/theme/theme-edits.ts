@@ -451,14 +451,18 @@ export async function setColor(
   );
 }
 
+/** The theme's fonts, by what each is for: headings, body text and the accent (3.22). */
+type FontRole = keyof ThemeTokens["fonts"];
+
 /** Sets the fonts (D7): asked first, then one step, "Changed fonts". */
 async function setFonts(
   session: ThemeSession,
   asks: ThemeAsks,
-  fonts: { readonly heading: FontRef; readonly body: FontRef },
+  fonts: Readonly<Record<FontRole, FontRef>>,
 ): Promise<boolean> {
   const now = theme(session).fonts;
-  if (now.heading.family === fonts.heading.family && now.body.family === fonts.body.family) {
+  const roles = ["heading", "body", "accent"] as const satisfies readonly FontRole[];
+  if (roles.every((role) => now[role].family === fonts[role].family)) {
     return false;
   }
   return changeTheme(
@@ -471,22 +475,29 @@ async function setFonts(
       confirm: t("theme.fonts.confirmButton"),
     },
     (tokens) => {
-      tokens.fonts = { heading: { ...fonts.heading }, body: { ...fonts.body } };
+      tokens.fonts = {
+        heading: { ...fonts.heading },
+        body: { ...fonts.body },
+        accent: { ...fonts.accent },
+      };
     },
   );
 }
 
-/** Sets the headings' or the body text's font: see {@link setFonts}. */
+/** Sets the headings', the body text's or the accent's font: see {@link setFonts}. */
 export function setFont(
   session: ThemeSession,
   asks: ThemeAsks,
-  which: "heading" | "body",
+  which: FontRole,
   font: FontRef,
 ): Promise<boolean> {
   return setFonts(session, asks, { ...theme(session).fonts, [which]: font });
 }
 
-/** Sets both fonts to a tested pairing's (F-DS-2): see {@link setFonts}. */
+/**
+ * Sets the headings' and body text's fonts to a tested pairing's (F-DS-2), the accent's as it was:
+ * see {@link setFonts}.
+ */
 export function setPairing(
   session: ThemeSession,
   asks: ThemeAsks,
@@ -495,7 +506,11 @@ export function setPairing(
   const heading = catalogueFont(pairing.heading);
   const body = catalogueFont(pairing.body);
   if (heading === undefined || body === undefined) return Promise.resolve(false);
-  return setFonts(session, asks, { heading: fontRefOf(heading), body: fontRefOf(body) });
+  return setFonts(session, asks, {
+    ...theme(session).fonts,
+    heading: fontRefOf(heading),
+    body: fontRefOf(body),
+  });
 }
 
 /** Whether `a` and `b` are the same JSON value, whatever the order of their keys. */

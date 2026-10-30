@@ -103,6 +103,13 @@ export const shared = {
     "Hard to read on the page: contrast {ratio}:1, less than the {needed}:1 this text needs.",
   // The Appearance group on every section and element (2.22, ST-1): theme tokens only, per device.
   // "Theme's" leaves the item as it draws itself.
+  // The theme's three fonts (3.22, PF-5), by the Theme tab's names; one for every device.
+  "field.look.font": "Font",
+  "field.look.font.help": "The theme's fonts, chosen in the Theme tab.",
+  "field.look.font.default": "Default",
+  "field.look.font.heading": "Headings",
+  "field.look.font.body": "Body text",
+  "field.look.font.accent": "Accent",
   "field.look.size": "Text size",
   "field.look.size.default": "Theme's",
   "field.look.size.small": "Small",

@@ -68,6 +68,7 @@
 @theme {
   --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-accent: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --spacing: 0.225rem;
   --text-h1: 3.75rem;
   --text-h1--line-height: 1.25;

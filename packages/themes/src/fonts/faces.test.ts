@@ -1,13 +1,14 @@
 import { DEFAULT_THEME, type ThemeTokens } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import type { CatalogueFont } from "./catalogue.js";
-import { fontFacesFor } from "./faces.js";
+import { fontFacesFor, usesAccentFont } from "./faces.js";
 
 const withFonts = (heading: string, body: string): ThemeTokens => ({
   ...DEFAULT_THEME,
   fonts: {
     heading: { family: heading, fallback: "sans-serif" },
     body: { family: body, fallback: "sans-serif" },
+    accent: { family: heading, fallback: "sans-serif" },
   },
 });
 
@@ -61,6 +62,48 @@ describe("fontFacesFor (2.2)", () => {
       ) as ThemeTokens["typeScale"],
     }).filter((file) => /^lato-latin-[0-9]/.test(file));
     expect(lato).toEqual(["lato-latin-700-normal.woff2"]);
+  });
+
+  it("gives the accent font's files only when asked: any title's or text's weights (3.22)", () => {
+    const theme: ThemeTokens = {
+      ...withFonts("Poppins", "Lato"),
+      fonts: {
+        ...withFonts("Poppins", "Lato").fonts,
+        accent: { family: "Pacifico", fallback: "sans-serif" },
+      },
+    };
+
+    expect(files(theme).some((file) => file.startsWith("pacifico"))).toBe(false);
+    const accent = fontFacesFor(theme, undefined, { accent: true })
+      .map((face) => face.file)
+      .filter((file) => /^pacifico-latin-[0-9]/.test(file));
+    // Pacifico has only an upright 400: it stands in for every weight.
+    expect(accent).toEqual(["pacifico-latin-400-normal.woff2"]);
+    // A static font with more: headings' upright weights and the body's bold and italics.
+    const lato = fontFacesFor(
+      { ...theme, fonts: { ...theme.fonts, accent: { family: "Lato", fallback: "sans-serif" } } },
+      undefined,
+      { accent: true },
+    )
+      .map((face) => face.file)
+      .filter((file) => /^lato-latin-[0-9]/.test(file));
+    expect(lato.sort()).toEqual([
+      "lato-latin-400-italic.woff2",
+      "lato-latin-400-normal.woff2",
+      "lato-latin-700-italic.woff2",
+      "lato-latin-700-normal.woff2",
+    ]);
+  });
+
+  it("knows a site uses its accent font from its classes, on any device (3.22)", () => {
+    expect(usesAccentFont(["text-h2!", "font-accent!"])).toBe(true);
+    expect(usesAccentFont(["md:max-lg:font-accent!"])).toBe(true);
+    // The person's own code may use the class too.
+    expect(usesAccentFont(["font-accent"])).toBe(true);
+    expect(usesAccentFont(["font-heading!", "font-sans", "font-accent-x", "x-font-accent"])).toBe(
+      false,
+    );
+    expect(usesAccentFont([])).toBe(false);
   });
 
   it("gives no file for a family the catalogue doesn't have", () => {

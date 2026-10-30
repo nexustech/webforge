@@ -99,6 +99,7 @@ describe("themeCss in the site's stylesheet (2.1)", () => {
       fonts: {
         heading: { family: "Playfair Display", fallback: "serif" },
         body: { family: "Lora", fallback: "serif" },
+        accent: { family: "Playfair Display", fallback: "serif" },
       },
       spacing: "roomy",
     };

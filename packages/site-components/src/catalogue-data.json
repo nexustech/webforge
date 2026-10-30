@@ -1,5 +1,33 @@
 {
   "appearance": {
+    "lookFont": {
+      "kind": "select",
+      "label": "Font",
+      "help": "The theme's fonts, chosen in the Theme tab.",
+      "group": "style",
+      "optionGroup": {
+        "id": "appearance",
+        "label": "Appearance"
+      },
+      "options": [
+        {
+          "label": "Default",
+          "value": "default"
+        },
+        {
+          "label": "Headings",
+          "value": "heading"
+        },
+        {
+          "label": "Body text",
+          "value": "body"
+        },
+        {
+          "label": "Accent",
+          "value": "accent"
+        }
+      ]
+    },
     "lookSize": {
       "kind": "select",
       "label": "Text size",

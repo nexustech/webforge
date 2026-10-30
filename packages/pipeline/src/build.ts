@@ -23,7 +23,7 @@ import {
   renderPage,
   UnknownComponentError,
 } from "@webforge/site-components";
-import { fontFacesFor, themeShape } from "@webforge/themes";
+import { fontFacesFor, themeShape, usesAccentFont } from "@webforge/themes";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
 import { type BuildWarning, pagePrefix, pageRender } from "./export-context.js";
@@ -660,7 +660,8 @@ export async function* buildEvents(
   // Only the fonts the theme uses (2.2), each exactly the file the catalogue (or the download) lists.
   stopIfCancelled(signal);
   yield { stage: "fonts" };
-  for (const face of fontFacesFor(site.theme, resources.fonts)) {
+  const accent = usesAccentFont(cssOptions.candidates);
+  for (const face of fontFacesFor(site.theme, resources.fonts, { accent })) {
     const data = await resources.readFont(face);
     const checked = caches?.fonts.get(face.file);
     const known =

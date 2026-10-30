@@ -35,6 +35,7 @@ const harbour: ThemeTokens = {
   fonts: {
     heading: { family: "Fraunces", fallback: "serif" },
     body: { family: "Inter", fallback: "sans-serif" },
+    accent: { family: "Fraunces", fallback: "serif" },
   },
   radius: { box: "l", field: "full", selector: "full" },
   border: "thin",
@@ -84,6 +85,7 @@ const linen: ThemeTokens = {
   fonts: {
     heading: { family: "Cormorant Garamond", fallback: "serif" },
     body: { family: "Raleway", fallback: "sans-serif" },
+    accent: { family: "Cormorant Garamond", fallback: "serif" },
   },
   radius: { box: "s", field: "s", selector: "s" },
   border: "thin",
@@ -133,6 +135,7 @@ const studio: ThemeTokens = {
   fonts: {
     heading: { family: "Plus Jakarta Sans", fallback: "sans-serif" },
     body: { family: "DM Sans", fallback: "sans-serif" },
+    accent: { family: "Plus Jakarta Sans", fallback: "sans-serif" },
   },
   radius: { box: "none", field: "none", selector: "none" },
   border: "thick",
@@ -182,6 +185,7 @@ const playground: ThemeTokens = {
   fonts: {
     heading: { family: "Quicksand", fallback: "sans-serif" },
     body: { family: "Nunito", fallback: "sans-serif" },
+    accent: { family: "Quicksand", fallback: "sans-serif" },
   },
   radius: { box: "xl", field: "full", selector: "full" },
   border: "thin",

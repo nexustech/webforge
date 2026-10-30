@@ -145,7 +145,19 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(theme().fonts.body.family).toBe("Source Sans 3");
     expect(await setPairing(session, answering(true), classic)).toBe(false);
 
-    expect(labels()).toEqual(["Changed fonts", "Changed fonts"]);
+    // The accent font (3.22) is set on its own, and a pairing keeps it.
+    await setFont(session, answering(true), "accent", {
+      family: "Pacifico",
+      fallback: "sans-serif",
+    });
+    expect(theme().fonts.accent).toEqual({ family: "Pacifico", fallback: "sans-serif" });
+    expect(theme().fonts.heading.family).toBe("Playfair Display");
+    const simple = FONT_PAIRINGS.find((pairing) => pairing.id === "simple");
+    if (simple === undefined) throw new Error("no Simple pairing");
+    await setPairing(session, answering(true), simple);
+    expect(theme().fonts.accent.family).toBe("Pacifico");
+
+    expect(labels()).toEqual(["Changed fonts", "Changed fonts", "Changed fonts", "Changed fonts"]);
   });
 
   it("sets a text style's size, weight and line height as one step naming it", async () => {

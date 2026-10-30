@@ -42,6 +42,7 @@ describe("siteStylesheetSource", () => {
     const fonts = {
       heading: { family: "Comic Neue", fallback: "sans-serif" },
       body: { family: "Comic Neue", fallback: "sans-serif" },
+      accent: { family: "Comic Neue", fallback: "sans-serif" },
     } as const;
     const source = siteStylesheetSource({
       theme: { ...DEFAULT_THEME, fonts },
@@ -72,6 +73,23 @@ describe("siteStylesheetSource", () => {
   unicode-range: U+0000-00FF, U+0131,`);
     expect(source.match(/@font-face/g)).toHaveLength(4);
     expect(source).toContain('url("../fonts/inter-latin-ext-wght-italic.woff2")');
+  });
+});
+
+describe("siteStylesheetSource's accent font (3.22)", () => {
+  const theme = {
+    ...DEFAULT_THEME,
+    fonts: { ...DEFAULT_THEME.fonts, accent: { family: "Pacifico", fallback: "sans-serif" } },
+  } as const;
+  const source = (candidates: readonly string[]) =>
+    siteStylesheetSource({ theme, candidates, fontsUrl: "../fonts/" });
+
+  it("names it for the font-accent class, and declares its faces only when a class uses it", () => {
+    expect(source([])).toContain(
+      '--font-accent: "Pacifico", ui-sans-serif, system-ui, sans-serif;',
+    );
+    expect(source([])).not.toContain('font-family: "Pacifico"');
+    expect(source(["font-accent!"])).toContain('font-family: "Pacifico"');
   });
 });
 

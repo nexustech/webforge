@@ -52,6 +52,9 @@ import {
 } from "./theme-edits.js";
 import { named } from "./theme-words.js";
 
+/** The theme's fonts, by what each is for, as the Fonts group lists them (3.22 adds the accent). */
+const FONT_ROLES = ["heading", "body", "accent"] as const;
+
 /** The pairing value of fonts that are no pairing: the person's own choice. */
 const OWN_PAIRING = "own";
 
@@ -151,13 +154,15 @@ function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelFie
       ],
       value: pairing?.id ?? OWN_PAIRING,
     }),
-    ...(["heading", "body"] as const).map((which) =>
+    // The accent (3.22): what an element or a title set to Accent takes, nothing else.
+    ...FONT_ROLES.map((which) =>
       field({
         kind: "font",
         name: `fonts.${which}`,
         group: "content",
         optionGroup: GROUPS.fonts,
-        label: t(which === "heading" ? "theme.fonts.heading" : "theme.fonts.body"),
+        label: t(`theme.fonts.${which}`),
+        ...(which === "accent" ? { help: t("theme.fonts.accentHelp") } : {}),
         value: theme.fonts[which],
       }),
     ),
@@ -260,10 +265,10 @@ export function ThemePanel({ session, siteWide, studio, ownThemes, reveal }: The
     } else if (name === "fonts.pairing") {
       const pairing = FONT_PAIRINGS.find((each) => each.id === value);
       if (pairing !== undefined) void setPairing(session, asks, pairing);
-    } else if (name === "fonts.heading" || name === "fonts.body") {
+    } else if (name === "fonts.heading" || name === "fonts.body" || name === "fonts.accent") {
       const font = fontRefSchema.safeParse(value);
-      if (font.success)
-        void setFont(session, asks, rest === "heading" ? "heading" : "body", font.data);
+      const which = FONT_ROLES.find((each) => each === rest);
+      if (font.success && which !== undefined) void setFont(session, asks, which, font.data);
     } else if (kind === "textSize") {
       const style = TEXT_STYLES.find((each) => each === rest);
       const size = TEXT_SIZES.find((each) => each === value);

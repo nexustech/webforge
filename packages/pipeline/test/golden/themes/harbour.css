@@ -68,6 +68,7 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Fraunces", ui-serif, Georgia, serif;
+  --font-accent: "Fraunces", ui-serif, Georgia, serif;
   --spacing: 0.275rem;
   --text-h1: 3.75rem;
   --text-h1--line-height: 1.25;

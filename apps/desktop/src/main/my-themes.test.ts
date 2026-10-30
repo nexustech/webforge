@@ -86,6 +86,22 @@ describe("My themes (2.23)", () => {
     }
   });
 
+  it("gives a theme kept before the accent font its headings' font (3.22)", async () => {
+    const theme = own("theme0000000000b", "Before 3.22");
+    const { accent, ...fonts } = {
+      ...theme.fonts,
+      heading: { family: "Playfair Display", fallback: "serif" as const },
+    };
+    writeFileSync(
+      join(dir, "themes.json"),
+      JSON.stringify({ version: 1, themes: [{ ...theme, fonts }] }),
+    );
+
+    const [listed] = await createMyThemes({ dir }).list();
+    expect(listed?.fonts).toEqual({ ...fonts, accent: fonts.heading });
+    expect(listed?.own.name).toBe("Before 3.22");
+  });
+
   it("skips a theme it can't read but keeps it", async () => {
     const newer = { own: { id: "theme0000000000n", name: "From a newer version" }, glow: 1 };
     writeFileSync(join(dir, "themes.json"), JSON.stringify({ version: 1, themes: [newer] }));

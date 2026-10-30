@@ -57,6 +57,9 @@ export const theme = {
   "theme.fonts.own": "Your own",
   "theme.fonts.heading": "Headings",
   "theme.fonts.body": "Body text",
+  // The third font (3.22, PF-5): only what an element's or a title's Font sets to Accent uses it.
+  "theme.fonts.accent": "Accent",
+  "theme.fonts.accentHelp": "For text whose Font is set to Accent in its Style tab.",
   "theme.fonts.confirm": "Change the fonts?",
   "theme.fonts.confirmDescription": "The text on every page changes to the new fonts.",
   "theme.fonts.confirmButton": "Change Fonts",
