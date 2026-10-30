@@ -142,6 +142,8 @@ test.describe("exported site from disk", () => {
     // Side by side, the two line up at the top.
     const tops = await page
       .locator("#shapes img")
+      // Not the closed lightbox's.
+      .filter({ visible: true })
       .evaluateAll((images) => images.map((img) => Math.round(img.getBoundingClientRect().top)));
     expect(new Set(tops).size).toBe(1);
   });
@@ -721,6 +723,45 @@ test.describe("exported site from disk", () => {
     });
   });
 
+  test.describe("an Image that opens larger (3.20)", () => {
+    test("opens its one picture whole, with its caption, and closes with Esc and its button", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      const link = page.getByRole("link", {
+        name: "Open a larger picture: Hills in a portrait frame",
+      });
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+
+      await link.click();
+      await expect(viewer).toBeVisible();
+      expect(await viewer.evaluate((dialog) => dialog.matches(":modal"))).toBe(true);
+      const shown = viewer.getByRole("img", { name: "Hills in a portrait frame" });
+      await expect
+        .poll(() => shown.evaluate((img) => (img as HTMLImageElement).naturalWidth))
+        .toBeGreaterThan(0);
+      // Whole: the photo's own 16:10, not the Image's 3:4 frame.
+      const box = await shown.boundingBox();
+      if (box === null) throw new Error("The larger picture isn't shown");
+      expect(box.width / box.height).toBeCloseTo(1.6, 1);
+      await expect(viewer.locator("[data-wf-lightbox-caption]")).toHaveText("Our fields");
+      // One picture: nowhere to go, nothing to count.
+      await expect(viewer.getByRole("button", { name: "Next image" })).toHaveCount(0);
+      await expect(viewer.getByRole("button", { name: "Previous image" })).toHaveCount(0);
+
+      await page.keyboard.press("Escape");
+      await expect(viewer).toBeHidden();
+      await expect(link).toBeFocused();
+
+      await link.click();
+      await expect(viewer).toBeVisible();
+      await viewer.getByRole("button", { name: "Close" }).first().click();
+      await expect(viewer).toBeHidden();
+      await expect(link).toBeFocused();
+    });
+  });
+
   test.describe("carousel (2.10)", () => {
     test("names its slides and moves with its buttons and the arrow keys, round past the end", async ({
       page,
@@ -814,6 +855,17 @@ test.describe("exported site from disk", () => {
 
       await expect(page.locator("html")).not.toHaveAttribute("data-wf-animate");
       expect(await band.evaluate((element) => getComputedStyle(element).opacity)).toBe("1");
+    });
+
+    test("opens an Image's large JPEG from disk when it opens larger (3.20)", async ({ page }) => {
+      await open(page, "about.html");
+
+      await page
+        .getByRole("link", { name: "Open a larger picture: Hills in a portrait frame" })
+        .click();
+
+      // The largest fallback, no wider than the 1600 px original.
+      await expect(page).toHaveURL(/\/assets\/img\/hero-1600\.jpg$/);
     });
 
     test("opens a gallery image's full-size file, from disk", async ({ page }) => {

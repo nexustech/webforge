@@ -168,6 +168,29 @@ export const ImageShapes: Story = {
   },
 };
 
+/**
+ * An Image that opens larger when clicked (3.20): a link to its large file around its picture, cut
+ * to Wide, and its lightbox, closed until a visitor clicks it.
+ */
+export const ImageOpensLarger: Story = {
+  args: {
+    nodes: inSection([
+      {
+        type: "Image",
+        props: {
+          id: "enlarge",
+          image: { mediaId: "portrait" },
+          width: "medium",
+          shape: "wide",
+          rounded: true,
+          caption: "Click to see the whole picture",
+          enlarge: true,
+        },
+      },
+    ]),
+  },
+};
+
 const items = ["Sourdough", "Cinnamon buns", "Birthday cakes"].map(
   (text, index): NodeDoc => ({ type: "ListItem", props: { id: `item-${index}`, text } }),
 );

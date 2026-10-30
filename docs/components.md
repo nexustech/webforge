@@ -150,6 +150,7 @@ As the module loads:
 - **Repeating content:** `list`, for repeating plain values.
 - **Containers:** `slot`, for elements inside. Give a slot `accepts: "element"` to take every element, or `allow` for a fixed set (an FAQ's questions).
   - **Laying out a slot's elements:** pass a class to the slot (`<Items className="grid md:grid-cols-3" />`). It goes on the element that holds them, Puck's drop zone on the canvas and a `<div>` in the export, so a grid lays them out alike in both. A class on an element around `<Items />` would reach only the drop zone on the canvas.
+- **Shown or usable only with some values:** `shownWhen` hides a field in the Edit panel while it would change nothing, keeping its value for when it shows again (an Image's *Height*, only while its *Shape* is *Set height* on some device; read through `fieldsHiddenBy`). `unavailable` shows it disabled instead, with a sentence saying why (a List's style while an icon takes the markers' place).
 - **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `basic.tsx`, rendered by `boxClasses` and `marginClasses`.
   - Every section takes both.
   - Every element takes `margin: MARGIN_FIELD`, since its sides are its section's.

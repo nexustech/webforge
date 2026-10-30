@@ -27,6 +27,12 @@ export const elements = {
   "field.imageHeight.small": "Small",
   "field.imageHeight.medium": "Medium",
   "field.imageHeight.large": "Large",
+  "field.imageEnlarge": "Open larger when clicked",
+  "field.imageEnlarge.help":
+    "Visitors can click the picture to see all of it, larger. On the canvas a click still selects it.",
+  // The link around an Image that opens larger (3.20): its alt text, else its caption.
+  "siteText.openLargerPictureOf": "Open a larger picture: {name}",
+  "siteText.openLargerPicture": "Open a larger picture",
   "field.rounded": "Rounded corners",
   "field.buttonStyle": "Style",
   "field.buttonStyle.theme": "Theme's style",

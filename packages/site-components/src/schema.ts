@@ -47,6 +47,12 @@ export type FieldDef = {
    * as its help: a List's style while an icon takes the place of its markers.
    */
   readonly unavailable?: (values: Readonly<Record<string, unknown>>) => string | undefined;
+  /**
+   * Whether the Edit panel shows the field while the element has `values` (with its defaults);
+   * always when left out. Hidden, it keeps its value for when it shows again: an Image's Height,
+   * only while its Shape is Set height (`fieldsHiddenBy`).
+   */
+  readonly shownWhen?: (values: Readonly<Record<string, unknown>>) => boolean;
   readonly responsive?: boolean;
   /**
    * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one

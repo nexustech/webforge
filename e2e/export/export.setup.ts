@@ -69,7 +69,8 @@ function withSectionBackground(site: SiteSnapshot): SiteSnapshot {
 
 /**
  * `site` with two Images of its photo cut to shapes (3.19) on the About page, side by side: a
- * Medium one in a Portrait frame and a Small one at a Large set height.
+ * Medium one in a Portrait frame, which opens larger when clicked (3.20), and a Small one at a
+ * Large set height.
  */
 function withShapedImages(site: SiteSnapshot): SiteSnapshot {
   const image = (id: string, props: Record<string, unknown>): NodeDoc => ({
@@ -91,6 +92,8 @@ function withShapedImages(site: SiteSnapshot): SiteSnapshot {
                 image: { mediaId: "hero-photo", alt: "Hills in a portrait frame" },
                 width: "medium",
                 shape: "portrait",
+                caption: "Our fields",
+                enlarge: true,
               }),
               image("tall-image", {
                 image: { mediaId: "hero-photo", alt: "Hills at a set height" },
