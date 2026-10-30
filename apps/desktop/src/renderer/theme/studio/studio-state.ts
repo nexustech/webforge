@@ -7,13 +7,24 @@ export const STUDIO_SECTIONS = ["themes", "colors", "text", "styles", "component
 export type StudioSection = (typeof STUDIO_SECTIONS)[number];
 
 /**
- * Whether Theme Studio is open, the section it shows, and the kind Components shows (a component
- * type, `Button`; its first kind while none is chosen).
+ * Components' changes to one kind's look not applied yet (4.10): the kind, its name for the step's
+ * label ("Button"), and the whole look as it would be.
+ */
+export type LookDraft = {
+  readonly type: string;
+  readonly item: string;
+  readonly look: Readonly<Record<string, unknown>>;
+};
+
+/**
+ * Whether Theme Studio is open, the section it shows, the kind Components shows (a component
+ * type, `Button`; its first kind while none is chosen), and its look's changes not applied yet.
  */
 export type StudioState = {
   readonly open: boolean;
   readonly section: StudioSection;
   readonly kind?: string | undefined;
+  readonly draft?: LookDraft | undefined;
 };
 
 /**

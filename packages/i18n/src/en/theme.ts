@@ -173,6 +173,24 @@ export const theme = {
   "theme.components.look": "Look for every {item}",
   "theme.components.reset": "Reset to Theme's Defaults",
   "theme.components.none": "Nothing chosen yet: each {item} uses the theme's defaults.",
+  // Apply changes together (4.10): the look's controls change a draft until it is applied.
+  "theme.components.draft": "Changes to every {item} that aren't in the theme yet.",
+  "theme.components.apply": "Apply Changes",
+  "theme.components.discard": "Discard",
+  "theme.components.enlarge": "Show {item} larger, before and after",
+  "theme.components.previewTitle": "Every {item}, before and after",
+  "theme.components.previewDescription":
+    "How every {item} on the site looks on Desktop and Mobile, now and with your changes.",
+  "theme.components.previewShow": "Look shown",
+  "theme.components.previewNow": "Theme now",
+  "theme.components.previewDraft": "With your changes",
+  "theme.components.previewOn": "{item} on {device}",
+  "theme.components.pending.title": "Apply your changes to every {item}?",
+  "theme.components.pending.description":
+    "They aren't in the theme yet. Apply them as one change, or discard them.",
+  "theme.components.pending.apply": "Apply Changes",
+  "theme.components.pending.discard": "Discard Changes",
+  "theme.components.pending.cancel": "Keep Editing",
   "theme.look.confirm": "Change how every {item} looks?",
   "theme.look.confirm.one": "This restyles the one on the site that has no look of its own.",
   "theme.look.confirm.other":

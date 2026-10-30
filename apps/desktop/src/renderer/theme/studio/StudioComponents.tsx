@@ -7,14 +7,17 @@ import {
   FieldRenderersProvider,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { LOOK_FIELDS, type ThemeTokens } from "@webforge/model";
+import { LOOK_FIELDS, type NodeDoc, type ThemeTokens } from "@webforge/model";
 import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components";
-import type { ReactNode } from "react";
+import { useState } from "react";
 import { lookFieldsOf } from "../../clipboard/index.js";
+import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
 import { specOf } from "../../editor/EditPanelHost.js";
 import { isOverridden, valueAt, withValueAt } from "../../editor/responsive-value.js";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey } from "../theme-controls.js";
+import { StudioLookPreview } from "./StudioLookPreview.js";
 import { TokenRow } from "./StudioStyles.js";
+import type { LookDraft } from "./studio-state.js";
 
 /** The card style's own entry: cards are list items without an Appearance group (CT-1). */
 const CARD_KIND = "Card";
@@ -73,43 +76,84 @@ type StudioComponentsProps = {
   /** The kind shown, a component type; the first while none is chosen. */
   readonly kind: string | undefined;
   readonly onKind: (type: string) => void;
-  /** Sets fields of `type`'s look, by name; `undefined` takes one off. */
+  /**
+   * The look's changes not applied yet (4.10), and the theme with them, which the previews draw;
+   * the controls show them for their kind.
+   */
+  readonly draft?: { readonly look: LookDraft; readonly theme: ThemeTokens } | undefined;
+  /** Sets fields of `type`'s draft look, by name; `undefined` takes one off. */
   readonly onChange: (
     type: string,
     item: string,
     change: Readonly<Record<string, unknown>>,
   ) => void;
+  /** Applies the draft to the theme: one step (4.10). */
+  readonly onApply: () => void;
+  /** Drops the draft. */
+  readonly onDiscard: () => void;
   /** Sets a theme token shown beside a look: the buttons', the card style. */
   readonly onToken: (control: TokenControl, value: unknown) => void;
   /** Draws a kind in the theme, with its look; nothing without one. */
-  readonly preview?: ((type: string) => ReactNode) | undefined;
+  readonly preview?: KindPreviews | undefined;
+  /** Draws a kind larger, on Desktop and Mobile, before and after the draft (4.10). */
+  readonly enlarge?: ItemPreviews | undefined;
   /** The colour fields' control: the theme's colours only, as a look holds (ADR 0009). */
   readonly renderers: FieldRenderers;
 };
 
+/** Each kind's node as its larger preview draws it, with its defaults: made once, so kept. */
+const previewNodes = new WeakMap<ComponentLibrary, Map<string, NodeDoc>>();
+
+/** `type`'s node in `library`, with its defaults, the same object each time. */
+function previewNode(library: ComponentLibrary, type: string): NodeDoc {
+  let nodes = previewNodes.get(library);
+  if (nodes === undefined) {
+    nodes = new Map();
+    previewNodes.set(library, nodes);
+  }
+  let node = nodes.get(type);
+  if (node === undefined) {
+    const defaults = library.components[type]?.defaults ?? {};
+    node = { type, props: { ...structuredClone(defaults), id: "preview" } };
+    nodes.set(type, node);
+  }
+  return node;
+}
+
 /**
  * Theme Studio's Components (3.12, CT-1): every kind of section and element with a look, by
  * category, and for the one chosen, it drawn live in the theme beside its look's controls, so a
- * kind is styled without selecting one on a page. A look is the Appearance group's fields, set once
- * here; a Button's look also shows the theme's button tokens, and Card the card style, which stay
- * where they are in the theme (product/11, 3.12 note 5).
+ * kind is styled without selecting one on a page. A look is the Appearance group's fields; its
+ * controls change a draft, which the preview draws, until **Apply changes** writes it as one step
+ * (4.10), or **Discard** drops it. The preview opens larger, on Desktop and Mobile, before and
+ * after. A Button's look also shows the theme's button tokens, and Card the card style, which stay
+ * where they are in the theme and change at once (product/11, 3.12 note 5).
  */
 export function StudioComponents({
   theme,
   library,
   kind,
   onKind,
+  draft,
   onChange,
+  onApply,
+  onDiscard,
   onToken,
   preview,
+  enlarge,
   renderers,
 }: StudioComponentsProps) {
+  const [enlarged, setEnlarged] = useState(false);
   const groups = lookKinds(library);
   const all = groups.flatMap((group) => group.kinds);
   const shown = all.find((each) => each.type === kind) ?? all[0];
   if (shown === undefined) return null;
   const def = library.components[shown.type];
-  const look: Readonly<Record<string, unknown>> = theme.looks?.[shown.type] ?? {};
+  // The draft for this kind, if there is one: what its controls and previews show.
+  const drafted = draft?.look.type === shown.type ? draft : undefined;
+  const look: Readonly<Record<string, unknown>> =
+    drafted?.look.look ?? theme.looks?.[shown.type] ?? {};
+  const previewType = shown.type === CARD_KIND ? CARD_PREVIEW : shown.type;
   const names =
     def === undefined
       ? []
@@ -183,8 +227,49 @@ export function StudioComponents({
             aria-label={t("theme.components.preview", { item: shown.label })}
             className="m-0 rounded-md border border-border bg-panel p-2"
           >
-            {preview(shown.type === CARD_KIND ? CARD_PREVIEW : shown.type)}
+            {enlarge === undefined ? (
+              preview(previewType, drafted?.theme)
+            ) : (
+              // Clicked, it opens larger, before and after (4.10).
+              <button
+                type="button"
+                aria-label={t("theme.components.enlarge", { item: shown.label })}
+                title={t("theme.components.enlarge", { item: shown.label })}
+                className="block cursor-zoom-in rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
+                onClick={() => setEnlarged(true)}
+              >
+                {preview(previewType, drafted?.theme)}
+              </button>
+            )}
           </figure>
+        )}
+        {enlarge === undefined ? null : (
+          <StudioLookPreview
+            open={enlarged}
+            onOpenChange={setEnlarged}
+            item={shown.label}
+            node={previewNode(library, previewType)}
+            theme={theme}
+            draft={drafted?.theme}
+            previews={enlarge}
+          />
+        )}
+        {drafted === undefined ? null : (
+          // The changes aren't in the theme until they are applied (4.10).
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2"
+          >
+            <p className="m-0 flex-1 text-xs">
+              {t("theme.components.draft", { item: shown.label })}
+            </p>
+            <Button type="button" size="sm" variant="outline" onClick={onDiscard}>
+              {t("theme.components.discard")}
+            </Button>
+            <Button type="button" size="sm" onClick={onApply}>
+              {t("theme.components.apply")}
+            </Button>
+          </div>
         )}
         {tokens.length === 0 ? null : (
           <div>
