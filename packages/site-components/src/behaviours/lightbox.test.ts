@@ -35,23 +35,24 @@ const image = (id: string, caption = ""): NodeDoc => ({
   props: { id, image: { mediaId: id }, caption },
 });
 
-/** A page of its own with a Gallery of `ids`, and `lightbox.js` run on it. */
-function page(ids = ["a", "b", "c"]) {
+/** A Gallery of `ids`, the second one with a caption. */
+const galleryOf = (ids: readonly string[]): NodeDoc => ({
+  type: "Gallery",
+  props: {
+    id: "gallery",
+    title: "Our work",
+    images: ids.map((id, index) => image(id, index === 1 ? "Our oven" : "")),
+  },
+});
+
+/** A page of its own with `nodes` (a Gallery of `ids`), and `lightbox.js` run on it. */
+function page(ids = ["a", "b", "c"], nodes: readonly NodeDoc[] = [galleryOf(ids)]) {
   const happy = new Window({ width: 1024, height: 768 });
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
   const { document } = window;
   document.body.innerHTML = `<button id="before">Before</button>${renderNodesToHtml(
-    [
-      {
-        type: "Gallery",
-        props: {
-          id: "gallery",
-          title: "Our work",
-          images: ids.map((id, index) => image(id, index === 1 ? "Our oven" : "")),
-        },
-      },
-    ],
+    nodes,
     siteLibrary,
     context,
   )}`;
@@ -200,5 +201,51 @@ describe("the lightbox behaviour (2.7a)", () => {
     dialog?.close();
     press("End");
     expect(text("[data-wf-lightbox-status]")).toBe("1 of 3");
+  });
+});
+
+describe("the lightbox of an Image that opens larger (3.20)", () => {
+  const enlarged = (props: Record<string, unknown>): NodeDoc => ({
+    type: "Image",
+    props: { id: "it", image: { mediaId: "shop" }, enlarge: true, ...props },
+  });
+
+  it("opens its one picture whole, with its caption, without moving or counting", () => {
+    const { items, dialog, shown, text, document, window } = page(
+      [],
+      [enlarged({ shape: "portrait", caption: "The shop" })],
+    );
+    expect(items).toHaveLength(1);
+    expect(document.querySelector("[data-wf-lightbox-previous]")).toBeNull();
+    expect(document.querySelector("[data-wf-lightbox-status]")).toBeNull();
+
+    const click = new window.MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+    items[0]?.dispatchEvent(click);
+
+    expect(click.defaultPrevented).toBe(true);
+    expect(dialog?.open).toBe(true);
+    expect(shown()?.getAttribute("src")).toBe("assets/img/shop-1600.jpg");
+    expect(shown()?.alt).toBe("Photo shop");
+    // The Image's caption, not the lightbox's own.
+    expect(text("[data-wf-lightbox-caption]")).toBe("The shop");
+    // Whole: the picture's own shape, not the Image's crop.
+    expect(shown()?.className).toContain("object-contain");
+    expect(shown()?.className).not.toContain("aspect");
+    // The arrow keys have nowhere to go.
+    document.body.dispatchEvent(
+      new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
+    );
+    expect(shown()?.getAttribute("src")).toBe("assets/img/shop-1600.jpg");
+
+    items[0]?.focus();
+    dialog?.close();
+    expect(document.activeElement).toBe(items[0]);
+  });
+
+  it("shows no caption when the Image has none", () => {
+    const { items, text } = page([], [enlarged({})]);
+    items[0]?.click();
+
+    expect(text("[data-wf-lightbox-caption]")).toBe("");
   });
 });

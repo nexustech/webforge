@@ -1819,6 +1819,12 @@
           "kind": "text",
           "label": "Caption"
         },
+        "enlarge": {
+          "kind": "toggle",
+          "label": "Open larger when clicked",
+          "help": "Visitors can click the picture to see all of it, larger. On the canvas a click still selects it.",
+          "group": "content"
+        },
         "hover": {
           "kind": "select",
           "label": "When hovered",
@@ -1980,6 +1986,7 @@
         "alignment": "centre",
         "rounded": false,
         "caption": "",
+        "enlarge": false,
         "hover": "none"
       }
     },
