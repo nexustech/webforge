@@ -34,6 +34,7 @@ function site(name: string, hour: number, more: Partial<RecentSite> = {}): Recen
     thumbnail: null,
     missing: false,
     pinned: false,
+    open: false,
     ...more,
   };
 }
@@ -94,12 +95,42 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     ]);
     // The renderer knows sites by id only.
     expect(submenu(registry)[0]?.id).toBe(`site.openRecent.${"7".repeat(32)}`);
-    // Neither Open Recent nor its sites are in the command box.
+  });
+
+  it("lists each site in the command box by the menu it's in, and opens it from there", async () => {
+    const fake = api([site("Bakery", 2, { folder: "Shops" }), site("Florist", 1)]);
+    await setUp(fake);
+
     await userEvent.click(screen.getByRole("button", { name: /^Search commands/ }));
     const options = screen.getAllByRole("option").map((option) => option.textContent);
-    expect(options.some((option) => /Open Recent|Site 7|Clear Recent/.test(option ?? ""))).toBe(
-      false,
+    expect(options).toEqual(
+      expect.arrayContaining(["Open Recent: Bakery", "Open Recent: Florist", "Clear Recent"]),
     );
+    // Open Recent itself opens a submenu, which the command box has no use for.
+    expect(options).not.toContain("Open Recent");
+    // Found by its folder too.
+    await userEvent.type(screen.getByRole("combobox"), "shops");
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Open Recent: Bakery",
+    ]);
+    await userEvent.keyboard("{Enter}");
+    expect(fake.openRecent).toHaveBeenCalledWith("2".repeat(32));
+  });
+
+  it("shows the site open now, off: opening it again would only start the window over", async () => {
+    const fake = api([site("Bakery", 2, { open: true }), site("Florist", 1)]);
+    const { registry } = await setUp(fake);
+
+    expect(submenu(registry).map((command) => [command.label, command.enabled])).toEqual([
+      ["Bakery", false],
+      ["Florist", true],
+      ["Clear Recent", true],
+    ]);
+    expect(registry.run(`site.openRecent.${"2".repeat(32)}`)).toBe(false);
+    expect(fake.openRecent).not.toHaveBeenCalled();
+    // Nor in the command box.
+    await userEvent.click(screen.getByRole("button", { name: /^Search commands/ }));
+    expect(screen.queryByRole("option", { name: "Open Recent: Bakery" })).toBeNull();
   });
 
   it("names a site's folder when another shown shares its name", async () => {
@@ -216,7 +247,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     // Only the pinned site is left, and nothing more to clear.
     await waitFor(() =>
       expect(submenu(registry).map((command) => [command.label, command.enabled])).toEqual([
-        ["Pinned", undefined],
+        ["Pinned", true],
         ["Clear Recent", false],
       ]),
     );

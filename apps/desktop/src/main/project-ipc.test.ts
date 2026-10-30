@@ -31,6 +31,7 @@ function setUp(
     create: vi.fn(() => opened),
     open: vi.fn(() => opened),
     current: vi.fn(() => project),
+    currentPath: vi.fn((): string | undefined => "/sites/Bakery.wforge"),
     readSite: vi.fn(() => ({ status: "empty" })),
     commit: vi.fn(() => ({ status: "saved" })),
     uiState: vi.fn(() => ({ editorMode: "content" })),
@@ -204,7 +205,7 @@ describe("registerProjectHandlers", () => {
   it("lists, opens and removes recent sites by id, never by path", async () => {
     const id = "a".repeat(32);
     const recent = {
-      list: vi.fn(() => []),
+      list: vi.fn((_openPath?: string) => []),
       pathOf: vi.fn((asked: string) => (asked === id ? "/sites/Bakery.wforge" : undefined)),
       remove: vi.fn(),
       setPinned: vi.fn(),
@@ -213,6 +214,8 @@ describe("registerProjectHandlers", () => {
     const { invoke, session } = setUp({}, { recent });
 
     await expect(invoke("project:list-recent")).resolves.toEqual([]);
+    // Main says which listed site is open, from the path only it knows.
+    expect(recent.list).toHaveBeenCalledWith("/sites/Bakery.wforge");
     await expect(invoke("project:open-recent", APP_URL, id)).resolves.toEqual(opened);
     expect(session.open).toHaveBeenCalledWith("/sites/Bakery.wforge");
     await expect(invoke("project:open-recent", APP_URL, "b".repeat(32))).resolves.toEqual({
@@ -232,7 +235,7 @@ describe("registerProjectHandlers", () => {
   it("takes a recent site whose file has gone off the list", async () => {
     const id = "a".repeat(32);
     const recent = {
-      list: vi.fn(() => []),
+      list: vi.fn((_openPath?: string) => []),
       pathOf: vi.fn(() => "/gone.wforge"),
       remove: vi.fn(),
       setPinned: vi.fn(),

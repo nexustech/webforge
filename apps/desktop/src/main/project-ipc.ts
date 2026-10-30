@@ -94,7 +94,12 @@ export function registerProjectHandlers(
     const path = await dialogs.chooseProjectToOpen();
     return path === undefined ? { status: "canceled" } : open(path);
   });
-  registerIpcHandler(ipc, "listRecentSites", isTrustedSender, () => recent?.list() ?? []);
+  registerIpcHandler(
+    ipc,
+    "listRecentSites",
+    isTrustedSender,
+    () => recent?.list(session.currentPath()) ?? [],
+  );
   registerIpcHandler(ipc, "openRecentSite", isTrustedSender, async (id) => {
     const path = recent?.pathOf(id);
     if (path === undefined) {

@@ -74,7 +74,7 @@ A dialog an area opens from anywhere (Theme Studio), not from inside one of its 
 ## Commands
 
 A command is in the command box, and in a menu if it names one (`shell/commands.ts`).
-- **Register it** with `registry.register({ id, label: t(…), run, menu?, shortcut?, enabled?, palette?, keywords? })`, from a `register…Commands(registry, …)` function; it returns how to remove it. `registry.update(id, { enabled })` changes it later. A command with `submenu: <id of another command>` is listed in that command's submenu instead of a menu of its own (File › Open Recent), after a separator with `separated: true`; the title bar and macOS's menu bar both draw it, and the command box leaves both out.
+- **Register it** with `registry.register({ id, label: t(…), run, menu?, shortcut?, enabled?, palette?, keywords? })`, from a `register…Commands(registry, …)` function; it returns how to remove it. `registry.update(id, { enabled })` changes it later. A command with `submenu: <id of another command>` is listed in that command's submenu instead of a menu of its own (File › Open Recent), after a separator with `separated: true`; the title bar and macOS's menu bar both draw it. The command box leaves out the item that opens the submenu and lists the submenu's commands, by `paletteLabel` where their menu label needs the submenu's name ("Open Recent: Rosa's Bakery").
 - **Ids are dotted** (`edit.cut`, `site.export`); shared ones are in `shell/command-ids.ts`.
 - **A change to the site goes through `session.history`** as one undo step with a meaningful label ("Changed Hero button link"), never around it.
 - **Shortcuts** follow the standard (Mod for Ctrl or Cmd). Text keeps its own keys while it's being edited (`textKeys`).

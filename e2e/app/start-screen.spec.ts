@@ -265,11 +265,11 @@ test("opens a site from File › Open Recent, and Clear Recent keeps the pinned 
       .catch(() => undefined);
   expect(await current()).toBe("Newer");
 
-  // Most recently opened first, pinned or not.
+  // Most recently opened first, pinned or not; the open site can't be opened again.
   await expect
     .poll(() => submenuItems(running(), page, "File", "Open Recent"))
     .toEqual([
-      { label: "Newer", enabled: true },
+      { label: "Newer", enabled: false },
       { label: "Older", enabled: true },
       { label: "Clear Recent", enabled: true },
     ]);

@@ -118,6 +118,8 @@ export const shell = {
   // File › Open Recent (3.18): the latest sites, by name, with the folder when two share one.
   "command.openRecent": "Open Recent",
   "command.openRecent.inFolder": "{name} ({folder})",
+  // A recent site in the command box, named by the menu it's in.
+  "command.openRecent.palette": "Open Recent: {name}",
   "command.noRecent": "No recent sites",
   "command.clearRecent": "Clear Recent",
   "command.exportSite": "Export Site…",

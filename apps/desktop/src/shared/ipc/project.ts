@@ -137,6 +137,8 @@ const recentSiteSchema = z.strictObject({
   missing: z.boolean(),
   /** Kept at the top of the list (2.14b). */
   pinned: z.boolean(),
+  /** The site open in the window now (3.18): File › Open Recent shows it off. */
+  open: z.boolean(),
 });
 
 /** A site on the start screen's Recent list. */

@@ -45,6 +45,8 @@ export type RecentSite = {
   readonly missing: boolean;
   /** Kept at the top of the list (2.14b). */
   readonly pinned: boolean;
+  /** The site open in the window now: File › Open Recent shows it, but can't open it again (3.18). */
+  readonly open: boolean;
 };
 
 /**
@@ -152,9 +154,13 @@ export function createRecentSites(options: {
       writeFileSync(thumbnailPath(id), jpeg);
     },
 
-    /** The list: pinned sites first, then the rest, each most recently opened first. */
-    list(): RecentSite[] {
+    /**
+     * The list: pinned sites first, then the rest, each most recently opened first. `openPath` is
+     * the site open in the window, if one is.
+     */
+    list(openPath?: string): RecentSite[] {
       const sites = read();
+      const openId = openPath === undefined ? undefined : recentSiteId(openPath);
       const ordered = [
         ...sites.filter((site) => site.pinned),
         ...sites.filter((site) => !site.pinned),
@@ -173,6 +179,7 @@ export function createRecentSites(options: {
             : null,
           missing: !existsSync(site.path),
           pinned: site.pinned,
+          open: site.id === openId,
         };
       });
     },

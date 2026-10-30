@@ -18,6 +18,7 @@ const recent = (id: string, name: string, extra: Partial<RecentSite> = {}): Rece
   thumbnail: null,
   missing: false,
   pinned: false,
+  open: false,
   ...extra,
 });
 

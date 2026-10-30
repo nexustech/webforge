@@ -30,6 +30,7 @@ const bakery: RecentSite = {
   thumbnail: "data:image/jpeg;base64,/9j/",
   missing: false,
   pinned: false,
+  open: false,
 };
 const florist: RecentSite = {
   ...bakery,

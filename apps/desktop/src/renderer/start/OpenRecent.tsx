@@ -59,10 +59,11 @@ function labelOf(site: RecentSite, shown: readonly RecentSite[]): string {
 /**
  * File › Open Recent's submenu (3.18, PF-1): the {@link OPEN_RECENT_MAX} most recently opened
  * sites, pinned or not, then Clear Recent, which asks first and keeps the pinned ones; with none,
- * a disabled No recent sites. Open Recent itself is registered by `SiteCommands`, after Open
- * Site…. A site opens as the start screen's Recent list opens it: main saves the open site first,
- * and a file that has gone is taken off the list, with the start screen's message as a toast. The
- * renderer knows a site by its id only, never its path.
+ * a disabled No recent sites. The site open now is shown off. Open Recent itself is registered by
+ * `SiteCommands`, after Open Site…; the command box lists each site as "Open Recent: ‹name›"
+ * (F-ED-26). A site opens as the start screen's Recent list opens it: main saves the open site
+ * first, and a file that has gone is taken off the list, with the start screen's message as a
+ * toast. The renderer knows a site by its id only, never its path.
  */
 export function OpenRecent({ project, restart, recent }: OpenRecentProps) {
   const registry = useCommandRegistry();
@@ -127,7 +128,12 @@ export function OpenRecent({ project, restart, recent }: OpenRecentProps) {
               registry.register({
                 id: `${COMMAND_IDS.openRecent}.${site.id}`,
                 label: labelOf(site, latest),
+                paletteLabel: t("command.openRecent.palette", { name: labelOf(site, latest) }),
+                // Found by its file and folder too, as on the start screen.
+                keywords: [site.fileName, ...(site.folder === "" ? [] : [site.folder])],
                 submenu,
+                // The site open now: shown, but opening it again would only start the window over.
+                enabled: !site.open,
                 run: () =>
                   openSiteWith(() => projectApi(project).openRecent(site.id), restart).then(
                     (message) => {

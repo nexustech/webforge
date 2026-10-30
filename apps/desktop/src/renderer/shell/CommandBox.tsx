@@ -61,13 +61,12 @@ export function CommandBox({ siteName }: CommandBoxProps) {
     [registry],
   );
 
-  // The app's own commands only when they can run; an Add with nowhere to go is shown, off. A
-  // submenu's (Open Recent's sites, 3.18) stay in their menu.
+  // The app's own commands only when they can run; an Add with nowhere to go is shown, off. An
+  // item that opens a submenu runs nothing: its submenu's commands are listed instead (3.18).
   const openers = submenuOpeners(commands);
   const shown = commands.filter(
     (command) =>
       command.id !== COMMAND_IDS.commandBox &&
-      command.submenu === undefined &&
       !openers.has(command.id) &&
       (command.palette === "add" || command.enabled !== false),
   );
@@ -77,14 +76,14 @@ export function CommandBox({ siteName }: CommandBoxProps) {
     <CommandItem
       key={command.id}
       value={command.id}
-      keywords={[command.label, ...(command.keywords ?? [])]}
+      keywords={[command.paletteLabel ?? command.label, ...(command.keywords ?? [])]}
       disabled={command.enabled === false}
       onSelect={() => {
         setOpen(false);
         registry.run(command.id);
       }}
     >
-      {command.label}
+      {command.paletteLabel ?? command.label}
       {command.shortcut !== undefined && (
         <CommandShortcut>{formatShortcut(command.shortcut)}</CommandShortcut>
       )}

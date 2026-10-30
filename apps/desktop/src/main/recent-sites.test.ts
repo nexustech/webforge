@@ -51,8 +51,14 @@ describe("createRecentSites", () => {
         thumbnail: null,
         missing: false,
         pinned: false,
+        open: false,
       },
       expect.objectContaining({ name: "Rosa's Bakery", fileName: "Rosa's Bakery.wforge" }),
+    ]);
+    // The site open in the window says so (3.18).
+    expect(list.list(bakery).map((entry) => [entry.name, entry.open])).toEqual([
+      ["Florist", false],
+      ["Rosa's Bakery", true],
     ]);
     expect(JSON.stringify(list.list())).not.toContain(dir.slice(3));
   });

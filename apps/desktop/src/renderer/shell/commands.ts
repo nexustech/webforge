@@ -46,14 +46,20 @@ export type Command = {
   readonly more?: string;
   /**
    * The submenu that lists it, by the id of the menu item that opens it (3.18): File › Open
-   * Recent's sites, say. It is listed there only, not in a menu of its own or the command box. A
-   * command that some command names here opens that submenu: its own `run` is never called.
+   * Recent's sites, say. It is listed there, not in a menu of its own. A command that some command
+   * names here opens that submenu: its own `run` is never called, and the command box leaves it
+   * out.
    */
   readonly submenu?: string;
   /** Drawn after a separator in its submenu: Clear Recent at Open Recent's foot (3.18). */
   readonly separated?: boolean;
   /** The palette's group for it; the app's own commands when left out. */
   readonly palette?: PaletteGroup;
+  /**
+   * Its name in the command box, when its menu's isn't enough there: a submenu's item named by
+   * its submenu too ("Open Recent: Rosa's Bakery", 3.18). `label` when left out.
+   */
+  readonly paletteLabel?: string;
   /** More words the palette finds it by (a page's file name, a component's category). */
   readonly keywords?: readonly string[];
   readonly run: () => void | Promise<void>;
