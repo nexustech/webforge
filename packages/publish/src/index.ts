@@ -38,10 +38,13 @@ export {
 export { MANIFEST_FILE } from "./remote-folder.js";
 export { type PublishRunEvent, type PublishRunOptions, publishSite } from "./run.js";
 export {
+  describePrivateKey,
   hostKeyFingerprint,
+  readPrivateKey,
   readSftpHostKey,
   type SftpDestination,
   type SftpOptions,
+  type SftpSignIn,
   sftpPublisher,
 } from "./sftp.js";
 export { type VerifyOptions, verifyPublished } from "./verify.js";

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { posix } from "node:path";
-import { Client, type SFTPWrapper } from "ssh2";
+import { Client, type SFTPWrapper, utils } from "ssh2";
 import { fileTransferError } from "./file-transfer-errors.js";
 import {
   type BuildOutput,
@@ -28,11 +28,56 @@ export type SftpDestination = {
   readonly url?: string;
 };
 
-export type SftpOptions = {
-  readonly password: string;
+/**
+ * How an SFTP destination signs in (4.3): with a password, or with a private key (OpenSSH or PEM
+ * text, as the key file holds it) and its passphrase, if it has one. Neither is ever stored with
+ * the destination.
+ */
+export type SftpSignIn =
+  | { readonly password: string }
+  | { readonly privateKey: string; readonly passphrase?: string };
+
+export type SftpOptions = SftpSignIn & {
   /** How long connecting and signing in may take. */
   readonly timeoutMs?: number;
 };
+
+/**
+ * Whether `privateKey` is a key `passphrase` opens: `bad-key` for anything else (not a key, a
+ * passphrase missing or wrong), checked before connecting, so the host never sees a failed try.
+ */
+export function readPrivateKey(privateKey: string, passphrase?: string): TestResult {
+  const parsed = utils.parseKey(privateKey, passphrase);
+  const key = Array.isArray(parsed) ? parsed[0] : parsed;
+  return key === undefined || key instanceof Error || !key.isPrivateKey()
+    ? { ok: false, code: "bad-key" }
+    : { ok: true };
+}
+
+/**
+ * What a key file holds (4.3): a private key, one that needs its passphrase first, or no private
+ * key at all (a public key, or any other file), for the destination form to say before any test.
+ */
+export function describePrivateKey(text: string): "key" | "encrypted" | "not-a-key" {
+  const parsed = utils.parseKey(text);
+  const key = Array.isArray(parsed) ? parsed[0] : parsed;
+  if (key instanceof Error) {
+    return /^Encrypted .* no passphrase given$/.test(key.message) ? "encrypted" : "not-a-key";
+  }
+  return key?.isPrivateKey() === true ? "key" : "not-a-key";
+}
+
+/** What `ssh2` signs in with: the password, or the private key. */
+function credentials(options: SftpOptions) {
+  if ("password" in options) return { password: options.password };
+  if (!readPrivateKey(options.privateKey, options.passphrase).ok) {
+    throw new PublishError("bad-key", "The private key could not be read");
+  }
+  return {
+    privateKey: options.privateKey,
+    ...(options.passphrase === undefined ? {} : { passphrase: options.passphrase }),
+  };
+}
 
 /** A host key's fingerprint as OpenSSH shows it: `SHA256:` and the unpadded base64 digest. */
 export function hostKeyFingerprint(key: Buffer): string {
@@ -62,7 +107,8 @@ export function sftpErrorCode(error: unknown): PublishErrorCode | undefined {
 type Session = { readonly sftp: SFTPWrapper; end(): void };
 
 /**
- * Connects and signs in, refusing any host key but the trusted one before the password goes.
+ * Connects and signs in, refusing any host key but the trusted one before the password or the
+ * key's signature goes.
  * `onClient` gets the connection at once, so a cancel can end it while it connects.
  */
 function connect(
@@ -71,6 +117,8 @@ function connect(
   onClient: (client: Client) => void = () => undefined,
 ): Promise<Session> {
   return new Promise((resolve, reject) => {
+    // A key that can't be read fails here, before anything connects.
+    const signIn = credentials(options);
     const client = new Client();
     onClient(client);
     let untrusted = false;
@@ -97,7 +145,7 @@ function connect(
         host: dest.host,
         port: dest.port ?? 22,
         username: dest.user,
-        password: options.password,
+        ...signIn,
         readyTimeout: options.timeoutMs ?? 30_000,
         hostVerifier: (key: Buffer) => {
           untrusted = hostKeyFingerprint(key) !== dest.hostKey;
@@ -198,8 +246,8 @@ export function readSftpHostKey(host: string, port = 22, timeoutMs = 30_000): Pr
 
 /**
  * Publishes to a host over SFTP (08): only what changed, by the manifest it keeps there, assets
- * first and `index.html` last. The password is given here, never through the destination, and
- * only to the host whose key was trusted. Cancelling ends the connection: a file being sent goes
+ * first and `index.html` last. The password or private key is given here, never through the
+ * destination, and only to the host whose key was trusted. Cancelling ends the connection: a file being sent goes
  * to its hidden upload file, so the live one stays whole.
  */
 export function sftpPublisher(options: SftpOptions): Publisher<SftpDestination> {

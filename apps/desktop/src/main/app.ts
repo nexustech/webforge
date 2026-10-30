@@ -62,6 +62,7 @@ import { createPreview, registerPreviewHandlers } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, ProjectSession } from "./project-session.js";
+import { registerPublishHandlers } from "./publish-ipc.js";
 import { createRecentSites } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 import {
@@ -541,6 +542,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     exposeForE2eTests(ai, app.isPackaged);
     registerThemesHandlers(ipcMain, isTrustedSender, myThemes);
     registerPreviewHandlers(ipcMain, isTrustedSender, preview);
+    registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

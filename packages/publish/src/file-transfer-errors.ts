@@ -31,6 +31,8 @@ const MESSAGES: Record<PublishErrorCode, string> = {
   rejected: "The host refused a file or a request",
   network: "The host could not be reached",
   "untrusted-host": "The host is not the one trusted for this destination",
+  "no-encryption": "The host doesn't offer encrypted FTP",
+  "bad-key": "The private key could not be read",
   cancelled: "Publishing was cancelled",
   failed: "Publishing to the host failed",
 };

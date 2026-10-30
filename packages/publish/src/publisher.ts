@@ -21,6 +21,13 @@ export type PublishErrorCode =
    * FTPS certificate the computer doesn't trust. Nothing was sent.
    */
   | "untrusted-host"
+  /**
+   * An FTPS destination's host doesn't offer encryption (it refused `AUTH TLS`): the person can
+   * choose SFTP, if the host has it, or plain FTP after its warning (B5, 4.3).
+   */
+  | "no-encryption"
+  /** An SFTP private key that can't be read: not a key, or its passphrase is wrong or missing. */
+  | "bad-key"
   /** The user cancelled. */
   | "cancelled"
   /** Anything else, including a response we did not understand. */

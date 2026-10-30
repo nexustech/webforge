@@ -126,21 +126,39 @@ export function hostKeys(generate = () => utils.generateKeyPairSync("ed25519")) 
 
 /**
  * A local SFTP server whose root is a temporary folder with a `site` folder in it, for one user
- * signing in with a password, under a host key made for the test. Closed by `stop`.
+ * signing in with a password, or with the private key whose `publicKey` is given (4.3), under a
+ * host key made for the test. Closed by `stop`.
  */
-export async function startSftpServer(options: { user: string; password: string }) {
+export async function startSftpServer(options: {
+  user: string;
+  password: string;
+  publicKey?: string;
+}) {
+  const allowed = options.publicKey === undefined ? undefined : utils.parseKey(options.publicKey);
+  const trusted = allowed === undefined || allowed instanceof Error ? undefined : allowed;
   const root = mkdtempSync(join(tmpdir(), "webforge-sftp-"));
   mkdirSync(join(root, "site"));
   const keys = hostKeys();
   const server = new Server({ hostKeys: [keys.private] }, (client) => {
     client
       .on("authentication", (context) => {
-        const ok =
-          context.method === "password" &&
-          context.username === options.user &&
-          context.password === options.password;
-        if (ok) context.accept();
-        else context.reject(["password"]);
+        if (context.username !== options.user) return context.reject(["password", "publickey"]);
+        if (context.method === "password" && context.password === options.password) {
+          return context.accept();
+        }
+        // The key offered first, then signed with: accepted only when it is the allowed one and,
+        // once signed, the signature is that key's.
+        if (
+          context.method === "publickey" &&
+          trusted !== undefined &&
+          context.key.algo === trusted.type &&
+          context.key.data.equals(trusted.getPublicSSH()) &&
+          (context.signature === undefined ||
+            trusted.verify(context.blob ?? Buffer.alloc(0), context.signature, context.hashAlgo))
+        ) {
+          return context.accept();
+        }
+        context.reject(["password", "publickey"]);
       })
       .on("ready", () => {
         client.on("session", (accept) => {

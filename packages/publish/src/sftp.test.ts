@@ -1,9 +1,16 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { utils } from "ssh2";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 import { MANIFEST_FILE } from "./remote-folder.js";
-import { readSftpHostKey, type SftpDestination, sftpPublisher } from "./sftp.js";
+import {
+  describePrivateKey,
+  readPrivateKey,
+  readSftpHostKey,
+  type SftpDestination,
+  sftpPublisher,
+} from "./sftp.js";
 import { hostKeys, startSftpServer } from "./sftp-server.test-helper.js";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
@@ -171,6 +178,90 @@ describe("sftpPublisher (0.3)", { timeout: 30_000 }, () => {
 
     expect(error).toMatchObject({ code: "unauthorized" });
     expect(String((error as Error).message)).not.toContain("wrong-secret");
+  });
+});
+
+describe("signing in to SFTP with a private key (4.3)", { timeout: 30_000 }, () => {
+  // A key the tests make, with a passphrase, as a host's control panel would have the person make.
+  const key = utils.generateKeyPairSync("ed25519", {
+    passphrase: "test-only-passphrase",
+    cipher: "aes256-ctr",
+    // Real keys use 16 rounds; one keeps reading it in the tests quick.
+    rounds: 1,
+  });
+  const other = utils.generateKeyPairSync("ed25519");
+  let keyed: Awaited<ReturnType<typeof startSftpServer>>;
+  beforeAll(async () => {
+    keyed = await startSftpServer({
+      user: "baker",
+      password: "test-only-password",
+      publicKey: key.public,
+    });
+  });
+  afterAll(async () => {
+    await keyed?.stop();
+  });
+  const dest = (): SftpDestination => ({
+    ...destination(),
+    port: keyed.port,
+    hostKey: keyed.hostKey,
+  });
+  const signIn = { privateKey: key.private, passphrase: "test-only-passphrase", timeoutMs: 10_000 };
+
+  it("tests and publishes with the key and its passphrase", async () => {
+    expect(await sftpPublisher(signIn).test(dest())).toEqual({ ok: true });
+    const events: PublishEvent[] = [];
+    for await (const event of sftpPublisher(signIn).publish(
+      build({ "index.html": "<p>Keyed</p>" }),
+      dest(),
+      AbortSignal.timeout(30_000),
+    )) {
+      events.push(event);
+    }
+    expect(events.at(-1)).toMatchObject({ type: "published" });
+    expect(readFileSync(join(keyed.site, "index.html"), "utf8")).toBe("<p>Keyed</p>");
+  });
+
+  it("tells a key it can't open from one the host refuses", async () => {
+    // Without its passphrase, or with a wrong one, or not a key: nothing is sent to the host.
+    for (const passphrase of [undefined, "wrong"]) {
+      expect(
+        await sftpPublisher({
+          privateKey: key.private,
+          ...(passphrase === undefined ? {} : { passphrase }),
+          timeoutMs: 10_000,
+        }).test(dest()),
+      ).toEqual({ ok: false, code: "bad-key" });
+    }
+    expect(readPrivateKey("not a key")).toEqual({ ok: false, code: "bad-key" });
+    expect(readPrivateKey(key.public)).toEqual({ ok: false, code: "bad-key" });
+    expect(readPrivateKey(key.private, "test-only-passphrase")).toEqual({ ok: true });
+    // What the key file is, for the form before any test.
+    expect(describePrivateKey(key.private)).toBe("encrypted");
+    expect(describePrivateKey(other.private)).toBe("key");
+    expect(describePrivateKey(key.public)).toBe("not-a-key");
+    expect(describePrivateKey("not a key")).toBe("not-a-key");
+    // A key the host doesn't have for this user.
+    expect(
+      await sftpPublisher({ privateKey: other.private, timeoutMs: 10_000 }).test(dest()),
+    ).toEqual({
+      ok: false,
+      code: "unauthorized",
+    });
+  });
+
+  it("never puts the key or its passphrase in an error", async () => {
+    const caught = await failure(
+      sftpPublisher({
+        privateKey: key.private,
+        passphrase: "wrong-passphrase",
+        timeoutMs: 10_000,
+      }).publish(build(site), dest(), AbortSignal.timeout(30_000)),
+    );
+
+    expect(caught).toMatchObject({ code: "bad-key" });
+    expect(String((caught as Error).message)).not.toContain("wrong-passphrase");
+    expect(String((caught as Error).message)).not.toContain("PRIVATE KEY");
   });
 });
 
