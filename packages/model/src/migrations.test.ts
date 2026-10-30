@@ -118,6 +118,10 @@ describe("migrateSite", () => {
       formatVersion: 10,
       theme: { name: "x" },
     });
+    expect(accentFonts({ formatVersion: 9, theme: { fonts: { body: "Inter" } } })).toEqual({
+      formatVersion: 10,
+      theme: { fonts: { body: "Inter" } },
+    });
   });
 
   it("opens the format 9 fixture's looks for Buttons and Calls to action as they were (3.12)", () => {

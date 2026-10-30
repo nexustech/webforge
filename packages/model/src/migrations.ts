@@ -285,10 +285,15 @@ function componentLooks(site: RawSite): RawSite {
  */
 function accentFonts(site: RawSite): RawSite {
   const theme = site.theme;
-  if (!isRecord(theme) || !isRecord(theme.fonts) || theme.fonts.accent !== undefined) {
+  if (
+    !isRecord(theme) ||
+    !isRecord(theme.fonts) ||
+    theme.fonts.accent !== undefined ||
+    !isRecord(theme.fonts.heading)
+  ) {
     return { ...site, formatVersion: 10 };
   }
-  const fonts = { ...theme.fonts, accent: JSON.parse(JSON.stringify(theme.fonts.heading)) };
+  const fonts = { ...theme.fonts, accent: structuredClone(theme.fonts.heading) };
   return { ...site, theme: { ...theme, fonts }, formatVersion: 10 };
 }
 
