@@ -265,28 +265,31 @@ const image = defineComponent({
     // Gallery's lightbox for one picture, which shows it whole whatever its shape. The lightbox's
     // own caption is inside it, so the Image's stays the figure's last child.
     const name = alt.trim() !== "" ? alt : caption;
-    return values.enlarge ? (
-      <figure className={`${frame}${hoverClasses(values)}`} {...entrance} data-wf-gallery="">
-        <a
-          href={resolved.src}
-          className="block"
-          aria-label={
-            name === ""
-              ? t("siteText.openLargerPicture")
-              : t("siteText.openLargerPictureOf", { name })
-          }
-          data-wf-lightbox-item=""
-        >
-          {picture}
-        </a>
-        <Lightbox single />
-        {caption === "" ? null : (
-          <figcaption className="mt-2 text-center text-sm">{caption}</figcaption>
+    return (
+      <figure
+        className={`${frame}${hoverClasses(values)}`}
+        {...entrance}
+        {...(values.enlarge ? { "data-wf-gallery": "" } : {})}
+      >
+        {values.enlarge ? (
+          <>
+            <a
+              href={resolved.src}
+              className="block"
+              aria-label={
+                name === ""
+                  ? t("siteText.openLargerPicture")
+                  : t("siteText.openLargerPictureOf", { name })
+              }
+              data-wf-lightbox-item=""
+            >
+              {picture}
+            </a>
+            <Lightbox single />
+          </>
+        ) : (
+          picture
         )}
-      </figure>
-    ) : (
-      <figure className={`${frame}${hoverClasses(values)}`} {...entrance}>
-        {picture}
         {caption === "" ? null : (
           <figcaption className="mt-2 text-center text-sm">{caption}</figcaption>
         )}

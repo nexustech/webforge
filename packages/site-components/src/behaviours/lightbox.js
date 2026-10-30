@@ -2,10 +2,10 @@
 // Without the script each image links to its full-size file. The script opens it large in the
 // gallery's <dialog> instead, as a modal: the focus stays in it and the page behind is out of
 // reach, Esc, its close button or a click beside it close it, and the focus goes back to the image
-// clicked. The previous and next buttons, the arrow keys (Home and
-// End for the first and last) and a swipe go through the gallery's images, round past either end;
-// each move says which image shows ("3 of 8"). The large image has the image's own sources, as
-// wide as the screen, so a phone loads a file its size; only the image shown is loaded.
+// clicked. The previous and next buttons, the arrow keys (Home and End for the first and last) and
+// a swipe go through the gallery's images, round past either end; each move says which image shows
+// ("3 of 8"). The large image has the image's own sources, as wide as the screen, so a phone loads
+// a file its size; only the image shown is loaded.
 (() => {
   /** A horizontal swipe at least this long, in CSS pixels, moves to the next or previous image. */
   const SWIPE = 50;
