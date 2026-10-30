@@ -28,13 +28,23 @@ const commandIdSchema = z.string().regex(/^[a-z][a-zA-Z0-9.-]{0,63}$/);
 /** The menus macOS's menu bar takes from the renderer: the application menu (`app`), then four. */
 const NATIVE_MENU_KINDS = ["app", "file", "edit", "view", "help"] as const;
 
-/** One item of a native menu: the renderer's command, as its menus show it (LF-13). */
-const nativeMenuItemSchema = z.strictObject({
+/** One item of a native submenu: the renderer's command, as its menus show it (3.18). */
+const nativeSubmenuItemSchema = z.strictObject({
   id: commandIdSchema,
   label: z.string().min(1).max(80),
   /** Its shortcut as Electron writes accelerators (`CmdOrCtrl+Shift+Z`), shown only. */
   accelerator: z.string().max(40).optional(),
   enabled: z.boolean(),
+  /** After a separator: Clear Recent at the foot of Open Recent. */
+  separated: z.literal(true).optional(),
+});
+
+/**
+ * One item of a native menu: the renderer's command, as its menus show it (LF-13), or the item
+ * that opens a submenu of them (File › Open Recent, 3.18). Submenus go one level deep.
+ */
+const nativeMenuItemSchema = nativeSubmenuItemSchema.omit({ separated: true }).extend({
+  submenu: z.array(nativeSubmenuItemSchema).min(1).max(20).optional(),
 });
 
 /** The renderer's menus (File, Edit, View, Help), for macOS's menu bar (LF-13). */

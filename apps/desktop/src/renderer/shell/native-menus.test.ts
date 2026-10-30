@@ -72,6 +72,37 @@ describe("macOS's menu bar (LF-13)", () => {
     ]);
   });
 
+  it("lists a submenu's commands under the item that opens it, the schema's way (3.18)", () => {
+    const { registry } = setUp();
+    registry.register({ id: "site.openRecent", label: "Open Recent", menu: "file", run: vi.fn() });
+    registry.register({
+      id: "site.clearRecent",
+      label: "Clear Recent",
+      submenu: "site.openRecent",
+      separated: true,
+      run: vi.fn(),
+    });
+    registry.register({
+      id: "site.noRecent",
+      label: "No recent sites",
+      submenu: "site.openRecent",
+      enabled: false,
+      run: vi.fn(),
+    });
+
+    const menus = nativeMenusOf(registry);
+    expect(menus[0]?.items[1]).toEqual({
+      id: "site.openRecent",
+      label: "Open Recent",
+      enabled: true,
+      submenu: [
+        { id: "site.clearRecent", label: "Clear Recent", enabled: true, separated: true },
+        { id: "site.noRecent", label: "No recent sites", enabled: false },
+      ],
+    });
+    expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);
+  });
+
   it("lists Settings… in the application menu, not in File (LF-12)", () => {
     const { registry } = setUp();
     registry.register({ id: "app.settings", label: "Settings…", menu: "file", run: vi.fn() });

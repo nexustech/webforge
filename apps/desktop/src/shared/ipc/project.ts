@@ -137,6 +137,8 @@ const recentSiteSchema = z.strictObject({
   missing: z.boolean(),
   /** Kept at the top of the list (2.14b). */
   pinned: z.boolean(),
+  /** The site open in the window now (3.18): File › Open Recent shows it off. */
+  open: z.boolean(),
 });
 
 /** A site on the start screen's Recent list. */
@@ -225,6 +227,12 @@ export const projectChannels = {
     request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/)]),
     response: z.null(),
   },
+  /** Takes every site off the Recent list but the pinned ones (3.18, Clear Recent). */
+  clearRecentSites: {
+    channel: "project:clear-recent",
+    request: z.tuple([]),
+    response: z.null(),
+  },
   getUiState: {
     channel: "project:get-ui-state",
     request: z.tuple([]),
@@ -269,6 +277,8 @@ export interface ProjectApi {
   pinRecent(id: string, pinned: boolean): Promise<null>;
   /** Takes a site off the Recent list. */
   removeRecent(id: string): Promise<null>;
+  /** Takes every unpinned site off the Recent list. */
+  clearRecent(): Promise<null>;
   /** Remembers the editor state with the open site, if it is still the opening `sessionId` names. */
   setUiState(sessionId: string, change: SiteUiChange): Promise<UiStateResult>;
 }

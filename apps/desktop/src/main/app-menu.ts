@@ -15,22 +15,45 @@ export type RendererMenus = {
  */
 const UNDO_REDO: readonly string[] = ["edit.undo", "edit.redo"];
 
-/** The items of the renderer's menu `id`, each running its command when chosen. */
+type NativeItem = NativeMenus[number]["items"][number];
+
+/** An item of the renderer's menus, running its command when chosen. */
+const command = (
+  renderer: RendererMenus | undefined,
+  item: Omit<NativeItem, "submenu">,
+): MenuItemConstructorOptions => ({
+  id: item.id,
+  label: item.label,
+  enabled: item.enabled,
+  // Shown, not taken: the renderer handles its own keys (F-ED-27), Undo's and Redo's aside.
+  ...(item.accelerator === undefined
+    ? {}
+    : { accelerator: item.accelerator, registerAccelerator: UNDO_REDO.includes(item.id) }),
+  click: () => renderer?.run(item.id),
+});
+
+/**
+ * The items of the renderer's menu `id`, each running its command when chosen, or opening the
+ * submenu of them it has (File › Open Recent, 3.18).
+ */
 function itemsOf(
   renderer: RendererMenus | undefined,
   id: NativeMenus[number]["id"],
 ): MenuItemConstructorOptions[] {
   const menu = renderer?.menus.find((each) => each.id === id);
-  return (menu?.items ?? []).map((item) => ({
-    id: item.id,
-    label: item.label,
-    enabled: item.enabled,
-    // Shown, not taken: the renderer handles its own keys (F-ED-27), Undo's and Redo's aside.
-    ...(item.accelerator === undefined
-      ? {}
-      : { accelerator: item.accelerator, registerAccelerator: UNDO_REDO.includes(item.id) }),
-    click: () => renderer?.run(item.id),
-  }));
+  return (menu?.items ?? []).map(({ submenu, ...item }) =>
+    submenu === undefined
+      ? command(renderer, item)
+      : {
+          id: item.id,
+          label: item.label,
+          enabled: item.enabled,
+          submenu: submenu.flatMap(({ separated, ...each }) => [
+            ...(separated === true ? [{ type: "separator" as const }] : []),
+            command(renderer, each),
+          ]),
+        },
+  );
 }
 
 /** Edit's Undo and Redo: the editor's when it has them, else the roles (the start screen). */

@@ -11,6 +11,7 @@ export const projectApi = (call: Call): ProjectApi => ({
   openRecent: (id) => call("openRecentSite", id),
   pinRecent: (id, pinned) => call("pinRecentSite", id, pinned),
   removeRecent: (id) => call("removeRecentSite", id),
+  clearRecent: () => call("clearRecentSites"),
   commit: (sessionId, changes) => call("commitSite", sessionId, [...changes]),
   getUiState: () => call("getUiState"),
   setUiState: (sessionId, state) => call("setUiState", sessionId, state),

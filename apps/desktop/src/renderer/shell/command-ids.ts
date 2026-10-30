@@ -7,6 +7,10 @@ export const COMMAND_IDS = {
   newSite: "site.new",
   quickStart: "site.quickStart",
   openSite: "site.open",
+  // File › Open Recent (3.18): its sites are `site.openRecent.<id>`, then Clear Recent.
+  openRecent: "site.openRecent",
+  clearRecent: "site.clearRecent",
+  noRecent: "site.noRecent",
   undo: "edit.undo",
   redo: "edit.redo",
   preview: "site.preview",
