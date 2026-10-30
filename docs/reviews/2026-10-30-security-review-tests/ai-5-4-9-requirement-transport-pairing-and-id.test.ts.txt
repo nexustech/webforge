@@ -1,0 +1,14 @@
+// Original path: apps/desktop/src/shared/ipc/zz-security-ai-5-4-9-requirement-transport-pairing-and-id.test.ts — result: both tests FAIL (schema accepts bidi-override and newline/control chars in app name)
+import { describe, expect, it } from "vitest";
+import { aiEvents } from "./ai.js";
+
+const command = (app: string) => [1, { kind: "command", name: "addNode", input: {}, app }];
+
+describe("AI request app name (4.9 requirement 5)", () => {
+  it("refuses an app name with bidi override characters", () => {
+    expect(aiEvents.request.args.safeParse(command("‮egrofbew")).success).toBe(false);
+  });
+  it("refuses an app name with control characters or line breaks", () => {
+    expect(aiEvents.request.args.safeParse(command("Claude\n\nWebforge says:")).success).toBe(false);
+  });
+});

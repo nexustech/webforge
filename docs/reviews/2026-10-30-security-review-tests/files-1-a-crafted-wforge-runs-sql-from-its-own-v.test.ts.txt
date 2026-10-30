@@ -1,0 +1,62 @@
+// Original: packages/storage/test/zz-security-files-1-a-crafted-wforge-runs-sql-from-its-own-v.test.ts. Result: both tests fail as expected (open took 3.3 s for a 30M-step meta view; newer-format file with a documents view opened).
+import { join } from "node:path";
+import { tempDirFactory } from "@webforge/test-utils/vitest";
+import Database from "better-sqlite3";
+import { describe, expect, it } from "vitest";
+import { ProjectFileError, type ProjectFileErrorCode, ProjectStore } from "../src/index.js";
+
+const tempDir = tempDirFactory();
+
+function createProject(): string {
+  const path = join(tempDir(), "site.wforge");
+  ProjectStore.create(path, { name: "Rosa's Bakery" }).close();
+  return path;
+}
+
+function tamper(path: string, change: (db: Database.Database) => void): void {
+  const db = new Database(path);
+  try {
+    change(db);
+  } finally {
+    db.close();
+  }
+}
+
+function openResult(path: string): ProjectFileErrorCode | "opened" {
+  try {
+    ProjectStore.open(path).close();
+    return "opened";
+  } catch (error) {
+    if (error instanceof ProjectFileError) {
+      return error.code;
+    }
+    throw error;
+  }
+}
+
+describe("security: a crafted file's views", () => {
+  it("refuses a meta view without running it", () => {
+    const path = createProject();
+    tamper(path, (db) =>
+      db.exec(`DROP TABLE meta;
+        CREATE VIEW meta AS WITH RECURSIVE c(x) AS
+          (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 30000000)
+        SELECT 'k' AS key, 'v' AS value FROM c WHERE x < 0`),
+    );
+    const start = performance.now();
+    const result = openResult(path);
+    const elapsed = performance.now() - start;
+    expect(result).toBe("unexpected-schema");
+    expect(elapsed).toBeLessThan(500);
+  }, 60_000);
+
+  it("refuses a newer-format file whose documents table is a view", () => {
+    const path = createProject();
+    tamper(path, (db) =>
+      db.exec(`UPDATE meta SET value = '99' WHERE key = 'format_version';
+        DROP TABLE documents;
+        CREATE VIEW documents AS SELECT 1 AS id`),
+    );
+    expect(openResult(path)).not.toBe("opened");
+  });
+});

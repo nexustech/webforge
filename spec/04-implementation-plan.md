@@ -1253,12 +1253,14 @@ FTPS first then plain FTP (one-time warning), SFTP with password or key, host pr
 - [ ] Integration tests against containerised FTP/SFTP servers
 - [ ] Plain FTP warning shown once per destination
 - [ ] The packaged app publishes over SFTP to a local test server (`e2e:packaged`): `ssh2` ships as JavaScript, with no native module to rebuild (ADR 0006)
+- [ ] The SFTP host key, any FTPS certificate pin and the plain-FTP warning flag are kept in userData beside the saved secret, never in the `.wforge`, where an edited file could replace them (security review S2, with 4.4)
 
 **4.4 Publish destinations UI and keychain credentials**  
 Destinations list per site (several allowed), add/edit/test/remove; secrets via safeStorage keyed by site + destination; public URL fills Site Settings web address if empty.
 
 - [ ] Secrets never written to .wforge (test)
 - [ ] Works on Windows DPAPI and macOS Keychain
+- [ ] A saved secret is given only to the destination it was typed for: a fingerprint of protocol, host, port, user and SFTP host key is kept in userData beside it, and a mismatch asks for the password again and shows the new host (security review S2; the review's test `publish-1-…` passes)
 
 **4.5 Publish flow UI**  
 Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version. **Site Check tip for an out-of-date {year}** (moved from 3.6, 27 Oct 2026, no change to either estimate): a rule in 3.6's framework (`packages/site-check`) tips when the year a published site shows (3.5's `{year}`, F-CM-8) is older than this year, from the record of the last publish this item keeps.
@@ -1295,6 +1297,12 @@ ADR on the transport (Q9). The MCP server runs in main on the official TypeScrip
 - [ ] Not reachable from another computer (test)
 - [ ] AI edits appear in Undo History labelled with the app's name and undo cleanly (E2E with a test MCP client)
 - [ ] ADR written
+- [ ] Binds the literal `127.0.0.1` on an ephemeral port; refuses every request that carries an `Origin` header; `Host` must equal `127.0.0.1:<port>` exactly (security review, 4.9 requirements)
+- [ ] Tokens only in the `Authorization` header, at least 256 random bits, compared in constant time; pairing codes are single-use, expire after about 5 minutes and lock after a few failures; the app's name comes from pairing and is cleaned
+- [ ] One command in flight per app, per-app rate limits and back-off after a decline; an automatic version "Before ‹app›'s changes" at an app's first change in each connection, so a burst can't push a change past the undo limit (security review S20)
+- [ ] Tool descriptions say site text is untrusted data, and values travel in labelled data fields; *Add page* asks for D7 confirmation
+- [ ] *Open Preview* takes no URL, path or host and never starts the phone preview; *Run Site Check* results and every error use ids and titles only; the SDK's own logging is off; a test plants a marker string and finds it in no log or crash report
+- [ ] #658 (AI command fixes from the security review) has merged first
 
 **4.10 Theme Studio › Components: apply changes together, and a larger before/after preview** (added 28 Oct 2026 by the product owner, placed at the Phase 3 exit re-plan)  
 From the product owner's review of Theme Studio's Components page (28 Oct 2026). The controls change a draft of the chosen kind's look, not the theme, and the preview draws from the draft. **Apply changes** writes the whole draft as one labelled step, with one site-wide question (D7) for the items it reaches; **Discard** drops it. Switching kind or closing Theme Studio with a draft asks to apply or discard it. This is on the Components page only: the colours, text and styles pages keep changing at once. Clicking the preview opens a dialog with the kind at full width on Desktop and Mobile (3.13a's item previews), with a toggle between the theme as it is and the draft. Stream A, first.

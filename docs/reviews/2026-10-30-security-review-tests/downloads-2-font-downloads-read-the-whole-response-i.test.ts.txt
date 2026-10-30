@@ -1,0 +1,64 @@
+// Original path: apps/desktop/src/main/zz-security-downloads-2-font-downloads-read-the-whole-response-i.test.ts. Result: both tests fail as expected (32 MB pulled vs <=10 MB limit; init.redirect undefined, not 'manual').
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it } from "vitest";
+import { createFontLibrary, type FontFetch } from "./font-library.js";
+
+const SOURCES = {
+  api: "https://fonts.test/api",
+  files: "https://fonts.test/files",
+  listings: "https://fonts.test/listings",
+};
+const MAX_JSON_BYTES = 8 * 1024 * 1024;
+const CHUNK = 1024 * 1024;
+
+const dirs: string[] = [];
+afterEach(() => {
+  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
+});
+
+describe("font downloads (security)", () => {
+  it("stops reading a list once it passes the limit, with no content-length", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "webforge-fonts-sec-"));
+    dirs.push(dir);
+    let pulled = 0;
+    let cancelled = false;
+    const total = MAX_JSON_BYTES * 4; // 32 MB, chunked, no content-length
+    const fetch: FontFetch = async () =>
+      new Response(
+        new ReadableStream<Uint8Array>({
+          pull(controller) {
+            if (pulled >= total) {
+              controller.close();
+              return;
+            }
+            pulled += CHUNK;
+            controller.enqueue(new Uint8Array(CHUNK).fill(0x20));
+          },
+          cancel() {
+            cancelled = true;
+          },
+        }),
+      );
+    const library = createFontLibrary({ dir, fetch, sources: SOURCES });
+    await library.browse().catch(() => undefined);
+    expect(pulled).toBeLessThanOrEqual(MAX_JSON_BYTES + 2 * CHUNK);
+    expect(cancelled).toBe(true);
+  });
+
+  it("does not let a redirect take a download off the font hosts", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "webforge-fonts-sec-"));
+    dirs.push(dir);
+    const inits: { readonly signal: AbortSignal; readonly redirect?: string }[] = [];
+    const fetch: FontFetch = async (_url, init) => {
+      inits.push(init);
+      return new Response("Not found", { status: 404 });
+    };
+    const library = createFontLibrary({ dir, fetch, sources: SOURCES });
+    await library.browse().catch(() => undefined);
+    expect(inits.length).toBeGreaterThan(0);
+    // The secure behaviour: hops are checked by hand rather than followed by net.fetch.
+    for (const init of inits) expect(init.redirect).toBe("manual");
+  });
+});

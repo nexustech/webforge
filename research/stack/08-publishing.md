@@ -96,7 +96,7 @@ Static sites can't send email by themselves; a form needs a **form service** tha
 | B1 | **MVP publish targets** | ✅ **Folder/ZIP, FTP/FTPS/SFTP, Netlify** |
 | B2 | **Webforge Hosting / form relay** | **Not in MVP.** Possible paid add-on later; decision deferred |
 | B3 | **Form services** | Built-in presets for the most widely used services + "Custom endpoint" (see below) |
-| B4 | **Analytics** | **Google Analytics (GA4) supported** as a built-in option. Anything else goes through Custom HTML (C7) |
+| B4 | **Analytics** | **Google Analytics (GA4) supported** as a built-in option. Anything else goes through Custom HTML (C7) **Amended 30 Oct 2026 (product owner, security review S25):** with the consent banner turned off, analytics cookies stay off: Consent Mode keeps `analytics_storage` denied for every visitor, so GA4 counts visits without cookies (less detail) and nothing is ever granted without a visitor's choice. Site Settings says so beside the banner switch |
 | B5 | **FTP security** | **Plain FTP allowed**; **FTPS / SFTP preferred**. Plain FTP shows a one-time warning that passwords and files are sent unencrypted, and suggests FTPS/SFTP if the host supports it ("Test connection" tries FTPS first) |
 | B6 | **Form service presets** | ✅ **Formspree, Web3Forms, FormSubmit** as presets; **Netlify Forms** automatic on Netlify profiles; **Custom endpoint** for anything else (Basin, Formcarry, Forminit…) |
 | B7 | **Consent scope** | **Consent banner covers analytics (GA4).** **Embeds (YouTube, Vimeo, Maps) use per-embed click-to-load placeholders** (05), which act as consent at the point of use. If a visitor clicks *"Accept all"* in the banner, embeds also load automatically. One small self-hosted script handles both **Amended 27 Oct 2026 (product owner, #539):** a visitor can change their choice at any time. On a site with GA and the banner, the export adds *Cookie settings* to every page's Footer; it reopens the banner, and declining after accepting stops the counting and removes Google's cookies (GDPR Art. 7(3)) |
@@ -135,7 +135,7 @@ Static sites can't send email by themselves; a form needs a **form service** tha
 - **Cookie consent:** in the UK/EU, analytics cookies require visitor consent (ePrivacy/PECR, GDPR).
   - Webforge provides an optional **built-in consent banner**: self-hosted JS/CSS, styled with the site theme, text editable.
   - It works with **Google Consent Mode v2**: analytics storage is *denied* until the visitor accepts.
-  - **On by default when GA is enabled**; can be turned off (the user's responsibility, with a help note).
+  - **On by default when GA is enabled**; can be turned off. **Amended 30 Oct 2026 (B4):** with the banner off, `analytics_storage` stays *denied* for every visitor, so GA4 counts visits without cookies and never sets them. The help note beside the switch says so.
 - **Disabled automatically** in Webforge's live preview and when viewing the export from disk, so test views don't pollute statistics.
 - Other analytics (Plausible, Matomo, Fathom…) go through **Custom HTML** (C7) and are reported by the external-resource check, which the user can allow per URL.
 

@@ -1,0 +1,68 @@
+// Original path: packages/pipeline/src/zz-security-export-3-json-ld-escaping-misses-a-site-or-busine.test.ts. Result: fails as expected (scriptEnd returned -1, expected 137: the ld+json element never ends at its own </script>).
+import type { SitePage, SiteSnapshot } from "@webforge/model";
+import { siteLibrary } from "@webforge/site-components";
+import { describe, expect, it } from "vitest";
+import { structuredData } from "./structured-data.js";
+
+const page = (path: string): SitePage => ({
+  id: path,
+  path,
+  title: path,
+  doc: { root: { props: {} }, content: [] },
+});
+
+/**
+ * Where a `<script>` element's text ends, by the WHATWG tokeniser's script data states (13.2.5.4,
+ * 13.2.5.20-13.2.5.31): `<!--` enters "escaped", `<script` there enters "double escaped", where
+ * `</script>` only returns to "escaped". Returns the index of the `</script` that ends the element.
+ */
+function scriptEnd(text: string): number {
+  let state: "data" | "escaped" | "double" = "data";
+  const at = (i: number, s: string) =>
+    text.slice(i, i + s.length).toLowerCase() === s && /[\s/>]/.test(text[i + s.length] ?? "");
+  for (let i = 0; i < text.length; i++) {
+    if (state === "data") {
+      if (text.startsWith("<!--", i)) {
+        state = "escaped";
+        i += 3;
+      } else if (at(i, "</script")) return i;
+    } else if (text.startsWith("-->", i)) {
+      state = "data";
+      i += 2;
+    } else if (state === "escaped") {
+      if (at(i, "</script")) return i;
+      if (at(i, "<script")) state = "double";
+    } else if (at(i, "</script")) state = "escaped";
+  }
+  return -1;
+}
+
+describe("JSON-LD escaping (security review)", () => {
+  it("can't be turned into a double-escaped script by the site name", () => {
+    const home = page("index");
+    const site = {
+      name: "Rosa's <!--<script> Bakery",
+      language: "en-GB",
+      pages: [home],
+      layout: { header: [], footer: [] },
+      settings: { "address.url": "https://rosas.example/" },
+      search: { allowIndexing: true, includeSitemap: true, readableByAi: false },
+    } as unknown as SiteSnapshot;
+    const [website] = structuredData({
+      site,
+      page: home,
+      nodes: [],
+      library: siteLibrary,
+      shareImage: undefined,
+    });
+    expect(website).toBeDefined();
+    const tag = website ?? "";
+    // The rest of the page as the export writes it after the head's JSON-LD.
+    const rest = '\n<link rel="stylesheet" href="assets/site.css">\n</head>\n<body><h1>Rosa</h1></body>';
+    const opening = '<script type="application/ld+json">';
+    const body = `${tag}${rest}`.slice(opening.length);
+    // The element must end at its own closing tag, not swallow the page.
+    expect(scriptEnd(body)).toBe(tag.length - opening.length - "</script>".length);
+    expect(tag).not.toContain("<!--");
+  });
+});
