@@ -222,7 +222,7 @@ interface Publisher {
 ## 8. Exported site contract
 - Flat pages (`index.html`, `about.html`, `services/web-design.html`), relative URLs, opens from disk (X1).
 - `assets/css/site.<hash>.css` (readable), `assets/js/webforge.<hash>.js` (classic `defer`, only if needed), `assets/fonts/*.woff2` (Fontsource, OFL), `assets/img/*` (WebP + fallback), favicons, `site.webmanifest`, `sitemap.xml` + canonical links if the URL is set, `robots.txt`, `404.html`, `files/*` (linked files, F-ED-24), `llms.txt` + `*.md` page copies when enabled (F-EX-5).
-- **No external requests** except explicitly allowed ones: GA4 `gtag.js` (B4, behind the consent banner B7) and per-URL user allow-list entries.
+- **No external requests** except explicitly allowed ones: GA4 `gtag.js` (B4: behind the consent banner B7, or with analytics cookies always denied when the owner turns the banner off) and per-URL user allow-list entries.
 - Forms POST to the configured form service (B3/B6); Buy buttons are plain links (M1).
 
 ## 9. Security & privacy
