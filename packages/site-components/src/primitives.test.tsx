@@ -104,7 +104,7 @@ describe("the section frame (2.19)", () => {
         name: "band",
         // @ts-expect-error: the frame adds the padding.
         fields: { padding: PADDING_FIELD },
-        defaults: {},
+        defaults: { contentWidth: "wide" },
         render: () => null,
       }),
     ).toThrow(`'Band' declares its own "padding": defineSection adds it`);
@@ -115,7 +115,7 @@ describe("the section frame (2.19)", () => {
       label: "Strip",
       name: "strip",
       fields: { items: { kind: "slot", label: "Items", allow: ["Text"] } },
-      defaults: { items: [] },
+      defaults: { contentWidth: "wide", items: [] },
       render: ({ slots }) => <slots.items className="grid grid-cols-3" />,
     });
     const library = { components: { ...siteLibrary.components, Strip: strip } };
@@ -139,7 +139,7 @@ describe("the section frame (2.19)", () => {
       label: "Band",
       name: "band",
       fields: {},
-      defaults: {},
+      defaults: { contentWidth: "wide" },
       frame: () => "bg-base-200",
       frameAttributes: () => ({ "data-band": "" }),
       render: () => <p>Inside</p>,
@@ -155,6 +155,7 @@ describe("the section frame (2.19)", () => {
       ...Object.keys(DIALOG_FIELDS),
       ...Object.keys(DIALOG_TITLE_FIELDS),
       ...Object.keys(BACKGROUND_FIELDS),
+      "contentWidth",
       "colors",
       "padding",
       "margin",
@@ -202,7 +203,7 @@ describe("the section frame (2.19)", () => {
               defaults: {},
             },
           },
-          defaults: { plans: [] },
+          defaults: { contentWidth: "wide", plans: [] },
           render: () => null,
         }),
       ).toThrow(`'Plans' names a field of "plans"'s items "${itemField}", which items can't have`);
@@ -222,7 +223,7 @@ describe("the section frame (2.19)", () => {
         name: "band",
         // @ts-expect-error: the frame adds the colours.
         fields: { colors: COLORS_FIELD },
-        defaults: {},
+        defaults: { contentWidth: "wide" },
         render: () => null,
       }),
     ).toThrow(`'Band' declares its own "colors": defineSection adds it`);

@@ -2,7 +2,7 @@ import { t } from "@webforge/i18n";
 import type { ImageValue, LinkValue } from "@webforge/model";
 import { createContext, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import { type ComponentDef, linkAttributes, linkValue } from "../library.js";
 import { Picture } from "../picture.js";
 import type { RenderContext } from "../schema.js";
@@ -31,6 +31,7 @@ const logos = defineSection({
     items: { kind: "slot", label: t("field.logos"), allow: ["Logo"] },
   },
   defaults: {
+    contentWidth: "wide",
     title: t("starter.logosTitle"),
     items: [0, 1, 2, 3].map((index) => ({
       type: "Logo",
@@ -42,7 +43,7 @@ const logos = defineSection({
   render: ({ values, slots }) => {
     const Items = slots.items;
     return (
-      <div className="mx-auto max-w-6xl space-y-8 text-center">
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-8 text-center`}>
         <SectionTitle>{values.title}</SectionTitle>
         <LogosLayoutContext value={values.variant}>
           <Items

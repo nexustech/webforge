@@ -83,6 +83,8 @@ export function sampleSite(): SiteSnapshot {
               type: "Section",
               props: {
                 id: "intro",
+                // Medium, as every Section saved before 3.21 is once format 10 opens it.
+                contentWidth: "medium",
                 padding: { top: "m", bottom: "m" },
                 content: [
                   {
@@ -178,6 +180,7 @@ export function sampleSite(): SiteSnapshot {
               props: {
                 id: "fresh",
                 colors: "inverse",
+                contentWidth: "medium",
                 // Below the fold (2.12): it moves in as it is scrolled to, its heading too.
                 entrance: "slideUp",
                 entranceDelay: "short",
@@ -232,6 +235,8 @@ export function sampleSite(): SiteSnapshot {
                 buttonLabel: "Price list (PDF)",
                 buttonLink: { kind: "file", mediaId: "price-list", newTab: true },
                 variant: "minimal",
+                // The width text only had before 3.21, as format 10 keeps it.
+                contentWidth: "narrow",
               },
             },
             {
@@ -301,6 +306,8 @@ export function sampleSite(): SiteSnapshot {
                 text: "<p>On the high street, opposite the library.</p>",
                 address: "1 High Street\nHightown\nHT1 2AB",
                 variant: "split",
+                // The width beside its text had before 3.21, as format 10 keeps it.
+                contentWidth: "wide",
               },
             },
             {
@@ -339,6 +346,7 @@ export function sampleSite(): SiteSnapshot {
               type: "Section",
               props: {
                 id: "thanks-section",
+                contentWidth: "medium",
                 content: [
                   {
                     type: "Heading",

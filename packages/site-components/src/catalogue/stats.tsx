@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { SectionIntro, SectionTitle } from "../typography.js";
 
@@ -35,6 +35,7 @@ const stats = defineSection({
     items: { kind: "slot", label: t("field.stats"), allow: ["Stat"] },
   },
   defaults: {
+    contentWidth: "wide",
     title: t("starter.statsTitle"),
     text: `<p>${t("starter.statsText")}</p>`,
     items: STARTER_STATS.map((stat, index) => ({
@@ -56,12 +57,14 @@ const stats = defineSection({
     return (
       <StatsLayoutContext value={layout}>
         {layout === "split" ? (
-          <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
+          <div
+            className={`mx-auto grid ${contentWidthClass(values.contentWidth)} items-center gap-10 md:grid-cols-2`}
+          >
             <div>{intro}</div>
             <Items className="grid grid-cols-2 gap-6" />
           </div>
         ) : (
-          <div className="mx-auto max-w-6xl space-y-10">
+          <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-10`}>
             <div className="mx-auto max-w-3xl text-center">{intro}</div>
             <Items
               className={

@@ -45,7 +45,8 @@ describe("the FAQ's layouts (2.7b)", () => {
   });
 
   it("puts the questions in two columns on wider screens, each still opening", () => {
-    const doc = faq({ variant: "columns" });
+    // Wide, as two columns were before 3.21 and format 10 keeps them.
+    const doc = faq({ variant: "columns", contentWidth: "wide" });
 
     expect(doc.querySelector(".grid")?.className).toContain("md:grid-cols-2");
     expect(doc.querySelectorAll(".grid > details.site-faq-item")).toHaveLength(2);

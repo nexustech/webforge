@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import { INVERSE_THEME } from "@webforge/model";
-import type { ReactNode } from "react";
+import { createContext, type ReactNode } from "react";
 import {
   APPEARANCE_FIELD_NAMES,
   APPEARANCE_FIELDS,
@@ -74,11 +74,67 @@ export const COLORS_FIELD = {
   ],
 } as const satisfies FieldDef;
 
+/** How wide a section's content is at most (3.21, PF-4), narrowest first. */
+export const CONTENT_WIDTHS = ["narrow", "medium", "wide", "full"] as const;
+export type ContentWidth = (typeof CONTENT_WIDTHS)[number];
+
+/**
+ * A section's content width (3.21, PF-4): how wide its content is at most, inside its padding. Its
+ * background still spans the page. Each kind's default is the width it used before.
+ */
+const CONTENT_WIDTH_FIELD = {
+  kind: "select",
+  label: t("field.contentWidth"),
+  help: t("field.contentWidth.help"),
+  group: "style",
+  options: CONTENT_WIDTHS.map((value) => ({ label: t(`field.contentWidth.${value}`), value })),
+} as const satisfies FieldDef;
+
+/** Each content width's class: 768, 896 and 1152 px, or the page's width less the padding. */
+const CONTENT_WIDTH_CLASS: Readonly<Record<ContentWidth, string>> = {
+  narrow: "max-w-3xl",
+  medium: "max-w-4xl",
+  wide: "max-w-6xl",
+  full: "max-w-none",
+};
+
+/** Each content width in pixels; Full has no cap. */
+export const CONTENT_WIDTH_PX: Readonly<Record<ContentWidth, number | undefined>> = {
+  narrow: 768,
+  medium: 896,
+  wide: 1152,
+  full: undefined,
+};
+
+/** A content width's pixels, from a section's values: always one of its choices when drawn. */
+function contentWidthPx(value: unknown): number | undefined {
+  const width = CONTENT_WIDTHS.find((choice) => choice === value);
+  return width === undefined ? CONTENT_WIDTH_PX.medium : CONTENT_WIDTH_PX[width];
+}
+
+/** The class that caps a section's content at `width`; `mx-auto` beside it centres it. */
+export function contentWidthClass(width: ContentWidth): string {
+  return CONTENT_WIDTH_CLASS[width];
+}
+
+/** The narrower of two content widths: a layout's own measure, never wider than the section's. */
+export function narrowerWidth(a: ContentWidth, b: ContentWidth): ContentWidth {
+  return CONTENT_WIDTHS.indexOf(a) <= CONTENT_WIDTHS.indexOf(b) ? a : b;
+}
+
+/**
+ * How wide the content of the section an element is in is at most, in pixels (3.21): undefined
+ * for Full, and outside a section, where an Image asks for a larger file rather than a blurry one.
+ * An Image's `sizes` reads it, so the browser fetches no larger a file than it shows.
+ */
+export const SectionWidthContext = createContext<number | undefined>(undefined);
+
 /**
  * The fields every section has, which {@link defineSection} adds: its entrance too (F-DS-5), and
  * the Appearance group (2.22).
  */
 type FrameFields = {
+  readonly contentWidth: typeof CONTENT_WIDTH_FIELD;
   readonly colors: typeof COLORS_FIELD;
   readonly padding: typeof PADDING_FIELD;
   readonly margin: typeof MARGIN_FIELD;
@@ -90,6 +146,7 @@ type FrameFields = {
 
 /** The names of {@link FrameFields}, which a section can't give a field of its own. */
 const FRAME_FIELDS = [
+  "contentWidth",
   "colors",
   "padding",
   "margin",
@@ -109,10 +166,11 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   "place" | "fields" | "render"
 > & {
   /**
-   * Its own fields; its colours, padding, margin, entrance and Appearance group are added (a field of those names is
-   * refused).
+   * Its own fields; its content width, colours, padding, margin, entrance and Appearance group are
+   * added (a field of those names is refused).
    */
   readonly fields: F & {
+    readonly contentWidth?: never;
     readonly colors?: never;
     readonly padding?: never;
     readonly margin?: never;
@@ -154,14 +212,19 @@ function frameText(classes: string): string | undefined {
 
 /**
  * A section (2.19): {@link defineComponent} for a page band, which adds what every section has.
- * It gets its colours ({@link COLORS_FIELD}), a padding (from {@link SECTION_PADDING} for the sides
+ * It gets its content width ({@link CONTENT_WIDTH_FIELD}), whose default each section gives, its
+ * colours ({@link COLORS_FIELD}), a padding (from {@link SECTION_PADDING} for the sides
  * left unset) and a margin, and is drawn in one frame: `<section class="site-<name> <its frame's
  * classes> <padding> <margin>">`, with `data-theme` when its colours are reversed, holding what
  * `render` draws. `defineComponent` refuses a section, so every section has the same frame and
  * the same frame fields.
  */
 export function defineSection<const F extends Fields, const Variant extends string = never>(
-  spec: SectionSpec<F, Variant> & { readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> },
+  spec: SectionSpec<F, Variant> & {
+    readonly defaults: NoInfer<DefaultsOf<F & FrameFields>> & {
+      readonly contentWidth: ContentWidth;
+    };
+  },
 ): ComponentDef {
   const { name, frame, frameAttributes, render, fields, behaviours, titled, background, ...rest } =
     spec;
@@ -186,6 +249,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
       // A background image and its overlay (2.26), in the Appearance group too.
       ...(background === false ? {} : BACKGROUND_FIELDS),
       ...fields,
+      contentWidth: CONTENT_WIDTH_FIELD,
       colors: COLORS_FIELD,
       padding: PADDING_FIELD,
       margin: MARGIN_FIELD,
@@ -237,7 +301,9 @@ export function defineSection<const F extends Fields, const Variant extends stri
           />
           <SectionTitleAppearance.Provider value={appearanceTextClasses(stored)}>
             <SectionSubtitleAppearance.Provider value={appearanceSubtitleClasses(stored)}>
-              {render(props)}
+              <SectionWidthContext value={contentWidthPx(stored.contentWidth)}>
+                {render(props)}
+              </SectionWidthContext>
             </SectionSubtitleAppearance.Provider>
           </SectionTitleAppearance.Provider>
         </section>

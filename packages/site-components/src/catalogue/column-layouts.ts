@@ -58,9 +58,6 @@ const WIDEST_COLUMN: Readonly<Record<ColumnLayout, number>> = {
 /** The layout of the Columns an element is in, per device; null outside Columns. */
 export const ColumnsLayoutContext = createContext<Responsive<ColumnLayout> | null>(null);
 
-/** How wide a section's column is at most (`max-w-4xl`), in pixels. */
-const SECTION_COLUMN_PX = 896;
-
 /**
  * How an image is cut to fill its frame on a device (3.19): to a shape, its width ÷ its height;
  * to a set height, in pixels; or, as its own shape, not at all.
@@ -69,8 +66,9 @@ export type ImageFrame = { readonly ratio: number } | { readonly height: number 
 
 /**
  * The `sizes` of an image at most `maxPx` wide (none: as wide as it can be), in Columns laid out
- * as `layout` or in none: the widest it can show on Desktop (from 1024 px), on Tablet (from 768 px)
- * and on Mobile, so the browser fetches no larger a file than it shows (X2).
+ * as `layout` or in none, in a section whose content is at most `sectionPx` wide (none: Full, or
+ * outside a section, 3.21): the widest it can show on Desktop (from 1024 px), on Tablet (from
+ * 768 px) and on Mobile, so the browser fetches no larger a file than it shows (X2).
  *
  * Cut to a `frame`, a picture wider in proportion than the frame (`ratio`, its width ÷ its height)
  * shows wider than the frame, to cover its height, so it asks for that width: a 16:9 picture in a
@@ -80,6 +78,7 @@ export type ImageFrame = { readonly ratio: number } | { readonly height: number 
 export function imageSizes(
   maxPx: (breakpoint: Breakpoint) => number | undefined,
   layout: Responsive<ColumnLayout> | null,
+  sectionPx: number | undefined,
   frame: (breakpoint: Breakpoint) => ImageFrame = () => null,
   ratio = 1,
 ): string {
@@ -101,8 +100,12 @@ export function imageSizes(
     const across = cap === undefined ? fluid : `min(${widen(cap, wider)}px, ${fluid})`;
     return cut !== null && "height" in cut ? `max(${across}, ${coverPx(cut)}px)` : across;
   };
-  const desktopCap = Math.round(SECTION_COLUMN_PX * share("desktop"));
+  // In a Full section, or outside one, as wide as the screen lets it be, as on Tablet and Mobile.
+  if (sectionPx === undefined) {
+    return `(min-width: 1024px) ${shown("desktop")}, (min-width: 768px) ${shown("tablet")}, ${shown("mobile")}`;
+  }
   const desktopMax = maxPx("desktop");
+  const desktopCap = Math.round(sectionPx * share("desktop"));
   const desktopCut = frame("desktop");
   const desktopFrame = desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap);
   const desktopWide = widen(desktopFrame, scale(desktopCut));

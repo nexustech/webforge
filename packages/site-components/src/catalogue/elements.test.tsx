@@ -28,9 +28,16 @@ const context: RenderContext = {
 const render = (type: string, props: Record<string, unknown>, on: RenderContext = context) =>
   renderNodesToHtml([{ type, props: { id: "it", ...props } } as NodeDoc], siteLibrary, on);
 
+/** `type` in a Section at Medium, 896 px wide, whose width an Image's `sizes` reads (3.21). */
+const inSection = (type: string, props: Record<string, unknown>) =>
+  render("Section", {
+    contentWidth: "medium",
+    content: [{ type, props: { id: "inside", ...props } }],
+  });
+
 describe("the Image element (2.9)", () => {
   it("shows its Media image with its focal point in view, its alt text and its caption", () => {
-    const html = render("Image", {
+    const html = inSection("Image", {
       image: { mediaId: "shop", alt: "The window" },
       caption: " On Mill Street ",
       rounded: true,
@@ -81,14 +88,14 @@ describe("the Image element (2.9)", () => {
 
 describe("an Image's sizes (2.9, X2)", () => {
   it("asks for no wider a file than its width token", () => {
-    expect(render("Image", { image: { mediaId: "shop" }, width: "small" })).toContain(
+    expect(inSection("Image", { image: { mediaId: "shop" }, width: "small" })).toContain(
       'sizes="(min-width: 1024px) 320px, (min-width: 768px) min(320px, 100vw), min(320px, 100vw)"',
     );
   });
 
   it("asks for no wider a file than its column, side by side or stacked", () => {
     const inColumns = (layout: unknown, width = "full") =>
-      render("Columns", {
+      inSection("Columns", {
         layout,
         columns: [
           {
@@ -118,10 +125,12 @@ describe("an Image's sizes (2.9, X2)", () => {
 describe("an Image's sizes under a shape (3.19)", () => {
   const medium = () => 448;
   const portrait = () => ({ ratio: 3 / 4 });
+  // In a Section at Medium (3.21).
+  const section = 896;
 
   it("asks for the width a picture wider than its frame shows at, to cover the frame's height", () => {
     // A 16:9 photo in a Medium Portrait frame, 448 × 597, shows 1062 px wide, never upscaled.
-    const sizes = imageSizes(medium, null, portrait, 16 / 9);
+    const sizes = imageSizes(medium, null, section, portrait, 16 / 9);
     expect(sizes).toBe(
       "(min-width: 1024px) 1062px, (min-width: 768px) min(1062px, 238vw), min(1062px, 238vw)",
     );
@@ -130,8 +139,12 @@ describe("an Image's sizes under a shape (3.19)", () => {
   });
 
   it("asks for the frame's width where the picture is narrower in proportion than it", () => {
-    expect(imageSizes(medium, null, portrait, 2 / 3)).toBe(imageSizes(medium, null));
-    expect(imageSizes(medium, null, () => ({ ratio: 1 }), 1)).toBe(imageSizes(medium, null));
+    expect(imageSizes(medium, null, section, portrait, 2 / 3)).toBe(
+      imageSizes(medium, null, section),
+    );
+    expect(imageSizes(medium, null, section, () => ({ ratio: 1 }), 1)).toBe(
+      imageSizes(medium, null, section),
+    );
   });
 
   it("asks under a set height for at least that height × the picture's proportions", () => {
@@ -140,6 +153,7 @@ describe("an Image's sizes under a shape (3.19)", () => {
       imageSizes(
         () => 320,
         null,
+        section,
         () => ({ height: 480 }),
         3 / 2,
       ),
@@ -151,6 +165,7 @@ describe("an Image's sizes under a shape (3.19)", () => {
       imageSizes(
         () => undefined,
         null,
+        section,
         () => ({ height: 240 }),
         3 / 2,
       ),
@@ -159,7 +174,7 @@ describe("an Image's sizes under a shape (3.19)", () => {
 
   it("follows the shape on each device, in Columns too", () => {
     const shape = (breakpoint: string) => (breakpoint === "mobile" ? { ratio: 1 } : null);
-    expect(imageSizes(() => undefined, "equal", shape, 16 / 9)).toBe(
+    expect(imageSizes(() => undefined, "equal", section, shape, 16 / 9)).toBe(
       "(min-width: 1024px) 448px, (min-width: 768px) 50vw, 89vw",
     );
   });
@@ -220,7 +235,7 @@ describe("the Image element's shapes (3.19)", () => {
   });
 
   it("asks for a file as wide as its cut picture shows", () => {
-    const html = render("Image", {
+    const html = inSection("Image", {
       image: { mediaId: "shop" },
       width: "medium",
       shape: "portrait",
