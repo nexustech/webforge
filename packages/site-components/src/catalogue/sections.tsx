@@ -1,7 +1,13 @@
 import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { CONTENT_WIDTH_PX, contentWidthClass, defineSection, narrowerWidth } from "../frame.js";
+import {
+  CONTENT_WIDTH_PX,
+  contentWidthClass,
+  defineSection,
+  FULL_WIDTH_IMAGE_PX,
+  narrowerWidth,
+} from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import {
@@ -111,7 +117,8 @@ const hero = defineSection({
       return <div className={`mx-auto ${width} ${aligned}`}>{copy}</div>;
     }
     const centred = layout === "centred";
-    const widthPx = CONTENT_WIDTH_PX[values.contentWidth];
+    // Full: as wide as the screen, up to the widest file the export writes.
+    const widthPx = CONTENT_WIDTH_PX[values.contentWidth] ?? FULL_WIDTH_IMAGE_PX;
     return (
       <div
         className={`hero-content ${width} ${centred ? "flex-col gap-10" : "flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
@@ -122,11 +129,9 @@ const hero = defineSection({
             image={image}
             alt={alt}
             sizes={
-              !centred
-                ? "(min-width: 1024px) 50vw, 100vw"
-                : widthPx === undefined
-                  ? "100vw"
-                  : `(min-width: ${widthPx}px) ${widthPx}px, 100vw`
+              centred
+                ? `(min-width: ${widthPx}px) ${widthPx}px, 100vw`
+                : "(min-width: 1024px) 50vw, 100vw"
             }
             eager={first}
             className={

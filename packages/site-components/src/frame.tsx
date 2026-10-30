@@ -106,6 +106,12 @@ export const CONTENT_WIDTH_PX: Readonly<Record<ContentWidth, number | undefined>
   full: undefined,
 };
 
+/**
+ * The widest an image a Full section shows asks for, in pixels: the widest file the export writes
+ * of a picture (X2), so a larger screen gets that file rather than none larger.
+ */
+export const FULL_WIDTH_IMAGE_PX = 1920;
+
 /** A content width's pixels, from a section's values: always one of its choices when drawn. */
 function contentWidthPx(value: unknown): number | undefined {
   const width = CONTENT_WIDTHS.find((choice) => choice === value);

@@ -1,5 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
+import { imageSizes } from "./catalogue/column-layouts.js";
 import { siteLibrary } from "./catalogue/index.js";
 import { CONTENT_WIDTHS, type ContentWidth, narrowerWidth } from "./frame.js";
 import { EDITOR_RENDER_CONTEXT, fieldsHiddenBy } from "./library.js";
@@ -206,8 +207,27 @@ describe("a section's content width (3.21, PF-4)", () => {
     expect(image("wide")).toContain(
       'sizes="(min-width: 1024px) 1152px, (min-width: 768px) 100vw, 100vw"',
     );
+    // Full: as wide as the screen, up to the widest file the export writes.
     expect(image("full")).toContain(
-      'sizes="(min-width: 1024px) 100vw, (min-width: 768px) 100vw, 100vw"',
+      'sizes="(min-width: 1024px) min(1920px, 100vw), (min-width: 768px) 100vw, 100vw"',
+    );
+  });
+
+  it("gives imageSizes the section's width, in Columns and with the Image's own cap", () => {
+    const none = () => undefined;
+    // Half of a Wide section's 1152 px, and of a Full one's widest file.
+    expect(imageSizes(none, "equal", 1152)).toBe(
+      "(min-width: 1024px) 576px, (min-width: 768px) 50vw, 50vw",
+    );
+    expect(imageSizes(none, "equal", undefined)).toBe(
+      "(min-width: 1024px) min(960px, 50vw), (min-width: 768px) 50vw, 50vw",
+    );
+    // The Image's own width token is the cap when it is narrower.
+    expect(imageSizes(() => 448, null, undefined)).toBe(
+      "(min-width: 1024px) min(448px, 100vw), (min-width: 768px) min(448px, 100vw), min(448px, 100vw)",
+    );
+    expect(imageSizes(() => 448, null, 768)).toBe(
+      "(min-width: 1024px) 448px, (min-width: 768px) min(448px, 100vw), min(448px, 100vw)",
     );
   });
 
@@ -222,6 +242,6 @@ describe("a section's content width (3.21, PF-4)", () => {
 
     expect(hero("medium")).toContain('sizes="(min-width: 896px) 896px, 100vw"');
     expect(hero("wide")).toContain('sizes="(min-width: 1152px) 1152px, 100vw"');
-    expect(hero("full")).toContain('sizes="100vw"');
+    expect(hero("full")).toContain('sizes="(min-width: 1920px) 1920px, 100vw"');
   });
 });

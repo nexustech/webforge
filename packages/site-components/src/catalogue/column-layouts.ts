@@ -1,5 +1,6 @@
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext } from "react";
+import { FULL_WIDTH_IMAGE_PX } from "../frame.js";
 
 /** The fewest and the most columns a Columns element has (2.17's toolbar adds and removes them). */
 export const MIN_COLUMNS = 1;
@@ -78,11 +79,13 @@ export function imageSizes(
     return cap === undefined ? fluid : `min(${cap}px, ${fluid})`;
   };
   const desktopMax = maxPx("desktop");
-  const desktopCap = sectionPx === undefined ? undefined : Math.round(sectionPx * share("desktop"));
-  // In a Full section, as wide as the screen lets it be, as on the smaller devices.
+  const desktopShare = share("desktop");
+  // In a Full section, as wide as the screen lets it be, up to the widest file the export writes.
+  const desktopCap = Math.round((sectionPx ?? FULL_WIDTH_IMAGE_PX) * desktopShare);
+  const capped = desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap);
   const desktop =
-    desktopCap === undefined
-      ? shown("desktop", "100vw")
-      : `${desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap)}px`;
+    sectionPx === undefined
+      ? `min(${capped}px, ${desktopShare === 1 ? "100vw" : `${Math.round(desktopShare * 100)}vw`})`
+      : `${capped}px`;
   return `(min-width: 1024px) ${desktop}, (min-width: 768px) ${shown("tablet", "100vw")}, ${shown("mobile", "100vw")}`;
 }
