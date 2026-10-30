@@ -207,20 +207,48 @@ describe("a section's content width (3.21, PF-4)", () => {
     expect(image("wide")).toContain(
       'sizes="(min-width: 1024px) 1152px, (min-width: 768px) 100vw, 100vw"',
     );
-    // Full: as wide as the screen, up to the widest file the export writes.
+    // Full: as wide as the screen.
     expect(image("full")).toContain(
-      'sizes="(min-width: 1024px) min(1920px, 100vw), (min-width: 768px) 100vw, 100vw"',
+      'sizes="(min-width: 1024px) 100vw, (min-width: 768px) 100vw, 100vw"',
+    );
+  });
+
+  it("sizes a shaped Image in a Full section as the screen, widened to cover its frame", () => {
+    const shaped = (width: string) =>
+      render([
+        {
+          type: "Section",
+          props: {
+            id: "s",
+            contentWidth: "full",
+            content: [
+              {
+                type: "Image",
+                props: { id: "i", image: { mediaId: "photo" }, width, shape: "portrait" },
+              },
+            ],
+          },
+        },
+      ]);
+
+    // A 640 × 427 picture in a 3:4 frame shows twice the frame's width to cover its height.
+    expect(shaped("full")).toContain(
+      'sizes="(min-width: 1024px) 200vw, (min-width: 768px) 200vw, 200vw"',
+    );
+    // At Medium (448 px), at most that frame's 896 px, on Desktop too.
+    expect(shaped("medium")).toContain(
+      'sizes="(min-width: 1024px) min(896px, 200vw), (min-width: 768px) min(896px, 200vw), min(896px, 200vw)"',
     );
   });
 
   it("gives imageSizes the section's width, in Columns and with the Image's own cap", () => {
     const none = () => undefined;
-    // Half of a Wide section's 1152 px, and of a Full one's widest file.
+    // Half of a Wide section's 1152 px, and of a Full one's screen.
     expect(imageSizes(none, "equal", 1152)).toBe(
       "(min-width: 1024px) 576px, (min-width: 768px) 50vw, 50vw",
     );
     expect(imageSizes(none, "equal", undefined)).toBe(
-      "(min-width: 1024px) min(960px, 50vw), (min-width: 768px) 50vw, 50vw",
+      "(min-width: 1024px) 50vw, (min-width: 768px) 50vw, 50vw",
     );
     // The Image's own width token is the cap when it is narrower.
     expect(imageSizes(() => 448, null, undefined)).toBe(
@@ -242,6 +270,6 @@ describe("a section's content width (3.21, PF-4)", () => {
 
     expect(hero("medium")).toContain('sizes="(min-width: 896px) 896px, 100vw"');
     expect(hero("wide")).toContain('sizes="(min-width: 1152px) 1152px, 100vw"');
-    expect(hero("full")).toContain('sizes="(min-width: 1920px) 1920px, 100vw"');
+    expect(hero("full")).toContain('sizes="100vw"');
   });
 });

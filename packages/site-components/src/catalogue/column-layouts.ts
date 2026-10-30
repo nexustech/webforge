@@ -1,6 +1,5 @@
 import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/model";
 import { createContext } from "react";
-import { FULL_WIDTH_IMAGE_PX } from "../frame.js";
 
 /** The fewest and the most columns a Columns element has (2.17's toolbar adds and removes them). */
 export const MIN_COLUMNS = 1;
@@ -60,32 +59,59 @@ const WIDEST_COLUMN: Readonly<Record<ColumnLayout, number>> = {
 export const ColumnsLayoutContext = createContext<Responsive<ColumnLayout> | null>(null);
 
 /**
+ * How an image is cut to fill its frame on a device (3.19): to a shape, its width ÷ its height;
+ * to a set height, in pixels; or, as its own shape, not at all.
+ */
+export type ImageFrame = { readonly ratio: number } | { readonly height: number } | null;
+
+/**
  * The `sizes` of an image at most `maxPx` wide (none: as wide as it can be), in Columns laid out
- * as `layout` or in none, in a section whose content is at most `sectionPx` wide (none: Full, 3.21):
- * the widest it can show on Desktop (from 1024 px), on Tablet (from 768 px) and on Mobile, so the
- * browser fetches no larger a file than it shows (X2).
+ * as `layout` or in none, in a section whose content is at most `sectionPx` wide (none: Full, or
+ * outside a section, 3.21): the widest it can show on Desktop (from 1024 px), on Tablet (from
+ * 768 px) and on Mobile, so the browser fetches no larger a file than it shows (X2).
+ *
+ * Cut to a `frame`, a picture wider in proportion than the frame (`ratio`, its width ÷ its height)
+ * shows wider than the frame, to cover its height, so it asks for that width: a 16:9 picture in a
+ * 448 px wide 3:4 frame, 597 px high, shows 1062 px wide (rounded up). Under a set height it shows at least as
+ * wide as that height × its proportions.
  */
 export function imageSizes(
   maxPx: (breakpoint: Breakpoint) => number | undefined,
   layout: Responsive<ColumnLayout> | null,
   sectionPx: number | undefined,
+  frame: (breakpoint: Breakpoint) => ImageFrame = () => null,
+  ratio = 1,
 ): string {
   const share = (breakpoint: Breakpoint) =>
     layout === null ? 1 : WIDEST_COLUMN[resolveResponsive(layout, breakpoint)];
-  const shown = (breakpoint: Breakpoint, viewport: string) => {
+  /** How much wider than its frame the picture shows, cut to a shape. */
+  const scale = (cut: ImageFrame) =>
+    cut !== null && "ratio" in cut ? Math.max(1, ratio / cut.ratio) : 1;
+  /** `across` that much wider, rounded up once it is, so the file is never narrower than shown. */
+  const widen = (across: number, wider: number) =>
+    wider === 1 ? Math.round(across) : Math.ceil(across * wider);
+  /** How wide a set height shows the picture at least. */
+  const coverPx = (cut: { readonly height: number }) => Math.ceil(cut.height * ratio);
+  const shown = (breakpoint: Breakpoint) => {
     const cap = maxPx(breakpoint);
-    const fraction = share(breakpoint);
-    const fluid = fraction === 1 ? viewport : `${Math.round(fraction * 100)}vw`;
-    return cap === undefined ? fluid : `min(${cap}px, ${fluid})`;
+    const cut = frame(breakpoint);
+    const wider = scale(cut);
+    const fluid = `${widen(share(breakpoint) * 100, wider)}vw`;
+    const across = cap === undefined ? fluid : `min(${widen(cap, wider)}px, ${fluid})`;
+    return cut !== null && "height" in cut ? `max(${across}, ${coverPx(cut)}px)` : across;
   };
+  // In a Full section, or outside one, as wide as the screen lets it be, as on Tablet and Mobile.
+  if (sectionPx === undefined) {
+    return `(min-width: 1024px) ${shown("desktop")}, (min-width: 768px) ${shown("tablet")}, ${shown("mobile")}`;
+  }
   const desktopMax = maxPx("desktop");
-  const desktopShare = share("desktop");
-  // In a Full section, as wide as the screen lets it be, up to the widest file the export writes.
-  const desktopCap = Math.round((sectionPx ?? FULL_WIDTH_IMAGE_PX) * desktopShare);
-  const capped = desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap);
+  const desktopCap = Math.round(sectionPx * share("desktop"));
+  const desktopCut = frame("desktop");
+  const desktopFrame = desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap);
+  const desktopWide = widen(desktopFrame, scale(desktopCut));
   const desktop =
-    sectionPx === undefined
-      ? `min(${capped}px, ${desktopShare === 1 ? "100vw" : `${Math.round(desktopShare * 100)}vw`})`
-      : `${capped}px`;
-  return `(min-width: 1024px) ${desktop}, (min-width: 768px) ${shown("tablet", "100vw")}, ${shown("mobile", "100vw")}`;
+    desktopCut !== null && "height" in desktopCut
+      ? Math.max(desktopWide, coverPx(desktopCut))
+      : desktopWide;
+  return `(min-width: 1024px) ${desktop}px, (min-width: 768px) ${shown("tablet")}, ${shown("mobile")}`;
 }

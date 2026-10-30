@@ -115,6 +115,37 @@ test.describe("exported site from disk", () => {
     ).toBe("H2");
   });
 
+  test("cuts an Image to its shape around the focal point, from a file wide enough to cover it (3.19)", async ({
+    page,
+  }) => {
+    await open(page, "about.html");
+
+    // The photo is 1600 × 1000: in a 448 px wide Portrait frame it shows 956 px wide, and at a
+    // 480 px set height 768 px wide, so each asks for the 1280 px file, not the 640 px one.
+    for (const [name, ratio] of [
+      ["Hills in a portrait frame", 3 / 4],
+      ["Hills at a set height", 320 / 480],
+    ] as const) {
+      const image = page.getByRole("img", { name });
+      await image.scrollIntoViewIfNeeded();
+      await expect(image).toHaveJSProperty("complete", true);
+      const shown = await image.evaluate((img: HTMLImageElement) => ({
+        width: img.getBoundingClientRect().width,
+        height: img.getBoundingClientRect().height,
+        fit: getComputedStyle(img).objectFit,
+        file: img.naturalWidth,
+      }));
+      expect(shown.width / shown.height, name).toBeCloseTo(ratio, 2);
+      expect(shown.fit, name).toBe("cover");
+      expect(shown.file, name).toBeGreaterThanOrEqual(shown.height * 1.6);
+    }
+    // Side by side, the two line up at the top.
+    const tops = await page
+      .locator("#shapes img")
+      .evaluateAll((images) => images.map((img) => Math.round(img.getBoundingClientRect().top)));
+    expect(new Set(tops).size).toBe(1);
+  });
+
   test("links to the price list, copied byte for byte, in a new tab (1.28)", async ({ page }) => {
     await open(page, "about.html");
 

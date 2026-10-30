@@ -106,12 +106,6 @@ export const CONTENT_WIDTH_PX: Readonly<Record<ContentWidth, number | undefined>
   full: undefined,
 };
 
-/**
- * The widest an image a Full section shows asks for, in pixels: the widest file the export writes
- * of a picture (X2), so a larger screen gets that file rather than none larger.
- */
-export const FULL_WIDTH_IMAGE_PX = 1920;
-
 /** A content width's pixels, from a section's values: always one of its choices when drawn. */
 function contentWidthPx(value: unknown): number | undefined {
   const width = CONTENT_WIDTHS.find((choice) => choice === value);
@@ -130,9 +124,10 @@ export function narrowerWidth(a: ContentWidth, b: ContentWidth): ContentWidth {
 
 /**
  * How wide the content of the section an element is in is at most, in pixels (3.21): undefined
- * for Full. An Image's `sizes` reads it, so the browser fetches no larger a file than it shows.
+ * for Full, and outside a section, where an Image asks for a larger file rather than a blurry one.
+ * An Image's `sizes` reads it, so the browser fetches no larger a file than it shows.
  */
-export const SectionWidthContext = createContext<number | undefined>(CONTENT_WIDTH_PX.medium);
+export const SectionWidthContext = createContext<number | undefined>(undefined);
 
 /**
  * The fields every section has, which {@link defineSection} adds: its entrance too (F-DS-5), and
