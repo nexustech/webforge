@@ -224,6 +224,13 @@ test("renames and deletes a shared section on no page from the Add panel, and un
   ]);
 });
 
+/**
+ * How far down a selected section to press in its left padding to drag it: above the padding grip
+ * at the middle of its side, which a Wide section (3.21) has at the canvas's edge, where 1% of its
+ * width falls.
+ */
+const GRAB_HEIGHT = 0.25;
+
 /** A point in a section's left padding, near its bottom: on the section, not on what it holds. */
 const padding = (box: Box, fromBottom = 6) => ({
   x: box.x + 6,
@@ -248,7 +255,7 @@ test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a 
   // Dragged with Ctrl/Cmd+Shift onto its own lower edge: another linked copy, after it.
   await page.keyboard.down("ControlOrMeta");
   await page.keyboard.down("Shift");
-  await drag(page, first, padding(await boxOf(first, "Section")), 0.01);
+  await drag(page, first, padding(await boxOf(first, "Section")), 0.01, GRAB_HEIGHT);
   await page.keyboard.up("Shift");
   await page.keyboard.up("ControlOrMeta");
   await expect(steps().first()).toHaveText("Added a copy of 'Welcome'");
@@ -274,7 +281,7 @@ test("Ctrl/Cmd+Shift-drag of a copy places another linked copy; Ctrl/Cmd-drag a 
   // With Ctrl/Cmd alone: a section of the page's own, linked to nothing.
   const last = sections.last();
   await page.keyboard.down("ControlOrMeta");
-  await drag(page, first, padding(await boxOf(last, "Section")), 0.01);
+  await drag(page, first, padding(await boxOf(last, "Section")), 0.01, GRAB_HEIGHT);
   await page.keyboard.up("ControlOrMeta");
   await expect(steps().first()).toHaveText("Duplicated Section");
   await expect(headings()).toHaveCount(3);

@@ -55,13 +55,15 @@ async function dragReady(canvas: FrameLocator, from: Locator): Promise<void> {
  * (it can miss one while it draws the canvas again) is let go outside the canvas, over the left
  * panels, so it isn't a click that adds to the selection, and made again, as a person would. `grabAt` is where to press,
  * as a fraction of the source's width: pressing on an inline-editable element's text selects text
- * instead of dragging.
+ * instead of dragging. `grabHeight` is the same down its height: a selected element's padding grips
+ * sit at the middle of its sides, where a press resizes its padding instead.
  */
 export async function drag(
   page: Page,
   from: Locator,
   to: { x: number; y: number },
   grabAt = 0.5,
+  grabHeight = 0.5,
 ): Promise<void> {
   const canvas = page.frameLocator(".editor__canvas iframe");
   let nudge = 0;
@@ -69,7 +71,7 @@ export async function drag(
     await dragReady(canvas, from);
     const box = await boxOf(from, "Drag source");
     const x = box.x + box.width * grabAt;
-    const y = box.y + box.height / 2;
+    const y = box.y + box.height * grabHeight;
     await page.mouse.move(x, y);
     await page.mouse.down();
     try {
