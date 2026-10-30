@@ -51,7 +51,11 @@ const section = (type: string, props: Readonly<Record<string, unknown>> = {}): S
 
 /** A Section holding `elements`. */
 const holding = (elements: readonly NodeDoc[]): Story => ({
-  args: { nodes: [{ type: "Section", props: { id: "band", content: [...elements] } }] },
+  args: {
+    nodes: [
+      { type: "Section", props: { id: "band", contentWidth: "medium", content: [...elements] } },
+    ],
+  },
 });
 
 /** Basic: a Section's title and its own Heading and Text, each with a look of its own. */

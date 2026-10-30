@@ -3,7 +3,7 @@ import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/m
 import { createContext, type ReactNode, useContext } from "react";
 import { whereOwnColour } from "../appearance.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
-import { MARGIN_FIELD, marginClasses } from "../frame.js";
+import { MARGIN_FIELD, marginClasses, SectionWidthContext } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
 import {
   type ComponentDef,
@@ -126,6 +126,7 @@ function ImagePicture({
   readonly rounded: boolean;
 }) {
   const layout = useContext(ColumnsLayoutContext);
+  const sectionPx = useContext(SectionWidthContext);
   const maxPx = (breakpoint: Breakpoint) => IMAGE_WIDTH_PX[resolveResponsive(width, breakpoint)];
   const corners = rounded ? " rounded-box" : "";
   // An Image that keeps its picture's shape on every device draws as it did before shapes.
@@ -134,7 +135,7 @@ function ImagePicture({
       <Picture
         image={image}
         alt={alt}
-        sizes={imageSizes(maxPx, layout)}
+        sizes={imageSizes(maxPx, layout, sectionPx)}
         className={`h-auto w-full${corners}`}
       />
     );
@@ -154,7 +155,13 @@ function ImagePicture({
     <Picture
       image={image}
       alt={alt}
-      sizes={imageSizes(maxPx, layout, (breakpoint) => cut(breakpoint).frame, pictureRatio(image))}
+      sizes={imageSizes(
+        maxPx,
+        layout,
+        sectionPx,
+        (breakpoint) => cut(breakpoint).frame,
+        pictureRatio(image),
+      )}
       className={`w-full object-cover ${classes}${corners}`}
       shaped
     />

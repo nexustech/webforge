@@ -18,6 +18,7 @@ export const BuyButton: Story = {
         props: {
           id: "section",
           ...siteLibrary.components.Section?.defaults,
+          contentWidth: "medium",
           content: [
             {
               type: "Heading",
@@ -48,6 +49,7 @@ export const BuyButtonWithoutLink: Story = {
         props: {
           id: "section",
           ...siteLibrary.components.Section?.defaults,
+          contentWidth: "medium",
           content: [
             {
               type: "BuyButton",

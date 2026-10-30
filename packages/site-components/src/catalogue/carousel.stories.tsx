@@ -14,6 +14,7 @@ const carousel = (variant: string, label: string, slides: Record<string, unknown
     type: "Section",
     props: {
       id: "section",
+      contentWidth: "medium",
       content: [
         {
           type: "Carousel",

@@ -200,7 +200,10 @@ describe("the Appearance group (2.22, ST-1)", () => {
         { type: "Section", props: { id: "band", lookUnderline: true, content: [{ type, props }] } },
       ]);
       // One that draws nothing by default (no image, profiles or address yet) has nothing to style.
-      const inside = html.replace(/^<section[^>]*>|<\/section>$/g, "");
+      const inside = html.replace(
+        /^<section[^>]*><div class="mx-auto[^"]*">|<\/div><\/section>$/g,
+        "",
+      );
       if (inside !== "" && !inside.includes("opacity-50!")) missed.push(type);
       expect(html.replace(/<section[^>]*>/, ""), type).not.toContain("underline!");
       // The mark that says where never reaches a page, whichever element sets it.

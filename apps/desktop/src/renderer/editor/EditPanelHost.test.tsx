@@ -788,13 +788,13 @@ describe("EditPanelHost", () => {
       expect(session.history.entries()).toEqual([]);
     });
 
-    it("switches a toggle as one step", async () => {
+    it("sets a Section's content width as one step (3.21)", async () => {
       const { labels, section, user } = setup("section-1");
 
-      await user.click(screen.getByRole("switch", { name: "Full width" }));
+      await user.selectOptions(screen.getByLabelText("Content width"), "full");
 
-      expect(section()?.fullWidth).toBe(true);
-      expect(labels()).toEqual(["Changed Section full width"]);
+      expect(section()?.contentWidth).toBe("full");
+      expect(labels()).toEqual(["Changed Section content width"]);
     });
   });
 

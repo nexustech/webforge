@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
 import type { RenderContext } from "../schema.js";
@@ -49,6 +49,7 @@ const pricing = defineSection({
     ...CARD_HOVER_FIELDS,
   },
   defaults: {
+    contentWidth: "wide",
     title: t("starter.pricingTitle"),
     text: `<p>${t("starter.pricingText")}</p>`,
     items: STARTER_PLANS.map((plan, index) => ({
@@ -70,7 +71,7 @@ const pricing = defineSection({
   render: ({ values, slots }) => {
     const Items = slots.items;
     return (
-      <div className="mx-auto max-w-6xl space-y-10">
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-10`}>
         <div className="mx-auto max-w-3xl text-center">
           <SectionTitle>{values.title}</SectionTitle>
           <SectionIntro className="mt-4">{values.text}</SectionIntro>

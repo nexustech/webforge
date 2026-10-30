@@ -2,8 +2,10 @@ import {
   expandSharedCopies,
   MIGRATIONS,
   type NodeDoc,
+  type RawSite,
   SHARED_COPY_TYPE,
   type SharedSectionId,
+  SITE_FORMAT_VERSION,
 } from "@webforge/model";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -62,11 +64,12 @@ describe("renderNodesToHtml", () => {
     const html = renderNodesToHtml(starterPage().content, siteLibrary, context);
 
     expect(html).toBe(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16">' +
+      // A new Section is Wide, its column inside its padding (3.21).
+      '<section class="site-section px-4 py-16"><div class="mx-auto max-w-6xl space-y-6">' +
         '<h1 class="site-heading font-heading text-h1">Welcome to our business</h1>' +
         '<div class="site-text text-body [&amp;_a:not(.btn)]:[text-decoration-line:var(--wf-link-decoration,underline)] [&amp;_a:not(.btn):hover]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn):focus-visible]:[text-decoration-line:var(--wf-link-hover-decoration,underline)] [&amp;_a:not(.btn)]:[color:var(--wf-link-color,currentColor)] [&amp;_p+p]:mt-4 [&amp;_ol]:my-3 [&amp;_ol]:list-decimal [&amp;_ol]:pl-6 [&amp;_ul]:my-3 [&amp;_ul]:list-disc [&amp;_ul]:pl-6">' +
         '<div class="contents"><p>Tell visitors what you do and why they will love it.</p></div>' +
-        "</div></section>",
+        "</div></div></section>",
     );
   });
 
@@ -443,7 +446,8 @@ describe("renderNodesToHtml", () => {
       );
 
     it("centres the text with the image below it, whatever the alignment", () => {
-      const html = heroIn("centred");
+      // Medium, as centred Heroes were before 3.21 and format 10 keeps them.
+      const html = heroIn("centred", { contentWidth: "medium" });
 
       expect(html).toContain('<div class="hero-content max-w-4xl flex-col gap-10 text-center">');
       expect(html.indexOf("<h1")).toBeLessThan(html.indexOf("<picture>"));
@@ -468,7 +472,7 @@ describe("renderNodesToHtml", () => {
     });
 
     it("shows text only, leaving out an image it was given", () => {
-      const html = heroIn("minimal", { alignment: "centre" });
+      const html = heroIn("minimal", { alignment: "centre", contentWidth: "narrow" });
 
       expect(html).not.toContain("<picture>");
       expect(html).toContain('<div class="mx-auto max-w-3xl text-center">');
@@ -636,12 +640,11 @@ describe("renderNodesToHtml", () => {
       props: { id: "s", colors: "inverse", content: [], ...props },
     });
 
-    expect(renderNodesToHtml([section({})], siteLibrary, context)).toBe(
+    expect(renderNodesToHtml([section({ contentWidth: "medium" })], siteLibrary, context)).toBe(
       '<section class="site-section px-4 py-16" data-theme="wf_inverse"><div class="mx-auto max-w-4xl space-y-6"></div></section>',
     );
-    // Full width: no column at all, as on the page's colours.
-    expect(renderNodesToHtml([section({ fullWidth: true })], siteLibrary, context)).toBe(
-      '<section class="site-section mx-auto space-y-6 px-4 py-16" data-theme="wf_inverse"></section>',
+    expect(renderNodesToHtml([section({ contentWidth: "full" })], siteLibrary, context)).toBe(
+      '<section class="site-section px-4 py-16" data-theme="wf_inverse"><div class="mx-auto max-w-none space-y-6"></div></section>',
     );
   });
 
@@ -659,7 +662,7 @@ describe("renderNodesToHtml", () => {
               },
             },
             gap: { $responsive: { desktop: "medium", tablet: "none" } },
-            fullWidth: true,
+            contentWidth: "full",
             content: [],
           },
         },
@@ -668,13 +671,13 @@ describe("renderNodesToHtml", () => {
       context,
     );
 
-    expect(html).toContain(
-      '<section class="site-section mx-auto space-y-0 lg:space-y-6 px-4 py-8 md:py-24">',
+    expect(html).toBe(
+      '<section class="site-section px-4 py-8 md:py-24"><div class="mx-auto max-w-none space-y-0 lg:space-y-6"></div></section>',
     );
   });
 
   it("renders a page saved before 1.32 exactly as before once format 6 migrates it (R14)", () => {
-    const page = (first: unknown, second: unknown): NodeDoc[] => [
+    const page = (first: unknown, second: unknown, width?: string): NodeDoc[] => [
       {
         type: "Hero",
         props: { id: "h", title: "Rosa's Bakery", text: "Fresh bread", buttonLabel: "" },
@@ -684,13 +687,25 @@ describe("renderNodesToHtml", () => {
         props: {
           id: "a",
           padding: first,
+          ...(width === undefined ? {} : { contentWidth: width }),
           content: [{ type: "Heading", props: { id: "t", text: "Hi", size: "small" } }],
         },
       },
-      { type: "Section", props: { id: "b", padding: second } },
-      { type: "Section", props: { id: "c" } },
+      {
+        type: "Section",
+        props: {
+          id: "b",
+          padding: second,
+          ...(width === undefined ? {} : { contentWidth: width }),
+        },
+      },
+      {
+        type: "Section",
+        props: { id: "c", ...(width === undefined ? {} : { contentWidth: width }) },
+      },
     ];
-    // Format 5's padding sizes, as MIGRATIONS[5] turns them into boxes.
+    // Format 5's padding sizes, as MIGRATIONS[5] turns them into boxes, and the Sections Medium, as
+    // format 10 keeps them (3.21).
     const raw = {
       formatVersion: 5,
       pages: {
@@ -699,9 +714,13 @@ describe("renderNodesToHtml", () => {
         },
       },
     };
-    const migrate = MIGRATIONS[5];
-    if (migrate === undefined) throw new Error("No migration from format 5");
-    const legacy = (migrate(raw) as typeof raw).pages.home.doc.content;
+    let migrated: RawSite = raw;
+    for (let version = 5; version < SITE_FORMAT_VERSION; version++) {
+      const migrate = MIGRATIONS[version];
+      if (migrate === undefined) throw new Error(`No migration from format ${version}`);
+      migrated = migrate(migrated);
+    }
+    const legacy = (migrated as unknown as typeof raw).pages.home.doc.content;
     const html = renderNodesToHtml(legacy, siteLibrary, context);
 
     expect(html).toContain('<section class="site-hero hero bg-base-200 px-4 py-16">');
@@ -718,6 +737,7 @@ describe("renderNodesToHtml", () => {
     const box = page(
       { top: "m", bottom: "m" },
       { $responsive: { desktop: { top: "l", bottom: "l" }, mobile: { top: "s", bottom: "s" } } },
+      "medium",
     );
     expect(renderNodesToHtml(box, siteLibrary, context)).toBe(html);
   });
@@ -752,7 +772,7 @@ describe("renderNodesToHtml", () => {
       '<section class="site-hero hero bg-base-200 pl-0 pr-4 pt-32 pb-16 max-md:mt-24 md:mt-4">',
     );
     expect(html).toContain(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-8 py-0 mb-16">',
+      '<section class="site-section px-8 py-0 mb-16"><div class="mx-auto max-w-6xl space-y-6">',
     );
     expect(html).toContain(
       '<h3 class="site-heading font-heading text-h3 max-md:mt-24 md:mt-4">Hi</h3>',

@@ -47,6 +47,9 @@ describe("new-component's files", () => {
     expect(module).toContain("<SectionTitle>{values.title}</SectionTitle>");
     expect(module).toContain("PriceList: priceList,");
     expect(module).not.toContain("padding");
+    // Its content width (3.21), Narrow as a section of text is.
+    expect(module).toContain('contentWidth: "narrow",');
+    expect(module).toContain("contentWidthClass(values.contentWidth)");
     expect(stringsFile(names, "section")).toContain('"section.priceList": "Price list",');
     expect(stringsFile(names, "section")).toContain('"starter.priceListTitle": "Price list",');
   });

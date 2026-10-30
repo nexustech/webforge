@@ -54,7 +54,8 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   6: themeStyleTokens,
   7: ownThemes,
   8: componentLooks,
-  9: accentFonts,
+  9: sectionContentWidths,
+  10: accentFonts,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -278,10 +279,54 @@ function componentLooks(site: RawSite): RawSite {
 }
 
 /**
- * Format 9 → 10 (3.22, PF-5): the theme has a third font, the accent, beside headings' and body
+ * The layouts of the kinds whose content was wider or narrower than their kind's default content
+ * width (3.21) before format 10, and that width; a layout that isn't here, or none (the kind's
+ * first), had the default.
+ */
+const FORMAT_10_LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  Hero: { centred: "medium", minimal: "narrow" },
+  CallToAction: { split: "wide" },
+  Faq: { columns: "wide" },
+  Video: { split: "wide" },
+  Map: { split: "wide" },
+};
+
+/**
+ * Format 9 → 10 (3.21, PF-4): every section has a content width. A Section's default became Wide,
+ * so one saved before is Medium, as it was, or Full where its *Full width* was on, which it
+ * replaces. A section in a layout whose width differed from its kind's default gets that width,
+ * so nothing saved before changes. A width already set is kept.
+ */
+function sectionContentWidths(site: RawSite): RawSite {
+  walkSite(site, (node) => {
+    const { props } = node;
+    if (node.type === "Section") {
+      const full = props.fullWidth === true;
+      delete props.fullWidth;
+      if (!Object.hasOwn(props, "contentWidth")) props.contentWidth = full ? "full" : "medium";
+      return;
+    }
+    const widths = Object.hasOwn(FORMAT_10_LAYOUT_WIDTHS, node.type)
+      ? FORMAT_10_LAYOUT_WIDTHS[node.type]
+      : undefined;
+    const layout = props.variant;
+    if (
+      widths !== undefined &&
+      typeof layout === "string" &&
+      Object.hasOwn(widths, layout) &&
+      !Object.hasOwn(props, "contentWidth")
+    ) {
+      props.contentWidth = widths[layout];
+    }
+  });
+  return { ...site, formatVersion: 10 };
+}
+
+/**
+ * Format 10 → 11 (3.22, PF-5): the theme has a third font, the accent, beside headings' and body
  * text's, and a look may set an element's font (`lookFont`). Every older theme's accent is its
  * headings' font, which nothing uses yet, so every site looks as it did. A theme that isn't a
- * record, or has no fonts, is left for validation.
+ * record, or has no heading font, is left for validation.
  */
 function accentFonts(site: RawSite): RawSite {
   const theme = site.theme;
@@ -291,10 +336,10 @@ function accentFonts(site: RawSite): RawSite {
     theme.fonts.accent !== undefined ||
     !isRecord(theme.fonts.heading)
   ) {
-    return { ...site, formatVersion: 10 };
+    return { ...site, formatVersion: 11 };
   }
   const fonts = { ...theme.fonts, accent: { ...theme.fonts.heading } };
-  return { ...site, theme: { ...theme, fonts }, formatVersion: 10 };
+  return { ...site, theme: { ...theme, fonts }, formatVersion: 11 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

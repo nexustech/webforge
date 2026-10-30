@@ -83,6 +83,7 @@ export const FormElement: Story = {
         props: {
           id: "section",
           ...siteLibrary.components.Section?.defaults,
+          contentWidth: "medium",
           content: [
             { type: "Heading", props: { id: "heading", text: "Book a table", size: "medium" } },
             { type: "Form", props: { id: "booking", ...siteLibrary.components.Form?.defaults } },
@@ -102,6 +103,7 @@ export const FormEveryField: Story = {
         props: {
           id: "section",
           ...siteLibrary.components.Section?.defaults,
+          contentWidth: "medium",
           content: [
             {
               type: "Form",

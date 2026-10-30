@@ -192,10 +192,6 @@
       "body": {
         "family": "Inter",
         "fallback": "sans-serif"
-      },
-      "accent": {
-        "family": "Playfair Display",
-        "fallback": "serif"
       }
     },
     "radius": {
@@ -288,8 +284,7 @@
         }
       },
       "CallToAction": {
-        "lookBackground": "primary",
-        "lookFont": "accent"
+        "lookBackground": "primary"
       }
     }
   },
@@ -357,6 +352,7 @@
             "type": "Section",
             "props": {
               "id": "hours",
+              "contentWidth": "medium",
               "advanced": {
                 "className": "scroll-mt-16",
                 "attributes": {
@@ -571,6 +567,7 @@
         "type": "Section",
         "props": {
           "id": "hours",
+          "contentWidth": "wide",
           "advanced": {
             "anchorId": "opening-hours"
           },

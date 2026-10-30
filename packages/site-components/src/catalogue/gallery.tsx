@@ -1,6 +1,6 @@
 import { t, template } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import { BUTTON_CLASSES, SectionTitle } from "../typography.js";
@@ -117,7 +117,7 @@ const gallery = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     images: { kind: "slot", label: t("field.images"), allow: ["GalleryImage"] },
   },
-  defaults: { title: t("starter.galleryTitle"), images: [] },
+  defaults: { title: t("starter.galleryTitle"), contentWidth: "wide", images: [] },
   behaviours: ["lightbox"],
   frame: () => "bg-base-100",
   frameAttributes: () => ({ "data-wf-gallery": "" }),
@@ -125,7 +125,7 @@ const gallery = defineSection({
     const Images = slots.images;
     return (
       <>
-        <div className="mx-auto max-w-6xl space-y-8">
+        <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-8`}>
           <SectionTitle>{values.title}</SectionTitle>
           <Images className={IMAGES_CLASSES[values.variant]} />
         </div>

@@ -2,7 +2,7 @@ import { t } from "@webforge/i18n";
 import type { ImageValue } from "@webforge/model";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
 import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
@@ -50,6 +50,7 @@ const testimonials = defineSection({
     ...CARD_HOVER_FIELDS,
   },
   defaults: {
+    contentWidth: "wide",
     title: t("starter.testimonialsTitle"),
     items: [0, 1, 2].map((index) => ({
       type: "Testimonial",
@@ -66,7 +67,7 @@ const testimonials = defineSection({
   render: ({ values, slots }) => {
     const Items = slots.items;
     return (
-      <div className="mx-auto max-w-6xl space-y-10">
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-10`}>
         <div className="text-center">
           <SectionTitle>{values.title}</SectionTitle>
         </div>

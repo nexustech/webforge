@@ -246,7 +246,10 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
             ["shared-hours" as SharedSectionId]: {
               id: "shared-hours" as SharedSectionId,
               name: "Opening hours",
-              section: { type: "Section", props: { id: "hours", content: [] } },
+              section: {
+                type: "Section",
+                props: { id: "hours", contentWidth: "medium", content: [] },
+              },
             },
           },
         }),

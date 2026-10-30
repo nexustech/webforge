@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import { LucideIcon } from "../icons.js";
 import type { ComponentDef } from "../library.js";
 import { CARD_HOVER_FIELDS, hoverClasses } from "../motion.js";
@@ -45,6 +45,7 @@ const features = defineSection({
     ...CARD_HOVER_FIELDS,
   },
   defaults: {
+    contentWidth: "wide",
     title: t("starter.featuresTitle"),
     text: `<p>${t("starter.featuresText")}</p>`,
     items: STARTER_ICONS.map((icon, index) => ({
@@ -62,7 +63,7 @@ const features = defineSection({
   render: ({ values, slots }) => {
     const Items = slots.items;
     return (
-      <div className="mx-auto max-w-6xl space-y-10">
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-10`}>
         <div className="mx-auto max-w-3xl text-center">
           <SectionTitle>{values.title}</SectionTitle>
           <SectionIntro className="mt-4">{values.text}</SectionIntro>

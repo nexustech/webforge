@@ -1336,6 +1336,7 @@ describe("buildSite: shared sections (F-ED-23, 3.3)", () => {
             type: "Section",
             props: {
               id: "hours",
+              contentWidth: "medium",
               advanced: { anchorId: "opening-hours" },
               content: [{ type: "Heading", props: { id: "title", text: "Open every day" } }],
             },

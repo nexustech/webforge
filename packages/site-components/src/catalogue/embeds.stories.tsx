@@ -39,6 +39,7 @@ export const VideoBesideText: Story = {
           ...siteLibrary.components.Video?.defaults,
           address: "https://vimeo.com/76979871",
           variant: "split",
+          contentWidth: "wide",
         },
       },
     ],
@@ -56,6 +57,7 @@ export const MapBesideText: Story = {
           ...siteLibrary.components.Map?.defaults,
           address: "1 High Street\nHightown\nHT1 2AB",
           variant: "split",
+          contentWidth: "wide",
         },
       },
     ],
@@ -71,6 +73,7 @@ export const EmbedVideoElement: Story = {
         props: {
           id: "section",
           ...siteLibrary.components.Section?.defaults,
+          contentWidth: "medium",
           content: [
             { type: "Heading", props: { id: "heading", text: "Our oven at work", size: "medium" } },
             {
@@ -101,6 +104,7 @@ export const EmbedMapElement: Story = {
         props: {
           id: "section",
           ...siteLibrary.components.Section?.defaults,
+          contentWidth: "medium",
           content: [
             { type: "Heading", props: { id: "heading", text: "Find us", size: "medium" } },
             {

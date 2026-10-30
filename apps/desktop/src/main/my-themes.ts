@@ -16,7 +16,7 @@ export type KeepOutcome = "kept" | "full";
 
 /**
  * `entry` with an accent font (3.22): one kept before there was one has its headings' font, as a
- * site's theme does when it opens in format 10, so it looks the same. Anything else as it is, for
+ * site's theme does when it opens in format 11, so it looks the same. Anything else as it is, for
  * the schema to check.
  */
 function withAccent(entry: unknown): unknown {

@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import type { BindableSetting } from "@webforge/model";
 import type { ReactNode } from "react";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { openingHoursLines } from "../opening-hours.js";
 import type { RenderContext } from "../schema.js";
@@ -139,6 +139,7 @@ const contactDetails = defineSection({
     },
   },
   defaults: {
+    contentWidth: "medium",
     title: t("starter.contactDetailsTitle"),
     text: `<p>${t("starter.contactDetailsText")}</p>`,
     showHours: true,
@@ -151,7 +152,7 @@ const contactDetails = defineSection({
       values.showContact ? <Contact key="contact" context={context} /> : null,
     ].filter((part) => part !== null);
     return (
-      <div className="mx-auto max-w-4xl space-y-8">
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-8`}>
         <div>
           <SectionTitle>{values.title}</SectionTitle>
           <SectionIntro className="mt-4">{values.text}</SectionIntro>

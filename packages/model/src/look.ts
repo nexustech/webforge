@@ -7,7 +7,7 @@ import { z } from "zod";
  * background image itself is content, so it isn't one.
  */
 export const LOOK_FIELDS = [
-  // The theme's font for its text (3.22, PF-5): new in format 10.
+  // The theme's font for its text (3.22, PF-5): new in format 11.
   "lookFont",
   "lookSize",
   "lookWeight",
