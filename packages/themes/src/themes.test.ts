@@ -604,6 +604,7 @@ describe("themeCss (2.1)", () => {
         fonts: {
           heading: { family: heading, fallback: "monospace" },
           body: { family: body, fallback: "serif" },
+          accent: { family: heading, fallback: "monospace" },
         },
       });
 

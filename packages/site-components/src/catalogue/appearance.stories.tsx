@@ -64,6 +64,17 @@ export const Basic: Story = holding([
   node("Text", { ...ELEMENT_LOOK, lookItalic: true }),
 ]);
 
+/**
+ * Fonts (3.22, PF-5): a Heading and Text in their own fonts, then each set to the theme's Body,
+ * Headings and Accent font; a theme's Accent is its Headings' until someone picks one.
+ */
+export const Fonts: Story = holding([
+  node("Heading", { text: "Fresh bread every morning" }),
+  node("Heading", { text: "Set in the body text's font", lookFont: "body" }),
+  node("Text", { text: "<p>Set in the headings' font</p>", lookFont: "heading" }),
+  node("Text", { text: "<p>Set in the accent font</p>", lookFont: "accent" }),
+]);
+
 /** Elements: a Button and an Icon, each with the hover row (ST-2). */
 export const Elements: Story = holding([
   node("Button", { label: "Book a table", ...ELEMENT_LOOK, hover: "darken" }),

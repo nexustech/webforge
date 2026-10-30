@@ -35,6 +35,7 @@ const meridian: ThemeTokens = {
   fonts: {
     heading: { family: "Lora", fallback: "serif" },
     body: { family: "Work Sans", fallback: "sans-serif" },
+    accent: { family: "Lora", fallback: "serif" },
   },
   radius: { box: "m", field: "m", selector: "m" },
   border: "thin",
@@ -84,6 +85,7 @@ const darkroom: ThemeTokens = {
   fonts: {
     heading: { family: "Space Grotesk", fallback: "sans-serif" },
     body: { family: "Figtree", fallback: "sans-serif" },
+    accent: { family: "Space Grotesk", fallback: "sans-serif" },
   },
   radius: { box: "s", field: "s", selector: "s" },
   border: "thin",
@@ -133,6 +135,7 @@ const market: ThemeTokens = {
   fonts: {
     heading: { family: "Caveat", fallback: "sans-serif" },
     body: { family: "Rubik", fallback: "sans-serif" },
+    accent: { family: "Caveat", fallback: "sans-serif" },
   },
   radius: { box: "m", field: "m", selector: "m" },
   border: "thin",
@@ -182,6 +185,7 @@ const gazette: ThemeTokens = {
   fonts: {
     heading: { family: "DM Serif Display", fallback: "serif" },
     body: { family: "Manrope", fallback: "sans-serif" },
+    accent: { family: "DM Serif Display", fallback: "serif" },
   },
   radius: { box: "s", field: "s", selector: "s" },
   border: "thick",

@@ -68,6 +68,7 @@
 @theme {
   --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "DM Serif Display", ui-serif, Georgia, serif;
+  --font-accent: "DM Serif Display", ui-serif, Georgia, serif;
   --spacing: 0.25rem;
   --text-h1: 3.75rem;
   --text-h1--line-height: 1.25;

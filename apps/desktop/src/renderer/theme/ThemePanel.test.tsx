@@ -43,6 +43,8 @@ describe("the Theme tab (2.3a)", () => {
       expect(colourPicker(colour)).toBeTruthy();
     }
     expect(screen.getByRole("button", { name: "Headings Inter" })).toBeTruthy();
+    // The accent font (3.22), beside the other two.
+    expect(screen.getByRole("button", { name: "Accent Inter" })).toBeTruthy();
     expect(
       (screen.getByRole("combobox", { name: "Font pairing" }) as HTMLSelectElement).value,
     ).toBe("simple");

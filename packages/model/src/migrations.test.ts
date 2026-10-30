@@ -11,6 +11,7 @@ import v7Site from "../test/fixtures/v7/site.json" with { type: "json" };
 import v8Site from "../test/fixtures/v8/site.json" with { type: "json" };
 import v9Site from "../test/fixtures/v9/site.json" with { type: "json" };
 import v10Site from "../test/fixtures/v10/site.json" with { type: "json" };
+import v11Site from "../test/fixtures/v11/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -71,20 +72,36 @@ const sectionContentWidths =
     throw new Error("No migration from format 9");
   });
 
-/** Format 5 → 10, each step's own fixture tested below: what the later steps do to an older one. */
+/** Format 10 → 11 (`MIGRATIONS[10]`). */
+const accentFonts =
+  MIGRATIONS[10] ??
+  ((): never => {
+    throw new Error("No migration from format 10");
+  });
+
+/** Format 5 → 11, each step's own fixture tested below: what the later steps do to an older one. */
 function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
-  return sectionContentWidths(
-    componentLooks(
-      ownThemes(themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site))))),
+  return accentFonts(
+    sectionContentWidths(
+      componentLooks(
+        ownThemes(themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site))))),
+      ),
     ),
   );
 }
 
-/** A format 9 site as format 10 opens it: its Sections at Medium, as they were (3.21). */
-const asLatest = (site: Record<string, unknown>) =>
-  sectionContentWidths(JSON.parse(JSON.stringify({ ...site, formatVersion: 9 })));
+/** A format 10 site as format 11 opens it: its accent font its headings' (3.22). */
+const asFormat11 = (site: Record<string, unknown>) =>
+  accentFonts(JSON.parse(JSON.stringify({ ...site, formatVersion: 10 })));
 
-/** The format 7 fixture as format 10 opens it: its theme still a built-in one. */
+/**
+ * A format 9 site as format 11 opens it: its Sections at Medium, as they were (3.21), and its
+ * accent font its headings' (3.22).
+ */
+const asLatest = (site: Record<string, unknown>) =>
+  asFormat11(sectionContentWidths(JSON.parse(JSON.stringify({ ...site, formatVersion: 9 }))));
+
+/** The format 7 fixture as format 11 opens it: its theme still a built-in one. */
 const v7AsLatest = asLatest(v7Site);
 
 /** A raw format 9 site with one page holding `nodes`, and what format 10 makes of their props. */
@@ -99,17 +116,43 @@ function widthsOf(...nodes: { type: string; props: Record<string, unknown> }[]):
 }
 
 describe("migrateSite", () => {
-  it("opens the format 10 fixture unchanged, its Sections' content widths as saved (3.21)", () => {
+  it("opens the format 11 fixture unchanged, its accent font and a look that takes it (3.22)", () => {
+    const site = migrateSite(v11Site);
+
+    expect(site).toEqual(v11Site);
+    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site.theme.fonts.accent).toEqual({ family: "Playfair Display", fallback: "serif" });
+    expect(site.theme.looks?.CallToAction?.lookFont).toBe("accent");
+  });
+
+  it("opens the format 10 fixture as format 11, its accent font its headings' (3.22)", () => {
     const site = migrateSite(v10Site);
 
-    expect(site).toEqual(v10Site);
-    expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(site).toEqual({
+      ...v10Site,
+      formatVersion: 11,
+      theme: {
+        ...v10Site.theme,
+        fonts: { ...v10Site.theme.fonts, accent: v10Site.theme.fonts.heading },
+      },
+    });
+    // A copy, not the same object: changing one font never changes the other.
+    expect(site.theme.fonts.accent).not.toBe(site.theme.fonts.heading);
+    // A theme that isn't a record, or has no heading font, is left for validation.
+    for (const theme of ["light", { name: "x" }, { fonts: { body: "Inter" } }]) {
+      expect(accentFonts({ formatVersion: 10, theme })).toEqual({ formatVersion: 11, theme });
+    }
+  });
+
+  it("opens the format 10 fixture's Sections' content widths as saved (3.21)", () => {
+    const site = migrateSite(v10Site);
+
     expect(site.sharedSections["shared-hours" as SharedSectionId]?.section.props.contentWidth).toBe(
       "wide",
     );
   });
 
-  it("opens the format 9 fixture as format 10, every Section Medium as it was (3.21)", () => {
+  it("opens the format 9 fixture as format 11, every Section Medium as it was (3.21)", () => {
     const site = migrateSite(v9Site);
     const sections = [
       ...Object.values(site.pages).flatMap((page) => page.doc.content),
@@ -181,7 +224,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 8 fixture as format 10, its theme without looks as it was (3.12)", () => {
+  it("opens the format 8 fixture as format 11, its theme without looks as it was (3.12)", () => {
     const site = migrateSite(v8Site);
 
     expect(site).toEqual(asLatest(v8Site));
@@ -199,7 +242,7 @@ describe("migrateSite", () => {
     expect(site.theme.own).toEqual({ id: "theme00000000001", name: "Cupcake (my version)" });
   });
 
-  it("opens the format 7 fixture as format 10, its theme a built-in one as it was (2.23)", () => {
+  it("opens the format 7 fixture as format 11, its theme a built-in one as it was (2.23)", () => {
     const site = migrateSite(v7Site);
 
     expect(site).toEqual(v7AsLatest);
@@ -210,7 +253,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 6 fixture as format 10, its theme's style tokens as it looked (2.13d)", () => {
+  it("opens the format 6 fixture as format 11, its theme's style tokens as it looked (2.13d)", () => {
     const site = migrateSite(v6Site);
 
     expect(v6Site.theme).not.toHaveProperty("cards");
@@ -230,7 +273,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 5 fixture as format 10, a Section's padding size as its top and bottom (R14)", () => {
+  it("opens the format 5 fixture as format 11, a Section's padding size as its top and bottom (R14)", () => {
     const site = migrateSite(v5Site);
 
     // The fixture's Sections have format 5's sizes, one plain, one per device.
@@ -275,7 +318,7 @@ describe("migrateSite", () => {
     expect(hero.pages.home.doc.content[0]?.props.padding).toBe("large");
   });
 
-  it("opens the format 4 fixture as format 10, its theme as tokens named after it (2.1)", () => {
+  it("opens the format 4 fixture as format 11, its theme as tokens named after it (2.1)", () => {
     const site = migrateSite(v4Site);
 
     expect(site).toEqual(latest({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
@@ -300,7 +343,7 @@ describe("migrateSite", () => {
     expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
   });
 
-  it("opens the format 3 fixture as format 10, its shared sections' names made unique (3 → 4)", () => {
+  it("opens the format 3 fixture as format 11, its shared sections' names made unique (3 → 4)", () => {
     const site = migrateSite(v3Site);
 
     // The fixture's second shared section repeats the first's name, as format 3 allowed.
@@ -348,13 +391,13 @@ describe("migrateSite", () => {
     ]);
   });
 
-  it("opens the format 2 fixture as format 10, with no shared sections yet", () => {
+  it("opens the format 2 fixture as format 11, with no shared sections yet", () => {
     expect(migrateSite(v2Site)).toEqual(
       latest({ ...v2Site, formatVersion: 5, sharedSections: {}, theme: cupcakeTokens }),
     );
   });
 
-  it("opens the format 1 fixture as format 10, its Hero image one value with its alt text (1 → 2)", () => {
+  it("opens the format 1 fixture as format 11, its Hero image one value with its alt text (1 → 2)", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // has its Hero image in the format 1 shape: a media id, and its alt text apart.
     const site = migrateSite(v1Site);
@@ -367,7 +410,11 @@ describe("migrateSite", () => {
       alt: "Fresh loaves on the counter",
     });
     expect(hero?.props).not.toHaveProperty("imageDescription");
-    expect(site).toMatchObject({ formatVersion: 10, sharedSections: {}, theme: cupcakeTokens });
+    expect(site).toMatchObject({
+      formatVersion: SITE_FORMAT_VERSION,
+      sharedSections: {},
+      theme: cupcakeTokens,
+    });
   });
 
   it("opens a new site after a JSON round trip", () => {
@@ -557,7 +604,11 @@ describe("migrateSite with a malformed file (R14)", () => {
     }
     return top;
   }
-  const withContent = (site: typeof v7Site, content: unknown[], formatVersion: number) => ({
+  const withContent = (
+    site: typeof v7Site | typeof v11Site,
+    content: unknown[],
+    formatVersion: number,
+  ) => ({
     ...site,
     formatVersion,
     pages: {
@@ -597,7 +648,7 @@ describe("migrateSite with a malformed file (R14)", () => {
   });
 
   it("opens a site nested as deeply as a page plausibly is", () => {
-    const site = migrateSite(withContent(v7Site, [nested(40)], SITE_FORMAT_VERSION));
+    const site = migrateSite(withContent(v11Site, [nested(40)], SITE_FORMAT_VERSION));
 
     expect(site.pages[site.homePageId]?.doc.content).toHaveLength(1);
   });
@@ -609,7 +660,7 @@ describe("migrateSite with a malformed file (R14)", () => {
 
     for (const content of [[inSection], [deeper]]) {
       const error = formatError(() =>
-        migrateSite(withContent(v7Site, content, SITE_FORMAT_VERSION)),
+        migrateSite(withContent(v11Site, content, SITE_FORMAT_VERSION)),
       );
       expect(error.code).toBe("invalid");
     }
@@ -628,7 +679,7 @@ describe("migrateSite with a malformed file (R14)", () => {
         },
       },
     ];
-    expect(() => migrateSite(withContent(v7Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
+    expect(() => migrateSite(withContent(v11Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
   });
 });
 
@@ -689,6 +740,13 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 11 → 10: no theme had an accent font, nor a look a font; the generated sites' accent is their
+  // headings', and their looks set none.
+  10: (site) => {
+    const theme = site.theme as { fonts: Record<string, unknown> };
+    const { accent, ...fonts } = theme.fonts;
+    return { ...site, theme: { ...theme, fonts }, formatVersion: 10 };
+  },
   // 10 → 9: a Section had no content width, Full its Full width toggle; every layout its own.
   9: (site) => {
     eachNode(site, (node) => {
@@ -806,7 +864,10 @@ const migratableSite = fc
   })
   .map(({ site, preset, alt, withImage, padding, width, heroLayout, shared }): SiteDoc => {
     const format5 = themeTokens({ formatVersion: 4, theme: { name: preset } });
-    const theme = themeStyleTokens({ ...format5, formatVersion: 6 }).theme as SiteDoc["theme"];
+    const theme = accentFonts({
+      ...themeStyleTokens({ ...format5, formatVersion: 6 }),
+      formatVersion: 10,
+    }).theme as SiteDoc["theme"];
     const home = site.pages[site.homePageId];
     if (home === undefined) throw new Error("no home page");
     const hero = {

@@ -400,6 +400,8 @@ export function themeCss(tokens: ThemeTokens): string {
     "@theme {",
     `  --font-sans: ${fontStack(tokens.fonts.body)};`,
     `  --font-heading: ${fontStack(tokens.fonts.heading)};`,
+    // The accent font (3.22): the `font-accent` class an element's Font of Accent gives it.
+    `  --font-accent: ${fontStack(tokens.fonts.accent)};`,
     `  --spacing: ${SPACING_UNIT[tokens.spacing]};`,
     ...typeScale,
     ...Object.entries(SHADOW_SCALE[tokens.shadow]).map(

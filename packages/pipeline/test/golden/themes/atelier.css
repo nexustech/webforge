@@ -68,6 +68,7 @@
 @theme {
   --font-sans: "Open Sans", ui-sans-serif, system-ui, sans-serif;
   --font-heading: "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-accent: "Montserrat", ui-sans-serif, system-ui, sans-serif;
   --spacing: 0.275rem;
   --text-h1: 3rem;
   --text-h1--line-height: 1.25;

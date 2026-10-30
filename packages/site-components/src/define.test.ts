@@ -49,7 +49,7 @@ describe("defineComponent (2.5)", () => {
       ...DIALOG_ELEMENT_FIELDS,
       ...base.fields,
     });
-    expect(Object.keys(def.fields).slice(0, 2)).toEqual(["lookSize", "lookWeight"]);
+    expect(Object.keys(def.fields).slice(0, 2)).toEqual(["lookFont", "lookSize"]);
     expect(def.defaults).toBe(base.defaults);
     expect(def.label).toBe("Card");
   });

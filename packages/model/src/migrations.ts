@@ -55,6 +55,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   7: ownThemes,
   8: componentLooks,
   9: sectionContentWidths,
+  10: accentFonts,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -319,6 +320,26 @@ function sectionContentWidths(site: RawSite): RawSite {
     }
   });
   return { ...site, formatVersion: 10 };
+}
+
+/**
+ * Format 10 → 11 (3.22, PF-5): the theme has a third font, the accent, beside headings' and body
+ * text's, and a look may set an element's font (`lookFont`). Every older theme's accent is its
+ * headings' font, which nothing uses yet, so every site looks as it did. A theme that isn't a
+ * record, or has no heading font, is left for validation.
+ */
+function accentFonts(site: RawSite): RawSite {
+  const theme = site.theme;
+  if (
+    !isRecord(theme) ||
+    !isRecord(theme.fonts) ||
+    theme.fonts.accent !== undefined ||
+    !isRecord(theme.fonts.heading)
+  ) {
+    return { ...site, formatVersion: 11 };
+  }
+  const fonts = { ...theme.fonts, accent: { ...theme.fonts.heading } };
+  return { ...site, theme: { ...theme, fonts }, formatVersion: 11 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

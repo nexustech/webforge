@@ -303,14 +303,19 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
   // One export worker while the site is open, keeping the images it encoded in memory (R15).
   const exports = createExportRunner(() => forkWorker("Webforge export"));
-  /** The font files `theme` uses and the downloaded families among them, read and checked here. */
+  /**
+   * The font files `theme` can use and the downloaded families among them, read and checked here:
+   * the accent font's too (3.22), which the build leaves out when nothing uses it.
+   */
   const fontsOf = async (theme: ThemeTokens) => {
     const families = await fonts.downloadedFamiliesOf(theme);
     return {
-      fonts: fontFacesFor(theme, [...FONT_CATALOGUE, ...families]).flatMap((face) => {
-        const data = fonts.reader.read(face);
-        return data === undefined ? [] : [{ file: face.file, data }];
-      }),
+      fonts: fontFacesFor(theme, [...FONT_CATALOGUE, ...families], { accent: true }).flatMap(
+        (face) => {
+          const data = fonts.reader.read(face);
+          return data === undefined ? [] : [{ file: face.file, data }];
+        },
+      ),
       families,
     };
   };
@@ -337,7 +342,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       const key = JSON.stringify(snapshot.theme.fonts);
       if (previewFonts?.key !== key) {
         const read = await fontsOf(snapshot.theme);
-        const faces = fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...read.families]);
+        const faces = fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...read.families], {
+          accent: true,
+        });
         if (read.fonts.length < faces.length) return { type: "preview", snapshot, ...read };
         previewFonts = { key, fonts: read };
       }
@@ -648,9 +655,12 @@ function siteFonts({ app, net }: Pick<AppElectron, "app" | "net">) {
       reader,
       (name) => catalogueFile(name) ?? downloaded().file(name),
     ),
-    /** The downloaded families `theme` sets its headings or text in: the canvas and an export need them. */
+    /**
+     * The downloaded families `theme` sets its headings, text or accent in: the canvas and an
+     * export need them.
+     */
     async downloadedFamiliesOf(theme: ThemeTokens): Promise<CatalogueFont[]> {
-      const used = [theme.fonts.heading.family, theme.fonts.body.family];
+      const used = Object.values(theme.fonts).map((font) => font.family);
       return (await downloaded().downloaded()).filter((family) => used.includes(family.family));
     },
   };

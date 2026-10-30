@@ -117,6 +117,7 @@ export type Catalogue = z.infer<typeof catalogueSchema>;
  * without them. Their names as `appearance.ts` has them; a test checks they agree.
  */
 export const APPEARANCE_TEXT_FIELDS = [
+  "lookFont",
   "lookSize",
   "lookWeight",
   "lookItalic",
