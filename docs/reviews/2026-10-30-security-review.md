@@ -13,6 +13,23 @@ The findings below cluster around three things:
 
 Severity: **medium** means reachable by an attacker who gets the user to open a file or paste content, with real harm to the owner or their visitors. **Low** means defence in depth, or a flaw in code that isn't wired up yet. **Info** means a spec gap or a product decision.
 
+## Issues opened (30 Oct 2026)
+| Issue | Findings |
+|---|---|
+| #649 Ask before code from someone else's site file runs for visitors or in Preview | S1, S6 |
+| #650 Consent: only the pipeline's banner counts, and analytics cookies stay off without one | S3, S25 |
+| #651 Check a site file's tables before reading them, and cap image decoding | S4, S12 |
+| #652 Serve the editor from an app:// scheme and turn off the file-access fuse | S5, S7, S8 |
+| #653 Phone preview: a fresh link each time, an idle timeout, the right network, a Host check | S9, S24 |
+| #654 Downloads: parse IP addresses properly, stream fonts with checked redirects | S10, S11 |
+| #655 Test the packaged app's fuses, and remove electron-log's unchecked IPC channel | S15, S17 |
+| #656 Add Renovate, run the audit every night, and upgrade Electron to the latest 44.x | S16 |
+| #657 JSON-LD escapes <, > and &, and hidden pages are flagged as still reachable | S14, S13 |
+| #658 AI commands: confirm payment and form addresses, keep away from Custom Code, check requests in main | S18, S19, S21 |
+| #659 Sanitisers: no url() in SVG attributes, and rich text cleaned when a site is opened | S22, S23 |
+| Acceptance criteria added to #71 (4.3) and #72 (4.4) | S2 |
+| Acceptance criteria added to #171 (4.9) | S20, the 4.9 requirements |
+
 ## Threat model
 
 **What we protect**
