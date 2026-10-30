@@ -1254,6 +1254,7 @@ FTPS first then plain FTP (one-time warning), SFTP with password or key, host pr
 - [ ] Plain FTP warning shown once per destination
 - [ ] The packaged app publishes over SFTP to a local test server (`e2e:packaged`): `ssh2` ships as JavaScript, with no native module to rebuild (ADR 0006)
 - [ ] The SFTP host key, any FTPS certificate pin and the plain-FTP warning flag are kept in userData beside the saved secret, never in the `.wforge`, where an edited file could replace them (security review S2, with 4.4)
+- [ ] The remote manifest (version 2, still reading 1) records the project, the destination and the publish time; publishing to a folder whose manifest names another project stops with `other-site` before uploading anything, and 4.5 asks before replacing it (architecture review 2, A8)
 
 **4.4 Publish destinations UI and keychain credentials**  
 Destinations list per site (several allowed), add/edit/test/remove; secrets via safeStorage keyed by site + destination; public URL fills Site Settings web address if empty.
@@ -1261,12 +1262,16 @@ Destinations list per site (several allowed), add/edit/test/remove; secrets via 
 - [ ] Secrets never written to .wforge (test)
 - [ ] Works on Windows DPAPI and macOS Keychain
 - [ ] A saved secret is given only to the destination it was typed for: a fingerprint of protocol, host, port, user and SFTP host key is kept in userData beside it, and a mismatch asks for the password again and shows the new host (security review S2; the review's test `publish-1-…` passes)
+- [ ] Destinations are stored outside the site document: per site, not undoable and not copied into versions, in one shape with `url` and `auth` that maps to each publisher; `publish` leaves `siteSettingsSchema` through an ADR 0012 step (architecture review 2, A3; as #662's ADR decides)
 
 **4.5 Publish flow UI**  
 Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version. **Site Check tip for an out-of-date {year}** (moved from 3.6, 27 Oct 2026, no change to either estimate): a rule in 3.6's framework (`packages/site-check`) tips when the year a published site shows (3.5's `{year}`, F-CM-8) is older than this year, from the record of the last publish this item keeps.
 
 - [ ] Publish-strict errors stop publish with jump-to-fix
 - [ ] E2E publish to mock Netlify and local SFTP
+- [ ] Publishing runs as a job in the export worker, with the secret passed for that job only; main runs the Site Check publish gate on the document it builds from before starting the job (architecture review 2, A2, A6; as #662's ADR decides)
+- [ ] The automatic version on publish is saved after the text session ends and autosave has flushed, and it is the version that was built and published (architecture review 2, A4)
+- [ ] The publish IPC carries the session id and an operation id for progress and cancel (#663, #665)
 
 **4.6 Version History**  
 Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before site-wide actions, on publish) with configurable retention (default 20), panel with thumbnails, read-only preview, restore as one undo step, open version as new site, republish a version.
@@ -1275,11 +1280,15 @@ Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before
 - [ ] Restore is undoable
 - [ ] Republishing a version works on all targets
 - [ ] Space used + Clean up shown
+- [ ] Built on storage format 2 (#664); restore goes through `restoreSite`, one undo step that dates the restored pages
+- [ ] Republish builds the stored version in main through `readVersionSite` and the same flow as 4.5, after the publish gate: a version with an external script can't be republished (test) (architecture review 2, A4, A6)
+- [ ] The scope says which actions take an automatic version before site-wide actions, including theme changes that ask no question, through `setBeforeSiteWideAction` (#668) (architecture review 2, A21)
 
 **4.7 Project export/import as ZIP**  
 File → Export as .zip (JSON + media, documented) and import back to a new .wforge.
 
 - [ ] Round trip is lossless (property test on fixtures)
+- [ ] Uses one site-package schema shared with 4.6's open-as-new-site: `site.json` read through `migrateSite`, a media manifest with names and dimensions, `files/`, and an explicit `project` block deciding which non-site settings a lossless round trip keeps; storage exports `reachableBlobs()`; import is a `NewSiteFill` (architecture review 2, A26)
 
 **4.8 Command API for AI apps** (added 22 Oct 2026, GA5)  
 A typed, framework-free command layer in a new `packages/commands` (no React, no Puck; field schemas from `site-components`' React-free catalogue entry point; architecture §4, §6), shared by the MCP server and the v1.1 built-in assistant (GA9). Main forwards tool calls to the renderer over typed IPC. Read queries: site outline, page tree, node fields with their catalogue schemas, Site Settings, theme. Commands: add, update, move and remove sections and elements; edit text and fields; add pages; set theme tokens. Inputs validated by zod schemas from the catalogue's field definitions; every command is one `HistoryManager` step labelled "AI (‹app›): …"; refused with `busy` while the user has a gesture or text session open; site-wide commands show the D7 confirmation and wait for the user (`declined` after 60 s); Content mode applies; nothing for publishing, credentials or Custom Code.
