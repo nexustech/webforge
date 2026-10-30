@@ -1,9 +1,9 @@
 import type { NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { holdsOverfullSlot, overfillsSlots } from "../library.js";
+import { fieldsHiddenBy, holdsOverfullSlot, overfillsSlots } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
-import { columnLayoutsFor, MAX_COLUMNS, MIN_COLUMNS } from "./column-layouts.js";
+import { columnLayoutsFor, imageSizes, MAX_COLUMNS, MIN_COLUMNS } from "./column-layouts.js";
 import { siteLibrary } from "./index.js";
 
 const shop: ResolvedImage = {
@@ -112,6 +112,138 @@ describe("an Image's sizes (2.9, X2)", () => {
     expect(inColumns("wideFirst", "small")).toContain(
       'sizes="(min-width: 1024px) 320px, (min-width: 768px) min(320px, 67vw), min(320px, 67vw)"',
     );
+  });
+});
+
+describe("an Image's sizes under a shape (3.19)", () => {
+  const medium = () => 448;
+  const portrait = () => ({ ratio: 3 / 4 });
+
+  it("asks for the width a picture wider than its frame shows at, to cover the frame's height", () => {
+    // A 16:9 photo in a Medium Portrait frame, 448 × 597, shows 1062 px wide, never upscaled.
+    const sizes = imageSizes(medium, null, portrait, 16 / 9);
+    expect(sizes).toBe(
+      "(min-width: 1024px) 1062px, (min-width: 768px) min(1062px, 238vw), min(1062px, 238vw)",
+    );
+    const desktop = /^\(min-width: 1024px\) (?<px>\d+)px,/.exec(sizes)?.groups?.px;
+    expect(Number(desktop)).toBeGreaterThanOrEqual(((448 * 4) / 3) * (16 / 9));
+  });
+
+  it("asks for the frame's width where the picture is narrower in proportion than it", () => {
+    expect(imageSizes(medium, null, portrait, 2 / 3)).toBe(imageSizes(medium, null));
+    expect(imageSizes(medium, null, () => ({ ratio: 1 }), 1)).toBe(imageSizes(medium, null));
+  });
+
+  it("asks under a set height for at least that height × the picture's proportions", () => {
+    // A 3:2 picture 480 px high is 720 px wide, more than a Small frame's 320 px.
+    expect(
+      imageSizes(
+        () => 320,
+        null,
+        () => ({ height: 480 }),
+        3 / 2,
+      ),
+    ).toBe(
+      "(min-width: 1024px) 720px, (min-width: 768px) max(min(320px, 100vw), 720px), max(min(320px, 100vw), 720px)",
+    );
+    // As wide as a section's column, the frame covers it already on Desktop.
+    expect(
+      imageSizes(
+        () => undefined,
+        null,
+        () => ({ height: 240 }),
+        3 / 2,
+      ),
+    ).toBe("(min-width: 1024px) 896px, (min-width: 768px) max(100vw, 360px), max(100vw, 360px)");
+  });
+
+  it("follows the shape on each device, in Columns too", () => {
+    const shape = (breakpoint: string) => (breakpoint === "mobile" ? { ratio: 1 } : null);
+    expect(imageSizes(() => undefined, "equal", shape, 16 / 9)).toBe(
+      "(min-width: 1024px) 448px, (min-width: 768px) 50vw, 89vw",
+    );
+  });
+});
+
+describe("the Image element's shapes (3.19)", () => {
+  const tall: ResolvedImage = { ...shop, width: 400, height: 600 };
+  const of = (image: ResolvedImage): RenderContext => ({ ...context, image: () => image });
+
+  it("draws as before with its picture's own shape, an existing Image reading as Original", () => {
+    const before = render("Image", { image: { mediaId: "shop" }, rounded: true });
+    expect(before).toContain('class="h-auto w-full rounded-box"');
+    expect(before).not.toContain("object-cover");
+    expect(render("Image", { image: { mediaId: "shop" }, rounded: true, shape: "original" })).toBe(
+      before,
+    );
+  });
+
+  it.each([
+    ["square", "aspect-square"],
+    ["landscape", "aspect-4/3"],
+    ["wide", "aspect-video"],
+    ["portrait", "aspect-3/4"],
+  ])("cuts its picture to fill a %s frame around its focal point", (shape, aspect) => {
+    for (const image of [shop, tall]) {
+      const html = render("Image", { image: { mediaId: "it" }, shape, rounded: true }, of(image));
+      expect(html).toContain(`class="w-full object-cover h-auto ${aspect} rounded-box"`);
+      expect(html).toContain('style="object-position:30% 50%"');
+    }
+  });
+
+  it("fills its width at a set height, per device", () => {
+    const html = render("Image", {
+      image: { mediaId: "shop" },
+      shape: { $responsive: { desktop: "height", mobile: "square" } },
+      height: { $responsive: { desktop: "large", tablet: "small" } },
+    });
+    expect(html).toContain(
+      'class="w-full object-cover h-auto aspect-square md:aspect-auto md:h-60 lg:aspect-auto lg:h-120"',
+    );
+  });
+
+  it("keeps the crop from Media on the devices it is Original on, on the canvas", () => {
+    const cropped: ResolvedImage = { ...shop, aspectRatio: "1 / 1" };
+    const html = render(
+      "Image",
+      { image: { mediaId: "it" }, shape: { $responsive: { desktop: "wide", mobile: "original" } } },
+      of(cropped),
+    );
+    expect(html).toContain(
+      'class="w-full object-cover h-auto aspect-[var(--picture-ratio,auto)] md:h-auto md:aspect-video"',
+    );
+    expect(html).toContain('style="object-position:30% 50%;--picture-ratio:1 / 1"');
+    // Without a shape of its own, the crop is its inline shape, as before.
+    expect(render("Image", { image: { mediaId: "it" } }, of(cropped))).toContain(
+      'style="object-position:30% 50%;aspect-ratio:1 / 1;object-fit:cover"',
+    );
+  });
+
+  it("asks for a file as wide as its cut picture shows", () => {
+    const html = render("Image", {
+      image: { mediaId: "shop" },
+      width: "medium",
+      shape: "portrait",
+    });
+    // 448 px wide and 597 high, a 640 × 427 picture shows 896 px wide, 200vw on a phone.
+    expect(html).toContain(
+      'sizes="(min-width: 1024px) 896px, (min-width: 768px) min(896px, 200vw), min(896px, 200vw)"',
+    );
+  });
+
+  it("shows Height only while its Shape is Set height on some device", () => {
+    const def = siteLibrary.components.Image;
+    if (def === undefined) throw new Error("no Image");
+    expect(fieldsHiddenBy(def, { ...def.defaults }).has("height")).toBe(true);
+    expect(fieldsHiddenBy(def, { shape: "height" }).has("height")).toBe(false);
+    expect(
+      fieldsHiddenBy(def, { shape: { $responsive: { desktop: "wide", mobile: "height" } } }).has(
+        "height",
+      ),
+    ).toBe(false);
+    // The Spacer's Height is its own.
+    const spacer = siteLibrary.components.Spacer;
+    expect(spacer && fieldsHiddenBy(spacer, { ...spacer.defaults }).has("height")).toBe(false);
   });
 });
 

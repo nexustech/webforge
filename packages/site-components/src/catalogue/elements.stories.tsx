@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { t } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
 import { SiteNodes } from "../stories/site-nodes.js";
 
@@ -116,6 +117,54 @@ export const Columns: Story = {
         },
       },
     ]),
+  },
+};
+
+/**
+ * An Image of each shape (3.19), a landscape and a portrait picture side by side in Columns, each
+ * cut around its focal point (a sun on the left, a tree on the right): pictures of different
+ * proportions line up. Then Set height at each height.
+ */
+export const ImageShapes: Story = {
+  args: {
+    nodes: inSection(
+      (
+        [
+          ["original"],
+          ["square"],
+          ["landscape"],
+          ["wide"],
+          ["portrait"],
+          ["height", "small"],
+          ["height", "medium"],
+          ["height", "large"],
+        ] as const
+      ).map(([shape, height]) => ({
+        type: "Columns",
+        props: {
+          id: `${shape}-${height ?? ""}`,
+          columns: (["landscape", "portrait"] as const).map((picture) =>
+            column(`${shape}-${height ?? ""}-${picture}`, [
+              {
+                type: "Image",
+                props: {
+                  id: `${shape}-${height ?? ""}-${picture}-image`,
+                  image: { mediaId: picture },
+                  width: "small",
+                  shape,
+                  ...(height === undefined ? {} : { height }),
+                  rounded: true,
+                  caption:
+                    height === undefined
+                      ? t(`field.imageShape.${shape}`)
+                      : `${t(`field.imageShape.${shape}`)}: ${t(`field.imageHeight.${height}`)}`,
+                },
+              },
+            ]),
+          ),
+        },
+      })),
+    ),
   },
 };
 

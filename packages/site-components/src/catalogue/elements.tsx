@@ -5,7 +5,13 @@ import { whereOwnColour } from "../appearance.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
-import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from "../library.js";
+import {
+  type ComponentDef,
+  colorClass,
+  linkAttributes,
+  onAnyDevice,
+  responsiveClasses,
+} from "../library.js";
 import {
   ENTRANCE_FIELDS,
   entranceAttributes,
@@ -17,7 +23,7 @@ import {
   hoverOn,
   PICTURE_HOVER_FIELDS,
 } from "../motion.js";
-import { Picture } from "../picture.js";
+import { Picture, pictureRatio } from "../picture.js";
 import { PREVIEW_ATTRIBUTE } from "../previews.js";
 import type { FieldDef, ResolvedImage } from "../schema.js";
 import { SocialLogo, socialName } from "../social-icons.js";
@@ -27,6 +33,7 @@ import {
   COLUMN_LAYOUTS,
   type ColumnLayout,
   ColumnsLayoutContext,
+  type ImageFrame,
   imageSizes,
   MAX_COLUMNS,
 } from "./column-layouts.js";
@@ -56,29 +63,100 @@ const IMAGE_WIDTH_PX = { small: 320, medium: 448, large: 672, full: undefined } 
 const IMAGE_ALIGN_CLASS = { left: "mr-auto", centre: "mx-auto", right: "ml-auto" } as const;
 
 /**
+ * An Image's shapes (3.19, PF-2): its picture's own (Original), or one it is cut to fill around its
+ * focal point (F-ED-21), its width ÷ its height; or a set height across its width.
+ */
+const IMAGE_SHAPES = ["original", "square", "landscape", "wide", "portrait", "height"] as const;
+type ImageShape = (typeof IMAGE_SHAPES)[number];
+/**
+ * Each shape cut to a ratio, its width ÷ its height, and its classes, all of them setting the
+ * picture's height and shape, so one device's replace another's. Original keeps the crop's shape
+ * from Media, which the canvas gives as `--picture-ratio`, else the picture's own.
+ */
+const IMAGE_SHAPE = {
+  original: { classes: "h-auto aspect-[var(--picture-ratio,auto)]", ratio: undefined },
+  square: { classes: "h-auto aspect-square", ratio: 1 },
+  landscape: { classes: "h-auto aspect-4/3", ratio: 4 / 3 },
+  wide: { classes: "h-auto aspect-video", ratio: 16 / 9 },
+  portrait: { classes: "h-auto aspect-3/4", ratio: 3 / 4 },
+} as const satisfies Record<Exclude<ImageShape, "height">, unknown>;
+const IMAGE_HEIGHTS = ["small", "medium", "large"] as const;
+type ImageHeight = (typeof IMAGE_HEIGHTS)[number];
+/** How high each height token is, in pixels, and its class (`h-60` is 15rem). */
+const IMAGE_HEIGHT = {
+  small: { px: 240, classes: "h-60" },
+  medium: { px: 360, classes: "h-90" },
+  large: { px: 480, classes: "h-120" },
+} as const;
+
+/** How an Image is cut on `breakpoint`, by its shape and, under Set height, its height there. */
+function cutOn(
+  shape: Responsive<ImageShape>,
+  height: Responsive<ImageHeight>,
+  breakpoint: Breakpoint,
+): { readonly frame: ImageFrame; readonly classes: string } {
+  const on = resolveResponsive(shape, breakpoint);
+  if (on === "height") {
+    const { px, classes } = IMAGE_HEIGHT[resolveResponsive(height, breakpoint)];
+    return { frame: { height: px }, classes: `aspect-auto ${classes}` };
+  }
+  const { ratio, classes } = IMAGE_SHAPE[on];
+  return { frame: ratio === undefined ? null : { ratio }, classes };
+}
+
+/**
  * An Image's picture, asking for a file no wider than it shows (X2): its width token on each
- * device, and in Columns the widest its column can be. A component, so it can read the Columns
- * it is in on the canvas as in the export.
+ * device, and in Columns the widest its column can be. Cut to a shape, as wide as it shows to
+ * cover the frame. A component, so it can read the Columns it is in on the canvas as in the
+ * export.
  */
 function ImagePicture({
   image,
   alt,
   width,
+  shape,
+  height,
   rounded,
 }: {
   readonly image: ResolvedImage;
   readonly alt: string;
   readonly width: Responsive<(typeof IMAGE_WIDTHS)[number]>;
+  readonly shape: Responsive<ImageShape>;
+  readonly height: Responsive<ImageHeight>;
   readonly rounded: boolean;
 }) {
   const layout = useContext(ColumnsLayoutContext);
   const maxPx = (breakpoint: Breakpoint) => IMAGE_WIDTH_PX[resolveResponsive(width, breakpoint)];
+  const corners = rounded ? " rounded-box" : "";
+  // An Image that keeps its picture's shape on every device draws as it did before shapes.
+  if (!onAnyDevice(shape, (one) => one !== "original")) {
+    return (
+      <Picture
+        image={image}
+        alt={alt}
+        sizes={imageSizes(maxPx, layout)}
+        className={`h-auto w-full${corners}`}
+      />
+    );
+  }
+  const cut = (breakpoint: Breakpoint) => cutOn(shape, height, breakpoint);
+  const classes = responsiveClasses(
+    {
+      $responsive: {
+        desktop: cut("desktop").classes,
+        tablet: cut("tablet").classes,
+        mobile: cut("mobile").classes,
+      },
+    },
+    (each) => each,
+  );
   return (
     <Picture
       image={image}
       alt={alt}
-      sizes={imageSizes(maxPx, layout)}
-      className={rounded ? "h-auto w-full rounded-box" : "h-auto w-full"}
+      sizes={imageSizes(maxPx, layout, (breakpoint) => cut(breakpoint).frame, pictureRatio(image))}
+      className={`w-full object-cover ${classes}${corners}`}
+      shaped
     />
   );
 }
@@ -103,6 +181,20 @@ const image = defineComponent({
         IMAGE_WIDTHS.map((value) => [value, IMAGE_WIDTH_PX[value] ?? null]),
       ),
     },
+    shape: {
+      kind: "select",
+      label: t("field.imageShape"),
+      help: t("field.imageShape.help"),
+      responsive: true,
+      options: IMAGE_SHAPES.map((value) => ({ label: t(`field.imageShape.${value}`), value })),
+    },
+    // Only under Set height (`fieldsHiddenBy`).
+    height: {
+      kind: "slider",
+      label: t("field.imageHeight"),
+      responsive: true,
+      steps: IMAGE_HEIGHTS.map((value) => ({ label: t(`field.imageHeight.${value}`), value })),
+    },
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
@@ -110,7 +202,15 @@ const image = defineComponent({
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
-  defaults: { width: "full", alignment: "centre", rounded: false, caption: "", hover: "none" },
+  defaults: {
+    width: "full",
+    shape: "original",
+    height: "medium",
+    alignment: "centre",
+    rounded: false,
+    caption: "",
+    hover: "none",
+  },
   behaviours: entranceBehaviours,
   render: ({ values, context }) => {
     const placed = values.image;
@@ -136,6 +236,8 @@ const image = defineComponent({
           image={resolved}
           alt={placed?.alt ?? resolved.alt}
           width={values.width}
+          shape={values.shape}
+          height={values.height}
           rounded={values.rounded}
         />
         {caption === "" ? null : (
