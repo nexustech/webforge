@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 421 working days** (≈ 84 weeks of effort; 335 before the 22–29 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
+**Total: 423 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -71,6 +71,20 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 **Re-plan, 23 Oct 2026 (Phase 2):** Phase 2 was planned ahead of the Phase 1 exit so each stream can continue straight into it: three streams, items over 5 days split into sub-issues, Phase 1's actual pace (0.39 of estimates) applied as 0.5 for engineering and 0.7 for content. Code-complete about **1 Dec 2026** (9 Dec with +25%) after the plan review's levelling below and the 24 Oct building-block items (26 Nov and 4 Dec before them); milestone due 11 Dec 2026. See [Phase 2](#phase-2-design--components). The table below and the Gantt chart still show the baseline dates for Phases 2–5.
 
 **Re-plan, 23 Oct 2026 (plan review, C1–C7):** the [plan review](../docs/reviews/2026-10-23-plan-review.md) corrected the effort totals, sequenced the architecture review's R7–R14 in the Phase 2 queues, levelled the streams (2.11 to B, 2.7a and 2.12 to C, 2.14 earlier in B, stream A starting with 2.9 and taking 1.39 before 2.3), moved the start screen's card grid (LF-10) from 1.39 to 2.14, added 2.18 for the CSS class browser (#276) and recomputed the critical path.
+
+**Re-plan, 30 Oct 2026 (Phase 3 exit):** Phase 3's exit criteria are met, with evidence, and the milestone is closed on the product owner's sign-off (30 Oct 2026), a week before its 6 Nov date: all 47 issues closed, none out of plan left open. The five review notes from the Phase 3 feedback items (3.18–3.22) went to Phase 5 as four chores ([#643](https://github.com/nexustech/webforge/issues/643)–[#646](https://github.com/nexustech/webforge/issues/646)).
+- **Evidence:**
+  - exported templates open from disk in Chromium, Firefox and WebKit (+ Edge on Windows) with no external requests (`e2e/export/`, 3.10), on every PR that could change the export and in the nightly runs of 25–30 Oct;
+  - export stops only for a Must fix (`e2e/app/export.spec.ts`), and the phone preview's QR code is decoded ([#624](https://github.com/nexustech/webforge/pull/624));
+  - the preview's CSS hot-swap is timed under 100 ms (`e2e/app/preview.spec.ts`, [#630](https://github.com/nexustech/webforge/pull/630));
+  - a site made by the quick start carries the person's name, pages, colours and contact details (`e2e/app/quick-start.spec.ts`, [#624](https://github.com/nexustech/webforge/pull/624));
+  - a kind's look restyles every kind, and every Appearance control says where its value comes from (`looks-every-kind.test.tsx`, `provenance-every-field.test.tsx`, `e2e/app/looks.spec.ts`, [#630](https://github.com/nexustech/webforge/pull/630));
+  - every business template's home page carries its `LocalBusiness` subtype, and Personal and Blank a `WebSite` only (`packages/pipeline/test/templates.test.ts`, [#623](https://github.com/nexustech/webforge/pull/623)); Site Check's *Being found* rules run (3.17);
+  - the feedback items 3.18–3.22 work, and sites saved before them open unchanged (site formats 10 and 11, with fixtures; template screenshots and thumbnails unchanged).
+- **Pace:** plan items ran at **0.68** of their estimates (45 actual days against 66.5, parents with sub-issues counted once), out-of-plan work with an estimate at 1.10 (8.5 against 7.75), plus 3.75 days of bugs and flaky tests without one: 57.25 actual days in all, over four calendar days.
+- **Scope change:** 4.10 ([#612](https://github.com/nexustech/webforge/issues/612), 2 days), which the product owner added on 28 Oct 2026 to be placed when Phase 4 was planned, joins Phase 4: Phase 4 goes from 30 to 32 days and the total from 421 to 423.
+- **New dates:** Phase 4 keeps **2 Nov → 13 Nov 2026**. Its 8 open items are 26 estimated days, about 17–18 actual days at 0.65–0.68, so about 6 working days per stream. The Netlify spike (0.2, [#12](https://github.com/nexustech/webforge/issues/12)) needs the product owner's run before 4.2, and it gates the critical path 4.2 → 4.4 → 4.5 → 4.6. Phase 5 and v1.0 (about 23 Dec 2026) are unchanged.
+- **Streams:** Phase 4's queues are below the Phase 4 table. The pause for the product owner's review of the app (28 Oct 2026) ends with this sign-off.
 
 **Re-plan, 28 Oct 2026 (Phase 3 first, product owner):** all three streams work on Phase 3 before Phase 4, so the phase ends when its work is spread evenly rather than when stream B's long queue does. 3.10 goes back to stream A, 3.13b moves from B to A and 3.14 from B to C, both after B's 3.13a, the dialog they build on. Stream A starts 4.1 only in the gaps. The longest queue drops from about 8.5 to about 6 estimated days, so Phase 3 should end about 3 Nov 2026, within its 6 Nov milestone. Days are unchanged, so there is no scope change.
 
@@ -132,8 +146,8 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
-| [Phase 3: Output](#phase-3-output) | 66.5 | 27 Oct 2026 | 6 Nov 2026 | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17)<br>File › Open Recent, an Image's shape and larger view, and every section's content width and every element's font work, and existing sites look the same (3.18–3.22) |
-| [Phase 4: Publish & versions](#phase-4-publish--versions) | 30 | 2 Nov 2026 | 13 Nov 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish |
+| [Phase 3: Output](#phase-3-output) | 66.5 | 27 Oct 2026 | 30 Oct 2026 (exit criteria met; closed 30 Oct 2026 on the product owner's sign-off) | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17)<br>File › Open Recent, an Image's shape and larger view, and every section's content width and every element's font work, and existing sites look the same (3.18–3.22) |
+| [Phase 4: Publish & versions](#phase-4-publish--versions) | 32 | 2 Nov 2026 | 13 Nov 2026 | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish<br>Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10) |
 | [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
 The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
@@ -255,6 +269,7 @@ gantt
     4.7 Project export/import as ZIP :t4_7, 2027-09-27, 2d
     4.8 Command API for AI apps :t4_8, after t4_7, 3d
     4.9 Local MCP server and AI app approvals :t4_9, after t4_8, 5d
+    4.10 Theme Studio Components – apply together, before/after preview :t4_10, after t4_9, 2d
     section Phase 5
     %% 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026; drawn at their baseline dates
     0.1 Start code-signing enrolment (Apple Developer… :crit, t0_1, 2026-10-26, 1d
@@ -1192,7 +1207,7 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 
 ### Phase 4: Publish & versions
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
-**Effort:** 30 days · **Scheduled:** 2 Nov 2026 → 13 Nov 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 23 Nov → 4 Dec; baseline 27 Aug → 28 Sep 2027; 4.8 and 4.9 added 22 Oct 2026)
+**Effort:** 32 days · **Scheduled:** 2 Nov 2026 → 13 Nov 2026 (Phase 3 exit re-plan, 30 Oct 2026, with 4.10; Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 23 Nov → 4 Dec; baseline 27 Aug → 28 Sep 2027; 4.8 and 4.9 added 22 Oct 2026)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -1205,6 +1220,17 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 | 4.7 | Project export/import as ZIP | [#75](https://github.com/nexustech/webforge/issues/75) | storage | F-SITE-5 | 2 | 1.5 |
 | 4.8 | Command API for AI apps | [#170](https://github.com/nexustech/webforge/issues/170) | history | F-AI-1, G33, GA5, GA9 | 3 | 1.17, 1.18, 1.26, 1.29, 2.1, 2.3, 2.5 |
 | 4.9 | Local MCP server and AI app approvals | [#171](https://github.com/nexustech/webforge/issues/171) | ai | F-AI-1, G33, GA5, architecture §3, §9 | 5 | 4.8, 4.4, 3.2, 3.6 |
+| 4.10 | Theme Studio › Components: apply changes together, and a larger before/after preview | [#612](https://github.com/nexustech/webforge/issues/612) | themes | CT-1, CT-2, F-DS-7, D7 | 2 | 3.12, 3.13 |
+
+**Streams (assigned 30 Oct 2026, Phase 3 exit).** One item in progress per stream, as before; a dependency counts as met when its PR has merged. 4.1 and 4.8 had merged in Phase 1–3.
+
+| Stream | Items, in order |
+|---|---|
+| A: Shell & panels | 4.10 (Theme Studio › Components) → 0.2 (Netlify spike, with the product owner, who runs it) → 4.4 (destinations UI, once 4.2 and 4.3 have merged) → 4.5 (publish flow UI) |
+| B: Data & site | 4.7 (project ZIP) → 4.2 (Netlify publisher, once 0.2 has run) → 4.6 (Version History, once 4.5 has merged) |
+| C: History & canvas | 4.3 (FTP/FTPS/SFTP publisher) → 4.9 (MCP server, once 4.4 has merged) |
+
+About 10, 11 and 8 estimated days. B takes 4.2 first if 0.2 has run by the time it starts, since 4.2 leads the critical path; 4.4 (A) waits on 4.2 (B) and 4.3 (C), 4.6 (B) on 4.5 (A), and 4.9 (C) on 4.4 (A).
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1270,9 +1296,17 @@ ADR on the transport (Q9). The MCP server runs in main on the official TypeScrip
 - [ ] AI edits appear in Undo History labelled with the app's name and undo cleanly (E2E with a test MCP client)
 - [ ] ADR written
 
+**4.10 Theme Studio › Components: apply changes together, and a larger before/after preview** (added 28 Oct 2026 by the product owner, placed at the Phase 3 exit re-plan)  
+From the product owner's review of Theme Studio's Components page (28 Oct 2026). The controls change a draft of the chosen kind's look, not the theme, and the preview draws from the draft. **Apply changes** writes the whole draft as one labelled step, with one site-wide question (D7) for the items it reaches; **Discard** drops it. Switching kind or closing Theme Studio with a draft asks to apply or discard it. This is on the Components page only: the colours, text and styles pages keep changing at once. Clicking the preview opens a dialog with the kind at full width on Desktop and Mobile (3.13a's item previews), with a toggle between the theme as it is and the draft. Stream A, first.
+
+- [ ] Several controls changed, then Apply: one undo step and one site-wide question; nothing changes in the theme before Apply
+- [ ] Discard, and closing with a draft then choosing Discard, leave the theme as it was
+- [ ] The preview follows the draft; the larger preview shows Desktop and Mobile and toggles between the current look and the draft
+- [ ] Strings through `t()`; stories with axe; `pnpm visual:docker` screenshots committed
+
 </details>
 
-**Phase exit:** Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP); Version History: save, auto-retention, preview, restore, open as new site, republish; a paired AI app's edits are undoable, and the MCP server can't be reached from another computer.
+**Phase exit:** Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP); Version History: save, auto-retention, preview, restore, open as new site, republish; a paired AI app's edits are undoable, and the MCP server can't be reached from another computer; Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10).
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
@@ -1414,7 +1448,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-DS-4 | Text and button styles | 2.3 |
 | F-DS-5 | Animations | 2.12, 2.28 |
 | F-DS-6 | Sticky header | 2.6 |
-| F-DS-7 | Theme Studio | 2.3, 3.12 |
+| F-DS-7 | Theme Studio | 2.3, 3.12, 4.10 |
 | F-SET-1 | Site Settings | 1.17, 3.15 |
 | F-SET-2 | Page Settings | 1.18, 3.15, 3.16 |
 | F-CHK-1 | Site Check | 3.6, 3.17 |
