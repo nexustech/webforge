@@ -245,6 +245,8 @@ export function StudioComponents({
         )}
         {enlarge === undefined ? null : (
           <StudioLookPreview
+            // Each opening starts on the changes, whatever was shown last time.
+            key={enlarged ? "open" : "closed"}
             open={enlarged}
             onOpenChange={setEnlarged}
             item={shown.label}

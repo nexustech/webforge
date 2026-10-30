@@ -179,6 +179,10 @@ describe("the Theme tab's reveal (3.12, CT-3)", () => {
       section: "components",
       kind: "Button",
     });
+    // Another kind's changes not applied yet come first (4.10).
+    studio.setState({ draft: { type: "Hero", item: "Hero", look: { lookShadow: "large" } } });
+    panels.show("theme", "look:Button");
+    expect(studio.getState().kind).toBe("Hero");
     remove();
     // Removed, it no longer listens.
     studio.setState({ open: false });

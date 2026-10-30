@@ -33,7 +33,14 @@ export function registerThemePanel(
   const stop = panels.onShow((id, target) => {
     if (id !== THEME_PANEL_ID || target === undefined) return;
     if (target.startsWith(LOOK)) {
-      studio?.setState({ open: true, section: "components", kind: target.slice(LOOK.length) });
+      const kind = target.slice(LOOK.length);
+      // Another kind's changes not applied yet come first: they are asked about before it leaves
+      // them (4.10), never hidden behind this one.
+      studio?.setState(({ draft }) => ({
+        open: true,
+        section: "components",
+        kind: draft !== undefined && draft.type !== kind ? draft.type : kind,
+      }));
     } else {
       reveal.setState({ field: target });
     }
