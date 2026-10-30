@@ -1,7 +1,8 @@
-// Gallery lightboxes (2.7a, G10). Without the script each image links to its full-size file. The
-// script opens it large in the gallery's <dialog> instead, as a modal: the focus stays in it and
-// the page behind is out of reach, Esc, its close button or a click beside it close it, and the
-// focus goes back to the image clicked. The previous and next buttons, the arrow keys (Home and
+// Gallery lightboxes (2.7a, G10), and an Image's that opens larger (3.20), with its one picture.
+// Without the script each image links to its full-size file. The script opens it large in the
+// gallery's <dialog> instead, as a modal: the focus stays in it and the page behind is out of
+// reach, Esc, its close button or a click beside it close it, and the focus goes back to the image
+// clicked. The previous and next buttons, the arrow keys (Home and
 // End for the first and last) and a swipe go through the gallery's images, round past either end;
 // each move says which image shows ("3 of 8"). The large image has the image's own sources, as
 // wide as the screen, so a phone loads a file its size; only the image shown is loaded.
@@ -55,8 +56,9 @@
       image.src = item.getAttribute("href") ?? item.href;
       image.alt = thumbnail?.alt ?? "";
       if (caption !== null) {
+        // The image's own caption, not the lightbox's inside an Image's figure (3.20).
         caption.textContent =
-          item.closest("figure")?.querySelector("figcaption")?.textContent ?? "";
+          item.closest("figure")?.querySelector(":scope > figcaption")?.textContent ?? "";
       }
       if (status !== null) {
         status.textContent = (dialog.dataset.imageOf ?? "{n} of {total}")

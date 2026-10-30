@@ -163,8 +163,9 @@ export function onAnyDevice(value: unknown, on: (one: unknown) => boolean): bool
 }
 
 /**
- * The fields `def`'s chosen layout doesn't use (#311), from its `values` (with its defaults): the
- * Edit panel hides them, and shows them again with their values once a layout uses them.
+ * The fields `def`'s chosen layout doesn't use (#311), or its values don't (a field's `shownWhen`),
+ * from its `values` (with its defaults): the Edit panel hides them, and shows them again with
+ * their values once they are used.
  */
 export function fieldsHiddenBy(
   def: Pick<ComponentDef, "variantHides"> & { readonly fields?: ComponentDef["fields"] },
@@ -187,13 +188,9 @@ export function fieldsHiddenBy(
     hidden.add("overlay");
     hidden.add("overlayColor");
   }
-  // An Image's Height, only while its Shape is Set height on some device (3.19).
-  if (
-    Object.hasOwn(def.fields ?? {}, "shape") &&
-    Object.hasOwn(def.fields ?? {}, "height") &&
-    !onAnyDevice(values.shape, (one) => one === "height")
-  ) {
-    hidden.add("height");
+  // A field shown only with some values (3.19): an Image's Height.
+  for (const [name, field] of Object.entries(def.fields ?? {})) {
+    if (field.shownWhen?.(values) === false) hidden.add(name);
   }
   return hidden;
 }

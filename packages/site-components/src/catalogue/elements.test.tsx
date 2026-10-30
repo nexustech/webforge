@@ -262,6 +262,49 @@ describe("the Image element's shapes (3.19)", () => {
   });
 });
 
+describe("an Image that opens larger (3.20)", () => {
+  it("links to its largest file, named for its picture, with a lightbox for it alone", () => {
+    const html = render("Image", {
+      image: { mediaId: "shop", alt: "The window" },
+      enlarge: true,
+      caption: "On Mill Street",
+    });
+
+    expect(html).toContain(
+      '<figure class="site-image w-full mx-auto max-w-none" data-wf-gallery="">',
+    );
+    expect(html).toContain(
+      '<a href="assets/img/shop-640.jpg" class="block" aria-label="Open a larger picture: The window" data-wf-lightbox-item="">',
+    );
+    expect(html).toContain("<dialog");
+    expect(html).not.toContain("data-wf-lightbox-next");
+    // Its caption stays the figure's last child, after the lightbox.
+    expect(html).toMatch(
+      /<\/dialog><figcaption class="mt-2 text-center text-sm">On Mill Street<\/figcaption><\/figure>$/,
+    );
+  });
+
+  it("is named for its caption without alt text, and needs the lightbox behaviour", () => {
+    expect(
+      render("Image", { image: { mediaId: "shop", alt: "" }, enlarge: true, caption: "Hi" }),
+    ).toContain('aria-label="Open a larger picture: Hi"');
+    expect(render("Image", { image: { mediaId: "shop", alt: "" }, enlarge: true })).toContain(
+      'aria-label="Open a larger picture"',
+    );
+    const behaviours = siteLibrary.components.Image?.behaviours;
+    const of = (values: Record<string, unknown>) =>
+      typeof behaviours === "function" ? behaviours(values) : behaviours;
+    expect(of({ enlarge: true })).toContain("lightbox");
+    expect(of({ enlarge: false })).not.toContain("lightbox");
+  });
+
+  it("draws as before with the toggle off", () => {
+    const html = render("Image", { image: { mediaId: "shop" } });
+    expect(html).not.toContain("<a ");
+    expect(html).not.toContain("data-wf-gallery");
+  });
+});
+
 describe("the Button element (2.9)", () => {
   it("draws its link with the button classes of its style and size", () => {
     expect(render("Button", { label: "Order", link: "about" })).toBe(

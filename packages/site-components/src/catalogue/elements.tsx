@@ -12,6 +12,7 @@ import {
   onAnyDevice,
   responsiveClasses,
 } from "../library.js";
+import { Lightbox } from "../lightbox.js";
 import {
   ENTRANCE_FIELDS,
   entranceAttributes,
@@ -129,7 +130,9 @@ function ImagePicture({
   const sectionPx = useContext(SectionWidthContext);
   const maxPx = (breakpoint: Breakpoint) => IMAGE_WIDTH_PX[resolveResponsive(width, breakpoint)];
   const corners = rounded ? " rounded-box" : "";
-  // An Image that keeps its picture's shape on every device draws as it did before shapes.
+  // An Image that keeps its picture's shape on every device draws as it did before shapes, byte
+  // for byte: the same classes, the Media crop inline and the same `sizes`, so an existing site's
+  // Images, all of them Original, export unchanged (3.19).
   if (!onAnyDevice(shape, (one) => one !== "original")) {
     return (
       <Picture
@@ -195,16 +198,23 @@ const image = defineComponent({
       responsive: true,
       options: IMAGE_SHAPES.map((value) => ({ label: t(`field.imageShape.${value}`), value })),
     },
-    // Only under Set height (`fieldsHiddenBy`).
     height: {
       kind: "slider",
       label: t("field.imageHeight"),
+      // Only while its Shape is Set height on some device.
+      shownWhen: (values) => onAnyDevice(values.shape, (one) => one === "height"),
       responsive: true,
       steps: IMAGE_HEIGHTS.map((value) => ({ label: t(`field.imageHeight.${value}`), value })),
     },
     alignment: ALIGNMENT_FIELD,
     rounded: { kind: "toggle", label: t("field.rounded"), group: "style" },
     caption: { kind: "text", label: t("field.caption") },
+    enlarge: {
+      kind: "toggle",
+      label: t("field.imageEnlarge"),
+      help: t("field.imageEnlarge.help"),
+      group: "content",
+    },
     ...PICTURE_HOVER_FIELDS,
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
@@ -216,9 +226,12 @@ const image = defineComponent({
     alignment: "centre",
     rounded: false,
     caption: "",
+    enlarge: false,
     hover: "none",
   },
-  behaviours: entranceBehaviours,
+  // Opened larger in the Gallery's lightbox (3.20).
+  behaviours: (values) =>
+    values.enlarge ? [...entranceBehaviours(values), "lightbox"] : entranceBehaviours(values),
   render: ({ values, context }) => {
     const placed = values.image;
     const resolved = placed === undefined ? null : context.image(placed.mediaId);
@@ -237,16 +250,43 @@ const image = defineComponent({
       );
     }
     const caption = values.caption.trim();
-    return (
+    const alt = placed?.alt ?? resolved.alt;
+    const picture = (
+      <ImagePicture
+        image={resolved}
+        alt={alt}
+        width={values.width}
+        shape={values.shape}
+        height={values.height}
+        rounded={values.rounded}
+      />
+    );
+    // Opened larger (3.20): a link to its largest JPEG or PNG, which any browser shows, and the
+    // Gallery's lightbox for one picture, which shows it whole whatever its shape. The lightbox's
+    // own caption is inside it, so the Image's stays the figure's last child.
+    const name = alt.trim() !== "" ? alt : caption;
+    return values.enlarge ? (
+      <figure className={`${frame}${hoverClasses(values)}`} {...entrance} data-wf-gallery="">
+        <a
+          href={resolved.src}
+          className="block"
+          aria-label={
+            name === ""
+              ? t("siteText.openLargerPicture")
+              : t("siteText.openLargerPictureOf", { name })
+          }
+          data-wf-lightbox-item=""
+        >
+          {picture}
+        </a>
+        <Lightbox single />
+        {caption === "" ? null : (
+          <figcaption className="mt-2 text-center text-sm">{caption}</figcaption>
+        )}
+      </figure>
+    ) : (
       <figure className={`${frame}${hoverClasses(values)}`} {...entrance}>
-        <ImagePicture
-          image={resolved}
-          alt={placed?.alt ?? resolved.alt}
-          width={values.width}
-          shape={values.shape}
-          height={values.height}
-          rounded={values.rounded}
-        />
+        {picture}
         {caption === "" ? null : (
           <figcaption className="mt-2 text-center text-sm">{caption}</figcaption>
         )}
