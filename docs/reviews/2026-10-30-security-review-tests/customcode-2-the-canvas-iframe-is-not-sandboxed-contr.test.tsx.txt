@@ -1,0 +1,59 @@
+// Original path: packages/engine/src/puck/zz-security-customcode-2-the-canvas-iframe-is-not-sandboxed-contr.test.tsx; result: FAILS as expected at 'expect(iframe?.hasAttribute("sandbox")).toBe(true)' (iframe has srcdoc, no sandbox)
+// @vitest-environment happy-dom
+
+import { DEFAULT_THEME, type PageDoc } from "@webforge/model";
+import { type ComponentLibrary, textValue } from "@webforge/site-components";
+import { act } from "react";
+import { afterAll, describe, expect, it } from "vitest";
+import { createPuckEngine } from "./puck-engine.js";
+
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+afterAll(async () => {
+  await new Promise((resolve) => setTimeout(resolve, 600));
+});
+
+const library: ComponentLibrary = {
+  components: {
+    Heading: {
+      label: "Heading",
+      fields: { text: { kind: "text", label: "Text", inline: true } },
+      defaults: { text: "Heading" },
+      render: ({ values }) => <p className="t-heading">{textValue(values.text)}</p>,
+    },
+  },
+};
+const page: PageDoc = {
+  root: { props: {} },
+  content: [{ type: "Heading", props: { id: "a", text: "First" } }],
+};
+
+describe("canvas iframe isolation (spec 01 §9: 'Canvas iframe sandboxed')", () => {
+  it("renders the canvas in a sandboxed iframe", async () => {
+    const element = document.createElement("div");
+    document.body.append(element);
+    // Default options: the iframe is on, as in the editor.
+    const engine = createPuckEngine();
+    await act(async () => {
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
+      engine.loadPage(page, { header: [], footer: [] });
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+    const iframe = element.querySelector("iframe");
+    try {
+      expect(iframe).not.toBeNull();
+      expect(iframe?.hasAttribute("srcdoc")).toBe(true);
+      // Secure behaviour: a sandbox attribute without allow-same-origin (opaque origin).
+      expect(iframe?.hasAttribute("sandbox")).toBe(true);
+      expect(iframe?.getAttribute("sandbox") ?? "").not.toContain("allow-same-origin");
+    } finally {
+      engine.destroy();
+      element.remove();
+    }
+  });
+});

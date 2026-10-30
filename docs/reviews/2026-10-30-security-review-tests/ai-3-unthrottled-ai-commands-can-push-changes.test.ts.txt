@@ -1,0 +1,66 @@
+// Original path: packages/commands/src/zz-security-ai-3-unthrottled-ai-commands-can-push-changes.test.ts — result: FAILS as expected (expected [] to have a length of 1 but got 0: the Heading removed by the AI app is not restored after undoing every entry)
+import { createHistoryManager } from "@webforge/history";
+import { createSite, type SiteDoc } from "@webforge/model";
+import { describe, expect, it } from "vitest";
+import { createCommandApi } from "./api.js";
+import type { CommandHost } from "./types.js";
+
+function site(): SiteDoc {
+  return createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Not found",
+    homeDoc: {
+      root: { props: {} },
+      content: [
+        {
+          type: "Section",
+          props: {
+            id: "section",
+            content: [{ type: "Heading", props: { id: "heading", text: "Welcome" } }],
+          },
+        },
+        { type: "Hero", props: { id: "hero", title: "Fresh bread" } },
+      ],
+    },
+    layout: {
+      header: [{ type: "Header", props: { id: "header", siteName: "Rosa's Bakery" } }],
+      footer: [{ type: "Footer", props: { id: "footer", text: "Thanks" } }],
+    },
+  });
+}
+
+describe("AI commands and the undo limit (security finding ai-3)", () => {
+  it("a removal by an AI app stays undoable after many more AI commands", async () => {
+    const initial = site();
+    // The production default limit (editor-session.ts passes none).
+    const history = createHistoryManager<SiteDoc>({ initial });
+    const host: CommandHost = {
+      history,
+      run: (label, recipe) => history.run(label, recipe),
+      editing: () => false,
+      mode: () => "design",
+      confirm: async () => true,
+    };
+    const api = createCommandApi(host);
+    const app = { app: "Evil" };
+    const location = { kind: "page" as const, pageId: history.document.getState().homePageId };
+
+    expect((await api.run("removeNode", { location, nodeId: "heading" }, app)).status).toBe("done");
+    for (let i = 0; i < 205; i++) {
+      const r = await api.run("updateFields", { location, nodeId: "hero", values: { title: `T${i}` } }, app);
+      expect(r.status).toBe("done");
+    }
+    const sectionContent = () => {
+      const doc = history.document.getState();
+      const page = doc.pages[doc.homePageId];
+      const section = page?.doc.content.find((node) => node.props.id === "section");
+      return (section?.props as { content?: unknown[] } | undefined)?.content ?? [];
+    };
+    expect(sectionContent()).toHaveLength(0);
+    while (history.state.getState().canUndo) history.undo();
+    // The person undoes everything: the Heading the AI app removed should be back.
+    expect(sectionContent()).toHaveLength(1);
+  });
+});
