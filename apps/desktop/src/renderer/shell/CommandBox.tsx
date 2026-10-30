@@ -17,7 +17,12 @@ import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { type Command as AppCommand, formatShortcut, type PaletteGroup } from "./commands.js";
+import {
+  type Command as AppCommand,
+  formatShortcut,
+  type PaletteGroup,
+  submenuOpeners,
+} from "./commands.js";
 
 /** The palette's groups, in order: the app's commands, pages to go to, things to add. */
 const GROUPS = [
@@ -56,10 +61,13 @@ export function CommandBox({ siteName }: CommandBoxProps) {
     [registry],
   );
 
-  // The app's own commands only when they can run; an Add with nowhere to go is shown, off.
+  // The app's own commands only when they can run; an Add with nowhere to go is shown, off. An
+  // item that opens a submenu runs nothing: its submenu's commands are listed instead (3.18).
+  const openers = submenuOpeners(commands);
   const shown = commands.filter(
     (command) =>
       command.id !== COMMAND_IDS.commandBox &&
+      !openers.has(command.id) &&
       (command.palette === "add" || command.enabled !== false),
   );
   const inGroup = (group: PaletteGroup | "commands") =>
@@ -68,14 +76,14 @@ export function CommandBox({ siteName }: CommandBoxProps) {
     <CommandItem
       key={command.id}
       value={command.id}
-      keywords={[command.label, ...(command.keywords ?? [])]}
+      keywords={[command.paletteLabel ?? command.label, ...(command.keywords ?? [])]}
       disabled={command.enabled === false}
       onSelect={() => {
         setOpen(false);
         registry.run(command.id);
       }}
     >
-      {command.label}
+      {command.paletteLabel ?? command.label}
       {command.shortcut !== undefined && (
         <CommandShortcut>{formatShortcut(command.shortcut)}</CommandShortcut>
       )}

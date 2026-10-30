@@ -7,24 +7,31 @@ import { reportFailure } from "../log.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { NewSiteDialog, templateName } from "./NewSiteDialog.js";
+import { OpenRecent, type ShownRecentSites } from "./OpenRecent.js";
 import { openSiteWith } from "./open-site.js";
 import { QuickStartDialog } from "./QuickStartDialog.js";
 
 /** Props of {@link SiteCommands}. */
 export type SiteCommandsProps = {
   /** Creates and opens sites; injectable for tests. Defaults to the preload API. */
-  readonly project?: Pick<ProjectApi, "create" | "open">;
+  readonly project?: Pick<
+    ProjectApi,
+    "create" | "open" | "listRecent" | "openRecent" | "clearRecent"
+  >;
   /** Lists the templates New Site offers; injectable for tests. Defaults to the preload API. */
   readonly templates?: Pick<TemplatesApi, "list">;
   /** Starts the window over with the newly opened site; injectable for tests. */
   readonly restart?: () => void;
   /** Offers Help → Try an Example (PG-3): on the start screen, which lists the templates for it. */
   readonly example?: boolean;
+  /** The Recent list the window shows (the start screen's), for File › Open Recent (3.18). */
+  readonly recent?: ShownRecentSites;
 };
 
 /**
- * File → New Site… (Ctrl/Cmd+N), Start a Site… (the quick start, QS-1) and Open Site…
- * (Ctrl/Cmd+O), the title bar's New and Open buttons (F-SITE-1, F-SITE-2), and on the start screen
+ * File → New Site… (Ctrl/Cmd+N), Start a Site… (the quick start, QS-1), Open Site… (Ctrl/Cmd+O)
+ * and Open Recent (3.18, {@link OpenRecent}), the title bar's New and Open buttons (F-SITE-1,
+ * F-SITE-2), and on the start screen
  * Help → Try an Example (PG-3). New Site and the quick start show their dialogs (2.14a, 3.11b) with
  * the templates main lists; then main shows the save dialog and saves the open site before
  * switching. A failure appears as a toast.
@@ -34,6 +41,7 @@ export function SiteCommands({
   templates,
   restart,
   example: offer = false,
+  recent,
 }: SiteCommandsProps) {
   const registry = useCommandRegistry();
   // The dialog open, New Site or the quick start, with the templates it shows; `null` for none.
@@ -67,10 +75,18 @@ export function SiteCommands({
       menu: "file",
       run: () => openWith(restart, () => (project ?? window.webforge.project).open()),
     });
+    // Opens its submenu of sites, which OpenRecent fills; it runs nothing itself.
+    const removeRecent = registry.register({
+      id: COMMAND_IDS.openRecent,
+      label: t("command.openRecent"),
+      menu: "file",
+      run: () => undefined,
+    });
     return () => {
       removeNew();
       removeQuick();
       removeOpen();
+      removeRecent();
     };
   }, [registry, project, templates, restart]);
 
@@ -126,6 +142,7 @@ export function SiteCommands({
         onChooseTemplate={() => setOpen({ dialog: "newSite", templates: listedTemplates })}
         onCancel={() => setOpen(null)}
       />
+      <OpenRecent project={project} restart={restart} recent={recent} />
     </>
   );
 }
