@@ -238,25 +238,25 @@ Refuted and dropped: a claim that Site Check and the pipeline don't know where a
 | Acceptance criteria added to #71 (4.3), #72 (4.4), #73 (4.5), #74 (4.6), #75 (4.7) and their entries in spec/04 | A3, A4, A6, A8, A21, A26 |
 | #250 (R17) moved to Phase 4, with the `ProjectStore` and `messageKey` items added | R12, R17, A23 |
 
-## Proposed issues
+## Proposed issues, as opened
 
-Grouped by when they are needed. Nothing is opened until the product owner says go.
+Grouped by when they are needed. All were opened or applied on 30 Oct 2026, as *Issues opened* lists; the last column names where each went.
 
-| # | Issue | Findings | Type | Est | Needed by |
-|---|---|---|---|---|---|
-| 1 | Run storage garbage collection when a site closes | A1 | `type/bug` | 0.5 | now |
-| 2 | ADR: which process publishes, where destinations live, and how a version is built and gated | A2, A3, A4 (decision), A6 | `type/docs` | 1 | before 4.4 |
-| 3 | Destinations out of SiteDoc: per-site store, one shape, mappers to each publisher | A3 | criteria on #72 (4.4) | – | 4.4 |
-| 4 | Every site-touching channel carries a session id; the AI bridge resets on reload | A7, R6 remainder | `type/bug` | 1.5 | before 4.5 |
-| 5 | Remote manifest v2 names its site; refuse to overwrite another site's folder | A8 | criteria on #71 (4.3) | – | 4.3 |
-| 6 | Storage format 2 for Version History, the first real schema migration, and writer jobs for clean-up | A5, restore helper | `type/chore` (4.6 prep) | 1.5 | before 4.6 |
-| 7 | One snapshot and publish/version flow in main; `readVersionSite`; Site Check gate in main | A4, A6 | criteria on #73 (4.5) and #74 (4.6) | – | 4.5 |
-| 8 | Main-process seams: feature modules in `app.ts`, ProjectSession to lifecycle only, one worker channel with operation ids | A12, A13, A14 | `type/chore` | 3 | before 4.5 (split into three PRs) |
-| 9 | One JSON-store helper for userData; namespaced credential keys | A15 | `type/chore` | 1 | before 4.4 |
-| 10 | Edit panel controller out of `EditPanelHost`; one field-acceptance rule | A10, A11 | `type/chore` + `type/bug` | 2.5 | before 4.10 |
-| 11 | Renderer seams: `api` on the area context, a shared build-flow module, Undo History and Edit panel as areas | A16, A17, A21 | `type/chore` | 1.5 | before 4.4 |
-| 12 | Evaluate and take Puck 0.24, with a mounted patch-contract test | A9, A19, A20 | `type/chore` | 2 | stream C, time-boxed |
-| 13 | SitePackage schema shared by ZIP export/import and open-as-new-site | A26 | criteria on #75 (4.7) | – | 4.7 |
-| 14 | Looks and surfaces in Site Check and commands: `effectiveValues`, `surfaceAt`, hidden fields skipped | the three Site Check findings | `type/bug` | 2 | before the beta |
-| 15 | Smaller consistency fixes: value equality, the clipboard format version, branded casts, memo drift, storage-writer crash routing, the abortable sleep, the Tailwind compiler per mode, the canvas redraw measurement | A18, A22–A25, R2, R3, R10 remainders | `type/chore` | 2 | when nearby |
-| 16 | Move R17 (#250) to Phase 4 and add the `messageKey` decision | R12, R17, A23 | edit #250 | – | before 4.6 |
+| # | Issue | Findings | Type | Est | Needed by | Opened as |
+|---|---|---|---|---|---|---|
+| 1 | Run storage garbage collection when a site closes | A1 | `type/bug` | 0.5 | now | #661 |
+| 2 | ADR: which process publishes, where destinations live, and how a version is built and gated | A2, A3, A4 (decision), A6 | `type/docs` | 1 | before 4.4 | #662 |
+| 3 | Destinations out of SiteDoc: per-site store, one shape, mappers to each publisher | A3 | criteria on #72 (4.4) | – | 4.4 | #72 |
+| 4 | Every site-touching channel carries a session id; the AI bridge resets on reload | A7, R6 remainder | `type/bug` | 1.5 | before 4.5 | #663 |
+| 5 | Remote manifest v2 names its site; refuse to overwrite another site's folder | A8 | criteria on #71 (4.3) | – | 4.3 | #71 |
+| 6 | Storage format 2 for Version History, the first real schema migration, and writer jobs for clean-up | A5, restore helper | `type/chore` (4.6 prep) | 1.5 | before 4.6 | #664 |
+| 7 | One snapshot and publish/version flow in main; `readVersionSite`; Site Check gate in main | A4, A6 | criteria on #73 (4.5) and #74 (4.6) | – | 4.5 | #73, #74 |
+| 8 | Main-process seams: feature modules in `app.ts`, ProjectSession to lifecycle only, one worker channel with operation ids | A12, A13, A14 | `type/chore` | 3 | before 4.5 (split into three PRs) | #665 |
+| 9 | One JSON-store helper for userData; namespaced credential keys | A15 | `type/chore` | 1 | before 4.4 | #666 |
+| 10 | Edit panel controller out of `EditPanelHost`; one field-acceptance rule | A10, A11 | `type/chore` + `type/bug` | 2.5 | before 4.10 | #667 |
+| 11 | Renderer seams: `api` on the area context, a shared build-flow module, Undo History and Edit panel as areas | A16, A17, A21 | `type/chore` | 1.5 | before 4.4 | #668 |
+| 12 | Evaluate and take Puck 0.24, with a mounted patch-contract test | A9, A19, A20 | `type/chore` | 2 | stream C, time-boxed | #669 |
+| 13 | SitePackage schema shared by ZIP export/import and open-as-new-site | A26 | criteria on #75 (4.7) | – | 4.7 | #75 |
+| 14 | Looks and surfaces in Site Check and commands: `effectiveValues`, `surfaceAt`, hidden fields skipped | the three Site Check findings | `type/bug` | 2 | before the beta | #670 |
+| 15 | Smaller consistency fixes: value equality, the clipboard format version, branded casts, memo drift, storage-writer crash routing, the abortable sleep, the Tailwind compiler per mode, the canvas redraw measurement | A18, A22–A25, R2, R3, R10 remainders | `type/chore` | 2 | when nearby | #671 |
+| 16 | Move R17 (#250) to Phase 4 and add the `messageKey` decision | R12, R17, A23 | edit #250 | – | before 4.6 | #250 |

@@ -1262,14 +1262,14 @@ Destinations list per site (several allowed), add/edit/test/remove; secrets via 
 - [ ] Secrets never written to .wforge (test)
 - [ ] Works on Windows DPAPI and macOS Keychain
 - [ ] A saved secret is given only to the destination it was typed for: a fingerprint of protocol, host, port, user and SFTP host key is kept in userData beside it, and a mismatch asks for the password again and shows the new host (security review S2; the review's test `publish-1-…` passes)
-- [ ] Destinations are stored outside the site document: per site, not undoable and not copied into versions, in one shape with `url` and `auth` that maps to each publisher; `publish` leaves `siteSettingsSchema` through an ADR 0012 step (architecture review 2, A3; decided in #662)
+- [ ] Destinations are stored outside the site document: per site, not undoable and not copied into versions, in one shape with `url` and `auth` that maps to each publisher; `publish` leaves `siteSettingsSchema` through an ADR 0012 step (architecture review 2, A3; as #662's ADR decides)
 
 **4.5 Publish flow UI**  
 Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version. **Site Check tip for an out-of-date {year}** (moved from 3.6, 27 Oct 2026, no change to either estimate): a rule in 3.6's framework (`packages/site-check`) tips when the year a published site shows (3.5's `{year}`, F-CM-8) is older than this year, from the record of the last publish this item keeps.
 
 - [ ] Publish-strict errors stop publish with jump-to-fix
 - [ ] E2E publish to mock Netlify and local SFTP
-- [ ] Publishing runs as a job in the export worker, with the secret passed for that job only; main runs the Site Check publish gate on the document it builds from before starting the job (architecture review 2, A2, A6; decided in #662)
+- [ ] Publishing runs as a job in the export worker, with the secret passed for that job only; main runs the Site Check publish gate on the document it builds from before starting the job (architecture review 2, A2, A6; as #662's ADR decides)
 - [ ] The automatic version on publish is saved after the text session ends and autosave has flushed, and it is the version that was built and published (architecture review 2, A4)
 - [ ] The publish IPC carries the session id and an operation id for progress and cancel (#663, #665)
 
