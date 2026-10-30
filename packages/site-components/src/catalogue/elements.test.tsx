@@ -125,8 +125,8 @@ describe("an Image's sizes under a shape (3.19)", () => {
     expect(sizes).toBe(
       "(min-width: 1024px) 1062px, (min-width: 768px) min(1062px, 238vw), min(1062px, 238vw)",
     );
-    const desktop = Number(sizes.split(" ")[2]?.replace("px,", ""));
-    expect(desktop).toBeGreaterThanOrEqual(((448 * 4) / 3) * (16 / 9));
+    const desktop = /^\(min-width: 1024px\) (?<px>\d+)px,/.exec(sizes)?.groups?.px;
+    expect(Number(desktop)).toBeGreaterThanOrEqual(((448 * 4) / 3) * (16 / 9));
   });
 
   it("asks for the frame's width where the picture is narrower in proportion than it", () => {

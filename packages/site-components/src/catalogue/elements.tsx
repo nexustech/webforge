@@ -68,35 +68,40 @@ const IMAGE_ALIGN_CLASS = { left: "mr-auto", centre: "mx-auto", right: "ml-auto"
  */
 const IMAGE_SHAPES = ["original", "square", "landscape", "wide", "portrait", "height"] as const;
 type ImageShape = (typeof IMAGE_SHAPES)[number];
-const IMAGE_SHAPE_RATIO = { square: 1, landscape: 4 / 3, wide: 16 / 9, portrait: 3 / 4 } as const;
 /**
- * Each shape's classes, all of them setting its height and shape, so one device's replace
- * another's. Original keeps the crop's shape from Media, which the canvas gives as
- * `--picture-ratio`, else the picture's own.
+ * Each shape cut to a ratio, its width ÷ its height, and its classes, all of them setting the
+ * picture's height and shape, so one device's replace another's. Original keeps the crop's shape
+ * from Media, which the canvas gives as `--picture-ratio`, else the picture's own.
  */
-const IMAGE_SHAPE_CLASS = {
-  original: "h-auto aspect-[var(--picture-ratio,auto)]",
-  square: "h-auto aspect-square",
-  landscape: "h-auto aspect-4/3",
-  wide: "h-auto aspect-video",
-  portrait: "h-auto aspect-3/4",
-} as const;
+const IMAGE_SHAPE = {
+  original: { classes: "h-auto aspect-[var(--picture-ratio,auto)]", ratio: undefined },
+  square: { classes: "h-auto aspect-square", ratio: 1 },
+  landscape: { classes: "h-auto aspect-4/3", ratio: 4 / 3 },
+  wide: { classes: "h-auto aspect-video", ratio: 16 / 9 },
+  portrait: { classes: "h-auto aspect-3/4", ratio: 3 / 4 },
+} as const satisfies Record<Exclude<ImageShape, "height">, unknown>;
 const IMAGE_HEIGHTS = ["small", "medium", "large"] as const;
 type ImageHeight = (typeof IMAGE_HEIGHTS)[number];
 /** How high each height token is, in pixels, and its class (`h-60` is 15rem). */
-const IMAGE_HEIGHT_PX = { small: 240, medium: 360, large: 480 } as const;
-const IMAGE_HEIGHT_CLASS = { small: "h-60", medium: "h-90", large: "h-120" } as const;
+const IMAGE_HEIGHT = {
+  small: { px: 240, classes: "h-60" },
+  medium: { px: 360, classes: "h-90" },
+  large: { px: 480, classes: "h-120" },
+} as const;
 
-/** What an Image is cut to on `breakpoint`: its shape there, and its height under Set height. */
-function frameOn(
+/** How an Image is cut on `breakpoint`, by its shape and, under Set height, its height there. */
+function cutOn(
   shape: Responsive<ImageShape>,
   height: Responsive<ImageHeight>,
   breakpoint: Breakpoint,
-): ImageFrame {
+): { readonly frame: ImageFrame; readonly classes: string } {
   const on = resolveResponsive(shape, breakpoint);
-  if (on === "original") return null;
-  if (on === "height") return { height: IMAGE_HEIGHT_PX[resolveResponsive(height, breakpoint)] };
-  return { ratio: IMAGE_SHAPE_RATIO[on] };
+  if (on === "height") {
+    const { px, classes } = IMAGE_HEIGHT[resolveResponsive(height, breakpoint)];
+    return { frame: { height: px }, classes: `aspect-auto ${classes}` };
+  }
+  const { ratio, classes } = IMAGE_SHAPE[on];
+  return { frame: ratio === undefined ? null : { ratio }, classes };
 }
 
 /**
@@ -134,30 +139,23 @@ function ImagePicture({
       />
     );
   }
-  const frame = (breakpoint: Breakpoint) => frameOn(shape, height, breakpoint);
-  // Each device's classes from its shape and, under Set height, its height.
-  const classesOn = (breakpoint: Breakpoint) => {
-    const on = resolveResponsive(shape, breakpoint);
-    return on === "height"
-      ? `aspect-auto ${IMAGE_HEIGHT_CLASS[resolveResponsive(height, breakpoint)]}`
-      : IMAGE_SHAPE_CLASS[on];
-  };
-  const cut = responsiveClasses(
+  const cut = (breakpoint: Breakpoint) => cutOn(shape, height, breakpoint);
+  const classes = responsiveClasses(
     {
       $responsive: {
-        desktop: classesOn("desktop"),
-        tablet: classesOn("tablet"),
-        mobile: classesOn("mobile"),
+        desktop: cut("desktop").classes,
+        tablet: cut("tablet").classes,
+        mobile: cut("mobile").classes,
       },
     },
-    (classes) => classes,
+    (each) => each,
   );
   return (
     <Picture
       image={image}
       alt={alt}
-      sizes={imageSizes(maxPx, layout, frame, pictureRatio(image))}
-      className={`w-full object-cover ${cut}${corners}`}
+      sizes={imageSizes(maxPx, layout, (breakpoint) => cut(breakpoint).frame, pictureRatio(image))}
+      className={`w-full object-cover ${classes}${corners}`}
       shaped
     />
   );

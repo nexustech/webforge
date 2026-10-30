@@ -16,7 +16,7 @@ export const elements = {
   "field.imageWidth.full": "Full width",
   "field.imageShape": "Shape",
   "field.imageShape.help":
-    "Every shape but Original crops the picture to fill it, keeping its focal point in view.",
+    "Every shape but Original crops the picture to fill the shape, keeping its focal point in view.",
   "field.imageShape.original": "Original",
   "field.imageShape.square": "Square",
   "field.imageShape.landscape": "Landscape (4:3)",

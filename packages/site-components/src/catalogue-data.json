@@ -1697,7 +1697,7 @@
         "shape": {
           "kind": "select",
           "label": "Shape",
-          "help": "Every shape but Original crops the picture to fill it, keeping its focal point in view.",
+          "help": "Every shape but Original crops the picture to fill the shape, keeping its focal point in view.",
           "responsive": true,
           "options": [
             {

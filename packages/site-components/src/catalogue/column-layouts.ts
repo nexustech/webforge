@@ -74,7 +74,7 @@ export type ImageFrame = { readonly ratio: number } | { readonly height: number 
  *
  * Cut to a `frame`, a picture wider in proportion than the frame (`ratio`, its width ÷ its height)
  * shows wider than the frame, to cover its height, so it asks for that width: a 16:9 picture in a
- * 448 px wide 3:4 frame, 597 px high, shows 1061 px wide. Under a set height it shows at least as
+ * 448 px wide 3:4 frame, 597 px high, shows 1062 px wide (rounded up). Under a set height it shows at least as
  * wide as that height × its proportions.
  */
 export function imageSizes(
