@@ -3,12 +3,17 @@ import {
   MenubarContent,
   MenubarItem,
   MenubarMenu,
+  MenubarSeparator,
   MenubarShortcut,
+  MenubarSub,
+  MenubarSubContent,
+  MenubarSubTrigger,
   MenubarTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { Fragment } from "react";
 import { useCommandRegistry, useCommands } from "./command-context.js";
-import { formatShortcut, type MenuId } from "./commands.js";
+import { type Command, formatShortcut, type MenuId, menuEntries } from "./commands.js";
 
 const MENUS: readonly MenuId[] = ["file", "edit", "view", "help"];
 
@@ -19,34 +24,57 @@ const MENU_LABELS = {
   help: "shell.menu.help",
 } as const;
 
-/** The title bar's app menu (File, Edit, View, Help), listing the registered commands. */
+/**
+ * The title bar's app menu (File, Edit, View, Help), listing the registered commands; an item
+ * can open a submenu (File › Open Recent, 3.18), which the arrow keys open and leave.
+ */
 export function AppMenu() {
   const registry = useCommandRegistry();
   const commands = useCommands();
 
+  const item = (command: Command) => (
+    <MenubarItem
+      key={command.id}
+      disabled={command.enabled === false}
+      onSelect={() => registry.run(command.id)}
+    >
+      {command.label}
+      {command.shortcut !== undefined && (
+        <MenubarShortcut>{formatShortcut(command.shortcut)}</MenubarShortcut>
+      )}
+    </MenubarItem>
+  );
+
   return (
     <Menubar aria-label={t("shell.menu")}>
       {MENUS.map((menu) => {
-        const items = commands.filter((command) => command.menu === menu);
-        if (items.length === 0) {
+        const entries = menuEntries(commands, (command) => command.menu === menu);
+        if (entries.length === 0) {
           return null;
         }
         return (
           <MenubarMenu key={menu} value={menu}>
             <MenubarTrigger>{t(MENU_LABELS[menu])}</MenubarTrigger>
             <MenubarContent>
-              {items.map((command) => (
-                <MenubarItem
-                  key={command.id}
-                  disabled={command.enabled === false}
-                  onSelect={() => registry.run(command.id)}
-                >
-                  {command.label}
-                  {command.shortcut !== undefined && (
-                    <MenubarShortcut>{formatShortcut(command.shortcut)}</MenubarShortcut>
-                  )}
-                </MenubarItem>
-              ))}
+              {entries.map(({ command, submenu }) =>
+                submenu.length === 0 ? (
+                  item(command)
+                ) : (
+                  <MenubarSub key={command.id}>
+                    <MenubarSubTrigger disabled={command.enabled === false}>
+                      {command.label}
+                    </MenubarSubTrigger>
+                    <MenubarSubContent>
+                      {submenu.map((each) => (
+                        <Fragment key={each.id}>
+                          {each.separated === true && <MenubarSeparator />}
+                          {item(each)}
+                        </Fragment>
+                      ))}
+                    </MenubarSubContent>
+                  </MenubarSub>
+                ),
+              )}
             </MenubarContent>
           </MenubarMenu>
         );

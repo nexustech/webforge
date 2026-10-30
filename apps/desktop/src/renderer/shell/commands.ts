@@ -44,12 +44,51 @@ export type Command = {
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
   readonly more?: string;
+  /**
+   * The submenu that lists it, by the id of the menu item that opens it (3.18): File › Open
+   * Recent's sites, say. It is listed there, not in a menu of its own. A command that some command
+   * names here opens that submenu: its own `run` is never called, and the command box leaves it
+   * out.
+   */
+  readonly submenu?: string;
+  /** Drawn after a separator in its submenu: Clear Recent at Open Recent's foot (3.18). */
+  readonly separated?: boolean;
   /** The palette's group for it; the app's own commands when left out. */
   readonly palette?: PaletteGroup;
+  /**
+   * Its name in the command box, when its menu's isn't enough there: a submenu's item named by
+   * its submenu too ("Open Recent: Rosa's Bakery", 3.18). `label` when left out.
+   */
+  readonly paletteLabel?: string;
   /** More words the palette finds it by (a page's file name, a component's category). */
   readonly keywords?: readonly string[];
   readonly run: () => void | Promise<void>;
 };
+
+/** An item of a menu: its command and, when it opens a submenu, the commands that lists (3.18). */
+export type MenuEntry = { readonly command: Command; readonly submenu: readonly Command[] };
+
+/**
+ * The items of a menu: the commands `inMenu` takes, but none listed in a submenu, each with the
+ * commands of the submenu it opens (none for most), all in registration order.
+ */
+export function menuEntries(
+  commands: readonly Command[],
+  inMenu: (command: Command) => boolean,
+): MenuEntry[] {
+  const submenus = Map.groupBy(
+    commands.filter((command) => command.submenu !== undefined),
+    (command) => command.submenu,
+  );
+  return commands
+    .filter((command) => command.submenu === undefined && inMenu(command))
+    .map((command) => ({ command, submenu: submenus.get(command.id) ?? [] }));
+}
+
+/** The ids of the commands that open a submenu (3.18): some command names them as its `submenu`. */
+export function submenuOpeners(commands: readonly Command[]): ReadonlySet<string> {
+  return new Set(commands.flatMap((command) => command.submenu ?? []));
+}
 
 /** A command's keys: its shortcut, then any others. */
 const keysOf = (command: Command): readonly string[] => [

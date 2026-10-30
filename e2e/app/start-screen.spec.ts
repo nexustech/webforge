@@ -7,6 +7,7 @@ import { expectWorkWithin, measureWork, OPEN_WAIT, openBudget } from "./budget.j
 import { canvasAxe } from "./canvas-axe.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
+import { chooseFromSubmenu, submenuItems } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The start screen (F-SITE-1, F-SITE-2): new → edit → quit → reopen from the Recent list.
@@ -225,6 +226,74 @@ test("pins a site to the top of the Recent list, which it keeps after a restart 
   // Search finds a site by its name.
   await page.getByRole("searchbox", { name: "Search sites" }).fill("newer");
   await expect(page.getByRole("listitem")).toHaveCount(1);
+});
+
+test("opens a site from File › Open Recent, and Clear Recent keeps the pinned ones (3.18)", async () => {
+  // Four launches: two to make the sites, then the start screen twice.
+  test.slow();
+  // Two sites on the list, the newer first.
+  for (const name of ["Older", "Newer"]) {
+    app = await launchDesktopApp({ userDataDir: userData, site: false });
+    const page = await app.firstWindow();
+    await stubFileDialogs(running(), join(dir, `${name}.wforge`));
+    await page
+      .getByRole("button", { name: "Choose a template yourself…", exact: true })
+      .first()
+      .click();
+    const newSite = page.getByRole("dialog", { name: "New Site" });
+    await newSite.getByRole("textbox", { name: "Site name" }).fill(name);
+    await newSite.getByRole("button", { name: "Create" }).click();
+    await waitForCanvas(page);
+    await closeWindow();
+  }
+
+  // Newer pinned, and open in the editor from the start screen.
+  let page = await startWithoutSite();
+  await page.getByRole("button", { name: "Pin Newer" }).click();
+  await page
+    .getByRole("button", { name: /^Newer/ })
+    .first()
+    .click();
+  await waitForCanvas(page);
+  // While the window starts over with another site, there is no page to ask.
+  const current = () =>
+    page
+      .evaluate(async () => {
+        const summary = await (window as unknown as RendererWindow).webforge.project.getCurrent();
+        return summary?.name;
+      })
+      .catch(() => undefined);
+  expect(await current()).toBe("Newer");
+
+  // Most recently opened first, pinned or not; the open site can't be opened again.
+  await expect
+    .poll(() => submenuItems(running(), page, "File", "Open Recent"))
+    .toEqual([
+      { label: "Newer", enabled: false },
+      { label: "Older", enabled: true },
+      { label: "Clear Recent", enabled: true },
+    ]);
+  // The window starts over with the site chosen, the open one saved first.
+  await chooseFromSubmenu(running(), page, "File", "Open Recent", "Older");
+  await expect.poll(current, { timeout: OPEN_WAIT }).toBe("Older");
+  await waitForCanvas(page);
+
+  // Clear Recent asks, then keeps the pinned site only, in the menu and on the start screen.
+  await chooseFromSubmenu(running(), page, "File", "Open Recent", "Clear Recent");
+  const question = page.getByRole("alertdialog", { name: "Clear the list of recent sites?" });
+  await expect(question).toContainText("Sites you've pinned stay");
+  await question.getByRole("button", { name: "Clear Recent" }).click();
+  await expect
+    .poll(() => submenuItems(running(), page, "File", "Open Recent"))
+    .toEqual([
+      { label: "Newer", enabled: true },
+      { label: "Clear Recent", enabled: false },
+    ]);
+  await closeWindow();
+
+  page = await startWithoutSite();
+  await expect(page.getByRole("listitem")).toHaveCount(1);
+  await expect(page.getByRole("listitem")).toContainText("Newer");
 });
 
 test("says when a site can't be opened, and removes sites from the list", async () => {
