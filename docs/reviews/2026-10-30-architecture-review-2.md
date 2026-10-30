@@ -221,6 +221,23 @@ Refuted and dropped: a claim that Site Check and the pipeline don't know where a
 - **Single sources.** Theme CSS comes from one place, `@webforge/themes`, and form-unset logic from one place in model.
 - **`catalogue-data.json` staleness** is caught by a file snapshot.
 
+## Issues opened (30 Oct 2026)
+| Issue | Findings |
+|---|---|
+| #661 Run storage garbage collection when a site closes | A1 |
+| #662 ADR: which process publishes, where destinations live, and how a version is built and checked | A2, A3, A4, A6 |
+| #663 Every site-touching channel carries a session id, and the AI bridge resets on reload | A7, R6 remainder |
+| #664 Storage format 2 for Version History, the first real schema migration, and clean-up off the main thread | A5, restore helper |
+| #665 Main-process seams: feature modules in app.ts, ProjectSession to lifecycle only, one worker channel | A12, A13, A14 |
+| #666 One helper for userData JSON files, and namespaced credential keys | A15 |
+| #667 Edit panel controller out of EditPanelHost, and one rule for what a field accepts | A10, A11 |
+| #668 Renderer seams: the preload API on the area context, a shared build flow, Undo History as an area | A16, A17, A21 |
+| #669 Evaluate and take Puck 0.24, with a mounted test for each patch change | A9, A19, A20 |
+| #670 Theme looks and section colours in Site Check and the AI queries; hidden fields left out of exports | the three Site Check findings |
+| #671 Smaller consistency fixes from the second architecture review | A18, A22–A25, R2, R3, R9, R10, R12 remainders, smaller findings |
+| Acceptance criteria added to #71 (4.3), #72 (4.4), #73 (4.5), #74 (4.6), #75 (4.7) and their entries in spec/04 | A3, A4, A6, A8, A21, A26 |
+| #250 (R17) moved to Phase 4, with the `ProjectStore` and `messageKey` items added | R12, R17, A23 |
+
 ## Proposed issues
 
 Grouped by when they are needed. Nothing is opened until the product owner says go.
