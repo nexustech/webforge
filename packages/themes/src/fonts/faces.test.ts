@@ -100,6 +100,8 @@ describe("fontFacesFor (2.2)", () => {
     expect(usesAccentFont(["md:max-lg:font-accent!"])).toBe(true);
     // The person's own code may use the class too.
     expect(usesAccentFont(["font-accent"])).toBe(true);
+    expect(usesAccentFont(["!font-accent"])).toBe(true);
+    expect(usesAccentFont(["var(--font-accent)"])).toBe(true);
     expect(usesAccentFont(["font-heading!", "font-sans", "font-accent-x", "x-font-accent"])).toBe(
       false,
     );

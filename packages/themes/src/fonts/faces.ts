@@ -48,11 +48,12 @@ function wanted(theme: ThemeTokens, role: FontRole) {
 /**
  * Whether a site's classes (`candidates`) set something in the theme's accent font (3.22): the
  * `font-accent` class that an element's Font of Accent gives it, on any device, or that the
- * person's own code uses. Without one, the site has no files of the accent font (C8).
+ * person's own code uses, `!` before or after, or its variable `--font-accent` there. Without one,
+ * the site has no files of the accent font (C8).
  */
 export function usesAccentFont(candidates: Iterable<string>): boolean {
   for (const candidate of candidates) {
-    if (/(^|:)font-accent!?$/.test(candidate)) return true;
+    if (/(^|:)!?font-accent!?$|--font-accent\b/.test(candidate)) return true;
   }
   return false;
 }

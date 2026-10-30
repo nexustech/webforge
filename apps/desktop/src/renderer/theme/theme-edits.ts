@@ -462,16 +462,21 @@ async function setFonts(
 ): Promise<boolean> {
   const now = theme(session).fonts;
   const roles = ["heading", "body", "accent"] as const satisfies readonly FontRole[];
-  if (roles.every((role) => now[role].family === fonts[role].family)) {
+  const changed = roles.filter((role) => now[role].family !== fonts[role].family);
+  if (changed.length === 0) {
     return false;
   }
+  // The accent alone changes only what is set in it, so the question says so (3.22).
+  const accentOnly = changed.every((role) => role === "accent");
   return changeTheme(
     session,
     asks,
     t("theme.history.fonts"),
     {
       action: t("theme.fonts.confirm"),
-      description: t("theme.fonts.confirmDescription"),
+      description: t(
+        accentOnly ? "theme.fonts.confirmAccentDescription" : "theme.fonts.confirmDescription",
+      ),
       confirm: t("theme.fonts.confirmButton"),
     },
     (tokens) => {

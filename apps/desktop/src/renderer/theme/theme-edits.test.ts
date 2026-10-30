@@ -146,10 +146,14 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(await setPairing(session, answering(true), classic)).toBe(false);
 
     // The accent font (3.22) is set on its own, and a pairing keeps it.
-    await setFont(session, answering(true), "accent", {
-      family: "Pacifico",
-      fallback: "sans-serif",
-    });
+    const accent = answering(true);
+    await setFont(session, accent, "accent", { family: "Pacifico", fallback: "sans-serif" });
+    // The question says only what is set in it changes.
+    expect(accent.confirmSiteWide).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: "Text whose Font is set to Accent changes to the new font, on every page.",
+      }),
+    );
     expect(theme().fonts.accent).toEqual({ family: "Pacifico", fallback: "sans-serif" });
     expect(theme().fonts.heading.family).toBe("Playfair Display");
     const simple = FONT_PAIRINGS.find((pairing) => pairing.id === "simple");
