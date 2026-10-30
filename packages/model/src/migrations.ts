@@ -293,7 +293,7 @@ function accentFonts(site: RawSite): RawSite {
   ) {
     return { ...site, formatVersion: 10 };
   }
-  const fonts = { ...theme.fonts, accent: structuredClone(theme.fonts.heading) };
+  const fonts = { ...theme.fonts, accent: { ...theme.fonts.heading } };
   return { ...site, theme: { ...theme, fonts }, formatVersion: 10 };
 }
 
