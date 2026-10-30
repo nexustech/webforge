@@ -29,7 +29,9 @@ export const Hero: Story = { args: { nodes: [hero("centre")] } };
 export const HeroLeft: Story = { args: { nodes: [hero("left")] } };
 
 /** The Hero centred, its image below the text (2.6). */
-export const HeroCentred: Story = { args: { nodes: [hero("centre", { variant: "centred" })] } };
+export const HeroCentred: Story = {
+  args: { nodes: [hero("centre", { variant: "centred", contentWidth: "medium" })] },
+};
 
 /** The Hero's text over its image, which fills the section (2.6). */
 export const HeroBackground: Story = {
@@ -37,7 +39,9 @@ export const HeroBackground: Story = {
 };
 
 /** The Hero with text only (2.6). */
-export const HeroMinimal: Story = { args: { nodes: [hero("centre", { variant: "minimal" })] } };
+export const HeroMinimal: Story = {
+  args: { nodes: [hero("centre", { variant: "minimal", contentWidth: "narrow" })] },
+};
 
 /** A Text section: a title and formatted text (2.6). */
 export const Text: Story = {
@@ -111,10 +115,11 @@ export const TextImageRight: Story = { args: { nodes: [textImage("imageRight")] 
 /** Text + Image, the image on the left (2.6). */
 export const TextImageLeft: Story = { args: { nodes: [textImage("imageLeft")] } };
 
-const callToAction = (variant: string) => ({
+const callToAction = (variant: string, contentWidth?: string) => ({
   type: "CallToAction",
   props: {
     id: `cta-${variant}`,
+    ...(contentWidth === undefined ? {} : { contentWidth }),
     title: "Order a cake",
     text: "Tell us what you'd like two days ahead, and we'll have it ready.",
     buttonLabel: "Get in touch",
@@ -127,7 +132,7 @@ const callToAction = (variant: string) => ({
 export const CallToActionBanner: Story = { args: { nodes: [callToAction("banner")] } };
 
 /** A Call to action with its button beside the text (2.6). */
-export const CallToActionSplit: Story = { args: { nodes: [callToAction("split")] } };
+export const CallToActionSplit: Story = { args: { nodes: [callToAction("split", "wide")] } };
 
 /** An FAQ: each question opens with the keyboard or a click, without JavaScript. */
 export const Faq: Story = {
@@ -170,7 +175,7 @@ export const Faq: Story = {
 };
 
 /** An FAQ of four questions in `variant`. */
-const faq = (variant: string): Story => ({
+const faq = (variant: string, contentWidth?: string): Story => ({
   args: {
     nodes: [
       {
@@ -179,6 +184,7 @@ const faq = (variant: string): Story => ({
           id: `faq-${variant}`,
           title: "Questions",
           variant,
+          ...(contentWidth === undefined ? {} : { contentWidth }),
           items: (
             [
               ["Are you open on Sundays?", "Yes, 8 to 2."],
@@ -197,7 +203,7 @@ const faq = (variant: string): Story => ({
 });
 
 /** An FAQ in two columns of questions that open. */
-export const FaqColumns: Story = faq("columns");
+export const FaqColumns: Story = faq("columns", "wide");
 
 /** An FAQ with every answer shown below its question. */
 export const FaqOpen: Story = faq("open");

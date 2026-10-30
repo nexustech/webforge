@@ -16,5 +16,4 @@ export const basic = {
   "field.gap.small": "Small",
   "field.gap.medium": "Medium",
   "field.gap.large": "Large",
-  "field.fullWidth": "Full width",
 } as const;

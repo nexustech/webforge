@@ -54,6 +54,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   6: themeStyleTokens,
   7: ownThemes,
   8: componentLooks,
+  9: sectionContentWidths,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -274,6 +275,50 @@ function ownThemes(site: RawSite): RawSite {
  */
 function componentLooks(site: RawSite): RawSite {
   return { ...site, formatVersion: 9 };
+}
+
+/**
+ * The layouts of the kinds whose content was wider or narrower than their kind's default content
+ * width (3.21) before format 10, and that width; a layout that isn't here, or none (the kind's
+ * first), had the default.
+ */
+const FORMAT_10_LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> = {
+  Hero: { centred: "medium", minimal: "narrow" },
+  CallToAction: { split: "wide" },
+  Faq: { columns: "wide" },
+  Video: { split: "wide" },
+  Map: { split: "wide" },
+};
+
+/**
+ * Format 9 → 10 (3.21, PF-4): every section has a content width. A Section's default became Wide,
+ * so one saved before is Medium, as it was, or Full where its *Full width* was on, which it
+ * replaces. A section in a layout whose width differed from its kind's default gets that width,
+ * so nothing saved before changes. A width already set is kept.
+ */
+function sectionContentWidths(site: RawSite): RawSite {
+  walkSite(site, (node) => {
+    const { props } = node;
+    if (node.type === "Section") {
+      const full = props.fullWidth === true;
+      delete props.fullWidth;
+      if (!Object.hasOwn(props, "contentWidth")) props.contentWidth = full ? "full" : "medium";
+      return;
+    }
+    const widths = Object.hasOwn(FORMAT_10_LAYOUT_WIDTHS, node.type)
+      ? FORMAT_10_LAYOUT_WIDTHS[node.type]
+      : undefined;
+    const layout = props.variant;
+    if (
+      widths !== undefined &&
+      typeof layout === "string" &&
+      Object.hasOwn(widths, layout) &&
+      !Object.hasOwn(props, "contentWidth")
+    ) {
+      props.contentWidth = widths[layout];
+    }
+  });
+  return { ...site, formatVersion: 10 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

@@ -4,7 +4,14 @@ import type { ReactNode } from "react";
 import { defineComponent } from "../define.js";
 import { type Embed, mapEmbed, videoEmbed } from "../embed.js";
 import { EmbedFrame, type EmbedKind } from "../embed-frame.js";
-import { defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
+import {
+  type ContentWidth,
+  contentWidthClass,
+  defineSection,
+  MARGIN_FIELD,
+  marginClasses,
+  narrowerWidth,
+} from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import {
   ENTRANCE_FIELDS,
@@ -27,10 +34,12 @@ const plainText = (value: unknown) =>
 
 /**
  * A section's title and text, and its embed: above it, centred (`stacked`), or beside it on wide
- * screens (`split`). Without an embed yet, the title and text alone.
+ * screens (`split`), `width` wide at most (3.21). Without an embed yet, the title and text alone,
+ * no wider than Medium beside nothing, as the stacked layout draws them.
  */
 function EmbedSection({
   layout,
+  width,
   title,
   text,
   embed,
@@ -38,6 +47,7 @@ function EmbedSection({
   frameTitle,
 }: {
   readonly layout: (typeof EMBED_LAYOUTS)[number];
+  readonly width: ContentWidth;
   readonly title: ReactNode;
   readonly text: ReactNode;
   readonly embed: Embed | null;
@@ -47,7 +57,9 @@ function EmbedSection({
   const frame = embed === null ? null : <EmbedFrame embed={embed} kind={kind} title={frameTitle} />;
   if (layout === "split" && frame !== null) {
     return (
-      <div className="mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2">
+      <div
+        className={`mx-auto grid ${contentWidthClass(width)} items-center gap-10 md:grid-cols-2`}
+      >
         <div>
           <SectionTitle>{title}</SectionTitle>
           <SectionIntro className="mt-4">{text}</SectionIntro>
@@ -57,7 +69,9 @@ function EmbedSection({
     );
   }
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
+    <div
+      className={`mx-auto ${contentWidthClass(layout === "split" ? narrowerWidth(width, "medium") : width)} space-y-8`}
+    >
       <div className="text-center">
         <SectionTitle>{title}</SectionTitle>
         <SectionIntro className="mt-4">{text}</SectionIntro>
@@ -90,12 +104,15 @@ const video = defineSection({
     title: t("starter.videoTitle"),
     text: `<p>${t("starter.videoText")}</p>`,
     address: "",
+    // Beside the text, its embed was Wide before 3.21; format 10 keeps those saved then.
+    contentWidth: "medium",
   },
   frame: () => "bg-base-100",
   behaviours: ["embed"],
   render: ({ values }) => (
     <EmbedSection
       layout={values.variant}
+      width={values.contentWidth}
       title={values.title}
       text={values.text}
       embed={videoEmbed(plainText(values.address) ?? "")}
@@ -136,12 +153,15 @@ const map = defineSection({
     title: t("starter.mapTitle"),
     text: `<p>${t("starter.mapText")}</p>`,
     address: "",
+    // Beside the text, its embed was Wide before 3.21; format 10 keeps those saved then.
+    contentWidth: "medium",
   },
   frame: () => "bg-base-100",
   behaviours: ["embed"],
   render: ({ values, context }) => (
     <EmbedSection
       layout={values.variant}
+      width={values.contentWidth}
       title={values.title}
       text={values.text}
       embed={mapEmbed(mapAddress(values, context))}

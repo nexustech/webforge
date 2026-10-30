@@ -11,7 +11,13 @@ import {
   formAction,
   SiteForm,
 } from "../form.js";
-import { defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
+import {
+  type ContentWidth,
+  contentWidthClass,
+  defineSection,
+  MARGIN_FIELD,
+  marginClasses,
+} from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import {
   ENTRANCE_FIELDS,
@@ -26,6 +32,8 @@ const FORM_LAYOUTS = ["stacked", "split"] as const;
 const layoutVariants = FORM_LAYOUTS.map((value) => ({
   label: t(`field.formLayout.${value}`),
   value,
+  // Stacked, a form keeps its own measure, narrower than every content width (3.21).
+  ...(value === "stacked" ? { hides: ["contentWidth"] as const } : {}),
 }));
 
 /** `value` as text, if it is some: what a plain text field holds in the export. */
@@ -38,18 +46,20 @@ const plainText = (value: unknown) =>
  */
 function FormSection({
   layout,
+  width,
   title,
   text,
   form,
 }: {
   readonly layout: (typeof FORM_LAYOUTS)[number];
+  readonly width: ContentWidth;
   readonly title: ReactNode;
   readonly text: ReactNode;
   readonly form: ReactNode;
 }) {
   if (layout === "split") {
     return (
-      <div className="mx-auto grid max-w-6xl items-start gap-10 md:grid-cols-2">
+      <div className={`mx-auto grid ${contentWidthClass(width)} items-start gap-10 md:grid-cols-2`}>
         <div>
           <SectionTitle>{title}</SectionTitle>
           <SectionIntro className="mt-4">{text}</SectionIntro>
@@ -104,11 +114,13 @@ const contactForm = defineSection({
     text: `<p>${t("starter.contactFormText")}</p>`,
     askPhone: false,
     buttonLabel: t("starter.contactFormButton"),
+    contentWidth: "wide",
   },
   frame: () => "bg-base-100",
   render: ({ id, values, context }) => (
     <FormSection
       layout={values.variant}
+      width={values.contentWidth}
       title={values.title}
       text={values.text}
       form={
@@ -184,11 +196,13 @@ const newsletter = defineSection({
     buttonLabel: t("starter.newsletterButton"),
     action: "",
     emailName: "email",
+    contentWidth: "wide",
   },
   frame: () => "bg-base-200",
   render: ({ id, values, context }) => (
     <FormSection
       layout={values.variant}
+      width={values.contentWidth}
       title={values.title}
       text={values.text}
       form={

@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
+import { contentWidthClass, defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
 import { boundText, type ComponentDef, colorClass, responsiveClasses } from "../library.js";
 import {
   ENTRANCE_FIELDS,
@@ -46,27 +46,31 @@ const section = defineSection({
       responsive: true,
       steps: GAPS.map((value) => ({ label: t(`field.gap.${value}`), value })),
     },
-    fullWidth: { kind: "toggle", label: t("field.fullWidth"), group: "style" },
     // Every element, those of families added later too (createLibrary lists them).
     content: { kind: "slot", label: t("field.content"), accepts: "element" },
   },
-  defaults: { gap: "medium", fullWidth: false, content: [] },
-  // A Section on reversed colours (2.4) is a band across the page: its background takes the full
-  // width, and its column goes inside it.
+  // Wide, as Features and the other grids, so a new Section lines up with them (3.21, PF-4).
+  // Sections saved before then are Medium (format 10).
+  defaults: { gap: "medium", contentWidth: "wide", content: [] },
+  // At Medium on the page's colours, the section itself is the 896 px column, padding included, as
+  // every Section was before 3.21, so one made then doesn't move. Otherwise (and on reversed
+  // colours, 2.4) it is a band across the page, with its column inside it.
   frame: (values) => {
-    const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
-    if (values.fullWidth) return `mx-auto ${gap}`;
-    return values.colors === "inverse" ? "" : `mx-auto max-w-4xl ${gap}`;
+    if (!boxedColumn(values)) return "";
+    return `mx-auto max-w-4xl ${responsiveClasses(values.gap, (value) => GAP_CLASS[value])}`;
   },
   render: ({ values, slots }) => {
     const Content = slots.content;
-    if (values.colors === "inverse" && !values.fullWidth) {
-      const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
-      return <Content className={`mx-auto max-w-4xl ${gap}`} />;
-    }
-    return <Content />;
+    if (boxedColumn(values)) return <Content />;
+    const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
+    return <Content className={`mx-auto ${contentWidthClass(values.contentWidth)} ${gap}`} />;
   },
 });
+
+/** Whether a Section is its own column, as before 3.21: at Medium on the page's colours. */
+function boxedColumn(values: { readonly contentWidth: string; readonly colors: string }) {
+  return values.contentWidth === "medium" && values.colors !== "inverse";
+}
 
 /** A heading; its size also sets the heading level. */
 const heading = defineComponent({

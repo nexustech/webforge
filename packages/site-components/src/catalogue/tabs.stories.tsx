@@ -20,6 +20,7 @@ export const Tabs: Story = {
         type: "Section",
         props: {
           id: "section",
+          contentWidth: "medium",
           content: [
             { type: "Heading", props: { id: "heading", text: "Our menu", size: "medium" } },
             {

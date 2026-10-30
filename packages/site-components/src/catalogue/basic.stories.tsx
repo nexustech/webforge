@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { NodeDoc } from "@webforge/model";
 import { SiteNodes } from "../stories/site-nodes.js";
+import { siteLibrary } from "./index.js";
 
 const meta = {
   title: "Site components/Basic",
@@ -21,7 +22,7 @@ const text: NodeDoc = {
   },
 };
 
-/** A Section with a Heading and Text, as a new page starts. */
+/** A Section with a Heading and Text, as a new page starts: Wide, as Features is (3.21). */
 export const Section: Story = {
   args: {
     nodes: [
@@ -33,7 +34,56 @@ export const Section: Story = {
   },
 };
 
-/** Full width, more space between its elements, and its own padding per device. */
+/** A Section at `contentWidth` on reversed colours, whose band still spans the page (3.21). */
+const sectionAt = (contentWidth: string, title: string): Story => ({
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          id: "section",
+          colors: "inverse",
+          contentWidth,
+          content: [heading("medium", title), text],
+        },
+      },
+    ],
+  },
+});
+
+/** Content width Narrow: 768 px, the text-led sections' reading width. */
+export const SectionNarrow: Story = sectionAt("narrow", "Narrow");
+
+/** Content width Medium: 896 px, as every Section was before 3.21. */
+export const SectionMedium: Story = sectionAt("medium", "Medium");
+
+/** Content width Wide: 1152 px, a new Section's, as Features and the other grids. */
+export const SectionWide: Story = sectionAt("wide", "Wide");
+
+/** Content width Full: the page's width less the section's padding. */
+export const SectionFull: Story = sectionAt("full", "Full");
+
+/** A new Section with a heading above a Features section: their content lines up (3.21, PF-4). */
+export const SectionAboveFeatures: Story = {
+  args: {
+    nodes: [
+      {
+        type: "Section",
+        props: {
+          ...siteLibrary.components.Section?.defaults,
+          id: "section",
+          content: [heading("medium", "Rosa's Bakery, since 1987")],
+        },
+      },
+      {
+        type: "Features",
+        props: { ...siteLibrary.components.Features?.defaults, id: "features" },
+      },
+    ],
+  },
+};
+
+/** Full, more space between its elements, and its own padding per device. */
 export const SectionStyled: Story = {
   args: {
     nodes: [
@@ -41,7 +91,7 @@ export const SectionStyled: Story = {
         type: "Section",
         props: {
           id: "section",
-          fullWidth: true,
+          contentWidth: "full",
           gap: "large",
           padding: { $responsive: { desktop: { top: "xl", bottom: "xl" }, mobile: { top: "s" } } },
           content: [heading("medium", "Our story"), text],
@@ -62,6 +112,7 @@ export const Headings: Story = {
         type: "Section",
         props: {
           id: "section",
+          contentWidth: "medium",
           content: [
             heading("large", "Large heading"),
             heading("medium", "Medium heading"),
@@ -84,6 +135,7 @@ export const TextWithLists: Story = {
         type: "Section",
         props: {
           id: "section",
+          contentWidth: "medium",
           content: [
             {
               type: "Text",

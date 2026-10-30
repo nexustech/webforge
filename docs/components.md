@@ -40,7 +40,7 @@ Wrap an element's definition in `defineComponent`, and a section's in `defineSec
 
 ```tsx
 import { t } from "@webforge/i18n";
-import { defineSection } from "../frame.js";
+import { contentWidthClass, defineSection } from "../frame.js";
 import { SectionTitle } from "../typography.js";
 
 const COLUMNS = ["two", "three"] as const;
@@ -67,14 +67,15 @@ const cards = defineSection({
     items: { kind: "slot", label: t("field.content"), accepts: "element" },
     // No padding or margin: defineSection adds them.
   },
-  defaults: { title: t("starter.cardsTitle"), gap: "medium", items: [] },
+  // Its content width (3.21): Narrow, Medium, Wide or Full, which defineSection adds.
+  defaults: { title: t("starter.cardsTitle"), gap: "medium", contentWidth: "wide", items: [] },
   // The frame's classes: its background and layout.
   frame: () => "bg-base-100",
   // The inside of the frame. `values` and `slots` are typed by `fields`.
   render: ({ values, slots }) => {
     const Items = slots.items;
     return (
-      <div className="mx-auto max-w-6xl space-y-8">
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-8`}>
         <SectionTitle>{values.title}</SectionTitle>
         {/* The slot's class goes on the element that holds its elements: see Slots below. */}
         <Items className={values.variant === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"} />
@@ -88,7 +89,10 @@ const cards = defineSection({
 
 Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComponent` refuses `place: "section"`, so every section has the same frame and the same frame fields:
 - **Its colours:** `COLORS_FIELD` (2.4, F-DS-3), *Page colours* or *Reversed*. A reversed section gets `data-theme="wf_inverse"` (`INVERSE_THEME` from `@webforge/model`), daisyUI's nested theme of the theme's inverse colours, so its background, text and every colour class inside it take those. A section declaring a `colors` field is refused.
-  - **A reversed Section** (not *Full width*) is a band across the page, with its `max-w-4xl` column on the slot inside it. With page colours that column is the `<section>` itself, padding included; reversed, it sits inside the band's padding, so its content is about 32 px wider. Accepted for now (#344).
+- **Its content width:** `CONTENT_WIDTH_FIELD` (3.21, PF-4), *Narrow* (768 px), *Medium* (896 px), *Wide* (1152 px) or *Full* (the page less the padding), in the Style tab. It caps the section's content, never its background, which spans the page. Each section gives its default in `defaults.contentWidth` (a type error without one): the width its first layout drew before 3.21. `render` caps its outermost column with `mx-auto ${contentWidthClass(values.contentWidth)}`; a narrower reading measure inside it (an intro over a grid) keeps its own class, and `narrowerWidth` gives a measure that is never wider than the section's. A section declaring a `contentWidth` field is refused.
+  - **Layouts keep the width:** switching a section's layout keeps its content width. Format 10 wrote, for each layout that drew wider or narrower than its kind's default before (a centred or text-only Hero, a Call to action or a Video or Map beside its text, an FAQ in columns), that width, so nothing saved changed. A stacked form keeps its own measure and hides the setting (`hides`).
+  - **A Section at Medium on the page's colours** is drawn as every Section was before 3.21, so one saved then doesn't move: the `<section>` itself is the 896 px column, padding included, so a background of its own is that wide too. Reversed (a band across the page, 2.4), or at another width, its column sits inside its padding, as every other section's does.
+  - **An Image** reads its Section's width from `SectionWidthContext`, for its `sizes`.
 - **Its padding and margin:** `PADDING_FIELD` and `MARGIN_FIELD` (1.32), added after its own fields. A section declaring either is refused. The canvas's spacing handles and the Edit panel's spacing fields work on every section alike.
 - **Its frame:** `<section class="site-<name> <frame classes> <padding> <margin>">` (with `data-theme` when reversed), with the padding from `SECTION_PADDING` (`px-4 py-16`) for the sides left unset. `frame` gives its background and layout classes from its values ("hero bg-base-200"); `frameAttributes` gives attributes its behaviour needs.
 - **Its inside:** `render` draws what goes in the frame.

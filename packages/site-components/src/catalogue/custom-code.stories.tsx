@@ -19,6 +19,7 @@ export const CustomCode: Story = {
         type: "Section",
         props: {
           id: "section",
+          contentWidth: "medium",
           content: [
             {
               type: "CustomCode",
@@ -42,6 +43,7 @@ export const CustomCodeEmpty: Story = {
         type: "Section",
         props: {
           id: "section",
+          contentWidth: "medium",
           content: [{ type: "CustomCode", props: { id: "custom", code: "" } }],
         },
       },

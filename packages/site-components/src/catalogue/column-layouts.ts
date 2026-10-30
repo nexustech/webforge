@@ -58,17 +58,16 @@ const WIDEST_COLUMN: Readonly<Record<ColumnLayout, number>> = {
 /** The layout of the Columns an element is in, per device; null outside Columns. */
 export const ColumnsLayoutContext = createContext<Responsive<ColumnLayout> | null>(null);
 
-/** How wide a section's column is at most (`max-w-4xl`), in pixels. */
-const SECTION_COLUMN_PX = 896;
-
 /**
  * The `sizes` of an image at most `maxPx` wide (none: as wide as it can be), in Columns laid out
- * as `layout` or in none: the widest it can show on Desktop (from 1024 px), on Tablet (from 768 px)
- * and on Mobile, so the browser fetches no larger a file than it shows (X2).
+ * as `layout` or in none, in a section whose content is at most `sectionPx` wide (none: Full, 3.21):
+ * the widest it can show on Desktop (from 1024 px), on Tablet (from 768 px) and on Mobile, so the
+ * browser fetches no larger a file than it shows (X2).
  */
 export function imageSizes(
   maxPx: (breakpoint: Breakpoint) => number | undefined,
   layout: Responsive<ColumnLayout> | null,
+  sectionPx: number | undefined,
 ): string {
   const share = (breakpoint: Breakpoint) =>
     layout === null ? 1 : WIDEST_COLUMN[resolveResponsive(layout, breakpoint)];
@@ -78,8 +77,12 @@ export function imageSizes(
     const fluid = fraction === 1 ? viewport : `${Math.round(fraction * 100)}vw`;
     return cap === undefined ? fluid : `min(${cap}px, ${fluid})`;
   };
-  const desktopCap = Math.round(SECTION_COLUMN_PX * share("desktop"));
   const desktopMax = maxPx("desktop");
-  const desktop = desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap);
-  return `(min-width: 1024px) ${desktop}px, (min-width: 768px) ${shown("tablet", "100vw")}, ${shown("mobile", "100vw")}`;
+  const desktopCap = sectionPx === undefined ? undefined : Math.round(sectionPx * share("desktop"));
+  // In a Full section, as wide as the screen lets it be, as on the smaller devices.
+  const desktop =
+    desktopCap === undefined
+      ? shown("desktop", "100vw")
+      : `${desktopMax === undefined ? desktopCap : Math.min(desktopMax, desktopCap)}px`;
+  return `(min-width: 1024px) ${desktop}, (min-width: 768px) ${shown("tablet", "100vw")}, ${shown("mobile", "100vw")}`;
 }

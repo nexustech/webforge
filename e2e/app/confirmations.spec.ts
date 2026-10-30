@@ -44,7 +44,7 @@ test.beforeEach(async () => {
       id: "footer-section",
       padding: { top: "m", bottom: "m" },
       gap: "medium",
-      fullWidth: false,
+      contentWidth: "medium",
       content: [heading("footer-hours", "Opening hours"), heading("footer-open", "Open daily")],
     },
   });

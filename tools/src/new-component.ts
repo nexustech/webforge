@@ -83,7 +83,7 @@ export function moduleFile(names: Names, place: Place): string {
   if (place === "section") {
     return [
       'import { t } from "@webforge/i18n";',
-      'import { defineSection } from "../frame.js";',
+      'import { contentWidthClass, defineSection } from "../frame.js";',
       'import type { ComponentDef } from "../library.js";',
       'import { BodyText, SectionTitle } from "../typography.js";',
       "",
@@ -99,10 +99,11 @@ export function moduleFile(names: Names, place: Place): string {
       "  defaults: {",
       `    title: t("starter.${camel}Title"),`,
       `    text: \`<p>\${t("starter.${camel}Text")}</p>\`,`,
+      '    contentWidth: "narrow",',
       "  },",
       '  frame: () => "bg-base-100",',
       "  render: ({ values }) => (",
-      '    <div className="mx-auto max-w-3xl">',
+      `    <div className={\`mx-auto \${contentWidthClass(values.contentWidth)}\`}>`,
       "      <SectionTitle>{values.title}</SectionTitle>",
       '      <BodyText className="mt-4">{values.text}</BodyText>',
       "    </div>",

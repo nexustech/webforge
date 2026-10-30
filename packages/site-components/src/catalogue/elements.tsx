@@ -3,7 +3,7 @@ import { type Breakpoint, type Responsive, resolveResponsive } from "@webforge/m
 import { createContext, type ReactNode, useContext } from "react";
 import { whereOwnColour } from "../appearance.js";
 import { defineComponent, LOOK_TARGET } from "../define.js";
-import { MARGIN_FIELD, marginClasses } from "../frame.js";
+import { MARGIN_FIELD, marginClasses, SectionWidthContext } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
 import { type ComponentDef, colorClass, linkAttributes, responsiveClasses } from "../library.js";
 import {
@@ -72,12 +72,13 @@ function ImagePicture({
   readonly rounded: boolean;
 }) {
   const layout = useContext(ColumnsLayoutContext);
+  const sectionPx = useContext(SectionWidthContext);
   const maxPx = (breakpoint: Breakpoint) => IMAGE_WIDTH_PX[resolveResponsive(width, breakpoint)];
   return (
     <Picture
       image={image}
       alt={alt}
-      sizes={imageSizes(maxPx, layout)}
+      sizes={imageSizes(maxPx, layout, sectionPx)}
       className={rounded ? "h-auto w-full rounded-box" : "h-auto w-full"}
     />
   );

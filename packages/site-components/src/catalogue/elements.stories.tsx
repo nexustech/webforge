@@ -11,7 +11,7 @@ type Story = StoryObj<typeof meta>;
 
 /** `content` in a Section, as elements are placed. */
 const inSection = (content: readonly NodeDoc[]): readonly NodeDoc[] => [
-  { type: "Section", props: { id: "section", content } },
+  { type: "Section", props: { id: "section", contentWidth: "medium", content } },
 ];
 
 const text: NodeDoc = {

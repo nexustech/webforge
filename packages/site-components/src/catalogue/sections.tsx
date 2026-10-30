@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
 import { defineComponent } from "../define.js";
-import { defineSection } from "../frame.js";
+import { CONTENT_WIDTH_PX, contentWidthClass, defineSection, narrowerWidth } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
 import {
@@ -53,11 +53,14 @@ const hero = defineSection({
     },
     image: { kind: "media", label: t("field.image") },
   },
+  // Its layouts' widths before 3.21 were Wide, Medium (centred) and Narrow (text only); format 10
+  // keeps those saved then.
   defaults: {
     title: t("starter.heroTitle"),
     text: t("starter.heroText"),
     buttonLabel: t("starter.heroButton"),
     alignment: "centre",
+    contentWidth: "wide",
   },
   // The image behind the text fills the whole section, its padding too, behind a dark overlay. It
   // doesn't use daisyUI's `hero` grid, whose grid areas would keep the overlay inside the padding.
@@ -73,6 +76,7 @@ const hero = defineSection({
     const first = id === context.firstSection;
     const aligned =
       values.alignment === "centre" || layout === "centred" ? "text-center" : "text-left";
+    const width = contentWidthClass(values.contentWidth);
     const placed = layout === "minimal" ? undefined : values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
     const alt = placed?.alt ?? image?.alt ?? "";
@@ -97,26 +101,33 @@ const hero = defineSection({
             />
           )}
           <div className="absolute inset-0 bg-neutral/70" />
-          <div className={`hero-content relative max-w-6xl text-neutral-content ${aligned}`}>
+          <div className={`hero-content relative ${width} text-neutral-content ${aligned}`}>
             {copy}
           </div>
         </>
       );
     }
     if (layout === "minimal") {
-      return <div className={`mx-auto max-w-3xl ${aligned}`}>{copy}</div>;
+      return <div className={`mx-auto ${width} ${aligned}`}>{copy}</div>;
     }
     const centred = layout === "centred";
+    const widthPx = CONTENT_WIDTH_PX[values.contentWidth];
     return (
       <div
-        className={`hero-content ${centred ? "max-w-4xl flex-col gap-10" : "max-w-6xl flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
+        className={`hero-content ${width} ${centred ? "flex-col gap-10" : "flex-col gap-10 lg:flex-row-reverse"} ${aligned}`}
       >
         {centred ? copy : null}
         {image !== null && (
           <Picture
             image={image}
             alt={alt}
-            sizes={centred ? "(min-width: 896px) 896px, 100vw" : "(min-width: 1024px) 50vw, 100vw"}
+            sizes={
+              !centred
+                ? "(min-width: 1024px) 50vw, 100vw"
+                : widthPx === undefined
+                  ? "100vw"
+                  : `(min-width: ${widthPx}px) ${widthPx}px, 100vw`
+            }
             eager={first}
             className={
               centred
@@ -140,10 +151,14 @@ const textSection = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     text: { kind: "richtext", label: t("field.text"), inline: true },
   },
-  defaults: { title: t("starter.textTitle"), text: `<p>${t("starter.textBody")}</p>` },
+  defaults: {
+    title: t("starter.textTitle"),
+    text: `<p>${t("starter.textBody")}</p>`,
+    contentWidth: "narrow",
+  },
   frame: () => "bg-base-100",
   render: ({ values }) => (
-    <div className="mx-auto max-w-3xl">
+    <div className={`mx-auto ${contentWidthClass(values.contentWidth)}`}>
       <SectionTitle>{values.title}</SectionTitle>
       <SectionIntro className="mt-4">{values.text}</SectionIntro>
     </div>
@@ -164,18 +179,22 @@ const textImage = defineSection({
     text: { kind: "richtext", label: t("field.text"), inline: true },
     image: { kind: "media", label: t("field.image") },
   },
-  defaults: { title: t("starter.textImageTitle"), text: `<p>${t("starter.textImageBody")}</p>` },
+  defaults: {
+    title: t("starter.textImageTitle"),
+    text: `<p>${t("starter.textImageBody")}</p>`,
+    contentWidth: "wide",
+  },
   frame: () => "bg-base-100",
   render: ({ values, context }) => {
     const placed = values.image;
     const image = placed === undefined ? null : context.image(placed.mediaId);
     return (
-      // Without an image yet, the text alone, in the Text section's readable measure.
+      // Without an image yet, the text alone, in the Text section's readable measure at most.
       <div
         className={
           image === null
-            ? "mx-auto max-w-3xl"
-            : "mx-auto grid max-w-6xl items-center gap-10 md:grid-cols-2"
+            ? `mx-auto ${contentWidthClass(narrowerWidth(values.contentWidth, "narrow"))}`
+            : `mx-auto grid ${contentWidthClass(values.contentWidth)} items-center gap-10 md:grid-cols-2`
         }
       >
         {/* The text comes first, as it is read; on wide screens CSS puts the image left. */}
@@ -214,21 +233,24 @@ const callToAction = defineSection({
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
     buttonLink: { kind: "link", label: t("field.buttonLink") },
   },
+  // Its text beside the button was Wide before 3.21; format 10 keeps those saved then.
   defaults: {
     title: t("starter.ctaTitle"),
     text: t("starter.ctaText"),
     buttonLabel: t("starter.ctaButton"),
+    contentWidth: "narrow",
   },
   frame: (values) =>
     values.variant === "banner" ? "bg-neutral text-neutral-content" : "bg-base-200",
   render: ({ values, context }) => {
     const banner = values.variant === "banner";
+    const width = contentWidthClass(values.contentWidth);
     return (
       <div
         className={
           banner
-            ? "mx-auto max-w-3xl text-center"
-            : "mx-auto flex max-w-6xl flex-col items-start gap-6 md:flex-row md:items-center md:justify-between"
+            ? `mx-auto ${width} text-center`
+            : `mx-auto flex ${width} flex-col items-start gap-6 md:flex-row md:items-center md:justify-between`
         }
       >
         <div>
@@ -262,17 +284,14 @@ const faq = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.questions"), allow: ["FaqItem"] },
   },
-  defaults: { title: t("starter.faqTitle"), items: [] },
+  // Its two columns were Wide before 3.21; format 10 keeps those saved then.
+  defaults: { title: t("starter.faqTitle"), contentWidth: "narrow", items: [] },
   frame: () => "bg-base-100",
   render: ({ values, slots }) => {
     const Items = slots.items;
     const layout = values.variant;
     return (
-      <div
-        className={
-          layout === "columns" ? "mx-auto max-w-6xl space-y-4" : "mx-auto max-w-3xl space-y-4"
-        }
-      >
+      <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-4`}>
         <SectionTitle>{values.title}</SectionTitle>
         <FaqLayoutContext value={layout}>
           {layout === "columns" ? (

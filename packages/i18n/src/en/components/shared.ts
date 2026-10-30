@@ -12,6 +12,14 @@ export const shared = {
   "field.sectionColors.inverse": "Reversed",
   "field.sectionColors.help":
     "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+  // How wide a section's content is at most (3.21, PF-4); its background still spans the page.
+  "field.contentWidth": "Content width",
+  "field.contentWidth.help":
+    "How wide the section's content can be. Its background still goes across the page.",
+  "field.contentWidth.narrow": "Narrow",
+  "field.contentWidth.medium": "Medium",
+  "field.contentWidth.wide": "Wide",
+  "field.contentWidth.full": "Full",
   "field.padding": "Padding",
   "field.margin": "Margin",
   // How a section or element moves in as visitors scroll to it (2.12, F-DS-5), and after how long.

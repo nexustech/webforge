@@ -1315,11 +1315,6 @@
             }
           ]
         },
-        "fullWidth": {
-          "kind": "toggle",
-          "label": "Full width",
-          "group": "style"
-        },
         "content": {
           "kind": "slot",
           "label": "Content",
@@ -1342,6 +1337,30 @@
             "BuyButton",
             "Tabs",
             "CustomCode"
+          ]
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
           ]
         },
         "colors": {
@@ -1436,7 +1455,7 @@
         "overlay": "60",
         "overlayColor": "base",
         "gap": "medium",
-        "fullWidth": false,
+        "contentWidth": "wide",
         "content": []
       }
     },
@@ -2910,6 +2929,30 @@
           "kind": "media",
           "label": "Image"
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -3026,7 +3069,8 @@
         "title": "Fresh ideas, made by hand",
         "text": "Say in one sentence what makes your business special.",
         "buttonLabel": "Get in touch",
-        "alignment": "centre"
+        "alignment": "centre",
+        "contentWidth": "wide"
       }
     },
     "TextSection": {
@@ -3103,6 +3147,30 @@
           "kind": "richtext",
           "label": "Text",
           "inline": true
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
         },
         "colors": {
           "kind": "select",
@@ -3196,7 +3264,8 @@
         "overlay": "60",
         "overlayColor": "base",
         "title": "Our story",
-        "text": "<p>Tell visitors who you are, what you do and why you do it.</p>"
+        "text": "<p>Tell visitors who you are, what you do and why you do it.</p>",
+        "contentWidth": "narrow"
       }
     },
     "TextImage": {
@@ -3277,6 +3346,30 @@
         "image": {
           "kind": "media",
           "label": "Image"
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
         },
         "colors": {
           "kind": "select",
@@ -3386,7 +3479,8 @@
         "overlay": "60",
         "overlayColor": "base",
         "title": "What we do",
-        "text": "<p>Describe what you offer, and add a photo that shows it.</p>"
+        "text": "<p>Describe what you offer, and add a photo that shows it.</p>",
+        "contentWidth": "wide"
       }
     },
     "CallToAction": {
@@ -3471,6 +3565,30 @@
         "buttonLink": {
           "kind": "link",
           "label": "Button link"
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
         },
         "colors": {
           "kind": "select",
@@ -3581,7 +3699,8 @@
         "overlayColor": "base",
         "title": "Ready to visit?",
         "text": "Tell visitors the one thing you would like them to do next.",
-        "buttonLabel": "Contact us"
+        "buttonLabel": "Contact us",
+        "contentWidth": "narrow"
       }
     },
     "Faq": {
@@ -3659,6 +3778,30 @@
           "label": "Questions",
           "allow": [
             "FaqItem"
+          ]
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
           ]
         },
         "colors": {
@@ -3773,6 +3916,7 @@
         "overlay": "60",
         "overlayColor": "base",
         "title": "Frequently asked questions",
+        "contentWidth": "narrow",
         "items": []
       }
     },
@@ -3871,6 +4015,30 @@
           "label": "Images",
           "allow": [
             "GalleryImage"
+          ]
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
           ]
         },
         "colors": {
@@ -3985,6 +4153,7 @@
         "overlay": "60",
         "overlayColor": "base",
         "title": "Our work",
+        "contentWidth": "wide",
         "images": []
       }
     },
@@ -4197,6 +4366,30 @@
           "label": "Video address",
           "help": "Paste the link to a YouTube or Vimeo video."
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -4306,7 +4499,8 @@
         "overlayColor": "base",
         "title": "See us at work",
         "text": "<p>Say what this video shows.</p>",
-        "address": ""
+        "address": "",
+        "contentWidth": "medium"
       }
     },
     "Map": {
@@ -4390,6 +4584,30 @@
           "help": "The place's address, or a link to it from OpenStreetMap. An address shows on Google Maps.",
           "bindable": [
             "contact.address"
+          ]
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
           ]
         },
         "colors": {
@@ -4501,7 +4719,8 @@
         "overlayColor": "base",
         "title": "Find us",
         "text": "<p>Tell visitors how to get here, and where to park.</p>",
-        "address": ""
+        "address": "",
+        "contentWidth": "medium"
       }
     },
     "EmbedVideo": {
@@ -4768,6 +4987,30 @@
           "label": "Show contact details",
           "help": "The address, phone number and email address come from Site Settings."
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -4875,6 +5118,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "medium",
         "title": "Visit us",
         "text": "<p>We'd love to see you.</p>",
         "showHours": true,
@@ -4963,6 +5207,30 @@
         "buttonLabel": {
           "kind": "text",
           "label": "Button text"
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
         },
         "colors": {
           "kind": "select",
@@ -5074,7 +5342,8 @@
         "title": "Get in touch",
         "text": "<p>Send us a message and we'll reply within a day.</p>",
         "askPhone": false,
-        "buttonLabel": "Send message"
+        "buttonLabel": "Send message",
+        "contentWidth": "wide"
       }
     },
     "Newsletter": {
@@ -5169,6 +5438,30 @@
           "kind": "text",
           "label": "Email field's name",
           "help": "What your newsletter service calls the email address, such as EMAIL. Leave it as email if unsure."
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
         },
         "colors": {
           "kind": "select",
@@ -5282,7 +5575,8 @@
         "askName": false,
         "buttonLabel": "Sign up",
         "action": "",
-        "emailName": "email"
+        "emailName": "email",
+        "contentWidth": "wide"
       }
     },
     "Form": {
@@ -5649,6 +5943,30 @@
             }
           ]
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -5760,6 +6078,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "wide",
         "title": "What we offer",
         "text": "<p>A few good reasons to choose us.</p>",
         "items": [
@@ -5986,6 +6305,30 @@
             }
           ]
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -6097,6 +6440,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "wide",
         "title": "What our customers say",
         "items": [
           {
@@ -6333,6 +6677,30 @@
             }
           ]
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -6444,6 +6812,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "wide",
         "title": "Meet the team",
         "text": "<p>The people you'll see when you visit.</p>",
         "items": [
@@ -6681,6 +7050,30 @@
             }
           ]
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -6788,6 +7181,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "wide",
         "title": "Prices",
         "text": "<p>Simple prices, no surprises.</p>",
         "items": [
@@ -7327,6 +7721,30 @@
             "Logo"
           ]
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -7434,6 +7852,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "wide",
         "title": "As seen in",
         "items": [
           {
@@ -7566,6 +7985,30 @@
             "Stat"
           ]
         },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
         "colors": {
           "kind": "select",
           "label": "Colours",
@@ -7677,6 +8120,7 @@
         "colors": "page",
         "overlay": "60",
         "overlayColor": "base",
+        "contentWidth": "wide",
         "title": "In numbers",
         "text": "<p>A few things we're proud of.</p>",
         "items": [
