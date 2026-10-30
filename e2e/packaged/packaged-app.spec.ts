@@ -10,6 +10,7 @@ import { ProjectStore } from "@webforge/storage";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
 import { FONT_BUDGET_BYTES, FONT_CATALOGUE } from "@webforge/themes";
 import { desktopVersion } from "../app/launch.js";
+import { startSftpServer } from "./sftp-server.js";
 
 // Checks the packaged app (`pnpm e2e:packaged`): electron-builder output with asar, Fuses and the
 // unpacked better-sqlite3 binary. Fuses switch off --inspect, so Playwright's Electron launcher
@@ -85,6 +86,15 @@ async function appPage(browser: Browser): Promise<Page> {
 type ProjectApi = {
   getCurrent(): Promise<unknown>;
   create(request: { name: string; theme: string }): Promise<{ status: string }>;
+};
+
+/** The renderer's `window.webforge.publish`, as far as these tests call it (4.3). */
+type PublishApi = {
+  readHostKey(
+    host: string,
+    port: number,
+  ): Promise<{ status: "read"; hostKey: string } | { status: "failed"; code: string }>;
+  testConnection(destination: unknown, signIn: unknown): Promise<unknown>;
 };
 
 const currentProject = (page: Page) =>
@@ -224,6 +234,41 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
   expect(listed.map((template) => template.id)).toEqual(
     TEMPLATE_IDS.filter((id) => id !== BLANK_TEMPLATE_ID),
   );
+});
+
+test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.3, ADR 0006)", async () => {
+  test.skip(child === undefined, "Needs the running packaged app");
+  const server = await startSftpServer({ user: "baker", password: "test-only-password" });
+  try {
+    // The host's key first, as the destination form trusts it, then Test connection with it.
+    const result = await page.evaluate(async (port) => {
+      const { publish } = (window as unknown as { webforge: { publish: PublishApi } }).webforge;
+      const read = await publish.readHostKey("127.0.0.1", port);
+      if (read.status !== "read") return read;
+      return publish.testConnection(
+        {
+          protocol: "sftp",
+          host: "127.0.0.1",
+          port,
+          user: "baker",
+          folder: "/site",
+          signIn: "password",
+          hostKey: read.hostKey,
+        },
+        { password: "test-only-password" },
+      );
+    }, server.port);
+
+    expect(result).toEqual({ ok: true });
+  } finally {
+    await server.stop();
+  }
+  // Nothing of ssh2's is unpacked beside app.asar: no native crypto binding or cpu-features.
+  const dir = resourcesDir();
+  if (dir !== undefined) {
+    expect(existsSync(join(dir, "app.asar.unpacked", "node_modules", "ssh2"))).toBe(false);
+    expect(existsSync(join(dir, "app.asar.unpacked", "node_modules", "cpu-features"))).toBe(false);
+  }
 });
 
 // Last: it quits the app.

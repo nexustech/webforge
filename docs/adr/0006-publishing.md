@@ -84,16 +84,20 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   - Once every upload is done, the manifest lists the new files plus those still to be removed, so a publish cancelled during clean-up still removes them next time.
   - A missing or damaged manifest counts as a first publish: everything is uploaded and nothing removed.
 - **FTPS first (B5).** `ftps` is explicit TLS (`AUTH TLS`) against the computer's trusted certificates. A certificate it doesn't trust fails as `untrusted-host` before signing in. Plain `ftp` is allowed; the app warns first (B5).
+  - **A host without FTPS (4.3):** one that refuses `AUTH TLS` fails as `no-encryption`, before the password is sent, so Test connection can offer SFTP or plain FTP. `connect` does what `basic-ftp`'s `access` does, step by step, to tell that refusal apart.
+  - **Plain FTP's warning (4.3)** shows once per destination: the destination keeps `plainFtpWarned` once the person accepts it, and Save waits for it.
   - **Not covered:** many shared hosts present a certificate for the host's own name rather than the customer's domain. For a mismatch the person accepts, the Phase 4 UI can store the certificate's fingerprint, as SFTP does with host keys.
 - **SFTP trusts a host key once.** The destination stores the server's key fingerprint as OpenSSH shows it (`SHA256:…`).
   - `readSftpHostKey` reads the key without signing in, for the person to compare and trust the first time.
   - After that, `ssh2`'s `hostVerifier` refuses any other key before the password is sent (`untrusted-host`).
+  - **In the destination form (4.3)** the key is read and shown when the person first tests the connection, and trusted only when they say so; a key that changed later is shown as changed, to trust only knowingly. A trusted key belongs to its host and port: another of either is another connection, untrusted.
+- **SFTP signs in with a password or a private key (4.3).** The key is the text of its file (OpenSSH or PEM) with its passphrase, if it has one. `readPrivateKey` checks the passphrase opens it before connecting, so a wrong one is `bad-key` and the host never sees a failed try; `describePrivateKey` tells the form whether a chosen file is a key and needs a passphrase. The main process reads the file the person picks (at most 16 KB) and returns its text to the form, which tests with it; 4.4 keeps it in the keychain with the password.
 - **`ssh2` directly, not `ssh2-sftp-client`.**
   - Research 08 named `ssh2-sftp-client`. Its types lag three major versions, and `ssh2` itself has every SFTP call needed, plus the `Server` the tests use.
   - `ssh2` pulls in `tweetnacl` (Unlicense, a public-domain dedication; a reviewed exception in `tools/src/check-licences.ts`) to decrypt passphrase-protected private keys.
   - **No native module ships.** `ssh2` has an optional native crypto binding and an optional `cpu-features` build. pnpm doesn't run their build scripts (they aren't allowed), and electron-builder's `npmRebuild` is off, so `ssh2` runs on its JavaScript fallback in tests and in the app. Nothing can then be built for the wrong ABI.
-    - Today `ssh2` isn't in the app at all: nothing in the main process imports the publishers yet.
-    - 4.3, which wires SFTP in, adds an `e2e:packaged` check that the packaged app publishes over SFTP.
+    - Since 4.3 the main process imports the publishers. `ssh2` is one of the app's own dependencies, so electron-vite leaves it unbundled, as it does `better-sqlite3`: bundling it failed on its optional native requires. electron-builder packs its JavaScript into app.asar and leaves out the native sources, `cpu-features` and `nan`; `ssh2` requires its bindings inside `try`, and runs without them.
+    - `e2e:packaged` checks the packaged app reads an SFTP host's key and tests a connection with it, against an SFTP server the test starts, and that nothing of `ssh2`'s is unpacked beside app.asar. The full publish run in the app comes with 4.5's flow.
 - **Errors by kind, never the reply.**
   - `fileTransferError` maps FTP reply codes, SSH sign-in levels, SFTP status codes, socket and DNS codes, and TLS certificate codes to `PublishError` codes, with `untrusted-host` added for both protocols.
   - The host's reply can echo the user name or a path, so it stays in `cause` only.
@@ -102,7 +106,7 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   - `ssh2`'s `Server` over a temporary folder for SFTP.
 
   They cover a second publish sending only the changed file, removals that leave other people's files alone, cancel mid-publish, a wrong password, a missing folder, an unreachable host, and an untrusted certificate or host key.
-- **Not yet run against real hosts.** The live checks with cPanel or Plesk FTP and an OpenSSH host are for the Phase 4 E2E (local FTP and SFTP servers in CI, 4.3).
+- **Against real servers (4.3).** CI's *File transfer servers* job (Linux) starts pure-ftpd over FTPS and OpenSSH's SFTP (`atmoz/sftp`) in containers, pinned by digest, and runs `servers.live.test.ts` against them. It publishes twice, the second time only the changed file, with the server's own certificate trusted, and over SFTP with a password and with a private key and its passphrase. It also checks that an untrusted certificate, a wrong password or passphrase and a changed host key are refused. Without the servers the tests skip. Real cPanel or Plesk hosts are still checked by hand.
 - **`safeStorage` round trip:** `e2e/app/credentials.spec.ts` encrypts a test secret in one run and decrypts it in the next, on Windows (DPAPI) and macOS (Keychain), in CI.
 
 ### 8. The publish run and the live check (4.1)
