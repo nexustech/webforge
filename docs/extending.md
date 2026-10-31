@@ -44,6 +44,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **Main only through `ctx.api`** (#668): an area never reads `window.webforge`. It passes `ctx.api.<domain>` (or a call of it) to what it registers, as the Media panel gets `ctx.api.media`. `App` takes the API as one prop, `api`, which is `window.webforge` in the app, and gives the same object to both lists; it is fixed for the window's life. A new call needs no new prop or context field: add it to its IPC domain, and the area calls it.
 - **The canvas engine** is there only while the editor has one mounted. Use `ctx.engine.whileMounted(({ engine, connection }) => connect…)`: it connects to each engine as it mounts and undoes that as the engine goes. Flush the canvas's pending edit with `ctx.engine.flush()` before a command changes the document.
 - **Design or Content mode:** follow it with `followLayoutLock(ctx.preferences, (locked) => …)` (`shell/preferences-store.ts`). Never hold a ref for someone else to call.
+- **A build of the site** (Export, and Publish and Republish from 4.5) composes `editor/build-flow.ts` (#668): `gateOnSiteCheck(site, mode, …)` stops it on a *Must fix* in that mode and shows Site Check; `runWithProgress(…)` runs it with its progress in a toast whose Cancel button stops it.
 
 ### Two lists: the editor's and the window's
 
