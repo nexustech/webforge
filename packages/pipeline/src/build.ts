@@ -28,7 +28,7 @@ import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler 
 import { developerFiles } from "./developer-files.js";
 import { type BuildWarning, pagePrefix, pageRender } from "./export-context.js";
 import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
-import { processImage } from "./images.js";
+import { processImage, UndecodableImageError } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
@@ -58,32 +58,57 @@ import { withThanksPage } from "./thanks-page.js";
  * `cancelled`: the build's signal was aborted (R15).
  * `reserved-name`: a page or its folder is named after a Windows device (`con`, `aux`, `nul`…), so
  * its file can't be written there (R16).
+ * `unreadable-image`: a Media image isn't decoded, being larger than 50 megapixels or not the kind
+ * of image it is stored as (S12); `image` names it.
  */
 export type BuildErrorCode =
   | "invalid-site"
   | "unknown-component"
   | "missing-font"
   | "cancelled"
-  | "reserved-name";
+  | "reserved-name"
+  | "unreadable-image";
 
 /** A build that cannot produce a working site. */
 export class BuildError extends WebforgeError<BuildErrorCode> {
   override readonly name = "BuildError";
   /** The title of the page the build stopped at, for the message telling the person to fix it. */
   readonly page: string | undefined;
+  /** The Media file the build couldn't decode (`unreadable-image`), for the person to replace. */
+  readonly image: string | undefined;
 
   constructor(
     code: BuildErrorCode,
     message: string,
-    options?: ErrorOptions & { readonly page?: string },
+    options?: ErrorOptions & { readonly page?: string; readonly image?: string },
   ) {
     super(
       code,
-      code === "reserved-name" ? "export.failed.reservedName" : "export.failed.buildFailed",
+      code === "reserved-name"
+        ? "export.failed.reservedName"
+        : code === "unreadable-image"
+          ? "export.failed.unreadableImage"
+          : "export.failed.buildFailed",
       message,
       options,
     );
     this.page = options?.page;
+    this.image = options?.image;
+  }
+}
+
+/**
+ * What `make` makes from Media image `item`, an original it refuses to decode (S12) failing the
+ * build as `unreadable-image`, naming the image for the person to replace.
+ */
+async function decodingOf<T>(item: MediaItem, make: () => Promise<T>): Promise<T> {
+  try {
+    return await make();
+  } catch (error) {
+    if (error instanceof UndecodableImageError) {
+      throw new BuildError("unreadable-image", error.message, { image: item.name, cause: error });
+    }
+    throw error;
   }
 }
 
@@ -350,9 +375,9 @@ export async function* buildEvents(
       missing.add(id);
       continue;
     }
-    const processed = await processImage(item, originalOf(item), resources.codecs, {
-      cache: resources.imageCache,
-    });
+    const processed = await decodingOf(item, () =>
+      processImage(item, originalOf(item), resources.codecs, { cache: resources.imageCache }),
+    );
     if (processed === undefined) {
       missing.add(id);
       continue;
@@ -373,7 +398,9 @@ export async function* buildEvents(
     const made =
       icon === undefined
         ? undefined
-        : await iconFiles(icon, originalOf(icon), resources.codecs, resources.imageCache);
+        : await decodingOf(icon, () =>
+            iconFiles(icon, originalOf(icon), resources.codecs, resources.imageCache),
+          );
     for (const file of made?.files ?? []) files.set(file.path, file.data);
     icons = made?.icons ?? [];
     // Deleted from Media since, or too small for the smallest icon: the site has no favicon.
@@ -391,7 +418,9 @@ export async function* buildEvents(
     const made =
       item === undefined
         ? undefined
-        : await shareImageFile(item, originalOf(item), resources.codecs, resources.imageCache);
+        : await decodingOf(item, () =>
+            shareImageFile(item, originalOf(item), resources.codecs, resources.imageCache),
+          );
     if (made !== undefined) files.set(made.path, made.data);
     shareFiles.set(id, made?.path);
   }

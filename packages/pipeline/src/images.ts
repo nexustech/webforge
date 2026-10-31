@@ -4,7 +4,7 @@ import decodePng, { init as initPng } from "@jsquash/png/decode.js";
 import encodePng from "@jsquash/png/encode.js";
 import resize, { initResize } from "@jsquash/resize";
 import encodeWebp, { init as initWebpEncode } from "@jsquash/webp/encode.js";
-import type { MediaItem } from "@webforge/model";
+import { decodableImage, type MediaItem } from "@webforge/model";
 import type { ImageSource, ResolvedImage } from "@webforge/site-components";
 import { z } from "zod";
 import type {} from "./codec-globals.js";
@@ -68,11 +68,23 @@ export function initCodecs(codecs: CodecModules): Promise<void> {
   return prepare();
 }
 
-/** Decodes an original JPEG or PNG. */
-export function decodeOriginal(
+/**
+ * An original that isn't decoded (S12): its first bytes say it's another type than the one it's
+ * stored as, or larger than `MAX_IMAGE_PIXELS`. A small file can claim a huge size, and a site file
+ * may come from anyone, so every decode checks first.
+ */
+export class UndecodableImageError extends Error {
+  override readonly name = "UndecodableImageError";
+}
+
+/** Decodes an original JPEG or PNG, once its header says it may be ({@link UndecodableImageError}). */
+export async function decodeOriginal(
   data: Uint8Array,
   mimeType: MediaItem["mimeType"],
 ): Promise<ImageData> {
+  if (decodableImage(data, mimeType) === undefined) {
+    throw new UndecodableImageError("The image is too large to decode, or not what it says it is");
+  }
   // The decoders take an ArrayBuffer; copy so a view into a larger buffer cannot leak extra bytes.
   const bytes = data.slice().buffer;
   return mimeType === "image/png" ? decodePng(bytes) : decodeJpeg(bytes);

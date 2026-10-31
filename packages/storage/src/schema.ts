@@ -55,7 +55,8 @@ const SCHEMA_V1: readonly string[] = [
 
 /**
  * The schema of every format this build opens, so an older file is checked against its own
- * format before it is migrated. Entries are never removed.
+ * format before it is migrated. Entries are never removed. `meta` is the same in every format:
+ * it says which format a file is in, so it is checked before that is known (S4).
  */
 export const SCHEMAS: Readonly<Record<number, readonly string[]>> = { 1: SCHEMA_V1 };
 

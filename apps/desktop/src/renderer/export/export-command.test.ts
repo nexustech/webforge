@@ -61,6 +61,14 @@ describe("exportFailure", () => {
     );
   });
 
+  it("names the image to replace when it can't be decoded (S12)", () => {
+    expect(
+      exportFailure({ status: "failed", reason: "unreadable-image", image: "huge-photo" }),
+    ).toBe(
+      "The image “huge-photo” can't be exported: it's larger than 50 megapixels, or its file is damaged. Replace it in Media and export again.",
+    );
+  });
+
   it("says nothing when the person cancels", () => {
     expect(exportFailure({ status: "canceled" })).toBeNull();
   });

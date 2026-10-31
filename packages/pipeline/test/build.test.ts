@@ -695,6 +695,24 @@ describe("buildSite: checks (X5)", () => {
     });
   });
 
+  it("fails, naming it, for an image over 50 megapixels that came in a site file (S12)", async () => {
+    // A PNG's first bytes claiming 30,000 × 30,000 pixels: the decoder never gets it.
+    const claim = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0,
+      0x75, 0x30, 0, 0, 0x75, 0x30, 8, 6, 0, 0, 0,
+    ]);
+    const site = siteWith(
+      [{ type: "Hero", props: { id: "h", title: "Huge", image: { mediaId: "huge" } } }],
+      { media: [{ id: "huge", name: "huge-photo", mimeType: "image/png", data: claim }] },
+    );
+
+    await expect(buildSite(site, siteLibrary, resources)).rejects.toMatchObject({
+      name: "BuildError",
+      code: "unreadable-image",
+      image: "huge-photo",
+    });
+  });
+
   it("leaves out an image deleted from Media, with a warning, instead of failing (1.16)", async () => {
     const site = siteWith([
       { type: "Hero", props: { id: "h", title: "Fresh bread", image: { mediaId: "gone" } } },

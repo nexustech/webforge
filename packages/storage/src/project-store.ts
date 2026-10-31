@@ -216,11 +216,47 @@ function collectHashes(value: JsonValue, into: Set<string>): void {
 }
 
 /** The `sqlite_schema` rows of a database, in a stable order, for comparison. */
+/**
+ * The file's `sqlite_schema`: its tables, indexes, views and triggers, each as one JSON line.
+ * Reading it runs nothing stored in the file, so it is safe on any file (S4).
+ */
 function readSchema(db: Database.Database): string[] {
   return db
     .prepare("SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name")
     .all()
     .map((row) => JSON.stringify(schemaRowSchema.parse(row)));
+}
+
+/** The tables every format has, whose rows the store reads: never a view, whatever the format. */
+const READ_TABLES = ["meta", "documents", "blobs", "assets"] as const;
+
+/**
+ * Checks `schema` (from {@link readSchema}) before anything is read from the file's own tables
+ * (S4): a view or trigger would run the file's SQL, which can loop for ever. `meta`, which says
+ * which format the file is in, must be exactly the table every format defines. The other tables
+ * the store reads must be plain tables, and a file of a newer format may have no views or
+ * triggers either; an older or the current format's whole schema is compared once `meta` is read.
+ */
+function checkTablesBeforeReading(schema: readonly string[]): void {
+  const rows = schema.map((line) => schemaRowSchema.parse(JSON.parse(line)));
+  const expected = getExpectedSchema(FORMAT_VERSION) ?? [];
+  const metaLine = (lines: readonly string[]) =>
+    lines.find((line) => schemaRowSchema.parse(JSON.parse(line)).name === "meta");
+  const refuse = (message: string) => {
+    throw new ProjectFileError("unexpected-schema", message);
+  };
+  if (metaLine(schema) === undefined || metaLine(schema) !== metaLine(expected)) {
+    refuse("The project's metadata table is not the one every format has");
+  }
+  for (const name of READ_TABLES) {
+    const row = rows.find((each) => each.name === name);
+    if (row === undefined || row.type !== "table" || !/^CREATE TABLE /.test(row.sql ?? "")) {
+      refuse(`The project's ${name} is not a plain table`);
+    }
+  }
+  if (rows.some((row) => row.type === "view" || row.type === "trigger")) {
+    refuse("The project has views or triggers");
+  }
 }
 
 const expectedSchemas = new Map<number, readonly string[]>();
@@ -285,8 +321,9 @@ type ValidatedProject = Omit<ProjectInfo, "readOnly">;
 
 /**
  * Checks that `db` is a Webforge project this build can open, and returns its metadata. A file of
- * an older format must have exactly that format's tables; a newer one only needs the metadata,
- * since a newer Webforge may have added tables. It is then only ever opened read-only.
+ * an older format must have exactly that format's tables; a newer one only needs the metadata and
+ * plain tables to read, with no views or triggers, since a newer Webforge may have added tables.
+ * It is then only ever opened read-only. No SQL of the file's runs before its tables are checked.
  */
 function validateProject(db: Database.Database): ValidatedProject {
   if (db.pragma("application_id", { simple: true }) !== APPLICATION_ID) {
@@ -296,6 +333,9 @@ function validateProject(db: Database.Database): ValidatedProject {
   if (check !== "ok") {
     throw new ProjectFileError("corrupt", "The project fails SQLite's integrity check");
   }
+  // Its tables first, from SQLite's own record of them: nothing of the file's runs (S4).
+  const schema = readSchema(db);
+  checkTablesBeforeReading(schema);
   let metaRows: Record<string, string>;
   try {
     metaRows = readMetaRows(db);
@@ -308,7 +348,6 @@ function validateProject(db: Database.Database): ValidatedProject {
   const newerFormat = version.success && version.data > FORMAT_VERSION;
   if (!newerFormat) {
     const expected = version.success ? getExpectedSchema(version.data) : undefined;
-    const schema = readSchema(db);
     if (
       expected === undefined ||
       schema.length !== expected.length ||

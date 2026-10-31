@@ -1,4 +1,4 @@
-import { IMAGE_MIME_TYPES } from "@webforge/model";
+import { decodableImage, IMAGE_MIME_TYPES } from "@webforge/model";
 import type { StoredBlob } from "@webforge/storage";
 
 /** How many thumbnails stay in memory; a site's Media panel rarely shows more. */
@@ -49,8 +49,18 @@ export function createMediaResponder(options: MediaResponderOptions) {
   const cacheSize = options.cacheSize ?? THUMBNAIL_CACHE_SIZE;
   /** Most recently used last; the same bytes make the same thumbnail, so the hash is the key. */
   const thumbnails = new Map<string, Promise<Uint8Array | undefined>>();
+  /**
+   * Images never decoded for a thumbnail (S12), by hash: larger than 50 megapixels, or not what
+   * they're stored as. Checked from their first bytes, so the worker never gets them.
+   */
+  const refused = new Set<string>();
 
   const thumbnailOf = (hash: string, data: Uint8Array, mimeType: ImageMime) => {
+    if (refused.has(hash)) return Promise.resolve(undefined);
+    if (decodableImage(data, mimeType) === undefined) {
+      refused.add(hash);
+      return Promise.resolve(undefined);
+    }
     let made = thumbnails.get(hash);
     if (made === undefined) {
       made = options.makeThumbnail(data, mimeType);

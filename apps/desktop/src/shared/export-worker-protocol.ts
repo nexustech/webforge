@@ -272,11 +272,14 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
       "build-failed",
       "reserved-name",
       "too-large",
+      "unreadable-image",
     ]),
     /** A machine-readable detail such as a BuildError code; safe to log. */
     detail: z.string(),
     /** The title of the page to fix, for `reserved-name`: shown to the person, never logged. */
     page: z.string().max(500).optional(),
+    /** The Media image to replace, for `unreadable-image` (S12): shown, never logged. */
+    image: z.string().max(500).optional(),
   }),
 ]);
 

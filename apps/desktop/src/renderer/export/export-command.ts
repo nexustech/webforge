@@ -31,6 +31,8 @@ export function exportFailure(
       return t("export.failed.tooLarge");
     case "build-failed":
       return t("export.failed.buildFailed");
+    case "unreadable-image":
+      return t("export.failed.unreadableImage", { image: result.image ?? "" });
   }
 }
 

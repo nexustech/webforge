@@ -3,10 +3,23 @@ import { createMediaResponder } from "./media-protocol.js";
 
 const PHOTO = "a".repeat(64);
 const PRICES = "b".repeat(64);
-const photo = { mime: "image/jpeg", data: new Uint8Array([0xff, 0xd8, 0xff]) };
+const HUGE = "1".repeat(64);
+const MISLABELLED = "2".repeat(64);
+/** The start of a 20 × 10 JPEG: its start-of-frame segment, which says its size. */
+const jpegHeader = new Uint8Array([
+  0xff, 0xd8, 0xff, 0xc0, 0x00, 0x11, 0x08, 0x00, 0x0a, 0x00, 0x14, 0x03, 0, 0, 0, 0,
+]);
+/** The start of a PNG claiming 30,000 × 30,000 pixels: a few bytes that decode to 3.6 GB. */
+const hugePng = new Uint8Array([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0, 0x75,
+  0x30, 0, 0, 0x75, 0x30, 8, 6, 0, 0, 0,
+]);
+const photo = { mime: "image/jpeg", data: jpegHeader };
 const blobs = new Map([
   [PHOTO, photo],
   [PRICES, { mime: "application/pdf", data: new Uint8Array([0x25]) }],
+  [HUGE, { mime: "image/png", data: hugePng }],
+  [MISLABELLED, { mime: "image/png", data: jpegHeader }],
 ]);
 
 function setUp(
@@ -78,6 +91,19 @@ describe("createMediaResponder", () => {
     await respond(`webforge-media://thumbnail/${"c".repeat(64)}`);
     await respond(`webforge-media://thumbnail/${PHOTO}`);
     expect(makeThumbnail).toHaveBeenCalledTimes(4);
+  });
+
+  it("makes no thumbnail of an image over 50 megapixels or not what it's stored as (S12)", async () => {
+    const { respond, makeThumbnail } = setUp();
+
+    for (const hash of [HUGE, MISLABELLED, HUGE]) {
+      const response = await respond(`webforge-media://thumbnail/${hash}`);
+      expect(response.status).toBe(404);
+    }
+    // Refused from its first bytes, and remembered: the decoder never sees it.
+    expect(makeThumbnail).not.toHaveBeenCalled();
+    // Its original is the site's own file, which the editor's canvas shows as it is.
+    expect((await respond(`webforge-media://original/${HUGE}`)).status).toBe(200);
   });
 
   it("answers 404 when the site's file can't be read", async () => {
