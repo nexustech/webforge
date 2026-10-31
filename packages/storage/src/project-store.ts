@@ -272,9 +272,10 @@ function checkTablesBeforeReading(db: Database.Database, schema: readonly string
       .some(
         (index) =>
           index.partial !== 0 ||
+          // The index's name is the file's: bound, never written into the SQL.
           z
             .array(z.object({ cid: z.number() }))
-            .parse(db.pragma(`index_xinfo(${JSON.stringify(index.name)})`))
+            .parse(db.prepare("SELECT cid FROM pragma_index_xinfo(?)").all(index.name))
             .some((column) => column.cid === -2),
       );
     if (generated || computedIndex) {

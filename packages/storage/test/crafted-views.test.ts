@@ -1,7 +1,7 @@
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { ProjectFileError, type ProjectFileErrorCode, ProjectStore } from "../src/index.js";
 import { SCHEMAS } from "../src/schema.js";
 
@@ -78,20 +78,21 @@ describe("a crafted file's views and triggers (S4)", () => {
   });
 
   it("runs no CHECK constraint of a file's before its tables are checked", () => {
-    // quick_check evaluates CHECK constraints: these 20 rows take it seconds.
+    // quick_check evaluates CHECK constraints, which can be made to take seconds a row.
     const path = createProject();
     tamper(path, (db) => {
       db.exec("CREATE TABLE slow (x INTEGER CHECK (length(hex(randomblob(20000000))) < 0))");
       db.pragma("ignore_check_constraints = ON");
-      const insert = db.prepare("INSERT INTO slow VALUES (?)");
-      for (let row = 0; row < 20; row += 1) insert.run(row);
+      db.prepare("INSERT INTO slow VALUES (?)").run(1);
     });
-    const start = performance.now();
-    const result = openResult(path);
-    const elapsed = performance.now() - start;
-    expect(result).toBe("unexpected-schema");
-    expect(elapsed).toBeLessThan(500);
-  }, 60_000);
+    const pragma = vi.spyOn(Database.prototype, "pragma");
+    try {
+      expect(openResult(path)).toBe("unexpected-schema");
+      expect(pragma.mock.calls.map(([source]) => source)).not.toContain("quick_check");
+    } finally {
+      pragma.mockRestore();
+    }
+  });
 
   it("refuses a newer-format file whose tables to read have SQL of their own", () => {
     for (const change of [
@@ -100,6 +101,9 @@ describe("a crafted file's views and triggers (S4)", () => {
       "CREATE INDEX sized ON documents (length(zeroblob(1000000000)))",
       "CREATE INDEX some ON blobs (hash) WHERE length(zeroblob(1000000000)) > 0",
       "ALTER TABLE versions ADD COLUMN big BLOB GENERATED ALWAYS AS (zeroblob(1000000000)) VIRTUAL",
+      // Index names the pragma must take as they are, not as quoted SQL.
+      'CREATE INDEX "evil\\" ON documents (length(zeroblob(1000000000)))',
+      'CREATE INDEX "say ""hi""" ON documents (length(zeroblob(1000000000)))',
     ]) {
       const path = createProject();
       tamper(path, (db) =>
