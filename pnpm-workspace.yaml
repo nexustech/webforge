@@ -72,6 +72,3 @@ overrides:
   happy-dom: 21.0.4
   js-beautify>glob: 14.0.3
   editorconfig>minimatch: 11.0.3
-
-minimumReleaseAgeExclude:
-  - electron@44.10.1
