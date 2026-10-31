@@ -23,7 +23,7 @@ A **paid, closed-source desktop app** (Windows 10/11 x64 + macOS 13+ on Apple Si
 | Site components | React components rendering static HTML + Tailwind + **daisyUI 5**; small vanilla `webforge.js` for behaviour | [05](../research/stack/05-site-components.md) |
 | Project file | Single **`.wforge`** = **SQLite** DB via **better-sqlite3** ✅, content-addressed blobs, versions | [06](../research/stack/06-project-file-format.md) |
 | Build / preview pipeline | In-app: Puck render → Tailwind v4 (programmatic) + daisyUI → esbuild → jSquash images; runs in an Electron `utilityProcess` | [07](../research/stack/07-export-pipeline.md) |
-| Publishing | Folder/ZIP · `basic-ftp` · `ssh2-sftp-client` · Netlify REST API | [08](../research/stack/08-publishing.md) |
+| Publishing | Folder/ZIP · `basic-ftp` · `ssh2` ([ADR 0006](../docs/adr/0006-publishing.md) §7) · Netlify REST API | [08](../research/stack/08-publishing.md) |
 | Packaging & updates | **electron-vite** (dev/build) + **electron-builder** (NSIS / DMG) + **electron-updater** ✅ (decided 2026-10-19, no Forge comparison needed) | 01 |
 
 Licensing rule for every dependency: **permissive only** (MIT, BSD, Apache-2.0, ISC); MPL-2.0 OK unmodified; **no GPL/AGPL**, no paid add-ons, and never GSAP or libraries built on it, whose terms exclude competing builders (C1, PG-6). Enforced in CI.
@@ -36,13 +36,14 @@ flowchart TB
     APP[App lifecycle · menus · single instance · file association .wforge]
     STORE[ProjectStore: SQLite .wforge]
     PREV[Preview server: HTTP + SSE live reload]
-    PUB[Publishers: Folder/ZIP · FTP/FTPS/SFTP · Netlify]
+    PUB[Publish: destinations · Test connection · Site Check publish gate]
     KEY[Credentials: safeStorage / OS keychain]
     UPD[Auto-updater]
     MCP[AI apps: local MCP server, off by default]
   end
   subgraph Worker["utilityProcess: Build worker"]
     PIPE[Pipeline: render → classes → Tailwind/daisyUI → esbuild → images → site files → checks]
+    PUBW[Publishers: FTP/FTPS/SFTP · Netlify, on the build in memory]
   end
   subgraph Renderer["Renderer: Editor UI (sandboxed, contextIsolation)"]
     UI[React + shadcn/ui panels]
@@ -64,11 +65,11 @@ flowchart TB
 
 | Process | Responsibilities | Must never |
 |---|---|---|
-| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publishing, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
+| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publish destinations, Test connection and the Site Check publish gate, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
 | **Preload** | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`) | Expose `ipcRenderer`, Node or Electron objects directly |
 | **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine, Site Check ([ADR 0016](../docs/adr/0016-site-check-in-the-renderer.md)) | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
 | **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`) | Load editor styles; run custom scripts unless the user enables it (05) |
-| **Build worker** (`utilityProcess`) | Export/preview builds, image conversion | Block the UI; touch the network except during publish |
+| **Build worker** (`utilityProcess`) | Export/preview builds, image conversion, publishing: it builds a version and uploads it, with the secret main passes for that one job ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md)) | Block the UI; touch the network except during publish; keep a secret past its job |
 
 **Electron hardening:** `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, no `@electron/remote`, strict CSP, `will-navigate`/`window.open` handlers, Electron Fuses (disable `RunAsNode`, enable ASAR integrity, cookie encryption).
 
@@ -114,7 +115,7 @@ wforge/
 ```
 Site (.wforge)
 ├── settings          Site Settings (X3): name, description, language, URL, social, contact, analytics (B4),
-│                     search engines, publish destinations (no secrets), allowed external URLs (C8)
+│                     search engines, allowed external URLs (C8)
 ├── theme             Theme preset + brand colours, fonts, radius, spacing (05), stored as CSS-variable tokens
 ├── layout            Header, Footer (C5): Puck data, stored once, rendered on every page
 ├── sharedSections[]  Shared sections (F-ED-23): named section data stored once; pages hold linked copies by ID
@@ -122,6 +123,7 @@ Site (.wforge)
 ├── media[]           Originals (images, fonts, files: F-ED-24) as content-addressed blobs
 ├── code              custom.css, custom.js, head/body snippets (C7, Advanced mode)
 ├── versions[]        Named + automatic versions (P3: last 20 automatic, configurable)
+├── destinations[]    Publish destinations, no secrets: beside the site, not undoable, not versioned (ADR 0018)
 └── history           Optional persisted Undo History (D6)
 ```
 
@@ -212,12 +214,14 @@ interface Publisher {
 9. Format.
 10. Write to a temp folder, then atomically swap it in.
 
-**Publish:**
-1. Site Check with the stricter publish rules (X5, ADR 0016), then build.
-2. Diff against the destination manifest.
-3. Upload assets → pages → `index.html`.
-4. Verify.
-5. Record an automatic version "Published …" (08).
+**Publish** ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md)):
+1. The renderer runs Site Check with the stricter publish rules (X5, ADR 0016), ends the text session and flushes autosave, then asks main to publish.
+2. Main saves the automatic version "Published …" (08), reads it back migrated, and runs the publish gate on it; a *Must fix* stops here.
+3. Main reads the destination's secret after checking its fingerprint (S2), and sends the version, the destination and the secret to the build worker as one job.
+4. The worker builds, diffs against the destination's manifest, and uploads assets → pages → `index.html`, streaming progress; cancel stops it.
+5. Verify, then main records the result on the version.
+
+Republishing a version (4.6) is the same flow from step 2, with that version and nothing new saved.
 
 ## 8. Exported site contract
 - Flat pages (`index.html`, `about.html`, `services/web-design.html`), relative URLs, opens from disk (X1).
