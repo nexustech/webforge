@@ -262,18 +262,20 @@ function checkTablesBeforeReading(db: Database.Database, schema: readonly string
       refuse(`The project's ${name} is not a plain table`);
     }
     // These read only what SQLite parsed from `sqlite_schema`: none of the file's SQL runs.
-    const generated = db
-      .pragma(`table_xinfo(${name})`)
-      .some((column) => z.object({ hidden: z.number() }).parse(column).hidden >= 2);
-    const computedIndex = db
-      .pragma(`index_list(${name})`)
-      .map((index) => z.object({ name: z.string(), partial: z.number() }).parse(index))
+    const generated = z
+      .array(z.object({ hidden: z.number() }))
+      .parse(db.pragma(`table_xinfo(${name})`))
+      .some((column) => column.hidden >= 2);
+    const computedIndex = z
+      .array(z.object({ name: z.string(), partial: z.number() }))
+      .parse(db.pragma(`index_list(${name})`))
       .some(
         (index) =>
           index.partial !== 0 ||
-          db
-            .pragma(`index_xinfo(${JSON.stringify(index.name)})`)
-            .some((column) => z.object({ cid: z.number() }).parse(column).cid === -2),
+          z
+            .array(z.object({ cid: z.number() }))
+            .parse(db.pragma(`index_xinfo(${JSON.stringify(index.name)})`))
+            .some((column) => column.cid === -2),
       );
     if (generated || computedIndex) {
       refuse(`The project's ${name} has columns or indexes of its own SQL`);
