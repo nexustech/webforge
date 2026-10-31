@@ -35,14 +35,17 @@ export const sitePackageProjectSchema = z.strictObject({
 /** See {@link sitePackageProjectSchema}. */
 export type SitePackageProject = z.infer<typeof sitePackageProjectSchema>;
 
+/** A blob a package carries, with the SHA-256 it is stored under. */
+type Hashed<T> = T & { readonly hash: string };
+
 /** One site, ready to fill a new project with. */
 export type SitePackage = {
   /** The site, migrated to this app's format. */
   readonly site: SiteDoc;
   /** The original of each Media item the site reaches, with its name and dimensions. */
-  readonly media: readonly NewAsset[];
+  readonly media: readonly Hashed<NewAsset>[];
   /** Other files the site names by their SHA-256, such as bundled code (3.9). */
-  readonly files: readonly StoredBlob[];
+  readonly files: readonly Hashed<StoredBlob>[];
   readonly project: SitePackageProject;
 };
 
@@ -64,9 +67,10 @@ export function packageBlobs(
   sites: readonly SiteDoc[],
 ): Pick<SitePackage, "media" | "files"> {
   const reached = reachableBlobs(sites.flatMap(siteDocuments));
-  const media = store.listAssets().flatMap((asset): NewAsset[] => {
-    if (!reached.has(asset.hash)) return [];
-    reached.delete(asset.hash);
+  // Two Media items can share an original (the same file imported twice): each is carried.
+  const assets = store.listAssets().filter((asset) => reached.has(asset.hash));
+  const originals = new Set(assets.map((asset) => asset.hash));
+  const media = assets.flatMap((asset): Hashed<NewAsset>[] => {
     const blob = store.readBlob(asset.hash);
     return blob === undefined
       ? []
@@ -78,13 +82,17 @@ export function packageBlobs(
             width: asset.width,
             height: asset.height,
             originalName: asset.originalName,
+            hash: asset.hash,
           },
         ];
   });
-  const files = [...reached].sort().flatMap((hash) => {
-    const blob = store.readBlob(hash);
-    return blob === undefined ? [] : [blob];
-  });
+  const files = [...reached]
+    .filter((hash) => !originals.has(hash))
+    .sort()
+    .flatMap((hash) => {
+      const blob = store.readBlob(hash);
+      return blob === undefined ? [] : [{ ...blob, hash }];
+    });
   return { media, files };
 }
 

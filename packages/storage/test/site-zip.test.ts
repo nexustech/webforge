@@ -278,6 +278,31 @@ describe("a site's ZIP (4.7)", () => {
     expect(paths.filter((path) => path.startsWith("media/"))).toEqual(["media/shop/shop.jpg"]);
     store.close();
   });
+
+  it("carries two Media items that share an original, the same file imported twice", async () => {
+    const store = bakeryWithPhoto(join(tempDir(), "site.wforge"), "shop.jpg");
+    const site = siteOf(store);
+    const again = store.putAsset({
+      mediaId: "again",
+      data: heroPhoto(),
+      mime: "image/jpeg",
+      width: 1600,
+      height: 1000,
+      originalName: "shop copy.jpg",
+    });
+    const id = "again" as MediaId;
+    const shop = site.media["shop" as MediaId];
+    if (shop?.kind !== "image") throw new Error("No shop photo");
+    site.media[id] = { ...shop, id, name: "again", fileName: "shop copy.jpg", hash: again.hash };
+    store.saveSite(site);
+
+    const copy = await roundTrip(store);
+
+    expect(copy.listAssets().map((asset) => asset.mediaId)).toEqual(["again", "shop"]);
+    expect(contents(copy)).toEqual(contents(store));
+    store.close();
+    copy.close();
+  });
 });
 
 describe("a site package (A26)", () => {

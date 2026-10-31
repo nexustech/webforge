@@ -4,6 +4,7 @@ import { basename, dirname, join } from "node:path";
 import { WebforgeError } from "@webforge/errors";
 import {
   migrateSite,
+  SITE_NAME_MAX,
   type SiteDoc,
   SiteFormatError,
   siteDocuments,
@@ -96,7 +97,7 @@ const mimeSchema = z
 const manifestSchema = z.strictObject({
   format: z.literal(SITE_ZIP_FORMAT),
   version: z.int().positive(),
-  name: z.string().min(1).max(1000),
+  name: z.string().min(1).max(SITE_NAME_MAX),
   /** Each Media item's original file, as imported, with its name and dimensions. */
   media: z.array(
     z.strictObject({
@@ -208,14 +209,13 @@ export function siteZipEntries(store: ProjectStore): Map<string, Uint8Array> {
       ...(item.width === undefined ? {} : { width: item.width }),
       ...(item.height === undefined ? {} : { height: item.height }),
       originalName: item.originalName,
-      sha256: sha256(item.data),
+      sha256: item.hash,
     };
   });
   const fileEntries = files.map((file) => {
-    const hash = sha256(file.data);
-    const path = `files/${hash}`;
+    const path = `files/${file.hash}`;
     entries.set(path, file.data);
-    return { path, mime: file.mime, sha256: hash };
+    return { path, mime: file.mime, sha256: file.hash };
   });
 
   const manifest: Manifest = {
@@ -387,10 +387,12 @@ export function readSiteZip(data: Uint8Array): SiteZip {
         width: item.width,
         height: item.height,
         originalName: item.originalName,
+        hash: item.sha256,
       })),
       files: manifest.files.map((file) => ({
         mime: file.mime,
         data: checked(file.path, file.sha256),
+        hash: file.sha256,
       })),
       project: manifest.project,
     },
