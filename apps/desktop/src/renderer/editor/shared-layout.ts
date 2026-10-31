@@ -7,7 +7,20 @@ export type SharedRegion = keyof LayoutDoc;
 
 const REGIONS: readonly SharedRegion[] = ["header", "footer"];
 
+/** The shared regions, as a page lists them: the Header first, the Footer last. */
+export const SHARED_REGIONS: readonly SharedRegion[] = ["header", "footer"];
+
 const HIDDEN_BY = { header: "hideHeader", footer: "hideFooter" } as const;
+
+/** Whether page `pageId`'s settings hide `region` ("Hide the Header on this page"). */
+export const regionHidden = (
+  site: Pick<SiteDoc, "pages">,
+  pageId: PageId,
+  region: SharedRegion,
+): boolean => site.pages[pageId]?.settings[HIDDEN_BY[region]] === true;
+
+/** The page setting that hides `region` on a page. */
+export const hiddenSetting = (region: SharedRegion) => HIDDEN_BY[region];
 
 /** The layouts the canvas showed with a region hidden, by layout: the same object every time. */
 const shownWithHidden = new WeakMap<LayoutDoc, Map<string, LayoutDoc>>();

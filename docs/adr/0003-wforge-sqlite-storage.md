@@ -87,7 +87,8 @@ The spike adds a minimal `ProjectStore` in `packages/storage` and wires it throu
   | Check | On failure |
   |---|---|
   | `PRAGMA application_id` = `0x57465247` ("WFRG") | `not-a-project` |
-  | `PRAGMA quick_check` | `corrupt` |
+  | **Before any of the file's SQL runs (S4, 31 Oct 2026):** from `sqlite_schema` alone, `meta` is exactly the table every format has; `meta`, `documents`, `blobs`, `assets` and `versions` are plain tables with no generated columns and no index on an expression or with a condition; there are no views or triggers | `unexpected-schema` |
+  | `PRAGMA quick_check`, only when `sqlite_schema` is exactly a format this build knows: it runs the tables' CHECK constraints, so a file of a newer format, opened read-only, is read by named columns instead | `corrupt` |
   | `meta.format_version` | `newer-format` if newer |
   | `sqlite_schema` equals the expected schema exactly (extra triggers, views, tables or indexes fail) | `unexpected-schema` |
   | zod-validated metadata and version manifests; JSON blobs parsed with `z.json()` | `unexpected-schema` / `corrupt` |

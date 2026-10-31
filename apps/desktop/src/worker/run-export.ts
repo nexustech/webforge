@@ -86,6 +86,14 @@ export async function runExport(
         ...(error.page === undefined ? {} : { page: error.page }),
       };
     }
+    if (error instanceof BuildError && error.code === "unreadable-image") {
+      return {
+        type: "failed",
+        code: "unreadable-image",
+        detail: error.code,
+        ...(error.image === undefined ? {} : { image: error.image }),
+      };
+    }
     if (error instanceof BuildError) {
       return { type: "failed", code: "build-failed", detail: error.code };
     }

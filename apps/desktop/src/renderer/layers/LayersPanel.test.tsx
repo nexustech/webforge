@@ -577,3 +577,33 @@ describe("LayersPanel (F-ED-12)", () => {
     });
   });
 });
+
+describe("LayersPanel's shared Header and Footer (#673)", () => {
+  const header = layer("header", { kind: "Header", region: "header" });
+  const footer = layer("footer", { kind: "Footer", region: "footer" });
+
+  it("marks them as on every page, and still says when the page has no sections of its own", () => {
+    render(<LayersPanel layers={[header, footer]} selectedId={null} actions={setUpActions()} />);
+
+    expect(shown()).toEqual(["On every page Header", "On every page Footer"]);
+    expect(
+      screen.getByText("This page has no sections yet. Add one from the canvas."),
+    ).toBeTruthy();
+  });
+
+  it("drags no section beside them, nor them among the sections", () => {
+    const actions = setUpActions();
+    render(
+      <LayersPanel layers={[header, ...LAYERS, footer]} selectedId={null} actions={actions} />,
+    );
+    const row = (id: string) => document.querySelector(`[data-layer="${id}"]`) as HTMLElement;
+
+    expect(row("header").getAttribute("draggable")).not.toBe("true");
+    dragRow(row("s2"), row("header"));
+    dragRow(row("s1"), row("footer"), {}, "after");
+    expect(actions.move).not.toHaveBeenCalled();
+    // Among the page's own, as before.
+    dragRow(row("s2"), row("s1"));
+    expect(actions.move).toHaveBeenCalledWith("s2", 1);
+  });
+});
