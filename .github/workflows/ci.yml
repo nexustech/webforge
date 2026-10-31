@@ -262,7 +262,7 @@ jobs:
       WEBFORGE_EXPORTED_SITE_DIR: ${{ github.workspace }}/.ci-cache/exported-site
       # Every template exported and opened from disk (3.10) only when what they're made from can
       # have changed, as Firefox and WebKit: several minutes a shard otherwise. Always, nightly.
-      WEBFORGE_EXPORT_TEMPLATES: ${{ needs.changes.outputs.all-browsers == 'true' && '1' || '0' }}
+      WEBFORGE_EXPORT_TEMPLATES: '0' # TEMPORARY (#678)
     steps: &e2e-steps
       - name: Check out
         uses: actions/checkout@v7
@@ -406,6 +406,8 @@ jobs:
           # shellcheck disable=SC2086 # BROWSERS is a space-separated list
           for browser in $BROWSERS; do args="$args --project=export-$browser"; done
           if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
+          # TEMPORARY (#678): only the flaky tests' files, 20 times. Reverted before the PR is ready.
+          args="--project=app --project=export-firefox --repeat-each=20 app/window.spec.ts app/preview.spec.ts app/layers.spec.ts app/edit-panel.spec.ts app/credentials.spec.ts export/forms.spec.ts"
           echo "args=$args" >> "$GITHUB_OUTPUT"
 
       # Playwright splits the tests across the matrix's shards by file (the export setup goes with
@@ -537,7 +539,7 @@ jobs:
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
-    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 60 }}
+    timeout-minutes: 150 # TEMPORARY (#678)
     steps:
       - name: Check out
         uses: actions/checkout@v7
