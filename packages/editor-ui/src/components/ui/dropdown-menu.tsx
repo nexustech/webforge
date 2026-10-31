@@ -2,6 +2,7 @@ import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
+import { useMenuClosing } from "./menu-closing.js";
 import { menuStyles } from "./menu-styles.js";
 
 /** A menu opened from a button: split-button menus (Preview, Export, Publish), "more" menus. */
@@ -14,12 +15,16 @@ export function DropdownMenuTrigger(props: ComponentProps<typeof DropdownMenuPri
   return <DropdownMenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
-/** The open menu. */
+/** The open menu. A press on its button while it fades out opens it again (#689). */
 export function DropdownMenuContent({
   className,
   sideOffset = 4,
+  onAnimationStart,
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: ComponentProps<typeof DropdownMenuPrimitive.Content>) {
+  const closing = useMenuClosing({ onAnimationStart, onPointerDownOutside, onFocusOutside });
   return (
     <DropdownMenuPrimitive.Portal>
       <DropdownMenuPrimitive.Content
@@ -27,6 +32,9 @@ export function DropdownMenuContent({
         sideOffset={sideOffset}
         className={cn(menuStyles.content, className)}
         {...props}
+        onAnimationStart={closing.onAnimationStart}
+        onPointerDownOutside={closing.onPointerDownOutside}
+        onFocusOutside={closing.onFocusOutside}
       />
     </DropdownMenuPrimitive.Portal>
   );

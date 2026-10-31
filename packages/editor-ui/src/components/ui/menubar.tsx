@@ -2,6 +2,7 @@ import { CheckIcon, ChevronRightIcon } from "lucide-react";
 import { Menubar as MenubarPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
+import { useMenuClosing } from "./menu-closing.js";
 import { menuStyles } from "./menu-styles.js";
 
 /** The app menu bar in the title bar (File, Edit, View, Help). */
@@ -38,14 +39,18 @@ export function MenubarTrigger({
   );
 }
 
-/** The open menu. */
+/** The open menu. A press on its title while it fades out opens it again (#689). */
 export function MenubarContent({
   className,
   align = "start",
   alignOffset = -4,
   sideOffset = 6,
+  onAnimationStart,
+  onPointerDownOutside,
+  onFocusOutside,
   ...props
 }: ComponentProps<typeof MenubarPrimitive.Content>) {
+  const closing = useMenuClosing({ onAnimationStart, onPointerDownOutside, onFocusOutside });
   return (
     <MenubarPrimitive.Portal>
       <MenubarPrimitive.Content
@@ -55,6 +60,9 @@ export function MenubarContent({
         sideOffset={sideOffset}
         className={cn(menuStyles.content, "min-w-48", className)}
         {...props}
+        onAnimationStart={closing.onAnimationStart}
+        onPointerDownOutside={closing.onPointerDownOutside}
+        onFocusOutside={closing.onFocusOutside}
       />
     </MenubarPrimitive.Portal>
   );
