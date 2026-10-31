@@ -26,7 +26,7 @@ Site Check is also a panel that is live: it updates as the person edits, and a f
 - **What a check costs** (`check-cost.test.ts`): a site of five of ADR 0007's large pages (225 elements each). Measured as the main thread's CPU time on a development machine (27 Oct 2026):
   - every rule together, about 27 ms;
   - the costliest, *Placeholder text*, 7 ms, then *Broken links* 4.7 and *Underlined text* 4.0; the rest under 3.5.
-  - The test holds each rule to a frame's 16 ms on CI, three times that elsewhere (ADR 0014). A rule over it would need splitting, or work of its own across idle periods.
+  - The test holds each rule to three copies of the site through JSON, about a frame's 16 ms on a development machine. It times the rule and the copy in alternating batches on the same runner and takes the median ratio, so a slow or busy runner slows both alike (#677): a fixed 16 ms failed on CI's Windows runners at 17.2 ms. A rule over it would need splitting, or work of its own across idle periods.
   - Two fast paths brought the costliest rules down: the model's link walk only parses strings with `href=` in them, and objects with a `kind`; *Placeholder text* skips the tag and entity patterns for plain text.
 - **The export pipeline doesn't run Site Check.**
   - The build still refuses what it can't write (`reserved-name`, R16) and warns about broken links and missing images in its report.
