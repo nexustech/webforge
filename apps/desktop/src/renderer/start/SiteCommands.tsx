@@ -16,7 +16,7 @@ export type SiteCommandsProps = {
   /** Creates and opens sites; injectable for tests. Defaults to the preload API. */
   readonly project?: Pick<
     ProjectApi,
-    "create" | "open" | "listRecent" | "openRecent" | "clearRecent"
+    "create" | "open" | "openZip" | "listRecent" | "openRecent" | "clearRecent"
   >;
   /** Lists the templates New Site offers; injectable for tests. Defaults to the preload API. */
   readonly templates?: Pick<TemplatesApi, "list">;
@@ -29,9 +29,9 @@ export type SiteCommandsProps = {
 };
 
 /**
- * File → New Site… (Ctrl/Cmd+N), Start a Site… (the quick start, QS-1), Open Site… (Ctrl/Cmd+O)
- * and Open Recent (3.18, {@link OpenRecent}), the title bar's New and Open buttons (F-SITE-1,
- * F-SITE-2), and on the start screen
+ * File → New Site… (Ctrl/Cmd+N), Start a Site… (the quick start, QS-1), Open Site… (Ctrl/Cmd+O),
+ * Open Recent (3.18, {@link OpenRecent}) and Open Site from ZIP… (4.7), the title bar's New and
+ * Open buttons (F-SITE-1, F-SITE-2), and on the start screen
  * Help → Try an Example (PG-3). New Site and the quick start show their dialogs (2.14a, 3.11b) with
  * the templates main lists; then main shows the save dialog and saves the open site before
  * switching. A failure appears as a toast.
@@ -82,11 +82,19 @@ export function SiteCommands({
       menu: "file",
       run: () => undefined,
     });
+    // A site saved as a ZIP (4.7), opened as a new site once main has asked where to save it.
+    const removeOpenZip = registry.register({
+      id: COMMAND_IDS.openSiteZip,
+      label: t("command.openSiteZip"),
+      menu: "file",
+      run: () => openWith(restart, () => (project ?? window.webforge.project).openZip()),
+    });
     return () => {
       removeNew();
       removeQuick();
       removeOpen();
       removeRecent();
+      removeOpenZip();
     };
   }, [registry, project, templates, restart]);
 

@@ -5,6 +5,8 @@ import type { Call } from "./call.js";
 export const projectApi = (call: Call): ProjectApi => ({
   create: (request) => call("createProject", request),
   open: () => call("openProject"),
+  saveZip: () => call("saveSiteZip"),
+  openZip: () => call("openSiteZip"),
   getCurrent: () => call("getCurrentProject"),
   readSite: () => call("readSite"),
   listRecent: () => call("listRecentSites"),

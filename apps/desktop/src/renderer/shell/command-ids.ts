@@ -11,6 +11,9 @@ export const COMMAND_IDS = {
   openRecent: "site.openRecent",
   clearRecent: "site.clearRecent",
   noRecent: "site.noRecent",
+  // A site's ZIP (4.7): a copy of the open site saved as one, and a site opened from one.
+  saveSiteZip: "site.saveZip",
+  openSiteZip: "site.openZip",
   undo: "edit.undo",
   redo: "edit.redo",
   preview: "site.preview",

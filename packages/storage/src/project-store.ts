@@ -203,9 +203,9 @@ function toAssetInfo(row: unknown): AssetInfo {
  * document only has to mention a hash anywhere (media metadata, a future field) to keep its blob,
  * so garbage collection can only ever keep too much, never remove a blob something uses.
  */
-function collectHashes(value: JsonValue, into: Set<string>): void {
+function collectHashes(value: unknown, into: Set<string>): void {
   // Iterative: a document nested very deeply (a crafted file) can't overflow the stack (R14).
-  const pending: JsonValue[] = [value];
+  const pending: unknown[] = [value];
   while (pending.length > 0) {
     const item = pending.pop();
     if (typeof item === "string") {
@@ -216,6 +216,16 @@ function collectHashes(value: JsonValue, into: Set<string>): void {
       for (const each of Object.values(item)) pending.push(each);
     }
   }
+}
+
+/**
+ * The blobs `documents` reach: every hash their content names, such as a Media item's original or
+ * a bundled file (3.9). Garbage collection keeps these, and a site package carries them (A26).
+ */
+export function reachableBlobs(documents: Iterable<{ readonly content: unknown }>): Set<string> {
+  const reached = new Set<string>();
+  for (const { content } of documents) collectHashes(content, reached);
+  return reached;
 }
 
 /** The `sqlite_schema` rows of a database, in a stable order, for comparison. */
@@ -700,6 +710,38 @@ export class ProjectStore {
     return version;
   }
 
+  /**
+   * Adds a saved version as it was in another project, with its own id, name, kind and time and
+   * its documents: a version brought in from a site's ZIP (4.7). It goes after the versions this
+   * project has, so add them oldest first.
+   */
+  addVersion(
+    version: VersionInfo,
+    documents: readonly { readonly id: string; readonly kind: string; readonly content: unknown }[],
+  ): void {
+    this.#write(() => {
+      // Sorted by id, as saveVersion lists them.
+      const manifest: Manifest["documents"] = [...documents]
+        .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+        .map(({ id, kind, content }) => ({
+          id,
+          kind,
+          hash: this.#insertBlob(Buffer.from(JSON.stringify(content), "utf8"), JSON_MIME),
+        }));
+      this.#prepare(
+        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+      ).run(
+        version.id,
+        version.name,
+        version.kind,
+        version.createdAt,
+        FORMAT_VERSION,
+        JSON.stringify({ documents: manifest }),
+      );
+    });
+  }
+
   /** Saved versions, newest first. */
   listVersions(): VersionInfo[] {
     return this.#prepare("SELECT id, name, kind, created_at FROM versions ORDER BY rowid DESC")
@@ -785,10 +827,10 @@ export class ProjectStore {
           documentHashes.add(hash);
         }
       }
-      const referenced = new Set(documentHashes);
-      for (const hash of documentHashes) {
-        collectHashes(this.#readJsonBlob(hash), referenced);
-      }
+      const referenced = reachableBlobs(
+        [...documentHashes].map((hash) => ({ content: this.#readJsonBlob(hash) })),
+      );
+      for (const hash of documentHashes) referenced.add(hash);
 
       const unreferenced = this.#prepare("SELECT hash, size FROM blobs")
         .all()

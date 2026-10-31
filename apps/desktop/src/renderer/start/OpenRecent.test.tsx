@@ -43,6 +43,7 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
   return {
     create: vi.fn(async () => result),
     open: vi.fn(async () => result),
+    openZip: vi.fn(async () => result),
     listRecent: vi.fn(async () => recent),
     openRecent: vi.fn(async (_id: string) => result),
     clearRecent: vi.fn(async () => null),
@@ -84,7 +85,7 @@ describe("File › Open Recent (3.18, PF-1)", () => {
         .list()
         .filter((command) => command.menu === "file")
         .map((command) => command.label),
-    ).toEqual(["New Site…", "Start a Site…", "Open Site…", "Open Recent"]);
+    ).toEqual(["New Site…", "Start a Site…", "Open Site…", "Open Recent", "Open Site from ZIP…"]);
     expect(submenu(registry).map((command) => [command.label, command.separated])).toEqual([
       ["Site 7", undefined],
       ["Site 6", undefined],
@@ -95,6 +96,18 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     ]);
     // The renderer knows sites by id only.
     expect(submenu(registry)[0]?.id).toBe(`site.openRecent.${"7".repeat(32)}`);
+  });
+
+  it("opens a site's ZIP from File › Open Site from ZIP…, then starts the window over (4.7)", async () => {
+    const fake = api([]);
+    const { registry, restart } = await setUp(fake);
+
+    await act(async () => {
+      registry.run(COMMAND_IDS.openSiteZip);
+    });
+
+    expect(fake.openZip).toHaveBeenCalled();
+    await waitFor(() => expect(restart).toHaveBeenCalled());
   });
 
   it("lists each site in the command box by the menu it's in, and opens it from there", async () => {

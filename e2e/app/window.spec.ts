@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { APP_START_TIMEOUT_MS, launchDesktopApp, newUserDataDir } from "./launch.js";
 
 // A roomy canvas (ADR 0008): the window starts maximised and remembers how it was left, side
 // columns are narrow and show one panel at a time, and the canvas stays usable at 1280 px.
@@ -13,14 +14,16 @@ let page: Page;
 async function start(): Promise<void> {
   app = await launchDesktopApp({ userDataDir });
   page = await app.firstWindow();
-  await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
 }
 
 test.beforeAll(start);
 
 test.afterAll(async () => {
   await app.close();
-  rmSync(userDataDir, { recursive: true, force: true });
+  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 const isMaximized = () =>

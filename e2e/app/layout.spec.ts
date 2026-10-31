@@ -1,7 +1,8 @@
-import { existsSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp, newUserDataDir } from "./launch.js";
+import { APP_START_TIMEOUT_MS, launchDesktopApp, newUserDataDir, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // The window shell (1.2): panel sizes and the theme are remembered per person, across restarts.
@@ -13,8 +14,11 @@ let page: Page;
 async function start(): Promise<void> {
   app = await launchDesktopApp({ userDataDir });
   page = await app.firstWindow();
-  await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Left panels" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
   // The canvas takes the focus once its page has loaded, which closes a menu opened before then.
+  await waitForCanvas(page);
   await expect(page.frameLocator(".editor__canvas iframe").locator("h1")).toBeVisible();
 }
 
@@ -22,7 +26,7 @@ test.beforeAll(start);
 
 test.afterAll(async () => {
   await app.close();
-  rmSync(userDataDir, { recursive: true, force: true });
+  await rm(userDataDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
 /**

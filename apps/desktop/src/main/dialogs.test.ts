@@ -97,6 +97,33 @@ describe("createNativeDialogs", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("saves a copy of a site as a ZIP under its name, and opens one ZIP (4.7)", async () => {
+    const { dialogs, dialog } = setUp({
+      save: { canceled: false, filePath: "/backups/Bakery.zip" },
+    });
+
+    await expect(dialogs.project.chooseSiteZipToSave("Rosa's Bakery")).resolves.toBe(
+      "/backups/Bakery.zip",
+    );
+    expect(dialog.showSaveDialog.mock.calls[0]?.at(-1)).toMatchObject({
+      title: "Save a copy of your site as a ZIP file",
+      defaultPath: "Rosa's Bakery.zip",
+      filters: [{ extensions: ["zip"] }],
+    });
+    await expect(dialogs.project.chooseSiteZipToOpen()).resolves.toBe("/a");
+    expect(dialog.showOpenDialog.mock.calls[0]?.at(-1)).toMatchObject({
+      title: "Open a site from a ZIP file",
+      filters: [{ extensions: ["zip"] }],
+      properties: ["openFile"],
+    });
+    const cancelled = setUp({
+      save: { canceled: true, filePath: "" },
+      open: { canceled: true, filePaths: [] },
+    }).dialogs;
+    await expect(cancelled.project.chooseSiteZipToSave("Bakery")).resolves.toBeUndefined();
+    await expect(cancelled.project.chooseSiteZipToOpen()).resolves.toBeUndefined();
+  });
+
   it("takes a test's answer instead of opening a site or export dialog (e2e builds)", async () => {
     const { dialogs, dialog } = setUp({ test: { path: "/test/Site.wforge" } });
 
@@ -104,6 +131,8 @@ describe("createNativeDialogs", () => {
     await expect(dialogs.project.chooseProjectToOpen()).resolves.toBe("/test/Site.wforge");
     await expect(dialogs.export.chooseExportFolder()).resolves.toBe("/test/Site.wforge");
     await expect(dialogs.export.chooseExportZip("Bakery")).resolves.toBe("/test/Site.wforge");
+    await expect(dialogs.project.chooseSiteZipToSave("Bakery")).resolves.toBe("/test/Site.wforge");
+    await expect(dialogs.project.chooseSiteZipToOpen()).resolves.toBe("/test/Site.wforge");
     expect(dialog.showSaveDialog).not.toHaveBeenCalled();
     expect(dialog.showOpenDialog).not.toHaveBeenCalled();
   });

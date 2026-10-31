@@ -10,6 +10,7 @@ let page: Page;
 test.beforeAll(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  await waitForCanvas(page);
   await expect(canvas().locator(".site-heading")).toBeVisible();
 });
 
