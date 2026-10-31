@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sessionIdSchema } from "./project.js";
 
 /** A query's or command's name: `outline`, `addNode`. Which ones exist, the renderer checks. */
 const nameSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
@@ -52,10 +53,14 @@ export const aiChannels = {
     request: z.tuple([requestIdSchema, aiResponseSchema]),
     response: z.null(),
   },
-  /** Whether the window answers AI apps' requests: it does while a site is open in it. */
+  /**
+   * Whether the window answers AI apps' requests for the site opened as `sessionId`: it does while
+   * that site is open in it (#663). Main sends none once another site has opened, or while the
+   * window reloads.
+   */
   aiListening: {
     channel: "ai:listening",
-    request: z.tuple([z.boolean()]),
+    request: z.tuple([sessionIdSchema, z.boolean()]),
     response: z.null(),
   },
 } as const;
@@ -72,5 +77,5 @@ export interface AiApi {
    * Answers AI apps' requests with `answer` until the returned function is called; meanwhile the
    * main process knows a site is open to ask.
    */
-  onRequest(answer: (request: AiRequest) => Promise<AiResponse>): () => void;
+  onRequest(sessionId: string, answer: (request: AiRequest) => Promise<AiResponse>): () => void;
 }

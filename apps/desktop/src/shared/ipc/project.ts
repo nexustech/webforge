@@ -203,11 +203,11 @@ export const projectChannels = {
   },
   /**
    * Saves a copy of the open site as a ZIP (4.7, F-SITE-5): its last changes first, then where
-   * the person chooses in a save dialog.
+   * the person chooses in a save dialog. `canceled` once another site has opened (#663).
    */
   saveSiteZip: {
     channel: "project:save-zip",
-    request: z.tuple([]),
+    request: z.tuple([sessionIdSchema]),
     response: saveSiteZipResultSchema,
   },
   /**
@@ -296,8 +296,8 @@ export interface ProjectApi {
   create(request: NewSiteRequest): Promise<ProjectResult>;
   /** Shows an open dialog, then opens the chosen site. */
   open(): Promise<ProjectResult>;
-  /** Saves a copy of the open site as a ZIP, where the person chooses (4.7). */
-  saveZip(): Promise<SaveSiteZipResult>;
+  /** Saves a copy of the site opened as `sessionId` as a ZIP, where the person chooses (4.7). */
+  saveZip(sessionId: string): Promise<SaveSiteZipResult>;
   /** Opens a site's ZIP the person chooses as a new site, saved where they choose (4.7). */
   openZip(): Promise<ProjectResult>;
   /** The site that is open, or `null`. */

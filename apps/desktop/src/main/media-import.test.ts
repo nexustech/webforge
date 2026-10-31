@@ -7,6 +7,9 @@ import { afterEach, describe, expect, it } from "vitest";
 import { importMediaFiles } from "./media-import.js";
 import { ProjectSession } from "./project-session.js";
 
+/** The open site, as a call for its opening reaches it (R6, #663). */
+const scoped = (session: ProjectSession) => session.forSession(session.current()?.sessionId ?? "");
+
 const tempDir = tempDirFactory("webforge-media-import-");
 const sessions: ProjectSession[] = [];
 // Registered after tempDirFactory's hook, so it runs first: the files close before their folder goes.
@@ -45,7 +48,7 @@ describe("importMediaFiles", () => {
     const photo = heroPhoto();
 
     const result = await importMediaFiles(
-      session,
+      scoped(session),
       [
         { fileName: "Shop Front.JPG", data: photo },
         { fileName: "Prices.pdf", data: pdf },
@@ -81,8 +84,12 @@ describe("importMediaFiles", () => {
     });
     if (result.status !== "imported") return;
     const [image, file] = result.items;
-    expect(new Uint8Array((await session.readMedia(image?.hash ?? ""))?.data ?? [])).toEqual(photo);
-    expect(new Uint8Array((await session.readMedia(file?.hash ?? ""))?.data ?? [])).toEqual(pdf);
+    expect(
+      new Uint8Array((await scoped(session).readMedia(image?.hash ?? ""))?.data ?? []),
+    ).toEqual(photo);
+    expect(new Uint8Array((await scoped(session).readMedia(file?.hash ?? ""))?.data ?? [])).toEqual(
+      pdf,
+    );
   });
 
   it("gives files with the same name different names, and imports the same bytes twice", async () => {
@@ -90,7 +97,7 @@ describe("importMediaFiles", () => {
     const photo = heroPhoto();
 
     const result = await importMediaFiles(
-      session,
+      scoped(session),
       [
         { fileName: "shop.jpg", data: photo },
         { fileName: "shop.jpg", data: photo },
@@ -109,7 +116,7 @@ describe("importMediaFiles", () => {
   it("rejects files Media doesn't take and imports the rest", async () => {
     const session = await openSession();
 
-    const result = await importMediaFiles(session, [
+    const result = await importMediaFiles(scoped(session), [
       { fileName: "logo.gif", data: new TextEncoder().encode("GIF89a") },
       { fileName: "photo.jpg", data: new TextEncoder().encode("not really a JPEG") },
       { fileName: "poster.png", data: undefined },
@@ -134,7 +141,7 @@ describe("importMediaFiles", () => {
 
   it("fails without an open site", async () => {
     expect(
-      await importMediaFiles(new ProjectSession(), [{ fileName: "prices.pdf", data: pdf }]),
+      await importMediaFiles(scoped(new ProjectSession()), [{ fileName: "prices.pdf", data: pdf }]),
     ).toEqual({ status: "failed", reason: "no-site" });
   });
 });
@@ -149,8 +156,8 @@ describe("ProjectSession.readMedia", () => {
     sessions.push(session);
     await session.open(path);
 
-    expect(await session.readMedia(hash)).toBeUndefined();
-    expect(await session.readMedia("0".repeat(64))).toBeUndefined();
-    expect(await new ProjectSession().readMedia("0".repeat(64))).toBeUndefined();
+    expect(await scoped(session).readMedia(hash)).toBeUndefined();
+    expect(await scoped(session).readMedia("0".repeat(64))).toBeUndefined();
+    expect(await scoped(new ProjectSession()).readMedia("0".repeat(64))).toBeUndefined();
   });
 });

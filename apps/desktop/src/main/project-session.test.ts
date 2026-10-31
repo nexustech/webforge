@@ -38,6 +38,9 @@ import {
 import { createStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
 
+/** The open site, as a call for its opening reaches it (R6, #663). */
+const scoped = (session: ProjectSession) => session.forSession(session.current()?.sessionId ?? "");
+
 /** The first bytes of a PNG of `width` × `height`: enough for Media to take it. */
 function pngOf(width: number, height: number): Uint8Array {
   const bytes = new Uint8Array(33);
@@ -288,7 +291,10 @@ describe("ProjectSession", () => {
     );
     const zip = join(dir, "copy.zip");
 
-    expect(await session.saveSiteZip(zip)).toEqual({ status: "saved", fileName: "copy.zip" });
+    expect(await scoped(session).saveSiteZip(zip)).toEqual({
+      status: "saved",
+      fileName: "copy.zip",
+    });
     const site = readSiteZip(readFileSync(zip));
     expect(site.name).toBe("Rosa's Bakery");
     expect(site.sitePackage.site.settings.general.name).toBe("Rosa's");
@@ -304,7 +310,7 @@ describe("ProjectSession", () => {
       `${site}-journal`,
       join(dir, ".", "Rosa's Bakery.wforge"),
     ]) {
-      expect(await session.saveSiteZip(path), path).toEqual({
+      expect(await scoped(session).saveSiteZip(path), path).toEqual({
         status: "failed",
         reason: "own-file",
       });
@@ -315,13 +321,13 @@ describe("ProjectSession", () => {
   });
 
   it("saves no copy without an open site, nor over a folder (4.7)", async () => {
-    expect(await session.saveSiteZip(join(dir, "copy.zip"))).toEqual({
+    expect(await scoped(session).saveSiteZip(join(dir, "copy.zip"))).toEqual({
       status: "failed",
       reason: "no-site",
     });
     await session.create(join(dir, "site.wforge"));
     mkdirSync(join(dir, "folder.zip"));
-    expect(await session.saveSiteZip(join(dir, "folder.zip"))).toEqual({
+    expect(await scoped(session).saveSiteZip(join(dir, "folder.zip"))).toEqual({
       status: "failed",
       reason: "unknown",
     });
@@ -513,19 +519,19 @@ describe("ProjectSession site documents", () => {
 
 describe("ProjectSession export choices (3.3)", () => {
   it("gives the defaults without a site, and remembers them with the open site", async () => {
-    expect(await session.exportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
+    expect(await scoped(session).exportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
     // Without a site there is nothing to remember them in, and nothing fails.
-    await session.setExportChoices({ ...DEFAULT_EXPORT_CHOICES, format: "zip" });
+    await scoped(session).setExportChoices({ ...DEFAULT_EXPORT_CHOICES, format: "zip" });
 
     const path = join(dir, "Bakery.wforge");
     await session.create(path);
-    expect(await session.exportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
+    expect(await scoped(session).exportChoices()).toEqual(DEFAULT_EXPORT_CHOICES);
     const zip = { ...DEFAULT_EXPORT_CHOICES, format: "zip", minify: true } as const;
-    await session.setExportChoices(zip);
+    await scoped(session).setExportChoices(zip);
 
     await session.close();
     await session.open(path);
-    expect(await session.exportChoices()).toEqual(zip);
+    expect(await scoped(session).exportChoices()).toEqual(zip);
   });
 
   it("keeps the earlier choices of a site it can't write to, without failing", async () => {
@@ -535,7 +541,7 @@ describe("ProjectSession export choices (3.3)", () => {
       throw new ReadOnlyProjectError();
     });
 
-    await expect(session.setExportChoices(DEFAULT_EXPORT_CHOICES)).resolves.toBeUndefined();
+    await expect(scoped(session).setExportChoices(DEFAULT_EXPORT_CHOICES)).resolves.toBeUndefined();
     write.mockRestore();
   });
 });
@@ -628,13 +634,13 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
     await session.create(join(dir, "Pasted.wforge"));
     const read = vi.fn(() => bytes);
 
-    expect(await session.storeCopiedMedia(photo, read)).toEqual({
+    expect(await scoped(session).storeCopiedMedia(photo, read)).toEqual({
       status: "stored",
       hash: photo.hash,
     });
-    expect([...((await session.readMedia(photo.hash))?.data ?? [])]).toEqual([...bytes]);
+    expect([...((await scoped(session).readMedia(photo.hash))?.data ?? [])]).toEqual([...bytes]);
     // Already there: its bytes aren't read again.
-    expect(await session.storeCopiedMedia(photo, read)).toEqual({
+    expect(await scoped(session).storeCopiedMedia(photo, read)).toEqual({
       status: "stored",
       hash: photo.hash,
     });
@@ -643,11 +649,11 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
 
   it("keeps the site's own item under that id, adding only missing bytes", async () => {
     await session.create(join(dir, "Own.wforge"));
-    await session.importFile(photo.id, "a.png", { data: pngOf(4, 3) });
+    await scoped(session).importFile(photo.id, "a.png", { data: pngOf(4, 3) });
 
-    await session.storeCopiedMedia(photo, () => bytes);
+    await scoped(session).storeCopiedMedia(photo, () => bytes);
 
-    expect([...((await session.readMedia(photo.hash))?.data ?? [])]).toEqual([...bytes]);
+    expect([...((await scoped(session).readMedia(photo.hash))?.data ?? [])]).toEqual([...bytes]);
     const store = ProjectStore.open(join(dir, "Own.wforge"), { readOnly: true });
     try {
       expect(store.readAsset(photo.id)?.mime).toBe("image/png");
@@ -657,15 +663,17 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
   });
 
   it("reports missing bytes, no site and a read-only site", async () => {
-    expect(await session.storeCopiedMedia(photo, () => bytes)).toEqual({
+    expect(await scoped(session).storeCopiedMedia(photo, () => bytes)).toEqual({
       status: "failed",
       reason: "no-site",
     });
     await session.create(join(dir, "Missing.wforge"));
-    expect(await session.storeCopiedMedia(photo, () => undefined)).toEqual({ status: "missing" });
+    expect(await scoped(session).storeCopiedMedia(photo, () => undefined)).toEqual({
+      status: "missing",
+    });
     // The same bytes under another item: those do.
-    await session.importFile("other", "b.jpg", { data: bytes });
-    expect(await session.storeCopiedMedia(photo, () => undefined)).toEqual({
+    await scoped(session).importFile("other", "b.jpg", { data: bytes });
+    expect(await scoped(session).storeCopiedMedia(photo, () => undefined)).toEqual({
       status: "stored",
       hash: photo.hash,
     });
@@ -677,7 +685,7 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
     });
     await session.open(path);
     const fresh = { ...photo, id: "fresh" as MediaId };
-    expect(await session.storeCopiedMedia(fresh, () => bytes)).toEqual({
+    expect(await scoped(session).storeCopiedMedia(fresh, () => bytes)).toEqual({
       status: "failed",
       reason: "read-only",
     });
@@ -761,12 +769,12 @@ describe("ProjectSession and the store gate (R13b)", () => {
     await gated.readSite();
     await gated.commit(changedDocuments(undefined, site), sessionId);
     await gated.readSite();
-    const stored = await gated.importFile("photo", "a.jpg", { data: bytes });
+    const stored = await scoped(gated).importFile("photo", "a.jpg", { data: bytes });
     const hash = stored.status === "stored" ? stored.hash : "";
-    await gated.readMedia(hash);
+    await scoped(gated).readMedia(hash);
     await gated.forSession(sessionId).readMedia(hash);
     await gated.forSession(sessionId).importFile("again", "a.jpg", { data: bytes });
-    await gated.storeCopiedMedia(
+    await scoped(gated).storeCopiedMedia(
       {
         id: "pasted" as MediaId,
         hash,
@@ -888,7 +896,7 @@ describe("ProjectSession and the store gate (R13b)", () => {
     await gated.commit(changedDocuments(undefined, site));
     const order: string[] = [];
 
-    const importing = gated
+    const importing = scoped(gated)
       .importFile("photo", "photo.jpg", { data: heroPhoto() })
       .then((result) => {
         order.push("import");
@@ -933,7 +941,7 @@ describe("ProjectSession and the store gate (R13b)", () => {
     await gated.create(join(dir, "Stuck writer.wforge"));
     vi.useFakeTimers();
 
-    const importing = gated.importFile("photo", "photo.jpg", { data: heroPhoto() });
+    const importing = scoped(gated).importFile("photo", "photo.jpg", { data: heroPhoto() });
     await vi.advanceTimersByTimeAsync(0);
     expect(thread.postMessage.mock.calls.map(([message]) => message.type)).toEqual([
       "prepare",
