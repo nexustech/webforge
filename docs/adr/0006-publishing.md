@@ -147,6 +147,11 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   - `verify.test.ts` covers a page rewritten as Netlify and hosts do, an answer that never comes, and one that runs on.
 - **Not here:** building with the publish-strict checks, the progress and result UI, and recording a version are 4.5 and 4.6. Destinations and their credentials are 4.4.
 
+### 9 and 10. Where publishing runs, and where destinations live
+Recorded in [ADR 0018](0018-publishing-from-a-version.md), with what a publish builds and where its gate runs:
+- **Where publishing runs:** `publishSite` runs in the export worker, as a `publish` job, with the secret main passes for that one job (§1).
+- **Where destinations live:** in the site file's `meta` table, outside the undoable, versioned site document, in one shape with `url` and a mapper to each publisher (§2).
+
 ## Consequences
 - `packages/publish` is the shared core for 0.3 (FTP/FTPS/SFTP use `diffManifest`, `uploadOrder` and `manifestSchema` for `.webforge-publish.json`) and for the Phase 4 publish UI.
 - **To finish this ADR:**
