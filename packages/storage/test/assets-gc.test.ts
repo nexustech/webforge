@@ -171,6 +171,42 @@ describe("ProjectStore.collectGarbage", () => {
     );
   }, 90_000);
 
+  it("keeps a blob a document names in any spelling: escaped, or as a key", () => {
+    const { store, path } = newStore();
+    const [escaped, key, unused] = [1, 2, 3].map(
+      (value) =>
+        store.putAsset({
+          mediaId: `m${value}`,
+          data: bytes(value),
+          mime: "image/png",
+          originalName: "x.png",
+        }).hash,
+    );
+    store.close();
+    // Written as another tool could: `JSON.stringify` never escapes a hash's letters or digits.
+    const spelt = [...(escaped ?? "")]
+      .map((char) => `\\u${char.charCodeAt(0).toString(16).padStart(4, "0")}`)
+      .join("");
+    const text = `{"m1":{"hash":"${spelt}"},"${key}":1}`;
+    const data = Buffer.from(text);
+    const db = new Database(path);
+    db.prepare("INSERT INTO blobs VALUES (?, 'application/json', ?, ?)").run(
+      sha(data),
+      data.length,
+      data,
+    );
+    db.prepare("INSERT INTO documents VALUES ('media', 'media', ?)").run(sha(data));
+    // No fingerprint, as from a tool that doesn't keep one: the rows changed behind the header's.
+    db.pragma("user_version = 0");
+    db.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.collectGarbage()).toEqual({ blobs: 1, bytes: 1, assets: 1 });
+    expect(reopened.listAssets().map((asset) => asset.hash)).toEqual([escaped, key]);
+    expect(reopened.hasBlob(unused ?? "")).toBe(false);
+    reopened.close();
+  });
+
   it("removes nothing when a version's manifest is damaged: the project doesn't even open", () => {
     const { store, path } = newStore();
     const asset = store.putAsset({

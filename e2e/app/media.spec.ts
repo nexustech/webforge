@@ -105,13 +105,21 @@ test("imports a dropped photo unmodified and shows its thumbnail and original", 
   });
   expect(await imageSize(page, `webforge-media://original/${"0".repeat(64)}`)).toBeNull();
 
-  await app?.close();
-  app = undefined;
   const store = ProjectStore.open(sitePath, { readOnly: true });
   try {
     expect(new Uint8Array(store.readBlob(hash)?.data ?? [])).toEqual(photo);
   } finally {
     store.close();
+  }
+
+  // The site never named the photo (no Media item was committed), so closing removes it (#661).
+  await app?.close();
+  app = undefined;
+  const closed = ProjectStore.open(sitePath, { readOnly: true });
+  try {
+    expect(closed.hasBlob(hash)).toBe(false);
+  } finally {
+    closed.close();
   }
 });
 

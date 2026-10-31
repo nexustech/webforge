@@ -127,6 +127,8 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 - **the preload's builder,** `preload/api/<domain>.ts`, listed in `preload/api.ts`;
 - **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), called from `main/app.ts`.
 
+A call that reads or changes the open site names the opening of it the page was loaded for, as its first argument (`sessionIdSchema`, the renderer's `siteSession()`; R6, #663). Main reaches the site only through `projectSession.forSession(sessionId)`, so a call that waited for a dialog while a hand-off replaced the site changes nothing in the next one. `shared/ipc-sessions.test.ts` lists every channel, as the site's or another's with the reason, and fails on a new channel until it is listed.
+
 Never log or store site content, credentials or personal data on the way; secrets stay in the OS keychain.
 
 ## Strings

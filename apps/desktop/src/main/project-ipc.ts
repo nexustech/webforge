@@ -120,13 +120,17 @@ export function registerProjectHandlers(
     return path === undefined ? { status: "canceled" } : open(path);
   });
   // Save a Copy as ZIP… (4.7): the site with its last changes, where the person chooses.
-  registerIpcHandler(ipc, "saveSiteZip", isTrustedSender, async () => {
-    const current = session.current();
-    if (current === null) return { status: "failed", reason: "no-site" };
+  // A copy of the site the renderer was loaded for: never of one a hand-off opened meanwhile (#663).
+  registerIpcHandler(ipc, "saveSiteZip", isTrustedSender, async (sessionId) => {
+    const site = session.forSession(sessionId);
+    const stale = site.staleReason();
+    if (stale === "stale-session") return { status: "canceled" };
+    const current = site.current();
+    if (stale !== undefined || current === null) return { status: "failed", reason: "no-site" };
     const path = await dialogs.chooseSiteZipToSave(current.name);
     if (path === undefined) return { status: "canceled" };
     await flush?.();
-    return session.saveSiteZip(path);
+    return site.saveSiteZip(path);
   });
   // Open Site from ZIP… (4.7): the ZIP checked before anything else is asked, then saved as a new
   // site where the person chooses, named as it was.
