@@ -1,8 +1,7 @@
 import babel from "@rolldown/plugin-babel";
 import { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
-import { COST_TEST } from "./packages/site-check/vitest.config.js";
-import { scaledTimeout, TIMEOUT_SCALE } from "./vitest.load.js";
+import { SITE_CHECK_COST_TEST, scaledTimeout, TIMEOUT_SCALE } from "./vitest.load.js";
 
 /**
  * The React Compiler as the app's build runs it (apps/desktop/electron.vite.config.ts): the editor's
@@ -48,7 +47,7 @@ export default defineConfig({
         test: {
           name: "site-check cost (without coverage)",
           root: "./packages/site-check",
-          include: [COST_TEST],
+          include: [SITE_CHECK_COST_TEST],
           testTimeout: scaledTimeout(5_000),
           provide: { timeoutScale: TIMEOUT_SCALE },
         },
