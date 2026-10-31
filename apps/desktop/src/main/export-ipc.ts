@@ -71,6 +71,7 @@ export function toExportResult(
       status: "failed",
       reason: outcome.code,
       ...(outcome.page === undefined ? {} : { page: outcome.page }),
+      ...(outcome.image === undefined ? {} : { image: outcome.image }),
     };
   }
   return {

@@ -10,7 +10,9 @@ import { test } from "@playwright/test";
 // - a loose wall-clock backstop beside it, for time spent waiting, which costs no CPU (a timer, a
 //   lost event, an IPC round trip in series);
 // - generous waits ({@link OPEN_WAIT}), so a slow run fails on its budget, never on a wait.
-// Nothing is retried.
+// Nothing is retried. A runner slower than CI's usual ones gets a larger CPU budget, by as much as
+// it is slower at a fixed piece of work timed in the same run ({@link calibrate}, #677): one slow
+// runner failed every opening on it, though nothing had changed.
 
 /** How long a test waits for what a timed operation shows: far past any budget it checks. */
 export const OPEN_WAIT = 30_000;
@@ -53,6 +55,95 @@ const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
   win32: 5.4,
   darwin: 4.6,
 };
+
+/**
+ * How long Webforge's main process takes for {@link calibrate}'s work on the slowest of CI's usual
+ * runners, by platform, in CPU seconds, so only a runner slower than those that CI's budgets were
+ * set on gets more. A runner that takes longer is that much slower, and its opening budget grows with it.
+ *
+ * From #677's CI runs (31 Oct 2026, 18 E2E jobs, about 1,100 openings): the usual runners took
+ * 0.125–0.18 on Linux, 0.11–0.19 on Windows and 0.10–0.22 on macOS, where it varies most within a
+ * job. One Linux runner took 0.25, 1.4–2 times the others, and its openings 1.35–1.6 times theirs:
+ * a median 3.1 CPU-s for each template, where they took 1.9–2.3.
+ */
+const CI_CALIBRATION_SECONDS: Readonly<Record<string, number>> = {
+  linux: 0.18,
+  win32: 0.19,
+  darwin: 0.22,
+};
+
+/**
+ * The most a slow runner can grow the opening budget. An opening three times costlier than usual
+ * still fails on a slow runner, as its cost grows by as much as its budget does: CI's budgets are
+ * about twice a usual opening (2.0 CPU-s on Linux, 2.3 on macOS, 2.8 on Windows). The limit bounds
+ * how far a calibration that stalled on all three tries can loosen the budget of a usual runner.
+ */
+const MAX_RUNNER_FACTOR = 2;
+
+/** The fixed piece of work {@link calibrate} times: reading a JSON document of 20,000 records. */
+const CALIBRATION_RECORDS = 20_000;
+
+/**
+ * How many times {@link calibrate} reads it: about 0.3 CPU-s on a development machine, many of the
+ * 16 ms steps Windows counts CPU time in.
+ */
+const CALIBRATION_ROUNDS = 40;
+
+/**
+ * How fast this run's runner is (#677): the CPU seconds Webforge's main process takes to read and
+ * write a JSON document {@link CALIBRATION_RECORDS} records long, {@link CALIBRATION_ROUNDS} times
+ * over, the quickest of three tries, so one stall doesn't make the runner look slow. Done once a
+ * worker, when its first opening is checked, after that opening is measured.
+ *
+ * Only the thread doing it is timed: the process's other threads may still be saving the new site
+ * (the storage writer, libuv's pool), and counting their work would make the runner look slow, so
+ * work an opening leaves behind would loosen the budget meant to catch it.
+ */
+async function calibrate(app: ElectronApplication): Promise<number> {
+  const tries = [];
+  for (let attempt = 0; attempt < 3; attempt++) {
+    tries.push(
+      await app.evaluate(
+        (_electron, { records, rounds }) => {
+          const text = JSON.stringify(
+            Array.from({ length: records }, (_, n) => ({
+              id: n,
+              name: `Record ${n}`,
+              tags: ["a"],
+            })),
+          );
+          const start = process.threadCpuUsage();
+          for (let round = 0; round < rounds; round++) JSON.stringify(JSON.parse(text));
+          const used = process.threadCpuUsage(start);
+          return (used.user + used.system) / 1e6;
+        },
+        { records: CALIBRATION_RECORDS, rounds: CALIBRATION_ROUNDS },
+      ),
+    );
+  }
+  return Math.min(...tries);
+}
+
+/** This worker's calibration, once measured. */
+let calibration: Promise<number> | undefined;
+
+/**
+ * How much slower than CI's usual runners this runner is, between 1 and {@link MAX_RUNNER_FACTOR}:
+ * on CI only, as a local run has its own factor.
+ */
+async function runnerFactor(
+  app: ElectronApplication,
+): Promise<{ factor: number; seconds: number }> {
+  // Measured again if it failed, so one closed app doesn't fail every later budget.
+  calibration ??= calibrate(app).catch((error: unknown) => {
+    calibration = undefined;
+    throw error;
+  });
+  const seconds = await calibration;
+  const usual = CI_CALIBRATION_SECONDS[process.platform];
+  if (process.env.CI !== "true" || usual === undefined) return { factor: 1, seconds };
+  return { factor: Math.min(MAX_RUNNER_FACTOR, Math.max(1, seconds / usual)), seconds };
+}
 
 /**
  * How much more CPU a local run may use than CI's: a development machine draws the canvas on a
@@ -107,24 +198,30 @@ export type Budget = {
 };
 
 /**
- * Opening a site's budget in this run: CI's CPU time for its platform, scaled when local, and the
- * wall-clock backstop. Worked out when a test checks it, so a spec that never does (spellcheck)
- * loads whatever the platform or settings.
+ * Opening a site's budget in this run: CI's CPU time for its platform, grown on a slow runner
+ * ({@link runnerFactor}) or scaled when local, and the wall-clock backstop. Worked out when a test
+ * checks it, so a spec that never does (spellcheck) loads whatever the platform or settings.
  */
-export function openBudget(): Budget {
+export async function openBudget(app: ElectronApplication): Promise<Budget> {
   const ci = CI_OPEN_CPU_SECONDS[process.platform];
   const wallMs = CI_OPEN_WALL_BACKSTOP_MS[process.platform];
   if (ci === undefined || wallMs === undefined) {
     throw new Error(`No budget for opening a site on ${process.platform}`);
   }
+  const { factor, seconds } = await runnerFactor(app);
+  const calibrated = `calibration ${seconds.toFixed(3)} CPU-s`;
   if (process.env.CI === "true") {
-    return { cpuSeconds: ci, wallMs, source: `CI's on ${process.platform}` };
+    return {
+      cpuSeconds: Math.round(ci * factor * 100) / 100,
+      wallMs,
+      source: `CI's on ${process.platform} × ${factor.toFixed(2)}, ${calibrated}`,
+    };
   }
   const scale = localCpuScale();
   return {
     cpuSeconds: Math.round(ci * scale * 100) / 100,
     wallMs: Math.max(LOCAL_OPEN_WALL_BACKSTOP_MS, wallMs),
-    source: `local on ${process.platform}, CI's × ${scale}`,
+    source: `local on ${process.platform}, CI's × ${scale}, ${calibrated}`,
   };
 }
 

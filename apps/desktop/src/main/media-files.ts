@@ -1,4 +1,4 @@
-import type { FileMimeType, IMAGE_MIME_TYPES } from "@webforge/model";
+import { type FileMimeType, type IMAGE_MIME_TYPES, sniffImage } from "@webforge/model";
 import { sniffDocument } from "./document-files.js";
 
 /** What an imported file turned out to be, from its bytes rather than its name. */
@@ -11,52 +11,10 @@ export type SniffedMedia =
     }
   | { readonly kind: "file"; readonly mimeType: FileMimeType };
 
-const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
-
-function startsWith(bytes: Uint8Array, signature: readonly number[]): boolean {
-  return signature.every((byte, index) => bytes[index] === byte);
-}
-
-const u16 = (bytes: Uint8Array, at: number) => ((bytes[at] ?? 0) << 8) | (bytes[at + 1] ?? 0);
-const u32 = (bytes: Uint8Array, at: number) => u16(bytes, at) * 0x10000 + u16(bytes, at + 2);
-
-/** Width and height from a PNG's IHDR chunk, which must come first. */
-function pngSize(bytes: Uint8Array): { width: number; height: number } | undefined {
-  // Signature (8), chunk length (4), "IHDR" (4), then width and height.
-  const ihdr = String.fromCharCode(...bytes.subarray(12, 16));
-  return ihdr === "IHDR" ? { width: u32(bytes, 16), height: u32(bytes, 20) } : undefined;
-}
-
-/** Start-of-frame markers, which carry the size; C4 (DHT), C8 (JPG) and CC (DAC) are not. */
-const JPEG_FRAME_MARKERS = new Set([
-  0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf,
-]);
-
-/** Width and height from a JPEG's first start-of-frame segment. */
-function jpegSize(bytes: Uint8Array): { width: number; height: number } | undefined {
-  let at = 2;
-  while (at + 9 < bytes.length) {
-    if (bytes[at] !== 0xff) {
-      return undefined;
-    }
-    const marker = bytes[at + 1] ?? 0;
-    if (marker === 0xff) {
-      // Fill byte before a marker.
-      at += 1;
-      continue;
-    }
-    if (JPEG_FRAME_MARKERS.has(marker)) {
-      return { height: u16(bytes, at + 5), width: u16(bytes, at + 7) };
-    }
-    if (marker === 0xd9 || marker === 0xda) {
-      // End of image, or the scan began without a frame header.
-      return undefined;
-    }
-    // Every other segment carries its length (which counts itself) after the marker.
-    at += 2 + u16(bytes, at + 2);
-  }
-  return undefined;
-}
+/** Whether `bytes` start as a PNG or a JPEG does. */
+const looksLikeImage = (bytes: Uint8Array) =>
+  [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a].every((byte, index) => bytes[index] === byte) ||
+  (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff);
 
 /**
  * Recognises the files Media accepts: JPEG and PNG images by their first bytes, with their size,
@@ -65,18 +23,10 @@ function jpegSize(bytes: Uint8Array): { width: number; height: number } | undefi
  * is `undefined`.
  */
 export function sniffMedia(bytes: Uint8Array, fileName: string): SniffedMedia | undefined {
-  if (startsWith(bytes, PNG_SIGNATURE)) {
-    const size = pngSize(bytes);
-    return size !== undefined && size.width > 0 && size.height > 0
-      ? { kind: "image", mimeType: "image/png", ...size }
-      : undefined;
-  }
-  if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
-    const size = jpegSize(bytes);
-    return size !== undefined && size.width > 0 && size.height > 0
-      ? { kind: "image", mimeType: "image/jpeg", ...size }
-      : undefined;
-  }
+  const image = sniffImage(bytes);
+  if (image !== undefined) return { kind: "image", ...image };
+  // A PNG or JPEG without a size it can read is no file Media takes.
+  if (looksLikeImage(bytes)) return undefined;
   const document = sniffDocument(bytes, fileName);
   return document === undefined ? undefined : { kind: "file", mimeType: document };
 }

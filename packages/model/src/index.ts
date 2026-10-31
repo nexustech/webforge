@@ -94,6 +94,12 @@ export {
   sharedSectionIdSchema,
   themeIdSchema,
 } from "./ids.js";
+export {
+  decodableImage,
+  MAX_IMAGE_PIXELS,
+  type SniffedImage,
+  sniffImage,
+} from "./image-size.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
 export type { ComponentLook, LookField, Looks } from "./look.js";

@@ -294,6 +294,20 @@ describe("toExportResult", () => {
     );
   });
 
+  it("passes on the image to replace, but logs only the codes (S12)", () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const result = toExportResult(
+      { type: "failed", code: "unreadable-image", detail: "unreadable-image", image: "huge-photo" },
+      target,
+    );
+
+    expect(result).toEqual({ status: "failed", reason: "unreadable-image", image: "huge-photo" });
+    expect(error).toHaveBeenCalledWith(
+      "Webforge could not export a site (code=unreadable-image, detail=unreadable-image)",
+    );
+  });
+
   it("reports a cancelled export as the dialog's cancel: nothing changed on disk (R15)", () => {
     expect(toExportResult({ type: "cancelled" }, target)).toEqual({ status: "canceled" });
   });

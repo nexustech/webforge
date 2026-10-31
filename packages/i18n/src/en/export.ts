@@ -67,6 +67,9 @@ export const exportSite = {
   "export.failed.buildFailed": "Your site could not be built. Nothing was changed on disk.",
   "export.failed.writeFailed": "Your site could not be saved there.",
   "export.failed.tooLarge": "Your site is too large for a ZIP file. Export it to a folder instead.",
+  // A Media image the export doesn't decode (S12): over 50 megapixels, or not what it says it is.
+  "export.failed.unreadableImage":
+    "The image “{image}” can't be exported: it's larger than 50 megapixels, or its file is damaged. Replace it in Media and export again.",
   "export.failed.reservedName":
     "The page “{page}” can't be exported: Windows keeps its name, or its folder's, for itself. Rename it in the Pages panel and export again.",
 } as const;
