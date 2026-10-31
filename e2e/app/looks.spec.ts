@@ -41,6 +41,12 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
     .locator('[data-field="lookBackground"]')
     .getByRole("radio", { name: "Accent", exact: true })
     .click();
+  // A draft until applied (4.10): the canvas has nothing of it yet.
+  await expect(features).not.toHaveClass(/bg-secondary!/);
+  await studio
+    .getByRole("region", { name: "Features" })
+    .getByRole("button", { name: "Apply Changes" })
+    .click();
   // A built-in theme is changed as the person's own copy of it (2.23), named first.
   await page
     .getByRole("dialog", { name: /^Save your own version of/ })

@@ -206,21 +206,22 @@ export function createSectionPreviews(source: PreviewSource): (item: AddItem) =>
 
 /**
  * Theme Studio's previews of each kind (3.12, CT-1): a section or an element of `type`, drawn with
- * its defaults in the site's theme, with the theme's look for its kind, as the Add panel's are.
- * Drawn again once the theme has changed, so a change to the look shows at once. Each takes its
- * whole size before it's drawn, so Theme Studio's fields under it stay put (#626).
+ * its defaults in the site's theme, with the theme's look for its kind, as the Add panel's are, or
+ * in `theme` when given: with a look not applied yet (4.10). Drawn again once the theme has
+ * changed, so a change to the look shows at once. Each takes its whole size before it's drawn, so
+ * Theme Studio's fields under it stay put (#626).
  */
 export function createKindPreviews(
   source: Omit<PreviewSource, "sharedSection">,
-): (type: string) => ReactNode {
+): (type: string, theme?: Theme) => ReactNode {
   const previews = createPreviews(
     { ...source, sharedSection: () => undefined },
     new Set(["section", "element"]),
   );
   // Its whole size from the start, drawn or not: what follows it never moves as it draws, so a
   // click on a control below lands where it was aimed (#626).
-  return (type) => {
-    const preview = previews({ type });
+  return (type, theme) => {
+    const preview = previews({ type }, theme);
     return preview === null ? null : (
       <div
         data-kind-preview
@@ -237,7 +238,7 @@ export function createKindPreviews(
 function createPreviews(
   source: PreviewSource,
   places: ReadonlySet<string>,
-): (item: PreviewItem) => ReactNode {
+): (item: PreviewItem, theme?: Theme) => ReactNode {
   /**
    * Each item's drawing, with the node and theme it was drawn from: drawn again once either
    * changes (a shared section or the theme edited; both are new objects then).
@@ -298,12 +299,23 @@ function createPreviews(
     return get;
   };
   const subscribe = source.subscribe ?? NO_CHANGES;
-  return (item) =>
+  // A theme given for one drawing (a draft look, 4.10), read the same way each time as it is.
+  const themeGetters = new WeakMap<Theme, () => Theme>();
+  const themeFor = (theme: Theme | undefined) => {
+    if (theme === undefined) return source.theme;
+    let get = themeGetters.get(theme);
+    if (get === undefined) {
+      get = () => theme;
+      themeGetters.set(theme, get);
+    }
+    return get;
+  };
+  return (item, theme) =>
     nodeOf(item) === undefined ? null : (
       <SectionPreview
         draw={drawerFor(item)}
         subscribe={subscribe}
-        theme={source.theme}
+        theme={themeFor(theme)}
         node={nodeFor(item)}
       />
     );
@@ -368,8 +380,11 @@ function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: 
   );
 }
 
-/** Draws an item: the same drawing for every device while the item and theme are the same. */
-type ItemDrawer = (node: NodeDoc) => Promise<Drawn | undefined>;
+/**
+ * Draws an item, in `theme` when given (a draft look, 4.10), else the site's: the same drawing for
+ * every device while the item and theme are the same.
+ */
+type ItemDrawer = (node: NodeDoc, theme?: Theme) => Promise<Drawn | undefined>;
 
 /**
  * A preview of `node`, drawn again once its changes have settled ({@link SITE_CSS_DEBOUNCE_MS}, as
@@ -379,10 +394,12 @@ function ItemPreview({
   draw,
   node,
   device,
+  theme,
 }: {
   readonly draw: ItemDrawer;
   readonly node: NodeDoc;
   readonly device: ItemDevice;
+  readonly theme?: Theme | undefined;
 }) {
   const [drawn, setDrawn] = useState<Drawn | undefined>(undefined);
   const drawnOnce = useRef(false);
@@ -390,7 +407,7 @@ function ItemPreview({
     let current = true;
     const timer = setTimeout(
       () => {
-        void draw(node).then((result) => {
+        void draw(node, theme).then((result) => {
           if (!current || result === undefined) return;
           drawnOnce.current = true;
           setDrawn(result);
@@ -402,7 +419,7 @@ function ItemPreview({
       current = false;
       clearTimeout(timer);
     };
-  }, [draw, node]);
+  }, [draw, node, theme]);
   return drawn === undefined ? (
     <div aria-hidden style={{ width: ITEM_SHOWN[device].width, height: 80 }} />
   ) : (
@@ -412,23 +429,32 @@ function ItemPreview({
 
 /**
  * *Style this ‹kind›…*'s previews (3.13a, CT-2): the item itself, as the person is styling it, on
- * Desktop or Mobile in the site's theme with its kind's look, drawn again as it changes. Both
- * devices draw from one compile of its CSS for each state of the item and theme (3.13a review).
+ * Desktop or Mobile in the site's theme with its kind's look, or in `theme` when given (Theme
+ * Studio's before and after, 4.10), drawn again as it changes. Both devices draw from one compile
+ * of its CSS for each state of the item and theme (3.13a review); a before and after are kept
+ * both, so switching between them draws nothing again.
  */
 export function createItemPreviews(
   source: Omit<PreviewSource, "sharedSection">,
-): (node: NodeDoc, device: ItemDevice) => ReactNode {
-  const drawings = new WeakMap<NodeDoc, { theme: Theme; drawing: Promise<Drawn | undefined> }>();
-  const draw: ItemDrawer = (node) => {
-    const theme = source.theme();
-    const kept = drawings.get(node);
-    if (kept?.theme === theme) return kept.drawing;
+): (node: NodeDoc, device: ItemDevice, theme?: Theme) => ReactNode {
+  const drawings = new WeakMap<NodeDoc, WeakMap<Theme, Promise<Drawn | undefined>>>();
+  const draw: ItemDrawer = (node, given) => {
+    const theme = given ?? source.theme();
+    let byTheme = drawings.get(node);
+    if (byTheme === undefined) {
+      byTheme = new WeakMap();
+      drawings.set(node, byTheme);
+    }
+    const kept = byTheme.get(theme);
+    if (kept !== undefined) return kept;
     const drawing = drawNode(source, node, theme).catch((error: unknown) => {
       reportFailure("style.preview", error);
       return undefined;
     });
-    drawings.set(node, { theme, drawing });
+    byTheme.set(theme, drawing);
     return drawing;
   };
-  return (node, device) => <ItemPreview draw={draw} node={node} device={device} />;
+  return (node, device, theme) => (
+    <ItemPreview draw={draw} node={node} device={device} theme={theme} />
+  );
 }

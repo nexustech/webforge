@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { manifestOf } from "./manifest.js";
+import { manifestOf, type PublishedSite } from "./manifest.js";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 import {
   MANIFEST_FILE,
@@ -35,13 +35,24 @@ function memoryFolder(files: Record<string, string> = {}) {
   return { folder, stored, log, manifest };
 }
 
+/** The site publishing in these tests, and the time it publishes at. */
+const rosas: PublishedSite = { projectId: "rosas-bakery", destinationId: "live" };
+const AT = new Date("2026-10-31T10:00:00.000Z");
+const publishing = (site = rosas, replaceOtherSite = false) => ({
+  site,
+  url: "https://example.com/",
+  now: () => AT,
+  ...(replaceOtherSite ? { replaceOtherSite } : {}),
+});
+
 async function run(
   folder: RemoteFolder,
   files: Record<string, string>,
   signal = new AbortController().signal,
+  as = publishing(),
 ) {
   const events: PublishEvent[] = [];
-  for await (const event of publishToFolder(folder, build(files), signal, "https://example.com/")) {
+  for await (const event of publishToFolder(folder, build(files), signal, as)) {
     events.push(event);
   }
   return events;
@@ -69,7 +80,7 @@ describe("publishToFolder", () => {
       "write index.html",
       `write ${MANIFEST_FILE}`,
     ]);
-    expect(manifest()).toEqual(manifestOf(build(site).files));
+    expect(manifest()).toEqual(manifestOf(build(site).files, rosas, AT.toISOString()));
     expect(events.at(-1)).toEqual({
       type: "published",
       url: "https://example.com/",
@@ -135,12 +146,12 @@ describe("publishToFolder", () => {
       Object.entries(site).map(([path, content]) => [path, `${content} v2`]),
     );
 
-    const publishing = publishToFolder(host.folder, build(changed), controller.signal, "");
-    await publishing.next(); // preparing
-    await publishing.next(); // the first upload's event
+    const cancelled = publishToFolder(host.folder, build(changed), controller.signal, publishing());
+    await cancelled.next(); // preparing
+    await cancelled.next(); // the first upload's event
     controller.abort();
 
-    await expect(publishing.next()).rejects.toMatchObject({ code: "cancelled" });
+    await expect(cancelled.next()).rejects.toMatchObject({ code: "cancelled" });
     expect(text(host.stored.get(MANIFEST_FILE))).toBe(before);
     // The live home page is still the published one.
     expect(text(host.stored.get("index.html"))).toBe("home");
@@ -213,6 +224,65 @@ describe("publishToFolder", () => {
 });
 
 describe("uploadPathFor", () => {
+  it("records the site that published and when, in manifest version 2 (A8)", async () => {
+    const { folder, manifest } = memoryFolder();
+
+    await run(folder, site);
+
+    expect(manifest()).toMatchObject({
+      version: 2,
+      site: rosas,
+      publishedAt: "2026-10-31T10:00:00.000Z",
+    });
+  });
+
+  it("stops with other-site before anything is written to another project's folder (A8)", async () => {
+    const host = memoryFolder();
+    await run(host.folder, site);
+    const before = new Map(host.stored);
+    host.log.length = 0;
+    const other = { projectId: "draft-copy", destinationId: "live" };
+
+    await expect(
+      run(host.folder, { "index.html": "draft" }, undefined, publishing(other)),
+    ).rejects.toMatchObject({
+      code: "other-site",
+    });
+    expect(host.log).toEqual([]);
+    expect(host.stored).toEqual(before);
+
+    // Once the person agrees to replace it (4.5), it publishes over it, removing what it dropped.
+    const events = await run(
+      host.folder,
+      { "index.html": "draft" },
+      undefined,
+      publishing(other, true),
+    );
+    expect(events.at(-1)).toMatchObject({ type: "published", removed: 3 });
+    expect(host.manifest()).toMatchObject({ site: other });
+  });
+
+  it("asks before publishing over a version 1 manifest, which names no site, then makes it this site's", async () => {
+    const digests = manifestOf(build(site).files, rosas, AT.toISOString()).files;
+    const host = memoryFolder({
+      [MANIFEST_FILE]: JSON.stringify({ version: 1, files: digests }),
+      ...site,
+    });
+
+    await expect(run(host.folder, site)).rejects.toMatchObject({ code: "other-site" });
+    expect(host.log).toEqual([]);
+
+    // Once the person agrees, it reads as this site's from then on: unchanged files stay.
+    const replaced = await run(host.folder, site, undefined, publishing(rosas, true));
+    expect(replaced.at(-1)).toMatchObject({ uploaded: 0, unchanged: 4 });
+    expect(host.manifest()).toMatchObject({ version: 2, site: rosas });
+    // Another destination of the same site is the same site.
+    const staging = { ...rosas, destinationId: "staging" };
+    expect((await run(host.folder, site, undefined, publishing(staging))).at(-1)).toMatchObject({
+      type: "published",
+    });
+  });
+
   it("names a hidden file beside the one it replaces", () => {
     expect(uploadPathFor("index.html")).toBe(".index.html.webforge-upload");
     expect(uploadPathFor("assets/css/site.css")).toBe("assets/css/.site.css.webforge-upload");

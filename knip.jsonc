@@ -11,9 +11,10 @@
     "apps/desktop": {
       // The export worker is a second main-process input in electron.vite.config.ts.
       "entry": ["src/worker/export-worker.ts"],
-      // Imported by @webforge/storage, which is bundled from source. Listed as a dependency so
-      // electron-vite keeps it external and electron-builder packages it (ADR 0003).
-      "ignoreDependencies": ["better-sqlite3"],
+      // Imported by @webforge/storage and @webforge/publish, which are bundled from source. Listed
+      // as dependencies so electron-vite keeps them external and electron-builder packages them
+      // (ADR 0003; ssh2, ADR 0006).
+      "ignoreDependencies": ["better-sqlite3", "ssh2"],
       // A system tool on macOS and Linux: a test makes a named pipe with it (R13b).
       "ignoreBinaries": ["mkfifo"]
     },

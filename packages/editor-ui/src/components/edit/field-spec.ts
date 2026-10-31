@@ -24,7 +24,7 @@ type FieldSpecs = {
     /** Shown while the field is empty, already translated. */
     readonly placeholder?: string;
     /** What the text is, for the keyboard phones show and the browser's checks (forms, 2.21). */
-    readonly inputType?: "text" | "email" | "tel" | "url";
+    readonly inputType?: "text" | "email" | "tel" | "url" | "password";
     /** The longest text it takes: the model's limit for it (forms, 2.21). */
     readonly maxLength?: number;
   } & (
