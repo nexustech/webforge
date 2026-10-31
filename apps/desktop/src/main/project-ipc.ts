@@ -147,29 +147,29 @@ export function registerProjectHandlers(
     ipc,
     "listRecentSites",
     isTrustedSender,
-    () => recent?.list(session.currentPath()) ?? [],
+    async () => (await recent?.list(session.currentPath())) ?? [],
   );
   registerIpcHandler(ipc, "openRecentSite", isTrustedSender, async (id) => {
-    const path = recent?.pathOf(id);
+    const path = await recent?.pathOf(id);
     if (path === undefined) {
       return { status: "failed", reason: "not-found" };
     }
     const result = await open(path);
     if (result.status === "failed" && result.reason === "not-found") {
-      recent?.remove(id);
+      await recent?.remove(id);
     }
     return result;
   });
-  registerIpcHandler(ipc, "pinRecentSite", isTrustedSender, (id, pinned) => {
-    recent?.setPinned(id, pinned);
+  registerIpcHandler(ipc, "pinRecentSite", isTrustedSender, async (id, pinned) => {
+    await recent?.setPinned(id, pinned);
     return null;
   });
-  registerIpcHandler(ipc, "removeRecentSite", isTrustedSender, (id) => {
-    recent?.remove(id);
+  registerIpcHandler(ipc, "removeRecentSite", isTrustedSender, async (id) => {
+    await recent?.remove(id);
     return null;
   });
-  registerIpcHandler(ipc, "clearRecentSites", isTrustedSender, () => {
-    recent?.clearUnpinned();
+  registerIpcHandler(ipc, "clearRecentSites", isTrustedSender, async () => {
+    await recent?.clearUnpinned();
     return null;
   });
   registerIpcHandler(ipc, "getCurrentProject", isTrustedSender, () => session.current());

@@ -10,7 +10,7 @@ function setUp(
   const requestFlush = vi.fn(async () => {
     order.push("flush");
   });
-  const saveThumbnail = vi.fn(() => {
+  const saveThumbnail = vi.fn(async () => {
     order.push("thumbnail");
   });
   const siteSwitch = createSiteSwitch({
