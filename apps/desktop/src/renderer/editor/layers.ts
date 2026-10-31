@@ -136,7 +136,7 @@ export function pageLayers(
     layersOf(site.layout[which], library, site.sharedSections).map((layer) => ({
       ...layer,
       region: which,
-      hidden: regionHidden(site as SiteDoc, pageId, which),
+      hidden: regionHidden(site, pageId, which),
     }));
   const content = site.pages[pageId]?.doc.content ?? [];
   return [

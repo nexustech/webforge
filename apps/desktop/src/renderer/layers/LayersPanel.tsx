@@ -574,6 +574,11 @@ export function LayersPanel({
         </div>
       </ScrollArea>
 
+      {/* Only the shared Header and Footer (#673): the page has no sections of its own yet. */}
+      {layers.every((layer) => layer.region !== undefined) && (
+        <p className="m-0 shrink-0 px-2 pb-1 text-xs text-muted-foreground">{t("layers.empty")}</p>
+      )}
+
       {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}
       <p role="status" className="shrink-0 px-2 text-xs text-destructive-text empty:hidden">
         {dragging !== null && rowDrag.drop?.allowed === false

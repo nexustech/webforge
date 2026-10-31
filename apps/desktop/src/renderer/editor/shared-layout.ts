@@ -13,8 +13,11 @@ export const SHARED_REGIONS: readonly SharedRegion[] = ["header", "footer"];
 const HIDDEN_BY = { header: "hideHeader", footer: "hideFooter" } as const;
 
 /** Whether page `pageId`'s settings hide `region` ("Hide the Header on this page"). */
-export const regionHidden = (site: SiteDoc, pageId: PageId, region: SharedRegion): boolean =>
-  site.pages[pageId]?.settings[HIDDEN_BY[region]] === true;
+export const regionHidden = (
+  site: Pick<SiteDoc, "pages">,
+  pageId: PageId,
+  region: SharedRegion,
+): boolean => site.pages[pageId]?.settings[HIDDEN_BY[region]] === true;
 
 /** The page setting that hides `region` on a page. */
 export const hiddenSetting = (region: SharedRegion) => HIDDEN_BY[region];
