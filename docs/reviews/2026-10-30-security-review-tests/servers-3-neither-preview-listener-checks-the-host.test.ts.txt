@@ -1,0 +1,37 @@
+// Original: apps/desktop/src/main/zz-security-servers-3-neither-preview-listener-checks-the-host.test.ts — FAILS as expected: AssertionError: expected [ 404, 421 ] to include 200
+import { request } from "node:http";
+import { afterEach, describe, expect, it } from "vitest";
+import { createPreviewServer, type PreviewServer } from "./preview-server.js";
+
+let server: PreviewServer | undefined;
+afterEach(async () => {
+  await server?.close();
+  server = undefined;
+});
+
+function get(port: number, path: string, headers: Record<string, string>) {
+  return new Promise<number>((resolve, reject) => {
+    const sent = request({ host: "127.0.0.1", port, path, method: "GET", headers }, (response) => {
+      response.resume();
+      response.on("end", () => resolve(response.statusCode ?? 0));
+    });
+    sent.on("error", reject);
+    sent.end();
+  });
+}
+
+describe("preview server Host check (DNS rebinding)", () => {
+  it("refuses a request whose Host is not the loopback address it listens on", async () => {
+    server = createPreviewServer();
+    const port = await server.listen("local");
+    const text = new TextEncoder();
+    server.update({
+      type: "previewed",
+      full: true,
+      changed: [{ path: "index.html", data: text.encode("<html><body>Home</body></html>") }],
+      removed: [],
+    });
+    expect(await get(port, server.base, { Host: `127.0.0.1:${port}` })).toBe(200);
+    expect([404, 421]).toContain(await get(port, server.base, { Host: `attacker.example:${port}` }));
+  });
+});

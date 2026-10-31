@@ -1,0 +1,19 @@
+// Original path: apps/desktop/src/main/zz-security-ipc-1-app-url-check-ignores-the-host-of-file-u.test.ts. Result: both tests fail on main (isAppUrl and mayNavigate return true for file://attacker.example/<app path>).
+import { describe, expect, it } from "vitest";
+import { isAppUrl, mayNavigate } from "./security.js";
+
+const appUrl = "file:///C:/Program%20Files/Webforge/resources/app.asar/out/renderer/index.html";
+const foreign =
+  "file://attacker.example/C:/Program%20Files/Webforge/resources/app.asar/out/renderer/index.html";
+
+describe("isAppUrl with a file: URL on another host", () => {
+  it("refuses the app's path on a foreign host", () => {
+    expect(isAppUrl(foreign, appUrl)).toBe(false);
+  });
+
+  it("refuses a navigation of the main frame to it", () => {
+    expect(mayNavigate({ url: foreign, isMainFrame: true, isSameDocument: false }, appUrl)).toBe(
+      false,
+    );
+  });
+});

@@ -1,0 +1,19 @@
+// Original path: packages/commands/src/zz-security-ai-6-4-9-requirement-abuse-limits-prompt-inje.test.ts. Result: fails as expected (addPage plan has no confirm; received false, expected 'function').
+import { createSite } from "@webforge/model";
+import { describe, expect, it } from "vitest";
+import { COMMANDS } from "./commands.js";
+
+describe("security: addPage is site-wide (adds a menu entry on every page)", () => {
+  it("asks for the D7 confirmation before an AI app adds a page", () => {
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Not found",
+      homeDoc: { root: { props: {} }, content: [] },
+      layout: { header: [], footer: [] },
+    });
+    const plan = COMMANDS.addPage.plan(site, { title: "Pay here" });
+    expect("confirm" in plan && typeof plan.confirm).toBe("function");
+  });
+});
