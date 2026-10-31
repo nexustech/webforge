@@ -239,6 +239,28 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     expect(field("Key passphrase").getAttribute("type")).toBe("password");
   });
 
+  it("shows a saved key as saved, with no file name to show", () => {
+    render(
+      <FileTransferDestinationDialog
+        open
+        destination={{
+          protocol: "sftp",
+          host: "sftp.rosasbakery.co.uk",
+          user: "rosa",
+          folder: "/site",
+          signIn: "key",
+        }}
+        signIn={{ privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----" }}
+        trust={{ hostKey: HOST_KEY }}
+        publish={fakePublish()}
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Using your saved key.")).toBeTruthy();
+  });
+
   it("says why a chosen file isn't a key", async () => {
     const publish = fakePublish({
       chooseKeyFile: vi.fn(async () => ({

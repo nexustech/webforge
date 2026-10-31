@@ -87,7 +87,8 @@ async function connect(
       // biome-ignore lint/correctness/useHookAtTopLevel: basic-ftp's method, not a React hook.
       await client.useTLS({ ...options.tls, host: options.tls?.host ?? dest.host });
     } catch (error) {
-      if (error instanceof FTPError) {
+      // A refusal (500, 502, 504, 534…) means no FTPS; a 4xx reply (421) is the host being busy.
+      if (error instanceof FTPError && error.code >= 500) {
         throw new PublishError("no-encryption", "The host doesn't offer encrypted FTP", {
           cause: error,
         });

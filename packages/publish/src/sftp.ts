@@ -57,11 +57,16 @@ export type SftpOptions = SftpSignIn & {
  * passphrase missing or wrong), checked before connecting, so the host never sees a failed try.
  */
 export function readPrivateKey(privateKey: string, passphrase?: string): TestResult {
-  const parsed = ssh2.utils.parseKey(privateKey, passphrase);
-  const key = Array.isArray(parsed) ? parsed[0] : parsed;
-  return key === undefined || key instanceof Error || !key.isPrivateKey()
+  return openPrivateKey(privateKey, passphrase) === undefined
     ? { ok: false, code: "bad-key" }
     : { ok: true };
+}
+
+/** The private key `passphrase` opens, or `undefined` for anything else. */
+function openPrivateKey(privateKey: string, passphrase?: string) {
+  const parsed = ssh2.utils.parseKey(privateKey, passphrase);
+  const key = Array.isArray(parsed) ? parsed[0] : parsed;
+  return key === undefined || key instanceof Error || !key.isPrivateKey() ? undefined : key;
 }
 
 /**
@@ -80,7 +85,7 @@ export function describePrivateKey(text: string): "key" | "encrypted" | "not-a-k
 /** What `ssh2` signs in with: the password, or the private key. */
 function credentials(options: SftpOptions) {
   if ("password" in options) return { password: options.password };
-  if (!readPrivateKey(options.privateKey, options.passphrase).ok) {
+  if (openPrivateKey(options.privateKey, options.passphrase) === undefined) {
     throw new PublishError("bad-key", "The private key could not be read");
   }
   return {

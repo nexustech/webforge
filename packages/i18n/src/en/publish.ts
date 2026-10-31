@@ -44,6 +44,7 @@ export const publish = {
   "publish.keyFile.choose": "Choose Key File…",
   "publish.keyFile.chosen": "Using {name}",
   "publish.keyFile.none": "No key file chosen.",
+  "publish.keyFile.saved": "Using your saved key.",
   "publish.keyFile.unreadable": "That file couldn't be read.",
   "publish.keyFile.tooLarge": "That file is too large to be a private key.",
   "publish.keyFile.notAKey":

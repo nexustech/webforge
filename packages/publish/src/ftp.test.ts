@@ -201,3 +201,23 @@ describe("an FTPS destination on a host without FTPS (4.3)", { timeout: 30_000 }
     expect(await ftpPublisher(trusted).test({ ...dest, protocol: "ftp" })).toEqual({ ok: true });
   });
 });
+
+describe("an FTPS host too busy to answer (4.3)", { timeout: 30_000 }, () => {
+  let busy: Awaited<ReturnType<typeof startFtpServer>>;
+  beforeAll(async () => {
+    busy = await startFtpServer({
+      user: "baker",
+      password: "test-only-password",
+      busy: "421 Too many connections",
+    });
+  });
+  afterAll(async () => {
+    await busy?.stop();
+  });
+
+  it("says it couldn't be reached, not that it has no FTPS", async () => {
+    const dest = { ...destination("ftps"), port: busy.port };
+
+    expect(await ftpPublisher(trusted).test(dest)).toEqual({ ok: false, code: "network" });
+  });
+});

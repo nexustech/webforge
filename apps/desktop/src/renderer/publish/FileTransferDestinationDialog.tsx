@@ -534,7 +534,9 @@ function KeyFileRow({
         {problem ??
           (keyFile === undefined
             ? t("publish.keyFile.none")
-            : t("publish.keyFile.chosen", { name: keyFile.name }))}
+            : keyFile.name === ""
+              ? t("publish.keyFile.saved")
+              : t("publish.keyFile.chosen", { name: keyFile.name }))}
       </span>
     </div>
   );

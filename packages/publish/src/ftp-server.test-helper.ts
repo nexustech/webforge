@@ -82,6 +82,8 @@ type ServerOptions = {
   readonly password: string;
   /** `false` for a host without FTPS, which refuses `AUTH TLS` (4.3). */
   readonly tls?: boolean;
+  /** The reply to `AUTH TLS` of a host too busy to answer it: `421 Too many connections`. */
+  readonly busy?: string;
 };
 
 function serve(session: Session, root: string, options: ServerOptions) {
@@ -116,6 +118,7 @@ function serve(session: Session, root: string, options: ServerOptions) {
 
   const commands: Record<string, (argument: string) => void | Promise<void>> = {
     AUTH: (argument) => {
+      if (options.busy !== undefined) return void reply(options.busy);
       if (argument.toUpperCase() !== "TLS" || TEST_TLS === undefined || options.tls === false)
         return void reply("504 Not here");
       reply("234 Starting TLS");
