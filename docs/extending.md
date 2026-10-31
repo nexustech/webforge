@@ -139,7 +139,8 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 - **Each area's strings** are in one file under `packages/i18n/src/en/`, listed in `en.ts`; a test fails on a key in two files. A new area gets its own (`<area>.ts`). The areas from before then share files, which `pnpm scaffold` knows (`STRINGS_FILES` in `tools/src/scaffold.ts`):
   - `panels.ts`: add, element-menu, layers, links, menu, site;
   - `site.ts`: clipboard, media, site-settings, start;
-  - `canvas.ts`: shared-sections;
+  - `canvas.ts`: edit-panel, shared-sections;
+  - `shell.ts`: preview, settings, undo-history (whose panel title, from before it was an area, is in `panels.ts`);
   - their own: export (`export.ts`), storage (`storage.ts`);
   - none of their own: fields (the colour field's are in `components/shared.ts`), perf.
 
