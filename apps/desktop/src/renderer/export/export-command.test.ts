@@ -282,6 +282,72 @@ describe("registerExportCommand", () => {
     expect(flow.exportSite).not.toHaveBeenCalled();
   });
 
+  describe("the site's code (#649)", () => {
+    /** The bakery with a Custom Code element that loads a script from another website. */
+    const withScript = (): SiteDoc => {
+      const site = withAddress(bakery());
+      const home = site.pages[site.homePageId];
+      if (home === undefined) throw new Error("no home page");
+      const widget = {
+        type: "CustomCode",
+        props: { id: "widget", code: '<script src="https://cdn.example.com/w.js"></script>' },
+      };
+      return {
+        ...site,
+        settings: { ...site.settings, allowedExternalUrls: ["https://cdn.example.com/"] },
+        pages: {
+          ...site.pages,
+          [site.homePageId]: { ...home, doc: { ...home.doc, content: [widget] } },
+        },
+      };
+    };
+
+    it("asks first, and stops when the owner doesn't go on", async () => {
+      const confirmCode = vi.fn(async (): Promise<CodeDecision> => ({ go: false }));
+      const { registry, flow, dialogs, finished } = setUp({ confirmCode }, withScript());
+
+      registry.run(EXPORT_COMMAND_ID);
+      await finished();
+
+      expect(confirmCode).toHaveBeenCalledOnce();
+      expect(dialogs.shown()).toBeNull();
+      expect(flow.exportSite).not.toHaveBeenCalled();
+    });
+
+    it("applies the allowed addresses only once confirmed", async () => {
+      const unconfirmed = setUp(
+        { confirmCode: async () => ({ go: true, keeps: () => true, allowListConfirmed: false }) },
+        withScript(),
+      );
+      unconfirmed.registry.run(EXPORT_COMMAND_ID);
+      await unconfirmed.finished();
+      expect(unconfirmed.flow.showSiteCheck).toHaveBeenCalled();
+
+      const confirmed = setUp({}, withScript());
+      confirmed.registry.run(EXPORT_COMMAND_ID);
+      await confirmed.shown("options");
+      expect(confirmed.flow.showSiteCheck).not.toHaveBeenCalled();
+    });
+
+    it("checks the site without the code the owner leaves out, which won't be exported", async () => {
+      const left = setUp(
+        {
+          confirmCode: async () => ({
+            go: true,
+            keeps: (text) => !text.includes("w.js"),
+            allowListConfirmed: false,
+          }),
+        },
+        withScript(),
+      );
+
+      left.registry.run(EXPORT_COMMAND_ID);
+      await left.shown("options");
+
+      expect(left.flow.showSiteCheck).not.toHaveBeenCalled();
+    });
+  });
+
   it("asks for the web address, exports with the chosen options, and shows the report", async () => {
     const { registry, flow, shown, finished, dialogs } = setUp();
     expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({ menu: "file", shortcut: "Mod+E" });
