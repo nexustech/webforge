@@ -50,6 +50,10 @@ describe("File › Save a Copy as ZIP… (4.7)", () => {
   it("says why no copy was saved, and nothing when the person cancels", async () => {
     await run(async () => ({ status: "failed", reason: "too-large" }));
     expect(toast.error).toHaveBeenLastCalledWith("This site is too large for a ZIP file.");
+    await run(async () => ({ status: "failed", reason: "own-file" }));
+    expect(toast.error).toHaveBeenLastCalledWith(
+      "A copy can't replace your site's own file. Choose another name for it.",
+    );
     await run(async () => ({ status: "failed", reason: "unknown" }));
     expect(toast.error).toHaveBeenLastCalledWith("Webforge couldn't save a copy of your site.");
 

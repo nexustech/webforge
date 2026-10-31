@@ -171,6 +171,26 @@ describe("ProjectSession", () => {
     expect(site.sitePackage.site.settings.general.name).toBe("Rosa's");
   });
 
+  it("saves no copy over the open site's own file, nor the files beside it (4.7)", async () => {
+    const site = join(dir, "Rosa's Bakery.wforge");
+    await session.create(site);
+
+    for (const path of [
+      site,
+      `${site}-wal`,
+      `${site}-journal`,
+      join(dir, ".", "Rosa's Bakery.wforge"),
+    ]) {
+      expect(await session.saveSiteZip(path), path).toEqual({
+        status: "failed",
+        reason: "own-file",
+      });
+    }
+    // The site is still there, and still opens.
+    expect(session.current()?.fileName).toBe("Rosa's Bakery.wforge");
+    expect((await session.readSite()).status).not.toBe("failed");
+  });
+
   it("saves no copy without an open site, nor over a folder (4.7)", async () => {
     expect(await session.saveSiteZip(join(dir, "copy.zip"))).toEqual({
       status: "failed",

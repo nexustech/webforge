@@ -415,6 +415,67 @@ describe("opening a ZIP that isn't a site's (4.7)", () => {
     expect(codeOf(changedZip((entries) => withManifest(entries, { project: {} })))).toBe("damaged");
   });
 
+  it("refuses an entry claiming to unpack to more than it can, before unpacking anything", () => {
+    /** `zip` with entry `name`'s unpacked size, in its local and central headers, said as `size`. */
+    const claiming = (zip: Uint8Array, name: string, size: number) => {
+      const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength);
+      const named = (at: number, length: number) =>
+        new TextDecoder().decode(zip.subarray(at, at + length)) === name;
+      for (let at = 0; at + 46 <= zip.byteLength; at += 1) {
+        const signature = view.getUint32(at, true);
+        if (signature === 0x04034b50 && named(at + 30, view.getUint16(at + 26, true))) {
+          view.setUint32(at + 22, size, true);
+        } else if (signature === 0x02014b50 && named(at + 46, view.getUint16(at + 28, true))) {
+          view.setUint32(at + 24, size, true);
+        }
+      }
+      return zip;
+    };
+    const entries = (() => {
+      let kept: Record<string, Uint8Array> = {};
+      changedZip((all) => {
+        kept = all;
+      });
+      return kept;
+    })();
+
+    // A deflated entry of a few hundred bytes claiming a GiB: fflate would allocate it first.
+    const lying = claiming(zipSync(entries), "site.json", 2 ** 30);
+    expect(codeOf(lying)).toBe("damaged");
+    // Refused from the headers, in the first pass, not by an unpacking that went wrong.
+    expect(() => readSiteZip(lying)).toThrow("claims more than it can unpack");
+    // A stored entry is exactly its own size.
+    const stored = zipSync({
+      ...entries,
+      "site.json": [entries["site.json"] ?? strToU8(""), { level: 0 }],
+    });
+    const size = (entries["site.json"] ?? strToU8("")).byteLength;
+    expect(codeOf(claiming(stored.slice(), "site.json", size + 1))).toBe("damaged");
+    expect(codeOf(stored)).toBe("read");
+  });
+
+  it("refuses one listing two versions or Media items with one id, or one entry twice", () => {
+    const listed = (entries: Record<string, Uint8Array>) => manifestOf(entries);
+    expect(
+      codeOf(
+        changedZip((entries) => {
+          const versions = listed(entries).versions as unknown[];
+          withManifest(entries, { versions: [...versions, ...versions] });
+        }),
+      ),
+    ).toBe("damaged");
+    expect(
+      codeOf(
+        changedZip((entries) => {
+          const media = listed(entries).media as { path: string }[];
+          withManifest(entries, {
+            media: [...media, ...media.map((item) => ({ ...item, mediaId: "other" }))],
+          });
+        }),
+      ),
+    ).toBe("damaged");
+  });
+
   it("unpacks only what its manifest lists", () => {
     const zip = changedZip((entries) => {
       entries["../outside.txt"] = strToU8("never read");

@@ -1,5 +1,11 @@
 import { readFile, stat } from "node:fs/promises";
-import { fillFromSiteZip, readSiteZip, type SiteZip, SiteZipError } from "@webforge/storage";
+import {
+  fillFromSiteZip,
+  readSiteZip,
+  SITE_ZIP_MAX_BYTES,
+  type SiteZip,
+  SiteZipError,
+} from "@webforge/storage";
 import type { IpcMain } from "electron";
 import type { ProjectFailureReason } from "../shared/ipc-contract.js";
 import type { Backups } from "./backups.js";
@@ -13,7 +19,7 @@ import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 /** Native file dialogs, injected so the handlers can be tested without Electron. */
 export type ProjectDialogs = {
   /**
-   * Asks where to save a new site, offering a file named after it (`siteFileName`); `undefined` if
+   * Asks where to save a new site, offering a file named after it (`safeFileName`); `undefined` if
    * the user cancels.
    */
   chooseNewProjectPath(siteName: string): Promise<string | undefined>;
@@ -27,28 +33,6 @@ export type ProjectDialogs = {
   /** Asks which site's ZIP to open (4.7); `undefined` if the user cancels. */
   chooseSiteZipToOpen(): Promise<string | undefined>;
 };
-
-/** Characters no file name may have on Windows, macOS or Linux. */
-const UNSAFE_IN_FILE_NAMES = /[<>:"/\\|?*\p{Cc}]/gu;
-
-/** Names Windows keeps for devices, which no file may have, whatever its extension. */
-const RESERVED_FILE_NAMES = /^(con|prn|aux|nul|com\d|lpt\d)$/i;
-
-/**
- * The file name New Site's save dialog offers for a site called `name` (2.14a), without the
- * extension: characters a file name can't have become "-", and trailing dots and spaces go, as
- * Windows drops them. `fallback` when nothing usable is left.
- */
-export function siteFileName(name: string, fallback: string): string {
-  const cleaned = name
-    .replace(UNSAFE_IN_FILE_NAMES, "-")
-    .trim()
-    .replace(/[. ]+$/, "");
-  return cleaned === "" || RESERVED_FILE_NAMES.test(cleaned) ? fallback : cleaned;
-}
-
-/** The most a site's ZIP can be (what a ZIP holds without ZIP64), checked before it is read. */
-const SITE_ZIP_MAX_FILE_BYTES = 0xffff_ffff;
 
 /** Why a site's ZIP can't be opened, as the open dialog's failure says it. */
 const SITE_ZIP_FAILURES = {
@@ -64,7 +48,7 @@ async function readSiteZipFile(
 ): Promise<SiteZip | { readonly reason: ProjectFailureReason }> {
   try {
     const { size } = await stat(path);
-    if (size > SITE_ZIP_MAX_FILE_BYTES) return { reason: "too-large" };
+    if (size > SITE_ZIP_MAX_BYTES) return { reason: "too-large" };
     return readSiteZip(await readFile(path));
   } catch (error) {
     if (error instanceof SiteZipError) return { reason: SITE_ZIP_FAILURES[error.code] };

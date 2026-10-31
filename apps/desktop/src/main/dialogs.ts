@@ -1,10 +1,10 @@
 import { t } from "@webforge/i18n";
-import { DOCUMENT_EXTENSIONS } from "@webforge/model";
+import { DOCUMENT_EXTENSIONS, safeFileName } from "@webforge/model";
 import type { BaseWindow, Dialog, OpenDialogOptions, SaveDialogOptions } from "electron";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import type { ExportDialogs } from "./export-ipc.js";
 import type { MediaDialogs } from "./media-ipc.js";
-import { type ProjectDialogs, siteFileName } from "./project-ipc.js";
+import type { ProjectDialogs } from "./project-ipc.js";
 import { PROJECT_EXTENSION } from "./project-session.js";
 
 /** What the native dialogs are made with; fakes in tests. */
@@ -56,7 +56,7 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         if (answer !== undefined) return answer.path;
         const result = await save({
           title: t("site.newDialogTitle"),
-          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
+          defaultPath: `${safeFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
           filters: projectFilters,
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;
@@ -77,7 +77,7 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         // The system's dialog asks before replacing a file of that name.
         const result = await save({
           title: t("site.zip.saveDialogTitle"),
-          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}.zip`,
+          defaultPath: `${safeFileName(siteName, t("site.untitledName"))}.zip`,
           filters: siteZipFilters,
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;
@@ -109,7 +109,7 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         // The system's dialog asks before replacing a file of that name.
         const result = await save({
           title: t("export.zipDialogTitle"),
-          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}.zip`,
+          defaultPath: `${safeFileName(siteName, t("site.untitledName"))}.zip`,
           filters: [{ name: t("export.zipFileType"), extensions: ["zip"] }],
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;

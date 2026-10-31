@@ -67,8 +67,11 @@ const saveSiteZipResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("canceled") }),
   z.strictObject({
     status: z.literal("failed"),
-    /** No site open, one larger than a ZIP file holds, or a write error. */
-    reason: z.enum(["no-site", "too-large", "unknown"]),
+    /**
+     * No site open, one larger than a ZIP file holds, a destination that is the open site's own
+     * file, or a write error.
+     */
+    reason: z.enum(["no-site", "too-large", "own-file", "unknown"]),
   }),
 ]);
 

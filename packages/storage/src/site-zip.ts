@@ -7,6 +7,7 @@ import {
   SITE_NAME_MAX,
   type SiteDoc,
   SiteFormatError,
+  safeFileName,
   siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
@@ -41,12 +42,19 @@ const SITE_ZIP_FORMAT = "webforge-site-zip";
 const SITE_ZIP_VERSION = 1;
 
 /**
- * The most a site's ZIP may hold, unpacked, and the most entries: what a ZIP holds without ZIP64,
- * which fflate doesn't write. Reading checks it before unpacking anything, so a crafted ZIP can't
- * ask for more memory than this.
+ * The most a site's ZIP may be, and may hold unpacked: 2 GiB, the most Node reads into memory at
+ * once, below the 4 GB a ZIP holds without ZIP64. Reading checks the file's size before reading
+ * it and the entries' sizes before unpacking anything, so a crafted ZIP can't ask for more memory
+ * than this.
  */
-const SITE_ZIP_MAX_BYTES = 0xffff_ffff;
+export const SITE_ZIP_MAX_BYTES = 2 ** 31 - 1;
+/** The most entries a ZIP holds without ZIP64, which fflate doesn't write. */
 const SITE_ZIP_MAX_ENTRIES = 0xffff;
+/**
+ * The most deflate can shrink data by. An entry claiming to unpack to more than this times its
+ * size is lying, and fflate would allocate the size it claims before inflating it.
+ */
+const DEFLATE_MAX_RATIO = 1032;
 /** The manifest is a list of entries: a few MB at most for any real site. */
 const MANIFEST_MAX_BYTES = 16 * 1024 * 1024;
 
@@ -94,7 +102,7 @@ const mimeSchema = z
   .max(255)
   .regex(/^[\w.+-]+\/[\w.+-]+$/);
 
-const manifestSchema = z.strictObject({
+const manifestShape = z.strictObject({
   format: z.literal(SITE_ZIP_FORMAT),
   version: z.int().positive(),
   name: z.string().min(1).max(SITE_NAME_MAX),
@@ -126,6 +134,32 @@ const manifestSchema = z.strictObject({
   project: sitePackageProjectSchema,
 });
 
+/** Whether `values` has no value twice. */
+const distinct = (values: readonly string[]) => new Set(values).size === values.length;
+
+/**
+ * The manifest, each id and entry once: two versions with one id would fail the new file's
+ * write after the person had chosen where to save it, so the ZIP is refused first.
+ */
+const manifestSchema = manifestShape
+  .refine((manifest) => distinct(manifest.versions.map((version) => version.id)), {
+    message: "Two versions have the same id",
+  })
+  .refine((manifest) => distinct(manifest.media.map((item) => item.mediaId)), {
+    message: "Two Media items have the same id",
+  })
+  .refine(
+    (manifest) =>
+      distinct([
+        SITE_ZIP_MANIFEST,
+        SITE_ENTRY,
+        ...manifest.media.map((item) => item.path),
+        ...manifest.files.map((file) => file.path),
+        ...manifest.versions.map((version) => version.path),
+      ]),
+    { message: "Two parts of the site have the same entry" },
+  );
+
 type Manifest = z.infer<typeof manifestSchema>;
 
 /** A site read from its ZIP and checked, ready to fill a new project with. */
@@ -142,18 +176,6 @@ const utf8 = new TextDecoder("utf-8", { fatal: true });
 
 /** A JSON entry: indented, so the ZIP reads in any text editor. */
 const jsonEntry = (value: unknown) => encoder.encode(`${JSON.stringify(value, null, 2)}\n`);
-
-/** Characters no file name may have on Windows, macOS or Linux. */
-const UNSAFE_IN_FILE_NAMES = /[<>:"/\\|?*\p{Cc}]/gu;
-
-/** `name` as a file name any system can unpack: unsafe characters as "-", never empty. */
-function fileName(name: string): string {
-  const cleaned = name
-    .replace(UNSAFE_IN_FILE_NAMES, "-")
-    .trim()
-    .replace(/[. ]+$/, "");
-  return cleaned === "" ? "file" : cleaned;
-}
 
 /**
  * An id as part of an entry's name: percent-encoded, `*` and the like too, so every name unpacks
@@ -200,7 +222,7 @@ export function siteZipEntries(store: ProjectStore): Map<string, Uint8Array> {
     return { ...version, path };
   });
   const mediaEntries = media.map((item) => {
-    const path = `media/${entryPart(item.mediaId)}/${fileName(item.originalName)}`;
+    const path = `media/${entryPart(item.mediaId)}/${safeFileName(item.originalName, "file")}`;
     entries.set(path, item.data);
     return {
       mediaId: item.mediaId,
@@ -299,17 +321,28 @@ export function readSiteZip(data: Uint8Array): SiteZip {
   // First what it holds, unpacking nothing but the manifest.
   let entries = 0;
   let unpacked = 0;
+  let lying = false;
   let manifestEntry: Record<string, Uint8Array>;
   try {
     manifestEntry = unzipSync(data, {
       filter: (file) => {
         entries += 1;
         unpacked += file.originalSize;
-        return file.name === SITE_ZIP_MANIFEST && file.originalSize <= MANIFEST_MAX_BYTES;
+        // A stored entry is its own size; a deflated one can't unpack to more than deflate makes.
+        if (
+          (file.compression === 0 && file.originalSize !== file.size) ||
+          (file.compression === 8 && file.originalSize > file.size * DEFLATE_MAX_RATIO)
+        ) {
+          lying = true;
+        }
+        return !lying && file.name === SITE_ZIP_MANIFEST && file.originalSize <= MANIFEST_MAX_BYTES;
       },
     });
   } catch (error) {
     throw new SiteZipError("not-a-site-zip", "The file is not a ZIP", { cause: error });
+  }
+  if (lying) {
+    throw new SiteZipError("damaged", "An entry claims more than it can unpack to");
   }
   if (entries > SITE_ZIP_MAX_ENTRIES || unpacked > SITE_ZIP_MAX_BYTES) {
     throw new SiteZipError("too-large", "The ZIP holds more than a site's ZIP can");

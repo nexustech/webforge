@@ -6,7 +6,7 @@ import { tempDirFactory } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectResult } from "../shared/ipc-contract.js";
-import { type ProjectDialogs, registerProjectHandlers, siteFileName } from "./project-ipc.js";
+import { type ProjectDialogs, registerProjectHandlers } from "./project-ipc.js";
 import type { ProjectSession } from "./project-session.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -409,23 +409,5 @@ describe("a site's ZIP (4.7)", () => {
       await expect(invoke("project:open-zip")).resolves.toEqual({ status: "canceled" });
       expect(session.create).not.toHaveBeenCalled();
     }
-  });
-});
-
-describe("siteFileName (2.14a)", () => {
-  it("offers the site's name as the file name, without what no file name may have", () => {
-    expect(siteFileName("Rosa's Bakery", "My site")).toBe("Rosa's Bakery");
-    expect(siteFileName('Fish & Chips: "Best" in town?', "My site")).toBe(
-      "Fish & Chips- -Best- in town-",
-    );
-    expect(siteFileName(String.raw`A/B\C|D*E<F>G` + "\u0007", "My site")).toBe("A-B-C-D-E-F-G-");
-    // Windows drops trailing dots and spaces.
-    expect(siteFileName("  Café Rosa...  ", "My site")).toBe("Café Rosa");
-  });
-
-  it("falls back when nothing usable is left", () => {
-    expect(siteFileName("...", "My site")).toBe("My site");
-    expect(siteFileName("CON", "My site")).toBe("My site");
-    expect(siteFileName("lpt1", "My site")).toBe("My site");
   });
 });

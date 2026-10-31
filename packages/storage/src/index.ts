@@ -28,6 +28,7 @@ export {
   fillFromSiteZip,
   readSiteZip,
   SITE_ZIP_MANIFEST,
+  SITE_ZIP_MAX_BYTES,
   type SiteZip,
   SiteZipError,
   type SiteZipErrorCode,

@@ -42,10 +42,10 @@ media/<media id>/<name>  each Media item's original file, as it was imported
 files/<sha-256>          other files the site names, such as bundled code (3.9)
 ```
 
-- Ids in entry names are percent-encoded (`media/photo%3A1/shop.jpg` for `photo:1`), so every name unpacks on Windows, macOS and Linux. A Media file keeps its name, with the characters a file name can't have replaced by `-`.
+- Ids in entry names are percent-encoded (`media/photo%3A1/shop.jpg` for `photo:1`), so every name unpacks on Windows, macOS and Linux. A Media file keeps its name, with the characters a file name can't have replaced by `-` (`safeFileName` in `@webforge/model`, as the save dialogs' names are); a name Windows keeps for a device, such as `con.jpg`, becomes `file`.
 - JSON entries are indented with two spaces. `site.json` and each version are a whole site as `@webforge/model` defines it (`SiteDoc`), in this app's site format, with its `formatVersion`.
 - Entries the manifest doesn't list are ignored. Every entry has the same date, so the same site always makes the same ZIP.
-- No ZIP64: at most 65,535 entries and 4 GB, as with an exported site's ZIP. A larger site can't be saved as a ZIP (`too-large`).
+- No ZIP64: at most 65,535 entries. A ZIP is at most 2 GiB, and holds at most 2 GiB unpacked, the most the app reads into memory at once. A larger site can't be saved as a ZIP (`too-large`).
 
 ## `manifest.json`
 
@@ -63,8 +63,8 @@ files/<sha-256>          other files the site names, such as bundled code (3.9)
 
 A ZIP the person chooses is untrusted, as a `.wforge` file is (ADR 0003). `readSiteZip` checks it before the save dialog asks where the new site goes:
 
-1. Its size and entries, from the ZIP's directory, before anything is unpacked: no more than a ZIP holds.
-2. The manifest: a site's, of a layout this app reads (else `not-a-site-zip` or `newer-format`), valid in every field (else `damaged`).
+1. Its size, before it is read, and its entries, from the ZIP's directory, before anything is unpacked: at most 2 GiB in all (else `too-large`). Each entry's claimed size must be one it can have: a stored entry's is its own size, and a deflated one's at most 1,032 times its size, the most deflate shrinks data by (else `damaged`). The unpacker allocates the claimed size first, so a few KB claiming GBs is refused here.
+2. The manifest: a site's, of a layout this app reads (else `not-a-site-zip` or `newer-format`), valid in every field, with each version id, Media id and entry listed once (else `damaged`).
 3. Only the entries the manifest lists are unpacked. Each file's bytes must match its SHA-256, and the site and every version must be a site this app opens through `migrateSite` (`damaged`, or `newer-format` for a newer site format).
 
 The new site is then filled in its new file before it opens, as New Site fills one (a `NewSiteFill`): the files and Media, the site, the project block, then the versions, oldest first so they list in the same order. Its project id and creation time are its own, as a new file's are.

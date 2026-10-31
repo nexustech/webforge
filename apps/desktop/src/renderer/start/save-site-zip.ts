@@ -13,7 +13,13 @@ function tell(result: SaveSiteZipResult): void {
       description: t("site.zip.savedDescription"),
     });
   } else if (result.status === "failed") {
-    toast.error(result.reason === "too-large" ? t("site.zip.tooLarge") : t("site.zip.saveFailed"));
+    toast.error(
+      result.reason === "too-large"
+        ? t("site.zip.tooLarge")
+        : result.reason === "own-file"
+          ? t("site.zip.ownFile")
+          : t("site.zip.saveFailed"),
+    );
   }
 }
 

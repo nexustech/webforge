@@ -319,8 +319,18 @@ export class ProjectSession {
    * Saves a copy of the open site as a ZIP at `path` (4.7, F-SITE-5), a file the person chose. The
    * site is read on the gate's shared side, so it can't close meanwhile, all at once, so the copy
    * is the site as it was then, whatever is saved while the ZIP is written.
+   *
+   * Never over the open site's own file or the files SQLite keeps beside it: on macOS and Linux
+   * the ZIP's rename would replace the database the site is saved to (`own-file`).
    */
   saveSiteZip(path: string): Promise<SaveSiteZipResult> {
+    const open = this.#path;
+    if (
+      open !== undefined &&
+      ["", "-wal", "-journal", "-shm"].some((suffix) => samePath(`${open}${suffix}`, path))
+    ) {
+      return Promise.resolve({ status: "failed", reason: "own-file" });
+    }
     return this.#shared<SaveSiteZipResult>(
       async (store) => {
         try {
