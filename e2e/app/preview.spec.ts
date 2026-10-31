@@ -13,6 +13,7 @@ import * as jsqr from "jsqr";
 import { expectMedianWithin, hotSwapBudgetMs } from "./budget.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
+import { openPreview } from "./sites.js";
 
 // Preview (3.2, F-PV-1): the title bar's Preview opens the site in the default browser (stubbed:
 // the address it would open is kept, and opened here in Chromium), served by the preview server
@@ -65,11 +66,11 @@ test("opens the site in the browser, and every edit reaches it", async () => {
   expect(url).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/[0-9a-f]{32}\/index\.html$/);
 
   const site = await browser.newPage();
-  await site.goto(url ?? "");
+  await openPreview(site, url ?? "");
   await expect(site.locator("h1")).toHaveText("Welcome to our business");
   // Nothing without the secret path.
   const { origin } = new URL(url ?? "");
-  expect((await (await browser.newPage()).goto(`${origin}/index.html`))?.status()).toBe(404);
+  expect((await openPreview(await browser.newPage(), `${origin}/index.html`))?.status()).toBe(404);
 
   // A word changed on the canvas: the page reloads with it.
   await canvas().locator("h1").dblclick();
@@ -167,7 +168,7 @@ test("swaps the stylesheet in place in under 100 ms, the median of five (#622)",
   const [url] = (await opened()).slice(-1);
   const site = await browser.newPage();
   await site.addInitScript(timeSwaps);
-  await site.goto((url ?? "").replace(/\/404\.html$/, "/index.html"));
+  await openPreview(site, (url ?? "").replace(/\/404\.html$/, "/index.html"));
   await expect(site.locator("h1")).toBeVisible();
   await page
     .getByRole("region", { name: "Right panels" })
