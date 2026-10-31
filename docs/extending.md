@@ -87,12 +87,12 @@ The selected element's own controls, in the row under the canvas toolbar (SP-4, 
 ## Kinds of field
 
 What a component's field is (`text`, `select`, `media`, `link`…) decides how the Edit panel draws it (2.20, B5). `FIELD_KINDS` (`renderer/fields/field-kinds.ts`) lists every kind with the renderer that draws it and that renderer's story, and its comment lists the seven places a new kind touches:
-1. `FieldDef`, `StoredOne` and `ValueOne` in site-components' `schema.ts`;
+1. `FieldDef`, `StoredOne` and `ValueOne` in site-components' `schema.ts`, and the values it may hold in `field-values.ts` (`FieldValueShape`, `fieldValueSchema`);
 2. `valueReader` in `define.ts`;
 3. `toPuckField` in the engine, and its every-kind test;
 4. `FieldSpecs` in editor-ui;
 5. its renderer: the Edit panel's own, or the app's in `renderer/fields/<kind>/`, listed in `fieldRenderers`;
-6. `specOf` and `accepts` in `EditPanelHost.tsx`;
+6. `specOf` in `renderer/editor/edit-panel-fields.ts`;
 7. its story, and its line in `FIELD_KINDS`.
 
 Three tests fail until a kind has all it needs, each saying what to add:

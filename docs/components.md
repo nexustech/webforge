@@ -186,10 +186,10 @@ As the module loads:
 ### A new field kind
 
 The field kinds are a closed vocabulary. A component almost always fits the kinds there are, or slot plus child for repeating items with fields of their own. A new kind costs a change in each of:
-- **The schema:** `FieldDef` and the value types in `src/schema.ts`, and how `defineComponent` reads its value (`define.ts`); `render-static.tsx` if it renders specially.
+- **The schema:** `FieldDef` and the value types in `src/schema.ts`, and how `defineComponent` reads its value (`define.ts`); `render-static.tsx` if it renders specially. What it may hold goes in `src/field-values.ts` (`fieldValueSchema`): the Edit panel, its paste, list edits, canvas drags and AI apps all check a value with it (`acceptsFieldValue`).
 - **The engine:** its Puck field in `packages/engine/src/puck/config.tsx` (`toPuckField`), and the action bar if it acts on the canvas.
 - **The editor UI:** a field renderer in `packages/editor-ui/src/components/edit/`, registered by kind, with its story.
-- **The desktop app:** `EditPanelHost.tsx` and `field-group.ts` (its Edit panel tab and group); copy and paste (`element-clipboard.ts`) and Media's usage (`media-usage.ts`) if it holds a file.
+- **The desktop app:** `specOf` in `edit-panel-fields.ts` and `field-group.ts` (its Edit panel spec, tab and group); copy and paste (`element-clipboard.ts`) and Media's usage (`media-usage.ts`) if it holds a file.
 - **The model:** a zod schema for its stored value if it isn't a plain one, and a migration if old documents hold it another way.
 - **Strings:** its labels, and any wording the renderer shows.
 

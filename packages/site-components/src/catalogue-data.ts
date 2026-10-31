@@ -4,16 +4,12 @@
 // `catalogue-data.json` is written from the library by `pnpm catalogue-data`; a test fails when it
 // is stale.
 
-import {
-  BOX_SIDES,
-  boxValueSchema,
-  colorRefSchema,
-  imageValueSchema,
-  linkValueSchema,
-} from "@webforge/model";
+import { BOX_SIDES } from "@webforge/model";
 import { z } from "zod";
 import data from "./catalogue-data.json" with { type: "json" };
 
+// What a field may hold (#667), the rule the editor uses too.
+export { fieldValueSchema } from "./field-values.js";
 // Rich text from outside the editor is cleaned as the editor's is (4.8).
 export { sanitizeStoredRichText } from "./rich-text-html.js";
 
@@ -174,69 +170,3 @@ export function expandCatalogue(file: CatalogueFile): Catalogue {
 
 /** Webforge's site components as data (`catalogue-data.json`), the Appearance group put back. */
 export const CATALOGUE: Catalogue = expandCatalogue(catalogueFileSchema.parse(data));
-
-/** A value set per device (F-ED-4), or one for all. */
-const responsive = (schema: z.ZodType) =>
-  z.union([
-    schema,
-    z.strictObject({
-      $responsive: z.strictObject({
-        desktop: schema,
-        tablet: schema.optional(),
-        mobile: schema.optional(),
-      }),
-    }),
-  ]);
-
-const optionValues = (options: readonly { readonly value: string }[]) => {
-  const [first, ...rest] = options.map((option) => option.value);
-  return first === undefined ? z.never() : z.enum([first, ...rest]);
-};
-
-/**
- * What `field` may hold, as a zod schema: a select's value one of its options, a link a link, an
- * image an image… A slot holds elements (whose types its `allow` checks elsewhere), and `code`
- * none, as nothing outside the editor may write Custom Code.
- */
-export function fieldValueSchema(field: CatalogueField): z.ZodType {
-  const value = ((): z.ZodType => {
-    switch (field.kind) {
-      case "text":
-      case "richtext":
-      case "icon":
-        return z.string().max(20_000);
-      case "select":
-      case "spacing":
-        return optionValues(field.options);
-      case "slider":
-        return optionValues(field.steps);
-      case "color":
-        return z.union([optionValues(field.options), colorRefSchema]);
-      case "toggle":
-        return z.boolean();
-      case "box":
-        return boxValueSchema;
-      case "media":
-        return imageValueSchema;
-      case "link":
-        return linkValueSchema;
-      case "slot":
-        return z.array(z.unknown());
-      case "code":
-        return z.never();
-      case "list": {
-        const item = z.strictObject({
-          id: z.string().min(1).max(64),
-          ...Object.fromEntries(
-            Object.entries(field.fields).map(([name, itemField]) => [
-              name,
-              fieldValueSchema(itemField).optional(),
-            ]),
-          ),
-        });
-        return z.array(item).max(100);
-      }
-    }
-  })();
-  return field.responsive === true ? responsive(value) : value;
-}
