@@ -231,7 +231,7 @@ export const panels = {
   "pageSettings.hideFromNavigation": "Hide from navigation",
   "pageSettings.hideFromSearch": "Hide this page from search engines",
   "pageSettings.hideFromSearchHint":
-    "Search engines won't show it, but it stays on your site and its links still work. Hide from navigation is for your menu; this is for search.",
+    "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide from navigation is for your menu; this is for search.",
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
   // The page as a search result and when shared, as the export writes it (3.16, SEO-6, G22).
   "pageSettings.preview.search": "In search results",
