@@ -168,7 +168,7 @@ describe("ProjectSession", () => {
     expect(await session.saveSiteZip(zip)).toEqual({ status: "saved", fileName: "copy.zip" });
     const site = readSiteZip(readFileSync(zip));
     expect(site.name).toBe("Rosa's Bakery");
-    expect(site.documents.map((document) => document.id)).toContain("theme");
+    expect(site.sitePackage.site.settings.general.name).toBe("Rosa's");
   });
 
   it("saves no copy without an open site, nor over a folder (4.7)", async () => {

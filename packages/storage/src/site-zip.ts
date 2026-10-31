@@ -3,12 +3,10 @@ import { open, rename, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { WebforgeError } from "@webforge/errors";
 import {
-  type ExportChoices,
-  exportChoicesSchema,
   migrateSite,
+  type SiteDoc,
   SiteFormatError,
-  siteCheckIgnoredSchema,
-  siteDocumentChangeSchema,
+  siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
 // Its browser build: the same synchronous API without the Node build's own `require`, which clashes
@@ -16,23 +14,24 @@ import {
 import { unzipSync, Zip, ZipDeflate, ZipPassThrough } from "fflate/browser";
 import { z } from "zod";
 import { sha256 } from "./connection.js";
+import type { ProjectStore, VersionInfo } from "./project-store.js";
 import {
-  collectHashes,
-  type NewAsset,
-  type ProjectStore,
-  type SiteEditorMode,
-  type StoredBlob,
-  type StoredDocument,
-  type VersionInfo,
-} from "./project-store.js";
-import { FORMAT_VERSION } from "./schema.js";
+  fillFromSitePackage,
+  packageBlobs,
+  packageProject,
+  type SitePackage,
+  sitePackageProjectSchema,
+} from "./site-package.js";
 
-// A site as a ZIP file (4.7, F-SITE-5): everything in a `.wforge` file as plain JSON and the
-// original files, for backup or moving a site, which opens again as a new site with nothing lost.
-// The layout is documented in docs/site-zip.md; keep the two in step.
+// A site as a ZIP file (4.7, F-SITE-5): its site package (A26) and its versions as plain JSON and
+// the original files, for backup or moving a site, which opens again as a new site with nothing
+// lost. The layout is documented in docs/site-zip.md; keep the two in step.
 
 /** The entry that says what the ZIP holds, and where. */
 export const SITE_ZIP_MANIFEST = "manifest.json";
+
+/** The entry holding the site itself. */
+const SITE_ENTRY = "site.json";
 
 /** What a site's ZIP says it is, so another ZIP is never taken for one. */
 const SITE_ZIP_FORMAT = "webforge-site-zip";
@@ -59,7 +58,7 @@ const ENTRY_DATE = new Date(2000, 0, 1);
 /**
  * Why a ZIP can't be opened as a site, or a site can't be saved as one.
  * - `not-a-site-zip`: not a ZIP, or a ZIP without a site's manifest.
- * - `damaged`: a site's ZIP with a missing or changed file, or documents that make no site.
+ * - `damaged`: a site's ZIP with a missing or changed file, or a site or version that isn't one.
  * - `newer-format`: made by a newer app.
  * - `too-large`: more than a ZIP holds.
  */
@@ -89,11 +88,6 @@ const entryPathSchema = z
   .min(1)
   .max(1000)
   .refine((path) => path.split("/").every((part) => part !== "" && part !== "." && part !== ".."));
-const documentEntrySchema = z.strictObject({
-  id: z.string().min(1).max(100),
-  kind: z.string().min(1).max(100),
-  path: entryPathSchema,
-});
 const mimeSchema = z
   .string()
   .max(255)
@@ -102,12 +96,8 @@ const mimeSchema = z
 const manifestSchema = z.strictObject({
   format: z.literal(SITE_ZIP_FORMAT),
   version: z.int().positive(),
-  /** The `.wforge` format the site was saved in. */
-  formatVersion: z.int().positive(),
   name: z.string().min(1).max(1000),
-  /** The working copy: the site as it was when saved. */
-  documents: z.array(documentEntrySchema),
-  /** Each Media item's original file, as imported. */
+  /** Each Media item's original file, as imported, with its name and dimensions. */
   media: z.array(
     z.strictObject({
       mediaId: z.string().min(1).max(100),
@@ -119,24 +109,20 @@ const manifestSchema = z.strictObject({
       sha256: hashSchema,
     }),
   ),
-  /** Other files the documents name by their SHA-256, such as downloaded ones. */
+  /** Other files the site names by their SHA-256, such as bundled code. */
   files: z.array(z.strictObject({ path: entryPathSchema, mime: mimeSchema, sha256: hashSchema })),
-  /** Saved versions, newest first, each with its documents. */
+  /** Saved versions, newest first, each a site as `site.json` is. */
   versions: z.array(
     z.strictObject({
       id: z.string().min(1).max(100),
       name: z.string().max(1000),
       kind: z.enum(["manual", "auto"]),
       createdAt: z.iso.datetime(),
-      documents: z.array(documentEntrySchema),
+      path: entryPathSchema,
     }),
   ),
-  /** The site's editor settings, remembered with it. */
-  settings: z.strictObject({
-    editorMode: z.enum(["design", "content"]),
-    exportChoices: exportChoicesSchema,
-    siteCheckIgnored: siteCheckIgnoredSchema,
-  }),
+  /** What the project keeps beside its site that a round trip keeps. */
+  project: sitePackageProjectSchema,
 });
 
 type Manifest = z.infer<typeof manifestSchema>;
@@ -144,19 +130,10 @@ type Manifest = z.infer<typeof manifestSchema>;
 /** A site read from its ZIP and checked, ready to fill a new project with. */
 export type SiteZip = {
   readonly name: string;
-  readonly documents: readonly StoredDocument[];
-  readonly media: readonly NewAsset[];
-  readonly files: readonly StoredBlob[];
+  /** The site, with the Media and files it and its versions reach. */
+  readonly sitePackage: SitePackage;
   /** Newest first, as {@link ProjectStore.listVersions} lists them. */
-  readonly versions: readonly {
-    readonly version: VersionInfo;
-    readonly documents: readonly StoredDocument[];
-  }[];
-  readonly settings: {
-    readonly editorMode: SiteEditorMode;
-    readonly exportChoices: ExportChoices;
-    readonly siteCheckIgnored: readonly string[];
-  };
+  readonly versions: readonly { readonly version: VersionInfo; readonly site: SiteDoc }[];
 };
 
 const encoder = new TextEncoder();
@@ -188,88 +165,67 @@ const entryPart = (id: string) =>
   );
 
 /**
- * The entries of the site in `store`'s ZIP, the manifest first: its documents, the Media's
- * originals, the other files its documents name, its versions and its editor settings. A document a
- * version shares with the working copy or another version is written once.
+ * `raw`, a site as stored or as a ZIP holds it, migrated to this app's format, as opening a
+ * `.wforge` file migrates it; `what` names it in the {@link SiteZipError} thrown when it isn't a
+ * site this app opens.
+ */
+function siteFrom(raw: unknown, what: string): SiteDoc {
+  try {
+    return migrateSite(raw);
+  } catch (error) {
+    if (error instanceof SiteFormatError && error.code === "newer-format") {
+      throw new SiteZipError("newer-format", `${what} comes from a newer app`, { cause: error });
+    }
+    throw new SiteZipError("damaged", `${what} is not a site`, { cause: error });
+  }
+}
+
+/**
+ * The entries of the site in `store`'s ZIP, the manifest first: the site, its versions, the Media
+ * originals and other files they reach, and the project's choices.
  */
 export function siteZipEntries(store: ProjectStore): Map<string, Uint8Array> {
-  const entries = new Map<string, Uint8Array>();
-  /** Where each document's content is in the ZIP, by its hash, so each is written once. */
-  const written = new Map<string, string>();
-  const documentEntries = (documents: readonly StoredDocument[], folder: string) =>
-    documents.map(({ id, kind, content }) => {
-      const hash = sha256(encoder.encode(JSON.stringify(content)));
-      let path = written.get(hash);
-      if (path === undefined) {
-        path = `${folder}/${entryPart(id)}.json`;
-        entries.set(path, jsonEntry(content));
-        written.set(hash, path);
-      }
-      return { id, kind, path };
-    });
-
-  const working = store.readDocuments();
-  const documents = documentEntries(working, "site");
+  const site = siteFrom(siteFromDocuments(store.readDocuments()), "The site");
   const versions = store.listVersions().map((version) => ({
-    ...version,
-    documents: documentEntries(
-      store.readVersion(version.id) ?? [],
-      `versions/${entryPart(version.id)}`,
-    ),
+    version,
+    site: siteFrom(siteFromDocuments(store.readVersion(version.id) ?? []), "A version"),
   }));
+  const { media, files } = packageBlobs(store, [site, ...versions.map((each) => each.site)]);
 
-  const assets = store.listAssets();
-  const media = assets.map((asset) => {
-    const blob = store.readBlob(asset.hash);
-    if (blob === undefined) {
-      throw new SiteZipError("damaged", `Media item "${asset.mediaId}" has no file`);
-    }
-    const path = `media/${entryPart(asset.mediaId)}/${fileName(asset.originalName)}`;
-    entries.set(path, blob.data);
+  const entries = new Map<string, Uint8Array>([[SITE_ENTRY, jsonEntry(site)]]);
+  const versionEntries = versions.map(({ version, site: versionSite }) => {
+    const path = `versions/${entryPart(version.id)}.json`;
+    entries.set(path, jsonEntry(versionSite));
+    return { ...version, path };
+  });
+  const mediaEntries = media.map((item) => {
+    const path = `media/${entryPart(item.mediaId)}/${fileName(item.originalName)}`;
+    entries.set(path, item.data);
     return {
-      mediaId: asset.mediaId,
+      mediaId: item.mediaId,
       path,
-      mime: asset.mime,
-      ...(asset.width === undefined ? {} : { width: asset.width }),
-      ...(asset.height === undefined ? {} : { height: asset.height }),
-      originalName: asset.originalName,
-      sha256: asset.hash,
+      mime: item.mime,
+      ...(item.width === undefined ? {} : { width: item.width }),
+      ...(item.height === undefined ? {} : { height: item.height }),
+      originalName: item.originalName,
+      sha256: sha256(item.data),
     };
   });
-
-  // The files the documents name that are neither a document nor a Media item's original, as
-  // garbage collection keeps them.
-  const named = new Set<string>();
-  for (const document of [
-    ...working,
-    ...versions.flatMap((version) => store.readVersion(version.id) ?? []),
-  ]) {
-    collectHashes(document.content, named);
-  }
-  for (const hash of written.keys()) named.delete(hash);
-  for (const asset of assets) named.delete(asset.hash);
-  const files = [...named].sort().flatMap((hash) => {
-    const blob = store.readBlob(hash);
-    if (blob === undefined) return [];
+  const fileEntries = files.map((file) => {
+    const hash = sha256(file.data);
     const path = `files/${hash}`;
-    entries.set(path, blob.data);
-    return [{ path, mime: blob.mime, sha256: hash }];
+    entries.set(path, file.data);
+    return { path, mime: file.mime, sha256: hash };
   });
 
   const manifest: Manifest = {
     format: SITE_ZIP_FORMAT,
     version: SITE_ZIP_VERSION,
-    formatVersion: store.info.formatVersion,
     name: store.info.name,
-    documents,
-    media,
-    files,
-    versions,
-    settings: {
-      editorMode: store.readEditorMode(),
-      exportChoices: store.readExportChoices(),
-      siteCheckIgnored: store.readSiteCheckIgnored(),
-    },
+    media: mediaEntries,
+    files: fileEntries,
+    versions: versionEntries,
+    project: packageProject(store),
   };
   return new Map([[SITE_ZIP_MANIFEST, jsonEntry(manifest)], ...entries]);
 }
@@ -330,45 +286,11 @@ export async function writeSiteZip(store: ProjectStore, destination: string): Pr
   }
 }
 
-/** The documents `entries` list, read from `files` and checked as a site's documents. */
-function readDocuments(
-  entries: Manifest["documents"],
-  files: Readonly<Record<string, Uint8Array>>,
-): StoredDocument[] {
-  return entries.map(({ id, kind, path }) => {
-    const data = files[path];
-    if (data === undefined) throw new SiteZipError("damaged", `"${path}" is missing`);
-    let content: unknown;
-    try {
-      content = JSON.parse(utf8.decode(data));
-    } catch (error) {
-      throw new SiteZipError("damaged", `"${path}" is not JSON`, { cause: error });
-    }
-    const document = siteDocumentChangeSchema.safeParse({ type: "put", id, kind, content });
-    if (!document.success || document.data.type !== "put") {
-      throw new SiteZipError("damaged", `"${path}" is not one of a site's documents`);
-    }
-    return { id, kind, content: z.json().parse(content) };
-  });
-}
-
-/** Throws a `damaged` {@link SiteZipError} unless `documents` make a site this app can open. */
-function checkSite(documents: readonly StoredDocument[], what: string): void {
-  try {
-    migrateSite(siteFromDocuments(documents));
-  } catch (error) {
-    if (error instanceof SiteFormatError && error.code === "newer-format") {
-      throw new SiteZipError("newer-format", `${what} comes from a newer app`, { cause: error });
-    }
-    throw new SiteZipError("damaged", `${what} is not a site`, { cause: error });
-  }
-}
-
 /**
  * Reads the site in a ZIP's bytes (`data`), as the person chose it in the open dialog: untrusted.
  * Before unpacking anything, the ZIP's size and entries are checked; then only the entries its
- * manifest lists are unpacked, each file's bytes checked against its SHA-256, and the documents,
- * the working copy's and each version's, checked to make a site. Throws a {@link SiteZipError}.
+ * manifest lists are unpacked, each file's bytes checked against its SHA-256, and the site and
+ * each version read through `migrateSite`. Throws a {@link SiteZipError}.
  */
 export function readSiteZip(data: Uint8Array): SiteZip {
   if (data.byteLength > SITE_ZIP_MAX_BYTES) {
@@ -414,16 +336,13 @@ export function readSiteZip(data: Uint8Array): SiteZip {
     throw new SiteZipError("damaged", "The manifest is not valid", { cause: parsed.error });
   }
   const manifest = parsed.data;
-  if (manifest.formatVersion > FORMAT_VERSION) {
-    throw new SiteZipError("newer-format", "The site comes from a newer app");
-  }
 
   // Then the entries the manifest lists, and no others.
   const wanted = new Set([
-    ...manifest.documents.map((entry) => entry.path),
+    SITE_ENTRY,
     ...manifest.media.map((entry) => entry.path),
     ...manifest.files.map((entry) => entry.path),
-    ...manifest.versions.flatMap((version) => version.documents.map((entry) => entry.path)),
+    ...manifest.versions.map((version) => version.path),
   ]);
   let files: Record<string, Uint8Array>;
   try {
@@ -439,49 +358,55 @@ export function readSiteZip(data: Uint8Array): SiteZip {
     }
     return bytes;
   };
+  /** The site in entry `path`, read through `migrateSite`. */
+  const siteAt = (path: string, what: string) => {
+    const bytes = files[path];
+    if (bytes === undefined) throw new SiteZipError("damaged", `"${path}" is missing`);
+    let site: unknown;
+    try {
+      site = JSON.parse(utf8.decode(bytes));
+    } catch (error) {
+      throw new SiteZipError("damaged", `"${path}" is not JSON`, { cause: error });
+    }
+    return siteFrom(site, what);
+  };
 
-  const documents = readDocuments(manifest.documents, files);
-  checkSite(documents, "The site");
-  const versions = manifest.versions.map(({ documents: listed, ...version }) => {
-    const versionDocuments = readDocuments(listed, files);
-    checkSite(versionDocuments, `Version "${version.name}"`);
-    return { version, documents: versionDocuments };
-  });
+  const site = siteAt(SITE_ENTRY, "The site");
+  const versions = manifest.versions.map(({ path, ...version }) => ({
+    version,
+    site: siteAt(path, `Version "${version.name}"`),
+  }));
   return {
     name: manifest.name,
-    documents,
-    media: manifest.media.map((item) => ({
-      mediaId: item.mediaId,
-      data: checked(item.path, item.sha256),
-      mime: item.mime,
-      width: item.width,
-      height: item.height,
-      originalName: item.originalName,
-    })),
-    files: manifest.files.map((file) => ({
-      mime: file.mime,
-      data: checked(file.path, file.sha256),
-    })),
+    sitePackage: {
+      site,
+      media: manifest.media.map((item) => ({
+        mediaId: item.mediaId,
+        data: checked(item.path, item.sha256),
+        mime: item.mime,
+        width: item.width,
+        height: item.height,
+        originalName: item.originalName,
+      })),
+      files: manifest.files.map((file) => ({
+        mime: file.mime,
+        data: checked(file.path, file.sha256),
+      })),
+      project: manifest.project,
+    },
     versions,
-    settings: manifest.settings,
   };
 }
 
 /**
- * Fills `store`, a new, empty project, with the site read from a ZIP: its files and Media, its
- * documents, its versions in their order, and its editor settings.
+ * Fills `store`, a new, empty project, with the site read from a ZIP: its package (the files,
+ * Media, site and project's choices), then its versions in their order. The project's id and
+ * creation time stay the new file's own, so publishing tells the copy from the original (A8).
  */
-export function fillFromSiteZip(store: ProjectStore, site: SiteZip): void {
-  for (const file of site.files) store.putBlob(file.data, file.mime);
-  for (const item of site.media) store.putAsset(item);
-  store.commit(
-    site.documents.map((document) => siteDocumentChangeSchema.parse({ type: "put", ...document })),
-  );
+export function fillFromSiteZip(store: ProjectStore, zip: SiteZip): void {
+  fillFromSitePackage(store, zip.sitePackage);
   // Oldest first, so they list in the same order.
-  for (const { version, documents } of [...site.versions].reverse()) {
-    store.addVersion(version, documents);
+  for (const { version, site } of [...zip.versions].reverse()) {
+    store.addVersion(version, siteDocuments(site));
   }
-  store.writeEditorMode(site.settings.editorMode);
-  store.writeExportChoices(site.settings.exportChoices);
-  store.writeSiteCheckIgnored(site.settings.siteCheckIgnored);
 }

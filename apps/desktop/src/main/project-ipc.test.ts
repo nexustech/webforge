@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { basename, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { createSite } from "@webforge/model";
 import { ProjectStore, writeSiteZip } from "@webforge/storage";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
@@ -372,6 +372,10 @@ describe("a site's ZIP (4.7)", () => {
     await fill.fill({ store: target });
     expect(target.readSite().settings.general.name).toBe("Rosa's Bakery");
     expect(target.listVersions().map((version) => version.name)).toEqual(["Before the change"]);
+    // A project of its own, so publishing never takes it for the site it was saved from (A8).
+    const source = ProjectStore.open(join(dirname(zip), "source.wforge"));
+    expect(target.info.projectId).not.toBe(source.info.projectId);
+    source.close();
     target.close();
   });
 

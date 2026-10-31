@@ -10,6 +10,7 @@ export {
   type OpenProjectOptions,
   type ProjectInfo,
   ProjectStore,
+  reachableBlobs,
   type SiteEditorMode,
   type StoredBlob,
   type StoredDocument,
@@ -17,6 +18,12 @@ export {
   type VersionKind,
 } from "./project-store.js";
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
+export {
+  fillFromSitePackage,
+  type SitePackage,
+  type SitePackageProject,
+  sitePackageOf,
+} from "./site-package.js";
 export {
   fillFromSiteZip,
   readSiteZip,

@@ -1,18 +1,26 @@
-import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createSite, type MediaId, type SiteDoc } from "@webforge/model";
+import {
+  createSite,
+  type MediaId,
+  migrateSite,
+  type SiteDoc,
+  siteFromDocuments,
+} from "@webforge/model";
 import { copyWforgeFixture, heroPhoto, zipArchive } from "@webforge/test-utils";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import fc from "fast-check";
 import { strToU8, zipSync } from "fflate";
 import { describe, expect, it } from "vitest";
 import {
+  fillFromSitePackage,
   fillFromSiteZip,
   ProjectStore,
+  reachableBlobs,
   readSiteZip,
   SITE_ZIP_MANIFEST,
   SiteZipError,
+  sitePackageOf,
   siteZipEntries,
   writeSiteZip,
 } from "../src/index.js";
@@ -20,14 +28,18 @@ import {
 // A site saved as a ZIP and opened again (4.7, F-SITE-5): nothing lost on the way.
 
 const tempDir = tempDirFactory();
-const sha = (data: Uint8Array) => createHash("sha256").update(data).digest("hex");
 
-/** Everything a project holds that the app reads: its documents, Media, files, versions, settings. */
+/** `store`'s site as it opens: its documents put together and migrated. */
+const siteOf = (store: ProjectStore) => migrateSite(siteFromDocuments(store.readDocuments()));
+
+/**
+ * Everything a project holds that the app reads: its site and versions as they open (migrated),
+ * its Media and the project's choices.
+ */
 function contents(store: ProjectStore) {
-  const documents = store.readDocuments();
   const versions = store.listVersions().map((version) => ({
     version,
-    documents: store.readVersion(version.id),
+    site: migrateSite(siteFromDocuments(store.readVersion(version.id) ?? [])),
   }));
   const assets = store.listAssets().map((asset) => ({
     ...asset,
@@ -35,7 +47,7 @@ function contents(store: ProjectStore) {
   }));
   return {
     name: store.info.name,
-    documents,
+    site: siteOf(store),
     versions,
     assets,
     editorMode: store.readEditorMode(),
@@ -90,6 +102,17 @@ const planArbitrary: fc.Arbitrary<Plan> = fc.record({
   ignored: fc.array(fc.stringMatching(/^[a-zA-Z]{1,10}:[a-z0-9-]{1,10}$/), { maxLength: 3 }),
 });
 
+/** A plan with nothing beyond the starting site. */
+const PLAIN: Plan = {
+  name: "Rosa's",
+  heading: "Home",
+  images: [],
+  bundled: null,
+  versions: [],
+  content: false,
+  ignored: [],
+};
+
 /** A new project filled as `plan` says, its site changed before each version. */
 function projectFrom(plan: Plan): ProjectStore {
   const store = ProjectStore.create(join(tempDir(), "site.wforge"), { name: plan.name });
@@ -139,8 +162,41 @@ function projectFrom(plan: Plan): ProjectStore {
   return store;
 }
 
+/** A new project at `path` whose site has one photo in Media, `shop`, named `fileName`. */
+function bakeryWithPhoto(path: string, fileName: string): ProjectStore {
+  const store = ProjectStore.create(path, { name: "Rosa's Bakery" });
+  const site = createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Oops",
+  });
+  const { hash } = store.putAsset({
+    mediaId: "shop",
+    data: heroPhoto(),
+    mime: "image/jpeg",
+    width: 1600,
+    height: 1000,
+    originalName: fileName,
+  });
+  const id = "shop" as MediaId;
+  site.media[id] = {
+    id,
+    kind: "image",
+    hash,
+    name: "shop",
+    fileName,
+    mimeType: "image/jpeg",
+    width: 1600,
+    height: 1000,
+    alt: "",
+  };
+  store.saveSite(site);
+  return store;
+}
+
 describe("a site's ZIP (4.7)", () => {
-  it("opens again with nothing lost: documents, Media, files, versions and settings", async () => {
+  it("opens again with nothing lost: the site, Media, files, versions and choices", async () => {
     await fc.assert(
       fc.asyncProperty(planArbitrary, async (plan) => {
         const store = projectFrom(plan);
@@ -151,7 +207,10 @@ describe("a site's ZIP (4.7)", () => {
           for (const bundled of copy.readSite().code.bundled ?? []) {
             expect(copy.readBlob(bundled.hash)?.data).toEqual(store.readBlob(bundled.hash)?.data);
           }
-          expect(copy.readSite()).toEqual(store.readSite());
+          // Each version's documents, as Version History reads them.
+          for (const { id } of store.listVersions()) {
+            expect(copy.readVersion(id)).toEqual(store.readVersion(id));
+          }
         } finally {
           store.close();
           copy.close();
@@ -170,53 +229,87 @@ describe("a site's ZIP (4.7)", () => {
     copy.close();
   });
 
+  it("gives the new site its own project id, so publishing tells it from the original (A8)", async () => {
+    const store = projectFrom(PLAIN);
+    const copy = await roundTrip(store);
+
+    expect(copy.info.projectId).not.toBe(store.info.projectId);
+    store.close();
+    copy.close();
+  });
+
   it("writes the same ZIP for the same site, readable entries listed in its manifest", () => {
-    const store = ProjectStore.create(join(tempDir(), "site.wforge"), { name: "Rosa's Bakery" });
-    const site = createSite({
-      name: "Rosa's Bakery",
-      language: "en",
-      homeTitle: "Home",
-      notFoundTitle: "Oops",
-    });
-    store.putAsset({
-      mediaId: "shop",
-      data: heroPhoto(),
-      mime: "image/jpeg",
-      width: 1600,
-      height: 1000,
-      originalName: "Shop: front?.jpg",
-    });
-    store.saveSite(site);
-    store.saveVersion("First", "manual");
+    const store = bakeryWithPhoto(join(tempDir(), "site.wforge"), "Shop: front?.jpg");
+    const version = store.saveVersion("First", "manual");
 
     const entries = siteZipEntries(store);
     const paths = [...entries.keys()];
     expect(paths[0]).toBe(SITE_ZIP_MANIFEST);
-    // The site's documents as indented JSON; a version's unchanged documents aren't written again.
-    expect(paths.filter((path) => path.startsWith("site/"))).toContain("site/site.json");
-    expect(paths.filter((path) => path.startsWith("versions/"))).toEqual([]);
-    expect(new TextDecoder().decode(entries.get("site/theme.json"))).toMatch(/^\{\n {2}"/);
+    // The site, and each version, as one indented JSON file.
+    expect(new TextDecoder().decode(entries.get("site.json"))).toMatch(/^\{\n {2}"/);
+    expect(paths).toContain(`versions/${version.id}.json`);
     // The original, under a name any system can unpack.
     expect(paths).toContain("media/shop/Shop- front-.jpg");
     expect([...(entries.get("media/shop/Shop- front-.jpg") ?? [])]).toEqual([...heroPhoto()]);
+    const manifest = JSON.parse(new TextDecoder().decode(entries.get(SITE_ZIP_MANIFEST)));
+    expect(manifest.media).toEqual([
+      expect.objectContaining({ mediaId: "shop", width: 1600, height: 1000 }),
+    ]);
+    expect(manifest.project).toEqual({
+      editorMode: "design",
+      exportChoices: store.readExportChoices(),
+      siteCheckIgnored: [],
+    });
     expect(siteZipEntries(store)).toEqual(entries);
     store.close();
+  });
+
+  it("carries only the Media the site or a version reaches, as garbage collection keeps", () => {
+    const store = bakeryWithPhoto(join(tempDir(), "site.wforge"), "shop.jpg");
+    store.putAsset({
+      mediaId: "unused",
+      data: heroPhoto().slice(0, 100),
+      mime: "image/jpeg",
+      originalName: "old.jpg",
+    });
+
+    const paths = [...siteZipEntries(store).keys()];
+
+    expect(paths.filter((path) => path.startsWith("media/"))).toEqual(["media/shop/shop.jpg"]);
+    store.close();
+  });
+});
+
+describe("a site package (A26)", () => {
+  it("names the blobs a site's documents reach", () => {
+    const hash = "a".repeat(64);
+    expect([
+      ...reachableBlobs([{ content: { media: { x: { hash } } } }, { content: "b" }]),
+    ]).toEqual([hash]);
+  });
+
+  it("opens a site, such as a version, as a new site with only what it reaches", () => {
+    const dir = tempDir();
+    const store = bakeryWithPhoto(join(dir, "site.wforge"), "shop.jpg");
+    const site = siteOf(store);
+    const withPhoto = sitePackageOf(store, site);
+
+    expect(withPhoto.media.map((item) => item.mediaId)).toEqual(["shop"]);
+    expect(sitePackageOf(store, { ...site, media: {} }).media).toEqual([]);
+    const copy = ProjectStore.create(join(dir, "copy.wforge"), { name: "Copy" });
+    fillFromSitePackage(copy, withPhoto);
+    expect(copy.readSite()).toEqual(site);
+    expect(copy.readAsset("shop")).toMatchObject({ width: 1600, height: 1000 });
+    store.close();
+    copy.close();
   });
 });
 
 describe("opening a ZIP that isn't a site's (4.7)", () => {
   /** A site's ZIP entries, as written, with `change` made to them. */
   function changedZip(change: (entries: Record<string, Uint8Array>) => void): Uint8Array {
-    const store = ProjectStore.create(join(tempDir(), "site.wforge"), { name: "Rosa's" });
-    store.saveSite(
-      createSite({ name: "Rosa's", language: "en", homeTitle: "Home", notFoundTitle: "Oops" }),
-    );
-    store.putAsset({
-      mediaId: "shop",
-      data: heroPhoto(),
-      mime: "image/jpeg",
-      originalName: "a.jpg",
-    });
+    const store = bakeryWithPhoto(join(tempDir(), "site.wforge"), "a.jpg");
+    store.saveVersion("First", "manual");
     const entries = Object.fromEntries(siteZipEntries(store));
     store.close();
     change(entries);
@@ -224,6 +317,9 @@ describe("opening a ZIP that isn't a site's (4.7)", () => {
   }
   const manifestOf = (entries: Record<string, Uint8Array>) =>
     JSON.parse(new TextDecoder().decode(entries[SITE_ZIP_MANIFEST])) as Record<string, unknown>;
+  const withManifest = (entries: Record<string, Uint8Array>, changes: Record<string, unknown>) => {
+    entries[SITE_ZIP_MANIFEST] = strToU8(JSON.stringify({ ...manifestOf(entries), ...changes }));
+  };
   const codeOf = (data: Uint8Array) => {
     try {
       readSiteZip(data);
@@ -246,19 +342,21 @@ describe("opening a ZIP that isn't a site's (4.7)", () => {
     ).toBe("not-a-site-zip");
   });
 
-  it("refuses one from a newer app", () => {
+  it("refuses one from a newer app, or with a site of a newer format", () => {
+    expect(codeOf(changedZip((entries) => withManifest(entries, { version: 99 })))).toBe(
+      "newer-format",
+    );
     expect(
       codeOf(
         changedZip((entries) => {
-          entries[SITE_ZIP_MANIFEST] = strToU8(
-            JSON.stringify({ ...manifestOf(entries), version: 99 }),
-          );
+          const site = JSON.parse(new TextDecoder().decode(entries["site.json"]));
+          entries["site.json"] = strToU8(JSON.stringify({ ...site, formatVersion: 999 }));
         }),
       ),
     ).toBe("newer-format");
   });
 
-  it("refuses one with a changed or missing file, or documents that make no site", () => {
+  it("refuses one with a changed or missing file, or a site or version that isn't one", () => {
     expect(
       codeOf(
         changedZip((entries) => {
@@ -269,26 +367,26 @@ describe("opening a ZIP that isn't a site's (4.7)", () => {
     expect(
       codeOf(
         changedZip((entries) => {
-          delete entries["site/theme.json"];
+          delete entries["site.json"];
         }),
       ),
     ).toBe("damaged");
     expect(
       codeOf(
         changedZip((entries) => {
-          entries["site/theme.json"] = strToU8('{"not":"a theme"}');
+          entries["site.json"] = strToU8('{"not":"a site"}');
         }),
       ),
     ).toBe("damaged");
     expect(
       codeOf(
         changedZip((entries) => {
-          entries[SITE_ZIP_MANIFEST] = strToU8(
-            JSON.stringify({ ...manifestOf(entries), documents: [{ id: "x", kind: "x" }] }),
-          );
+          const [version] = manifestOf(entries).versions as { path: string }[];
+          if (version !== undefined) entries[version.path] = strToU8("[]");
         }),
       ),
     ).toBe("damaged");
+    expect(codeOf(changedZip((entries) => withManifest(entries, { project: {} })))).toBe("damaged");
   });
 
   it("unpacks only what its manifest lists", () => {
