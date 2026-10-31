@@ -461,7 +461,7 @@ jobs:
         shard: [1, 2]
         shards: [2]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 30
+    timeout-minutes: 150 # TEMPORARY (#678)
     env: *e2e-env
     steps: *e2e-steps
 
@@ -539,7 +539,7 @@ jobs:
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
-    timeout-minutes: 150 # TEMPORARY (#678)
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 60 }}
     steps:
       - name: Check out
         uses: actions/checkout@v7
