@@ -11,7 +11,7 @@ import { t } from "@webforge/i18n";
 import type { SiteCodePiece } from "@webforge/model";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
-import type { CodeQuestion } from "./code-trust.js";
+import type { CodeQuestion } from "../editor/code-trust.js";
 
 /** Settings' Custom Code parts, as the prompt lists them. */
 const PART_KEYS = {

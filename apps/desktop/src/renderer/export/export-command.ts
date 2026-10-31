@@ -12,7 +12,7 @@ import type { ComponentLibrary } from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
-import type { CodeDecision } from "../code-trust/index.js";
+import type { CodeDecision } from "../editor/code-trust.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";

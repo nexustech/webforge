@@ -2,8 +2,8 @@ import { stateBefore } from "@webforge/history";
 import { type SiteCodePiece, type SiteDoc, siteCodePieces } from "@webforge/model";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { TrustApi } from "../../shared/ipc/trust.js";
-import type { EditorSession } from "../editor/editor-session.js";
 import { reportFailure } from "../log.js";
+import type { EditorSession } from "./editor-session.js";
 
 /**
  * The code trust step (#649, S1 and S6): a site's own code runs for its visitors, and in Preview in
@@ -14,6 +14,9 @@ import { reportFailure } from "../log.js";
 
 /** How long Site Check waits after a change before asking main about the site's allow-list. */
 const ALLOW_LIST_DELAY_MS = 300;
+
+/** How long the owner's writing has to pause before what they wrote is trusted. */
+const WRITTEN_DELAY_MS = 1000;
 
 /** What the owner chose for the code they haven't confirmed. */
 export type CodeAnswer = "keep" | "leave" | "review" | "cancel";
@@ -134,16 +137,28 @@ export function createCodeTrust({
   };
 
   // What the owner writes here is theirs (#649): code a change of a field or of Settings' Custom
-  // Code adds is trusted. A paste, an added section, an Undo or a Redo trusts nothing.
+  // Code adds is trusted. A paste, an added section, an Undo or a Redo trusts nothing. Typing in a
+  // Custom Code element changes it at every key, so what was written is trusted once the owner
+  // stops, as far as the site still has it: never the steps on the way.
+  const written = new Set<string>();
+  let writing: ReturnType<typeof setTimeout> | undefined;
+  const trustWritten = async () => {
+    clearTimeout(writing);
+    writing = undefined;
+    const current = textsOf(session.history.document.getState());
+    const texts = [...written].filter((text) => current.has(text));
+    written.clear();
+    if (texts.length > 0 && (await trust(texts))) void checkAllowList();
+  };
   const stopWatching = session.onEntryAdded((entry, kind) => {
     if (kind !== "props") return;
     const after = session.history.document.getState();
     const before = textsOf(stateBefore(after, entry));
-    const written = [...textsOf(after)].filter((text) => !before.has(text));
-    if (written.length === 0) return;
-    void trust(written).then((trusted) => {
-      if (trusted) void checkAllowList();
-    });
+    const added = [...textsOf(after)].filter((text) => !before.has(text));
+    if (added.length === 0) return;
+    for (const text of added) written.add(text);
+    clearTimeout(writing);
+    writing = setTimeout(() => void trustWritten(), WRITTEN_DELAY_MS);
   });
 
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -161,6 +176,8 @@ export function createCodeTrust({
     question,
     allowListConfirmed,
     async confirm(site) {
+      // What the owner has just written is theirs: it's never asked about.
+      if (writing !== undefined) await trustWritten();
       const pieces = siteCodePieces(site);
       const untrusted = await untrustedOf(pieces);
       if (untrusted.length === 0) {
@@ -189,6 +206,7 @@ export function createCodeTrust({
     },
     dispose() {
       clearTimeout(timer);
+      clearTimeout(writing);
       asked++;
       stopWatching();
       stopFollowing();

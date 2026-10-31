@@ -3,7 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
-import type { CodeDecision } from "../code-trust/index.js";
+import type { CodeDecision } from "../editor/code-trust.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";

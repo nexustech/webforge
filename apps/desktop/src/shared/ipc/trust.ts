@@ -23,7 +23,7 @@ const untrustedResultSchema = z.discriminatedUnion("status", [
 ]);
 
 /** See {@link trustChannels}' `untrustedCode`. */
-export type UntrustedCodeResult = z.infer<typeof untrustedResultSchema>;
+type UntrustedCodeResult = z.infer<typeof untrustedResultSchema>;
 
 const trustResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("trusted") }),
@@ -31,7 +31,7 @@ const trustResultSchema = z.discriminatedUnion("status", [
 ]);
 
 /** See {@link trustChannels}' `trustCode`. */
-export type TrustCodeResult = z.infer<typeof trustResultSchema>;
+type TrustCodeResult = z.infer<typeof trustResultSchema>;
 
 /** IPC channels of the `trust` domain (`trust:*`, #649). Each one's arguments are checked. */
 export const trustChannels = {

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import type { PhoneAddress, PreviewApi } from "../../shared/ipc/preview.js";
 import { starterSite } from "../../shared/starter-site.js";
-import type { CodeDecision } from "../code-trust/index.js";
+import type { CodeDecision } from "../editor/code-trust.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";

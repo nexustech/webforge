@@ -2,9 +2,9 @@ import type { NodeDoc, SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
 import type { TrustApi } from "../../shared/ipc/trust.js";
 import { starterSite } from "../../shared/starter-site.js";
-import { currentPage } from "../editor/editor-session.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { type CodeAnswer, createCodeTrust } from "./code-trust.js";
+import { currentPage } from "./editor-session.js";
 
 const SESSION = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 
@@ -129,25 +129,55 @@ describe("the code trust step (#649)", () => {
     expect(notify).toHaveBeenCalledWith("trust-failed");
   });
 
-  it("trusts code the owner writes here, but not code a paste or an Undo brings", async () => {
+  it("trusts code the owner writes here, once they stop, never the steps on the way", async () => {
     const { session, api } = setUp(starterSite());
+    vi.useFakeTimers();
+    try {
+      for (const js of ["m", "mi", "mine()"]) {
+        session.edit("props", "Changed Custom Code", (draft) => {
+          draft.code.js = js;
+        });
+      }
+      expect(api.trust).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(1000);
+    } finally {
+      vi.useRealTimers();
+    }
 
+    expect(api.trust).toHaveBeenCalledOnce();
+    expect(api.trust).toHaveBeenCalledWith(SESSION, ["mine()"]);
+  });
+
+  it("trusts what was just written before it asks, so it never asks about it", async () => {
+    const { session, api, codeTrust } = setUp(starterSite());
     session.edit("props", "Changed Custom Code", (draft) => {
       draft.code.js = "mine()";
     });
-    await vi.waitFor(() => expect(api.trust).toHaveBeenCalledWith(SESSION, ["mine()"]));
 
-    api.trust.mockClear();
-    session.edit("insert", "Pasted Custom Code", (draft) => {
-      const page = draft.pages[draft.homePageId];
-      page?.doc.content.push(skimmer);
+    expect(await codeTrust.confirm(session.history.document.getState())).toMatchObject({
+      go: true,
     });
-    session.history.undo();
-    session.history.undo();
-    session.history.redo();
-    await Promise.resolve();
+    expect(api.trust).toHaveBeenCalledWith(SESSION, ["mine()"]);
+    expect(codeTrust.question.getState().question).toBeNull();
+  });
+
+  it("trusts nothing a paste or an Undo brings", async () => {
+    const { session, api } = setUp(starterSite());
+    vi.useFakeTimers();
+    try {
+      session.edit("insert", "Pasted Custom Code", (draft) => {
+        const page = draft.pages[draft.homePageId];
+        page?.doc.content.push(skimmer);
+      });
+      session.history.undo();
+      session.history.redo();
+      await vi.advanceTimersByTimeAsync(1000);
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(currentPage(session)?.doc.content).toContainEqual(skimmer);
     expect(api.trust).not.toHaveBeenCalled();
-    expect(currentPage(session)?.doc.content).not.toContainEqual(skimmer);
   });
 
   it("follows whether the site's allowed addresses are confirmed, for Site Check", async () => {
