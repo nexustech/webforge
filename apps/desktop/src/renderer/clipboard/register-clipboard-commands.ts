@@ -20,6 +20,8 @@ export function registerClipboardCommands(
   notify: (message: string) => void,
   /** Asks before Cut removes an element from the shared Header or Footer (D7). */
   confirmSharedCut?: (item: string, place: SharedPlace) => Promise<boolean>,
+  /** Simple or Advanced mode (F-ED-11): a paste in Simple mode leaves out Custom Code (#649). */
+  level: () => "simple" | "advanced" = () => "simple",
 ): {
   readonly remove: () => void;
   readonly setHasSelection: (selected: boolean) => void;
@@ -54,7 +56,7 @@ export function registerClipboardCommands(
       menu: "edit",
       run: async () => {
         beforeAction();
-        await pasteElements(session, clipboard, notify);
+        await pasteElements(session, clipboard, notify, false, level());
       },
     }),
     registry.register({
@@ -63,7 +65,7 @@ export function registerClipboardCommands(
       menu: "edit",
       run: async () => {
         beforeAction();
-        await pasteElements(session, clipboard, notify, true);
+        await pasteElements(session, clipboard, notify, true, level());
       },
     }),
   ];

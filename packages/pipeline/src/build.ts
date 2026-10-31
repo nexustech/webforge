@@ -32,7 +32,15 @@ import { processImage, UndecodableImageError } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import type { PipelineResources } from "./resources.js";
-import { scriptMistake, siteCodeCandidates, toBundled } from "./site-code.js";
+import {
+  RUNS_ALL_CODE,
+  RUNS_NO_CODE,
+  type RunsCode,
+  scriptMistake,
+  siteCodeCandidates,
+  toBundled,
+  withRunnableCode,
+} from "./site-code.js";
 import {
   hasSitemap,
   llmsTxt,
@@ -166,6 +174,8 @@ export type BuildOptions = {
   readonly output?: OutputOptions | undefined;
   /** The year `{year}` stands for in the site's text (F-CM-8): this year when left out. */
   readonly year?: number | undefined;
+  /** Which of the site's own code goes in (#649): all of it when left out. */
+  readonly runsCode?: RunsCode | undefined;
 };
 
 /**
@@ -202,6 +212,8 @@ type BuildRun = {
   readonly output?: OutputOptions | undefined;
   readonly caches?: BuildCaches | undefined;
   readonly year?: number | undefined;
+  /** Which of the site's own code goes in (#649): none in a preview and all otherwise, when left out. */
+  readonly runsCode?: RunsCode | undefined;
 };
 
 const sha256 = (data: string | Uint8Array) => createHash("sha256").update(data).digest("hex");
@@ -280,6 +292,7 @@ export async function buildSite(
     signal: options.signal,
     output: options.output,
     year: options.year,
+    runsCode: options.runsCode,
   });
   for (;;) {
     const next = await events.next();
@@ -304,8 +317,11 @@ export async function* buildEvents(
   if (!parsed.success) {
     throw new BuildError("invalid-site", parsed.error.message);
   }
+  // The site's own code that may run (#649, S1 and S6): a preview runs none of it unless its caller
+  // says, as the editor doesn't, so a site file can't run a script in the person's browser unasked.
+  const runsCode = run.runsCode ?? (run.mode === "preview" ? RUNS_NO_CODE : RUNS_ALL_CODE);
   // The thank-you page a form service sends visitors to (3.7), made if the site has none.
-  const { site, thanksPage } = withThanksPage(parsed.data, library);
+  const { site, thanksPage } = withThanksPage(withRunnableCode(parsed.data, runsCode), library);
   // A page whose file Windows won't write (`con.html`, a folder `aux/`) stops the build before
   // anything else, naming the page, so the person can rename it (R16).
   const unwritable = site.pages.find((page) => page.path.split("/").some(isDeviceName));

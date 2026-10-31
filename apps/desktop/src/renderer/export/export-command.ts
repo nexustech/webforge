@@ -147,7 +147,10 @@ export type ExportFlow = {
  * says how many and shows Site Check, where each has its place and, often, a *Fix*.
  */
 function passesSiteCheck(flow: ExportFlow, site: SiteDoc): boolean {
-  const blocking = blockingCount(checkSite({ site, catalogue: CATALOGUE }, "export"));
+  // The site's allow-list counts as the owner's until the code trust step can tell (#649).
+  const blocking = blockingCount(
+    checkSite({ site, catalogue: CATALOGUE, allowListConfirmed: true }, "export"),
+  );
   if (blocking === 0) return true;
   toast.error(plural("siteCheck.exportBlocked", blocking));
   flow.showSiteCheck();

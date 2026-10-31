@@ -2,6 +2,7 @@ import { plural, t } from "@webforge/i18n";
 import {
   copiedNodeId,
   findNode,
+  isNodeDoc,
   MAX_COPIED_NODES,
   type MediaMeta,
   mediaItem,
@@ -13,6 +14,7 @@ import {
   removeNode,
 } from "@webforge/model";
 import {
+  type ComponentLibrary,
   holdsOverfullSlot,
   mediaUsedBy,
   overfillsSlots,
@@ -237,6 +239,33 @@ function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "f
 }
 
 /**
+ * `nodes` without the elements offered in Advanced mode only (Custom Code), in slots too, and how
+ * many it left out. In Simple mode a paste brings none (#649, S1): the person would never see the
+ * code it carries, which runs for the site's visitors.
+ */
+export function withoutAdvancedOnly(
+  nodes: readonly NodeDoc[],
+  library: ComponentLibrary,
+): { readonly nodes: NodeDoc[]; readonly left: number } {
+  let left = 0;
+  const keep = (list: readonly NodeDoc[]): NodeDoc[] =>
+    list.flatMap((node) => {
+      if (library.components[node.type]?.advancedOnly === true) {
+        left += 1;
+        return [];
+      }
+      const props: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(node.props)) {
+        props[key] = Array.isArray(value)
+          ? value.flatMap((item) => (isNodeDoc(item) ? keep([item]) : [item]))
+          : value;
+      }
+      return [{ ...node, props: props as NodeDoc["props"] }];
+    });
+  return { nodes: keep(nodes), left };
+}
+
+/**
  * Pastes what the clipboard holds. Elements go into the shown page, where {@link pasteTarget} puts
  * them, as one step ("Pasted Heading") that selects the first; their images join the site's Media in
  * the same step, keeping their ids. A copied linked copy pastes as a section of the page's own, as
@@ -244,13 +273,15 @@ function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "f
  * another linked copy instead, and pastes nothing but says so for anything else. In a site without
  * the shared section, both paste a section of its own. Image files or a copied image go to Media
  * and the selection ({@link pasteMedia}); a copied video address, to a new Embed video
- * ({@link pasteVideo}). Returns whether it pasted.
+ * ({@link pasteVideo}). Returns whether it pasted. In Simple mode (`level`, F-ED-11), elements
+ * for Advanced mode only are left out, and it says how many ({@link withoutAdvancedOnly}).
  */
 export async function pasteElements(
   session: ClipboardSession,
   clipboard: Pick<ClipboardApi, "read">,
   notify: (message: string) => void,
   linked = false,
+  level: "simple" | "advanced" = "simple",
 ): Promise<boolean> {
   let result: ClipboardReadResult;
   try {
@@ -277,7 +308,13 @@ export async function pasteElements(
     notify(readMessage(result));
     return false;
   }
-  const { nodes, media, sharedSectionId } = result.elements;
+  const { media, sharedSectionId } = result.elements;
+  const allowed =
+    level === "advanced"
+      ? { nodes: result.elements.nodes, left: 0 }
+      : withoutAdvancedOnly(result.elements.nodes, session.library);
+  if (allowed.left > 0) notify(plural("site.clipboard.advancedLeftOut", allowed.left));
+  const { nodes } = allowed;
   const [first] = nodes;
   const page = currentPage(session);
   const ui = session.ui.getState();

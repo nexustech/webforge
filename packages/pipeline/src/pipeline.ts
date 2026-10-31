@@ -11,6 +11,7 @@ import {
 import { createStyleCompiler } from "./css.js";
 import { createMemoryImageCache } from "./memory-image-cache.js";
 import type { PipelineResources } from "./resources.js";
+import type { RunsCode } from "./site-code.js";
 
 /** What a pipeline's build goes through: the stages of {@link BuildEvent}, then the site. */
 export type PipelineEvent = BuildEvent | { readonly stage: "done"; readonly site: BuiltSite };
@@ -24,6 +25,8 @@ export type PipelineBuildOptions = {
   readonly output?: OutputOptions | undefined;
   /** The year `{year}` stands for (F-CM-8): this year when left out. */
   readonly year?: number | undefined;
+  /** Which of the site's own code goes in (#649): none in a preview and all otherwise, when left out. */
+  readonly runsCode?: RunsCode | undefined;
 };
 
 /** Builds one open site, as often as asked, keeping between builds what it can (3.1). */
@@ -61,13 +64,13 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
   const images = createMemoryImageCache(options.imageCacheBytes ?? IMAGE_CACHE_BYTES);
   let caches: BuildCaches | undefined;
   return {
-    async *build(snapshot, resources, { mode, signal, output, year }) {
+    async *build(snapshot, resources, { mode, signal, output, year, runsCode }) {
       caches ??= { styles: createStyleCompiler(resources), pages: new Map(), fonts: new Map() };
       const site = yield* buildEvents(
         snapshot,
         library,
         { ...resources, imageCache: resources.imageCache ?? images },
-        { mode, signal, output, caches, year },
+        { mode, signal, output, caches, year, runsCode },
       );
       yield { stage: "done", site };
     },

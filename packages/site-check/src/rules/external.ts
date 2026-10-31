@@ -24,14 +24,19 @@ const SITE_CODE_PARTS: readonly (readonly [SiteCodePart, (code: string) => Exter
  * exported site would depend on that website, and wouldn't work from disk or offline: *Must fix*,
  * unless Settings allow its address, or the site keeps a copy of the file (Download and bundle),
  * which the export points HTML and CSS at; a script's addresses it can't rewrite. Each finding
- * names the address (`url`) and what it is (`kind`).
+ * names the address (`url`) and what it is (`kind`). The allowed addresses count only once the
+ * owner has confirmed them (`allowListConfirmed`), since they come with the site's file.
+ *
+ * It is a portability check, not a safety check (#649, ADR 0017): a script can build an address
+ * at run time, or hide one, and code that names no other website can still do harm on the site
+ * itself. What keeps code from someone else's file from running unasked is the code trust step.
  */
 export const externalResourcesRule: CheckRule = {
   id: "externalResources",
   level: "must",
-  check: ({ site }) => {
+  check: ({ site, allowListConfirmed }) => {
     const found: Finding[] = [];
-    const allowed = site.settings.allowedExternalUrls;
+    const allowed = allowListConfirmed === true ? site.settings.allowedExternalUrls : [];
     const kept = (site.code.bundled ?? []).map((file) => file.url);
     const report = (place: FindingPlace, at: string, resources: readonly ExternalResource[]) => {
       const rewritten = !(place.kind === "code" && place.part === "js");

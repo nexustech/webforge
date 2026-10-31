@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import {
   codeCandidates,
   customHtml,
+  RUNS_ALL_CODE,
   scriptMistake,
   scriptStrings,
   siteCodeCandidates,
+  withRunnableCode,
 } from "./site-code.js";
 
 describe("codeCandidates (3.9)", () => {
@@ -106,5 +108,63 @@ describe("scriptMistake (3.9)", () => {
   it("gives the line of a mistake, and of an import, which a classic script can't have", async () => {
     expect(await scriptMistake("let a = 1;\nlet b = ;")).toBe(2);
     expect(await scriptMistake('\n\nimport x from "./x.js";')).toBe(3);
+  });
+});
+
+describe("withRunnableCode (#649)", () => {
+  const code = (id: string, html: string): NodeDoc => ({
+    type: "CustomCode",
+    props: { id, code: html },
+  });
+  const site = (): SiteSnapshot => {
+    const base = sampleSite();
+    const [home, ...rest] = base.pages;
+    if (home === undefined) throw new Error("no home page");
+    return {
+      ...base,
+      layout: { ...base.layout, header: [...base.layout.header, code("top", "<b>mine</b>")] },
+      pages: [
+        {
+          ...home,
+          doc: {
+            ...home.doc,
+            content: [
+              ...home.doc.content,
+              {
+                type: "Section",
+                props: { id: "s", content: [code("deep", "<script>skim()</script>")] },
+              },
+            ],
+          },
+        },
+        ...rest,
+      ],
+      code: { css: ".x{}", js: "skim()", head: "<b>mine</b>", bodyEnd: "  " },
+    };
+  };
+
+  it("blanks the code it doesn't let run, in Settings and in elements, nested ones too", () => {
+    const runs = withRunnableCode(site(), (text) => text === "<b>mine</b>");
+
+    expect(runs.code).toEqual({ css: ".x{}", js: "", head: "<b>mine</b>", bodyEnd: "  " });
+    expect(customHtml(runs)).toEqual(["<b>mine</b>", ""]);
+    expect(JSON.stringify(runs.pages)).not.toContain("skim()");
+  });
+
+  it("keeps blank code and CSS without asking, and leaves the site as it is when all may run", () => {
+    const asked: string[] = [];
+    withRunnableCode(site(), (text) => {
+      asked.push(text);
+      return false;
+    });
+    const all = site();
+
+    expect(asked.sort()).toEqual([
+      "<b>mine</b>",
+      "<b>mine</b>",
+      "<script>skim()</script>",
+      "skim()",
+    ]);
+    expect(withRunnableCode(all, RUNS_ALL_CODE)).toBe(all);
   });
 });

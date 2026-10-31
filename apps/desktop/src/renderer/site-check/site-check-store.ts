@@ -69,8 +69,10 @@ export function createSiteCheck(
   document: ReadonlyStore<SiteDoc>,
   { ignored: initial, saveIgnored }: SiteCheckOptions,
 ): SiteCheck {
+  // The site's allow-list counts as the owner's until the code trust step can tell (#649).
+  const inputOf = (site: SiteDoc) => ({ site, catalogue: CATALOGUE, allowListConfirmed: true });
   const runAll = (site: SiteDoc) =>
-    new Map(SITE_CHECK_RULES.map((rule) => [rule, rule.check({ site, catalogue: CATALOGUE })]));
+    new Map(SITE_CHECK_RULES.map((rule) => [rule, rule.check(inputOf(site))]));
   /** What each rule found in the latest check, before anything ignored is left out. */
   let found: ReadonlyMap<CheckRule, readonly Finding[]> = runAll(document.getState());
   const report = (ignored: ReadonlySet<string>) =>
@@ -101,7 +103,7 @@ export function createSiteCheck(
       do {
         const rule = rules.shift();
         if (rule === undefined) break;
-        next.set(rule, rule.check({ site, catalogue: CATALOGUE }));
+        next.set(rule, rule.check(inputOf(site)));
       } while (rules.length > 0 && (deadline?.timeRemaining() ?? 0) > IDLE_MARGIN_MS);
       if (rules.length > 0) {
         whenIdle(step);
