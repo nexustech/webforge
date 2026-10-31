@@ -28,7 +28,8 @@ const exportThrough =
 export const exportCommandArea: Area<WindowContext> = {
   id: "exportCommand",
   register: (context) => {
-    const { api, commands, session, settings, preferences, windowDialogs, panels } = context;
+    const { api, commands, session, settings, preferences, windowDialogs, panels, codeTrust } =
+      context;
     const dialogs = createExportDialogs();
     // Preview from disk: main opens what it exported itself, or says it isn't there any more.
     const openExport = () => {
@@ -56,6 +57,7 @@ export const exportCommandArea: Area<WindowContext> = {
       dialogs,
       showSettings: (part, group) => settings.show(part, group),
       showSiteCheck: () => panels.show(SITE_CHECK_PANEL_ID),
+      confirmCode: (site) => codeTrust.confirm(site),
     });
     return () => {
       removeCommand();

@@ -191,6 +191,18 @@ export const site = {
   "site.code.allowedRemove": "Remove this address",
   "site.code.error.address": "Enter a web address that starts with https://.",
   "site.code.history": "Changed Custom Code",
+  // The code trust step (#649), approved by the product owner (31 Oct 2026).
+  "site.code.trust.title": "This site contains code that will run for your visitors",
+  "site.code.trust.body":
+    "It came with the site's file or was pasted in, rather than written in {appName} on this computer. Keep it only if you trust where it came from.",
+  "site.code.trust.part.head": "Custom Code in Settings: Head",
+  "site.code.trust.part.bodyEnd": "Custom Code in Settings: End of page",
+  "site.code.trust.part.js": "Custom Code in Settings: Script",
+  "site.code.trust.allowList": "Addresses allowed in Custom Code",
+  "site.code.trust.review": "Review",
+  "site.code.trust.leave": "Leave it out",
+  "site.code.trust.keep": "Keep the code",
+  "site.code.trust.failed": "{appName} couldn't remember that you trust this code. Try again.",
   "site.settings.historySections": "Changed Site Settings: {sections}",
   "site.settings.section.general": "General",
   "site.settings.section.address": "Web address",

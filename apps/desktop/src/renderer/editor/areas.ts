@@ -2,6 +2,7 @@ import type { NodeDoc, Theme } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { WebforgeApi } from "../../shared/webforge-api.js";
+import type { CodeTrust } from "../code-trust/index.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -75,6 +76,8 @@ export type WindowContext = AreaContext & {
   readonly settings: SettingsRegistry;
   /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
   readonly windowDialogs: WindowDialogRegistry;
+  /** The code trust step (#649): asks before the site's code runs, and keeps what's trusted. */
+  readonly codeTrust: CodeTrust;
   /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
   readonly siteCheckIgnored: {
     readonly initial: readonly string[];

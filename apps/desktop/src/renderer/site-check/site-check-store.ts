@@ -56,6 +56,11 @@ type SiteCheckOptions = {
   readonly ignored: readonly string[];
   /** Remembers what is ignored with the open site. */
   readonly saveIgnored: (ignored: readonly string[]) => void;
+  /**
+   * Whether the owner has confirmed the addresses Settings' Custom Code allows (#649): until then
+   * they allow nothing. Left out, they never do.
+   */
+  readonly allowListConfirmed?: ReadonlyStore<boolean>;
 };
 
 /**
@@ -67,10 +72,13 @@ type SiteCheckOptions = {
  */
 export function createSiteCheck(
   document: ReadonlyStore<SiteDoc>,
-  { ignored: initial, saveIgnored }: SiteCheckOptions,
+  { ignored: initial, saveIgnored, allowListConfirmed }: SiteCheckOptions,
 ): SiteCheck {
-  // The site's allow-list counts as the owner's until the code trust step can tell (#649).
-  const inputOf = (site: SiteDoc) => ({ site, catalogue: CATALOGUE, allowListConfirmed: true });
+  const inputOf = (site: SiteDoc) => ({
+    site,
+    catalogue: CATALOGUE,
+    allowListConfirmed: allowListConfirmed?.getState() ?? false,
+  });
   const runAll = (site: SiteDoc) =>
     new Map(SITE_CHECK_RULES.map((rule) => [rule, rule.check(inputOf(site))]));
   /** What each rule found in the latest check, before anything ignored is left out. */
@@ -116,11 +124,18 @@ export function createSiteCheck(
   };
 
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const stop = document.subscribe(() => {
+  const later = () => {
     pass++;
     clearTimeout(timer);
     timer = setTimeout(recheck, RECHECK_DELAY_MS);
-  });
+  };
+  const stopDocument = document.subscribe(later);
+  // Confirming the allowed addresses changes what they allow (#649).
+  const stopConfirmed = allowListConfirmed?.subscribe(later);
+  const stop = () => {
+    stopDocument();
+    stopConfirmed?.();
+  };
   const changeIgnored = (ignored: ReadonlySet<string>) => {
     show(ignored);
     // The latest ignored, as many as a site remembers; one-time tips marked *Done* first, so they

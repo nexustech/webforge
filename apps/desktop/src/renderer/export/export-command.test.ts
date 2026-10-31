@@ -3,6 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import type { CodeDecision } from "../code-trust/index.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
@@ -17,6 +18,9 @@ import {
 import { createExportDialogs, type ExportDialogShown } from "./export-dialogs.js";
 
 const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
+
+/** The owner trusts all of the site's code, or has none to be asked about (#649). */
+const GO: CodeDecision = { go: true, keeps: () => true, allowListConfirmed: true };
 
 const toast = vi.hoisted(() => ({
   loading: vi.fn(() => "progress"),
@@ -241,6 +245,7 @@ describe("registerExportCommand", () => {
       showSettings: vi.fn(async () => true),
       saveChoices: vi.fn(async () => null),
       showSiteCheck: vi.fn(),
+      confirmCode: vi.fn(async (): Promise<CodeDecision> => GO),
       ...overrides,
     } satisfies ExportFlow;
     registerExportCommand(registry, flow);

@@ -14,5 +14,5 @@ export type {
   SelectionAdapter,
   Transaction,
 } from "./history-manager.js";
-export { createHistoryManager, HistoryError } from "./history-manager.js";
+export { createHistoryManager, HistoryError, stateBefore } from "./history-manager.js";
 export { syncDraft } from "./sync-draft.js";
