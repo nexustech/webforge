@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { DEFAULT_THEME, themeIdSchema } from "@webforge/model";
+import { DEFAULT_THEME, type Theme, themeIdSchema } from "@webforge/model";
 import { themePreset } from "@webforge/themes";
+import { userEvent, within } from "storybook/test";
 import type { OwnTheme } from "../../../shared/ipc/themes.js";
 import { starterSite } from "../../../shared/starter-site.js";
+import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
 import { dialogStory } from "../../testing/stories.js";
 import { createOwnThemes } from "../own-themes.js";
 import { createStudio, type StudioSection } from "./studio-state.js";
@@ -81,3 +83,65 @@ export const Components: Story = componentsOn("Button");
 
 /** The theme's card style, as the Card look. */
 export const ComponentsCard: Story = componentsOn("Card");
+
+/**
+ * Stand-ins for the kind's drawings, which use the canvas's CSS compiler that Storybook doesn't
+ * have: a box the drawing's size, saying the look it would draw.
+ */
+const standIn = (type: string, theme: Theme | undefined, width: number) => (
+  <div
+    className="flex items-center justify-center rounded-sm border border-dashed border-border p-2 text-center text-xs text-muted-foreground"
+    style={{ width, height: 120 }}
+  >
+    {`${type}: ${JSON.stringify(theme?.looks?.[type] ?? {})}`}
+  </div>
+);
+const kindPreviews: KindPreviews = (type, theme) => standIn(type, theme, 240);
+const itemPreviews: ItemPreviews = (node, device, theme) =>
+  standIn(node.type, theme, device === "desktop" ? 400 : 150);
+
+/** Components on Button, changed but not applied yet (4.10): Apply Changes or Discard. */
+export const ComponentsDraft: Story = dialogStory((session) => {
+  const studio = createStudio();
+  studio.setState({
+    open: true,
+    section: "components",
+    kind: "Button",
+    draft: {
+      type: "Button",
+      item: "Button",
+      change: { lookCorners: "full", lookShadow: "large" },
+    },
+  });
+  return (
+    <ThemeStudio
+      session={session}
+      studio={studio}
+      kindPreviews={kindPreviews}
+      itemPreviews={itemPreviews}
+    />
+  );
+});
+
+/** Another kind chosen with Button's changes not applied: apply or discard them first (4.10). */
+export const ComponentsDraftQuestion: Story = {
+  ...ComponentsDraft,
+  play: async () => {
+    // The dialog draws outside the story's root.
+    const page = within(document.body);
+    await userEvent.click(await page.findByRole("button", { name: "Card" }));
+    await page.findByRole("alertdialog", { name: "Apply your changes to every Button?" });
+  },
+};
+
+/** The preview opened larger, on Desktop and Mobile, with the changes shown (4.10). */
+export const ComponentsLargerPreview: Story = {
+  ...ComponentsDraft,
+  play: async () => {
+    const page = within(document.body);
+    await userEvent.click(
+      await page.findByRole("button", { name: "Show Button larger, before and after" }),
+    );
+    await page.findByRole("dialog", { name: "Every Button, before and after" });
+  },
+};
