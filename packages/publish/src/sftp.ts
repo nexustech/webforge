@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { posix } from "node:path";
-import { Client, type SFTPWrapper, utils } from "ssh2";
+// ssh2 is CommonJS: Node's ESM loader, which runs the app's main process (where ssh2 stays
+// unbundled), gives its exports only through the default export.
+import ssh2, { type Client, type SFTPWrapper } from "ssh2";
 import { fileTransferError } from "./file-transfer-errors.js";
 import type { PublishedSite } from "./manifest.js";
 import {
@@ -55,7 +57,7 @@ export type SftpOptions = SftpSignIn & {
  * passphrase missing or wrong), checked before connecting, so the host never sees a failed try.
  */
 export function readPrivateKey(privateKey: string, passphrase?: string): TestResult {
-  const parsed = utils.parseKey(privateKey, passphrase);
+  const parsed = ssh2.utils.parseKey(privateKey, passphrase);
   const key = Array.isArray(parsed) ? parsed[0] : parsed;
   return key === undefined || key instanceof Error || !key.isPrivateKey()
     ? { ok: false, code: "bad-key" }
@@ -67,7 +69,7 @@ export function readPrivateKey(privateKey: string, passphrase?: string): TestRes
  * key at all (a public key, or any other file), for the destination form to say before any test.
  */
 export function describePrivateKey(text: string): "key" | "encrypted" | "not-a-key" {
-  const parsed = utils.parseKey(text);
+  const parsed = ssh2.utils.parseKey(text);
   const key = Array.isArray(parsed) ? parsed[0] : parsed;
   if (key instanceof Error) {
     return /^Encrypted .* no passphrase given$/.test(key.message) ? "encrypted" : "not-a-key";
@@ -127,7 +129,7 @@ function connect(
   return new Promise((resolve, reject) => {
     // A key that can't be read fails here, before anything connects.
     const signIn = credentials(options);
-    const client = new Client();
+    const client = new ssh2.Client();
     onClient(client);
     let untrusted = false;
     client
@@ -231,7 +233,7 @@ function remoteFolder(sftp: SFTPWrapper, root: string): RemoteFolder {
  */
 export function readSftpHostKey(host: string, port = 22, timeoutMs = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
-    const client = new Client();
+    const client = new ssh2.Client();
     let fingerprint: string | undefined;
     client
       .on("error", (error) => {

@@ -1,7 +1,14 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { createHash } from "node:crypto";
 import { once } from "node:events";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -264,11 +271,15 @@ test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.
   } finally {
     await server.stop();
   }
-  // Nothing of ssh2's is unpacked beside app.asar: no native crypto binding or cpu-features.
+  // No native module of ssh2's ships: no crypto binding, built or not, and no cpu-features.
   const dir = resourcesDir();
   if (dir !== undefined) {
-    expect(existsSync(join(dir, "app.asar.unpacked", "node_modules", "ssh2"))).toBe(false);
-    expect(existsSync(join(dir, "app.asar.unpacked", "node_modules", "cpu-features"))).toBe(false);
+    const unpacked = join(dir, "app.asar.unpacked", "node_modules");
+    const ssh2Files = existsSync(join(unpacked, "ssh2"))
+      ? readdirSync(join(unpacked, "ssh2"), { recursive: true, encoding: "utf8" })
+      : [];
+    expect(ssh2Files.filter((file) => /\.node$|binding\.gyp$/.test(file))).toEqual([]);
+    expect(existsSync(join(unpacked, "cpu-features"))).toBe(false);
   }
 });
 
