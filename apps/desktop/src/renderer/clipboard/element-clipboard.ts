@@ -241,9 +241,10 @@ function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "f
 /**
  * `nodes` without the elements offered in Advanced mode only (Custom Code), in slots too, and how
  * many it left out. In Simple mode a paste brings none (#649, S1): the person would never see the
- * code it carries, which runs for the site's visitors.
+ * code it carries, which runs for the site's visitors. Custom Code is the only such element, and
+ * the message names it: another would need wording of its own.
  */
-export function withoutAdvancedOnly(
+function withoutAdvancedOnly(
   nodes: readonly NodeDoc[],
   library: ComponentLibrary,
 ): { readonly nodes: NodeDoc[]; readonly left: number } {

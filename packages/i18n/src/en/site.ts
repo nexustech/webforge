@@ -122,10 +122,11 @@ export const site = {
   "site.clipboard.imagesMissing.other":
     "{count} images couldn't be pasted with them. Copy them again from their site.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
+  // Approved by the product owner (31 Oct 2026, #649).
   "site.clipboard.advancedLeftOut.one":
-    "1 element wasn't pasted, because it's for Advanced Mode only.",
+    "1 Custom Code element wasn't pasted. It's for Advanced mode.",
   "site.clipboard.advancedLeftOut.other":
-    "{count} elements weren't pasted, because they're for Advanced Mode only.",
+    "{count} Custom Code elements weren't pasted. They're for Advanced mode.",
   // Links to documents in Media (1.28), beside the link dialog's own `link.*` strings.
   "link.kind.file": "File",
   "link.document": "Document",
