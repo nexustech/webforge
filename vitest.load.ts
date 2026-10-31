@@ -13,3 +13,11 @@ export const TIMEOUT_SCALE = Math.max(1, WORKERS / 2);
 
 /** A timeout set for CI, for this run. */
 export const scaledTimeout = (ms: number): number => Math.round(ms * TIMEOUT_SCALE);
+
+/**
+ * Site Check's cost test (ADR 0016), from `packages/site-check`. It times the rules against a copy
+ * of the site through JSON. Coverage counts every block of the rules' JavaScript as it runs, but
+ * not the native JSON copy, so under coverage the rules read as up to twice as costly (#698). So
+ * `pnpm test` leaves it out, and `pnpm test:compiled`, which runs without coverage, runs it.
+ */
+export const SITE_CHECK_COST_TEST = "src/check-cost.test.ts";

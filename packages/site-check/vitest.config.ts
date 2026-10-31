@@ -1,8 +1,10 @@
-import { defineProject } from "vitest/config";
-import { scaledTimeout, TIMEOUT_SCALE } from "../../vitest.load.js";
+import { configDefaults, defineProject } from "vitest/config";
+import { SITE_CHECK_COST_TEST, scaledTimeout, TIMEOUT_SCALE } from "../../vitest.load.js";
 
 export default defineProject({
   test: {
+    // Run without coverage, in `pnpm test:compiled` (#698).
+    exclude: [...configDefaults.exclude, SITE_CHECK_COST_TEST],
     // Its rules run over whole sites, and the cost test over five large pages many times: CPU-bound
     // work, slower when the run's other workers share the machine (#555). Vitest's defaults (5 s,
     // hooks 10 s), scaled to the run's workers (ADR 0014); the cost test's budget is CPU time, which
