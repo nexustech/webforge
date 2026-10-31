@@ -1,7 +1,10 @@
 import { createHash } from "node:crypto";
 import { posix } from "node:path";
-import { Client, type SFTPWrapper } from "ssh2";
+// ssh2 is CommonJS: Node's ESM loader, which runs the app's main process (where ssh2 stays
+// unbundled), gives its exports only through the default export.
+import ssh2, { type Client, type SFTPWrapper } from "ssh2";
 import { fileTransferError } from "./file-transfer-errors.js";
+import type { PublishedSite } from "./manifest.js";
 import {
   type BuildOutput,
   PublishError,
@@ -11,7 +14,10 @@ import {
 } from "./publisher.js";
 import { publishToFolder, type RemoteFolder, uploadPathFor } from "./remote-folder.js";
 
-/** An SFTP destination, as the `.wforge` file stores it: no password. */
+/**
+ * An SFTP destination, as the app puts it together from the site's settings (no password or key),
+ * the host key trusted on this computer (never in the site's file, S2) and the site publishing.
+ */
 export type SftpDestination = {
   readonly host: string;
   /** 22 when not set. */
@@ -26,13 +32,98 @@ export type SftpDestination = {
   readonly hostKey: string;
   /** The address the site is visited at, for the published event. */
   readonly url?: string;
+  /** The site publishing, which the folder's manifest records (A8, 4.3). */
+  readonly site: PublishedSite;
+  /** The person agreed to replace another site published to the folder, for this publish (4.5). */
+  readonly replaceOtherSite?: boolean;
 };
 
-export type SftpOptions = {
-  readonly password: string;
+/**
+ * How an SFTP destination signs in (4.3): with a password, or with a private key (OpenSSH or PEM
+ * text, as the key file holds it) and its passphrase, if it has one. Neither is ever stored with
+ * the destination.
+ */
+export type SftpSignIn =
+  | { readonly password: string }
+  | { readonly privateKey: string; readonly passphrase?: string };
+
+export type SftpOptions = SftpSignIn & {
   /** How long connecting and signing in may take. */
   readonly timeoutMs?: number;
 };
+
+/**
+ * Whether `privateKey` is a key `passphrase` opens: `bad-key` for anything else (not a key, a
+ * passphrase missing or wrong), checked before connecting, so the host never sees a failed try.
+ */
+export function readPrivateKey(privateKey: string, passphrase?: string): TestResult {
+  return openPrivateKey(privateKey, passphrase) === undefined
+    ? { ok: false, code: "bad-key" }
+    : { ok: true };
+}
+
+/** The private key `passphrase` opens, or `undefined` for anything else. */
+function openPrivateKey(privateKey: string, passphrase?: string) {
+  const parsed = ssh2.utils.parseKey(privateKey, passphrase);
+  const key = Array.isArray(parsed) ? parsed[0] : parsed;
+  return key === undefined || key instanceof Error || !key.isPrivateKey() ? undefined : key;
+}
+
+/** The OpenSSH key format's own name, before its cipher's (PROTOCOL.key). */
+const OPENSSH_MAGIC = "openssh-key-v1\0";
+
+/**
+ * Whether a key file's text is encrypted, by its format's own marker rather than by what ssh2's
+ * error says: an OpenSSH key's cipher name, a PEM key's `Proc-Type: 4,ENCRYPTED` header, a PuTTY
+ * key's `Encryption` line. `undefined` for none of these formats.
+ */
+function encryptedByFormat(text: string): boolean | undefined {
+  const openssh =
+    /-----BEGIN OPENSSH PRIVATE KEY-----([\s\S]*?)-----END OPENSSH PRIVATE KEY-----/.exec(text);
+  if (openssh?.[1] !== undefined) {
+    const data = Buffer.from(openssh[1].replace(/\s/g, ""), "base64");
+    const at = OPENSSH_MAGIC.length;
+    if (data.subarray(0, at).toString("latin1") !== OPENSSH_MAGIC || data.length < at + 4) {
+      return undefined;
+    }
+    const cipher = data.subarray(at + 4, at + 4 + data.readUInt32BE(at)).toString("latin1");
+    return cipher !== "none";
+  }
+  if (/-----BEGIN (?:RSA|EC|DSA) PRIVATE KEY-----/.test(text)) {
+    return /^Proc-Type:\s*4,\s*ENCRYPTED\s*$/m.test(text);
+  }
+  const putty = /^PuTTY-User-Key-File-\d+:[^\n]*\n\s*Encryption:\s*(\S+)/m.exec(text);
+  if (putty?.[1] !== undefined) return putty[1] !== "none";
+  return undefined;
+}
+
+/**
+ * What a key file holds (4.3): a private key, one that needs its passphrase first, a key in a
+ * format ssh2 can't read (PKCS#8: `BEGIN PRIVATE KEY` or `BEGIN ENCRYPTED PRIVATE KEY`), or no
+ * private key at all (a public key, or any other file), for the destination form to say before
+ * any test.
+ */
+export function describePrivateKey(
+  text: string,
+): "key" | "encrypted" | "unsupported" | "not-a-key" {
+  if (/-----BEGIN (?:ENCRYPTED )?PRIVATE KEY-----/.test(text)) return "unsupported";
+  const encrypted = encryptedByFormat(text);
+  if (encrypted === true) return "encrypted";
+  if (encrypted === undefined) return "not-a-key";
+  return openPrivateKey(text) === undefined ? "not-a-key" : "key";
+}
+
+/** What `ssh2` signs in with: the password, or the private key. */
+function credentials(options: SftpOptions) {
+  if ("password" in options) return { password: options.password };
+  if (openPrivateKey(options.privateKey, options.passphrase) === undefined) {
+    throw new PublishError("bad-key", "The private key could not be read");
+  }
+  return {
+    privateKey: options.privateKey,
+    ...(options.passphrase === undefined ? {} : { passphrase: options.passphrase }),
+  };
+}
 
 /** A host key's fingerprint as OpenSSH shows it: `SHA256:` and the unpadded base64 digest. */
 export function hostKeyFingerprint(key: Buffer): string {
@@ -62,16 +153,19 @@ export function sftpErrorCode(error: unknown): PublishErrorCode | undefined {
 type Session = { readonly sftp: SFTPWrapper; end(): void };
 
 /**
- * Connects and signs in, refusing any host key but the trusted one before the password goes.
+ * Connects and signs in, refusing any host key but the trusted one before the password or the
+ * key's signature goes.
  * `onClient` gets the connection at once, so a cancel can end it while it connects.
  */
 function connect(
-  dest: SftpDestination,
+  dest: Omit<SftpDestination, "site">,
   options: SftpOptions,
   onClient: (client: Client) => void = () => undefined,
 ): Promise<Session> {
   return new Promise((resolve, reject) => {
-    const client = new Client();
+    // A key that can't be read fails here, before anything connects.
+    const signIn = credentials(options);
+    const client = new ssh2.Client();
     onClient(client);
     let untrusted = false;
     client
@@ -97,7 +191,7 @@ function connect(
         host: dest.host,
         port: dest.port ?? 22,
         username: dest.user,
-        password: options.password,
+        ...signIn,
         readyTimeout: options.timeoutMs ?? 30_000,
         hostVerifier: (key: Buffer) => {
           untrusted = hostKeyFingerprint(key) !== dest.hostKey;
@@ -175,7 +269,7 @@ function remoteFolder(sftp: SFTPWrapper, root: string): RemoteFolder {
  */
 export function readSftpHostKey(host: string, port = 22, timeoutMs = 30_000): Promise<string> {
   return new Promise((resolve, reject) => {
-    const client = new Client();
+    const client = new ssh2.Client();
     let fingerprint: string | undefined;
     client
       .on("error", (error) => {
@@ -198,8 +292,8 @@ export function readSftpHostKey(host: string, port = 22, timeoutMs = 30_000): Pr
 
 /**
  * Publishes to a host over SFTP (08): only what changed, by the manifest it keeps there, assets
- * first and `index.html` last. The password is given here, never through the destination, and
- * only to the host whose key was trusted. Cancelling ends the connection: a file being sent goes
+ * first and `index.html` last. The password or private key is given here, never through the
+ * destination, and only to the host whose key was trusted. Cancelling ends the connection: a file being sent goes
  * to its hidden upload file, so the live one stays whole.
  */
 export function sftpPublisher(options: SftpOptions): Publisher<SftpDestination> {
@@ -226,7 +320,13 @@ export function sftpPublisher(options: SftpOptions): Publisher<SftpDestination> 
         const { sftp } = await connect(dest, options, (connecting) => {
           client = connecting;
         });
-        yield* publishToFolder(remoteFolder(sftp, dest.folder), build, signal, dest.url ?? "");
+        yield* publishToFolder(remoteFolder(sftp, dest.folder), build, signal, {
+          site: dest.site,
+          url: dest.url ?? "",
+          ...(dest.replaceOtherSite === undefined
+            ? {}
+            : { replaceOtherSite: dest.replaceOtherSite }),
+        });
       } catch (error) {
         throw fileTransferError(error, signal, sftpErrorCode);
       } finally {

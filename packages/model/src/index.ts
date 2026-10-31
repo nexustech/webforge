@@ -48,6 +48,25 @@ export {
 export type { ExportChoices } from "./export-choices.js";
 export { DEFAULT_EXPORT_CHOICES, exportChoicesSchema } from "./export-choices.js";
 export { exportedAddress, exportedSiteAddress, exportedTitle } from "./exported-page.js";
+export type {
+  FileTransferDestination,
+  FileTransferProtocol,
+  FileTransferSignIn,
+  FileTransferTrust,
+} from "./file-transfer.js";
+export {
+  DEFAULT_PORTS,
+  FILE_TRANSFER_PROTOCOLS,
+  FILE_TRANSFER_USER_MAX,
+  FOLDER_MAX,
+  fileTransferDestinationSchema,
+  fileTransferSignInSchema,
+  fileTransferTrustSchema,
+  HOST_MAX,
+  hostKeySchema,
+  PRIVATE_KEY_MAX,
+  SECRET_MAX,
+} from "./file-transfer.js";
 export type { FormUnset } from "./forms.js";
 export {
   formServiceUnset,

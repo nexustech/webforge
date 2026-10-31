@@ -61,6 +61,7 @@ jobs:
       all-browsers: ${{ steps.decide.outputs.all-browsers }}
       storybook: ${{ steps.decide.outputs.storybook }}
       audit: ${{ steps.decide.outputs.audit }}
+      transfer: ${{ steps.decide.outputs.transfer }}
     steps:
       - name: Decide which jobs to run
         id: decide
@@ -73,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           everything() {
-            for output in run e2e all-browsers storybook audit; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            for output in run e2e all-browsers storybook audit transfer; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
           case "$EVENT" in
@@ -119,14 +120,17 @@ jobs:
           storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components|themes|pipeline|templates)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
           # The dependencies: any manifest, the lockfile or the workspace file (overrides, catalog).
           deps='(^|/)package.json$|^pnpm-(lock|workspace).yaml$'
+          # The FTP, FTPS and SFTP publishers, which the file-transfer job publishes with (4.3).
+          transfer='^packages/(publish|errors)/'
           echo "run=true" >> "$GITHUB_OUTPUT"
           if matches "$deps"; then audit=true; else audit=false; fi
+          if matches "$shared" || matches "$transfer"; then transfer=true; else transfer=false; fi
           if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
           # Unit tests don't change what the exported site or the stories look like.
           files=$(grep -Ev '(\.test\.tsx?|\.test-helper\.ts|\.snap)$|^packages/[^/]+/test/' <<< "$files" || true)
           if matches "$shared" || matches "$export_site"; then all=true; else all=false; fi
           if matches "$shared" || matches "$storybook"; then sb=true; else sb=false; fi
-          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; echo "audit=$audit"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; echo "audit=$audit"; echo "transfer=$transfer"; } | tee -a "$GITHUB_OUTPUT"
 
   audit:
     # Known vulnerabilities in the installed dependencies, from the lockfile: when a PR changes
@@ -649,13 +653,83 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  file-transfer:
+    # The FTP, FTPS and SFTP publishers against real servers in containers (4.3): pure-ftpd over
+    # FTPS, trusting the certificate it makes, and OpenSSH's SFTP with a password and with a private
+    # key and its passphrase (packages/publish/src/servers.live.test.ts). Unit tests run the
+    # publishers against the tests' own servers on every OS; this checks them against servers
+    # hosts use. Linux only, where Docker is. The images are pinned by digest.
+    name: File transfer servers (FTPS, SFTP)
+    needs: changes
+    if: needs.changes.outputs.transfer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Start the servers
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A key for this run only, with a passphrase, as a host's control panel has people make.
+          ssh-keygen -q -t ed25519 -N test-only-passphrase -f "$RUNNER_TEMP/id"
+          docker run -d --name webforge-sftp -p 2222:22 \
+            -v "$RUNNER_TEMP/id.pub:/home/baker/.ssh/keys/id.pub:ro" \
+            atmoz/sftp@sha256:43dd1c023cf1bae487127d4b54660b0aee6e94c188a6599be36fb89ba115f961 \
+            baker:test-only-password:::site
+          docker run -d --name webforge-ftps -p 2121:21 -p 30000-30009:30000-30009 \
+            -e PUBLICHOST=localhost -e FTP_USER_NAME=baker -e FTP_USER_PASS=test-only-password \
+            -e FTP_USER_HOME=/home/baker -e "ADDED_FLAGS=--tls=2" -e TLS_CN=localhost \
+            -e TLS_ORG=Webforge -e TLS_C=GB \
+            stilliard/pure-ftpd@sha256:54eff59f458532899a4f814da339a7c0921ddf0b4d8b3b87318a162cb4232687
+          # pure-ftpd makes its certificate, then its DH parameters, before it listens.
+          for _ in $(seq 60); do
+            if docker logs webforge-ftps 2>&1 | grep -q "Starting Pure-FTPd"; then break; fi
+            sleep 5
+          done
+          docker exec webforge-ftps sh -c "mkdir -p /home/baker/site && chown -R ftpuser:ftpgroup /home/baker"
+          docker cp webforge-ftps:/etc/ssl/private/pure-ftpd.pem "$RUNNER_TEMP/ftps.pem"
+          for port in 2222 2121; do
+            for _ in $(seq 30); do
+              if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then break; fi
+              sleep 1
+            done
+          done
+
+      - name: Publish to them
+        env:
+          WEBFORGE_SFTP_PORT: "2222"
+          WEBFORGE_SFTP_KEY: ${{ runner.temp }}/id
+          WEBFORGE_FTPS_PORT: "2121"
+          WEBFORGE_FTPS_CA: ${{ runner.temp }}/ftps.pem
+        run: pnpm vitest run packages/publish/src/servers.live.test.ts
+
+      - name: Server logs
+        if: failure()
+        run: |
+          docker logs webforge-sftp || true
+          docker logs webforge-ftps || true
+
   passed:
     # The one required check on `main` (spec/03 §7). Every job above can be skipped, and a skipped
     # job's check never reports, so `main` requires this instead: it always runs, and fails if any
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, audit, check, e2e-linux, e2e, export-browsers, visual, package]
+    needs: [changes, audit, check, e2e-linux, e2e, export-browsers, visual, package, file-transfer]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -9,6 +9,7 @@ import { mediaApi, type PathOfFile } from "./api/media.js";
 import { prefsApi } from "./api/prefs.js";
 import { previewApi } from "./api/preview.js";
 import { projectApi } from "./api/project.js";
+import { publishApi } from "./api/publish.js";
 import { siteApi } from "./api/site.js";
 import { templatesApi } from "./api/templates.js";
 import { themesApi } from "./api/themes.js";
@@ -39,5 +40,6 @@ export function createWebforgeApi(
     templates: templatesApi(call),
     themes: themesApi(call),
     preview: previewApi(call),
+    publish: publishApi(call),
   };
 }

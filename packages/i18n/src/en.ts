@@ -7,6 +7,7 @@ import { exportSite } from "./en/export.js";
 import { fonts } from "./en/fonts.js";
 import { history } from "./en/history.js";
 import { panels } from "./en/panels.js";
+import { publish } from "./en/publish.js";
 import { puck } from "./en/puck.js";
 import { shell } from "./en/shell.js";
 import { site } from "./en/site.js";
@@ -33,6 +34,7 @@ export const areas = {
   export: exportSite,
   fonts,
   puck,
+  publish,
   errors,
   theme,
   templates,
@@ -56,6 +58,7 @@ export const en = {
   ...exportSite,
   ...fonts,
   ...puck,
+  ...publish,
   ...errors,
   ...theme,
   ...templates,

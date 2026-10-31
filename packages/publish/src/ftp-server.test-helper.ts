@@ -77,7 +77,16 @@ type Session = {
  * 4217's AUTH TLS) from the folder `root`: just enough for the tests, never for real use. Like
  * most servers, a rename replaces the file at the new name.
  */
-function serve(session: Session, root: string, options: { user: string; password: string }) {
+type ServerOptions = {
+  readonly user: string;
+  readonly password: string;
+  /** `false` for a host without FTPS, which refuses `AUTH TLS` (4.3). */
+  readonly tls?: boolean;
+  /** The reply to `AUTH TLS` of a host too busy to answer it: `421 Too many connections`. */
+  readonly busy?: string;
+};
+
+function serve(session: Session, root: string, options: ServerOptions) {
   const local = (path: string) => join(root, posix.resolve(session.cwd, path));
   const reply = (line: string) => session.control.write(`${line}\r\n`);
 
@@ -109,7 +118,8 @@ function serve(session: Session, root: string, options: { user: string; password
 
   const commands: Record<string, (argument: string) => void | Promise<void>> = {
     AUTH: (argument) => {
-      if (argument.toUpperCase() !== "TLS" || TEST_TLS === undefined)
+      if (options.busy !== undefined) return void reply(options.busy);
+      if (argument.toUpperCase() !== "TLS" || TEST_TLS === undefined || options.tls === false)
         return void reply("504 Not here");
       reply("234 Starting TLS");
       // From here the plain socket carries TLS: only the TLS socket reads it.
@@ -247,7 +257,7 @@ function serve(session: Session, root: string, options: { user: string; password
  * A local FTP server (FTPS too, explicit `AUTH TLS` with {@link TEST_TLS}) whose root is a
  * temporary folder with a `site` folder in it, for one user. Closed by `stop`.
  */
-export async function startFtpServer(options: { user: string; password: string }) {
+export async function startFtpServer(options: ServerOptions) {
   const root = mkdtempSync(join(tmpdir(), "webforge-ftp-"));
   mkdirSync(join(root, "site"));
   const sockets = new Set<Socket>();
