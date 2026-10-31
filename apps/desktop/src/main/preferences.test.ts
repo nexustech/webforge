@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -120,11 +120,13 @@ describe("openPreferencesStore", () => {
   });
 
   it("keeps saving after a write fails", async () => {
-    // The folder doesn't exist yet, so the first write fails.
+    // A file where the folder should be, so the first write fails.
     const folder = join(tempDir(), "later");
+    writeFileSync(folder, "");
     const store = await openPreferencesStore(join(folder, "preferences.json"));
     await expect(store.set({ theme: "light" })).rejects.toThrow();
 
+    rmSync(folder);
     mkdirSync(folder);
     await store.set({ editorLevel: "advanced" });
 

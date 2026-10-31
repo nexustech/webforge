@@ -59,10 +59,10 @@ Why:
 **Fallback:** a pasted personal access token, checked with `GET /user` before it is saved. `canSignIn()` is false until Webforge's OAuth client ID is set up. The product owner registers the OAuth application at app.netlify.com/applications; the ticket flow uses no redirect URI.
 
 ### 5. Credentials: `safeStorage`-encrypted, in user data
-- Each secret is encrypted with Electron `safeStorage`, whose key the OS keeps (Windows DPAPI, macOS Keychain). The encrypted bytes (base64) go in one file, `<userData>/credentials.json`, keyed by project ID + publish profile (`credentialKey`).
-- The file is written atomically (temp file + rename, owner-only permissions where supported), and saves are serialised.
+- Each secret is encrypted with Electron `safeStorage`, whose key the OS keeps (Windows DPAPI, macOS Keychain). The encrypted bytes (base64) go in one file, `<userData>/credentials.json`, under a namespaced key (#666): `publish/<projectId>/<destinationId>` for a destination (`publishCredentialKey`), `mcp/<appId>` for an AI app (`mcpCredentialKey`).
+- The file is written through `createJsonStore` (#666), as the app's other files in userData are: atomically (temp file + rename, tried again while the file is briefly locked; owner-only permissions where supported), and one save at a time.
 - **Never in plain text:** if `isEncryptionAvailable()` is false, saving fails (`encryption-unavailable`) instead of falling back. On Linux, Electron may use a weak `basic_text` backend. Linux isn't a release target; if it becomes one, also refuse that backend.
-- A damaged file, or a secret that can't be decrypted (another OS user or machine), counts as missing, and the user signs in again. Any other read error (file locked, no permission) fails the save instead, because saving over a file we couldn't read would lose every other profile's secrets.
+- A damaged file, or a secret that can't be decrypted (another OS user or machine), counts as missing, and the user signs in again. A damaged file is moved aside as `credentials.damaged-<time>.json` before the next save, never written over (#666). Any other read error (file locked, no permission) fails the save instead, because saving over a file we couldn't read would lose every other destination's secrets.
 - Tokens stay in the main process. The renderer only learns whether a profile is signed in (Phase 4 IPC).
 
 ### 6. Netlify Forms on API deploys

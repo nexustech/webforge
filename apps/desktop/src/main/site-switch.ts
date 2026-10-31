@@ -44,7 +44,7 @@ export function createSiteSwitch(options: SiteSwitchOptions) {
       try {
         const jpeg = await captureInTime();
         if (jpeg !== undefined) {
-          options.recent.saveThumbnail(path, jpeg);
+          await options.recent.saveThumbnail(path, jpeg);
         }
       } catch {
         // The thumbnail is a nicety; the Recent list shows the site without one.
