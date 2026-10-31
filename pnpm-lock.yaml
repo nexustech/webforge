@@ -1062,6 +1062,9 @@ importers:
       better-sqlite3:
         specifier: 'catalog:'
         version: 13.0.3
+      fflate:
+        specifier: 0.8.3
+        version: 0.8.3
       zod:
         specifier: 'catalog:'
         version: 4.6.7

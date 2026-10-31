@@ -22,6 +22,7 @@ import { viewCommandsArea } from "./shell/area.js";
 import { pageCommandsArea, sitePanelArea } from "./site/area.js";
 import { siteCheckArea } from "./site-check/area.js";
 import { canvasSettingsArea, siteCodeArea, siteSettingsArea } from "./site-settings/area.js";
+import { saveSiteZipArea } from "./start/save-site-zip.js";
 import { crashReportsArea } from "./storage/area.js";
 import { themePanelArea } from "./theme/area.js";
 
@@ -64,6 +65,7 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   crashReportsArea,
   viewCommandsArea,
   exportCommandArea,
+  saveSiteZipArea,
   previewArea,
   settingsArea,
   siteSettingsArea,

@@ -82,7 +82,8 @@
 | **Page Settings** | Per-page title, description, share image, hide header/footer | Universal | Page properties, Meta |
 | **Preview** | Open the live preview (desktop, phone via QR) | Universal | Serve, Run |
 | **Publish** | Upload to a host (B1) | Universal | Deploy, Upload, Push |
-| **Export** | Save the site as files/ZIP | Familiar | Build, Compile |
+| **Export** | Save the website as files or a ZIP of them, to put on a host. Export stays the website's word: a ZIP of the site itself, to open again in Webforge, is *Save a Copy as ZIP…* (product owner, 30 Oct 2026) | Familiar | Build, Compile |
+| **Save a Copy as ZIP… · Open Site from ZIP…** | File menu: save the whole site (its pages, Media, versions and choices) as one ZIP, for a backup or another computer, and open such a ZIP again as a new site (F-SITE-5, 4.7; product owner, 30 Oct 2026). Not the website, which *Export* makes | Says it is a copy of the site, and what it comes in | Export (as .zip), Project export, Import, Backup |
 | **Publish destination** | A publish profile (Netlify, FTP…) | Plain English | Profile, Target, Endpoint |
 | **Version History** (with **Save version** and **Restore**) | Project versions (06) | Google Sites/Docs "Version history", Wix "Site History" | Snapshots, Revisions, Backups |
 | **Undo History** | Undo/redo step list (03 D3) | Photoshop "History"; prefix avoids a clash with Version History | History (alone) |

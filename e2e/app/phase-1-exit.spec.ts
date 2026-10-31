@@ -6,7 +6,12 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { heroPhoto } from "@webforge/test-utils";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
-import { launchDesktopApp, type WebforgeApp, waitForCanvas } from "./launch.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  type WebforgeApp,
+  waitForCanvas,
+} from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
@@ -40,7 +45,9 @@ function running(): ElectronApplication {
 async function startWithoutSite(): Promise<Page> {
   app = await launchDesktopApp({ userDataDir: userData, site: false });
   const page = await app.firstWindow();
-  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
   return page;
 }
 

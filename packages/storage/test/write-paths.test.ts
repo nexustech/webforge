@@ -52,6 +52,16 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
       originalName: "photo.png",
     }),
   saveVersion: (store) => store.saveVersion("Before the change", "manual"),
+  addVersion: (store) =>
+    store.addVersion(
+      {
+        id: "v-imported",
+        name: "From a ZIP",
+        kind: "manual",
+        createdAt: "2026-10-30T09:00:00.000Z",
+      },
+      [{ id: "theme", kind: "theme", content: { preset: "light" } }],
+    ),
   writeEditorMode: (store) => store.writeEditorMode("content"),
   writeExportChoices: (store) => store.writeExportChoices(DEFAULT_EXPORT_CHOICES),
   writeSiteCheckIgnored: (store) => store.writeSiteCheckIgnored(["brokenLinks:a"]),

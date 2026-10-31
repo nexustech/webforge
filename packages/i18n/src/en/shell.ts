@@ -122,6 +122,9 @@ export const shell = {
   "command.openRecent.palette": "Open Recent: {name}",
   "command.noRecent": "No recent sites",
   "command.clearRecent": "Clear Recent",
+  // A copy of the whole site as a ZIP, and a site opened from one (4.7): not Export's website.
+  "command.saveSiteZip": "Save a Copy as ZIP…",
+  "command.openSiteZip": "Open Site from ZIP…",
   "command.exportSite": "Export Site…",
   "command.preview": "Preview",
   "command.previewOnPhone": "Preview on Phone…",
