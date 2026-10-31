@@ -1,4 +1,4 @@
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
@@ -22,6 +22,24 @@ test.afterEach(async () => {
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 const studio = () => page.getByRole("dialog", { name: "Theme Studio" });
+
+/**
+ * Waits until `dialog` takes the Escape key (#676). Radix gives Escape to the top dialog only once
+ * React has run its effects, a frame or two after the dialog shows and focuses its button; until
+ * then the dialog below it, or one still closing, takes the key and the Escape is lost. So: no
+ * dialog still closing, `dialog` drawn as the top one (the only one taking the pointer), then two
+ * frames for its effects.
+ */
+async function ownsEscape(dialog: Locator): Promise<void> {
+  await expect(
+    page.locator('[role="dialog"][data-state="closed"], [role="alertdialog"][data-state="closed"]'),
+  ).toHaveCount(0);
+  await expect(dialog).toHaveCSS("pointer-events", "auto");
+  await page.evaluate(
+    () =>
+      new Promise((frames) => requestAnimationFrame(() => requestAnimationFrame(() => frames(0)))),
+  );
+}
 
 test("a look cancelled at its question with Escape says 'Not changed' and goes back (#614)", async () => {
   const left = page.getByRole("region", { name: "Left panels" });
@@ -65,6 +83,7 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   // It opens with Cancel focused (the owner's decision). Meant for Theme Studio, the Escape
   // cancels the question.
   await expect(question.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await ownsEscape(question);
   await page.keyboard.press("Escape");
 
   await expect(question).toBeHidden();
@@ -88,6 +107,7 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await expect(notChanged).toHaveCount(1);
   await region.getByRole("button", { name: "Discard" }).click();
   await expect(corners).toHaveValue(theirs);
+  await ownsEscape(studio());
   await page.keyboard.press("Escape");
   await expect(studio()).toBeHidden();
   await expect(features).not.toHaveClass(/bg-secondary!/);
