@@ -109,6 +109,7 @@ export const panels = {
   "layers.history.hidRegion": "Hid the {item} on this page",
   "layers.history.showedRegion": "Showed the {item} on this page",
   "layers.onEveryPage": "On every page",
+  "layers.copyRegion": "Elements of the {region} can't be copied: it's the same on every page.",
   // Layers tools (1.35): the tree, its filter and what a drag may drop where.
   "layers.expand": "Expand {item}",
   "layers.collapse": "Collapse {item}",

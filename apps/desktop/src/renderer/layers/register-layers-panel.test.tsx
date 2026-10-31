@@ -11,6 +11,7 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
+import { copyLayer } from "../editor/layers.js";
 import { selectedIds } from "../editor/selection.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
@@ -241,6 +242,44 @@ describe("Layers' shared Header and Footer (#673)", () => {
     act(() => session.history.undo());
     expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
     expect(screen.getByRole("button", { name: "Hide Header" })).toBeTruthy();
+  });
+
+  it("shows a Header hidden on every page again from its eye, not hiding it twice (#684 review)", async () => {
+    const site = starterSite();
+    // Mod+/ on the Header hides the section itself, on every page.
+    const header = site.layout.header[0];
+    if (header === undefined) throw new Error("no header");
+    header.props.hidden = true;
+    const { session } = setUp(site);
+    const doc = () => session.history.document.getState();
+    const { pageId } = session.ui.getState();
+
+    await userEvent.click(screen.getByRole("button", { name: "Show Header" }));
+
+    expect(doc().layout.header[0]?.props.hidden).toBeUndefined();
+    expect(doc().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
+    expect(labels(session)).toEqual(["Showed the Header on this page"]);
+    expect(screen.getByRole("button", { name: "Hide Header" })).toBeTruthy();
+  });
+
+  it("names the step for the Header, whatever its first section is (#684 review)", async () => {
+    const site = starterSite();
+    site.layout.header = [{ type: "Hero", props: { id: "banner", heading: "Welcome" } }];
+    const { session } = setUp(site);
+    const row = document.querySelector('[data-layer="banner"]') as HTMLElement;
+
+    await userEvent.click(within(row).getByRole("button", { name: /^Hide / }));
+
+    expect(labels(session)).toEqual(["Hid the Header on this page"]);
+  });
+
+  it("says why an element of the Footer isn't copied (#684 review)", () => {
+    const { session } = setUp();
+
+    expect(copyLayer(session, "footer", 0, false)).toBe(
+      "Elements of the Footer can't be copied: it's the same on every page.",
+    );
+    expect(session.history.entries()).toHaveLength(0);
   });
 
   it("renames the Footer from Layers, on every page, as one step", async () => {

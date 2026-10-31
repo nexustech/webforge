@@ -125,7 +125,7 @@ export function layersOf(
 /**
  * Page `pageId`'s whole Layers tree (#673): the shared Header first, then the page's own sections,
  * then the shared Footer. The Header's and Footer's layers are marked with their region, and are
- * hidden while the page's settings hide them.
+ * hidden while the page's settings hide them, or while hidden themselves, on every page.
  */
 export function pageLayers(
   site: Pick<SiteDoc, "pages" | "layout" | "sharedSections">,
@@ -136,7 +136,7 @@ export function pageLayers(
     layersOf(site.layout[which], library, site.sharedSections).map((layer) => ({
       ...layer,
       region: which,
-      hidden: regionHidden(site, pageId, which),
+      hidden: layer.hidden || regionHidden(site, pageId, which),
     }));
   const content = site.pages[pageId]?.doc.content ?? [];
   return [
@@ -209,7 +209,9 @@ function target(session: LayersSession, id: string) {
     if (layer === undefined) return undefined;
     return {
       pageId,
-      layer: top ? { ...layer, region, hidden: regionHidden(site, pageId, region) } : layer,
+      layer: top
+        ? { ...layer, region, hidden: layer.hidden || regionHidden(site, pageId, region) }
+        : layer,
       own: id,
       region,
       top,
@@ -287,7 +289,9 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
 /**
  * Hides a layer (dimmed on the canvas, left out of the export), or shows it again. The shared
  * Header or Footer itself is hidden on the shown page only, by its *Hide the Header on this page*
- * setting, which Page Settings shows too (#673, product owner, 30 Oct 2026).
+ * setting, which Page Settings shows too (#673, product owner, 30 Oct 2026). Shown again, it is
+ * shown by that setting and by its own, which hides it on every page (Mod+/ sets that), so the eye
+ * can always bring it back.
  */
 export function setLayerHidden(session: LayersSession, id: string, hidden: boolean): void {
   const found = target(session, id);
@@ -299,10 +303,15 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
     const key = hidden ? "layers.history.hidRegion" : "layers.history.showedRegion";
     session.edit(
       "props",
-      t(key, { item: found.layer.kind }),
+      // Named as Page Settings names it, whatever the region's first section is (a Navbar).
+      t(key, { item: t(`canvas.sharedRegion.${region}`) }),
       (draft) => {
         const page = draft.pages[found.pageId];
         if (page !== undefined) page.settings[hiddenSetting(region)] = hidden;
+        if (!hidden) {
+          const node = draft.layout[region].find((each) => each.props.id === found.own);
+          if (node !== undefined) delete node.props.hidden;
+        }
       },
       { selectionAfter: session.ui.getState(), apply: true },
     );
@@ -391,7 +400,8 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
  * its own ("Duplicated Heading"). A linked copy is copied as its section, the page's own; with
  * `linked` (Shift too), it places another linked copy of the same shared section instead ("Added
  * a copy of 'Hours'"), F-ED-23. The copy is selected. Returns why a copy was refused, to tell the
- * person: there's no room for it there (a Columns' four), or it holds a slot over its limit itself.
+ * person: there's no room for it there (a Columns' four), it holds a slot over its limit itself,
+ * or it is in the shared Header or Footer (#673), whose elements the canvas doesn't copy either.
  */
 export function copyLayer(
   session: LayersSession,
@@ -401,7 +411,9 @@ export function copyLayer(
 ): string | undefined {
   const found = target(session, id);
   // Not the shared Header's or Footer's (#673): the canvas copies none of theirs either.
-  if (found?.region !== undefined) return undefined;
+  if (found?.region !== undefined) {
+    return t("layers.copyRegion", { region: t(`canvas.sharedRegion.${found.region}`) });
+  }
   const site = session.history.document.getState();
   const current = session.ui.getState();
   const content = site.pages[current.pageId]?.doc.content;
