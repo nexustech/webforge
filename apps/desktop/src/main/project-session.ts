@@ -402,8 +402,8 @@ export class ProjectSession {
    * Imports a file as the asset of Media item `mediaId` (1.16): the storage writer reads, checks
    * and stores its original bytes, unmodified, off the main thread (R13b, ADR 0013), holding the
    * file alone meanwhile; then the asset that names them is recorded. The item itself joins the
-   * site when the renderer commits it; until then, and after an Undo, garbage collection at the
-   * next open or close removes the unused bytes again.
+   * site when the renderer commits it; until then, and after an Undo, garbage collection when the
+   * site closes removes the unused bytes again.
    */
   importFile(mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> {
     return this.#importFile(mediaId, fileName, source);
@@ -425,7 +425,7 @@ export class ProjectSession {
   /**
    * Stores files' bytes in the open site (Download and bundle, 3.9), all or none. Like an import,
    * they stay once the renderer commits the site's code that names their hashes; until then, and
-   * after an Undo, garbage collection at the next open or close removes them again.
+   * after an Undo, garbage collection when the site closes removes them again.
    */
   storeBlobs(
     files: readonly { readonly data: Uint8Array; readonly mime: string }[],
@@ -513,6 +513,11 @@ export class ProjectSession {
   /**
    * Closes the open site's store. Let in while the storage writer still writes (its time was up),
    * it stops the writer first: the import fails, and garbage collection removes its bytes.
+   *
+   * Garbage collection runs here, after the last save and with the file to itself (A1): every save
+   * of a page leaves its previous JSON behind, as do undone imports and pastes, and Undo can no
+   * longer bring any of it back. A read-only store (a newer format, once the editor can show one)
+   * is left as it is. A failure is logged and the site still closes; the next close tries again.
    */
   async #closeNow(): Promise<void> {
     if (this.#writing !== undefined) {
@@ -520,6 +525,13 @@ export class ProjectSession {
     }
     if (this.#store !== undefined) {
       this.#events.closed?.();
+      if (!this.#store.info.readOnly) {
+        try {
+          this.#store.collectGarbage();
+        } catch (error) {
+          logFailure("Webforge could not clean up a site file as it closed", error);
+        }
+      }
     }
     this.#store?.close();
     this.#store = undefined;
