@@ -149,7 +149,7 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 | Unit + property + integration tests with coverage gates | Linux; Windows, macOS | Linux: every PR + nightly; Windows, macOS: nightly and manual runs (since 31 Oct 2026, research/stack/09 CI-2) |
 | Licence check (C1 allow-list) + vulnerability audit (`pnpm audit` / OSV) | Linux; the licence check also on Windows + macOS, in the packaged-app job | every PR + nightly |
 | Golden output + visual regression + a11y | Linux container | PRs that change the editor UI or what its stories render + nightly |
-| E2E app + exported-site compatibility | Linux, Windows, macOS | every PR except unit-test-only ones (app + Chromium; Firefox and WebKit when the exported site can change) / nightly (full) |
+| E2E app + exported-site compatibility | Linux, Windows, macOS | every PR except unit-test-only ones (app + Chromium; Firefox and WebKit when the exported site can change, Firefox on Linux only) / nightly (full) |
 | Packaged app (electron-builder, Fuses, native modules) | Windows + macOS | every PR + nightly |
 | Performance benchmarks | macOS + Windows | nightly; PR when labelled |
 | Release build: sign (Windows code signing, macOS Developer ID + notarisation), publish update feed | Windows + macOS | on release tag |

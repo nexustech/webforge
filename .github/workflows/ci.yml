@@ -13,8 +13,9 @@ name: CI
 #   nothing but "CI passed". Storybook runs only when the editor UI or what its stories render
 #   changed. Firefox and WebKit (exported-site tests) run only when the exported site can have
 #   changed; on Linux they run in Playwright's container (`export-browsers`), so their system
-#   packages never come from the runners' slow Ubuntu mirror. E2E is skipped when a PR changes only
-#   unit tests, stories, screenshots or tooling.
+#   packages never come from the runners' slow Ubuntu mirror. On a pull request Firefox runs on
+#   Linux only (one engine on every OS); Windows and macOS run it nightly. E2E is skipped when a
+#   PR changes only unit tests, stories, screenshots or tooling.
 # - To keep runs short: E2E runs in two shards on every OS, and Storybook in two; `export-browsers`
 #   waits only for Linux's E2E, whose exported site it opens; and the static checks (lint,
 #   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
@@ -247,8 +248,9 @@ jobs:
     env: &e2e-env
       # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
       # they run in `export-browsers` instead; Windows and macOS need no system packages, so they
-      # run them here.
-      BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && 'chromium firefox webkit' || 'chromium' }}
+      # run them here. On a pull request Windows and macOS skip Firefox: its engine is the same on
+      # every OS, so Linux's run covers it, and it runs on all three nightly (31 Oct 2026).
+      BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && (github.event_name == 'pull_request' && 'chromium webkit' || 'chromium firefox webkit') || 'chromium' }}
       # Downloads go inside the workspace, so the cache steps use one path on every OS.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
       electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
@@ -393,14 +395,14 @@ jobs:
         id: projects
         shell: bash
         run: |
-          # With Chromium only, run the app and the Chromium export tests (Firefox and WebKit run
-          # in `export-browsers` on Linux, or not at all when the exported site can't have changed),
+          # The app, and the export tests in each browser installed (Firefox and WebKit run in
+          # `export-browsers` on Linux, or not at all when the exported site can't have changed),
           # and on Windows Edge's too, which comes with Windows (3.10).
-          if [ "$BROWSERS" = chromium ]; then
-            edge=""
-            if [ "$RUNNER_OS" = Windows ]; then edge=" --project=export-msedge"; fi
-            echo "args=--project=app --project=export-setup --project=export-chromium$edge" >> "$GITHUB_OUTPUT"
-          fi
+          args="--project=app --project=export-setup"
+          # shellcheck disable=SC2086 # BROWSERS is a space-separated list
+          for browser in $BROWSERS; do args="$args --project=export-$browser"; done
+          if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
+          echo "args=$args" >> "$GITHUB_OUTPUT"
 
       # Playwright splits the tests across the matrix's shards by file (the export setup goes with
       # the export tests that need it), two on every OS.
