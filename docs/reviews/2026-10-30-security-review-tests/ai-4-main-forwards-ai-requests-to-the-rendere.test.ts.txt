@@ -1,0 +1,46 @@
+// Original path: apps/desktop/src/main/zz-security-ai-4-main-forwards-ai-requests-to-the-rendere.test.ts — result: both tests fail as expected (malformed request left waiting, not 'invalid'; 1000 of 1000 concurrent asks forwarded)
+import type { IpcMain, IpcMainInvokeEvent } from "electron";
+import { describe, expect, it } from "vitest";
+import type { AiRequest } from "../shared/ipc/ai.js";
+import { type AiWindow, registerAiHandlers } from "./ai-ipc.js";
+
+type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
+
+function bridge() {
+  const registered = new Map<string, Handler>();
+  const ipc = {
+    handle: (name: string, handler: Handler) => registered.set(name, handler),
+  } as unknown as Pick<IpcMain, "handle">;
+  const sent: unknown[][] = [];
+  const window: AiWindow = {
+    webContents: { send: (...args) => sent.push(args), isCrashed: () => false },
+  };
+  const ai = registerAiHandlers(ipc, () => true, () => window, { queryMs: 60_000, commandMs: 60_000 });
+  const invoke = (channel: string, ...args: unknown[]) =>
+    registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
+  return { ai, sent, invoke };
+}
+
+describe("security: AiBridge.ask validates and bounds requests", () => {
+  it("refuses a malformed request at once without forwarding it", async () => {
+    const { ai, sent, invoke } = bridge();
+    await invoke("ai:listening", true);
+    const malformed = { kind: "command", name: "x y", input: {}, app: "" } as unknown as AiRequest;
+    const result = await Promise.race([
+      ai.ask(malformed),
+      new Promise((r) => setTimeout(() => r("still-waiting"), 200)),
+    ]);
+    expect(result).toMatchObject({ status: "invalid" });
+    expect(sent).toEqual([]);
+  });
+
+  it("caps the number of requests waiting for the renderer", async () => {
+    const { ai, sent, invoke } = bridge();
+    await invoke("ai:listening", true);
+    const outline: AiRequest = { kind: "query", name: "outline", input: {} };
+    const extra = [];
+    for (let i = 0; i < 1_000; i++) extra.push(ai.ask(outline));
+    // Without a cap, all 1000 go to the renderer and hold a timer each.
+    expect(sent.length).toBeLessThan(1_000);
+  });
+});

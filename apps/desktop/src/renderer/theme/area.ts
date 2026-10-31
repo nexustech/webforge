@@ -37,6 +37,7 @@ export const themePanelArea: Area<WindowContext> = {
       siteWide,
       ownThemes,
       kindPreviews,
+      itemPreviews,
     });
     const removeOwn = registerOwnThemes(windowDialogs, session, ownThemes);
     const removeStyle = registerStyleDialog(

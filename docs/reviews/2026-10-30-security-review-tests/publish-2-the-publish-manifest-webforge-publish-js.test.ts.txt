@@ -1,0 +1,43 @@
+// Original path: packages/publish/src/zz-security-publish-2-the-publish-manifest-webforge-publish-js.test.ts. Result: fails as expected (manifest lists private-prices.html).
+import { describe, expect, it } from "vitest";
+import type { BuildOutput } from "./publisher.js";
+import { MANIFEST_FILE, publishToFolder, type RemoteFolder } from "./remote-folder.js";
+
+const bytes = (text: string) => new TextEncoder().encode(text);
+
+describe("publish manifest exposure (security review)", () => {
+  it("does not list a page left out of the sitemap in a file the host serves", async () => {
+    const stored = new Map<string, Uint8Array>();
+    const folder: RemoteFolder = {
+      read: async (path) => stored.get(path),
+      write: async (path, data) => {
+        stored.set(path, data);
+      },
+      remove: async (path) => {
+        stored.delete(path);
+      },
+    };
+    // private-prices.html is hidden from search: the sitemap leaves it out, nothing links to it.
+    const build: BuildOutput = {
+      files: new Map([
+        ["index.html", bytes("home")],
+        ["private-prices.html", bytes("prices")],
+        ["assets/files/staff-rota.pdf", bytes("rota")],
+        ["sitemap.xml", bytes("<urlset><url><loc>https://example.com/</loc></url></urlset>")],
+      ]),
+    };
+    for await (const _ of publishToFolder(
+      folder,
+      build,
+      new AbortController().signal,
+      "https://example.com/",
+    )) {
+      // drain
+    }
+    // Every file in the site's folder is served at https://example.com/<path>.
+    const served = stored.get(MANIFEST_FILE);
+    const listing = new TextDecoder().decode(served);
+    expect(listing).not.toContain("private-prices.html");
+    expect(listing).not.toContain("staff-rota.pdf");
+  });
+});

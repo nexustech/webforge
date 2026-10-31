@@ -1,0 +1,31 @@
+// Original path: apps/desktop/zz-security-packaging-2-electron-fuses-are-never-checked-by-a-te.test.ts. Result: fails as expected: 6 passed, 1 failed (grantFileProtocolExtraPrivileges undefined, expected false)
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+// Spec §3 Fuses, as electron-builder.yml should set them. Asserts the secure state; today
+// grantFileProtocolExtraPrivileges is not set, so Electron's default (enabled) applies to the
+// file:// renderer (app.ts loadFile).
+const required: Record<string, boolean> = {
+  runAsNode: false,
+  enableCookieEncryption: true,
+  enableNodeOptionsEnvironmentVariable: false,
+  enableNodeCliInspectArguments: false,
+  enableEmbeddedAsarIntegrityValidation: true,
+  onlyLoadAppFromAsar: true,
+  grantFileProtocolExtraPrivileges: false,
+};
+
+function fuseBlock(): Record<string, string> {
+  const yml = readFileSync(join(import.meta.dirname, "electron-builder.yml"), "utf8");
+  const block = /^electronFuses:\n((?:[ \t]+.*\n|\s*\n)+)/m.exec(yml)?.[1] ?? "";
+  return Object.fromEntries(
+    [...block.matchAll(/^\s+(\w+):\s*(\S+)/gm)].map((m) => [m[1] ?? "", m[2] ?? ""]),
+  );
+}
+
+describe("electronFuses", () => {
+  it.each(Object.entries(required))("sets %s to %s", (key, value) => {
+    expect(fuseBlock()[key]).toBe(String(value));
+  });
+});

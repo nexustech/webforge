@@ -22,7 +22,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 - **No hard-coded UI strings.** Use `t('key')`, with wording from the glossary in `research/product/01-terminology.md`. Hierarchy: Site → Page → Section → Element.
 - **The app's name is `{appName}` in every message,** filled in from `app.name`; a rename changes that and `productName` only (`docs/branding.md`).
 - **Exported sites:**
-  - no CDNs or external requests (except allowed GA4 behind consent)
+  - no CDNs or external requests (except allowed GA4: behind consent, or cookieless when the banner is off)
   - classic `<script defer>`, no ES modules or `fetch` of local files
   - WebP + JPEG/PNG fallback images
   - readable (non-minified) HTML/CSS
@@ -63,7 +63,7 @@ A desktop builder for non-technical small-business owners that produces self-con
   - **Keep a PR in draft until it's ready:** `pnpm check` (and `pnpm e2e` where needed, and `pnpm visual:docker` when stories changed) pass locally, the code review is done and its fixes are in. Drafts don't run CI and can't merge.
   - **Then mark it ready (`gh pr ready <n>`) and ask for the merge review.** Every PR gets a high-effort code review (`/code-review high`) before it merges (product owner, 2026-10-23). Whoever runs that review (the coordinating session, when streams work in parallel) turns on auto-merge once it passes: `gh pr merge <n> --auto --squash`. While a coordinating session runs, every PR goes to it for that review, whichever session wrote it: streams, research and one-off sessions alike, docs-only PRs included (product owner, 2026-10-26). Message it with the PR number once the PR is ready. Don't turn it on yourself for a PR you wrote, or an up-to-date PR can go green and merge before its review. GitHub then squash-merges it, with the PR's title and description as the commit message, once "CI passed" is green on a branch that is up to date with `main`, and deletes the branch; the Merge queue workflow brings waiting PRs up to date one at a time.
   - **The PR's stream fixes whatever stops it:** a merge conflict with `main` or a CI failure. Auto-fix is on for every PR, so resolve the conflict (merge `main`, keep both sides) or fix the failure and push, in one batch; the PR then rejoins the queue.
-  - Every ready PR runs on Linux, and on Windows and macOS (including the packaged app) while the repository variable `FULL_CI_ENABLED` is `true`, as it is now; the `changes` job skips what a PR can't affect, and docs-only PRs run nothing but "CI passed". `main` is checked nightly; `gh workflow run ci.yml --ref <branch>` runs everything at once.
+  - Every ready PR runs on Linux, and on Windows and macOS (E2E and the packaged app; their unit tests run nightly) while the repository variable `FULL_CI_ENABLED` is `true`, as it is now; the `changes` job skips what a PR can't affect, and docs-only PRs run nothing but "CI passed". `main` is checked nightly; `gh workflow run ci.yml --ref <branch>` runs everything at once.
 - **Never push to `main` directly:** branch protection requires a PR.
 - Record new architectural decisions as ADRs in `docs/adr/`.
 
