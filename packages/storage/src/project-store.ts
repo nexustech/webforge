@@ -218,6 +218,33 @@ function collectHashes(value: unknown, into: Set<string>): void {
   }
 }
 
+/** A document's JSON text, parsed and checked. */
+function parseDocument(text: string): JsonValue {
+  try {
+    return jsonValueSchema.parse(JSON.parse(text));
+  } catch (error) {
+    throw new ProjectFileError("corrupt", "A document is not valid JSON", { cause: error });
+  }
+}
+
+/** A hash as a JSON string, in a document's text. */
+const QUOTED_HASH = /"([0-9a-f]{64})"/g;
+
+/**
+ * Adds every hash the JSON text `json` names to `into`, as {@link collectHashes} does for its
+ * parsed value, but from the text: garbage collection reads every document the working copy and
+ * the versions store, and scanning their text takes about half the time of parsing them (#661).
+ * The scan is more generous than the walk, never less: it also counts a hash used as a key. Only a
+ * `\u` escape can hide a hash from it, and `JSON.stringify` never writes one for a hash's letters
+ * and digits, so a document with one (a crafted file) is walked as well.
+ */
+function collectHashesFromJson(json: string, into: Set<string>): void {
+  for (const [, hash] of json.matchAll(QUOTED_HASH)) {
+    if (hash !== undefined) into.add(hash);
+  }
+  if (json.includes("\\u")) collectHashes(parseDocument(json), into);
+}
+
 /**
  * The blobs `documents` reach: every hash their content names, such as a Media item's original or
  * a bundled file (3.9). Garbage collection keeps these, and a site package carries them (A26).
@@ -827,10 +854,10 @@ export class ProjectStore {
           documentHashes.add(hash);
         }
       }
-      const referenced = reachableBlobs(
-        [...documentHashes].map((hash) => ({ content: this.#readJsonBlob(hash) })),
-      );
-      for (const hash of documentHashes) referenced.add(hash);
+      const referenced = new Set(documentHashes);
+      for (const hash of documentHashes) {
+        collectHashesFromJson(this.#readJsonText(hash), referenced);
+      }
 
       const unreferenced = this.#prepare("SELECT hash, size FROM blobs")
         .all()
@@ -994,12 +1021,17 @@ export class ProjectStore {
   }
 
   #readJsonBlob(hash: string): JsonValue {
+    return parseDocument(this.#readJsonText(hash));
+  }
+
+  /** A document's blob as text, unparsed. */
+  #readJsonText(hash: string): string {
     const blob = this.readBlob(hash);
     if (blob === undefined) {
       throw new ProjectFileError("corrupt", "A document refers to a missing blob");
     }
     try {
-      return jsonValueSchema.parse(JSON.parse(utf8.decode(blob.data)));
+      return utf8.decode(blob.data);
     } catch (error) {
       throw new ProjectFileError("corrupt", "A document is not valid JSON", { cause: error });
     }
