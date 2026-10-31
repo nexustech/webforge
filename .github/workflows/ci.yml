@@ -7,7 +7,8 @@ name: CI
 # - "CI passed" is the one required check on `main`, which also requires a branch to be up to
 #   date with `main`. PRs merge themselves with auto-merge once it passes; merge-queue.yml brings
 #   them up to date one at a time.
-# - `main` is also checked once a night (02:30 UTC, only if it changed). "Run workflow"
+# - `main` is also checked once a night (02:30 UTC, only if it changed; the dependency audit runs
+#   every night, as a new advisory needs no commit). "Run workflow"
 #   (`gh workflow run ci.yml --ref <branch>`) runs everything at once.
 # - The `changes` job looks at the files a PR changes, to keep runs short. Docs-only PRs run
 #   nothing but "CI passed". Storybook runs only when the editor UI or what its stories render
@@ -84,12 +85,13 @@ jobs:
               [ "$(wc -l <<< "$files")" -lt 3000 ] || everything
               ;;
             schedule)
-              # Nightly: only when main changed in the last day.
+              # Nightly: everything when main changed in the last day. Otherwise only the audit,
+              # as an advisory published overnight needs no commit (#656).
               since=$(date -u -d '25 hours ago' +%Y-%m-%dT%H:%M:%SZ)
               count=$(gh api "repos/$REPO/commits?sha=main&since=$since&per_page=1" --jq 'length')
               if [ "$count" -eq 0 ]; then
-                echo "main hasn't changed since the last nightly run."
-                echo "run=false" >> "$GITHUB_OUTPUT"
+                echo "main hasn't changed since the last nightly run: the audit only."
+                { echo "run=false"; echo "audit=true"; } >> "$GITHUB_OUTPUT"
                 exit 0
               fi
               everything
@@ -134,8 +136,9 @@ jobs:
 
   audit:
     # Known vulnerabilities in the installed dependencies, from the lockfile: when a PR changes
-    # them, and nightly. Dependabot can't see packages taken from the pnpm catalog ("catalog:" in a
-    # manifest), so this is the check that covers every dependency. Fails on high or critical.
+    # them, and every night. Dependabot can't see packages taken from the pnpm catalog ("catalog:"
+    # in a manifest), so this is the check that covers every dependency. Fails on a high or
+    # critical advisory in any dependency, and on a moderate one in what the app ships (#656).
     name: Dependency audit
     needs: changes
     if: needs.changes.outputs.audit == 'true'
@@ -155,6 +158,9 @@ jobs:
 
       - name: pnpm audit (high and critical)
         run: pnpm audit --audit-level=high
+
+      - name: pnpm audit of production dependencies (moderate and above)
+        run: pnpm audit --prod --audit-level=moderate
 
   check:
     name: Check (${{ matrix.os }})
