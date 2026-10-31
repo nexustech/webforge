@@ -1,3 +1,4 @@
+import { generateKeyPairSync } from "node:crypto";
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { utils } from "ssh2";
@@ -237,9 +238,6 @@ describe("signing in to SFTP with a private key (4.3)", { timeout: 30_000 }, () 
     expect(readPrivateKey("not a key")).toEqual({ ok: false, code: "bad-key" });
     expect(readPrivateKey(key.public)).toEqual({ ok: false, code: "bad-key" });
     expect(readPrivateKey(key.private, "test-only-passphrase")).toEqual({ ok: true });
-    // What the key file is, for the form before any test.
-    expect(describePrivateKey(key.private)).toBe("encrypted");
-    expect(describePrivateKey(other.private)).toBe("key");
     expect(describePrivateKey(key.public)).toBe("not-a-key");
     expect(describePrivateKey("not a key")).toBe("not-a-key");
     // A key the host doesn't have for this user.
@@ -263,6 +261,55 @@ describe("signing in to SFTP with a private key (4.3)", { timeout: 30_000 }, () 
     expect(caught).toMatchObject({ code: "bad-key" });
     expect(String((caught as Error).message)).not.toContain("wrong-passphrase");
     expect(String((caught as Error).message)).not.toContain("PRIVATE KEY");
+  });
+});
+
+describe("what a key file holds, by its format's own marker (4.3, review)", () => {
+  /** An RSA or EC key in PEM, as OpenSSL writes it, encrypted when given a passphrase. */
+  const locking = (passphrase?: string) =>
+    passphrase === undefined ? {} : { cipher: "aes-256-cbc", passphrase };
+  const pem = (type: "rsa" | "ec", format: "pkcs1" | "sec1" | "pkcs8", passphrase?: string) =>
+    type === "rsa"
+      ? generateKeyPairSync("rsa", {
+          modulusLength: 2048,
+          publicKeyEncoding: { type: "spki", format: "pem" },
+          privateKeyEncoding: {
+            type: format === "pkcs8" ? "pkcs8" : "pkcs1",
+            format: "pem",
+            ...locking(passphrase),
+          },
+        }).privateKey
+      : generateKeyPairSync("ec", {
+          namedCurve: "prime256v1",
+          publicKeyEncoding: { type: "spki", format: "pem" },
+          privateKeyEncoding: { type: "sec1", format: "pem", ...locking(passphrase) },
+        }).privateKey;
+
+  it("reads an OpenSSH key's cipher, encrypted or not", () => {
+    const locked = utils.generateKeyPairSync("ed25519", {
+      passphrase: "test-only-passphrase",
+      cipher: "aes256-ctr",
+      rounds: 1,
+    });
+    expect(describePrivateKey(locked.private)).toBe("encrypted");
+    expect(describePrivateKey(utils.generateKeyPairSync("ed25519").private)).toBe("key");
+  });
+
+  it("reads a PEM key's Proc-Type header, encrypted or not", () => {
+    expect(describePrivateKey(pem("rsa", "pkcs1", "test-only-passphrase"))).toBe("encrypted");
+    expect(describePrivateKey(pem("rsa", "pkcs1"))).toBe("key");
+    expect(describePrivateKey(pem("ec", "sec1", "test-only-passphrase"))).toBe("encrypted");
+    expect(describePrivateKey(pem("ec", "sec1"))).toBe("key");
+  });
+
+  it("reads a PuTTY key's Encryption line", () => {
+    const putty = "PuTTY-User-Key-File-3: ssh-ed25519\nEncryption: aes256-cbc\nComment: rosa\n";
+    expect(describePrivateKey(putty)).toBe("encrypted");
+  });
+
+  it("says a PKCS#8 key, which SFTP sign-in can't read, is in a format it can't use", () => {
+    expect(describePrivateKey(pem("rsa", "pkcs8"))).toBe("unsupported");
+    expect(describePrivateKey(pem("rsa", "pkcs8", "test-only-passphrase"))).toBe("unsupported");
   });
 });
 

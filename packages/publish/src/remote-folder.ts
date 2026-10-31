@@ -82,8 +82,8 @@ const encodeManifest = (manifest: Manifest) =>
  * live site has still find their assets, so it stays usable.
  *
  * A folder whose manifest names another project stops with `other-site` before anything is
- * written, unless the person agreed to replace it (A8). A version 1 manifest names none, so it
- * counts as this site's.
+ * written, unless the person agreed to replace it (A8). A version 1 manifest names no site, so
+ * it could be any site's: it gets the same question (review). Only the 0.3 spike wrote them.
  */
 export async function* publishToFolder(
   folder: RemoteFolder,
@@ -95,8 +95,8 @@ export async function* publishToFolder(
   yield { type: "preparing" };
   const previous = await previousManifest(folder);
   if (
-    previous?.site !== undefined &&
-    previous.site.projectId !== site.projectId &&
+    previous !== null &&
+    previous.site?.projectId !== site.projectId &&
     publishing.replaceOtherSite !== true
   ) {
     throw new PublishError("other-site", "The folder has another site published there");

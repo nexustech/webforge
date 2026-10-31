@@ -54,6 +54,11 @@ describe("a file-transfer destination's settings (4.3)", () => {
     expect(valid({ ...ftps, host: "ftp://ftp.rosasbakery.co.uk" })).toBe(false);
     expect(valid({ ...ftps, host: "rosasbakery.co.uk/public_html" })).toBe(false);
     expect(valid({ ...ftps, host: "" })).toBe(false);
+    // An address is checked as one: not any run of dots, colons and digits.
+    for (const host of ["...", ":", "192.168.1.", "1.2.3.4.5:21", "::g"]) {
+      expect(valid({ ...ftps, host }), host).toBe(false);
+    }
+    expect(valid({ ...ftps, host: "::1" })).toBe(true);
   });
 
   it("takes a port in range, a folder without control characters and an https address", () => {

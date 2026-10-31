@@ -11,7 +11,6 @@ import {
   FILE_TRANSFER_USER_MAX,
   type FileTransferDestination,
   type FileTransferProtocol,
-  type FileTransferSignIn,
   type FileTransferTrust,
   FOLDER_MAX,
   fileTransferDestinationSchema,
@@ -19,7 +18,12 @@ import {
   SECRET_MAX,
 } from "@webforge/model";
 import { useState } from "react";
-import type { ConnectionResult, KeyFileResult, PublishApi } from "../../shared/ipc/publish.js";
+import type {
+  ConnectionResult,
+  KeyFileResult,
+  PublishApi,
+  SignInRef,
+} from "../../shared/ipc/publish.js";
 import "../shell/form-messages.js";
 
 /** Control panels whose usual settings the form fills in (research 08: host presets). */
@@ -49,10 +53,11 @@ export type FileTransferValues = {
 /**
  * What the dialog saves, kept apart (4.4, security review S2): the destination's settings, for the
  * site's file; and how it signs in and what this computer trusts about it, for the app's own data.
+ * A private key is named by its handle: its text stays in the main process (review).
  */
 export type FileTransferSaved = {
   readonly destination: FileTransferDestination;
-  readonly signIn: FileTransferSignIn;
+  readonly signIn: SignInRef;
   readonly trust: FileTransferTrust;
 };
 
@@ -83,7 +88,7 @@ const NEW_VALUES: FileTransferValues = {
 /** The form's values for `destination`, with its password or passphrase when it is known. */
 export function valuesOf(
   destination: FileTransferDestination | undefined,
-  signIn?: FileTransferSignIn,
+  signIn?: SignInRef,
 ): FileTransferValues {
   if (destination === undefined) return NEW_VALUES;
   const preset =
@@ -128,7 +133,7 @@ function toOutput(values: FileTransferValues, extra: Extra) {
   const signIn =
     values.protocol === "sftp" && values.signIn === "key"
       ? {
-          privateKey: extra.keyFile?.privateKey ?? "",
+          keyHandle: extra.keyFile?.handle ?? "",
           ...(values.passphrase === "" ? {} : { passphrase: values.passphrase }),
         }
       : { password: values.password };
@@ -161,7 +166,11 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
             issues.push({
               path: ["destination", ...issue.path],
               message:
-                issue.code === "invalid_format" && own !== undefined ? t(own) : issue.message,
+                // A host in the wrong form fails each of name, IPv4 and IPv6 (`invalid_union`).
+                (issue.code === "invalid_format" || issue.code === "invalid_union") &&
+                own !== undefined
+                  ? t(own)
+                  : issue.message,
             });
           }
         }
@@ -170,8 +179,8 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
             ? signIn.password === ""
               ? (["password", "publish.fileTransfer.error.password"] as const)
               : undefined
-            : signIn.privateKey === ""
-              ? (["privateKey", "publish.fileTransfer.error.key"] as const)
+            : signIn.keyHandle === ""
+              ? (["keyHandle", "publish.fileTransfer.error.key"] as const)
               : keyFile?.encrypted === true && signIn.passphrase === undefined
                 ? (["passphrase", "publish.fileTransfer.error.passphrase"] as const)
                 : undefined;
@@ -179,7 +188,7 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
           issues.push({ path: ["signIn", problem[0]], message: t(problem[1]) });
         if (!parsed.success || issues.length > 0) return { issues };
         return {
-          value: { destination: parsed.data, signIn: signIn as FileTransferSignIn, trust },
+          value: { destination: parsed.data, signIn, trust },
         };
       },
     },
@@ -265,7 +274,7 @@ function fieldsFor(values: FileTransferValues, keyFile: KeyFile | undefined): Fo
             kind: "choice",
             name: "signIn",
             label: t("publish.fileTransfer.signIn"),
-            path: "signIn.privateKey",
+            path: "signIn.keyHandle",
             options: (["password", "key"] as const).map((value) => ({
               value,
               label: t(`publish.fileTransfer.signIn.${value}`),
@@ -334,7 +343,7 @@ export type FileTransferDestinationDialogProps = {
   /** The destination to edit; a new one when left out. */
   readonly destination?: FileTransferDestination | undefined;
   /** Its sign-in, when the keychain has it (4.4). */
-  readonly signIn?: FileTransferSignIn | undefined;
+  readonly signIn?: SignInRef | undefined;
   /** What this computer trusts about it, from the app's own data (4.4): never the site's file. */
   readonly trust?: FileTransferTrust | undefined;
   /** Test connection, the host key and the key file, through the main process. */
@@ -360,12 +369,12 @@ export function FileTransferDestinationDialog({
   onCancel,
 }: FileTransferDestinationDialogProps) {
   const [keyFile, setKeyFile] = useState<KeyFile | undefined>(
-    signIn !== undefined && "privateKey" in signIn
+    signIn !== undefined && "keyHandle" in signIn
       ? {
           status: "chosen",
           name: "",
-          privateKey: signIn.privateKey,
           encrypted: signIn.passphrase !== undefined,
+          handle: signIn.keyHandle,
         }
       : undefined,
   );
@@ -410,11 +419,7 @@ export function FileTransferDestinationDialog({
       );
       return;
     }
-    const result = await publish.testConnection(
-      tested,
-      output.signIn as FileTransferSignIn,
-      output.trust,
-    );
+    const result = await publish.testConnection(tested, output.signIn, output.trust);
     // A trusted SFTP key the host no longer presents: show the new one, to trust or not.
     if (!result.ok && result.code === "untrusted-host" && tested.protocol === "sftp") {
       const read = await publish.readHostKey(tested.host, tested.port);
@@ -440,7 +445,9 @@ export function FileTransferDestinationDialog({
           ? "publish.keyFile.tooLarge"
           : chosen.reason === "not-a-key"
             ? "publish.keyFile.notAKey"
-            : "publish.keyFile.unreadable",
+            : chosen.reason === "unsupported"
+              ? "publish.keyFile.unsupported"
+              : "publish.keyFile.unreadable",
       ),
     );
   };

@@ -47,6 +47,8 @@ export const publish = {
   "publish.keyFile.saved": "Using your saved key.",
   "publish.keyFile.unreadable": "That file couldn't be read.",
   "publish.keyFile.tooLarge": "That file is too large to be a private key.",
+  "publish.keyFile.unsupported":
+    "That key is saved in a format {appName} can't read. Save it again in the OpenSSH format, which most hosts' control panels offer.",
   "publish.keyFile.notAKey":
     "That file isn't a private key. Choose the private one, not the file ending in .pub.",
   // Plain FTP's warning, once per destination (B5).

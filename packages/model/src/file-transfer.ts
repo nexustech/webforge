@@ -28,14 +28,22 @@ export const PRIVATE_KEY_MAX = 16 * 1024;
 /** The longest password or passphrase the app sends. */
 export const SECRET_MAX = 1024;
 
-/** A host's name or address, as the host's control panel gives it: `ftp.example.com`. */
+/** A host's name: labels of letters, digits and hyphens, joined by dots (`ftp.example.com`). */
+const hostNameSchema = z
+  .string()
+  .regex(
+    /^(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)*[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/,
+  );
+
+/**
+ * A host's name or address, as the host's control panel gives it: `ftp.example.com`, an IPv4
+ * address or an IPv6 one, each checked as itself.
+ */
 const hostSchema = z
   .string()
   .min(1)
   .max(HOST_MAX)
-  .regex(
-    /^(?:[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?\.)*[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$|^[0-9A-Fa-f:.]+$/,
-  );
+  .pipe(z.union([z.ipv4(), z.ipv6(), hostNameSchema]));
 
 /** A folder on the host, from the root the login sees: `/public_html`, `/www/shop`. */
 const folderSchema = z

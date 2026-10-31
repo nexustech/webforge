@@ -69,17 +69,48 @@ function openPrivateKey(privateKey: string, passphrase?: string) {
   return key === undefined || key instanceof Error || !key.isPrivateKey() ? undefined : key;
 }
 
+/** The OpenSSH key format's own name, before its cipher's (PROTOCOL.key). */
+const OPENSSH_MAGIC = "openssh-key-v1\0";
+
 /**
- * What a key file holds (4.3): a private key, one that needs its passphrase first, or no private
- * key at all (a public key, or any other file), for the destination form to say before any test.
+ * Whether a key file's text is encrypted, by its format's own marker rather than by what ssh2's
+ * error says: an OpenSSH key's cipher name, a PEM key's `Proc-Type: 4,ENCRYPTED` header, a PuTTY
+ * key's `Encryption` line. `undefined` for none of these formats.
  */
-export function describePrivateKey(text: string): "key" | "encrypted" | "not-a-key" {
-  const parsed = ssh2.utils.parseKey(text);
-  const key = Array.isArray(parsed) ? parsed[0] : parsed;
-  if (key instanceof Error) {
-    return /^Encrypted .* no passphrase given$/.test(key.message) ? "encrypted" : "not-a-key";
+function encryptedByFormat(text: string): boolean | undefined {
+  const openssh =
+    /-----BEGIN OPENSSH PRIVATE KEY-----([\s\S]*?)-----END OPENSSH PRIVATE KEY-----/.exec(text);
+  if (openssh?.[1] !== undefined) {
+    const data = Buffer.from(openssh[1].replace(/\s/g, ""), "base64");
+    const at = OPENSSH_MAGIC.length;
+    if (data.subarray(0, at).toString("latin1") !== OPENSSH_MAGIC || data.length < at + 4) {
+      return undefined;
+    }
+    const cipher = data.subarray(at + 4, at + 4 + data.readUInt32BE(at)).toString("latin1");
+    return cipher !== "none";
   }
-  return key?.isPrivateKey() === true ? "key" : "not-a-key";
+  if (/-----BEGIN (?:RSA|EC|DSA) PRIVATE KEY-----/.test(text)) {
+    return /^Proc-Type:\s*4,\s*ENCRYPTED\s*$/m.test(text);
+  }
+  const putty = /^PuTTY-User-Key-File-\d+:[^\n]*\n\s*Encryption:\s*(\S+)/m.exec(text);
+  if (putty?.[1] !== undefined) return putty[1] !== "none";
+  return undefined;
+}
+
+/**
+ * What a key file holds (4.3): a private key, one that needs its passphrase first, a key in a
+ * format ssh2 can't read (PKCS#8: `BEGIN PRIVATE KEY` or `BEGIN ENCRYPTED PRIVATE KEY`), or no
+ * private key at all (a public key, or any other file), for the destination form to say before
+ * any test.
+ */
+export function describePrivateKey(
+  text: string,
+): "key" | "encrypted" | "unsupported" | "not-a-key" {
+  if (/-----BEGIN (?:ENCRYPTED )?PRIVATE KEY-----/.test(text)) return "unsupported";
+  const encrypted = encryptedByFormat(text);
+  if (encrypted === true) return "encrypted";
+  if (encrypted === undefined) return "not-a-key";
+  return openPrivateKey(text) === undefined ? "not-a-key" : "key";
 }
 
 /** What `ssh2` signs in with: the password, or the private key. */

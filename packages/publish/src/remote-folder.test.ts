@@ -262,14 +262,21 @@ describe("uploadPathFor", () => {
     expect(host.manifest()).toMatchObject({ site: other });
   });
 
-  it("publishes as before over a version 1 manifest, its own from before, and to another destination of the site", async () => {
+  it("asks before publishing over a version 1 manifest, which names no site, then makes it this site's", async () => {
     const digests = manifestOf(build(site).files, rosas, AT.toISOString()).files;
     const host = memoryFolder({
       [MANIFEST_FILE]: JSON.stringify({ version: 1, files: digests }),
       ...site,
     });
 
-    expect((await run(host.folder, site)).at(-1)).toMatchObject({ uploaded: 0, unchanged: 4 });
+    await expect(run(host.folder, site)).rejects.toMatchObject({ code: "other-site" });
+    expect(host.log).toEqual([]);
+
+    // Once the person agrees, it reads as this site's from then on: unchanged files stay.
+    const replaced = await run(host.folder, site, undefined, publishing(rosas, true));
+    expect(replaced.at(-1)).toMatchObject({ uploaded: 0, unchanged: 4 });
+    expect(host.manifest()).toMatchObject({ version: 2, site: rosas });
+    // Another destination of the same site is the same site.
     const staging = { ...rosas, destinationId: "staging" };
     expect((await run(host.folder, site, undefined, publishing(staging))).at(-1)).toMatchObject({
       type: "published",

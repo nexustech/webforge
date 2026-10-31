@@ -6,6 +6,8 @@ import { join } from "node:path";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterAll, describe, expect, it } from "vitest";
 import {
+  createKeyFiles,
+  type KeyFiles,
   readHostKey,
   readKeyFile,
   registerPublishHandlers,
@@ -14,17 +16,21 @@ import {
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
-/** The handler of `channel`, called as from a renderer that `trusted` says it trusts or not. */
+/**
+ * The handler of `channel`, called as from a renderer that `trusted` says it trusts or not, with
+ * the chosen keys held in `keys`.
+ */
 function invoker(
   channel: string,
   chooseKeyFile = async () => undefined as string | undefined,
   trusted = true,
+  keys: KeyFiles = createKeyFiles(),
 ) {
   const registered = new Map<string, Handler>();
   const ipc = {
     handle: (name: string, handler: Handler) => registered.set(name, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerPublishHandlers(ipc, () => trusted, { chooseKeyFile, timeoutMs: 2_000 });
+  registerPublishHandlers(ipc, () => trusted, { chooseKeyFile, timeoutMs: 2_000 }, keys);
   return (...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
@@ -73,18 +79,57 @@ describe("Test connection (4.3)", () => {
         },
         { password: "test-only-password" },
         {},
+        createKeyFiles(),
       ),
     ).toEqual({ ok: false, code: "untrusted-host" });
   });
 
   it("signs in to FTP with a password only", async () => {
+    const keys = createKeyFiles();
     expect(
       await testConnection(
         { protocol: "ftps", host: "127.0.0.1", user: "baker", folder: "/site" },
+        { keyHandle: keys.hold(rsa().privateKey) },
+        {},
+        keys,
+      ),
+    ).toEqual({ ok: false, code: "unauthorized" });
+  });
+
+  it("signs in with a key only by a handle main holds: one it doesn't is bad-key", async () => {
+    expect(
+      await testConnection(
+        {
+          protocol: "sftp",
+          host: "127.0.0.1",
+          user: "baker",
+          folder: "/site",
+          signIn: "key",
+        },
+        { keyHandle: "6f1c2b3a-1111-4222-8333-444455556666" },
+        { hostKey: `SHA256:${"A".repeat(43)}` },
+        createKeyFiles(),
+      ),
+    ).toEqual({ ok: false, code: "bad-key" });
+    // The renderer can't send a key's text instead of its handle.
+    await expect(
+      invoker("publish:testConnection")(
+        { protocol: "sftp", host: "127.0.0.1", user: "baker", folder: "/site", signIn: "key" },
         { privateKey: rsa().privateKey },
         {},
       ),
-    ).toEqual({ ok: false, code: "unauthorized" });
+    ).rejects.toThrow();
+  });
+
+  it("holds the last 16 keys chosen, forgetting the oldest", () => {
+    const keys = createKeyFiles();
+    const first = keys.hold("first key");
+    const handles = Array.from({ length: 16 }, (_, index) => keys.hold(`key ${index}`));
+
+    expect(keys.get(first)).toBeUndefined();
+    expect(handles.map((handle) => keys.get(handle))).toEqual(
+      Array.from({ length: 16 }, (_, index) => `key ${index}`),
+    );
   });
 
   it("says an unreachable host is unreachable, through the IPC call", async () => {
@@ -114,29 +159,28 @@ describe("Test connection (4.3)", () => {
 
 describe("the private key file (4.3)", () => {
   it("reads a private key, saying whether it needs its passphrase", async () => {
-    expect(await readKeyFile(file("id_rsa", rsa().privateKey))).toMatchObject({
-      status: "chosen",
-      name: "id_rsa",
-      encrypted: false,
-    });
-    expect(await readKeyFile(file("locked", rsa("test-only-passphrase").privateKey))).toMatchObject(
-      {
-        status: "chosen",
-        encrypted: true,
-      },
-    );
+    const keys = createKeyFiles();
+    const key = rsa().privateKey;
+    const chosen = await readKeyFile(file("id_rsa", key), keys);
+    expect(chosen).toMatchObject({ status: "chosen", name: "id_rsa", encrypted: false });
+    // Main holds the key; the renderer gets its handle, never its text.
+    expect(JSON.stringify(chosen)).not.toContain("PRIVATE KEY");
+    expect(chosen.status === "chosen" ? keys.get(chosen.handle) : undefined).toBe(key);
+    expect(
+      await readKeyFile(file("locked", rsa("test-only-passphrase").privateKey), keys),
+    ).toMatchObject({ status: "chosen", encrypted: true });
   });
 
   it("refuses a public key, another file, one too large, and one that isn't there", async () => {
-    expect(await readKeyFile(file("id_rsa.pub", rsa().publicKey))).toEqual({
+    expect(await readKeyFile(file("id_rsa.pub", rsa().publicKey), createKeyFiles())).toEqual({
       status: "failed",
       reason: "not-a-key",
     });
-    expect(await readKeyFile(file("big", "x".repeat(20_000)))).toEqual({
+    expect(await readKeyFile(file("big", "x".repeat(20_000)), createKeyFiles())).toEqual({
       status: "failed",
       reason: "too-large",
     });
-    expect(await readKeyFile(join(folder, "missing"))).toEqual({
+    expect(await readKeyFile(join(folder, "missing"), createKeyFiles())).toEqual({
       status: "failed",
       reason: "unreadable",
     });

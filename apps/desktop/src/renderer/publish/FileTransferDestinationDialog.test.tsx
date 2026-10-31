@@ -9,6 +9,7 @@ import { FileTransferDestinationDialog, valuesOf } from "./FileTransferDestinati
 afterEach(cleanup);
 
 const HOST_KEY = "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8";
+const KEY_HANDLE = "6f1c2b3a-1111-4222-8333-444455556666";
 const OTHER_KEY = "SHA256:AAAAg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8";
 
 /** A publish API whose calls the test sets, each a spy. */
@@ -73,6 +74,17 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
       signIn: { password: "test-only-password" },
       trust: {},
     });
+  });
+
+  it("says a host isn't a host's name or address in its own words", async () => {
+    const { fill, save, onSave } = setUp();
+    await fill("Host", "192.168.1.");
+    await fill("User name", "rosa");
+    await fill("Password", "test-only-password");
+    await save();
+
+    expect(onSave).not.toHaveBeenCalled();
+    expect(screen.getByText("Use the host's name, such as ftp.example.com.")).toBeTruthy();
   });
 
   it("fills in Plesk's folder unless one of the person's own is typed", async () => {
@@ -203,8 +215,8 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
       chooseKeyFile: vi.fn(async () => ({
         status: "chosen" as const,
         name: "id_ed25519",
-        privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----",
         encrypted: true,
+        handle: KEY_HANDLE,
       })),
     });
     const { user, field, fill, save, onSave } = setUp(
@@ -230,10 +242,8 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
 
     expect(onSave).toHaveBeenCalledWith({
       destination: expect.objectContaining({ signIn: "key" }),
-      signIn: {
-        privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----",
-        passphrase: "test-only-passphrase",
-      },
+      // The key's handle: its text stays in the main process.
+      signIn: { keyHandle: KEY_HANDLE, passphrase: "test-only-passphrase" },
       trust: { hostKey: HOST_KEY },
     });
     expect(field("Key passphrase").getAttribute("type")).toBe("password");
@@ -250,7 +260,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
           folder: "/site",
           signIn: "key",
         }}
-        signIn={{ privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----" }}
+        signIn={{ keyHandle: KEY_HANDLE }}
         trust={{ hostKey: HOST_KEY }}
         publish={fakePublish()}
         onSave={vi.fn()}
