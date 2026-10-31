@@ -78,6 +78,8 @@ const exportFailureReasonSchema = z.enum([
   "reserved-name",
   // Too large for a ZIP file (3.3): a folder takes it.
   "too-large",
+  // A Media image the export doesn't decode (S12): `image` says which, to replace.
+  "unreadable-image",
 ]);
 
 /**
@@ -126,6 +128,8 @@ const exportResultSchema = z.discriminatedUnion("status", [
     reason: exportFailureReasonSchema,
     /** The page to fix, by its title, for `reserved-name`. */
     page: z.string().max(500).optional(),
+    /** The Media image to replace, by its id, for `unreadable-image`. */
+    image: z.string().max(500).optional(),
   }),
 ]);
 
