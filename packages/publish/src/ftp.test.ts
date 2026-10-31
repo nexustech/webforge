@@ -29,6 +29,7 @@ const destination = (protocol: FtpDestination["protocol"]): FtpDestination => ({
   user: "baker",
   folder: "/site",
   url: "https://bakery.example/",
+  site: { projectId: "rosas-bakery", destinationId: "live" },
 });
 /** FTPS trusting the test certificate, as a host's real certificate is trusted. */
 const trusted = {
@@ -176,5 +177,47 @@ describe("ftpPublisher (0.3)", { timeout: 30_000 }, () => {
 
     expect(caught).toMatchObject({ code: "unauthorized" });
     expect(String((caught as Error).message)).not.toContain("wrong-secret");
+  });
+});
+
+describe("an FTPS destination on a host without FTPS (4.3)", { timeout: 30_000 }, () => {
+  let plain: Awaited<ReturnType<typeof startFtpServer>>;
+  beforeAll(async () => {
+    plain = await startFtpServer({ user: "baker", password: "test-only-password", tls: false });
+  });
+  afterAll(async () => {
+    await plain?.stop();
+  });
+
+  it("says the host doesn't offer encryption, before the password is sent, so plain FTP can be offered", async () => {
+    const dest = { ...destination("ftps"), port: plain.port };
+
+    expect(await ftpPublisher(trusted).test(dest)).toEqual({ ok: false, code: "no-encryption" });
+    // A wrong password gives the same answer: the host never saw it.
+    expect(await ftpPublisher({ ...trusted, password: "wrong" }).test(dest)).toEqual({
+      ok: false,
+      code: "no-encryption",
+    });
+    expect(await ftpPublisher(trusted).test({ ...dest, protocol: "ftp" })).toEqual({ ok: true });
+  });
+});
+
+describe("an FTPS host too busy to answer (4.3)", { timeout: 30_000 }, () => {
+  let busy: Awaited<ReturnType<typeof startFtpServer>>;
+  beforeAll(async () => {
+    busy = await startFtpServer({
+      user: "baker",
+      password: "test-only-password",
+      busy: "421 Too many connections",
+    });
+  });
+  afterAll(async () => {
+    await busy?.stop();
+  });
+
+  it("says it couldn't be reached, not that it has no FTPS", async () => {
+    const dest = { ...destination("ftps"), port: busy.port };
+
+    expect(await ftpPublisher(trusted).test(dest)).toEqual({ ok: false, code: "network" });
   });
 });

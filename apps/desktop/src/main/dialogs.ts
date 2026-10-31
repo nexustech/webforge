@@ -6,6 +6,7 @@ import type { ExportDialogs } from "./export-ipc.js";
 import type { MediaDialogs } from "./media-ipc.js";
 import type { ProjectDialogs } from "./project-ipc.js";
 import { PROJECT_EXTENSION } from "./project-session.js";
+import type { PublishParts } from "./publish-ipc.js";
 
 /** What the native dialogs are made with; fakes in tests. */
 export type DialogParts = {
@@ -23,11 +24,12 @@ export type DialogParts = {
   testAnswer(kind: E2eDialog): Promise<{ path: string | undefined } | undefined>;
 };
 
-/** The native file dialogs of sites, the export and Media. */
+/** The native file dialogs of sites, the export, Media and publishing. */
 export type NativeDialogs = {
   readonly project: ProjectDialogs;
   readonly export: ExportDialogs;
   readonly media: MediaDialogs;
+  readonly publish: Pick<PublishParts, "chooseKeyFile">;
 };
 
 /** The native file dialogs, each modal to the focused window when there is one. */
@@ -128,6 +130,18 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
           properties: ["openFile", "multiSelections"],
         });
         return result.canceled ? undefined : result.filePaths;
+      },
+    },
+    publish: {
+      // Any file: key files often have no extension (`id_ed25519`).
+      chooseKeyFile: async () => {
+        const answer = await parts.testAnswer("open");
+        if (answer !== undefined) return answer.path;
+        const result = await open({
+          title: t("publish.keyFile.chooseTitle"),
+          properties: ["openFile"],
+        });
+        return result.canceled ? undefined : result.filePaths[0];
       },
     },
   };

@@ -11,11 +11,18 @@ files:
   - "!out/fonts/**"
   - "!out/templates/**"
   - package.json
-  # Production dependencies (only better-sqlite3) are added from node_modules automatically.
+  # Production dependencies (better-sqlite3, ssh2 and theirs) are added from node_modules
+  # automatically.
   # Ship only the prebuilt binary for the platform being packaged, not SQLite's C sources.
   - "!**/node_modules/better-sqlite3/{deps,src,binding.gyp}"
   - "!**/node_modules/better-sqlite3/prebuilds/!(${platform}-${arch}).node"
   - "!**/node_modules/node-addon-api/**"
+  # ssh2 (SFTP, 4.3) runs on its JavaScript: its optional native crypto binding and cpu-features
+  # are never built (ADR 0006), so neither their sources nor nan ship. Its crypto folder's
+  # poly1305.js is the JavaScript it runs instead, so only the binding's sources are left out.
+  - "!**/node_modules/ssh2/lib/protocol/crypto/{binding.gyp,src/**}"
+  - "!**/node_modules/cpu-features/**"
+  - "!**/node_modules/nan/**"
 # The installer's fonts (2.2), outside app.asar as plain files: the main process checks each one
 # against the font catalogue's SHA-256 when it reads it.
 extraResources:

@@ -1,8 +1,19 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { diffManifest, type Manifest, manifestOf, manifestSchema, sha1 } from "./manifest.js";
+import {
+  diffManifest,
+  type Manifest,
+  manifestOf as manifestAt,
+  manifestSchema,
+  readManifest,
+  sha1,
+} from "./manifest.js";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
+const rosas = { projectId: "rosas-bakery", destinationId: "live" };
+const AT = "2026-10-31T10:00:00.000Z";
+/** The manifest of `files`, published by Rosa's site at {@link AT}. */
+const manifestOf = (files: ReadonlyMap<string, Uint8Array>) => manifestAt(files, rosas, AT);
 const site = (files: Record<string, string>) =>
   new Map(Object.entries(files).map(([path, text]) => [path, bytes(text)]));
 
@@ -15,7 +26,9 @@ describe("sha1", () => {
 describe("manifestOf", () => {
   it("lists every file with its digest", () => {
     expect(manifestOf(site({ "index.html": "hello" }))).toEqual({
-      version: 1,
+      version: 2,
+      site: rosas,
+      publishedAt: AT,
       files: { "index.html": "aaf4c61ddcc5e8a2dabede0f3b482cd9aea9434d" },
     });
   });
@@ -25,8 +38,18 @@ describe("manifestSchema", () => {
   const digest = "a".repeat(40);
 
   it("accepts relative site paths", () => {
-    const manifest = { version: 1, files: { "index.html": digest, "assets/a b.css": digest } };
+    const manifest = {
+      version: 2,
+      site: rosas,
+      publishedAt: AT,
+      files: { "index.html": digest, "assets/a b.css": digest },
+    };
     expect(manifestSchema.parse(manifest)).toEqual(manifest);
+    // Version 1, which had only the files, is still read (0.3).
+    expect(readManifest({ version: 1, files: { "index.html": digest } })).toEqual({
+      files: { "index.html": digest },
+    });
+    expect(readManifest(manifest)).toEqual({ site: rosas, files: manifest.files });
   });
 
   it.each([
@@ -40,14 +63,14 @@ describe("manifestSchema", () => {
     "a\u0000.html",
     "",
   ])("rejects %j, which could point outside the site folder", (path) => {
-    expect(manifestSchema.safeParse({ version: 1, files: { [path]: digest } }).success).toBe(false);
+    expect(readManifest({ version: 1, files: { [path]: digest } })).toBeNull();
   });
 
   it("rejects digests that are not SHA-1 hex and unknown versions", () => {
-    expect(manifestSchema.safeParse({ version: 1, files: { "a.html": "xyz" } }).success).toBe(
-      false,
-    );
-    expect(manifestSchema.safeParse({ version: 2, files: {} }).success).toBe(false);
+    expect(readManifest({ version: 1, files: { "a.html": "xyz" } })).toBeNull();
+    // Version 2 names its site and time; any other version isn't one.
+    expect(readManifest({ version: 2, files: {} })).toBeNull();
+    expect(readManifest({ version: 3, site: rosas, publishedAt: AT, files: {} })).toBeNull();
   });
 });
 
