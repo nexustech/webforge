@@ -11,7 +11,7 @@ import type { PreviewScope, PreviewServer } from "./preview-server.js";
 import type { SessionSite } from "./project-session.js";
 
 /** The open site as a preview of one opening of it reaches it (R6, #663): its Media. */
-export type PreviewSite = Pick<SessionSite, "staleReason" | "readMedia">;
+type PreviewSite = Pick<SessionSite, "staleReason" | "readMedia">;
 
 /** What the preview reaches outside this module; injected, so tests need no Electron or network. */
 export type PreviewDeps = {

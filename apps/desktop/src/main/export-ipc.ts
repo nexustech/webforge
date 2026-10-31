@@ -2,7 +2,7 @@ import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
-import type { ExportChoices, ExportProgress, SiteContent } from "../shared/ipc/site.js";
+import type { ExportProgress, SiteContent } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
