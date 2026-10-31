@@ -105,6 +105,11 @@ export const panels = {
   "layers.history.unnamed": "Removed the name of {item}",
   "layers.history.hid": "Hid {item}",
   "layers.history.showed": "Showed {item}",
+  // The shared Header and Footer (#673): their eye is the page's own setting.
+  "layers.history.hidRegion": "Hid the {item} on this page",
+  "layers.history.showedRegion": "Showed the {item} on this page",
+  "layers.onEveryPage": "On every page",
+  "layers.copyRegion": "Elements of the {region} can't be copied: it's the same on every page.",
   // Layers tools (1.35): the tree, its filter and what a drag may drop where.
   "layers.expand": "Expand {item}",
   "layers.collapse": "Collapse {item}",
