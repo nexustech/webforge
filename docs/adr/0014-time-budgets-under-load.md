@@ -36,6 +36,11 @@ Re-running a failed job hides all three, and each makes the next failure harder 
        - Those two jobs had the costliest openings, all nine of them dearer: #522's (median 2.98, most 3.92) and #538's second attempt (median 3.29, most 4.16).
        - #538's third attempt, the same commit, cost a median 2.74, most 3.04.
        - GitHub's runners don't all have the same processors, so the same work costs a different number of CPU-seconds from job to job.
+     - **A slow runner gets a larger budget** (#677, 31 Oct 2026). On one macOS job all nine openings cost 5.5–7.5 CPU-s, over the 4.6 budget, with nothing changed.
+       - So each worker times a fixed piece of work in Webforge's main process once its first opening is measured (`calibrate`: reading and writing a JSON document of 20,000 records 40 times, the quickest of three tries).
+       - A runner slower at it than CI's usual ones (`CI_CALIBRATION_SECONDS`) gets a CPU budget that much larger, at most twice; a faster one keeps CI's. Each `[work]` line shows the factor and the calibration.
+       - Opening costs follow it: of two Linux runners, the one at 0.178 CPU-s took 27% more CPU to open each template than the one at 0.125.
+       - An opening three times costlier still fails on a slow runner, since its cost grows as its budget does: the budgets are about twice a usual opening.
      - **Locally:** three times CI's, or `WEBFORGE_E2E_CPU_SCALE` times. A development machine cost 2–3 times as much: 5.3–7.8 CPU-s on Windows. Its canvas is drawn on a larger, high-DPI screen (more pixels to raster and composite), and it shares its CPU with other work, whose switching costs our processes CPU time too.
      - **A miss** says which budget applied, CI's or the local one, with what was measured.
    - **The backstop** (`CI_OPEN_WALL_BACKSTOP_MS`) catches what costs time but no CPU: an added timer, a lost event, IPC round trips in series. On CI it is at least twice the slowest opening measured, and never under 6 s, twice the target:
@@ -61,7 +66,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 
 ## Consequences
 - **Every run catches the opening doing more work, or waiting longer,** whatever else the machine runs. Whether it opens in 3 s is a question for a quiet machine: answer it with `pnpm e2e:perf` before a release, and after work that touches opening a site.
-- **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines of every E2E job over a day or two, every attempt included (a re-run job's first attempt is only in `actions/runs/<id>/attempts/<n>/jobs`), and set its budget again at the most plus 30%. One or two runs aren't enough (#526). A developer whose machine needs more than three times CI's sets `WEBFORGE_E2E_CPU_SCALE`.
+- **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines of every E2E job over a day or two, every attempt included (a re-run job's first attempt is only in `actions/runs/<id>/attempts/<n>/jobs`), and set its budget again at the most plus 30%, and `CI_CALIBRATION_SECONDS` at the calibrations' median. One or two runs aren't enough (#526). A developer whose machine needs more than three times CI's sets `WEBFORGE_E2E_CPU_SCALE`.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
 - **On Windows, each opening's wall time is checked for hangs only** (#561), so a wait in a Windows-only branch of the open path (a retry with a delay after `EBUSY`, say) gets past it: Linux and macOS never run that branch.
   - **The median of templates.spec's openings catches it instead** (#569, `expectMedianWithin` in its `afterAll`).

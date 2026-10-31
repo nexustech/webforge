@@ -127,7 +127,11 @@ let calibration: Promise<number> | undefined;
 async function runnerFactor(
   app: ElectronApplication,
 ): Promise<{ factor: number; seconds: number }> {
-  calibration ??= calibrate(app);
+  // Measured again if it failed, so one closed app doesn't fail every later budget.
+  calibration ??= calibrate(app).catch((error: unknown) => {
+    calibration = undefined;
+    throw error;
+  });
   const seconds = await calibration;
   const usual = CI_CALIBRATION_SECONDS[process.platform];
   if (process.env.CI !== "true" || usual === undefined) return { factor: 1, seconds };

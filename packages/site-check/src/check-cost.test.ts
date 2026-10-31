@@ -42,7 +42,8 @@ function largeSite(pages: number): SiteDoc {
 
 /**
  * The CPU time one run of `run` takes, in ms, over as many runs as add up to `minMs`: Windows
- * counts CPU time in steps of about 16 ms, so a batch shorter than a few steps can't be measured.
+ * counts CPU time in steps of about 16 ms, so a batch can read up to a step short, a third of a
+ * 50 ms batch and under a tenth of a 200 ms one.
  */
 function perRun(run: () => unknown, minMs: number): number {
   const start = process.cpuUsage();
@@ -83,10 +84,10 @@ describe("the cost of a check (ADR 0016)", () => {
     const costs = SITE_CHECK_RULES.map((rule) => {
       const check = () => rule.check(input);
       perRun(check, 20);
-      const quick = inReferences(check, copy, 1, 20);
+      const quick = inReferences(check, copy, 1, 50);
       return {
         rule: rule.id,
-        copies: quick < CLEARLY_WITHIN ? quick : inReferences(check, copy, 5, 50),
+        copies: quick < CLEARLY_WITHIN ? quick : inReferences(check, copy, 3, 200),
       };
     });
     const all = costs.map(({ rule, copies }) => `${rule} ${copies.toFixed(2)}`).join(", ");
