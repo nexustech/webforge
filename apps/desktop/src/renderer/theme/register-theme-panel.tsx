@@ -5,6 +5,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { OwnThemes } from "./own-themes.js";
+import { draftChanges } from "./studio/look-draft.js";
 import type { StudioState } from "./studio/studio-state.js";
 import { ThemePanel } from "./ThemePanel.js";
 
@@ -33,7 +34,16 @@ export function registerThemePanel(
   const stop = panels.onShow((id, target) => {
     if (id !== THEME_PANEL_ID || target === undefined) return;
     if (target.startsWith(LOOK)) {
-      studio?.setState({ open: true, section: "components", kind: target.slice(LOOK.length) });
+      const kind = target.slice(LOOK.length);
+      // Another kind's changes not applied yet come first (4.10): shown, with the question to
+      // apply or discard them before this kind shows, as choosing it in Components asks.
+      studio?.setState(({ draft }) =>
+        draft !== undefined &&
+        draft.type !== kind &&
+        draftChanges(session.history.document.getState().theme, draft)
+          ? { open: true, section: "components", kind: draft.type, pending: { kind } }
+          : { open: true, section: "components", kind },
+      );
     } else {
       reveal.setState({ field: target });
     }
