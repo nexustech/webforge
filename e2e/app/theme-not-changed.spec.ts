@@ -1,10 +1,11 @@
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // A theme change cancelled at its question says so (#614): an Escape meant to close Theme Studio
 // answers "Change how every Features looks?" first, which has Cancel focused. The note says "Not
-// changed", the control goes back to the theme's value, and the canvas stays as it was.
+// changed", the changes stay a draft to apply or discard (4.10), Discard takes the control back to
+// the theme's value, and the canvas stays as it was.
 
 let app: ElectronApplication;
 let page: Page;
@@ -21,6 +22,24 @@ test.afterEach(async () => {
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 const studio = () => page.getByRole("dialog", { name: "Theme Studio" });
+
+/**
+ * Waits until `dialog` takes the Escape key (#676). Radix gives Escape to the top dialog only once
+ * React has run its effects, a frame or two after the dialog shows and focuses its button; until
+ * then the dialog below it, or one still closing, takes the key and the Escape is lost. So: no
+ * dialog still closing, `dialog` drawn as the top one (the only one taking the pointer), then two
+ * frames for its effects.
+ */
+async function ownsEscape(dialog: Locator): Promise<void> {
+  await expect(
+    page.locator('[role="dialog"][data-state="closed"], [role="alertdialog"][data-state="closed"]'),
+  ).toHaveCount(0);
+  await expect(dialog).toHaveCSS("pointer-events", "auto");
+  await page.evaluate(
+    () =>
+      new Promise((frames) => requestAnimationFrame(() => requestAnimationFrame(() => frames(0)))),
+  );
+}
 
 test("a look cancelled at its question with Escape says 'Not changed' and goes back (#614)", async () => {
   const left = page.getByRole("region", { name: "Left panels" });
@@ -49,8 +68,12 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
     [...document.querySelectorAll('[role="dialog"] figure div')].some((each) => each.shadowRoot),
   );
   expect(await accent.boundingBox()).toEqual(shownAt);
-  // One click: a built-in theme asks for a name for the person's own version first (2.23).
+  // One click: a draft (4.10). Applied, a built-in theme asks for a name for the person's own
+  // version first (2.23).
   await accent.click();
+  const region = studio().getByRole("region", { name: "Features" });
+  const apply = region.getByRole("button", { name: "Apply Changes" });
+  await apply.click();
   const naming = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
   await expect(naming).toBeVisible();
   await naming.getByRole("button", { name: "Save Theme" }).click();
@@ -60,24 +83,31 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   // It opens with Cancel focused (the owner's decision). Meant for Theme Studio, the Escape
   // cancels the question.
   await expect(question.getByRole("button", { name: "Cancel" })).toBeFocused();
+  await ownsEscape(question);
   await page.keyboard.press("Escape");
 
   await expect(question).toBeHidden();
   const notChanged = page.locator("[data-sonner-toast]", { hasText: "Not changed" });
   await expect(notChanged).toHaveCount(1);
-  await expect(accent).toHaveAttribute("aria-checked", "false");
   await expect(studio()).toBeVisible();
+  // The changes are still a draft to apply or discard; Discard goes back.
+  await expect(accent).toHaveAttribute("aria-checked", "true");
+  await region.getByRole("button", { name: "Discard" }).click();
+  await expect(accent).toHaveAttribute("aria-checked", "false");
 
-  // A select goes back too, cancelled at the name it asks for first. The first note goes on its own
-  // after a few seconds: gone, the select's own is then the one shown.
+  // Cancelled at the name it asks for first, too. The first note goes on its own after a few
+  // seconds: gone, the second is then the one shown.
   await expect(notChanged).toHaveCount(0, { timeout: 15_000 });
   const corners = studio().getByRole("combobox", { name: "Corners" }).first();
   const theirs = await corners.inputValue();
   await corners.selectOption({ label: "Round" });
+  await apply.click();
   await naming.getByRole("button", { name: "Cancel" }).click();
   await expect(naming).toBeHidden();
   await expect(notChanged).toHaveCount(1);
+  await region.getByRole("button", { name: "Discard" }).click();
   await expect(corners).toHaveValue(theirs);
+  await ownsEscape(studio());
   await page.keyboard.press("Escape");
   await expect(studio()).toBeHidden();
   await expect(features).not.toHaveClass(/bg-secondary!/);

@@ -1,5 +1,17 @@
-import { diffManifest, type Manifest, manifestOf, manifestSchema } from "./manifest.js";
-import { type BuildOutput, type PublishEvent, throwIfCancelled } from "./publisher.js";
+import {
+  diffManifest,
+  type Manifest,
+  manifestOf,
+  type PublishedFiles,
+  type PublishedSite,
+  readManifest,
+} from "./manifest.js";
+import {
+  type BuildOutput,
+  PublishError,
+  type PublishEvent,
+  throwIfCancelled,
+} from "./publisher.js";
 
 /**
  * The hidden file on the host that lists what Webforge published there, with each file's digest
@@ -31,16 +43,28 @@ export function uploadPathFor(path: string): string {
 }
 
 /** What the host's manifest says was published; a missing or damaged one counts as nothing. */
-async function previousManifest(folder: RemoteFolder): Promise<Manifest | null> {
+async function previousManifest(folder: RemoteFolder): Promise<PublishedFiles | null> {
   const data = await folder.read(MANIFEST_FILE);
   if (data === undefined) return null;
   try {
-    const parsed = manifestSchema.safeParse(JSON.parse(new TextDecoder().decode(data)));
-    return parsed.success ? parsed.data : null;
+    return readManifest(JSON.parse(new TextDecoder().decode(data)));
   } catch {
     return null;
   }
 }
+
+/**
+ * Who is publishing to a folder, and how (4.3): the site, as its manifest records it, the address
+ * the site is visited at, for the published event, and whether the person agreed to replace
+ * another site published there (A8, asked by 4.5's flow).
+ */
+export type FolderPublish = {
+  readonly site: PublishedSite;
+  readonly url: string;
+  readonly replaceOtherSite?: boolean;
+  /** The publish's time, for the manifest; now when left out. */
+  readonly now?: () => Date;
+};
 
 /**
  * The digest a pending manifest gives a file that may or may not have arrived: it matches no
@@ -55,25 +79,37 @@ const encodeManifest = (manifest: Manifest) =>
  * Publishes `build` to `folder` (08): only new and changed files are uploaded, assets first and
  * `index.html` last, then the files the site no longer has are removed, pages before assets.
  * Cancelling stops before the next file: the files already sent are whole, and the pages the
- * live site has still find their assets, so it stays usable. `url` is the address the site is
- * visited at, for the published event.
+ * live site has still find their assets, so it stays usable.
+ *
+ * A folder whose manifest names another project stops with `other-site` before anything is
+ * written, unless the person agreed to replace it (A8). A version 1 manifest names no site, so
+ * it could be any site's: it gets the same question (review). Only the 0.3 spike wrote them.
  */
 export async function* publishToFolder(
   folder: RemoteFolder,
   build: BuildOutput,
   signal: AbortSignal,
-  url: string,
+  publishing: FolderPublish,
 ): AsyncGenerator<PublishEvent> {
+  const { site, url } = publishing;
   yield { type: "preparing" };
   const previous = await previousManifest(folder);
-  const next = manifestOf(build.files);
+  if (
+    previous !== null &&
+    previous.site?.projectId !== site.projectId &&
+    publishing.replaceOtherSite !== true
+  ) {
+    throw new PublishError("other-site", "The folder has another site published there");
+  }
+  const publishedAt = (publishing.now?.() ?? new Date()).toISOString();
+  const next = manifestOf(build.files, site, publishedAt);
   const diff = diffManifest(previous, next);
 
   // Files the host never had: listed before they go, so that if the publish stops part-way and
   // the site drops one of them before the next, that publish still removes it from the host.
   const added = diff.upload.filter((path) => previous?.files[path] === undefined);
   if (added.length > 0) {
-    const pending: Manifest = { version: 1, files: { ...previous?.files } };
+    const pending: Manifest = { ...next, files: { ...previous?.files } };
     for (const path of added) pending.files[path] = UNCONFIRMED;
     await folder.write(MANIFEST_FILE, encodeManifest(pending));
   }

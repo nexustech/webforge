@@ -76,5 +76,20 @@ export const LinkedCopies: Story = {
   },
 };
 
+/**
+ * The shared Header first and Footer last (#673), marked as on every page; the Footer hidden on
+ * this page, dimmed as other hidden layers are.
+ */
+export const HeaderAndFooter: Story = {
+  args: {
+    layers: [
+      layer("header", "Header", { region: "header" }),
+      layer("hero", "Section", { children: [layer("h1", "Heading"), layer("t1", "Text")] }),
+      layer("footer", "Footer", { region: "footer", hidden: true }),
+    ],
+    selectedId: "header",
+  },
+};
+
 /** A page with no sections yet. */
 export const Empty: Story = { args: { layers: [], selectedId: null } };

@@ -5,6 +5,8 @@ export {
   type ManifestDiff,
   manifestOf,
   manifestSchema,
+  type PublishedSite,
+  readManifest,
   sha1,
 } from "./manifest.js";
 export {
@@ -35,13 +37,16 @@ export {
   throwIfCancelled,
   type Verification,
 } from "./publisher.js";
-export { MANIFEST_FILE } from "./remote-folder.js";
+export { type FolderPublish, MANIFEST_FILE } from "./remote-folder.js";
 export { type PublishRunEvent, type PublishRunOptions, publishSite } from "./run.js";
 export {
+  describePrivateKey,
   hostKeyFingerprint,
+  readPrivateKey,
   readSftpHostKey,
   type SftpDestination,
   type SftpOptions,
+  type SftpSignIn,
   sftpPublisher,
 } from "./sftp.js";
 export { type VerifyOptions, verifyPublished } from "./verify.js";

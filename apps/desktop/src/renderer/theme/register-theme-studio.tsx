@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
+import type { ItemPreviews, KindPreviews } from "../editor/areas.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
@@ -12,7 +12,9 @@ type ThemeStudioOptions = {
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
   readonly ownThemes?: OwnThemes | undefined;
   /** Each kind of section and element drawn in the theme, for Components (3.12). */
-  readonly kindPreviews?: ((type: string) => ReactNode) | undefined;
+  readonly kindPreviews?: KindPreviews | undefined;
+  /** A kind drawn larger, on Desktop and Mobile, before and after a draft look (4.10). */
+  readonly itemPreviews?: ItemPreviews | undefined;
 };
 
 /**
@@ -24,7 +26,7 @@ export function registerThemeStudio(
   dialogs: WindowDialogRegistry,
   session: EditorSession,
   studio: StoreApi<StudioState>,
-  { siteWide, ownThemes, kindPreviews }: ThemeStudioOptions = {},
+  { siteWide, ownThemes, kindPreviews, itemPreviews }: ThemeStudioOptions = {},
 ): () => void {
   function Studio() {
     return (
@@ -34,6 +36,7 @@ export function registerThemeStudio(
         siteWide={siteWide}
         ownThemes={ownThemes}
         kindPreviews={kindPreviews}
+        itemPreviews={itemPreviews}
       />
     );
   }

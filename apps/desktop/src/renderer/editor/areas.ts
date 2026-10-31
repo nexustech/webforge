@@ -1,4 +1,4 @@
-import type { NodeDoc } from "@webforge/model";
+import type { NodeDoc, Theme } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { AiApi } from "../../shared/ipc/ai.js";
@@ -18,6 +18,20 @@ import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
 import type { Layer } from "./layers.js";
+
+/**
+ * Theme Studio's previews of each kind (3.12): `type` with its defaults, in the site's theme or in
+ * `theme`, with a look not applied yet (4.10).
+ */
+export type KindPreviews = (type: string, theme?: Theme) => ReactNode;
+
+/** An item drawn on Desktop or Mobile (3.13a), in the site's theme or in `theme` (4.10). */
+export type ItemPreviews = (
+  node: NodeDoc,
+  device: "desktop" | "mobile",
+  theme?: Theme,
+) => ReactNode;
+
 import type { SettingsRegistry } from "./settings-registry.js";
 import type { SharedSectionNaming } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
@@ -87,12 +101,13 @@ export type WindowContext = AreaContext & {
    * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
    * with its look; none without a CSS compiler.
    */
-  readonly kindPreviews?: ((type: string) => ReactNode) | undefined;
+  readonly kindPreviews?: KindPreviews | undefined;
   /**
    * *Style this ‹kind›…*'s previews of the item being styled (3.13a), on Desktop or Mobile, drawn
-   * as the kind previews are; none without a CSS compiler.
+   * as the kind previews are, and Theme Studio's before and after (4.10); none without a CSS
+   * compiler.
    */
-  readonly itemPreviews?: ((node: NodeDoc, device: "desktop" | "mobile") => ReactNode) | undefined;
+  readonly itemPreviews?: ItemPreviews | undefined;
 };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

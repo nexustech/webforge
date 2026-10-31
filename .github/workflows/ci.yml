@@ -13,12 +13,17 @@ name: CI
 #   nothing but "CI passed". Storybook runs only when the editor UI or what its stories render
 #   changed. Firefox and WebKit (exported-site tests) run only when the exported site can have
 #   changed; on Linux they run in Playwright's container (`export-browsers`), so their system
-#   packages never come from the runners' slow Ubuntu mirror. E2E is skipped when a PR changes only
-#   unit tests, stories, screenshots or tooling.
-# - To keep runs short: E2E runs in two shards each on Windows and macOS; `export-browsers` waits
-#   only for Linux's E2E, whose exported site it opens; and the static checks (lint, typecheck,
-#   boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the same source on
-#   every OS.
+#   packages never come from the runners' slow Ubuntu mirror. On a pull request Firefox runs on
+#   Linux only (one engine on every OS); Windows and macOS run it nightly. E2E is skipped when a
+#   PR changes only unit tests, stories, screenshots or tooling.
+# - To keep runs short: E2E runs in two shards on every OS, and Storybook in two; `export-browsers`
+#   waits only for Linux's E2E, whose exported site it opens; and the static checks (lint,
+#   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
+#   same source on every OS.
+# - Unit tests run on Linux in every run, and on Windows and macOS only nightly and in "Run
+#   workflow" runs: they test the same code on every OS, and repeating them on pull requests cost
+#   about 17 minutes a run (measured 28–31 Oct 2026, research/stack/09). The licence check of each
+#   OS's own binary packages runs in the packaged-app job, which installs them anyway.
 #
 # Windows and macOS run only while the repository variable FULL_CI_ENABLED is `true`. Unset it
 # (`gh variable delete FULL_CI_ENABLED`) to make CI Linux-only, e.g. if the repository goes
@@ -56,6 +61,7 @@ jobs:
       all-browsers: ${{ steps.decide.outputs.all-browsers }}
       storybook: ${{ steps.decide.outputs.storybook }}
       audit: ${{ steps.decide.outputs.audit }}
+      transfer: ${{ steps.decide.outputs.transfer }}
     steps:
       - name: Decide which jobs to run
         id: decide
@@ -68,7 +74,7 @@ jobs:
         run: |
           set -euo pipefail
           everything() {
-            for output in run e2e all-browsers storybook audit; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            for output in run e2e all-browsers storybook audit transfer; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
           case "$EVENT" in
@@ -114,14 +120,17 @@ jobs:
           storybook='^(packages/(editor-ui|i18n|model|history|engine|site-components|themes|pipeline|templates)/|apps/desktop/src/renderer/|e2e/visual/|e2e/playwright\.visual\.config\.ts$|e2e/package\.json$)'
           # The dependencies: any manifest, the lockfile or the workspace file (overrides, catalog).
           deps='(^|/)package.json$|^pnpm-(lock|workspace).yaml$'
+          # The FTP, FTPS and SFTP publishers, which the file-transfer job publishes with (4.3).
+          transfer='^packages/(publish|errors)/'
           echo "run=true" >> "$GITHUB_OUTPUT"
           if matches "$deps"; then audit=true; else audit=false; fi
+          if matches "$shared" || matches "$transfer"; then transfer=true; else transfer=false; fi
           if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
           # Unit tests don't change what the exported site or the stories look like.
           files=$(grep -Ev '(\.test\.tsx?|\.test-helper\.ts|\.snap)$|^packages/[^/]+/test/' <<< "$files" || true)
           if matches "$shared" || matches "$export_site"; then all=true; else all=false; fi
           if matches "$shared" || matches "$storybook"; then sb=true; else sb=false; fi
-          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; echo "audit=$audit"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; echo "audit=$audit"; echo "transfer=$transfer"; } | tee -a "$GITHUB_OUTPUT"
 
   audit:
     # Known vulnerabilities in the installed dependencies, from the lockfile: when a PR changes
@@ -154,8 +163,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
-        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        # Windows and macOS while FULL_CI_ENABLED is true, and not on pull requests (see the notes
+        # above).
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && github.event_name != 'pull_request' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -176,8 +186,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Static checks read the source, which is the same on every OS, so they run on Linux only.
-      # Windows and macOS run what can differ by OS: the licences of their own binary packages and
-      # the tests.
+      # Windows and macOS run the tests here (nightly), and the licences of their own binary
+      # packages in the packaged-app job.
       - name: Lint and format (biome ci)
         if: matrix.os == 'ubuntu-latest'
         run: pnpm lint
@@ -195,7 +205,8 @@ jobs:
         run: pnpm knip
 
       - name: Dependency licences (C1)
-        # Runs on every OS because each installs its own platform-specific binary packages.
+        # Linux's binary packages; the packaged-app job checks Windows' and macOS'.
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm licence-check
 
       - name: No hard-coded UI strings
@@ -222,24 +233,28 @@ jobs:
           retention-days: 7
 
   e2e-linux:
-    # Linux runs the E2E tests in one job, which `export-browsers` waits for (it opens the site
-    # this job exports), so it starts without waiting for Windows and macOS. The steps are shared
-    # with `e2e` through the `e2e-steps` anchor.
+    # Linux runs the E2E tests in a job of its own, which `export-browsers` waits for (it opens the
+    # site this job exports), so it starts without waiting for Windows and macOS. Two shards: one
+    # took 11–12 minutes, the longest E2E job. The steps are shared with `e2e` through the
+    # `e2e-steps` anchor.
     # The name uses the matrix, so GitHub doesn't add the matrix values to it.
-    name: E2E (${{ matrix.os }})
+    name: E2E (${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-latest, shard: 1, shards: 1 }
+        os: [ubuntu-latest]
+        shard: [1, 2]
+        shards: [2]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env: &e2e-env
       # Firefox and WebKit only when the exported site can have changed (see `changes`). On Linux
       # they run in `export-browsers` instead; Windows and macOS need no system packages, so they
-      # run them here.
-      BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && 'chromium firefox webkit' || 'chromium' }}
+      # run them here. On a pull request Windows and macOS skip Firefox: its engine is the same on
+      # every OS, so Linux's run covers it, and it runs on all three nightly (31 Oct 2026).
+      BROWSERS: ${{ matrix.os != 'ubuntu-latest' && needs.changes.outputs.all-browsers == 'true' && (github.event_name == 'pull_request' && 'chromium webkit' || 'chromium firefox webkit') || 'chromium' }}
       # Downloads go inside the workspace, so the cache steps use one path on every OS.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
       electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
@@ -384,17 +399,17 @@ jobs:
         id: projects
         shell: bash
         run: |
-          # With Chromium only, run the app and the Chromium export tests (Firefox and WebKit run
-          # in `export-browsers` on Linux, or not at all when the exported site can't have changed),
+          # The app, and the export tests in each browser installed (Firefox and WebKit run in
+          # `export-browsers` on Linux, or not at all when the exported site can't have changed),
           # and on Windows Edge's too, which comes with Windows (3.10).
-          if [ "$BROWSERS" = chromium ]; then
-            edge=""
-            if [ "$RUNNER_OS" = Windows ]; then edge=" --project=export-msedge"; fi
-            echo "args=--project=app --project=export-setup --project=export-chromium$edge" >> "$GITHUB_OUTPUT"
-          fi
+          args="--project=app --project=export-setup"
+          # shellcheck disable=SC2086 # BROWSERS is a space-separated list
+          for browser in $BROWSERS; do args="$args --project=export-$browser"; done
+          if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
+          echo "args=$args" >> "$GITHUB_OUTPUT"
 
       # Playwright splits the tests across the matrix's shards by file (the export setup goes with
-      # the export tests that need it): Linux runs them all in one, Windows and macOS in two.
+      # the export tests that need it), two on every OS.
       - name: Electron E2E tests (Linux, virtual display)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
@@ -412,13 +427,14 @@ jobs:
           key: ${{ steps.keys.outputs.electron }}
 
       - name: Upload the exported site
-        # For the `export-browsers` job, which opens it in Firefox and WebKit.
+        # For the `export-browsers` job, which opens it in Firefox and WebKit. Only a shard that ran
+        # the export setup has it; if none did, that job finds no site and fails.
         if: runner.os == 'Linux' && needs.changes.outputs.all-browsers == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: exported-site
+          name: exported-site-${{ matrix.shard }}
           path: .ci-cache/exported-site/
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 1
 
       - name: Upload Playwright report
@@ -475,9 +491,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the exported site
+        # From whichever E2E shard exported it (both, if each ran the export setup: the same site).
         uses: actions/download-artifact@v8
         with:
-          name: exported-site
+          pattern: exported-site-*
+          merge-multiple: true
           path: exported-site
 
       - name: Firefox and WebKit
@@ -506,10 +524,16 @@ jobs:
     # fonts and anti-aliasing match the committed images (R8). Linux only, always. A pull request
     # shows the site components in the three development presets; the nightly run (and a manual
     # one) in every preset too, with axe (2.16). A pull request has 30 minutes: the stories, the
-    # template thumbnails and every template's pages take about 20 by now (#608).
-    name: Storybook (axe and screenshots)
+    # template thumbnails and every template's pages took about 20 in one job (#608), the longest
+    # in a run, so they run in two shards.
+    name: Storybook (axe and screenshots, ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+        shards: [2]
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -538,8 +562,8 @@ jobs:
 
       - name: Axe and screenshots
         # A story or template without a committed screenshot gets one written, and the next step
-        # fails.
-        run: pnpm --filter @webforge/e2e e2e:visual --update-snapshots=missing
+        # fails. Playwright splits the stories and pages across the shards one by one.
+        run: pnpm --filter @webforge/e2e e2e:visual --update-snapshots=missing --shard=${{ matrix.shard }}/${{ matrix.shards }}
         env:
           VISUAL_SCREENSHOTS: "1"
           VISUAL_ALL_THEMES: ${{ github.event_name == 'pull_request' && '0' || '1' }}
@@ -551,7 +575,7 @@ jobs:
           new=$(git status --porcelain --untracked-files=all -- e2e/visual/__screenshots__ packages/templates/templates)
           if [ -n "$new" ]; then
             echo "$new"
-            echo "::error::New stories or templates have no screenshots yet. Run pnpm visual:docker (or pnpm template-thumbnails) and commit what it writes, or download the 'visual-screenshots' artifact."
+            echo "::error::New stories or templates have no screenshots yet. Run pnpm visual:docker (or pnpm template-thumbnails) and commit what it writes, or download the 'visual-screenshots-${{ matrix.shard }}' artifact."
             exit 1
           fi
 
@@ -559,7 +583,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: visual-screenshots
+          name: visual-screenshots-${{ matrix.shard }}
           path: |
             e2e/visual/__screenshots__/
             packages/templates/templates/*/thumbnail.png
@@ -570,7 +594,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-visual
+          name: playwright-report-visual-${{ matrix.shard }}
           path: |
             e2e/playwright-report/
             e2e/test-results/
@@ -613,6 +637,10 @@ jobs:
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
 
+      - name: Dependency licences (C1)
+        # This OS's own binary packages; Linux's are checked in `check`.
+        run: pnpm licence-check
+
       - name: Package (electron-builder --dir) and test the packaged app
         run: pnpm e2e:packaged
 
@@ -625,13 +653,83 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  file-transfer:
+    # The FTP, FTPS and SFTP publishers against real servers in containers (4.3): pure-ftpd over
+    # FTPS, trusting the certificate it makes, and OpenSSH's SFTP with a password and with a private
+    # key and its passphrase (packages/publish/src/servers.live.test.ts). Unit tests run the
+    # publishers against the tests' own servers on every OS; this checks them against servers
+    # hosts use. Linux only, where Docker is. The images are pinned by digest.
+    name: File transfer servers (FTPS, SFTP)
+    needs: changes
+    if: needs.changes.outputs.transfer == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Start the servers
+        shell: bash
+        run: |
+          set -euo pipefail
+          # A key for this run only, with a passphrase, as a host's control panel has people make.
+          ssh-keygen -q -t ed25519 -N test-only-passphrase -f "$RUNNER_TEMP/id"
+          docker run -d --name webforge-sftp -p 2222:22 \
+            -v "$RUNNER_TEMP/id.pub:/home/baker/.ssh/keys/id.pub:ro" \
+            atmoz/sftp@sha256:43dd1c023cf1bae487127d4b54660b0aee6e94c188a6599be36fb89ba115f961 \
+            baker:test-only-password:::site
+          docker run -d --name webforge-ftps -p 2121:21 -p 30000-30009:30000-30009 \
+            -e PUBLICHOST=localhost -e FTP_USER_NAME=baker -e FTP_USER_PASS=test-only-password \
+            -e FTP_USER_HOME=/home/baker -e "ADDED_FLAGS=--tls=2" -e TLS_CN=localhost \
+            -e TLS_ORG=Webforge -e TLS_C=GB \
+            stilliard/pure-ftpd@sha256:54eff59f458532899a4f814da339a7c0921ddf0b4d8b3b87318a162cb4232687
+          # pure-ftpd makes its certificate, then its DH parameters, before it listens.
+          for _ in $(seq 60); do
+            if docker logs webforge-ftps 2>&1 | grep -q "Starting Pure-FTPd"; then break; fi
+            sleep 5
+          done
+          docker exec webforge-ftps sh -c "mkdir -p /home/baker/site && chown -R ftpuser:ftpgroup /home/baker"
+          docker cp webforge-ftps:/etc/ssl/private/pure-ftpd.pem "$RUNNER_TEMP/ftps.pem"
+          for port in 2222 2121; do
+            for _ in $(seq 30); do
+              if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then break; fi
+              sleep 1
+            done
+          done
+
+      - name: Publish to them
+        env:
+          WEBFORGE_SFTP_PORT: "2222"
+          WEBFORGE_SFTP_KEY: ${{ runner.temp }}/id
+          WEBFORGE_FTPS_PORT: "2121"
+          WEBFORGE_FTPS_CA: ${{ runner.temp }}/ftps.pem
+        run: pnpm vitest run packages/publish/src/servers.live.test.ts
+
+      - name: Server logs
+        if: failure()
+        run: |
+          docker logs webforge-sftp || true
+          docker logs webforge-ftps || true
+
   passed:
     # The one required check on `main` (spec/03 §7). Every job above can be skipped, and a skipped
     # job's check never reports, so `main` requires this instead: it always runs, and fails if any
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, audit, check, e2e-linux, e2e, export-browsers, visual, package]
+    needs: [changes, audit, check, e2e-linux, e2e, export-browsers, visual, package, file-transfer]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
