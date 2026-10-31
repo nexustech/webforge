@@ -68,7 +68,7 @@
   What went live is the version recorded, by construction.
 - **Republish (4.6) is the same flow** with an existing version's id, and nothing new is saved. The renderer never opens the version.
 - **The worker makes the snapshot.** `siteContentFor` moves from the renderer to `@webforge/site-components`, beside `mediaUsedBy` and `documentsLinkedBy`, which it is built from. It needs no React and no Node, so the renderer (export, preview) and the worker (publish) call the same function. Main still never imports site components.
-- **Main serves only that site's bytes.** The worker asks for each image and document by hash as the build reaches it (R15). Main answers only for hashes among the `media` of the `SiteDoc` it sent.
+- **Bytes as for an export.** The worker asks for each image and document by hash as the build reaches it (R15). Main answers as it does for an export (`ProjectSession.#readMedia`): Media's files and the site code's bundled files, never a site document.
 - **Alternatives:**
   - *The renderer sends a snapshot, and main saves a version beside it.* The two can differ, and republishing a stored version would need it opened in the editor first, which 4.6's scope rules out.
   - *Version the committed rows without flushing.* The version misses up to 30 s of edits: the very edits "before restore" exists to keep.
