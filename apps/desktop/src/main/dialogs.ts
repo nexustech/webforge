@@ -1,10 +1,10 @@
 import { t } from "@webforge/i18n";
-import { DOCUMENT_EXTENSIONS } from "@webforge/model";
+import { DOCUMENT_EXTENSIONS, safeFileName } from "@webforge/model";
 import type { BaseWindow, Dialog, OpenDialogOptions, SaveDialogOptions } from "electron";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import type { ExportDialogs } from "./export-ipc.js";
 import type { MediaDialogs } from "./media-ipc.js";
-import { type ProjectDialogs, siteFileName } from "./project-ipc.js";
+import type { ProjectDialogs } from "./project-ipc.js";
 import { PROJECT_EXTENSION } from "./project-session.js";
 import type { PublishParts } from "./publish-ipc.js";
 
@@ -36,6 +36,7 @@ export type NativeDialogs = {
 export function createNativeDialogs(parts: DialogParts): NativeDialogs {
   const { dialog } = parts;
   const projectFilters = [{ name: t("site.fileType"), extensions: [PROJECT_EXTENSION.slice(1)] }];
+  const siteZipFilters = [{ name: t("site.zip.fileType"), extensions: ["zip"] }];
 
   const save = (options: SaveDialogOptions) => {
     const parent = parts.focusedWindow();
@@ -57,7 +58,7 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         if (answer !== undefined) return answer.path;
         const result = await save({
           title: t("site.newDialogTitle"),
-          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
+          defaultPath: `${safeFileName(siteName, t("site.untitledName"))}${PROJECT_EXTENSION}`,
           filters: projectFilters,
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;
@@ -68,6 +69,27 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         const result = await open({
           title: t("site.openDialogTitle"),
           filters: projectFilters,
+          properties: ["openFile"],
+        });
+        return result.canceled ? undefined : result.filePaths[0];
+      },
+      chooseSiteZipToSave: async (siteName) => {
+        const answer = await parts.testAnswer("save");
+        if (answer !== undefined) return answer.path;
+        // The system's dialog asks before replacing a file of that name.
+        const result = await save({
+          title: t("site.zip.saveDialogTitle"),
+          defaultPath: `${safeFileName(siteName, t("site.untitledName"))}.zip`,
+          filters: siteZipFilters,
+        });
+        return result.canceled || result.filePath === "" ? undefined : result.filePath;
+      },
+      chooseSiteZipToOpen: async () => {
+        const answer = await parts.testAnswer("open");
+        if (answer !== undefined) return answer.path;
+        const result = await open({
+          title: t("site.zip.openDialogTitle"),
+          filters: siteZipFilters,
           properties: ["openFile"],
         });
         return result.canceled ? undefined : result.filePaths[0];
@@ -89,7 +111,7 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
         // The system's dialog asks before replacing a file of that name.
         const result = await save({
           title: t("export.zipDialogTitle"),
-          defaultPath: `${siteFileName(siteName, t("site.untitledName"))}.zip`,
+          defaultPath: `${safeFileName(siteName, t("site.untitledName"))}.zip`,
           filters: [{ name: t("export.zipFileType"), extensions: ["zip"] }],
         });
         return result.canceled || result.filePath === "" ? undefined : result.filePath;

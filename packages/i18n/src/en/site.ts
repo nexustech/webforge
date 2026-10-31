@@ -382,4 +382,16 @@ export const site = {
     "This site was saved by a newer version of {appName}. Update {appName} to open it.",
   "site.openFailed.missing": "The site file is no longer there. It may have been moved or deleted.",
   "site.openFailed.unknown": "{appName} couldn't open the site.",
+  // A copy of the whole site as a ZIP, for a backup or another computer (4.7, F-SITE-5): not the
+  // website, which Export makes.
+  "site.zip.fileType": "ZIP file",
+  "site.zip.saveDialogTitle": "Save a copy of your site as a ZIP file",
+  "site.zip.openDialogTitle": "Open a site from a ZIP file",
+  "site.zip.saved": "Saved a copy of your site as “{name}”.",
+  "site.zip.savedDescription":
+    "It has everything in your site, its versions too. Open it with File › Open Site from ZIP.",
+  "site.zip.saveFailed": "{appName} couldn't save a copy of your site.",
+  "site.zip.ownFile": "A copy can't replace your site's own file. Choose another name for it.",
+  // More than a ZIP file holds, saving the site as one or opening one.
+  "site.zip.tooLarge": "This site is too large for a ZIP file.",
 } as const;

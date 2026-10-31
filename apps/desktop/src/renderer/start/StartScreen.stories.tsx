@@ -25,6 +25,7 @@ const recent = (id: string, name: string, extra: Partial<RecentSite> = {}): Rece
 const project = (sites: readonly RecentSite[]): NonNullable<StartScreenProps["project"]> => ({
   create: async () => ({ status: "canceled" }),
   open: async () => ({ status: "canceled" }),
+  openZip: async () => ({ status: "canceled" }),
   listRecent: async () => [...sites],
   openRecent: async () => ({ status: "canceled" }),
   pinRecent: async () => null,

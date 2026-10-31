@@ -23,6 +23,7 @@ export type {
   ProjectSummary,
   ReadSiteResult,
   RecentSite,
+  SaveSiteZipResult,
   SiteUiChange,
   SiteUiState,
   UiStateResult,
