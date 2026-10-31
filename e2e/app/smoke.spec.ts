@@ -116,6 +116,7 @@ test.describe("desktop shell", () => {
         "templates",
         "themes",
         "preview",
+        "publish",
       ],
     });
   });

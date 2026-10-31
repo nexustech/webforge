@@ -3,7 +3,7 @@ export const publish = {
   // An FTP, FTPS or SFTP publish destination (4.3, F-PB-1, B5).
   "publish.fileTransfer.title": "Publish to your web host",
   "publish.fileTransfer.description":
-    "Webforge uploads your site to the folder your web host serves. Your host's control panel shows these details.",
+    "{appName} uploads your site to the folder your web host serves. Your host's control panel shows these details.",
   "publish.fileTransfer.confirm": "Save",
   "publish.fileTransfer.preset": "Control panel",
   "publish.fileTransfer.preset.help": "Fills in the usual settings for it.",
@@ -56,7 +56,7 @@ export const publish = {
   // Test connection.
   "publish.test.button": "Test Connection",
   "publish.test.testing": "Connecting…",
-  "publish.test.ok": "Connected. Webforge can publish your site here.",
+  "publish.test.ok": "Connected. {appName} can publish your site here.",
   "publish.test.unauthorized": "The host refused the user name or password.",
   "publish.test.not-found": "Signed in, but there's no folder of that name. Check the folder.",
   "publish.test.rate-limited": "The host asked to wait. Try again in a few minutes.",
@@ -74,7 +74,7 @@ export const publish = {
   // An SFTP host's key, trusted the first time (ADR 0006 §7).
   "publish.hostKey.title": "Is this your host?",
   "publish.hostKey.body":
-    "Your host's key is {hostKey}. If it matches the one your host shows, trust it: Webforge will then refuse any other.",
+    "Your host's key is {hostKey}. If it matches the one your host shows, trust it: {appName} will then refuse any other.",
   "publish.hostKey.changedTitle": "The host's key has changed",
   "publish.hostKey.changedBody":
     "The host now shows {hostKey}. Trust it only if your host says it changed its key; otherwise someone may be in the way.",

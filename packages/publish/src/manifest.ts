@@ -15,7 +15,7 @@ const filesSchema = z.record(sitePathSchema, z.string().regex(/^[0-9a-f]{40}$/))
  * The site that published to a folder (A8, 4.3): its project and the destination it published
  * to, so another site published to the same folder is told apart before anything is replaced.
  */
-export const publishedSiteSchema = z.strictObject({
+const publishedSiteSchema = z.strictObject({
   projectId: z.string().min(1).max(200),
   destinationId: z.string().min(1).max(200),
 });

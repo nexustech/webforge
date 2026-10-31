@@ -390,7 +390,8 @@ export function FileTransferDestinationDialog({
     hostKey: trusted?.at === connectionOf(values) ? trusted.hostKey : undefined,
   });
 
-  const runTest = async (values: FileTransferValues, hostKey = extraFor(values).hostKey) => {
+  /** Test connection with `values`, and the SFTP host key trusted for it, if any. */
+  const runTest = async (values: FileTransferValues, hostKey: string | undefined) => {
     const at = connectionOf(values);
     const output = toOutput(values, { ...extraFor(values), hostKey });
     setTest({ status: "testing", at });
@@ -470,7 +471,7 @@ export function FileTransferDestinationDialog({
         <TestConnection
           // Only a test of the connection as it is now.
           state={test?.at === connectionOf(values) ? test : undefined}
-          onTest={() => void runTest(values)}
+          onTest={() => void runTest(values, extraFor(values).hostKey)}
           onTrust={(hostKey) => {
             setTrusted({ at: connectionOf(values), hostKey });
             void runTest(values, hostKey);
