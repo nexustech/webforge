@@ -522,6 +522,11 @@ export class ProjectSession {
   /**
    * Closes the open site's store. Let in while the storage writer still writes (its time was up),
    * it stops the writer first: the import fails, and garbage collection removes its bytes.
+   *
+   * Garbage collection runs here, after the last save and with the file to itself (A1): every save
+   * of a page leaves its previous JSON behind, as do undone imports and pastes, and Undo can no
+   * longer bring any of it back. A read-only store (a newer format, once the editor can show one)
+   * is left as it is. A failure is logged and the site still closes; the next close tries again.
    */
   async #closeNow(): Promise<void> {
     if (this.#writing !== undefined) {
@@ -529,6 +534,13 @@ export class ProjectSession {
     }
     if (this.#store !== undefined) {
       this.#events.closed?.();
+      if (!this.#store.info.readOnly) {
+        try {
+          this.#store.collectGarbage();
+        } catch (error) {
+          logFailure("Webforge could not clean up a site file as it closed", error);
+        }
+      }
     }
     this.#store?.close();
     this.#store = undefined;
