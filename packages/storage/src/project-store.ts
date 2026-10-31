@@ -843,6 +843,9 @@ export class ProjectStore {
    * Run it only when no undo step can bring a reference back: when a site is opened, before any
    * editing, or when it is closed, after the last save. A deleted image stays restorable by Undo
    * until then. Freed pages are reused by later writes; the file does not shrink until a VACUUM.
+   *
+   * With nothing to remove it writes nothing (see `#write`): the file's bytes and modified time
+   * stay as they were, so a site opened and closed unchanged isn't synced or backed up again.
    */
   collectGarbage(): GarbageReport {
     return this.#write(() => {
@@ -981,14 +984,25 @@ export class ProjectStore {
    * the content fingerprint (#295) before it commits. Every write goes through here, so none can
    * leave a fingerprint that no longer matches its rows and make a healthy file open as corrupt;
    * `test/write-paths.test.ts` keeps it that way.
+   *
+   * A change that alters no row (garbage collection with nothing to remove, a blob stored again)
+   * leaves the fingerprint as it was and isn't stamped: the transaction then only read, so the
+   * file's bytes and modified time stay as they were, and a sync folder or a backup sees no change
+   * nobody made (#661).
    */
   #write<T>(change: () => T): T {
     this.#assertWritable();
     return this.#db.transaction(() => {
+      const before = this.#totalChanges();
       const result = change();
-      stampContent(this.#db);
+      if (this.#totalChanges() !== before) stampContent(this.#db);
       return result;
     })();
+  }
+
+  /** The rows this connection has inserted, updated or deleted since it opened. */
+  #totalChanges(): number {
+    return Number(this.#prepare("SELECT total_changes()").pluck().get());
   }
 
   #assertWritable(): void {

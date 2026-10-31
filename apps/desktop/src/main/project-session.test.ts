@@ -1,5 +1,14 @@
 import { createHash } from "node:crypto";
-import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -175,6 +184,40 @@ describe("ProjectSession", () => {
     expect(vi.mocked(console.error)).toHaveBeenCalled();
     // The file is closed: another connection can open it for writing.
     ProjectStore.open(path).close();
+  });
+
+  it("leaves the file of a site opened and closed unchanged as it was: no sync, no backup", async () => {
+    const path = join(dir, "site.wforge");
+    await session.create(path);
+    await session.close();
+    const before = readFileSync(path);
+    // An hour ago, so a write in this test can't share its modified time.
+    const then = new Date(Date.now() - 3_600_000);
+    utimesSync(path, then, then);
+
+    await session.open(path);
+    await session.close();
+
+    expect(statSync(path).mtimeMs).toBe(then.getTime());
+    expect(readFileSync(path).equals(before)).toBe(true);
+  });
+
+  it("leaves a read-only site's file alone as it closes, without logging a failure", async () => {
+    const path = join(dir, "site.wforge");
+    await session.create(path);
+    // A store the editor shows read-only, as a newer format will be once it can show one.
+    const info = Object.getOwnPropertyDescriptor(ProjectStore.prototype, "info")?.get;
+    vi.spyOn(ProjectStore.prototype, "info", "get").mockImplementation(function (
+      this: ProjectStore,
+    ) {
+      return { ...info?.call(this), readOnly: true };
+    });
+    const collect = vi.spyOn(ProjectStore.prototype, "collectGarbage");
+
+    await session.close();
+
+    expect(collect).not.toHaveBeenCalled();
+    expect(vi.mocked(console.error)).not.toHaveBeenCalled();
   });
 
   it("replaces the current site when it creates one over the same file", async () => {

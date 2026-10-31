@@ -99,6 +99,24 @@ describe("ProjectStore's writes (#295)", () => {
     }
   });
 
+  it("leaves the file's bytes as they were after a write that changes no row (#661)", () => {
+    const path = join(tempDir(), "unchanged.wforge");
+    const store = ProjectStore.create(path, { name: "Unchanged" });
+    const data = new Uint8Array([1, 2, 3]);
+    const blob = store.putBlob(data, "application/octet-stream");
+    store.commit([{ type: "put", id: "page:home", kind: "page", content: { blob } }]);
+    store.collectGarbage();
+    const before = readFileSync(path);
+
+    // Nothing to collect, and a blob it already has.
+    expect(store.collectGarbage()).toEqual({ blobs: 0, bytes: 0, assets: 0 });
+    store.putBlob(data, "application/octet-stream");
+    store.close();
+
+    expect(readFileSync(path).equals(before)).toBe(true);
+    expect(() => ProjectStore.open(path).close()).not.toThrow();
+  });
+
   it("opens no transaction but in its one write helper", () => {
     const source = readFileSync(new URL("../src/project-store.ts", import.meta.url), "utf8");
 
