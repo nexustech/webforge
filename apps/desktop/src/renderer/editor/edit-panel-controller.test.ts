@@ -126,6 +126,15 @@ describe("createEditPanelController (#667)", () => {
     expect(labels()).toHaveLength(2);
   });
 
+  it("ends a canvas text session with the latest flush it was given", () => {
+    const { controller, flush } = setup();
+    const later = vi.fn();
+    controller.setFlush(later);
+    controller.change("size", "small");
+    expect(later).toHaveBeenCalled();
+    expect(flush).not.toHaveBeenCalled();
+  });
+
   it("does nothing once the element has gone", () => {
     const { session, controller, labels } = setup();
     session.select("nothing-here");

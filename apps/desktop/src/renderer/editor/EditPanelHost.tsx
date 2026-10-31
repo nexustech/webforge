@@ -1,6 +1,6 @@
 import { EditPanel, type GroupAction } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 import { createEditPanelController } from "./edit-panel-controller.js";
 import { type DialogGroups, fieldsFor, panelSlice, sameSlice } from "./edit-panel-fields.js";
 import type { EditorSession } from "./editor-session.js";
@@ -76,15 +76,9 @@ export function EditPanelHost({
   const theme = useDocument(session, (site) => site.theme);
   const breakpoint = breakpointOf(viewport);
 
-  // The latest `flush`, which the host's owner may make anew on every drawing.
-  const latestFlush = useRef(flush);
-  useEffect(() => {
-    latestFlush.current = flush;
-  });
-  const controller = useMemo(
-    () => createEditPanelController(session, () => latestFlush.current()),
-    [session],
-  );
+  const controller = useMemo(() => createEditPanelController(session), [session]);
+  // The latest `flush`, before anyone can type: the host's owner may make it anew on every drawing.
+  useEffect(() => controller.setFlush(flush));
   // A run ends when the selection or the device view moves on while its field keeps focus (undo,
   // the canvas); closing the panel mid-drag cancels the drag (U2).
   const selectedId = target?.id;

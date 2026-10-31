@@ -59,6 +59,8 @@ export type EditPanelController = {
   follow(selectedId: string | undefined, breakpoint: Breakpoint): void;
   /** The panel has gone: a drag still open is cancelled, like any gesture whose control goes (U2). */
   dispose(): void;
+  /** `flush` from now on: the panel's owner may make it anew whenever it draws. */
+  setFlush(flush: () => void): void;
 };
 
 /**
@@ -72,14 +74,16 @@ export type EditPanelController = {
  *
  * A change is written to the element as the document has it now, never as an older drawing of the
  * panel found it (R9), and only a value its field takes (#667). Once the element has gone, a change
- * still on its way does nothing. `flush` ends a canvas text session before the document changes.
+ * still on its way does nothing. `flush` (or the latest given to `setFlush`) ends a canvas text
+ * session before the document changes.
  */
 export function createEditPanelController(
   session: EditorSession,
-  flush: () => void,
+  initialFlush: () => void = () => undefined,
 ): EditPanelController {
   const { history, library } = session;
   let open: Run | null = null;
+  let flush = initialFlush;
 
   const endRun = () => {
     const run = open;
@@ -444,6 +448,9 @@ export function createEditPanelController(
       open = null;
       if (run?.cancel !== undefined) run.cancel();
       else run?.end();
+    },
+    setFlush: (next) => {
+      flush = next;
     },
   };
 }
