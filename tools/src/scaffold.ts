@@ -159,6 +159,7 @@ function stringsOf(folder: string) {
 export const STRINGS_FILES: Readonly<Record<string, string>> = {
   add: "panels",
   clipboard: "site",
+  "code-trust": "site",
   "element-menu": "panels",
   layers: "panels",
   links: "panels",
