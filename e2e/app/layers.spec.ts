@@ -2,7 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { launchDesktopApp } from "./launch.js";
+import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
@@ -19,6 +19,7 @@ let page: Page;
 test.beforeEach(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
+  await waitForCanvas(page);
   await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
 });
 

@@ -55,8 +55,10 @@ test("holds a form sent in the page's first seconds, then sends it once, at 3 s 
   page,
 }) => {
   // The page's clock stands still while the test fills the form, however long that takes.
+  // Installed a minute earlier: its clock runs from then, and on a slow runner it had already
+  // passed `opened` by the time it was paused there, which Playwright refuses (#678).
   const opened = new Date("2026-10-27T10:00:00Z");
-  await page.clock.install({ time: opened });
+  await page.clock.install({ time: new Date(opened.getTime() - 60_000) });
   await page.clock.pauseAt(opened);
   const form = await filledContactForm(page);
   const posts = () => requests.filter((request) => request.url.includes("web3forms"));

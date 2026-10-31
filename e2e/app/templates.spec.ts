@@ -13,7 +13,7 @@ import {
   type Work,
 } from "./budget.js";
 import { canvasAxe } from "./canvas-axe.js";
-import { launchDesktopApp } from "./launch.js";
+import { APP_START_TIMEOUT_MS, launchDesktopApp } from "./launch.js";
 import { stubFileDialogs } from "./sites.js";
 import { createFromTemplate, TEMPLATES } from "./templates.js";
 
@@ -52,7 +52,9 @@ for (const template of TEMPLATES) {
   test(`makes a ${template.title} site within its opening budget, accessible on the canvas (2.15)`, async () => {
     app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
     const page = await app.firstWindow();
-    await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+      timeout: APP_START_TIMEOUT_MS,
+    });
     await stubFileDialogs(app, join(dir, "Site.wforge"));
 
     let opened: (() => Promise<Work>) | undefined;

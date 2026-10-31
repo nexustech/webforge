@@ -6,7 +6,7 @@ import { expect, test } from "@playwright/test";
 import type { Oklch } from "@webforge/model";
 import { brandedTheme, brandFromImage, themePreset } from "@webforge/themes";
 import { OPEN_WAIT } from "./budget.js";
-import { launchDesktopApp, type WebforgeApp } from "./launch.js";
+import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The quick start (QS-1…QS-4, 3.11b): from the start screen's Start a site, through its four steps,
@@ -28,7 +28,9 @@ test.afterEach(async () => {
 test("starts a site from the quick start's answers: the business, a look, pages, colours and details", async () => {
   app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
   const page = await app.firstWindow();
-  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
   await stubFileDialogs(app, join(dir, "Rosa's Bakery.wforge"));
 
   // Exactly: the welcome's card says what it does as well.
