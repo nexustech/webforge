@@ -66,7 +66,7 @@ for (const template of TEMPLATES) {
     if (opened === undefined) throw new Error("Not measured");
     const work = await opened();
     openings.push(work.wallMs);
-    expectWorkWithin(work, openBudget(), `Opening the ${template.title} site`);
+    expectWorkWithin(work, await openBudget(running()), `Opening the ${template.title} site`);
     await expect(canvas.locator("main img, section img").first()).not.toHaveJSProperty(
       "naturalWidth",
       0,
