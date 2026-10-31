@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { DEFAULT_THEME, type Theme, themeIdSchema } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +9,7 @@ import { sessionWith } from "../../testing/fixtures.js";
 import { OwnThemeDialogs } from "../OwnThemeDialogs.js";
 import { createOwnThemes } from "../own-themes.js";
 import { ThemePanel } from "../ThemePanel.js";
+import { setLook } from "../theme-edits.js";
 import { createStudio, type StudioSection } from "./studio-state.js";
 import { ThemeStudio } from "./ThemeStudio.js";
 
@@ -363,6 +364,68 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     expect(session.history.document.getState().theme.looks).toEqual({
       Button: { lookShadow: { $responsive: { desktop: "medium", mobile: "none" } } },
     });
+  });
+
+  it("applies only its own changes, keeping one made to the look since it began (review)", async () => {
+    const { session, button, theme, user } = onButton();
+    await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
+
+    // Meanwhile Style this Button… (or an AI app) sets the look's Border.
+    await act(() => setLook(session, undefined, "Button", "Button", { lookBorder: "thick" }));
+    await user.click(button().getByRole("button", { name: "Apply Changes" }));
+
+    expect(theme().looks).toEqual({ Button: { lookBorder: "thick", lookCorners: "full" } });
+  });
+
+  it("drops the question once the draft changes nothing, and never asks it later unprompted", async () => {
+    const { session, dialog, button, studio, user } = onButton();
+    await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
+    await user.click(dialog().getByRole("button", { name: "Card" }));
+    expect(screen.getByRole("alertdialog")).toBeDefined();
+
+    // The look takes the same value elsewhere: there's nothing left to apply.
+    await act(() => setLook(session, undefined, "Button", "Button", { lookCorners: "full" }));
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+    expect(studio.getState().pending).toBeUndefined();
+    expect(studio.getState().kind).toBe("Button");
+
+    // A new draft asks nothing until the person leaves it.
+    await user.selectOptions(button().getByRole("combobox", { name: "Shadow" }), "large");
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(studio.getState().kind).toBe("Button");
+  });
+
+  it("asks at once when it opens with a question waiting (a look link from the Theme tab)", async () => {
+    const { button, studio, user } = onButton();
+    await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
+
+    act(() => studio.setState({ pending: { kind: "Card" } }));
+    const ask = await screen.findByRole("alertdialog", {
+      name: "Apply your changes to every Button?",
+    });
+    await user.click(within(ask).getByRole("button", { name: "Discard Changes" }));
+    expect(studio.getState().kind).toBe("Card");
+  });
+
+  it("gives the focus back to the preview when the larger one closes, opening again on the changes", async () => {
+    const { button, user } = onButton();
+    await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
+    const opener = button().getByRole("button", { name: "Show Button larger, before and after" });
+
+    await user.click(opener);
+    const large = () =>
+      within(screen.getByRole("dialog", { name: "Every Button, before and after" }));
+    await user.click(large().getByRole("radio", { name: "Theme now" }));
+    await user.keyboard("{Escape}");
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog", { name: "Every Button, before and after" })).toBeNull(),
+    );
+    await waitFor(() => expect(document.activeElement).toBe(opener));
+
+    await user.click(opener);
+    expect(
+      large().getByRole("radio", { name: "With your changes" }).getAttribute("aria-checked"),
+    ).toBe("true");
   });
 
   it("shows the card style as the Card look, changed at once", async () => {

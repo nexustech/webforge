@@ -43,7 +43,12 @@ import { StudioImagePalette } from "./StudioImagePalette.js";
 import { StudioStyles } from "./StudioStyles.js";
 import { StudioText } from "./StudioText.js";
 import { StudioThemes } from "./StudioThemes.js";
-import { STUDIO_SECTIONS, type StudioSection, type StudioState } from "./studio-state.js";
+import {
+  type DraftPending,
+  STUDIO_SECTIONS,
+  type StudioSection,
+  type StudioState,
+} from "./studio-state.js";
 
 /** The links' underline token, which Theme Studio shows with the text. */
 const LINKS = TOKEN_CONTROLS.find((control) => tokenKey(control) === "links.underline");
@@ -65,9 +70,6 @@ export type ThemeStudioProps = {
   readonly itemPreviews?: ItemPreviews | undefined;
 };
 
-/** What waits on the answer to apply or discard a draft: closing, or another kind (4.10). */
-type Pending = { readonly close: true } | { readonly kind: string };
-
 /**
  * Theme Studio (F-DS-7, UI2): the site's theme in full, in a large dialog in the window (not a
  * window of its own, decided 2026-10-23). Its sections: the themes as cards, live in their own
@@ -88,7 +90,7 @@ export function ThemeStudio({
   kindPreviews,
   itemPreviews,
 }: ThemeStudioProps) {
-  const { open, section, kind, draft: kept } = useStore(studio);
+  const { open, section, kind, draft: kept, pending: asked } = useStore(studio);
   // A look's colours are the theme's (ADR 0009): the colour field as Simple mode has it.
   const [renderers] = useState<FieldRenderers>(() => ({
     color: (props: FieldRendererProps<"color">) => <ColourField {...props} session={session} />,
@@ -105,7 +107,12 @@ export function ThemeStudio({
     () => (draft === undefined ? undefined : { look: draft, theme: themeWithDraft(theme, draft) }),
     [theme, draft],
   );
-  const [pending, setPending] = useState<Pending>();
+  // The question about the draft, while there is one to ask about: an undo can end it meanwhile.
+  const pending = draft === undefined ? undefined : asked;
+  useEffect(() => {
+    if (asked !== undefined && draft === undefined) studio.setState({ pending: undefined });
+  }, [asked, draft, studio]);
+  const setPending = (next: DraftPending | undefined) => studio.setState({ pending: next });
   /** Writes the draft as one step, once asked (D7); whether it is in the theme now. */
   const apply = async (): Promise<boolean> => {
     if (draft === undefined) return true;
@@ -115,7 +122,7 @@ export function ThemeStudio({
   };
   const discard = () => studio.setState({ draft: undefined });
   /** Does what waited on the question: closes, or shows the other kind. */
-  const go = (after: Pending) =>
+  const go = (after: DraftPending) =>
     studio.setState("close" in after ? { open: false } : { kind: after.kind });
   // The cards and text styles show each font in itself; My themes is read again as it opens.
   useEffect(() => {

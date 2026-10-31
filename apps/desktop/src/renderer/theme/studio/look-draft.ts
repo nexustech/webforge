@@ -5,17 +5,20 @@ import type { LookDraft } from "./studio-state.js";
 const lookIn = (theme: Theme, type: string): Readonly<Record<string, unknown>> =>
   theme.looks?.[type] ?? {};
 
+/** Whether the look's `field` is `value` already (`undefined`: it doesn't set the field). */
+const holds = (look: Readonly<Record<string, unknown>>, field: string, value: unknown) =>
+  JSON.stringify(look[field]) === JSON.stringify(value);
+
 /**
- * What applying `draft` changes in `theme`'s look for its kind (4.10): each field that differs, to
- * its draft value, or `undefined` for one the draft takes off. Empty when the draft is the look.
+ * What applying `draft` changes in `theme`'s look for its kind now (4.10): each field the draft
+ * changes that the look doesn't already hold, to its value, or `undefined` for one the draft takes
+ * off. Only the draft's own fields: a change made to the look since (an undo, another theme, *Style
+ * this ‹kind›…*) stays. Empty when the draft would change nothing.
  */
 export function draftChange(theme: Theme, draft: LookDraft): Record<string, unknown> {
   const look = lookIn(theme, draft.type);
-  const fields = new Set([...Object.keys(look), ...Object.keys(draft.look)]);
   return Object.fromEntries(
-    [...fields]
-      .filter((field) => JSON.stringify(look[field]) !== JSON.stringify(draft.look[field]))
-      .map((field) => [field, draft.look[field]]),
+    Object.entries(draft.change).filter(([field, value]) => !holds(look, field, value)),
   );
 }
 
@@ -24,8 +27,9 @@ export const draftChanges = (theme: Theme, draft: LookDraft | undefined): draft 
   draft !== undefined && Object.keys(draftChange(theme, draft)).length > 0;
 
 /**
- * `draft`, or a new one for `type` from the theme's look, with `change` made: each field to its
- * value, or taken off for `undefined`, as `setLook` would. `undefined` once it is the look again.
+ * `draft`, or a new one for `type`, with `change` made too: each field to its value, or taken off
+ * for `undefined`, as `setLook` would. Only fields that differ from the theme's look now are kept;
+ * `undefined` once none do.
  */
 export function changeDraft(
   theme: Theme,
@@ -34,22 +38,31 @@ export function changeDraft(
   item: string,
   change: Readonly<Record<string, unknown>>,
 ): LookDraft | undefined {
-  const look: Record<string, unknown> = {
-    ...(draft?.type === type ? draft.look : lookIn(theme, type)),
-  };
+  const merged: Record<string, unknown> = { ...(draft?.type === type ? draft.change : {}) };
   for (const [field, value] of Object.entries(change)) {
-    if (value === undefined) delete look[field];
-    else look[field] = structuredClone(value);
+    merged[field] = value === undefined ? undefined : structuredClone(value);
   }
-  const next = { type, item, look };
-  return draftChanges(theme, next) ? next : undefined;
+  const next = { type, item, change: merged };
+  const kept = draftChange(theme, next);
+  return Object.keys(kept).length === 0 ? undefined : { type, item, change: kept };
 }
 
-/** `theme` with `draft` as its kind's look: what the previews draw while it isn't applied. */
+/** The kind's look as `draft` would make it: the theme's look now, with the draft's changes. */
+export function draftLook(theme: Theme, draft: LookDraft): Record<string, unknown> {
+  const look: Record<string, unknown> = { ...lookIn(theme, draft.type) };
+  for (const [field, value] of Object.entries(draft.change)) {
+    if (value === undefined) delete look[field];
+    else look[field] = value;
+  }
+  return look;
+}
+
+/** `theme` with `draft` made to its kind's look: what the previews draw while it isn't applied. */
 export function themeWithDraft(theme: Theme, draft: LookDraft): Theme {
+  const look = draftLook(theme, draft);
   const looks = { ...theme.looks };
-  if (Object.keys(draft.look).length === 0) delete looks[draft.type];
-  else looks[draft.type] = draft.look as NonNullable<Theme["looks"]>[string];
+  if (Object.keys(look).length === 0) delete looks[draft.type];
+  else looks[draft.type] = look as NonNullable<Theme["looks"]>[string];
   const { looks: _, ...rest } = theme;
   return Object.keys(looks).length === 0 ? rest : { ...rest, looks };
 }

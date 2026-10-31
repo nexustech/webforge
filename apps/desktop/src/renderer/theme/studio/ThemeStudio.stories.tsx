@@ -110,7 +110,7 @@ export const ComponentsDraft: Story = dialogStory((session) => {
     draft: {
       type: "Button",
       item: "Button",
-      look: { lookCorners: "full", lookShadow: "large" },
+      change: { lookCorners: "full", lookShadow: "large" },
     },
   });
   return (

@@ -9,7 +9,7 @@ import {
 import { t } from "@webforge/i18n";
 import { LOOK_FIELDS, type NodeDoc, type ThemeTokens } from "@webforge/model";
 import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
 import { specOf } from "../../editor/EditPanelHost.js";
@@ -144,6 +144,7 @@ export function StudioComponents({
   renderers,
 }: StudioComponentsProps) {
   const [enlarged, setEnlarged] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null);
   const groups = lookKinds(library);
   const all = groups.flatMap((group) => group.kinds);
   const shown = all.find((each) => each.type === kind) ?? all[0];
@@ -152,7 +153,7 @@ export function StudioComponents({
   // The draft for this kind, if there is one: what its controls and previews show.
   const drafted = draft?.look.type === shown.type ? draft : undefined;
   const look: Readonly<Record<string, unknown>> =
-    drafted?.look.look ?? theme.looks?.[shown.type] ?? {};
+    (drafted?.theme ?? theme).looks?.[shown.type] ?? {};
   const previewType = shown.type === CARD_KIND ? CARD_PREVIEW : shown.type;
   const names =
     def === undefined
@@ -232,6 +233,7 @@ export function StudioComponents({
             ) : (
               // Clicked, it opens larger, before and after (4.10).
               <button
+                ref={opener}
                 type="button"
                 aria-label={t("theme.components.enlarge", { item: shown.label })}
                 title={t("theme.components.enlarge", { item: shown.label })}
@@ -245,8 +247,6 @@ export function StudioComponents({
         )}
         {enlarge === undefined ? null : (
           <StudioLookPreview
-            // Each opening starts on the changes, whatever was shown last time.
-            key={enlarged ? "open" : "closed"}
             open={enlarged}
             onOpenChange={setEnlarged}
             item={shown.label}
@@ -254,6 +254,7 @@ export function StudioComponents({
             theme={theme}
             draft={drafted?.theme}
             previews={enlarge}
+            opener={opener}
           />
         )}
         {drafted === undefined ? null : (

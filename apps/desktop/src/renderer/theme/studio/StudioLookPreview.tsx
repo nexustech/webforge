@@ -9,7 +9,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { NodeDoc, Theme } from "@webforge/model";
-import { useState } from "react";
+import { type RefObject, useState } from "react";
 import type { ItemPreviews } from "../../editor/areas.js";
 
 /** Which look the larger preview shows: the theme's now, or with the changes not applied yet. */
@@ -27,6 +27,8 @@ type StudioLookPreviewProps = {
   /** The theme with the look not applied yet; none while there are no changes. */
   readonly draft: Theme | undefined;
   readonly previews: ItemPreviews;
+  /** Where the focus goes back to once it closes: the preview that opened it. */
+  readonly opener: RefObject<HTMLElement | null>;
 };
 
 /**
@@ -42,14 +44,30 @@ export function StudioLookPreview({
   theme,
   draft,
   previews,
+  opener,
 }: StudioLookPreviewProps) {
-  // The changes first, while there are some: they are what the person is looking at.
+  // The changes first, while there are some: they are what the person is looking at. Each opening
+  // starts on them again, whatever was shown last time; the dialog itself stays, so it closes as
+  // a dialog does and gives the focus back to the preview.
   const [chosen, setChosen] = useState<Shown>("draft");
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setChosen("draft");
+  }
   const shown: Shown = draft === undefined ? "now" : chosen;
   const drawnIn = shown === "draft" && draft !== undefined ? draft : theme;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-3 overflow-auto sm:max-w-3xl">
+      <DialogContent
+        className="flex max-h-[calc(100dvh-2rem)] max-w-[calc(100%-2rem)] flex-col gap-3 overflow-auto sm:max-w-3xl"
+        // Back to the preview that opened it, for the keyboard: it is no trigger of the dialog's.
+        onCloseAutoFocus={(event) => {
+          if (opener.current === null) return;
+          event.preventDefault();
+          opener.current.focus();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{t("theme.components.previewTitle", { item })}</DialogTitle>
           <DialogDescription>
