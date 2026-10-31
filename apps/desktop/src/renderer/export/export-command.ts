@@ -1,6 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
-import { DEFAULT_EXPORT_CHOICES, type SiteDoc, siteToSnapshot } from "@webforge/model";
+import { DEFAULT_EXPORT_CHOICES, mediaItem, type SiteDoc, siteToSnapshot } from "@webforge/model";
 import { blockingCount, checkSite } from "@webforge/site-check";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
@@ -15,9 +15,13 @@ import { exportRequestFor } from "./export-request.js";
 
 const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
 
-/** What to tell the person about an export that didn't happen; `null` when they cancelled. */
+/**
+ * What to tell the person about an export of `site` that didn't happen; `null` when they
+ * cancelled. An image is named as the Media panel shows it.
+ */
 export function exportFailure(
   result: Exclude<ExportResult, { status: "exported" }>,
+  site: SiteDoc,
 ): string | null {
   if (result.status === "canceled") return null;
   switch (result.reason) {
@@ -32,8 +36,16 @@ export function exportFailure(
     case "build-failed":
       return t("export.failed.buildFailed");
     case "unreadable-image":
-      return t("export.failed.unreadableImage", { image: result.image ?? "" });
+      return t("export.failed.unreadableImage", {
+        image: imageFileName(result.image, site),
+      });
   }
+}
+
+/** The file name Media shows for image `id`, or the id itself if the image has gone. */
+function imageFileName(id: string | undefined, site: SiteDoc): string {
+  if (id === undefined) return "";
+  return mediaItem(site.media, id)?.fileName ?? id;
 }
 
 /** What an export has reached, under the toast's "Exporting…"; images and pages count from 1. */
@@ -228,7 +240,7 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
         flow.dialogs.showReport(exportReport(result, site));
         return;
       }
-      const failure = exportFailure(result);
+      const failure = exportFailure(result, site);
       // A toast updated in place keeps what it isn't given: the outcome drops the progress line
       // and the Cancel button.
       if (failure === null) toast.dismiss(progress);

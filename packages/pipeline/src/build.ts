@@ -74,7 +74,7 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
   override readonly name = "BuildError";
   /** The title of the page the build stopped at, for the message telling the person to fix it. */
   readonly page: string | undefined;
-  /** The Media file the build couldn't decode (`unreadable-image`), for the person to replace. */
+  /** The id of the Media image the build couldn't decode (`unreadable-image`), to replace. */
   readonly image: string | undefined;
 
   constructor(
@@ -106,7 +106,7 @@ async function decodingOf<T>(item: MediaItem, make: () => Promise<T>): Promise<T
     return await make();
   } catch (error) {
     if (error instanceof UndecodableImageError) {
-      throw new BuildError("unreadable-image", error.message, { image: item.name, cause: error });
+      throw new BuildError("unreadable-image", error.message, { image: item.id, cause: error });
     }
     throw error;
   }

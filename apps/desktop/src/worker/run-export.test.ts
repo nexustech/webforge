@@ -231,7 +231,7 @@ describe("runExport", () => {
       type: "failed",
       code: "unreadable-image",
       detail: "unreadable-image",
-      image: "hero",
+      image: "hero-photo",
     });
     expect(existsSync(destination)).toBe(false);
   }, 60_000);

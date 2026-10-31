@@ -709,7 +709,7 @@ describe("buildSite: checks (X5)", () => {
     await expect(buildSite(site, siteLibrary, resources)).rejects.toMatchObject({
       name: "BuildError",
       code: "unreadable-image",
-      image: "huge-photo",
+      image: "huge",
     });
   });
 

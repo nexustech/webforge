@@ -238,14 +238,17 @@ const READ_TABLES = ["meta", "documents", "blobs", "assets"] as const;
  * triggers either; an older or the current format's whole schema is compared once `meta` is read.
  */
 function checkTablesBeforeReading(schema: readonly string[]): void {
-  const rows = schema.map((line) => schemaRowSchema.parse(JSON.parse(line)));
-  const expected = getExpectedSchema(FORMAT_VERSION) ?? [];
-  const metaLine = (lines: readonly string[]) =>
-    lines.find((line) => schemaRowSchema.parse(JSON.parse(line)).name === "meta");
+  const parse = (line: string) => schemaRowSchema.parse(JSON.parse(line));
+  const rows = schema.map(parse);
+  // Names are unique in `sqlite_schema`, so there is one `meta` line at most in each.
+  const meta = schema[rows.findIndex((row) => row.name === "meta")];
+  const expectedMeta = getExpectedSchema(FORMAT_VERSION)?.find(
+    (line) => parse(line).name === "meta",
+  );
   const refuse = (message: string) => {
     throw new ProjectFileError("unexpected-schema", message);
   };
-  if (metaLine(schema) === undefined || metaLine(schema) !== metaLine(expected)) {
+  if (meta === undefined || meta !== expectedMeta) {
     refuse("The project's metadata table is not the one every format has");
   }
   for (const name of READ_TABLES) {
