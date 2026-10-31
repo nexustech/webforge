@@ -1,0 +1,51 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency updates (spec/03 §7, #656): weekly and grouped, versions kept exact. Renovate reads the pnpm catalog in pnpm-workspace.yaml, which Dependabot can't.",
+  "extends": ["config:recommended"],
+  "timezone": "Europe/London",
+  "schedule": ["before 6am on monday"],
+  "minimumReleaseAge": "3 days",
+  "rangeStrategy": "pin",
+  "semanticCommits": "enabled",
+  "semanticCommitType": "chore",
+  "semanticCommitScope": "deps",
+  "labels": ["type/chore"],
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Every minor and patch update in one pull request a week; each major on its own.",
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "groupName": "minor and patch updates",
+      "groupSlug": "minor-and-patch"
+    },
+    {
+      "description": "The workflows' actions together.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "description": "Electron on its own (risk R7): upgraded at least once a quarter, its patches and minors as they come.",
+      "matchPackageNames": ["electron"],
+      "groupName": "Electron"
+    },
+    {
+      "description": "A new Electron major waits for approval on the Dependency Dashboard: it's planned for a phase boundary (R7).",
+      "matchPackageNames": ["electron"],
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Playwright's package and CI's Playwright container move together: local and CI screenshots must use the same image (tools/src/visual-docker.ts).",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "groupName": "Playwright"
+    },
+    {
+      "description": "Puck on its own: only packages/engine imports it, and an upgrade needs pnpm e2e:perf (ADR 0007).",
+      "matchPackageNames": ["@puckeditor/core"],
+      "groupName": "Puck"
+    }
+  ]
+}

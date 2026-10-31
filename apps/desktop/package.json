@@ -54,7 +54,7 @@
     "@webforge/themes": "workspace:*",
     "babel-plugin-react-compiler": "catalog:",
     "daisyui": "catalog:",
-    "electron": "44.9.1",
+    "electron": "44.10.1",
     "electron-builder": "26.15.3",
     "electron-vite": "6.0.0",
     "fast-check": "4.10.2",
