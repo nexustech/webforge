@@ -56,7 +56,12 @@ test("a secret encrypted by one run decrypts in the next (safeStorage, 0.3)", as
   // The key on disk first, as it is long before a person saves a password (#678); macOS keeps its
   // key in the Keychain instead.
   if (process.platform === "win32") {
-    await expect.poll(() => keyWritten(userData), { timeout: 30_000 }).toBe(true);
+    await expect
+      .poll(() => keyWritten(userData), {
+        message: "the safeStorage key is in Local State",
+        timeout: 30_000,
+      })
+      .toBe(true);
   }
   await app.close();
 
