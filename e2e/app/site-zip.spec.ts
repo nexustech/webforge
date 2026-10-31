@@ -83,6 +83,9 @@ test("saves a copy of the site as a ZIP and opens it again as a new site", async
   await chooseFromMenu(app, page, "File", "Save a Copy as ZIP");
   await expect(page.getByText("Saved a copy of your site as “Rosa's Bakery.zip”.")).toBeVisible();
   expect(existsSync(zip)).toBe(true);
+  // The save can finish before File's menu has finished closing, and a click on File while it
+  // closes leaves it closed (#689): wait until it has gone.
+  await expect(page.getByRole("menu")).toHaveCount(0);
 
   // Opened from the ZIP the open dialog gives, as a new site where the save dialog says.
   await app.evaluate(

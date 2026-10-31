@@ -47,13 +47,8 @@ export async function chooseFromMenu(
     await expect.poll(() => inMenuBar(app, menu, item, true)).toBe(true);
     return;
   }
-  // A menu can close again as it opens, when the window settles just after a command (the
-  // toast and save status of Save a Copy as ZIP, 4.7): then the item is gone, so open it again.
-  await expect(async () => {
-    if ((await page.getByRole("menu").count()) > 0) await page.keyboard.press("Escape");
-    await page.getByRole("menuitem", { name: menu, exact: true }).click();
-    await page.getByRole("menuitem", { name: item }).click({ timeout: 5_000 });
-  }).toPass({ timeout: 30_000 });
+  await page.getByRole("menuitem", { name: menu, exact: true }).click();
+  await page.getByRole("menuitem", { name: item }).click();
 }
 
 /** Whether the editor's menu `menu` lists an item whose label starts with `item`. */
