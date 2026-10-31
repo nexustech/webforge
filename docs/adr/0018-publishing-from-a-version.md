@@ -60,23 +60,25 @@
 
 ### 3. A version is what the person sees, and builds are made from versions (A4)
 - **Before any automatic version** (on publish, before a restore, before a site-wide action), the renderer ends the text session and awaits `autosave.flush()`. It then calls main with its session id (A7). The version is then the site as the person sees it, not as it stood up to 30 s earlier.
-- **Publishing builds what it records:**
-  1. Main saves the "Published …" version from the store.
-  2. It reads the version back with `ProjectStore.readVersionSite(id)`, which migrates as `readSite` does (#664).
-  3. It runs the gate on that `SiteDoc` (decision 4) and sends it in the worker's `publish` job (decision 1).
+- **Publishing builds what it records, and records only what went live:**
+  1. In one turn of main's event loop, so no autosave commit lands between them, main reads the site (`readSite`, migrated) and the manifest of its documents, as `saveVersion` would take it, and runs the gate on that `SiteDoc` (decision 4). A *Must fix* stops here, with nothing saved.
+  2. It sends that `SiteDoc` in the worker's `publish` job (decision 1), and holds the manifest.
+  3. **A publish that finishes** (`published`, whatever the live check found) saves the "Published …" version from the held manifest, and records where it went and the live check's result on it (`published_to`, #664).
+  4. **One that doesn't** (the build or the upload failed, the host refused it, or the person cancelled) saves nothing. Five failed attempts during an outage leave no versions behind to push real ones out of the last 20 automatic versions (P3), or to be offered for republishing.
 
-  What went live is the version recorded, by construction.
-- **Republish (4.6) is the same flow** with an existing version's id, and nothing new is saved. The renderer never opens the version.
-- **The worker makes the snapshot.** `siteContentFor` moves from the renderer to `@webforge/site-components`, beside `mediaUsedBy` and `documentsLinkedBy`, which it is built from. It needs no React and no Node, so the renderer (export, preview) and the worker (publish) call the same function. Main still never imports site components.
+  What went live is the version recorded, by construction. The held manifest's blobs stay in the file meanwhile: garbage collection runs only when the site closes (A1), and closing cancels a publish first. `ProjectStore.saveVersion` takes the held manifest for this (#664).
+- **Republish (4.6) is the same flow** from a stored version: main reads it with `ProjectStore.readVersionSite(id)`, which migrates as `readSite` does (#664), gates it and publishes it. Nothing new is saved: a publish that finishes records itself on that version (`published_to`). The renderer never opens the version.
+- **The worker makes the snapshot.** `siteContentFor` moves from the renderer to `@webforge/site-components`, beside `mediaUsedBy` and `documentsLinkedBy`, which it is built from. It needs no React and no Node, so the renderer (export, preview) and the worker (publish) call the same function. Main never imports the components: the gate's catalogue comes with `site-check` (decision 4).
 - **Bytes as for an export.** The worker asks for each image and document by hash as the build reaches it (R15). Main answers as it does for an export (`ProjectSession.#readMedia`): Media's files and the site code's bundled files, never a site document.
 - **Alternatives:**
   - *The renderer sends a snapshot, and main saves a version beside it.* The two can differ, and republishing a stored version would need it opened in the editor first, which 4.6's scope rules out.
   - *Version the committed rows without flushing.* The version misses up to 30 s of edits: the very edits "before restore" exists to keep.
+  - *Save the version before publishing, then rename or delete it on the outcome.* A crash or a quit mid-publish would leave a version that never went live, for Version History to explain or prune. Holding the manifest until the outcome leaves nothing to clean up.
 
 ### 4. Main runs the publish gate on what it builds (A6; amends ADR 0016)
 - **`publishGate(site, target)`** in `@webforge/site-check` runs `checkSite(…, "publish")`. It adds what only the destination knows, such as Netlify Forms without a Netlify destination, and returns the *Must fix* findings.
-- **Main runs it** in the publish and republish handlers, on the `SiteDoc` it is about to build, before asking the worker. With any *Must fix*, the handler refuses with `must-fix` and the count. A stored version with an external script therefore can't be republished (X5).
-  - `site-check` is framework-free and reads the catalogue as data, so main can import it (`main-no-react` holds).
+- **Main runs it** in the publish and republish handlers, on the `SiteDoc` it is about to build, before saving anything or asking the worker. With any *Must fix*, the handler refuses with `must-fix` and the count. A stored version with an external script therefore can't be republished (X5).
+  - **The catalogue comes with it.** `checkSite` takes the components' catalogue as input, and `publishGate` passes it from `@webforge/site-components/catalogue-data` itself, the JSON subpath `site-check` already reads (`commands-only-catalogue-data`). So main imports `site-check` only, never `site-components`: `site-check` is framework-free, and `main-no-react` holds.
 - **The renderer still checks first,** for the panel: the person sees *Must fix* with jump-to-fix before anything is sent (ADR 0016). Main's check is the one that can't be bypassed.
 - **Exports stay as they are.** They build the open site, which the renderer has just checked.
 - **Alternatives:**
@@ -87,7 +89,7 @@
 - **4.4 (#72)** stores destinations in `meta`, adds `publisherFor`, and drops `publish` from `siteSettingsSchema` with an ADR 0012 step. It keeps secrets, the S2 fingerprint and trust in userData, under #666's keys.
 - **4.5 (#73)** adds the `publish` job, its progress and outcome. It adds the flush-then-call flow and the main handler: save the version, read it back, gate, build and publish in the worker. The IPC carries the session id and an operation id (#663, #665).
 - **4.6 (#74)** republishes through 4.5's handler with an existing version id.
-- **#664** adds `readVersionSite`. Storage format 2's `published_to` records where a version went.
+- **#664** adds `readVersionSite`, and a `saveVersion` that takes a manifest read earlier. Storage format 2's `published_to` records where a version went and what the live check found.
 - **Prep work:** `siteContentFor` moves to `@webforge/site-components`, and `publishGate` is added, both with 4.5.
 - **Accepted limits:**
   - A secret crosses one MessagePort, inside the app, once per publish.

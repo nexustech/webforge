@@ -216,12 +216,12 @@ interface Publisher {
 
 **Publish** ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md)):
 1. The renderer runs Site Check with the stricter publish rules (X5, ADR 0016), ends the text session and flushes autosave, then asks main to publish.
-2. Main saves the automatic version "Published …" (08), reads it back migrated, and runs the publish gate on it; a *Must fix* stops here.
-3. Main reads the destination's secret after checking its fingerprint (S2), and sends the version, the destination and the secret to the build worker as one job.
+2. Main reads the site from the store and runs the publish gate on it; a *Must fix* stops here, with nothing saved. It holds the manifest of the documents it read.
+3. Main reads the destination's secret after checking its fingerprint (S2), and sends the site, the destination and the secret to the build worker as one job.
 4. The worker builds, diffs against the destination's manifest, and uploads assets → pages → `index.html`, streaming progress; cancel stops it.
-5. Verify, then main records the result on the version.
+5. Verify. Once the publish has finished, main saves the automatic version "Published …" (08) from the held manifest, with where it went and what the check found. A publish that failed or was cancelled saves no version.
 
-Republishing a version (4.6) is the same flow from step 2, with that version and nothing new saved.
+Republishing a version (4.6) is the same flow from step 2, starting from that version: nothing new is saved, and a publish that finishes is recorded on it.
 
 ## 8. Exported site contract
 - Flat pages (`index.html`, `about.html`, `services/web-design.html`), relative URLs, opens from disk (X1).
