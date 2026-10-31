@@ -406,8 +406,6 @@ jobs:
           # shellcheck disable=SC2086 # BROWSERS is a space-separated list
           for browser in $BROWSERS; do args="$args --project=export-$browser"; done
           if [ "$RUNNER_OS" = Windows ]; then args="$args --project=export-msedge"; fi
-          # TEMPORARY (#676): only the flaky test, 50 times. Reverted before the PR is ready.
-          args="--project=app --repeat-each=50 app/theme-not-changed.spec.ts"
           echo "args=$args" >> "$GITHUB_OUTPUT"
 
       # Playwright splits the tests across the matrix's shards by file (the export setup goes with
