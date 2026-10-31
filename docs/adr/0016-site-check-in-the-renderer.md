@@ -32,5 +32,6 @@ Site Check is also a panel that is live: it updates as the person edits, and a f
   - The build still refuses what it can't write (`reserved-name`, R16) and warns about broken links and missing images in its report.
   - The renderer's check comes first, so those refusals show up in Site Check before an export starts.
 - **Publishing (4.5) runs `checkSite(…, "publish")` in the renderer the same way.** It is stricter (X5): broken links, a missing web address, placeholder text, unconfigured forms and missing titles become *Must fix*.
+  - **Amended by [ADR 0018](0018-publishing-from-a-version.md) §4:** main also runs the publish gate (`publishGate`) on the version it builds, before the worker starts. A republished version (4.6) never passes through the renderer, so the renderer's check is for the panel, and main's is the one that can't be bypassed.
 - **A rule that needs the rendered site cannot be written this way.** Examples are external requests found in Custom Code's output, or an image's bytes. Such a rule would run in the worker as part of the build and report back through the export's result. 3.9's external resources may be the first.
 - **Later rules join the registry** (`SITE_CHECK_RULES`), with their words in `siteCheck.rule.<id>`: forms (3.7), external resources (3.9).
