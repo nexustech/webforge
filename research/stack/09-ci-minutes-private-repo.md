@@ -1,6 +1,6 @@
 # CI minutes if the repository goes private again
 
-**Status:** ℹ️ Research for a future decision (28 Oct 2026). Nothing has changed: CI runs as it does today while the repository is public. The proposals are numbered CI-1…CI-6 so that a later decision can cite them.
+**Status:** ℹ️ Research for a future decision (28 Oct 2026). Updated 31 Oct 2026: CI-2 is made, and CI-1 in a softer form (an hourly schedule); see §8. The rest is unchanged while the repository is public. The proposals are numbered CI-1…CI-6 so that a later decision can cite them.
 
 **Question:** when nexustech/webforge goes private again, how can CI stay within GitHub Free's included Actions minutes, and in particular avoid the expensive macOS runners?
 
@@ -178,3 +178,41 @@ Current settings to remember: `FULL_CI_ENABLED` turns Windows and macOS off when
   - [c7i.xlarge in us-east-1](https://calculator.holori.com/aws/ec2/c7i.xlarge/us-east-1) (Holori)
   - [EC2 Mac instances](https://aws.amazon.com/blogs/aws/use-amazon-ec2-m1-mac-instances-to-build-test-macos-ios-ipados-tvos-and-watchos-apps/) (AWS News Blog)
   - The AWS figures come from third-party trackers of the AWS Pricing API. Confirm them on AWS's own pricing pages before budgeting.
+
+## 8. Update, 31 Oct 2026: CI-1 and CI-2 made, and the longest jobs sharded
+
+**Measured again, 28 Oct 10:53 → 31 Oct 07:25 UTC** (the same scripts): 126 CI runs, 440 merge-queue runs and 45 merged PRs, quieter after 28 Oct with Phase 3's end and the Phase 4 pause.
+- **Minutes:** 3,988 Linux, 3,239 Windows and 3,272 macOS, so 43,186 counted if billed, 76% of it macOS.
+- **Runs per PR:** 2.0 full runs per merged PR, about as before.
+- **Waste:**
+  - cancelled jobs 13% of the counted minutes, failed jobs 3%;
+  - 40 of the 126 runs were run again (34 twice, 6 three times).
+- **Merge queue:** the 15-minute schedule made 256 of the 440 runs.
+
+**Failures.** 20 runs failed. The flaky tests behind most of the re-runs are tracked as issues:
+- `theme-not-changed.spec.ts` (macOS, Linux and the nightly run on `main`);
+- `image.spec.ts` (macOS);
+- timing limits that slow runners miss: `check-cost.test.ts` on Windows, and opening budgets on macOS;
+- four one-off Windows E2E failures.
+
+The real failures, caused by the PR itself, were sometimes run again unchanged, which wastes a run.
+
+**Job times:**
+
+| Job | Average (min) |
+|---|---|
+| Storybook | 17.4 |
+| E2E, Linux, one shard | 11.5 |
+| E2E, macOS, per shard | 10.7 |
+| E2E, Windows, per shard | 9.5 |
+| Check, Windows | 9.2 |
+| Check, macOS | 7.4 |
+| Check, Linux | 6.6 |
+
+On Windows and macOS, `Check` was the unit tests twice (`pnpm test`, then `pnpm test:compiled`) plus a 3-second licence check.
+
+**Done (PR "ci: unit tests on Linux for PRs, an hourly queue safety net, and two shards for Storybook and Linux E2E"):**
+- **CI-2:** Windows' and macOS' unit tests run nightly and in "Run workflow" runs, not on PRs. Their licence check moved into the packaged-app job. That's about 17 fewer minutes per full run, about 92 of the ~410 it would count if billed.
+- **CI-1, softened:** the merge queue's schedule runs hourly rather than every 15 minutes. It stays as a safety net because the `auto_merge_enabled` trigger has been missed before.
+- **Sharding, for run length rather than minutes:** Storybook and Linux's E2E run in two shards each, so neither of the two longest jobs holds up a PR as long. Shorter runs also mean fewer PRs are in flight when another merges.
+- **What it costs:** a bug in the unit tests that shows only on Windows or macOS is found by the nightly run on `main`, not before the merge (for example the macOS storage torn-copy test, #295, and a Windows timing test).

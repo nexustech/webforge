@@ -15,10 +15,14 @@ name: CI
 #   changed; on Linux they run in Playwright's container (`export-browsers`), so their system
 #   packages never come from the runners' slow Ubuntu mirror. E2E is skipped when a PR changes only
 #   unit tests, stories, screenshots or tooling.
-# - To keep runs short: E2E runs in two shards each on Windows and macOS; `export-browsers` waits
-#   only for Linux's E2E, whose exported site it opens; and the static checks (lint, typecheck,
-#   boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the same source on
-#   every OS.
+# - To keep runs short: E2E runs in two shards on every OS, and Storybook in two; `export-browsers`
+#   waits only for Linux's E2E, whose exported site it opens; and the static checks (lint,
+#   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
+#   same source on every OS.
+# - Unit tests run on Linux in every run, and on Windows and macOS only nightly and in "Run
+#   workflow" runs: they test the same code on every OS, and repeating them on pull requests cost
+#   about 17 minutes a run (measured 28–31 Oct 2026, research/stack/09). The licence check of each
+#   OS's own binary packages runs in the packaged-app job, which installs them anyway.
 #
 # Windows and macOS run only while the repository variable FULL_CI_ENABLED is `true`. Unset it
 # (`gh variable delete FULL_CI_ENABLED`) to make CI Linux-only, e.g. if the repository goes
@@ -154,8 +158,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Windows and macOS while FULL_CI_ENABLED is true (see the notes above).
-        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
+        # Windows and macOS while FULL_CI_ENABLED is true, and not on pull requests (see the notes
+        # above).
+        os: ${{ fromJSON(vars.FULL_CI_ENABLED == 'true' && github.event_name != 'pull_request' && '["ubuntu-latest", "windows-latest", "macos-latest"]' || '["ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     steps:
@@ -176,8 +181,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Static checks read the source, which is the same on every OS, so they run on Linux only.
-      # Windows and macOS run what can differ by OS: the licences of their own binary packages and
-      # the tests.
+      # Windows and macOS run the tests here (nightly), and the licences of their own binary
+      # packages in the packaged-app job.
       - name: Lint and format (biome ci)
         if: matrix.os == 'ubuntu-latest'
         run: pnpm lint
@@ -195,7 +200,8 @@ jobs:
         run: pnpm knip
 
       - name: Dependency licences (C1)
-        # Runs on every OS because each installs its own platform-specific binary packages.
+        # Linux's binary packages; the packaged-app job checks Windows' and macOS'.
+        if: matrix.os == 'ubuntu-latest'
         run: pnpm licence-check
 
       - name: No hard-coded UI strings
@@ -222,17 +228,20 @@ jobs:
           retention-days: 7
 
   e2e-linux:
-    # Linux runs the E2E tests in one job, which `export-browsers` waits for (it opens the site
-    # this job exports), so it starts without waiting for Windows and macOS. The steps are shared
-    # with `e2e` through the `e2e-steps` anchor.
+    # Linux runs the E2E tests in a job of its own, which `export-browsers` waits for (it opens the
+    # site this job exports), so it starts without waiting for Windows and macOS. Two shards: one
+    # took 11–12 minutes, the longest E2E job. The steps are shared with `e2e` through the
+    # `e2e-steps` anchor.
     # The name uses the matrix, so GitHub doesn't add the matrix values to it.
-    name: E2E (${{ matrix.os }})
+    name: E2E (${{ matrix.os }}, ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - { os: ubuntu-latest, shard: 1, shards: 1 }
+        os: [ubuntu-latest]
+        shard: [1, 2]
+        shards: [2]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     env: &e2e-env
@@ -394,7 +403,7 @@ jobs:
           fi
 
       # Playwright splits the tests across the matrix's shards by file (the export setup goes with
-      # the export tests that need it): Linux runs them all in one, Windows and macOS in two.
+      # the export tests that need it), two on every OS.
       - name: Electron E2E tests (Linux, virtual display)
         if: runner.os == 'Linux'
         run: xvfb-run --auto-servernum pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
@@ -412,13 +421,14 @@ jobs:
           key: ${{ steps.keys.outputs.electron }}
 
       - name: Upload the exported site
-        # For the `export-browsers` job, which opens it in Firefox and WebKit.
+        # For the `export-browsers` job, which opens it in Firefox and WebKit. Only a shard that ran
+        # the export setup has it; if none did, that job finds no site and fails.
         if: runner.os == 'Linux' && needs.changes.outputs.all-browsers == 'true'
         uses: actions/upload-artifact@v7
         with:
-          name: exported-site
+          name: exported-site-${{ matrix.shard }}
           path: .ci-cache/exported-site/
-          if-no-files-found: error
+          if-no-files-found: ignore
           retention-days: 1
 
       - name: Upload Playwright report
@@ -475,9 +485,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Download the exported site
+        # From whichever E2E shard exported it (both, if each ran the export setup: the same site).
         uses: actions/download-artifact@v8
         with:
-          name: exported-site
+          pattern: exported-site-*
+          merge-multiple: true
           path: exported-site
 
       - name: Firefox and WebKit
@@ -506,10 +518,16 @@ jobs:
     # fonts and anti-aliasing match the committed images (R8). Linux only, always. A pull request
     # shows the site components in the three development presets; the nightly run (and a manual
     # one) in every preset too, with axe (2.16). A pull request has 30 minutes: the stories, the
-    # template thumbnails and every template's pages take about 20 by now (#608).
-    name: Storybook (axe and screenshots)
+    # template thumbnails and every template's pages took about 20 in one job (#608), the longest
+    # in a run, so they run in two shards.
+    name: Storybook (axe and screenshots, ${{ matrix.shard }}/${{ matrix.shards }})
     needs: changes
     if: needs.changes.outputs.storybook == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+        shards: [2]
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
     container: mcr.microsoft.com/playwright:v1.64.1-noble
@@ -538,8 +556,8 @@ jobs:
 
       - name: Axe and screenshots
         # A story or template without a committed screenshot gets one written, and the next step
-        # fails.
-        run: pnpm --filter @webforge/e2e e2e:visual --update-snapshots=missing
+        # fails. Playwright splits the stories and pages across the shards one by one.
+        run: pnpm --filter @webforge/e2e e2e:visual --update-snapshots=missing --shard=${{ matrix.shard }}/${{ matrix.shards }}
         env:
           VISUAL_SCREENSHOTS: "1"
           VISUAL_ALL_THEMES: ${{ github.event_name == 'pull_request' && '0' || '1' }}
@@ -551,7 +569,7 @@ jobs:
           new=$(git status --porcelain --untracked-files=all -- e2e/visual/__screenshots__ packages/templates/templates)
           if [ -n "$new" ]; then
             echo "$new"
-            echo "::error::New stories or templates have no screenshots yet. Run pnpm visual:docker (or pnpm template-thumbnails) and commit what it writes, or download the 'visual-screenshots' artifact."
+            echo "::error::New stories or templates have no screenshots yet. Run pnpm visual:docker (or pnpm template-thumbnails) and commit what it writes, or download the 'visual-screenshots-${{ matrix.shard }}' artifact."
             exit 1
           fi
 
@@ -559,7 +577,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: visual-screenshots
+          name: visual-screenshots-${{ matrix.shard }}
           path: |
             e2e/visual/__screenshots__/
             packages/templates/templates/*/thumbnail.png
@@ -570,7 +588,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-visual
+          name: playwright-report-visual-${{ matrix.shard }}
           path: |
             e2e/playwright-report/
             e2e/test-results/
@@ -612,6 +630,10 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Dependency licences (C1)
+        # This OS's own binary packages; Linux's are checked in `check`.
+        run: pnpm licence-check
 
       - name: Package (electron-builder --dir) and test the packaged app
         run: pnpm e2e:packaged

@@ -13,7 +13,8 @@ name: Merge queue
 # "Behind" comes from comparing the PR's head with `main`, not from GitHub's merge state, which
 # reads UNKNOWN for a while after every merge.
 # It runs after every push to `main` (a merge), every finished CI run, when auto-merge is turned
-# on, and every 15 minutes as a safety net.
+# on, and once an hour as a safety net (every 15 minutes until 31 Oct 2026: the schedule made 256 of
+# the 440 runs from 28 to 31 Oct; research/stack/09).
 on:
   push:
     branches: [main]
@@ -23,7 +24,7 @@ on:
   pull_request:
     types: [auto_merge_enabled]
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7 * * * *"
   workflow_dispatch:
     inputs:
       dry-run:
