@@ -38,9 +38,10 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **`register(ctx)` returns how to remove what it registered.** `connectAreas(areas, ctx)` registers a list in order and removes it in reverse.
 - **The composition root,** `renderer/areas.ts`, lists every area in order. Menus, the command box and each panel slot list what is registered in the order it registers, so an area's place in its list is its place there.
 - **The context** (`editor/areas.ts`) holds what an area registers into and works on:
-  - every context: `session`, `commands`, `panels`, `preferences`;
+  - every context: `api`, `session`, `commands`, `panels`, `preferences`;
   - the editor's: `toolbars`, `engine`, `siteWide`, `compileCss`, `sectionPreviews`, `editPreviews`, and `dialogs` (the editor's dialogs: naming a shared section, renaming a layer, picking an image);
-  - the window's: `siteWide`, `canvasView`, `exportSite`.
+  - the window's: `siteWide`, `canvasView`, `canvasPointer`, `settings`, `windowDialogs`, `siteCheckIgnored` and the previews.
+- **Main only through `ctx.api`** (#668): an area never reads `window.webforge`. It passes `ctx.api.<domain>` (or a call of it) to what it registers, as the Media panel gets `ctx.api.media`. `App` takes the API as one prop, `api`, which is `window.webforge` in the app, and gives the same object to both lists; it is fixed for the window's life. A new call needs no new prop or context field: add it to its IPC domain, and the area calls it.
 - **The canvas engine** is there only while the editor has one mounted. Use `ctx.engine.whileMounted(({ engine, connection }) => connect…)`: it connects to each engine as it mounts and undoes that as the engine goes. Flush the canvas's pending edit with `ctx.engine.flush()` before a command changes the document.
 - **Design or Content mode:** follow it with `followLayoutLock(ctx.preferences, (locked) => …)` (`shell/preferences-store.ts`). Never hold a ref for someone else to call.
 
@@ -119,7 +120,7 @@ A rule (`packages/site-check`, [ADR 0016](adr/0016-site-check-in-the-renderer.md
 
 ## IPC domains
 
-The renderer reaches the main process only through `window.webforge`, the preload's typed API (`shared/webforge-api.ts`). A domain is:
+The renderer reaches the main process only through `window.webforge`, the preload's typed API (`shared/webforge-api.ts`), which areas get as `ctx.api`. A domain is:
 - **its contract,** in `shared/ipc/<domain>.ts`: each call's channel (`<domain>:<call>`) and its request and response as zod schemas, which main checks on every call;
 - **listed** in `shared/ipc-contract.ts` (`ipcContract` and `ipcDomains`) and in `WebforgeApi`;
 - **the preload's builder,** `preload/api/<domain>.ts`, listed in `preload/api.ts`;
@@ -148,7 +149,8 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 - **The app's fixtures** are in `renderer/testing/`:
   - `sessionWith(site?, pageId?)`: an editor session on a new site's starter page, unless given another;
   - `registriesForTest({ mac? })`: empty panel, command and toolbar registries, and preferences;
-  - `fakePreloadApi(overrides)`: a `window.webforge` in which every call not overridden is a `vi.fn()`;
+  - `fakePreloadApi(overrides)`: a `window.webforge` in which every call not overridden is a `vi.fn()`, for `App`'s `api`, `Editor`'s and an area's context;
+  - `storyPreloadApi(overrides)` (`testing/story-preload.ts`): the same without Vitest, which Storybook doesn't load: a call not overridden does nothing;
   - `panelStory()` and `dialogStory()`: the story helpers.
 - **Why there are two places:** packages can't import the app, so only the engine fake is in `@webforge/test-utils`, and the helpers typed by the app are in the app (B6). That's a change from the issue's wording.
 - **Stories** run in Storybook's axe and screenshot checks (`pnpm visual:docker`; commit new screenshots with the PR). A story that draws after it renders says so with `data-story-state="drawing"` until it has, as `panelStory()` does.

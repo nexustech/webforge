@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { PaletteIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
@@ -28,6 +29,7 @@ export function registerThemePanel(
   siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
   studio?: StoreApi<StudioState>,
   ownThemes?: OwnThemes,
+  fonts?: () => FontsApi,
 ): () => void {
   // The field to reveal once the tab is drawn: it may be hidden when it is asked for.
   const reveal = createStore<{ readonly field?: string | undefined }>()(() => ({}));
@@ -56,6 +58,7 @@ export function registerThemePanel(
         studio={studio}
         ownThemes={ownThemes}
         reveal={reveal}
+        fonts={fonts}
       />
     );
   }
