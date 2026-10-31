@@ -5,9 +5,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import { createImagePickRequests, type ImagePickRequests } from "../editor/image-picks.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { ImageField } from "./ImageField.js";
-import { createImagePickRequests, type ImagePickRequests } from "./image-picks.js";
 import { addMedia } from "./media-commands.js";
 
 declare global {
