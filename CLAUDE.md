@@ -22,7 +22,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 - **No hard-coded UI strings.** Use `t('key')`, with wording from the glossary in `research/product/01-terminology.md`. Hierarchy: Site → Page → Section → Element.
 - **The app's name is `{appName}` in every message,** filled in from `app.name`; a rename changes that and `productName` only (`docs/branding.md`).
 - **Exported sites:**
-  - no CDNs or external requests (except allowed GA4 behind consent)
+  - no CDNs or external requests (except allowed GA4: behind consent, or cookieless when the banner is off)
   - classic `<script defer>`, no ES modules or `fetch` of local files
   - WebP + JPEG/PNG fallback images
   - readable (non-minified) HTML/CSS
