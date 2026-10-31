@@ -290,7 +290,7 @@ test("remembers the option groups closed for a kind of element, after a restart 
     await app.close();
     app = await launchDesktopApp({ userDataDir });
     page = await app.firstWindow();
-    await expect(canvas().locator("style[data-webforge-site-css]")).toHaveCount(1);
+    await waitForCanvas(page);
   };
   await reopen();
   await selectHeading();

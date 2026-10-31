@@ -55,3 +55,18 @@ export async function exportFromEditor(page: Page, timeout = 30_000): Promise<st
   await expect(report).toBeHidden();
   return text;
 }
+
+/**
+ * Opens the preview server's `url` in a browser's `site` page, once more if Windows had no socket
+ * buffer free for the connection (WSAENOBUFS, `net::ERR_NO_BUFFER_SPACE`). That happened once on
+ * CI's busy runner (#678), 50 ms after the same server had answered: the connection fails in the
+ * operating system, before it reaches the server, so it says nothing about the app.
+ */
+export async function openPreview(site: Page, url: string): ReturnType<Page["goto"]> {
+  try {
+    return await site.goto(url);
+  } catch (error) {
+    if (!String(error).includes("net::ERR_NO_BUFFER_SPACE")) throw error;
+    return site.goto(url);
+  }
+}

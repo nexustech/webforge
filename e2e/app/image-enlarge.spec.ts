@@ -7,6 +7,7 @@ import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
+import { openPreview } from "./sites.js";
 
 // An Image that opens larger when clicked (3.20): on the canvas a click selects it and opens
 // nothing; in Preview it opens the one picture in the lightbox, whole, whatever its shape.
@@ -125,7 +126,7 @@ test("opens the one picture larger in Preview, whole, and gives the focus back o
   const browser = await chromium.launch();
   try {
     const site = await browser.newPage({ viewport: { width: 1280, height: 800 } });
-    await site.goto(url ?? "");
+    await openPreview(site, url ?? "");
     const link = site.getByRole("link", { name: NAME });
     const viewer = site.getByRole("dialog", { name: "Image viewer" });
 

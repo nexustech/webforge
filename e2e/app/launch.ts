@@ -266,6 +266,14 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
 }
 
 /**
+ * How long the app may take from its window opening to its first screen, the editor or the start
+ * screen: the renderer loads and draws. Under a second on the developer's computer, but a cold
+ * start on a busy Windows runner went past Playwright's 5 s default (#678). For a test's first wait
+ * after a launch; {@link waitForCanvas} waits for the canvas too.
+ */
+export const APP_START_TIMEOUT_MS = 30_000;
+
+/**
  * How long the app may take from its window opening to a canvas showing the site with its CSS: the
  * renderer loads, the canvas mounts, and the canvas styles worker compiles the site's Tailwind CSS
  * for the first time. That is a few seconds on the developer's computer, but the first compile on a
