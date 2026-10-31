@@ -330,6 +330,23 @@ describe("registerExportHandlers", () => {
     await expect(openLast()).resolves.toBe("none");
   });
 
+  it("cancels when the hand-off comes between the check and the read, even on the last image (#663)", async () => {
+    const run = vi.fn<RunExport>(async (_snapshot, _target, { readMedia: read, signal }) => {
+      // The only image, and so the last read: no later one would notice the hand-off.
+      expect(await read(PHOTO)).toBeUndefined();
+      return signal.aborted ? { type: "cancelled" } : exported;
+    });
+    const { invoke, readMedia, opened, openLast } = setUp(toFolder("/sites/my-site"), run);
+    // The hand-off takes the gate while the read waits for it: the gated read finds no site.
+    readMedia.mockImplementationOnce(async () => {
+      opened.sessionId = SITE_B;
+      return undefined;
+    });
+
+    await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
+    await expect(openLast()).resolves.toBe("none");
+  });
+
   it("does nothing when the person cancels the dialog, and remembers nothing", async () => {
     const { invoke, runExport, choices } = setUp(toFolder(undefined));
 

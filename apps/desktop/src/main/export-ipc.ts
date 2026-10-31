@@ -153,11 +153,12 @@ export function registerExportHandlers(
     try {
       const outcome = await deps.runExport(snapshotOf(request), target, {
         // A site replaced while the export runs cancels it, as Cancel would: nothing changes on
-        // disk, rather than a site written without its images.
-        readMedia: (hash) => {
-          if (site.staleReason() === undefined) return site.readMedia(hash);
-          controller.abort();
-          return Promise.resolve(undefined);
+        // disk, rather than a site written without its images. Checked again once a read comes
+        // back empty: a hand-off can take the gate between the check and the read.
+        readMedia: async (hash) => {
+          const blob = site.staleReason() === undefined ? await site.readMedia(hash) : undefined;
+          if (blob === undefined && site.staleReason() !== undefined) controller.abort();
+          return blob;
         },
         signal: controller.signal,
         onProgress: deps.sendProgress,
