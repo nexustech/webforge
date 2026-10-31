@@ -50,16 +50,19 @@ describe("createMediaResponder", () => {
   });
 
   it("serves exactly an image's bytes when they are part of a larger buffer, uncopied (R13b)", async () => {
-    // As a pooled Buffer can be: the image is bytes 2 to 4 of 8.
-    const pooled = new Uint8Array([9, 9, 0xff, 0xd8, 0xff, 9, 9, 9]);
+    // As a pooled Buffer can be: the image sits between other bytes.
+    const pooled = new Uint8Array([9, 9, ...jpegHeader, 9, 9, 9]);
     const respond = createMediaResponder({
-      readMedia: async () => ({ mime: "image/jpeg", data: pooled.subarray(2, 5) }),
+      readMedia: async () => ({
+        mime: "image/jpeg",
+        data: pooled.subarray(2, 2 + jpegHeader.length),
+      }),
       makeThumbnail: async () => undefined,
     });
 
     const response = await respond(`webforge-media://original/${PHOTO}`);
 
-    expect(await bytes(response)).toEqual(new Uint8Array([0xff, 0xd8, 0xff]));
+    expect(await bytes(response)).toEqual(jpegHeader);
   });
 
   it("makes a thumbnail once and serves it as WebP", async () => {
@@ -93,17 +96,16 @@ describe("createMediaResponder", () => {
     expect(makeThumbnail).toHaveBeenCalledTimes(4);
   });
 
-  it("makes no thumbnail of an image over 50 megapixels or not what it's stored as (S12)", async () => {
+  it("serves no image over 50 megapixels or not what it's stored as, nor its thumbnail (S12)", async () => {
     const { respond, makeThumbnail } = setUp();
 
     for (const hash of [HUGE, MISLABELLED, HUGE]) {
-      const response = await respond(`webforge-media://thumbnail/${hash}`);
-      expect(response.status).toBe(404);
+      expect((await respond(`webforge-media://thumbnail/${hash}`)).status).toBe(404);
+      // Nor the original, which the canvas would decode: it shows its missing-image placeholder.
+      expect((await respond(`webforge-media://original/${hash}`)).status).toBe(404);
     }
-    // Refused from its first bytes, and remembered: the decoder never sees it.
+    // Refused from its first bytes, and remembered: no decoder ever sees it.
     expect(makeThumbnail).not.toHaveBeenCalled();
-    // Its original is the site's own file, which the editor's canvas shows as it is.
-    expect((await respond(`webforge-media://original/${HUGE}`)).status).toBe(200);
   });
 
   it("answers 404 when the site's file can't be read", async () => {

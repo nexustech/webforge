@@ -50,17 +50,19 @@ export function createMediaResponder(options: MediaResponderOptions) {
   /** Most recently used last; the same bytes make the same thumbnail, so the hash is the key. */
   const thumbnails = new Map<string, Promise<Uint8Array | undefined>>();
   /**
-   * Images never decoded for a thumbnail (S12), by hash: larger than 50 megapixels, or not what
-   * they're stored as. Checked from their first bytes, so the worker never gets them.
+   * Images never decoded (S12), by hash: larger than 50 megapixels, or not what they're stored
+   * as. Checked from their first bytes, so neither the thumbnail worker nor the canvas's own
+   * decoder gets them: the canvas shows its missing-image placeholder instead.
    */
   const refused = new Set<string>();
+  const decodable = (hash: string, data: Uint8Array, mimeType: ImageMime) => {
+    if (refused.has(hash)) return false;
+    if (decodableImage(data, mimeType) !== undefined) return true;
+    refused.add(hash);
+    return false;
+  };
 
   const thumbnailOf = (hash: string, data: Uint8Array, mimeType: ImageMime) => {
-    if (refused.has(hash)) return Promise.resolve(undefined);
-    if (decodableImage(data, mimeType) === undefined) {
-      refused.add(hash);
-      return Promise.resolve(undefined);
-    }
     let made = thumbnails.get(hash);
     if (made === undefined) {
       made = options.makeThumbnail(data, mimeType);
@@ -91,7 +93,7 @@ export function createMediaResponder(options: MediaResponderOptions) {
       // The site closed or its file failed underneath: the image just doesn't show.
       return notFound();
     }
-    if (blob === undefined || !isImageMime(blob.mime)) {
+    if (blob === undefined || !isImageMime(blob.mime) || !decodable(hash, blob.data, blob.mime)) {
       return notFound();
     }
     if (kind === "original") {

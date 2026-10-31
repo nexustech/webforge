@@ -183,6 +183,9 @@ const assetRowSchema = z.object({
 
 const HASH = /^[0-9a-f]{64}$/;
 
+/** The columns an asset is read from: by name, so a newer format's added ones are never read. */
+const ASSET_COLUMNS = "media_id, blob_hash, mime, width, height, original_name";
+
 function toAssetInfo(row: unknown): AssetInfo {
   const asset = assetRowSchema.parse(row);
   return {
@@ -228,16 +231,18 @@ function readSchema(db: Database.Database): string[] {
 }
 
 /** The tables every format has, whose rows the store reads: never a view, whatever the format. */
-const READ_TABLES = ["meta", "documents", "blobs", "assets"] as const;
+const READ_TABLES = ["meta", "documents", "blobs", "assets", "versions"] as const;
 
 /**
- * Checks `schema` (from {@link readSchema}) before anything is read from the file's own tables
- * (S4): a view or trigger would run the file's SQL, which can loop for ever. `meta`, which says
- * which format the file is in, must be exactly the table every format defines. The other tables
- * the store reads must be plain tables, and a file of a newer format may have no views or
- * triggers either; an older or the current format's whole schema is compared once `meta` is read.
+ * Checks `schema` (from {@link readSchema}) before anything runs on the file's own tables (S4): a
+ * view or trigger would run the file's SQL, which can loop for ever. `meta`, which says which
+ * format the file is in, must be exactly the table every format defines. The other tables the
+ * store reads must be plain tables, with no generated columns and no index on an expression or
+ * with a condition, whose SQL would run as they are read; a file of a newer format may have no
+ * views or triggers either. An older or the current format's whole schema is compared once `meta`
+ * is read.
  */
-function checkTablesBeforeReading(schema: readonly string[]): void {
+function checkTablesBeforeReading(db: Database.Database, schema: readonly string[]): void {
   const parse = (line: string) => schemaRowSchema.parse(JSON.parse(line));
   const rows = schema.map(parse);
   // Names are unique in `sqlite_schema`, so there is one `meta` line at most in each.
@@ -256,10 +261,37 @@ function checkTablesBeforeReading(schema: readonly string[]): void {
     if (row === undefined || row.type !== "table" || !/^CREATE TABLE /.test(row.sql ?? "")) {
       refuse(`The project's ${name} is not a plain table`);
     }
+    // These read only what SQLite parsed from `sqlite_schema`: none of the file's SQL runs.
+    const generated = db
+      .pragma(`table_xinfo(${name})`)
+      .some((column) => z.object({ hidden: z.number() }).parse(column).hidden >= 2);
+    const computedIndex = db
+      .pragma(`index_list(${name})`)
+      .map((index) => z.object({ name: z.string(), partial: z.number() }).parse(index))
+      .some(
+        (index) =>
+          index.partial !== 0 ||
+          db
+            .pragma(`index_xinfo(${JSON.stringify(index.name)})`)
+            .some((column) => z.object({ cid: z.number() }).parse(column).cid === -2),
+      );
+    if (generated || computedIndex) {
+      refuse(`The project's ${name} has columns or indexes of its own SQL`);
+    }
   }
   if (rows.some((row) => row.type === "view" || row.type === "trigger")) {
     refuse("The project has views or triggers");
   }
+}
+
+/** Whether `schema` is exactly what format `version` has. */
+function isSchemaOf(schema: readonly string[], version: number): boolean {
+  const expected = getExpectedSchema(version);
+  return (
+    expected !== undefined &&
+    schema.length === expected.length &&
+    schema.every((row, index) => row === expected[index])
+  );
 }
 
 const expectedSchemas = new Map<number, readonly string[]>();
@@ -332,13 +364,18 @@ function validateProject(db: Database.Database): ValidatedProject {
   if (db.pragma("application_id", { simple: true }) !== APPLICATION_ID) {
     throw new ProjectFileError("not-a-project", "The database is not a Webforge project");
   }
-  const check = db.pragma("quick_check", { simple: true });
-  if (check !== "ok") {
-    throw new ProjectFileError("corrupt", "The project fails SQLite's integrity check");
-  }
   // Its tables first, from SQLite's own record of them: nothing of the file's runs (S4).
   const schema = readSchema(db);
-  checkTablesBeforeReading(schema);
+  checkTablesBeforeReading(db, schema);
+  // quick_check runs the tables' CHECK constraints, so only a schema this build writes, all of
+  // whose SQL is its own, is checked so. A file of a newer format opens read-only, and only its
+  // tables' named columns are read.
+  if (Object.keys(SCHEMAS).some((version) => isSchemaOf(schema, Number(version)))) {
+    const check = db.pragma("quick_check", { simple: true });
+    if (check !== "ok") {
+      throw new ProjectFileError("corrupt", "The project fails SQLite's integrity check");
+    }
+  }
   let metaRows: Record<string, string>;
   try {
     metaRows = readMetaRows(db);
@@ -350,12 +387,7 @@ function validateProject(db: Database.Database): ValidatedProject {
   const version = metaSchema.shape.format_version.safeParse(metaRows.format_version);
   const newerFormat = version.success && version.data > FORMAT_VERSION;
   if (!newerFormat) {
-    const expected = version.success ? getExpectedSchema(version.data) : undefined;
-    if (
-      expected === undefined ||
-      schema.length !== expected.length ||
-      schema.some((row, index) => row !== expected[index])
-    ) {
+    if (!version.success || !isSchemaOf(schema, version.data)) {
       throw new ProjectFileError(
         "unexpected-schema",
         "The project's tables do not match its format",
@@ -718,13 +750,17 @@ export class ProjectStore {
 
   /** The asset of a Media item, or `undefined` if none was imported under this id. */
   readAsset(mediaId: string): AssetInfo | undefined {
-    const row = this.#prepare("SELECT * FROM assets WHERE media_id = ?").get(mediaId);
+    const row = this.#prepare(`SELECT ${ASSET_COLUMNS} FROM assets WHERE media_id = ?`).get(
+      mediaId,
+    );
     return row === undefined ? undefined : toAssetInfo(row);
   }
 
   /** Every asset, sorted by media id. */
   listAssets(): AssetInfo[] {
-    return this.#prepare("SELECT * FROM assets ORDER BY media_id").all().map(toAssetInfo);
+    return this.#prepare(`SELECT ${ASSET_COLUMNS} FROM assets ORDER BY media_id`)
+      .all()
+      .map(toAssetInfo);
   }
 
   /**

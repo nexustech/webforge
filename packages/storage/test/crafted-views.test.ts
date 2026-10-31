@@ -77,6 +77,57 @@ describe("a crafted file's views and triggers (S4)", () => {
     }
   });
 
+  it("runs no CHECK constraint of a file's before its tables are checked", () => {
+    // quick_check evaluates CHECK constraints: these 20 rows take it seconds.
+    const path = createProject();
+    tamper(path, (db) => {
+      db.exec("CREATE TABLE slow (x INTEGER CHECK (length(hex(randomblob(20000000))) < 0))");
+      db.pragma("ignore_check_constraints = ON");
+      const insert = db.prepare("INSERT INTO slow VALUES (?)");
+      for (let row = 0; row < 20; row += 1) insert.run(row);
+    });
+    const start = performance.now();
+    const result = openResult(path);
+    const elapsed = performance.now() - start;
+    expect(result).toBe("unexpected-schema");
+    expect(elapsed).toBeLessThan(500);
+  }, 60_000);
+
+  it("refuses a newer-format file whose tables to read have SQL of their own", () => {
+    for (const change of [
+      // A generated column runs as its row is read; an index's expression or condition as it is used.
+      "ALTER TABLE assets ADD COLUMN big BLOB GENERATED ALWAYS AS (zeroblob(1000000000)) VIRTUAL",
+      "CREATE INDEX sized ON documents (length(zeroblob(1000000000)))",
+      "CREATE INDEX some ON blobs (hash) WHERE length(zeroblob(1000000000)) > 0",
+      "ALTER TABLE versions ADD COLUMN big BLOB GENERATED ALWAYS AS (zeroblob(1000000000)) VIRTUAL",
+    ]) {
+      const path = createProject();
+      tamper(path, (db) =>
+        db.exec(`UPDATE meta SET value = '99' WHERE key = 'format_version'; ${change}`),
+      );
+      expect(openResult(path), change).toBe("unexpected-schema");
+    }
+  });
+
+  it("reads a newer format's assets by the columns it knows", () => {
+    const path = createProject();
+    const writer = ProjectStore.open(path);
+    writer.putAsset({
+      mediaId: "shop",
+      data: new Uint8Array([1, 2, 3]),
+      mime: "image/jpeg",
+      originalName: "shop.jpg",
+    });
+    writer.close();
+    tamper(path, (db) =>
+      db.exec(`UPDATE meta SET value = '99' WHERE key = 'format_version';
+        ALTER TABLE assets ADD COLUMN later TEXT`),
+    );
+    const store = ProjectStore.open(path);
+    expect(store.listAssets()).toEqual([expect.objectContaining({ mediaId: "shop" })]);
+    store.close();
+  });
+
   it("still opens a newer-format file with a table of its own, read-only", () => {
     const path = createProject();
     tamper(path, (db) =>
