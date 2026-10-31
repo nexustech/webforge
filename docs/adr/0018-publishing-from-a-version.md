@@ -87,7 +87,7 @@
 
 ## Consequences
 - **4.4 (#72)** stores destinations in `meta`, adds `publisherFor`, and drops `publish` from `siteSettingsSchema` with an ADR 0012 step. It keeps secrets, the S2 fingerprint and trust in userData, under #666's keys.
-- **4.5 (#73)** adds the `publish` job, its progress and outcome. It adds the flush-then-call flow and the main handler: save the version, read it back, gate, build and publish in the worker. The IPC carries the session id and an operation id (#663, #665).
+- **4.5 (#73)** adds the `publish` job, its progress and outcome. It adds the flush-then-call flow and the main handler: read the site and its documents' manifest, gate, build and publish in the worker, then save "Published …" from the held manifest once the publish finishes. The IPC carries the session id and an operation id (#663, #665).
 - **4.6 (#74)** republishes through 4.5's handler with an existing version id.
 - **#664** adds `readVersionSite`, and a `saveVersion` that takes a manifest read earlier. Storage format 2's `published_to` records where a version went and what the live check found.
 - **Prep work:** `siteContentFor` moves to `@webforge/site-components`, and `publishGate` is added, both with 4.5.
