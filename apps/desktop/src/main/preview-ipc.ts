@@ -8,13 +8,25 @@ import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
 import type { PreviewBuilder } from "./preview-builder.js";
 import type { PreviewScope, PreviewServer } from "./preview-server.js";
+import type { SessionSite } from "./project-session.js";
+
+/** The open site as a preview of one opening of it reaches it (R6, #663): its Media. */
+export type PreviewSite = Pick<SessionSite, "staleReason" | "readMedia">;
 
 /** What the preview reaches outside this module; injected, so tests need no Electron or network. */
 export type PreviewDeps = {
   /** A new preview server, not yet listening. */
   readonly startServer: () => PreviewServer;
-  /** A new preview builder, telling `onBuilt` each build's outcome. */
-  readonly startBuilder: (onBuilt: (outcome: PreviewOutcome) => void) => PreviewBuilder;
+  /**
+   * A new preview builder, reading the site's Media with `readMedia` and telling `onBuilt` each
+   * build's outcome.
+   */
+  readonly startBuilder: (
+    onBuilt: (outcome: PreviewOutcome) => void,
+    readMedia: PreviewSite["readMedia"],
+  ) => PreviewBuilder;
+  /** The open site for a call from a renderer loaded for opening `sessionId` (R6). */
+  readonly site: (sessionId: string) => PreviewSite;
   /** The build job for `snapshot`: its fonts read and checked here, as an export's (2.2). */
   readonly jobFor: (snapshot: SiteSnapshot) => Promise<PreviewJob>;
   /** Opens `url`, the preview's own address, in the default browser; whether it could. */
@@ -23,12 +35,15 @@ export type PreviewDeps = {
   readonly networkAddress: () => string | undefined;
 };
 
-/** The open site's preview (3.2): started by the first open, stopped when the site closes. */
+/**
+ * The open site's preview (3.2): started by the first open, stopped when the site closes. Each
+ * call that sends the site names the opening it is for (`sessionId`, #663).
+ */
 export type Preview = {
-  open(site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
-  update(site: SiteContent): Promise<void>;
+  open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
+  update(sessionId: string, site: SiteContent): Promise<void>;
   show(page: PreviewPage): void;
-  phone(site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
+  phone(sessionId: string, site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
   /** Stops the phone's listener only (Stop Phone Preview); the desktop preview goes on. */
   stopPhone(): Promise<void>;
   /** Stops the server and the builder: the site closed, or the app quits. */
@@ -45,9 +60,14 @@ const pageUrl = (host: string, port: number, base: string, page: PreviewPage) =>
  * shows the preview (or waits for its first page): the latest site then, once, whatever edits came
  * before, so an editor nobody previews spends nothing on builds. The server listens on this
  * computer only until a phone is asked for. Failures are logged by code, never with site content.
+ *
+ * A preview is of one opening of the site (#663): its builds read that opening's Media only. A call
+ * for an opening a hand-off has replaced changes nothing: the window reloads with the new site.
  */
 export function createPreview(deps: PreviewDeps): Preview {
-  let running: { server: PreviewServer; builder: PreviewBuilder } | undefined;
+  let running:
+    | { server: PreviewServer; builder: PreviewBuilder; readonly sessionId: string }
+    | undefined;
   let latest: PreviewJob | undefined;
   let stale = false;
   // Each site taken in turn: one whose fonts take longer to read never replaces a later one.
@@ -59,22 +79,42 @@ export function createPreview(deps: PreviewDeps): Preview {
     running.builder.request(latest);
   };
 
-  const start = () => {
-    if (running !== undefined) return running;
+  const stop = async () => {
+    const stopping = running;
+    running = undefined;
+    latest = undefined;
+    stale = false;
+    if (stopping === undefined) return;
+    stopping.builder.close();
+    await stopping.server.close();
+  };
+
+  /** The preview of opening `sessionId`: the running one, or a new one in place of another's. */
+  const start = async (sessionId: string) => {
+    if (running?.sessionId === sessionId) return running;
+    // Another opening's: `open` and `phone` stop it before they take the site, which this keeps.
+    if (running !== undefined) await stop();
+    const site = deps.site(sessionId);
     const server = deps.startServer();
-    const builder = deps.startBuilder((outcome) => {
-      if (outcome.type === "previewed") {
-        server.update(outcome);
-        return;
-      }
-      log.error("Webforge could not build the preview", { detail: outcome.detail });
-      server.failed();
-    });
+    const builder = deps.startBuilder(
+      (outcome) => {
+        if (outcome.type === "previewed") {
+          server.update(outcome);
+          return;
+        }
+        log.error("Webforge could not build the preview", { detail: outcome.detail });
+        server.failed();
+      },
+      (hash) => site.readMedia(hash),
+    );
     // A browser that starts watching gets the latest edits built.
     server.onWatch(build);
-    running = { server, builder };
+    running = { server, builder, sessionId };
     return running;
   };
+
+  /** Whether opening `sessionId` is still the open site's: else the call changes nothing. */
+  const current = (sessionId: string) => deps.site(sessionId).staleReason() === undefined;
 
   const take = async (site: SiteContent) => {
     const turn = ++taken;
@@ -84,18 +124,20 @@ export function createPreview(deps: PreviewDeps): Preview {
     stale = true;
   };
 
-  const listen = async (scope: PreviewScope, host?: string) => {
-    const { server } = start();
+  const listen = async (sessionId: string, scope: PreviewScope, host?: string) => {
+    const { server } = await start(sessionId);
     const port = await server.listen(scope, host);
     build();
     return { port, base: server.base };
   };
 
   return {
-    async open(site, page) {
+    async open(sessionId, site, page) {
+      if (!current(sessionId)) return "failed";
       try {
+        if (running?.sessionId !== sessionId) await stop();
         await take(site);
-        const { port, base } = await listen("local");
+        const { port, base } = await listen(sessionId, "local");
         return (await deps.openInBrowser(pageUrl("127.0.0.1", port, base, page)))
           ? "opened"
           : "failed";
@@ -106,33 +148,27 @@ export function createPreview(deps: PreviewDeps): Preview {
         return "failed";
       }
     },
-    async update(site) {
-      if (running === undefined) return;
+    async update(sessionId, site) {
+      if (running?.sessionId !== sessionId || !current(sessionId)) return;
       await take(site);
-      if (running.server.watching() > 0) build();
+      if (running?.sessionId === sessionId && running.server.watching() > 0) build();
     },
     show(page) {
       running?.server.show(page);
     },
-    async phone(site, page) {
+    async phone(sessionId, site, page) {
       const host = deps.networkAddress();
-      if (host === undefined) return { status: "offline" };
+      // No address to give: no network, or the site was replaced (the window reloads with it).
+      if (host === undefined || !current(sessionId)) return { status: "offline" };
+      if (running?.sessionId !== sessionId) await stop();
       await take(site);
-      const { port, base } = await listen("network", host);
+      const { port, base } = await listen(sessionId, "network", host);
       return { status: "ready", url: pageUrl(host, port, base, page) };
     },
     async stopPhone() {
       await running?.server.stop("network");
     },
-    async close() {
-      const stopping = running;
-      running = undefined;
-      latest = undefined;
-      stale = false;
-      if (stopping === undefined) return;
-      stopping.builder.close();
-      await stopping.server.close();
-    },
+    close: stop,
   };
 }
 
@@ -142,17 +178,19 @@ export function registerPreviewHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   preview: Preview,
 ): void {
-  registerIpcHandler(ipc, "previewOpen", isTrustedSender, (site, page) => preview.open(site, page));
-  registerIpcHandler(ipc, "previewUpdate", isTrustedSender, async (site) => {
-    await preview.update(site);
+  registerIpcHandler(ipc, "previewOpen", isTrustedSender, (sessionId, site, page) =>
+    preview.open(sessionId, site, page),
+  );
+  registerIpcHandler(ipc, "previewUpdate", isTrustedSender, async (sessionId, site) => {
+    await preview.update(sessionId, site);
     return null;
   });
   registerIpcHandler(ipc, "previewShow", isTrustedSender, (page) => {
     preview.show(page);
     return null;
   });
-  registerIpcHandler(ipc, "previewPhone", isTrustedSender, (site, page) =>
-    preview.phone(site, page),
+  registerIpcHandler(ipc, "previewPhone", isTrustedSender, (sessionId, site, page) =>
+    preview.phone(sessionId, site, page),
   );
   registerIpcHandler(ipc, "previewStopPhone", isTrustedSender, async () => {
     await preview.stopPhone();

@@ -3,9 +3,9 @@ import type { Call } from "./call.js";
 
 /** `window.webforge.preview`. */
 export const previewApi = (call: Call): PreviewApi => ({
-  open: (site, page) => call("previewOpen", site, page),
-  update: (site) => call("previewUpdate", site),
+  open: (sessionId, site, page) => call("previewOpen", sessionId, site, page),
+  update: (sessionId, site) => call("previewUpdate", sessionId, site),
   show: (page) => call("previewShow", page),
-  phone: (site, page) => call("previewPhone", site, page),
+  phone: (sessionId, site, page) => call("previewPhone", sessionId, site, page),
   stopPhone: () => call("previewStopPhone"),
 });

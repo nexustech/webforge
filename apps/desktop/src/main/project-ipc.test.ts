@@ -46,6 +46,12 @@ function setUp(
     staleReason: vi.fn((sessionId: string) =>
       sessionId === project.sessionId ? undefined : "stale-session",
     ),
+    // The site as one opening's call reaches it (R6, #663).
+    forSession: (sessionId: string) => ({
+      current: () => session.current(),
+      staleReason: () => session.staleReason(sessionId),
+      saveSiteZip: (path: string) => session.saveSiteZip(path),
+    }),
   };
   registerProjectHandlers(
     ipc,
@@ -325,7 +331,7 @@ describe("a site's ZIP (4.7)", () => {
       return { status: "saved", fileName: basename(path) };
     });
 
-    await expect(invoke("project:save-zip")).resolves.toEqual({
+    await expect(invoke("project:save-zip", APP_URL, project.sessionId)).resolves.toEqual({
       status: "saved",
       fileName: "Bakery.zip",
     });
@@ -337,14 +343,27 @@ describe("a site's ZIP (4.7)", () => {
   it("saves nothing without an open site, or when the person cancels", async () => {
     const closed = setUp();
     closed.session.current.mockReturnValue(null as unknown as typeof project);
-    await expect(closed.invoke("project:save-zip")).resolves.toEqual({
+    await expect(closed.invoke("project:save-zip", APP_URL, project.sessionId)).resolves.toEqual({
       status: "failed",
       reason: "no-site",
     });
 
     const canceled = setUp({ chooseSiteZipToSave: async () => undefined });
-    await expect(canceled.invoke("project:save-zip")).resolves.toEqual({ status: "canceled" });
+    await expect(canceled.invoke("project:save-zip", APP_URL, project.sessionId)).resolves.toEqual({
+      status: "canceled",
+    });
     expect(canceled.session.saveSiteZip).not.toHaveBeenCalled();
+  });
+
+  it("saves nothing for an opening a hand-off has replaced, nor asks where (#663)", async () => {
+    const chooseSiteZipToSave = vi.fn(async (_name: string) => "/backups/Bakery.zip");
+    const { invoke, session } = setUp({ chooseSiteZipToSave });
+    await expect(
+      invoke("project:save-zip", APP_URL, "22222222-2222-4222-8222-222222222222"),
+    ).resolves.toEqual({ status: "canceled" });
+    expect(chooseSiteZipToSave).not.toHaveBeenCalled();
+    expect(session.saveSiteZip).not.toHaveBeenCalled();
+    await expect(invoke("project:save-zip")).rejects.toThrow();
   });
 
   it("opens a site's ZIP as a new site, named as it was, where the person chooses", async () => {

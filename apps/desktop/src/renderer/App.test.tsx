@@ -42,7 +42,7 @@ const setSpellCheckLanguage = vi.fn(async () => null);
 
 /** What main forwards AI apps' requests to: the window's answer while it listens. */
 const ai = { answer: undefined as ((request: AiRequest) => Promise<AiResponse>) | undefined };
-const answerAi = vi.fn<AiApi["onRequest"]>((answer) => {
+const answerAi = vi.fn<AiApi["onRequest"]>((_sessionId, answer) => {
   ai.answer = answer;
   return () => {
     ai.answer = undefined;
@@ -70,7 +70,8 @@ function renderApp(
     app: { setSpellCheckLanguage },
     ai: { onRequest: answerAi },
     canvas: { compileCss },
-    site: { export: exportSite, exportChoices },
+    // Each call names the site's opening (#663); these tests look at what it sends besides.
+    site: { export: (_sessionId, request) => exportSite(request), exportChoices },
   });
   render(
     <App

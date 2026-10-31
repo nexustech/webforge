@@ -3,6 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { createElement } from "react";
 import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { siteSession } from "../storage/index.js";
 import { PhonePreviewDialog, type PhoneState } from "./PhonePreviewDialog.js";
 import { registerPreviewCommands } from "./preview-commands.js";
 
@@ -23,6 +24,7 @@ export const previewArea: Area<WindowContext> = {
       session,
       library: siteLibrary,
       api: api.preview,
+      sessionId: siteSession,
       phone,
       notify: (message) => toast.error(message),
     });

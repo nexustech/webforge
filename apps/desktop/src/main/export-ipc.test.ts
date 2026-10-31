@@ -7,6 +7,7 @@ import type { ExportChoices } from "../shared/ipc/site.js";
 import {
   type ExportDeps,
   type ExportDialogs,
+  type ExportSite,
   type RunExport,
   registerExportHandlers,
   toExportResult,
@@ -58,6 +59,10 @@ const exported: ExportOutcome = {
   durationMs: 900,
 };
 
+/** The opening of the site the window was loaded for, and the one a hand-off opens. */
+const SITE_A = "11111111-1111-4111-8111-111111111111";
+const SITE_B = "22222222-2222-4222-8222-222222222222";
+
 const toFolder = (path: string | undefined): ExportDialogs => ({
   chooseExportFolder: async () => path,
   chooseExportZip: async () => undefined,
@@ -70,15 +75,34 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
       handlers.set(channel, handler);
     },
   } as unknown as Pick<IpcMain, "handle">;
+  // The site that is open now, by its opening, and its export choices and Media.
+  const opened = { sessionId: SITE_A as string | undefined };
+  const choices = { read: vi.fn(async () => zip), write: vi.fn(async (_: ExportChoices) => {}) };
+  const readMedia = vi.fn<ExportSite["readMedia"]>(async () => undefined);
   const deps = {
     dialogs,
     runExport: vi.fn<RunExport>(typeof run === "function" ? run : async () => run),
     sendProgress: vi.fn(),
-    choices: { read: vi.fn(async () => zip), write: vi.fn(async () => undefined) },
+    site: (sessionId: string): ExportSite => {
+      const staleReason = () =>
+        opened.sessionId === undefined
+          ? ("no-site" as const)
+          : opened.sessionId === sessionId
+            ? undefined
+            : ("stale-session" as const);
+      return {
+        staleReason,
+        readMedia,
+        exportChoices: async () => (staleReason() === undefined ? choices.read() : folder),
+        setExportChoices: async (kept) => {
+          if (staleReason() === undefined) await choices.write(kept);
+        },
+      };
+    },
     open: vi.fn(async (): Promise<"opened" | "missing"> => "opened"),
-    currentSite: vi.fn((): string | undefined => "/sites/Bakery.wforge"),
   } satisfies ExportDeps;
   registerExportHandlers(ipc, (url) => url === APP_URL, deps);
+  // Each call as the window loaded for opening A sends it.
   const call =
     (channel: string) =>
     (...args: unknown[]) => {
@@ -86,10 +110,16 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
       if (handler === undefined) {
         throw new Error(`No handler for ${channel}`);
       }
-      return handler({ senderFrame: { url: APP_URL } } as unknown as IpcMainInvokeEvent, ...args);
+      return handler(
+        { senderFrame: { url: APP_URL } } as unknown as IpcMainInvokeEvent,
+        ...(channel === "site:cancel-export" ? args : [SITE_A, ...args]),
+      );
     };
   return {
     ...deps,
+    choices,
+    readMedia,
+    opened,
     invoke: call("site:export"),
     cancel: call("site:cancel-export"),
     choicesOf: call("site:export-choices"),
@@ -186,13 +216,13 @@ describe("registerExportHandlers", () => {
   });
 
   it("opens only the open site's export, and says when it's gone (3.3)", async () => {
-    const { invoke, openLast, open, currentSite } = setUp(toFolder("/sites/my-site"));
+    const { invoke, openLast, open, opened } = setUp(toFolder("/sites/my-site"));
     await invoke(request);
 
     open.mockResolvedValueOnce("missing");
     await expect(openLast()).resolves.toBe("missing");
     // File → Open of another site: it hasn't been exported yet.
-    currentSite.mockReturnValue("/sites/Salon.wforge");
+    opened.sessionId = SITE_B;
     await expect(openLast()).resolves.toBe("none");
     expect(open).toHaveBeenCalledOnce();
   });
@@ -254,6 +284,50 @@ describe("registerExportHandlers", () => {
       expect.anything(),
       expect.anything(),
     );
+  });
+
+  it("refuses an export as stale after a hand-off before the folder is picked, writing nothing to the next site (#663)", async () => {
+    const site: { opened?: { sessionId: string | undefined } } = {};
+    const { invoke, runExport, choices, openLast, opened } = setUp({
+      chooseExportFolder: async () => {
+        // The dialog is open while a double-clicked site replaces this one.
+        if (site.opened !== undefined) site.opened.sessionId = SITE_B;
+        return "/sites/my-site";
+      },
+      chooseExportZip: async () => undefined,
+    });
+    site.opened = opened;
+
+    await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
+    // Nothing built, the next site's choices left as they were, and no export of it to open.
+    expect(runExport).not.toHaveBeenCalled();
+    expect(choices.write).not.toHaveBeenCalled();
+    await expect(openLast()).resolves.toBe("none");
+  });
+
+  it("refuses an export, or its choices, for an opening that has gone before the dialog (#663)", async () => {
+    const { invoke, choicesOf, setChoices, choices, opened } = setUp(toFolder("/sites/my-site"));
+    opened.sessionId = SITE_B;
+
+    await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
+    await expect(choicesOf()).resolves.toEqual(folder);
+    await expect(setChoices(zip)).resolves.toBeNull();
+    expect(choices.write).not.toHaveBeenCalled();
+  });
+
+  it("builds with the Media of the site it is of, and cancels once a hand-off replaces it (#663)", async () => {
+    const run = vi.fn<RunExport>(async (_snapshot, _target, { readMedia, signal }) => {
+      await readMedia(PHOTO);
+      opened.sessionId = SITE_B;
+      await readMedia(PHOTO);
+      return signal.aborted ? { type: "cancelled" } : exported;
+    });
+    const { invoke, readMedia, opened, openLast } = setUp(toFolder("/sites/my-site"), run);
+
+    await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
+    // Its first image read from its own site; none from the next.
+    expect(readMedia).toHaveBeenCalledOnce();
+    await expect(openLast()).resolves.toBe("none");
   });
 
   it("does nothing when the person cancels the dialog, and remembers nothing", async () => {

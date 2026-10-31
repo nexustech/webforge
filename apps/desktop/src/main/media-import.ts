@@ -1,6 +1,6 @@
 import { type MediaId, type MediaMeta, mediaNameFor, newId } from "@webforge/model";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
-import type { ImportFileResult, ProjectSession } from "./project-session.js";
+import type { ImportFileResult, SessionSite } from "./project-session.js";
 
 /**
  * A file to import: one the main process found (chosen in the dialog, dropped, or copied in the
@@ -21,7 +21,7 @@ type ImportFailure = Extract<ImportFileResult, { status: "failed" }>;
  * import; the renderer makes them unique within the site when it adds them.
  */
 function createMediaImport(
-  session: Pick<ProjectSession, "importFile">,
+  session: Pick<SessionSite, "importFile">,
   createId: () => MediaId = () => newId("media"),
 ) {
   const items: MediaMeta[] = [];
@@ -78,7 +78,7 @@ function createMediaImport(
 
 /** Imports `files`, one at a time; see {@link createMediaImport}. */
 export async function importMediaFiles(
-  session: Pick<ProjectSession, "importFile">,
+  session: Pick<SessionSite, "importFile">,
   files: readonly ImportFile[],
   createId?: () => MediaId,
 ): Promise<MediaImportResult> {

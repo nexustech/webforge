@@ -5,6 +5,7 @@ import type { Area, WindowContext } from "../editor/areas.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
+import { siteSession } from "../storage/index.js";
 
 /** What the person is told once a copy is saved, or why it wasn't. */
 function tell(result: SaveSiteZipResult): void {
@@ -55,5 +56,6 @@ export function registerSaveSiteZipCommand(
 export const saveSiteZipArea: Area<WindowContext> = {
   id: "saveSiteZip",
   register: ({ api, commands }) =>
-    registerSaveSiteZipCommand(commands, () => api.project.saveZip()),
+    // A copy of the site this page was loaded for (R6, #663).
+    registerSaveSiteZipCommand(commands, () => api.project.saveZip(siteSession())),
 };

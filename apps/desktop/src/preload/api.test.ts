@@ -107,16 +107,23 @@ describe("createWebforgeApi site export", () => {
     const invoke = vi.fn(async () => exported);
     const api = apiWith(invoke);
 
-    await expect(api.site.export({ snapshot, media: [], choices, output })).resolves.toEqual(
-      exported,
-    );
-    expect(invoke).toHaveBeenCalledWith("site:export", { snapshot, media: [], choices, output });
+    await expect(
+      api.site.export(SESSION, { snapshot, media: [], choices, output }),
+    ).resolves.toEqual(exported);
+    expect(invoke).toHaveBeenCalledWith("site:export", SESSION, {
+      snapshot,
+      media: [],
+      choices,
+      output,
+    });
   });
 
   it("rejects an export result that leaks a path", async () => {
     const api = apiWith(async () => ({ ...exported, path: "C:Userssamsite" }));
 
-    await expect(api.site.export({ snapshot, media: [], choices, output })).rejects.toThrow();
+    await expect(
+      api.site.export(SESSION, { snapshot, media: [], choices, output }),
+    ).rejects.toThrow();
   });
 
   it("reads the last export choices and opens the last export through their channels (3.3)", async () => {
@@ -129,13 +136,13 @@ describe("createWebforgeApi site export", () => {
     );
     const api = apiWith(invoke);
 
-    await expect(api.site.exportChoices()).resolves.toEqual(choices);
-    await expect(api.site.setExportChoices(choices)).resolves.toBeNull();
-    await expect(api.site.openExport()).resolves.toBe("missing");
+    await expect(api.site.exportChoices(SESSION)).resolves.toEqual(choices);
+    await expect(api.site.setExportChoices(SESSION, choices)).resolves.toBeNull();
+    await expect(api.site.openExport(SESSION)).resolves.toBe("missing");
     expect(invoke.mock.calls).toEqual([
-      ["site:export-choices"],
-      ["site:set-export-choices", choices],
-      ["site:open-export"],
+      ["site:export-choices", SESSION],
+      ["site:set-export-choices", SESSION, choices],
+      ["site:open-export", SESSION],
     ]);
   });
 
@@ -325,8 +332,8 @@ describe("createWebforgeApi AI requests (4.8)", () => {
   it("answers an AI app's request with its id, and says when it listens", async () => {
     const { api, invoke, listeners } = withEvents();
     const answer = vi.fn(async () => ({ status: "done" as const, data: { name: "Bakery" } }));
-    const stop = api.ai.onRequest(answer);
-    expect(invoke).toHaveBeenCalledWith("ai:listening", true);
+    const stop = api.ai.onRequest(SESSION, answer);
+    expect(invoke).toHaveBeenCalledWith("ai:listening", SESSION, true);
 
     const request = { kind: "query", name: "outline", input: {} };
     listeners.get("ai:request")?.(4, request);
@@ -340,7 +347,7 @@ describe("createWebforgeApi AI requests (4.8)", () => {
 
     stop();
     expect(listeners.has("ai:request")).toBe(false);
-    expect(invoke).toHaveBeenLastCalledWith("ai:listening", false);
+    expect(invoke).toHaveBeenLastCalledWith("ai:listening", SESSION, false);
   });
 
   it("answers busy when answering fails, and ignores malformed requests", async () => {
@@ -348,7 +355,7 @@ describe("createWebforgeApi AI requests (4.8)", () => {
     const answer = vi.fn(async () => {
       throw new Error("no session");
     });
-    api.ai.onRequest(answer);
+    api.ai.onRequest(SESSION, answer);
 
     listeners.get("ai:request")?.(5, { kind: "delete everything" });
     listeners.get("ai:request")?.(6, { kind: "query", name: "outline", input: {} });
