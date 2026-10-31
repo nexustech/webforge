@@ -58,20 +58,24 @@ const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
 
 /**
  * How long Webforge's main process takes for {@link calibrate}'s work on CI's usual runners, by
- * platform, in CPU seconds: the median of every run of #677's CI runs. A runner that takes longer
- * is that much slower, and its opening budget grows with it.
+ * platform, in CPU seconds (#677's CI runs, 31 Oct 2026: 0.125 and 0.178 on Linux, 0.169 and 0.181
+ * on macOS, 0.187 twice on Windows). A runner that takes longer is that much slower, and its
+ * opening budget grows with it: the Linux runner at 0.178 took 27% more CPU to open each template
+ * than the one at 0.125.
  */
 const CI_CALIBRATION_SECONDS: Readonly<Record<string, number>> = {
-  linux: 1_000,
-  win32: 1_000,
-  darwin: 1_000,
+  linux: 0.15,
+  win32: 0.19,
+  darwin: 0.175,
 };
 
 /**
- * The most a slow runner can grow the opening budget, so a real slowdown still fails on one: a
- * three times costlier opening fails on a runner up to this much slower than usual.
+ * The most a slow runner can grow the opening budget. An opening three times costlier than usual
+ * still fails on a slow runner, as its cost grows by as much as its budget does: CI's budgets are
+ * about twice a usual opening (2.0 CPU-s on Linux, 2.3 on macOS, 2.8 on Windows). The limit bounds
+ * how far a calibration that stalled on all three tries can loosen the budget of a usual runner.
  */
-const MAX_RUNNER_FACTOR = 1.6;
+const MAX_RUNNER_FACTOR = 2;
 
 /** The fixed piece of work {@link calibrate} times: reading a JSON document of 20,000 records. */
 const CALIBRATION_RECORDS = 20_000;
