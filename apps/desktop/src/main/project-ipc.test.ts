@@ -214,11 +214,11 @@ describe("registerProjectHandlers", () => {
   it("lists, opens and removes recent sites by id, never by path", async () => {
     const id = "a".repeat(32);
     const recent = {
-      list: vi.fn((_openPath?: string) => []),
-      pathOf: vi.fn((asked: string) => (asked === id ? "/sites/Bakery.wforge" : undefined)),
-      remove: vi.fn(),
-      setPinned: vi.fn(),
-      clearUnpinned: vi.fn(),
+      list: vi.fn(async (_openPath?: string) => []),
+      pathOf: vi.fn(async (asked: string) => (asked === id ? "/sites/Bakery.wforge" : undefined)),
+      remove: vi.fn(async () => undefined),
+      setPinned: vi.fn(async () => undefined),
+      clearUnpinned: vi.fn(async () => undefined),
     };
     const { invoke, session } = setUp({}, { recent });
 
@@ -244,11 +244,11 @@ describe("registerProjectHandlers", () => {
   it("takes a recent site whose file has gone off the list", async () => {
     const id = "a".repeat(32);
     const recent = {
-      list: vi.fn((_openPath?: string) => []),
-      pathOf: vi.fn(() => "/gone.wforge"),
-      remove: vi.fn(),
-      setPinned: vi.fn(),
-      clearUnpinned: vi.fn(),
+      list: vi.fn(async (_openPath?: string) => []),
+      pathOf: vi.fn(async () => "/gone.wforge"),
+      remove: vi.fn(async () => undefined),
+      setPinned: vi.fn(async () => undefined),
+      clearUnpinned: vi.fn(async () => undefined),
     };
     const { invoke, session } = setUp({}, { recent });
     session.open.mockReturnValueOnce({ status: "failed", reason: "not-found" } as never);

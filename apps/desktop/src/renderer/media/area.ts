@@ -12,5 +12,5 @@ export const canvasImagesArea: Area<EditorContext> = {
 /** The Media panel (2.20, B1). */
 export const mediaPanelArea: Area<EditorContext> = {
   id: "mediaPanel",
-  register: ({ panels, session }) => registerMediaPanel(panels, session),
+  register: ({ api, panels, session }) => registerMediaPanel(panels, session, api.media),
 };

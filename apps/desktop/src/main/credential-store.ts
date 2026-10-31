@@ -1,12 +1,11 @@
-import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
 import { WebforgeError } from "@webforge/errors";
 import { z } from "zod";
+import { createJsonStore } from "./json-store.js";
 
 // Publish credentials (Netlify tokens, FTP passwords): never in the `.wforge` file, which may be
 // shared (research 08, architecture §9). Each secret is encrypted with Electron's safeStorage,
 // whose key the OS keeps (Windows DPAPI, macOS Keychain), and the encrypted bytes are kept in
-// one file in the app's user-data folder, keyed by project and publish profile.
+// one file in the app's user-data folder, keyed by what the secret is for (`publish/…`, `mcp/…`).
 
 /** The part of Electron's `safeStorage` the store uses; injectable for tests. */
 export type SecretCipher = {
@@ -36,9 +35,18 @@ export type CredentialStore = {
   delete(key: string): Promise<void>;
 };
 
-/** The key of a publish profile's secret in a project. */
-export function credentialKey(projectId: string, profileId: string): string {
-  return `${encodeURIComponent(projectId)}/${encodeURIComponent(profileId)}`;
+/**
+ * The key of a publish destination's secret in a project (#666):
+ * `publish/<projectId>/<destinationId>`. Namespaced, so the AI apps' keys
+ * ({@link mcpCredentialKey}) can never meet a destination's.
+ */
+export function publishCredentialKey(projectId: string, destinationId: string): string {
+  return `publish/${encodeURIComponent(projectId)}/${encodeURIComponent(destinationId)}`;
+}
+
+/** The key of an AI app's secret (F-AI-1, #666): `mcp/<appId>`. */
+export function mcpCredentialKey(appId: string): string {
+  return `mcp/${encodeURIComponent(appId)}`;
 }
 
 const fileSchema = z.object({
@@ -47,88 +55,75 @@ const fileSchema = z.object({
   secrets: z.record(z.string(), z.string()),
 });
 
-type Secrets = Record<string, string>;
+type CredentialsFile = z.infer<typeof fileSchema>;
 
-/** A credential store kept in `file` (e.g. `<userData>/credentials.json`). */
+/**
+ * A credential store kept in `file` (e.g. `<userData>/credentials.json`), through
+ * {@link createJsonStore}: one read-modify-write at a time, so two saves can't lose each other's
+ * changes. A file that won't parse is moved aside before a save, never written over, so a damaged
+ * file costs no one their other secrets (#666). One that can't be opened now (locked by another
+ * program, no permission) fails the save instead, for the same reason.
+ */
 export function createCredentialStore(file: string, cipher: SecretCipher): CredentialStore {
-  // One read-modify-write at a time, so two saves can't lose each other's changes.
-  let queue: Promise<unknown> = Promise.resolve();
-  function serial<T>(task: () => Promise<T>): Promise<T> {
-    const run = queue.then(task, task);
-    queue = run.catch(() => undefined);
-    return run;
-  }
+  const store = createJsonStore<CredentialsFile>(file, fileSchema, {
+    empty: { version: 1, secrets: {} },
+    onDamaged: "move-aside",
+    // Owner-only where the OS supports it; the content is encrypted either way.
+    mode: 0o600,
+  });
 
-  /**
-   * The stored secrets. A missing file is empty, and so is a damaged one (the user signs in
-   * again). Any other read error throws: saving over a file we couldn't read (locked by another
-   * program, no permission) would lose every other profile's secrets.
-   */
-  async function load(): Promise<Secrets> {
-    let text: string;
+  /** Applies `change` to the secrets, as a {@link CredentialError} when the file fails. */
+  async function update(change: (secrets: Record<string, string>) => boolean): Promise<void> {
+    let read = false;
     try {
-      text = await readFile(file, "utf8");
+      await store.update((current) => {
+        read = true;
+        const secrets = { ...current.secrets };
+        return change(secrets) ? { version: 1, secrets } : undefined;
+      });
     } catch (error) {
-      // No file, or a parent that is a file (Linux reports ENOTDIR where Windows says ENOENT).
-      const code = (error as NodeJS.ErrnoException).code;
-      if (code === "ENOENT" || code === "ENOTDIR") return {};
-      throw new CredentialError("read-failed", "The credentials file could not be read", {
-        cause: error,
-      });
-    }
-    try {
-      return fileSchema.parse(JSON.parse(text)).secrets;
-    } catch {
-      return {};
-    }
-  }
-
-  async function save(secrets: Secrets): Promise<void> {
-    const temp = `${file}.tmp`;
-    try {
-      await mkdir(dirname(file), { recursive: true });
-      // Owner-only where the OS supports it; the content is encrypted either way.
-      await writeFile(temp, `${JSON.stringify({ version: 1, secrets }, null, 2)}\n`, {
-        mode: 0o600,
-      });
-      await rename(temp, file);
-    } catch (error) {
-      throw new CredentialError("write-failed", "The credentials file could not be saved", {
-        cause: error,
-      });
+      throw read
+        ? new CredentialError("write-failed", "The credentials file could not be saved", {
+            cause: error,
+          })
+        : new CredentialError("read-failed", "The credentials file could not be read", {
+            cause: error,
+          });
     }
   }
 
   return {
-    get: (key) =>
-      serial(async () => {
-        const secrets = await load().catch(() => ({}) as Secrets);
-        if (!Object.hasOwn(secrets, key)) return null;
-        try {
-          return cipher.decryptString(Buffer.from(secrets[key] ?? "", "base64"));
-        } catch {
-          // Encrypted by another OS user or machine, or the OS key changed.
-          return null;
-        }
-      }),
-    set: (key, secret) =>
-      serial(async () => {
-        if (!cipher.isEncryptionAvailable()) {
-          throw new CredentialError(
-            "encryption-unavailable",
-            "The operating system can't encrypt the secret, so it was not saved",
-          );
-        }
-        const secrets = await load();
-        secrets[key] = cipher.encryptString(secret).toString("base64");
-        await save(secrets);
-      }),
+    async get(key) {
+      const secrets = await store.read().then(
+        (current) => current.secrets,
+        () => ({}) as Record<string, string>,
+      );
+      if (!Object.hasOwn(secrets, key)) return null;
+      try {
+        return cipher.decryptString(Buffer.from(secrets[key] ?? "", "base64"));
+      } catch {
+        // Encrypted by another OS user or machine, or the OS key changed.
+        return null;
+      }
+    },
+    async set(key, secret) {
+      if (!cipher.isEncryptionAvailable()) {
+        throw new CredentialError(
+          "encryption-unavailable",
+          "The operating system can't encrypt the secret, so it was not saved",
+        );
+      }
+      const encrypted = cipher.encryptString(secret).toString("base64");
+      await update((secrets) => {
+        secrets[key] = encrypted;
+        return true;
+      });
+    },
     delete: (key) =>
-      serial(async () => {
-        const secrets = await load();
-        if (!Object.hasOwn(secrets, key)) return;
+      update((secrets) => {
+        if (!Object.hasOwn(secrets, key)) return false;
         delete secrets[key];
-        await save(secrets);
+        return true;
       }),
   };
 }

@@ -8,9 +8,10 @@ import {
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
-import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { type RefObject, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { shallow } from "zustand/shallow";
 import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
+import type { WebforgeApi } from "../../shared/webforge-api.js";
 import { createSectionPreviews } from "../add/index.js";
 import { APPEARANCE_GROUP_ID, LOOK_COMMANDS } from "../clipboard/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
@@ -48,7 +49,7 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
-import { PRELOAD_ITEM_CSS } from "./ItemCssView.js";
+import { type ItemCssServices, itemCssThrough } from "./ItemCssView.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
@@ -77,15 +78,23 @@ function withClosedGroups(
 export type EditorProps = {
   readonly session: EditorSession;
   /**
+   * The main process, through the preload API (#668): the window's, given to the areas. Tests and
+   * stories give a fake (`fakePreloadApi()`, `storyPreloadApi()`).
+   */
+  readonly api: WebforgeApi;
+  /**
    * The areas it registers around its canvas, in order (2.20, B1): `EDITOR_AREAS` from the
    * composition root, `renderer/areas.ts`.
    */
   readonly areas: readonly Area<EditorContext>[];
   /** Creates the canvas engine; injectable for tests. */
   readonly createEngine?: () => CanvasEngine;
-  /** Compiles the site CSS for the canvas; injectable for tests. Defaults to the preload API. */
+  /** Compiles the site CSS for the canvas; injectable for tests. Defaults to `api`'s. */
   readonly compileCss?: CompileCanvasCss;
-  /** Reports an error in the canvas as a local crash report (R3); injectable for tests. */
+  /**
+   * Reports an error in the canvas as a local crash report (R3); injectable for tests. Defaults to
+   * `api`'s.
+   */
   readonly reportError?: ReportError;
   /**
    * The person's preferences and the editor mode (R9): Design or Content (M3, 1.10), which the
@@ -113,12 +122,6 @@ const viewOptionsOf = ({ preferences: { canvas } }: EditorPreferences): ViewOpti
   extraBottomSpace: canvas.extraBottomSpace,
 });
 
-const compileWithPreload: CompileCanvasCss = (request) =>
-  window.webforge.canvas.compileCss(request);
-const reportWithPreload = createErrorReporter((kind, error) =>
-  window.webforge.app.reportError(kind, error),
-);
-
 /** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
 function undoHistoryPanel(
   history: EditorSession["history"],
@@ -145,6 +148,7 @@ const THEME_PANEL = "theme";
  */
 function PreferredEditPanel({
   preferences,
+  itemCss,
   ...props
 }: Omit<
   EditPanelHostProps,
@@ -154,8 +158,11 @@ function PreferredEditPanel({
   | "onClosedGroupsChange"
   | "groupActions"
   | "styleAction"
+  | "itemCss"
 > & {
   readonly preferences: PreferencesStore;
+  /** The CSS tab's worker and clipboard (#668), in Advanced mode. */
+  readonly itemCss: Omit<ItemCssServices, "onOpenCustomCode">;
 }) {
   const advanced = usePreferences(
     preferences,
@@ -199,7 +206,7 @@ function PreferredEditPanel({
       itemCss={
         advanced
           ? {
-              ...PRELOAD_ITEM_CSS,
+              ...itemCss,
               onOpenCustomCode:
                 customCode === undefined ? undefined : () => void registry.run(customCode.id),
             }
@@ -251,16 +258,26 @@ function CanvasEdges({
  */
 export function Editor({
   session,
+  api,
   areas,
   createEngine = createPuckEngine,
-  compileCss = compileWithPreload,
-  reportError = reportWithPreload,
+  compileCss: givenCompileCss,
+  reportError: givenReportError,
   preferences: givenPreferences,
   canvasView,
   canvasPointer,
   siteWide,
 }: EditorProps) {
   const canvasRef = useRef<HTMLDivElement>(null);
+  const compileCss = useMemo<CompileCanvasCss>(
+    () => givenCompileCss ?? ((request) => api.canvas.compileCss(request)),
+    [givenCompileCss, api],
+  );
+  const reportError = useMemo(
+    () =>
+      givenReportError ?? createErrorReporter((kind, error) => api.app.reportError(kind, error)),
+    [givenReportError, api],
+  );
   const [engine, setEngine] = useState<CanvasEngine | null>(null);
   const [defaultPreferences] = useState(() => createPreferencesStore());
   const preferences = givenPreferences ?? defaultPreferences;
@@ -498,13 +515,15 @@ export function Editor({
   useEffect(() => {
     // The fields the app draws itself (R11, fields/): images, links, icons, and colours with the
     // theme's own colours and a contrast warning (1.37, UX-25).
-    const renderers = fieldRenderers({ session, preferences, imagePicks });
+    const renderers = fieldRenderers({ api, session, preferences, imagePicks });
+    const itemCss = itemCssThrough(api);
     function Edit() {
       return (
         <FieldRenderersProvider renderers={renderers}>
           <PreferredEditPanel
             session={session}
             preferences={preferences}
+            itemCss={itemCss}
             flush={() => host.flush()}
             // An Appearance field's source shows in the Theme tab, or a kind's look in Theme
             // Studio, which the Theme tab's registration opens (3.12, CT-3).
@@ -520,13 +539,14 @@ export function Editor({
       icon: SlidersHorizontalIcon,
       component: Edit,
     });
-  }, [panels, session, preferences, imagePicks, host]);
+  }, [api, panels, session, preferences, imagePicks, host]);
 
   // The areas' panels, commands, toolbars and connections to the canvas (2.20, B1), in the order
   // of the composition root's list. Each follows the mode itself, through the preferences.
   useEffect(
     () =>
       connectAreas(areas, {
+        api,
         session,
         commands: registry,
         panels,
@@ -540,6 +560,7 @@ export function Editor({
         dialogs,
       }),
     [
+      api,
       areas,
       session,
       registry,

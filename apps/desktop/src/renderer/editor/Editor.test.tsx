@@ -17,6 +17,7 @@ import { PanelRegistryProvider, usePanels } from "../shell/panel-context.js";
 import { createPanelRegistry, type PanelRegistry } from "../shell/panels.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { fakePreloadApi } from "../testing/preload.js";
 import { Editor } from "./Editor.js";
 import type { EditorSession } from "./editor-session.js";
 import { saveAsSharedSection } from "./shared-sections.js";
@@ -64,6 +65,7 @@ describe("Editor", () => {
               <Editor
                 session={session}
                 areas={EDITOR_AREAS}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
               />
@@ -166,6 +168,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 siteWide={siteWide}
@@ -233,6 +236,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 preferences={createPreferencesStore({ mode: "content" })}
@@ -362,6 +366,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 preferences={preferences}
@@ -397,6 +402,7 @@ describe("Editor", () => {
               <Editor
                 session={session}
                 areas={EDITOR_AREAS}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
               />
@@ -458,6 +464,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 preferences={createPreferencesStore({ mode: "content" })}
@@ -509,6 +516,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={() => content}
                 compileCss={compileCss}
                 preferences={createPreferencesStore({ mode: "content" })}
@@ -532,6 +540,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 preferences={preferences}
@@ -560,6 +569,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 preferences={preferences}
@@ -602,6 +612,7 @@ describe("Editor", () => {
               <Editor
                 session={session}
                 areas={EDITOR_AREAS}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
               />
@@ -709,6 +720,7 @@ describe("Editor", () => {
               <Editor
                 areas={EDITOR_AREAS}
                 session={session}
+                api={fakePreloadApi()}
                 createEngine={createEngine}
                 compileCss={compileCss}
                 preferences={createPreferencesStore({

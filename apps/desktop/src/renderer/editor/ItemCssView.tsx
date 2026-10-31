@@ -4,6 +4,7 @@ import type { NodeDoc } from "@webforge/model";
 import { appearanceClassGroups, type ComponentDef, withLook } from "@webforge/site-components";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState } from "react";
+import type { WebforgeApi } from "../../shared/webforge-api.js";
 import { reportFailure } from "../log.js";
 import type { EditorSession } from "./editor-session.js";
 import {
@@ -28,14 +29,16 @@ export type ItemCssServices = {
   readonly onOpenCustomCode?: (() => void) | undefined;
 };
 
-/** The CSS tab's worker and clipboard through the preload API, reached only when used. */
-export const PRELOAD_ITEM_CSS: Omit<ItemCssServices, "onOpenCustomCode"> = {
+/** The CSS tab's worker and clipboard through `api`, the preload API (#668). */
+export const itemCssThrough = (
+  api: Pick<WebforgeApi, "canvas" | "clipboard">,
+): Omit<ItemCssServices, "onOpenCustomCode"> => ({
   api: {
-    itemHtml: (request) => window.webforge.canvas.itemHtml(request),
-    classCss: (theme, classes) => window.webforge.canvas.classCss(theme, classes),
+    itemHtml: (request) => api.canvas.itemHtml(request),
+    classCss: (theme, classes) => api.canvas.classCss(theme, classes),
   },
-  copyText: (text) => window.webforge.clipboard.copyText(text),
-};
+  copyText: (text) => api.clipboard.copyText(text),
+});
 
 /** Props of {@link ItemCssView}. */
 export type ItemCssViewProps = ItemCssServices & {

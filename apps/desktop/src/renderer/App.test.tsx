@@ -9,8 +9,15 @@ import {
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiApi, AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import { applyPreferencesChange, DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
-import type { ExportResult, PreferencesChange, UiStateResult } from "../shared/ipc-contract.js";
+import type { ExportRequest } from "../shared/ipc/site.js";
+import type {
+  ExportResult,
+  PreferencesChange,
+  SiteUiChange,
+  UiStateResult,
+} from "../shared/ipc-contract.js";
 import { App, type AppProps } from "./App.js";
+import { fakePreloadApi } from "./testing/preload.js";
 
 // Each test renders the whole window (title bar, panels, Radix menus); on a busy machine that can
 // take longer than Vitest's default 5 s.
@@ -27,7 +34,9 @@ const savePreferences = vi.fn(async (change: PreferencesChange) =>
   applyPreferencesChange(DEFAULT_PREFERENCES, change),
 );
 
-const saveUiState = vi.fn(async (): Promise<UiStateResult> => ({ status: "saved" }));
+const saveUiState = vi.fn(
+  async (_change: SiteUiChange): Promise<UiStateResult> => ({ status: "saved" }),
+);
 
 const setSpellCheckLanguage = vi.fn(async () => null);
 
@@ -46,22 +55,29 @@ const exportChoices = vi.fn(
     ({ format: "folder", minify: false, developerFiles: false, askWebAddress: true }) as const,
 );
 
+/** The window with main's calls faked (#668): `exportSite` is main's export. */
 function renderApp(
-  exportSite = vi.fn(async (): Promise<ExportResult> => ({ status: "canceled" })),
+  exportSite = vi.fn(
+    async (_request: ExportRequest): Promise<ExportResult> => ({
+      status: "canceled",
+    }),
+  ),
   extra: Partial<AppProps> = {},
 ) {
+  const api = fakePreloadApi({
+    prefs: { set: savePreferences },
+    project: { setUiState: (_session, change) => saveUiState(change) },
+    app: { setSpellCheckLanguage },
+    ai: { onRequest: answerAi },
+    canvas: { compileCss },
+    site: { export: exportSite, exportChoices },
+  });
   render(
     <App
-      saveUiState={saveUiState}
-      setSpellCheckLanguage={setSpellCheckLanguage}
-      answerAi={answerAi}
+      api={api}
       info={{ name: "Webforge", version: "1.2.0" }}
       preferences={DEFAULT_PREFERENCES}
-      savePreferences={savePreferences}
       createEngine={createFakeEngine}
-      compileCss={compileCss}
-      exportSite={exportSite}
-      exportChoices={exportChoices}
       {...extra}
     />,
   );
@@ -89,7 +105,7 @@ describe("App", () => {
   it("exports the site from the title bar, asking first, and says where it went (3.3)", async () => {
     const exportSite = renderApp(
       vi.fn(
-        async (): Promise<ExportResult> => ({
+        async (_request: ExportRequest): Promise<ExportResult> => ({
           status: "exported",
           format: "folder",
           name: "my-site",
@@ -107,44 +123,15 @@ describe("App", () => {
     await userEvent.click(await screen.findByRole("button", { name: "Export without it" }));
     await userEvent.click(await screen.findByRole("button", { name: "Export…" }));
 
-    expect(exportSite).toHaveBeenCalledWith(
-      {
-        snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
-        media: [],
-        documents: [],
-        choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
-        output: { minify: false, developerFiles: false },
-      },
-      // Told how far the export has come, for the toast (3.1).
-      expect.any(Function),
-    );
+    expect(exportSite).toHaveBeenCalledWith({
+      snapshot: expect.objectContaining({ pages: expect.any(Array), media: [] }),
+      media: [],
+      documents: [],
+      choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
+      output: { minify: false, developerFiles: false },
+    });
     const report = await screen.findByRole("dialog", { name: "Site exported" });
     expect(report.textContent).toContain("Saved in the folder “my-site”.");
-  });
-
-  it("exports with the exportSite it was given last", async () => {
-    const props = {
-      saveUiState,
-      setSpellCheckLanguage,
-      answerAi,
-      info: { name: "Webforge", version: "1.2.0" },
-      preferences: DEFAULT_PREFERENCES,
-      savePreferences,
-      createEngine: createFakeEngine,
-      compileCss,
-    } satisfies Partial<AppProps>;
-    const canceled = async (): Promise<ExportResult> => ({ status: "canceled" });
-    const first = vi.fn(canceled);
-    const latest = vi.fn(canceled);
-    const remembered = async () => ({ ...(await exportChoices()), askWebAddress: false });
-    const { rerender } = render(<App {...props} exportSite={first} exportChoices={remembered} />);
-
-    rerender(<App {...props} exportSite={latest} exportChoices={remembered} />);
-    await userEvent.click(screen.getByRole("button", { name: "Export Site…" }));
-    await userEvent.click(await screen.findByRole("button", { name: "Export…" }));
-
-    expect(latest).toHaveBeenCalledOnce();
-    expect(first).not.toHaveBeenCalled();
   });
 
   it("runs commands from their shortcuts", async () => {

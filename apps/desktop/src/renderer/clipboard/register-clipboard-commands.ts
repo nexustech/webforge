@@ -5,12 +5,6 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import { type ClipboardSession, copySelected, pasteElements } from "./element-clipboard.js";
 
-/** The clipboard through the preload API, looked up only when used. */
-export const preloadClipboard: Pick<ClipboardApi, "write" | "read"> = {
-  write: (sessionId, elements) => window.webforge.clipboard.write(sessionId, elements),
-  read: (sessionId) => window.webforge.clipboard.read(sessionId),
-};
-
 /**
  * Registers Cut, Copy, Paste and Paste as Linked Copy (F-ED-23) for sections and elements (1.25)
  * in the Edit menu and the command box, with their usual shortcuts. In a text field or editable text, or with text selected, the

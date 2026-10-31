@@ -24,9 +24,10 @@ import {
   themePreset,
 } from "@webforge/themes";
 import { PaletteIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
@@ -223,6 +224,8 @@ export type ThemePanelProps = {
    * *Theme's (Corners: Medium)* asks for its token's.
    */
   readonly reveal?: StoreApi<{ readonly field?: string | undefined }> | undefined;
+  /** The computer's fonts for the font picker: the preload API's (#668). */
+  readonly fonts?: (() => FontsApi) | undefined;
 };
 
 /** No field to reveal: the tab drawn without a registration's requests. */
@@ -236,8 +239,18 @@ const NO_REVEAL = createStore<{ readonly field?: string | undefined }>()(() => (
  * person's own themes are listed first; the first change to a built-in one saves their own version
  * of it, by a name they choose (2.23, PH2-17).
  */
-export function ThemePanel({ session, siteWide, studio, ownThemes, reveal }: ThemePanelProps) {
+export function ThemePanel({
+  session,
+  siteWide,
+  studio,
+  ownThemes,
+  reveal,
+  fonts,
+}: ThemePanelProps) {
   const theme = useDocument(session, (site) => site.theme);
+  const [renderers] = useState(() =>
+    fonts === undefined ? RENDERERS : themeFieldRenderers(fonts),
+  );
   const root = useRef<HTMLDivElement>(null);
   const field = useStore(reveal ?? NO_REVEAL, (state) => state.field);
   useEffect(() => {
@@ -283,7 +296,7 @@ export function ThemePanel({ session, siteWide, studio, ownThemes, reveal }: The
     }
   };
   return (
-    <FieldRenderersProvider renderers={RENDERERS}>
+    <FieldRenderersProvider renderers={renderers}>
       <div ref={root} className="flex h-full flex-col">
         {studio === undefined ? null : (
           <div className="px-3 pt-2">

@@ -10,15 +10,14 @@ const OPEN_CRASH_REPORTS_ID = "help.openCrashReports";
  */
 export function registerCrashReportsCommand(
   registry: CommandRegistry,
-  /** Defaults to the preload API, looked up when the command runs. */
-  app?: Pick<AppApi, "openCrashReports">,
+  app: Pick<AppApi, "openCrashReports">,
 ): () => void {
   return registry.register({
     id: OPEN_CRASH_REPORTS_ID,
     label: t("storage.command.openCrashReports"),
     menu: "help",
     run: async () => {
-      await (app ?? window.webforge.app).openCrashReports();
+      await app.openCrashReports();
     },
   });
 }
