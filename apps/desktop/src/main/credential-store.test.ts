@@ -1,11 +1,12 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it } from "vitest";
 import {
   CredentialError,
   createCredentialStore,
-  credentialKey,
+  mcpCredentialKey,
+  publishCredentialKey,
   type SecretCipher,
 } from "./credential-store.js";
 
@@ -26,7 +27,7 @@ describe("createCredentialStore", () => {
 
   it("saves, reads and deletes secrets by key", async () => {
     const store = createCredentialStore(fileIn(tempDir()), cipher());
-    const key = credentialKey("project-1", "live");
+    const key = publishCredentialKey("project-1", "live");
 
     expect(await store.get(key)).toBeNull();
     await store.set(key, "nfp_secret");
@@ -86,6 +87,23 @@ describe("createCredentialStore", () => {
     expect(await createCredentialStore(foreign, cipher()).get("constructor")).toBeNull();
   });
 
+  it("moves a file that won't parse aside before saving, never writing over it (#666)", async () => {
+    const dir = tempDir();
+    const file = join(dir, "credentials.json");
+    writeFileSync(file, '{ "version": 1, "secrets": { "old": "a'); // cut off mid-write
+    const store = createCredentialStore(file, cipher());
+
+    expect(await store.get("old")).toBeNull();
+    await store.set("new", "fresh");
+
+    expect(await store.get("new")).toBe("fresh");
+    const aside = readdirSync(dir).filter((name) => name.startsWith("credentials.damaged-"));
+    expect(aside).toHaveLength(1);
+    expect(readFileSync(join(dir, aside[0] ?? ""), "utf8")).toBe(
+      '{ "version": 1, "secrets": { "old": "a',
+    );
+  });
+
   it("doesn't save over a file it couldn't read, which would lose other secrets", async () => {
     const dir = tempDir();
     // A folder where the file should be: reading fails with something other than "not found".
@@ -108,8 +126,12 @@ describe("createCredentialStore", () => {
   });
 });
 
-describe("credentialKey", () => {
-  it("keeps project and profile apart even when they contain the separator", () => {
-    expect(credentialKey("a/b", "c")).not.toBe(credentialKey("a", "b/c"));
+describe("credential keys (#666)", () => {
+  it("are namespaced, and keep their parts apart even when they contain the separator", () => {
+    expect(publishCredentialKey("p-1", "d-1")).toBe("publish/p-1/d-1");
+    expect(mcpCredentialKey("claude")).toBe("mcp/claude");
+    expect(publishCredentialKey("a/b", "c")).not.toBe(publishCredentialKey("a", "b/c"));
+    // An AI app named like a destination's key stays in its own namespace.
+    expect(mcpCredentialKey("publish/p-1/d-1")).toBe("mcp/publish%2Fp-1%2Fd-1");
   });
 });

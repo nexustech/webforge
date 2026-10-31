@@ -197,6 +197,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const backupSchedule = createBackupSchedule(backups);
   // The start screen's Recent list (F-SITE-2, 1.8).
   const recentSites = createRecentSites({ dir: app.getPath("userData") });
+  /** The Recent list is a convenience: a write that fails is logged by its code, nothing more. */
+  const recentFailed = (error: unknown) =>
+    logFailure("Webforge could not update the Recent list", error);
   // My themes (2.23): the person's own themes, for every site on this computer.
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   const projectSession = new ProjectSession(
@@ -204,12 +207,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       opened: (access, path) => {
         void backupSchedule.opened(access, path);
         const name = projectSession.current()?.name;
-        if (name !== undefined) recentSites.opened(path, name);
+        if (name !== undefined) void recentSites.opened(path, name).catch(recentFailed);
       },
       committed: () => {
         backupSchedule.committed();
         const path = projectSession.currentPath();
-        if (path !== undefined) recentSites.edited(path);
+        if (path !== undefined) void recentSites.edited(path).catch(recentFailed);
       },
       closed: () => {
         backupSchedule.closed();
@@ -224,12 +227,14 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   );
 
   // Before another site replaces the open one: save it, and capture its canvas for Recent.
+  /** The renderer saves its last changes (`app:flush`). */
+  const requestFlush = async () => {
+    const window = lifecycle.mainWindow();
+    if (window !== undefined) await lifecycle.flushOnClose?.requestFlush(window);
+  };
   const siteSwitch = createSiteSwitch({
     currentPath: () => projectSession.currentPath(),
-    requestFlush: async () => {
-      const window = lifecycle.mainWindow();
-      if (window !== undefined) await lifecycle.flushOnClose?.requestFlush(window);
-    },
+    requestFlush,
     capture: () => captureCanvas(lifecycle.mainWindow()),
     recent: recentSites,
   });
@@ -480,6 +485,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
       template: shippedTemplateReader(templatesDir),
+      flush: requestFlush,
     });
     registerCanvasHandlers(ipcMain, isTrustedSender, canvasStyles);
     registerFontHandlers(ipcMain, isTrustedSender, fonts.downloaded());
@@ -598,10 +604,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // quit: the images are the running Webforge's, in the same user data.
     if (primaryInstance) elementClipboard.forgetKept();
     void closeThenExit({
-      // And My themes' last write, if one is under way (2.23).
+      // And My themes' and the Recent list's last writes, if any are under way (2.23).
       close: async () => {
         await projectSession.close();
-        await myThemes.idle();
+        await Promise.all([myThemes.idle(), recentSites.idle()]);
       },
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to

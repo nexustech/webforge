@@ -59,10 +59,10 @@ Why:
 **Fallback:** a pasted personal access token, checked with `GET /user` before it is saved. `canSignIn()` is false until Webforge's OAuth client ID is set up. The product owner registers the OAuth application at app.netlify.com/applications; the ticket flow uses no redirect URI.
 
 ### 5. Credentials: `safeStorage`-encrypted, in user data
-- Each secret is encrypted with Electron `safeStorage`, whose key the OS keeps (Windows DPAPI, macOS Keychain). The encrypted bytes (base64) go in one file, `<userData>/credentials.json`, keyed by project ID + publish profile (`credentialKey`).
-- The file is written atomically (temp file + rename, owner-only permissions where supported), and saves are serialised.
+- Each secret is encrypted with Electron `safeStorage`, whose key the OS keeps (Windows DPAPI, macOS Keychain). The encrypted bytes (base64) go in one file, `<userData>/credentials.json`, under a namespaced key (#666): `publish/<projectId>/<destinationId>` for a destination (`publishCredentialKey`), `mcp/<appId>` for an AI app (`mcpCredentialKey`).
+- The file is written through `createJsonStore` (#666), as the app's other files in userData are: atomically (temp file + rename, tried again while the file is briefly locked; owner-only permissions where supported), and one save at a time.
 - **Never in plain text:** if `isEncryptionAvailable()` is false, saving fails (`encryption-unavailable`) instead of falling back. On Linux, Electron may use a weak `basic_text` backend. Linux isn't a release target; if it becomes one, also refuse that backend.
-- A damaged file, or a secret that can't be decrypted (another OS user or machine), counts as missing, and the user signs in again. Any other read error (file locked, no permission) fails the save instead, because saving over a file we couldn't read would lose every other profile's secrets.
+- A damaged file, or a secret that can't be decrypted (another OS user or machine), counts as missing, and the user signs in again. A damaged file is moved aside as `credentials.damaged-<time>.json` before the next save, never written over (#666). Any other read error (file locked, no permission) fails the save instead, because saving over a file we couldn't read would lose every other destination's secrets.
 - Tokens stay in the main process. The renderer only learns whether a profile is signed in (Phase 4 IPC).
 
 ### 6. Netlify Forms on API deploys
@@ -146,6 +146,11 @@ Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and
   - `run.test.ts` puts the Netlify, FTPS and SFTP publishers through the run on the tests' own servers: Netlify's API check, and the address answered from what the FTP and SFTP servers hold. Each publish is checked as `live`. A publish cancelled at its first upload leaves the old home page, and the stylesheet it names, in place.
   - `verify.test.ts` covers a page rewritten as Netlify and hosts do, an answer that never comes, and one that runs on.
 - **Not here:** building with the publish-strict checks, the progress and result UI, and recording a version are 4.5 and 4.6. Destinations and their credentials are 4.4.
+
+### 9 and 10. Where publishing runs, and where destinations live
+Recorded in [ADR 0018](0018-publishing-from-a-version.md), with what a publish builds and where its gate runs:
+- **Where publishing runs:** `publishSite` runs in the export worker, as a `publish` job, with the secret main passes for that one job (§1).
+- **Where destinations live:** in the site file's `meta` table, outside the undoable, versioned site document, in one shape with `url` and a mapper to each publisher (§2).
 
 ## Consequences
 - `packages/publish` is the shared core for 0.3 (FTP/FTPS/SFTP use `diffManifest`, `uploadOrder` and `manifestSchema` for `.webforge-publish.json`) and for the Phase 4 publish UI.

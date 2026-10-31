@@ -1,5 +1,5 @@
-import { readFile, rename, writeFile } from "node:fs/promises";
 import type { IpcMain } from "electron";
+import { z } from "zod";
 import {
   applyPreferencesChange,
   DEFAULT_PREFERENCES,
@@ -8,6 +8,7 @@ import {
   preferencesSchema,
 } from "../shared/ipc/prefs.js";
 import { registerIpcHandler } from "./ipc.js";
+import { createJsonStore } from "./json-store.js";
 
 /** The person's editor preferences, kept in one JSON file. */
 export type PreferencesStore = {
@@ -19,12 +20,16 @@ export type PreferencesStore = {
 /**
  * Reads the preferences in `file` (e.g. `<userData>/preferences.json`). A missing, unreadable or
  * invalid file gives the defaults, and so does each invalid field of an otherwise good file:
- * a damaged preference never stops the editor from opening.
+ * a damaged preference never stops the editor from opening. Saves go through
+ * {@link createJsonStore}, one after another, so an older write can never land after a newer one;
+ * a file that isn't JSON is written over, as the defaults lose nothing.
  */
 export async function openPreferencesStore(file: string): Promise<PreferencesStore> {
-  let current = parsePreferences(await readJson(file));
-  // Saves run one after another, so an older write can never land after a newer one.
-  let saving: Promise<unknown> = Promise.resolve();
+  const store = createJsonStore(file, z.unknown().transform(parsePreferences), {
+    empty: DEFAULT_PREFERENCES,
+    onDamaged: "reset",
+  });
+  let current = await store.read().catch(() => DEFAULT_PREFERENCES);
 
   return {
     get: () => current,
@@ -32,11 +37,7 @@ export async function openPreferencesStore(file: string): Promise<PreferencesSto
       current = preferencesSchema.parse(applyPreferencesChange(current, change));
       const snapshot = current;
       // A failed write doesn't block later ones; its caller still sees the error.
-      const write = saving
-        .catch(() => undefined)
-        .then(() => writeAtomically(file, `${JSON.stringify(snapshot, null, 2)}\n`));
-      saving = write;
-      return write.then(() => snapshot);
+      return store.update(() => snapshot).then(() => snapshot);
     },
   };
 }
@@ -60,21 +61,6 @@ export function parsePreferences(raw: unknown): Preferences {
     add: field("add"),
     editPanel: field("editPanel"),
   };
-}
-
-async function readJson(file: string): Promise<unknown> {
-  try {
-    return JSON.parse(await readFile(file, "utf8"));
-  } catch {
-    return undefined;
-  }
-}
-
-/** Writes next to the file and renames over it, so a crash never leaves half a file. */
-async function writeAtomically(file: string, contents: string): Promise<void> {
-  const temporary = `${file}.tmp`;
-  await writeFile(temporary, contents, "utf8");
-  await rename(temporary, file);
 }
 
 /**

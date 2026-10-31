@@ -144,9 +144,20 @@ type StructuredDataOptions = {
   readonly shareImage: string | undefined;
 };
 
-/** `data` as a readable `<script type="application/ld+json">` (X4) that can't close itself early. */
+/** The characters {@link jsonLd} writes as JSON escapes. */
+const SCRIPT_SAFE: Readonly<Record<string, string>> = {
+  "<": "\\u003c",
+  ">": "\\u003e",
+  "&": "\\u0026",
+};
+
+/**
+ * `data` as a readable `<script type="application/ld+json">` (X4) that the HTML parser can't end
+ * early or run on past its end (S14, #657): `<`, `>` and `&` as JSON's `<`, `>` and
+ * `&`, so no `</script>` or `<!--` can reach it. Still valid JSON, read the same.
+ */
 const jsonLd = (data: object) =>
-  `<script type="application/ld+json">\n${JSON.stringify(data, null, 2).replaceAll("</", "<\\/")}\n</script>`;
+  `<script type="application/ld+json">\n${JSON.stringify(data, null, 2).replace(/[<>&]/g, (c) => SCRIPT_SAFE[c] ?? c)}\n</script>`;
 
 /**
  * The structured data the home page carries, and the contact page (3.15, SEO-1): the

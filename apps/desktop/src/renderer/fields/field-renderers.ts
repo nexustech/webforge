@@ -1,4 +1,5 @@
 import type { FieldRenderers } from "@webforge/editor-ui";
+import type { FontsApi } from "../../shared/ipc/fonts.js";
 import { classesField } from "./classes/field.js";
 import { codeField } from "./code/field.js";
 import { colourField } from "./color/field.js";
@@ -27,8 +28,9 @@ export function fieldRenderers(context: FieldRendererContext): FieldRenderers {
 
 /**
  * The renderers of the Theme tab's own kinds (2.3a): a theme colour, with its contrast warnings,
- * and a font from the font picker. The Edit panel never draws these kinds.
+ * and a font from the font picker, through `fonts` (the preload API's, #668). The Edit panel never
+ * draws these kinds.
  */
-export function themeFieldRenderers(): FieldRenderers {
-  return { themeColor: themeColorField(), font: fontField() };
+export function themeFieldRenderers(fonts?: () => FontsApi): FieldRenderers {
+  return { themeColor: themeColorField(), font: fontField(fonts) };
 }

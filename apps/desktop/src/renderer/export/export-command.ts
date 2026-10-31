@@ -4,9 +4,8 @@ import { DEFAULT_EXPORT_CHOICES, mediaItem, type SiteDoc, siteToSnapshot } from 
 import { blockingCount, checkSite } from "@webforge/site-check";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
-import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
+import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
-import type { ExportSite } from "../editor/areas.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -116,6 +115,12 @@ export function exportReport(
     noWebAddress: !hasWebAddress(site),
   };
 }
+
+/** Exports a site, telling `onProgress` how far it has come (3.1). */
+export type ExportSite = (
+  request: ExportRequest,
+  onProgress: (progress: ExportProgress) => void,
+) => Promise<ExportResult>;
 
 /** What the export command reaches: the open site, the main process's calls, the dialogs. */
 export type ExportFlow = {

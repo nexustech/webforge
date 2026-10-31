@@ -1,10 +1,7 @@
 import type { NodeDoc, Theme } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
-import type { AiApi } from "../../shared/ipc/ai.js";
-import type { PreviewApi } from "../../shared/ipc/preview.js";
-import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
-import type { ExportResult } from "../../shared/ipc-contract.js";
+import type { WebforgeApi } from "../../shared/webforge-api.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -50,18 +47,18 @@ export type Area<Context> = {
 
 /** What every area registers into, and the session and preferences it works on. */
 type AreaContext = {
+  /**
+   * The main process, through the preload API: `window.webforge` in the app, `fakePreloadApi()` in
+   * tests and `storyPreloadApi()` in stories (#668). An area reaches main only through this, never
+   * through `window.webforge`.
+   */
+  readonly api: WebforgeApi;
   readonly session: EditorSession;
   readonly commands: CommandRegistry;
   readonly panels: PanelRegistry;
   /** The person's preferences and the editor mode, which an area follows itself. */
   readonly preferences: PreferencesStore;
 };
-
-/** Exports a site, telling `onProgress` how far it has come. */
-export type ExportSite = (
-  request: ExportRequest,
-  onProgress: (progress: ExportProgress) => void,
-) => Promise<ExportResult>;
 
 /**
  * What the window gives the areas it registers (App): its own registries and stores, made once,
@@ -78,20 +75,6 @@ export type WindowContext = AreaContext & {
   readonly settings: SettingsRegistry;
   /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
   readonly windowDialogs: WindowDialogRegistry;
-  /** Exports a site, telling `onProgress` how far it has come (3.1). */
-  readonly exportSite: ExportSite;
-  /** Cancels the export under way. */
-  readonly cancelExport: () => Promise<null>;
-  /** What the person chose for the open site's last export (3.3). */
-  readonly exportChoices: () => Promise<ExportChoices>;
-  /** Remembers the person's export choices with the open site. */
-  readonly setExportChoices: (choices: ExportChoices) => Promise<null>;
-  /** Opens the open site's last export from disk (Preview from disk, 3.3). */
-  readonly openExport: () => Promise<"opened" | "none" | "missing">;
-  /** Answers AI apps' requests (F-AI-1) until the returned function is called. */
-  readonly answerAi: AiApi["onRequest"];
-  /** The preview server (3.2): the site in the default browser, and its address for a phone. */
-  readonly preview: PreviewApi;
   /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
   readonly siteCheckIgnored: {
     readonly initial: readonly string[];

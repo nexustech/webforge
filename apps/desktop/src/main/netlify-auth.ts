@@ -17,7 +17,7 @@ export type NetlifyAuthOptions = {
   readonly fetch?: typeof fetch;
 };
 
-/** Netlify sign-in, keyed like the credential store (see `credentialKey`). */
+/** Netlify sign-in, keyed like the credential store (see `publishCredentialKey`). */
 export function netlifyAuth(options: NetlifyAuthOptions) {
   const { store, clientId } = options;
   const network = options.fetch === undefined ? {} : { fetch: options.fetch };

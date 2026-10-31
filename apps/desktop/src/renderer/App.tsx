@@ -2,22 +2,13 @@ import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import type { AiApi } from "../shared/ipc/ai.js";
-import type { PreviewApi } from "../shared/ipc/preview.js";
-import type { ExportChoices } from "../shared/ipc/site.js";
-import type {
-  AppInfo,
-  Preferences,
-  PreferencesChange,
-  SiteUiChange,
-  SiteUiState,
-  UiStateResult,
-} from "../shared/ipc-contract.js";
+import { useEffect, useState } from "react";
+import type { AppInfo, Preferences, SiteUiState } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
+import type { WebforgeApi } from "../shared/webforge-api.js";
 import { createItemPreviews, createKindPreviews } from "./add/index.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
-import { connectAreas, type ExportSite, type WindowContext } from "./editor/areas.js";
+import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
@@ -58,62 +49,18 @@ export type AppProps = {
   readonly info: AppInfo;
   /** The person's preferences as main loaded them. */
   readonly preferences: Preferences;
-  /** Saves changed preferences; injectable for tests. Defaults to the preload API. */
-  readonly savePreferences?: (change: PreferencesChange) => Promise<Preferences>;
+  /**
+   * The main process, through the preload API (#668): the areas' only way to it. Defaults to
+   * `window.webforge`; tests give `fakePreloadApi()`. Fixed for the window's life: its areas
+   * register once.
+   */
+  readonly api?: WebforgeApi;
   /** Creates the canvas engine; injectable for tests. */
   readonly createEngine?: EditorProps["createEngine"];
-  /** Compiles the canvas's site CSS; injectable for tests. */
-  readonly compileCss?: EditorProps["compileCss"];
-  /** Exports a site; injectable for tests. Defaults to the preload API. */
-  readonly exportSite?: ExportSite;
-  /** Cancels the export under way; injectable for tests. Defaults to the preload API. */
-  readonly cancelExport?: () => Promise<null>;
-  /** The open site's last export choices; injectable for tests. Defaults to the preload API. */
-  readonly exportChoices?: () => Promise<ExportChoices>;
-  /** Remembers the export choices; injectable for tests. Defaults to the preload API. */
-  readonly setExportChoices?: (choices: ExportChoices) => Promise<null>;
-  /** Opens the last export from disk; injectable for tests. Defaults to the preload API. */
-  readonly openExport?: () => Promise<"opened" | "none" | "missing">;
   /** The site read from the open site file at start-up (1.6); the starter site otherwise. */
   readonly loaded?: LoadedSite;
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
   readonly uiState?: SiteUiState | null;
-  /** Remembers the editor state with the open site; injectable for tests. */
-  readonly saveUiState?: (change: SiteUiChange) => Promise<UiStateResult>;
-  /** Spell checks text in the site's language (F-ED-19); injectable for tests. */
-  readonly setSpellCheckLanguage?: (language: string) => Promise<null>;
-  /** Answers AI apps' requests (F-AI-1); injectable for tests. Defaults to the preload API. */
-  readonly answerAi?: AiApi["onRequest"];
-  /** The preview server (3.2); injectable for tests. Defaults to the preload API. */
-  readonly preview?: PreviewApi;
-};
-
-const exportWithPreload: ExportSite = async (request, onProgress) => {
-  const stop = window.webforge.site.onExportProgress(onProgress);
-  try {
-    return await window.webforge.site.export(request);
-  } finally {
-    stop();
-  }
-};
-const cancelExportWithPreload = () => window.webforge.site.cancelExport();
-const exportChoicesWithPreload = () => window.webforge.site.exportChoices();
-const setExportChoicesWithPreload = (choices: ExportChoices) =>
-  window.webforge.site.setExportChoices(choices);
-const openExportWithPreload = () => window.webforge.site.openExport();
-const saveWithPreload = (change: PreferencesChange) => window.webforge.prefs.set(change);
-const saveUiStateWithPreload = (change: SiteUiChange) =>
-  window.webforge.project.setUiState(siteSession(), change);
-const spellCheckWithPreload = (language: string) =>
-  window.webforge.app.setSpellCheckLanguage(language);
-const answerAiWithPreload: AiApi["onRequest"] = (answer) => window.webforge.ai.onRequest(answer);
-// Looked up as each call is made: tests and stories without a preload never call it.
-const previewWithPreload: PreviewApi = {
-  open: (site, page) => window.webforge.preview.open(site, page),
-  update: (site) => window.webforge.preview.update(site),
-  show: (page) => window.webforge.preview.show(page),
-  phone: (site, page) => window.webforge.preview.phone(site, page),
-  stopPhone: () => window.webforge.preview.stopPhone(),
 };
 
 /** The perf check's hooks (ADR 0007), loaded only in perf builds. */
@@ -125,21 +72,12 @@ const installPerf = (session: EditorSession) => {
 export function App({
   info,
   preferences: initialPreferences,
-  savePreferences = saveWithPreload,
+  api: givenApi,
   createEngine,
-  compileCss,
-  exportSite = exportWithPreload,
-  cancelExport = cancelExportWithPreload,
-  exportChoices = exportChoicesWithPreload,
-  setExportChoices = setExportChoicesWithPreload,
-  openExport = openExportWithPreload,
   loaded,
   uiState,
-  saveUiState = saveUiStateWithPreload,
-  setSpellCheckLanguage = spellCheckWithPreload,
-  answerAi = answerAiWithPreload,
-  preview = previewWithPreload,
 }: AppProps) {
+  const [api] = useState(() => givenApi ?? window.webforge);
   const [session] = useState(() => createEditorSession(siteLibrary, loaded?.site ?? starterSite()));
   const [registry] = useState(createCommandRegistry);
   const [panels] = useState(createPanelRegistry);
@@ -154,7 +92,10 @@ export function App({
   const [preferences] = useState(() =>
     createPreferencesStore(
       { preferences: initialPreferences, mode: uiState?.editorMode ?? "design" },
-      { preferences: savePreferences, mode: (editorMode) => saveUiState({ editorMode }) },
+      {
+        preferences: (change) => api.prefs.set(change),
+        mode: (editorMode) => api.project.setUiState(siteSession(), { editorMode }),
+      },
     ),
   );
   const mode = usePreferences(preferences, (state) => state.mode);
@@ -165,10 +106,10 @@ export function App({
   const siteLanguage = useDocument(session, (site) => site.settings.general.language);
   // Spelling is checked in the site's language, including after Site Settings changes it (1.22).
   useEffect(() => {
-    setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
+    api.app.setSpellCheckLanguage(siteLanguage).catch((error: unknown) => {
       reportFailure("spellcheck.language", error);
     });
-  }, [setSpellCheckLanguage, siteLanguage]);
+  }, [api, siteLanguage]);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -178,33 +119,18 @@ export function App({
   useEffect(() => pauseCommandsWhileAsking(siteWide, registry), [siteWide, registry]);
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
   // the View menu's zoom and device views, and Export, after the shell's own commands. Their
-  // context is made once, so they register once: Export reads the latest exportSite as it runs.
-  const exportSiteRef = useRef({
-    exportSite,
-    cancelExport,
-    exportChoices,
-    setExportChoices,
-    openExport,
-  });
-  useEffect(() => {
-    exportSiteRef.current = {
-      exportSite,
-      cancelExport,
-      exportChoices,
-      setExportChoices,
-      openExport,
-    };
-  }, [exportSite, cancelExport, exportChoices, setExportChoices, openExport]);
+  // context is made once, so they register once; they reach main through its `api` (#668).
   const [windowContext] = useState<WindowContext>(() => {
     // What the kind and item previews draw with: the canvas's CSS compiler, as the Add panel's.
     const previewSource = {
       library: session.library,
       theme: () => session.history.document.getState().theme,
-      compileCss: compileCss ?? ((request) => window.webforge.canvas.compileCss(request)),
+      compileCss: (request) => api.canvas.compileCss(request),
       // A preview shown draws again as the theme changes (#613).
       subscribe: (listener: () => void) => session.history.document.subscribe(listener),
     } satisfies Parameters<typeof createKindPreviews>[0];
     return {
+      api,
       session,
       commands: registry,
       panels,
@@ -214,22 +140,17 @@ export function App({
       canvasPointer,
       settings,
       windowDialogs,
-      exportSite: (request, onProgress) => exportSiteRef.current.exportSite(request, onProgress),
-      cancelExport: () => exportSiteRef.current.cancelExport(),
-      exportChoices: () => exportSiteRef.current.exportChoices(),
-      setExportChoices: (choices) => exportSiteRef.current.setExportChoices(choices),
-      openExport: () => exportSiteRef.current.openExport(),
-      answerAi,
-      preview,
       // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
       kindPreviews: createKindPreviews(previewSource),
       itemPreviews: createItemPreviews(previewSource),
       siteCheckIgnored: {
         initial: uiState?.siteCheckIgnored ?? [],
         save: (ignored) => {
-          saveUiState({ siteCheckIgnored: [...ignored] }).catch((error: unknown) => {
-            reportFailure("siteCheck.ignored", error);
-          });
+          api.project
+            .setUiState(siteSession(), { siteCheckIgnored: [...ignored] })
+            .catch((error: unknown) => {
+              reportFailure("siteCheck.ignored", error);
+            });
         },
       },
     };
@@ -296,8 +217,8 @@ export function App({
               <TitleBar
                 siteName={siteName}
                 // On macOS the menus are the menu bar's (LF-13).
-                menuBar={isMac() ? window.webforge.app : undefined}
-                saveStatus={<AutosaveStatus session={session} loaded={loaded} />}
+                menuBar={isMac() ? api.app : undefined}
+                saveStatus={<AutosaveStatus session={session} loaded={loaded} api={api} />}
                 undoSteps={
                   <UndoStepsMenu
                     state={session.history.state}
@@ -342,9 +263,9 @@ export function App({
                       <div className="min-h-0 flex-1">
                         <Editor
                           session={session}
+                          api={api}
                           areas={EDITOR_AREAS}
                           {...(createEngine === undefined ? {} : { createEngine })}
-                          {...(compileCss === undefined ? {} : { compileCss })}
                           preferences={preferences}
                           siteWide={siteWide}
                           canvasView={canvasView}
@@ -358,7 +279,7 @@ export function App({
             </div>
             <AboutDialog info={info} />
             <ShortcutSheet />
-            <SiteCommands />
+            <SiteCommands project={api.project} templates={api.templates} />
             <SettingsHost registry={settings} />
             <WindowDialogs registry={windowDialogs} />
             <SiteWideConfirmDialog confirm={siteWide} />

@@ -222,10 +222,69 @@ describe("structured data (3.15, SEO-1)", () => {
       shareImage: undefined,
     });
     expect(tags.join("\n").match(/<\/script>/g)).toHaveLength(2);
-    expect(tags.join("\n")).toContain("Rosa<\\/script><script>x");
+    expect(tags.join("\n")).toContain("Rosa\\u003c/script\\u003e\\u003cscript\\u003ex");
+    expect(dataOn(sneaky, "index")).toContainEqual(
+      expect.objectContaining({ name: "Rosa</script><script>x" }),
+    );
 
     // A profile address the checks refuse: no business rather than a wrong one.
     const refused = site({ socialProfiles: [{ network: "custom", url: "not an address" }] });
     expect(dataOn(refused, "index")).toEqual([expect.objectContaining({ "@type": "WebSite" })]);
   });
+
+  it("can't run on past its end, whatever the site's name (S14, #657)", () => {
+    const named = site({ name: "Rosa's <!--<script> Bakery & Café > the rest" });
+    const [website] = structuredData({
+      site: named,
+      page: named.pages[0] as SitePage,
+      nodes: [],
+      library: siteLibrary,
+      shareImage: undefined,
+    });
+    const tag = website ?? "";
+    const opening = '<script type="application/ld+json">';
+    // The rest of the page as the export writes it after the head's JSON-LD.
+    const rest =
+      '\n<link rel="stylesheet" href="assets/site.css">\n</head>\n<body><h1>Rosa</h1></body>';
+    const text = `${tag}${rest}`.slice(opening.length);
+
+    // The element ends at its own closing tag rather than taking the page with it.
+    expect(scriptEnd(text)).toBe(tag.length - opening.length - "</script>".length);
+    expect(tag.slice(opening.length, -"</script>".length)).not.toMatch(/[<>&]/);
+    // Read back as typed.
+    expect(dataOn(named, "index")).toContainEqual(
+      expect.objectContaining({
+        "@type": "WebSite",
+        name: "Rosa's <!--<script> Bakery & Café > the rest",
+      }),
+    );
+  });
 });
+
+/**
+ * Where a `<script>` element's text ends, by the WHATWG tokeniser's script data states (13.2.5.4,
+ * 13.2.5.20–13.2.5.31): `<!--` enters "escaped", `<script` there enters "double escaped", where
+ * `</script>` only returns to "escaped". The index of the `</script` that ends the element, or -1.
+ * From the security review's test for S14 (`docs/reviews/2026-10-30-security-review-tests/`).
+ */
+function scriptEnd(text: string): number {
+  let state: "data" | "escaped" | "double" = "data";
+  const at = (i: number, tag: string) =>
+    text.slice(i, i + tag.length).toLowerCase() === tag &&
+    /[\s/>]/.test(text[i + tag.length] ?? "");
+  for (let i = 0; i < text.length; i++) {
+    if (state === "data") {
+      if (text.startsWith("<!--", i)) {
+        state = "escaped";
+        i += 3;
+      } else if (at(i, "</script")) return i;
+    } else if (text.startsWith("-->", i)) {
+      state = "data";
+      i += 2;
+    } else if (state === "escaped") {
+      if (at(i, "</script")) return i;
+      if (at(i, "<script")) state = "double";
+    } else if (at(i, "</script")) state = "escaped";
+  }
+  return -1;
+}

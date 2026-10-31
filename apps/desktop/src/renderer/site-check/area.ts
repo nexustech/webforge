@@ -13,7 +13,7 @@ import { registerSiteCheckPanel } from "./register-site-check-panel.js";
  */
 export const siteCheckArea: Area<WindowContext> = {
   id: "siteCheck",
-  register: ({ panels, session, settings, commands, siteCheckIgnored, windowDialogs }) => {
+  register: ({ api, panels, session, settings, commands, siteCheckIgnored, windowDialogs }) => {
     // Download and bundle's question (3.9), drawn once in the window.
     const question = createBundleConfirm();
     const removeDialog = windowDialogs.register({
@@ -26,7 +26,7 @@ export const siteCheckArea: Area<WindowContext> = {
       commands,
       // A guide's page (3.17), by its name: main knows the address.
       openGuide: (guide) => {
-        window.webforge.app
+        api.app
           .openGuide(guide)
           .then((opened) => {
             if (!opened) toast.error(t("siteCheck.guide.failed"));
@@ -37,7 +37,7 @@ export const siteCheckArea: Area<WindowContext> = {
       saveIgnored: siteCheckIgnored.save,
       bundle: {
         confirm: question.confirm,
-        download: (url) => window.webforge.site.bundleFile(siteSession(), url),
+        download: (url) => api.site.bundleFile(siteSession(), url),
         notify: (message) => toast.error(message),
       },
     });

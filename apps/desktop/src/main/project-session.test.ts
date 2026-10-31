@@ -10,8 +10,9 @@ import {
   type ImageMeta,
   type MediaId,
   pageDocumentId,
+  siteDocuments,
 } from "@webforge/model";
-import { ProjectStore, ReadOnlyProjectError } from "@webforge/storage";
+import { ProjectStore, ReadOnlyProjectError, readSiteZip } from "@webforge/storage";
 import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
@@ -235,6 +236,54 @@ describe("ProjectSession", () => {
     expect(() => filled?.readDocuments()).toThrow();
   });
 
+  it("saves a copy of the open site as a ZIP that opens again as a new site (4.7)", async () => {
+    await session.create(join(dir, "Rosa's Bakery.wforge"));
+    await session.commit(
+      siteDocuments(
+        createSite({ name: "Rosa's", language: "en", homeTitle: "Home", notFoundTitle: "Oops" }),
+      ).map((document) => ({ type: "put" as const, ...document })),
+    );
+    const zip = join(dir, "copy.zip");
+
+    expect(await session.saveSiteZip(zip)).toEqual({ status: "saved", fileName: "copy.zip" });
+    const site = readSiteZip(readFileSync(zip));
+    expect(site.name).toBe("Rosa's Bakery");
+    expect(site.sitePackage.site.settings.general.name).toBe("Rosa's");
+  });
+
+  it("saves no copy over the open site's own file, nor the files beside it (4.7)", async () => {
+    const site = join(dir, "Rosa's Bakery.wforge");
+    await session.create(site);
+
+    for (const path of [
+      site,
+      `${site}-wal`,
+      `${site}-journal`,
+      join(dir, ".", "Rosa's Bakery.wforge"),
+    ]) {
+      expect(await session.saveSiteZip(path), path).toEqual({
+        status: "failed",
+        reason: "own-file",
+      });
+    }
+    // The site is still there, and still opens.
+    expect(session.current()?.fileName).toBe("Rosa's Bakery.wforge");
+    expect((await session.readSite()).status).not.toBe("failed");
+  });
+
+  it("saves no copy without an open site, nor over a folder (4.7)", async () => {
+    expect(await session.saveSiteZip(join(dir, "copy.zip"))).toEqual({
+      status: "failed",
+      reason: "no-site",
+    });
+    await session.create(join(dir, "site.wforge"));
+    mkdirSync(join(dir, "folder.zip"));
+    expect(await session.saveSiteZip(join(dir, "folder.zip"))).toEqual({
+      status: "failed",
+      reason: "unknown",
+    });
+  });
+
   it("keeps the current site when another one fails to open", async () => {
     await session.create(join(dir, "good.wforge"));
     const bad = join(dir, "bad.wforge");
@@ -312,6 +361,8 @@ describe("ProjectSession sessions (R6, #239)", () => {
     registerProjectHandlers(ipc, () => true, session, {
       chooseNewProjectPath: async () => undefined,
       chooseProjectToOpen: async () => undefined,
+      chooseSiteZipToSave: async () => undefined,
+      chooseSiteZipToOpen: async () => undefined,
     });
     const commit = (sessionId: string, changes: unknown) =>
       handlers.get("project:commit")?.({ senderFrame: { url: "app" } }, sessionId, changes);

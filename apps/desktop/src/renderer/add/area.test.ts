@@ -4,6 +4,7 @@ import type { EditorContext } from "../editor/areas.js";
 import { createPreviewStore } from "../editor/edit-previews.js";
 import { createEngineHost } from "../editor/engine-host.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
+import { fakePreloadApi } from "../testing/preload.js";
 import { addPanelArea } from "./area.js";
 
 function setUp() {
@@ -11,6 +12,7 @@ function setUp() {
   const engine = createEngineHost();
   const ctx: EditorContext = {
     ...registries,
+    api: fakePreloadApi(),
     session: sessionWith(),
     engine,
     compileCss: async () => ({ status: "failed" }),
