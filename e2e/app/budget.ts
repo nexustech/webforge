@@ -57,16 +57,19 @@ const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
 };
 
 /**
- * How long Webforge's main process takes for {@link calibrate}'s work on CI's usual runners, by
- * platform, in CPU seconds (#677's CI runs, 31 Oct 2026: 0.125 and 0.178 on Linux, 0.169 and 0.181
- * on macOS, 0.187 twice on Windows). A runner that takes longer is that much slower, and its
- * opening budget grows with it: the Linux runner at 0.178 took 27% more CPU to open each template
- * than the one at 0.125.
+ * How long Webforge's main process takes for {@link calibrate}'s work on the slowest of CI's usual
+ * runners, by platform, in CPU seconds, so only a runner slower than those CI's budgets were set on
+ * gets more. A runner that takes longer is that much slower, and its opening budget grows with it.
+ *
+ * From #677's CI runs (31 Oct 2026, 18 E2E jobs, about 1,100 openings): the usual runners took
+ * 0.125–0.18 on Linux, 0.11–0.19 on Windows and 0.10–0.22 on macOS, where it varies most within a
+ * job. One Linux runner took 0.25, and opened each template in a median 3.1 CPU-s where the others
+ * took 1.9–2.3: the calibration, 1.4–1.7 times the others', matched it.
  */
 const CI_CALIBRATION_SECONDS: Readonly<Record<string, number>> = {
-  linux: 0.15,
+  linux: 0.18,
   win32: 0.19,
-  darwin: 0.175,
+  darwin: 0.22,
 };
 
 /**
