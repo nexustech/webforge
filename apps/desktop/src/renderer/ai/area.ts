@@ -8,8 +8,8 @@ import { answerRequest, commandHost } from "./command-host.js";
  */
 export const aiRequestsArea: Area<WindowContext> = {
   id: "aiRequests",
-  register: ({ session, preferences, siteWide, answerAi }) => {
-    const api = createCommandApi(commandHost(session, preferences, siteWide));
-    return answerAi((request) => answerRequest(api, request));
+  register: ({ api, session, preferences, siteWide }) => {
+    const commandApi = createCommandApi(commandHost(session, preferences, siteWide));
+    return api.ai.onRequest((request) => answerRequest(commandApi, request));
   },
 };

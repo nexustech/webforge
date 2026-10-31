@@ -8,6 +8,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { fieldRenderers } from "../fields/index.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { dialogStory } from "../testing/stories.js";
+import { storyPreloadApi } from "../testing/story-preload.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import type { ItemCssServices } from "./ItemCssView.js";
 
@@ -63,6 +64,7 @@ function Panel({
   const [renderers] = useState(() => {
     session.select("heading-1");
     return fieldRenderers({
+      api: storyPreloadApi(),
       session,
       preferences: createPreferencesStore({
         preferences: { ...DEFAULT_PREFERENCES, editorLevel: "advanced" },

@@ -2,6 +2,7 @@ import { hasBuiltInRenderer } from "@webforge/editor-ui";
 import { describe, expect, it } from "vitest";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { fakePreloadApi } from "../testing/preload.js";
 import { FIELD_KINDS } from "./field-kinds.js";
 import { fieldRenderers } from "./field-renderers.js";
 
@@ -24,6 +25,7 @@ const storyTitles = new Set(
 
 describe("field kinds (2.20, B5)", () => {
   const appRenderers = fieldRenderers({
+    api: fakePreloadApi(),
     session: sessionWith(),
     preferences: createPreferencesStore(),
     imagePicks: { request: () => undefined, take: () => false, subscribe: () => () => undefined },

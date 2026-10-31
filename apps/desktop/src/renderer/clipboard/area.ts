@@ -3,7 +3,7 @@ import type { Area, EditorContext } from "../editor/areas.js";
 import { sharedCutConfirmation } from "../editor/shared-confirmations.js";
 import { followLayoutLock } from "../shell/preferences-store.js";
 import { registerLookCommands } from "./apply-look.js";
-import { preloadClipboard, registerClipboardCommands } from "./register-clipboard-commands.js";
+import { registerClipboardCommands } from "./register-clipboard-commands.js";
 import { registerStyleCommands } from "./style-clipboard.js";
 
 /**
@@ -12,12 +12,12 @@ import { registerStyleCommands } from "./style-clipboard.js";
  */
 export const clipboardCommandsArea: Area<EditorContext> = {
   id: "clipboardCommands",
-  register: ({ engine, session, commands, preferences, siteWide }) =>
+  register: ({ api, engine, session, commands, preferences, siteWide }) =>
     engine.whileMounted(({ connection }) => {
       const clipboardCommands = registerClipboardCommands(
         commands,
         session,
-        preloadClipboard,
+        api.clipboard,
         connection.flush,
         (message) => toast(message),
         siteWide === undefined ? undefined : sharedCutConfirmation(session, siteWide),

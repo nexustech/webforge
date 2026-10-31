@@ -1,6 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import type { Area, WindowContext } from "../editor/areas.js";
-import { PRELOAD_ITEM_CSS } from "../editor/ItemCssView.js";
+import { itemCssThrough } from "../editor/ItemCssView.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
@@ -18,6 +18,7 @@ import { registerThemeCommands } from "./theme-commands.js";
 export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",
   register: ({
+    api,
     panels,
     commands,
     windowDialogs,
@@ -28,10 +29,17 @@ export const themePanelArea: Area<WindowContext> = {
     itemPreviews,
   }) => {
     const studio = createStudio();
-    const ownThemes = createOwnThemes(() => window.webforge.themes, {
+    const ownThemes = createOwnThemes(() => api.themes, {
       notify: (message) => toast.error(message),
     });
-    const removePanel = registerThemePanel(panels, session, siteWide, studio, ownThemes);
+    const removePanel = registerThemePanel(
+      panels,
+      session,
+      siteWide,
+      studio,
+      ownThemes,
+      () => api.fonts,
+    );
     const removeCommands = registerThemeCommands(commands, panels, studio);
     const removeStudio = registerThemeStudio(windowDialogs, session, studio, {
       siteWide,
@@ -53,7 +61,7 @@ export const themePanelArea: Area<WindowContext> = {
           notify: (message) => toast(message),
         },
         itemPreviews,
-        itemCss: PRELOAD_ITEM_CSS,
+        itemCss: itemCssThrough(api),
       },
     );
     return () => {

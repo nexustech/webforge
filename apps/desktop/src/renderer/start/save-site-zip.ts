@@ -54,5 +54,6 @@ export function registerSaveSiteZipCommand(
 /** Save a Copy as ZIP…, after Export in the File menu. */
 export const saveSiteZipArea: Area<WindowContext> = {
   id: "saveSiteZip",
-  register: (context) => registerSaveSiteZipCommand(context.commands, context.saveSiteZip),
+  register: ({ api, commands }) =>
+    registerSaveSiteZipCommand(commands, () => api.project.saveZip()),
 };

@@ -7,6 +7,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { fieldRenderers } from "../fields/index.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { dialogStory } from "../testing/stories.js";
+import { storyPreloadApi } from "../testing/story-preload.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 
 // The Edit panel's Style tab on a Heading (2.22, ST-1): the Appearance group every section and
@@ -29,6 +30,7 @@ function Panel({ session }: { readonly session: Parameters<typeof fieldRenderers
   const [renderers] = useState(() => {
     session.select("heading-1");
     return fieldRenderers({
+      api: storyPreloadApi(),
       session,
       preferences: createPreferencesStore(),
       // No image picker asked for from the canvas in a story.
