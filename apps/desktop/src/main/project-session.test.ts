@@ -96,6 +96,86 @@ describe("ProjectSession", () => {
     });
   });
 
+  it("collects the file's garbage as the site closes, keeping what it and its versions use (A1)", async () => {
+    const path = join(dir, "site.wforge");
+    const site = createSite({
+      name: "Rosa's",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Oops",
+    });
+    // A photo in Media, a version, and bytes nothing names (an import that was undone).
+    const store = ProjectStore.create(path, { name: "Rosa's" });
+    const { hash: photo } = store.putAsset({
+      mediaId: "shop",
+      data: heroPhoto(),
+      mime: "image/jpeg",
+      originalName: "shop.jpg",
+    });
+    const shop = "shop" as MediaId;
+    site.media[shop] = {
+      id: shop,
+      kind: "image",
+      hash: photo,
+      name: "shop",
+      fileName: "shop.jpg",
+      mimeType: "image/jpeg",
+      width: 1600,
+      height: 1000,
+      alt: "",
+    };
+    store.saveSite(site);
+    store.saveVersion("First", "manual");
+    const unused = store.putBlob(new Uint8Array([1, 2, 3]), "application/octet-stream");
+    store.close();
+
+    // The home page saved twice, as autosave does while it is edited.
+    await session.open(path);
+    const home = pageDocumentId(site.homePageId);
+    const page = site.pages[site.homePageId];
+    const saves = ["Fresh bread", "Fresh rolls"].map((title) => ({ ...page, title }));
+    for (const content of saves) {
+      expect(await session.commit([{ type: "put", id: home, kind: "page", content }])).toEqual({
+        status: "saved",
+      });
+    }
+    await session.close();
+
+    const blobOf = (content: unknown) =>
+      createHash("sha256").update(JSON.stringify(content)).digest("hex");
+    const after = ProjectStore.open(path);
+    try {
+      expect(after.hasBlob(blobOf(saves[0]))).toBe(false);
+      expect(after.hasBlob(unused)).toBe(false);
+      expect(after.hasBlob(blobOf(saves[1]))).toBe(true);
+      expect(after.hasBlob(photo)).toBe(true);
+      expect(after.readAsset("shop")?.hash).toBe(photo);
+      const [version] = after.listVersions();
+      expect(after.readVersion(version?.id ?? "")).toContainEqual({
+        id: home,
+        kind: "page",
+        content: JSON.parse(JSON.stringify(page)),
+      });
+    } finally {
+      after.close();
+    }
+  });
+
+  it("still closes the site when its garbage can't be collected, and logs why", async () => {
+    const path = join(dir, "site.wforge");
+    await session.create(path);
+    vi.spyOn(ProjectStore.prototype, "collectGarbage").mockImplementation(() => {
+      throw new Error("disk full");
+    });
+
+    await session.close();
+
+    expect(session.current()).toBeNull();
+    expect(vi.mocked(console.error)).toHaveBeenCalled();
+    // The file is closed: another connection can open it for writing.
+    ProjectStore.open(path).close();
+  });
+
   it("replaces the current site when it creates one over the same file", async () => {
     const path = join(dir, "site.wforge");
     await session.create(path);

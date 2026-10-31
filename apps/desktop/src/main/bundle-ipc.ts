@@ -18,8 +18,8 @@ function hostOf(url: string): string | undefined {
  * Registers Download and bundle (C8, 3.9): on the person's click in Site Check, the file at an
  * address the site's code names is downloaded ({@link downloadForBundle}) and stored in the site
  * the renderer was loaded for (R6). The renderer keeps the files in the site's code as one undo
- * step; until then, and after an Undo, garbage collection removes their bytes again. The log names
- * a failed download's host and reason, never its address.
+ * step; until then, and after an Undo, garbage collection removes their bytes when the site
+ * closes. The log names a failed download's host and reason, never its address.
  */
 export function registerBundleHandlers(
   ipc: Pick<IpcMain, "handle">,
