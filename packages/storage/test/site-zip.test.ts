@@ -197,6 +197,7 @@ function bakeryWithPhoto(path: string, fileName: string): ProjectStore {
 
 describe("a site's ZIP (4.7)", () => {
   it("opens again with nothing lost: the site, Media, files, versions and choices", async () => {
+    // Each run writes two site files and a ZIP: slow while the whole suite runs at once.
     await fc.assert(
       fc.asyncProperty(planArbitrary, async (plan) => {
         const store = projectFrom(plan);
@@ -218,7 +219,7 @@ describe("a site's ZIP (4.7)", () => {
       }),
       { numRuns: 25 },
     );
-  });
+  }, 120_000);
 
   it("opens the format 1 fixture's site again with nothing lost", async () => {
     const store = ProjectStore.open(copyWforgeFixture(1, tempDir()));
