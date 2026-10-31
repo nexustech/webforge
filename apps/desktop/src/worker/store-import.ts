@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { type FileHandle, open, stat } from "node:fs/promises";
+import { MAX_IMAGE_PIXELS } from "@webforge/model";
 import { AssetWriter } from "@webforge/storage";
 import { isTextName } from "../main/document-files.js";
 import { sniffMedia } from "../main/media-files.js";
@@ -10,12 +11,6 @@ import type {
   PrepareOutcome,
   StoreOutcome,
 } from "../shared/storage-writer-protocol.js";
-
-/**
- * The most pixels an imported image may have (50 megapixels, e.g. 8660 × 5774). A small file can
- * claim a huge size; decoding it for thumbnails and the export would exhaust memory.
- */
-const MAX_IMAGE_PIXELS = 50_000_000;
 
 /** How much of a file is read at a time. */
 const CHUNK_BYTES = 1024 * 1024;

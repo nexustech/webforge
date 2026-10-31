@@ -8,8 +8,8 @@ import type { EditorSession } from "../editor/editor-session.js";
 import {
   copyLayer,
   type Layer,
-  layersOf,
   moveLayer,
+  pageLayers,
   renameLayer,
   setLayerHidden,
 } from "../editor/layers.js";
@@ -43,9 +43,24 @@ function useCommandAction(id: string): (() => void) | undefined {
 }
 
 /**
+ * Where `index` among a page's top-level rows (the shared Header's first, then the page's sections,
+ * then the Footer's) falls in the list the top-level layer `id` is in: the Header's, the page's own
+ * or the Footer's (#673). `index` itself for a layer inside another.
+ */
+function listIndex(layers: readonly Layer[], id: string, index: number): number {
+  const top = layers.find((layer) => layer.id === id);
+  if (top === undefined || top.region === "header") return index;
+  const before =
+    top.region === "footer"
+      ? layers.filter((layer) => layer.region !== "footer").length
+      : layers.filter((layer) => layer.region === "header").length;
+  return index - before;
+}
+
+/**
  * Adds Layers to the left column's bottom, before Undo History (UI1), in Advanced mode only (T2).
- * The tree follows the shown page and the selection; it is rebuilt only when the page's structure
- * or names change, not on every keystroke. A linked copy's layer is selected while the copy is,
+ * The tree follows the shown page and the selection, the shared Header first and the Footer last
+ * (#673); it is rebuilt only when the page's structure or names change, not on every keystroke. A linked copy's layer is selected while the copy is,
  * not an element inside it: Layers' actions act on what is selected (F-ED-23). In Content mode
  * (M3, from `preferences`) nothing can be dragged, moved or hidden; the panel follows the mode
  * without being registered again, so what it shows (collapsed layers, the filter) stays (R9).
@@ -64,25 +79,28 @@ export function registerLayersPanel(
   } = {},
 ): () => void {
   const { history, ui, library } = session;
-  // The tree as last shown, for the page content and shared sections it was made from: rebuilt
-  // only when they change, and kept (same object) when the rebuilt tree is the same, e.g. after
-  // typing.
-  let shown: { content: unknown; shared: unknown; layers: Layer[] } = {
-    content: undefined,
+  // The tree as last shown, for the page (its content and settings), the shared sections and the
+  // Header and Footer it was made from: rebuilt only when they change, and kept (same object) when
+  // the rebuilt tree is the same, e.g. after typing.
+  let shown: { page: unknown; shared: unknown; layout: unknown; layers: Layer[] } = {
+    page: undefined,
     shared: undefined,
+    layout: undefined,
     layers: [],
   };
   const currentLayers = () => {
     const site = history.document.getState();
-    const content = site.pages[ui.getState().pageId]?.doc.content;
+    const { pageId } = ui.getState();
+    const page = site.pages[pageId];
     const shared = site.sharedSections;
-    if (content === shown.content && shared === shown.shared) {
+    const layout = site.layout;
+    if (page === shown.page && shared === shown.shared && layout === shown.layout) {
       return shown.layers;
     }
-    const layers = content === undefined ? [] : layersOf(content, library, shared);
+    const layers = page === undefined ? [] : pageLayers(site, pageId, library);
     shown = sameValue(layers, shown.layers)
-      ? { ...shown, content, shared }
-      : { content, shared, layers };
+      ? { ...shown, page, shared, layout }
+      : { page, shared, layout, layers };
     return shown.layers;
   };
 
@@ -116,10 +134,11 @@ export function registerLayersPanel(
           setHidden: (id, hidden) => setLayerHidden(session, id, hidden),
           // A dragged layer moves or is copied alone, and is selected alone after: the panel
           // never drags a row of several selected (those move with the Edit menu's moves, 1.31).
-          move: (id, index) => moveLayer(session, id, index),
+          // A page's own section counts among the page's sections, not the Header (#673).
+          move: (id, index) => moveLayer(session, id, listIndex(layers, id, index)),
           copy: (id, index, linked) => {
             // Refused, it says why, as duplicate does.
-            const refused = copyLayer(session, id, index, linked);
+            const refused = copyLayer(session, id, listIndex(layers, id, index), linked);
             if (refused !== undefined) toast(refused);
           },
           moveUp: useCommandAction(TOOLBAR_COMMANDS.moveUp),

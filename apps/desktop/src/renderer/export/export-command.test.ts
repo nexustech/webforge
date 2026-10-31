@@ -1,4 +1,4 @@
-import { createSite, type SiteDoc } from "@webforge/model";
+import { createSite, type MediaId, type SiteDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
@@ -56,13 +56,44 @@ const exported: Extract<ExportResult, { status: "exported" }> = {
 
 describe("exportFailure", () => {
   it("names the page to rename when Windows keeps its name (R16)", () => {
-    expect(exportFailure({ status: "failed", reason: "reserved-name", page: "Contact us" })).toBe(
+    expect(
+      exportFailure({ status: "failed", reason: "reserved-name", page: "Contact us" }, bakery()),
+    ).toBe(
       "The page “Contact us” can't be exported: Windows keeps its name, or its folder's, for itself. Rename it in the Pages panel and export again.",
     );
   });
 
+  it("names the image to replace as Media shows it when it can't be decoded (S12)", () => {
+    const huge = "huge" as MediaId;
+    const site: SiteDoc = {
+      ...bakery(),
+      media: {
+        [huge]: {
+          id: huge,
+          kind: "image",
+          hash: "a".repeat(64),
+          name: "huge-photo",
+          fileName: "Shop front.png",
+          mimeType: "image/png",
+          width: 30_000,
+          height: 30_000,
+          alt: "",
+        },
+      },
+    };
+    expect(
+      exportFailure({ status: "failed", reason: "unreadable-image", image: "huge" }, site),
+    ).toBe(
+      "The image “Shop front.png” can't be exported: it's larger than 50 megapixels, or its file is damaged. Replace it in Media and export again.",
+    );
+    // An image no longer in Media is named by its id.
+    expect(
+      exportFailure({ status: "failed", reason: "unreadable-image", image: "constructor" }, site),
+    ).toContain("“constructor”");
+  });
+
   it("says nothing when the person cancels", () => {
-    expect(exportFailure({ status: "canceled" })).toBeNull();
+    expect(exportFailure({ status: "canceled" }, bakery())).toBeNull();
   });
 
   it.each([
@@ -71,7 +102,7 @@ describe("exportFailure", () => {
     ["build-failed", "Your site could not be built."],
     ["too-large", "Your site is too large for a ZIP file. Export it to a folder instead."],
   ] as const)("explains a %s failure", (reason, text) => {
-    expect(exportFailure({ status: "failed", reason })).toContain(text);
+    expect(exportFailure({ status: "failed", reason }, bakery())).toContain(text);
   });
 });
 

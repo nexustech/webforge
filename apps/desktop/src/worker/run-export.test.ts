@@ -210,6 +210,32 @@ describe("runExport", () => {
     expect(existsSync(destination)).toBe(false);
   }, 60_000);
 
+  it("names an image over 50 megapixels, writing nothing (S12)", async () => {
+    const destination = join(tempDir(), "site");
+    const site = sampleSite();
+    // The photo's first bytes, as a crafted site file could hold them: 30,000 × 30,000 pixels.
+    const claim = new Uint8Array([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52, 0, 0,
+      0x75, 0x30, 0, 0, 0x75, 0x30, 8, 6, 0, 0, 0,
+    ]);
+    const huge = {
+      ...site,
+      media: site.media.map((item) =>
+        item.id === "hero-photo" ? { ...item, mimeType: "image/png" as const, data: claim } : item,
+      ),
+    };
+
+    const outcome = await runExport(await job(huge, destination), loadNodeResources, channel());
+
+    expect(outcome).toEqual({
+      type: "failed",
+      code: "unreadable-image",
+      detail: "unreadable-image",
+      image: "hero-photo",
+    });
+    expect(existsSync(destination)).toBe(false);
+  }, 60_000);
+
   it("names the page to rename when Windows keeps its name, writing nothing (R16)", async () => {
     const destination = join(tempDir(), "site");
     const site = sampleSite();

@@ -113,8 +113,12 @@ test("a five-page site built from blank comes back as it was, page by page", asy
   const tree = () => left().getByRole("tree", { name: "Layers" });
   const row = (name: string) => tree().getByRole("treeitem", { name: startsWith(name) });
   const steps = () => page.locator(".undo-history__step");
-  /** The page's sections, as Layers lists them: its top-level rows, whatever kind each is. */
-  const sections = () => tree().locator('[role="treeitem"][aria-level="1"]');
+  /**
+   * The page's sections, as Layers lists them: its top-level rows, whatever kind each is, but for
+   * the shared Header and Footer on every page (#673).
+   */
+  const sections = () =>
+    tree().locator('[role="treeitem"][aria-level="1"]').filter({ hasNotText: "On every page" });
   const showTab = (region: () => ReturnType<typeof left>, name: string) =>
     region().getByRole("tab", { name, exact: true }).click();
   /** Adds item `name` from the Add panel's tab `tab` (Sections or Elements). */
