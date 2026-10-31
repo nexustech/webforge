@@ -1,6 +1,8 @@
 import babel from "@rolldown/plugin-babel";
 import { reactCompilerPreset } from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
+import { COST_TEST } from "./packages/site-check/vitest.config.js";
+import { scaledTimeout, TIMEOUT_SCALE } from "./vitest.load.js";
 
 /**
  * The React Compiler as the app's build runs it (apps/desktop/electron.vite.config.ts): the editor's
@@ -17,6 +19,9 @@ const compiled = () =>
  * they catch what only it changes, such as a component that relied on its parent drawing it again
  * (ADR 0010). Without coverage: the compiler's memo checks would count as branches of our code.
  * `pnpm test` measures coverage on the source.
+ *
+ * And Site Check's cost test, which `pnpm test` leaves out: coverage slows the rules it times but
+ * not the native JSON copy it times them against (#698, ADR 0016).
  */
 export default defineConfig({
   test: {
@@ -37,6 +42,15 @@ export default defineConfig({
           name: "editor-ui (compiled)",
           root: "./packages/editor-ui",
           include: ["src/**/*.test.{ts,tsx}"],
+        },
+      },
+      {
+        test: {
+          name: "site-check cost (without coverage)",
+          root: "./packages/site-check",
+          include: [COST_TEST],
+          testTimeout: scaledTimeout(5_000),
+          provide: { timeoutScale: TIMEOUT_SCALE },
         },
       },
       {
