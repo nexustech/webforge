@@ -1,15 +1,8 @@
 import { createHash } from "node:crypto";
-import {
-  existsSync,
-  mkdirSync,
-  readdirSync,
-  readFileSync,
-  renameSync,
-  rmSync,
-  writeFileSync,
-} from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { z } from "zod";
+import { createJsonStore } from "./json-store.js";
 
 /** How many sites the start screen lists, besides those pinned, which stay however many there are. */
 const MAX_SITES = 12;
@@ -28,6 +21,8 @@ const entrySchema = z.strictObject({
 const fileSchema = z.strictObject({ version: z.literal(1), sites: z.array(entrySchema) });
 
 type Entry = z.infer<typeof entrySchema>;
+
+const EMPTY: z.infer<typeof fileSchema> = { version: 1, sites: [] };
 
 /** A site on the start screen's Recent list. */
 export type RecentSite = {
@@ -69,6 +64,7 @@ export function recentSiteId(path: string): string {
  * The start screen's Recent list (F-SITE-2): `userData/recent.json` plus thumbnails in
  * `userData/recent-thumbnails/<id>.jpg`. It lives only on this computer, next to the user's
  * preferences; nothing of it is logged. A damaged or unknown file just means an empty list.
+ * Read and written one change at a time through {@link createJsonStore}.
  */
 export function createRecentSites(options: {
   readonly dir: string;
@@ -83,44 +79,45 @@ export function createRecentSites(options: {
   /** When each site's edit time was last written, so most saves don't even read the file. */
   const editWritten = new Map<string, number>();
 
-  const read = (): Entry[] => {
-    try {
-      return fileSchema.parse(JSON.parse(readFileSync(file, "utf8"))).sites;
-    } catch {
-      return [];
-    }
-  };
+  // A damaged or unknown file is written over: the list is rebuilt as sites are opened.
+  const store = createJsonStore(file, fileSchema, { empty: EMPTY, onDamaged: "reset" });
 
-  const write = (sites: readonly Entry[]) => {
-    mkdirSync(options.dir, { recursive: true });
-    // Write and rename, so a crash never leaves half a list.
-    const temp = `${file}.tmp`;
-    writeFileSync(temp, JSON.stringify({ version: 1, sites }, null, 2));
-    renameSync(temp, file);
-    // Thumbnails of sites no longer listed go too.
-    if (existsSync(thumbnails)) {
-      const kept = new Set(sites.map((site) => `${site.id}.jpg`));
+  /** The listed sites; none when the file can't be read now, which is no reason to fail. */
+  const read = (): Promise<Entry[]> =>
+    store.read().then(
+      (stored) => stored.sites,
+      () => [],
+    );
+
+  /** Writes what `edit` makes of the list, if anything, then drops unlisted sites' thumbnails. */
+  const change = async (edit: (sites: readonly Entry[]) => Entry[] | undefined) => {
+    let written: Entry[] | undefined;
+    await store.update((stored) => {
+      written = edit(stored.sites);
+      return written === undefined ? undefined : { version: 1, sites: written };
+    });
+    if (written !== undefined && existsSync(thumbnails)) {
+      const kept = new Set(written.map((site) => `${site.id}.jpg`));
       for (const name of readdirSync(thumbnails).filter((entry) => !kept.has(entry))) {
         rmSync(join(thumbnails, name), { force: true });
       }
     }
   };
 
-  const update = (path: string, change: (entry: Entry | undefined) => Entry | undefined) => {
+  const update = (path: string, next: (entry: Entry | undefined) => Entry | undefined) => {
     const id = recentSiteId(path);
-    const sites = read();
-    const existing = sites.find((site) => site.id === id);
-    const next = change(existing);
-    if (next === undefined) {
-      return;
-    }
-    write(capped([next, ...sites.filter((site) => site.id !== id)], max));
+    return change((sites) => {
+      const entry = next(sites.find((site) => site.id === id));
+      return entry === undefined
+        ? undefined
+        : capped([entry, ...sites.filter((site) => site.id !== id)], max);
+    });
   };
 
   return {
     /** Puts a site at the top of the list as just opened (or created). */
-    opened(path: string, name: string): void {
-      update(path, (existing) => ({
+    opened(path: string, name: string): Promise<void> {
+      return update(path, (existing) => ({
         id: recentSiteId(path),
         path: resolve(path),
         name,
@@ -131,13 +128,13 @@ export function createRecentSites(options: {
     },
 
     /** Records that the open site was saved; written at most once a minute per site. */
-    edited(path: string): void {
+    async edited(path: string): Promise<void> {
       const time = now();
       const id = recentSiteId(path);
       if (time.getTime() - (editWritten.get(id) ?? Number.NEGATIVE_INFINITY) < 60_000) {
         return;
       }
-      update(path, (existing) => {
+      await update(path, (existing) => {
         if (existing === undefined) return undefined;
         const last = existing.lastEdited === null ? 0 : Date.parse(existing.lastEdited);
         if (time.getTime() - last < 60_000) return undefined;
@@ -147,9 +144,9 @@ export function createRecentSites(options: {
     },
 
     /** Stores the canvas thumbnail of a listed site. */
-    saveThumbnail(path: string, jpeg: Uint8Array): void {
+    async saveThumbnail(path: string, jpeg: Uint8Array): Promise<void> {
       const id = recentSiteId(path);
-      if (!read().some((site) => site.id === id)) return;
+      if (!(await read()).some((site) => site.id === id)) return;
       mkdirSync(thumbnails, { recursive: true });
       writeFileSync(thumbnailPath(id), jpeg);
     },
@@ -158,8 +155,8 @@ export function createRecentSites(options: {
      * The list: pinned sites first, then the rest, each most recently opened first. `openPath` is
      * the site open in the window, if one is.
      */
-    list(openPath?: string): RecentSite[] {
-      const sites = read();
+    async list(openPath?: string): Promise<RecentSite[]> {
+      const sites = await read();
       const openId = openPath === undefined ? undefined : recentSiteId(openPath);
       const ordered = [
         ...sites.filter((site) => site.pinned),
@@ -185,33 +182,35 @@ export function createRecentSites(options: {
     },
 
     /** The path of a listed site, for opening it; `undefined` for an unknown id. */
-    pathOf(id: string): string | undefined {
-      return read().find((site) => site.id === id)?.path;
+    async pathOf(id: string): Promise<string | undefined> {
+      return (await read()).find((site) => site.id === id)?.path;
     },
 
     /** Pins a listed site to the top of the list, or unpins it (2.14b). */
-    setPinned(id: string, pinned: boolean): void {
-      const sites = read();
-      if (sites.some((site) => site.id === id && site.pinned !== pinned)) {
-        write(sites.map((site) => (site.id === id ? { ...site, pinned } : site)));
-      }
+    setPinned(id: string, pinned: boolean): Promise<void> {
+      return change((sites) =>
+        sites.some((site) => site.id === id && site.pinned !== pinned)
+          ? sites.map((site) => (site.id === id ? { ...site, pinned } : site))
+          : undefined,
+      );
     },
 
     /** Takes a site off the list (its file is untouched). */
-    remove(id: string): void {
-      const sites = read();
-      if (sites.some((site) => site.id === id)) {
-        write(sites.filter((site) => site.id !== id));
-      }
+    remove(id: string): Promise<void> {
+      return change((sites) =>
+        sites.some((site) => site.id === id) ? sites.filter((site) => site.id !== id) : undefined,
+      );
     },
 
     /** Takes every site off the list but the pinned ones: File › Open Recent › Clear Recent (3.18). */
-    clearUnpinned(): void {
-      const sites = read();
-      if (sites.some((site) => !site.pinned)) {
-        write(sites.filter((site) => site.pinned));
-      }
+    clearUnpinned(): Promise<void> {
+      return change((sites) =>
+        sites.some((site) => !site.pinned) ? sites.filter((site) => site.pinned) : undefined,
+      );
     },
+
+    /** Resolves once every change asked so far is written: before the app exits. */
+    idle: () => store.idle(),
   };
 }
 
