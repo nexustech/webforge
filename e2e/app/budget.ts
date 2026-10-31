@@ -94,6 +94,10 @@ const CALIBRATION_ROUNDS = 40;
  * write a JSON document {@link CALIBRATION_RECORDS} records long, {@link CALIBRATION_ROUNDS} times
  * over, the quickest of three tries, so one stall doesn't make the runner look slow. Done once a
  * worker, when its first opening is checked, after that opening is measured.
+ *
+ * Only the thread doing it is timed: the process's other threads may still be saving the new site
+ * (the storage writer, libuv's pool), and counting their work would make the runner look slow, so
+ * work an opening leaves behind would loosen the budget meant to catch it.
  */
 async function calibrate(app: ElectronApplication): Promise<number> {
   const tries = [];
@@ -108,9 +112,9 @@ async function calibrate(app: ElectronApplication): Promise<number> {
               tags: ["a"],
             })),
           );
-          const start = process.cpuUsage();
+          const start = process.threadCpuUsage();
           for (let round = 0; round < rounds; round++) JSON.stringify(JSON.parse(text));
-          const used = process.cpuUsage(start);
+          const used = process.threadCpuUsage(start);
           return (used.user + used.system) / 1e6;
         },
         { records: CALIBRATION_RECORDS, rounds: CALIBRATION_ROUNDS },
