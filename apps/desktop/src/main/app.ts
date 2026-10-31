@@ -3,7 +3,7 @@ import { networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import type { ThemeTokens } from "@webforge/model";
+import type { SiteSnapshot, ThemeTokens } from "@webforge/model";
 import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import {
@@ -27,6 +27,7 @@ import { captureCanvas } from "./canvas-capture.js";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
+import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
@@ -80,6 +81,7 @@ import {
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { registerTemplatesHandlers } from "./templates-ipc.js";
 import { registerThemesHandlers } from "./themes-ipc.js";
+import { registerTrustHandlers } from "./trust-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -202,6 +204,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     logFailure("Webforge could not update the Recent list", error);
   // My themes (2.23): the person's own themes, for every site on this computer.
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
+  // The code each site's owner trusts (#649): only that goes into a build.
+  const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
   const projectSession = new ProjectSession(
     {
       opened: (access, path) => {
@@ -325,11 +329,16 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       families,
     };
   };
-  const runExport: RunExport = async (snapshot, target, { signal, onProgress }) =>
-    exports.run(
+  // Every build gets only the code the open site's owner trusts (#649).
+  const trustedOnly = (snapshot: SiteSnapshot) =>
+    withTrustedCode(snapshot, projectSession.projectId(), codeTrust);
+  const runExport: RunExport = async (sent, target, { signal, onProgress }) => {
+    const snapshot = await trustedOnly(sent);
+    return exports.run(
       { type: "export", snapshot, ...target, ...(await fontsOf(snapshot.theme)) },
       { readMedia: (hash) => projectSession.readMedia(hash), signal, onProgress },
     );
+  };
 
   // The preview server (3.2): its builds in a worker of their own while a preview is open, so an
   // export never waits behind one; opened in the default browser, which the site's scripts run in,
@@ -344,7 +353,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         readMedia: (hash) => projectSession.readMedia(hash),
         onBuilt,
       }),
-    jobFor: async (snapshot) => {
+    jobFor: async (sent) => {
+      const snapshot = await trustedOnly(sent);
       const key = JSON.stringify(snapshot.theme.fonts);
       if (previewFonts?.key !== key) {
         const read = await fontsOf(snapshot.theme);
@@ -549,6 +559,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerThemesHandlers(ipcMain, isTrustedSender, myThemes);
     registerPreviewHandlers(ipcMain, isTrustedSender, preview);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish);
+    registerTrustHandlers(ipcMain, isTrustedSender, codeTrust, projectSession);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
@@ -607,7 +618,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // And My themes' and the Recent list's last writes, if any are under way (2.23).
       close: async () => {
         await projectSession.close();
-        await Promise.all([myThemes.idle(), recentSites.idle()]);
+        await Promise.all([myThemes.idle(), recentSites.idle(), codeTrust.idle()]);
       },
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to

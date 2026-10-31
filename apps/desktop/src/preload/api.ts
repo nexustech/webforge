@@ -13,6 +13,7 @@ import { publishApi } from "./api/publish.js";
 import { siteApi } from "./api/site.js";
 import { templatesApi } from "./api/templates.js";
 import { themesApi } from "./api/themes.js";
+import { trustApi } from "./api/trust.js";
 
 export type { Invoke, Subscribe } from "./api/call.js";
 export type { PathOfFile } from "./api/media.js";
@@ -41,5 +42,6 @@ export function createWebforgeApi(
     themes: themesApi(call),
     preview: previewApi(call),
     publish: publishApi(call),
+    trust: trustApi(call),
   };
 }

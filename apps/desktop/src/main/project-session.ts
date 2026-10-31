@@ -231,6 +231,15 @@ export class ProjectSession {
   }
 
   /**
+   * The open site's project id, which stays with its file (copies too), or `undefined` when none
+   * is open. What's kept for the site on this computer is kept under it: its backups, the code its
+   * owner trusts (#649).
+   */
+  projectId(): string | undefined {
+    return this.#store?.info.projectId;
+  }
+
+  /**
    * The open site for a call from a renderer loaded for opening `sessionId` (R6): it reads no Media
    * bytes and stores nothing once another site has opened, however long the call waited before it
    * did (for a dialog, the clipboard, or the gate), and says why (`stale-session`).
