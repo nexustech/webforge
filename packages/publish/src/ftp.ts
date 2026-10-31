@@ -3,6 +3,7 @@ import { Readable, Writable } from "node:stream";
 import type { ConnectionOptions } from "node:tls";
 import { Client, FTPError } from "basic-ftp";
 import { fileTransferError } from "./file-transfer-errors.js";
+import type { PublishedSite } from "./manifest.js";
 import {
   type BuildOutput,
   PublishError,
@@ -12,7 +13,10 @@ import {
 } from "./publisher.js";
 import { publishToFolder, type RemoteFolder, uploadPathFor } from "./remote-folder.js";
 
-/** An FTP or FTPS destination, as the `.wforge` file stores it: no password. */
+/**
+ * An FTP or FTPS destination, as the app puts it together from the site's settings (no password)
+ * and the site publishing.
+ */
 export type FtpDestination = {
   /**
    * `ftps`: explicit TLS (`AUTH TLS`) on the usual port, tried first (B5). `ftp`: plain FTP, which
@@ -27,6 +31,10 @@ export type FtpDestination = {
   readonly folder: string;
   /** The address the site is visited at, for the published event. */
   readonly url?: string;
+  /** The site publishing, which the folder's manifest records (A8, 4.3). */
+  readonly site: PublishedSite;
+  /** The person agreed to replace another site published to the folder, for this publish (4.5). */
+  readonly replaceOtherSite?: boolean;
 };
 
 export type FtpOptions = {
@@ -66,7 +74,7 @@ const isMissing = (error: unknown) => error instanceof FTPError && MISSING.has(e
  * closes the client, also when this throws.
  */
 async function connect(
-  dest: FtpDestination,
+  dest: Omit<FtpDestination, "site">,
   options: FtpOptions,
   onClient: (client: Client) => void = () => undefined,
 ): Promise<Client> {
@@ -175,7 +183,13 @@ export function ftpPublisher(options: FtpOptions): Publisher<FtpDestination> {
         const signedIn = await connect(dest, options, (connecting) => {
           client = connecting;
         });
-        yield* publishToFolder(remoteFolder(signedIn, dest.folder), build, signal, dest.url ?? "");
+        yield* publishToFolder(remoteFolder(signedIn, dest.folder), build, signal, {
+          site: dest.site,
+          url: dest.url ?? "",
+          ...(dest.replaceOtherSite === undefined
+            ? {}
+            : { replaceOtherSite: dest.replaceOtherSite }),
+        });
       } catch (error) {
         throw fileTransferError(error, signal, ftpErrorCode);
       } finally {

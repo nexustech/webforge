@@ -63,29 +63,23 @@ const common = {
 
 /**
  * An FTPS or plain FTP destination's settings, as the site keeps them: never its password, which
- * lives in the OS keychain (architecture §9).
+ * lives in the OS keychain (architecture §9), nor what this computer trusts about it
+ * ({@link fileTransferTrustSchema}).
  */
 const ftpDestinationSchema = z.strictObject({
   protocol: z.enum(["ftps", "ftp"]),
   ...common,
-  /**
-   * The person has seen plain FTP's warning for this destination (B5): it shows once per
-   * destination, the first time it is set to plain FTP.
-   */
-  plainFtpWarned: z.literal(true).optional(),
 });
 
-/** An SFTP destination's settings, as the site keeps them: never its password or private key. */
+/**
+ * An SFTP destination's settings, as the site keeps them: never its password or private key, nor
+ * the host key this computer trusts ({@link fileTransferTrustSchema}).
+ */
 const sftpDestinationSchema = z.strictObject({
   protocol: z.literal("sftp"),
   ...common,
   /** Whether it signs in with a password or a private key (4.3). */
   signIn: z.enum(["password", "key"]),
-  /**
-   * The host key the person trusted the first time (ADR 0006 §7): any other is refused before
-   * anything is sent. Absent until they have.
-   */
-  hostKey: hostKeySchema.optional(),
 });
 
 /** A destination the site is published to over FTPS, SFTP or FTP (F-PB-1, 4.3). */
@@ -112,3 +106,19 @@ export const fileTransferSignInSchema = z.union([
 
 /** How a file-transfer destination signs in. */
 export type FileTransferSignIn = z.infer<typeof fileTransferSignInSchema>;
+
+/**
+ * What this computer trusts about a file-transfer destination (4.3, security review S2): the SFTP
+ * host key the person trusted the first time (ADR 0006 §7), and that they have seen plain FTP's
+ * warning for it (B5). Kept in the app's own data beside the destination's sign-in (4.4), never in
+ * the site's file, where an edited copy could change the host and bring its own key with it.
+ */
+export const fileTransferTrustSchema = z.strictObject({
+  /** Any other key is refused before anything is sent; absent until the person trusts one. */
+  hostKey: hostKeySchema.optional(),
+  /** Plain FTP's warning shows once per destination, the first time it is set to plain FTP. */
+  plainFtpWarned: z.literal(true).optional(),
+});
+
+/** What this computer trusts about a file-transfer destination. */
+export type FileTransferTrust = z.infer<typeof fileTransferTrustSchema>;

@@ -68,6 +68,7 @@ export const publish = {
   "publish.test.no-encryption":
     "This host doesn't offer FTPS. Choose SFTP if your host offers it, or plain FTP.",
   "publish.test.bad-key": "The private key couldn't be opened. Check its passphrase.",
+  "publish.test.other-site": "This folder has another site published there with {appName}.",
   "publish.test.cancelled": "The test was cancelled.",
   "publish.test.failed": "The connection didn't work.",
   // An SFTP host's key, trusted the first time (ADR 0006 §7).

@@ -29,6 +29,7 @@ const destination = (protocol: FtpDestination["protocol"]): FtpDestination => ({
   user: "baker",
   folder: "/site",
   url: "https://bakery.example/",
+  site: { projectId: "rosas-bakery", destinationId: "live" },
 });
 /** FTPS trusting the test certificate, as a host's real certificate is trusted. */
 const trusted = {

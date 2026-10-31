@@ -33,6 +33,7 @@ const MESSAGES: Record<PublishErrorCode, string> = {
   "untrusted-host": "The host is not the one trusted for this destination",
   "no-encryption": "The host doesn't offer encrypted FTP",
   "bad-key": "The private key could not be read",
+  "other-site": "The folder has another site published there",
   cancelled: "Publishing was cancelled",
   failed: "Publishing to the host failed",
 };

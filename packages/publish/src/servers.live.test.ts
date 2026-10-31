@@ -67,6 +67,7 @@ describe.skipIf(sftpPort === 0)(
       user: "baker",
       folder: "site",
       hostKey: await readSftpHostKey("127.0.0.1", sftpPort),
+      site: { projectId: "webforge-ci", destinationId: "sftp" },
     });
 
     it("publishes with a password: only what changed the second time", async () => {
@@ -119,6 +120,7 @@ describe.skipIf(ftpsPort === 0)(
       port: ftpsPort,
       user: "baker",
       folder: "/site",
+      site: { projectId: "webforge-ci", destinationId: "ftps" },
     } as const;
     // The server's certificate, from the file pure-ftpd keeps it in with its key.
     const ca =

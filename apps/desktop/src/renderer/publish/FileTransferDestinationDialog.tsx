@@ -12,6 +12,7 @@ import {
   type FileTransferDestination,
   type FileTransferProtocol,
   type FileTransferSignIn,
+  type FileTransferTrust,
   FOLDER_MAX,
   fileTransferDestinationSchema,
   HOST_MAX,
@@ -45,10 +46,14 @@ export type FileTransferValues = {
   readonly url: string;
 };
 
-/** What the dialog saves: the destination's settings, and how it signs in, kept apart (4.4). */
+/**
+ * What the dialog saves, kept apart (4.4, security review S2): the destination's settings, for the
+ * site's file; and how it signs in and what this computer trusts about it, for the app's own data.
+ */
 export type FileTransferSaved = {
   readonly destination: FileTransferDestination;
   readonly signIn: FileTransferSignIn;
+  readonly trust: FileTransferTrust;
 };
 
 /** A key file the person chose. */
@@ -111,19 +116,15 @@ function toOutput(values: FileTransferValues, extra: Extra) {
   };
   const destination =
     values.protocol === "sftp"
-      ? {
-          protocol: "sftp" as const,
-          ...common,
-          signIn: values.signIn,
-          ...(extra.hostKey === undefined ? {} : { hostKey: extra.hostKey }),
-        }
-      : {
-          protocol: values.protocol,
-          ...common,
-          ...(values.protocol === "ftp" && extra.plainFtpWarned
-            ? { plainFtpWarned: true as const }
-            : {}),
-        };
+      ? { protocol: "sftp" as const, ...common, signIn: values.signIn }
+      : { protocol: values.protocol, ...common };
+  // Only what applies to the connection as it is now: a key for SFTP, the warning for plain FTP.
+  const trust: FileTransferTrust = {
+    ...(values.protocol === "sftp" && extra.hostKey !== undefined
+      ? { hostKey: extra.hostKey }
+      : {}),
+    ...(values.protocol === "ftp" && extra.plainFtpWarned ? { plainFtpWarned: true as const } : {}),
+  };
   const signIn =
     values.protocol === "sftp" && values.signIn === "key"
       ? {
@@ -131,7 +132,7 @@ function toOutput(values: FileTransferValues, extra: Extra) {
           ...(values.passphrase === "" ? {} : { passphrase: values.passphrase }),
         }
       : { password: values.password };
-  return { destination, signIn };
+  return { destination, signIn, trust };
 }
 
 /** The form's own words for a value in the wrong form, by the destination's field. */
@@ -148,7 +149,7 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
   return {
     "~standard": {
       validate: (value) => {
-        const { destination, signIn } = value as ReturnType<typeof toOutput>;
+        const { destination, signIn, trust } = value as ReturnType<typeof toOutput>;
         const issues: { path: PropertyKey[]; message: string }[] = [];
         const parsed = fileTransferDestinationSchema.safeParse(destination);
         if (!parsed.success) {
@@ -177,7 +178,9 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
         if (problem !== undefined)
           issues.push({ path: ["signIn", problem[0]], message: t(problem[1]) });
         if (!parsed.success || issues.length > 0) return { issues };
-        return { value: { destination: parsed.data, signIn: signIn as FileTransferSignIn } };
+        return {
+          value: { destination: parsed.data, signIn: signIn as FileTransferSignIn, trust },
+        };
       },
     },
   };
@@ -332,6 +335,8 @@ export type FileTransferDestinationDialogProps = {
   readonly destination?: FileTransferDestination | undefined;
   /** Its sign-in, when the keychain has it (4.4). */
   readonly signIn?: FileTransferSignIn | undefined;
+  /** What this computer trusts about it, from the app's own data (4.4): never the site's file. */
+  readonly trust?: FileTransferTrust | undefined;
   /** Test connection, the host key and the key file, through the main process. */
   readonly publish: PublishApi;
   readonly onSave: (saved: FileTransferSaved) => void;
@@ -349,6 +354,7 @@ export function FileTransferDestinationDialog({
   open,
   destination,
   signIn,
+  trust,
   publish,
   onSave,
   onCancel,
@@ -368,12 +374,12 @@ export function FileTransferDestinationDialog({
   const [trusted, setTrusted] = useState<
     { readonly at: string; readonly hostKey: string } | undefined
   >(
-    destination?.protocol === "sftp" && destination.hostKey !== undefined
-      ? { at: connectionOf(valuesOf(destination)), hostKey: destination.hostKey }
+    destination?.protocol === "sftp" && trust?.hostKey !== undefined
+      ? { at: connectionOf(valuesOf(destination)), hostKey: trust.hostKey }
       : undefined,
   );
   const [plainFtpWarned, setPlainFtpWarned] = useState(
-    destination?.protocol === "ftp" && destination.plainFtpWarned === true,
+    destination?.protocol === "ftp" && trust?.plainFtpWarned === true,
   );
   const [test, setTest] = useState<TestState | undefined>();
 
@@ -403,7 +409,11 @@ export function FileTransferDestinationDialog({
       );
       return;
     }
-    const result = await publish.testConnection(tested, output.signIn as FileTransferSignIn);
+    const result = await publish.testConnection(
+      tested,
+      output.signIn as FileTransferSignIn,
+      output.trust,
+    );
     // A trusted SFTP key the host no longer presents: show the new one, to trust or not.
     if (!result.ok && result.code === "untrusted-host" && tested.protocol === "sftp") {
       const read = await publish.readHostKey(tested.host, tested.port);

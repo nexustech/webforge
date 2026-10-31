@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { manifestOf } from "./manifest.js";
+import { digestsOf } from "./manifest.js";
 import { uploadOrder } from "./order.js";
 import {
   type BuildOutput,
@@ -276,9 +276,9 @@ export function netlifyPublisher(options: NetlifyOptions): Publisher<NetlifyDest
 
     async *publish(build: BuildOutput, dest, signal): AsyncGenerator<PublishEvent> {
       yield { type: "preparing" };
-      const manifest = manifestOf(build.files);
+      const files = digestsOf(build.files);
       const digests = Object.fromEntries(
-        Object.entries(manifest.files).map(([path, digest]) => [`/${path}`, digest]),
+        Object.entries(files).map(([path, digest]) => [`/${path}`, digest]),
       );
       const created = await client.createDeploy(dest.siteId, digests, signal);
 
@@ -286,7 +286,7 @@ export function netlifyPublisher(options: NetlifyOptions): Publisher<NetlifyDest
       const required = new Set(created.required ?? []);
       const toUpload: string[] = [];
       for (const path of uploadOrder(build.files.keys())) {
-        const digest = manifest.files[path];
+        const digest = files[path];
         if (digest !== undefined && required.delete(digest)) toUpload.push(path);
       }
       for (const [done, path] of toUpload.entries()) {

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { posix } from "node:path";
 import { Client, type SFTPWrapper, utils } from "ssh2";
 import { fileTransferError } from "./file-transfer-errors.js";
+import type { PublishedSite } from "./manifest.js";
 import {
   type BuildOutput,
   PublishError,
@@ -11,7 +12,10 @@ import {
 } from "./publisher.js";
 import { publishToFolder, type RemoteFolder, uploadPathFor } from "./remote-folder.js";
 
-/** An SFTP destination, as the `.wforge` file stores it: no password. */
+/**
+ * An SFTP destination, as the app puts it together from the site's settings (no password or key),
+ * the host key trusted on this computer (never in the site's file, S2) and the site publishing.
+ */
 export type SftpDestination = {
   readonly host: string;
   /** 22 when not set. */
@@ -26,6 +30,10 @@ export type SftpDestination = {
   readonly hostKey: string;
   /** The address the site is visited at, for the published event. */
   readonly url?: string;
+  /** The site publishing, which the folder's manifest records (A8, 4.3). */
+  readonly site: PublishedSite;
+  /** The person agreed to replace another site published to the folder, for this publish (4.5). */
+  readonly replaceOtherSite?: boolean;
 };
 
 /**
@@ -112,7 +120,7 @@ type Session = { readonly sftp: SFTPWrapper; end(): void };
  * `onClient` gets the connection at once, so a cancel can end it while it connects.
  */
 function connect(
-  dest: SftpDestination,
+  dest: Omit<SftpDestination, "site">,
   options: SftpOptions,
   onClient: (client: Client) => void = () => undefined,
 ): Promise<Session> {
@@ -274,7 +282,13 @@ export function sftpPublisher(options: SftpOptions): Publisher<SftpDestination> 
         const { sftp } = await connect(dest, options, (connecting) => {
           client = connecting;
         });
-        yield* publishToFolder(remoteFolder(sftp, dest.folder), build, signal, dest.url ?? "");
+        yield* publishToFolder(remoteFolder(sftp, dest.folder), build, signal, {
+          site: dest.site,
+          url: dest.url ?? "",
+          ...(dest.replaceOtherSite === undefined
+            ? {}
+            : { replaceOtherSite: dest.replaceOtherSite }),
+        });
       } catch (error) {
         throw fileTransferError(error, signal, sftpErrorCode);
       } finally {

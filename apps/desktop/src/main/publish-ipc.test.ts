@@ -72,6 +72,7 @@ describe("Test connection (4.3)", () => {
           signIn: "password",
         },
         { password: "test-only-password" },
+        {},
       ),
     ).toEqual({ ok: false, code: "untrusted-host" });
   });
@@ -81,6 +82,7 @@ describe("Test connection (4.3)", () => {
       await testConnection(
         { protocol: "ftps", host: "127.0.0.1", user: "baker", folder: "/site" },
         { privateKey: rsa().privateKey },
+        {},
       ),
     ).toEqual({ ok: false, code: "unauthorized" });
   });
@@ -93,11 +95,12 @@ describe("Test connection (4.3)", () => {
       await test(
         { protocol: "ftps", host: "127.0.0.1", port, user: "baker", folder: "/site" },
         { password: "test-only-password" },
+        {},
       ),
     ).toEqual({ ok: false, code: "network" });
     // What the renderer sends is checked: no destination without a host.
     await expect(
-      test({ protocol: "ftps", host: "", user: "baker", folder: "/site" }, { password: "x" }),
+      test({ protocol: "ftps", host: "", user: "baker", folder: "/site" }, { password: "x" }, {}),
     ).rejects.toThrow();
   });
 

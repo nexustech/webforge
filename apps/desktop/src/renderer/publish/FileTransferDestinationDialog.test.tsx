@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { FileTransferDestination } from "@webforge/model";
+import type { FileTransferDestination, FileTransferTrust } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublishApi } from "../../shared/ipc/publish.js";
 import { FileTransferDestinationDialog, valuesOf } from "./FileTransferDestinationDialog.js";
@@ -24,12 +24,17 @@ function fakePublish(overrides: Partial<PublishApi> = {}) {
   };
 }
 
-function setUp(destination?: FileTransferDestination, publish = fakePublish()) {
+function setUp(
+  destination?: FileTransferDestination,
+  publish = fakePublish(),
+  trust?: FileTransferTrust,
+) {
   const onSave = vi.fn();
   render(
     <FileTransferDestinationDialog
       open
       destination={destination}
+      trust={trust}
       publish={publish}
       onSave={onSave}
       onCancel={vi.fn()}
@@ -66,6 +71,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
         url: "https://www.rosasbakery.co.uk",
       },
       signIn: { password: "test-only-password" },
+      trust: {},
     });
   });
 
@@ -94,11 +100,12 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     expect(publish.testConnection).toHaveBeenCalledWith(
       { protocol: "ftps", host: "ftp.rosasbakery.co.uk", user: "rosa", folder: "/public_html" },
       { password: "test-only-password" },
+      {},
     );
     expect(await screen.findByText(/doesn't offer FTPS/)).toBeTruthy();
   });
 
-  it("warns once before plain FTP, and remembers it for the destination", async () => {
+  it("warns once before plain FTP, and remembers it for the destination on this computer (S2)", async () => {
     const plain: FileTransferDestination = {
       protocol: "ftp",
       host: "ftp.rosasbakery.co.uk",
@@ -115,14 +122,16 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await user.click(screen.getByRole("button", { name: "Use Plain FTP Anyway" }));
     expect(screen.queryByText("Plain FTP isn't encrypted")).toBeNull();
     await save();
+    // Remembered with what this computer trusts, never in the site's settings.
     expect(onSave).toHaveBeenCalledWith({
-      destination: { ...plain, plainFtpWarned: true },
+      destination: plain,
       signIn: { password: "test-only-password" },
+      trust: { plainFtpWarned: true },
     });
 
-    // Opened again, it doesn't warn.
+    // Opened again with it, it doesn't warn.
     cleanup();
-    setUp({ ...plain, plainFtpWarned: true });
+    setUp(plain, undefined, { plainFtpWarned: true });
     expect(screen.queryByText("Plain FTP isn't encrypted")).toBeNull();
   });
 
@@ -145,13 +154,16 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
 
     expect(await screen.findByText(/Connected/)).toBeTruthy();
     expect(publish.testConnection).toHaveBeenCalledWith(
-      expect.objectContaining({ protocol: "sftp", hostKey: HOST_KEY, signIn: "password" }),
+      expect.objectContaining({ protocol: "sftp", signIn: "password" }),
       { password: "test-only-password" },
+      { hostKey: HOST_KEY },
     );
     await save();
+    // The key is trusted on this computer, never written into the site's settings (S2).
     expect(onSave).toHaveBeenCalledWith(
       expect.objectContaining({
-        destination: expect.objectContaining({ hostKey: HOST_KEY }),
+        destination: expect.not.objectContaining({ hostKey: expect.anything() }),
+        trust: { hostKey: HOST_KEY },
       }),
     );
 
@@ -174,9 +186,9 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
         user: "rosa",
         folder: "/site",
         signIn: "password",
-        hostKey: HOST_KEY,
       },
       publish,
+      { hostKey: HOST_KEY },
     );
     await fill("Password", "test-only-password");
 
@@ -202,9 +214,9 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
         user: "rosa",
         folder: "/site",
         signIn: "password",
-        hostKey: HOST_KEY,
       },
       publish,
+      { hostKey: HOST_KEY },
     );
     await user.click(screen.getByRole("radio", { name: "A private key file" }));
     expect(screen.queryByLabelText("Password")).toBeNull();
@@ -217,11 +229,12 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await save();
 
     expect(onSave).toHaveBeenCalledWith({
-      destination: expect.objectContaining({ signIn: "key", hostKey: HOST_KEY }),
+      destination: expect.objectContaining({ signIn: "key" }),
       signIn: {
         privateKey: "-----BEGIN OPENSSH PRIVATE KEY-----",
         passphrase: "test-only-passphrase",
       },
+      trust: { hostKey: HOST_KEY },
     });
     expect(field("Key passphrase").getAttribute("type")).toBe("password");
   });

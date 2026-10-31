@@ -33,6 +33,7 @@ const destination = (): SftpDestination => ({
   folder: "/site",
   hostKey: server.hostKey,
   url: "https://bakery.example/",
+  site: { projectId: "rosas-bakery", destinationId: "live" },
 });
 const options = { password: "test-only-password", timeoutMs: 10_000 };
 

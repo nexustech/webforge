@@ -1,6 +1,7 @@
 import {
   fileTransferDestinationSchema,
   fileTransferSignInSchema,
+  fileTransferTrustSchema,
   HOST_MAX,
   hostKeySchema,
   PRIVATE_KEY_MAX,
@@ -20,6 +21,7 @@ const CONNECTION_FAILURES = [
   "untrusted-host",
   "no-encryption",
   "bad-key",
+  "other-site",
   "cancelled",
   "failed",
 ] as const;
@@ -73,7 +75,11 @@ export const publishChannels = {
    */
   publishTestConnection: {
     channel: "publish:testConnection",
-    request: z.tuple([fileTransferDestinationSchema, fileTransferSignInSchema]),
+    request: z.tuple([
+      fileTransferDestinationSchema,
+      fileTransferSignInSchema,
+      fileTransferTrustSchema,
+    ]),
     response: connectionResultSchema,
   },
   /** The key an SFTP host presents, without signing in (ADR 0006 §7). */
@@ -99,6 +105,7 @@ export interface PublishApi {
   testConnection(
     destination: z.input<typeof fileTransferDestinationSchema>,
     signIn: z.input<typeof fileTransferSignInSchema>,
+    trust: z.input<typeof fileTransferTrustSchema>,
   ): Promise<ConnectionResult>;
   /** The key the SFTP host at `host` presents, for the person to trust. */
   readHostKey(host: string, port?: number): Promise<HostKeyResult>;

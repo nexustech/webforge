@@ -1,5 +1,8 @@
 import type { AddressInfo } from "node:net";
-import { type Attributes, Server, utils } from "ssh2";
+import ssh2, { type Attributes } from "ssh2";
+
+// ssh2 is CommonJS: its default export holds `Server` and `utils` under Node's ESM loader.
+const { Server, utils } = ssh2;
 
 /** SFTP status codes the server answers with (draft-ietf-secsh-filexfer-02). */
 const NO_SUCH_FILE = 2;

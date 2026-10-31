@@ -28,6 +28,11 @@ export type PublishErrorCode =
   | "no-encryption"
   /** An SFTP private key that can't be read: not a key, or its passphrase is wrong or missing. */
   | "bad-key"
+  /**
+   * The folder has another site published there with the app (its manifest names another
+   * project): nothing was sent, and the app asks before replacing it (A8, 4.5).
+   */
+  | "other-site"
   /** The user cancelled. */
   | "cancelled"
   /** Anything else, including a response we did not understand. */
@@ -109,8 +114,11 @@ export type Verification =
  * created, never through `D`.
  */
 export interface Publisher<D> {
-  /** Checks that the destination can be reached with the current credentials. */
-  test(dest: D, signal?: AbortSignal): Promise<TestResult>;
+  /**
+   * Checks that the destination can be reached with the current credentials. Nothing is
+   * published, so the site publishing isn't needed (4.3).
+   */
+  test(dest: Omit<D, "site" | "replaceOtherSite">, signal?: AbortSignal): Promise<TestResult>;
   /**
    * Uploads what changed, assets first and `index.html` last (08), then removes files the site
    * no longer has. Throws {@link PublishError}; cancelling leaves the previous site usable.

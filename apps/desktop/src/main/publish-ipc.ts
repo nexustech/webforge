@@ -4,6 +4,7 @@ import {
   DEFAULT_PORTS,
   type FileTransferDestination,
   type FileTransferSignIn,
+  type FileTransferTrust,
   PRIVATE_KEY_MAX,
 } from "@webforge/model";
 import {
@@ -36,12 +37,13 @@ export type PublishParts = {
 export async function testConnection(
   destination: FileTransferDestination,
   signIn: FileTransferSignIn,
+  trust: FileTransferTrust,
   timeoutMs = TIMEOUT_MS,
 ): Promise<ConnectionResult> {
   const { host, user, folder } = destination;
   const port = destination.port ?? DEFAULT_PORTS[destination.protocol];
   if (destination.protocol === "sftp") {
-    if (destination.hostKey === undefined) return { ok: false, code: "untrusted-host" };
+    if (trust.hostKey === undefined) return { ok: false, code: "untrusted-host" };
     const options =
       "password" in signIn
         ? { password: signIn.password, timeoutMs }
@@ -55,7 +57,7 @@ export async function testConnection(
       port,
       user,
       folder,
-      hostKey: destination.hostKey,
+      hostKey: trust.hostKey,
     });
   }
   // FTPS and FTP sign in with a password only.
@@ -110,8 +112,8 @@ export function registerPublishHandlers(
   parts: PublishParts,
 ): void {
   const timeoutMs = parts.timeoutMs ?? TIMEOUT_MS;
-  registerIpcHandler(ipc, "publishTestConnection", isTrustedSender, (destination, signIn) =>
-    testConnection(destination, signIn, timeoutMs),
+  registerIpcHandler(ipc, "publishTestConnection", isTrustedSender, (destination, signIn, trust) =>
+    testConnection(destination, signIn, trust, timeoutMs),
   );
   registerIpcHandler(ipc, "publishReadHostKey", isTrustedSender, (host, port) =>
     readHostKey(host, port, timeoutMs),

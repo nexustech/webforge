@@ -94,7 +94,7 @@ type PublishApi = {
     host: string,
     port: number,
   ): Promise<{ status: "read"; hostKey: string } | { status: "failed"; code: string }>;
-  testConnection(destination: unknown, signIn: unknown): Promise<unknown>;
+  testConnection(destination: unknown, signIn: unknown, trust: unknown): Promise<unknown>;
 };
 
 const currentProject = (page: Page) =>
@@ -253,9 +253,10 @@ test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.
           user: "baker",
           folder: "/site",
           signIn: "password",
-          hostKey: read.hostKey,
         },
         { password: "test-only-password" },
+        // Trusted on this computer, never in the site's file (S2).
+        { hostKey: read.hostKey },
       );
     }, server.port);
 

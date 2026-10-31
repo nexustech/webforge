@@ -35,8 +35,8 @@ export const SftpWithKey: Story = {
       folder: "/home/rosa/public_html",
       url: "https://www.rosasbakery.co.uk",
       signIn: "key",
-      hostKey: "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8",
     },
+    trust: { hostKey: "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8" },
   },
 };
 

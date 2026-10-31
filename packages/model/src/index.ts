@@ -52,6 +52,7 @@ export type {
   FileTransferDestination,
   FileTransferProtocol,
   FileTransferSignIn,
+  FileTransferTrust,
 } from "./file-transfer.js";
 export {
   DEFAULT_PORTS,
@@ -60,6 +61,7 @@ export {
   FOLDER_MAX,
   fileTransferDestinationSchema,
   fileTransferSignInSchema,
+  fileTransferTrustSchema,
   HOST_MAX,
   hostKeySchema,
   PRIVATE_KEY_MAX,
