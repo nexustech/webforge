@@ -64,11 +64,12 @@ describe("exportFailure", () => {
   });
 
   it("names the image to replace as Media shows it when it can't be decoded (S12)", () => {
+    const huge = "huge" as MediaId;
     const site: SiteDoc = {
       ...bakery(),
       media: {
-        huge: {
-          id: "huge" as MediaId,
+        [huge]: {
+          id: huge,
           kind: "image",
           hash: "a".repeat(64),
           name: "huge-photo",
