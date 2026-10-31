@@ -296,8 +296,16 @@ export function LayersPanel({
     }
   };
 
-  /** Whether the dragged layer can go next to `row`: only among its own siblings. */
-  const canDropAt = (from: Row, row: Row) => from.parent === row.parent;
+  /**
+   * Whether the dragged layer can go next to `row`: only among its own siblings; at the top, the
+   * page's sections among themselves, and the shared Header's or Footer's among theirs, so they
+   * stay first and last (#673).
+   */
+  const canDropAt = (from: Row, row: Row) =>
+    from.parent === row.parent && (row.parent !== "" || from.layer.region === row.layer.region);
+  /** How many top-level rows the shared `region` has. */
+  const regionRows = (region: Layer["region"]) =>
+    layers.filter((layer) => layer.region === region).length;
 
   /** Whether a drag copies what it drags: Ctrl or Cmd held, as on the canvas (UX-4). */
   const copying = (keys: RowDragKeys) =>
@@ -398,7 +406,11 @@ export function LayersPanel({
             // One drag moving several selected layers is for later (1.31): until then a
             // selected row can't be dragged while others are selected too.
             const draggable =
-              !layoutLocked && renaming !== layer.id && !(isSelected && alsoSelected.length > 0);
+              !layoutLocked &&
+              renaming !== layer.id &&
+              !(isSelected && alsoSelected.length > 0) &&
+              // The shared Header and Footer stay first and last: theirs move among their own (#673).
+              !(row.parent === "" && layer.region !== undefined && regionRows(layer.region) < 2);
             return (
               <div
                 key={layer.id}
@@ -502,6 +514,13 @@ export function LayersPanel({
                       <span title={linked}>
                         <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
                         <span className="sr-only">{linked} </span>
+                      </span>
+                    )}
+                    {row.parent === "" && layer.region !== undefined && (
+                      // The shared Header or Footer (#673), marked as shared sections are (UX-12).
+                      <span title={t("layers.onEveryPage")}>
+                        <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
+                        <span className="sr-only">{t("layers.onEveryPage")} </span>
                       </span>
                     )}
                     {layer.locked === true && (

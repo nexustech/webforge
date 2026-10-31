@@ -62,11 +62,12 @@ describe("registerLayersPanel", () => {
     const { session } = setUp();
     const rows = () => screen.getAllByRole("treeitem");
 
-    await userEvent.click(rows()[1] as HTMLElement);
+    // The shared Header comes first (#673).
+    await userEvent.click(rows()[2] as HTMLElement);
     expect(session.ui.getState().nodeId).toBe("heading-1");
 
     act(() => session.select("text-1"));
-    expect(rows()[2]?.getAttribute("aria-selected")).toBe("true");
+    expect(rows()[3]?.getAttribute("aria-selected")).toBe("true");
   });
 
   it("never moves one layer alone while several are selected (#259 review)", () => {
@@ -79,7 +80,7 @@ describe("registerLayersPanel", () => {
     const before = order();
     act(() => session.selectElements(["heading-1", "text-1"]));
 
-    fireEvent.keyDown(screen.getAllByRole("treeitem")[1] as HTMLElement, {
+    fireEvent.keyDown(screen.getAllByRole("treeitem")[2] as HTMLElement, {
       key: "ArrowDown",
       altKey: true,
       ...(isMac() ? { metaKey: true } : { ctrlKey: true }),
@@ -105,13 +106,13 @@ describe("registerLayersPanel", () => {
     };
     act(() => session.selectElements(["section-1", "heading-1"]));
 
-    // The Text, not selected, dragged before the Heading.
-    drag(2, 1);
+    // The Text, not selected, dragged before the Heading (the Header is first, #673).
+    drag(3, 2);
     expect(order()).toEqual(["text-1", "heading-1"]);
     expect(selectedIds(session.ui.getState())).toEqual(["text-1"]);
 
     act(() => session.selectElements(["section-1", "text-1"]));
-    drag(2, 1, true);
+    drag(3, 2, true);
     expect(order()).toHaveLength(3);
     expect(selectedIds(session.ui.getState())).toHaveLength(1);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
@@ -189,5 +190,92 @@ describe("registerLayersPanel", () => {
     await userEvent.pointer({ keys: "[MouseRight]", target: heading() });
     await userEvent.keyboard("{Escape}");
     await waitFor(() => expect(document.activeElement).toBe(heading()));
+  });
+});
+
+describe("Layers' shared Header and Footer (#673)", () => {
+  const labels = (session: ReturnType<typeof setUp>["session"]) =>
+    session.history.entries().map((entry) => entry.label);
+  const rowsNamed = () => screen.getAllByRole("treeitem").map((row) => row.dataset.layer);
+
+  it("lists the Header first and the Footer last, each marked as on every page", () => {
+    setUp();
+
+    const rows = rowsNamed();
+    expect(rows[0]).toBe("header");
+    expect(rows.at(-1)).toBe("footer");
+    for (const id of ["header", "footer"]) {
+      const row = document.querySelector(`[data-layer="${id}"]`);
+      expect(row?.textContent).toContain("On every page");
+      // Never dragged among the page's sections.
+      expect(row?.getAttribute("draggable")).not.toBe("true");
+    }
+  });
+
+  it("selects the Header or Footer in step with the canvas, both ways", async () => {
+    const { session } = setUp();
+    const row = (id: string) => document.querySelector(`[data-layer="${id}"]`) as HTMLElement;
+
+    act(() => session.select("footer"));
+    expect(row("footer").getAttribute("aria-selected")).toBe("true");
+    await userEvent.click(row("header"));
+    expect(session.ui.getState().nodeId).toBe("header");
+  });
+
+  it("hides the Header on this page only, as Page Settings' setting, one step undone at once", async () => {
+    const { session } = setUp();
+    const site = () => session.history.document.getState();
+    const { pageId } = session.ui.getState();
+    const others = Object.keys(site().pages).filter((id) => id !== pageId);
+
+    await userEvent.click(screen.getByRole("button", { name: "Hide Header" }));
+
+    expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(true);
+    for (const id of others) {
+      expect(site().pages[id as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
+    }
+    expect(labels(session)).toEqual(["Hid the Header on this page"]);
+    // Dimmed, as other hidden layers are, and shown again from the same button.
+    expect(screen.getByRole("button", { name: "Show Header" })).toBeTruthy();
+
+    act(() => session.history.undo());
+    expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
+    expect(screen.getByRole("button", { name: "Hide Header" })).toBeTruthy();
+  });
+
+  it("renames the Footer from Layers, on every page, as one step", async () => {
+    const { session } = setUp();
+    const footer = () => document.querySelector('[data-layer="footer"]') as HTMLElement;
+
+    await userEvent.dblClick(footer());
+    await userEvent.keyboard("Contact strip{Enter}");
+
+    expect(session.history.document.getState().layout.footer[0]?.props.layerName).toBe(
+      "Contact strip",
+    );
+    expect(labels(session)).toEqual(["Renamed Footer to 'Contact strip'"]);
+  });
+
+  it("keeps a page's section from going above the Header, and reorders the Footer's own", () => {
+    const site = starterSite();
+    const extra: NodeDoc = { type: "Footer", props: { id: "footer-2", text: "Small print" } };
+    site.layout.footer.push(extra);
+    const { session } = setUp(site);
+    const row = (id: string) => document.querySelector(`[data-layer="${id}"]`) as HTMLElement;
+    const sections = () =>
+      (currentPage(session)?.doc.content ?? []).map((node) => node.props.id as string);
+    const before = sections();
+
+    dragRow(row("section-1"), row("header"));
+    expect(sections()).toEqual(before);
+    expect(session.history.entries()).toHaveLength(0);
+
+    // Two in the Footer: they move among themselves, first the second.
+    dragRow(row("footer-2"), row("footer"));
+    expect(session.history.document.getState().layout.footer.map((node) => node.props.id)).toEqual([
+      "footer-2",
+      "footer",
+    ]);
+    expect(labels(session)).toEqual(["Moved Footer"]);
   });
 });

@@ -8,10 +8,12 @@ import {
   type NodeDoc,
   newSharedCopy,
   type PageDoc,
+  type PageId,
   pageAnchors,
   pastedCopies,
   type SharedCopyNode,
   type SharedSectionsDoc,
+  type SiteDoc,
 } from "@webforge/model";
 import {
   type ComponentLibrary,
@@ -21,7 +23,13 @@ import {
 } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
-import { shownLayout } from "../editor/shared-layout.js";
+import {
+  hiddenSetting,
+  regionHidden,
+  SHARED_REGIONS,
+  type SharedRegion,
+  shownLayout,
+} from "../editor/shared-layout.js";
 
 /**
  * Layers (F-ED-12, Advanced): the shown page's sections and elements as a tree, and the changes the
@@ -48,6 +56,11 @@ export type Layer = {
   readonly locked?: boolean;
   /** It has an entrance animation (UX-12, 2.12); Layers marks it. */
   readonly animated?: boolean;
+  /**
+   * The shared Header or Footer it is (#673): first or last on every page, marked as shared,
+   * never moved among the page's sections. Hidden while the page's settings hide it.
+   */
+  readonly region?: SharedRegion;
 };
 
 /** The node lists inside `node`: its slots' contents, in field order. */
@@ -109,6 +122,30 @@ export function layersOf(
   });
 }
 
+/**
+ * Page `pageId`'s whole Layers tree (#673): the shared Header first, then the page's own sections,
+ * then the shared Footer. The Header's and Footer's layers are marked with their region, and are
+ * hidden while the page's settings hide them.
+ */
+export function pageLayers(
+  site: Pick<SiteDoc, "pages" | "layout" | "sharedSections">,
+  pageId: PageId,
+  library: ComponentLibrary,
+): Layer[] {
+  const region = (which: SharedRegion): Layer[] =>
+    layersOf(site.layout[which], library, site.sharedSections).map((layer) => ({
+      ...layer,
+      region: which,
+      hidden: regionHidden(site as SiteDoc, pageId, which),
+    }));
+  const content = site.pages[pageId]?.doc.content ?? [];
+  return [
+    ...region("header"),
+    ...layersOf(content, library, site.sharedSections),
+    ...region("footer"),
+  ];
+}
+
 /** How undo labels name a layer: its own name in quotes, else its component ("Heading"). */
 export const layerItem = (layer: Pick<Layer, "kind" | "name">) =>
   quotedName(layer.kind, layer.name);
@@ -148,27 +185,50 @@ export function ownId(content: readonly NodeDoc[], shared: SharedSectionsDoc, id
   return copy?.props.id ?? id;
 }
 
-/** The shown page and the layer `id` on it, before a change, with the page's own node for it. */
+/**
+ * The shown page and the layer `id` on it, before a change, with the page's own node for it; or
+ * the layer in the shared Header or Footer (#673), with its region, and whether it is the region's
+ * own top layer (the Header itself), which the page's settings show or hide.
+ */
 function target(session: LayersSession, id: string) {
   const { pageId } = session.ui.getState();
   const site = session.history.document.getState();
   const page: PageDoc | undefined = site.pages[pageId]?.doc;
   const own = page === undefined ? id : ownId(page.content, site.sharedSections, id);
   const node = page === undefined ? undefined : findNode(page.content, (n) => n.props.id === own);
-  if (node === undefined) {
-    return undefined;
+  if (node !== undefined) {
+    const [layer] = layersOf([node], session.library, site.sharedSections);
+    return layer === undefined ? undefined : { pageId, layer, own };
   }
-  const [layer] = layersOf([node], session.library, site.sharedSections);
-  return layer === undefined ? undefined : { pageId, layer, own };
+  for (const region of SHARED_REGIONS) {
+    const nodes = site.layout[region];
+    const shared = findNode(nodes, (n) => n.props.id === id);
+    if (shared === undefined) continue;
+    const top = nodes.some((each) => each.props.id === id);
+    const [layer] = layersOf([shared], session.library, site.sharedSections);
+    if (layer === undefined) return undefined;
+    return {
+      pageId,
+      layer: top ? { ...layer, region, hidden: regionHidden(site, pageId, region) } : layer,
+      own: id,
+      region,
+      top,
+    };
+  }
+  return undefined;
 }
 
 /**
  * Runs `change` on the page's own node `own` for layer `id` (which a step that selects selects) on
- * the shown page, as one undo step.
+ * the shown page, or in the shared `region` it is in (#673), as one undo step.
  */
 function editNode(
   session: LayersSession,
-  { id, own }: { readonly id: string; readonly own: string },
+  {
+    id,
+    own,
+    region,
+  }: { readonly id: string; readonly own: string; readonly region?: SharedRegion | undefined },
   kind: "props" | "move",
   /** Whether the step selects the layer (a move does; a hide or rename leaves the selection). */
   select: boolean,
@@ -183,7 +243,8 @@ function editNode(
     kind,
     label,
     (draft) => {
-      const content = draft.pages[pageId]?.doc.content;
+      const content =
+        region === undefined ? draft.pages[pageId]?.doc.content : draft.layout[region];
       const place = content === undefined ? undefined : placeOf(content, own, session.library);
       const node = place?.list[place.index];
       if (place !== undefined && node !== undefined) {
@@ -214,7 +275,7 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
     next === ""
       ? t("layers.history.unnamed", { item: layerItem(found.layer) })
       : t("layers.history.renamed", { item: found.layer.kind, name: next });
-  editNode(session, { id, own: found.own }, "props", false, label, (node) => {
+  editNode(session, { id, own: found.own, region: found.region }, "props", false, label, (node) => {
     if (next === "") {
       delete node.props.layerName;
     } else {
@@ -223,14 +284,32 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
   });
 }
 
-/** Hides a layer (dimmed on the canvas, left out of the export), or shows it again. */
+/**
+ * Hides a layer (dimmed on the canvas, left out of the export), or shows it again. The shared
+ * Header or Footer itself is hidden on the shown page only, by its *Hide the Header on this page*
+ * setting, which Page Settings shows too (#673, product owner, 30 Oct 2026).
+ */
 export function setLayerHidden(session: LayersSession, id: string, hidden: boolean): void {
   const found = target(session, id);
   if (found === undefined || found.layer.hidden === hidden) {
     return;
   }
+  if (found.region !== undefined && found.top === true) {
+    const region = found.region;
+    const key = hidden ? "layers.history.hidRegion" : "layers.history.showedRegion";
+    session.edit(
+      "props",
+      t(key, { item: found.layer.kind }),
+      (draft) => {
+        const page = draft.pages[found.pageId];
+        if (page !== undefined) page.settings[hiddenSetting(region)] = hidden;
+      },
+      { selectionAfter: session.ui.getState(), apply: true },
+    );
+    return;
+  }
   const key = hidden ? "layers.history.hid" : "layers.history.showed";
-  const at = { id, own: found.own };
+  const at = { id, own: found.own, region: found.region };
   editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
     if (hidden) {
       node.props.hidden = true;
@@ -274,8 +353,12 @@ export function toggleLayerHidden(session: LayersSession, id: string): void {
  */
 export function moveLayer(session: LayersSession, id: string, index: number): void {
   const found = target(session, id);
+  // The Header's and Footer's own layers move among their region's only (#673).
+  const site = session.history.document.getState();
   const content =
-    session.history.document.getState().pages[session.ui.getState().pageId]?.doc.content;
+    found?.region === undefined
+      ? site.pages[session.ui.getState().pageId]?.doc.content
+      : site.layout[found.region];
   const place =
     content === undefined || found === undefined
       ? undefined
@@ -291,7 +374,7 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
   }
   editNode(
     session,
-    { id, own: found.own },
+    { id, own: found.own, region: found.region },
     "move",
     true,
     t("history.moved", { item: layerItem(found.layer) }),
@@ -317,6 +400,8 @@ export function copyLayer(
   linked: boolean,
 ): string | undefined {
   const found = target(session, id);
+  // Not the shared Header's or Footer's (#673): the canvas copies none of theirs either.
+  if (found?.region !== undefined) return undefined;
   const site = session.history.document.getState();
   const current = session.ui.getState();
   const content = site.pages[current.pageId]?.doc.content;
