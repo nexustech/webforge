@@ -62,8 +62,13 @@ export type CodeTrust = {
   /** Whether the site's allowed addresses are confirmed, for Site Check (false while unknown). */
   readonly allowListConfirmed: StoreApi<boolean>;
   /**
+   * Calls `listener` each time main trusts more of the site's code, so a running Preview builds
+   * again with it: main builds only what it trusts. Returns how to stop.
+   */
+  onTrusted(listener: () => void): () => void;
+  /**
    * Starts following what the owner writes and the site's allow-list, while the window's areas
-   * are connected. Returns how to stop.
+   * are connected. Returns how to stop, which first trusts what was written just before.
    */
   connect(): () => void;
 };
@@ -85,6 +90,7 @@ export function createCodeTrust({
 }: CodeTrustOptions): CodeTrust {
   const question = createStore<{ readonly question: CodeQuestion }>(() => ({ question: null }));
   const allowListConfirmed = createStore<boolean>(() => false);
+  const trustedListeners = new Set<() => void>();
 
   /** Which of `texts` main doesn't trust, by position; all of them when it can't say. */
   const untrustedAt = async (texts: readonly string[]): Promise<ReadonlySet<number>> => {
@@ -108,7 +114,10 @@ export function createCodeTrust({
     if (texts.length === 0) return true;
     try {
       const result = await api.trust(sessionId(), texts);
-      if (result.status === "trusted") return true;
+      if (result.status === "trusted") {
+        for (const listener of trustedListeners) listener();
+        return true;
+      }
     } catch (error) {
       reportFailure("codeTrust.trust", error);
     }
@@ -150,10 +159,9 @@ export function createCodeTrust({
   let writing: ReturnType<typeof setTimeout> | undefined;
   /** What was written being trusted now, which an export or a Preview waits for. */
   let trusting: Promise<void> = Promise.resolve();
-  const trustNow = async () => {
+  const trustNow = async (entries: readonly (readonly [string, string | null])[]) => {
     const current = textsOf(session.history.document.getState());
-    const kept = [...written].filter(([text]) => current.has(text));
-    written.clear();
+    const kept = entries.filter(([text]) => current.has(text));
     const origins = [...new Set(kept.flatMap(([, origin]) => (origin === null ? [] : [origin])))];
     const untrusted = await untrustedAt(origins);
     const theirs = new Set(origins.filter((_, index) => !untrusted.has(index)));
@@ -165,7 +173,9 @@ export function createCodeTrust({
   const trustWritten = () => {
     clearTimeout(writing);
     writing = undefined;
-    const next = trusting.then(trustNow);
+    const entries = [...written];
+    written.clear();
+    const next = trusting.then(() => trustNow(entries));
     trusting = next;
     return next;
   };
@@ -190,6 +200,12 @@ export function createCodeTrust({
   return {
     question,
     allowListConfirmed,
+    onTrusted(listener) {
+      trustedListeners.add(listener);
+      return () => {
+        trustedListeners.delete(listener);
+      };
+    },
     async confirm(site) {
       // What the owner has just written is theirs: it's never asked about.
       await (writing === undefined ? trusting : trustWritten());
@@ -225,10 +241,9 @@ export function createCodeTrust({
       lastAllowList = allowListOf(session.history.document.getState())?.text;
       void checkAllowList();
       return () => {
+        // What was written just before the site closes, or the window, is still the owner's.
+        if (writing !== undefined) void trustWritten();
         clearTimeout(timer);
-        clearTimeout(writing);
-        writing = undefined;
-        written.clear();
         asked++;
         stopWatching();
         stopFollowing();

@@ -50,11 +50,20 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
   const confirmCode = vi.fn(
     async (): Promise<CodeDecision> => ({ go: true, keeps: () => true, allowListConfirmed: true }),
   );
+  const trustedListeners = new Set<() => void>();
+  /** Main trusting more of the site's code. */
+  const codeTrusted = () => {
+    for (const listener of trustedListeners) listener();
+  };
   const remove = registerPreviewCommands(registry, {
     session,
     library: siteLibrary,
     api,
     confirmCode,
+    onCodeTrusted: (listener) => {
+      trustedListeners.add(listener);
+      return () => trustedListeners.delete(listener);
+    },
     sessionId: () => SESSION,
     phone: phoneState,
     notify,
@@ -64,7 +73,18 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     session.edit("root", "Renamed site", (draft) => {
       draft.settings.general.name = name;
     });
-  return { session, registry, api, phoneState, notify, remove, edit, about, confirmCode };
+  return {
+    session,
+    registry,
+    api,
+    phoneState,
+    notify,
+    remove,
+    edit,
+    about,
+    confirmCode,
+    codeTrusted,
+  };
 }
 
 describe("previewPageOf (3.2)", () => {
@@ -93,6 +113,21 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
     expect(confirmCode).toHaveBeenCalledTimes(2);
     expect(api.open).not.toHaveBeenCalled();
     expect(api.phone).not.toHaveBeenCalled();
+  });
+
+  it("builds again once more code is trusted, which main builds with, while it follows", async () => {
+    const { registry, api, codeTrusted, remove } = setUp();
+    codeTrusted();
+    expect(api.update).not.toHaveBeenCalled();
+
+    await runSettled(registry, COMMAND_IDS.preview);
+    codeTrusted();
+    expect(api.update).toHaveBeenCalledOnce();
+
+    vi.advanceTimersByTime(PREVIEW_UPDATE_MS);
+    remove();
+    codeTrusted();
+    expect(api.update).toHaveBeenCalledOnce();
   });
 });
 

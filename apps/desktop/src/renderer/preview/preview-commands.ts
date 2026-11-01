@@ -30,6 +30,11 @@ export type PreviewCommandsDeps = {
    * runs it in their browser or on their phone.
    */
   readonly confirmCode: (site: SiteDoc) => Promise<CodeDecision>;
+  /**
+   * Calls `listener` when more of the site's code is trusted, which the preview then builds with:
+   * code the owner has just written is trusted a moment after their last change (#649).
+   */
+  readonly onCodeTrusted: (listener: () => void) => () => void;
 };
 
 /** The file of page `pageId` in the preview, as the build names it: `index.html`, `about.html`. */
@@ -50,7 +55,7 @@ export function registerPreviewCommands(
   registry: CommandRegistry,
   deps: PreviewCommandsDeps,
 ): () => void {
-  const { session, library, api, sessionId, phone, notify, confirmCode } = deps;
+  const { session, library, api, sessionId, phone, notify, confirmCode, onCodeTrusted } = deps;
   /** Runs `start` once the owner has said what to do with code they haven't confirmed (#649). */
   const afterCode = (start: () => void) => {
     confirmCode(site())
@@ -105,16 +110,20 @@ export function registerPreviewCommands(
         }
       }, PREVIEW_UPDATE_MS);
     };
-    const stopSite = session.history.document.subscribe(() => {
+    const changed = () => {
       if (timer === undefined) send();
       else changedSince = true;
-    });
+    };
+    const stopSite = session.history.document.subscribe(changed);
+    // Main builds only trusted code: once more is trusted, the preview builds again to show it.
+    const stopTrusted = onCodeTrusted(changed);
     const stopPage = session.ui.subscribe((ui, before) => {
       if (ui.pageId === before.pageId) return;
       api.show(page()).catch((error: unknown) => reportFailure("preview.show", error));
     });
     following = () => {
       stopSite();
+      stopTrusted();
       stopPage();
       if (timer !== undefined) clearTimeout(timer);
     };

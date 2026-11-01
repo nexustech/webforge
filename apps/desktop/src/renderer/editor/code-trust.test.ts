@@ -1,8 +1,15 @@
 import { allowListText, type NodeDoc, type SiteDoc } from "@webforge/model";
+import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
+import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { TrustApi } from "../../shared/ipc/trust.js";
 import { starterSite } from "../../shared/starter-site.js";
 import { applyLook, lookChange } from "../clipboard/index.js";
+import type { PhoneState } from "../preview/PhonePreviewDialog.js";
+import { registerPreviewCommands } from "../preview/preview-commands.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
+import { createCommandRegistry } from "../shell/commands.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { toggleSelectedHidden } from "./bulk-layers.js";
 import { type CodeAnswer, createCodeTrust } from "./code-trust.js";
@@ -242,6 +249,53 @@ describe("what the owner writes (#649)", () => {
       "go(12)",
       "https://cdn.example.com/\nhttps://mine.example.com/",
     ]);
+  });
+
+  it("is trusted when the window's areas disconnect just after it's written", async () => {
+    const { session, api } = setUp(starterSite());
+    vi.useFakeTimers();
+    write(session, "js", "mine()");
+    for (const disconnect of connected.splice(0)) disconnect();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(api.trust).toHaveBeenCalledWith(SESSION, ["mine()"]);
+  });
+
+  it("builds a running Preview again once it's trusted, so the preview shows it", async () => {
+    const { session, api, codeTrust } = setUp(starterSite());
+    const preview = {
+      open: vi.fn<PreviewApi["open"]>(async () => "opened"),
+      update: vi.fn<PreviewApi["update"]>(async () => null),
+      show: vi.fn<PreviewApi["show"]>(async () => null),
+      phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "failed" })),
+      stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
+    };
+    const commands = createCommandRegistry();
+    connected.push(
+      registerPreviewCommands(commands, {
+        session,
+        library: siteLibrary,
+        api: preview,
+        sessionId: () => SESSION,
+        phone: createStore<PhoneState>(() => ({ status: "closed" })),
+        notify: vi.fn(),
+        confirmCode: (site) => codeTrust.confirm(site),
+        onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
+      }),
+    );
+    commands.run(COMMAND_IDS.preview);
+    await vi.waitFor(() => expect(preview.open).toHaveBeenCalledOnce());
+    vi.useFakeTimers();
+
+    write(session, "js", "mine()");
+    // Sent at once, before main trusts it: main's build leaves it out.
+    expect(preview.update).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(api.trust).toHaveBeenCalledWith(SESSION, ["mine()"]);
+    expect(preview.update).toHaveBeenCalledTimes(2);
+    const [trusted] = api.trust.mock.invocationCallOrder;
+    expect(preview.update.mock.invocationCallOrder[1]).toBeGreaterThan(trusted ?? Infinity);
   });
 
   it("isn't followed once the window's areas disconnect", async () => {

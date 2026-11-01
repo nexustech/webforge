@@ -28,6 +28,7 @@ export const previewArea: Area<WindowContext> = {
       phone,
       notify: (message) => toast.error(message),
       confirmCode: (site) => codeTrust.confirm(site),
+      onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
     });
     return () => {
       removeCommands();

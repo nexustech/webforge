@@ -20,6 +20,7 @@ An export wrote it as it stood, and Preview ran it in the owner's everyday brows
   - A damaged file is read as empty: the owner is asked again.
 - **A piece becomes trusted in two ways:**
   - **The owner writes it here.** Only the fields code is written in say so, through `EditorSession.codeWritten(before, after)`: a Custom Code element's code field in the Edit panel, and Settings' Head, End of page, Script and allowed addresses. What they wrote is trusted once the owner stops writing, if the site still has it (`renderer/editor/code-trust.ts`).
+    - Once the owner stops, or the site or window closes first. A running Preview builds again whenever more code is trusted (`codeTrust.onTrusted`), so what was just written shows there.
     - It's trusted only when the piece was the owner's before the edit: trusted already, or blank. A fix to a line of someone else's script, or an address added to their list, leaves the whole piece to the prompt.
     - Nothing else trusts code, whatever step it records: a paste, Copy Style or an option group's paste, Apply Look, showing a hidden element, an added section, Undo, Redo, opening a file. The trust step doesn't read history steps at all.
   - **The owner confirms it.** Before an export, a Preview or a Preview on Phone, the window lists the pieces main doesn't trust:
