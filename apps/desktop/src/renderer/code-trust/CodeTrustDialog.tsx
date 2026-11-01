@@ -23,7 +23,7 @@ const PART_KEYS = {
 /**
  * "This site contains code that will run for your visitors" (#649): each piece of the site's code
  * its owner hasn't written here or confirmed, with *Review*, *Leave it out* and *Keep the code*.
- * Closing it is a cancel. `elementPlace` names where a Custom Code element is, as Site Check does.
+ * Closing it is a cancel. `elementPlace` names where a Custom Code element is (`codeElementPlace`).
  */
 export function CodeTrustDialog({
   state,
