@@ -32,10 +32,8 @@ function paths(outcome: PreviewOutcome) {
 
 describe("createPreviewBuilds (3.2)", () => {
   it("answers with every file first, then only what each change changed", async () => {
-    const preview = createPreviewBuilds(loadNodeResources, {
-      readMedia: async () => undefined,
-      pipeline: createPipeline(siteLibrary),
-    });
+    const build = createPreviewBuilds(loadNodeResources, { pipeline: createPipeline(siteLibrary) });
+    const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
     const site = sampleSite();
 
     const first = paths(await preview(await job(site)));
@@ -84,10 +82,8 @@ describe("createPreviewBuilds (3.2)", () => {
   }, 120_000);
 
   it("fails with a code, never the site's content", async () => {
-    const preview = createPreviewBuilds(loadNodeResources, {
-      readMedia: async () => undefined,
-      pipeline: createPipeline(siteLibrary),
-    });
+    const build = createPreviewBuilds(loadNodeResources, { pipeline: createPipeline(siteLibrary) });
+    const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
     // No font files sent: the build can't write the site's fonts.
     const site = sampleSite();
 

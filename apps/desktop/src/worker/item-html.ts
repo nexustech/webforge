@@ -15,8 +15,8 @@ export function itemHtmlFor(job: ItemHtmlJob): ItemHtmlOutcome {
       job.pageId,
       job.nodeId,
     );
-    return { type: "item-html", id: job.id, html: html ?? null };
+    return { type: "item-html", html: html ?? null };
   } catch {
-    return { type: "item-html-failed", id: job.id };
+    return { type: "item-html-failed" };
   }
 }

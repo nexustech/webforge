@@ -1,7 +1,7 @@
 import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
 import { catalogueFontSchema } from "@webforge/themes";
 import { z } from "zod";
-import { exportProgressSchema, exportWarningSchema, MAX_REPORTED_WARNINGS } from "./ipc/site.js";
+import { exportWarningSchema, MAX_REPORTED_WARNINGS } from "./ipc/site.js";
 
 /**
  * The downloaded families a site's theme uses (2.2), as the main process keeps them: its heading
@@ -11,8 +11,8 @@ const downloadedFamiliesSchema = z.array(catalogueFontSchema).max(2);
 
 /**
  * What the main process asks the export worker to do. The snapshot names its images and
- * documents by hash: the worker asks for each one's bytes as the build reaches it
- * ({@link blobRequestSchema}), so neither process holds them all (R15).
+ * documents by hash: the worker asks for each one's bytes as the build reaches it (`read-blob`,
+ * worker-channel-protocol.ts), so neither process holds them all (R15).
  */
 const exportJobSchema = z.strictObject({
   type: z.literal("export"),
@@ -52,8 +52,6 @@ export type PreviewJob = z.infer<typeof previewJobSchema>;
 /** Compiles the site CSS for the canvas; a long-lived worker answers many of these (1.12). */
 const compileCssJobSchema = z.strictObject({
   type: z.literal("compile-css"),
-  /** Matches the answer to the request. */
-  id: z.int().nonnegative(),
   theme: themeSchema,
   candidates: z.array(z.string()),
   families: downloadedFamiliesSchema,
@@ -68,7 +66,6 @@ export type CompileCssJob = z.infer<typeof compileCssJobSchema>;
  */
 const classCatalogueJobSchema = z.strictObject({
   type: z.literal("class-catalogue"),
-  id: z.int().nonnegative(),
   theme: themeSchema,
 });
 
@@ -84,7 +81,6 @@ export const classNameSchema = z.string().min(1).max(128).regex(/^\S+$/);
 /** The CSS each class produces, for the class browser's previews and the unknown-class warning. */
 const classCssJobSchema = z.strictObject({
   type: z.literal("class-css"),
-  id: z.int().nonnegative(),
   theme: themeSchema,
   classes: z.array(classNameSchema).max(MAX_CLASS_CSS),
 });
@@ -110,51 +106,17 @@ export const itemHtmlRequestSchema = z.strictObject({
 /** An item of a page to write as the export would. */
 export type ItemHtmlRequest = z.infer<typeof itemHtmlRequestSchema>;
 
-const itemHtmlJobSchema = itemHtmlRequestSchema.extend({
-  type: z.literal("item-html"),
-  id: z.int().nonnegative(),
-});
+const itemHtmlJobSchema = itemHtmlRequestSchema.extend({ type: z.literal("item-html") });
 
 /** An item of a page to write as the export would, in the canvas styles worker. */
 export type ItemHtmlJob = z.infer<typeof itemHtmlJobSchema>;
 
 /** Bytes of any buffer kind (a Node `Buffer` too), which `z.instanceof` would narrow. */
-const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
-
-/** The export worker asks for the bytes the open site stores under `hash` (R15). */
-export const blobRequestSchema = z.strictObject({
-  type: z.literal("read-blob"),
-  /** Matches the answer to the request. */
-  id: z.int().nonnegative(),
-  hash: z.string().regex(/^[0-9a-f]{64}$/),
-});
-
-/** The export worker tells how far its export has come (3.1); main passes it to the window. */
-export const exportProgressMessageSchema = z.strictObject({
-  type: z.literal("progress"),
-  progress: exportProgressSchema,
-});
-
-/**
- * What the main process sends the export worker during its export: the bytes it asked for (none
- * if the site doesn't store them), or that the export is cancelled.
- */
-export const exportMessageSchema = z.discriminatedUnion("type", [
-  z.strictObject({
-    type: z.literal("blob"),
-    id: z.int().nonnegative(),
-    blob: z.strictObject({ data: bytesSchema, mime: z.string().max(255) }).optional(),
-  }),
-  z.strictObject({ type: z.literal("cancel") }),
-]);
-
-/** What the main process sends the export worker during its export. */
-export type ExportMessage = z.infer<typeof exportMessageSchema>;
+export const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
 
 /** Makes the editor's preview of a Media image (1.16); a long-lived worker answers many. */
 const thumbnailJobSchema = z.strictObject({
   type: z.literal("thumbnail"),
-  id: z.int().nonnegative(),
   mimeType: z.enum(IMAGE_MIME_TYPES),
   /** The original's bytes. */
   data: bytesSchema,
@@ -181,10 +143,9 @@ export type WorkerJob = z.infer<typeof workerJobSchema>;
 export const thumbnailOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("thumbnail"),
-    id: z.int().nonnegative(),
     data: bytesSchema,
   }),
-  z.strictObject({ type: z.literal("thumbnail-failed"), id: z.int().nonnegative() }),
+  z.strictObject({ type: z.literal("thumbnail-failed") }),
 ]);
 
 /** The worker's answer to a {@link ThumbnailJob}. */
@@ -194,11 +155,10 @@ export type ThumbnailOutcome = z.infer<typeof thumbnailOutcomeSchema>;
 const compileCssOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("css"),
-    id: z.int().nonnegative(),
     css: z.string(),
     bodyClass: z.string(),
   }),
-  z.strictObject({ type: z.literal("css-failed"), id: z.int().nonnegative() }),
+  z.strictObject({ type: z.literal("css-failed") }),
 ]);
 
 /** The worker's answer to a {@link CompileCssJob}. */
@@ -208,16 +168,14 @@ export type CompileCssOutcome = z.infer<typeof compileCssOutcomeSchema>;
 const classesOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("class-catalogue"),
-    id: z.int().nonnegative(),
     classes: z.array(classNameSchema).max(100_000),
     variants: z.array(classNameSchema).max(1_000),
   }),
   z.strictObject({
     type: z.literal("class-css"),
-    id: z.int().nonnegative(),
     css: z.array(z.string().max(100_000).nullable()).max(MAX_CLASS_CSS),
   }),
-  z.strictObject({ type: z.literal("classes-failed"), id: z.int().nonnegative() }),
+  z.strictObject({ type: z.literal("classes-failed") }),
 ]);
 
 /** The worker's answer to a {@link ClassCatalogueJob} or a {@link ClassCssJob}. */
@@ -227,11 +185,10 @@ export type ClassesOutcome = z.infer<typeof classesOutcomeSchema>;
 const itemHtmlOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("item-html"),
-    id: z.int().nonnegative(),
     /** `""` for a hidden item; `null` when the page or the item isn't there. */
     html: z.string().max(1_000_000).nullable(),
   }),
-  z.strictObject({ type: z.literal("item-html-failed"), id: z.int().nonnegative() }),
+  z.strictObject({ type: z.literal("item-html-failed") }),
 ]);
 
 /** The worker's answer to an {@link ItemHtmlJob}. */

@@ -117,6 +117,9 @@ describe("createExportFeature (A12)", () => {
     );
 
     await vi.waitFor(() => expect(posted).toHaveLength(1));
-    expect(posted[0]).toMatchObject({ type: "export", snapshot: { code: trusted.code } });
+    expect(posted[0]).toMatchObject({
+      message: "job",
+      job: { type: "export", snapshot: { code: trusted.code } },
+    });
   });
 });

@@ -3,9 +3,9 @@ import { constants } from "node:fs";
 import { type FileHandle, open, stat } from "node:fs/promises";
 import { MAX_IMAGE_PIXELS } from "@webforge/model";
 import { type BlobAsset, SiteFileWriter } from "@webforge/storage";
-import { isTextName } from "../main/document-files.js";
-import { sniffMedia } from "../main/media-files.js";
+import { isTextName } from "../shared/document-files.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
+import { sniffMedia } from "../shared/media-files.js";
 import type {
   CleanUpOutcome,
   ImportSource,

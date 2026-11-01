@@ -5,7 +5,6 @@ import { itemHtmlFor } from "./item-html.js";
 
 const job = (pageId: string, nodeId: string, snapshot: SiteSnapshot = sampleSite()) => ({
   type: "item-html" as const,
-  id: 7,
   snapshot,
   sizes: { "hero-photo": { width: 1600, height: 1000 } },
   pageId,
@@ -16,7 +15,7 @@ describe("itemHtmlFor (3.14)", () => {
   it("answers with the item as the export writes it, or null when it isn't there", () => {
     const hero = itemHtmlFor(job("home", "hero"));
     expect(hero.type === "item-html" && hero.html).toContain("assets/img/hero-1600.webp");
-    expect(itemHtmlFor(job("home", "nothing"))).toEqual({ type: "item-html", id: 7, html: null });
+    expect(itemHtmlFor(job("home", "nothing"))).toEqual({ type: "item-html", html: null });
   });
 
   it("fails without details when the item can't be drawn", () => {
@@ -26,6 +25,6 @@ describe("itemHtmlFor (3.14)", () => {
       layout: { ...site.layout, header: [{ type: "NoSuchThing", props: { id: "x" } }] },
     };
 
-    expect(itemHtmlFor(job("home", "x", broken))).toEqual({ type: "item-html-failed", id: 7 });
+    expect(itemHtmlFor(job("home", "x", broken))).toEqual({ type: "item-html-failed" });
   });
 });
