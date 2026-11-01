@@ -138,26 +138,37 @@ export function registerExportHandlers(
     async (sessionId, request, operationId) => {
       // The site the export is of, taken once: it reads that site's Media only (#663).
       const site = deps.site(sessionId);
-      if (site.staleReason() !== undefined || underWay.has(operationId))
-        return { status: "canceled" };
-      const { choices } = request;
-      const destination =
-        choices.format === "zip"
-          ? await deps.dialogs.chooseExportZip(request.snapshot.name)
-          : await deps.dialogs.chooseExportFolder();
-      // Cancelled, or a hand-off replaced the site while the dialog was open: nothing is written,
-      // and its choices aren't kept with the next site.
-      if (destination === undefined || site.staleReason() !== undefined) {
+      // One name, one export.
+      if (site.staleReason() !== undefined || underWay.has(operationId)) {
         return { status: "canceled" };
       }
-      // Remembered once the person has gone ahead; a site that can't save them still exports.
-      await site.setExportChoices(choices).catch(() => undefined);
-      const target: ExportTarget = { destination, format: choices.format, output: request.output };
-      // Checked again: the dialog was open meanwhile. One name, one export.
-      if (underWay.has(operationId)) return { status: "canceled" };
+      // Under way from the start, the id with it: a Cancel while the dialog is open, or while the
+      // choices wait at the store gate, stops it before anything is written.
       const controller = new AbortController();
       underWay.set(operationId, controller);
       try {
+        const { choices } = request;
+        const destination =
+          choices.format === "zip"
+            ? await deps.dialogs.chooseExportZip(request.snapshot.name)
+            : await deps.dialogs.chooseExportFolder();
+        // Cancelled, or a hand-off replaced the site while the dialog was open: nothing is
+        // written, and its choices aren't kept with the next site.
+        if (
+          destination === undefined ||
+          controller.signal.aborted ||
+          site.staleReason() !== undefined
+        ) {
+          return { status: "canceled" };
+        }
+        // Remembered once the person has gone ahead; a site that can't save them still exports.
+        await site.setExportChoices(choices).catch(() => undefined);
+        if (controller.signal.aborted) return { status: "canceled" };
+        const target: ExportTarget = {
+          destination,
+          format: choices.format,
+          output: request.output,
+        };
         const outcome = await deps.runExport(snapshotOf(request), target, {
           // A site replaced while the export runs cancels it, as Cancel would: nothing changes on
           // disk, rather than a site written without its images. Checked again once a read comes

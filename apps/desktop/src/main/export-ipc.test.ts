@@ -62,7 +62,7 @@ const exported: ExportOutcome = {
 /** The opening of the site the window was loaded for, and the one a hand-off opens. */
 const SITE_A = "11111111-1111-4111-8111-111111111111";
 /** The operation an export runs as, unless a test names another (A14). */
-const OPERATION = "22222222-2222-4222-8222-222222222222";
+const OPERATION = "44444444-4444-4444-8444-444444444444";
 const SITE_B = "22222222-2222-4222-8222-222222222222";
 
 const toFolder = (path: string | undefined): ExportDialogs => ({
@@ -293,6 +293,26 @@ describe("registerExportHandlers", () => {
     expect(signals.map((signal) => signal.aborted)).toEqual([false, true]);
     await cancel();
     await expect(first).resolves.toEqual({ status: "canceled" });
+  });
+
+  it("cancels an export whose choices are still being kept, before anything is built (A14)", async () => {
+    let keep: () => void = () => undefined;
+    const { invoke, cancel, runExport, choices } = setUp(toFolder("/sites/my-site"));
+    // The choices wait at the store gate, behind an import or a save.
+    choices.write.mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          keep = resolve;
+        }),
+    );
+
+    const result = invoke(request);
+    await vi.waitFor(() => expect(choices.write).toHaveBeenCalled());
+    await cancel();
+    keep();
+
+    await expect(result).resolves.toEqual({ status: "canceled" });
+    expect(runExport).not.toHaveBeenCalled();
   });
 
   it("refuses a second export under an operation id already under way (A14)", async () => {
