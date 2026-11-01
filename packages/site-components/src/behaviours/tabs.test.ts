@@ -152,6 +152,32 @@ describe("tabs on the exported page (2.11, WCAG 2.1 AA)", () => {
     expect(shown()).toEqual(["tab-c"]);
   });
 
+  it("names a Tab's panel by its Advanced anchor, which its tab controls and a link reaches (#709)", () => {
+    const lunch = tab("b", "Lunch", [text("b1", "Soup")]);
+    const anchored = [
+      tab("a", "Breakfast"),
+      { ...lunch, props: { ...lunch.props, advanced: { anchorId: "lunch" } } },
+      tab("c", "Cakes"),
+    ];
+
+    // As exported: the anchor is the panel's id, the only one it has.
+    const exported = page(anchored, { script: false });
+    expect(exported.panels().map((panel) => panel.id)).toEqual(["tab-a", "lunch", "tab-c"]);
+
+    const { window, buttons, panels, shown } = page(anchored);
+    expect(buttons()[1]?.getAttribute("aria-controls")).toBe("lunch");
+    expect(panels()[1]?.getAttribute("aria-labelledby")).toBe(buttons()[1]?.id);
+    buttons()[1]?.click();
+    expect(shown()).toEqual(["lunch"]);
+    buttons()[2]?.click();
+    expect(shown()).toEqual(["tab-c"]);
+    // A link to the anchor chooses its tab, as the page opens and as the anchor changes.
+    window.location.hash = "#lunch";
+    window.dispatchEvent(new window.Event("hashchange"));
+    expect(shown()).toEqual(["lunch"]);
+    expect(page(anchored, { hash: "#lunch" }).shown()).toEqual(["lunch"]);
+  });
+
   it("sets up every Tabs and follows the anchor at an #anchor not encoded right (#397 review)", () => {
     const inner: NodeDoc = {
       type: "Tabs",

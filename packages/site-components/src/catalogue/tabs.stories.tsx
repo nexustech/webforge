@@ -36,6 +36,8 @@ export const Tabs: Story = {
                   props: {
                     id,
                     label,
+                    // An Advanced anchor names its panel (#709): axe checks the page with one.
+                    ...(id === "cakes" ? { advanced: { anchorId: "cakes" } } : {}),
                     content: [
                       { type: "Text", props: { id: `${id}-text`, text: `<p>${words}</p>` } },
                     ],
