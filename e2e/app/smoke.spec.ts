@@ -119,6 +119,7 @@ test.describe("desktop shell", () => {
         "preview",
         "publish",
         "trust",
+        "versions",
       ],
     });
   });

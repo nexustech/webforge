@@ -102,8 +102,8 @@ const editPanelPreferencesSchema = z.strictObject({
 export type EditPanelPreferences = z.infer<typeof editPanelPreferencesSchema>;
 
 /** The fewest and the most automatic versions a site may keep (P3). */
-export const VERSIONS_KEPT_MIN = 5;
-export const VERSIONS_KEPT_MAX = 100;
+const VERSIONS_KEPT_MIN = 5;
+const VERSIONS_KEPT_MAX = 100;
 
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in

@@ -4,7 +4,7 @@ import type { ProjectResult } from "./project.js";
 import { projectResultSchema, sessionIdSchema } from "./project.js";
 
 /** The longest name the person can give a version (Save version…, 4.6). */
-export const VERSION_NAME_MAX = 100;
+const VERSION_NAME_MAX = 100;
 
 /**
  * Why a version was saved (ADR 0020): by the person (`manual`), or by Webforge on the site's first
@@ -17,9 +17,6 @@ const versionReasonSchema = z.enum([
   "before-site-wide",
   "on-publish",
 ]);
-
-/** Why a version was saved. */
-export type VersionReason = z.infer<typeof versionReasonSchema>;
 
 /**
  * The reasons the renderer asks main to save a version for: the person's own, and the automatic
