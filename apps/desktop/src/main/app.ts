@@ -28,6 +28,7 @@ import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 import type { startCrashReports } from "./crash-wiring.js";
+import { createCredentialStore } from "./credential-store.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
@@ -53,7 +54,9 @@ import { createPreview, previewFeature } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import { ProjectSession } from "./project-session.js";
-import { registerPublishHandlers } from "./publish-ipc.js";
+import { publishDestinationsFeature } from "./publish-destinations-ipc.js";
+import { createKeyFiles, registerPublishHandlers, testSignIn } from "./publish-ipc.js";
+import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 import {
@@ -99,6 +102,7 @@ export type AppElectron = Pick<
   | "Menu"
   | "net"
   | "protocol"
+  | "safeStorage"
   | "screen"
   | "session"
   | "shell"
@@ -195,6 +199,15 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   // The code each site's owner trusts (#649): only that goes into a build.
   const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
+  // Publish passwords, keys and tokens (#666, 4.4a), encrypted with the OS's keychain (Windows
+  // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
+  const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
+    isEncryptionAvailable: () => electron.safeStorage.isEncryptionAvailable(),
+    encryptString: (text) => electron.safeStorage.encryptString(text),
+    decryptString: (encrypted) => electron.safeStorage.decryptString(encrypted),
+  });
+  // The key files the person chose (4.3), by handle: Test connection and saving read them.
+  const keyFiles = createKeyFiles();
   const projectSession = new ProjectSession(
     {},
     // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
@@ -334,6 +347,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     }),
     previewFeature(preview),
     codeTrustFeature(codeTrust, projectSession),
+    // The open site's publish destinations (4.4a): the list in its file, sign-ins in the keychain.
+    publishDestinationsFeature({
+      site: (sessionId) => projectSession.site(sessionId),
+      secrets: createPublishSecrets(credentials),
+      keys: keyFiles,
+      test: testSignIn,
+    }),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);
@@ -499,7 +519,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       projectSession,
     );
     exposeForE2eTests(ai, app.isPackaged);
-    registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish);
+    registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
