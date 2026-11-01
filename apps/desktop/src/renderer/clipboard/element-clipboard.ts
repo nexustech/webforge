@@ -19,6 +19,7 @@ import {
   mediaUsedBy,
   overfillsSlots,
   videoEmbed,
+  withCleanRichText,
 } from "@webforge/site-components";
 import type {
   ClipboardApi,
@@ -358,8 +359,12 @@ export async function pasteElements(
     );
     return true;
   }
-  // The page's own anchors, its copies' and the shared Header's and Footer's are taken.
-  const copies = pastedCopies(nodes, pageAnchors(page.doc.content, site.sharedSections, layout));
+  // The page's own anchors, its copies' and the shared Header's and Footer's are taken. Any
+  // program can put rich text on the clipboard: it is cleaned as the editor's is (S23).
+  const copies = withCleanRichText(
+    pastedCopies(nodes, pageAnchors(page.doc.content, site.sharedSections, layout)),
+    session.library,
+  );
   const firstId = copies[0]?.props.id ?? null;
   const label =
     copies.length === 1

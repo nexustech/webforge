@@ -8,7 +8,8 @@ The site's documents and their zod schemas: what the editor edits, `.wforge` sto
 - **`SiteDoc`** and `siteDocSchema` (architecture §5): settings, theme, the shared layout, pages keyed by `PageId` with `pageOrder` and `homePageId`, media metadata, custom code and the navigation menu. The schema rejects broken structure: pages stored under another id, a page order that misses a page, no home or "Page not found" page, reserved slugs (`index`, `404`, `assets`), two pages with one path, duplicate media names or menu item ids. `createSite(options)` makes a new valid site.
 - **Pages:** `PageEntry` (`kind: "page" | "not-found"`, `slug`, `folder`, `title`, `navLabel`, Page Settings, content) and `pagePath(page, homePageId)`, which gives the export path (`index`, `404`, `services/cakes`).
 - **Branded ids:** `PageId`, `NodeId`, `MediaId`, `MenuItemId`, their schemas, and `newId(kind)`.
-- **Site Settings** (`SiteSettings`, X3): general, web address, social, contact and opening hours, search engines, analytics, form defaults, publish destinations (never secrets), allowed external URLs.
+- **Site Settings** (`SiteSettings`, X3): general, web address, social, contact and opening hours, search engines, analytics, form defaults, allowed external URLs.
+- **Publish destinations** (`PublishDestination`, B1, ADR 0018 §2): where a site is published to, kept beside the site document in the file's `meta` table, never undone or versioned, and never holding a secret.
 - **Media:** `MediaMeta` (an image with alt text, focal point and crop, or a file), `ImageValue` (`{ mediaId, alt? }`) and `altTextFor`, which applies the per-use override (G15).
 - **Links:** `LinkValue` (page by id with an optional anchor, e-mail, phone, URL, file).
 - **Menu:** `MenuDoc` (`follows: "pages" | "custom"`) with page, link, section, button and one-level group items.

@@ -56,6 +56,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   8: componentLooks,
   9: sectionContentWidths,
   10: accentFonts,
+  11: destinationsOutOfSettings,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -340,6 +341,19 @@ function accentFonts(site: RawSite): RawSite {
   }
   const fonts = { ...theme.fonts, accent: { ...theme.fonts.heading } };
   return { ...site, theme: { ...theme, fonts }, formatVersion: 11 };
+}
+
+/**
+ * Format 11 → 12 (4.4a, ADR 0018 §2): publish destinations moved out of Site Settings to the site
+ * file's `meta` table, beside the document, so they are never undone or copied into a version.
+ * Every site's list was empty (nothing could add to it), so nothing is lost. Settings that aren't
+ * a record are left for validation.
+ */
+function destinationsOutOfSettings(site: RawSite): RawSite {
+  const settings = site.settings;
+  if (!isRecord(settings) || !("publish" in settings)) return { ...site, formatVersion: 12 };
+  const { publish: _publish, ...rest } = settings;
+  return { ...site, settings: rest, formatVersion: 12 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

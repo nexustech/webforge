@@ -103,3 +103,4 @@ export type {
   StoredValue,
   ValuesOf,
 } from "./schema.js";
+export { siteWithCleanRichText, withCleanRichText } from "./stored-rich-text.js";

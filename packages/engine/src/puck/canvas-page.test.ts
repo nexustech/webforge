@@ -101,12 +101,24 @@ describe("CanvasPage (R8)", () => {
     dispatched.length = 0;
 
     page.apply({ ...first });
-    const echo = { page: pageOf(heading("a1", "Typed")), layout: NO_LAYOUT, shared: {} };
+    // The app's own objects for what the canvas shows.
+    const echo = structuredClone(first);
     sync.report(() => page.apply(echo));
 
     expect(dispatched).toEqual([]);
     // Taken over all the same, so the app's next change is recognised.
     expect(page.docs().page).toBe(echo.page);
+  });
+
+  it("throws, in a test build, for an echo that isn't what the canvas shows (A24)", () => {
+    const { page, dispatched, sync } = canvasPage();
+    page.load({ page: pageOf(heading("a1")), layout: NO_LAYOUT, shared: {} });
+    dispatched.length = 0;
+
+    const changed = { page: pageOf(heading("a1", "Typed")), layout: NO_LAYOUT, shared: {} };
+
+    expect(() => sync.report(() => page.apply(changed))).toThrow(/took it over \(page\)/);
+    expect(dispatched).toEqual([]);
   });
 
   it("waits for Puck to be ready, then shows the latest page whole", () => {
