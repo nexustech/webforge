@@ -20,10 +20,11 @@ import { stubFileDialogs } from "../app/sites.js";
 import {
   CHECK_TEMPLATES,
   EXPORTED_SITE_DIR,
+  NO_BANNER_SITE_DIR,
   TEMPLATES_DIR,
   THEMED_SITE_DIR,
 } from "./exported-site.js";
-import { exportTemplate } from "./template-export.js";
+import { exportSnapshot, exportTemplate } from "./template-export.js";
 
 type ExportRequest = {
   snapshot: SiteSnapshot;
@@ -339,6 +340,26 @@ setup("export the fixture site from the app", async () => {
     await app.close();
     await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
+});
+
+setup("export a site whose owner turned the consent banner off (#650)", async () => {
+  const sample = sampleSite();
+  const [home] = sample.pages;
+  if (home === undefined) throw new Error("The fixture site has no pages");
+  const heading: NodeDoc = { type: "Heading", props: { id: "welcome", text: "Welcome" } };
+  rmSync(NO_BANNER_SITE_DIR, { recursive: true, force: true });
+  // One page and no files, through the pipeline alone: only its analytics matter here.
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      pages: [{ ...home, doc: { root: { props: {} }, content: [heading] } }],
+      analytics: { measurementId: "G-ABC123DEF4", consentBanner: false },
+    },
+    NO_BANNER_SITE_DIR,
+  );
+  expect(pages).toContain("index.html");
 });
 
 setup("export every template, as a site made from it starts (3.10)", async () => {

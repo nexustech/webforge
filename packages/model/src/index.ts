@@ -37,12 +37,14 @@ export {
   bundledFileSchema,
   classNamesSchema,
   isNodeDoc,
+  isReservedAttributeName,
   LAYER_NAME_MAX,
   layoutDocSchema,
   nodeAdvancedSchema,
   nodeDocSchema,
   pageDocSchema,
   siteCodeSchema,
+  storedAdvancedSchema,
   themeSchema,
 } from "./documents.js";
 export type { ExportChoices } from "./export-choices.js";

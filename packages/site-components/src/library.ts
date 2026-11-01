@@ -9,12 +9,12 @@ import {
   type LinkValue,
   linkValueSchema,
   type NodeDoc,
-  nodeAdvancedSchema,
   parseColorRef,
   type Responsive,
   resolveResponsive,
   responsiveBoxOf,
   type SpacingToken,
+  storedAdvancedSchema,
   type TextStyle,
 } from "@webforge/model";
 import { cloneElement, isValidElement, type ReactNode } from "react";
@@ -513,7 +513,8 @@ export function withAdvanced(output: ReactNode, advanced: unknown): ReactNode {
   if (advanced === undefined || !isValidElement(output) || typeof output.type !== "string") {
     return output;
   }
-  const parsed = nodeAdvancedSchema.safeParse(advanced);
+  // As a file has them: an attribute only the export writes is left out (#650).
+  const parsed = storedAdvancedSchema.safeParse(advanced);
   if (!parsed.success) {
     return output;
   }

@@ -52,12 +52,22 @@ export type LayoutDoc = {
 export type Theme = ThemeTokens;
 
 /**
+ * Whether `name` is an attribute only the export writes (S3, #650): the site's scripts' own
+ * (`data-wf-*`, the consent banner's among them) and the banner's Measurement ID. One set on an
+ * element could stand in for the banner and count visitors in someone else's Google Analytics.
+ */
+export const isReservedAttributeName = (name: string): boolean =>
+  name.startsWith("data-wf-") || name === "data-measurement-id";
+
+/**
  * Attribute names Advanced mode accepts: `data-*`, `aria-*` and a few harmless global attributes.
- * An allow-list, so nothing can add event handlers, inline styles or `javascript:` URLs.
+ * An allow-list, so nothing can add event handlers, inline styles or `javascript:` URLs, nor any
+ * of the attributes only the export writes ({@link isReservedAttributeName}).
  */
 export const attributeNameSchema = z
   .string()
-  .regex(/^(?:data-[a-z0-9-]+|aria-[a-z]+|role|title|lang|dir|translate|tabindex)$/);
+  .regex(/^(?:data-[a-z0-9-]+|aria-[a-z]+|role|title|lang|dir|translate|tabindex)$/)
+  .refine((name) => !isReservedAttributeName(name));
 
 const CLASS_NAMES = /^(?:[\w:/.[\]%#-]+(?: [\w:/.[\]%#-]+)*)?$/;
 
@@ -72,6 +82,27 @@ export const nodeAdvancedSchema: z.ZodType<NodeAdvanced> = z.strictObject({
 });
 
 /**
+ * A node's Advanced-mode options as a file has them: {@link nodeAdvancedSchema}, once the
+ * attributes only the export writes are taken out. A site made before they were refused still
+ * opens, without them (#650).
+ */
+export const storedAdvancedSchema: z.ZodType<NodeAdvanced> = z.preprocess((advanced) => {
+  if (typeof advanced !== "object" || advanced === null || !("attributes" in advanced)) {
+    return advanced;
+  }
+  const { attributes } = advanced;
+  if (typeof attributes !== "object" || attributes === null || Array.isArray(attributes)) {
+    return advanced;
+  }
+  return {
+    ...advanced,
+    attributes: Object.fromEntries(
+      Object.entries(attributes).filter(([name]) => !isReservedAttributeName(name)),
+    ),
+  };
+}, nodeAdvancedSchema);
+
+/**
  * Whether `value` is a slot: an array in a node's props holding nodes (a Section's `content`). Any
  * object in it with `props` counts, so a broken node (`{ type: 5, props: null }`) can't pass as a
  * plain list item. A list field's items never have `props` (`defineComponent` refuses such a
@@ -82,8 +113,9 @@ const isSlot = (value: unknown): value is readonly unknown[] =>
   value.some((item) => typeof item === "object" && item !== null && "props" in item);
 
 /**
- * A node as files and IPC carry it, with every node in its slots at any depth (R14). Props are
- * component-specific beyond the common ones; the component's own fields are checked where it
+ * A node as files and IPC carry it, with every node in its slots at any depth (R14), each one as
+ * this schema gives it (its Advanced attributes as {@link storedAdvancedSchema} has them). Props
+ * are component-specific beyond the common ones; the component's own fields are checked where it
  * renders. Always used inside {@link withoutUnsafeKeys}, whose depth limit keeps this recursion
  * shallow.
  */
@@ -94,22 +126,27 @@ export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
       id: z.string().min(1),
       layerName: z.string().max(LAYER_NAME_MAX).optional(),
       hidden: z.boolean().optional(),
-      advanced: nodeAdvancedSchema.optional(),
+      advanced: storedAdvancedSchema.optional(),
     })
-    .superRefine((props, context) => {
-      for (const [key, value] of Object.entries(props)) {
-        if (!isSlot(value)) continue;
-        for (const [index, item] of value.entries()) {
+    .transform((props, context) => {
+      const slots = Object.entries(props).flatMap(([key, value]) => {
+        if (!isSlot(value)) return [];
+        const nodes = value.map((item, index) => {
           const node = nodeDocSchema.safeParse(item);
-          for (const issue of node.success ? [] : node.error.issues) {
-            context.addIssue({
+          if (node.success) return node.data;
+          for (const issue of node.error.issues) {
+            context.issues.push({
               code: "custom",
               message: issue.message,
               path: [key, index, ...issue.path],
+              input: item,
             });
           }
-        }
-      }
+          return item;
+        });
+        return [[key, nodes] as const];
+      });
+      return slots.length === 0 ? props : { ...props, ...Object.fromEntries(slots) };
     }),
 });
 

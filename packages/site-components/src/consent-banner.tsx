@@ -5,9 +5,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 /**
  * Google Analytics' consent banner (3.8, B4, B7), which the export adds after every page's Footer
  * when Site Settings have a Measurement ID. It carries the ID for the `consent` behaviour, which
- * loads Google's script only once the visitor accepts (or at once without the banner, the person's
- * choice), and never from disk. Hidden until the behaviour knows the visitor hasn't chosen yet,
- * so without JavaScript nothing shows and nothing is counted. In the theme's page colours.
+ * loads Google's script only once the visitor accepts (or at once, without cookies, when the person
+ * turned the banner off), and never from disk. Hidden until the behaviour knows the visitor hasn't
+ * chosen yet, so without JavaScript nothing shows and nothing is counted. In the theme's page
+ * colours.
  */
 function ConsentBanner({ analytics }: { readonly analytics: SiteAnalytics }) {
   return (

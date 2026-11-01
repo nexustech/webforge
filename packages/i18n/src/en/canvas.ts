@@ -236,6 +236,8 @@ export const canvas = {
   "editPanel.advanced.attributeNameInvalid":
     "Use data-…, aria-…, role, title, lang, dir, translate or tabindex",
   "editPanel.advanced.attributeNameTaken": "This element already has this attribute",
+  "editPanel.advanced.attributeNameReserved":
+    "{appName} writes this attribute itself in the exported site",
   "editPanel.advanced.attributeValueTooLong": "Use at most 1000 characters",
   // A repeating list in the Edit panel (F-ED-6); {item} is what one item is called.
   "editPanel.list.add": "Add {item}",

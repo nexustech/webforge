@@ -4,6 +4,7 @@ import {
   anchorIdSchema,
   attributeNameSchema,
   classNamesSchema,
+  isReservedAttributeName,
   type NodeAdvanced,
   nodeAdvancedSchema,
 } from "@webforge/model";
@@ -100,11 +101,13 @@ export function advancedFields(
           kind: "text",
           label: t("editPanel.advanced.attributeName"),
           validate: (value) =>
-            !attributeNameSchema.safeParse(value).success
-              ? t("editPanel.advanced.attributeNameInvalid")
-              : names.includes(value)
-                ? t("editPanel.advanced.attributeNameTaken")
-                : undefined,
+            isReservedAttributeName(value)
+              ? t("editPanel.advanced.attributeNameReserved")
+              : !attributeNameSchema.safeParse(value).success
+                ? t("editPanel.advanced.attributeNameInvalid")
+                : names.includes(value)
+                  ? t("editPanel.advanced.attributeNameTaken")
+                  : undefined,
         },
         {
           name: "value",

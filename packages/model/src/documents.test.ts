@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  attributeNameSchema,
   isNodeDoc,
   layoutDocSchema,
+  nodeAdvancedSchema,
   pageDocSchema,
   siteCodeSchema,
   themeSchema,
@@ -138,6 +140,71 @@ describe("node options", () => {
     ["an unknown option", { css: "x" }],
   ])("rejects %s", (_name, advanced) => {
     expect(pageDocSchema.safeParse(node({ advanced })).success).toBe(false);
+  });
+
+  it("refuses the attributes only the export writes, as Advanced mode would set them (#650)", () => {
+    for (const name of ["data-wf-consent", "data-wf-tabs", "data-measurement-id"]) {
+      expect(attributeNameSchema.safeParse(name).success).toBe(false);
+      expect(nodeAdvancedSchema.safeParse({ attributes: { [name]: "" } }).success).toBe(false);
+    }
+    expect(attributeNameSchema.safeParse("data-wfx").success).toBe(true);
+  });
+
+  it("opens a file that has them without them, at any depth, keeping the rest (#650)", () => {
+    const advanced = {
+      className: "mt-4",
+      attributes: {
+        "data-wf-consent": "",
+        "data-measurement-id": "G-ATTACKER1",
+        "data-track": "x",
+      },
+    };
+    const page = {
+      root: { props: {} },
+      content: [
+        {
+          type: "Section",
+          props: {
+            id: "s",
+            advanced,
+            content: [
+              {
+                type: "Columns",
+                props: { id: "c", left: [{ ...heading, props: { ...heading.props, advanced } }] },
+              },
+            ],
+          },
+        },
+      ],
+    };
+    const kept = { className: "mt-4", attributes: { "data-track": "x" } };
+
+    const parsed = pageDocSchema.parse(page);
+    const [section] = parsed.content;
+    const [columns] = (section?.props.content ?? []) as typeof parsed.content;
+    const [inner] = (columns?.props.left ?? []) as typeof parsed.content;
+    expect(section?.props.advanced).toEqual(kept);
+    expect(inner?.props.advanced).toEqual(kept);
+    expect(inner?.props.text).toBe("Hello");
+    // The document read is left as it was.
+    expect(page.content[0]?.props.advanced.attributes).toHaveProperty("data-wf-consent");
+  });
+
+  it("still names where a node deep in a slot is wrong", () => {
+    const result = pageDocSchema.safeParse({
+      root: { props: {} },
+      content: [{ type: "Section", props: { id: "s", content: [{ type: "Heading", props: {} }] } }],
+    });
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.path).toEqual([
+      "content",
+      0,
+      "props",
+      "content",
+      0,
+      "props",
+      "id",
+    ]);
   });
 });
 
