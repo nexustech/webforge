@@ -75,6 +75,14 @@ describe("commandHost (4.8)", () => {
     expect(siteWide.current()).toEqual(confirmation);
     siteWide.answer(true);
     expect(await allowed).toBe(true);
+    // Where a payment link goes now and would go is the question's description (S18).
+    const repointed = {
+      ...confirmation,
+      description: "Payment link: from a.example to b.example.",
+    };
+    void host.confirm(repointed, new AbortController().signal);
+    expect(siteWide.current()?.description).toBe(repointed.description);
+    siteWide.answer(false);
 
     const timeout = new AbortController();
     const unanswered = host.confirm(confirmation, timeout.signal);

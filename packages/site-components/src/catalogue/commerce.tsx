@@ -33,7 +33,12 @@ const buyButton = defineComponent({
     label: { kind: "text", label: t("field.buyLabel") },
     price: { kind: "text", label: t("field.price"), help: t("field.price.help") },
     image: { kind: "media", label: t("field.image") },
-    link: { kind: "text", label: t("field.paymentLink"), help: t("field.paymentLink.help") },
+    link: {
+      kind: "text",
+      label: t("field.paymentLink"),
+      help: t("field.paymentLink.help"),
+      sensitive: true,
+    },
     alignment: ALIGNMENT_FIELD,
     ...HOVER_FIELDS,
     margin: MARGIN_FIELD,

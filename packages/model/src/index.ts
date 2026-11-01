@@ -243,6 +243,7 @@ export {
   applySiteChanges,
   changedDocuments,
   pageDocumentId,
+  restoreSite,
   SITE_DOCUMENT_KINDS,
   siteDocumentChangeSchema,
   siteDocuments,

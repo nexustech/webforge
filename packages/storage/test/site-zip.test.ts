@@ -22,6 +22,8 @@ import {
   SiteZipError,
   sitePackageOf,
   siteZipEntries,
+  VERSION_REASONS,
+  type VersionReason,
   writeSiteZip,
 } from "../src/index.js";
 
@@ -37,7 +39,8 @@ const siteOf = (store: ProjectStore) => migrateSite(siteFromDocuments(store.read
  * its Media and the project's choices.
  */
 function contents(store: ProjectStore) {
-  const versions = store.listVersions().map((version) => ({
+  // Not the site format it was saved in: a ZIP holds each version migrated to the current one.
+  const versions = store.listVersions().map(({ siteFormat: _format, ...version }) => ({
     version,
     site: migrateSite(siteFromDocuments(store.readVersion(version.id) ?? [])),
   }));
@@ -74,7 +77,7 @@ type Plan = {
   readonly images: readonly { readonly bytes: Uint8Array; readonly name: string }[];
   /** A file kept with the site's code (3.9), named by its hash in the site's code only. */
   readonly bundled: Uint8Array | null;
-  readonly versions: readonly { readonly name: string; readonly kind: "manual" | "auto" }[];
+  readonly versions: readonly { readonly name: string; readonly reason: VersionReason }[];
   readonly content: boolean;
   readonly ignored: readonly string[];
 };
@@ -94,7 +97,7 @@ const planArbitrary: fc.Arbitrary<Plan> = fc.record({
   versions: fc.array(
     fc.record({
       name: fc.string({ maxLength: 30 }),
-      kind: fc.constantFrom("manual" as const, "auto" as const),
+      reason: fc.constantFrom(...VERSION_REASONS),
     }),
     { maxLength: 3 },
   ),
@@ -152,7 +155,7 @@ function projectFrom(plan: Plan): ProjectStore {
   }
   store.saveSite(site);
   plan.versions.forEach((version, index) => {
-    store.saveVersion(version.name, version.kind);
+    store.saveVersion(version.name, version.reason);
     const home = site.pages[site.homePageId];
     if (home !== undefined) home.title = `${home.title} ${index}`;
     store.saveSite(site);

@@ -4,12 +4,14 @@ import type { SiteDoc } from "@webforge/model";
 import type {} from "./web-globals.js";
 
 /**
- * The D7 confirmation an AI app's change to more than one page waits for, already translated: as
- * Webforge's site-wide question asks it.
+ * The D7 confirmation an AI app's change waits for, already translated, as Webforge's site-wide
+ * question asks it: a change to more than one page, or to where visitors' money or details go.
  */
 export type Confirmation = {
   /** The question, as the dialog's title: "Allow Claude to change the Header?". */
   readonly action: string;
+  /** More about it, before the pages it changes: "Payment link: from pay.example to …" (S18). */
+  readonly description?: string;
   /** The button that allows it: "Allow". */
   readonly confirm: string;
   /** How many pages it changes, which the dialog states. */

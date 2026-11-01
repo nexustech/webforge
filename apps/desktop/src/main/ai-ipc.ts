@@ -1,5 +1,6 @@
 import type { IpcMain } from "electron";
-import { type AiRequest, type AiResponse, aiEvents } from "../shared/ipc/ai.js";
+import { z } from "zod";
+import { type AiRequest, type AiResponse, aiEvents, aiRequestSchema } from "../shared/ipc/ai.js";
 import { registerIpcHandler } from "./ipc.js";
 
 /** How long a query waits for the renderer's answer. */
@@ -18,6 +19,17 @@ const RELOADED: AiResponse = {
 const NO_ANSWER: AiResponse = {
   status: "busy",
   message: "Webforge didn't answer in time: try again.",
+};
+
+/**
+ * The most requests that wait on the window at once (S21): one command per app, as each waits for
+ * the person, a few commands in all, and a few queries. The rest are answered `busy` at once.
+ */
+const MAX_WAITING = { commandsPerApp: 1, commands: 4, queries: 4 } as const;
+
+const TOO_MANY: AiResponse = {
+  status: "busy",
+  message: "Webforge is still answering earlier requests: wait for their answers, then ask again.",
 };
 
 /** The parts of the window an AI app's request goes to; a fake in tests. */
@@ -48,10 +60,12 @@ const E2E_AI_VARIABLE = "WEBFORGE_E2E_AI";
 /** Forwards AI apps' requests to the open site's window (F-AI-1); the MCP server (4.9) uses it. */
 export type AiBridge = {
   /**
-   * Sends `request` to the window and resolves with its answer. Nothing is logged of a request
-   * or its answer (architecture §9). With no site open, or no answer in time, it says so.
+   * Checks `request` against the contract and sends it to the window, resolving with its answer:
+   * `invalid` at once for a request outside the contract, `busy` at once while too many wait
+   * (S21). Nothing is logged of a request or its answer (architecture §9). With no site open, or
+   * no answer in time, it says so.
    */
-  ask(request: AiRequest): Promise<AiResponse>;
+  ask(request: unknown): Promise<AiResponse>;
 };
 
 /**
@@ -84,7 +98,23 @@ export function registerAiHandlers(
   site: AiSite,
   timeouts: { readonly queryMs?: number; readonly commandMs?: number } = {},
 ): AiBridge {
-  const waiting = new Map<number, (response: AiResponse) => void>();
+  /** Each request waiting on the window: how to settle it, and who asked (a command's app). */
+  const waiting = new Map<
+    number,
+    { readonly settle: (response: AiResponse) => void; readonly app: string | undefined }
+  >();
+  /** Whether one more `request` would wait past {@link MAX_WAITING}. */
+  const tooMany = (request: AiRequest) => {
+    const all = [...waiting.values()];
+    if (request.kind === "query") {
+      return all.filter(({ app }) => app === undefined).length >= MAX_WAITING.queries;
+    }
+    const commands = all.filter(({ app }) => app !== undefined);
+    return (
+      commands.length >= MAX_WAITING.commands ||
+      commands.filter(({ app }) => app === request.app).length >= MAX_WAITING.commandsPerApp
+    );
+  };
   // The opening of the site the window answers for, while it does.
   let listening: string | undefined;
   let nextId = 1;
@@ -96,12 +126,12 @@ export function registerAiHandlers(
     target.webContents.on("did-start-navigation", (details) => {
       if (!details.isMainFrame || details.isSameDocument) return;
       listening = undefined;
-      for (const settle of [...waiting.values()]) settle(RELOADED);
+      for (const { settle } of [...waiting.values()]) settle(RELOADED);
     });
   };
 
   registerIpcHandler(ipc, "aiAnswer", isTrustedSender, (id, response) => {
-    waiting.get(id)?.(response);
+    waiting.get(id)?.settle(response);
     return null;
   });
   registerIpcHandler(ipc, "aiListening", isTrustedSender, (sessionId, on) => {
@@ -115,7 +145,12 @@ export function registerAiHandlers(
   });
 
   return {
-    ask(request) {
+    ask(asked) {
+      const parsed = aiRequestSchema.safeParse(asked);
+      if (!parsed.success) {
+        return Promise.resolve({ status: "invalid", message: z.prettifyError(parsed.error) });
+      }
+      const request = parsed.data;
       const target = window();
       if (
         listening === undefined ||
@@ -125,6 +160,7 @@ export function registerAiHandlers(
       ) {
         return Promise.resolve(NO_SITE);
       }
+      if (tooMany(request)) return Promise.resolve(TOO_MANY);
       const timeoutMs =
         request.kind === "query"
           ? (timeouts.queryMs ?? QUERY_TIMEOUT_MS)
@@ -137,7 +173,7 @@ export function registerAiHandlers(
           resolve(response);
         };
         const timer = setTimeout(() => settle(NO_ANSWER), timeoutMs);
-        waiting.set(id, settle);
+        waiting.set(id, { settle, app: request.kind === "command" ? request.app : undefined });
         target.webContents.send(aiEvents.request.channel, id, request);
       });
     },

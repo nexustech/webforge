@@ -1,12 +1,12 @@
 import { mkdirSync, truncateSync, writeFileSync } from "node:fs";
 import { open } from "node:fs/promises";
 import { join } from "node:path";
-import { AssetWriter, ProjectStore } from "@webforge/storage";
+import { ProjectStore, SiteFileWriter } from "@webforge/storage";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
-import { createImportJobs, readAtMost } from "../worker/store-import.js";
+import { createWriterJobs, readAtMost } from "../worker/writer-jobs.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { ProjectSession } from "./project-session.js";
 import type { ImportFileResult, ImportSource } from "./site-media.js";
@@ -24,7 +24,12 @@ function setUp(chosen: readonly string[] | undefined, open = true) {
     handle: (channel: string, handler: Handler) => handlers.set(channel, handler),
   } as unknown as Pick<IpcMain, "handle">;
   // Reads and checks as the storage writer does; stores nowhere.
-  const jobs = createImportJobs(() => ({ put: () => "a".repeat(64), close: () => undefined }));
+  const jobs = createWriterJobs(() => ({
+    put: () => "a".repeat(64),
+    putBlobs: () => [],
+    cleanUp: () => ({ blobs: 0, bytes: 0, assets: 0, vacuumed: false }),
+    close: () => undefined,
+  }));
   const session = {
     current: vi.fn(() => (open ? { name: "Bakery" } : null)),
     staleReason: vi.fn((sessionId: string) =>
@@ -255,7 +260,7 @@ describe("registerMediaHandlers and a hand-off (R6)", () => {
     registerMediaHandlers(ipc, (url) => url === APP_URL, project, { chooseMediaFiles });
     // Nothing reaches the file, whichever way the bytes would be stored.
     const store = vi.spyOn(ProjectStore.prototype, "putAsset");
-    const write = vi.spyOn(AssetWriter.prototype, "put");
+    const write = vi.spyOn(SiteFileWriter.prototype, "put");
 
     const chosen = handlers.get("media:choose")?.(
       { senderFrame: { url: APP_URL } } as IpcMainInvokeEvent,

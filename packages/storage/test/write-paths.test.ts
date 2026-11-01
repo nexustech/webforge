@@ -24,8 +24,11 @@ const READERS = [
   "readSite",
   "hasBlob",
   "readBlob",
+  "readManifest",
   "listVersions",
   "readVersion",
+  "readVersionSite",
+  "versionSpace",
   "readAsset",
   "listAssets",
   "readEditorMode",
@@ -57,11 +60,23 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
       {
         id: "v-imported",
         name: "From a ZIP",
-        kind: "manual",
+        reason: "before-restore",
         createdAt: "2026-10-30T09:00:00.000Z",
       },
       [{ id: "theme", kind: "theme", content: { preset: "light" } }],
     ),
+  // The version addVersion added.
+  recordPublish: (store) =>
+    store.recordPublish("v-imported", {
+      destinationId: "d1",
+      publishedAt: "2026-10-30T10:00:00.000Z",
+      check: "live",
+    }),
+  deleteVersion: (store) => store.deleteVersion("v-imported"),
+  pruneAutoVersions: (store) => {
+    store.saveVersion("Daily", "daily");
+    return store.pruneAutoVersions(0);
+  },
   writeEditorMode: (store) => store.writeEditorMode("content"),
   writeExportChoices: (store) => store.writeExportChoices(DEFAULT_EXPORT_CHOICES),
   writeSiteCheckIgnored: (store) => store.writeSiteCheckIgnored(["brokenLinks:a"]),
@@ -121,7 +136,10 @@ describe("ProjectStore's writes (#295)", () => {
     const source = readFileSync(new URL("../src/project-store.ts", import.meta.url), "utf8");
 
     // `create` and the format migrations stamp in their own transactions, before a store exists.
-    expect(source.match(/this\.#db\.transaction\(/g)).toHaveLength(1);
-    expect(source).toMatch(/#write<T>\(change: \(\) => T\): T \{[^}]*this\.#db\.transaction\(/);
+    expect(source.match(/this\.#db\.transaction\(/g)).toBeNull();
+    expect(source.match(/stamped\(/g)).toHaveLength(1);
+    expect(source).toMatch(
+      /#write<T>\(change: \(\) => T\): T \{[^}]*stamped\(this\.#db, \(\) => \{/,
+    );
   });
 });

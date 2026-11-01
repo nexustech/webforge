@@ -32,13 +32,14 @@ export type SiteStore = {
    */
   readonly writer: Pick<StorageWriter, "prepare" | "discard">;
   /**
-   * Runs `work` with the open site's file and the writer's `store` on the gate's exclusive side, as
+   * Runs `work` with the open site's file and the writer's writes on the gate's exclusive side, as
    * the storage writer's turn: a close that can wait no longer stops the writer first (R13b).
-   * `none` as for {@link withStore}.
+   * `none` as for {@link withStore}, and `read-only` for a site the store can't write (the writer
+   * writes through a connection of its own, which doesn't know).
    */
   writerTurn<T>(
-    work: (path: string, store: StorageWriter["store"]) => Promise<T>,
-    none: (reason: StaleReason) => T,
+    work: (path: string, writer: Pick<StorageWriter, "store" | "putBlobs">) => Promise<T>,
+    none: (reason: StaleReason | "read-only") => T,
   ): Promise<T>;
 };
 

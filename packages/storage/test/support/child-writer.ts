@@ -14,11 +14,11 @@ export type ChildWriter = {
 
 /**
  * What a child writer does: commit in a loop (`writer.ts`), or import as the storage writer does
- * (`asset-writer.ts`, R13b).
+ * (`site-file-writer.ts`, R13b).
  */
 const SCRIPTS = {
   commits: new URL("./writer.ts", import.meta.url),
-  imports: new URL("./asset-writer.ts", import.meta.url),
+  imports: new URL("./site-file-writer.ts", import.meta.url),
 };
 
 /**
