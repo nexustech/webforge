@@ -2,7 +2,7 @@ import { z } from "zod";
 import { isNodeDoc, type NodeDoc, nodeDocSchema, withoutUnsafeKeys } from "./documents.js";
 import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
 import { type MediaMeta, mediaMetaSchema } from "./media.js";
-import { MIGRATIONS, migrateSiteWith, type RawSite } from "./migrations.js";
+import { MIGRATIONS, type MigrateOptions, migrateSiteWith, type RawSite } from "./migrations.js";
 import { SITE_FORMAT_VERSION } from "./site-doc.js";
 
 /**
@@ -63,17 +63,21 @@ export type ReadClipboardPayload =
  * The copied elements in `raw`, read from the system clipboard, where any program can put data in
  * Webforge's format: brought from the format they were copied in up to this build's, through the
  * site migration chain (ADR 0012), then validated. Elements copied in a newer build are refused.
+ * Never throws. `chain` is this build's, unless a test gives another.
  */
-export function readClipboardPayload(raw: unknown): ReadClipboardPayload {
+export function readClipboardPayload(
+  raw: unknown,
+  chain: MigrateOptions = { migrations: MIGRATIONS, currentVersion: SITE_FORMAT_VERSION },
+): ReadClipboardPayload {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { status: "invalid" };
   const { formatVersion, ...rest } = raw as Record<string, unknown>;
   const version = formatVersion ?? UNVERSIONED_FORMAT;
   if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
     return { status: "invalid" };
   }
-  if (version > SITE_FORMAT_VERSION) return { status: "newer-format" };
+  if (version > chain.currentVersion) return { status: "newer-format" };
   const parsed = copiedElementsSchema.safeParse(
-    version === SITE_FORMAT_VERSION ? rest : migratedElements(rest, version),
+    version === chain.currentVersion ? rest : migratedElements(rest, version, chain),
   );
   return parsed.success ? { status: "elements", elements: parsed.data } : { status: "invalid" };
 }
@@ -86,7 +90,11 @@ const CARRIED_PAGE = "clipboard";
  * holding nothing else, and its Media items as that site's, migrated as a site would be. `null`
  * when the chain can't take them; validating then refuses it.
  */
-function migratedElements(copied: Record<string, unknown>, version: number): unknown {
+function migratedElements(
+  copied: Record<string, unknown>,
+  version: number,
+  chain: MigrateOptions,
+): unknown {
   const { nodes, media, ...rest } = copied;
   if (!Array.isArray(nodes) || !Array.isArray(media)) return null;
   const items = media.filter(
@@ -99,23 +107,21 @@ function migratedElements(copied: Record<string, unknown>, version: number): unk
     layout: { header: [], footer: [] },
     media: Object.fromEntries(items.map((item) => [item.id, item])),
   };
-  let migrated: RawSite;
   try {
-    migrated = migrateSiteWith(carrier, {
-      migrations: MIGRATIONS,
-      currentVersion: SITE_FORMAT_VERSION,
-    });
+    const migrated = migrateSiteWith(carrier, chain);
+    // What the chain left of the carrier, read as untrusted as what went in.
+    const page = isRecord(migrated.pages) ? migrated.pages[CARRIED_PAGE] : undefined;
+    const doc = isRecord(page) ? page.doc : undefined;
+    if (!isRecord(doc) || !isRecord(migrated.media)) return null;
+    return { ...rest, nodes: doc.content, media: Object.values(migrated.media) };
   } catch {
     // Anything the chain can't take, as `migrateSite` treats it: not elements to paste.
     return null;
   }
-  const pages = migrated.pages as Record<string, { doc: { content: unknown } }>;
-  return {
-    ...rest,
-    nodes: pages[CARRIED_PAGE]?.doc.content,
-    media: Object.values(migrated.media as Record<string, unknown>),
-  };
 }
+
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Copies of `nodes` to paste: every element in them, slots included, gets a new id. A section

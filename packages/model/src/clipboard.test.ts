@@ -9,6 +9,7 @@ import {
 import type { NodeDoc } from "./documents.js";
 import type { MediaId } from "./ids.js";
 import type { MediaMeta } from "./media.js";
+import type { RawSite } from "./migrations.js";
 import { SITE_FORMAT_VERSION } from "./site-doc.js";
 
 const section: NodeDoc = {
@@ -189,6 +190,37 @@ describe("copied elements across builds (ADR 0012)", () => {
   it("takes elements copied before the clipboard named a format as format 12", () => {
     const read = readClipboardPayload({ nodes: [section], media: [] });
     expect(read).toEqual({ status: "elements", elements: { nodes: [section], media: [] } });
+  });
+
+  it("reads as invalid whatever a step leaves of the carrier, never throwing", () => {
+    const copied = { formatVersion: 1, nodes: [section], media: [photo] };
+    // Steps that drop the page's document, drop Media, or throw.
+    const leaving = (change: (site: RawSite) => RawSite) => ({
+      migrations: { 1: (site: RawSite) => ({ ...change(site), formatVersion: 2 }) },
+      currentVersion: 2,
+    });
+    const chains = [
+      leaving((site) => ({ ...site, pages: { clipboard: {} } })),
+      leaving((site) => ({ ...site, pages: "none" })),
+      leaving(({ media: _media, ...site }) => ({ ...site, formatVersion: 1 })),
+      leaving(() => {
+        throw new Error("a step's bug");
+      }),
+    ];
+
+    for (const chain of chains) {
+      expect(readClipboardPayload(copied, chain)).toEqual({ status: "invalid" });
+    }
+    // The same through a chain that keeps it: the elements, as they were.
+    expect(
+      readClipboardPayload(
+        copied,
+        leaving((site) => site),
+      ),
+    ).toEqual({
+      status: "elements",
+      elements: { nodes: [section], media: [photo] },
+    });
   });
 
   it("refuses elements copied in a newer build, and anything that isn't elements", () => {
