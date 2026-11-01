@@ -1,5 +1,5 @@
-import { createHistoryManager } from "@webforge/history";
 import fc from "fast-check";
+import { applyPatches, enablePatches, produceWithPatches } from "immer";
 import { describe, expect, it } from "vitest";
 import { siteDocArbitrary } from "../test/arbitraries.js";
 import type { PageId } from "./ids.js";
@@ -7,28 +7,30 @@ import type { SiteDoc } from "./site-doc.js";
 import { changedDocuments, pageDocumentId, restoreSite } from "./site-documents.js";
 
 // restoreSite (#664, for 4.6's Restore): a version replaces the site in one history step, and only
-// the documents that differ change.
+// the documents that differ change. The step is made as the history makes one (Immer, with its
+// patches); the editor's own test of a restore is in page-updated.test.ts.
+
+enablePatches();
 
 /** A copy of `value`, as the file gives a version back: JSON. */
 const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-/** `site` in a history, restored to `target` in one step. */
+/** `site` restored to `target` in one step, as the history records it: the site after, and Undo. */
 function restored(site: SiteDoc, target: SiteDoc) {
-  const history = createHistoryManager({ initial: site });
-  history.run("Restored version", (draft) => restoreSite(draft, target));
-  return history;
+  const [after, forward, inverse] = produceWithPatches(site, (draft) => {
+    restoreSite(draft, target);
+  });
+  return { after, changed: forward.length > 0, undo: () => applyPatches(after, inverse) };
 }
 
 describe("restoreSite (#664)", () => {
-  it("gives the version, as one undo step that Undo takes back whole", () => {
+  it("gives the version in one step, which Undo takes back whole", () => {
     fc.assert(
       fc.property(siteDocArbitrary, siteDocArbitrary, (site, version) => {
-        const history = restored(site, version);
-        expect(history.document.getState()).toEqual(version);
-        expect(history.state.getState().entries.length).toBeLessThanOrEqual(1);
+        const restore = restored(site, version);
+        expect(restore.after).toEqual(version);
 
-        history.undo();
-        expect(history.document.getState()).toEqual(site);
+        expect(restore.undo()).toEqual(site);
       }),
     );
   });
@@ -42,10 +44,9 @@ describe("restoreSite (#664)", () => {
         const version = copy(site);
         version.pages[id] = { ...copy(page), title: `${page.title} (before)` };
 
-        const history = restored(site, version);
-        const after = history.document.getState();
+        const { after, changed } = restored(site, version);
 
-        expect(history.state.getState().entries).toHaveLength(1);
+        expect(changed).toBe(true);
         expect(changedDocuments(site, after)).toEqual([
           { type: "put", id: pageDocumentId(id), kind: "page", content: after.pages[id] },
         ]);
@@ -59,10 +60,11 @@ describe("restoreSite (#664)", () => {
       fc.property(siteDocArbitrary, (site) => {
         // A version read back from the file: the same JSON, its keys in the order it was parsed.
         const { settings, ...rest } = copy(site);
-        const history = restored(site, { settings, ...rest });
+        const restore = restored(site, { settings, ...rest });
 
-        expect(history.state.getState().entries).toEqual([]);
-        expect(history.document.getState()).toBe(site);
+        // No step at all: the history records none.
+        expect(restore.changed).toBe(false);
+        expect(restore.after).toBe(site);
       }),
     );
   });
