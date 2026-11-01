@@ -15,15 +15,29 @@ import {
 } from "@webforge/model";
 import Database from "better-sqlite3";
 import { z } from "zod";
+import {
+  collectGarbage,
+  decodeDocument,
+  type GarbageReport,
+  type JsonValue,
+  type Manifest,
+  parseDocument,
+  parseManifest,
+  type VersionSpace,
+  versionSpace,
+} from "./blob-reach.js";
 import { configureWrites, connect, INSERT_BLOB, sha256, UPSERT_ASSET } from "./connection.js";
-import { checkContent, stampContent } from "./content-check.js";
+import { checkContent, stampContent, stamped } from "./content-check.js";
 import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
-import { APPLICATION_ID, FORMAT_VERSION, SCHEMA, SCHEMA_MIGRATIONS, SCHEMAS } from "./schema.js";
-
-const jsonValueSchema = z.json();
-
-/** A JSON value as stored in a document. */
-export type JsonValue = z.infer<typeof jsonValueSchema>;
+import {
+  APPLICATION_ID,
+  FORMAT_VERSION,
+  SCHEMA,
+  SCHEMA_MIGRATIONS,
+  SCHEMAS,
+  V1_REASON,
+  V1_SITE_FORMAT,
+} from "./schema.js";
 
 /** One document of the working copy, e.g. a page, the header or the theme. */
 export type StoredDocument = {
@@ -51,6 +65,43 @@ export type StoredBlob = {
 export type VersionKind = "manual" | "auto";
 
 /**
+ * Why a version was saved (storage format 2, for 4.6): the person saved it (`manual`), or Webforge
+ * did, once a day, before a restore, before a change to every page, or as the site went live.
+ * Only `manual` ones are the person's: pruning never deletes them.
+ */
+export const VERSION_REASONS = [
+  "manual",
+  "daily",
+  "before-restore",
+  "before-site-wide",
+  "on-publish",
+] as const;
+
+/** See {@link VERSION_REASONS}. */
+export type VersionReason = (typeof VERSION_REASONS)[number];
+
+/** Who saves a version for `reason`. */
+const kindOf = (reason: VersionReason): VersionKind => (reason === "manual" ? "manual" : "auto");
+
+/**
+ * Where a version was published, and what the live check found then (ADR 0018 §3): the last time,
+ * when it has been republished.
+ */
+export const versionPublishSchema = z.strictObject({
+  /** The site's publish destination (ADR 0018 §2). */
+  destinationId: z.string().min(1).max(100),
+  /** ISO 8601 timestamp (UTC). */
+  publishedAt: z.iso.datetime(),
+  /** The live check's answer (`@webforge/publish`'s `Verification`). */
+  check: z.enum(["live", "different", "unreachable", "unchecked"]),
+  /** The publisher's own name for what went live, such as Netlify's deploy id. */
+  deploy: z.string().min(1).max(200).optional(),
+});
+
+/** See {@link versionPublishSchema}. */
+export type VersionPublish = z.infer<typeof versionPublishSchema>;
+
+/**
  * The editor's mode for a site (M3, 1.10): Design changes the layout, Content edits text and
  * images only. Remembered per site, but UI state: not part of the site, never versioned or undone.
  */
@@ -62,9 +113,35 @@ const siteEditorModeSchema = z.enum(["design", "content"]);
 export type VersionInfo = {
   readonly id: string;
   readonly name: string;
+  /** Who saved it, which follows from why. */
   readonly kind: VersionKind;
+  readonly reason: VersionReason;
   /** ISO 8601 timestamp (UTC). */
   readonly createdAt: string;
+  /** The site format its documents were saved in: {@link ProjectStore.readVersionSite} migrates. */
+  readonly siteFormat: number;
+  /** The SHA-256 of its picture, a blob, if it has one. */
+  readonly thumbnailHash: string | undefined;
+  readonly publishedTo: VersionPublish | undefined;
+};
+
+/** What {@link ProjectStore.addVersion} takes: a version as another project has it. */
+export type NewVersion = Pick<VersionInfo, "id" | "name" | "reason" | "createdAt">;
+
+/**
+ * The working copy's documents as a version holds them, each one's id, kind and blob, from
+ * {@link ProjectStore.readManifest}: what a publish builds is saved once it has gone live, from
+ * the documents it read when it started (ADR 0018 §3).
+ */
+export type VersionManifest = Manifest["documents"];
+
+/** What {@link ProjectStore.saveVersion} saves, besides a name and a reason. */
+export type SaveVersionOptions = {
+  /** Its documents, as {@link ProjectStore.readManifest} read them; the working copy's by default. */
+  readonly documents?: VersionManifest;
+  /** The SHA-256 of a blob holding its picture. */
+  readonly thumbnailHash?: string;
+  readonly publishedTo?: VersionPublish;
 };
 
 /** What {@link ProjectStore.putAsset} stores: an imported file's original bytes and facts. */
@@ -91,18 +168,15 @@ export type AssetInfo = {
   readonly originalName: string;
 };
 
-/** What {@link ProjectStore.collectGarbage} removed. */
-export type GarbageReport = {
-  readonly blobs: number;
-  readonly bytes: number;
-  readonly assets: number;
-};
-
 /** Facts about an open project. */
 export type ProjectInfo = {
   readonly projectId: string;
   /** Site name chosen when the project was created. */
   readonly name: string;
+  /**
+   * The storage format the file is in: an older one stays as it is until the first write, which
+   * brings it to {@link FORMAT_VERSION}.
+   */
   readonly formatVersion: number;
   /** ISO 8601 timestamp (UTC). */
   readonly createdAt: string;
@@ -125,7 +199,6 @@ export type CreateProjectOptions = {
 };
 
 const JSON_MIME = "application/json";
-const utf8 = new TextDecoder("utf-8", { fatal: true });
 
 const metaSchema = z.strictObject({
   format_version: z
@@ -143,19 +216,6 @@ const metaSchema = z.strictObject({
   site_check_ignored: z.string().optional(),
 });
 
-/** A version's documents in `readDocuments` order. An array, so any id (even "__proto__") works. */
-const manifestSchema = z.strictObject({
-  documents: z.array(
-    z.strictObject({
-      id: z.string().min(1),
-      kind: z.string().min(1),
-      hash: z.string().regex(/^[0-9a-f]{64}$/),
-    }),
-  ),
-});
-
-type Manifest = z.infer<typeof manifestSchema>;
-
 const schemaRowSchema = z.object({
   type: z.string(),
   name: z.string(),
@@ -169,8 +229,62 @@ const versionRowSchema = z.object({
   id: z.string(),
   name: z.string(),
   kind: z.enum(["manual", "auto"]),
+  reason: z.string(),
   created_at: z.string(),
+  site_format: z.number(),
+  thumbnail_hash: z.string().nullable(),
+  published_to: z.string().nullable(),
 });
+
+/** A version's row as {@link VERSION_COLUMNS} reads it. */
+function toVersionInfo(row: unknown): VersionInfo {
+  const version = versionRowSchema.parse(row);
+  // A newer Webforge may save for a reason this one doesn't know: who saved it is still known.
+  const reason = z.enum(VERSION_REASONS).safeParse(version.reason);
+  return {
+    id: version.id,
+    name: version.name,
+    kind: version.kind,
+    reason: reason.success ? reason.data : version.kind === "manual" ? "manual" : "daily",
+    createdAt: version.created_at,
+    siteFormat: version.site_format,
+    thumbnailHash: version.thumbnail_hash ?? undefined,
+    publishedTo: publishOf(version.published_to),
+  };
+}
+
+/** What a version's `published_to` says, if it says it: a fact to show, never one to fail on. */
+function publishOf(text: string | null): VersionPublish | undefined {
+  if (text === null) return undefined;
+  try {
+    const parsed = versionPublishSchema.safeParse(JSON.parse(text));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The columns a version is read from: by name, so a newer format's added ones are never read. A
+ * format 1 file, opened read-only, says why and in which site format as its migration would.
+ */
+const VERSION_COLUMNS = (format: number) =>
+  format >= 2
+    ? "id, name, kind, reason, created_at, site_format, thumbnail_hash, published_to"
+    : `id, name, kind, ${V1_REASON} AS reason, created_at, ${V1_SITE_FORMAT} AS site_format,
+       NULL AS thumbnail_hash, NULL AS published_to`;
+
+/** The site format `documents`' `site` document records, or 1 when it records none. */
+function siteFormatOf(
+  documents: Iterable<{ readonly id: string; readonly content: unknown }>,
+): number {
+  for (const { id, content } of documents) {
+    if (id !== "site") continue;
+    const site = z.object({ formatVersion: z.int().positive() }).safeParse(content);
+    return site.success ? site.data.formatVersion : 1;
+  }
+  return 1;
+}
 
 const assetRowSchema = z.object({
   media_id: z.string(),
@@ -196,63 +310,6 @@ function toAssetInfo(row: unknown): AssetInfo {
     height: asset.height ?? undefined,
     originalName: asset.original_name,
   };
-}
-
-/**
- * Adds every string in `value` that looks like a blob hash to `into`. Deliberately generous: a
- * document only has to mention a hash anywhere (media metadata, a future field) to keep its blob,
- * so garbage collection can only ever keep too much, never remove a blob something uses.
- */
-function collectHashes(value: unknown, into: Set<string>): void {
-  // Iterative: a document nested very deeply (a crafted file) can't overflow the stack (R14).
-  const pending: unknown[] = [value];
-  while (pending.length > 0) {
-    const item = pending.pop();
-    if (typeof item === "string") {
-      if (HASH.test(item)) into.add(item);
-    } else if (Array.isArray(item)) {
-      for (const each of item) pending.push(each);
-    } else if (typeof item === "object" && item !== null) {
-      for (const each of Object.values(item)) pending.push(each);
-    }
-  }
-}
-
-/** A document's JSON text, parsed and checked. */
-function parseDocument(text: string): JsonValue {
-  try {
-    return jsonValueSchema.parse(JSON.parse(text));
-  } catch (error) {
-    throw new ProjectFileError("corrupt", "A document is not valid JSON", { cause: error });
-  }
-}
-
-/** A hash as a JSON string, in a document's text. */
-const QUOTED_HASH = /"([0-9a-f]{64})"/g;
-
-/**
- * Adds every hash the JSON text `json` names to `into`, as {@link collectHashes} does for its
- * parsed value, but from the text: garbage collection reads every document the working copy and
- * the versions store, and scanning their text takes about half the time of parsing them (#661).
- * The scan is more generous than the walk, never less: it also counts a hash used as a key. Only a
- * `\u` escape can hide a hash from it, and `JSON.stringify` never writes one for a hash's letters
- * and digits, so a document with one (a crafted file) is walked as well.
- */
-function collectHashesFromJson(json: string, into: Set<string>): void {
-  for (const [, hash] of json.matchAll(QUOTED_HASH)) {
-    if (hash !== undefined) into.add(hash);
-  }
-  if (json.includes("\\u")) collectHashes(parseDocument(json), into);
-}
-
-/**
- * The blobs `documents` reach: every hash their content names, such as a Media item's original or
- * a bundled file (3.9). Garbage collection keeps these, and a site package carries them (A26).
- */
-export function reachableBlobs(documents: Iterable<{ readonly content: unknown }>): Set<string> {
-  const reached = new Set<string>();
-  for (const { content } of documents) collectHashes(content, reached);
-  return reached;
 }
 
 /** The `sqlite_schema` rows of a database, in a stable order, for comparison. */
@@ -455,25 +512,21 @@ function validateProject(db: Database.Database): ValidatedProject {
 }
 
 /**
- * Brings an older file's tables up to {@link FORMAT_VERSION}, one format at a time, in one
- * transaction: after a crash the file is either fully migrated or untouched.
+ * Brings an older file's tables up to {@link FORMAT_VERSION}, one format at a time, inside the
+ * transaction of the first write to it (see `ProjectStore.#write`): after a crash the file is
+ * either fully migrated, with that write, or untouched.
  */
 function migrateSchema(db: Database.Database, from: number): void {
-  db.transaction(() => {
-    for (let version = from; version < FORMAT_VERSION; version += 1) {
-      const step = SCHEMA_MIGRATIONS[version];
-      if (step === undefined) {
-        throw new ProjectFileError("unexpected-schema", `No migration from format ${version}`);
-      }
-      for (const statement of step) {
-        db.exec(statement);
-      }
+  for (let version = from; version < FORMAT_VERSION; version += 1) {
+    const step = SCHEMA_MIGRATIONS[version];
+    if (step === undefined) {
+      throw new ProjectFileError("unexpected-schema", `No migration from format ${version}`);
     }
-    db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(
-      String(FORMAT_VERSION),
-    );
-    stampContent(db);
-  })();
+    for (const statement of step) {
+      db.exec(statement);
+    }
+  }
+  db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(String(FORMAT_VERSION));
 }
 
 /**
@@ -485,7 +538,7 @@ function migrateSchema(db: Database.Database, from: number): void {
  */
 export class ProjectStore {
   readonly #db: Database.Database;
-  readonly #info: ProjectInfo;
+  #info: ProjectInfo;
   /** Prepared statements by SQL text, compiled once per connection. */
   readonly #statements = new Map<string, Database.Statement>();
   /**
@@ -543,8 +596,9 @@ export class ProjectStore {
    * application id, pass SQLite's quick check, have exactly the tables of its format version and
    * valid metadata. Otherwise this throws a {@link ProjectFileError} and leaves the file untouched.
    *
-   * An older format is migrated to {@link FORMAT_VERSION} first (unless opened read-only). A file
-   * from a newer Webforge opens read-only, with `info.newerFormat` set, instead of failing.
+   * An older format is read as it is, and migrated to {@link FORMAT_VERSION} by the first write
+   * (never when opened read-only), so a file opened and closed unedited stays as it was (R14). A
+   * file from a newer Webforge opens read-only, with `info.newerFormat` set, instead of failing.
    */
   static open(path: string, options: OpenProjectOptions = {}): ProjectStore {
     if (!existsSync(path)) {
@@ -562,11 +616,6 @@ export class ProjectStore {
         return new ProjectStore(db, { ...validated, readOnly });
       }
       configureWrites(db);
-      if (validated.formatVersion < FORMAT_VERSION) {
-        migrateSchema(db, validated.formatVersion);
-        // The migration checked nothing new about the file; only its version changed.
-        return new ProjectStore(db, { ...validated, formatVersion: FORMAT_VERSION, readOnly });
-      }
       return new ProjectStore(db, { ...validated, readOnly });
     } catch (error) {
       if (db.open) db.close();
@@ -706,77 +755,147 @@ export class ProjectStore {
   }
 
   /**
-   * Saves the working copy as a version. Versions share unchanged content with the working copy
-   * and with each other, so saving one only writes a small manifest.
+   * The working copy's documents as a version would hold them: each one's id, kind and blob,
+   * sorted by id. {@link saveVersion} saves them later, as long as the site stays open: garbage
+   * collection runs only as it closes, so their blobs stay in the file until then.
    */
-  saveVersion(name: string, kind: VersionKind): VersionInfo {
-    const documents: Manifest["documents"] = this.#prepare(
-      "SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id",
-    )
+  readManifest(): VersionManifest {
+    return this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id")
       .all()
       .map((row) => documentRowSchema.parse(row));
+  }
+
+  /**
+   * Saves the working copy as a version, or the documents {@link readManifest} read earlier.
+   * Versions share unchanged content with the working copy and with each other, so saving one
+   * only writes a small manifest. Throws when a document's blob has gone from the file.
+   */
+  saveVersion(name: string, reason: VersionReason, options: SaveVersionOptions = {}): VersionInfo {
+    const documents = options.documents ?? this.readManifest();
+    if (documents.some(({ hash }) => !this.hasBlob(hash))) {
+      throw new Error("A document of the version is no longer in the file");
+    }
+    const site = documents.find(({ id }) => id === "site");
     const version: VersionInfo = {
       id: randomUUID(),
       name,
-      kind,
+      kind: kindOf(reason),
+      reason,
       createdAt: new Date().toISOString(),
+      siteFormat: siteFormatOf(
+        site === undefined ? [] : [{ id: site.id, content: this.#readJsonBlob(site.hash) }],
+      ),
+      thumbnailHash: options.thumbnailHash,
+      publishedTo: options.publishedTo,
     };
-    this.#write(() => {
-      this.#prepare(
-        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-      ).run(
-        version.id,
-        version.name,
-        version.kind,
-        version.createdAt,
-        FORMAT_VERSION,
-        JSON.stringify({ documents }),
-      );
-    });
+    this.#write(() => this.#insertVersion(version, documents));
     return version;
   }
 
   /**
-   * Adds a saved version as it was in another project, with its own id, name, kind and time and
+   * Adds a saved version as it was in another project, with its own id, name, reason and time and
    * its documents: a version brought in from a site's ZIP (4.7). It goes after the versions this
    * project has, so add them oldest first.
    */
   addVersion(
-    version: VersionInfo,
+    version: NewVersion,
     documents: readonly { readonly id: string; readonly kind: string; readonly content: unknown }[],
   ): void {
     this.#write(() => {
-      // Sorted by id, as saveVersion lists them.
-      const manifest: Manifest["documents"] = [...documents]
+      // Sorted by id, as readManifest lists them.
+      const manifest: VersionManifest = [...documents]
         .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
         .map(({ id, kind, content }) => ({
           id,
           kind,
           hash: this.#insertBlob(Buffer.from(JSON.stringify(content), "utf8"), JSON_MIME),
         }));
-      this.#prepare(
-        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest)
-           VALUES (?, ?, ?, ?, ?, ?)`,
-      ).run(
-        version.id,
-        version.name,
-        version.kind,
-        version.createdAt,
-        FORMAT_VERSION,
-        JSON.stringify({ documents: manifest }),
+      this.#insertVersion(
+        {
+          ...version,
+          kind: kindOf(version.reason),
+          siteFormat: siteFormatOf(documents),
+          thumbnailHash: undefined,
+          publishedTo: undefined,
+        },
+        manifest,
       );
     });
   }
 
+  #insertVersion(version: VersionInfo, documents: VersionManifest): void {
+    this.#prepare(
+      `INSERT INTO versions (id, name, kind, created_at, format_version, manifest, reason,
+         site_format, thumbnail_hash, published_to)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ).run(
+      version.id,
+      version.name,
+      version.kind,
+      version.createdAt,
+      FORMAT_VERSION,
+      JSON.stringify({ documents }),
+      version.reason,
+      version.siteFormat,
+      version.thumbnailHash ?? null,
+      version.publishedTo === undefined
+        ? null
+        : JSON.stringify(versionPublishSchema.parse(version.publishedTo)),
+    );
+  }
+
+  /**
+   * Records where version `id` was published and what the live check found (ADR 0018 §3), as a
+   * republish of it finishes. Gives whether there is such a version.
+   */
+  recordPublish(id: string, publishedTo: VersionPublish): boolean {
+    const text = JSON.stringify(versionPublishSchema.parse(publishedTo));
+    return this.#write(
+      () =>
+        this.#prepare("UPDATE versions SET published_to = ? WHERE id = ?").run(text, id).changes >
+        0,
+    );
+  }
+
+  /**
+   * Deletes version `id`, and gives whether there was one. The space it alone kept is freed once
+   * the site closes and its file is cleaned up.
+   */
+  deleteVersion(id: string): boolean {
+    return this.#write(
+      () => this.#prepare("DELETE FROM versions WHERE id = ?").run(id).changes > 0,
+    );
+  }
+
+  /**
+   * Deletes all but the newest `keep` of the versions Webforge saved (P3), and gives how many it
+   * deleted. The person's own versions are never deleted.
+   */
+  pruneAutoVersions(keep: number): number {
+    const kept = z.int().nonnegative().parse(keep);
+    return this.#write(
+      () =>
+        this.#prepare(
+          `DELETE FROM versions WHERE kind = 'auto' AND rowid NOT IN (
+             SELECT rowid FROM versions WHERE kind = 'auto' ORDER BY rowid DESC LIMIT ?
+           )`,
+        ).run(kept).changes,
+    );
+  }
+
+  /** How much of the file the versions take, all of them and each alone (4.6). */
+  versionSpace(): VersionSpace {
+    return versionSpace(this.#db);
+  }
+
   /** Saved versions, newest first. */
   listVersions(): VersionInfo[] {
-    return this.#prepare("SELECT id, name, kind, created_at FROM versions ORDER BY rowid DESC")
+    return this.#prepare(
+      `SELECT ${VERSION_COLUMNS(this.#info.formatVersion)} FROM versions AS versions_v1
+       ORDER BY rowid DESC`,
+    )
       .all()
-      .map((row) => {
-        const { id, name, kind, created_at } = versionRowSchema.parse(row);
-        return { id, name, kind, createdAt: created_at };
-      });
+      .map(toVersionInfo);
   }
 
   /** The documents of a saved version sorted by id, or `undefined` if there is no such version. */
@@ -786,11 +905,22 @@ export class ProjectStore {
       return undefined;
     }
     const { manifest } = z.object({ manifest: z.string() }).parse(row);
-    return this.#parseManifest(manifest).documents.map(({ id: documentId, kind, hash }) => ({
+    return parseManifest(manifest).documents.map(({ id: documentId, kind, hash }) => ({
       id: documentId,
       kind,
       content: this.#readJsonBlob(hash),
     }));
+  }
+
+  /**
+   * The site saved as version `id`, migrated to the current site format and validated as
+   * {@link readSite}'s is, or `undefined` if there is no such version: what Restore and Republish
+   * (4.6) take. Throws `SiteFormatError` from `@webforge/model` for an invalid site or a newer
+   * site format.
+   */
+  readVersionSite(id: string): SiteDoc | undefined {
+    const documents = this.readVersion(id);
+    return documents === undefined ? undefined : migrateSite(siteFromDocuments(documents));
   }
 
   /**
@@ -837,47 +967,20 @@ export class ProjectStore {
 
   /**
    * Deletes blobs nothing refers to any more, and the assets that point at them (06: "garbage
-   * collection"). A blob is kept when the working copy or any version stores a document in it, or
-   * a hash in such a document names it (media metadata).
+   * collection"). A blob is kept when the working copy or any version stores a document in it, a
+   * hash in such a document names it (media metadata), or it is a version's picture.
    *
    * Run it only when no undo step can bring a reference back: when a site is opened, before any
    * editing, or when it is closed, after the last save. A deleted image stays restorable by Undo
    * until then. Freed pages are reused by later writes; the file does not shrink until a VACUUM.
+   * The app cleans a site's file up as it closes, on the storage writer's connection
+   * (`SiteFileWriter.cleanUp`, ADR 0013).
    *
    * With nothing to remove it writes nothing (see `#write`): the file's bytes and modified time
    * stay as they were, so a site opened and closed unchanged isn't synced or backed up again.
    */
   collectGarbage(): GarbageReport {
-    return this.#write(() => {
-      const documentHashes = new Set(
-        this.#prepare("SELECT blob_hash FROM documents").pluck().all().map(String),
-      );
-      for (const row of this.#prepare("SELECT manifest FROM versions").pluck().all()) {
-        for (const { hash } of this.#parseManifest(String(row)).documents) {
-          documentHashes.add(hash);
-        }
-      }
-      const referenced = new Set(documentHashes);
-      for (const hash of documentHashes) {
-        collectHashesFromJson(this.#readJsonText(hash), referenced);
-      }
-
-      const unreferenced = this.#prepare("SELECT hash, size FROM blobs")
-        .all()
-        .map((row) => z.object({ hash: z.string(), size: z.number() }).parse(row))
-        .filter((blob) => !referenced.has(blob.hash));
-      // Assets first: their foreign key keeps a blob from being deleted while a row points at it.
-      const { changes: assets } = this.#prepare(
-        "DELETE FROM assets WHERE blob_hash IN (SELECT value FROM json_each(?))",
-      ).run(JSON.stringify(unreferenced.map((blob) => blob.hash)));
-      const removeBlob = this.#prepare("DELETE FROM blobs WHERE hash = ?");
-      let bytes = 0;
-      for (const blob of unreferenced) {
-        removeBlob.run(blob.hash);
-        bytes += blob.size;
-      }
-      return { blobs: unreferenced.length, bytes, assets };
-    });
+    return this.#write(() => collectGarbage(this.#db));
   }
 
   /**
@@ -981,28 +1084,22 @@ export class ProjectStore {
 
   /**
    * Runs `change` as one write: refused on a read-only project, in one transaction, which records
-   * the content fingerprint (#295) before it commits. Every write goes through here, so none can
-   * leave a fingerprint that no longer matches its rows and make a healthy file open as corrupt;
-   * `test/write-paths.test.ts` keeps it that way.
+   * the content fingerprint (#295) before it commits, if it changed a row (`stamped`). Every write
+   * goes through here, so none can leave a fingerprint that no longer matches its rows and make a
+   * healthy file open as corrupt; `test/write-paths.test.ts` keeps it that way.
    *
-   * A change that alters no row (garbage collection with nothing to remove, a blob stored again)
-   * leaves the fingerprint as it was and isn't stamped: the transaction then only read, so the
-   * file's bytes and modified time stay as they were, and a sync folder or a backup sees no change
-   * nobody made (#661).
+   * The first write to a file of an older format migrates its tables first, in the same
+   * transaction, as the first commit writes a migrated site (ADR 0012, decision 5).
    */
   #write<T>(change: () => T): T {
     this.#assertWritable();
-    return this.#db.transaction(() => {
-      const before = this.#totalChanges();
-      const result = change();
-      if (this.#totalChanges() !== before) stampContent(this.#db);
-      return result;
-    })();
-  }
-
-  /** The rows this connection has inserted, updated or deleted since it opened. */
-  #totalChanges(): number {
-    return Number(this.#prepare("SELECT total_changes()").pluck().get());
+    const from = this.#info.formatVersion;
+    const result = stamped(this.#db, () => {
+      if (from < FORMAT_VERSION) migrateSchema(this.#db, from);
+      return change();
+    });
+    if (from < FORMAT_VERSION) this.#info = { ...this.#info, formatVersion: FORMAT_VERSION };
+    return result;
   }
 
   #assertWritable(): void {
@@ -1026,28 +1123,12 @@ export class ProjectStore {
     return hash;
   }
 
-  #parseManifest(manifest: string): Manifest {
-    try {
-      return manifestSchema.parse(JSON.parse(manifest));
-    } catch (error) {
-      throw new ProjectFileError("corrupt", "A version's manifest is invalid", { cause: error });
-    }
-  }
-
   #readJsonBlob(hash: string): JsonValue {
     return parseDocument(this.#readJsonText(hash));
   }
 
   /** A document's blob as text, unparsed. */
   #readJsonText(hash: string): string {
-    const blob = this.readBlob(hash);
-    if (blob === undefined) {
-      throw new ProjectFileError("corrupt", "A document refers to a missing blob");
-    }
-    try {
-      return utf8.decode(blob.data);
-    } catch (error) {
-      throw new ProjectFileError("corrupt", "A document is not valid JSON", { cause: error });
-    }
+    return decodeDocument(this.readBlob(hash)?.data);
   }
 }

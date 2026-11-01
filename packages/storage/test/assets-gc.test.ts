@@ -153,7 +153,7 @@ describe("ProjectStore.collectGarbage", () => {
           const referenced = new Set(pick(current));
           for (const version of versions) {
             store.commit([mediaDocument(pick(version))]);
-            store.saveVersion("auto", "auto");
+            store.saveVersion("auto", "daily");
             for (const hash of pick(version)) referenced.add(hash);
           }
           store.commit([mediaDocument(pick(current))]);

@@ -1,21 +1,31 @@
 export { AssetWriter } from "./asset-writer.js";
+export {
+  type GarbageReport,
+  type JsonValue,
+  reachableBlobs,
+  type VersionSpace,
+} from "./blob-reach.js";
 export { ProjectFileError, type ProjectFileErrorCode, ReadOnlyProjectError } from "./errors.js";
 export {
   type AssetInfo,
   type CreateProjectOptions,
   type DocumentChange,
-  type GarbageReport,
-  type JsonValue,
   type NewAsset,
+  type NewVersion,
   type OpenProjectOptions,
   type ProjectInfo,
   ProjectStore,
-  reachableBlobs,
+  type SaveVersionOptions,
   type SiteEditorMode,
   type StoredBlob,
   type StoredDocument,
+  VERSION_REASONS,
   type VersionInfo,
   type VersionKind,
+  type VersionManifest,
+  type VersionPublish,
+  type VersionReason,
+  versionPublishSchema,
 } from "./project-store.js";
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
 export {

@@ -201,7 +201,7 @@ describe("ProjectStore versions", () => {
       { type: "put", id: "page:new", kind: "page", content: { title: "New" } },
       { type: "put", id: "page:home", kind: "page", content: { title: "Two" } },
     ]);
-    const second = store.saveVersion("Daily", "auto");
+    const second = store.saveVersion("Daily", "daily");
     store.close();
 
     const reopened = ProjectStore.open(path);
@@ -251,7 +251,7 @@ describe("ProjectStore versions", () => {
       { type: "put", id: "page:home", kind: "page", content: { body: "x".repeat(100_000) } },
     ]);
     for (let i = 0; i < 20; i += 1) {
-      store.saveVersion(`Version ${i}`, "auto");
+      store.saveVersion(`Version ${i}`, "daily");
     }
     store.close();
 
@@ -265,6 +265,180 @@ describe("ProjectStore versions", () => {
     store.close();
     tamper(path, (db) => {
       db.prepare("UPDATE versions SET manifest = ? WHERE id = ?").run("{}", version.id);
+    });
+
+    expect(openResult(path)).toBe("corrupt");
+  });
+});
+
+describe("ProjectStore versions in storage format 2 (#664)", () => {
+  /** A site of one page, whose text is `text`, with an image `image` it names. */
+  const page = (text: string, image?: string) => ({
+    type: "put" as const,
+    id: "page:home",
+    kind: "page" as const,
+    content: { title: text, ...(image === undefined ? {} : { image }) },
+  });
+
+  it("saves why, the site format, its picture and where it was published", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    store.commit([
+      { type: "put", id: "site", kind: "site", content: { formatVersion: 9 } },
+      page("One"),
+    ]);
+    const picture = store.putBlob(new Uint8Array([9, 9, 9]), "image/png");
+    const published = {
+      destinationId: "d1",
+      publishedAt: "2026-11-01T10:00:00.000Z",
+      check: "different" as const,
+      deploy: "abc",
+    };
+    const version = store.saveVersion("Published", "on-publish", {
+      thumbnailHash: picture,
+      publishedTo: published,
+    });
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.listVersions()).toEqual([
+      {
+        id: version.id,
+        name: "Published",
+        kind: "auto",
+        reason: "on-publish",
+        createdAt: version.createdAt,
+        siteFormat: 9,
+        thumbnailHash: picture,
+        publishedTo: published,
+      },
+    ]);
+    // Republished later: the last publish is the one it records.
+    const again = { ...published, check: "live" as const };
+    expect(reopened.recordPublish(version.id, again)).toBe(true);
+    expect(reopened.recordPublish("no-such-version", again)).toBe(false);
+    expect(reopened.listVersions()[0]?.publishedTo).toEqual(again);
+    reopened.close();
+  });
+
+  it("saves the documents read earlier, not the working copy as it is now (ADR 0018 §3)", () => {
+    const store = ProjectStore.open(createProject());
+    store.commit([page("As built")]);
+    const built = store.readManifest();
+    store.commit([page("Edited during the publish")]);
+
+    const version = store.saveVersion("Published", "on-publish", { documents: built });
+
+    expect(store.readVersion(version.id)).toEqual([
+      { id: "page:home", kind: "page", content: { title: "As built" } },
+    ]);
+    expect(() =>
+      store.saveVersion("Gone", "on-publish", {
+        documents: [{ id: "page:home", kind: "page", hash: "4".repeat(64) }],
+      }),
+    ).toThrow("no longer in the file");
+    store.close();
+  });
+
+  it("deletes a version, and prunes Webforge's own down to the newest, never the person's", () => {
+    const store = ProjectStore.open(createProject());
+    store.commit([page("One")]);
+    const mine = store.saveVersion("Mine", "manual");
+    const daily = ["Monday", "Tuesday", "Wednesday"].map((day) => store.saveVersion(day, "daily"));
+    const before = store.saveVersion("Before restoring", "before-restore");
+
+    expect(store.pruneAutoVersions(2)).toBe(2);
+    expect(store.listVersions().map((version) => version.name)).toEqual([
+      "Before restoring",
+      "Wednesday",
+      "Mine",
+    ]);
+    expect(store.pruneAutoVersions(0)).toBe(2);
+    expect(store.listVersions()).toEqual([mine]);
+    expect(() => store.pruneAutoVersions(-1)).toThrow();
+
+    expect(store.deleteVersion(mine.id)).toBe(true);
+    expect(store.deleteVersion(daily[0]?.id ?? "")).toBe(false);
+    expect(store.listVersions()).toEqual([]);
+    expect(before.kind).toBe("auto");
+    store.close();
+  });
+
+  it("says how much space the versions keep, all of them and each alone", () => {
+    const store = ProjectStore.open(createProject());
+    const old = store.putBlob(new Uint8Array(1000), "image/png");
+    const shared = store.putBlob(new Uint8Array(300).fill(1), "image/png");
+    const picture = store.putBlob(new Uint8Array(50).fill(2), "image/png");
+    store.commit([page("Old", old)]);
+    const first = store.saveVersion("First", "manual", { thumbnailHash: picture });
+    const firstPage = store.readManifest()[0];
+    store.commit([page("Shared", shared)]);
+    const second = store.saveVersion("Second", "daily");
+    const third = store.saveVersion("Third", "daily");
+    store.commit([page("Now")]);
+    const pageSize = (text: string, image: string) => JSON.stringify({ title: text, image }).length;
+
+    const space = store.versionSpace();
+
+    expect(space.versions).toEqual([
+      // The page and image the second and third share is neither's alone.
+      { id: third.id, bytes: 0 },
+      { id: second.id, bytes: 0 },
+      { id: first.id, bytes: 1000 + 50 + pageSize("Old", old) },
+    ]);
+    expect(space.bytes).toBe(1000 + 50 + 300 + pageSize("Old", old) + pageSize("Shared", shared));
+    expect(firstPage?.id).toBe("page:home");
+    store.close();
+  });
+
+  it("keeps a version's picture when cleaning up, and lets it go with the version", () => {
+    const store = ProjectStore.open(createProject());
+    store.commit([page("One")]);
+    const picture = store.putBlob(new Uint8Array([7, 7]), "image/png");
+    const version = store.saveVersion("With a picture", "manual", { thumbnailHash: picture });
+
+    expect(store.collectGarbage().blobs).toBe(0);
+    expect(store.hasBlob(picture)).toBe(true);
+    store.deleteVersion(version.id);
+    expect(store.collectGarbage().blobs).toBe(1);
+    expect(store.hasBlob(picture)).toBe(false);
+    store.close();
+  });
+
+  it("reads a version's site migrated and checked, as the site is read", () => {
+    const store = ProjectStore.open(createProject());
+    expect(store.readVersionSite("no-such-version")).toBeUndefined();
+    store.commit([page("Not a site")]);
+    const version = store.saveVersion("Broken", "manual");
+
+    expect(() => store.readVersionSite(version.id)).toThrow();
+    store.close();
+  });
+
+  it("shows a version whose publish record it can't read as never published", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    const version = store.saveVersion("v", "on-publish");
+    store.close();
+    tamper(path, (db) => {
+      db.prepare("UPDATE versions SET published_to = ? WHERE id = ?").run("{not json", version.id);
+    });
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.listVersions()[0]?.publishedTo).toBeUndefined();
+    reopened.close();
+  });
+
+  it("refuses to open a project whose version's picture is missing (#295)", () => {
+    const path = createProject();
+    tamper(path, (db) => {
+      db.pragma("foreign_keys = OFF");
+      db.prepare(
+        `INSERT INTO versions (id, name, kind, created_at, format_version, manifest, reason,
+           site_format, thumbnail_hash)
+         VALUES ('v', 'v', 'manual', '2026-11-01T10:00:00.000Z', 2, '{"documents":[]}', 'manual',
+           1, ?)`,
+      ).run("5".repeat(64));
     });
 
     expect(openResult(path)).toBe("corrupt");

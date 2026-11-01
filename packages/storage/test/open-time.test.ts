@@ -50,7 +50,7 @@ describe("opening a large project (#295)", () => {
               },
             ],
       );
-      store.saveVersion(`Version ${version}`, "auto");
+      store.saveVersion(`Version ${version}`, "daily");
     }
     store.close();
 

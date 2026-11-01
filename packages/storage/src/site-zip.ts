@@ -16,7 +16,7 @@ import {
 import { unzipSync, Zip, ZipDeflate, ZipPassThrough } from "fflate/browser";
 import { z } from "zod";
 import { sha256 } from "./connection.js";
-import type { ProjectStore, VersionInfo } from "./project-store.js";
+import { type NewVersion, type ProjectStore, VERSION_REASONS } from "./project-store.js";
 import {
   fillFromSitePackage,
   packageBlobs,
@@ -39,7 +39,7 @@ const SITE_ENTRY = "site.json";
 const SITE_ZIP_FORMAT = "webforge-site-zip";
 
 /** The layout this build writes; a ZIP of a later one is from a newer app. */
-const SITE_ZIP_VERSION = 1;
+const SITE_ZIP_VERSION = 2;
 
 /**
  * The most a site's ZIP may be, and may hold unpacked: 2 GiB, the most Node reads into memory at
@@ -126,6 +126,8 @@ const manifestShape = z.strictObject({
       id: z.string().min(1).max(100),
       name: z.string().max(1000),
       kind: z.enum(["manual", "auto"]),
+      /** Why it was saved (version 2); a version 1 ZIP's say only who saved them. */
+      reason: z.enum(VERSION_REASONS).optional(),
       createdAt: z.iso.datetime(),
       path: entryPathSchema,
     }),
@@ -168,7 +170,7 @@ export type SiteZip = {
   /** The site, with the Media and files it and its versions reach. */
   readonly sitePackage: SitePackage;
   /** Newest first, as {@link ProjectStore.listVersions} lists them. */
-  readonly versions: readonly { readonly version: VersionInfo; readonly site: SiteDoc }[];
+  readonly versions: readonly { readonly version: NewVersion; readonly site: SiteDoc }[];
 };
 
 const encoder = new TextEncoder();
@@ -219,7 +221,9 @@ export function siteZipEntries(store: ProjectStore): Map<string, Uint8Array> {
   const versionEntries = versions.map(({ version, site: versionSite }) => {
     const path = `versions/${entryPart(version.id)}.json`;
     entries.set(path, jsonEntry(versionSite));
-    return { ...version, path };
+    // Not its picture or where it was published: a copy is published anew (ADR 0018 §2).
+    const { id, name, kind, reason, createdAt } = version;
+    return { id, name, kind, reason, createdAt, path };
   });
   const mediaEntries = media.map((item) => {
     const path = `media/${entryPart(item.mediaId)}/${safeFileName(item.originalName, "file")}`;
@@ -405,8 +409,8 @@ export function readSiteZip(data: Uint8Array): SiteZip {
   };
 
   const site = siteAt(SITE_ENTRY, "The site");
-  const versions = manifest.versions.map(({ path, ...version }) => ({
-    version,
+  const versions = manifest.versions.map(({ path, kind, reason, ...version }) => ({
+    version: { ...version, reason: reason ?? (kind === "manual" ? "manual" : "daily") },
     site: siteAt(path, `Version "${version.name}"`),
   }));
   return {
