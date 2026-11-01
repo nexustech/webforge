@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { DRAWER_ITEM } from "@webforge/engine/puck-dom";
 import { below, drag } from "./drag.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
@@ -84,7 +85,7 @@ test("drags a section onto the page, as one step; nothing offers the Header, Foo
       )
       .filter({ visible: true }),
   ).toHaveCount(0);
-  await expect(item("Hero").locator("[data-puck-drawer-item]").first()).toBeAttached();
+  await expect(item("Hero").locator(DRAWER_ITEM).first()).toBeAttached();
   await drag(page, item("Hero"), await below(canvas().locator(".site-section")));
 
   await expect(canvas().locator(".site-hero")).toHaveCount(1);

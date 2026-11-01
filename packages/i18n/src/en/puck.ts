@@ -11,6 +11,8 @@ export const puck = {
   "puck.header.toggleRightSidebar": "Show or hide the right panels",
   "puck.header.toggleMenuBar": "Show or hide the menu bar",
   "puck.action.selectParent": "Select the surrounding element",
+  // An action bar's drag handle (Puck 0.24); the glossary's wording (T3).
+  "puck.action.drag": "Drag to reorder",
   "puck.action.duplicate": "Duplicate",
   "puck.action.delete": "Delete",
   "puck.label.page": "Page",

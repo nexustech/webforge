@@ -1,4 +1,11 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import {
+  ACTION_BAR,
+  COMPONENT_ATTRIBUTE,
+  LAYOUT,
+  OVERLAY,
+  RICH_TEXT,
+} from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -32,14 +39,14 @@ const steps = () => page.locator(".undo-history__step");
 /** A quick action of the selected element (a hovered element shows a bar of its own too). */
 const quickAction = (title: string) =>
   canvas()
-    .locator("[data-puck-overlay]")
+    .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
     .locator(`[title="${title}"]`);
 
 /** The selected element's quick-action bar, which names it. */
 const selectedBar = () =>
   canvas()
-    .locator("[data-puck-overlay]")
+    .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') });
 
 /**
@@ -59,9 +66,9 @@ test("shows Puck's canvas only: no Puck rail or panel, in Design or Content mode
   for (const mode of ["Design", "Content"] as const) {
     await page.getByRole("radio", { name: mode, exact: true }).click();
     await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
-    await expect(editor.locator('[class*="_PuckLayout-nav_"]')).toBeHidden();
-    await expect(editor.locator('[class*="_Sidebar--left_"]')).toBeHidden();
-    await expect(editor.locator('[class*="_Sidebar--right_"]')).toBeHidden();
+    await expect(editor.locator(LAYOUT.nav)).toBeHidden();
+    await expect(editor.locator(LAYOUT.leftSidebar)).toBeHidden();
+    await expect(editor.locator(LAYOUT.rightSidebar)).toBeHidden();
     // Webforge's Layers is the only one: Puck's rail had a "Layers" button too.
     await expect(editor.getByRole("button", { name: "Layers" })).toHaveCount(0);
     await expect(editor.getByRole("button", { name: "Add" })).toHaveCount(0);
@@ -85,10 +92,7 @@ test.describe("selection chrome", () => {
     await expect(outline).toHaveCount(1);
     await expect(outline).toHaveCSS("outline-color", accent);
     await expect(outline).toHaveCSS("outline-style", "solid");
-    await expect(canvas().locator('[class*="_ActionBar_"]').first()).toHaveCSS(
-      "background-color",
-      accent,
-    );
+    await expect(canvas().locator(ACTION_BAR).first()).toHaveCSS("background-color", accent);
   });
 
   test("its buttons work while the element's text is being edited, the format menu with them (LF-3)", async () => {
@@ -236,7 +240,7 @@ test.describe("keyboard and floating add", () => {
 
   test("never deletes the element whose rich text is being edited (1.30)", async () => {
     const text = canvas().locator(".site-text");
-    const editor = text.locator(".ProseMirror");
+    const editor = text.locator(RICH_TEXT);
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
@@ -289,7 +293,7 @@ test.describe("keyboard and floating add", () => {
       canvas()
         .locator("style[data-webforge-also-selected]")
         .evaluate((style) => style.textContent ?? "");
-    await expect.poll(alsoSelected).toContain('[data-puck-component="heading-1"]');
+    await expect.poll(alsoSelected).toContain(`[${COMPONENT_ATTRIBUTE}="heading-1"]`);
     // Delete takes both, as one step; undo brings them back, both selected again (1.31).
     await page.keyboard.press("Delete");
     await expect(steps().first()).toHaveText("Deleted 2 elements");

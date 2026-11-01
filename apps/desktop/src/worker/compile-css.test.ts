@@ -1,3 +1,4 @@
+import { CANVAS_EVEN_SECTIONS } from "@webforge/engine/puck-dom";
 import { DEFAULT_THEME } from "@webforge/model";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import type { CatalogueFont } from "@webforge/themes";
@@ -27,6 +28,26 @@ describe("compileCss", () => {
     expect(outcome.css).toContain('url("webforge-font://fonts/inter-latin-wght-normal.woff2")');
     // Classes the site doesn't use aren't compiled.
     expect(outcome.css).not.toContain(".text-9xl");
+  }, 60_000);
+
+  it("stripes the canvas's sections, in Puck's wrappers, as the theme stripes the page's (A19)", async () => {
+    const outcome = await compileCss(
+      {
+        type: "compile-css",
+        theme: { ...DEFAULT_THEME, preset: "light", sections: { rhythm: "alternating" } },
+        candidates: [],
+        families: [],
+      },
+      loadNodeResources,
+    );
+
+    expect(outcome).toMatchObject({ type: "css" });
+    if (outcome.type !== "css") return;
+    const css = outcome.css.replace(/\s+/g, " ");
+    expect(css).toContain(
+      `${CANVAS_EVEN_SECTIONS}:not([data-theme]) { background-color: var(--color-base-200); }`,
+    );
+    expect(css).toContain("#main > section:nth-child(even of section):not([data-theme])");
   }, 60_000);
 
   it("declares a downloaded family the job names, as the export would (2.2)", async () => {

@@ -2,7 +2,6 @@ import {
   COLOR_ROLES,
   DEFAULT_THEME,
   type FontRef,
-  HIDDEN_ATTRIBUTE,
   INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
@@ -163,31 +162,27 @@ const IMAGE_RADIUS: Readonly<Record<ThemeTokens["images"]["corners"], string | u
 };
 
 /**
- * Every second section of a page (2.13d), counting only the sections a visitor sees, so the canvas
- * stripes as the exported page does:
- * - on the exported page, `main`'s sections, whatever else it holds;
- * - on the canvas, the page's drop zone (`wf-sections`), where each section is in a wrapper of its
- *   own: wrappers of a shown section, never one hidden in Layers (which the export leaves out) or
- *   Puck's place for a dragged one.
- *
- * Not a section on reversed colours, which keeps its own. Each selector is a rule of its own
- * ({@link evenSectionRules}): a browser drops a rule whose selector it can't read, so one without
- * `:has()` (Firefox ESR 115) still stripes the exported page, and one without `:nth-child(… of …)`
- * (before Chromium 111, Safari 9 and Firefox 113) shows its sections all on the page's surface.
+ * Every second section of the exported page (2.13d): `main`'s sections, whatever else it holds.
+ * The canvas has its own, whose DOM is Puck's: the engine's `CANVAS_EVEN_SECTIONS`, through
+ * {@link ThemeCssOptions.evenSections} (A19).
  */
-export const EVEN_SECTION_SELECTORS = [
-  "#main > section:nth-child(even of section):not([data-theme])",
-  `.wf-sections > :nth-child(even of :has(> section:not([${HIDDEN_ATTRIBUTE}]))) > section:not([data-theme])`,
-];
+export const PAGE_EVEN_SECTIONS = "#main > section:nth-child(even of section)";
 
 /**
- * A rule for each of {@link EVEN_SECTION_SELECTORS}, followed by `then` (" .wf-card"), setting
- * `declaration`: never one selector list, which a browser drops whole for one selector it can't
- * read.
+ * Rules for every second section of each of `selectors` (a selector of those sections), not one on
+ * reversed colours, which keeps its own, followed by `then` (" .wf-card"), setting `declaration`.
+ * Each selector is a rule of its own, never one selector list: a browser drops a rule whose
+ * selector it can't read, so one without `:has()` (Firefox ESR 115, which the canvas's needs) still
+ * stripes the exported page, and one without `:nth-child(… of …)` (before Chromium 111, Safari 9
+ * and Firefox 113) shows its sections all on the page's surface.
  */
-function evenSectionRules(then: string, declaration: string): string[] {
-  return EVEN_SECTION_SELECTORS.flatMap((selector) => [
-    `  ${selector}${then} {`,
+function evenSectionRules(
+  selectors: readonly string[],
+  then: string,
+  declaration: string,
+): string[] {
+  return selectors.flatMap((selector) => [
+    `  ${selector}:not([data-theme])${then} {`,
     `    ${declaration}`,
     "  }",
   ]);
@@ -302,7 +297,7 @@ function buttonRules(tokens: ThemeTokens): string[] {
  *   and any section framed on the page's surface (`bg-base-100`), never one with another surface
  *   of its own (a tinted Hero, a dark band); flat cards go on the page's surface there.
  */
-function styleRules(tokens: ThemeTokens): string[] {
+function styleRules(tokens: ThemeTokens, evenSections: readonly string[]): string[] {
   const { headings, cards, images, sections } = tokens;
   const caps = headings.case !== "normal";
   const tracking = HEADING_TRACKING[headings.tracking] + (caps ? CAPS_TRACKING : 0);
@@ -332,23 +327,34 @@ function styleRules(tokens: ThemeTokens): string[] {
     // Any section framed on the page's surface by its own class too; one with another surface of
     // its own (a tinted Hero, a dark band) keeps it.
     ...(alternating
-      ? evenSectionRules(".bg-base-100", "background-color: var(--color-base-200);")
+      ? evenSectionRules(evenSections, ".bg-base-100", "background-color: var(--color-base-200);")
       : []),
     ...(alternating && cards.style === "flat"
-      ? evenSectionRules(" .wf-card", "background-color: var(--color-base-100);")
+      ? evenSectionRules(evenSections, " .wf-card", "background-color: var(--color-base-100);")
       : []),
   ];
   return [
     ...(alternating
       ? [
           "@layer components {",
-          ...evenSectionRules("", "background-color: var(--color-base-200);"),
+          ...evenSectionRules(evenSections, "", "background-color: var(--color-base-200);"),
           "}",
         ]
       : []),
     ...(utilities.length === 0 ? [] : ["@layer utilities {", ...utilities, "}"]),
   ];
 }
+
+/** What {@link themeCss} writes besides the theme. */
+export type ThemeCssOptions = {
+  /**
+   * More places whose every second section is striped, besides the exported page
+   * ({@link PAGE_EVEN_SECTIONS}): a selector of those sections each. The canvas's CSS gives the
+   * engine's (`CANVAS_EVEN_SECTIONS`), so the canvas stripes as the export does and no export
+   * carries the canvas's rules (A19).
+   */
+  readonly evenSections?: readonly string[];
+};
 
 /**
  * The site's theme as Tailwind and daisyUI source (2.1), for the site's stylesheet after Tailwind's
@@ -370,7 +376,7 @@ function styleRules(tokens: ThemeTokens): string[] {
  *
  * Every value is a token the model checked, so nothing from a site can reach the CSS as written.
  */
-export function themeCss(tokens: ThemeTokens): string {
+export function themeCss(tokens: ThemeTokens, options: ThemeCssOptions = {}): string {
   const inverse = inverseColors(tokens);
   // Links not always underlined are in the main colour, apart from the text (WCAG 1.4.1).
   const linkColor = tokens.links.underline === "always" ? "currentColor" : "var(--color-primary)";
@@ -441,7 +447,7 @@ export function themeCss(tokens: ThemeTokens): string {
     ...roleShades(inverse),
     "}",
     ...buttonRules(tokens),
-    ...styleRules(tokens),
+    ...styleRules(tokens, [PAGE_EVEN_SECTIONS, ...(options.evenSections ?? [])]),
   ].join("\n");
 }
 

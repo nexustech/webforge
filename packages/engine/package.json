@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./puck-dom": "./src/puck/puck-dom.ts"
   },
   "devDependencies": {
     "@types/react": "catalog:",
@@ -14,7 +15,7 @@
     "vitest": "catalog:"
   },
   "dependencies": {
-    "@puckeditor/core": "0.23.0",
+    "@puckeditor/core": "0.24.0",
     "@tiptap/core": "3.32.0",
     "@webforge/i18n": "workspace:*",
     "@webforge/model": "workspace:*",

@@ -70,6 +70,15 @@ export const previewChannels = {
   },
 } as const;
 
+/** Messages the main process sends to the renderer in the `preview` domain. */
+export const previewEvents = {
+  /**
+   * The preview's listener on the local network stopped by itself: no phone used it for a while,
+   * or the computer left that network (S9). A phone needs a new address now.
+   */
+  phoneStopped: { channel: "preview:phone-stopped", args: z.tuple([]) },
+} as const;
+
 /** `window.webforge.preview`: the preview server (3.2, F-PV-1). */
 export interface PreviewApi {
   /** Opens the preview of the site opened as `sessionId`, at `page`, in the default browser. */
@@ -82,4 +91,9 @@ export interface PreviewApi {
   phone(sessionId: string, site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
   /** Stops the preview on the local network: no phone can open it any more. */
   stopPhone(): Promise<null>;
+  /**
+   * Calls `listener` when the preview on the local network stops by itself, until the returned
+   * function is called.
+   */
+  onPhoneStopped(listener: () => void): () => void;
 }

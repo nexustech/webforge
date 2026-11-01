@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 
 import { Puck, useGetPuck } from "@puckeditor/core";
+import puckCss from "@puckeditor/core/puck.css?raw";
 import { DEFAULT_THEME, type PageDoc } from "@webforge/model";
 import { type ComponentLibrary, textValue } from "@webforge/site-components";
 import { act, type ReactNode } from "react";
@@ -8,14 +9,21 @@ import { createRoot } from "react-dom/client";
 import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CanvasEngine } from "../canvas-engine.js";
 import {
+  ACTION_BAR,
+  ACTION_BAR_ACTION,
+  ACTION_BAR_LABEL,
   ACTIONS,
   ACTIONS_OVERLAY,
   CANVAS,
+  CANVAS_EVEN_SECTIONS,
   CANVAS_ROOT,
   COMPONENT,
   COMPONENT_ATTRIBUTE,
   componentSelector,
+  DISABLED_ATTRIBUTE,
+  DRAGGING,
   DRAWER_ITEM,
+  DROP_PREVIEW,
   HOVERED_COMPONENT,
   INLINE_TEXT,
   LAYOUT,
@@ -23,6 +31,7 @@ import {
   type PuckPrivateApi,
   puckPrivateApi,
   RICH_TEXT,
+  RICH_TEXT_MENU,
   ROOT_DROP_ZONE,
   SELECTED_COMPONENT,
 } from "./puck-dom.js";
@@ -123,6 +132,19 @@ describe("Puck's DOM contract (R8)", () => {
     // LF-3 moves the bar's box; HOVERED_COMPONENT needs a real pointer: canvas-chrome.spec.ts.
     expect(element.querySelector(`${OVERLAY} ${ACTIONS_OVERLAY} ${ACTIONS}`)).not.toBeNull();
     expect(element.querySelector(`${SELECTED_COMPONENT} ${ACTIONS}`)).not.toBeNull();
+    // Its action bar: the element's name, and its actions by their titles (A20).
+    expect(element.querySelector(`${ACTIONS} ${ACTION_BAR}`)).not.toBeNull();
+    expect(element.querySelector(`${ACTION_BAR} ${ACTION_BAR_LABEL}`)?.textContent).toMatch(
+      /^Heading/,
+    );
+    expect(element.querySelector(`${ACTION_BAR} ${ACTION_BAR_ACTION}[title]`)).not.toBeNull();
+  });
+
+  it("draws the rich-text menu over a selected rich text (A20)", async () => {
+    await act(async () => engine.select("t"));
+    await settle();
+
+    expect(element.querySelector(RICH_TEXT_MENU)).not.toBeNull();
   });
 
   it("hovers an element with the pointer over its text, one element at a time (#399)", async () => {
@@ -163,6 +185,68 @@ describe("Puck's DOM contract (R8)", () => {
     expect(item.querySelector(DRAWER_ITEM)).not.toBeNull();
     await act(async () => remove());
     item.remove();
+  });
+});
+
+describe("what Puck marks only while a drag goes on (A20)", () => {
+  it("is still named in Puck's stylesheet as installed", () => {
+    // A pointer drag that happy-dom can't make sets them; the E2E drags use them (drag.ts).
+    const names = [DRAGGING, DROP_PREVIEW, `[${DISABLED_ATTRIBUTE}]`].flatMap((selector) =>
+      [...selector.matchAll(/\[([a-z-]+)\]/g)].map(([, name]) => name),
+    );
+
+    expect(names).toEqual([
+      "data-puck-entry",
+      "data-puck-dragging",
+      "data-dnd-placeholder",
+      "data-puck-line-placeholder",
+      "data-puck-disabled",
+    ]);
+    for (const name of names) expect(puckCss, name).toContain(`[${name}]`);
+  });
+});
+
+describe("the canvas's every second section (2.13d, A19)", () => {
+  it("is every second section a visitor sees, in Puck's wrappers, the hidden ones left out", async () => {
+    const bands: ComponentLibrary = {
+      components: {
+        Band: {
+          label: "Band",
+          place: "section",
+          fields: { text: { kind: "text", label: "Text", inline: true } },
+          defaults: { text: "Band" },
+          render: ({ values }) => <section>{textValue(values.text)}</section>,
+        },
+      },
+    };
+    const band = (id: string, hidden = false) => ({
+      type: "Band",
+      props: { id, text: id, ...(hidden ? { hidden: true } : {}) },
+    });
+    const element = document.createElement("div");
+    document.body.append(element);
+    const engine = createPuckEngine({ iframe: false });
+    await act(async () => {
+      engine.mount(element, { library: bands, theme: { ...DEFAULT_THEME, preset: "test" } });
+      engine.loadPage(
+        {
+          root: { props: {} },
+          content: [band("a"), band("b", true), band("c"), band("d"), band("e")],
+        },
+        { header: [], footer: [] },
+      );
+    });
+    await settle(50);
+
+    const striped = [...element.querySelectorAll(CANVAS_EVEN_SECTIONS)].map(
+      (section) => section.textContent,
+    );
+
+    // The second and fourth shown, c and e: b is hidden in Layers, which the export leaves out.
+    expect(striped).toEqual(["c", "e"]);
+    engine.destroy();
+    await settle();
+    element.remove();
   });
 });
 

@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { OVERLAY } from "@webforge/engine/puck-dom";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
@@ -122,7 +123,7 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   await expect(copies()).toHaveCount(1);
   await copies().first().click();
   await canvas()
-    .locator("[data-puck-overlay]")
+    .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
     .locator('[title="Delete"]')
     .click();

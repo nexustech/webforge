@@ -390,9 +390,6 @@
   #main > section:nth-child(even of section):not([data-theme]) {
     background-color: var(--color-base-200);
   }
-  .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]) {
-    background-color: var(--color-base-200);
-  }
 }
 @layer utilities {
   :is(h1, h2, h3, h4, h5, h6).font-heading {
@@ -404,13 +401,7 @@
   #main > section:nth-child(even of section):not([data-theme]).bg-base-100 {
     background-color: var(--color-base-200);
   }
-  .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]).bg-base-100 {
-    background-color: var(--color-base-200);
-  }
   #main > section:nth-child(even of section):not([data-theme]) .wf-card {
-    background-color: var(--color-base-100);
-  }
-  .wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme]) .wf-card {
     background-color: var(--color-base-100);
   }
 }
