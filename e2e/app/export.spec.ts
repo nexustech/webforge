@@ -200,4 +200,81 @@ test.describe("Export site with Site Check (3.6, X5)", () => {
       await checked.close();
     }
   });
+
+  test("asks before exporting code from someone else's site file; Leave it out asks again (#649)", async () => {
+    // A site file from someone else: a script in Settings' Custom Code, and a Custom Code element.
+    const dir = mkdtempSync(join(parent, "code-"));
+    const site = createSite({
+      name: "Rosa's Bakery",
+      language: "en",
+      homeTitle: "Home",
+      notFoundTitle: "Page not found",
+    });
+    site.code.js = "window.handedOver = true;";
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content.push({
+      type: "CustomCode",
+      props: { id: "widget", code: "<p>Hours</p><script>window.widget = 1;</script>" },
+    });
+    const sitePath = join(dir, "Rosa's Bakery.wforge");
+    const store = ProjectStore.create(sitePath, { name: "Rosa's Bakery" });
+    store.saveSite(site);
+    store.close();
+    const opened = await launchDesktopApp({
+      userDataDir: join(dir, "user-data"),
+      args: [sitePath],
+    });
+    try {
+      const editor = await opened.firstWindow();
+      await waitForCanvas(editor);
+      const prompt = editor.getByRole("alertdialog", {
+        name: "This site contains code that will run for your visitors",
+      });
+      /** Exports to a new folder `name`, answering the code prompt with `answer` if it asks. */
+      const exportAnswering = async (name: string, answer?: "Leave it out" | "Keep the code") => {
+        const folder = join(dir, name);
+        await stubFileDialogs(opened, folder);
+        await editor.getByRole("button", { name: "Export Site…", exact: true }).click();
+        if (answer !== undefined) {
+          await expect(prompt).toBeVisible();
+          await expect(prompt.getByRole("listitem")).toHaveText([
+            "Custom Code in Settings: Script",
+            "Custom Code on Home",
+          ]);
+          await prompt.getByRole("button", { name: answer }).click();
+        }
+        const address = editor.getByRole("alertdialog", { name: "Add your site's web address?" });
+        await address.getByRole("button", { name: "Export without it" }).click();
+        await editor
+          .getByRole("dialog", { name: "Export Site" })
+          .getByRole("button", { name: "Export…" })
+          .click();
+        const report = editor.getByRole("dialog", { name: "Site exported" });
+        await expect(report).toBeVisible({ timeout: 30_000 });
+        await report.getByRole("button", { name: "Done" }).click();
+        const js = join(folder, "assets", "js");
+        const scripts = existsSync(js) ? readdirSync(js) : [];
+        return {
+          html: readFileSync(join(folder, "index.html"), "utf8"),
+          custom: scripts.filter((file) => file.startsWith("custom.")),
+        };
+      };
+
+      // Left out: neither the script nor the element's code is exported.
+      const left = await exportAnswering("left", "Leave it out");
+      expect(left.custom).toEqual([]);
+      expect(left.html).not.toContain("window.widget");
+
+      // This time only: the next export asks again. Kept, it's exported, and never asked about again.
+      const kept = await exportAnswering("kept", "Keep the code");
+      expect(kept.custom).toHaveLength(1);
+      expect(kept.html).toContain("window.widget = 1;");
+      const again = await exportAnswering("again");
+      expect(again.custom).toHaveLength(1);
+      await expect(prompt).toBeHidden();
+    } finally {
+      await opened.close();
+    }
+  });
 });

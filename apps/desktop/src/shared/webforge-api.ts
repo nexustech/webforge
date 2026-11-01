@@ -11,6 +11,7 @@ import type { PublishApi } from "./ipc/publish.js";
 import type { SiteApi } from "./ipc/site.js";
 import type { TemplatesApi } from "./ipc/templates.js";
 import type { ThemesApi } from "./ipc/themes.js";
+import type { TrustApi } from "./ipc/trust.js";
 
 /**
  * The typed API the preload script exposes to the renderer as `window.webforge`.
@@ -31,4 +32,5 @@ export interface WebforgeApi {
   readonly themes: ThemesApi;
   readonly preview: PreviewApi;
   readonly publish: PublishApi;
+  readonly trust: TrustApi;
 }

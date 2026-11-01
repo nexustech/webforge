@@ -40,7 +40,7 @@ export function createPreviewBuilds(
       };
       for await (const event of channel.pipeline.build(job.snapshot, resources, {
         mode: "preview",
-        // All of the site's code, until the code trust step says which the owner has confirmed (#649).
+        // What the main process sent: it has left out the code the owner doesn't trust (#649).
         runsCode: RUNS_ALL_CODE,
       })) {
         if (event.stage !== "done") continue;

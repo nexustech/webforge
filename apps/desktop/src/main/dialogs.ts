@@ -5,8 +5,8 @@ import type { E2eDialog } from "./e2e-dialogs.js";
 import type { ExportDialogs } from "./export-ipc.js";
 import type { MediaDialogs } from "./media-ipc.js";
 import type { ProjectDialogs } from "./project-ipc.js";
-import { PROJECT_EXTENSION } from "./project-session.js";
 import type { PublishParts } from "./publish-ipc.js";
+import { PROJECT_EXTENSION } from "./site-paths.js";
 
 /** What the native dialogs are made with; fakes in tests. */
 export type DialogParts = {

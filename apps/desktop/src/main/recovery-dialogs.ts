@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { BrowserWindow, dialog, type MessageBoxOptions, type OpenDialogOptions } from "electron";
-import { PROJECT_EXTENSION } from "./project-session.js";
 import { type RecoveryChoice, type RecoveryDialogs, recoveryMessage } from "./recovery.js";
+import { PROJECT_EXTENSION } from "./site-paths.js";
 
 // Electron wiring only: the flow lives in recovery.ts and is unit-tested; E2E tests replace the
 // dialog functions, so they are looked up on the module at call time.

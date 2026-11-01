@@ -210,6 +210,14 @@ export {
   sharedSectionsDocSchema,
 } from "./shared-sections.js";
 export { SITE_CHECK_IGNORED_MAX, siteCheckIgnoredSchema } from "./site-check-ignored.js";
+export {
+  allowListText,
+  RUNNING_PARTS,
+  type RunningCodePart,
+  type SiteCodePiece,
+  siteCodePieces,
+  withKeptCode,
+} from "./site-code-pieces.js";
 export type { CreateSiteOptions, PageEntry, PageSettings, SiteDoc } from "./site-doc.js";
 export {
   createSite,

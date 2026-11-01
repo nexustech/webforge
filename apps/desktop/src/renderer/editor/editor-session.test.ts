@@ -715,3 +715,18 @@ describe("gestures (U2)", () => {
     expect(added).not.toHaveBeenCalled();
   });
 });
+
+describe("codeWritten (#649)", () => {
+  it("tells its listeners what the owner wrote, and nothing when the code is the same", () => {
+    const session = sessionWith();
+    const written: [string, string][] = [];
+    const stop = session.onCodeWritten((before, after) => written.push([before, after]));
+
+    session.codeWritten("", "go()");
+    session.codeWritten("go()", "go()");
+    stop();
+    session.codeWritten("go()", "stop()");
+
+    expect(written).toEqual([["", "go()"]]);
+  });
+});

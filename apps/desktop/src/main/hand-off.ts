@@ -1,5 +1,5 @@
 import type { ProjectFailureReason, ProjectResult } from "../shared/ipc-contract.js";
-import { samePath } from "./project-session.js";
+import { samePath } from "./site-paths.js";
 
 /** Options of {@link createHandOff}. */
 export type HandOffOptions = {
