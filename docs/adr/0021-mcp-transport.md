@@ -1,6 +1,6 @@
 # 0021. AI apps reach Webforge over loopback HTTP, and Claude Desktop through a bundled extension
 
-- Status: Proposed
+- Status: Accepted (2026-11-01; decisions 3 and 5 confirmed by the product owner)
 - Date: 2026-11-01
 - Related: 4.9 (#171), spec/04 Q9, [spec/01 §9](../../spec/01-architecture.md#9-security--privacy) (AI apps), [security review](../reviews/2026-10-30-security-review.md) (S18–S21 and the 4.9 requirements), F-AI-1, GA5, [ADR 0015](0015-preview-server.md) (the other loopback listener)
 
@@ -42,7 +42,7 @@ The server's checks (decision 1) protect Webforge from its callers. Nothing in t
    - **The app's name comes from the pairing dialog,** where the person picks or types it, cleaned. Never from the app's own `clientInfo`.
    - **Removing an app deletes its hash,** and its sessions end.
    - **Failed attempts back off,** doubling after the third in a minute. A 256-bit key can't be guessed, but the back-off stops a local process from hammering the server.
-3. **Claude Desktop connects through a Webforge desktop extension.** It is a small relay, `webforge-bridge`, bundled with esbuild into one file in the app's resources.
+3. **Claude Desktop connects through a Webforge desktop extension.** The person pastes the key into its `sensitive` setting rather than installing it in one click with the key written into the file (product owner, 1 Nov 2026). It is a small relay, `webforge-bridge`, bundled with esbuild into one file in the app's resources.
    - It takes MCP over stdio from Claude Desktop and sends each message on to the server, with the key in the header. Nothing else: it holds no state and logs nothing.
    - **It checks that it is talking to Webforge before it sends the key.** Each pairing has a second random value, the *server proof*, which Webforge keeps in the keychain beside the key's hash:
      - the bridge opens each connection with a fresh nonce, sent in a request that carries no key;
@@ -56,7 +56,7 @@ The server's checks (decision 1) protect Webforge from its callers. Nothing in t
 4. **The developer tools connect directly.** *Add AI app* → *Another app* shows the URL and the header, ready to paste into Claude Code, Cursor or VS Code.
    - **They can't check the server,** so the risk remains, and the dialog and the help page name it: a developer tool sends its key to whatever answers at that address. While Webforge isn't running, another program on the computer could be answering.
    - The help page tells the person to turn that tool's Webforge server off while Webforge is closed. A tool that can run a stdio command can use the bridge instead, which does check.
-5. **ChatGPT isn't supported at first.** Its desktop app can't reach a server on this computer, short of a tunnel to OpenAI, which would send the site's content through OpenAI's servers, or Codex. The help page says so. When ChatGPT can start local servers, the bridge in 3 should serve it too.
+5. **ChatGPT isn't supported at first** (product owner, 1 Nov 2026). Its desktop app can't reach a server on this computer, short of a tunnel to OpenAI, which would send the site's content through OpenAI's servers, or Codex. The help page says so. When ChatGPT can start local servers, the bridge in 3 should serve it too.
 6. **Each request goes through what the security review asks for:**
    - **Checks:** main validates every request against the `ai` contract (S21);
    - **Limits:**
@@ -79,7 +79,7 @@ The server's checks (decision 1) protect Webforge from its callers. Nothing in t
   The `.mcpb` also needs to pass the MCPB CLI's validation.
 - **Not reachable from another computer:** it binds `127.0.0.1` only. A test connects through the machine's other addresses and is refused.
 - **The remembered port** is a second loopback port beside the preview server's (ADR 0015). The preview server keeps drawing a new one each time.
-- **Changes to #171's acceptance criteria,** to agree before 4.9 starts:
+- **Changes made to #171's acceptance criteria** (agreed 1 Nov 2026):
   - "Binds the literal `127.0.0.1` on an ephemeral port" becomes "on a port from the ephemeral range, drawn once and remembered, listening whenever *AI apps* is on and Webforge runs (answering 'no site open' while none is), and the bridge checks the server's proof before it sends the key".
   - "Pairing codes are single-use, expire after about 5 minutes and lock after a few failures" becomes "A key is shown once, is revoked unless used within 5 minutes, and failed attempts back off".
   - "Help page: how to connect Claude and ChatGPT desktop apps" becomes "Claude Desktop and developer tools; ChatGPT once it can reach local servers".
