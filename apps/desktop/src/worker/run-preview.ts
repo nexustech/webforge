@@ -3,12 +3,16 @@ import { BuildError, RUNS_ALL_CODE } from "@webforge/pipeline";
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
 
-/** What a preview build reaches outside the worker: the site's stored bytes, and its pipeline. */
+/** What the preview's builds keep between them: the preview's own pipeline (3.1). */
 export type PreviewChannel = {
+  /** Its pages, images and stylesheet kept between builds. */
+  readonly pipeline: Pipeline;
+};
+
+/** What one build reaches outside the worker: the site's stored bytes. */
+export type PreviewReads = {
   /** The bytes the open site stores under a hash, asked of the main process one at a time (R15). */
   readonly readMedia: (hash: string) => Promise<StoredMedia | undefined>;
-  /** The preview's own pipeline: its pages, images and stylesheet kept between builds (3.1). */
-  readonly pipeline: Pipeline;
 };
 
 /** Whether two files hold the same bytes. */
@@ -27,16 +31,16 @@ function sameBytes(a: Uint8Array, b: Uint8Array): boolean {
 export function createPreviewBuilds(
   loadResources: () => Promise<PipelineResources>,
   channel: PreviewChannel,
-): (job: PreviewJob) => Promise<PreviewOutcome> {
+): (job: PreviewJob, reads: PreviewReads) => Promise<PreviewOutcome> {
   let last: ReadonlyMap<string, Uint8Array> | undefined;
-  return async (job) => {
+  return async (job, reads) => {
     try {
       const fonts = new Map(job.fonts.map((font) => [font.file, font.data]));
       const resources = {
         ...(await loadResources()),
         readFont: async (face: { readonly file: string }) => fonts.get(face.file),
         fonts: [...FONT_CATALOGUE, ...job.families],
-        readMedia: channel.readMedia,
+        readMedia: reads.readMedia,
       };
       for await (const event of channel.pipeline.build(job.snapshot, resources, {
         mode: "preview",

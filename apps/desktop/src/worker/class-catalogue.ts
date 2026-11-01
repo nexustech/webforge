@@ -41,13 +41,12 @@ export function createClassCatalogues(
       return job.type === "class-catalogue"
         ? {
             type: "class-catalogue",
-            id: job.id,
             classes: [...catalogue.classes],
             variants: [...catalogue.variants],
           }
-        : { type: "class-css", id: job.id, css: catalogue.cssFor(job.classes) };
+        : { type: "class-css", css: catalogue.cssFor(job.classes) };
     } catch {
-      return { type: "classes-failed", id: job.id };
+      return { type: "classes-failed" };
     }
   };
 }

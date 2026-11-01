@@ -10,10 +10,9 @@ export async function thumbnailFor(
     const { codecs } = await loadResources();
     return {
       type: "thumbnail",
-      id: job.id,
       data: await makeThumbnail(job.data, job.mimeType, codecs),
     };
   } catch {
-    return { type: "thumbnail-failed", id: job.id };
+    return { type: "thumbnail-failed" };
   }
 }
