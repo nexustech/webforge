@@ -24,6 +24,8 @@ const common = {
   optionGroup: z.strictObject({ id: z.string(), label: z.string() }).optional(),
   /** Shown only in *Style this ‹component›…* (3.13b): the dialog's deeper groups. */
   inDialog: z.literal(true).optional(),
+  /** Where visitors' money or details go: an AI app's change to it is asked first (S18). */
+  sensitive: z.literal(true).optional(),
 };
 
 const listItemFieldSchema = z.discriminatedUnion("kind", [

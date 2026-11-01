@@ -57,17 +57,41 @@ function isContent(field: CatalogueField): boolean {
   return !["select", "toggle", "slider", "color", "spacing", "box"].includes(field.kind);
 }
 
+/** Whether AI apps keep away from `component`: Custom Code and Advanced mode's own (R10). */
+const offLimits = (component: CatalogueComponent) =>
+  component.advancedOnly === true || Object.values(component.fields).some((f) => f.kind === "code");
+
 /** The component of `type`, or why there's none an AI app may use. */
 function componentOf(type: string): CatalogueComponent | Failure {
   const component = CATALOGUE[type];
   if (component === undefined) return fail("invalid", `There is no component "${type}".`);
-  if (
-    component.advancedOnly === true ||
-    Object.values(component.fields).some((f) => f.kind === "code")
-  ) {
+  if (offLimits(component)) {
     return fail("refused", `AI apps can't add or edit ${component.label}.`);
   }
   return component;
+}
+
+/**
+ * Why AI apps can't move or remove `node`: it, or something in its slots at any depth, is a
+ * component they keep away from (S19). `undefined` when they can.
+ */
+function untouchable(node: NodeDoc): Failure | undefined {
+  const pending: NodeDoc[] = [node];
+  for (let next = pending.pop(); next !== undefined; next = pending.pop()) {
+    const component = CATALOGUE[next.type];
+    if (component !== undefined && offLimits(component)) {
+      return fail(
+        "refused",
+        next === node
+          ? `AI apps can't move or remove ${component.label}.`
+          : `AI apps can't move or remove this: it holds ${component.label}.`,
+      );
+    }
+    for (const value of Object.values(next.props)) {
+      if (isSlot(value)) pending.push(...value);
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -213,6 +237,67 @@ function confirmationAt(site: SiteDoc, location: Location): Plan["confirm"] {
   });
 }
 
+/** A field's address as it is set, without the spaces around it. */
+const addressOf = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+
+/** The host of `address` (`pay.example`), or `undefined` for text that isn't a web address. */
+function hostOf(address: string): string | undefined {
+  const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#\s]+)/i.exec(address)?.[1];
+  const host = authority?.slice(authority.lastIndexOf("@") + 1).toLowerCase();
+  return host === "" ? undefined : host;
+}
+
+/** `address` as a confirmation names it, cut short past 80 characters. */
+const shown = (address: string) =>
+  address === ""
+    ? t("ai.confirm.noAddress")
+    : address.length > 80
+      ? `${address.slice(0, 79)}…`
+      : address;
+
+/**
+ * Where a field sends visitors before and after a change, as a confirmation names them: each
+ * address's host, or the whole addresses when the hosts are the same (a payment page of another
+ * account on the same service).
+ */
+function fromTo(before: string, after: string): { readonly from: string; readonly to: string } {
+  const from = hostOf(before);
+  const to = hostOf(after);
+  return from !== undefined && to !== undefined && from !== to
+    ? { from, to }
+    : { from: shown(before), to: shown(after) };
+}
+
+/**
+ * The confirmation setting `values` on an element of `component` that has `before` needs at
+ * `location` (D7): asked always when a field saying where visitors' money or details go changes
+ * (S18), naming where it goes now and would go; otherwise as {@link confirmationAt} says.
+ */
+function confirmationFor(
+  site: SiteDoc,
+  location: Location,
+  component: CatalogueComponent,
+  before: Readonly<Record<string, unknown>>,
+  values: Readonly<Record<string, unknown>>,
+): Plan["confirm"] {
+  const changed = Object.entries(values).flatMap(([name, value]) => {
+    const field = component.fields[name];
+    const [was, now] = [addressOf(before[name]), addressOf(value)];
+    return field?.sensitive === true && was !== now
+      ? [{ field: field.label, ...fromTo(was, now) }]
+      : [];
+  });
+  const [first] = changed;
+  if (first === undefined) return confirmationAt(site, location);
+  const pages = pagesShowing(site, location);
+  return (app) => ({
+    action: t("ai.confirm.destination", { app, item: component.label, field: first.field }),
+    description: changed.map((change) => t("ai.confirm.destinationFromTo", change)).join(" "),
+    confirm: t("ai.confirm.allow"),
+    affectedPages: pages,
+  });
+}
+
 /** Whether a planning step failed. */
 const failed = (value: object): value is Failure => "status" in value;
 
@@ -266,7 +351,7 @@ export const COMMANDS = {
         action: t("history.added", { item: component.label }),
         structural: true,
         kind: "insert",
-        confirm: confirmationAt(site, location),
+        confirm: confirmationFor(site, location, component, component.defaults, values),
         id: node.props.id,
         recipe: (draft) => {
           const top = nodesAt(draft, location);
@@ -305,7 +390,7 @@ export const COMMANDS = {
             : t("ai.history.fields", { item: component.label }),
         structural: fields.some((field) => !isContent(field)),
         kind: "props",
-        confirm: confirmationAt(site, location),
+        confirm: confirmationFor(site, location, component, placed.node.props, values),
         recipe: (draft) => {
           const top = nodesAt(draft, location);
           const node = top === undefined ? undefined : locate(top, id)?.node;
@@ -343,7 +428,9 @@ export const COMMANDS = {
         action: t("history.editedText", { item: component.label }),
         structural: false,
         kind: "text",
-        confirm: confirmationAt(site, location),
+        confirm: confirmationFor(site, location, component, placed.node.props, {
+          [input.field]: text,
+        }),
         recipe: (draft) => {
           const top = nodesAt(draft, location);
           const node = top === undefined ? undefined : locate(top, id)?.node;
@@ -372,6 +459,8 @@ export const COMMANDS = {
     ): Plan | Failure {
       const placed = find(site, input.location, input.nodeId);
       if (failed(placed)) return placed;
+      const kept = untouchable(placed.node);
+      if (kept !== undefined) return kept;
       const nodes = nodesAt(site, input.location) ?? [];
       const parent = input.parentId === null ? null : locate(nodes, input.parentId)?.node;
       if (parent === undefined)
@@ -419,6 +508,8 @@ export const COMMANDS = {
       if (placed.node.type === "Header" || placed.node.type === "Footer") {
         return fail("refused", "The Header and Footer can't be removed.");
       }
+      const kept = untouchable(placed.node);
+      if (kept !== undefined) return kept;
       const { location, nodeId: id } = input;
       const label = CATALOGUE[placed.node.type]?.label ?? placed.node.type;
       return {

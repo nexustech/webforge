@@ -171,4 +171,25 @@ describe("registerAiHandlers", () => {
     const trusted = bridge();
     await expect(trusted.invoke("ai:answer", 1, { status: "maybe" })).rejects.toThrow();
   });
+
+  it("lets one command per app and a few queries wait, answering the rest busy at once (S21)", async () => {
+    const { ai, sent, invoke } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const first = ai.ask(addHero);
+    // The same app's next command waits for the first; another app's goes.
+    expect(await ai.ask(addHero)).toMatchObject({ status: "busy" });
+    void ai.ask({ ...addHero, app: "Copilot" });
+    const queries = [0, 1, 2, 3].map(() => ai.ask(outline));
+    expect(await ai.ask(outline)).toMatchObject({ status: "busy" });
+    expect(sent).toHaveLength(6);
+
+    // Once answered, its place is free again.
+    await invoke("ai:answer", 1, { status: "done", label: "AI (Claude): Added Hero" });
+    await first;
+    void ai.ask(addHero);
+    await invoke("ai:answer", 3, { status: "done", data: {} });
+    await queries[0];
+    void ai.ask(outline);
+    expect(sent).toHaveLength(8);
+  });
 });

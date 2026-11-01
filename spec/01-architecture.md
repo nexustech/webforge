@@ -274,6 +274,9 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
   - An HTTP transport checks `Origin` and `Host` on every request (DNS-rebinding and browser protection, as the MCP specification requires).
   - Every tool call is validated with zod and becomes a document command through `HistoryManager`; the server holds no document state of its own.
   - No tools for publishing, credentials, Custom Code or files outside the site.
+  - Custom Code stays out of reach: AI commands can't add, edit, move or remove it, nor remove or move a section that holds it (S19).
+  - A change to where visitors' money or details go (a field marked `sensitive`: a Buy button's payment link, a Newsletter's form address) always waits for the person's D7 confirmation, on one page too and in Content mode. The question names where the field sends visitors now and where it would (S18).
+  - Main checks every request against the `ai` domain's zod contract before forwarding it, with a cap on its size, and lets only a few wait at once: one command per app. The others are answered `invalid` or `busy` straight away (S21).
   - Site content goes only to the AI app the user paired; Webforge itself sends nothing.
   - Tool calls are never logged with their content (same rule as crash reports).
 - **Files in Media (F-ED-24):** accepted by extension and sniffed content type; stored and exported unchanged; never opened, previewed or run inside the editor.

@@ -738,6 +738,144 @@ describe("the command API's text and rich text (4.8)", () => {
   });
 });
 
+describe("where visitors' money and details go (S18, #658)", () => {
+  const PAY = "https://buy.stripe.com/rosas";
+  /** The home page's Section with a Buy button paying `PAY`, and a Newsletter after it. */
+  const shop = (doc: SiteDoc) => {
+    const page = doc.pages[doc.homePageId];
+    page?.doc.content.push(
+      {
+        type: "Section",
+        props: {
+          id: "shop",
+          content: [{ type: "BuyButton", props: { id: "buy", label: "Buy", link: PAY } }],
+        },
+      },
+      { type: "Newsletter", props: { id: "news", action: "https://list.rosas.example/join" } },
+    );
+  };
+
+  it("asks before a payment link or a form address changes, in Content mode too, naming both hosts", async () => {
+    for (const mode of ["design", "content"] as const) {
+      const { history, host, confirm } = setup(false, shop);
+      host.mode = () => mode;
+      const api = createCommandApi(host);
+      const location = home(history);
+
+      const repointed = await api.run(
+        "updateFields",
+        { location, nodeId: "buy", values: { link: "https://pay.example.net/x" } },
+        app,
+      );
+      expect(repointed.status).toBe("declined");
+      expect(confirm.mock.calls[0]?.[0]).toEqual({
+        action: "Allow Claude to change the Buy button's Payment link?",
+        description: "Payment link: from buy.stripe.com to pay.example.net.",
+        confirm: "Allow",
+        affectedPages: 1,
+      });
+      const text = await api.run(
+        "editText",
+        { location, nodeId: "news", field: "action", text: "https://collect.example.net/" },
+        app,
+      );
+      expect(text.status).toBe("declined");
+      expect(confirm.mock.calls[1]?.[0].description).toBe(
+        "Form address: from list.rosas.example to collect.example.net.",
+      );
+      expect(history.state.getState().entries).toEqual([]);
+    }
+  });
+
+  it("names whole addresses on one host, and asks when one is added with an address", async () => {
+    const { history, host, confirm } = setup(true, shop);
+    const api = createCommandApi(host);
+    const location = home(history);
+
+    expect(
+      await api.run(
+        "updateFields",
+        { location, nodeId: "buy", values: { link: "https://buy.stripe.com/theirs" } },
+        app,
+      ),
+    ).toMatchObject({ status: "done" });
+    expect(confirm.mock.calls[0]?.[0].description).toBe(
+      `Payment link: from ${PAY} to https://buy.stripe.com/theirs.`,
+    );
+    const added = await api.run(
+      "addNode",
+      {
+        location,
+        type: "BuyButton",
+        parentId: "shop",
+        slot: "content",
+        values: { link: "https://pay.example.net/x" },
+      },
+      app,
+    );
+    expect(added.status).toBe("done");
+    expect(confirm.mock.calls[1]?.[0].description).toBe(
+      "Payment link: from no address to https://pay.example.net/x.",
+    );
+  });
+
+  it("doesn't ask for its other fields, nor for the same address again", async () => {
+    const { history, host, confirm } = setup(true, shop);
+    const api = createCommandApi(host);
+    const location = home(history);
+
+    for (const values of [{ label: "Buy a loaf" }, { link: ` ${PAY} ` }]) {
+      expect((await api.run("updateFields", { location, nodeId: "buy", values }, app)).status).toBe(
+        "done",
+      );
+    }
+    expect(confirm).not.toHaveBeenCalled();
+  });
+});
+
+describe("Custom Code, which AI apps keep away from (S19, #658)", () => {
+  /** A Section holding Custom Code beside a Heading, and an empty Section after it. */
+  const coded = (doc: SiteDoc) => {
+    doc.pages[doc.homePageId]?.doc.content.push(
+      {
+        type: "Section",
+        props: {
+          id: "coded",
+          content: [
+            { type: "Heading", props: { id: "title", text: "Hi" } },
+            { type: "CustomCode", props: { id: "code", html: "<p>Hi</p>" } },
+          ],
+        },
+      },
+      { type: "Section", props: { id: "empty", content: [] } },
+    );
+  };
+
+  it("moves and removes what's beside it, never it nor what holds it", async () => {
+    const { history, host } = setup(true, coded);
+    const api = createCommandApi(host);
+    const location = home(history);
+    const into = { parentId: "empty", slot: "content", index: 0 };
+
+    for (const [command, input] of [
+      ["moveNode", { location, nodeId: "code", ...into }],
+      ["moveNode", { location, nodeId: "coded", parentId: null, slot: null, index: 0 }],
+      ["removeNode", { location, nodeId: "code" }],
+      ["removeNode", { location, nodeId: "coded" }],
+    ] as const) {
+      expect(await api.run(command, input, app)).toMatchObject({
+        status: "refused",
+        message: expect.stringContaining("Custom Code"),
+      });
+    }
+    expect(history.state.getState().entries).toEqual([]);
+    expect((await api.run("moveNode", { location, nodeId: "title", ...into }, app)).status).toBe(
+      "done",
+    );
+    expect((await api.run("removeNode", { location, nodeId: "empty" }, app)).status).toBe("done");
+  });
+});
+
 describe("every command (4.8, property)", () => {
   it("is one undo step labelled for its app, and undoing all of them restores the site", async () => {
     const command = fc.oneof(
