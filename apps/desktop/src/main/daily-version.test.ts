@@ -1,63 +1,82 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createSite } from "@webforge/model";
+import { changedDocuments, createSite, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { dailyVersionFeature } from "./daily-version.js";
-import type { SiteStoreAccess } from "./project-session.js";
+import { ProjectSession } from "./project-session.js";
 
 let dir: string;
-let store: ProjectStore;
-const access: SiteStoreAccess = async (work) => work(store);
+let session: ProjectSession;
+let site: SiteDoc;
+const path = () => join(dir, "Bakery.wforge");
 
-beforeEach(() => {
+beforeEach(async () => {
   dir = mkdtempSync(join(tmpdir(), "webforge-daily-"));
-  store = ProjectStore.create(join(dir, "Bakery.wforge"), { name: "Bakery" });
   // Days on this computer's clock, which versions are saved by too.
   vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date("2026-11-01T09:00:00"));
+  site = createSite({ name: "Bakery", language: "en", homeTitle: "Home", notFoundTitle: "404" });
+  const store = ProjectStore.create(path(), { name: "Bakery" });
+  store.saveSite(site);
+  store.close();
+  session = new ProjectSession({}, { dailyVersion: { kept: () => 2 } });
+  await session.open(path());
+  await session.readSite();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await session.close();
   vi.useRealTimers();
-  store.close();
   rmSync(dir, { recursive: true, force: true });
 });
 
-/** Opens the site at `when`, as the app tells its features. */
-async function openAt(when: string, kept = 20): Promise<void> {
+/** The site renamed, saved as autosave saves it, at `when`. */
+async function editAt(when: string, name: string): Promise<void> {
   vi.setSystemTime(new Date(when));
-  const feature = dailyVersionFeature({ versionsKept: () => kept });
-  await feature.site?.opened?.(access, join(dir, "Bakery.wforge"));
+  const next = {
+    ...site,
+    settings: { ...site.settings, general: { ...site.settings.general, name } },
+  };
+  expect(await session.commit(changedDocuments(site, next))).toEqual({ status: "saved" });
+  site = next;
 }
 
-const reasons = () => store.listVersions().map((version) => version.reason);
+/** The versions' reasons, and the name of the site each holds, newest first. */
+async function versions(): Promise<string[]> {
+  await session.close();
+  const store = ProjectStore.open(path());
+  try {
+    return store
+      .listVersions()
+      .map(
+        (version) =>
+          `${version.reason} ${store.readVersionSite(version.id)?.settings.general.name}`,
+      );
+  } finally {
+    store.close();
+    await session.open(path());
+    await session.readSite();
+  }
+}
 
 describe("the daily version (F-SITE-4, P3)", () => {
-  it("saves one as the site first opens each day, with no name or picture", async () => {
-    store.saveSite(
-      createSite({ name: "Bakery", language: "en", homeTitle: "Home", notFoundTitle: "404" }),
-    );
+  it("saves the site as it was before the day's first change, once a day", async () => {
+    await editAt("2026-11-01T09:05:00", "Rosa's");
+    await editAt("2026-11-01T17:30:00", "Rosa's Bakery");
+    expect(await versions()).toEqual(["daily Bakery"]);
 
-    await openAt("2026-11-01T09:00:00");
-    await openAt("2026-11-01T17:30:00");
-    expect(reasons()).toEqual(["daily"]);
-    expect(store.listVersions()[0]).toMatchObject({ name: "", thumbnailHash: undefined });
+    await editAt("2026-11-02T08:00:00", "Rosa's Cakes");
+    expect(await versions()).toEqual(["daily Rosa's Bakery", "daily Bakery"]);
+  });
 
-    await openAt("2026-11-02T08:00:00");
-    expect(reasons()).toEqual(["daily", "daily"]);
+  it("writes nothing to a site only looked at (R14)", async () => {
+    expect(await versions()).toEqual([]);
   });
 
   it("keeps no more of them than the person's Versions kept", async () => {
-    store.saveSite(
-      createSite({ name: "Bakery", language: "en", homeTitle: "Home", notFoundTitle: "404" }),
-    );
-    for (const day of ["01", "02", "03", "04"]) await openAt(`2026-11-${day}T09:00:00`, 2);
-    expect(reasons()).toEqual(["daily", "daily"]);
-  });
-
-  it("saves none of a new, empty site", async () => {
-    await openAt("2026-11-01T09:00:00");
-    expect(reasons()).toEqual([]);
+    for (const day of ["01", "02", "03", "04"])
+      await editAt(`2026-11-${day}T09:00:00`, `Day ${day}`);
+    expect(await versions()).toEqual(["daily Day 03", "daily Day 02"]);
   });
 });

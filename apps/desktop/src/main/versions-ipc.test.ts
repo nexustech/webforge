@@ -50,7 +50,7 @@ function setUp(options: Partial<VersionsOptions> = {}) {
   const beforeSwitch = vi.fn(async () => undefined);
   registerVersionsHandlers(ipc, (url) => url === APP_URL, {
     session,
-    dialogs: { chooseNewProjectPath: async (name) => join(dir, `${name} copy.wforge`) },
+    dialogs: { chooseNewProjectPath: async (name) => join(dir, `${name}.wforge`) },
     captureCanvas: async () => JPEG,
     versionsKept: async () => 5,
     beforeSwitch,
@@ -161,7 +161,7 @@ describe("the versions IPC calls (4.6)", () => {
       status: "failed",
       reason: "stale-session",
     });
-    expect(await invoke("versions:open-as-new-site", other, crypto.randomUUID())).toEqual({
+    expect(await invoke("versions:open-as-new-site", other, crypto.randomUUID(), "Copy")).toEqual({
       status: "canceled",
     });
   });
@@ -196,9 +196,15 @@ describe("the versions IPC calls (4.6)", () => {
     };
     await rename("Rosa's");
 
-    const opened = await invoke("versions:open-as-new-site", sessionId, saved.version.id);
+    const opened = await invoke(
+      "versions:open-as-new-site",
+      sessionId,
+      saved.version.id,
+      "Rosa's Bakery (First)",
+    );
 
-    expect(opened).toMatchObject({ status: "opened", project: { name: "Rosa's Bakery" } });
+    // Named as the renderer words it; its site's own name is the version's.
+    expect(opened).toMatchObject({ status: "opened", project: { name: "Rosa's Bakery (First)" } });
     expect(beforeSwitch).toHaveBeenCalledOnce();
     expect(session.current()?.sessionId).not.toBe(sessionId);
     expect(await session.readSite()).toMatchObject({
@@ -207,7 +213,7 @@ describe("the versions IPC calls (4.6)", () => {
     });
     await session.close();
     // A site of its own: no versions of the first, and its own id.
-    const copy = ProjectStore.open(join(dir, "Rosa's Bakery copy.wforge"));
+    const copy = ProjectStore.open(join(dir, "Rosa's Bakery (First).wforge"));
     try {
       expect(copy.listVersions()).toEqual([]);
     } finally {
@@ -219,7 +225,9 @@ describe("the versions IPC calls (4.6)", () => {
     const { invoke, sessionId } = setUp({
       dialogs: { chooseNewProjectPath: async () => undefined },
     });
-    expect(await invoke("versions:open-as-new-site", sessionId, crypto.randomUUID())).toEqual({
+    expect(
+      await invoke("versions:open-as-new-site", sessionId, crypto.randomUUID(), "Copy"),
+    ).toEqual({
       status: "failed",
       reason: "not-found",
     });
@@ -229,7 +237,7 @@ describe("the versions IPC calls (4.6)", () => {
     })) as {
       version: VersionSummary;
     };
-    expect(await invoke("versions:open-as-new-site", sessionId, saved.version.id)).toEqual({
+    expect(await invoke("versions:open-as-new-site", sessionId, saved.version.id, "Copy")).toEqual({
       status: "canceled",
     });
     expect(session.current()?.sessionId).toBe(sessionId);

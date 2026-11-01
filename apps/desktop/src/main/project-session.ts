@@ -14,6 +14,7 @@ import {
   ProjectFileError,
   type ProjectFileErrorCode,
   ProjectStore,
+  ReadOnlyProjectError,
   type StoredBlob,
 } from "@webforge/storage";
 import type {
@@ -34,6 +35,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { createWriterJobs } from "../worker/writer-jobs.js";
+import { localDay, takeDailyVersion } from "./daily-version.js";
 import { setUiState, uiState } from "./editor-state.js";
 import { exportChoices, setExportChoices } from "./export-choices.js";
 import { log, logFailure } from "./log.js";
@@ -173,6 +175,11 @@ export type ProjectSessionOptions = {
   readonly gate?: StoreGate;
   /** Opens a site's file; `ProjectStore.open` unless a test wraps it. */
   readonly openStore?: (path: string) => ProjectStore;
+  /**
+   * Saves the daily version before the first change of the day (F-SITE-4), keeping `kept()` of
+   * Webforge's own versions; none without it, as in most tests.
+   */
+  readonly dailyVersion?: { readonly kept: () => number };
   /** Creates a site's file; `ProjectStore.create` unless a test wraps it. */
   readonly createStore?: (path: string, name: string) => ProjectStore;
   /**
@@ -202,6 +209,9 @@ export class ProjectSession {
   readonly #openStore: (path: string) => ProjectStore;
   readonly #createStore: (path: string, name: string) => ProjectStore;
   readonly #writer: StorageWriter;
+  readonly #dailyVersion: ProjectSessionOptions["dailyVersion"];
+  /** The opening and day the daily version was last looked for: one look a day, not a commit. */
+  #dailyChecked: string | undefined;
   /** The import the storage writer is writing to the open site's file now, holding the gate. */
   #writing: object | undefined;
 
@@ -212,6 +222,7 @@ export class ProjectSession {
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
     this.#writer = options.writer ?? createInlineStorageWriter(createWriterJobs());
+    this.#dailyVersion = options.dailyVersion;
   }
 
   /**
@@ -465,6 +476,7 @@ export class ProjectSession {
           log.error("Webforge refused changes that would break the site");
           return { status: "failed", reason: "invalid" };
         }
+        this.#takeDailyVersion(store);
         try {
           store.commit(changes);
         } catch (error) {
@@ -545,6 +557,24 @@ export class ProjectSession {
   }
 
   /** The site in `store`, kept as the one commits build on. Inside the gate only. */
+  /**
+   * The daily version, before the first change of the day is saved (F-SITE-4): looked for once a
+   * day for each opening. One that can't be saved never stops the change being saved.
+   */
+  #takeDailyVersion(store: ProjectStore): void {
+    if (this.#dailyVersion === undefined) return;
+    const checked = `${this.#sessionId ?? ""} ${localDay(new Date())}`;
+    if (this.#dailyChecked === checked) return;
+    this.#dailyChecked = checked;
+    try {
+      takeDailyVersion(store, this.#dailyVersion.kept());
+    } catch (error) {
+      if (!(error instanceof ReadOnlyProjectError)) {
+        logFailure("Webforge could not save the daily version of a site", error);
+      }
+    }
+  }
+
   #readSiteFrom(store: ProjectStore): ReadSiteResult {
     if (store.isEmpty()) {
       this.#site = undefined;

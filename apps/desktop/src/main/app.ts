@@ -29,7 +29,6 @@ import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 import type { startCrashReports } from "./crash-wiring.js";
-import { dailyVersionFeature } from "./daily-version.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
@@ -198,10 +197,17 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   // The code each site's owner trusts (#649): only that goes into a build.
   const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
+  /** How many of Webforge's own versions each site keeps: the person's choice (P3). */
+  const versionsKept = () =>
+    lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   const projectSession = new ProjectSession(
     {},
-    // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
-    { writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)) },
+    {
+      // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
+      writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)),
+      // The site as it was before each day's first change, in Version History (F-SITE-4, 4.6).
+      dailyVersion: { kept: versionsKept },
+    },
   );
 
   // Before another site replaces the open one: save it, and capture its canvas for Recent.
@@ -216,9 +222,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     capture: () => captureCanvas(lifecycle.mainWindow()),
     recent: recentSites,
   });
-  /** How many of Webforge's own versions each site keeps: the person's choice (P3). */
-  const versionsKept = () =>
-    lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   const openSite = (path: string) =>
     openOrRecover(projectSession, path, backups, parts.recoveryDialogs);
 
@@ -319,10 +322,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const features: readonly AppFeature[] = [
     // Rolling backups of the open site: as it opens, then every 30 minutes it was edited.
     { site: backupSchedule },
-    // The site as it was when first opened each day, in Version History (F-SITE-4, 4.6).
-    dailyVersionFeature({
-      versionsKept,
-    }),
     recentSitesFeature(recentSites, projectSession),
     myThemesFeature(myThemes),
     fonts,

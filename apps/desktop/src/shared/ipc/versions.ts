@@ -1,4 +1,4 @@
-import { siteDocSchema } from "@webforge/model";
+import { SITE_NAME_MAX, siteDocSchema } from "@webforge/model";
 import { z } from "zod";
 import type { ProjectResult } from "./project.js";
 import { projectResultSchema, sessionIdSchema } from "./project.js";
@@ -143,11 +143,13 @@ export const versionsChannels = {
   },
   /**
    * Opens a version as a new site where the person chooses (P5): its pages, Media and choices,
-   * with no publish destinations (ADR 0018 §2). It replaces the open site, as New Site does.
+   * with no publish destinations (ADR 0018 §2). It replaces the open site, as New Site does. The
+   * renderer words the name the save dialog offers ("Rosa's Bakery (Before the menu)"), so it
+   * isn't the open site's own file.
    */
   openVersionAsNewSite: {
     channel: "versions:open-as-new-site",
-    request: z.tuple([sessionIdSchema, z.uuid()]),
+    request: z.tuple([sessionIdSchema, z.uuid(), z.string().trim().min(1).max(SITE_NAME_MAX)]),
     response: projectResultSchema,
   },
 } as const;
@@ -165,6 +167,6 @@ export interface VersionsApi {
   delete(sessionId: string, id: string): Promise<DeleteVersionResult>;
   /** Version `id`'s site, to preview or restore it. */
   readSite(sessionId: string, id: string): Promise<ReadVersionSiteResult>;
-  /** Opens version `id` as a new site, which replaces the open one. */
-  openAsNewSite(sessionId: string, id: string): Promise<ProjectResult>;
+  /** Opens version `id` as a new site named `name`, which replaces the open one. */
+  openAsNewSite(sessionId: string, id: string, name: string): Promise<ProjectResult>;
 }

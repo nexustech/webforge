@@ -44,7 +44,7 @@ export function registerVersionsHandlers(
   );
   // Open version as new site (P5): the version read first, then a new site where the person
   // chooses, with its pages, Media and choices but no destinations (ADR 0018 §2).
-  registerIpcHandler(ipc, "openVersionAsNewSite", isTrustedSender, async (sessionId, id) => {
+  registerIpcHandler(ipc, "openVersionAsNewSite", isTrustedSender, async (sessionId, id, name) => {
     const site = session.forSession(sessionId);
     const stale = site.staleReason();
     if (stale === "stale-session") return { status: "canceled" };
@@ -54,7 +54,6 @@ export function registerVersionsHandlers(
         ? { status: "canceled" }
         : { status: "failed", reason: read.status === "not-found" ? "not-found" : "corrupt" };
     }
-    const name = read.pack.site.settings.general.name;
     const path = await dialogs.chooseNewProjectPath(name);
     if (path === undefined) return { status: "canceled" };
     await beforeSwitch?.();
