@@ -2,9 +2,9 @@ import { DEFAULT_THEME, type ThemeTokens } from "@webforge/model";
 import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
 import { describe, expect, it, vi } from "vitest";
 import { ipcContract } from "../shared/ipc-contract.js";
-import type { FontLibrary } from "./font-library.js";
+import type { FontFetch, FontLibrary } from "./font-library.js";
 import type { ExpectedFont } from "./fonts.js";
-import { createSiteFonts } from "./site-fonts.js";
+import { createSiteFonts, fontFetchFor } from "./site-fonts.js";
 
 /** A family downloaded on this computer: Comic Neue, regular and bold. */
 const comic: CatalogueFont = {
@@ -133,5 +133,31 @@ describe("createSiteFonts (2.2, A12)", () => {
 
     expect(makeLibrary).toHaveBeenCalledOnce();
     expect(handle).toHaveBeenCalledWith(ipcContract.listFonts.channel, expect.any(Function));
+  });
+});
+
+describe("fontFetchFor (S11)", () => {
+  it("uses the E2E tests' stand-in only in an unpackaged E2E launch, else Electron's network", async () => {
+    const request = vi.fn(() => {
+      throw new Error("Electron's network");
+    });
+    const stand = vi.fn<FontFetch>(async () => new Response("stand-in"));
+    Object.assign(globalThis, { webforgeFontFetch: stand });
+    const init = { signal: new AbortController().signal, redirect: "manual" } as const;
+    try {
+      const e2e = fontFetchFor({ request } as never, false, { WEBFORGE_E2E_FONTS: "1" });
+      expect(await (await e2e("https://fonts.test/a", init)).text()).toBe("stand-in");
+      for (const real of [
+        fontFetchFor({ request } as never, true, { WEBFORGE_E2E_FONTS: "1" }),
+        fontFetchFor({ request } as never, false, {}),
+      ]) {
+        await expect(real("https://fonts.test/a", init)).rejects.toThrow("Electron's network");
+      }
+      expect(stand).toHaveBeenCalledOnce();
+      // In manual mode, so the library sees each redirect.
+      expect(request).toHaveBeenCalledWith(expect.objectContaining({ redirect: "manual" }));
+    } finally {
+      Reflect.deleteProperty(globalThis, "webforgeFontFetch");
+    }
   });
 });

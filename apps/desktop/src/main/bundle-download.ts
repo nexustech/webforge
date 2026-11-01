@@ -185,21 +185,21 @@ const ipv4Of = (high: number, low: number) =>
   [high >> 8, high & 0xff, low >> 8, low & 0xff].join(".");
 
 /**
- * The IPv4 address an IPv6 address carries, which a request to it may reach: IPv4-mapped
+ * The IPv4 addresses an IPv6 address carries, which a request to it may reach: IPv4-mapped
  * (`::ffff:0:0/96`), IPv4-compatible (`::/96`), NAT64's well-known prefix (`64:ff9b::/96`), 6to4
- * (`2002::/16`) and Teredo's client (`2001::/32`, its bits inverted).
+ * (`2002::/16`), and Teredo's server and client (`2001::/32`, the client's bits inverted).
  */
-function embeddedIpv4(groups: readonly number[]): string | undefined {
+function embeddedIpv4(groups: readonly number[]): string[] {
   const [g0 = 0, g1 = 0, g2 = 0, g3 = 0, g4 = 0, g5 = 0, g6 = 0, g7 = 0] = groups;
   const zeroTo = (end: number) => groups.slice(0, end).every((group) => group === 0);
-  if (zeroTo(5) && g5 === 0xffff) return ipv4Of(g6, g7);
-  if (zeroTo(6)) return ipv4Of(g6, g7);
+  if (zeroTo(5) && g5 === 0xffff) return [ipv4Of(g6, g7)];
+  if (zeroTo(6)) return [ipv4Of(g6, g7)];
   if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0) {
-    return ipv4Of(g6, g7);
+    return [ipv4Of(g6, g7)];
   }
-  if (g0 === 0x2002) return ipv4Of(g1, g2);
-  if (g0 === 0x2001 && g1 === 0) return ipv4Of(g6 ^ 0xffff, g7 ^ 0xffff);
-  return undefined;
+  if (g0 === 0x2002) return [ipv4Of(g1, g2)];
+  if (g0 === 0x2001 && g1 === 0) return [ipv4Of(g2, g3), ipv4Of(g6 ^ 0xffff, g7 ^ 0xffff)];
+  return [];
 }
 
 /**
@@ -214,8 +214,7 @@ export function isLocalAddress(address: string): boolean {
   if (groups === undefined) return true;
   const ipv6 = groups.map((group) => group.toString(16)).join(":");
   if (LOCAL_ADDRESSES.check(ipv6, "ipv6")) return true;
-  const ipv4 = embeddedIpv4(groups);
-  return ipv4 !== undefined && LOCAL_ADDRESSES.check(ipv4, "ipv4");
+  return embeddedIpv4(groups).some((ipv4) => LOCAL_ADDRESSES.check(ipv4, "ipv4"));
 }
 
 /**

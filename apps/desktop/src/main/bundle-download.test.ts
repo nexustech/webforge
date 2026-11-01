@@ -212,6 +212,8 @@ describe("isLocalAddress", () => {
       "2002:c0a8:101::1",
       // Teredo, its client 127.0.0.1 with its bits inverted.
       "2001:0:4136:e378:8000:63bf:80ff:fffe",
+      // Teredo, its server 10.0.0.1.
+      "2001:0:a00:1:8000:63bf:a247:d3f1",
       "64:ff9b:1::8.8.8.8",
       "fec0::1",
       "ff02::1",
@@ -226,6 +228,7 @@ describe("isLocalAddress", () => {
       "64:ff9b::8.8.8.8",
       "2002:808:808::1",
       "2001:4860:4860::8888",
+      "2001:0:4136:e378:8000:63bf:a247:d3f1",
       "198.20.0.1",
     ]) {
       expect(isLocalAddress(elsewhere), elsewhere).toBe(false);
@@ -240,7 +243,7 @@ describe("bundleNetworkFor", () => {
       resolve: vi.fn(async () => ["93.184.215.14"]),
     };
     const stand = vi.fn<BundleFetch>(async () => new Response("stand-in"));
-    const standResolve = vi.fn(async () => ["198.51.100.1"]);
+    const standResolve = vi.fn(async () => ["93.184.215.14"]);
     Object.assign(globalThis, { webforgeBundleFetch: stand, webforgeBundleResolve: standResolve });
     try {
       const init = { signal: new AbortController().signal, redirect: "manual" } as const;
