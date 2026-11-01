@@ -114,6 +114,7 @@ describe("createExportFeature (A12)", () => {
         choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
         output: { minify: false, developerFiles: false },
       },
+      "44444444-4444-4444-8444-444444444444",
     );
 
     await vi.waitFor(() => expect(posted).toHaveLength(1));

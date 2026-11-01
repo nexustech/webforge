@@ -319,8 +319,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       fontsOf: fonts.fontsOf,
       // Only the code the site's owner trusts (#649).
       snapshotFor: trustedOnly,
-      sendProgress: (progress) =>
-        lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
+      sendProgress: (operationId, progress) =>
+        lifecycle
+          .mainWindow()
+          ?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
       // The site each export call is for (#663): its Media and its export choices.
       site: (sessionId) => projectSession.forSession(sessionId),
       // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.

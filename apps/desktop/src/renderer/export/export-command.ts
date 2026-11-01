@@ -122,9 +122,10 @@ export function exportReport(
   };
 }
 
-/** Exports a site, telling `onProgress` how far it has come (3.1). */
+/** Exports a site as operation `operationId`, telling `onProgress` how far it has come (3.1). */
 export type ExportSite = (
   request: ExportRequest,
+  operationId: string,
   onProgress: (progress: ExportProgress) => void,
 ) => Promise<ExportResult>;
 
@@ -136,7 +137,8 @@ export type ExportFlow = {
   /** Advanced mode: developer files are offered (T2). */
   readonly advanced: () => boolean;
   readonly exportSite: ExportSite;
-  readonly cancel: () => Promise<null>;
+  /** Cancels export `operationId`, and no other (A14). */
+  readonly cancel: (operationId: string) => Promise<null>;
   /** What the person chose for this site's last export. */
   readonly choices: () => Promise<ExportChoices>;
   /** Remembers the person's choices with the site at once. */
@@ -165,14 +167,20 @@ function exportWithProgress(
     minify: choices.minify,
     developerFiles: flow.advanced() && choices.developerFiles,
   };
+  // This export's own name, which its progress and its Cancel button go by (A14).
+  const operationId = crypto.randomUUID();
   return runWithProgress<ExportProgress, ExportResult>({
     working: t("export.working"),
     describe: progressText,
     cancelLabel: t("export.cancel"),
     cancelling: t("export.cancelling"),
-    cancel: flow.cancel,
+    cancel: () => flow.cancel(operationId),
     run: (onProgress) =>
-      flow.exportSite(exportRequestFor(site, flow.library, choices, output), onProgress),
+      flow.exportSite(
+        exportRequestFor(site, flow.library, choices, output),
+        operationId,
+        onProgress,
+      ),
     failed: { status: "failed", reason: "build-failed" },
     failureKey: "export",
   });
