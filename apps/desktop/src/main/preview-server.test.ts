@@ -1,7 +1,7 @@
 import { request } from "node:http";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   changedValues,
   createPreviewServer,
@@ -114,11 +114,17 @@ describe("the preview server (3.2)", () => {
     // Here the loopback stands in for the Wi-Fi's address: the listener is on that address only.
     const phonePort = await preview.listen("network", "127.0.0.1");
     expect(phonePort).not.toBe(port);
-    expect((await get(phonePort, preview.base)).status).toBe(200);
+    const phoneBase = preview.phoneBase() ?? "";
+    expect((await get(phonePort, phoneBase)).status).toBe(200);
+    // Each listener has its own secret (S9): this computer's opens nothing on the phone's.
+    expect(phoneBase).not.toBe(preview.base);
+    expect((await get(phonePort, preview.base)).status).toBe(404);
+    expect((await get(port, phoneBase)).status).toBe(404);
 
     await preview.stop("network");
 
-    await expect(get(phonePort, preview.base)).rejects.toThrow();
+    expect(preview.phoneBase()).toBe(undefined);
+    await expect(get(phonePort, phoneBase)).rejects.toThrow();
     // The desktop preview goes on.
     expect((await get(port, preview.base)).status).toBe(200);
   });
@@ -325,6 +331,60 @@ ${THEME_VALUES_MARKER}
       status: 200,
       body: "body{color:blue}",
     });
+  });
+
+  it("gives each phone preview a new secret: an address given out before opens nothing (S9)", async () => {
+    const { server: preview } = await started();
+    preview.update(FIRST);
+    const first = await preview.listen("network", "127.0.0.1");
+    const before = preview.phoneBase() ?? "";
+    // Asked again while it's on: the same address.
+    expect(await preview.listen("network", "127.0.0.1")).toBe(first);
+    expect(preview.phoneBase()).toBe(before);
+
+    await preview.stop("network");
+    const second = await preview.listen("network", "127.0.0.1");
+    expect(preview.phoneBase()).not.toBe(before);
+    expect((await get(second, before)).status).toBe(404);
+    expect((await get(second, preview.phoneBase() ?? "")).status).toBe(200);
+  });
+
+  it("stops the phone's listener once unused, but not while a page is open on it (S9)", async () => {
+    server = createPreviewServer({ phoneIdleMs: 150 });
+    const preview = server;
+    preview.update(FIRST);
+    const stopped = vi.fn();
+    preview.onPhoneStopped(stopped);
+    const phonePort = await preview.listen("network", "127.0.0.1");
+    const phoneBase = preview.phoneBase() ?? "";
+
+    // A page open on the phone keeps it on.
+    const stream = events(phonePort, phoneBase);
+    const close = await stream.opened;
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(stopped).not.toHaveBeenCalled();
+    expect((await get(phonePort, phoneBase)).status).toBe(200);
+
+    // Closed, then unused: it stops, and says so.
+    close();
+    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce(), { timeout: 2_000 });
+    expect(preview.phoneBase()).toBe(undefined);
+    await expect(get(phonePort, phoneBase)).rejects.toThrow();
+  });
+
+  it("answers only requests naming its own address, before looking at the base (S24)", async () => {
+    const { server: preview, port } = await started();
+    preview.update(FIRST);
+    expect((await get(port, preview.base, "GET", { Host: `localhost:${port}` })).status).toBe(200);
+    for (const host of [`attacker.example:${port}`, `127.0.0.1:${port + 1}`, "127.0.0.1"]) {
+      expect((await get(port, preview.base, "GET", { Host: host })).status).toBe(421);
+    }
+    // A phone's listener answers its own address only, not this computer's names.
+    const phonePort = await preview.listen("network", "127.0.0.1");
+    const phoneBase = preview.phoneBase() ?? "";
+    expect((await get(phonePort, phoneBase)).status).toBe(200);
+    const misnamed = { Host: `localhost:${phonePort}` };
+    expect((await get(phonePort, phoneBase, "GET", misnamed)).status).toBe(421);
   });
 
   it("stops listening when closed", async () => {

@@ -34,7 +34,14 @@ export type PreviewDeps = {
   readonly openInBrowser: (url: string) => Promise<boolean>;
   /** This computer's address on its local network, for a phone; none when it isn't on one. */
   readonly networkAddress: () => string | undefined;
+  /** Whether `address` is still one of this computer's: the phone's listener stops once it isn't. */
+  readonly hasAddress: (address: string) => boolean;
+  /** Tells the window the phone's listener stopped by itself: unused, or its network gone (S9). */
+  readonly phoneStopped: () => void;
 };
+
+/** How often the phone's address is checked for, while a phone can open the preview. */
+const ADDRESS_CHECK_MS = 5_000;
 
 /**
  * The open site's preview (3.2): started by the first open, stopped when the site closes. Each
@@ -71,6 +78,12 @@ export function createPreview(deps: PreviewDeps): Preview {
     | undefined;
   let latest: PreviewJob | undefined;
   let stale = false;
+  // While a phone can open the preview: the check that its address is still this computer's.
+  let watchingAddress: ReturnType<typeof setInterval> | undefined;
+  const stopWatchingAddress = () => {
+    clearInterval(watchingAddress);
+    watchingAddress = undefined;
+  };
   // Each site taken in turn: one whose fonts take longer to read never replaces a later one.
   let taken = 0;
 
@@ -81,6 +94,7 @@ export function createPreview(deps: PreviewDeps): Preview {
   };
 
   const stop = async () => {
+    stopWatchingAddress();
     const stopping = running;
     running = undefined;
     latest = undefined;
@@ -110,6 +124,10 @@ export function createPreview(deps: PreviewDeps): Preview {
     );
     // A browser that starts watching gets the latest edits built.
     server.onWatch(build);
+    server.onPhoneStopped(() => {
+      stopWatchingAddress();
+      deps.phoneStopped();
+    });
     running = { server, builder, sessionId };
     return running;
   };
@@ -129,7 +147,7 @@ export function createPreview(deps: PreviewDeps): Preview {
     const { server } = await start(sessionId);
     const port = await server.listen(scope, host);
     build();
-    return { port, base: server.base };
+    return { port, base: (scope === "network" ? server.phoneBase() : undefined) ?? server.base };
   };
 
   return {
@@ -164,9 +182,18 @@ export function createPreview(deps: PreviewDeps): Preview {
       if (running?.sessionId !== sessionId) await stop();
       await take(site);
       const { port, base } = await listen(sessionId, "network", host);
+      // Once the computer leaves that network, the phone's listener stops (S9).
+      stopWatchingAddress();
+      const phoneServer = running?.server;
+      watchingAddress = setInterval(() => {
+        if (deps.hasAddress(host)) return;
+        stopWatchingAddress();
+        void phoneServer?.stop("network").then(deps.phoneStopped);
+      }, ADDRESS_CHECK_MS);
       return { status: "ready", url: pageUrl(host, port, base, page) };
     },
     async stopPhone() {
+      stopWatchingAddress();
       await running?.server.stop("network");
     },
     close: stop,
