@@ -1,6 +1,7 @@
 import { type MediaId, type MediaMeta, mediaNameFor, newId } from "@webforge/model";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
-import type { ImportFileResult, SessionSite } from "./project-session.js";
+import type { SessionSite } from "./project-session.js";
+import type { ImportFileResult } from "./site-media.js";
 
 /**
  * A file to import: one the main process found (chosen in the dialog, dropped, or copied in the

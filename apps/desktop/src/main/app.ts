@@ -51,7 +51,7 @@ import { createPreviewBuilder } from "./preview-builder.js";
 import { createPreview, previewFeature } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
 import { registerProjectHandlers } from "./project-ipc.js";
-import { findProjectArgument, ProjectSession } from "./project-session.js";
+import { ProjectSession } from "./project-session.js";
 import { registerPublishHandlers } from "./publish-ipc.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
@@ -62,6 +62,7 @@ import {
   isAppUrl,
 } from "./security.js";
 import { siteFontsOf } from "./site-fonts.js";
+import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
 import {
   installContextMenu,
