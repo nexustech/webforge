@@ -137,6 +137,8 @@ A call that reads or changes the open site names the opening of it the page was 
 
 Never log or store site content, credentials or personal data on the way; secrets stay in the OS keychain.
 
+A job for a utility process (a build, a thumbnail, the canvas's CSS) is a schema in `workerJobSchema` with its outcome's (`shared/export-worker-protocol.ts`), a handler in `worker/export-worker.ts`'s dispatch table, which TypeScript makes list every kind, and a call from main through `createWorkerChannel(start).run(job, { outcome, timeoutMs, signal?, onProgress?, readMedia? })` (`main/worker-channel.ts`, A14). The channel and the worker's dispatch carry each job's id, its cancel, its progress and its reads of the site's bytes, and fail it on a timeout, an exit or anything the worker sends that isn't asked for. `worker/` imports nothing of `main/`; what both need is in `shared/`.
+
 ## Strings
 
 No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `t()` from `@webforge/i18n`, worded from the glossary (`research/product/01-terminology.md`).

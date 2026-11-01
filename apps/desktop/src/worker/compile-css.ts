@@ -19,8 +19,8 @@ export async function compileCss(
       fontsUrl: CANVAS_FONT_URL,
       fonts: [...FONT_CATALOGUE, ...job.families],
     });
-    return { type: "css", id: job.id, css, bodyClass: BODY_CLASS };
+    return { type: "css", css, bodyClass: BODY_CLASS };
   } catch {
-    return { type: "css-failed", id: job.id };
+    return { type: "css-failed" };
   }
 }

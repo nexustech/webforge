@@ -39,7 +39,13 @@ const options = (extra: Partial<ExportOptions> = {}): ExportOptions => ({
   ...extra,
 });
 
-/** A worker the test drives: it records what it was sent and answers when told to. */
+/** `job` as the channel sends it, as job `id` (A14). */
+const sentJob = (id: number) => ({ message: "job", id, job });
+
+/**
+ * A worker the test drives: it records what it was sent, answers the job it was sent last with
+ * `reply`, and sends anything else with `send`.
+ */
 function fakeWorker() {
   const listeners: { message?: (message: unknown) => void; exit?: (code: number) => void } = {};
   const worker = {
@@ -53,9 +59,19 @@ function fakeWorker() {
     },
     kill: vi.fn(() => true),
   };
+  /** The id of the job it was sent last. */
+  const lastJob = () =>
+    (
+      worker.posted.filter((each) => (each as { message?: string }).message === "job").at(-1) as
+        | { id: number }
+        | undefined
+    )?.id ?? -1;
   return {
     worker: worker as typeof worker & WorkerProcess,
-    reply: (message: unknown) => listeners.message?.(message),
+    reply: (outcome: unknown) =>
+      listeners.message?.({ message: "outcome", id: lastJob(), outcome }),
+    send: (message: unknown) => listeners.message?.(message),
+    lastJob,
     exit: (code: number) => listeners.exit?.(code),
   };
 }
@@ -93,7 +109,7 @@ describe("createExportRunner", () => {
 
     // One worker, for both, still running: its cache serves the second export.
     expect(workers).toHaveLength(1);
-    expect(latest().worker.posted).toEqual([job, job]);
+    expect(latest().worker.posted).toEqual([sentJob(0), sentJob(1)]);
     expect(latest().worker.kill).not.toHaveBeenCalled();
   });
 
@@ -103,11 +119,11 @@ describe("createExportRunner", () => {
     const first = runner.run(job, options());
     const second = runner.run(job, options());
     await sent();
-    expect(latest().worker.posted).toEqual([job]);
+    expect(latest().worker.posted).toEqual([sentJob(0)]);
 
     latest().reply(exported);
     await first;
-    await vi.waitFor(() => expect(latest().worker.posted).toEqual([job, job]));
+    await vi.waitFor(() => expect(latest().worker.posted).toEqual([sentJob(0), sentJob(1)]));
     latest().reply({ type: "cancelled" });
     await expect(second).resolves.toEqual({ type: "cancelled" });
   });
@@ -160,7 +176,7 @@ describe("createExportRunner", () => {
       detail: "worker-start-failed",
     });
     const next = runner.run(job, options());
-    await vi.waitFor(() => expect(made.worker.posted).toEqual([job]));
+    await vi.waitFor(() => expect(made.worker.posted).toEqual([sentJob(0)]));
     made.reply(exported);
     await expect(next).resolves.toEqual(exported);
   });
@@ -232,16 +248,17 @@ describe("createExportRunner", () => {
     // Nothing is read before the worker asks.
     expect(readMedia).not.toHaveBeenCalled();
 
-    latest().reply({ type: "read-blob", id: 0, hash: "a".repeat(64) });
-    latest().reply({ type: "read-blob", id: 1, hash: "b".repeat(64) });
-    latest().reply({ type: "read-blob", id: 2, hash: "c".repeat(64) });
+    const id = latest().lastJob();
+    latest().send({ message: "read-blob", id, read: 0, hash: "a".repeat(64) });
+    latest().send({ message: "read-blob", id, read: 1, hash: "b".repeat(64) });
+    latest().send({ message: "read-blob", id, read: 2, hash: "c".repeat(64) });
     await vi.waitFor(() => expect(latest().worker.posted).toHaveLength(4));
 
     expect(latest().worker.posted.slice(1)).toEqual([
-      { type: "blob", id: 0, blob: { data: photo.data, mime: "image/jpeg" } },
+      { message: "blob", id, read: 0, blob: { data: photo.data, mime: "image/jpeg" } },
       // Not stored, or not readable: the build leaves it out.
-      { type: "blob", id: 1 },
-      { type: "blob", id: 2 },
+      { message: "blob", id, read: 1 },
+      { message: "blob", id, read: 2 },
     ]);
   });
 
@@ -251,11 +268,12 @@ describe("createExportRunner", () => {
     const outcome = runner.run(job, options({ onProgress }));
     await sent();
 
-    latest().reply({ type: "progress", progress: { stage: "pages", done: 0, total: 1 } });
-    latest().reply({ type: "progress", progress: { stage: "writing" } });
+    const id = latest().lastJob();
+    latest().send({ message: "progress", id, progress: { stage: "pages", done: 0, total: 1 } });
+    latest().send({ message: "progress", id, progress: { stage: "writing" } });
     latest().reply(exported);
     await outcome;
-    latest().reply({ type: "progress", progress: { stage: "fonts" } });
+    latest().send({ message: "progress", id, progress: { stage: "fonts" } });
 
     expect(onProgress.mock.calls).toEqual([
       [{ stage: "pages", done: 0, total: 1 }],
@@ -273,11 +291,13 @@ describe("createExportRunner", () => {
     latest().reply({ type: "cancelled" });
 
     await expect(outcome).resolves.toEqual({ type: "cancelled" });
-    expect(latest().worker.posted).toEqual([job, { type: "cancel" }]);
+    expect(latest().worker.posted).toEqual([sentJob(0), { message: "cancel", id: 0 }]);
 
     // Cancelled before it started: the worker is told with the job.
     const late = runnerOf();
     void late.runner.run(job, options({ signal: controller.signal }));
-    await vi.waitFor(() => expect(late.latest().worker.posted).toEqual([job, { type: "cancel" }]));
+    await vi.waitFor(() =>
+      expect(late.latest().worker.posted).toEqual([sentJob(0), { message: "cancel", id: 0 }]),
+    );
   });
 });

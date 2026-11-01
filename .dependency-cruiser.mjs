@@ -83,6 +83,14 @@ export default {
       to: { path: REACT },
     },
     {
+      name: "worker-not-to-main",
+      severity: "error",
+      comment:
+        "The utility processes' code never imports the main process's (A14): what both need is in shared/. main/ may start a worker's jobs inline (the storage writer's, in tests).",
+      from: { path: "^apps/desktop/src/worker/" },
+      to: { path: "^apps/desktop/src/main/" },
+    },
+    {
       name: "no-electron-remote",
       severity: "error",
       comment: "@electron/remote is banned; use the typed preload API.",
