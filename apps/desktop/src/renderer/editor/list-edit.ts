@@ -1,11 +1,12 @@
 import type { ListChange } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { isNodeDoc, type NodeDoc, newId } from "@webforge/model";
-import type {
-  ComponentLibrary,
-  FieldDef,
-  ListItem,
-  ListItemFieldDef,
+import {
+  acceptsFieldValue,
+  type ComponentLibrary,
+  type FieldDef,
+  type ListItem,
+  type ListItemFieldDef,
 } from "@webforge/site-components";
 
 /**
@@ -79,9 +80,45 @@ export function listItems(stored: unknown, list: EditableList): ListItem[] {
 }
 
 /**
+ * `change`, from the Edit panel's list field, if it is a change `list` takes (#667): an item added,
+ * moved to a place, or removed, or an item's field the list's items have set to a value that field
+ * accepts. Anything else is refused.
+ */
+export function acceptedListChange(change: unknown, list: EditableList): ListChange | undefined {
+  if (typeof change !== "object" || change === null || !("type" in change)) return undefined;
+  const id = "id" in change && typeof change.id === "string" ? change.id : undefined;
+  switch (change.type) {
+    case "add":
+      return { type: "add" };
+    case "remove":
+      return id === undefined ? undefined : { type: "remove", id };
+    case "move": {
+      const to = "to" in change ? change.to : undefined;
+      return id === undefined || typeof to !== "number" || !Number.isInteger(to)
+        ? undefined
+        : { type: "move", id, to };
+    }
+    case "edit": {
+      const name = "name" in change && typeof change.name === "string" ? change.name : undefined;
+      const field = name === undefined ? undefined : list.fields[name];
+      const value = "value" in change ? change.value : undefined;
+      return id === undefined ||
+        name === undefined ||
+        field === undefined ||
+        !acceptsFieldValue(field, value, { responsive: false })
+        ? undefined
+        : { type: "edit", id, name, value };
+    }
+    default:
+      return undefined;
+  }
+}
+
+/**
  * Applies `change` to `items`, the list's array in the document being edited (an Immer draft). An
  * added item gets the list's defaults and a new id. Returns false if there was nothing to change:
- * an item that is gone, a move out of the list.
+ * an item that is gone, a move out of the list, a field its items don't have or a value that field
+ * doesn't take.
  */
 export function applyListChange(items: unknown[], change: ListChange, list: EditableList): boolean {
   if (change.type === "add") {
@@ -111,6 +148,11 @@ export function applyListChange(items: unknown[], change: ListChange, list: Edit
       items.splice(index, 1);
       return true;
     case "edit": {
+      // Only a field the items have, set to a value it takes (#667).
+      const field = list.fields[change.name];
+      if (field === undefined || !acceptsFieldValue(field, change.value, { responsive: false })) {
+        return false;
+      }
       const values = (list.holds === "elements" ? (item as NodeDoc).props : item) as Record<
         string,
         unknown

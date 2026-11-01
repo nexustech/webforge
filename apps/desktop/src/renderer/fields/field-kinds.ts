@@ -7,7 +7,9 @@ import type { FieldDef } from "@webforge/site-components";
  * has a renderer and a story. A new kind touches seven places:
  *
  * 1. `FieldDef`, `StoredOne` and `ValueOne` (packages/site-components/src/schema.ts): how it's
- *    described, what it stores, and what a component's render gets.
+ *    described, what it stores, and what a component's render gets; and `FieldValueShape` and
+ *    `fieldValueSchema` (field-values.ts): the values it may hold, which the Edit panel, its paste,
+ *    list edits, canvas drags and AI apps all check (#667).
  * 2. `valueReader` (packages/site-components/src/define.ts): how render reads what is stored, and
  *    what it falls back to.
  * 3. `toPuckField` (packages/engine/src/puck/config.tsx): its Puck field, and a sample in the
@@ -16,8 +18,8 @@ import type { FieldDef } from "@webforge/site-components";
  *    renderer needs, if the Edit panel draws it.
  * 5. Its renderer: the Edit panel's own (editor-ui's `edit/`), or the app's in `fields/<kind>/`,
  *    listed in `fieldRenderers` (field-renderers.ts).
- * 6. `specOf` and `accepts` (apps/desktop/src/renderer/editor/EditPanelHost.tsx): the Edit panel's
- *    spec for the field, and the values it accepts.
+ * 6. `specOf` (apps/desktop/src/renderer/editor/edit-panel-fields.ts): the Edit panel's spec for
+ *    the field.
  * 7. A story of its renderer, next to it, and the kind in this list with the story's title.
  *
  * Its words go through `t()` (the glossary, research/product/01-terminology.md).
