@@ -39,8 +39,10 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **The composition root,** `renderer/areas.ts`, lists every area in order. Menus, the command box and each panel slot list what is registered in the order it registers, so an area's place in its list is its place there.
 - **The context** (`editor/areas.ts`) holds what an area registers into and works on:
   - every context: `api`, `session`, `commands`, `panels`, `preferences`;
-  - the editor's: `toolbars`, `engine`, `siteWide`, `compileCss`, `sectionPreviews`, `editPreviews`, and `dialogs` (the editor's dialogs: naming a shared section, renaming a layer, picking an image);
+  - the editor's: `toolbars`, `engine`, `siteWide`, `compileCss`, `sectionPreviews`, `editPreviews`, `imagePicks` (the Edit panel's image picker, opened from the canvas), and `dialogs` (the editor's dialogs: naming a shared section, renaming a layer, picking an image);
   - the window's: `siteWide`, `canvasView`, `canvasPointer`, `settings`, `windowDialogs`, `siteCheckIgnored` and the previews.
+  - `siteWide` in both has `setBeforeSiteWideAction(hook)`: the hook runs before an action that changes every page, once the person has agreed, as 4.6's automatic version before a site-wide action does.
+- **Even the editor's own panels are areas** (#668): Undo and Redo with Undo History (`undo-history/`) and the Edit panel (`edit-panel/`) head `EDITOR_AREAS`, so `Editor.tsx` registers nothing by hand.
 - **Main only through `ctx.api`** (#668): an area never reads `window.webforge`. It passes `ctx.api.<domain>` (or a call of it) to what it registers, as the Media panel gets `ctx.api.media`. `App` takes the API as one prop, `api`, which is `window.webforge` in the app, and gives the same object to both lists; it is fixed for the window's life. A new call needs no new prop or context field: add it to its IPC domain, and the area calls it.
 - **The canvas engine** is there only while the editor has one mounted. Use `ctx.engine.whileMounted(({ engine, connection }) => connect…)`: it connects to each engine as it mounts and undoes that as the engine goes. Flush the canvas's pending edit with `ctx.engine.flush()` before a command changes the document.
 - **Design or Content mode:** follow it with `followLayoutLock(ctx.preferences, (locked) => …)` (`shell/preferences-store.ts`). Never hold a ref for someone else to call.
@@ -137,7 +139,8 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 - **Each area's strings** are in one file under `packages/i18n/src/en/`, listed in `en.ts`; a test fails on a key in two files. A new area gets its own (`<area>.ts`). The areas from before then share files, which `pnpm scaffold` knows (`STRINGS_FILES` in `tools/src/scaffold.ts`):
   - `panels.ts`: add, element-menu, layers, links, menu, site;
   - `site.ts`: clipboard, media, site-settings, start;
-  - `canvas.ts`: shared-sections;
+  - `canvas.ts`: edit-panel, shared-sections;
+  - `shell.ts`: preview, settings, undo-history (whose panel title, from before it was an area, is in `panels.ts`);
   - their own: export (`export.ts`), storage (`storage.ts`);
   - none of their own: fields (the colour field's are in `components/shared.ts`), perf.
 

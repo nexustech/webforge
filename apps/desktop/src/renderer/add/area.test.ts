@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { EditorContext } from "../editor/areas.js";
 import { createPreviewStore } from "../editor/edit-previews.js";
 import { createEngineHost } from "../editor/engine-host.js";
+import { createImagePickRequests } from "../editor/image-picks.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { fakePreloadApi } from "../testing/preload.js";
 import { addPanelArea } from "./area.js";
@@ -19,6 +20,7 @@ function setUp() {
     sectionPreviews: () => null,
     editPreviews: createPreviewStore(),
     dialogs: { nameSharedSection: vi.fn(), rename: vi.fn(), pickImage: vi.fn() },
+    imagePicks: createImagePickRequests(),
   };
   const mount = () => {
     const canvas = createFakeEngine();

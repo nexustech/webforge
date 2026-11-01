@@ -159,6 +159,7 @@ function stringsOf(folder: string) {
 export const STRINGS_FILES: Readonly<Record<string, string>> = {
   add: "panels",
   clipboard: "site",
+  "edit-panel": "canvas",
   "element-menu": "panels",
   layers: "panels",
   links: "panels",
@@ -170,6 +171,7 @@ export const STRINGS_FILES: Readonly<Record<string, string>> = {
   site: "panels",
   "site-settings": "site",
   start: "site",
+  "undo-history": "shell",
 };
 
 /** A new strings file, for renderer folder `folder`, with `entries`. */

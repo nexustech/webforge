@@ -14,6 +14,7 @@ import type { CanvasPointer } from "./canvas-pointer.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
+import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
 
 /**
@@ -66,7 +67,10 @@ type AreaContext = {
  */
 export type WindowContext = AreaContext & {
   /** Asks before what changes more than the page shown (D7); AI apps' changes too, and close it. */
-  readonly siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "current" | "answer">;
+  readonly siteWide: Pick<
+    SiteWideConfirm,
+    "confirmSiteWide" | "current" | "answer" | "setBeforeSiteWideAction"
+  >;
   /** The canvas toolbar's zoom and size readout (1.15). */
   readonly canvasView: CanvasView;
   /** What a panel points at on the canvas: an element to outline, a drop point (SP-8, SP-10). */
@@ -100,7 +104,10 @@ export type EditorContext = AreaContext & {
   /** The canvas engine, while the editor has one mounted. */
   readonly engine: EngineHandle;
   /** Asks before what changes more than the page shown (D7); without it, changes happen at once. */
-  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
+  readonly siteWide?: Pick<
+    SiteWideConfirm,
+    "confirmSiteWide" | "current" | "setBeforeSiteWideAction"
+  >;
   /** Compiles the site CSS for the canvas. */
   readonly compileCss: CompileCanvasCss;
   /**
@@ -112,6 +119,8 @@ export type EditorContext = AreaContext & {
   readonly editPreviews: StoreApi<PreviewChoices>;
   /** The editor's own dialogs and panels, which an area's commands open. */
   readonly dialogs: EditorDialogs;
+  /** Requests to open the Edit panel's image picker, from *Edit* on an image (F-ED-25). */
+  readonly imagePicks: ImagePickRequests;
 };
 
 /** The dialogs and panels the editor shows when an area asks. */
