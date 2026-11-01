@@ -9,6 +9,9 @@ import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import { ProjectSession } from "./project-session.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 
+/** The open site, as a call for its opening reaches it (R6, #663). */
+const scoped = (session: ProjectSession) => session.forSession(session.current()?.sessionId ?? "");
+
 const tempDir = tempDirFactory("webforge-storage-writer-");
 
 /** A thread that answers only when the test says, recording what it was sent. */
@@ -190,7 +193,7 @@ describe("the storage writer thread (R13b)", () => {
     // doesn't count waiting for the disk, so the import also writes nothing on this thread: its
     // bytes, asset and fingerprint are all the writer's (AssetWriter).
     const before = process.threadCpuUsage();
-    const result = await session.importFile("poster", "poster.png", { path: photo });
+    const result = await scoped(session).importFile("poster", "poster.png", { path: photo });
     const { user, system } = process.threadCpuUsage(before);
     const busy = (user + system) / 1000;
 
@@ -200,7 +203,7 @@ describe("the storage writer thread (R13b)", () => {
       media: { kind: "image", mimeType: "image/png", width: 2000, height: 1500 },
     });
     expect(busy).toBeLessThan(50);
-    const blob = await session.readMedia(result.status === "stored" ? result.hash : "");
+    const blob = await scoped(session).readMedia(result.status === "stored" ? result.hash : "");
     expect(blob?.data.byteLength).toBe(MAX_MEDIA_BYTES);
   }
 });

@@ -32,7 +32,19 @@ type ExportRequest = {
   choices: { format: "folder"; minify: false; developerFiles: false; askWebAddress: true };
   output: { minify: false; developerFiles: false };
 };
-type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
+type ExportingWindow = {
+  webforge: {
+    project: { getCurrent(): Promise<{ sessionId: string } | null> };
+    site: { export(sessionId: string, request: ExportRequest): Promise<unknown> };
+  };
+};
+
+/** Exports `request` as the page does: for the opening of the site it was loaded for (#663). */
+const exportFromPage = async (request: ExportRequest) => {
+  const { webforge } = window as unknown as ExportingWindow;
+  const current = await webforge.project.getCurrent();
+  return webforge.site.export(current?.sessionId ?? "", request);
+};
 
 // Exports the three-page fixture site, and its "Page not found" page, (with its photo and price list)
 // through the real app: preload API, IPC, export utility process. The browser projects then open
@@ -300,10 +312,13 @@ setup("export the fixture site from the app", async () => {
     await page.waitForLoadState("domcontentloaded");
     await stubFileDialogs(app, EXPORTED_SITE_DIR);
 
-    const result = await page.evaluate(
-      (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      { snapshot: { ...site, media: [], documents: [] }, media, documents, choices, output },
-    );
+    const result = await page.evaluate(exportFromPage, {
+      snapshot: { ...site, media: [], documents: [] },
+      media,
+      documents,
+      choices,
+      output,
+    });
 
     // With "Page not found" (3.5). One warning: the fixture's second Newsletter has no form address,
     // on purpose (3.7).
@@ -311,16 +326,13 @@ setup("export the fixture site from the app", async () => {
 
     // Again in a theme of its own, into a folder inside the first.
     await stubFileDialogs(app, THEMED_SITE_DIR);
-    const again = await page.evaluate(
-      (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
-      {
-        snapshot: { ...themed(site), media: [], documents: [] },
-        media,
-        documents,
-        choices,
-        output,
-      },
-    );
+    const again = await page.evaluate(exportFromPage, {
+      snapshot: { ...themed(site), media: [], documents: [] },
+      media,
+      documents,
+      choices,
+      output,
+    });
     // With the thank-you page Web3Forms sends visitors to (3.7).
     expect(again).toMatchObject({ status: "exported", pages: 5, warningCount: 1 });
   } finally {

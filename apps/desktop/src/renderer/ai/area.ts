@@ -1,5 +1,6 @@
 import { createCommandApi } from "@webforge/commands";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { siteSession } from "../storage/index.js";
 import { answerRequest, commandHost } from "./command-host.js";
 
 /**
@@ -10,6 +11,7 @@ export const aiRequestsArea: Area<WindowContext> = {
   id: "aiRequests",
   register: ({ api, session, preferences, siteWide }) => {
     const commandApi = createCommandApi(commandHost(session, preferences, siteWide));
-    return api.ai.onRequest((request) => answerRequest(commandApi, request));
+    // For the opening of the site this page was loaded for (#663).
+    return api.ai.onRequest(siteSession(), (request) => answerRequest(commandApi, request));
   },
 };

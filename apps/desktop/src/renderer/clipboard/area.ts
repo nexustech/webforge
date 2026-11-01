@@ -21,6 +21,7 @@ export const clipboardCommandsArea: Area<EditorContext> = {
         connection.flush,
         (message) => toast(message),
         siteWide === undefined ? undefined : sharedCutConfirmation(session, siteWide),
+        () => preferences?.getState().preferences.editorLevel ?? "simple",
       );
       const stopLock = followLayoutLock(preferences, clipboardCommands.setLayoutLocked);
       // Several selected elements (1.31): Cut and Copy act on one.

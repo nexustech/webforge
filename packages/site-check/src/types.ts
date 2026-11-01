@@ -61,6 +61,12 @@ export type Finding = {
 export type CheckInput = {
   readonly site: SiteDoc;
   readonly catalogue: Catalogue;
+  /**
+   * Whether the owner has confirmed the addresses Settings' Custom Code allows (#649, S1). The
+   * list is stored in the site's file, which may come from anyone, so until then it allows nothing:
+   * a file can't pass its own scripts' addresses.
+   */
+  readonly allowListConfirmed?: boolean;
 };
 
 /** One Site Check rule (F-CHK-1): its level, and what it finds in a site. */

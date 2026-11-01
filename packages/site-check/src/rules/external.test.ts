@@ -1,4 +1,5 @@
 import type { SiteDoc } from "@webforge/model";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
 import { externalResourcesRule } from "./external.js";
@@ -68,10 +69,21 @@ describe("externalResources (C8, 3.9)", () => {
     ]);
   });
 
-  it("finds nothing Settings allow, and stops the export for the rest", () => {
+  it("finds nothing Settings allow, once confirmed, and stops the export for the rest", () => {
     const site = withCode(siteWith([widget]), {}, ["https://cdn.example.com/"]);
 
-    expect(findIn(externalResourcesRule, site)).toEqual([]);
+    expect(
+      externalResourcesRule.check({ site, catalogue: CATALOGUE, allowListConfirmed: true }),
+    ).toEqual([]);
     expect(externalResourcesRule.level).toBe("must");
+  });
+
+  it("lets the site file's own allow-list allow nothing until the owner confirms it (#649)", () => {
+    const site = withCode(siteWith([widget]), {}, ["https://cdn.example.com/"]);
+
+    expect(findIn(externalResourcesRule, site)).toHaveLength(1);
+    expect(
+      externalResourcesRule.check({ site, catalogue: CATALOGUE, allowListConfirmed: false }),
+    ).toHaveLength(1);
   });
 });

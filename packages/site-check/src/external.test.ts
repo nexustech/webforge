@@ -98,7 +98,7 @@ describe("cssResources (C8, 3.9)", () => {
 });
 
 describe("scriptResources (C8, 3.9)", () => {
-  it("finds the files a script names, but not the addresses it only goes to", () => {
+  it("finds every address a script names: the files it loads, and where it sends or goes (#649)", () => {
     const js = `
       const s = document.createElement("script");
       s.src = 'https://cdn.example.com/chat.js';
@@ -109,6 +109,8 @@ describe("scriptResources (C8, 3.9)", () => {
     expect(scriptResources(js)).toEqual([
       { url: "https://cdn.example.com/chat.js", kind: "script" },
       { url: "https://img.example.com/pixel.gif", kind: "image" },
+      { url: "https://example.com/thanks", kind: "other" },
+      { url: "https://api.example.com/hours", kind: "other" },
     ]);
   });
 

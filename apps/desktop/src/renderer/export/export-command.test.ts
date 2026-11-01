@@ -277,6 +277,24 @@ describe("registerExportCommand", () => {
     expect(flow.exportSite).not.toHaveBeenCalled();
   });
 
+  it("passes a script that reaches an address Settings allow (#649)", async () => {
+    const site = withAddress(bakery());
+    const { registry, flow, shown } = setUp(
+      {},
+      {
+        ...site,
+        code: { ...site.code, js: 'fetch("https://api.example.com/hours");' },
+        settings: { ...site.settings, allowedExternalUrls: ["https://api.example.com/"] },
+      },
+    );
+
+    registry.run(EXPORT_COMMAND_ID);
+    await shown("options");
+
+    expect(flow.showSiteCheck).not.toHaveBeenCalled();
+    expect(toast.error).not.toHaveBeenCalled();
+  });
+
   it("asks for the web address, exports with the chosen options, and shows the report", async () => {
     const { registry, flow, shown, finished, dialogs } = setUp();
     expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({ menu: "file", shortcut: "Mod+E" });

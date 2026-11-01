@@ -30,6 +30,9 @@ function siteWithAbout() {
   return { site, about };
 }
 
+/** The opening of the site the page was loaded for, which every call names (#663). */
+const SESSION = "11111111-1111-4111-8111-111111111111";
+
 function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.23:5002/x/" }) {
   const { site, about } = siteWithAbout();
   const session = sessionWith(site);
@@ -47,6 +50,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     session,
     library: siteLibrary,
     api,
+    sessionId: () => SESSION,
     phone: phoneState,
     notify,
   });
@@ -75,7 +79,8 @@ describe("registerPreviewCommands (3.2)", () => {
     registry.run(COMMAND_IDS.preview);
 
     expect(api.open).toHaveBeenCalledOnce();
-    const [content, page] = api.open.mock.calls[0] ?? [];
+    const [sessionId, content, page] = api.open.mock.calls[0] ?? [];
+    expect(sessionId).toBe(SESSION);
     expect(page).toBe("services/about.html");
     expect(content?.snapshot.name).toBe(session.history.document.getState().settings.general.name);
   });
@@ -99,13 +104,13 @@ describe("registerPreviewCommands (3.2)", () => {
     registry.run(COMMAND_IDS.preview);
     // A lone change goes at once.
     edit("One");
-    expect(api.update.mock.calls.map(([site]) => site.snapshot.name)).toEqual(["One"]);
+    expect(api.update.mock.calls.map(([, site]) => site.snapshot.name)).toEqual(["One"]);
     // Those right after it wait, and go as one: the last.
     edit("Two");
     edit("Three");
     expect(api.update).toHaveBeenCalledOnce();
     vi.advanceTimersByTime(PREVIEW_UPDATE_MS);
-    expect(api.update.mock.calls.map(([site]) => site.snapshot.name)).toEqual(["One", "Three"]);
+    expect(api.update.mock.calls.map(([, site]) => site.snapshot.name)).toEqual(["One", "Three"]);
     vi.advanceTimersByTime(PREVIEW_UPDATE_MS);
     expect(api.update).toHaveBeenCalledTimes(2);
   });
@@ -135,7 +140,7 @@ describe("registerPreviewCommands (3.2)", () => {
         url: "http://192.168.1.23:5002/x/",
       }),
     );
-    expect(api.phone.mock.calls[0]?.[1]).toBe("index.html");
+    expect(api.phone.mock.calls[0]?.[2]).toBe("index.html");
 
     const offline = setUp({ status: "offline" });
     offline.registry.run(COMMAND_IDS.previewOnPhone);

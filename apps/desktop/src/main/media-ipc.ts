@@ -4,7 +4,7 @@ import { MAX_MEDIA_FILES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { importMediaFiles } from "./media-import.js";
-import type { ProjectSession } from "./project-session.js";
+import type { ProjectSession, SessionSite } from "./project-session.js";
 
 /** The native dialog of the Media import, injected so the handlers can be tested. */
 export type MediaDialogs = {
@@ -63,7 +63,7 @@ export function registerMediaHandlers(
  * the others are still imported.
  */
 export function importFilesAt(
-  session: Pick<ProjectSession, "importFile">,
+  session: Pick<SessionSite, "importFile">,
   paths: readonly string[],
 ): Promise<MediaImportResult> {
   return importMediaFiles(

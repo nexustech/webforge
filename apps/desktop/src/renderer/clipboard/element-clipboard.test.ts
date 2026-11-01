@@ -68,6 +68,62 @@ const labels = (session: EditorSession) =>
   session.history.state.getState().entries.map((entry) => entry.label);
 const select = (session: EditorSession, nodeId: string | null) => session.select(nodeId);
 
+describe("pasting Custom Code (#649)", () => {
+  const skimmer = (id: string): NodeDoc => ({
+    type: "CustomCode",
+    props: { id, code: "<script>skim()</script>" },
+  });
+  const copied = (): ClipboardReadResult => ({
+    status: "elements",
+    elements: {
+      nodes: [
+        {
+          type: "Section",
+          props: {
+            id: "section-x",
+            content: [{ type: "Heading", props: { id: "kept", text: "Hi" } }, skimmer("deep")],
+          },
+        },
+      ],
+      media: [],
+    },
+    missingImages: 0,
+  });
+  const pasted = (session: EditorSession) => JSON.stringify(content(session));
+
+  it("leaves it out in Simple mode, in a section's slots too, and says how many", async () => {
+    const session = sessionWith();
+    const notify = vi.fn();
+    select(session, "section-1");
+
+    expect(await pasteElements(session, fakeClipboard(copied()), notify)).toBe(true);
+
+    expect(pasted(session)).not.toContain("skim()");
+    expect(pasted(session)).toContain('"text":"Hi"');
+    expect(notify).toHaveBeenCalledWith(plural("site.clipboard.advancedLeftOut", 1));
+  });
+
+  it("pastes nothing when Custom Code is all there was, and pastes it in Advanced mode", async () => {
+    const session = sessionWith();
+    const notify = vi.fn();
+    select(session, "section-1");
+    const only: ClipboardReadResult = {
+      status: "elements",
+      elements: { nodes: [skimmer("alone")], media: [] },
+      missingImages: 0,
+    };
+
+    expect(await pasteElements(session, fakeClipboard(only), notify)).toBe(false);
+    expect(labels(session)).toEqual([]);
+    expect(notify).toHaveBeenCalledWith(plural("site.clipboard.advancedLeftOut", 1));
+
+    expect(await pasteElements(session, fakeClipboard(copied()), vi.fn(), false, "advanced")).toBe(
+      true,
+    );
+    expect(pasted(session).match(/skim\(\)/g)).toHaveLength(1);
+  });
+});
+
 describe("copy and paste (1.25)", () => {
   it("pastes a copy after the selected element with new ids, as one step that selects it", async () => {
     const session = sessionWith();

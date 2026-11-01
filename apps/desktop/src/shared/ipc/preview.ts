@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sessionIdSchema } from "./project.js";
 import { type SiteContent, siteContentSchema } from "./site.js";
 
 /**
@@ -26,7 +27,10 @@ const phoneAddressSchema = z.discriminatedUnion("status", [
 /** The preview's address for a phone. */
 export type PhoneAddress = z.infer<typeof phoneAddressSchema>;
 
-/** IPC channels of the `preview` domain (`preview:*`, 3.2). Each one's arguments are checked. */
+/**
+ * IPC channels of the `preview` domain (`preview:*`, 3.2). Each one's arguments are checked; each
+ * that sends the site names the opening it is for (`sessionId`, #663), whose Media it builds with.
+ */
 export const previewChannels = {
   /**
    * Starts the preview of the site, if it isn't running, at `page`, and opens it in the default
@@ -34,13 +38,13 @@ export const previewChannels = {
    */
   previewOpen: {
     channel: "preview:open",
-    request: z.tuple([siteContentSchema, pagePathSchema]),
+    request: z.tuple([sessionIdSchema, siteContentSchema, pagePathSchema]),
     response: z.enum(["opened", "failed"]),
   },
   /** The site changed: the browsers showing the preview get the change. Nothing while it's closed. */
   previewUpdate: {
     channel: "preview:update",
-    request: z.tuple([siteContentSchema]),
+    request: z.tuple([sessionIdSchema, siteContentSchema]),
     response: z.null(),
   },
   /** The editor shows `page`: the browsers showing the preview go there. */
@@ -55,7 +59,7 @@ export const previewChannels = {
    */
   previewPhone: {
     channel: "preview:phone",
-    request: z.tuple([siteContentSchema, pagePathSchema]),
+    request: z.tuple([sessionIdSchema, siteContentSchema, pagePathSchema]),
     response: phoneAddressSchema,
   },
   /** Stops the preview's listener on the local network; the desktop preview goes on. */
@@ -68,14 +72,14 @@ export const previewChannels = {
 
 /** `window.webforge.preview`: the preview server (3.2, F-PV-1). */
 export interface PreviewApi {
-  /** Opens the site's preview at `page` in the default browser. */
-  open(site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
-  /** Tells the preview the site changed. */
-  update(site: SiteContent): Promise<null>;
+  /** Opens the preview of the site opened as `sessionId`, at `page`, in the default browser. */
+  open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
+  /** Tells the preview the site opened as `sessionId` changed. */
+  update(sessionId: string, site: SiteContent): Promise<null>;
   /** Tells the preview the editor shows `page`. */
   show(page: PreviewPage): Promise<null>;
   /** The preview's address for a phone on the same network, at `page`. */
-  phone(site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
+  phone(sessionId: string, site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
   /** Stops the preview on the local network: no phone can open it any more. */
   stopPhone(): Promise<null>;
 }

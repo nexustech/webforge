@@ -43,6 +43,50 @@ export function withCustomCode(
   });
 }
 
+/**
+ * Which of the site's own code a build lets run (#649, S1 and S6), by its text: the Script, Head
+ * and End of page of Settings' Custom Code, and each Custom Code element's code. CSS isn't code
+ * that runs, and is always built.
+ */
+export type RunsCode = (code: string) => boolean;
+
+/** Lets in all of the site's code: an export or a publish whose caller says nothing. */
+export const RUNS_ALL_CODE: RunsCode = () => true;
+
+/** Lets in none of it: a preview whose caller says nothing, as the editor runs none. */
+export const RUNS_NO_CODE: RunsCode = () => false;
+
+/**
+ * `site` with only the code `runs` lets in: what it leaves out is blank, as if the person had
+ * written none. Blank code is kept as it is, whatever `runs` says.
+ */
+export function withRunnableCode(site: SiteSnapshot, runs: RunsCode): SiteSnapshot {
+  if (runs === RUNS_ALL_CODE) return site;
+  const kept = (code: string) => (code.trim() === "" || runs(code) ? code : "");
+  return {
+    ...site,
+    ...(site.code === undefined
+      ? {}
+      : {
+          code: {
+            ...site.code,
+            js: kept(site.code.js),
+            head: kept(site.code.head),
+            bodyEnd: kept(site.code.bodyEnd),
+          },
+        }),
+    layout: {
+      ...site.layout,
+      header: withCustomCode(site.layout.header, kept),
+      footer: withCustomCode(site.layout.footer, kept),
+    },
+    pages: site.pages.map((page) => ({
+      ...page,
+      doc: { ...page.doc, content: withCustomCode(page.doc.content, kept) },
+    })),
+  };
+}
+
 /** `text` with the characters a regular expression gives a meaning to escaped. */
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

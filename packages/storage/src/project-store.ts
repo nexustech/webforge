@@ -218,6 +218,33 @@ function collectHashes(value: unknown, into: Set<string>): void {
   }
 }
 
+/** A document's JSON text, parsed and checked. */
+function parseDocument(text: string): JsonValue {
+  try {
+    return jsonValueSchema.parse(JSON.parse(text));
+  } catch (error) {
+    throw new ProjectFileError("corrupt", "A document is not valid JSON", { cause: error });
+  }
+}
+
+/** A hash as a JSON string, in a document's text. */
+const QUOTED_HASH = /"([0-9a-f]{64})"/g;
+
+/**
+ * Adds every hash the JSON text `json` names to `into`, as {@link collectHashes} does for its
+ * parsed value, but from the text: garbage collection reads every document the working copy and
+ * the versions store, and scanning their text takes about half the time of parsing them (#661).
+ * The scan is more generous than the walk, never less: it also counts a hash used as a key. Only a
+ * `\u` escape can hide a hash from it, and `JSON.stringify` never writes one for a hash's letters
+ * and digits, so a document with one (a crafted file) is walked as well.
+ */
+function collectHashesFromJson(json: string, into: Set<string>): void {
+  for (const [, hash] of json.matchAll(QUOTED_HASH)) {
+    if (hash !== undefined) into.add(hash);
+  }
+  if (json.includes("\\u")) collectHashes(parseDocument(json), into);
+}
+
 /**
  * The blobs `documents` reach: every hash their content names, such as a Media item's original or
  * a bundled file (3.9). Garbage collection keeps these, and a site package carries them (A26).
@@ -816,6 +843,9 @@ export class ProjectStore {
    * Run it only when no undo step can bring a reference back: when a site is opened, before any
    * editing, or when it is closed, after the last save. A deleted image stays restorable by Undo
    * until then. Freed pages are reused by later writes; the file does not shrink until a VACUUM.
+   *
+   * With nothing to remove it writes nothing (see `#write`): the file's bytes and modified time
+   * stay as they were, so a site opened and closed unchanged isn't synced or backed up again.
    */
   collectGarbage(): GarbageReport {
     return this.#write(() => {
@@ -827,10 +857,10 @@ export class ProjectStore {
           documentHashes.add(hash);
         }
       }
-      const referenced = reachableBlobs(
-        [...documentHashes].map((hash) => ({ content: this.#readJsonBlob(hash) })),
-      );
-      for (const hash of documentHashes) referenced.add(hash);
+      const referenced = new Set(documentHashes);
+      for (const hash of documentHashes) {
+        collectHashesFromJson(this.#readJsonText(hash), referenced);
+      }
 
       const unreferenced = this.#prepare("SELECT hash, size FROM blobs")
         .all()
@@ -954,14 +984,25 @@ export class ProjectStore {
    * the content fingerprint (#295) before it commits. Every write goes through here, so none can
    * leave a fingerprint that no longer matches its rows and make a healthy file open as corrupt;
    * `test/write-paths.test.ts` keeps it that way.
+   *
+   * A change that alters no row (garbage collection with nothing to remove, a blob stored again)
+   * leaves the fingerprint as it was and isn't stamped: the transaction then only read, so the
+   * file's bytes and modified time stay as they were, and a sync folder or a backup sees no change
+   * nobody made (#661).
    */
   #write<T>(change: () => T): T {
     this.#assertWritable();
     return this.#db.transaction(() => {
+      const before = this.#totalChanges();
       const result = change();
-      stampContent(this.#db);
+      if (this.#totalChanges() !== before) stampContent(this.#db);
       return result;
     })();
+  }
+
+  /** The rows this connection has inserted, updated or deleted since it opened. */
+  #totalChanges(): number {
+    return Number(this.#prepare("SELECT total_changes()").pluck().get());
   }
 
   #assertWritable(): void {
@@ -994,12 +1035,17 @@ export class ProjectStore {
   }
 
   #readJsonBlob(hash: string): JsonValue {
+    return parseDocument(this.#readJsonText(hash));
+  }
+
+  /** A document's blob as text, unparsed. */
+  #readJsonText(hash: string): string {
     const blob = this.readBlob(hash);
     if (blob === undefined) {
       throw new ProjectFileError("corrupt", "A document refers to a missing blob");
     }
     try {
-      return jsonValueSchema.parse(JSON.parse(utf8.decode(blob.data)));
+      return utf8.decode(blob.data);
     } catch (error) {
       throw new ProjectFileError("corrupt", "A document is not valid JSON", { cause: error });
     }
