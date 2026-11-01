@@ -325,6 +325,8 @@ export const site = {
   "site.settings.measurementId": "Google Analytics measurement ID",
   "site.settings.measurementIdHint": "Such as G-ABC123DEF4. Leave empty for no analytics.",
   "site.settings.consentBanner": "Ask visitors before counting them (cookie banner)",
+  "site.settings.consentBannerHint":
+    "With the banner off, visits are still counted, without cookies and in less detail.",
   "site.settings.consentMessage": "Banner text",
   "site.settings.consentMessageHint":
     "Leave empty for the standard text. Its buttons are Accept all and Decline; Accept all also loads videos and maps.",

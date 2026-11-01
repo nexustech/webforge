@@ -137,15 +137,44 @@ describe("the consent behaviour (3.8, B4, B7)", () => {
     expect(declined.gtag()).toEqual([]);
   });
 
-  it("counts at once without the banner, which the owner turned off, and leaves the embeds", () => {
-    const { document, banner, gtag } = page({
+  it("counts at once, without cookies, when the owner turned the banner off, and leaves the embeds", () => {
+    const { document, banner, gtag, commands } = page({
       analytics: { ...ANALYTICS, consentBanner: false },
     });
 
     expect(banner?.hidden).toBe(true);
     expect(banner?.querySelector("button")).toBeNull();
     expect(gtag()).toEqual([GTAG]);
+    // Analytics storage stays denied: no visitor chose otherwise (B4, amended; #650).
+    expect(commands()[0]).toEqual([
+      "consent",
+      "default",
+      expect.objectContaining({ analytics_storage: "denied" }),
+    ]);
+    expect(
+      commands().filter(([command, kind]) => command === "consent" && kind === "update"),
+    ).toEqual([]);
+    expect(commands().at(-1)).toEqual(["config", "G-ABC123DEF4"]);
     expect(document.querySelector("iframe")).toBeNull();
+  });
+
+  it("reads only the banner the export wrote, after the Footer, not an element of the page (#650)", () => {
+    const happy = new Window({ url: "https://rosas-bakery.example/" });
+    windows.push(happy);
+    const window = happy as unknown as typeof globalThis & { dataLayer?: unknown[] };
+    const { document } = window;
+    // Written by hand, as Advanced attributes no longer can (S3).
+    document.body.innerHTML = `<main><h1 data-wf-consent data-measurement-id="G-ATTACKER1">Hi</h1></main><div data-wf-consent data-measurement-id="G-ATTACKER2"></div>${consentBannerHtml(ANALYTICS)}`;
+    new Function("window", "document", "HTMLElement", "Event", BEHAVIOUR_SCRIPTS.consent ?? "")(
+      window,
+      document,
+      window.HTMLElement,
+      window.Event,
+    );
+
+    expect(window.dataLayer).toBeUndefined();
+    expect(document.querySelectorAll("script")).toHaveLength(0);
+    expect(document.querySelector<HTMLElement>("[data-ask]")?.hidden).toBe(false);
   });
 
   it("never counts a page opened from disk, though the banner still works there", () => {

@@ -6,8 +6,8 @@ import {
   type LayoutDoc,
   type NodeAdvanced,
   type NodeDoc,
-  nodeAdvancedSchema,
   nodeDocSchema,
+  storedAdvancedSchema,
   withoutUnsafeKeys,
 } from "./documents.js";
 import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
@@ -82,7 +82,7 @@ const sharedCopyNodeSchema = z.strictObject({
     // What Layers sets on any node: renaming or hiding a copy (F-ED-12).
     layerName: z.string().max(LAYER_NAME_MAX).optional(),
     hidden: z.boolean().optional(),
-    advanced: nodeAdvancedSchema.optional(),
+    advanced: storedAdvancedSchema.optional(),
   }),
 });
 
