@@ -1,5 +1,5 @@
+import { sameJson } from "@webforge/model";
 import { useState } from "react";
-import { sameValue } from "../../lib/same-value.js";
 import type { ListChange, ListItem } from "../edit/field-spec.js";
 import type { FormField, FormIssue, FormSpec, FormValues } from "./form-spec.js";
 
@@ -121,7 +121,7 @@ export function changedGroups<V extends FormValues>(
 ): readonly string[] {
   const changed = new Set(
     fieldsOf(spec, after)
-      .filter((field) => !sameValue(before[field.name], after[field.name]))
+      .filter((field) => !sameJson(before[field.name], after[field.name]))
       .map((field) => field.group ?? ""),
   );
   const order = spec.groups?.map((group) => group.id) ?? [""];

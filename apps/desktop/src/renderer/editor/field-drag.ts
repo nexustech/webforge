@@ -1,5 +1,5 @@
-import { sameValue } from "@webforge/editor-ui";
 import type { CanvasEngine, FieldDrag, Unsubscribe } from "@webforge/engine";
+import { sameJson } from "@webforge/model";
 import { acceptsFieldValue } from "@webforge/site-components";
 import type { EditorSession, Gesture } from "./editor-session.js";
 import { fieldTarget } from "./field-target.js";
@@ -75,7 +75,7 @@ export function connectFieldDrags(
     // Let go where it started: nothing changed, so no step.
     if (
       drag.phase === "cancel" ||
-      (drag.phase === "commit" && sameValue(drag.value, run.drag.value))
+      (drag.phase === "commit" && sameJson(drag.value, run.drag.value))
     ) {
       open = null;
       run.gesture.cancel();

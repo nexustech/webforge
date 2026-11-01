@@ -1,6 +1,7 @@
-import { sameValue, toast } from "@webforge/editor-ui";
+import { toast } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
+import { sameJson } from "@webforge/model";
 import { LayersIcon } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
@@ -98,7 +99,7 @@ export function registerLayersPanel(
       return shown.layers;
     }
     const layers = page === undefined ? [] : pageLayers(site, pageId, library);
-    shown = sameValue(layers, shown.layers)
+    shown = sameJson(layers, shown.layers)
       ? { ...shown, page, shared, layout }
       : { page, shared, layout, layers };
     return shown.layers;

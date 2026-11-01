@@ -159,6 +159,7 @@ export {
   richTextLinkValue,
   richTextPageLinks,
 } from "./rich-text-links.js";
+export { sameJson } from "./same-json.js";
 export type {
   BusinessKind,
   BusinessType,

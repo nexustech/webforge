@@ -478,6 +478,23 @@ describe("the theme's looks (3.12, CT-1)", () => {
     expect(labels()).toEqual(["Changed the theme's look for Button"]);
   });
 
+  it("changes nothing, and asks nothing, for a value the look has with its devices in another order (A18)", async () => {
+    const { session, labels } = setUp(withButtons());
+    await setLook(session, undefined, "Button", "Button", {
+      lookCorners: { $responsive: { desktop: "full", mobile: "none" } },
+    });
+    const { siteWide, confirmSiteWide } = answering(true);
+
+    expect(
+      await setLook(session, { siteWide }, "Button", "Button", {
+        lookCorners: { $responsive: { mobile: "none", desktop: "full" } },
+      }),
+    ).toBe(false);
+
+    expect(confirmSiteWide).not.toHaveBeenCalled();
+    expect(labels()).toEqual(["Changed the theme's look for Button"]);
+  });
+
   it("takes a look off as a reset, leaving no empty look behind", async () => {
     const { session, labels, theme } = setUp(withButtons());
     await setLook(session, undefined, "Button", "Button", {

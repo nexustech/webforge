@@ -1,4 +1,3 @@
-import { sameValue } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import {
   findNode,
@@ -9,6 +8,7 @@ import {
   type PageId,
   type SharedSectionId,
   type SiteDoc,
+  sameJson,
 } from "@webforge/model";
 import {
   APPEARANCE_FIELDS,
@@ -252,7 +252,7 @@ function changedFields(
         // A field the source leaves to its kind's look or its default is taken off one that sets
         // it, even to what it draws anyway, so it follows later changes to the look too (3.12).
         ((value === undefined && node.props[name] !== undefined) ||
-          !sameValue(
+          !sameJson(
             drawnWith(component, look, node.props[name], name),
             drawnWith(component, look, value, name),
           )),

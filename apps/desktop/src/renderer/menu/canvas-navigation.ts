@@ -1,6 +1,5 @@
-import { sameValue } from "@webforge/editor-ui";
 import type { CanvasEngine } from "@webforge/engine";
-import { mediaItem, pagePath, type SiteDoc } from "@webforge/model";
+import { mediaItem, pagePath, type SiteDoc, sameJson } from "@webforge/model";
 import type { NavItem, NavLink } from "@webforge/site-components";
 // The export's own navigation, through a subpath that must stay free of Node imports, as it runs
 // in the renderer (the pipeline-navigation-no-node rule in .dependency-cruiser.mjs checks it).
@@ -56,7 +55,7 @@ export function connectCanvasNavigation(
       (item): NavItem =>
         "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),
     );
-    if (shown === undefined || !sameValue(items, shown)) {
+    if (shown === undefined || !sameJson(items, shown)) {
       shown = items;
       engine.setNavigation(items);
     }

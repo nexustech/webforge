@@ -1,4 +1,3 @@
-import { sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   anchorIdSchema,
@@ -11,6 +10,7 @@ import {
   type PageId,
   pageAnchors,
   type SiteDoc,
+  sameJson,
   slugify,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
@@ -71,7 +71,7 @@ export function createLinkTargets(
     const known = lists.get(site);
     if (known !== undefined) return known;
     const next = linkTargets(site, library);
-    last = sameValue(next, last) ? last : next;
+    last = sameJson(next, last) ? last : next;
     lists.set(site, last);
     return last;
   };
