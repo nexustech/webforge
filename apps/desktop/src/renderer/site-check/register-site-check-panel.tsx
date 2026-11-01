@@ -1,3 +1,4 @@
+import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import type { SearchGuide } from "@webforge/site-check";
 import { ListChecksIcon } from "lucide-react";
@@ -29,6 +30,8 @@ type SiteCheckPanelOptions = {
   readonly saveIgnored: (ignored: readonly string[]) => void;
   /** Download and bundle (3.9): its *Fix* for a file from another website. */
   readonly bundle?: BundleActions;
+  /** Whether the owner has confirmed the addresses Settings allow (#649). */
+  readonly allowListConfirmed?: ReadonlyStore<boolean>;
 };
 
 /**
@@ -38,9 +41,22 @@ type SiteCheckPanelOptions = {
  */
 export function registerSiteCheckPanel(
   panels: PanelRegistry,
-  { session, settings, commands, openGuide, ignored, saveIgnored, bundle }: SiteCheckPanelOptions,
+  {
+    session,
+    settings,
+    commands,
+    openGuide,
+    ignored,
+    saveIgnored,
+    bundle,
+    allowListConfirmed,
+  }: SiteCheckPanelOptions,
 ): () => void {
-  const siteCheck = createSiteCheck(session.history.document, { ignored, saveIgnored });
+  const siteCheck = createSiteCheck(session.history.document, {
+    ignored,
+    saveIgnored,
+    ...(allowListConfirmed === undefined ? {} : { allowListConfirmed }),
+  });
   const actions = {
     session,
     panels,

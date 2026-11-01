@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import type { SiteSnapshot } from "@webforge/model";
 import type { Shell } from "electron";
 import type { AppFeature } from "./app-feature.js";
 import { type ExportDeps, type RunExport, registerExportHandlers } from "./export-ipc.js";
@@ -13,6 +14,8 @@ export type ExportFeatureDeps = Pick<ExportDeps, "dialogs" | "sendProgress" | "s
   readonly startWorker: () => WorkerProcess;
   /** The font files and downloaded families of a theme, read and checked here (2.2). */
   readonly fontsOf: SiteFonts["fontsOf"];
+  /** The snapshot an export builds: the one sent, with only the code its owner trusts (#649). */
+  readonly snapshotFor: (sent: SiteSnapshot) => Promise<SiteSnapshot>;
   /** Electron's `shell`, whose methods are looked up as they're called (the E2E tests replace them). */
   readonly shell: Pick<Shell, "showItemInFolder" | "openPath">;
   /** Whether a path exists; `existsSync` unless a test says. */
@@ -48,11 +51,13 @@ export function openExport(
  */
 export function createExportFeature(deps: ExportFeatureDeps): AppFeature {
   const exports = createExportRunner(deps.startWorker);
-  const runExport: RunExport = async (snapshot, target, { readMedia, signal, onProgress }) =>
-    exports.run(
+  const runExport: RunExport = async (sent, target, { readMedia, signal, onProgress }) => {
+    const snapshot = await deps.snapshotFor(sent);
+    return exports.run(
       { type: "export", snapshot, ...target, ...(await deps.fontsOf(snapshot.theme)) },
       { readMedia, signal, onProgress },
     );
+  };
   return {
     register: (ipc, isTrustedSender) => {
       registerExportHandlers(ipc, isTrustedSender, {

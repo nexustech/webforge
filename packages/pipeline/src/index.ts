@@ -31,7 +31,7 @@ export type {
   StoredMedia,
 } from "./resources.js";
 export { compileCodecs, TAILWIND_STYLESHEETS } from "./resources.js";
-export { RUNS_ALL_CODE, type RunsCode } from "./site-code.js";
+export { RUNS_ALL_CODE, type RunsCode, withRunnableCode } from "./site-code.js";
 export type { WriteErrorCode } from "./write.js";
 export { EXPORT_MARKER, WriteError, writeSiteFolder } from "./write.js";
 export { writeSiteZip } from "./zip.js";

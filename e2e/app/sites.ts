@@ -37,10 +37,21 @@ export async function stubFileDialogs(app: ElectronApplication, filePath: string
 /**
  * File → Export Site… as the person goes through it (3.3): past the web address prompt when it's
  * asked, with the export dialog as it opens, until the report shows. Gives the report's text, and
- * closes it.
+ * closes it. A site whose code its owner hasn't confirmed asks about it first (#649): `code` is
+ * the answer.
  */
-export async function exportFromEditor(page: Page, timeout = 30_000): Promise<string> {
+export async function exportFromEditor(
+  page: Page,
+  timeout = 30_000,
+  code?: "Keep the code" | "Leave it out",
+): Promise<string> {
   await page.getByRole("button", { name: "Export Site…", exact: true }).click();
+  if (code !== undefined) {
+    const asked = page.getByRole("alertdialog", {
+      name: "This site contains code that will run for your visitors",
+    });
+    await asked.getByRole("button", { name: code }).click();
+  }
   const prompt = page.getByRole("alertdialog", { name: "Add your site's web address?" });
   const options = page.getByRole("dialog", { name: "Export Site" });
   await expect(prompt.or(options)).toBeVisible();

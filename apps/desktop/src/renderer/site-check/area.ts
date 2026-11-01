@@ -13,7 +13,16 @@ import { registerSiteCheckPanel } from "./register-site-check-panel.js";
  */
 export const siteCheckArea: Area<WindowContext> = {
   id: "siteCheck",
-  register: ({ api, panels, session, settings, commands, siteCheckIgnored, windowDialogs }) => {
+  register: ({
+    api,
+    panels,
+    session,
+    settings,
+    commands,
+    siteCheckIgnored,
+    windowDialogs,
+    codeTrust,
+  }) => {
     // Download and bundle's question (3.9), drawn once in the window.
     const question = createBundleConfirm();
     const removeDialog = windowDialogs.register({
@@ -35,6 +44,7 @@ export const siteCheckArea: Area<WindowContext> = {
       },
       ignored: siteCheckIgnored.initial,
       saveIgnored: siteCheckIgnored.save,
+      allowListConfirmed: codeTrust.allowListConfirmed,
       bundle: {
         confirm: question.confirm,
         download: (url) => api.site.bundleFile(siteSession(), url),
