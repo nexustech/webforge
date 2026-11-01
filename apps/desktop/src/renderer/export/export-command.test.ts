@@ -383,6 +383,7 @@ describe("registerExportCommand", () => {
         choices: { ...LAST, format: "zip", minify: true },
         snapshot: expect.objectContaining({ name: "Bakery" }),
       }),
+      expect.any(String),
       expect.any(Function),
     );
     expect(toast.loading).toHaveBeenCalledWith("Exporting…", {
@@ -432,6 +433,7 @@ describe("registerExportCommand", () => {
         choices: remembered,
         output: { minify: false, developerFiles: false },
       }),
+      expect.any(String),
       expect.any(Function),
     );
   });
@@ -501,7 +503,7 @@ describe("registerExportCommand", () => {
     const { registry, flow, shown, finished } = setUp({
       choices: async () => ({ ...LAST, askWebAddress: false }),
       exportSite: vi.fn(
-        (_request, onProgress) =>
+        (_request, _operationId, onProgress) =>
           new Promise<ExportResult>((resolve) => {
             tell = onProgress;
             finish = resolve;
@@ -524,7 +526,9 @@ describe("registerExportCommand", () => {
     const preventDefault = vi.fn();
     options.action.onClick({ preventDefault });
 
+    // This export's own operation, and no other (A14).
     expect(flow.cancel).toHaveBeenCalledOnce();
+    expect(flow.cancel).toHaveBeenCalledWith(vi.mocked(flow.exportSite).mock.calls[0]?.[1]);
     // The toast stays, saying it's stopping, and later progress doesn't bring the button back.
     expect(preventDefault).toHaveBeenCalled();
     expect(toast.loading).toHaveBeenLastCalledWith("Cancelling…", {

@@ -104,6 +104,13 @@ export const exportWarningSchema = z.strictObject({
   detail: z.string().max(2048),
 });
 
+/**
+ * One long-running operation the renderer starts (A14): an export now, a publish in 4.5. The
+ * renderer names it as it starts it, its progress comes back under that name, and a cancel names
+ * it, so cancelling one operation stops no other.
+ */
+const operationIdSchema = z.uuid();
+
 /** At most this many warnings reach the report; it says how many more there were. */
 export const MAX_REPORTED_WARNINGS = 500;
 
@@ -195,11 +202,12 @@ export type BundleResult = z.infer<typeof bundleResultSchema>;
 export const siteChannels = {
   /**
    * Asks for a folder (open dialog in main), builds the site in a utility process and writes it
-   * there (export pipeline, 07).
+   * there (export pipeline, 07), as operation `operationId`, which its progress and its cancel
+   * name. An id already under way is refused (`canceled`).
    */
   exportSite: {
     channel: "site:export",
-    request: z.tuple([sessionIdSchema, exportRequestSchema]),
+    request: z.tuple([sessionIdSchema, exportRequestSchema, operationIdSchema]),
     response: exportResultSchema,
   },
   /** What the person chose for the open site's last export: the defaults until there was one. */
@@ -228,12 +236,12 @@ export const siteChannels = {
     response: z.enum(["opened", "none", "missing"]),
   },
   /**
-   * Cancels the export under way, if there is one (3.1): it stops before its next image or page
-   * and answers `canceled`, changing nothing on disk.
+   * Cancels export `operationId`, if it is under way (3.1): it stops before its next image or page
+   * and answers `canceled`, changing nothing on disk. No other export or operation stops.
    */
   cancelExport: {
     channel: "site:cancel-export",
-    request: z.tuple([]),
+    request: z.tuple([operationIdSchema]),
     response: z.null(),
   },
   /**
@@ -250,24 +258,30 @@ export const siteChannels = {
 
 /** Messages the main process sends to the renderer in the `site` domain. */
 export const siteEvents = {
-  /** How far the export under way has come. */
-  exportProgress: { channel: "site:export-progress", args: z.tuple([exportProgressSchema]) },
+  /** How far export `operationId` has come. */
+  exportProgress: {
+    channel: "site:export-progress",
+    args: z.tuple([operationIdSchema, exportProgressSchema]),
+  },
 } as const;
 
 /** `window.webforge.site`. */
 export interface SiteApi {
-  /** Shows a folder or save dialog, then builds the site opened as `sessionId` and writes it there. */
-  export(sessionId: string, request: ExportRequest): Promise<ExportResult>;
+  /**
+   * Shows a folder or save dialog, then builds the site opened as `sessionId` and writes it there,
+   * as operation `operationId` (a new UUID for each export).
+   */
+  export(sessionId: string, request: ExportRequest, operationId: string): Promise<ExportResult>;
   /** What the person chose for the last export of the site opened as `sessionId`. */
   exportChoices(sessionId: string): Promise<ExportChoices>;
   /** Remembers the person's export choices with the site opened as `sessionId`. */
   setExportChoices(sessionId: string, choices: ExportChoices): Promise<null>;
   /** Opens the last export of the site opened as `sessionId` from disk. */
   openExport(sessionId: string): Promise<"opened" | "none" | "missing">;
-  /** Cancels the export under way, if there is one. */
-  cancelExport(): Promise<null>;
+  /** Cancels export `operationId`, if it is under way. */
+  cancelExport(operationId: string): Promise<null>;
   /** Downloads the file at `url` to keep with the site opened as `sessionId`. */
   bundleFile(sessionId: string, url: string): Promise<BundleResult>;
-  /** Tells `listener` how far exports come, until the returned function is called. */
-  onExportProgress(listener: (progress: ExportProgress) => void): () => void;
+  /** Tells `listener` how far each export comes, by its operation, until the returned function is called. */
+  onExportProgress(listener: (operationId: string, progress: ExportProgress) => void): () => void;
 }
