@@ -36,6 +36,8 @@ export const publish = {
   "publish.fileTransfer.url": "Web address",
   "publish.fileTransfer.url.help":
     "Where visitors find your site, such as https://www.example.com.",
+  // The automatic version a publish saves (4.5, F-PB-2): "Published 19 Oct, 14:02".
+  "publish.version.name": "Published {when}",
   // The site's publish destinations (4.4a): where the Publish button publishes to.
   "publish.destinations.title": "Publish",
   "publish.destinations.description":

@@ -4,7 +4,7 @@ import type { SiteSnapshot } from "@webforge/model";
 import type { Shell } from "electron";
 import type { AppFeature } from "./app-feature.js";
 import { type ExportDeps, type RunExport, registerExportHandlers } from "./export-ipc.js";
-import { createExportRunner } from "./export-worker-client.js";
+import { createExportRunner, type ExportRunner } from "./export-worker-client.js";
 import type { SiteFonts } from "./site-fonts.js";
 import type { WorkerProcess } from "./worker-process.js";
 
@@ -47,9 +47,12 @@ export function openExport(
  * (07): one worker while the site is open, keeping the images it encoded in memory (R15), which
  * goes when the site closes. The worker resolves nothing itself: it gets the site's font files,
  * read and checked here, and asks for each image and document as it reaches it, read from the site
- * the export's handler took as it started (#663).
+ * the export's handler took as it started (#663). Its runner publishes too (4.5, ADR 0018 §1), in
+ * the same worker: the feature gives it for Publish.
  */
-export function createExportFeature(deps: ExportFeatureDeps): AppFeature {
+export function createExportFeature(
+  deps: ExportFeatureDeps,
+): AppFeature & { readonly runner: ExportRunner } {
   const exports = createExportRunner(deps.startWorker);
   const runExport: RunExport = async (sent, target, { readMedia, signal, onProgress }) => {
     const snapshot = await deps.snapshotFor(sent);
@@ -59,6 +62,7 @@ export function createExportFeature(deps: ExportFeatureDeps): AppFeature {
     );
   };
   return {
+    runner: exports,
     register: (ipc, isTrustedSender) => {
       registerExportHandlers(ipc, isTrustedSender, {
         dialogs: deps.dialogs,

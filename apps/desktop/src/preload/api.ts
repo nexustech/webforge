@@ -41,7 +41,7 @@ export function createWebforgeApi(
     templates: templatesApi(call),
     themes: themesApi(call),
     preview: previewApi(call, subscribe),
-    publish: publishApi(call),
+    publish: publishApi(call, subscribe),
     trust: trustApi(call),
   };
 }
