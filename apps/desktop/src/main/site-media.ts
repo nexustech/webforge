@@ -1,9 +1,9 @@
 import { FILE_MIME_TYPES, IMAGE_MIME_TYPES, type MediaMeta } from "@webforge/model";
-import type { StoredBlob } from "@webforge/storage";
+import type { BlobAsset, NewBlob, StoredBlob } from "@webforge/storage";
 import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
 import { BUNDLE_MIME_TYPES } from "./bundle-download.js";
 import { log } from "./log.js";
-import { type SiteStore, type StaleReason, storeFailure } from "./site-store.js";
+import type { SiteStore, StaleReason } from "./site-store.js";
 import type { PreparedImport } from "./storage-writer.js";
 
 /** The blob types a Media item's file can have; documents (JSON) are never served as media. */
@@ -68,8 +68,8 @@ export async function importFile(
   // Then store it alone, the bytes and the asset together: the main process's reads and saves
   // wait at the gate, as promises, and nothing of the import is written on its thread.
   const stored = await site.writerTurn<ImportFileResult | "stored" | "not-stored">(
-    async (sitePath, store) => {
-      const outcome = await store(prepared, {
+    async (sitePath, writer) => {
+      const outcome = await writer.store(prepared, {
         sitePath,
         mediaId,
         originalName: fileName,
@@ -87,34 +87,47 @@ export async function importFile(
   return { status: "stored", ...facts };
 }
 
-/** Stores files' bytes for the site's code, all or none (Download and bundle, 3.9). */
-export function storeBlobs(
+/**
+ * Stores files' bytes in the open site, all or none, on the storage writer's turn (#664): hashed
+ * and written off the main thread, as an import is.
+ */
+function putBlobs(
   site: SiteStore,
-  files: readonly { readonly data: Uint8Array; readonly mime: string }[],
+  blobs: readonly NewBlob[],
+  asset: BlobAsset | undefined,
+  event: string,
 ): Promise<StoreBlobsResult> {
-  return site.withStore<StoreBlobsResult>(
-    "shared",
-    (store) => {
-      try {
-        return {
-          status: "stored",
-          hashes: files.map(({ data, mime }) => store.putBlob(data, mime)),
-        };
-      } catch (error) {
-        return storeFailure(error, "Webforge could not store a downloaded file");
-      }
+  return site.writerTurn<StoreBlobsResult>(
+    async (sitePath, writer) => {
+      const outcome = await writer.putBlobs(sitePath, blobs, asset);
+      if (outcome.status === "put") return { status: "stored", hashes: outcome.hashes };
+      log.error(event);
+      return { status: "failed", reason: "unknown" };
     },
     (reason) => ({ status: "failed", reason }),
   );
 }
 
+/** Stores files' bytes for the site's code, all or none (Download and bundle, 3.9). */
+export function storeBlobs(
+  site: SiteStore,
+  files: readonly { readonly data: Uint8Array; readonly mime: string }[],
+): Promise<StoreBlobsResult> {
+  if (files.length === 0) return Promise.resolve({ status: "stored", hashes: [] });
+  return putBlobs(site, files, undefined, "Webforge could not store a downloaded file");
+}
+
 /** Stores a pasted Media item's bytes, unless the site has them (1.25). */
-export function storeCopiedMedia(
+export async function storeCopiedMedia(
   site: SiteStore,
   item: MediaMeta,
   read: () => Uint8Array | undefined,
 ): Promise<StoreAssetResult | { readonly status: "missing" }> {
-  return site.withStore<StoreAssetResult | { readonly status: "missing" }>(
+  const found = await site.withStore<
+    | StoreAssetResult
+    | { readonly status: "missing" }
+    | { readonly status: "store"; readonly data: Uint8Array; readonly hasAsset: boolean }
+  >(
     "shared",
     (store) => {
       const hasAsset = store.readAsset(item.id) !== undefined;
@@ -123,28 +136,27 @@ export function storeCopiedMedia(
       }
       // The kept bytes, else the same bytes this site already has under another item.
       const data = read() ?? store.readBlob(item.hash)?.data;
-      if (data === undefined) {
-        return { status: "missing" };
-      }
-      try {
-        // An item of this site keeps its own asset (it may have been replaced since the copy).
-        if (hasAsset) {
-          store.putBlob(data, item.mimeType);
-        } else {
-          store.putAsset({
-            mediaId: item.id,
-            data,
-            mime: item.mimeType,
-            width: item.kind === "image" ? item.width : undefined,
-            height: item.kind === "image" ? item.height : undefined,
-            originalName: item.fileName,
-          });
-        }
-        return { status: "stored", hash: item.hash };
-      } catch (error) {
-        return storeFailure(error, "Webforge could not store a pasted file");
-      }
+      return data === undefined ? { status: "missing" } : { status: "store", data, hasAsset };
     },
     (reason) => ({ status: "failed", reason }),
   );
+  if (found.status !== "store") return found;
+  // An item of this site keeps its own asset (it may have been replaced since the copy).
+  const asset: BlobAsset | undefined = found.hasAsset
+    ? undefined
+    : {
+        mediaId: item.id,
+        width: item.kind === "image" ? item.width : undefined,
+        height: item.kind === "image" ? item.height : undefined,
+        originalName: item.fileName,
+      };
+  // Bytes that aren't the item's are refused in the writer's transaction, so its asset never
+  // names a file the site doesn't have.
+  const stored = await putBlobs(
+    site,
+    [{ data: found.data, mime: item.mimeType, hash: item.hash }],
+    asset,
+    "Webforge could not store a pasted file",
+  );
+  return stored.status === "stored" ? { status: "stored", hash: item.hash } : stored;
 }

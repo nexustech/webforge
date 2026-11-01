@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type Database from "better-sqlite3";
 import { z } from "zod";
+import { hasVersionFacts } from "./blob-reach.js";
 import { ProjectFileError } from "./errors.js";
 
 // A .wforge copied while Webforge writes to it (a sync client, e-mail, a USB stick; ADR 0003) can
@@ -10,8 +11,10 @@ import { ProjectFileError } from "./errors.js";
 
 /**
  * The rows a fingerprint covers, in a fixed order: every document's and asset's row, and which
- * versions there are. A version's row is only ever added or removed, never changed, so its id is
- * enough; hashing every manifest (each lists every document) would slow down every save.
+ * versions there are. A version's content is never changed once saved, so its id is enough;
+ * hashing every manifest (each lists every document) would slow down every save. Its publish
+ * record can change (`recordPublish`), and isn't covered: a copy torn as one was written shows
+ * the publish before it, which is no damage to the site. A missing picture is caught below.
  */
 const FINGERPRINT_ROWS = `
   SELECT 'document', id, kind, blob_hash, NULL, NULL, NULL FROM documents
@@ -38,6 +41,24 @@ function contentFingerprint(db: Database.Database): number {
  */
 export function stampContent(db: Database.Database): void {
   db.pragma(`user_version = ${contentFingerprint(db)}`);
+}
+
+/**
+ * Runs `change` in one transaction on `db`, which records the content fingerprint before it
+ * commits, if it changed a row: every write to a project goes through here, on any connection. A
+ * change that alters no row (garbage collection with nothing to remove, a blob stored again)
+ * leaves the fingerprint as it was and isn't stamped: the transaction then only read, so the
+ * file's bytes and modified time stay as they were, and a sync folder or a backup sees no change
+ * nobody made (#661).
+ */
+export function stamped<T>(db: Database.Database, change: () => T): T {
+  const totalChanges = db.prepare("SELECT total_changes()").pluck();
+  return db.transaction(() => {
+    const before = Number(totalChanges.get());
+    const result = change();
+    if (Number(totalChanges.get()) !== before) stampContent(db);
+    return result;
+  })();
 }
 
 const corrupt = (message: string) => new ProjectFileError("corrupt", message);
@@ -90,6 +111,18 @@ export function checkContent(db: Database.Database): void {
     .get();
   if (missingInVersions !== 0) {
     throw corrupt("A version refers to a missing blob");
+  }
+  const missingPictures = hasVersionFacts(db)
+    ? db
+        .prepare(
+          `SELECT count(*) FROM versions LEFT JOIN blobs ON blobs.hash = versions.thumbnail_hash
+           WHERE versions.thumbnail_hash IS NOT NULL AND blobs.hash IS NULL`,
+        )
+        .pluck()
+        .get()
+    : 0;
+  if (missingPictures !== 0) {
+    throw corrupt("A version's picture is missing");
   }
   const documentBlobs = documentBlobsSchema.parse(
     db

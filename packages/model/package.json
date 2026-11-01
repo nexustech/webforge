@@ -8,6 +8,7 @@
   },
   "devDependencies": {
     "fast-check": "4.10.2",
+    "immer": "11.1.21",
     "vitest": "catalog:"
   },
   "dependencies": {

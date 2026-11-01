@@ -5,12 +5,8 @@ import {
   siteDocuments,
 } from "@webforge/model";
 import { z } from "zod";
-import {
-  type NewAsset,
-  type ProjectStore,
-  reachableBlobs,
-  type StoredBlob,
-} from "./project-store.js";
+import { reachableBlobs } from "./blob-reach.js";
+import type { NewAsset, ProjectStore, StoredBlob } from "./project-store.js";
 
 // A site package (A26): one site with everything it needs to open as a new site, and the one shape
 // a site's ZIP (4.7) and opening a version as a new site (4.6) share. A ZIP writes it out, with the

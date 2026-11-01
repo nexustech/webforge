@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { AssetWriter, ProjectStore } from "@webforge/storage";
+import { ProjectStore, SiteFileWriter } from "@webforge/storage";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -115,7 +115,7 @@ describe("registerClipboardHandlers (1.25)", () => {
     const invoke = handlers(createElementClipboard(system, join(dir, "kept")), project);
     // Nothing reaches the file, whichever way the bytes would be stored.
     const store = vi.spyOn(ProjectStore.prototype, "putAsset");
-    const write = vi.spyOn(AssetWriter.prototype, "put");
+    const write = vi.spyOn(SiteFileWriter.prototype, "put");
 
     const pasted = invoke("clipboard:read", opened.project.sessionId);
     await project.create(join(dir, "Florist.wforge"));

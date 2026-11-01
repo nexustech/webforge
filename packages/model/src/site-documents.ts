@@ -302,3 +302,50 @@ export function changedDocuments(
   }
   return changes;
 }
+
+/** Whether `a` and `b` are the same JSON: keys in any order, an `undefined` property as none. */
+function sameJson(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return (
+      Array.isArray(a) &&
+      Array.isArray(b) &&
+      a.length === b.length &&
+      a.every((item, index) => sameJson(item, b[index]))
+    );
+  }
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  const keys = Object.keys(left).filter((key) => left[key] !== undefined);
+  return (
+    keys.length === Object.keys(right).filter((key) => right[key] !== undefined).length &&
+    keys.every((key) => Object.hasOwn(right, key) && sameJson(left[key], right[key]))
+  );
+}
+
+/**
+ * Makes `draft`, the site in a history step, into `target`, a version being restored (4.6),
+ * document by document as `.wforge` stores them: only a document whose JSON differs is replaced,
+ * with a copy. So the restore is one undo step, a page it changes is dated in that step as any
+ * page's change is, and the documents it leaves alone keep their objects: autosave writes only
+ * what it changed ({@link changedDocuments}).
+ */
+export function restoreSite(draft: SiteDoc, target: SiteDoc): void {
+  // A copy, never the version's own objects: a site is JSON.
+  const take = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+  if (draft.formatVersion !== target.formatVersion) draft.formatVersion = target.formatVersion;
+  if (!sameJson(draft.pageOrder, target.pageOrder)) draft.pageOrder = take(target.pageOrder);
+  if (draft.homePageId !== target.homePageId) draft.homePageId = target.homePageId;
+  for (const part of PARTS) {
+    if (!sameJson(draft[part], target[part])) {
+      (draft as Record<Part, unknown>)[part] = take(target[part]);
+    }
+  }
+  for (const id of Object.keys(draft.pages) as PageId[]) {
+    if (!Object.hasOwn(target.pages, id)) delete draft.pages[id];
+  }
+  for (const [id, page] of Object.entries(target.pages) as [PageId, PageEntry][]) {
+    if (!sameJson(draft.pages[id], page)) draft.pages[id] = take(page);
+  }
+}
