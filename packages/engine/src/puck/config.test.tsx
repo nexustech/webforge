@@ -12,6 +12,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { isTextField, toPuckConfig } from "./config.js";
+import { fixedRenderContext } from "./render-context-store.js";
 import { FormatToolbar, RICH_TEXT_OPTIONS } from "./rich-text.js";
 import { ROOT_ZONE } from "./tree.js";
 
@@ -227,7 +228,7 @@ describe("toPuckConfig render context", () => {
     const config = toPuckConfig(
       withImage,
       () => 0,
-      () => context,
+      fixedRenderContext(() => context),
     );
     const Photo = config.components.Photo?.render as (props: Record<string, unknown>) => ReactNode;
 

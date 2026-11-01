@@ -118,6 +118,9 @@ const destinationsFailureSchema = z.strictObject({
   ]),
 });
 
+/** Why a call about the open site's destinations did nothing, for the person to be told. */
+export type DestinationsFailure = z.infer<typeof destinationsFailureSchema>["reason"];
+
 /** One destination of the open site, with what this computer keeps for it. */
 const listedDestinationSchema = z.strictObject({
   destination: publishDestinationSchema,
@@ -125,6 +128,9 @@ const listedDestinationSchema = z.strictObject({
   /** What this computer trusts about it: kept beside the secret, never in the site file. */
   trust: fileTransferTrustSchema,
 });
+
+/** A destination as listed. */
+export type ListedDestination = z.infer<typeof listedDestinationSchema>;
 
 const destinationsResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("listed"), destinations: z.array(listedDestinationSchema) }),
@@ -151,7 +157,7 @@ type DestinationDraft = z.input<typeof destinationDraftSchema>;
 const savedSignInSchema = z.union([signInRefSchema, z.strictObject({ keep: z.literal(true) })]);
 
 /** See {@link savedSignInSchema}. */
-type SavedSignInRef = z.infer<typeof savedSignInSchema>;
+export type SavedSignInRef = z.infer<typeof savedSignInSchema>;
 
 const saveDestinationResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved"), destination: publishDestinationSchema }),

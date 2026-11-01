@@ -64,8 +64,19 @@ const colourName = (role: unknown) =>
     ? t(ROLE_NAMES[role as ColorRole])
     : String(role);
 
-/** Where `finding` is, in a few words: "Heading on About", "Menu item Prices", "photo.jpg". */
-export function describePlace(finding: Finding, site: SiteDoc, library: ComponentLibrary): string {
+/** How an element on a page is named: Site Check's "Heading on About". */
+const ON_PAGE = (element: string, page: string) => t("siteCheck.place.page", { element, page });
+
+/**
+ * Where `finding` is, in a few words: "Heading on About", "Menu item Prices", "photo.jpg".
+ * `onPage` words an element on a page, for a caller with words of its own (the code trust prompt).
+ */
+export function describePlace(
+  finding: Finding,
+  site: SiteDoc,
+  library: ComponentLibrary,
+  onPage: (element: string, page: string) => string = ON_PAGE,
+): string {
   const { place, values = {} } = finding;
   switch (place.kind) {
     case "element": {
@@ -75,7 +86,7 @@ export function describePlace(finding: Finding, site: SiteDoc, library: Componen
       const region = layoutRegion(place.on);
       if (region !== undefined) return t(`siteCheck.place.${region}`, { element });
       if (Object.hasOwn(site.pages, place.on)) {
-        return t("siteCheck.place.page", { element, page: pageName(site, place.on) });
+        return onPage(element, pageName(site, place.on));
       }
       const shared = site.sharedSections[place.on as keyof SiteDoc["sharedSections"]];
       return t("siteCheck.place.shared", { element, name: shared?.name ?? place.on });

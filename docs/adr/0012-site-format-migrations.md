@@ -29,4 +29,7 @@ The architecture review of 23 Oct 2026 asked for one mechanism.
 - A shape change costs a step, fixtures and an inverse for the property, so it's visible in review. In exchange, readers stay simple and every old site is tested.
 - The format number rises more often. That's free: it is only compared, never shown.
 - An older build opens a site of a newer format read-only (`newer-format`), so a bump also stops older builds from writing shapes they don't know.
-- **Not covered:** the clipboard's JSON carries no format version. A Section copied from a format 5 build and pasted into a format 6 one loses its padding size. Before the first release, give clipboard payloads a format version and run them through the chain.
+- **Copied elements go through the chain too** (#671, 1 Nov 2026). The clipboard's JSON names the site format it was copied in (`clipboardPayload`). A paste (`readClipboardPayload`) brings older elements up through the chain, refuses newer ones (*copied in a newer version of {appName}*), and takes a payload without a version as format 12, the format of every build before it, none of them released.
+  - **The carrier:** the elements ride through the chain in a site holding nothing else. Their nodes are a page's content, their Media items the site's Media, and it has no theme, settings or shared sections.
+  - **What that asks of every step:** it must take such a site, as every step up to format 12 does. A step that reads a part the carrier lacks must leave it absent, or build it from nothing as format 5's theme step does.
+  - **The test:** `clipboard.test.ts` carries format 1 elements through the whole chain, so a new step that fails on the carrier fails it.

@@ -240,7 +240,8 @@ test.describe("Export site with Site Check (3.6, X5)", () => {
           await expect(prompt).toBeVisible();
           await expect(prompt.getByRole("listitem")).toHaveText([
             "Custom Code in Settings: Script",
-            "Custom Code on Home",
+            // The prompt's own words for an element's place (#732).
+            "Custom Code element on Home",
           ]);
           await prompt.getByRole("button", { name: answer }).click();
         }
