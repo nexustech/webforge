@@ -199,6 +199,38 @@ describe("isLocalAddress", () => {
       expect(isLocalAddress(elsewhere), elsewhere).toBe(false);
     }
   });
+
+  it("finds a local IPv4 address inside IPv6, however it is written (S10, #654)", () => {
+    for (const local of [
+      "::ffff:7f00:1",
+      "::ffff:c0a8:101",
+      "0:0:0:0:0:ffff:127.0.0.1",
+      "::127.0.0.1",
+      "64:ff9b::7f00:1",
+      "64:ff9b::10.0.0.1",
+      "2002:7f00:1::",
+      "2002:c0a8:101::1",
+      // Teredo, its client 127.0.0.1 with its bits inverted.
+      "2001:0:4136:e378:8000:63bf:80ff:fffe",
+      "64:ff9b:1::8.8.8.8",
+      "fec0::1",
+      "ff02::1",
+      "2001:db8::1",
+      "fe80::1%eth0",
+      "not an address",
+    ]) {
+      expect(isLocalAddress(local), local).toBe(true);
+    }
+    for (const elsewhere of [
+      "::ffff:5db8:d70e",
+      "64:ff9b::8.8.8.8",
+      "2002:808:808::1",
+      "2001:4860:4860::8888",
+      "198.20.0.1",
+    ]) {
+      expect(isLocalAddress(elsewhere), elsewhere).toBe(false);
+    }
+  });
 });
 
 describe("bundleNetworkFor", () => {

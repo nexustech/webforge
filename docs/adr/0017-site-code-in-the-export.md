@@ -36,7 +36,8 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
       - `net.request` gives the redirect's target, which the downloader checks like any address.
       - Checked on 28 Oct 2026 against unpkg, whose `htmx.org@1` redirects to a versioned file: it downloaded through the checked hop.
     - **Never this computer or its network.** Each host is resolved before its request and refused if any address is loopback, private, link-local, carrier-grade NAT or reserved, as are `localhost` and IP addresses of those kinds.
-      - This narrows DNS rebinding but can't close it, as the request resolves the host again.
+      - Addresses are checked against ranges in a `net.BlockList`, not by pattern (security review S10, #654). An IPv6 address that carries an IPv4 one is checked by that one, however it is written: IPv4-mapped (`::ffff:7f00:1`), IPv4-compatible, NAT64's well-known prefix (`64:ff9b::/96`), 6to4 (`2002::/16`) and Teredo. Site-local `fec0::/10`, multicast, documentation and NAT64's local-use prefix are refused outright.
+      - This narrows DNS rebinding but can't close it, as the request resolves the host again. Pinning the request to the checked address isn't possible: `net.request` takes no address to connect to.
       - `https://` with its certificate checked is what stands between a rebound name and a local server.
     - **At most 10 MB, however it's sent.** The body is read as a stream and cancelled past the limit, so a response with no length can't fill main's memory.
     - **A script, stylesheet, font, image, sound or video, by its type** (or its name, for `application/octet-stream`).
