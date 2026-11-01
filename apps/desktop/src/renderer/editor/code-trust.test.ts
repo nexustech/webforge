@@ -267,7 +267,7 @@ describe("what the owner writes (#649)", () => {
       open: vi.fn<PreviewApi["open"]>(async () => "opened"),
       update: vi.fn<PreviewApi["update"]>(async () => null),
       show: vi.fn<PreviewApi["show"]>(async () => null),
-      phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "failed" })),
+      phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "offline" })),
       stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
     };
     const commands = createCommandRegistry();
