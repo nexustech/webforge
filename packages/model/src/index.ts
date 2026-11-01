@@ -17,8 +17,14 @@ export {
 } from "./box.js";
 export type { BrokenLink, SiteTarget } from "./broken-links.js";
 export { eachLink, findBrokenLinks } from "./broken-links.js";
-export type { CopiedElements } from "./clipboard.js";
-export { copiedElementsSchema, MAX_COPIED_NODES, pastedCopies } from "./clipboard.js";
+export type { ClipboardPayload, CopiedElements, ReadClipboardPayload } from "./clipboard.js";
+export {
+  clipboardPayload,
+  copiedElementsSchema,
+  MAX_COPIED_NODES,
+  pastedCopies,
+  readClipboardPayload,
+} from "./clipboard.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 export type {

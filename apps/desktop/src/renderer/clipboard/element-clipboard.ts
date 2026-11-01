@@ -234,8 +234,9 @@ function pasteSelection(session: ClipboardSession): string | null {
 /** What the user is told when the clipboard has nothing to paste or couldn't be read. */
 function readMessage(result: Extract<ClipboardReadResult, { status: "empty" | "failed" }>): string {
   if (result.status === "empty") return t("site.clipboard.nothing");
-  return result.reason === "read-only"
-    ? t("site.clipboard.readOnly")
+  if (result.reason === "read-only") return t("site.clipboard.readOnly");
+  return result.reason === "newer-format"
+    ? t("site.clipboard.newerFormat")
     : t("site.clipboard.pasteFailed");
 }
 

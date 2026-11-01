@@ -13,8 +13,9 @@ import { fileURLToPath } from "node:url";
 import { t } from "@webforge/i18n";
 import {
   type CopiedElements,
-  copiedElementsSchema,
+  clipboardPayload,
   type MediaMeta,
+  readClipboardPayload,
   webUrlSchema,
 } from "@webforge/model";
 import {
@@ -260,7 +261,10 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
           if (!kept.has(name)) rmSync(join(dir, name), { force: true });
         }
         const { nodes, sharedSectionId } = elements;
-        await system.writeElements(JSON.stringify({ nodes, media, sharedSectionId }));
+        // With the site format they were copied in, for a paste into another build (ADR 0012).
+        await system.writeElements(
+          JSON.stringify(clipboardPayload({ nodes, media, sharedSectionId })),
+        );
         return { status: "copied" };
       } catch (error) {
         failed("copy elements", error);
@@ -311,8 +315,12 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       } catch {
         return { status: "empty" };
       }
-      const copied = copiedElementsSchema.safeParse(parsed);
-      if (!copied.success) {
+      // Brought up to this build's format, as a site would be (ADR 0012).
+      const copied = readClipboardPayload(parsed);
+      if (copied.status === "newer-format") {
+        return { status: "failed", reason: "newer-format" };
+      }
+      if (copied.status !== "elements") {
         return { status: "empty" };
       }
       if (site.current() === null) {
@@ -321,13 +329,13 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
       try {
         const media: MediaMeta[] = [];
         let missingImages = 0;
-        for (const item of copied.data.media) {
+        for (const item of copied.elements.media) {
           const stored = await site.storeCopiedMedia(item, () => readKept(item));
           if (stored.status === "failed") return stored;
           if (stored.status === "stored") media.push(item);
           else if (stored.status === "missing") missingImages += 1;
         }
-        const { nodes, sharedSectionId } = copied.data;
+        const { nodes, sharedSectionId } = copied.elements;
         const shared = sharedSectionId === undefined ? {} : { sharedSectionId };
         return { status: "elements", elements: { nodes, media, ...shared }, missingImages };
       } catch (error) {
