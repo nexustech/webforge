@@ -144,6 +144,32 @@ Puck 0.24.0 came out on 29 Oct 2026. Our 0.23 patch couldn't be applied to it: i
 - **No change beyond this machine's noise.** The ranges overlap, and the one long task while typing, right at 50 ms, came on both versions. The p95s jump between runs on both (up to 440 ms typing and 303 ms undo once each), as a busy machine does.
 - **On this machine both versions now miss the jumps' 100 ms**, which they met in October (56–98 ms). The page and the harness are the same, so that is the machine, not Puck. The drop's long tasks missed their target then too (mitigation 5). 5.1 sets the budgets on CI's runners.
 
+## Addendum: drawing the whole page again (A25, 2026-11-01)
+
+The second architecture review's A25: any change to what the canvas renders with, besides the page, draws the whole page again (`redraw()` in `puck-engine.tsx`). Such a change can be a theme look, Media, an edit-only preview or Site Settings. `redraw()` builds Puck a new config, because a component draws again only when its props or its config change. Nothing measured it until now.
+
+- **The case:** `large-page.perf.ts` now has a step that turns the theme's italic look for Heading on and off ten times on the 225-node page. It goes through a perf-only hook, `toggleHeadingLook`, as one history step each, as Theme Studio's look change makes one. The app then calls `setLooks`, as it does for any theme change.
+- **What is timed:** from the change until the first heading on the canvas shows it, in a painted frame. It is looked for frame by frame, in the canvas as it is then: a `class` observer on the heading saw nothing. So the time covers the whole theme change as the app handles it, of which the redraw is the long task.
+- **The other entry points:** `setPreviews`, Media and Site Settings go through the same `redraw()`, so this one case stands for them all.
+
+**Result**, on the same machine: `pnpm e2e:perf` three times each, interleaved, on `main` and the branch with the new step. The branch adds the step only, so the other rows show the machine's noise on the day.
+
+| What (225 nodes) | `main` | With the new step |
+|---|---|---|
+| **A theme look changed, until shown** | not measured | **p50 1.7–2.2 s, p95 1.9–3.1 s** |
+| Long tasks while it is drawn again | – | one per change, 1.4–2.8 s |
+| Keystroke → next painted frame | p50 48 ms | p50 48–56 ms |
+| Drop after dragging a heading: longest task | 217–362 ms | 247–275 ms |
+| Undo (50-step history), p50 | 54–70 ms | 53–56 ms |
+| Redo, p50 | 54–55 ms | 47–55 ms |
+| Jump to start / end in Undo History | 116–125 / 117–187 ms | 113–134 / 111–118 ms |
+| Load the page into the canvas | 1.4–2.0 s | 1.6–1.9 s |
+| Memory afterwards: JS heap / renderer | 125 / 423–425 MB | 111–347 / 631–692 MB |
+
+- **Far over "instant".** A theme change on a large page holds the editor for about two seconds, 17–22 times the 100 ms that U7 takes as instant, and every keystroke or click in that time waits. Each change is one long task of the page being drawn again: with a new config Puck draws every component again, all 225, not only the headings the look changes. The other rows match `main` within the machine's noise, so the step adds this cost alone.
+- **Memory.** After the ten changes, the renderer holds about 200–270 MB more than `main` does at the same point. That is likely the replaced elements still waiting for garbage collection, but the run doesn't show whether it is ever given back.
+- **No budget yet:** the step records its numbers without failing, as 5.1 sets the budgets on CI's runners. The fix is a follow-up of its own: give the components what they render with through a store they subscribe to, so that a change draws only the components that read the part that changed, and Puck's config stays the same.
+
 ## Upstream reports (drafts)
 
 **1. `InlineTextField` moves the caret to the start when its value changes from outside**

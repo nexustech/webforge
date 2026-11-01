@@ -52,6 +52,22 @@ describe("perf hooks", () => {
     expect(sizeOf()).not.toBe(before);
   });
 
+  it("turns the theme's look for Heading on and off, as steps named like real ones (A25)", () => {
+    const session = newSession();
+    const hooks = createPerfHooks(session);
+    const looks = () => session.history.document.getState().theme.looks;
+
+    hooks.toggleHeadingLook();
+    expect(looks()).toEqual({ Heading: { lookItalic: true } });
+    hooks.toggleHeadingLook();
+    expect(looks()).toBeUndefined();
+
+    expect(session.history.state.getState().entries.map((entry) => entry.label)).toEqual([
+      "Changed the theme's look for Heading",
+      "Reset the theme's look for Heading",
+    ]);
+  });
+
   it("installs the hooks on window", () => {
     installPerfHooks(newSession());
 
