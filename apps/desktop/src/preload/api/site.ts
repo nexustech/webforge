@@ -3,10 +3,10 @@ import type { Call, Subscribe } from "./call.js";
 
 /** `window.webforge.site`. */
 export const siteApi = (call: Call, subscribe: Subscribe): SiteApi => ({
-  export: (request) => call("exportSite", request),
-  exportChoices: () => call("exportChoices"),
-  setExportChoices: (choices) => call("setExportChoices", choices),
-  openExport: () => call("openExport"),
+  export: (sessionId, request) => call("exportSite", sessionId, request),
+  exportChoices: (sessionId) => call("exportChoices", sessionId),
+  setExportChoices: (sessionId, choices) => call("setExportChoices", sessionId, choices),
+  openExport: (sessionId) => call("openExport", sessionId),
   cancelExport: () => call("cancelExport"),
   bundleFile: (sessionId, url) => call("bundleFile", sessionId, url),
   onExportProgress: (listener) =>

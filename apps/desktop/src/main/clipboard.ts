@@ -26,7 +26,7 @@ import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type { MediaImportResult } from "../shared/ipc-contract.js";
 import { logFailure } from "./log.js";
 import type { ImportFile } from "./media-import.js";
-import type { ProjectSession } from "./project-session.js";
+import type { SessionSite } from "./project-session.js";
 
 /**
  * Webforge's own format on the system clipboard: copied elements, as JSON. Electron's clipboard
@@ -161,7 +161,7 @@ export type ClipboardMediaImport = {
 };
 
 /** The open site, as the clipboard reads and fills its Media. */
-export type ClipboardSite = Pick<ProjectSession, "current" | "readMedia" | "storeCopiedMedia">;
+export type ClipboardSite = Pick<SessionSite, "current" | "readMedia" | "storeCopiedMedia">;
 
 const sha256 = (data: Uint8Array) => createHash("sha256").update(data).digest("hex");
 

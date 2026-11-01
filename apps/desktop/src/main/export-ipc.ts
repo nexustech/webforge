@@ -2,10 +2,11 @@ import { basename } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
 import type { IpcMain } from "electron";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
-import type { ExportChoices, ExportProgress, SiteContent } from "../shared/ipc/site.js";
+import type { ExportProgress, SiteContent } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
+import type { SessionSite } from "./project-session.js";
 
 /** Native dialogs, injected so the handler can be tested without Electron. */
 export type ExportDialogs = {
@@ -15,11 +16,21 @@ export type ExportDialogs = {
   chooseExportZip(siteName: string): Promise<string | undefined>;
 };
 
-/** How one export runs: a signal that cancels it, and what to tell of its progress (3.1). */
+/**
+ * How one export runs: where its images' and documents' bytes come from (the site it is of, #663),
+ * a signal that cancels it, and what to tell of its progress (3.1).
+ */
 type RunExportOptions = {
+  readonly readMedia: SessionSite["readMedia"];
   readonly signal: AbortSignal;
   readonly onProgress: (progress: ExportProgress) => void;
 };
+
+/** The open site as an export of one opening of it reaches it (R6, #663). */
+export type ExportSite = Pick<
+  SessionSite,
+  "staleReason" | "readMedia" | "exportChoices" | "setExportChoices"
+>;
 
 /** Where and how an export is written (3.3). */
 export type ExportTarget = Pick<ExportJob, "destination" | "format" | "output">;
@@ -37,11 +48,11 @@ export type ExportDeps = {
   readonly runExport: RunExport;
   /** Tells the window how far the export has come (3.1). */
   readonly sendProgress: (progress: ExportProgress) => void;
-  /** The open site's export choices (3.3): read for the dialog, kept when an export goes ahead. */
-  readonly choices: {
-    read(): Promise<ExportChoices>;
-    write(choices: ExportChoices): Promise<void>;
-  };
+  /**
+   * The open site for a call from a renderer loaded for opening `sessionId` (R6): its Media and its
+   * export choices (3.3), read for the dialog and kept when an export goes ahead.
+   */
+  readonly site: (sessionId: string) => ExportSite;
   /**
    * Opens an export from disk: a folder's home page in the browser, a ZIP in the file manager;
    * `missing` when it isn't there any more.
@@ -49,8 +60,6 @@ export type ExportDeps = {
   readonly open: (
     target: Pick<ExportTarget, "destination" | "format">,
   ) => Promise<"opened" | "missing">;
-  /** The open site's file, which an export belongs to; `undefined` with none open. */
-  readonly currentSite: () => string | undefined;
 };
 
 /**
@@ -107,6 +116,11 @@ export function snapshotOf(request: SiteContent): SiteSnapshot {
  * write anywhere it likes, and opens only what it exported itself. Image bytes come from the open
  * site's file, as the export worker asks for them, never from the renderer. Its progress goes to
  * `sendProgress`, and the renderer can cancel it (3.1).
+ *
+ * Each call names the opening of the site it is for (R6, #663). An export takes that site once, as
+ * it starts: one whose site was replaced by a hand-off while the dialog was open, or while it ran,
+ * is cancelled and writes nothing, and never keeps its choices with the next site, nor builds with
+ * its Media.
  */
 export function registerExportHandlers(
   ipc: Pick<IpcMain, "handle">,
@@ -115,41 +129,60 @@ export function registerExportHandlers(
 ): void {
   // The exports under way (or waiting for the one before): a cancel stops them all.
   const underWay = new Set<AbortController>();
-  // The last export written, and the site it was of, for Preview from disk.
-  let last: { readonly target: ExportTarget; readonly site: string | undefined } | undefined;
-  registerIpcHandler(ipc, "exportSite", isTrustedSender, async (request) => {
+  // The last export written, and the opening of the site it was of, for Preview from disk.
+  let last: { readonly target: ExportTarget; readonly sessionId: string } | undefined;
+  registerIpcHandler(ipc, "exportSite", isTrustedSender, async (sessionId, request) => {
+    // The site the export is of, taken once: it reads that site's Media only (#663).
+    const site = deps.site(sessionId);
+    if (site.staleReason() !== undefined) return { status: "canceled" };
     const { choices } = request;
     const destination =
       choices.format === "zip"
         ? await deps.dialogs.chooseExportZip(request.snapshot.name)
         : await deps.dialogs.chooseExportFolder();
-    if (destination === undefined) {
+    // Cancelled, or a hand-off replaced the site while the dialog was open: nothing is written,
+    // and its choices aren't kept with the next site.
+    if (destination === undefined || site.staleReason() !== undefined) {
       return { status: "canceled" };
     }
     // Remembered once the person has gone ahead; a site that can't save them still exports.
-    await deps.choices.write(choices).catch(() => undefined);
+    await site.setExportChoices(choices).catch(() => undefined);
     const target: ExportTarget = { destination, format: choices.format, output: request.output };
     const controller = new AbortController();
     underWay.add(controller);
     try {
       const outcome = await deps.runExport(snapshotOf(request), target, {
+        // A site replaced while the export runs cancels it, as Cancel would: nothing changes on
+        // disk, rather than a site written without its images. Checked again once a read comes
+        // back empty: a hand-off can take the gate between the check and the read.
+        readMedia: async (hash) => {
+          const blob = site.staleReason() === undefined ? await site.readMedia(hash) : undefined;
+          if (blob === undefined && site.staleReason() !== undefined) controller.abort();
+          return blob;
+        },
         signal: controller.signal,
         onProgress: deps.sendProgress,
       });
-      if (outcome.type === "exported") last = { target, site: deps.currentSite() };
+      if (outcome.type === "exported") last = { target, sessionId };
       return toExportResult(outcome, target);
     } finally {
       underWay.delete(controller);
     }
   });
-  registerIpcHandler(ipc, "exportChoices", isTrustedSender, () => deps.choices.read());
-  registerIpcHandler(ipc, "setExportChoices", isTrustedSender, async (choices) => {
-    await deps.choices.write(choices);
+  registerIpcHandler(ipc, "exportChoices", isTrustedSender, (sessionId) =>
+    deps.site(sessionId).exportChoices(),
+  );
+  registerIpcHandler(ipc, "setExportChoices", isTrustedSender, async (sessionId, choices) => {
+    await deps.site(sessionId).setExportChoices(choices);
     return null;
   });
-  // Only the open site's export: after File → Open of another site, it has none yet.
-  registerIpcHandler(ipc, "openExport", isTrustedSender, async () =>
-    last === undefined || last.site !== deps.currentSite() ? "none" : deps.open(last.target),
+  // Only this opening's export: after File → Open of another site, it has none yet.
+  registerIpcHandler(ipc, "openExport", isTrustedSender, async (sessionId) =>
+    last === undefined ||
+    last.sessionId !== sessionId ||
+    deps.site(sessionId).staleReason() !== undefined
+      ? "none"
+      : deps.open(last.target),
   );
   registerIpcHandler(ipc, "cancelExport", isTrustedSender, () => {
     for (const controller of underWay) controller.abort();

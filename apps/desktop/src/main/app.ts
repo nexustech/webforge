@@ -332,11 +332,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // Every build gets only the code the open site's owner trusts (#649).
   const trustedOnly = (snapshot: SiteSnapshot) =>
     withTrustedCode(snapshot, projectSession.projectId(), codeTrust);
-  const runExport: RunExport = async (sent, target, { signal, onProgress }) => {
+  // Each export reads the Media of the site it is of, which its handler took as it started (#663).
+  const runExport: RunExport = async (sent, target, { readMedia, signal, onProgress }) => {
     const snapshot = await trustedOnly(sent);
     return exports.run(
       { type: "export", snapshot, ...target, ...(await fontsOf(snapshot.theme)) },
-      { readMedia: (hash) => projectSession.readMedia(hash), signal, onProgress },
+      { readMedia, signal, onProgress },
     );
   };
 
@@ -348,11 +349,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   let previewFonts: { key: string; fonts: Awaited<ReturnType<typeof fontsOf>> } | undefined;
   const preview = createPreview({
     startServer: createPreviewServer,
-    startBuilder: (onBuilt) =>
-      createPreviewBuilder(() => forkWorker("Webforge preview"), {
-        readMedia: (hash) => projectSession.readMedia(hash),
-        onBuilt,
-      }),
+    // A preview's builds read the Media of the opening it was started for (#663).
+    startBuilder: (onBuilt, readMedia) =>
+      createPreviewBuilder(() => forkWorker("Webforge preview"), { readMedia, onBuilt }),
+    site: (sessionId) => projectSession.forSession(sessionId),
     jobFor: async (sent) => {
       const snapshot = await trustedOnly(sent);
       const key = JSON.stringify(snapshot.theme.fonts);
@@ -385,7 +385,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     60_000,
   );
   const respondWithMedia = createMediaResponder({
-    readMedia: (hash) => projectSession.readMedia(hash),
+    readMedia: (hash) => projectSession.readOpenMedia(hash),
     makeThumbnail: async (data, mimeType) => {
       const outcome = await requestThumbnail({ type: "thumbnail", mimeType, data });
       return outcome?.type === "thumbnail" ? outcome.data : undefined;
@@ -535,10 +535,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       runExport,
       sendProgress: (progress) =>
         lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
-      choices: {
-        read: () => projectSession.exportChoices(),
-        write: (choices) => projectSession.setExportChoices(choices),
-      },
+      // The site each export call is for (#663): its Media and its export choices.
+      site: (sessionId) => projectSession.forSession(sessionId),
       // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
       open: async ({ destination, format }) => {
         if (format === "zip") {
@@ -550,11 +548,15 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         const failed = await electron.shell.openPath(join(destination, "index.html"));
         return failed === "" ? "opened" : "missing";
       },
-      currentSite: () => projectSession.currentPath(),
     });
     registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
-    const ai = registerAiHandlers(ipcMain, isTrustedSender, () => lifecycle.mainWindow());
+    const ai = registerAiHandlers(
+      ipcMain,
+      isTrustedSender,
+      () => lifecycle.mainWindow(),
+      projectSession,
+    );
     exposeForE2eTests(ai, app.isPackaged);
     registerThemesHandlers(ipcMain, isTrustedSender, myThemes);
     registerPreviewHandlers(ipcMain, isTrustedSender, preview);

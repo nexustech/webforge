@@ -188,7 +188,10 @@ const bundleResultSchema = z.discriminatedUnion("status", [
 /** What came of Download and bundle. */
 export type BundleResult = z.infer<typeof bundleResultSchema>;
 
-/** IPC channels of the `site` domain (`site:*`). */
+/**
+ * IPC channels of the `site` domain (`site:*`). Each call that reads or changes the open site
+ * names the opening it is for (`sessionId`, R6, #663): main refuses one whose site has gone.
+ */
 export const siteChannels = {
   /**
    * Asks for a folder (open dialog in main), builds the site in a utility process and writes it
@@ -196,13 +199,13 @@ export const siteChannels = {
    */
   exportSite: {
     channel: "site:export",
-    request: z.tuple([exportRequestSchema]),
+    request: z.tuple([sessionIdSchema, exportRequestSchema]),
     response: exportResultSchema,
   },
   /** What the person chose for the open site's last export: the defaults until there was one. */
   exportChoices: {
     channel: "site:export-choices",
-    request: z.tuple([]),
+    request: z.tuple([sessionIdSchema]),
     response: exportChoicesSchema,
   },
   /**
@@ -211,7 +214,7 @@ export const siteChannels = {
    */
   setExportChoices: {
     channel: "site:set-export-choices",
-    request: z.tuple([exportChoicesSchema]),
+    request: z.tuple([sessionIdSchema, exportChoicesSchema]),
     response: z.null(),
   },
   /**
@@ -221,7 +224,7 @@ export const siteChannels = {
    */
   openExport: {
     channel: "site:open-export",
-    request: z.tuple([]),
+    request: z.tuple([sessionIdSchema]),
     response: z.enum(["opened", "none", "missing"]),
   },
   /**
@@ -253,14 +256,14 @@ export const siteEvents = {
 
 /** `window.webforge.site`. */
 export interface SiteApi {
-  /** Shows a folder or save dialog, then builds the site and writes it there. */
-  export(request: ExportRequest): Promise<ExportResult>;
-  /** What the person chose for the open site's last export. */
-  exportChoices(): Promise<ExportChoices>;
-  /** Remembers the person's export choices with the open site. */
-  setExportChoices(choices: ExportChoices): Promise<null>;
-  /** Opens the open site's last export from disk. */
-  openExport(): Promise<"opened" | "none" | "missing">;
+  /** Shows a folder or save dialog, then builds the site opened as `sessionId` and writes it there. */
+  export(sessionId: string, request: ExportRequest): Promise<ExportResult>;
+  /** What the person chose for the last export of the site opened as `sessionId`. */
+  exportChoices(sessionId: string): Promise<ExportChoices>;
+  /** Remembers the person's export choices with the site opened as `sessionId`. */
+  setExportChoices(sessionId: string, choices: ExportChoices): Promise<null>;
+  /** Opens the last export of the site opened as `sessionId` from disk. */
+  openExport(sessionId: string): Promise<"opened" | "none" | "missing">;
   /** Cancels the export under way, if there is one. */
   cancelExport(): Promise<null>;
   /** Downloads the file at `url` to keep with the site opened as `sessionId`. */
