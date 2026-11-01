@@ -17,7 +17,11 @@ const FRAME_BUDGET_MS = 16;
 const INSTANT_MS = 100;
 
 type PerfWindow = Window & {
-  __webforgePerf?: { loadPage(page: unknown): void; addSteps(count: number): void };
+  __webforgePerf?: {
+    loadPage(page: unknown): void;
+    addSteps(count: number): void;
+    toggleHeadingLook(): void;
+  };
 };
 
 let app: ElectronApplication;
@@ -148,6 +152,40 @@ async function timeClicks(selector: string, runs: number): Promise<number[]> {
   );
 }
 
+/**
+ * Toggles the theme's look for Heading `runs` times and measures, each time, how long until the
+ * canvas's first heading shows it (italic, or not again) in a painted frame: the whole page drawn
+ * again, as any change to what the canvas renders with makes it (A25). Looked for frame by frame,
+ * in the canvas as it is then, since drawing the page again may replace what was there.
+ */
+async function timeLookChanges(runs: number): Promise<number[]> {
+  return page.evaluate(async (count) => {
+    const hooks = (window as PerfWindow).__webforgePerf;
+    if (!hooks) throw new Error("No perf hooks");
+    const italic = () =>
+      document
+        .querySelector<HTMLIFrameElement>(".editor__canvas iframe")
+        ?.contentDocument?.querySelector(".site-section :is(h1, h2, h3, h4, h5, h6)")
+        ?.classList.contains("italic!");
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+    const times: number[] = [];
+    for (let i = 0; i < count; i++) {
+      const wanted = italic() !== true;
+      const start = performance.now();
+      hooks.toggleHeadingLook();
+      while (italic() !== wanted) {
+        // Over 3 s at worst on a busy machine (ADR 0007).
+        if (performance.now() - start > 15_000) throw new Error("Canvas did not change");
+        await frame();
+      }
+      // Shown in the next frame painted.
+      await frame();
+      times.push(performance.now() - start);
+    }
+    return times;
+  }, runs);
+}
+
 test.beforeAll(async () => {
   app = await launchDesktopApp();
   page = await app.firstWindow();
@@ -266,6 +304,14 @@ test("a page with 200+ elements against the editing budgets", async () => {
 
     results.drag = { totalMs: Date.now() - start, ...observed };
     expect.soft(observed.longTasks, "long tasks while dragging").toEqual([]);
+  });
+
+  await test.step("a theme look changed: the whole page drawn again (A25)", async () => {
+    await takeObserved();
+    const times = await timeLookChanges(10);
+    const observed = await takeObserved();
+    // No budget yet: 5.1 sets it on CI's runners, from this result (ADR 0007).
+    results.redraw = { ...summary(times), longTasks: observed.longTasks };
   });
 
   await test.step("undo, redo and jumps: instant (U7)", async () => {

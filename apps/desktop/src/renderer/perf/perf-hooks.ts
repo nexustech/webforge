@@ -14,6 +14,11 @@ export type PerfHooks = {
   /** Adds `count` history steps, each toggling the first heading's size (a real props edit). */
   addSteps(count: number): void;
   /**
+   * Turns the theme's italic look for Heading on, or off again, as one history step: a theme
+   * change the canvas draws by drawing the whole page again (`setLooks`, A25).
+   */
+  toggleHeadingLook(): void;
+  /**
    * When the site last changed (`Date.now()`), or 0: where the preview's timing starts (3.2), as
    * the edit lands, apart from the clicks and dialogs that made it.
    */
@@ -66,6 +71,17 @@ export function createPerfHooks(session: EditorSession): PerfHooks {
           }
         });
       }
+    },
+    toggleHeadingLook() {
+      const on = session.history.document.getState().theme.looks?.Heading?.lookItalic !== true;
+      const item = session.library.components.Heading?.label ?? "Heading";
+      const label = t(on ? "theme.history.look" : "theme.history.lookReset", { item });
+      session.history.run(label, (draft) => {
+        const { Heading: _heading, ...others } = draft.theme.looks ?? {};
+        const looks = on ? { ...others, Heading: { lookItalic: true } } : others;
+        if (Object.keys(looks).length === 0) delete draft.theme.looks;
+        else draft.theme.looks = looks;
+      });
     },
   };
 }
