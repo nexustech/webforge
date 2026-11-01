@@ -271,8 +271,8 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 - **Canvas iframe sandboxed;** no Node access anywhere in renderer contexts.
 - **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth, user-initiated "Download and bundle" (C8), and downloading a font the user picks from "Browse all fonts" (2.2; fonts are cached locally and self-hosted in exports).
 - **AI apps (MCP, F-AI-1):**
-  - Off by default. When on, the server listens only on this computer (loopback or a local pipe; transport chosen by ADR).
-  - **Pairing, not self-reported names:** Webforge issues a one-time code per AI app, which the user pastes into that app; the app then holds a token stored in the OS keychain on our side. Requests without a valid token are refused, and removing an app revokes it.
+  - Off by default. When on, an MCP server over Streamable HTTP listens on the literal `127.0.0.1` only, on a port drawn once and remembered, whenever Webforge runs ([ADR 0021](../docs/adr/0021-mcp-transport.md)). Developer tools connect to it directly. Claude Desktop connects through a Webforge `.mcpb` desktop extension that relays its stdio, and that checks the server's proof before it sends the key. ChatGPT isn't supported until it can reach local servers.
+  - **Pairing, not self-reported names:** Webforge issues a key per AI app, 256 random bits, shown once. The user pastes it into that app (into the extension's secure setting, for Claude Desktop), and the key is revoked unless it is used within 5 minutes. Webforge keeps only its hash, in the OS keychain. The app's name comes from the pairing dialog. Requests without a valid key are refused, and removing an app revokes it.
   - An HTTP transport checks `Origin` and `Host` on every request (DNS-rebinding and browser protection, as the MCP specification requires).
   - Every tool call is validated with zod and becomes a document command through `HistoryManager`; the server holds no document state of its own.
   - No tools for publishing, credentials, Custom Code or files outside the site.
