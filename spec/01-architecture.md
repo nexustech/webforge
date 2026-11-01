@@ -279,6 +279,11 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
   - Main checks every request against the `ai` domain's zod contract before forwarding it, with a cap on its size, and lets only a few wait at once: one command per app. The others are answered `invalid` or `busy` straight away (S21).
   - Site content goes only to the AI app the user paired; Webforge itself sends nothing.
   - Tool calls are never logged with their content (same rule as crash reports).
+- **Preview server (F-PV-1):**
+  - It listens on this computer (`127.0.0.1`), and for Preview on Phone on one more address: the computer's private IPv4 address on its Wi-Fi or Ethernet, never a virtual adapter's or a VPN's.
+  - It serves only the latest build, under a secret base path. The phone's listener has a base of its own, a new one each time it starts, so an address given out before opens nothing (S9).
+  - The phone's listener stops by itself after 10 minutes with no request and no page open on it, and when its address leaves the computer's adapters. The window then says so.
+  - Each listener answers only requests whose `Host` names its own address, and on this computer `localhost`, with 421 otherwise, before the base is looked at (DNS rebinding, S24).
 - **Files in Media (F-ED-24):** accepted by extension and sniffed content type; stored and exported unchanged; never opened, previewed or run inside the editor.
 - **Crash reports (local only):**
   - Electron `crashReporter.start({ uploadToServer: false })` for native crashes (minidumps in `app.getPath('crashDumps')`).

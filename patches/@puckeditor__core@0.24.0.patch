@@ -1,0 +1,153 @@
+diff --git a/dist/Editor-LJSLIQQP.mjs b/dist/Editor-LJSLIQQP.mjs
+index 104bfbbf3c454dec0a87dda064930fbc9f99114b..f38221850ff53af38bd81a9f9a8b0fff6c206bde 100644
+--- a/dist/Editor-LJSLIQQP.mjs
++++ b/dist/Editor-LJSLIQQP.mjs
+@@ -46,6 +46,11 @@ function useSyncedEditor({
+     maxWait: 200
+   });
+   const syncingRef = useRef(false);
++  // Webforge: the latest onChange, and how many changes the editor has made and sent on (#307).
++  const webforgeOnChange = useRef(onChange);
++  webforgeOnChange.current = onChange;
++  const webforgeChanges = useRef(0);
++  const webforgeDelivered = useRef(0);
+   const lastSyncedRef = useRef("");
+   const editTimer = useRef(null);
+   const isPending = !!editTimer.current;
+@@ -73,7 +78,7 @@ function useSyncedEditor({
+       }
+       const html = editor2.getHTML();
+       const { from, to } = editor2.state.selection;
+-      setDebouncedState({ from, to, html });
++      setDebouncedState({ from, to, html, webforgeChange: ++webforgeChanges.current });
+       resetTimer(html);
+       lastSyncedRef.current = html;
+     }
+@@ -84,12 +89,38 @@ function useSyncedEditor({
+       onFocusChange == null ? void 0 : onFocusChange(editor);
+     };
+     editor.on("focus", handleFocus);
++    // Webforge: sends what the editor hasn't sent on yet now, not through the debounced state,
++    // which reaches onChange only once React has rendered: on a busy computer that can be after
++    // the Undo it was sent for (#307). That includes a change the debounce has passed on already
++    // but React hasn't rendered yet; the debounced state then doesn't send it again.
++    const sendPending = () => {
++      if (webforgeDelivered.current === webforgeChanges.current) return false;
++      setDebouncedState.cancel();
++      webforgeDelivered.current = webforgeChanges.current;
++      const { from, to } = editor.state.selection;
++      const { ui } = appStoreApi.getState().state;
++      webforgeOnChange.current(editor.getHTML(), {
++        field: __spreadProps(__spreadValues({}, ui.field), { metadata: { from, to } })
++      });
++      return true;
++    };
++    // Webforge: deliver the last keystrokes as the editor loses focus, not up to 200 ms later,
++    // when the user may already have clicked elsewhere or pressed Undo, and they would be lost.
++    const handleBlur = () => {
++      sendPending();
++    };
++    // Webforge: lets the canvas send the pending change before an Undo or Redo pressed while
++    // typing (#146), through Puck's API (`__private.flushRichText`).
++    editor.webforgeFlushPending = sendPending;
++    editor.on("blur", handleBlur);
+     return () => {
+       editor.off("focus", handleFocus);
++      editor.off("blur", handleBlur);
+     };
+   }, [editor, onFocusChange]);
+   useEffect(() => {
+-    if (debouncedState) {
++    if (debouncedState && debouncedState.webforgeChange > webforgeDelivered.current) {
++      webforgeDelivered.current = debouncedState.webforgeChange;
+       const { ui } = appStoreApi.getState().state;
+       onChange(debouncedState.html, {
+         field: __spreadProps(__spreadValues({}, ui.field), {
+diff --git a/dist/chunk-DQXMVPVM.mjs b/dist/chunk-DQXMVPVM.mjs
+index 5f8d0a72dbd8006fe25155b7668b9bd9b23daf29..cb46963bc7fd518a86f854caac2708e4e8e6e65d 100644
+--- a/dist/chunk-DQXMVPVM.mjs
++++ b/dist/chunk-DQXMVPVM.mjs
+@@ -1,3 +1,4 @@
++import { Editor as WebforgeEagerEditor } from "./Editor-LJSLIQQP.mjs";
+ import {
+   EditorInner,
+   LoadedRichTextMenu
+@@ -6051,11 +6052,9 @@ import {
+   Suspense as Suspense2
+ } from "react";
+ import { jsx as jsx31 } from "react/jsx-runtime";
+-var Editor2 = lazy2(
+-  () => import("./Editor-LJSLIQQP.mjs").then((m) => ({
+-    default: m.Editor
+-  }))
+-);
++// Webforge: the inline rich-text editor loads with the canvas instead of lazily, so no
++// keystrokes go into a fallback that the loaded editor replaces (ADR 0004, 1.23).
++var Editor2 = WebforgeEagerEditor;
+ var RichTextRender = lazy2(
+   () => import("./Render-H3USS5FU.mjs").then((m) => ({
+     default: m.RichTextRender
+@@ -7162,7 +7161,16 @@ var generateUsePuck = (store, getState) => {
+     dictionary: store.dictionary
+   };
+   storeData.__private = {
+-    appState: store.state
++    appState: store.state,
++    // Webforge: the canvas zoom, which Puck keeps out of its public API.
++    getZoomConfig: () => getState().zoomConfig,
++    setZoomConfig: (zoomConfig) => getState().setZoomConfig(zoomConfig),
++    // Webforge: sends the focused rich-text editor's pending change now; false if there is none.
++    flushRichText: () => {
++      const richText = getState().currentRichText;
++      const flush = richText && richText.editor && richText.editor.webforgeFlushPending;
++      return typeof flush === "function" ? flush() === true : false;
++    }
+   };
+   return storeData;
+ };
+@@ -13753,10 +13761,18 @@ var Canvas = () => {
+   }, [viewports.current.width, viewports]);
+   useEffect30(() => {
+     if (!frameRef.current) return;
++    // Webforge: re-fit only when the canvas itself changes size (the window, a column). The frame
++    // fills its parent's content box, and that parent is what scrolls: a scrollbar the zoom brings
++    // or takes away shrinks or grows the frame, but not the parent's own box, and must not undo
++    // the zoom (#134).
++    let frameSize = null;
+     const resizeObserver = new ResizeObserver(() => {
+-      if (!isResizingRef.current) {
+-        resetAutoZoom();
+-      }
++      const frame = frameRef.current;
++      const box = frame ? frame.parentElement || frame : null;
++      const size = box ? `${box.offsetWidth}x${box.offsetHeight}` : null;
++      if (size === frameSize || isResizingRef.current) return;
++      frameSize = size;
++      resetAutoZoom();
+     });
+     resizeObserver.observe(frameRef.current);
+     return () => {
+diff --git a/dist/chunk-FWBFOZBF.mjs b/dist/chunk-FWBFOZBF.mjs
+index 75c893e048443afa33a53143ab8eadfaa82df20d..273d1969390eaa29a22e089d30200cee8cc93344 100644
+--- a/dist/chunk-FWBFOZBF.mjs
++++ b/dist/chunk-FWBFOZBF.mjs
+@@ -1105,7 +1105,8 @@ var createPermissionsSlice = (set, get) => {
+       }));
+     } else if (root) {
+       resolvePermissionsForRoot(force);
+-    } else {
++    } else if (Object.values(config.components).some((c) => c == null ? void 0 : c.resolvePermissions) || (config.root == null ? void 0 : config.root.resolvePermissions)) {
++      // Webforge: no whole-page walk when nothing resolves permissions (ADR 0007, #100).
+       flattenData(state, config).map((item2) => __async(null, null, function* () {
+         yield resolvePermissionsForItem(item2, force);
+       }));
+@@ -1241,7 +1242,8 @@ var useRegisterFieldsSlice = (appStore, id) => {
+             id: nodeId
+           }
+         });
+-      } else {
++      } else if (appStore.getState().fields.fields !== defaultFields || appStore.getState().fields.id !== nodeId) {
++        // Webforge: no new fields object when they and the item are unchanged (ADR 0007, #100).
+         appStore.setState((s) => ({
+           fields: __spreadProps(__spreadValues({}, s.fields), { fields: defaultFields, id: nodeId })
+         }));

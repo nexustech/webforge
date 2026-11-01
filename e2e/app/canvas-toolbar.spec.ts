@@ -1,5 +1,6 @@
 import { rm } from "node:fs/promises";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { CANVAS_INNER } from "@webforge/engine/puck-dom";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
 
 // The canvas toolbar (1.15, F-ED-8): device views, a custom width and the page shown, none of
@@ -189,10 +190,10 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   // The frame scrolls itself, like a browser window; nothing spills sideways.
   expect(frame).toMatchObject({ scrolls: true, overflowsSideways: false });
   // The box Desktop measures never scrolls, so its room, and the page's width, stay put.
-  const room = await page.evaluate(() => {
-    const inner = document.querySelector('[class*="PuckCanvas-inner"]') as HTMLElement;
+  const room = await page.evaluate((selector) => {
+    const inner = document.querySelector(selector) as HTMLElement;
     return { scrolls: inner.scrollHeight > inner.clientHeight, width: inner.clientWidth };
-  });
+  }, CANVAS_INNER);
   // Desktop takes the room's whole pixels: a fractional box can round one either way.
   expect(room.scrolls).toBe(false);
   expect(Math.abs(room.width - frame.width)).toBeLessThanOrEqual(1);

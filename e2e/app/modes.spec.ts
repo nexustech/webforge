@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { ACTION_BAR_ACTION, COMPONENT, RICH_TEXT } from "@webforge/engine/puck-dom";
 import { createSite, type MediaId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { heroPhoto } from "@webforge/test-utils";
@@ -43,7 +44,7 @@ const modeButton = (page: Page, name: "Design" | "Content") =>
   page.getByRole("radio", { name, exact: true });
 /** A button of Puck's action bar on the selected element, drawn inside the canvas frame. */
 const action = (page: Page, title: "Duplicate" | "Delete") =>
-  canvas(page).locator(`[class*="ActionBarAction"][title="${title}"]`);
+  canvas(page).locator(`${ACTION_BAR_ACTION}[title="${title}"]`);
 
 /** Selects the starter heading, so Puck shows its action bar for it. */
 async function selectHeading(page: Page): Promise<void> {
@@ -171,7 +172,7 @@ test.describe("editor modes", () => {
     // formatting).
     const text = frame.locator(".site-text");
     await text.getByText("We bake every day.").click();
-    await placeCaret(text.locator(".ProseMirror"), "end");
+    await placeCaret(text.locator(RICH_TEXT), "end");
     await page.keyboard.type(" Fresh");
     await app?.evaluate(({ clipboard }) => clipboard.writeText(" every morning."));
     await page.keyboard.press("ControlOrMeta+v");
@@ -189,7 +190,7 @@ test.describe("editor modes", () => {
     await expect(text.locator("strong, b")).toHaveText("Warm");
 
     // Only dragging is off: no element on the canvas says it is disabled, and a click selects one.
-    await expect(frame.locator("[data-puck-component]").first()).toBeVisible();
+    await expect(frame.locator(COMPONENT).first()).toBeVisible();
     await expect(frame.locator("[aria-disabled='true']")).toHaveCount(0);
 
     // An image swapped, and a link set, on the Hero.

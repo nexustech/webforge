@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { DRAWER_ITEM, RICH_TEXT } from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { below, boxOf, drag, lowerHalf } from "./drag.js";
@@ -63,7 +64,7 @@ async function addPanelElement(name: string): Promise<Locator> {
   await left().getByRole("tab", { name: "Elements" }).click();
   const item = left().getByRole("button", { name, exact: true });
   // The canvas adds its drag handle to a newly shown item a moment later.
-  await expect(item.locator("[data-puck-drawer-item]").first()).toBeAttached();
+  await expect(item.locator(DRAWER_ITEM).first()).toBeAttached();
   return item;
 }
 
@@ -184,7 +185,7 @@ test.describe("Puck canvas with Webforge history", () => {
 
   test("a rich-text session is one step", async () => {
     // The real Tiptap editor: Puck shows a fallback until its lazily loaded editor chunk arrives.
-    const editor = canvas().locator(".site-text .ProseMirror");
+    const editor = canvas().locator(`.site-text ${RICH_TEXT}`);
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
@@ -204,7 +205,7 @@ test.describe("Puck canvas with Webforge history", () => {
   });
 
   test("undoes all of a rich-text session with Ctrl/Cmd+Z pressed straight after typing (#146)", async () => {
-    const editor = canvas().locator(".site-text .ProseMirror");
+    const editor = canvas().locator(`.site-text ${RICH_TEXT}`);
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
@@ -221,7 +222,7 @@ test.describe("Puck canvas with Webforge history", () => {
   });
 
   test("undoes and redoes all of the typing on a busy computer too (#307)", async () => {
-    const editor = canvas().locator(".site-text .ProseMirror");
+    const editor = canvas().locator(`.site-text ${RICH_TEXT}`);
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();
@@ -272,7 +273,7 @@ test.describe("Puck canvas with Webforge history", () => {
     if (sectionBox === null) throw new Error("Section not visible");
     await section.click({ force: true, position: { x: 10, y: sectionBox.height - 4 } });
 
-    const editor = canvas().locator(".site-text .ProseMirror");
+    const editor = canvas().locator(`.site-text ${RICH_TEXT}`);
     await canvas().getByText(STARTER_TEXT).click();
     await editor.click();
     await expect(editor).toBeFocused();

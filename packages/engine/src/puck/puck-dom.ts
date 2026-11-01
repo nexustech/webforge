@@ -4,10 +4,26 @@
  * readable part (`_PuckCanvas-root_1a2b3`), matched by that part; its data attributes are its
  * markup. `puck-dom.test.tsx` mounts Puck and checks that each one still matches, so a Puck upgrade
  * that changes them fails `pnpm check` before the E2E suite does.
+ *
+ * React-free, so the E2E tests and the canvas styles worker import it too, as
+ * `@webforge/engine/puck-dom` (A20).
  */
+
+import { HIDDEN_ATTRIBUTE } from "@webforge/model";
 
 /** The attribute on each component's wrapper on the canvas, which holds the element's id. */
 export const COMPONENT_ATTRIBUTE = "data-puck-component";
+
+/** The class the canvas gives the page's drop zone, its list of sections (config.tsx). */
+export const SECTIONS_ZONE_CLASS = "wf-sections";
+
+/**
+ * Every second section of the canvas that a visitor would see (2.13d, A19), for the canvas's CSS
+ * (`themeCss`'s `evenSections`): each section is in a wrapper of Puck's in the page's drop zone,
+ * and only wrappers of a shown section count, never one hidden in Layers (which the export leaves
+ * out) or Puck's place for a dragged one.
+ */
+export const CANVAS_EVEN_SECTIONS = `.${SECTIONS_ZONE_CLASS} > :nth-child(even of :has(> section:not([${HIDDEN_ATTRIBUTE}]))) > section`;
 
 /** Any component's wrapper on the canvas. */
 export const COMPONENT = `[${COMPONENT_ATTRIBUTE}]`;
@@ -59,6 +75,29 @@ export const ACTIONS_OVERLAY = '[class*="_DraggableComponent-actionsOverlay_"]';
 /** The component under the pointer, and the selected one, as Puck marks them. */
 export const HOVERED_COMPONENT = '[class*="_DraggableComponent--hover_"]';
 export const SELECTED_COMPONENT = '[class*="_DraggableComponent--isSelected_"]';
+
+/**
+ * A component's action bar (the chip with its name and its actions), its name, and one action,
+ * named by its title ("Delete").
+ */
+export const ACTION_BAR = '[class*="_ActionBar_"]';
+export const ACTION_BAR_LABEL = '[class*="_ActionBar-label_"]';
+export const ACTION_BAR_ACTION = '[class*="_ActionBarAction_"]';
+
+/** The rich-text editor's formatting menu, which Puck draws over the text being edited. */
+export const RICH_TEXT_MENU = "[data-puck-rte-menu]";
+
+/**
+ * While a drag goes on (A20): the entry Puck draws for the element being dragged, and where it
+ * would drop, dnd-kit's placeholder or Puck's line. They show only during a pointer drag, which
+ * happy-dom can't make, so `puck-dom.test.tsx` checks that Puck still names them, and the E2E
+ * drags use them.
+ */
+export const DRAGGING = "[data-puck-entry][data-puck-dragging]";
+export const DROP_PREVIEW = "[data-dnd-placeholder], [data-puck-line-placeholder]";
+
+/** The attribute Puck gives a component's wrapper that can't be dragged now, as it is drawn again. */
+export const DISABLED_ATTRIBUTE = "data-puck-disabled";
 
 /** Puck's layout around the canvas (#274): its plugin rail, its two sidebars and their box. */
 export const LAYOUT = {

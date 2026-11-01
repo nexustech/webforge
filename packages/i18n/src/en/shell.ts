@@ -67,6 +67,9 @@ export const shell = {
   "preview.phone.on": "Phone preview on",
   "preview.phone.onDescription":
     "Anyone on this Wi-Fi who has the address can see the preview. Stop it when you're done.",
+  // Main stopped the phone's preview by itself (S9): unused for 10 minutes, or off the Wi-Fi.
+  "preview.phone.stopped":
+    "Phone preview stopped: no phone used it for 10 minutes, or this computer left its Wi-Fi. Choose Preview on Phone again for a new address.",
   "preview.phone.failed":
     "{appName} couldn't start the preview for your phone. Try again in a moment.",
   "shell.export": "Export",

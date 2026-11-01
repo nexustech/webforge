@@ -39,12 +39,21 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
   const { site, about } = siteWithAbout();
   const session = sessionWith(site);
   const registry = createCommandRegistry();
+  const phoneStoppedListeners = new Set<() => void>();
+  /** Main stopping the phone's listener by itself. */
+  const phoneStopped = () => {
+    for (const listener of phoneStoppedListeners) listener();
+  };
   const api = {
     open: vi.fn<PreviewApi["open"]>(async () => "opened"),
     update: vi.fn<PreviewApi["update"]>(async () => null),
     show: vi.fn<PreviewApi["show"]>(async () => null),
     phone: vi.fn<PreviewApi["phone"]>(async () => phone),
     stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
+    onPhoneStopped: (listener: () => void) => {
+      phoneStoppedListeners.add(listener);
+      return () => phoneStoppedListeners.delete(listener);
+    },
   };
   const phoneState = createStore<PhoneState>(() => ({ status: "closed" }));
   const notify = vi.fn();
@@ -85,6 +94,8 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     about,
     confirmCode,
     codeTrusted,
+    phoneStopped,
+    phoneStoppedListeners,
   };
 }
 
@@ -152,6 +163,7 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
       show: vi.fn<PreviewApi["show"]>(async () => null),
       phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "offline" })),
       stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
+      onPhoneStopped: () => () => undefined,
     };
     const remove = registerPreviewCommands(registry, {
       session,
@@ -289,6 +301,21 @@ describe("registerPreviewCommands (3.2)", () => {
     await runSettled(offline.registry, COMMAND_IDS.previewOnPhone);
     await vi.waitFor(() => expect(offline.phoneState.getState()).toEqual({ status: "offline" }));
     expect(offline.registry.get(COMMAND_IDS.stopPhonePreview)).toBeUndefined();
+  });
+
+  it("says so when main stopped the phone's preview by itself, and takes its address away (S9)", async () => {
+    const { registry, phoneState, notify, phoneStopped, phoneStoppedListeners, remove } = setUp();
+    await runSettled(registry, COMMAND_IDS.previewOnPhone);
+    await vi.waitFor(() => expect(phoneState.getState().status).toBe("ready"));
+
+    phoneStopped();
+    expect(registry.get(COMMAND_IDS.stopPhonePreview)).toBeUndefined();
+    expect(phoneState.getState()).toEqual({ status: "closed" });
+    expect(notify).toHaveBeenCalledWith(
+      "Phone preview stopped: no phone used it for 10 minutes, or this computer left its Wi-Fi. Choose Preview on Phone again for a new address.",
+    );
+    remove();
+    expect(phoneStoppedListeners.size).toBe(0);
   });
 
   it("leaves the dialog closed when it was closed while the preview started", async () => {

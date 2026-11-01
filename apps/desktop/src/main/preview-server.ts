@@ -26,8 +26,21 @@ export type PreviewServer = {
   listen(scope: PreviewScope, host?: string): Promise<number>;
   /** Stops listening on `scope`, closing its connections: Stop Phone Preview. */
   stop(scope: PreviewScope): Promise<void>;
-  /** The path every URL starts with: a secret, so only those given a link can open the preview. */
+  /**
+   * The path every URL on this computer starts with: a secret, so a site another tab opens can't
+   * read the preview.
+   */
   readonly base: string;
+  /**
+   * The path every URL a phone opens starts with: another secret, a new one each time the phone's
+   * listener starts (S9), so an address given out before opens nothing. None while it's stopped.
+   */
+  phoneBase(): string | undefined;
+  /**
+   * Calls `listener` when the phone's listener stops by itself: no phone asked for anything, nor
+   * kept a page open, for a while (S9).
+   */
+  onPhoneStopped(listener: () => void): void;
   /** Takes a build: its files are served from now on, and the browsers told what changed. */
   update(build: PreviewBuild): void;
   /** Takes the editor to `page` (`about.html`): the browsers showing another page go there. */
@@ -101,6 +114,29 @@ const FIRST_BUILD_WAIT_MS = 120_000;
 /** How often an open event stream is told the server is still there (a phone may drop it). */
 const KEEP_ALIVE_MS = 20_000;
 
+/** How long the phone's listener stays on with no request and no page open on it (S9). */
+const PHONE_IDLE_MS = 10 * 60_000;
+
+/** A new secret base path: `/<32 hex digits>/`. */
+const newBase = () => `/${randomBytes(16).toString("hex")}/`;
+
+/** A listener: its server, port and address, the base its URLs start with, its idle timer. */
+type Listener = {
+  readonly server: Server;
+  readonly port: Promise<number>;
+  readonly host: string;
+  readonly base: string;
+  idle?: ReturnType<typeof setTimeout>;
+};
+
+/**
+ * The `Host` a request to a listener on `address` and `port` may name (S24): its own address, and
+ * on this computer `localhost` too. A page elsewhere that points its own name at the preview's
+ * address (DNS rebinding) names its own, and is refused before the base is looked at.
+ */
+const hostsFor = (scope: PreviewScope, address: string, port: number) =>
+  scope === "local" ? [`${address}:${port}`, `localhost:${port}`] : [`${address}:${port}`];
+
 /**
  * `html` with the live reload script before its `</body>`, or at its end: it follows the editor,
  * swapping the stylesheet in place, reloading a changed page or going to the page shown.
@@ -114,12 +150,17 @@ function withLiveReload(html: string, base: string): string {
 /**
  * The preview server (3.2). It serves only the files of the latest build, by their exact paths,
  * under a secret base path (`/<32 hex digits>/`), so a site another tab opens can't read the
- * preview, nor a device on the network that wasn't given its link; and nothing from disk. Pages get
- * the live reload script; `__webforge/events` is the stream of what changed. Until the first build,
- * a page asked for waits for it.
+ * preview, nor a device on the network that wasn't given its link; and nothing from disk. Each
+ * listener has its own base, the phone's a new one each time it starts, and answers only requests
+ * naming its own address (S9, S24). The phone's stops by itself after `phoneIdleMs` unused. Pages
+ * get the live reload script; `__webforge/events` is the stream of what changed. Until the first
+ * build, a page asked for waits for it.
  */
-export function createPreviewServer(): PreviewServer {
-  const base = `/${randomBytes(16).toString("hex")}/`;
+export function createPreviewServer(
+  options: { readonly phoneIdleMs?: number } = {},
+): PreviewServer {
+  const phoneIdleMs = options.phoneIdleMs ?? PHONE_IDLE_MS;
+  const base = newBase();
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   let files = new Map<string, Uint8Array>();
@@ -129,23 +170,42 @@ export function createPreviewServer(): PreviewServer {
   let built = false;
   /** The pages asked for before the first build, each answered with it, or as not ready. */
   const waiting = new Set<(ready: boolean) => void>();
-  const streams = new Set<ServerResponse>();
+  /** The open event streams, each with the listener it came through. */
+  const streams = new Map<ServerResponse, Listener>();
   const watchers = new Set<() => void>();
-  const servers = new Map<
-    PreviewScope,
-    { readonly server: Server; readonly port: Promise<number>; readonly host: string }
-  >();
+  const phoneStopped = new Set<() => void>();
+  const servers = new Map<PreviewScope, Listener>();
 
-  /** Stops `server`, closing every connection to it. */
-  const closeServer = (server: Server) =>
+  /** Stops `listener`, closing every connection to it. */
+  const closeServer = (listener: Listener) =>
     new Promise<void>((resolve) => {
-      server.close(() => resolve());
-      server.closeAllConnections();
+      clearTimeout(listener.idle);
+      listener.server.close(() => resolve());
+      listener.server.closeAllConnections();
     });
+
+  /**
+   * (Re)starts the phone's idle timer: when it runs out with no page open through it, the phone's
+   * listener stops, and those listening are told.
+   */
+  const stillUsed = (phone: Listener) => {
+    clearTimeout(phone.idle);
+    phone.idle = setTimeout(() => {
+      if (servers.get("network") !== phone) return;
+      if ([...streams.values()].includes(phone)) {
+        stillUsed(phone);
+        return;
+      }
+      // Told before it closes, so a phone listener started after the notice is never taken for it.
+      servers.delete("network");
+      for (const listener of phoneStopped) listener();
+      void closeServer(phone);
+    }, phoneIdleMs);
+  };
 
   const send = (event: string, data: unknown) => {
     const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
-    for (const stream of streams) stream.write(message);
+    for (const stream of streams.keys()) stream.write(message);
   };
 
   const notReady = (response: ServerResponse) => {
@@ -160,6 +220,7 @@ export function createPreviewServer(): PreviewServer {
 
   const serveFile = (
     path: string,
+    listener: Listener,
     request: IncomingMessage,
     response: ServerResponse,
     head: boolean,
@@ -177,7 +238,7 @@ export function createPreviewServer(): PreviewServer {
     }
     const type = contentTypeOf(path);
     const body = type.startsWith("text/html")
-      ? encoder.encode(withLiveReload(decoder.decode(data), base))
+      ? encoder.encode(withLiveReload(decoder.decode(data), listener.base))
       : data;
     response.writeHead(200, {
       ...FILE_HEADERS,
@@ -188,7 +249,7 @@ export function createPreviewServer(): PreviewServer {
     response.end(head ? undefined : body);
   };
 
-  const openStream = (request: IncomingMessage, response: ServerResponse) => {
+  const openStream = (listener: Listener, request: IncomingMessage, response: ServerResponse) => {
     response.writeHead(200, {
       ...COMMON_HEADERS,
       "Content-Type": "text/event-stream; charset=utf-8",
@@ -197,7 +258,7 @@ export function createPreviewServer(): PreviewServer {
     // A dropped stream comes back after a second. It isn't told the page shown: a visitor who
     // followed a link to another page stays there until the editor shows another.
     response.write("retry: 1000\n\n");
-    streams.add(response);
+    streams.set(response, listener);
     const alive = setInterval(() => response.write(": alive\n\n"), KEEP_ALIVE_MS);
     request.on("close", () => {
       clearInterval(alive);
@@ -206,7 +267,19 @@ export function createPreviewServer(): PreviewServer {
     for (const watcher of watchers) watcher();
   };
 
-  const handle = (request: IncomingMessage, response: ServerResponse) => {
+  const handle = (
+    scope: PreviewScope,
+    listener: Listener,
+    request: IncomingMessage,
+    response: ServerResponse,
+  ) => {
+    const { port } = listener.server.address() as AddressInfo;
+    const host = request.headers.host?.toLowerCase() ?? "";
+    if (!hostsFor(scope, listener.host, port).includes(host)) {
+      response.writeHead(421, { ...COMMON_HEADERS, "Content-Type": "text/plain; charset=utf-8" });
+      response.end();
+      return;
+    }
     const head = request.method === "HEAD";
     if (request.method !== "GET" && !head) {
       response.writeHead(405, { ...COMMON_HEADERS, Allow: "GET, HEAD" });
@@ -214,13 +287,15 @@ export function createPreviewServer(): PreviewServer {
       return;
     }
     const url = new URL(request.url ?? "/", "http://preview");
-    if (!url.pathname.startsWith(base)) {
+    if (!url.pathname.startsWith(listener.base)) {
       notFound(response);
       return;
     }
+    // A request with the phone's secret: a phone is still using it.
+    if (scope === "network") stillUsed(listener);
     let path: string;
     try {
-      path = decodeURIComponent(url.pathname.slice(base.length));
+      path = decodeURIComponent(url.pathname.slice(listener.base.length));
     } catch {
       notFound(response);
       return;
@@ -234,12 +309,12 @@ export function createPreviewServer(): PreviewServer {
       return;
     }
     if (path === "__webforge/events") {
-      openStream(request, response);
+      openStream(listener, request, response);
       return;
     }
     const wanted = path === "" || path.endsWith("/") ? `${path}index.html` : path;
     if (built) {
-      serveFile(wanted, request, response, head);
+      serveFile(wanted, listener, request, response, head);
       return;
     }
     // Before the first build: wait for it, then answer; a browser opened at once gets its page.
@@ -247,7 +322,7 @@ export function createPreviewServer(): PreviewServer {
     const answer = (ready: boolean) => {
       clearTimeout(timer);
       waiting.delete(answer);
-      if (ready) serveFile(wanted, request, response, head);
+      if (ready) serveFile(wanted, listener, request, response, head);
       else notReady(response);
     };
     const timer = setTimeout(() => answer(false), FIRST_BUILD_WAIT_MS);
@@ -260,6 +335,10 @@ export function createPreviewServer(): PreviewServer {
 
   return {
     base,
+    phoneBase: () => servers.get("network")?.base,
+    onPhoneStopped(listener) {
+      phoneStopped.add(listener);
+    },
     async listen(scope, host) {
       // This computer only, unless a phone is to open it: then the one local address chosen,
       // never a VPN's or another adapter's.
@@ -269,9 +348,11 @@ export function createPreviewServer(): PreviewServer {
       if (running !== undefined && running.host === address) return running.port;
       if (running !== undefined) {
         servers.delete(scope);
-        await closeServer(running.server);
+        await closeServer(running);
       }
-      const server = createServer(handle);
+      const server = createServer((request, response) =>
+        handle(scope, listener, request, response),
+      );
       const port = new Promise<number>((resolve, reject) => {
         server.once("error", reject);
         server.listen(0, address, () => {
@@ -279,9 +360,17 @@ export function createPreviewServer(): PreviewServer {
           resolve((server.address() as AddressInfo).port);
         });
       });
-      servers.set(scope, { server, port, host: address });
+      // This computer's base stays; the phone's is new each time its listener starts (S9).
+      const listener: Listener = {
+        server,
+        port,
+        host: address,
+        base: scope === "local" ? base : newBase(),
+      };
+      servers.set(scope, listener);
+      if (scope === "network") stillUsed(listener);
       port.catch(() => {
-        if (servers.get(scope)?.server === server) servers.delete(scope);
+        if (servers.get(scope) === listener) servers.delete(scope);
       });
       return port;
     },
@@ -289,7 +378,7 @@ export function createPreviewServer(): PreviewServer {
       const running = servers.get(scope);
       if (running === undefined) return;
       servers.delete(scope);
-      await closeServer(running.server);
+      await closeServer(running);
     },
     update(build) {
       const stylesheet = files.get(PREVIEW_STYLESHEET);
@@ -334,11 +423,11 @@ export function createPreviewServer(): PreviewServer {
     },
     async close() {
       for (const answer of [...waiting]) answer(false);
-      for (const stream of streams) stream.end();
+      for (const stream of streams.keys()) stream.end();
       streams.clear();
       const stopping = [...servers.values()];
       servers.clear();
-      await Promise.all(stopping.map(({ server }) => closeServer(server)));
+      await Promise.all(stopping.map(closeServer));
     },
   };
 }

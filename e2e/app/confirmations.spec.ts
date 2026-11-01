@@ -3,6 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { OVERLAY } from "@webforge/engine/puck-dom";
 import { createSite, type PageId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { clickOnCanvas } from "./canvas-click.js";
@@ -68,7 +69,7 @@ const steps = () => page.locator(".undo-history__step");
 /** A quick action of the selected element (a hovered element shows a bar of its own too). */
 const quickAction = (title: string) =>
   canvas()
-    .locator("[data-puck-overlay]")
+    .locator(OVERLAY)
     .filter({ has: canvas().locator('.wf-outline[data-state="selected"]') })
     .locator(`[title="${title}"]`);
 
