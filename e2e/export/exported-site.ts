@@ -27,6 +27,12 @@ export function themedPageUrl(page: string): string {
 }
 
 /**
+ * Where the setup exports a one-page site with Google Analytics and the consent banner turned off
+ * (#650), inside the fixture's folder so CI uploads it with it.
+ */
+export const NO_BANNER_SITE_DIR = join(EXPORTED_SITE_DIR, "no-banner");
+
+/**
  * Where the setup exports every template, one folder each by its id (3.10), inside the fixture's
  * folder so CI uploads them with it.
  */

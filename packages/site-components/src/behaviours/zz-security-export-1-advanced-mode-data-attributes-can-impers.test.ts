@@ -1,0 +1,40 @@
+// Security review S3 (docs/reviews/2026-10-30-security-review.md), restored by #650.
+import type { NodeDoc } from "@webforge/model";
+import { Window } from "happy-dom";
+import { afterEach, expect, it } from "vitest";
+import { BEHAVIOUR_SCRIPTS } from "../behaviours.js";
+import { siteLibrary } from "../catalogue/index.js";
+import { consentBannerHtml } from "../consent-banner.js";
+import { EDITOR_RENDER_CONTEXT } from "../library.js";
+import { renderNodesToHtml } from "../render-static.js";
+
+const windows: Window[] = [];
+afterEach(async () => {
+  for (const happy of windows.splice(0)) await happy.happyDOM.close();
+});
+
+it("an element's Advanced data attributes cannot stand in for the consent banner", () => {
+  const heading: NodeDoc = {
+    type: "Heading",
+    props: {
+      id: "h",
+      text: "Welcome",
+      advanced: { attributes: { "data-wf-consent": "", "data-measurement-id": "G-ATTACKER1" } },
+    },
+  };
+  const html =
+    renderNodesToHtml([heading], siteLibrary, EDITOR_RENDER_CONTEXT) +
+    consentBannerHtml({ measurementId: "G-OWNER12345", consentBanner: true });
+  const happy = new Window({ url: "https://rosas-bakery.example/" });
+  windows.push(happy);
+  happy.document.body.innerHTML = html;
+  happy.eval(BEHAVIOUR_SCRIPTS.consent ?? "");
+  const scripts = [...happy.document.head.querySelectorAll("script")].map((s) =>
+    s.getAttribute("src"),
+  );
+  // Nothing loads before the visitor accepts, and the owner's banner still shows.
+  expect(scripts).toEqual([]);
+  expect((happy as unknown as { dataLayer?: unknown }).dataLayer).toBeUndefined();
+  expect(happy.document.querySelectorAll("[data-wf-consent]")).toHaveLength(1);
+  expect(happy.document.querySelector("[data-ask]")?.hasAttribute("hidden")).toBe(false);
+});

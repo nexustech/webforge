@@ -1,6 +1,7 @@
 import { addPanelArea } from "./add/area.js";
 import { aiRequestsArea } from "./ai/area.js";
 import { clipboardCommandsArea, styleCommandsArea } from "./clipboard/area.js";
+import { codeTrustArea } from "./code-trust/index.js";
 import { editPanelArea } from "./edit-panel/area.js";
 import type { Area, EditorContext, WindowContext } from "./editor/areas.js";
 import {
@@ -69,6 +70,7 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   layersPanelArea,
   crashReportsArea,
   viewCommandsArea,
+  codeTrustArea,
   exportCommandArea,
   saveSiteZipArea,
   previewArea,

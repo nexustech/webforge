@@ -11,6 +11,7 @@ import type { PreferencesStore } from "../shell/preferences-store.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
 import type { AddItem } from "./add-item.js";
 import type { CanvasPointer } from "./canvas-pointer.js";
+import type { CodeTrust } from "./code-trust.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
@@ -79,6 +80,8 @@ export type WindowContext = AreaContext & {
   readonly settings: SettingsRegistry;
   /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
   readonly windowDialogs: WindowDialogRegistry;
+  /** The code trust step (#649): asks before the site's code runs, and keeps what's trusted. */
+  readonly codeTrust: CodeTrust;
   /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
   readonly siteCheckIgnored: {
     readonly initial: readonly string[];

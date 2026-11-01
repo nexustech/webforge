@@ -61,6 +61,9 @@ describe("advancedFields", () => {
     expect(name?.("data-track")).toBeUndefined();
     expect(name?.("onclick")).toMatch(/data-…/);
     expect(name?.("style")).toMatch(/data-…/);
+    // Only the export writes these (#650).
+    expect(name?.("data-wf-consent")).toMatch(/writes this attribute itself in the exported site$/);
+    expect(name?.("data-measurement-id")).toMatch(/itself/);
     expect(name?.("data-a")).toBe("This element already has this attribute");
     expect(value?.("x".repeat(1000))).toBeUndefined();
     expect(value?.("x".repeat(1001))).toBe("Use at most 1000 characters");
@@ -145,6 +148,14 @@ describe("withAdvancedChange", () => {
         id: "0",
         name: "name",
         value: "onclick",
+      }),
+    ).toBe(advanced);
+    expect(
+      withAdvancedChange(advanced, ADVANCED_FIELDS.attributes, {
+        type: "edit",
+        id: "0",
+        name: "name",
+        value: "data-wf-consent",
       }),
     ).toBe(advanced);
     expect(withAdvancedChange(advanced, "text", "x")).toBe(advanced);

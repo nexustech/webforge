@@ -231,7 +231,7 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 
 ## 9. Security & privacy
 - **Secrets never in `.wforge`.** Publish credentials live in the OS keychain via `safeStorage` (08).
-- **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default.
+- **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default. Code from someone else's site file goes into an export, a preview or a publish only once its owner has confirmed it on this computer ([ADR 0019](../docs/adr/0019-code-trust.md), #649).
 - **Canvas iframe sandboxed;** no Node access anywhere in renderer contexts.
 - **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth, user-initiated "Download and bundle" (C8), and downloading a font the user picks from "Browse all fonts" (2.2; fonts are cached locally and self-hosted in exports).
 - **AI apps (MCP, F-AI-1):**

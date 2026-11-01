@@ -128,3 +128,44 @@ describe("what Site Check remembers as ignored (3.17)", () => {
     expect(saveIgnored).toHaveBeenLastCalledWith(["searchConsole:searchConsole"]);
   });
 });
+
+describe("Site Check and the site's allowed addresses (#649)", () => {
+  /** The starter site loading a script from another website, which Settings allow. */
+  const withAllowedScript = (): SiteDoc => {
+    const site = starterSite();
+    return {
+      ...site,
+      code: { ...site.code, bodyEnd: '<script src="https://cdn.example.com/w.js"></script>' },
+      settings: { ...site.settings, allowedExternalUrls: ["https://cdn.example.com/"] },
+    };
+  };
+  const external = (check: ReturnType<typeof createSiteCheck>) =>
+    check.state.getState().report.results.find((result) => result.rule === "externalResources")
+      ?.findings.length;
+
+  it("applies them only once confirmed, and checks again when they are", () => {
+    const document = createStore<SiteDoc>()(() => withAllowedScript());
+    const allowListConfirmed = createStore<boolean>()(() => false);
+    const check = createSiteCheck(document, {
+      ignored: [],
+      saveIgnored: () => {},
+      allowListConfirmed,
+    });
+    expect(external(check)).toBe(1);
+
+    allowListConfirmed.setState(true, true);
+    vi.advanceTimersByTime(400);
+    while (idle.length > 0) idlePeriod(100);
+
+    expect(external(check)).toBe(0);
+    check.dispose();
+  });
+
+  it("never applies them when nothing says they're confirmed", () => {
+    const document = createStore<SiteDoc>()(() => withAllowedScript());
+    const check = createSiteCheck(document, { ignored: [], saveIgnored: () => {} });
+
+    expect(external(check)).toBe(1);
+    check.dispose();
+  });
+});

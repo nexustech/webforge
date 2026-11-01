@@ -1,0 +1,36 @@
+// Security review S25 (docs/reviews/2026-10-30-security-review.md), restored by #650.
+import type { SiteAnalytics } from "@webforge/model";
+import { Window } from "happy-dom";
+import { afterEach, describe, expect, it } from "vitest";
+import { BEHAVIOUR_SCRIPTS } from "../behaviours.js";
+import { consentBannerHtml } from "../consent-banner.js";
+
+const windows: Window[] = [];
+afterEach(async () => {
+  for (const happy of windows.splice(0)) await happy.happyDOM.close();
+});
+
+describe("security: GA4 with the consent banner turned off", () => {
+  it("keeps analytics_storage denied on first view when no banner asks", () => {
+    const happy = new Window({ url: "https://rosas-bakery.example/" });
+    windows.push(happy);
+    const window = happy as unknown as typeof globalThis & { dataLayer?: unknown[] };
+    const { document } = window;
+    const analytics: SiteAnalytics = { measurementId: "G-ABC123DEF4", consentBanner: false };
+    document.body.innerHTML = consentBannerHtml(analytics);
+    new Function("window", "document", "HTMLElement", "Event", BEHAVIOUR_SCRIPTS.consent ?? "")(
+      window,
+      document,
+      window.HTMLElement,
+      window.Event,
+    );
+    const commands = (window.dataLayer ?? []).map((e) => Array.from(e as ArrayLike<unknown>));
+    const granted = commands.some(
+      (c) =>
+        c[0] === "consent" &&
+        c[1] === "update" &&
+        (c[2] as { analytics_storage?: string }).analytics_storage === "granted",
+    );
+    expect(granted).toBe(false);
+  });
+});

@@ -634,6 +634,31 @@ describe("renderNodesToHtml", () => {
     );
   });
 
+  it("keeps an embed's own address and name whatever its Advanced attributes say (#650)", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "EmbedVideo",
+          props: {
+            id: "v",
+            address: "https://www.youtube.com/watch?v=aqz-KE-bpKQ",
+            advanced: {
+              attributes: { "data-src": "https://player.vimeo.com/video/1", "data-title": "x" },
+            },
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    // The embed script reads the frame's, which an Advanced attribute (on the element's root)
+    // never reaches.
+    expect(html).toMatch(
+      /data-wf-embed="" data-src="https:\/\/www\.youtube-nocookie\.com\/embed\/aqz-KE-bpKQ" data-title="Video"/,
+    );
+  });
+
   it("renders a Section on reversed colours as a band across the page, its column inside (2.4)", () => {
     const section = (props: Record<string, unknown>): NodeDoc => ({
       type: "Section",
@@ -812,6 +837,28 @@ describe("renderNodesToHtml", () => {
         siteLibrary,
         context,
       );
+
+    it("keeps the attributes its script reads, and its name, over Advanced ones (#650)", () => {
+      const rootOf = (html: string) => html.slice(0, html.indexOf(">"));
+      const own = rootOf(carouselHtml({ autoplay: true }));
+      const root = rootOf(
+        carouselHtml({
+          autoplay: true,
+          advanced: {
+            attributes: {
+              "data-interval": "1",
+              "data-slide-of": "Pwned",
+              "aria-label": "Other",
+              "data-track": "hero",
+            },
+          },
+        }),
+      );
+
+      expect(own).toContain('data-interval="7000"');
+      // An attribute the Carousel doesn't write is still added.
+      expect(root).toBe(`${own} data-track="hero"`);
+    });
 
     it("is a named region of slides that scroll and snap without the script", () => {
       const html = carouselHtml({ variant: "testimonials" });

@@ -2,4 +2,6 @@
  * The Site Check area (3.6): what other areas use of it. Another area imports only from this file
  * (`pnpm deps`, B2); everything else here is the area's own.
  */
+export { jumpTo } from "./actions.js";
+export { describePlace } from "./describe.js";
 export { SITE_CHECK_PANEL_ID } from "./register-site-check-panel.js";

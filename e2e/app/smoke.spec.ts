@@ -117,6 +117,7 @@ test.describe("desktop shell", () => {
         "themes",
         "preview",
         "publish",
+        "trust",
       ],
     });
   });

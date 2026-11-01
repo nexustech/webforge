@@ -1,6 +1,6 @@
 import type { NodeDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
 import { createCommandRegistry } from "../shell/commands.js";
@@ -208,5 +208,29 @@ describe("Paste Style and fields a target can't use (2.9b)", () => {
     expect(pasteStyle(session, copied)).toBe(false);
     expect(top("ticked")?.style).toBeUndefined();
     expect(labels()).toEqual([]);
+  });
+});
+
+describe("Copy Style on Custom Code (#649)", () => {
+  it("copies its margin and look, never its code, and says no code was written", () => {
+    const { session, select, top } = sessionOn([
+      {
+        type: "CustomCode",
+        props: { id: "theirs", code: "<script>skim()</script>", margin: { top: "l" } },
+      },
+      { type: "CustomCode", props: { id: "mine", code: "<p>Mine</p>" } },
+    ]);
+    const written = vi.fn();
+    session.onCodeWritten(written);
+    select("theirs");
+    const copied = copyStyle(session);
+    expect(copied?.values).toHaveProperty("margin", { top: "l" });
+    expect(copied?.values).not.toHaveProperty("code");
+
+    select("mine");
+    expect(copied !== undefined && pasteStyle(session, copied)).toBe(true);
+
+    expect(top("mine")).toMatchObject({ code: "<p>Mine</p>", margin: { top: "l" } });
+    expect(written).not.toHaveBeenCalled();
   });
 });

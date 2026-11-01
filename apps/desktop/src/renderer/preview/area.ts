@@ -14,7 +14,7 @@ import { registerPreviewCommands } from "./preview-commands.js";
  */
 export const previewArea: Area<WindowContext> = {
   id: "preview",
-  register: ({ api, commands, session, windowDialogs }) => {
+  register: ({ api, commands, session, windowDialogs, codeTrust }) => {
     const phone = createStore<PhoneState>(() => ({ status: "closed" }));
     const removeDialog = windowDialogs.register({
       id: "phonePreview",
@@ -27,6 +27,8 @@ export const previewArea: Area<WindowContext> = {
       sessionId: siteSession,
       phone,
       notify: (message) => toast.error(message),
+      confirmCode: (site) => codeTrust.confirm(site),
+      onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
     });
     return () => {
       removeCommands();

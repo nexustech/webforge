@@ -171,6 +171,18 @@ describe("withAdvanced", () => {
     );
   });
 
+  it("leaves the component's own attributes as it wrote them (#650)", () => {
+    expect(
+      renderToStaticMarkup(
+        <>
+          {withAdvanced(<div data-interval="5000" tabIndex={-1} />, {
+            attributes: { "data-interval": "1", tabindex: "0", "data-track": "hero" },
+          })}
+        </>,
+      ),
+    ).toBe('<div data-interval="5000" tabindex="-1" data-track="hero"></div>');
+  });
+
   it("leaves the output alone without options, with invalid ones, or without an element root", () => {
     expect(html(undefined)).toBe('<h2 class="site-heading">Hi</h2>');
     // Checked again here: an event handler never reaches a page, whatever the document holds.
