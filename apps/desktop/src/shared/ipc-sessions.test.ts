@@ -32,6 +32,7 @@ const SITE_CHANNELS = [
   "publish:saveDestination",
   "publish:removeDestination",
   "publish:testSavedDestination",
+  "publish:publish",
 ] as const;
 
 /** The others, and why none of them needs the opening. */
@@ -76,6 +77,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "publish:testConnection": "a destination's connection, nothing of the site",
   "publish:readHostKey": "a server's key, nothing of the site",
   "publish:chooseKeyFile": "a key file the person chooses, nothing of the site",
+  "publish:cancel": "cancels whichever publish is under way",
 };
 
 const channels = Object.values(ipcContract);

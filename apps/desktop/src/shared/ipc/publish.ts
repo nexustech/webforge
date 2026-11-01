@@ -8,6 +8,7 @@ import {
   SECRET_MAX,
 } from "@webforge/model";
 import { z } from "zod";
+import { PUBLISH_FAILURES } from "../export-worker-protocol.js";
 import { sessionIdSchema } from "./project.js";
 
 /**
@@ -199,6 +200,41 @@ const testSavedResultSchema = z.union([connectionResultSchema, destinationsFailu
 /** See {@link publishChannels}' `publishTestSavedDestination`. */
 type TestSavedResult = z.infer<typeof testSavedResultSchema>;
 
+/** One publish, named by the renderer, for its progress and its cancel (#665). */
+const operationIdSchema = z.uuid();
+
+/**
+ * What became of a publish (4.5, ADR 0018): live at `url` (the live check's result with it, and
+ * whether its "Published …" version was saved: not to a read-only site); refused before anything
+ * was built, for `count` *Must fix* findings, or a sign-in not saved for the destination as it is
+ * (S2); cancelled; or why it failed, by its code.
+ */
+const publishResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({
+    status: z.literal("published"),
+    url: z.string().max(2048),
+    check: z.enum(["live", "different", "unreachable", "unchecked"]),
+    uploaded: z.int().nonnegative(),
+    unchanged: z.int().nonnegative(),
+    removed: z.int().nonnegative(),
+    versionSaved: z.boolean(),
+  }),
+  z.strictObject({ status: z.literal("must-fix"), count: z.int().positive() }),
+  z.strictObject({ status: z.literal("sign-in-needed") }),
+  z.strictObject({ status: z.literal("cancelled") }),
+  z.strictObject({
+    status: z.literal("failed"),
+    reason: z.enum([...PUBLISH_FAILURES, "no-site", "stale-session", "no-destination", "unknown"]),
+    /** The title of the page to fix, for `reserved-name`. */
+    page: z.string().max(500).optional(),
+    /** The id of the Media image to replace, for `unreadable-image`. */
+    image: z.string().max(500).optional(),
+  }),
+]);
+
+/** What became of a publish. */
+export type PublishResult = z.infer<typeof publishResultSchema>;
+
 /** IPC channels of the `publish` domain (`publish:*`). Each one's arguments are checked. */
 export const publishChannels = {
   /**
@@ -266,6 +302,37 @@ export const publishChannels = {
     ]),
     response: testSavedResultSchema,
   },
+  /**
+   * Publishes the open site to one of its destinations (4.5, ADR 0018): main reads the site from
+   * its file as the window has just saved it, gates it, builds and sends it in the export worker,
+   * and saves the "Published …" version once it is live. As `operationId`, for its progress and
+   * its cancel; `replaceOtherSite` once the person agreed to replace another site's folder (A8).
+   */
+  publishSite: {
+    channel: "publish:publish",
+    request: z.tuple([
+      sessionIdSchema,
+      z.uuid(),
+      operationIdSchema,
+      z.strictObject({ replaceOtherSite: z.boolean() }),
+    ]),
+    response: publishResultSchema,
+  },
+  /** Cancels publish `operationId`: the previous site is left as it was. */
+  publishCancel: {
+    channel: "publish:cancel",
+    request: z.tuple([operationIdSchema]),
+    response: z.null(),
+  },
+} as const;
+
+/** Events main sends the window about publishing. */
+export const publishEvents = {
+  /** How far publish `operationId` has come. */
+  progress: {
+    channel: "publish:progress",
+    args: z.tuple([operationIdSchema, publishProgressSchema]),
+  },
 } as const;
 
 /** `window.webforge.publish`: publishing's calls to the main process (Phase 4). */
@@ -291,6 +358,17 @@ export interface PublishApi {
   ): Promise<SaveDestinationResult>;
   /** Removes one of the site's destinations, with what this computer kept for it. */
   removeDestination(sessionId: string, id: string): Promise<RemoveDestinationResult>;
+  /** Publishes the site `sessionId` opened to destination `destinationId`, as `operationId`. */
+  publish(
+    sessionId: string,
+    destinationId: string,
+    operationId: string,
+    options: { readonly replaceOtherSite: boolean },
+  ): Promise<PublishResult>;
+  /** Cancels publish `operationId`. */
+  cancel(operationId: string): Promise<null>;
+  /** Calls `listener` with each publish's progress; returns how to stop. */
+  onProgress(listener: (operationId: string, progress: PublishProgress) => void): () => void;
   /** Test connection for destination `id` as edited, with the sign-in saved for it. */
   testSavedDestination(
     sessionId: string,

@@ -11,6 +11,7 @@ import {
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { previewEvents } from "../shared/ipc/preview.js";
+import { publishEvents } from "../shared/ipc/publish.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
@@ -56,6 +57,7 @@ import { registerProjectHandlers } from "./project-ipc.js";
 import { ProjectSession } from "./project-session.js";
 import { publishDestinationsFeature } from "./publish-destinations-ipc.js";
 import { createKeyFiles, registerPublishHandlers, testSignIn } from "./publish-ipc.js";
+import { publishRunFeature } from "./publish-run.js";
 import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
@@ -323,6 +325,22 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
    * The app's features (A12): each is told as sites open, are saved and close (a hand-off's
    * included), registered once Electron is ready, and given its last work before Webforge exits.
    */
+  const exportFeature = createExportFeature({
+    dialogs: dialogs.export,
+    startWorker: () => forkWorker("Webforge export"),
+    fontsOf: fonts.fontsOf,
+    // Only the code the site's owner trusts (#649).
+    snapshotFor: trustedOnly,
+    sendProgress: (operationId, progress) =>
+      lifecycle
+        .mainWindow()
+        ?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
+    // The site each export call is for (#663): its Media and its export choices.
+    site: (sessionId) => projectSession.forSession(sessionId),
+    // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
+    shell: electron.shell,
+  });
+  const publishSecrets = createPublishSecrets(credentials);
   const features: readonly AppFeature[] = [
     // Rolling backups of the open site: as it opens, then every 30 minutes it was edited.
     { site: backupSchedule },
@@ -330,29 +348,30 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     myThemesFeature(myThemes),
     fonts,
     templates,
-    createExportFeature({
-      dialogs: dialogs.export,
-      startWorker: () => forkWorker("Webforge export"),
-      fontsOf: fonts.fontsOf,
-      // Only the code the site's owner trusts (#649).
-      snapshotFor: trustedOnly,
-      sendProgress: (operationId, progress) =>
-        lifecycle
-          .mainWindow()
-          ?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
-      // The site each export call is for (#663): its Media and its export choices.
-      site: (sessionId) => projectSession.forSession(sessionId),
-      // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
-      shell: electron.shell,
-    }),
+    exportFeature,
     previewFeature(preview),
     codeTrustFeature(codeTrust, projectSession),
     // The open site's publish destinations (4.4a): the list in its file, sign-ins in the keychain.
     publishDestinationsFeature({
       site: (sessionId) => projectSession.site(sessionId),
-      secrets: createPublishSecrets(credentials),
+      secrets: publishSecrets,
       keys: keyFiles,
       test: testSignIn,
+    }),
+    // Publish (4.5): read, gated, built and sent in the export worker, then saved as a version.
+    publishRunFeature({
+      site: (sessionId) => ({
+        ...projectSession.forSession(sessionId),
+        withStore: projectSession.site(sessionId).withStore,
+      }),
+      secrets: publishSecrets,
+      trusted: (projectId) => codeTrust.trusted(projectId),
+      fontsOf: fonts.fontsOf,
+      runner: exportFeature.runner,
+      sendProgress: (operationId, progress) =>
+        lifecycle
+          .mainWindow()
+          ?.webContents.send(publishEvents.progress.channel, operationId, progress),
     }),
   ];
   for (const feature of features) {
