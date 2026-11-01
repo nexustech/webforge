@@ -131,6 +131,8 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 
 A domain with work that must stop when its site closes, or finish before Webforge exits, is a feature (`AppFeature` in `main/app-feature.ts`, A12): its `register`, its `site` events (opened, committed, closed, a site a hand-off replaced included) and its `quit`, made beside its handlers, as `createExportFeature` is, and listed in `startApp`'s `features`. `startApp` registers each, has the project session tell each as sites open and close, and has quitting wait for each `quit` once the site has closed.
 
+An operation on the open site's file is a function of its own module, written on `projectSession.site(sessionId)` (a `SiteStore`, A13), as `site-media.ts`, `export-choices.ts` and `site-zip.ts` are: `withStore(kind, work, none)` runs it through the store gate, and gives `none` once that opening has gone. `ProjectSession` itself keeps to opening and closing sites, the gate and the opening's id; `forSession` lists the operations a call may use. A write that throws becomes what the renderer is told through `storeFailure`, which logs it by its code only.
+
 A call that reads or changes the open site names the opening of it the page was loaded for, as its first argument (`sessionIdSchema`, the renderer's `siteSession()`; R6, #663). Main reaches the site only through `projectSession.forSession(sessionId)`, so a call that waited for a dialog while a hand-off replaced the site changes nothing in the next one. `shared/ipc-sessions.test.ts` lists every channel, as the site's or another's with the reason, and fails on a new channel until it is listed.
 
 Never log or store site content, credentials or personal data on the way; secrets stay in the OS keychain.

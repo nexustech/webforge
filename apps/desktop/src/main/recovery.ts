@@ -2,7 +2,8 @@ import { dirname } from "node:path";
 import { t } from "@webforge/i18n";
 import type { ProjectResult } from "../shared/ipc-contract.js";
 import type { BackupInfo, Backups } from "./backups.js";
-import { type ProjectSession, samePath } from "./project-session.js";
+import type { ProjectSession } from "./project-session.js";
+import { samePath } from "./site-paths.js";
 
 /** What the user chose for a damaged site. */
 export type RecoveryChoice = "latest" | "choose" | "cancel";

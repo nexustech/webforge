@@ -3,7 +3,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BundleFetch, BundleNetwork } from "./bundle-download.js";
 import { registerBundleHandlers } from "./bundle-ipc.js";
 import { setLogSink } from "./log.js";
-import type { ProjectSession, StoreBlobsResult } from "./project-session.js";
+import type { ProjectSession } from "./project-session.js";
+import type { StoreBlobsResult } from "./site-media.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 

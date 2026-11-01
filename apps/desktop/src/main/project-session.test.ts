@@ -29,12 +29,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "../worker/store-import.js";
 import type { NewSiteTarget } from "./new-site.js";
 import { registerProjectHandlers } from "./project-ipc.js";
-import {
-  findProjectArgument,
-  ProjectSession,
-  type SiteStoreAccess,
-  withProjectExtension,
-} from "./project-session.js";
+import { ProjectSession, type SiteStoreAccess } from "./project-session.js";
+import { findProjectArgument, withProjectExtension } from "./site-paths.js";
 import { createStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
 
@@ -613,6 +609,54 @@ describe("ProjectSession events", () => {
     await observed.close();
     await observed.close();
     expect(events.closed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ProjectSession site (A13)", () => {
+  it("lets work for an opening reach the store only while that opening is open", async () => {
+    const created = await session.create(join(dir, "Site store.wforge"));
+    const sessionId = created.status === "opened" ? created.project.sessionId : "";
+    const site = session.site(sessionId);
+    const name = (kind: "shared" | "exclusive") =>
+      site.withStore(
+        kind,
+        (store) => store.info.name,
+        (reason) => reason,
+      );
+
+    expect(site.staleReason()).toBeUndefined();
+    expect(site.openPath()).toBe(join(dir, "Site store.wforge"));
+    expect(await name("shared")).toBe("Site store");
+    expect(await name("exclusive")).toBe("Site store");
+
+    await session.create(join(dir, "Other.wforge"));
+    expect(site.staleReason()).toBe("stale-session");
+    expect(await name("shared")).toBe("stale-session");
+    expect(await session.site().withStore("shared", (store) => store.info.name, String)).toBe(
+      "Other",
+    );
+
+    await session.close();
+    expect(site.staleReason()).toBe("no-site");
+    expect(session.site().staleReason()).toBe("no-site");
+    expect(
+      await site.writerTurn(
+        async (path) => path,
+        (reason) => reason,
+      ),
+    ).toBe("no-site");
+  });
+
+  it("gives the writer's turn the open site's file, for its opening only", async () => {
+    const created = await session.create(join(dir, "Turn.wforge"));
+    const sessionId = created.status === "opened" ? created.project.sessionId : "";
+
+    expect(await session.site(sessionId).writerTurn(async (path) => path, String)).toBe(
+      join(dir, "Turn.wforge"),
+    );
+    expect(await session.site("another").writerTurn(async (path) => path, String)).toBe(
+      "stale-session",
+    );
   });
 });
 
