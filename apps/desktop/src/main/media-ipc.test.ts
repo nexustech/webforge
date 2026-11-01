@@ -8,7 +8,8 @@ import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import { createImportJobs, readAtMost } from "../worker/store-import.js";
 import { registerMediaHandlers } from "./media-ipc.js";
-import { type ImportFileResult, type ImportSource, ProjectSession } from "./project-session.js";
+import { ProjectSession } from "./project-session.js";
+import type { ImportFileResult, ImportSource } from "./site-media.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 

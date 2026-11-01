@@ -29,12 +29,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createImportJobs } from "../worker/store-import.js";
 import type { NewSiteTarget } from "./new-site.js";
 import { registerProjectHandlers } from "./project-ipc.js";
-import {
-  findProjectArgument,
-  ProjectSession,
-  type SiteStoreAccess,
-  withProjectExtension,
-} from "./project-session.js";
+import { ProjectSession, type SiteStoreAccess } from "./project-session.js";
+import { findProjectArgument, withProjectExtension } from "./site-paths.js";
 import { createStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
 
@@ -557,7 +553,9 @@ describe("ProjectSession editor mode", () => {
     const path = join(dir, "Bakery.wforge");
     await session.create(path);
     expect(await session.uiState()).toEqual({ editorMode: "design", siteCheckIgnored: [] });
-    expect(await session.setUiState({ editorMode: "content" })).toEqual({ status: "saved" });
+    expect(await session.setUiState({ editorMode: "content" })).toEqual({
+      status: "saved",
+    });
     // Each part on its own: Site Check's ignored items leave the mode as it is (3.6).
     expect(await session.setUiState({ siteCheckIgnored: ["altText:a"] })).toEqual({
       status: "saved",
@@ -613,6 +611,91 @@ describe("ProjectSession events", () => {
     await observed.close();
     await observed.close();
     expect(events.closed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ProjectSession site (A13)", () => {
+  it("lets work for an opening reach the store only while that opening is open", async () => {
+    const created = await session.create(join(dir, "Site store.wforge"));
+    const sessionId = created.status === "opened" ? created.project.sessionId : "";
+    const site = session.site(sessionId);
+    const name = (kind: "shared" | "exclusive") =>
+      site.withStore(
+        kind,
+        (store) => store.info.name,
+        (reason) => reason,
+      );
+
+    expect(site.staleReason()).toBeUndefined();
+    expect(site.openPath()).toBe(join(dir, "Site store.wforge"));
+    expect(await name("shared")).toBe("Site store");
+    expect(await name("exclusive")).toBe("Site store");
+
+    await session.create(join(dir, "Other.wforge"));
+    expect(site.staleReason()).toBe("stale-session");
+    expect(await name("shared")).toBe("stale-session");
+    expect(await session.site().withStore("shared", (store) => store.info.name, String)).toBe(
+      "Other",
+    );
+
+    await session.close();
+    expect(site.staleReason()).toBe("no-site");
+    expect(session.site().staleReason()).toBe("no-site");
+    expect(
+      await site.writerTurn(
+        async (path) => path,
+        (reason) => reason,
+      ),
+    ).toBe("no-site");
+  });
+
+  it("stores an import only in the writer's turn, which a close that can't wait stops", async () => {
+    const stop = vi.fn(async () => undefined);
+    const store = vi.fn(() => new Promise<never>(() => undefined));
+    const writer: StorageWriter = {
+      warm: () => undefined,
+      prepare: vi.fn(),
+      store,
+      discard: vi.fn(),
+      stop,
+    };
+    const gated = new ProjectSession({}, { writer });
+    const created = await gated.create(join(dir, "Turn closed.wforge"));
+    const sessionId = created.status === "opened" ? created.project.sessionId : "";
+    const site = gated.site(sessionId);
+    expect(Object.keys(site.writer).sort()).toEqual(["discard", "prepare"]);
+    const outcome = await createImportJobs().prepare(1, "photo.jpg", { data: heroPhoto() });
+    if (outcome.status !== "prepared") throw new Error("The photo wasn't prepared");
+    const prepared = { ...outcome, token: 1 };
+    vi.useFakeTimers();
+
+    // A turn whose store never finishes, as a writer thread that stops answering.
+    void site.writerTurn(
+      (sitePath, storeImport) =>
+        storeImport(prepared, { sitePath, mediaId: "photo", originalName: "photo.jpg" }),
+      () => ({ status: "failed" }),
+    );
+    await vi.advanceTimersByTimeAsync(0);
+    const closing = gated.close();
+    await vi.advanceTimersByTimeAsync(5_000);
+    await closing;
+
+    expect(store).toHaveBeenCalledOnce();
+    expect(stop).toHaveBeenCalledOnce();
+    expect(gated.current()).toBeNull();
+    vi.useRealTimers();
+  });
+
+  it("gives the writer's turn the open site's file, for its opening only", async () => {
+    const created = await session.create(join(dir, "Turn.wforge"));
+    const sessionId = created.status === "opened" ? created.project.sessionId : "";
+
+    expect(await session.site(sessionId).writerTurn(async (path) => path, String)).toBe(
+      join(dir, "Turn.wforge"),
+    );
+    expect(await session.site("another").writerTurn(async (path) => path, String)).toBe(
+      "stale-session",
+    );
   });
 });
 
