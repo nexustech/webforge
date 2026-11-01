@@ -73,9 +73,9 @@ What item 1.27 changed:
   - its permissions slice walks the whole page on every data change, even though no component defines `resolvePermissions` (about 8 ms);
   - its fields slice re-publishes unchanged sidebar fields for the selected element, costing one more full selector pass.
 
-  A `pnpm patch` (`patches/@puckeditor__core@0.23.0.patch`) skips the last two when they would change nothing. pnpm fails the install if the patch no longer applies after a Puck upgrade. Both are drafted for upstream below (reports 3 and 4).
+  A `pnpm patch` (`patches/@puckeditor__core@0.24.0.patch` since Puck 0.24, below; `@0.23.0` before) skips the last two when they would change nothing. pnpm fails the install if the patch no longer applies after a Puck upgrade. Both are drafted for upstream below (reports 3 and 4).
 
-  **What the Puck patch changes**, for re-applying it after an upgrade (Puck is MIT; the licence check fails if a patched package's licence allows only unmodified use, see ADR 0002):
+  **What the Puck patch changes**, for re-applying it after an upgrade (Puck is MIT; the licence check fails if a patched package's licence allows only unmodified use, see ADR 0002). `packages/engine/src/puck/patch-contract.test.tsx` takes the items by number and names the test of each, so an upgrade that loses one fails by name:
   1. The permissions slice skips its whole-page walk when no component and not the root define `resolvePermissions` (#100).
   2. The fields slice doesn't re-publish the default fields when they and the item's id are unchanged (#100).
   3. Puck's API object (`useGetPuck()`, `__private`) gains `getZoomConfig` and `setZoomConfig`. Puck keeps its canvas zoom out of its public API, and the engine's `setZoom` and `onCanvasSize` need it for the canvas toolbar (1.15). Without it, zooming does nothing and no size is reported.
@@ -109,6 +109,40 @@ Against the targets:
 - **Selector cost.** Puck's `_experimentalVirtualization` renders only the visible top-level sections. It would cut the selector work roughly in proportion, but it takes off-screen sections out of the DOM (find-in-page, scroll positions, E2E counts). Revisit if pages larger than about 25 sections are common, or when Puck makes it stable.
 - **The drop hitch** needs Puck to stop re-rendering every draggable element when a drag ends. That would be a third patch or upstream work. Not pursued in Phase 1: one hitch per drop of about 0.3 s on a 225-element page is noticeable but rare.
 - **Moves and inserts** could carry a targeted change like text edits do, saving the remaining 18 ms of `syncDraft` per drop. This becomes worthwhile once the drop hitch itself is fixed.
+
+## Addendum: Puck 0.24 (#669, 2026-11-01)
+
+Puck 0.24.0 came out on 29 Oct 2026. Our 0.23 patch couldn't be applied to it: it edits Puck's built files, whose hashed names 0.24 changed (A9, second architecture review).
+
+- **Still needed.** 0.24 still walks the whole page for permissions on every change and still publishes new fields for an unchanged selected element. So all seven items above are re-applied, each where 0.24 now has the code.
+- **ESM only.** The new patch edits Puck's three ESM chunks: 153 lines, down from 433. The 0.23 patch also edited the CommonJS `index.js` and `no-external.js`. Those are never loaded:
+  - Puck's package exports give `import` its `index.mjs`, and `require` alone the CommonJS copy;
+  - the app's renderer is built by Vite, and the tests run in Vitest, both through `import`;
+  - nothing in the repository `require`s Puck.
+
+  `patch-contract.test.tsx` runs on what Vitest loads, and fails without items 1 or 2: each was checked by taking it out of the installed Puck.
+- **Items 1 and 2 have mounted tests** for the first time. Before, only this `e2e:perf` check covered them.
+  - Item 1: on a page of 30 elements, a change looks up `resolvePermissions` fewer times than there are elements. The walk looks it up for each one.
+  - Item 2: a change to the selected element runs a store selector as often as a change to another element. The re-published fields would add a pass.
+- **One new string.** 0.24's dictionary gains `action-drag` (the action bar's drag handle), now in `t()` as *Drag to reorder* (glossary T3).
+- **The canvas's stripes moved out of the themes package (A19).** `themeCss` stripes the exported page's sections, plus the places its caller names. The canvas's CSS names the engine's `CANVAS_EVEN_SECTIONS`, built from `puck-dom.ts`. No exported stylesheet carries the canvas's rules any more.
+- **E2E uses the engine's names for Puck's DOM (A20),** through `@webforge/engine/puck-dom`, a React-free subpath. `puck-dom.ts` now names the six attributes the E2E tests used on their own. Two have mounted tests: the rich-text menu, and the action bar with its label and actions. Puck sets the five drag-time attributes only during a pointer drag, which happy-dom can't make. For those, the test checks that Puck's installed stylesheet still names them.
+
+**Before and after**, on the same machine as above: `pnpm e2e:perf` three times on each version, interleaved, on `main` (0.23) and the branch (0.24). The ranges are across runs.
+
+| What (225 nodes) | Puck 0.23 | Puck 0.24 |
+|---|---|---|
+| Keystroke → next painted frame | p50 48–56 ms | p50 48–56 ms |
+| Long tasks while typing 37 characters | none, none, one of 50 ms | one of 50 ms, one of 53 ms, none |
+| Drop after dragging a heading: longest task | 215–249 ms | 222–259 ms |
+| Undo (50-step history), p50 | 35–49 ms | 37–52 ms |
+| Redo, p50 | 35–39 ms | 36–52 ms |
+| Jump to start / end in Undo History | 103–109 / 104–125 ms | 112–132 / 113–137 ms |
+| Load the page into the canvas | 1.2–1.4 s | 1.3–1.5 s |
+| Memory: JS heap / renderer | 117–141 / 412–414 MB | 117–141 / 418–425 MB |
+
+- **No change beyond this machine's noise.** The ranges overlap, and the one long task while typing, right at 50 ms, came on both versions. The p95s jump between runs on both (up to 440 ms typing and 303 ms undo once each), as a busy machine does.
+- **On this machine both versions now miss the jumps' 100 ms**, which they met in October (56–98 ms). The page and the harness are the same, so that is the machine, not Puck. The drop's long tasks missed their target then too (mitigation 5). 5.1 sets the budgets on CI's runners.
 
 ## Upstream reports (drafts)
 

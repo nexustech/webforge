@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { RICH_TEXT, RICH_TEXT_MENU } from "@webforge/engine/puck-dom";
 import { placeCaret, selectText } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
@@ -26,7 +27,7 @@ test.afterEach(async () => {
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
-const editor = () => canvas().locator(".site-text .ProseMirror");
+const editor = () => canvas().locator(`.site-text ${RICH_TEXT}`);
 const steps = () => page.locator(".undo-history__step");
 
 /**
@@ -63,7 +64,7 @@ test("keeps every keystroke typed straight after the first click into rich text 
 
 test("formats rich text from its toolbar, which offers only the site's formatting", async () => {
   await editText();
-  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  const toolbar = canvas().locator(RICH_TEXT_MENU);
   for (const name of [
     "Bold",
     "Italic",
@@ -121,7 +122,7 @@ test("keeps only the site's formatting in text pasted from Word or a web page", 
 
 test("underlines with Mod+U and colours text from the theme only, as the text's one step (2.25, ST-3)", async () => {
   await editText();
-  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  const toolbar = canvas().locator(RICH_TEXT_MENU);
   await selectText(editor());
   await page.keyboard.press("ControlOrMeta+u");
   await expect(editor().locator("u")).toHaveText(STARTER_TEXT);
@@ -151,7 +152,7 @@ test("underlines with Mod+U and colours text from the theme only, as the text's 
 test("links selected text through the link dialog, as part of the text's one step", async () => {
   await editText();
   await selectText(editor());
-  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  const toolbar = canvas().locator(RICH_TEXT_MENU);
   await toolbar.getByRole("button", { name: "Link…" }).click();
 
   const dialog = page.getByRole("dialog", { name: "Link" });
@@ -189,7 +190,7 @@ test("links selected text through the link dialog, as part of the text's one ste
 test("removes a link from the toolbar", async () => {
   await editText();
   await selectText(editor());
-  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  const toolbar = canvas().locator(RICH_TEXT_MENU);
   await toolbar.getByRole("button", { name: "Link…" }).click();
   const dialog = page.getByRole("dialog", { name: "Link" });
   await dialog.getByRole("radio", { name: "Email" }).click();
@@ -210,7 +211,7 @@ test("links text and removes links in Content mode, which keeps text and links e
   await canvas().getByText(STARTER_TEXT).click();
   await expect(editor()).toBeFocused();
   await selectText(editor());
-  const toolbar = canvas().locator("[data-puck-rte-menu]");
+  const toolbar = canvas().locator(RICH_TEXT_MENU);
   const dialog = page.getByRole("dialog", { name: "Link" });
 
   // To a section of this page: the anchor it gives the section is allowed in Content mode too.

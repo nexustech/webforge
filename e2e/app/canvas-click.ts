@@ -1,7 +1,8 @@
 import { expect, type Locator } from "@playwright/test";
+import { COMPONENT } from "@webforge/engine/puck-dom";
 
 /** Puck's wrapper around each element on the canvas. */
-const WRAPPER = "[data-puck-component]";
+const WRAPPER = COMPONENT;
 
 /** What a canvas click takes: Playwright's click options, but never `force`, which this decides. */
 type CanvasClickOptions = Omit<NonNullable<Parameters<Locator["click"]>[0]>, "force" | "trial">;

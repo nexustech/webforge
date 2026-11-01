@@ -2,7 +2,7 @@ import type { Dictionary } from "@puckeditor/core";
 import { type MessageKey, template } from "@webforge/i18n";
 
 /**
- * Puck's UI strings (keys of Puck 0.23's `defaultDictionary`) and the i18n keys that replace them.
+ * Puck's UI strings (keys of Puck 0.24's `defaultDictionary`) and the i18n keys that replace them.
  * Check this list against Puck's `defaultDictionary` when upgrading Puck: a key missing here falls
  * back to Puck's English text.
  */
@@ -14,6 +14,7 @@ export const PUCK_MESSAGES = {
   "header-toggle-rightsidebar": "puck.header.toggleRightSidebar",
   "header-toggle-menubar": "puck.header.toggleMenuBar",
   "action-selectparent": "puck.action.selectParent",
+  "action-drag": "puck.action.drag",
   "action-duplicate": "puck.action.duplicate",
   "action-delete": "puck.action.delete",
   "label-page": "puck.label.page",

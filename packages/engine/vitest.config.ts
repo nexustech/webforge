@@ -10,5 +10,8 @@ export default defineProject({
     hookTimeout: scaledTimeout(10_000),
     // For a test that sets its own timeout: `scaledTestTimeout()` reads it.
     provide: { timeoutScale: TIMEOUT_SCALE },
+    // Puck's stylesheet as text, which the DOM contract test reads for what it names (A20);
+    // Vitest hands every other stylesheet over empty.
+    css: { include: [/@puckeditor\/core\/dist\/index\.css/] },
   },
 });

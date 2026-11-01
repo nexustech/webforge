@@ -1,7 +1,6 @@
 import {
   COLOR_ROLES,
   DEFAULT_THEME,
-  HIDDEN_ATTRIBUTE,
   INVERSE_THEME,
   type Oklch,
   SHADE_STEPS,
@@ -23,7 +22,7 @@ import { AA_LARGE, AA_TEXT, contrastIssues } from "./contrast.js";
 import { CURATED_BATCHES, CURATED_THEMES } from "./curated/index.js";
 import { FONT_CATALOGUE, FONT_PAIRINGS } from "./fonts/catalogue.js";
 import { THEME_PRESETS, themePreset } from "./presets.js";
-import { EVEN_SECTION_SELECTORS, oklchCss, radiusCss, shadowCss, themeCss } from "./theme-css.js";
+import { oklchCss, PAGE_EVEN_SECTIONS, radiusCss, shadowCss, themeCss } from "./theme-css.js";
 
 const BLACK: Oklch = { l: 0, c: 0, h: 0 };
 const WHITE: Oklch = { l: 1, c: 0, h: 0 };
@@ -521,9 +520,15 @@ describe("themeCss (2.1)", () => {
     );
     expect(css({ images: { corners: "soft" } })).toContain("border-radius: 1.5rem;");
     // Every second section on the second surface, under sections' own colours, with flat cards
-    // on the page's surface there.
-    const alternating = css({ sections: { rhythm: "alternating" } });
-    const [exported, canvas] = EVEN_SECTION_SELECTORS;
+    // on the page's surface there: the exported page's, and another place the caller names (the
+    // canvas's, A19), which an export doesn't.
+    const canvasSections = ".canvas > div > section";
+    const alternating = themeCss(
+      { ...DEFAULT_THEME, sections: { rhythm: "alternating" } },
+      { evenSections: [canvasSections] },
+    );
+    const exported = `${PAGE_EVEN_SECTIONS}:not([data-theme])`;
+    const canvas = `${canvasSections}:not([data-theme])`;
     expect(alternating).toContain(
       lines(
         "@layer components {",
@@ -531,7 +536,8 @@ describe("themeCss (2.1)", () => {
         "    background-color: var(--color-base-200);",
       ),
     );
-    for (const selector of EVEN_SECTION_SELECTORS) {
+    expect(css({ sections: { rhythm: "alternating" } })).not.toContain(canvasSections);
+    for (const selector of [exported, canvas]) {
       expect(alternating).toContain(`  ${selector} .wf-card {`);
       // Any section framed on the page's surface by its own class too.
       expect(alternating).toContain(
@@ -551,34 +557,25 @@ describe("themeCss (2.1)", () => {
     expect(alternating).toContain(`  ${canvas} {`);
   });
 
-  it("stripes the sections a visitor sees, on the canvas as on the exported page (2.13d)", () => {
+  it("stripes the sections a visitor sees on the exported page (2.13d)", () => {
     const happy = new Window();
     const { document } = happy;
-    // The exported page: no hidden sections, and maybe something besides sections in `main`.
-    // The canvas: each section in Puck's wrapper, the second hidden in Layers, and Puck's place
-    // for a section being dragged.
+    // No hidden sections there, and maybe something besides sections in `main`. The canvas's
+    // are the engine's, tested against Puck's DOM (puck-dom.test.tsx, A19).
     document.body.innerHTML = [
       '<main id="main">',
       '<section id="a"></section><div></div><section id="c"></section>',
       '<section id="e"></section><section id="d" data-theme="wf_inverse"></section>',
       "</main>",
-      '<div class="wf-sections">',
-      '<div><section id="canvas-a"></section></div>',
-      `<div><section id="canvas-b" ${HIDDEN_ATTRIBUTE}></section></div>`,
-      '<div><section id="canvas-c"></section></div>',
-      '<div class="placeholder"></div>',
-      '<div><section id="canvas-e"></section></div>',
-      '<div><section id="canvas-d" data-theme="wf_inverse"></section></div>',
-      "</div>",
     ].join("");
 
-    const striped = EVEN_SECTION_SELECTORS.flatMap((selector) =>
-      [...document.querySelectorAll(selector)].map((section) => section.id),
+    const striped = [...document.querySelectorAll(`${PAGE_EVEN_SECTIONS}:not([data-theme])`)].map(
+      (section) => section.id,
     );
     void happy.happyDOM.close();
 
-    // The second and fourth shown sections, c and d; d keeps its reversed colours.
-    expect(striped).toEqual(["c", "canvas-c"]);
+    // The second and fourth sections, c and d; d keeps its reversed colours.
+    expect(striped).toEqual(["c"]);
   });
 
   it("sets the page title a size smaller on phones, never above 4xl (#419)", () => {

@@ -14,11 +14,11 @@ We built a working prototype:
   - Coalescing, `endSession` for text sessions, and selection restore through a `SelectionAdapter`.
   - `syncDraft` turns a whole new value into minimal patches; `compactPatches` keeps merged entries small.
   - The document store is read-only from outside and frozen by Immer.
-- **`packages/engine`:** the `CanvasEngine` interface and `createPuckEngine()` on `@puckeditor/core` 0.23.0. It is the only package that imports Puck (dependency-cruiser enforces this).
+- **`packages/engine`:** the `CanvasEngine` interface and `createPuckEngine()` on `@puckeditor/core` 0.24.0 (0.23.0 until #669). It is the only package that imports Puck (dependency-cruiser enforces this).
 - **Desktop renderer:** Section, Heading (inline text) and Text (inline rich text) components. You can drag to add and reorder elements and edit text on the canvas. Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z and Ctrl/Cmd+Y go to our history, Undo/Redo buttons sit in the toolbar, and an Undo History panel lets you jump to any step.
 
 ## Decision
-**Go: keep Puck (pinned to 0.23.0) behind the `CanvasEngine` adapter.** The critical criterion holds. Our history manager produces every step, and undo, redo and jumps update Puck's canvas correctly. Puck's own undo never acts, and its undo UI is gone. Making this work needed a handful of contained workarounds in `packages/engine`, listed below. Nothing broke in a way that needs the fallback canvas.
+**Go: keep Puck (pinned; 0.23.0 then, 0.24.0 since #669) behind the `CanvasEngine` adapter.** The critical criterion holds. Our history manager produces every step, and undo, redo and jumps update Puck's canvas correctly. Puck's own undo never acts, and its undo UI is gone. Making this work needed a handful of contained workarounds in `packages/engine`, listed below. Nothing broke in a way that needs the fallback canvas.
 
 ## Evidence
 

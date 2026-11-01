@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { COMPONENT } from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -22,7 +23,7 @@ test.afterEach(async () => {
 const heading = () => page.frameLocator(".editor__canvas iframe").locator("h1");
 
 test("selects an element through its wrapper, a group, not a button", async () => {
-  const wrapper = page.frameLocator(".editor__canvas iframe").locator("[data-puck-component]", {
+  const wrapper = page.frameLocator(".editor__canvas iframe").locator(COMPONENT, {
     has: heading(),
   });
   await expect(wrapper.last()).toHaveAttribute("role", "group");
