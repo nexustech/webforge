@@ -1,4 +1,9 @@
 import type { SiteDoc } from "@webforge/model";
+import {
+  type ComponentLibrary,
+  siteLibrary,
+  siteWithCleanRichText,
+} from "@webforge/site-components";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import { setSiteSession } from "./site-session.js";
 
@@ -14,10 +19,15 @@ export type LoadedSite =
  * starter site) as its first content, which autosave then writes. Without an open site the editor
  * still starts, with `newSite()` in memory, until the start screen (1.8) opens or creates one.
  * The open site's session is remembered for the calls that change it (`siteSession`, R6).
+ *
+ * The file's rich text is cleaned as the editor's is (S23), as anything could have written it.
+ * What was cleaned is written with the next edit of its page, part or section, as the editor
+ * now holds it; a file that needs nothing cleaned stays as it is.
  */
 export async function loadSite(
   project: Pick<ProjectApi, "getCurrent" | "readSite">,
   newSite: () => SiteDoc,
+  library: ComponentLibrary = siteLibrary,
 ): Promise<LoadedSite> {
   const current = await project.getCurrent();
   setSiteSession(current?.sessionId);
@@ -26,8 +36,10 @@ export async function loadSite(
   }
   const result = await project.readSite();
   switch (result.status) {
-    case "ok":
-      return { kind: "file", site: result.site, saved: result.site };
+    case "ok": {
+      const site = siteWithCleanRichText(result.site, library);
+      return { kind: "file", site, saved: site };
+    }
     case "empty":
       return { kind: "file", site: newSite(), saved: undefined };
     default:
