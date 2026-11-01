@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { changedDocuments, createSite, type SiteDoc } from "@webforge/model";
+import { FORMAT_VERSION } from "@webforge/storage";
 import { desktopDir, desktopVersion, launchDesktopApp } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
@@ -197,7 +198,7 @@ test.describe("desktop shell", () => {
       sessionId: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: "Rosa's Bakery",
       fileName: "Rosa's Bakery.wforge",
-      formatVersion: 1,
+      formatVersion: FORMAT_VERSION,
       syncService: null,
     };
 
