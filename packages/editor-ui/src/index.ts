@@ -167,4 +167,3 @@ export {
   TooltipTrigger,
 } from "./components/ui/tooltip.js";
 export { cn } from "./lib/cn.js";
-export { sameValue } from "./lib/same-value.js";

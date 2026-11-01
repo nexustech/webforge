@@ -1,4 +1,4 @@
-import { sameValue } from "@webforge/editor-ui";
+import { sameJson } from "@webforge/model";
 import type { EditorSession } from "./editor-session.js";
 import { fieldTarget } from "./field-target.js";
 import { breakpointOf, valueAt, withValueAt } from "./responsive-value.js";
@@ -27,7 +27,7 @@ export function changeField(
   const next = (stored: unknown) =>
     field.responsive === true ? withValueAt(stored, breakpoint, value) : value;
   const stored = target.storedOr(name, target.node.props[name]);
-  if (sameValue(stored, next(stored))) return;
+  if (sameJson(stored, next(stored))) return;
   session.edit("props", target.labelOf(name, field, breakpoint), target.recipe(name, next), {
     selectionAfter: { pageId, viewport, nodeId },
   });
@@ -51,6 +51,6 @@ export function useFieldValue(session: EditorSession, nodeId: string, name: stri
         ? valueAt(stored, breakpoint)
         : stored;
     },
-    sameValue,
+    sameJson,
   );
 }

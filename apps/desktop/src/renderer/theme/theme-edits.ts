@@ -8,6 +8,7 @@ import {
   newId,
   type Oklch,
   type SiteDoc,
+  sameJson,
   type TEXT_SIZES,
   type TextStyle,
   type ThemeTokens,
@@ -249,9 +250,7 @@ export function setLook(
   change: Readonly<Record<string, unknown>>,
 ): Promise<boolean> {
   const look: Readonly<Record<string, unknown>> = theme(session).looks?.[type] ?? {};
-  const fields = Object.keys(change).filter(
-    (field) => JSON.stringify(look[field]) !== JSON.stringify(change[field]),
-  );
+  const fields = Object.keys(change).filter((field) => !sameJson(look[field], change[field]));
   if (fields.length === 0) return Promise.resolve(false);
   const reach = lookReach(session.history.document.getState(), type, fields);
   const resets = fields.every((field) => change[field] === undefined);
@@ -518,26 +517,11 @@ export function setPairing(
   });
 }
 
-/** Whether `a` and `b` are the same JSON value, whatever the order of their keys. */
-function sameValue(a: unknown, b: unknown): boolean {
-  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return a === b;
-  if (Array.isArray(a) !== Array.isArray(b)) return false;
-  // Keys whose value is `undefined` are absent from JSON, so they don't count.
-  const entries = (value: object) =>
-    Object.entries(value).filter(([, inner]) => inner !== undefined);
-  const aEntries = entries(a);
-  const bValues = new Map(entries(b));
-  return (
-    aEntries.length === bValues.size &&
-    aEntries.every(([key, inner]) => bValues.has(key) && sameValue(inner, bValues.get(key)))
-  );
-}
-
 /** Whether `a` and `b` look the same on the page: the same tokens, whatever they're named (2.23). */
 function looksTheSame(a: ThemeTokens, b: ThemeTokens): boolean {
   const { own: _a, ...aTokens } = a;
   const { own: _b, ...bTokens } = b;
-  return sameValue(aTokens, bTokens);
+  return sameJson(aTokens, bTokens);
 }
 
 /**

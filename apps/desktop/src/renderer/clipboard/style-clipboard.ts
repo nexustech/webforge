@@ -1,5 +1,5 @@
-import { sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { sameJson } from "@webforge/model";
 import type { ComponentDef } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { fieldGroupOf } from "../editor/field-group.js";
@@ -92,7 +92,7 @@ export function pasteStyle(session: StyleSession, copied: CopiedStyle): boolean 
   const changed = Object.entries(copied.values).filter(
     ([name, value]) =>
       target.component.fields[name]?.unavailable?.(values) === undefined &&
-      !sameValue(target.storedOr(name, target.node.props[name]), value),
+      !sameJson(target.storedOr(name, target.node.props[name]), value),
   );
   if (changed.length === 0) return false;
   const label = target.copyLabel ?? pastedStyleLabel(target.editOf("props", ""), session.library);

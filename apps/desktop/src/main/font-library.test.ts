@@ -298,6 +298,41 @@ describe("createFontLibrary: downloads (2.2, PH2-8)", () => {
 describe("createFontLibrary: browsing (S4)", () => {
   const DAY = 24 * 60 * 60 * 1000;
 
+  it("follows a redirect only to https on the font sources' hosts, by hand (S11, #654)", async () => {
+    const sources = fakeSources();
+    /** The list moved to `to`; everything else as Fontsource answers. */
+    const movedTo = (to: string) =>
+      vi.fn<FontFetch>(async (url, init) =>
+        url === `${SOURCES.api}/fonts`
+          ? new Response(null, { status: 302, headers: { location: to } })
+          : sources.fetch(url.replace("/moved", "/fonts"), init),
+      );
+    const moved = movedTo("/api/moved");
+
+    const listed = await createFontLibrary({
+      dir: newDir(),
+      fetch: moved,
+      sources: SOURCES,
+    }).browse();
+
+    expect(listed.status).toBe("listed");
+    expect(moved.mock.calls.map(([url]) => url)).toEqual([
+      `${SOURCES.api}/fonts`,
+      `${SOURCES.api}/moved`,
+    ]);
+    expect(moved.mock.calls.every(([, init]) => init.redirect === "manual")).toBe(true);
+    for (const away of ["https://elsewhere.test/fonts", "http://fonts.test/api/moved"]) {
+      const refused = movedTo(away);
+      const result = await createFontLibrary({
+        dir: newDir(),
+        fetch: refused,
+        sources: SOURCES,
+      }).browse();
+      expect(result.status, away).not.toBe("listed");
+      expect(refused, away).toHaveBeenCalledTimes(1);
+    }
+  });
+
   it("lists Fontsource's fonts the app may use, marking the ones the computer has", async () => {
     const library = createFontLibrary({
       dir: newDir(),

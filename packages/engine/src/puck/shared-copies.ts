@@ -7,6 +7,7 @@ import {
   type SharedCopyNode,
   type SharedSectionId,
   type SharedSectionsDoc,
+  sameJson,
 } from "@webforge/model";
 
 /** A linked copy on the page, as the page stores it. */
@@ -77,26 +78,6 @@ function withoutCopyProps(root: NodeDoc, section: NodeDoc, copy: Copy): NodeDoc 
   return { type: root.type, props: props as NodeDoc["props"] };
 }
 
-/** Whether two JSON values are the same, whatever the order of their objects' keys. */
-function sameValue(a: unknown, b: unknown): boolean {
-  if (a === b) return true;
-  if (Array.isArray(a) || Array.isArray(b)) {
-    return (
-      Array.isArray(a) &&
-      Array.isArray(b) &&
-      a.length === b.length &&
-      a.every((item, index) => sameValue(item, b[index]))
-    );
-  }
-  if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
-  const left = Object.entries(a).filter(([, value]) => value !== undefined);
-  const right = Object.entries(b).filter(([, value]) => value !== undefined);
-  return (
-    left.length === right.length &&
-    left.every(([key, value]) => sameValue(value, (b as Record<string, unknown>)[key]))
-  );
-}
-
 /** A shared section a copy now shows differently: the section as that copy shows it. */
 export type ChangedSection = {
   readonly section: NodeDoc;
@@ -142,7 +123,7 @@ export function foldCopies(
     const section = sectionOf(shared, copy);
     if (section === undefined) continue;
     const now = withoutCopyProps(fromCopy(node, copy, anchorsById(section)), section, copy);
-    if (!sameValue(now, section)) {
+    if (!sameJson(now, section)) {
       changedCopies++;
       sections.set(copy.props.sharedSectionId, { section: now, copyId: copy.props.id });
     }

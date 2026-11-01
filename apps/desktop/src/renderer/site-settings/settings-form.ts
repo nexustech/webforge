@@ -1,4 +1,4 @@
-import { type FormSchema, sameValue } from "@webforge/editor-ui";
+import type { FormSchema } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BUSINESS_KINDS,
@@ -9,6 +9,7 @@ import {
   type MediaId,
   type SiteSettings,
   type SOCIAL_NETWORKS,
+  sameJson,
   siteSettingsSchema,
   verificationCodeOf,
 } from "@webforge/model";
@@ -335,11 +336,11 @@ export type Section = (typeof SECTIONS)[number];
  * them.
  */
 function savedLabel(before: SiteSettings, after: SiteSettings): string {
-  const sections = SECTIONS.filter((section) => !sameValue(before[section], after[section]));
+  const sections = SECTIONS.filter((section) => !sameJson(before[section], after[section]));
   const earlier: Readonly<Record<string, unknown>> = before;
   const outside = Object.entries(after).some(
     ([key, value]) =>
-      !SECTIONS.some((section) => section === key) && !sameValue(earlier[key], value),
+      !SECTIONS.some((section) => section === key) && !sameJson(earlier[key], value),
   );
   return sections.length === 0 || outside
     ? t("site.settings.history")
@@ -360,7 +361,7 @@ export function saveSiteSettings(
   settings: SiteSettings,
 ): boolean {
   const current = session.history.document.getState().settings;
-  if (sameValue(current, settings)) {
+  if (sameJson(current, settings)) {
     return false;
   }
   session.edit("props", savedLabel(current, settings), (draft) => {

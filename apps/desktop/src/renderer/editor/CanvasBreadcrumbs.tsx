@@ -1,6 +1,7 @@
-import { cn, sameValue } from "@webforge/editor-ui";
+import { cn } from "@webforge/editor-ui";
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
+import { sameJson } from "@webforge/model";
 import { ChevronRightIcon } from "lucide-react";
 import { useEffect } from "react";
 import { selectionPath } from "./breadcrumbs.js";
@@ -25,7 +26,7 @@ export function CanvasBreadcrumbs({ session, engine }: CanvasBreadcrumbsProps) {
   const crumbs = useDocument(
     session,
     (site) => selectionPath(site, pageId, nodeId, session.library),
-    sameValue,
+    sameJson,
   );
   const outline = (id: string | null) => engine?.outline(id);
   // A step under the pointer can go without the pointer leaving it (Esc, Delete or Undo while it

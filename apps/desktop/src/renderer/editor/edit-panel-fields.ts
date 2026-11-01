@@ -1,10 +1,4 @@
-import {
-  type EditPanelField,
-  type FieldSpec,
-  type OptionGroup,
-  type PlainFieldKind,
-  sameValue,
-} from "@webforge/editor-ui";
+import type { EditPanelField, FieldSpec, OptionGroup, PlainFieldKind } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BOX_SIDES,
@@ -14,6 +8,7 @@ import {
   type PageId,
   type SiteDoc,
   SPACING_TOKENS,
+  sameJson,
 } from "@webforge/model";
 import {
   APPEARANCE_FIELDS,
@@ -185,7 +180,7 @@ function samePanelValues(
   for (const name of names) {
     const field = component.fields[name];
     const shown = field?.kind !== "slot" || editableList(field, library) !== undefined;
-    if (shown && !sameValue(a.props[name], b.props[name])) return false;
+    if (shown && !sameJson(a.props[name], b.props[name])) return false;
   }
   return true;
 }
@@ -197,14 +192,14 @@ function samePanelValues(
 export function sameSlice(a: PanelSlice, b: PanelSlice, library: ComponentLibrary): boolean {
   const x = a.target;
   const y = b.target;
-  if (x === undefined || y === undefined) return x === y && sameValue(a.anchors, b.anchors);
+  if (x === undefined || y === undefined) return x === y && sameJson(a.anchors, b.anchors);
   return (
     x.id === y.id &&
     x.component === y.component &&
     x.region === y.region &&
     x.copyLabel === y.copyLabel &&
     samePanelValues(x.node, y.node, x.component, library) &&
-    sameValue(a.anchors, b.anchors)
+    sameJson(a.anchors, b.anchors)
   );
 }
 

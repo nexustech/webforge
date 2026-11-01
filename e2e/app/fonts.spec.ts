@@ -12,8 +12,9 @@ import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // A font downloaded on demand (2.2, S4, PH2-8) works offline. It comes once from a stand-in for
 // Fontsource and jsDelivr, then shows on the canvas and goes into an export after the app has
-// started again with every request refused. The main process looks `net.fetch` up when it
-// downloads, so replacing it works, as replacing the file dialogs does.
+// started again with every request refused. Launched with `WEBFORGE_E2E_FONTS=1`, the main process
+// fetches fonts through `webforgeFontFetch` on its globals when one is there, looked up as it
+// downloads, so putting one there works, as replacing the file dialogs does.
 
 /** The test font: any real WOFF2 works, as its family name comes from its metadata. */
 const FILE = "test-script-latin-400-normal.woff2";
@@ -56,14 +57,13 @@ const ANSWERS: Readonly<Record<string, unknown>> = {
   },
 };
 
-/** Makes the main process's `net.fetch` answer as Fontsource would for Test Script, and nothing else. */
+/** Makes the main process's font fetch answer as Fontsource would for Test Script, and nothing else. */
 async function standInForFontsource(app: ElectronApplication): Promise<void> {
   await app.evaluate(
-    ({ net }, { answers, fontUrl, font }) => {
+    (_electron, { answers, fontUrl, font }) => {
       const requests: string[] = [];
       Object.assign(globalThis, { fontRequests: requests });
-      net.fetch = async (input: string | Request) => {
-        const url = typeof input === "string" ? input : input.url;
+      const webforgeFontFetch = async (url: string) => {
         requests.push(url);
         if (url === fontUrl) return new Response(Buffer.from(font, "base64"));
         const answer = answers[url];
@@ -71,6 +71,7 @@ async function standInForFontsource(app: ElectronApplication): Promise<void> {
           ? new Response("Not found", { status: 404 })
           : Response.json(answer);
       };
+      Object.assign(globalThis, { webforgeFontFetch });
     },
     {
       answers: ANSWERS,
@@ -82,13 +83,13 @@ async function standInForFontsource(app: ElectronApplication): Promise<void> {
 
 /** Makes every request of the main process fail, as with no network; records what was tried. */
 async function cutOffTheNetwork(app: ElectronApplication): Promise<void> {
-  await app.evaluate(({ net }) => {
+  await app.evaluate(() => {
     const requests: string[] = [];
-    Object.assign(globalThis, { fontRequests: requests });
-    net.fetch = async (input: string | Request) => {
-      requests.push(typeof input === "string" ? input : input.url);
+    const webforgeFontFetch = async (url: string) => {
+      requests.push(url);
       throw new TypeError("net::ERR_INTERNET_DISCONNECTED");
     };
+    Object.assign(globalThis, { fontRequests: requests, webforgeFontFetch });
   });
 }
 

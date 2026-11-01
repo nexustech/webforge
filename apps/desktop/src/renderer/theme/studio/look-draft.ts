@@ -1,4 +1,4 @@
-import type { Theme } from "@webforge/model";
+import { sameJson, type Theme } from "@webforge/model";
 import type { LookDraft } from "./studio-state.js";
 
 /** A kind's look in `theme`: its fields, none when it has no look. */
@@ -7,7 +7,7 @@ const lookIn = (theme: Theme, type: string): Readonly<Record<string, unknown>> =
 
 /** Whether the look's `field` is `value` already (`undefined`: it doesn't set the field). */
 const holds = (look: Readonly<Record<string, unknown>>, field: string, value: unknown) =>
-  JSON.stringify(look[field]) === JSON.stringify(value);
+  sameJson(look[field], value);
 
 /**
  * What applying `draft` changes in `theme`'s look for its kind now (4.10): each field the draft
