@@ -24,8 +24,8 @@ import { datePages, localDay } from "./page-updated.js";
 import {
   createSelectionStore,
   type EditorSelection,
-  selectElements,
-  toggleSelected,
+  withSelected,
+  withToggled,
 } from "./selection.js";
 import { shownLayout } from "./shared-layout.js";
 import { undoEntry } from "./undo-entry.js";
@@ -259,10 +259,10 @@ export function createEditorSession(
       if (nodeId !== shown || others.length > 0) setSelection({ ...alone(ui.getState()), nodeId });
     },
     selectElements(ids) {
-      selectElements(ui, ids);
+      setSelection(withSelected(ui.getState(), ids));
     },
     toggleSelected(id) {
-      toggleSelected(ui, id);
+      setSelection(withToggled(ui.getState(), id));
     },
     restoreSelection(selection) {
       setSelection(selection);

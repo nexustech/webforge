@@ -7,6 +7,7 @@ import { DEFAULT_PREFERENCES } from "../../../shared/ipc/prefs.js";
 import { starterSite } from "../../../shared/starter-site.js";
 import { createPreferencesStore } from "../../shell/preferences-store.js";
 import { sessionWith } from "../../testing/fixtures.js";
+import { followersOf } from "../../testing/followers.test-helper.js";
 import { StyleDialog } from "./StyleDialog.js";
 import { openStyle } from "./style-apply.js";
 import { createStyleDialog } from "./style-state.js";
@@ -149,6 +150,22 @@ describe("StyleDialog (3.13a, CT-2)", () => {
     cleanup();
     const simple = setUp("simple", true);
     expect(simple.dialog().queryByRole("tab")).toBeNull();
+  });
+
+  it("follows nothing of the document or the selection while it's closed (R9)", () => {
+    const session = sessionWith(starterSite());
+    const followers = [followersOf(session.history.document), followersOf(session.ui)];
+    const state = createStyleDialog();
+    render(
+      <StyleDialog
+        session={session}
+        state={state}
+        preferences={createPreferencesStore({ preferences: DEFAULT_PREFERENCES })}
+        itemPreviews={() => null}
+      />,
+    );
+
+    expect(followers.map((count) => count())).toEqual([0, 0]);
   });
 
   it("offers the four places a change applies", () => {
