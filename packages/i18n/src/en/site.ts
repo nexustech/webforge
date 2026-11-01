@@ -122,6 +122,8 @@ export const site = {
   "site.clipboard.imagesMissing.other":
     "{count} images couldn't be pasted with them. Copy them again from their site.",
   "site.clipboard.readOnly": "This site is read-only, so nothing can be pasted into it.",
+  "site.clipboard.newerFormat":
+    "That was copied in a newer version of {appName}. Update {appName} to paste it here.",
   // Approved by the product owner (31 Oct 2026, #649).
   "site.clipboard.advancedLeftOut.one":
     "1 Custom Code element wasn't pasted. It's for Advanced mode.",
