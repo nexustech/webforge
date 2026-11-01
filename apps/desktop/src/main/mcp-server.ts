@@ -5,8 +5,7 @@ import {
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
 import { AI_TOOLS } from "@webforge/commands";
-import type { AiResponse } from "../shared/ipc/ai.js";
-import type { AiBridge } from "./ai-ipc.js";
+import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
 export type McpApp = { readonly id: string; readonly name: string };
@@ -28,7 +27,11 @@ function toolResult(response: AiResponse): CallToolResult {
  * so any transport can carry it: the loopback HTTP one for AI apps (ADR 0021), or an in-memory one
  * for an in-app assistant. Nothing of a call or its answer is logged, the SDK's errors included.
  */
-export function createMcpServer(info: McpServerInfo, app: McpApp, ask: AiBridge["ask"]): Server {
+export function createMcpServer(
+  info: McpServerInfo,
+  app: McpApp,
+  ask: (request: AiRequest) => Promise<AiResponse>,
+): Server {
   const server = new Server(info, { capabilities: { tools: {} } });
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
