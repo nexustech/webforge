@@ -91,6 +91,33 @@ test("drags a section's padding as one step, shown live; Esc cancels a drag", as
   await expect(panel().getByRole("heading", { name: "Section", exact: true })).toBeVisible();
 });
 
+test("drags a Medium Section's padding on its column, the section a band across the page (#643)", async () => {
+  const section = canvas().locator(".site-section");
+  const column = canvas().locator(".site-section > .site-section-column");
+  await selectSection();
+  await panel().getByRole("tab", { name: "Style" }).click();
+  await panel().getByLabel("Content width", { exact: true }).selectOption("medium");
+  await expect(column).toHaveCSS("padding-top", "64px");
+  await expect(section).toHaveCSS("padding-top", "0px");
+
+  // The padding grips sit over the column, however wide the canvas is.
+  const [held, grips] = await Promise.all(
+    [column, canvas().locator(".wf-padding-grips")].map((each) => each.boundingBox()),
+  );
+  if (!held || !grips) throw new Error("Section not visible");
+  for (const side of ["x", "y", "width", "height"] as const) {
+    expect(Math.abs(grips[side] - held[side])).toBeLessThan(2);
+  }
+
+  // From the column's 64 px, far in: the largest size, on the column.
+  await dragBy(grip("padding", "top"), 300);
+  await expect(canvas().locator(".wf-grip-readout")).toHaveText("Padding Top: XL");
+  await page.mouse.up();
+  await expect(column).toHaveCSS("padding-top", "128px");
+  await expect(section).toHaveCSS("padding-top", "0px");
+  await expect(steps().first()).toHaveText("Changed Section padding");
+});
+
 test("drags a heading's margin on Mobile; hidden in Content mode", async () => {
   await page
     .getByRole("toolbar", { name: "Canvas" })

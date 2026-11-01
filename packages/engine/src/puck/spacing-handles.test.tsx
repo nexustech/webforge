@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 
 import type { Breakpoint } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { PADDED_COLUMN_CLASS, siteLibrary } from "@webforge/site-components";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FieldDrag } from "../canvas-engine.js";
 import { boxHandleFields, SpacingHandles } from "./spacing-handles.js";
 
@@ -22,10 +22,10 @@ let drags: FieldDrag[];
 /** The view the canvas shows, as the app writes a drag at. */
 let breakpoint: Breakpoint = "desktop";
 
-/** Shows the handles of a Section whose padding is `padding`, drawn with `style`. */
-function show(padding: unknown, style = "padding: 64px 16px; margin: 0") {
+/** Shows the handles of a Section whose padding is `padding`, drawn with `style` around `inside`. */
+function show(padding: unknown, style = "padding: 64px 16px; margin: 0", inside = "") {
   // As Puck draws it: the element inside a wrapper of its own.
-  document.body.innerHTML = `<div data-puck-component="s"><section style="${style}"></section></div>`;
+  document.body.innerHTML = `<div data-puck-component="s"><section style="${style}">${inside}</section></div>`;
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -216,6 +216,52 @@ describe("spacing handles (1.32)", () => {
     // Its listeners went with it.
     expect(esc.defaultPrevented).toBe(false);
     root = createRoot(host);
+  });
+
+  it("puts the padding grips on a Medium Section's column, which holds its padding (#643)", () => {
+    // A band across a 1280 px page, its 896 px column in the middle.
+    const rects = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element,
+    ) {
+      const [left, right] = this.classList.contains(PADDED_COLUMN_CLASS) ? [192, 1088] : [0, 1280];
+      return { left, right, top: 0, bottom: 400, width: right - left, height: 400 } as DOMRect;
+    });
+    try {
+      show(
+        { top: "m", bottom: "m" },
+        "padding: 0; margin: 0",
+        `<div class="${PADDED_COLUMN_CLASS}" style="padding: 64px 16px"></div>`,
+      );
+
+      const box = host.querySelector<HTMLElement>(".wf-padding-grips");
+      expect([box?.style.top, box?.style.right, box?.style.bottom, box?.style.left]).toEqual([
+        "0px",
+        "192px",
+        "0px",
+        "192px",
+      ]);
+      expect(grip("padding", "left").parentElement).toBe(box);
+      expect(grip("margin", "top").parentElement).toBe(host);
+      // The column's 64 px and 40 px further in: Large, as for a section that holds its own.
+      const top = grip("padding", "top");
+      press(top, 100);
+      move(top, 140);
+      release(top, 140);
+      expect(drags.at(-1)?.value).toEqual({ top: "l", bottom: "m" });
+    } finally {
+      rects.mockRestore();
+    }
+  });
+
+  it("keeps the padding grips on the outline's edges for a section that holds its padding", () => {
+    show({});
+    const box = host.querySelector<HTMLElement>(".wf-padding-grips");
+    expect([box?.style.top, box?.style.right, box?.style.bottom, box?.style.left]).toEqual([
+      "0px",
+      "0px",
+      "0px",
+      "0px",
+    ]);
   });
 
   it("reads the value of the device the canvas shows", () => {
