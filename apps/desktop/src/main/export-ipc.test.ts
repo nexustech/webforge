@@ -61,6 +61,8 @@ const exported: ExportOutcome = {
 
 /** The opening of the site the window was loaded for, and the one a hand-off opens. */
 const SITE_A = "11111111-1111-4111-8111-111111111111";
+/** The operation an export runs as, unless a test names another (A14). */
+const OPERATION = "22222222-2222-4222-8222-222222222222";
 const SITE_B = "22222222-2222-4222-8222-222222222222";
 
 const toFolder = (path: string | undefined): ExportDialogs => ({
@@ -115,13 +117,16 @@ function setUp(dialogs: ExportDialogs, run: RunExport | ExportOutcome = exported
         ...(channel === "site:cancel-export" ? args : [SITE_A, ...args]),
       );
     };
+  const exportSite = call("site:export");
+  const cancelExport = call("site:cancel-export");
   return {
     ...deps,
     choices,
     readMedia,
     opened,
-    invoke: call("site:export"),
-    cancel: call("site:cancel-export"),
+    /** Exports `request` as operation `operationId` (A14). */
+    invoke: (request: unknown, operationId = OPERATION) => exportSite(request, operationId),
+    cancel: (operationId = OPERATION) => cancelExport(operationId),
     choicesOf: call("site:export-choices"),
     setChoices: call("site:set-export-choices"),
     openLast: call("site:open-export"),
@@ -258,13 +263,55 @@ describe("registerExportHandlers", () => {
 
     const result = invoke(request);
     await vi.waitFor(() =>
-      expect(sendProgress).toHaveBeenCalledWith({ stage: "images", done: 0, total: 2 }),
+      expect(sendProgress).toHaveBeenCalledWith(OPERATION, { stage: "images", done: 0, total: 2 }),
     );
     await expect(cancel()).resolves.toBeNull();
 
     await expect(result).resolves.toEqual({ status: "canceled" });
     // With nothing under way, a cancel does nothing.
     await expect(cancel()).resolves.toBeNull();
+  });
+
+  it("cancels the export a cancel names, and no other (A14)", async () => {
+    const signals: AbortSignal[] = [];
+    const { invoke, cancel } = setUp(
+      toFolder("/sites/my-site"),
+      (_snapshot, _target, { signal }) =>
+        new Promise((resolve) => {
+          signals.push(signal);
+          signal.addEventListener("abort", () => resolve({ type: "cancelled" }));
+        }),
+    );
+    const other = "33333333-3333-4333-8333-333333333333";
+
+    const first = invoke(request);
+    const second = invoke(request, other);
+    await vi.waitFor(() => expect(signals).toHaveLength(2));
+    await cancel(other);
+
+    await expect(second).resolves.toEqual({ status: "canceled" });
+    expect(signals.map((signal) => signal.aborted)).toEqual([false, true]);
+    await cancel();
+    await expect(first).resolves.toEqual({ status: "canceled" });
+  });
+
+  it("refuses a second export under an operation id already under way (A14)", async () => {
+    let started = 0;
+    const { invoke, cancel } = setUp(
+      toFolder("/sites/my-site"),
+      (_snapshot, _target, { signal }) =>
+        new Promise((resolve) => {
+          started += 1;
+          signal.addEventListener("abort", () => resolve({ type: "cancelled" }));
+        }),
+    );
+
+    const first = invoke(request);
+    await vi.waitFor(() => expect(started).toBe(1));
+    await expect(invoke(request)).resolves.toEqual({ status: "canceled" });
+    expect(started).toBe(1);
+    await cancel();
+    await first;
   });
 
   it("names images and documents by hash: their bytes are read only as the worker asks (R15)", async () => {

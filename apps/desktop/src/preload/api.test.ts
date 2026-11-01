@@ -4,6 +4,8 @@ import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { createWebforgeApi, type Invoke, type Subscribe } from "./api.js";
 
 const SESSION = "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d";
+/** An export's operation id (A14). */
+const OPERATION = "22222222-2222-4222-8222-222222222222";
 
 const noEvents: Subscribe = () => () => undefined;
 
@@ -103,26 +105,26 @@ describe("createWebforgeApi site export", () => {
     warningCount: 0,
   };
 
-  it("sends the snapshot on the export channel and parses the result", async () => {
+  it("sends the snapshot on the export channel, as its operation, and parses the result", async () => {
     const invoke = vi.fn(async () => exported);
     const api = apiWith(invoke);
 
     await expect(
-      api.site.export(SESSION, { snapshot, media: [], choices, output }),
+      api.site.export(SESSION, { snapshot, media: [], choices, output }, OPERATION),
     ).resolves.toEqual(exported);
-    expect(invoke).toHaveBeenCalledWith("site:export", SESSION, {
-      snapshot,
-      media: [],
-      choices,
-      output,
-    });
+    expect(invoke).toHaveBeenCalledWith(
+      "site:export",
+      SESSION,
+      { snapshot, media: [], choices, output },
+      OPERATION,
+    );
   });
 
   it("rejects an export result that leaks a path", async () => {
     const api = apiWith(async () => ({ ...exported, path: "C:Userssamsite" }));
 
     await expect(
-      api.site.export(SESSION, { snapshot, media: [], choices, output }),
+      api.site.export(SESSION, { snapshot, media: [], choices, output }, OPERATION),
     ).rejects.toThrow();
   });
 
@@ -302,17 +304,18 @@ describe("createWebforgeApi app events", () => {
     expect(save).toHaveBeenCalledTimes(1);
   });
 
-  it("passes on an export's progress, ignoring malformed messages, and cancels it (3.1)", async () => {
+  it("passes on an export's progress with its operation, ignoring malformed messages, and cancels it (3.1, A14)", async () => {
     const { api, invoke, listeners } = withEvents();
     const listener = vi.fn();
     const stop = api.site.onExportProgress(listener);
 
-    listeners.get("site:export-progress")?.({ stage: "pages", done: 0, total: 2 });
-    listeners.get("site:export-progress")?.({ stage: "pages", path: "/home/sam" });
-    await api.site.cancelExport();
+    listeners.get("site:export-progress")?.(OPERATION, { stage: "pages", done: 0, total: 2 });
+    listeners.get("site:export-progress")?.(OPERATION, { stage: "pages", path: "/home/sam" });
+    listeners.get("site:export-progress")?.({ stage: "writing" });
+    await api.site.cancelExport(OPERATION);
 
-    expect(listener.mock.calls).toEqual([[{ stage: "pages", done: 0, total: 2 }]]);
-    expect(invoke).toHaveBeenCalledWith("site:cancel-export");
+    expect(listener.mock.calls).toEqual([[OPERATION, { stage: "pages", done: 0, total: 2 }]]);
+    expect(invoke).toHaveBeenCalledWith("site:cancel-export", OPERATION);
     stop();
     expect(listeners.has("site:export-progress")).toBe(false);
   });

@@ -11,16 +11,19 @@ import { type ExportSite, registerExportCommand } from "./export-command.js";
 import { createExportDialogs } from "./export-dialogs.js";
 
 /**
- * Exports through main, telling `onProgress` each stage main reports until it answers. The export
- * names the opening of the site this page was loaded for (R6, #663): main refuses it once a hand-off
- * has replaced that site.
+ * Exports through main as operation `operationId`, telling `onProgress` each stage main reports of
+ * it until it answers: another export's progress isn't this one's (A14). The export names the
+ * opening of the site this page was loaded for (R6, #663): main refuses it once a hand-off has
+ * replaced that site.
  */
 const exportThrough =
   (site: Pick<SiteApi, "export" | "onExportProgress">): ExportSite =>
-  async (request, onProgress) => {
-    const stop = site.onExportProgress(onProgress);
+  async (request, operationId, onProgress) => {
+    const stop = site.onExportProgress((of, progress) => {
+      if (of === operationId) onProgress(progress);
+    });
     try {
-      return await site.export(siteSession(), request);
+      return await site.export(siteSession(), request, operationId);
     } finally {
       stop();
     }
@@ -56,7 +59,7 @@ export const exportCommandArea: Area<WindowContext> = {
       library: siteLibrary,
       advanced: () => preferences.getState().preferences.editorLevel === "advanced",
       exportSite: exportThrough(api.site),
-      cancel: () => api.site.cancelExport(),
+      cancel: (operationId) => api.site.cancelExport(operationId),
       choices: () => api.site.exportChoices(siteSession()),
       saveChoices: (choices) => api.site.setExportChoices(siteSession(), choices),
       dialogs,

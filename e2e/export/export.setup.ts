@@ -36,7 +36,9 @@ type ExportRequest = {
 type ExportingWindow = {
   webforge: {
     project: { getCurrent(): Promise<{ sessionId: string } | null> };
-    site: { export(sessionId: string, request: ExportRequest): Promise<unknown> };
+    site: {
+      export(sessionId: string, request: ExportRequest, operationId: string): Promise<unknown>;
+    };
     trust: { trust(sessionId: string, texts: readonly string[]): Promise<unknown> };
   };
 };
@@ -45,7 +47,7 @@ type ExportingWindow = {
 const exportFromPage = async (request: ExportRequest) => {
   const { webforge } = window as unknown as ExportingWindow;
   const current = await webforge.project.getCurrent();
-  return webforge.site.export(current?.sessionId ?? "", request);
+  return webforge.site.export(current?.sessionId ?? "", request, crypto.randomUUID());
 };
 
 /**
