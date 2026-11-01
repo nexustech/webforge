@@ -8,7 +8,7 @@ export const CANVAS_HOST_ATTRIBUTE = "data-webforge-canvas";
 const STYLE_ATTRIBUTE = "data-webforge-puck-layout";
 
 /**
- * Hides Puck's own rail and sidebars (#274): Puck 0.23 always draws its plugin rail (Add, Layers,
+ * Hides Puck's own rail and sidebars (#274): Puck (0.24) always draws its plugin rail (Add, Layers,
  * Fields), whose buttons open its sidebars again whatever `ui.leftSideBarVisible` says. The editor
  * has its own Add panel (1.13), Layers (1.24) and Edit panel (1.14), so only Puck's canvas shows.
  * Hidden rather than left out: rendering `<Puck>` with only its preview would also drop Puck's

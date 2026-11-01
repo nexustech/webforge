@@ -225,7 +225,7 @@ overrides:
   editorconfig>minimatch: 11.0.3
 
 patchedDependencies:
-  '@puckeditor/core@0.23.0': b188b98bccf88d949d288d2a4395909c65af154cf7d59675ec26f7b8dfbdf0b1
+  '@puckeditor/core@0.24.0': e1b3d9dc48ea20a83eb65dd2c73703d31a8de3e4ebb755cfb7d5e86d8ffe9077
 
 importers:
 
@@ -448,6 +448,9 @@ importers:
       '@types/ssh2':
         specifier: 1.15.6
         version: 1.15.6
+      '@webforge/engine':
+        specifier: workspace:*
+        version: link:../packages/engine
       '@webforge/model':
         specifier: workspace:*
         version: link:../packages/model
@@ -604,8 +607,8 @@ importers:
   packages/engine:
     dependencies:
       '@puckeditor/core':
-        specifier: 0.23.0
-        version: 0.23.0(patch_hash=b188b98bccf88d949d288d2a4395909c65af154cf7d59675ec26f7b8dfbdf0b1)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+        specifier: 0.24.0
+        version: 0.24.0(patch_hash=e1b3d9dc48ea20a83eb65dd2c73703d31a8de3e4ebb755cfb7d5e86d8ffe9077)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
       '@tiptap/core':
         specifier: 3.32.0
         version: 3.32.0(@tiptap/pm@3.32.0)
@@ -2392,8 +2395,8 @@ packages:
   '@preact/signals-core@1.14.4':
     resolution: {integrity: sha512-HNB6HYeYKhQbJ1aKl+YRjrS4+QWHLKX6qKoUsfS/m0vqzsVaEBiZiaKbG/e+NKk2ch5ALQr/ihWaMHxiCuuWHA==}
 
-  '@puckeditor/core@0.23.0':
-    resolution: {integrity: sha512-sBnch+YIE3C6Bq+Z100GJs2y0rykxjcYW04m5iGJjMcBSqxQSmA3VKtDe742uPmPqQRJnKRBPrPuaiBmR2a78g==}
+  '@puckeditor/core@0.24.0':
+    resolution: {integrity: sha512-NxEYoGG9guV+oIiyf0lCf87yPvPlpErfsReojkIdpptDI/7Y8wusrPzHmWH3itW/tkIM0yShCR2Ctnc+T2Go7Q==}
     engines: {node: '>=20.0.0'}
     peerDependencies:
       react: ^18.0.0 || ^19.0.0
@@ -7315,7 +7318,7 @@ snapshots:
 
   '@preact/signals-core@1.14.4': {}
 
-  '@puckeditor/core@0.23.0(patch_hash=b188b98bccf88d949d288d2a4395909c65af154cf7d59675ec26f7b8dfbdf0b1)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))':
+  '@puckeditor/core@0.24.0(patch_hash=e1b3d9dc48ea20a83eb65dd2c73703d31a8de3e4ebb755cfb7d5e86d8ffe9077)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))':
     dependencies:
       '@dnd-kit/abstract': 0.4.0
       '@dnd-kit/dom': 0.4.0

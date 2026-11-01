@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { RICH_TEXT } from "@webforge/engine/puck-dom";
 import { BACKGROUND_WAIT } from "./budget.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp } from "./launch.js";
@@ -154,7 +155,7 @@ test("offers spelling suggestions inside rich text on the canvas (1.23)", async 
   // The system's checker takes its time on a busy machine (#446): room for its wait.
   test.slow();
   const canvas = page.frameLocator(".editor__canvas iframe");
-  const editor = canvas.locator(".site-text .ProseMirror");
+  const editor = canvas.locator(`.site-text ${RICH_TEXT}`);
   await canvas.getByText("Tell visitors what you do and why they will love it.").click();
   await editor.click();
   await expect(editor).toBeFocused();

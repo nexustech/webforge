@@ -2,6 +2,7 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { ACTION_BAR_LABEL, SELECTED_COMPONENT } from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -34,8 +35,7 @@ const tree = () => left().getByRole("tree", { name: "Layers" });
 const row = (name: string) => tree().getByRole("treeitem", { name: new RegExp(`^${name}`) });
 /** The label of Puck's action bar, which names the selected element. */
 // The selected element's name, in its bar: a hovered element's chip is a label too (SP-1).
-const selected = () =>
-  canvas().locator('[class*="DraggableComponent--isSelected"] [class*="ActionBar-label"]');
+const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABEL}`);
 const steps = () => page.locator(".undo-history__step");
 
 /** Runs a View menu command, once a menu an earlier one closed has gone. */

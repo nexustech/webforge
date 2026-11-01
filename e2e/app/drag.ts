@@ -1,4 +1,5 @@
 import { expect, type FrameLocator, type Locator, type Page } from "@playwright/test";
+import { COMPONENT, DISABLED_ATTRIBUTE, DRAGGING, DROP_PREVIEW } from "@webforge/engine/puck-dom";
 
 export type Box = { x: number; y: number; width: number; height: number };
 
@@ -20,18 +21,14 @@ export async function boxOf(target: Locator, name: string): Promise<Box> {
   return box as unknown as Box;
 }
 
-/** Puck marks the canvas while something is being dragged over it. */
-const DRAGGING = "[data-puck-entry][data-puck-dragging]";
-/** Where the drop would land: Puck's placeholder in the list, or its line between items. */
-const DROP_PREVIEW = "[data-dnd-placeholder], [data-puck-line-placeholder]";
-
 /** How many times {@link drag} presses before it gives up on the drag starting. */
 const PRESSES = 3;
 
 /**
  * Whether Puck can start a drag from `from` now: no drag is still ending (dnd-kit ignores a press
  * until its last one is idle), and the element it is in may be dragged (Puck marks one that may
- * not, as while it is drawn again, with `data-puck-disabled`).
+ * not, as while it is drawn again, with DISABLED_ATTRIBUTE). Puck marks the canvas while something is
+ * being dragged over it (DRAGGING), and where the drop would land (DROP_PREVIEW).
  */
 async function dragReady(canvas: FrameLocator, from: Locator): Promise<void> {
   await expect(canvas.locator(DRAGGING)).toHaveCount(0);
@@ -39,9 +36,10 @@ async function dragReady(canvas: FrameLocator, from: Locator): Promise<void> {
     .poll(
       () =>
         from.evaluate(
-          (element) =>
+          (element, { component, disabled }) =>
             // A source outside the canvas (the Add panel's items) has no element of Puck's.
-            element.closest("[data-puck-component]")?.hasAttribute("data-puck-disabled") ?? false,
+            element.closest(component)?.hasAttribute(disabled) ?? false,
+          { component: COMPONENT, disabled: DISABLED_ATTRIBUTE },
         ),
       { message: "The drag source can't be dragged" },
     )

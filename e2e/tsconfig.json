@@ -17,6 +17,7 @@
     "playwright.visual.config.ts"
   ],
   "references": [
+    { "path": "../packages/engine" },
     { "path": "../packages/model" },
     { "path": "../packages/pipeline" },
     { "path": "../packages/site-components" },

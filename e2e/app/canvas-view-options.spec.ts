@@ -1,4 +1,11 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import {
+  ACTION_BAR_LABEL,
+  COMPONENT,
+  HOVERED_COMPONENT,
+  RICH_TEXT,
+  ROOT_DROP_ZONE,
+} from "@webforge/engine/puck-dom";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // The canvas's View menu (1.33, F-ED-25): outlines around every element, margins and padding on
@@ -40,7 +47,7 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
   const before = await steps().count();
   const root = canvas().locator("html");
   const wrapper = canvas()
-    .locator("[data-puck-component]")
+    .locator(COMPONENT)
     .filter({ has: canvas().locator("h1") });
 
   // Outlines are on by default: a dashed line around every element.
@@ -60,7 +67,7 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
   await expect(canvas().locator(".wf-view-padding")).toHaveCount(1);
 
   // Extra space at the bottom: room below the page's last section, however long the page is.
-  const zone = canvas().locator('[data-puck-dropzone="root:default-zone"]');
+  const zone = canvas().locator(ROOT_DROP_ZONE);
   await expect(zone).toHaveCSS("padding-bottom", "0px");
   await toggle("Extra space at the bottom");
   await expect(zone).toHaveCSS("padding-bottom", "320px");
@@ -77,7 +84,7 @@ test("shows outlines, element names, spacing on hover and extra space, none an u
 });
 
 test("names a hovered element in a chip, with its size while spacing on hover is on (SP-1, SP-2)", async () => {
-  const chip = canvas().locator('[class*="_ActionBar-label_"]', { hasText: /^Heading/ });
+  const chip = canvas().locator(ACTION_BAR_LABEL, { hasText: /^Heading/ });
   // Over the Heading's own text, which Puck's inline text field used to keep from hovering it (#399).
   const text = canvas().locator("h1 [contenteditable]");
 
@@ -94,9 +101,9 @@ test("names a hovered element in a chip, with its size while spacing on hover is
 
 test("moves the hover straight from one element's text onto another's, one at a time (#399)", async () => {
   const chip = (name: string) =>
-    canvas().locator('[class*="_ActionBar-label_"]', { hasText: new RegExp(`^${name}`) });
+    canvas().locator(ACTION_BAR_LABEL, { hasText: new RegExp(`^${name}`) });
   const heading = canvas().locator("h1 [contenteditable]");
-  const text = canvas().locator(".site-text .ProseMirror");
+  const text = canvas().locator(`.site-text ${RICH_TEXT}`);
   const centre = async (target: typeof heading) => {
     const box = await target.boundingBox();
     if (box === null) throw new Error("Not on the canvas");
@@ -107,18 +114,18 @@ test("moves the hover straight from one element's text onto another's, one at a 
   // Every change to what's hovered on the way, counted.
   await canvas()
     .locator("body")
-    .evaluate((body) => {
+    .evaluate((body, hovered) => {
       const counts: number[] = [];
       (window as unknown as { hoverCounts: number[] }).hoverCounts = counts;
       new MutationObserver(() => {
-        counts.push(body.querySelectorAll('[class*="_DraggableComponent--hover_"]').length);
+        counts.push(body.querySelectorAll(hovered).length);
       }).observe(body, {
         subtree: true,
         childList: true,
         attributes: true,
         attributeFilter: ["class"],
       });
-    });
+    }, HOVERED_COMPONENT);
 
   const to = await centre(text);
   await page.mouse.move(to.x, to.y, { steps: 12 });

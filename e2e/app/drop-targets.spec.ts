@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Locator, type Page, test } from "@playwright/test";
+import { COMPONENT, ROOT_DROP_ZONE } from "@webforge/engine/puck-dom";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Valid drop targets only (1.13, F-ED-1): the page's top level takes sections, so an element
@@ -28,8 +29,7 @@ test.afterEach(async () => {
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
 /** The elements at the page's top level, as the canvas shows it: the Header, sections, the Footer. */
-const topLevel = () =>
-  canvas().locator('[data-puck-dropzone="root:default-zone"] > [data-puck-component]');
+const topLevel = () => canvas().locator(`${ROOT_DROP_ZONE} > ${COMPONENT}`);
 
 /** Drags with real mouse events, in small steps, pressing at `grabAt` of the source's width. */
 async function drag(from: Locator, to: { x: number; y: number }, grabAt: number): Promise<void> {

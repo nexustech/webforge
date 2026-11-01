@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { RICH_TEXT, RICH_TEXT_MENU } from "@webforge/engine/puck-dom";
 import { clickOnCanvas } from "./canvas-click.js";
 import { placeCaret } from "./caret.js";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
@@ -110,7 +111,7 @@ test("leaves keys to a text field being typed in, except the app's own Mod keys"
 
 test("leaves ? to rich text edited on the canvas, where Mod+K links", async () => {
   const text = canvas().getByText("Tell visitors what you do and why they will love it.");
-  const editor = canvas().locator(".site-text .ProseMirror");
+  const editor = canvas().locator(`.site-text ${RICH_TEXT}`);
   // Clicking the text edits it (F-ED-3).
   await text.click();
   await editor.click();
@@ -126,7 +127,7 @@ test("leaves ? to rich text edited on the canvas, where Mod+K links", async () =
 
 test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Enter splits the element", async () => {
   const text = canvas().getByText("Tell visitors what you do and why they will love it.");
-  const editor = canvas().locator(".site-text .ProseMirror");
+  const editor = canvas().locator(`.site-text ${RICH_TEXT}`);
   await text.click();
   await editor.click();
 
@@ -135,7 +136,7 @@ test("in rich text: Mod+K links, Shift+Space types a non-breaking space, Alt+Ent
   await page.keyboard.press("Shift+ControlOrMeta+ArrowLeft");
   // Once the editor has the selection: the toolbar's Link… turns on with it.
   await expect(
-    canvas().locator("[data-puck-rte-menu]").getByRole("button", { name: "Link…" }),
+    canvas().locator(RICH_TEXT_MENU).getByRole("button", { name: "Link…" }),
   ).toBeEnabled();
   await page.keyboard.press("ControlOrMeta+k");
   const link = page.getByRole("dialog", { name: "Link" });

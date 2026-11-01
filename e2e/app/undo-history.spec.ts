@@ -1,4 +1,5 @@
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { ACTION_BAR_ACTION, ACTION_BAR_LABEL, SELECTED_COMPONENT } from "@webforge/engine/puck-dom";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 
 // Undo History panel and Undo toasts (1.11, D3, D4): deleting shows "Deleted … · Undo"; jumping to
@@ -32,14 +33,13 @@ const history = () => page.getByRole("list", { name: "Undo History" });
 const step = (label: string) => history().getByRole("button", { name: label });
 /** The label of Puck's action bar, which names the selected element. */
 // The selected element's name, in its bar: a hovered element's chip is a label too (SP-1).
-const selected = () =>
-  canvas().locator('[class*="DraggableComponent--isSelected"] [class*="ActionBar-label"]');
+const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABEL}`);
 
 /** Selects the starter heading and deletes it with Puck's action bar. */
 async function deleteHeading(): Promise<void> {
   await canvas().locator("h1").click();
   await expect(selected()).toHaveText("Heading");
-  await canvas().locator('[class*="ActionBarAction"][title="Delete"]').click();
+  await canvas().locator(`${ACTION_BAR_ACTION}[title="Delete"]`).click();
   await expect(canvas().locator("h1")).toHaveCount(0);
 }
 
@@ -80,7 +80,7 @@ test.describe("Undo History and Undo toasts", () => {
     await deleteHeading();
     await canvas().getByText(STARTER_TEXT).click();
     await expect(selected()).toHaveText("Text");
-    await canvas().locator('[class*="ActionBarAction"][title="Delete"]').click();
+    await canvas().locator(`${ACTION_BAR_ACTION}[title="Delete"]`).click();
     await expect(canvas().getByText(STARTER_TEXT)).toHaveCount(0);
 
     await page.getByRole("button", { name: "Undo several steps" }).click();

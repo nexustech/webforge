@@ -1006,15 +1006,12 @@ describe("buildSite: the theme's style (2.13d)", () => {
         "section .wf-card { background-color: var(--color-base-100); border: var(--border) solid var(--color-base-300); }",
       );
       expect(css).toContain("img.rounded-box { border-radius: 0; }");
-      // A rule per selector, as written, never merged into a list: a browser without :has()
-      // (Firefox ESR 115) drops only the canvas's rule, and keeps the exported page's stripes.
+      // The exported page's sections only: the canvas's rules, for Puck's DOM, are the canvas's
+      // CSS's alone (A19).
       const onPage = "#main > section:nth-child(even of section):not([data-theme])";
-      const canvas =
-        ".wf-sections > :nth-child(even of :has(> section:not([data-webforge-hidden]))) > section:not([data-theme])";
       const rhythm = css.indexOf(`${onPage} { background-color: var(--color-base-200); }`);
       expect(rhythm).toBeGreaterThan(-1);
-      expect(css).toContain(`${canvas} { background-color: var(--color-base-200); }`);
-      expect(css).not.toContain(`${onPage}, ${canvas}`);
+      expect(css).not.toContain("wf-sections");
       // In the components layer, under the classes of sections with colours of their own, which
       // are utilities.
       expect(
@@ -1026,7 +1023,6 @@ describe("buildSite: the theme's style (2.13d)", () => {
       expect(css).toContain("@layer theme, base, components, utilities;");
       // And over the page's surface that any section framed on it sets by its class.
       expect(css).toContain(`${onPage}.bg-base-100 { background-color: var(--color-base-200); }`);
-      expect(css).toContain(`${canvas}.bg-base-100 { background-color: var(--color-base-200); }`);
     },
     scaledTestTimeout(60_000),
   );

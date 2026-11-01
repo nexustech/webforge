@@ -24,6 +24,11 @@ export type SiteCssOptions = {
   readonly fontsUrl: string;
   /** The font families there are files for; see {@link PipelineResources.fonts}. */
   readonly fonts?: readonly CatalogueFont[];
+  /**
+   * More places whose every second section is striped, besides the exported page: the canvas's,
+   * for the canvas's CSS only (`themeCss`'s `evenSections`, A19). An export gives none.
+   */
+  readonly evenSections?: readonly string[];
 };
 
 /**
@@ -83,7 +88,10 @@ export function siteStylesheetSource(
     "@custom-variant wf-waiting (:root[data-wf-animate] &:not([data-wf-shown]));",
     // ...and while it moves in, which its delay applies to, not to later changes.
     "@custom-variant wf-entering (&[data-wf-shown]:not([data-wf-done]));",
-    themeCss(options.theme),
+    themeCss(
+      options.theme,
+      options.evenSections === undefined ? {} : { evenSections: options.evenSections },
+    ),
     // The accent font's files only when something is set in it (3.22, C8).
     fontFaces(
       fontFacesFor(options.theme, options.fonts, {
