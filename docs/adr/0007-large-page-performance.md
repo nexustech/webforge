@@ -170,6 +170,33 @@ The second architecture review's A25: any change to what the canvas renders with
 - **Memory.** After the ten changes, the renderer holds about 200–270 MB more than `main` does at the same point. That is likely the replaced elements still waiting for garbage collection, but the run doesn't show whether it is ever given back.
 - **No budget yet:** the step records its numbers without failing, as 5.1 sets the budgets on CI's runners. The fix is a follow-up of its own: give the components what they render with through a store they subscribe to, so that a change draws only the components that read the part that changed, and Puck's config stays the same.
 
+## Addendum: drawing only what reads the change (#727, 2026-11-01)
+
+The follow-up above, done.
+- **What it does:** `redraw()` is gone. The engine keeps the render context in a store (`render-context-store.ts`), and Puck's config is built once per library.
+- **How a component follows the context:** each one draws through a small `Drawn` component, which records what it reads of the context as it draws. It records:
+  - a value (`navigation`);
+  - an entry of a plain object: its own kind's look, or one preview;
+  - a function's answer for the arguments it was called with (`image("m1")`, `setting("contact.phone")`).
+- **What draws again:** a change reaches only the components whose reads give something else now. A function's answer is compared as JSON, and a drawn hint counts as changed whenever its function does.
+- **Kept or read whole:** the canvas always holds a looks object, empty for a theme without looks. Otherwise every element would read "no looks" as one value, and a theme's first look would change it for all of them. A component that lists the context's keys, or spreads it, reads it whole and draws again on any change: none on the canvas does.
+
+**Before and after**, on the same machine: `pnpm e2e:perf` three times each, interleaved, on `main` (after A25's step) and the branch.
+
+| What (225 nodes) | `main` | Drawing only what reads it |
+|---|---|---|
+| **A theme look changed, until shown** | p50 1.8–3.0 s, p95 2.3–3.3 s | **p50 36–38 ms**, p95 122–350 ms |
+| Long tasks while it is drawn again | one per change, 1.6–2.9 s | none, none, one of 63 ms |
+| Keystroke → next painted frame | p50 64–72 ms | p50 48–56 ms |
+| Undo / Redo, p50 | 50–82 / 51–78 ms | 52–72 / 54–71 ms |
+| Load the page into the canvas | 2.7–3.0 s | 1.5–1.9 s |
+| Memory afterwards: JS heap / renderer | 111–190 / 635–663 MB | 125–133 / 429–430 MB |
+
+- **Within U7's 100 ms at p50, with no long task over 200 ms** (#727's targets). A look change draws the headings whose kind's look changed, and nothing else. The p95 is one change in ten, from 122 to 350 ms; the long-task observer saw no task above 63 ms then, so it's work spread over frames rather than one task.
+- **The memory A25 found has gone:** the renderer ends at what `main` held before the step was added (423–425 MB, A25's table).
+- **The other rows** show nothing this change explains. They come before the step in each run, and `main`'s slower typing and load on these runs are this machine's noise (A25's runs of the same code gave p50 48 ms and 1.4–2.0 s).
+- **A test checks it:** `puck-engine.test.tsx` mounts the engine with an element that reads nothing of the context and one that reads an image. A look, a preview and a Site Settings change draw neither again, and a new image draws only the second. A new config would draw both.
+
 ## Upstream reports (drafts)
 
 **1. `InlineTextField` moves the caret to the start when its value changes from outside**
