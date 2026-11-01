@@ -11,8 +11,10 @@ import { ProjectFileError } from "./errors.js";
 
 /**
  * The rows a fingerprint covers, in a fixed order: every document's and asset's row, and which
- * versions there are. A version's row is only ever added or removed, never changed, so its id is
- * enough; hashing every manifest (each lists every document) would slow down every save.
+ * versions there are. A version's content is never changed once saved, so its id is enough;
+ * hashing every manifest (each lists every document) would slow down every save. Its publish
+ * record can change (`recordPublish`), and isn't covered: a copy torn as one was written shows
+ * the publish before it, which is no damage to the site. A missing picture is caught below.
  */
 const FINGERPRINT_ROWS = `
   SELECT 'document', id, kind, blob_hash, NULL, NULL, NULL FROM documents
