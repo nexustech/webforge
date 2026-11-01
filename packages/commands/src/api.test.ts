@@ -368,6 +368,48 @@ describe("the command API's commands (4.8)", () => {
     expect(page).toMatchObject({ title: "Menu", slug: "menu" });
   });
 
+  it("merges a group of tokens it names in part, keeping the rest (#645)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const before = history.document.getState().theme;
+    const heading = { family: "Lora", fallback: "serif" } as const;
+
+    // The shape AI apps sent before 3.22 added the accent: heading only, the rest kept.
+    expect((await api.run("setThemeTokens", { tokens: { fonts: { heading } } }, app)).status).toBe(
+      "done",
+    );
+    const fonts = history.document.getState().theme.fonts;
+    expect(fonts).toEqual({ ...before.fonts, heading });
+
+    // One corner, and one text style: the other corners and styles stay.
+    const tokens = {
+      radius: { box: "xl" },
+      typeScale: { h1: { ...before.typeScale.h1, weight: 800 } },
+    };
+    expect((await api.run("setThemeTokens", { tokens }, app)).status).toBe("done");
+    const theme = history.document.getState().theme;
+    expect(theme.radius).toEqual({ ...before.radius, box: "xl" });
+    expect(theme.typeScale).toEqual({
+      ...before.typeScale,
+      h1: { ...before.typeScale.h1, weight: 800 },
+    });
+    expect(theme.spacing).toBe(before.spacing);
+
+    // A merged result that isn't a theme is still refused, readably, changing nothing.
+    const entries = history.state.getState().entries.length;
+    for (const bad of [{ radius: { box: "huge" } }, { fonts: { heading: { family: "Lora" } } }]) {
+      const result = await api.run("setThemeTokens", { tokens: bad }, app);
+      expect(result).toMatchObject({ status: "invalid", message: expect.stringMatching(/\S/) });
+    }
+    expect(history.document.getState().theme).toBe(theme);
+    expect(history.state.getState().entries).toHaveLength(entries);
+
+    // A `__proto__` from an AI app's JSON is no token: it changes nothing.
+    const prototype: unknown = JSON.parse('{ "__proto__": { "spacing": "roomy" } }');
+    await api.run("setThemeTokens", { tokens: prototype }, app);
+    expect(history.document.getState().theme).toEqual(theme);
+  });
+
   it("waits for the person to allow a change to more than one page (D7), declined after a minute", async () => {
     vi.useFakeTimers();
     const allowed = setup(true);
