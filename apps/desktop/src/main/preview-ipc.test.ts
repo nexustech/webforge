@@ -299,6 +299,37 @@ describe("createPreview (3.2)", () => {
     expect(deps.phoneStopped).toHaveBeenCalledTimes(2);
   });
 
+  it("keeps watching a phone listener started while the last one was closing (S9)", async () => {
+    vi.useFakeTimers();
+    let connected = true;
+    const { preview, server, deps } = previewOf({ hasAddress: () => connected });
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    // Off the Wi-Fi: the window is told at once, while the listener is still closing.
+    let closed = () => undefined as void;
+    server.stop.mockImplementationOnce(
+      () =>
+        new Promise<undefined>((resolve) => {
+          closed = () => resolve(undefined);
+        }),
+    );
+    connected = false;
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(deps.phoneStopped).toHaveBeenCalledOnce();
+
+    // Back on, and the person asks again before that close is done.
+    connected = true;
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    closed();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(deps.phoneStopped).toHaveBeenCalledOnce();
+
+    // The new listener has its own check.
+    connected = false;
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(server.stop).toHaveBeenCalledTimes(2);
+    expect(deps.phoneStopped).toHaveBeenCalledTimes(2);
+  });
+
   it("stops the server and the builder when closed; the next open starts afresh", async () => {
     const { preview, deps, server, builder, built } = previewOf();
     await preview.open(SITE_A, site("One"), "index.html");

@@ -27,6 +27,7 @@ const FIRST: PreviewBuild = {
 
 let server: PreviewServer | undefined;
 afterEach(async () => {
+  vi.useRealTimers();
   await server?.close();
   server = undefined;
 });
@@ -370,6 +371,30 @@ ${THEME_VALUES_MARKER}
     await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce(), { timeout: 2_000 });
     expect(preview.phoneBase()).toBe(undefined);
     await expect(get(phonePort, phoneBase)).rejects.toThrow();
+  });
+
+  it("says the phone's listener stopped before it closes, so one started then stays on (S9)", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    server = createPreviewServer({ phoneIdleMs: 150 });
+    const preview = server;
+    preview.update(FIRST);
+    const stopped = vi.fn();
+    preview.onPhoneStopped(stopped);
+    await preview.listen("network", "127.0.0.1");
+
+    // Unused: everyone is told in the same moment it goes, before its close is done.
+    vi.advanceTimersByTime(150);
+    expect(stopped).toHaveBeenCalledOnce();
+    expect(preview.phoneBase()).toBe(undefined);
+
+    // So a phone listener started straight after is never taken for the one that stopped.
+    vi.useRealTimers();
+    const phonePort = await preview.listen("network", "127.0.0.1");
+    const phoneBase = preview.phoneBase() ?? "";
+    expect(phoneBase).not.toBe("");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect((await get(phonePort, phoneBase)).status).toBe(200);
+    expect(stopped).toHaveBeenCalledOnce();
   });
 
   it("answers only requests naming its own address, before looking at the base (S24)", async () => {

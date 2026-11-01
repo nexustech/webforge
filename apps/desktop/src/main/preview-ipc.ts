@@ -179,6 +179,8 @@ export function createPreview(deps: PreviewDeps): Preview {
       const host = deps.networkAddress();
       // No address to give: no network, or the site was replaced (the window reloads with it).
       if (host === undefined || !current(sessionId)) return { status: "offline" };
+      // The last address's check stops first: it mustn't stop the listener started here.
+      stopWatchingAddress();
       if (running?.sessionId !== sessionId) await stop();
       await take(site);
       const { port, base } = await listen(sessionId, "network", host);
@@ -187,8 +189,10 @@ export function createPreview(deps: PreviewDeps): Preview {
       const phoneServer = running?.server;
       watchingAddress = setInterval(() => {
         if (deps.hasAddress(host)) return;
+        // The window is told before the listener closes, as for the idle stop.
         stopWatchingAddress();
-        void phoneServer?.stop("network").then(deps.phoneStopped);
+        deps.phoneStopped();
+        void phoneServer?.stop("network");
       }, ADDRESS_CHECK_MS);
       return { status: "ready", url: pageUrl(host, port, base, page) };
     },

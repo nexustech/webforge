@@ -196,10 +196,10 @@ export function createPreviewServer(
         stillUsed(phone);
         return;
       }
+      // Told before it closes, so a phone listener started after the notice is never taken for it.
       servers.delete("network");
-      void closeServer(phone).then(() => {
-        for (const listener of phoneStopped) listener();
-      });
+      for (const listener of phoneStopped) listener();
+      void closeServer(phone);
     }, phoneIdleMs);
   };
 
