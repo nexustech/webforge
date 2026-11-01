@@ -54,21 +54,6 @@ const full = {
   search: { allowIndexing: true, includeSitemap: false },
   analytics: { measurementId: "G-ABC123XYZ", consentBanner: true },
   forms: { service: { kind: "formspree", formId: "xyzzabcd" } },
-  publish: {
-    destinations: [
-      {
-        kind: "ftp",
-        id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
-        name: "My host",
-        protocol: "sftp",
-        host: "ftp.example.com",
-        port: 22,
-        username: "rosa",
-        remotePath: "/public_html",
-      },
-      { kind: "netlify", id: "0b9a8f6e-3c2d-4e1f-8a7b-6c5d4e3f2a10", name: "Netlify" },
-    ],
-  },
   allowedExternalUrls: ["https://widgets.example.com"],
 };
 
@@ -119,30 +104,12 @@ describe("siteSettingsSchema", () => {
       { analytics: { measurementId: "UA-1234-1", consentBanner: true } },
     ],
     ["a form service without its id", { forms: { service: { kind: "formspree" } } }],
-    [
-      "a password on a destination",
-      { publish: { destinations: [{ ...full.publish.destinations[0], password: "secret" }] } },
-    ],
     ["an unknown section", { extra: {} }],
-    [
-      "a host that is neither a name nor an IP address",
-      { publish: { destinations: [{ ...full.publish.destinations[0], host: "ftp://x" }] } },
-    ],
+    // Destinations live beside the site document now (4.4a, ADR 0018 §2).
+    ["publish destinations", { publish: { destinations: [] } }],
   ])("rejects %s", (_name, change) => {
     expect(siteSettingsSchema.safeParse({ ...full, ...change }).success).toBe(false);
   });
-});
-
-describe("publish destinations", () => {
-  it.each(["203.0.113.10", "2001:db8::1", "ftp.example.co.uk"])(
-    "accept the FTP host %s",
-    (host) => {
-      const destination = { ...full.publish.destinations[0], host };
-      const settings = { ...full, publish: { destinations: [destination] } };
-
-      expect(siteSettingsSchema.safeParse(settings).success).toBe(true);
-    },
-  );
 });
 
 describe("webAddressSchema", () => {

@@ -385,8 +385,8 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
 
 /**
  * Site Settings as a form (F-SET-1, 2.21): one tab per section, checked on Save by the model's
- * schema ({@link settingsSchema}). `previous` gives what the dialog doesn't edit (publish
- * destinations).
+ * schema ({@link settingsSchema}). `previous` gives what the dialog doesn't edit (allowed
+ * external addresses).
  */
 export function siteSettingsSpec(
   previous: SiteSettings,

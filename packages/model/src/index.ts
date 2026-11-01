@@ -69,6 +69,7 @@ export {
   hostKeySchema,
   PRIVATE_KEY_MAX,
   SECRET_MAX,
+  siteAddressSchema,
 } from "./file-transfer.js";
 export type { FormUnset } from "./forms.js";
 export {
@@ -141,6 +142,14 @@ export type {
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export { findNode, removeNode } from "./node-tree.js";
 export { insertPage, pageSlugFor, pageTitle, slugsInFolder } from "./pages.js";
+export type { PublishDestination } from "./publish-destinations.js";
+export {
+  DESTINATION_NAME_MAX,
+  PUBLISH_DESTINATIONS_MAX,
+  publishDestinationSchema,
+  publishDestinationsFrom,
+  publishDestinationsSchema,
+} from "./publish-destinations.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
