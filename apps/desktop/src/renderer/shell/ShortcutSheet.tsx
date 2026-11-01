@@ -35,7 +35,7 @@ export type SheetRow = { readonly label: string; readonly keys: readonly string[
 /**
  * The sheet's groups and lines: the registered commands with keys, by their group in the standard,
  * then the keys handled elsewhere (saving, text, Layers). Made from the registry, so the sheet lists
- * what the menus show, and nothing that isn't there yet (Preview, Publish).
+ * what the menus show, and nothing that isn't there yet.
  */
 export function shortcutSheet(
   commands: readonly Command[],

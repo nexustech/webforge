@@ -65,23 +65,23 @@ export function selectedIds(selection: Pick<EditorSelection, "nodeId" | "others"
 }
 
 /**
- * Selects the elements `ids` (by the ids the canvas shows them by), the first the one the canvas
- * and the Edit panel show; none for an empty list. For whatever selects several at once, such as
- * *Select similar* (1.35).
+ * `selection` with the elements `ids` selected (by the ids the canvas shows them by), the first the
+ * one the canvas and the Edit panel show; none for an empty list. For whatever selects several at
+ * once, such as *Select similar* (1.35). The editor session writes it (R9).
  */
-export function selectElements(ui: StoreApi<EditorSelection>, ids: readonly string[]): void {
+export function withSelected(selection: EditorSelection, ids: readonly string[]): EditorSelection {
   const unique = [...new Set(ids)];
-  ui.setState({ nodeId: unique[0] ?? null, others: unique.slice(1) });
+  return { ...selection, nodeId: unique[0] ?? null, others: unique.slice(1) };
 }
 
 /**
- * Adds element `id` to the selection, the one shown now, or takes it out if it is in it already
+ * `selection` with element `id` added, as the one shown, or taken out if it is in it already
  * (Ctrl/Cmd- or Shift-click, 1.31).
  */
-export function toggleSelected(ui: StoreApi<EditorSelection>, id: string): void {
-  const selected = selectedIds(ui.getState());
-  selectElements(
-    ui,
+export function withToggled(selection: EditorSelection, id: string): EditorSelection {
+  const selected = selectedIds(selection);
+  return withSelected(
+    selection,
     selected.includes(id) ? selected.filter((each) => each !== id) : [id, ...selected],
   );
 }
