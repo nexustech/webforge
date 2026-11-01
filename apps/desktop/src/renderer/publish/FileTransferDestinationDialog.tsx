@@ -8,6 +8,7 @@ import {
 import { t } from "@webforge/i18n";
 import {
   DEFAULT_PORTS,
+  DESTINATION_NAME_MAX,
   FILE_TRANSFER_USER_MAX,
   type FileTransferDestination,
   type FileTransferProtocol,
@@ -22,7 +23,7 @@ import type {
   ConnectionResult,
   KeyFileResult,
   PublishApi,
-  SignInRef,
+  SavedSignInRef,
 } from "../../shared/ipc/publish.js";
 import "../shell/form-messages.js";
 
@@ -38,6 +39,7 @@ const PRESET_FOLDER: Readonly<Record<Exclude<Preset, "other">, string>> = {
 
 /** The form's values, as the person types them; secrets too, which the site never keeps. */
 export type FileTransferValues = {
+  readonly name: string;
   readonly preset: Preset;
   readonly protocol: FileTransferProtocol;
   readonly host: string;
@@ -51,13 +53,16 @@ export type FileTransferValues = {
 };
 
 /**
- * What the dialog saves, kept apart (4.4, security review S2): the destination's settings, for the
- * site's file; and how it signs in and what this computer trusts about it, for the app's own data.
- * A private key is named by its handle: its text stays in the main process (review).
+ * What the dialog saves, kept apart (4.4a, security review S2): the destination's name and
+ * settings, for the site's file; and how it signs in and what this computer trusts about it, for
+ * the keychain. A private key is named by its handle: its text stays in the main process (review).
+ * `keep` keeps the sign-in saved for it, which the dialog offers only while the connection, user
+ * and host key are those it was saved for.
  */
 export type FileTransferSaved = {
+  readonly name: string;
   readonly destination: FileTransferDestination;
-  readonly signIn: SignInRef;
+  readonly signIn: SavedSignInRef;
   readonly trust: FileTransferTrust;
 };
 
@@ -69,10 +74,13 @@ type Extra = {
   readonly keyFile: KeyFile | undefined;
   readonly hostKey: string | undefined;
   readonly plainFtpWarned: boolean;
+  /** The sign-in saved for the destination still applies: nothing new typed or chosen keeps it. */
+  readonly keepable: boolean;
 };
 
 /** The values a new destination starts from: cPanel's, over FTPS. */
 const NEW_VALUES: FileTransferValues = {
+  name: "",
   preset: "cpanel",
   protocol: "ftps",
   host: "",
@@ -85,10 +93,13 @@ const NEW_VALUES: FileTransferValues = {
   url: "",
 };
 
-/** The form's values for `destination`, with its password or passphrase when it is known. */
+/**
+ * The form's values for `destination`, called `name`. Never its password or passphrase: those stay
+ * in the main process once saved (4.4a).
+ */
 export function valuesOf(
   destination: FileTransferDestination | undefined,
-  signIn?: SignInRef,
+  name = "",
 ): FileTransferValues {
   if (destination === undefined) return NEW_VALUES;
   const preset =
@@ -96,14 +107,15 @@ export function valuesOf(
       ([, folder]) => folder === destination.folder,
     )?.[0] ?? "other";
   return {
+    name,
     preset,
     protocol: destination.protocol,
     host: destination.host,
     port: destination.port === undefined ? "" : String(destination.port),
     user: destination.user,
     signIn: destination.protocol === "sftp" ? destination.signIn : "password",
-    password: signIn !== undefined && "password" in signIn ? signIn.password : "",
-    passphrase: signIn !== undefined && "passphrase" in signIn ? (signIn.passphrase ?? "") : "",
+    password: "",
+    passphrase: "",
     folder: destination.folder,
     url: destination.url ?? "",
   };
@@ -130,14 +142,20 @@ function toOutput(values: FileTransferValues, extra: Extra) {
       : {}),
     ...(values.protocol === "ftp" && extra.plainFtpWarned ? { plainFtpWarned: true as const } : {}),
   };
-  const signIn =
-    values.protocol === "sftp" && values.signIn === "key"
+  const withKey = values.protocol === "sftp" && values.signIn === "key";
+  // Nothing new typed, or no key file chosen: the saved sign-in, while it applies.
+  const keep = extra.keepable && (withKey ? extra.keyFile === undefined : values.password === "");
+  const signIn: SavedSignInRef = keep
+    ? { keep: true }
+    : withKey
       ? {
           keyHandle: extra.keyFile?.handle ?? "",
           ...(values.passphrase === "" ? {} : { passphrase: values.passphrase }),
         }
       : { password: values.password };
-  return { destination, signIn, trust };
+  // A destination left unnamed is listed by its host.
+  const name = values.name.trim() === "" ? common.host : values.name.trim();
+  return { name, destination, signIn, trust };
 }
 
 /** The form's own words for a value in the wrong form, by the destination's field. */
@@ -154,7 +172,7 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
   return {
     "~standard": {
       validate: (value) => {
-        const { destination, signIn, trust } = value as ReturnType<typeof toOutput>;
+        const { name, destination, signIn, trust } = value as ReturnType<typeof toOutput>;
         const issues: { path: PropertyKey[]; message: string }[] = [];
         const parsed = fileTransferDestinationSchema.safeParse(destination);
         if (!parsed.success) {
@@ -175,28 +193,37 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
           }
         }
         const problem =
-          "password" in signIn
-            ? signIn.password === ""
-              ? (["password", "publish.fileTransfer.error.password"] as const)
-              : undefined
-            : signIn.keyHandle === ""
-              ? (["keyHandle", "publish.fileTransfer.error.key"] as const)
-              : keyFile?.encrypted === true && signIn.passphrase === undefined
-                ? (["passphrase", "publish.fileTransfer.error.passphrase"] as const)
-                : undefined;
+          "keep" in signIn
+            ? undefined
+            : "password" in signIn
+              ? signIn.password === ""
+                ? (["password", "publish.fileTransfer.error.password"] as const)
+                : undefined
+              : signIn.keyHandle === ""
+                ? (["keyHandle", "publish.fileTransfer.error.key"] as const)
+                : keyFile?.encrypted === true && signIn.passphrase === undefined
+                  ? (["passphrase", "publish.fileTransfer.error.passphrase"] as const)
+                  : undefined;
         if (problem !== undefined)
           issues.push({ path: ["signIn", problem[0]], message: t(problem[1]) });
         if (!parsed.success || issues.length > 0) return { issues };
         return {
-          value: { destination: parsed.data, signIn, trust },
+          value: { name, destination: parsed.data, signIn, trust },
         };
       },
     },
   };
 }
 
-/** The fields, as the protocol and the way it signs in ask. */
-function fieldsFor(values: FileTransferValues, keyFile: KeyFile | undefined): FormField[] {
+/**
+ * The fields, as the protocol and the way it signs in ask; `keepable` while the sign-in saved for
+ * the destination still applies, which an empty password keeps.
+ */
+function fieldsFor(
+  values: FileTransferValues,
+  keyFile: KeyFile | undefined,
+  keepable: boolean,
+): FormField[] {
   const sftp = values.protocol === "sftp";
   const withKey = sftp && values.signIn === "key";
   const secret = { kind: "text", inputType: "password", maxLength: SECRET_MAX } as const;
@@ -216,11 +243,21 @@ function fieldsFor(values: FileTransferValues, keyFile: KeyFile | undefined): Fo
           ...secret,
           name: "password",
           label: t("publish.fileTransfer.password"),
-          help: t("publish.fileTransfer.password.help"),
+          help: t(
+            keepable ? "publish.fileTransfer.password.saved" : "publish.fileTransfer.password.help",
+          ),
           path: "signIn.password",
         },
       ];
   return [
+    {
+      kind: "text",
+      name: "name",
+      label: t("publish.fileTransfer.name"),
+      help: t("publish.fileTransfer.name.help"),
+      maxLength: DESTINATION_NAME_MAX,
+      width: "md",
+    },
     {
       kind: "select",
       name: "preset",
@@ -340,17 +377,33 @@ const connectionOf = (values: FileTransferValues) =>
 
 export type FileTransferDestinationDialogProps = {
   readonly open: boolean;
-  /** The destination to edit; a new one when left out. */
+  /** The destination to edit, and its name; a new one when left out. */
   readonly destination?: FileTransferDestination | undefined;
-  /** Its sign-in, when the keychain has it (4.4). */
-  readonly signIn?: SignInRef | undefined;
-  /** What this computer trusts about it, from the app's own data (4.4): never the site's file. */
+  readonly name?: string | undefined;
+  /**
+   * Whether this computer has its sign-in saved for it as it is (4.4a): then an empty password, or
+   * no key file chosen, keeps it, while the connection, user and host key stay the same (S2).
+   */
+  readonly savedSignIn?: boolean | undefined;
+  /** What this computer trusts about it, from the keychain (4.4a): never the site's file. */
   readonly trust?: FileTransferTrust | undefined;
   /** Test connection, the host key and the key file, through the main process. */
   readonly publish: Pick<PublishApi, "testConnection" | "readHostKey" | "chooseKeyFile">;
+  /** Test connection with the sign-in saved for it, which the renderer never sees. */
+  readonly testSaved?:
+    | ((
+        destination: FileTransferDestination,
+        trust: FileTransferTrust,
+      ) => Promise<ConnectionResult>)
+    | undefined;
   readonly onSave: (saved: FileTransferSaved) => void;
   readonly onCancel: () => void;
 };
+
+/** What Test connection found, in the person's words: for the list of destinations too. */
+export function connectionMessage(result: ConnectionResult): string {
+  return result.ok ? t("publish.test.ok") : t(`publish.test.${result.code}`);
+}
 
 /**
  * An FTP, FTPS or SFTP publish destination (4.3, F-PB-1, B5): a control panel's usual settings,
@@ -362,22 +415,15 @@ export type FileTransferDestinationDialogProps = {
 export function FileTransferDestinationDialog({
   open,
   destination,
-  signIn,
+  name,
+  savedSignIn = false,
   trust,
   publish,
+  testSaved,
   onSave,
   onCancel,
 }: FileTransferDestinationDialogProps) {
-  const [keyFile, setKeyFile] = useState<KeyFile | undefined>(
-    signIn !== undefined && "keyHandle" in signIn
-      ? {
-          status: "chosen",
-          name: "",
-          encrypted: signIn.passphrase !== undefined,
-          handle: signIn.keyHandle,
-        }
-      : undefined,
-  );
+  const [keyFile, setKeyFile] = useState<KeyFile | undefined>();
   const [keyProblem, setKeyProblem] = useState<string | undefined>();
   // The SFTP host key trusted, for the connection it was trusted on.
   const [trusted, setTrusted] = useState<
@@ -392,17 +438,34 @@ export function FileTransferDestinationDialog({
   );
   const [test, setTest] = useState<TestState | undefined>();
 
+  /**
+   * Whether the sign-in saved for the destination applies to `values`, trusting `hostKey`: the
+   * same connection, user, way of signing in and host key it was saved for (S2).
+   */
+  const keepableFor = (values: FileTransferValues, hostKey: string | undefined) => {
+    if (!savedSignIn || destination === undefined) return false;
+    const saved = valuesOf(destination);
+    return (
+      connectionOf(values).toLowerCase() === connectionOf(saved).toLowerCase() &&
+      values.user.trim() === saved.user &&
+      (values.protocol !== "sftp" || (values.signIn === saved.signIn && hostKey === trust?.hostKey))
+    );
+  };
+
   /** What the person chose, trusted and accepted, for these values' connection. */
-  const extraFor = (values: FileTransferValues): Extra => ({
-    keyFile,
-    plainFtpWarned,
-    hostKey: trusted?.at === connectionOf(values) ? trusted.hostKey : undefined,
-  });
+  const extraFor = (values: FileTransferValues): Extra => {
+    const hostKey = trusted?.at === connectionOf(values) ? trusted.hostKey : undefined;
+    return { keyFile, plainFtpWarned, hostKey, keepable: keepableFor(values, hostKey) };
+  };
 
   /** Test connection with `values`, and the SFTP host key trusted for it, if any. */
   const runTest = async (values: FileTransferValues, hostKey: string | undefined) => {
     const at = connectionOf(values);
-    const output = toOutput(values, { ...extraFor(values), hostKey });
+    const output = toOutput(values, {
+      ...extraFor(values),
+      hostKey,
+      keepable: keepableFor(values, hostKey),
+    });
     setTest({ status: "testing", at });
     const parsed = fileTransferDestinationSchema.safeParse(output.destination);
     if (!parsed.success) {
@@ -419,7 +482,10 @@ export function FileTransferDestinationDialog({
       );
       return;
     }
-    const result = await publish.testConnection(tested, output.signIn, output.trust);
+    const result =
+      "keep" in output.signIn
+        ? ((await testSaved?.(tested, output.trust)) ?? { ok: false, code: "unauthorized" })
+        : await publish.testConnection(tested, output.signIn, output.trust);
     // A trusted SFTP key the host no longer presents: show the new one, to trust or not.
     if (!result.ok && result.code === "untrusted-host" && tested.protocol === "sftp") {
       const read = await publish.readHostKey(tested.host, tested.port);
@@ -453,7 +519,7 @@ export function FileTransferDestinationDialog({
   };
 
   const spec: FormSpec<FileTransferValues, FileTransferSaved> = {
-    fields: (values) => fieldsFor(values, keyFile),
+    fields: (values) => fieldsFor(values, keyFile, extraFor(values).keepable),
     schema: outputSchema(keyFile),
     toModel: (values) => toOutput(values, extraFor(values)),
     adjust,
@@ -472,7 +538,12 @@ export function FileTransferDestinationDialog({
         ) : undefined,
       signIn:
         values.protocol === "sftp" && values.signIn === "key" ? (
-          <KeyFileRow keyFile={keyFile} problem={keyProblem} onChoose={() => void chooseKey()} />
+          <KeyFileRow
+            keyFile={keyFile}
+            saved={extraFor(values).keepable}
+            problem={keyProblem}
+            onChoose={() => void chooseKey()}
+          />
         ) : undefined,
       url: (
         <TestConnection
@@ -495,7 +566,7 @@ export function FileTransferDestinationDialog({
       description={t("publish.fileTransfer.description")}
       confirm={t("publish.fileTransfer.confirm")}
       spec={spec}
-      initial={valuesOf(destination, signIn)}
+      initial={valuesOf(destination, name)}
       size="lg"
       onSave={(saved) => onSave(saved)}
       onCancel={onCancel}
@@ -522,10 +593,13 @@ function PlainFtpWarning({ onAccept }: { readonly onAccept: () => void }) {
 /** The private key file: which one, or why the one chosen can't be used, and a button to choose. */
 function KeyFileRow({
   keyFile,
+  saved,
   problem,
   onChoose,
 }: {
   readonly keyFile: KeyFile | undefined;
+  /** The key saved for the destination still applies, until another is chosen. */
+  readonly saved: boolean;
   readonly problem: string | undefined;
   readonly onChoose: () => void;
 }) {
@@ -540,10 +614,8 @@ function KeyFileRow({
       >
         {problem ??
           (keyFile === undefined
-            ? t("publish.keyFile.none")
-            : keyFile.name === ""
-              ? t("publish.keyFile.saved")
-              : t("publish.keyFile.chosen", { name: keyFile.name }))}
+            ? t(saved ? "publish.keyFile.saved" : "publish.keyFile.none")
+            : t("publish.keyFile.chosen", { name: keyFile.name }))}
       </span>
     </div>
   );
@@ -568,7 +640,7 @@ function TestConnection({
         {state?.status === "testing" && <p>{t("publish.test.testing")}</p>}
         {state?.status === "done" && (
           <p className={state.result.ok ? "text-success" : "text-destructive-text"}>
-            {state.result.ok ? t("publish.test.ok") : t(`publish.test.${state.result.code}`)}
+            {connectionMessage(state.result)}
           </p>
         )}
       </div>
