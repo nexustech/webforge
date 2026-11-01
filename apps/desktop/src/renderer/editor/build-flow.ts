@@ -16,6 +16,11 @@ type GateOptions = {
   readonly blocked: (count: number) => string;
   /** Shows the Site Check panel, where each finding has its place and, often, a *Fix*. */
   readonly showSiteCheck: () => void;
+  /**
+   * Whether the owner has confirmed the addresses Settings' Custom Code allows (#649): until then
+   * they allow nothing, as the site's file may come from anyone.
+   */
+  readonly allowListConfirmed: boolean;
 };
 
 /**
@@ -24,7 +29,9 @@ type GateOptions = {
  * (ADR 0016); main checks again before it publishes (ADR 0018 §4).
  */
 export function gateOnSiteCheck(site: SiteDoc, mode: CheckMode, options: GateOptions): boolean {
-  const blocking = blockingCount(checkSite({ site, catalogue: CATALOGUE }, mode));
+  const blocking = blockingCount(
+    checkSite({ site, catalogue: CATALOGUE, allowListConfirmed: options.allowListConfirmed }, mode),
+  );
   if (blocking === 0) return true;
   toast.error(options.blocked(blocking));
   options.showSiteCheck();

@@ -78,17 +78,18 @@ export function cssResources(css: string): ExternalResource[] {
 const STRING_LITERAL = /"((?:\\.|[^"\\\n])*)"|'((?:\\.|[^'\\\n])*)'|`((?:\\[\s\S]|[^`\\])*)`/g;
 
 /**
- * The outside files `script` loads, as far as it can be read without running it: each address in
- * its strings whose name says it is a script, a stylesheet, a font, an image or a sound or video.
- * An address it only goes to (a link, a form) isn't one.
+ * The other websites `script` uses, as far as it can be read without running it: every address in
+ * its strings, a script, a stylesheet, a font, an image or a sound or video by its name, and
+ * anything else as `other`. A script may send to an address as well as load from it (`fetch`,
+ * `sendBeacon`), and the site then depends on that website too, or gives it its visitors' data
+ * (#649, S1), so an address with no file name counts as well.
  */
 export function scriptResources(script: string): ExternalResource[] {
   const found: ExternalResource[] = [];
   for (const match of script.matchAll(STRING_LITERAL)) {
     const url = (match[1] ?? match[2] ?? match[3] ?? "").trim();
     if (!isExternalUrl(url)) continue;
-    const kind = kindByExtension(url);
-    if (kind !== undefined) found.push({ url, kind });
+    found.push({ url, kind: kindByExtension(url) ?? "other" });
   }
   return unique(found);
 }

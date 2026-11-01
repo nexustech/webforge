@@ -56,7 +56,11 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
 - **Site Check's external-resource rule runs in the renderer with the others** (ADR 0016), though ADR 0016 thought it might need the rendered site. The export writes the site's own code and Custom Code's HTML as written, so the rule reads the same text.
   - It finds each file they load from another website (`packages/site-check/src/external.ts`): scripts, stylesheets, fonts, images, sounds and videos, and frames.
   - Each is *Must fix* unless Settings' Custom Code allows its address, either the address itself or a folder ending in `/`.
-  - Links aren't loaded files, so they pass. An address a script only goes to (`fetch`, `location`) passes too: a script can't be read for what it loads without running it.
+  - Links aren't loaded files, so they pass.
+  - **Changed by #649 (security review S1):**
+    - A script counts every address in its strings, including one it only sends to or goes to (`fetch`, `sendBeacon`, `location`). A site that sends its visitors' data to another website depends on it as much as one that loads a file from there.
+    - Settings' allowed addresses count only once the owner has confirmed them (`allowListConfirmed` in the rule's input). The list comes with the site's file, which may come from anyone, so a file can't allow its own scripts.
+  - **It is a portability check, not a safety check.** A script can build an address at run time or hide one, and code that names no other website can still do harm on the site itself. What keeps code from someone else's file from running unasked is the code trust step (#649), not this rule.
 - A site without code exports byte for byte as before: no new files, no new lines.
 - Custom Code's classes no longer depend on how its HTML quotes them.
 - **The developer files' README** lists `custom.*.css` and `custom.*.js` when the site has them.

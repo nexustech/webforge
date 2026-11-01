@@ -1,5 +1,5 @@
 import type { Pipeline, PipelineResources, StoredMedia } from "@webforge/pipeline";
-import { BuildError } from "@webforge/pipeline";
+import { BuildError, RUNS_ALL_CODE } from "@webforge/pipeline";
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
 
@@ -40,6 +40,8 @@ export function createPreviewBuilds(
       };
       for await (const event of channel.pipeline.build(job.snapshot, resources, {
         mode: "preview",
+        // All of the site's code, until the code trust step says which the owner has confirmed (#649).
+        runsCode: RUNS_ALL_CODE,
       })) {
         if (event.stage !== "done") continue;
         const { files } = event.site;
