@@ -1,5 +1,5 @@
 import { FILE_MIME_TYPES, IMAGE_MIME_TYPES, type MediaMeta } from "@webforge/model";
-import type { BlobAsset, StoredBlob } from "@webforge/storage";
+import type { BlobAsset, NewBlob, StoredBlob } from "@webforge/storage";
 import type { ImportSource, PrepareOutcome } from "../shared/storage-writer-protocol.js";
 import { BUNDLE_MIME_TYPES } from "./bundle-download.js";
 import { log } from "./log.js";
@@ -93,7 +93,7 @@ export async function importFile(
  */
 function putBlobs(
   site: SiteStore,
-  blobs: readonly { readonly data: Uint8Array; readonly mime: string }[],
+  blobs: readonly NewBlob[],
   asset: BlobAsset | undefined,
   event: string,
 ): Promise<StoreBlobsResult> {
@@ -150,17 +150,13 @@ export async function storeCopiedMedia(
         height: item.kind === "image" ? item.height : undefined,
         originalName: item.fileName,
       };
+  // Bytes that aren't the item's are refused in the writer's transaction, so its asset never
+  // names a file the site doesn't have.
   const stored = await putBlobs(
     site,
-    [{ data: found.data, mime: item.mimeType }],
+    [{ data: found.data, mime: item.mimeType, hash: item.hash }],
     asset,
     "Webforge could not store a pasted file",
   );
-  if (stored.status !== "stored") return stored;
-  // Bytes that aren't the item's would leave it naming a file the site doesn't have.
-  if (stored.hashes[0] !== item.hash) {
-    log.error("Webforge could not store a pasted file");
-    return { status: "failed", reason: "unknown" };
-  }
-  return { status: "stored", hash: item.hash };
+  return stored.status === "stored" ? { status: "stored", hash: item.hash } : stored;
 }

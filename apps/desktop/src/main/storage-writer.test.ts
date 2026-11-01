@@ -204,6 +204,25 @@ describe("the storage writer thread (R13b)", () => {
     return bytes;
   }
 
+  it("answers a job it can't read as failed, so the store gate is let go (#664)", async () => {
+    const writer = createStorageWriter(startThread);
+    const blob = { data: new Uint8Array([1]), mime: "image/png" };
+
+    // Past the protocol's limit of 1000 files, which only the thread checks.
+    expect(
+      await writer.putBlobs(
+        "site.wforge",
+        Array.from({ length: 1001 }, () => blob),
+      ),
+    ).toEqual({
+      status: "failed",
+    });
+    expect(await writer.putBlobs("site.wforge", [{ ...blob, mime: "" }])).toEqual({
+      status: "failed",
+    });
+    await writer.stop();
+  });
+
   it("stores a 50 MB image keeping the main thread busy for less than 50 ms", async () => {
     const dir = tempDir();
     const sitePath = join(dir, "Large.wforge");

@@ -364,6 +364,24 @@ describe("ProjectStore versions in storage format 2 (#664)", () => {
     store.close();
   });
 
+  it("keeps the newest version the site was published from when pruning (#664)", () => {
+    const store = ProjectStore.open(createProject());
+    store.commit([page("One")]);
+    store.saveVersion("Published first", "on-publish");
+    const live = store.saveVersion("Published again", "on-publish");
+    for (const day of ["Monday", "Tuesday", "Wednesday"]) store.saveVersion(day, "daily");
+
+    expect(store.pruneAutoVersions(2)).toBe(2);
+    expect(store.listVersions().map((version) => version.name)).toEqual([
+      "Wednesday",
+      "Tuesday",
+      "Published again",
+    ]);
+    expect(store.pruneAutoVersions(0)).toBe(2);
+    expect(store.listVersions().map((version) => version.id)).toEqual([live.id]);
+    store.close();
+  });
+
   it("says how much space the versions keep, all of them and each alone", () => {
     const store = ProjectStore.open(createProject());
     const old = store.putBlob(new Uint8Array(1000), "image/png");

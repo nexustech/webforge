@@ -96,6 +96,19 @@ describe("SiteFileWriter", () => {
         { data: undefined as unknown as Uint8Array, mime: "image/png" },
       ]),
     ).toThrow();
+    // Bytes that aren't the ones expected: nothing stored, not even the item's asset (#664).
+    expect(() =>
+      writer.putBlobs(
+        [
+          { data: new Uint8Array([6]), mime: "image/png", hash: sha(photo) },
+          { data: new Uint8Array([7]), mime: "image/png" },
+        ],
+        { mediaId: "wrong", originalName: "wrong.png" },
+      ),
+    ).toThrow("not the ones expected");
+    expect(writer.putBlobs([{ data: photo, mime: "image/jpeg", hash: sha(photo) }])).toEqual([
+      sha(photo),
+    ]);
     writer.close();
 
     expect(hashes).toEqual([sha(photo), sha(code)]);
@@ -104,6 +117,8 @@ describe("SiteFileWriter", () => {
       expect(store.readAsset("pasted")).toMatchObject({ hash: sha(photo), mime: "image/jpeg" });
       expect(store.readBlob(sha(code))?.mime).toBe("text/javascript");
       expect(store.hasBlob(sha(new Uint8Array([5])))).toBe(false);
+      expect(store.readAsset("wrong")).toBeUndefined();
+      expect(store.hasBlob(sha(new Uint8Array([7])))).toBe(false);
     } finally {
       store.close();
     }
@@ -153,6 +168,38 @@ describe("SiteFileWriter", () => {
     writer.close();
 
     expect(readFileSync(path).equals(before)).toBe(true);
+  });
+
+  it("leaves an unedited file as it was, however much of it is free (#661, #664)", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    store.putBlob(new Uint8Array(8 * 1024 * 1024).fill(3), "image/png");
+    // Collected at an earlier close, which left the space free.
+    expect(store.collectGarbage().blobs).toBe(1);
+    store.close();
+    const before = readFileSync(path);
+    const modified = statSync(path).mtimeMs;
+
+    const writer = SiteFileWriter.open(path);
+    expect(writer.cleanUp()).toEqual({ blobs: 0, bytes: 0, assets: 0, vacuumed: false });
+    writer.close();
+
+    expect(readFileSync(path).equals(before)).toBe(true);
+    expect(statSync(path).mtimeMs).toBe(modified);
+  });
+
+  it("leaves a file too large to rewrite quickly for Version History's Clean up (#664)", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    const kept = store.putBlob(new Uint8Array(17 * 1024 * 1024).fill(1), "image/png");
+    store.commit([{ type: "put", id: "page:home", kind: "page", content: { image: kept } }]);
+    store.putBlob(new Uint8Array(24 * 1024 * 1024).fill(2), "image/png");
+    store.close();
+
+    const writer = SiteFileWriter.open(path);
+    // Garbage goes, but a VACUUM of what's kept could outlast the time a clean-up is given.
+    expect(writer.cleanUp()).toMatchObject({ blobs: 1, vacuumed: false });
+    writer.close();
   });
 
   it("opens only a Webforge project", () => {

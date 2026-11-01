@@ -1,4 +1,4 @@
-import type { BlobAsset } from "@webforge/storage";
+import type { BlobAsset, NewBlob } from "@webforge/storage";
 import {
   type CleanUpOutcome,
   type ImportSource,
@@ -56,12 +56,13 @@ export type StorageWriter = {
   discard(prepared: PreparedImport): void;
   /**
    * Stores files' bytes in `sitePath`, all or none, hashing them on the thread: a pasted Media
-   * item's (with its asset, when `asset` says so), or files the site's code downloaded. While its
+   * item's (with its asset, when `asset` says so), or files the site's code downloaded. A file with
+   * a `hash` fails the lot, storing nothing, unless its bytes have it. While its
    * caller holds the store gate alone. Never throws.
    */
   putBlobs(
     sitePath: string,
-    blobs: readonly { readonly data: Uint8Array; readonly mime: string }[],
+    blobs: readonly NewBlob[],
     asset?: BlobAsset,
   ): Promise<PutBlobsOutcome>;
   /**
@@ -193,7 +194,11 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
         id,
         type: "put-blobs",
         sitePath,
-        blobs: blobs.map(({ data, mime }) => ({ data, mime })),
+        blobs: blobs.map(({ data, mime, hash }) => ({
+          data,
+          mime,
+          ...(hash === undefined ? {} : { hash }),
+        })),
         ...(asset === undefined ? {} : { asset }),
       }));
       return outcome.status === "put" && outcome.hashes.length === blobs.length

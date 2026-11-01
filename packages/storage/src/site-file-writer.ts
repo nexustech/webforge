@@ -14,8 +14,26 @@ import { APPLICATION_ID } from "./schema.js";
 const VACUUM_MIN_FREE_BYTES = 4 * 1024 * 1024;
 const VACUUM_MIN_FREE_SHARE = 0.25;
 
+/**
+ * The most a file may keep for {@link SiteFileWriter.cleanUp} to VACUUM it. A VACUUM can't be
+ * stopped once it has started, not even by stopping the thread, and it takes about 45 ms a MB kept
+ * on a fast disk (measured for #664), so this keeps it well inside the 5 s the main process gives
+ * a clean-up. A larger file is left for Version History's Clean up (4.6), which says it's working.
+ */
+const VACUUM_MAX_KEPT_BYTES = 16 * 1024 * 1024;
+
 /** What {@link SiteFileWriter.cleanUp} did: the blobs and assets it removed, and whether the file shrank. */
 export type CleanUpReport = GarbageReport & { readonly vacuumed: boolean };
+
+/**
+ * A file's bytes for {@link SiteFileWriter.putBlobs}, with the hash they must have when the caller
+ * knows it: bytes that hash otherwise are refused, and nothing is stored.
+ */
+export type NewBlob = {
+  readonly data: Uint8Array;
+  readonly mime: string;
+  readonly hash?: string | undefined;
+};
 
 /** A Media item's asset for the first file {@link SiteFileWriter.putBlobs} stores. */
 export type BlobAsset = Omit<NewAsset, "data" | "mime">;
@@ -69,16 +87,18 @@ export class SiteFileWriter {
   /**
    * Stores files' bytes, all or none, and gives their hashes in order: a pasted Media item's,
    * with its asset when `asset` says it's the site's first copy of it, or files the site's code
-   * downloaded (3.9). Bytes the file has already are kept as they are.
+   * downloaded (3.9). Bytes the file has already are kept as they are. Throws, storing nothing,
+   * when a file's bytes don't have the hash it expects: an asset would name bytes that aren't its
+   * item's.
    */
-  putBlobs(
-    blobs: readonly { readonly data: Uint8Array; readonly mime: string }[],
-    asset?: BlobAsset,
-  ): string[] {
+  putBlobs(blobs: readonly NewBlob[], asset?: BlobAsset): string[] {
     return stamped(this.#db, () => {
       const insert = this.#db.prepare(INSERT_BLOB);
-      const hashes = blobs.map(({ data, mime }) => {
+      const hashes = blobs.map(({ data, mime, hash: expected }) => {
         const hash = sha256(data);
+        if (expected !== undefined && hash !== expected) {
+          throw new Error("A file's bytes are not the ones expected");
+        }
         insert.run(hash, mime, data.byteLength, data);
         return hash;
       });
@@ -93,16 +113,22 @@ export class SiteFileWriter {
 
   /**
    * Cleans the file up as its site closes: garbage collection (see `ProjectStore.collectGarbage`),
-   * then a VACUUM once enough of the file is free, which gives the space back to the disk. Run it
-   * only once no undo step can bring a reference back, with the file to itself: the VACUUM
-   * rewrites the whole file. With nothing to remove and too little free, it writes nothing.
+   * then, when that removed something, a VACUUM once enough of the file is free and the file is
+   * small enough to rewrite quickly ({@link VACUUM_MAX_KEPT_BYTES}), which gives the space back to
+   * the disk. Run it only once no undo step can bring a reference back, with the file to itself:
+   * the VACUUM rewrites the whole file. With nothing to remove it writes nothing, however much is
+   * free, so a site opened and closed unedited stays as it was (#661).
    */
   cleanUp(): CleanUpReport {
     const removed = stamped(this.#db, () => collectGarbage(this.#db));
     const pageSize = Number(this.#db.pragma("page_size", { simple: true }));
     const free = Number(this.#db.pragma("freelist_count", { simple: true })) * pageSize;
     const size = Number(this.#db.pragma("page_count", { simple: true })) * pageSize;
-    const vacuumed = free >= VACUUM_MIN_FREE_BYTES && free >= size * VACUUM_MIN_FREE_SHARE;
+    const vacuumed =
+      removed.blobs + removed.assets > 0 &&
+      free >= VACUUM_MIN_FREE_BYTES &&
+      free >= size * VACUUM_MIN_FREE_SHARE &&
+      size - free <= VACUUM_MAX_KEPT_BYTES;
     // VACUUM keeps the header's fingerprint and application id, and writes the rows as they are.
     if (vacuumed) this.#db.exec("VACUUM");
     return { ...removed, vacuumed };

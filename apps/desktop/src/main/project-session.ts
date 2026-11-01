@@ -136,8 +136,9 @@ const CLOSE_WAIT_MS = 5_000;
 
 /**
  * How long the storage writer may clean a closing site's file up before it is stopped, so a writer
- * that never finishes can't hold up opening the next site (#664). SQLite rolls back what it had
- * done the next time the file opens.
+ * that doesn't answer can't hold up opening the next site (#664). SQLite rolls back what it had
+ * done the next time the file opens. Stopping can't cut a statement short, so `SiteFileWriter`
+ * VACUUMs only a file small enough to finish well inside this.
  */
 export const CLEAN_UP_WAIT_MS = 5_000;
 
@@ -504,7 +505,7 @@ export class ProjectSession {
       const cleaned = await Promise.race([this.#writer.cleanUp(path), late]);
       if (cleaned === "late") {
         await this.#writer.stop();
-        log.error("Webforge stopped cleaning up a site file that took too long");
+        log.error("Webforge stopped the storage writer: cleaning up a site file took too long");
       } else if (cleaned.status === "failed") {
         log.error("Webforge could not clean up a site file as it closed");
       }

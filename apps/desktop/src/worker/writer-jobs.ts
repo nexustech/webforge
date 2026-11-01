@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { type FileHandle, open, stat } from "node:fs/promises";
 import { MAX_IMAGE_PIXELS } from "@webforge/model";
-import { type BlobAsset, SiteFileWriter } from "@webforge/storage";
+import { type BlobAsset, type NewBlob, SiteFileWriter } from "@webforge/storage";
 import { isTextName } from "../shared/document-files.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import { sniffMedia } from "../shared/media-files.js";
@@ -157,11 +157,7 @@ export function createWriterJobs(openWriter: (path: string) => FileWriter = Site
     discard(id: number): void {
       prepared.delete(id);
     },
-    putBlobs(
-      sitePath: string,
-      blobs: readonly { readonly data: Uint8Array; readonly mime: string }[],
-      asset?: BlobAsset,
-    ): PutBlobsOutcome {
+    putBlobs(sitePath: string, blobs: readonly NewBlob[], asset?: BlobAsset): PutBlobsOutcome {
       const hashes = withWriter(sitePath, (writer) => writer.putBlobs(blobs, asset));
       return hashes === undefined ? { status: "failed" } : { status: "put", hashes };
     },

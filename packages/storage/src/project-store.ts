@@ -84,6 +84,14 @@ export type VersionReason = (typeof VERSION_REASONS)[number];
 const kindOf = (reason: VersionReason): VersionKind => (reason === "manual" ? "manual" : "auto");
 
 /**
+ * The reason a version gets when only who saved it is known: a format 1 version's, a version 1
+ * ZIP's, or one a newer Webforge saved for a reason this one doesn't know. `V1_REASON` in the
+ * schema is its SQL twin.
+ */
+export const reasonOfKind = (kind: VersionKind): VersionReason =>
+  kind === "manual" ? "manual" : "daily";
+
+/**
  * Where a version was published, and what the live check found then (ADR 0018 §3): the last time,
  * when it has been republished.
  */
@@ -245,7 +253,7 @@ function toVersionInfo(row: unknown): VersionInfo {
     id: version.id,
     name: version.name,
     kind: version.kind,
-    reason: reason.success ? reason.data : version.kind === "manual" ? "manual" : "daily",
+    reason: reason.success ? reason.data : reasonOfKind(version.kind),
     createdAt: version.created_at,
     siteFormat: version.site_format,
     thumbnailHash: version.thumbnail_hash ?? undefined,
@@ -867,16 +875,20 @@ export class ProjectStore {
 
   /**
    * Deletes all but the newest `keep` of the versions Webforge saved (P3), and gives how many it
-   * deleted. The person's own versions are never deleted.
+   * deleted. The person's own versions are never deleted, nor the newest `on-publish` one: the
+   * version the live site came from, which a restore or a republish may need however many daily
+   * versions followed it.
    */
   pruneAutoVersions(keep: number): number {
     const kept = z.int().nonnegative().parse(keep);
     return this.#write(
       () =>
         this.#prepare(
-          `DELETE FROM versions WHERE kind = 'auto' AND rowid NOT IN (
+          `DELETE FROM versions WHERE kind = 'auto'
+           AND rowid NOT IN (
              SELECT rowid FROM versions WHERE kind = 'auto' ORDER BY rowid DESC LIMIT ?
-           )`,
+           )
+           AND rowid IS NOT (SELECT max(rowid) FROM versions WHERE reason = 'on-publish')`,
         ).run(kept).changes,
     );
   }

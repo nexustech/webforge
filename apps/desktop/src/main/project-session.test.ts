@@ -821,13 +821,28 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
     expect((await scoped(session).readMedia(photo.hash))?.mime).toBe("image/jpeg");
   });
 
-  it("refuses kept bytes that aren't the pasted item's, which would name a file the site lacks", async () => {
-    await session.create(join(dir, "Changed bytes.wforge"));
+  it("refuses kept bytes that aren't the pasted item's, storing nothing, so a paste after can store it (#664)", async () => {
+    const path = join(dir, "Changed bytes.wforge");
+    await session.create(path);
+    const wrong = new Uint8Array([1, 2, 3]);
 
-    expect(await scoped(session).storeCopiedMedia(photo, () => new Uint8Array([1, 2, 3]))).toEqual({
+    expect(await scoped(session).storeCopiedMedia(photo, () => wrong)).toEqual({
       status: "failed",
       reason: "unknown",
     });
+    const refused = ProjectStore.open(path, { readOnly: true });
+    try {
+      // No asset naming the wrong bytes, which the next paste would take as the item's.
+      expect(refused.readAsset(photo.id)).toBeUndefined();
+      expect(refused.hasBlob(createHash("sha256").update(wrong).digest("hex"))).toBe(false);
+    } finally {
+      refused.close();
+    }
+    expect(await scoped(session).storeCopiedMedia(photo, () => bytes)).toEqual({
+      status: "stored",
+      hash: photo.hash,
+    });
+    expect((await scoped(session).readMedia(photo.hash))?.mime).toBe("image/jpeg");
   });
 
   it("reports missing bytes, no site and a read-only site", async () => {

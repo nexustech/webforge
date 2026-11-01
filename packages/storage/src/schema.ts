@@ -95,7 +95,10 @@ export const V1_SITE_FORMAT = `COALESCE((
   WHERE json_extract(entry.value, '$.id') = 'site'
 ), 1)`;
 
-/** Why a format 1 version was saved: format 1 knew only by whom. */
+/**
+ * Why a format 1 version was saved: format 1 knew only by whom. The SQL twin of `reasonOfKind` in
+ * `project-store.ts`: change both together.
+ */
 export const V1_REASON = "CASE kind WHEN 'manual' THEN 'manual' ELSE 'daily' END";
 
 /**

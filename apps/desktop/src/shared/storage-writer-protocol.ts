@@ -61,14 +61,21 @@ export const storageWriterMessageSchema = z.discriminatedUnion("type", [
   z.strictObject({ id: z.number().int(), type: z.literal("discard"), prepared: z.number().int() }),
   /**
    * Store these files' bytes in `sitePath`, all or none: a pasted Media item's, as its asset when
-   * `asset` says so, or the files the site's code downloaded (3.9).
+   * `asset` says so, or the files the site's code downloaded (3.9). A file with a `hash` is
+   * refused, with nothing stored, unless its bytes have it.
    */
   z.strictObject({
     id: z.number().int(),
     type: z.literal("put-blobs"),
     sitePath: z.string().min(1),
     blobs: z
-      .array(z.strictObject({ data: bytesSchema, mime: z.string().min(1).max(255) }))
+      .array(
+        z.strictObject({
+          data: bytesSchema,
+          mime: z.string().min(1).max(255),
+          hash: hashSchema.optional(),
+        }),
+      )
       .min(1)
       .max(1000),
     asset: blobAssetSchema.optional(),

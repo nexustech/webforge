@@ -16,7 +16,12 @@ import {
 import { unzipSync, Zip, ZipDeflate, ZipPassThrough } from "fflate/browser";
 import { z } from "zod";
 import { sha256 } from "./connection.js";
-import { type NewVersion, type ProjectStore, VERSION_REASONS } from "./project-store.js";
+import {
+  type NewVersion,
+  type ProjectStore,
+  reasonOfKind,
+  VERSION_REASONS,
+} from "./project-store.js";
 import {
   fillFromSitePackage,
   packageBlobs,
@@ -410,7 +415,7 @@ export function readSiteZip(data: Uint8Array): SiteZip {
 
   const site = siteAt(SITE_ENTRY, "The site");
   const versions = manifest.versions.map(({ path, kind, reason, ...version }) => ({
-    version: { ...version, reason: reason ?? (kind === "manual" ? "manual" : "daily") },
+    version: { ...version, reason: reason ?? reasonOfKind(kind) },
     site: siteAt(path, `Version "${version.name}"`),
   }));
   return {

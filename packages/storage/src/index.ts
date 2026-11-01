@@ -27,7 +27,12 @@ export {
   versionPublishSchema,
 } from "./project-store.js";
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
-export { type BlobAsset, type CleanUpReport, SiteFileWriter } from "./site-file-writer.js";
+export {
+  type BlobAsset,
+  type CleanUpReport,
+  type NewBlob,
+  SiteFileWriter,
+} from "./site-file-writer.js";
 export {
   fillFromSitePackage,
   type SitePackage,

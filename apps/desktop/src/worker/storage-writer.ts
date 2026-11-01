@@ -14,9 +14,19 @@ if (port === null) {
 }
 const jobs = createWriterJobs();
 
+/** The id of a message that isn't a job this thread knows, when it has one. */
+function idOf(message: unknown): number | undefined {
+  if (typeof message !== "object" || message === null || !("id" in message)) return undefined;
+  return typeof message.id === "number" ? message.id : undefined;
+}
+
 port.on("message", (message: unknown) => {
   const parsed = storageWriterMessageSchema.safeParse(message);
   if (!parsed.success) {
+    // Answer what can be answered: a job the main process waits for would otherwise hold the
+    // store gate for ever (#664), as a put-blobs past the protocol's limits would.
+    const id = idOf(message);
+    if (id !== undefined) port.postMessage({ id, outcome: { status: "failed" } });
     return;
   }
   const job = parsed.data;
