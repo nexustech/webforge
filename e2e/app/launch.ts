@@ -47,7 +47,13 @@ function electronCommand(): { executablePath: string; env: Record<string, string
   // (E2E_BUNDLE_VARIABLE in main's bundle-download.ts, 3.9).
   return {
     executablePath,
-    env: { ...env, WEBFORGE_E2E_AI: "1", WEBFORGE_E2E_CLOSED: "1", WEBFORGE_E2E_BUNDLE: "1" },
+    env: {
+      ...env,
+      WEBFORGE_E2E_AI: "1",
+      WEBFORGE_E2E_CLOSED: "1",
+      WEBFORGE_E2E_BUNDLE: "1",
+      WEBFORGE_E2E_FONTS: "1",
+    },
   };
 }
 

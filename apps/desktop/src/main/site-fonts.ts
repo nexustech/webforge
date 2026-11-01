@@ -4,7 +4,13 @@ import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/them
 import type { App, Net } from "electron";
 import type { ExportJob } from "../shared/export-worker-protocol.js";
 import type { AppFeature } from "./app-feature.js";
-import { createFontLibrary, type FontLibrary, registerFontHandlers } from "./font-library.js";
+import { electronBundleFetch } from "./bundle-net.js";
+import {
+  createFontLibrary,
+  type FontFetch,
+  type FontLibrary,
+  registerFontHandlers,
+} from "./font-library.js";
 import { catalogueFile, createFontReader, createFontResponder, type FontReader } from "./fonts.js";
 
 /** The font files a build of the site gets, read and checked here, and the downloaded families. */
@@ -89,10 +95,31 @@ export function createSiteFonts({ bundled, library }: SiteFontSources) {
 /** The site's fonts as the app has them. */
 export type SiteFonts = ReturnType<typeof createSiteFonts>;
 
+/** The environment variable E2E tests launch Webforge with, to stand in for Fontsource (2.2). */
+const E2E_FONTS_VARIABLE = "WEBFORGE_E2E_FONTS";
+
+/**
+ * Fetches for font downloads through Electron's network, each redirect answered rather than
+ * followed (S11). In an unpackaged app launched with `WEBFORGE_E2E_FONTS=1`, as the E2E tests
+ * launch it, through the stand-in they put on main's globals (`webforgeFontFetch`), looked up at
+ * call time, so they can stand in for Fontsource, or cut it off. Never in the installed app, nor
+ * in `pnpm dev`.
+ */
+export function fontFetchFor(
+  net: Pick<Net, "request">,
+  packaged: boolean,
+  env: NodeJS.ProcessEnv = process.env,
+): FontFetch {
+  const network = electronBundleFetch(net);
+  if (packaged || env[E2E_FONTS_VARIABLE] !== "1") return network;
+  return (url, init) =>
+    ((globalThis as { webforgeFontFetch?: FontFetch }).webforgeFontFetch ?? network)(url, init);
+}
+
 /** {@link createSiteFonts} from the app's folders, and Electron's `net` for downloads. */
 export function siteFontsOf(
   app: Pick<App, "isPackaged" | "getAppPath" | "getPath">,
-  net: Pick<Net, "fetch">,
+  net: Pick<Net, "request">,
 ) {
   return createSiteFonts({
     // In the packaged app's resources, or where the build copied them while developing.
@@ -104,8 +131,7 @@ export function siteFontsOf(
     library: () =>
       createFontLibrary({
         dir: join(app.getPath("userData"), "fonts"),
-        // Looked up at call time, so the E2E tests can stand in for Fontsource, or cut it off.
-        fetch: (url, init) => net.fetch(url, init),
+        fetch: fontFetchFor(net, app.isPackaged),
       }),
   });
 }
