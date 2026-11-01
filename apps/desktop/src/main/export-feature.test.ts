@@ -114,9 +114,13 @@ describe("createExportFeature (A12)", () => {
         choices: { format: "folder", minify: false, developerFiles: false, askWebAddress: true },
         output: { minify: false, developerFiles: false },
       },
+      "44444444-4444-4444-8444-444444444444",
     );
 
     await vi.waitFor(() => expect(posted).toHaveLength(1));
-    expect(posted[0]).toMatchObject({ type: "export", snapshot: { code: trusted.code } });
+    expect(posted[0]).toMatchObject({
+      message: "job",
+      job: { type: "export", snapshot: { code: trusted.code } },
+    });
   });
 });

@@ -3,31 +3,8 @@ import { sampleSite } from "@webforge/test-utils";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
+import { fakeWorker } from "./fake-worker.test-helper.js";
 import type { WorkerProcess } from "./worker-process.js";
-
-type Listener = (value: unknown) => void;
-
-/** A worker the test answers for; it records the jobs it was sent. */
-function fakeWorker() {
-  const listeners = { message: [] as Listener[], exit: [] as Listener[] };
-  const jobs: { id: number; candidates: string[] }[] = [];
-  const worker: WorkerProcess = {
-    postMessage: (job) => jobs.push(job as { id: number; candidates: string[] }),
-    on: ((event: "message" | "exit", listener: Listener) =>
-      listeners[event].push(listener)) as WorkerProcess["on"],
-    kill: vi.fn(() => true),
-  };
-  return {
-    worker,
-    jobs,
-    answer: (message: unknown) => {
-      for (const listener of listeners.message) listener(message);
-    },
-    exit: () => {
-      for (const listener of listeners.exit) listener(1);
-    },
-  };
-}
 
 const request = (candidates: string[]) => ({
   theme: { ...DEFAULT_THEME, preset: "light" },
@@ -84,12 +61,22 @@ describe("createCanvasStyles' compileCss", () => {
     expect(await result).toEqual({ status: "failed" });
   });
 
-  it("ignores unexpected messages and fails the request when it times out", async () => {
+  it("fails the request and stops the worker on an unexpected message (A14)", async () => {
     const fake = fakeWorker();
     const compile = createCanvasStyles(() => fake.worker, 1_000).compileCss;
 
     const result = compile(request([]));
-    fake.answer({ type: "css", id: "not a number", css: 1 });
+    fake.send({ message: "outcome", id: "not a number", outcome: { type: "css", css: 1 } });
+
+    expect(await result).toEqual({ status: "failed" });
+    expect(fake.worker.kill).toHaveBeenCalled();
+  });
+
+  it("fails the request when it times out", async () => {
+    const fake = fakeWorker();
+    const compile = createCanvasStyles(() => fake.worker, 1_000).compileCss;
+
+    const result = compile(request([]));
     vi.advanceTimersByTime(1_000);
 
     expect(await result).toEqual({ status: "failed" });

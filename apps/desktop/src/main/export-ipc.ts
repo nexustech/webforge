@@ -46,8 +46,8 @@ export type RunExport = (
 export type ExportDeps = {
   readonly dialogs: ExportDialogs;
   readonly runExport: RunExport;
-  /** Tells the window how far the export has come (3.1). */
-  readonly sendProgress: (progress: ExportProgress) => void;
+  /** Tells the window how far export `operationId` has come (3.1). */
+  readonly sendProgress: (operationId: string, progress: ExportProgress) => void;
   /**
    * The open site for a call from a renderer loaded for opening `sessionId` (R6): its Media and its
    * export choices (3.3), read for the dialog and kept when an export goes ahead.
@@ -127,48 +127,67 @@ export function registerExportHandlers(
   isTrustedSender: (senderUrl: string) => boolean,
   deps: ExportDeps,
 ): void {
-  // The exports under way (or waiting for the one before): a cancel stops them all.
-  const underWay = new Set<AbortController>();
+  // The exports under way (or waiting for the one before), by operation: a cancel stops its own.
+  const underWay = new Map<string, AbortController>();
   // The last export written, and the opening of the site it was of, for Preview from disk.
   let last: { readonly target: ExportTarget; readonly sessionId: string } | undefined;
-  registerIpcHandler(ipc, "exportSite", isTrustedSender, async (sessionId, request) => {
-    // The site the export is of, taken once: it reads that site's Media only (#663).
-    const site = deps.site(sessionId);
-    if (site.staleReason() !== undefined) return { status: "canceled" };
-    const { choices } = request;
-    const destination =
-      choices.format === "zip"
-        ? await deps.dialogs.chooseExportZip(request.snapshot.name)
-        : await deps.dialogs.chooseExportFolder();
-    // Cancelled, or a hand-off replaced the site while the dialog was open: nothing is written,
-    // and its choices aren't kept with the next site.
-    if (destination === undefined || site.staleReason() !== undefined) {
-      return { status: "canceled" };
-    }
-    // Remembered once the person has gone ahead; a site that can't save them still exports.
-    await site.setExportChoices(choices).catch(() => undefined);
-    const target: ExportTarget = { destination, format: choices.format, output: request.output };
-    const controller = new AbortController();
-    underWay.add(controller);
-    try {
-      const outcome = await deps.runExport(snapshotOf(request), target, {
-        // A site replaced while the export runs cancels it, as Cancel would: nothing changes on
-        // disk, rather than a site written without its images. Checked again once a read comes
-        // back empty: a hand-off can take the gate between the check and the read.
-        readMedia: async (hash) => {
-          const blob = site.staleReason() === undefined ? await site.readMedia(hash) : undefined;
-          if (blob === undefined && site.staleReason() !== undefined) controller.abort();
-          return blob;
-        },
-        signal: controller.signal,
-        onProgress: deps.sendProgress,
-      });
-      if (outcome.type === "exported") last = { target, sessionId };
-      return toExportResult(outcome, target);
-    } finally {
-      underWay.delete(controller);
-    }
-  });
+  registerIpcHandler(
+    ipc,
+    "exportSite",
+    isTrustedSender,
+    async (sessionId, request, operationId) => {
+      // The site the export is of, taken once: it reads that site's Media only (#663).
+      const site = deps.site(sessionId);
+      // One name, one export.
+      if (site.staleReason() !== undefined || underWay.has(operationId)) {
+        return { status: "canceled" };
+      }
+      // Under way from the start, the id with it: a Cancel while the dialog is open, or while the
+      // choices wait at the store gate, stops it before anything is written.
+      const controller = new AbortController();
+      underWay.set(operationId, controller);
+      try {
+        const { choices } = request;
+        const destination =
+          choices.format === "zip"
+            ? await deps.dialogs.chooseExportZip(request.snapshot.name)
+            : await deps.dialogs.chooseExportFolder();
+        // Cancelled, or a hand-off replaced the site while the dialog was open: nothing is
+        // written, and its choices aren't kept with the next site.
+        if (
+          destination === undefined ||
+          controller.signal.aborted ||
+          site.staleReason() !== undefined
+        ) {
+          return { status: "canceled" };
+        }
+        // Remembered once the person has gone ahead; a site that can't save them still exports.
+        await site.setExportChoices(choices).catch(() => undefined);
+        if (controller.signal.aborted) return { status: "canceled" };
+        const target: ExportTarget = {
+          destination,
+          format: choices.format,
+          output: request.output,
+        };
+        const outcome = await deps.runExport(snapshotOf(request), target, {
+          // A site replaced while the export runs cancels it, as Cancel would: nothing changes on
+          // disk, rather than a site written without its images. Checked again once a read comes
+          // back empty: a hand-off can take the gate between the check and the read.
+          readMedia: async (hash) => {
+            const blob = site.staleReason() === undefined ? await site.readMedia(hash) : undefined;
+            if (blob === undefined && site.staleReason() !== undefined) controller.abort();
+            return blob;
+          },
+          signal: controller.signal,
+          onProgress: (progress) => deps.sendProgress(operationId, progress),
+        });
+        if (outcome.type === "exported") last = { target, sessionId };
+        return toExportResult(outcome, target);
+      } finally {
+        underWay.delete(operationId);
+      }
+    },
+  );
   registerIpcHandler(ipc, "exportChoices", isTrustedSender, (sessionId) =>
     deps.site(sessionId).exportChoices(),
   );
@@ -184,8 +203,8 @@ export function registerExportHandlers(
       ? "none"
       : deps.open(last.target),
   );
-  registerIpcHandler(ipc, "cancelExport", isTrustedSender, () => {
-    for (const controller of underWay) controller.abort();
+  registerIpcHandler(ipc, "cancelExport", isTrustedSender, (operationId) => {
+    underWay.get(operationId)?.abort();
     return null;
   });
 }

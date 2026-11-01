@@ -135,7 +135,11 @@ An operation on the open site's file is a function of its own module, written on
 
 A call that reads or changes the open site names the opening of it the page was loaded for, as its first argument (`sessionIdSchema`, the renderer's `siteSession()`; R6, #663). Main reaches the site only through `projectSession.forSession(sessionId)`, so a call that waited for a dialog while a hand-off replaced the site changes nothing in the next one. `shared/ipc-sessions.test.ts` lists every channel, as the site's or another's with the reason, and fails on a new channel until it is listed.
 
+A long-running call (an export; a publish, 4.5) is an operation (A14): the renderer names each one as it starts it, with a new UUID (`operationIdSchema` in `shared/ipc/site.ts`), its progress events come back under that name, and its cancel names it, so cancelling one stops no other. Main keeps the operations under way by that id, and refuses a second one under an id already running.
+
 Never log or store site content, credentials or personal data on the way; secrets stay in the OS keychain.
+
+A job for a utility process (a build, a thumbnail, the canvas's CSS) is a schema in `workerJobSchema` with its outcome's (`shared/export-worker-protocol.ts`), a handler in `worker/export-worker.ts`'s dispatch table, which TypeScript makes list every kind, and a call from main through `createWorkerChannel(start).run(job, { outcome, timeoutMs, signal?, onProgress?, readMedia? })` (`main/worker-channel.ts`, A14). The channel and the worker's dispatch carry each job's id, its cancel, its progress and its reads of the site's bytes, and fail it on a timeout, an exit or anything the worker sends that isn't asked for. `worker/` imports nothing of `main/`; what both need is in `shared/`.
 
 ## Strings
 
