@@ -1,14 +1,15 @@
 import type { PageDoc } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { ICON_NAMES, MAX_TEXT_LENGTH, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { createEditPanelController } from "./edit-panel-controller.js";
+import { specOf } from "./edit-panel-fields.js";
 import { currentPage } from "./editor-session.js";
 
 // The Edit panel's changes without React (#667): the controller makes each one history step.
 
-/** The starter page, then Columns and an FAQ with two questions. */
+/** The starter page, then Columns, an FAQ with a question, and an Icon. */
 function setup(nodeId = "heading-1") {
   const site = starterSite();
   const home = site.pages[site.homePageId];
@@ -30,6 +31,10 @@ function setup(nodeId = "heading-1") {
           },
         ],
       },
+    },
+    {
+      type: "Icon",
+      props: { id: "icon", ...structuredClone(siteLibrary.components.Icon?.defaults ?? {}) },
     },
   );
   const session = sessionWith(site);
@@ -165,5 +170,37 @@ describe("createEditPanelController (#667)", () => {
       "Changed Columns space between columns",
       "Reset Columns space between columns",
     ]);
+  });
+
+  it("takes text up to the longest a field takes, where the panel's input stops (#705 review)", () => {
+    const { controller, labels, props } = setup("faq");
+    const longest = "x".repeat(MAX_TEXT_LENGTH);
+    controller.change("title", `${longest}x`);
+    expect(labels()).toEqual([]);
+    controller.change("title", longest);
+    expect(props("faq")?.title).toBe(longest);
+    expect(labels()).toHaveLength(1);
+
+    const title = siteLibrary.components.Faq?.fields.title;
+    expect(title === undefined ? undefined : specOf(title)).toMatchObject({
+      kind: "text",
+      maxLength: MAX_TEXT_LENGTH,
+    });
+  });
+
+  it("sets only one of Lucide's icons, or none, as the picker offers (#705 review)", () => {
+    const { controller, labels, props } = setup("icon");
+    const before = props("icon")?.icon;
+    const other = ICON_NAMES.find((name) => name !== before);
+    controller.change("icon", "not-an-icon");
+    controller.paste({ icon: "not-an-icon" }, "Icon");
+    expect(props("icon")?.icon).toBe(before);
+    expect(labels()).toEqual([]);
+
+    controller.change("icon", other);
+    expect(props("icon")?.icon).toBe(other);
+    controller.change("icon", undefined);
+    expect(props("icon")).not.toHaveProperty("icon", other);
+    expect(labels()).toHaveLength(2);
   });
 });

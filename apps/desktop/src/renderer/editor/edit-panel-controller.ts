@@ -1,7 +1,7 @@
 import type { ListChange } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { Breakpoint, NodeAdvanced, SiteDoc } from "@webforge/model";
-import { acceptsFieldValue, type FieldDef, withLook } from "@webforge/site-components";
+import { acceptsFieldValue, type FieldDef, isIconName, withLook } from "@webforge/site-components";
 import { advancedFieldLabel, isAdvancedField, withAdvancedChange } from "./advanced-fields.js";
 import { bindingLabel, boundFieldOf, isBindingField, withBinding } from "./binding-fields.js";
 import type { EditorSession } from "./editor-session.js";
@@ -36,6 +36,14 @@ type Run = {
   /** Puts back what the run changed (a drag); undefined for runs that are kept as they are. */
   readonly cancel?: () => void;
 };
+
+/**
+ * Whether the panel may set `value` in `field`: what the field takes (#667), and for an icon one of
+ * Lucide's, or none to take it away, as its picker offers.
+ */
+const panelTakes = (field: FieldDef, value: unknown) =>
+  acceptsFieldValue(field, value, { responsive: false }) &&
+  (field.kind !== "icon" || value === undefined || isIconName(value));
 
 /** What the Edit panel does to the document, which {@link createEditPanelController} makes. */
 export type EditPanelController = {
@@ -239,7 +247,7 @@ export function createEditPanelController(
       changeLink(where, name, field, value);
       return;
     }
-    if (!acceptsFieldValue(field, value, { responsive: false })) {
+    if (!panelTakes(field, value)) {
       return;
     }
     const next = (stored: unknown) =>
@@ -404,7 +412,7 @@ export function createEditPanelController(
         field !== undefined &&
         field.kind !== "link" &&
         editableList(field, library) === undefined &&
-        acceptsFieldValue(field, value, { responsive: false })
+        panelTakes(field, value)
       );
     });
     const [first] = known;

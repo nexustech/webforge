@@ -711,7 +711,7 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
         (text) =>
           insertBefore(
             text,
-            '      case "icon":\n        return z.string().max(20_000);',
+            '      case "icon":\n        return z.string().max(MAX_TEXT_LENGTH);',
             `      case "${kind}":\n`,
           ),
       ],

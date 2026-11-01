@@ -5,6 +5,9 @@
 import { boxValueSchema, colorRefSchema, imageValueSchema, linkValueSchema } from "@webforge/model";
 import { z } from "zod";
 
+/** The longest text a text, rich text or icon field takes: the Edit panel's input stops there too. */
+export const MAX_TEXT_LENGTH = 20_000;
+
 /** A choice of a select, a slider's step: its value is what the field stores. */
 type OptionValue = { readonly value: string };
 
@@ -59,7 +62,7 @@ export function fieldValueSchema(field: FieldValueShape): z.ZodType {
       case "text":
       case "richtext":
       case "icon":
-        return z.string().max(20_000);
+        return z.string().max(MAX_TEXT_LENGTH);
       case "select":
       case "spacing":
         return optionValues(field.options);

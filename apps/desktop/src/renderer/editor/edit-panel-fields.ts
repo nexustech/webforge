@@ -20,6 +20,7 @@ import {
   type ComponentLibrary,
   type FieldDef,
   fieldsHiddenBy,
+  MAX_TEXT_LENGTH,
   textStylesOf,
   withLook,
 } from "@webforge/site-components";
@@ -49,8 +50,9 @@ import { anchorsTakenInSection } from "./shared-sections.js";
 export function specOf(field: FieldDef): FieldSpec | undefined {
   const { label } = field;
   switch (field.kind) {
+    // The input stops at the longest text the field takes, as a change past it isn't recorded.
     case "text":
-      return { kind: "text", label };
+      return { kind: "text", label, maxLength: MAX_TEXT_LENGTH };
     case "toggle":
       return { kind: "toggle", label };
     case "select":
