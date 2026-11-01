@@ -221,6 +221,39 @@ describe("the versions IPC calls (4.6)", () => {
     }
   });
 
+  it("saves main's own version before an app's changes, the last changes saved first (4.9, S20)", async () => {
+    const flush = vi.fn(async () => undefined);
+    const handlers = new Map<string, Handler>();
+    const versions = registerVersionsHandlers(
+      { handle: (channel: string, handler: Handler) => handlers.set(channel, handler) } as never,
+      () => true,
+      {
+        session,
+        dialogs: { chooseNewProjectPath: async () => undefined },
+        captureCanvas: async () => JPEG,
+        versionsKept: async () => 5,
+        flush,
+      },
+    );
+    const sessionId = session.current()?.sessionId ?? "";
+
+    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toBe("saved");
+    expect(await versions.saveVersionBefore("9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d", "x")).toBe(
+      "failed",
+    );
+
+    expect(flush).toHaveBeenCalledTimes(2);
+    expect((await session.forSession(sessionId).listVersions()).status).toBe("ok");
+    const listed = await session.forSession(sessionId).listVersions();
+    expect(listed.status === "ok" ? listed.versions : []).toMatchObject([
+      {
+        name: "Before Claude's changes",
+        reason: "before-site-wide",
+        thumbnailHash: expect.any(String),
+      },
+    ]);
+  });
+
   it("opens nothing when the version has gone, or the person cancels", async () => {
     const { invoke, sessionId } = setUp({
       dialogs: { chooseNewProjectPath: async () => undefined },

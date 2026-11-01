@@ -515,6 +515,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
       versionsKept: async () => versionsKept(),
       beforeSwitch: () => siteSwitch.leaveSite(),
+      // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
+      flush: requestFlush,
     });
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
