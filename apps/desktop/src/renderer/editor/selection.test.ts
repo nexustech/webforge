@@ -1,6 +1,6 @@
 import type { PageId } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { createSelectionStore, selectElements, selectedIds, toggleSelected } from "./selection.js";
+import { createSelectionStore, selectedIds, withSelected, withToggled } from "./selection.js";
 
 const HOME = "home" as PageId;
 const store = () => createSelectionStore({ pageId: HOME, nodeId: null, viewport: "desktop" });
@@ -9,11 +9,11 @@ describe("the selection (1.31, UX-3)", () => {
   it("selects several elements at once, the first the one shown, each once", () => {
     const ui = store();
 
-    selectElements(ui, ["b", "a", "b", "c"]);
+    ui.setState(withSelected(ui.getState(), ["b", "a", "b", "c"]), true);
 
     expect(ui.getState()).toMatchObject({ nodeId: "b", others: ["a", "c"] });
     expect(selectedIds(ui.getState())).toEqual(["b", "a", "c"]);
-    selectElements(ui, []);
+    ui.setState(withSelected(ui.getState(), []), true);
     expect(selectedIds(ui.getState())).toEqual([]);
   });
 
@@ -21,31 +21,31 @@ describe("the selection (1.31, UX-3)", () => {
     const ui = store();
     ui.setState({ nodeId: "a" });
 
-    toggleSelected(ui, "b");
+    ui.setState(withToggled(ui.getState(), "b"), true);
     expect(selectedIds(ui.getState())).toEqual(["b", "a"]);
-    toggleSelected(ui, "c");
+    ui.setState(withToggled(ui.getState(), "c"), true);
     expect(selectedIds(ui.getState())).toEqual(["c", "b", "a"]);
     // Out again: another, then the one shown, the next one shown instead.
-    toggleSelected(ui, "b");
+    ui.setState(withToggled(ui.getState(), "b"), true);
     expect(selectedIds(ui.getState())).toEqual(["c", "a"]);
-    toggleSelected(ui, "c");
+    ui.setState(withToggled(ui.getState(), "c"), true);
     expect(selectedIds(ui.getState())).toEqual(["a"]);
-    toggleSelected(ui, "a");
+    ui.setState(withToggled(ui.getState(), "a"), true);
     expect(ui.getState().nodeId).toBeNull();
   });
 
   it("ends a multi-selection when one element or another page is selected alone", () => {
     const ui = store();
-    selectElements(ui, ["a", "b"]);
+    ui.setState(withSelected(ui.getState(), ["a", "b"]), true);
 
     ui.setState({ nodeId: "a" });
     expect(selectedIds(ui.getState())).toEqual(["a"]);
-    selectElements(ui, ["a", "b"]);
+    ui.setState(withSelected(ui.getState(), ["a", "b"]), true);
     ui.setState({ pageId: "about" as PageId, nodeId: null });
     expect(selectedIds(ui.getState())).toEqual([]);
 
     // Neither does the device view, which isn't a selection.
-    selectElements(ui, ["a", "b"]);
+    ui.setState(withSelected(ui.getState(), ["a", "b"]), true);
     ui.setState({ viewport: "mobile" });
     expect(selectedIds(ui.getState())).toEqual(["a", "b"]);
   });
