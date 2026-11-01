@@ -32,7 +32,29 @@ type ExportRequest = {
   choices: { format: "folder"; minify: false; developerFiles: false; askWebAddress: true };
   output: { minify: false; developerFiles: false };
 };
-type ExportingWindow = { webforge: { site: { export(request: ExportRequest): Promise<unknown> } } };
+type ExportingWindow = {
+  webforge: {
+    site: { export(request: ExportRequest): Promise<unknown> };
+    project: { getCurrent(): Promise<{ sessionId: string } | null> };
+    trust: { trust(sessionId: string, texts: readonly string[]): Promise<unknown> };
+  };
+};
+
+/**
+ * The fixture's own code: Settings' Script, Head and End of page, and each Custom Code element's.
+ * Main builds it only once the owner trusts it (#649), as *Keep the code* does.
+ */
+function codeOf(site: SiteSnapshot): string[] {
+  const texts = [site.code?.js ?? "", site.code?.head ?? "", site.code?.bodyEnd ?? ""];
+  JSON.stringify(site, (_key, value: unknown) => {
+    const node = value as { type?: unknown; props?: { code?: unknown } } | null;
+    if (node?.type === "CustomCode" && typeof node.props?.code === "string") {
+      texts.push(node.props.code);
+    }
+    return value;
+  });
+  return texts.filter((text) => text.trim() !== "");
+}
 
 // Exports the three-page fixture site, and its "Page not found" page, (with its photo and price list)
 // through the real app: preload API, IPC, export utility process. The browser projects then open
@@ -299,6 +321,13 @@ setup("export the fixture site from the app", async () => {
     const page = await app.firstWindow();
     await page.waitForLoadState("domcontentloaded");
     await stubFileDialogs(app, EXPORTED_SITE_DIR);
+    await page.evaluate(
+      async (texts) => {
+        const { project, trust } = (window as unknown as ExportingWindow).webforge;
+        await trust.trust((await project.getCurrent())?.sessionId ?? "", texts);
+      },
+      [...codeOf(site), ...codeOf(themed(site))],
+    );
 
     const result = await page.evaluate(
       (request) => (window as unknown as ExportingWindow).webforge.site.export(request),
