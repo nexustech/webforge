@@ -295,8 +295,6 @@ const assetRowSchema = z.object({
   original_name: z.string(),
 });
 
-const HASH = /^[0-9a-f]{64}$/;
-
 /** The columns an asset is read from: by name, so a newer format's added ones are never read. */
 const ASSET_COLUMNS = "media_id, blob_hash, mime, width, height, original_name";
 
