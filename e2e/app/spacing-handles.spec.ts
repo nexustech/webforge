@@ -100,14 +100,14 @@ test("drags a Medium Section's padding on its column, the section a band across 
   await expect(column).toHaveCSS("padding-top", "64px");
   await expect(section).toHaveCSS("padding-top", "0px");
 
-  // The grip is on the column's edge, inside the band.
-  const [band, held, top] = await Promise.all(
-    [section, column, grip("padding", "top")].map((each) => each.boundingBox()),
+  // The padding grips sit over the column, however wide the canvas is.
+  const [held, grips] = await Promise.all(
+    [column, canvas().locator(".wf-padding-grips")].map((each) => each.boundingBox()),
   );
-  if (!band || !held || !top) throw new Error("Section not visible");
-  expect(held.width).toBeLessThan(band.width);
-  expect(top.x).toBeGreaterThan(held.x);
-  expect(top.x + top.width).toBeLessThan(held.x + held.width);
+  if (!held || !grips) throw new Error("Section not visible");
+  for (const side of ["x", "y", "width", "height"] as const) {
+    expect(Math.abs(grips[side] - held[side])).toBeLessThan(2);
+  }
 
   // From the column's 64 px, far in: the largest size, on the column.
   await dragBy(grip("padding", "top"), 300);
