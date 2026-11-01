@@ -46,7 +46,6 @@ const full: SiteSettings = {
   search: { allowIndexing: true, includeSitemap: false, readableByAi: true },
   analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
   forms: { service: { kind: "formspree", formId: "mzbqwxyz" } },
-  publish: { destinations: [] },
   allowedExternalUrls: ["https://maps.example.com/"],
 };
 
