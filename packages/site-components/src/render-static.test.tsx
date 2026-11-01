@@ -748,15 +748,16 @@ describe("renderNodesToHtml", () => {
     const legacy = (migrated as unknown as typeof raw).pages.home.doc.content;
     const html = renderNodesToHtml(legacy, siteLibrary, context);
 
+    // Medium Sections' columns are where they were, padding included, in bands since #643.
     expect(html).toContain('<section class="site-hero hero bg-base-200 px-4 py-16">');
     expect(html).toContain(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"><h3 class="site-heading font-heading text-h3">Hi</h3></section>',
+      '<section class="site-section"><div class="site-section-column mx-auto max-w-4xl px-4 py-16 space-y-6"><h3 class="site-heading font-heading text-h3">Hi</h3></div></section>',
     );
     expect(html).toContain(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-8 md:py-24"></section>',
+      '<section class="site-section"><div class="site-section-column mx-auto max-w-4xl px-4 py-8 md:py-24 space-y-6"></div></section>',
     );
     expect(html).toContain(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"></section>',
+      '<section class="site-section"><div class="site-section-column mx-auto max-w-4xl px-4 py-16 space-y-6"></div></section>',
     );
 
     const box = page(

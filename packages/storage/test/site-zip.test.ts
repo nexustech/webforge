@@ -235,9 +235,19 @@ describe("a site's ZIP (4.7)", () => {
 
   it("gives the new site its own project id, so publishing tells it from the original (A8)", async () => {
     const store = projectFrom(PLAIN);
+    store.writePublishDestinations([
+      {
+        id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
+        name: "My host",
+        kind: "file-transfer",
+        settings: { protocol: "ftps", host: "ftp.example.com", user: "rosa", folder: "/" },
+      },
+    ]);
     const copy = await roundTrip(store);
 
     expect(copy.info.projectId).not.toBe(store.info.projectId);
+    // Nor does it carry the original's destinations: the copy adds its own (ADR 0018 §2).
+    expect(copy.readPublishDestinations()).toEqual([]);
     store.close();
     copy.close();
   });

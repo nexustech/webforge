@@ -139,15 +139,26 @@ describe("a section's content width (3.21, PF-4)", () => {
     );
   });
 
-  it("keeps a Section at Medium on the page's colours as it was: the section its own column", () => {
+  it("keeps a Section's content at Medium on the page's colours where it was, in a band (#643)", () => {
     const section = (colors: string) =>
       render([
         { type: "Section", props: { id: "s", colors, contentWidth: "medium", content: [] } },
       ]);
 
-    // 896 px with its padding, so a Section saved before 3.21 doesn't move.
+    // A band, so its background spans the page; its column 896 px with its padding, so a Section
+    // saved before 3.21 doesn't move.
     expect(section("page")).toBe(
-      '<section class="site-section mx-auto max-w-4xl space-y-6 px-4 py-16"></section>',
+      '<section class="site-section"><div class="site-section-column mx-auto max-w-4xl px-4 py-16 space-y-6"></div></section>',
+    );
+    // Its background colour is the band's, across the page, as at every other width.
+    const coloured = render([
+      {
+        type: "Section",
+        props: { id: "s", contentWidth: "medium", lookBackground: "base-200", content: [] },
+      },
+    ]);
+    expect(coloured).toMatch(
+      /^<section class="site-section [^"]*bg-base-200[^"]*"><div class="site-section-column /,
     );
     // Reversed, its column was always inside the band's padding.
     expect(section("inverse")).toBe(

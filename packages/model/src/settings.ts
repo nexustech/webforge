@@ -108,34 +108,6 @@ export const formServiceSchema = z.discriminatedUnion("kind", [
 export type FormService = z.infer<typeof formServiceSchema>;
 
 /**
- * A place the site is published to (B1). Passwords and tokens are never stored in the site: they
- * live in the OS keychain under the destination's `id` (architecture §9).
- */
-const publishDestinationSchema = z.discriminatedUnion("kind", [
-  z.strictObject({
-    kind: z.literal("ftp"),
-    id: z.uuid(),
-    name: z.string().min(1).max(100),
-    protocol: z.enum(["sftp", "ftps", "ftp"]),
-    /** A host name, or an IP address as many hosting providers give it. */
-    host: z.union([z.string().regex(z.regexes.domain), z.ipv4(), z.ipv6()]),
-    port: z.int().min(1).max(65_535),
-    username: z.string().min(1).max(200),
-    remotePath: z.string().max(500),
-  }),
-  z.strictObject({
-    kind: z.literal("netlify"),
-    id: z.uuid(),
-    name: z.string().min(1).max(100),
-    /** Netlify's id of the site, once the first publish has created or chosen it. */
-    siteId: z
-      .string()
-      .regex(/^[0-9a-f-]{36}$/)
-      .optional(),
-  }),
-]);
-
-/**
  * Site Settings (X3, F-SET-1), grouped like the dialog's sections. Components can show these values
  * through bindings, so a phone number typed once appears everywhere.
  */
@@ -287,7 +259,6 @@ export const siteSettingsSchema = z.strictObject({
     consentMessage: text(CONSENT_MESSAGE_MAX),
   }),
   forms: z.strictObject({ service: formServiceSchema.optional() }),
-  publish: z.strictObject({ destinations: z.array(publishDestinationSchema) }),
   /** External addresses the user allowed in Custom HTML (C8). */
   allowedExternalUrls: z.array(webUrlSchema),
 });
@@ -308,7 +279,6 @@ export function defaultSiteSettings(name: string, language: string): SiteSetting
     search: { allowIndexing: true, includeSitemap: true, readableByAi: false },
     analytics: { consentBanner: true },
     forms: {},
-    publish: { destinations: [] },
     allowedExternalUrls: [],
   };
 }

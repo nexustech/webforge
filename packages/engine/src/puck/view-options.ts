@@ -1,6 +1,7 @@
 import type { ViewOptions } from "../canvas-engine.js";
 import { canvasZoom } from "./chrome.js";
 import { COMPONENT, COMPONENT_ATTRIBUTE, OVERLAY, ROOT_DROP_ZONE } from "./puck-dom.js";
+import { paddingBoxOf } from "./spacing-handles.js";
 import { ensureStyle } from "./styles.js";
 import { OPTION_ATTRIBUTES } from "./view-attributes.js";
 
@@ -185,9 +186,9 @@ function showSpacingOnHover(document: Document, view: Window, layer: HTMLElement
       padding.remove();
       return;
     }
-    const bands = bandsOf(shown, view);
-    place(margin, bands.margin);
-    place(padding, bands.padding);
+    // A Medium Section's padding is its column's (#643).
+    place(margin, bandsOf(shown, view).margin);
+    place(padding, bandsOf(paddingBoxOf(shown), view).padding);
     layer.append(margin, padding);
   };
   const onMove = (event: Event) => {

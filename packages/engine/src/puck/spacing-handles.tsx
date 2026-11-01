@@ -10,10 +10,28 @@ import {
   SPACING_TOKENS,
   type SpacingToken,
 } from "@webforge/model";
-import { boxTokenPixels, type ComponentLibrary } from "@webforge/site-components";
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import {
+  boxTokenPixels,
+  type ComponentLibrary,
+  PADDED_COLUMN_CLASS,
+} from "@webforge/site-components";
+import {
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import type { FieldDrag } from "../canvas-engine.js";
-import { componentSelector } from "./puck-dom.js";
+import { elementOf } from "./puck-dom.js";
+
+/**
+ * The box that holds `element`'s padding: itself, or the column inside it of a section that is a
+ * band without padding of its own (a Medium Section, #643).
+ */
+export function paddingBoxOf(element: Element): Element {
+  return element.querySelector(`:scope > .${PADDED_COLUMN_CLASS}`) ?? element;
+}
 
 /** A `box` field of a component, as its handles need it. */
 export type BoxHandleField = {
@@ -40,12 +58,18 @@ export function boxHandleFields(
  * The handles' styles (UI1 §3, 1.32, SP-3): thin grips, inside the element's edges for padding and
  * outside them for margin, tinted as the spacing overlay tints them (padding green, margin warm),
  * the same size on screen whatever the zoom. Top and bottom grips sit left of the middle, clear of
- * the floating + on a section's bottom edge.
+ * the floating + on a section's bottom edge. The padding grips sit in a box over the box that
+ * holds the padding ({@link paddingBoxOf}), the outline unless that is a column inside it.
  */
 /** The grips' solid tints (SP-3): the spacing overlay's, strong enough to grab. */
 const GRIP_TINT = { margin: "#e8913a", padding: "#5f9e45" } as const;
 
 export const SPACING_HANDLES_CSS = `
+.wf-padding-grips {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
 .wf-grip {
   position: absolute;
   box-sizing: border-box;
@@ -90,6 +114,9 @@ export const SPACING_HANDLES_CSS = `
   transform: translate(-50%, -50%) scale(calc(1 / var(--wf-zoom, 1)));
 }
 `;
+
+/** No inset: the padding grips on the outline's edges. */
+const NO_INSET: Readonly<Record<BoxSide, number>> = { top: 0, right: 0, bottom: 0, left: 0 };
 
 /** The side across from `side`. */
 const OPPOSITE: Readonly<Record<BoxSide, BoxSide>> = {
@@ -171,6 +198,45 @@ export function SpacingHandles({
   // leave no listeners behind, and no change half made.
   const cancelDrag = useRef<(() => void) | null>(null);
   useEffect(() => () => cancelDrag.current?.(), []);
+  // The padding box's edges, in from the outline's: where the padding grips go.
+  const paddingGrips = useRef<HTMLSpanElement>(null);
+  const [inset, setInset] = useState(NO_INSET);
+  const remeasure = useRef<(() => void) | null>(null);
+  useLayoutEffect(() => {
+    const grips = paddingGrips.current;
+    const outline = grips?.parentElement;
+    const document = grips?.ownerDocument;
+    const frame = document?.defaultView;
+    if (!outline || !document || !frame) return;
+    const measure = () => {
+      const element = elementOf(document, nodeId);
+      const box = element ? paddingBoxOf(element) : undefined;
+      if (box === undefined || box === element) {
+        setInset(NO_INSET);
+        return;
+      }
+      const shown = box.getBoundingClientRect();
+      const around = outline.getBoundingClientRect();
+      const next = {
+        top: Math.round(shown.top - around.top),
+        right: Math.round(around.right - shown.right),
+        bottom: Math.round(around.bottom - shown.bottom),
+        left: Math.round(shown.left - around.left),
+      };
+      setInset((now) => (BOX_SIDES.every((side) => now[side] === next[side]) ? now : next));
+    };
+    // The column moves as the outline resizes; a change of width, which can take the column away,
+    // is a new render (below).
+    const resizes = new frame.ResizeObserver(() => measure());
+    resizes.observe(outline);
+    remeasure.current = measure;
+    measure();
+    return () => {
+      resizes.disconnect();
+      remeasure.current = null;
+    };
+  }, [nodeId]);
+  useLayoutEffect(() => remeasure.current?.());
 
   const begin = (
     event: ReactPointerEvent<HTMLButtonElement>,
@@ -186,7 +252,7 @@ export function SpacingHandles({
     const grip = event.currentTarget;
     const frame = grip.ownerDocument.defaultView;
     // Puck wraps each element in a `div` of its own: the element is its child.
-    const element = grip.ownerDocument.querySelector(componentSelector(nodeId))?.firstElementChild;
+    const element = elementOf(grip.ownerDocument, nodeId);
     if (!frame || element === null || element === undefined) {
       return;
     }
@@ -202,8 +268,9 @@ export function SpacingHandles({
       return;
     }
 
+    const measured = field.property === "padding" ? paddingBoxOf(element) : element;
     const start = Number.parseFloat(
-      frame.getComputedStyle(element)[`${field.property}${capital(side)}`],
+      frame.getComputedStyle(measured)[`${field.property}${capital(side)}`],
     );
     const startPixels = Number.isNaN(start) ? 0 : start;
     const vertical = side === "top" || side === "bottom";
@@ -262,9 +329,10 @@ export function SpacingHandles({
     for (const each of windows) each.addEventListener("keydown", onKey, true);
   };
 
-  return (
-    <>
-      {fields.flatMap((field) =>
+  const grips = (property: BoxHandleField["property"]) =>
+    fields
+      .filter((field) => field.property === property)
+      .flatMap((field) =>
         field.sides.map((side) => (
           <button
             key={`${field.name}-${side}`}
@@ -282,7 +350,14 @@ export function SpacingHandles({
             onClick={(event) => event.stopPropagation()}
           />
         )),
-      )}
+      );
+
+  return (
+    <>
+      <span ref={paddingGrips} className="wf-padding-grips" style={inset}>
+        {grips("padding")}
+      </span>
+      {grips("margin")}
       {readout === null ? null : (
         <span className="wf-grip-readout">
           {t("canvas.spacing.readout", {
