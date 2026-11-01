@@ -149,7 +149,8 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{action?.action}</AlertDialogTitle>
-          <AlertDialogDescription>
+          {/* An AI app's question names whole web addresses, which wrap anywhere (S18). */}
+          <AlertDialogDescription className="[overflow-wrap:anywhere]">
             {action?.description === undefined ? "" : `${action.description} `}
             {action === null
               ? ""

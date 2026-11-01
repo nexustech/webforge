@@ -11,6 +11,12 @@ export const ai = {
   "ai.confirm.layout": "Allow {app} to change the {part}?",
   "ai.confirm.shared": "Allow {app} to change the shared section {name}?",
   "ai.confirm.allow": "Allow",
+  // Asked whenever an AI app sets where visitors' money or details go (S18), on one page too:
+  // "Allow Claude to change the Buy button's Payment link?", then where it goes now and would go.
+  "ai.confirm.destination": "Allow {app} to change the {item}'s {field}?",
+  "ai.confirm.destinationFromTo": "{field}: from {from} to {to}.",
+  // Where a field with no address sends visitors.
+  "ai.confirm.noAddress": "no address",
   "ai.part.header": "Header",
   "ai.part.footer": "Footer",
 } as const;

@@ -4,16 +4,34 @@ import { sessionIdSchema } from "./project.js";
 /** A query's or command's name: `outline`, `addNode`. Which ones exist, the renderer checks. */
 const nameSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
 
+/** The most an AI app's request may carry as JSON: well over any command's input (S21). */
+export const AI_INPUT_MAX_CHARS = 256_000;
+
+/** Whether `input` fits in {@link AI_INPUT_MAX_CHARS} as JSON; a value JSON can't hold doesn't. */
+const fitsAsJson = (input: unknown) => {
+  try {
+    return (JSON.stringify(input) ?? "").length <= AI_INPUT_MAX_CHARS;
+  } catch {
+    return false;
+  }
+};
+
+/** A request's input: whatever its query or command takes, which the renderer checks. */
+const inputSchema = z.unknown().refine(fitsAsJson, {
+  message: `A request's input can be at most ${AI_INPUT_MAX_CHARS} characters as JSON.`,
+});
+
 /**
  * What an AI app asks of the open site (F-AI-1, 4.8): a query that reads it, or a command that
- * changes it, on behalf of the app the person paired (4.9). Main forwards it; the renderer runs it.
+ * changes it, on behalf of the app the person paired (4.9). Main checks it and forwards it (S21);
+ * the renderer runs it.
  */
-const aiRequestSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("query"), name: nameSchema, input: z.unknown() }),
+export const aiRequestSchema = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("query"), name: nameSchema, input: inputSchema }),
   z.strictObject({
     kind: z.literal("command"),
     name: nameSchema,
-    input: z.unknown(),
+    input: inputSchema,
     /** The app's name, as the person gave it when pairing: "AI (‹app›): …" in Undo History. */
     app: z.string().min(1).max(80),
   }),

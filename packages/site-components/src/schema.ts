@@ -65,6 +65,12 @@ export type FieldDef = {
    * styling, which the Style tab, keeping the Appearance basics, leaves out.
    */
   readonly inDialog?: true;
+  /**
+   * Where visitors' money or details go: a Buy button's payment link, a form's address. An AI
+   * app's change to it always asks the person first, saying where it goes now and would go
+   * (S18, D7).
+   */
+  readonly sensitive?: true;
 } & (
   | {
       readonly kind: "text";

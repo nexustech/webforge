@@ -182,7 +182,12 @@ const newsletter = defineSection({
     text: { kind: "richtext", label: t("field.text"), inline: true },
     askName: { kind: "toggle", label: t("field.askName") },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
-    action: { kind: "text", label: t("field.formAddress"), help: t("field.formAddress.help") },
+    action: {
+      kind: "text",
+      label: t("field.formAddress"),
+      help: t("field.formAddress.help"),
+      sensitive: true,
+    },
     emailName: {
       kind: "text",
       label: t("field.emailFieldName"),

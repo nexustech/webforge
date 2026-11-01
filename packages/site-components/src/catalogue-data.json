@@ -5520,7 +5520,8 @@
         "action": {
           "kind": "text",
           "label": "Form address",
-          "help": "The address your newsletter service gives its signup form, starting with https://."
+          "help": "The address your newsletter service gives its signup form, starting with https://.",
+          "sensitive": true
         },
         "emailName": {
           "kind": "text",
@@ -7391,7 +7392,8 @@
         "link": {
           "kind": "text",
           "label": "Payment link",
-          "help": "The https:// link from Stripe Payment Links, PayPal or your shop, which takes the payment."
+          "help": "The https:// link from Stripe Payment Links, PayPal or your shop, which takes the payment.",
+          "sensitive": true
         },
         "alignment": {
           "kind": "select",
