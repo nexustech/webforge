@@ -1,10 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  createHistoryManager,
-  HistoryError,
-  type SelectionAdapter,
-  stateBefore,
-} from "./history-manager.js";
+import { createHistoryManager, HistoryError, type SelectionAdapter } from "./history-manager.js";
 
 type Doc = { title: string; items: { id: string; text: string }[] };
 
@@ -1001,20 +996,5 @@ describe("finish: what every change brings with it (3.15)", () => {
     typing.cancel();
 
     expect(doc()).toEqual(initial);
-  });
-});
-
-describe("stateBefore (#649)", () => {
-  it("gives the document as it was before a step, leaving the step done", () => {
-    const { history, doc } = setup();
-    history.run("Edited title", (draft) => {
-      draft.title = "About";
-      draft.items.push({ id: "b", text: "New" });
-    });
-    const [entry] = history.state.getState().entries;
-    if (entry === undefined) throw new Error("no step");
-
-    expect(stateBefore(doc(), entry)).toEqual(initial);
-    expect(doc().title).toBe("About");
   });
 });

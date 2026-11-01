@@ -50,17 +50,6 @@ export type HistoryEntry<S> = {
   readonly updatedAt: number;
 };
 
-/**
- * `doc` as it was before `entry`, the step that made it: what `entry` changed, undone, without
- * undoing it. A listener told of a new step reads what it changed this way (#649).
- */
-export function stateBefore<T extends Objectish>(
-  doc: T,
-  entry: Pick<HistoryEntry<unknown>, "inverse">,
-): T {
-  return applyPatches(doc, entry.inverse);
-}
-
 /** What the Undo History panel and the undo/redo buttons render. */
 export type HistoryState<S> = {
   readonly entries: readonly HistoryEntry<S>[];
