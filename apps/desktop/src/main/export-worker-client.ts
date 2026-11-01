@@ -3,7 +3,7 @@ import {
   type ExportOutcome,
   exportOutcomeSchema,
 } from "../shared/export-worker-protocol.js";
-import type { ExportProgress } from "../shared/ipc/site.js";
+import { type ExportProgress, exportProgressSchema } from "../shared/ipc/site.js";
 import { createWorkerChannel, type ReadMedia } from "./worker-channel.js";
 import type { WorkerProcess } from "./worker-process.js";
 
@@ -51,7 +51,11 @@ export function createExportRunner(
       outcome: exportOutcomeSchema,
       timeoutMs,
       signal: options.signal,
-      onProgress: options.onProgress,
+      // An export's own stages: the worker sends nothing else for an export.
+      onProgress: (progress) => {
+        const own = exportProgressSchema.safeParse(progress);
+        if (own.success) options.onProgress?.(own.data);
+      },
       readMedia: options.readMedia,
     });
     return result.ok

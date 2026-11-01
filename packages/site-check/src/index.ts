@@ -6,6 +6,7 @@ export {
   reportOf,
   SITE_CHECK_RULES,
 } from "./check.js";
+export { publishGate } from "./publish-gate.js";
 export type {
   CheckInput,
   CheckLevel,
