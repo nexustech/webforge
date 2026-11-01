@@ -17,7 +17,11 @@ const bakery = (): SiteDoc =>
 describe("gateOnSiteCheck (#668)", () => {
   it("lets a site through in a mode where nothing is Must fix, and stops it in a stricter one", () => {
     const showSiteCheck = vi.fn();
-    const gate = { blocked: (count: number) => `Fix ${count}`, showSiteCheck };
+    const gate = {
+      blocked: (count: number) => `Fix ${count}`,
+      showSiteCheck,
+      allowListConfirmed: true,
+    };
 
     // A new site has no web address: fine to export, a Must fix to publish (X5, ADR 0016).
     expect(gateOnSiteCheck(bakery(), "export", gate)).toBe(true);
@@ -27,6 +31,20 @@ describe("gateOnSiteCheck (#668)", () => {
     expect(gateOnSiteCheck(bakery(), "publish", gate)).toBe(false);
     expect(toast.error).toHaveBeenCalledWith(expect.stringMatching(/^Fix [1-9]\d*$/));
     expect(showSiteCheck).toHaveBeenCalledOnce();
+  });
+
+  it("lets a script reach an address Settings allow once confirmed, never before (#649)", () => {
+    const site = bakery();
+    const allowed: SiteDoc = {
+      ...site,
+      code: { ...site.code, js: 'fetch("https://api.example.com/hours");' },
+      settings: { ...site.settings, allowedExternalUrls: ["https://api.example.com/"] },
+    };
+    const gate = { blocked: (count: number) => `Fix ${count}`, showSiteCheck: vi.fn() };
+
+    expect(gateOnSiteCheck(allowed, "export", { ...gate, allowListConfirmed: true })).toBe(true);
+    expect(gateOnSiteCheck(allowed, "export", { ...gate, allowListConfirmed: false })).toBe(false);
+    expect(toast.error).toHaveBeenCalledWith("Fix 1");
   });
 });
 

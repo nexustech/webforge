@@ -185,6 +185,8 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
       const gate = {
         blocked: (count: number) => plural("siteCheck.exportBlocked", count),
         showSiteCheck: flow.showSiteCheck,
+        // The site's allow-list counts as the owner's until the code trust step can tell (#649).
+        allowListConfirmed: true,
       };
       if (!gateOnSiteCheck(flow.site(), "export", gate)) return;
       // A site whose choices can't be read exports from the defaults.
