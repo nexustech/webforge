@@ -327,6 +327,8 @@ const placement = {
 export const COMMANDS = {
   /** Adds a section to a page, or an element to a slot, with `values` over its defaults. */
   addNode: {
+    description:
+      "Adds a section to a page (parentId null) or an element to a section's slot, of a type from the catalogue, with values over its defaults. Answers with the new element's id. One undo step.",
     input: z.strictObject({
       location: locationSchema,
       type: z.string().min(1).max(64),
@@ -380,6 +382,8 @@ export const COMMANDS = {
   },
   /** Sets fields of an element: its title, a select's option, an image, a link… */
   updateFields: {
+    description:
+      "Sets fields of an element, by the names and value schemas fields gives. One undo step. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it.",
     input: z.strictObject({ location: locationSchema, nodeId, values }),
     plan(
       site: SiteDoc,
@@ -415,6 +419,8 @@ export const COMMANDS = {
   },
   /** Replaces an element's text, or rich text's HTML. */
   editText: {
+    description:
+      "Replaces an element's text, or a rich-text field's HTML (cleaned). One undo step.",
     input: z.strictObject({
       location: locationSchema,
       nodeId,
@@ -455,6 +461,8 @@ export const COMMANDS = {
   },
   /** Moves an element: to another index, or into another section's slot at the same location. */
   moveNode: {
+    description:
+      "Moves an element to another index, or into another section's slot at the same location. One undo step.",
     input: z.strictObject({
       location: locationSchema,
       nodeId,
@@ -509,6 +517,8 @@ export const COMMANDS = {
   },
   /** Removes an element, or a linked copy of a shared section from a page. */
   removeNode: {
+    description:
+      "Removes an element, or a linked copy of a shared section from a page. One undo step, which the person can undo.",
     input: z.strictObject({ location: locationSchema, nodeId }),
     plan(site: SiteDoc, input: { location: Location; nodeId: string }): Plan | Failure {
       const placed = find(site, input.location, input.nodeId);
@@ -539,10 +549,12 @@ export const COMMANDS = {
       };
     },
   },
-  /** Adds an empty page called `title`, before "Page not found", in the menu. */
+  /** Adds an empty page called `title`, before "Page not found", in the menu (asked first: D7). */
   addPage: {
+    description:
+      'Adds an empty page called title, before "Page not found", with a menu entry on every page: waits for the person to allow it. Answers with the new page\'s id.',
     input: z.strictObject({ title: z.string().min(1).max(200) }),
-    plan(_site: SiteDoc, input: { title: string }): Plan | Failure {
+    plan(site: SiteDoc, input: { title: string }): Plan | Failure {
       const title = pageTitle(input.title);
       if (title === "") return fail("invalid", "A page needs a title.");
       const id: PageId = newId("page");
@@ -550,6 +562,12 @@ export const COMMANDS = {
         action: t("history.added", { item: t("pages.item", { name: title }) }),
         structural: true,
         kind: "insert",
+        // Its menu entry changes every page (D7, 4.9).
+        confirm: (app) => ({
+          action: t("ai.confirm.addPage", { app, title }),
+          confirm: t("ai.confirm.allow"),
+          affectedPages: site.pageOrder.length,
+        }),
         id,
         recipe: (draft) => insertPage(draft, id, title),
       };
@@ -560,6 +578,8 @@ export const COMMANDS = {
    * in part (`{ fonts: { heading } }`) keeps the values it doesn't name (#645).
    */
   setThemeTokens: {
+    description:
+      "Sets theme tokens, as theme gives them. It changes every page, so it waits for the person to allow it. A group named in part keeps the values it doesn't name.",
     input: z.strictObject({
       tokens: z
         .record(z.string(), z.unknown())
