@@ -10,6 +10,7 @@ import {
 } from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
+import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
@@ -28,6 +29,7 @@ import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 import type { startCrashReports } from "./crash-wiring.js";
+import { dailyVersionFeature } from "./daily-version.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
@@ -74,6 +76,7 @@ import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
+import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -213,6 +216,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     capture: () => captureCanvas(lifecycle.mainWindow()),
     recent: recentSites,
   });
+  /** How many of Webforge's own versions each site keeps: the person's choice (P3). */
+  const versionsKept = () =>
+    lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   const openSite = (path: string) =>
     openOrRecover(projectSession, path, backups, parts.recoveryDialogs);
 
@@ -313,6 +319,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const features: readonly AppFeature[] = [
     // Rolling backups of the open site: as it opens, then every 30 minutes it was edited.
     { site: backupSchedule },
+    // The site as it was when first opened each day, in Version History (F-SITE-4, 4.6).
+    dailyVersionFeature({
+      versionsKept,
+    }),
     recentSitesFeature(recentSites, projectSession),
     myThemesFeature(myThemes),
     fonts,
@@ -500,6 +510,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     );
     exposeForE2eTests(ai, app.isPackaged);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish);
+    registerVersionsHandlers(ipcMain, isTrustedSender, {
+      session: projectSession,
+      dialogs: dialogs.project,
+      captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
+      versionsKept: async () => versionsKept(),
+      beforeSwitch: () => siteSwitch.leaveSite(),
+    });
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

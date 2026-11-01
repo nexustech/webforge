@@ -101,6 +101,10 @@ const editPanelPreferencesSchema = z.strictObject({
 /** The Edit panel's remembered option groups. */
 export type EditPanelPreferences = z.infer<typeof editPanelPreferencesSchema>;
 
+/** The fewest and the most automatic versions a site may keep (P3). */
+export const VERSIONS_KEPT_MIN = 5;
+export const VERSIONS_KEPT_MAX = 100;
+
 /**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
  * `<userData>/preferences.json`.
@@ -117,6 +121,11 @@ export const preferencesSchema = z.strictObject({
   canvas: canvasPreferencesSchema,
   add: addPreferencesSchema,
   editPanel: editPanelPreferencesSchema,
+  /**
+   * How many of the versions Webforge saves itself each site keeps (P3, 4.6): older ones are
+   * deleted as a new one is saved. The person's own versions are never deleted.
+   */
+  versionsKept: z.int().min(VERSIONS_KEPT_MIN).max(VERSIONS_KEPT_MAX),
 });
 
 /** One person's editor preferences. */
@@ -137,6 +146,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   },
   add: { favourites: [], recent: [] },
   editPanel: { closedGroups: {} },
+  versionsKept: 20,
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -158,6 +168,7 @@ export function applyPreferencesChange(
     canvas: change.canvas ?? preferences.canvas,
     add: change.add ?? preferences.add,
     editPanel: change.editPanel ?? preferences.editPanel,
+    versionsKept: change.versionsKept ?? preferences.versionsKept,
   };
 }
 

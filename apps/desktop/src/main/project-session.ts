@@ -17,6 +17,12 @@ import {
   type StoredBlob,
 } from "@webforge/storage";
 import type {
+  DeleteVersionResult,
+  ListVersionsResult,
+  ReadVersionSiteResult,
+  SaveVersionResult,
+} from "../shared/ipc/versions.js";
+import type {
   CommitResult,
   ProjectFailureReason,
   ProjectResult,
@@ -44,6 +50,15 @@ import {
 } from "./site-media.js";
 import { samePath, withProjectExtension } from "./site-paths.js";
 import { type SiteStore, type StaleReason, storeFailure } from "./site-store.js";
+import {
+  deleteVersion,
+  listVersions,
+  readVersionSite,
+  saveVersion,
+  type VersionPackageResult,
+  type VersionToSave,
+  versionPackage,
+} from "./site-versions.js";
 import { saveSiteZip } from "./site-zip.js";
 import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate, type GateKind, type StoreGate } from "./store-gate.js";
@@ -79,6 +94,16 @@ export type SessionSite = {
   setExportChoices(choices: ExportChoices): Promise<void>;
   /** Saves a copy of the site as a ZIP at `path` (4.7); `canceled` once it isn't open. */
   saveSiteZip(path: string): Promise<SaveSiteZipResult>;
+  /** The site's versions and the space they take (4.6). */
+  listVersions(): Promise<ListVersionsResult>;
+  /** Saves the site's file as it is as a version (4.6). */
+  saveVersion(version: VersionToSave): Promise<SaveVersionResult>;
+  /** Deletes a version (4.6). */
+  deleteVersion(id: string): Promise<DeleteVersionResult>;
+  /** A version's site, to preview or restore it (4.6). */
+  readVersionSite(id: string): Promise<ReadVersionSiteResult>;
+  /** A version as a site of its own, to open as a new site (4.6, P5). */
+  versionPackage(id: string): Promise<VersionPackageResult>;
 };
 
 const FAILURE_REASONS = {
@@ -262,6 +287,11 @@ export class ProjectSession {
       exportChoices: () => exportChoices(site),
       setExportChoices: (choices) => setExportChoices(site, choices),
       saveSiteZip: (path) => saveSiteZip(site, path),
+      listVersions: () => listVersions(site),
+      saveVersion: (version) => saveVersion(site, version),
+      deleteVersion: (id) => deleteVersion(site, id),
+      readVersionSite: (id) => readVersionSite(site, id),
+      versionPackage: (id) => versionPackage(site, id),
     };
   }
 

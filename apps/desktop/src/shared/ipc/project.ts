@@ -51,7 +51,7 @@ const projectFailureReasonSchema = z.enum([
 export type ProjectFailureReason = z.infer<typeof projectFailureReasonSchema>;
 
 /** Outcome of asking the main process to create or open a site. */
-const projectResultSchema = z.discriminatedUnion("status", [
+export const projectResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("opened"), project: projectSummarySchema }),
   z.strictObject({ status: z.literal("canceled") }),
   z.strictObject({ status: z.literal("failed"), reason: projectFailureReasonSchema }),

@@ -13,6 +13,7 @@ import { siteChannels } from "./ipc/site.js";
 import { templatesChannels } from "./ipc/templates.js";
 import { themesChannels } from "./ipc/themes.js";
 import { trustChannels } from "./ipc/trust.js";
+import { versionsChannels } from "./ipc/versions.js";
 
 export type { AppInfo } from "./ipc/app.js";
 export type { MediaImportResult } from "./ipc/media.js";
@@ -55,6 +56,7 @@ export const ipcContract = {
   ...previewChannels,
   ...publishChannels,
   ...trustChannels,
+  ...versionsChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -73,6 +75,7 @@ export const ipcDomains = {
   preview: previewChannels,
   publish: publishChannels,
   trust: trustChannels,
+  versions: versionsChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

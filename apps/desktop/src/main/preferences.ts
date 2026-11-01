@@ -60,6 +60,7 @@ export function parsePreferences(raw: unknown): Preferences {
     canvas: field("canvas"),
     add: field("add"),
     editPanel: field("editPanel"),
+    versionsKept: field("versionsKept"),
   };
 }
 
