@@ -7,6 +7,9 @@
   "include": ["src/main", "src/preload", "src/shared", "src/worker", "electron.vite.config.ts"],
   "references": [
     {
+      "path": "../../packages/commands"
+    },
+    {
       "path": "../../packages/i18n"
     },
     {
