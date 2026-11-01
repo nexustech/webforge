@@ -368,6 +368,23 @@ describe("the command API's commands (4.8)", () => {
     expect(page).toMatchObject({ title: "Menu", slug: "menu" });
   });
 
+  it("asks first before adding a page, whose menu entry changes every page (D7, 4.9)", async () => {
+    const allowed = setup(true);
+    await createCommandApi(allowed.host).run("addPage", { title: "Menu" }, app);
+    expect(allowed.confirm.mock.calls[0]?.[0]).toEqual<Confirmation>({
+      action: "Allow Claude to add the page Menu, with a menu entry on every page?",
+      confirm: "Allow",
+      affectedPages: 3,
+    });
+
+    const refused = setup(false);
+    const pages = refused.history.document.getState().pageOrder.length;
+    expect(
+      (await createCommandApi(refused.host).run("addPage", { title: "Menu" }, app)).status,
+    ).toBe("declined");
+    expect(refused.history.document.getState().pageOrder).toHaveLength(pages);
+  });
+
   it("merges a group of tokens it names in part, keeping the rest (#645)", async () => {
     const { history, host } = setup();
     const api = createCommandApi(host);

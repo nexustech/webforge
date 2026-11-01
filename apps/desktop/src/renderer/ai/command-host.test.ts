@@ -105,15 +105,19 @@ describe("commandHost (4.8)", () => {
 
 describe("answerRequest (4.8)", () => {
   it("answers a query and a command for the app that asked", async () => {
-    const { api, session } = setup();
+    const { api, session, siteWide } = setup();
     const outline = await answerRequest(api, { kind: "query", name: "outline", input: {} });
     expect(outline).toMatchObject({ status: "done", data: { name: "My site" } });
-    const page = await answerRequest(api, {
+    const adding = answerRequest(api, {
       kind: "command",
       name: "addPage",
       input: { title: "Menu" },
       app: "Claude",
     });
+    // A new page's menu entry changes every page, so the person is asked first (D7, 4.9).
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    siteWide.answer(true);
+    const page = await adding;
     expect(page).toMatchObject({ status: "done", label: "AI (Claude): Added page 'Menu'" });
     expect(session.history.state.getState().entries.at(-1)?.label).toBe(
       "AI (Claude): Added page 'Menu'",

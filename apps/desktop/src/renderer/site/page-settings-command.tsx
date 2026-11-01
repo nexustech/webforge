@@ -29,10 +29,16 @@ export function registerPageSettingsCommand(
 
   function PageSettings() {
     const { open, pageId } = useStore(opened);
+    // Closed, it follows nothing of the document, which every keystroke on the canvas changes (R9).
+    return open ? <OpenPageSettings pageId={pageId} /> : null;
+  }
+
+  /** The dialog while it's open, on the site as it is. */
+  function OpenPageSettings({ pageId }: { readonly pageId: PageId | undefined }) {
     const site = useDocument(session, (doc) => doc);
     return (
       <PageSettingsDialog
-        open={open}
+        open
         site={site}
         page={pageId === undefined ? undefined : site.pages[pageId]}
         onSave={(change) => {
