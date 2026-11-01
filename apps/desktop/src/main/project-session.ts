@@ -171,7 +171,10 @@ export type SiteStoreAccess = <T>(
   work: (store: ProjectStore) => T | Promise<T>,
 ) => Promise<T | undefined>;
 
-/** What a {@link ProjectSession} tells others, e.g. the backup schedule. */
+/**
+ * What a {@link ProjectSession} tells its listeners, e.g. the backup schedule and the app's
+ * features (A12).
+ */
 export type ProjectSessionEvents = {
   /** A site was opened or created; `access` reaches its store through the gate. */
   opened?(access: SiteStoreAccess, path: string): void;
@@ -213,7 +216,8 @@ export class ProjectSession {
   #site: SiteDoc | undefined;
   /** This opening of the open site (R6): new each time a site is opened or created. */
   #sessionId: string | undefined;
-  readonly #events: ProjectSessionEvents;
+  /** The listeners, in the order they were added; see {@link ProjectSession.listen}. */
+  readonly #listeners: ProjectSessionEvents[];
   readonly #gate: StoreGate;
   readonly #openStore: (path: string) => ProjectStore;
   readonly #createStore: (path: string, name: string) => ProjectStore;
@@ -222,12 +226,37 @@ export class ProjectSession {
   #writing: object | undefined;
 
   constructor(events: ProjectSessionEvents = {}, options: ProjectSessionOptions = {}) {
-    this.#events = events;
+    this.#listeners = [events];
     this.#gate = options.gate ?? createStoreGate();
     this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
     this.#writer = options.writer ?? createInlineStorageWriter(createImportJobs());
+  }
+
+  /**
+   * Tells `events` too as sites open, are saved and close (A12): a site replaced by a hand-off
+   * closes as any other.
+   */
+  listen(events: ProjectSessionEvents): void {
+    this.#listeners.push(events);
+  }
+
+  /**
+   * Tells every listener of `event`, in order. One that throws is logged by its code only, and the
+   * others are still told: a feature's failure never stops a site opening, saving or closing.
+   */
+  #tell<E extends keyof ProjectSessionEvents>(
+    event: E,
+    ...args: Parameters<NonNullable<ProjectSessionEvents[E]>>
+  ): void {
+    for (const listener of this.#listeners) {
+      try {
+        (listener[event] as ((...each: typeof args) => void) | undefined)?.(...args);
+      } catch (error) {
+        logFailure(`Webforge could not act on the site being ${event}`, error);
+      }
+    }
   }
 
   /** The open site's file, for the main process only (never sent to the renderer). */
@@ -433,7 +462,7 @@ export class ProjectSession {
           return { status: "failed", reason: "unknown" };
         }
         this.#site = next.data;
-        this.#events.committed?.();
+        this.#tell("committed");
         return { status: "saved" };
       },
       (reason) => ({ status: "failed", reason }),
@@ -533,7 +562,7 @@ export class ProjectSession {
       await this.#writer.stop();
     }
     if (this.#store !== undefined) {
-      this.#events.closed?.();
+      this.#tell("closed");
       if (!this.#store.info.readOnly) {
         try {
           this.#store.collectGarbage();
@@ -752,7 +781,7 @@ export class ProjectSession {
     );
     // Ready for the first import, which then doesn't wait for a thread to start.
     this.#writer.warm();
-    this.#events.opened?.(this.#accessTo(store), path);
+    this.#tell("opened", this.#accessTo(store), path);
     return { status: "opened", project: summarise(store, path, sessionId) };
   }
 

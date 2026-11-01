@@ -1,4 +1,5 @@
 import type { IpcMain } from "electron";
+import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
 import type { MyThemes } from "./my-themes.js";
 
@@ -17,4 +18,14 @@ export function registerThemesHandlers(
     await themes.remove(id);
     return null;
   });
+}
+
+/** My themes as a feature (A12): their IPC calls, and their last write finished before Webforge exits. */
+export function myThemesFeature(themes: MyThemes): AppFeature {
+  return {
+    register: (ipc, isTrustedSender) => {
+      registerThemesHandlers(ipc, isTrustedSender, themes);
+    },
+    quit: () => themes.idle(),
+  };
 }

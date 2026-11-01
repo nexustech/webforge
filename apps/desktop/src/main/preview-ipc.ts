@@ -3,6 +3,7 @@ import type { IpcMain } from "electron";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
 import type { PhoneAddress, PreviewPage } from "../shared/ipc/preview.js";
 import type { SiteContent } from "../shared/ipc/site.js";
+import type { AppFeature } from "./app-feature.js";
 import { snapshotOf } from "./export-ipc.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
@@ -196,4 +197,21 @@ export function registerPreviewHandlers(
     await preview.stopPhone();
     return null;
   });
+}
+
+/**
+ * The preview as a feature (A12): its IPC calls, and its server and worker stopped when the site
+ * closes, replaced by a hand-off or as Webforge quits.
+ */
+export function previewFeature(preview: Preview): AppFeature {
+  return {
+    register: (ipc, isTrustedSender) => {
+      registerPreviewHandlers(ipc, isTrustedSender, preview);
+    },
+    site: {
+      closed: () => {
+        void preview.close();
+      },
+    },
+  };
 }

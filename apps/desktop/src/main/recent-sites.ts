@@ -2,7 +2,9 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { z } from "zod";
+import type { AppFeature } from "./app-feature.js";
 import { createJsonStore } from "./json-store.js";
+import { logFailure } from "./log.js";
 
 /** How many sites the start screen lists, besides those pinned, which stay however many there are. */
 const MAX_SITES = 12;
@@ -216,3 +218,34 @@ export function createRecentSites(options: {
 
 /** See {@link createRecentSites}. */
 export type RecentSites = ReturnType<typeof createRecentSites>;
+
+/** The Recent list is a convenience: a write that fails is logged by its code, nothing more. */
+const recentFailed = (error: unknown) =>
+  logFailure("Webforge could not update the Recent list", error);
+
+/**
+ * The Recent list as a feature (A12): a site goes to its top as it opens, is marked edited as it is
+ * saved, and its last write finishes before Webforge exits.
+ */
+export function recentSitesFeature(
+  recent: Pick<RecentSites, "opened" | "edited" | "idle">,
+  /** The open site, as the project session has it. */
+  session: {
+    current(): { readonly name: string } | null;
+    currentPath(): string | undefined;
+  },
+): AppFeature {
+  return {
+    site: {
+      opened: (_access, path) => {
+        const name = session.current()?.name;
+        if (name !== undefined) void recent.opened(path, name).catch(recentFailed);
+      },
+      committed: () => {
+        const path = session.currentPath();
+        if (path !== undefined) void recent.edited(path).catch(recentFailed);
+      },
+    },
+    quit: () => recent.idle(),
+  };
+}
