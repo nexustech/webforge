@@ -6,6 +6,7 @@ import {
   type Responsive,
   type ResponsiveValue,
   resolveResponsive,
+  sameJson,
 } from "@webforge/model";
 
 /**
@@ -87,9 +88,6 @@ export function withoutOverride(current: unknown, breakpoint: Breakpoint): Respo
   return normalised({ $responsive: { ...rest, desktop: rest.desktop } });
 }
 
-/** Whether two field values are the same: equal as JSON, which they are (props are JSON). */
-const sameValue = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
-
 /**
  * Whether a field's value `stored` is changed from the component's default `initial` for the
  * device shown (UX-18), so resetting it would change something: on Desktop (or for a field that is
@@ -102,7 +100,7 @@ export function differsFromDefault(
   responsive: boolean,
   breakpoint: Breakpoint,
 ): boolean {
-  if (!responsive) return !sameValue(stored, initial);
+  if (!responsive) return !sameJson(stored, initial);
   if (breakpoint !== "desktop") return isOverridden(stored, breakpoint);
-  return !sameValue(valueAt(stored, "desktop"), valueAt(initial, "desktop"));
+  return !sameJson(valueAt(stored, "desktop"), valueAt(initial, "desktop"));
 }

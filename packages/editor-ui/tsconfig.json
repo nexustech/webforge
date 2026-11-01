@@ -4,6 +4,9 @@
   "references": [
     {
       "path": "../i18n"
+    },
+    {
+      "path": "../model"
     }
   ]
 }

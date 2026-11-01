@@ -1,10 +1,11 @@
-import { type FormField, type FormSchema, type FormSpec, sameValue } from "@webforge/editor-ui";
+import type { FormField, FormSchema, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   allowListText,
   RUNNING_PARTS,
   type SiteCode,
   type SiteDoc,
+  sameJson,
   siteCodeSchema,
 } from "@webforge/model";
 import { z } from "zod";
@@ -164,8 +165,8 @@ export function saveSiteCode(
   const site = session.history.document.getState();
   const { bundled, ...code } = site.code;
   if (
-    sameValue(code, saved.code) &&
-    sameValue(site.settings.allowedExternalUrls, saved.allowedExternalUrls)
+    sameJson(code, saved.code) &&
+    sameJson(site.settings.allowedExternalUrls, saved.allowedExternalUrls)
   ) {
     return false;
   }

@@ -515,6 +515,9 @@ importers:
       '@webforge/i18n':
         specifier: workspace:*
         version: link:../i18n
+      '@webforge/model':
+        specifier: workspace:*
+        version: link:../model
       class-variance-authority:
         specifier: 0.7.1
         version: 0.7.1

@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import type { SiteDoc } from "@webforge/model";
+import { type SiteDoc, sameJson } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { applyLookToAll, lookChange, lookFieldsOf } from "../../clipboard/index.js";
 import type { EditorSelection, EditorSession } from "../../editor/editor-session.js";
@@ -126,9 +126,7 @@ async function makeThemeLook(
   if (Object.keys(own).length === 0) return true;
   const look: Readonly<Record<string, unknown>> =
     session.history.document.getState().theme.looks?.[node.type] ?? {};
-  const differs = Object.keys(own).some(
-    (name) => JSON.stringify(look[name]) !== JSON.stringify(own[name]),
-  );
+  const differs = Object.keys(own).some((name) => !sameJson(look[name], own[name]));
   if (differs && !(await setLook(session, asks, node.type, component.label, own))) return false;
   // Found again: the theme's change may have asked first, and the item is written as it is now.
   const now = styledItem(session);
