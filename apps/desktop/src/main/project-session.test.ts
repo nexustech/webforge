@@ -10,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import {
   changedDocuments,
   createSite,
@@ -613,6 +613,51 @@ describe("ProjectSession events", () => {
     await observed.close();
     await observed.close();
     expect(events.closed).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ProjectSession listeners (A12)", () => {
+  it("tells every listener, in order, that a site replaced by another closed", async () => {
+    const told: string[] = [];
+    const listening = new ProjectSession({ closed: () => told.push("first closed") });
+    listening.listen({
+      opened: (_access, path) => told.push(`second opened ${basename(path)}`),
+      closed: () => told.push("second closed"),
+    });
+
+    await listening.create(join(dir, "One.wforge"));
+    // A hand-off opens the other site in place of this one.
+    await listening.create(join(dir, "Two.wforge"));
+    await listening.close();
+
+    expect(told).toEqual([
+      "second opened One.wforge",
+      "first closed",
+      "second closed",
+      "second opened Two.wforge",
+      "first closed",
+      "second closed",
+    ]);
+  });
+
+  it("still tells the others, and still closes, when a listener throws", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const closed = vi.fn();
+    const listening = new ProjectSession({
+      closed: () => {
+        throw Object.assign(new Error("EIO: C:SitesBakery"), { code: "EIO" });
+      },
+    });
+    listening.listen({ closed });
+    await listening.create(join(dir, "Thrown.wforge"));
+
+    await listening.close();
+
+    expect(closed).toHaveBeenCalledOnce();
+    expect(listening.current()).toBeNull();
+    expect(error).toHaveBeenCalledWith(
+      "Webforge could not act on the site being closed (code=Error EIO)",
+    );
   });
 });
 

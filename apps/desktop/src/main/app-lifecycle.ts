@@ -1,4 +1,5 @@
 import type { BrowserWindow } from "electron";
+import type { AppFeature } from "./app-feature.js";
 import type { createFlushOnClose } from "./flush-on-close.js";
 import { log, logFailure } from "./log.js";
 import type { PreferencesStore } from "./preferences.js";
@@ -55,28 +56,44 @@ export class AppLifecycle<W extends MainWindow = BrowserWindow> {
 const QUIT_CLOSE_WAIT_MS = 10_000;
 
 /**
- * Closes the site, then exits, whatever closing does: at most {@link QUIT_CLOSE_WAIT_MS}, and a
- * failure is logged, so Webforge never lingers without a window. `releaseLock` runs first, once
- * the site is closed: a launch from then on opens Webforge itself (#413).
+ * Closes the site, then lets each feature finish its last work (`quit`, A12), then exits, whatever
+ * closing does: at most {@link QUIT_CLOSE_WAIT_MS} in all, and a failure is logged, so Webforge never
+ * lingers without a window. A site that fails to close still has the features finish, and a feature
+ * that fails stops none of the others. `releaseLock` runs first, once all that is done: a launch
+ * from then on opens Webforge itself (#413).
  */
 export async function closeThenExit(
   steps: {
     close(): Promise<void>;
+    readonly features?: readonly Pick<AppFeature, "quit">[];
     releaseLock(): void;
     exit(code: number): void;
   },
   timers: Timers = defaultTimers,
 ): Promise<void> {
+  const finish = async (feature: Pick<AppFeature, "quit">) => {
+    try {
+      await feature.quit?.();
+    } catch (error) {
+      logFailure("Webforge could not finish a feature's work before quitting", error);
+    }
+  };
+  const closing = async () => {
+    try {
+      await steps.close();
+    } catch (error) {
+      logFailure("Webforge could not close the site", error);
+    }
+    await Promise.all((steps.features ?? []).map(finish));
+  };
   let timer: unknown;
   try {
     const timedOut = new Promise<"timed-out">((resolve) => {
       timer = timers.setTimeout(() => resolve("timed-out"), QUIT_CLOSE_WAIT_MS);
     });
-    if ((await Promise.race([steps.close(), timedOut])) === "timed-out") {
+    if ((await Promise.race([closing(), timedOut])) === "timed-out") {
       log.error("Webforge quit before the site had closed");
     }
-  } catch (error) {
-    logFailure("Webforge could not close the site", error);
   } finally {
     timers.clearTimeout(timer);
     steps.releaseLock();
