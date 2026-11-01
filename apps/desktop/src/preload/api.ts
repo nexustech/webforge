@@ -40,7 +40,7 @@ export function createWebforgeApi(
     site: siteApi(call, subscribe),
     templates: templatesApi(call),
     themes: themesApi(call),
-    preview: previewApi(call),
+    preview: previewApi(call, subscribe),
     publish: publishApi(call),
     trust: trustApi(call),
   };

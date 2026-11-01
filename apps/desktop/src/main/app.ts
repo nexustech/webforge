@@ -10,6 +10,7 @@ import {
 } from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
+import { previewEvents } from "../shared/ipc/preview.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
@@ -41,7 +42,7 @@ import { logFailure } from "./log.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import { createMyThemes } from "./my-themes.js";
-import { localNetworkAddress } from "./network-address.js";
+import { hasAddress, localNetworkAddress } from "./network-address.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
@@ -300,6 +301,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       }
     },
     networkAddress: () => localNetworkAddress(networkInterfaces()),
+    hasAddress: (address) => hasAddress(networkInterfaces(), address),
+    phoneStopped: () =>
+      lifecycle.mainWindow()?.webContents.send(previewEvents.phoneStopped.channel),
   });
 
   /**

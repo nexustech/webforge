@@ -1,6 +1,6 @@
 import { DEFAULT_THEME, type SiteSnapshot } from "@webforge/model";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
 import type { SiteContent } from "../shared/ipc/site.js";
 import type { PreviewBuilder } from "./preview-builder.js";
@@ -32,6 +32,12 @@ const site = (name: string): SiteContent => ({
 });
 
 const BASE = "/0123456789abcdef0123456789abcdef/";
+/** The phone's own base, a secret apart from this computer's (S9). */
+const PHONE_BASE = "/fedcba9876543210fedcba9876543210/";
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 /** The opening of the site the window was loaded for, and the one a hand-off opens (#663). */
 const SITE_A = "11111111-1111-4111-8111-111111111111";
@@ -40,9 +46,12 @@ const SITE_B = "22222222-2222-4222-8222-222222222222";
 /** A preview over a fake server and builder, recording what they were asked. */
 function previewOf(overrides: Partial<PreviewDeps> = {}) {
   const watchers: (() => void)[] = [];
+  const phoneStoppedListeners: (() => void)[] = [];
   let watching = 0;
   const server = {
     base: BASE,
+    phoneBase: () => PHONE_BASE,
+    onPhoneStopped: (listener: () => void) => phoneStoppedListeners.push(listener),
     listen: vi.fn(async (scope: "local" | "network", _host?: string) =>
       scope === "local" ? 5001 : 5002,
     ),
@@ -87,6 +96,8 @@ function previewOf(overrides: Partial<PreviewDeps> = {}) {
     }),
     openInBrowser: vi.fn(async () => true),
     networkAddress: () => "192.168.1.23",
+    hasAddress: () => true,
+    phoneStopped: vi.fn(() => undefined),
     ...overrides,
   };
   const built = () => builder.request.mock.calls.map(([job]) => job.snapshot.name);
@@ -101,6 +112,10 @@ function previewOf(overrides: Partial<PreviewDeps> = {}) {
       for (const watcher of watchers) watcher();
     },
     finish: (outcome: PreviewOutcome) => onBuilt(outcome),
+    /** The server stops the phone's listener by itself, unused. */
+    idle: () => {
+      for (const listener of phoneStoppedListeners) listener();
+    },
     /** What the builder asks for: a file's bytes, from the site the preview was started for. */
     read: (hash: string) => readMedia(hash),
     opened,
@@ -236,7 +251,7 @@ describe("createPreview (3.2)", () => {
     const { preview, server, built } = previewOf();
     expect(await preview.phone(SITE_A, site("Bakery"), "about.html")).toEqual({
       status: "ready",
-      url: `http://192.168.1.23:5002${BASE}about.html`,
+      url: `http://192.168.1.23:5002${PHONE_BASE}about.html`,
     });
     // On the one address chosen, never every network the computer is on.
     expect(server.listen).toHaveBeenCalledWith("network", "192.168.1.23");
@@ -251,6 +266,68 @@ describe("createPreview (3.2)", () => {
       status: "offline",
     });
     expect(offline.server.listen).not.toHaveBeenCalled();
+  });
+
+  it("tells the window when the phone's listener stops by itself: unused, or off its network (S9)", async () => {
+    vi.useFakeTimers();
+    let connected = true;
+    const { preview, server, deps, idle } = previewOf({ hasAddress: () => connected });
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    // Unused for a while: the server stopped it.
+    idle();
+    expect(deps.phoneStopped).toHaveBeenCalledTimes(1);
+
+    // The computer leaves the Wi-Fi: its listener stops within a few seconds.
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(server.stop).not.toHaveBeenCalled();
+    connected = false;
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(server.stop).toHaveBeenCalledExactlyOnceWith("network");
+    expect(deps.phoneStopped).toHaveBeenCalledTimes(2);
+    // And it isn't checked for any more.
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(server.stop).toHaveBeenCalledTimes(1);
+
+    // Stopped by the person: nothing more is checked either.
+    connected = true;
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    await preview.stopPhone();
+    connected = false;
+    await vi.advanceTimersByTimeAsync(20_000);
+    expect(server.stop).toHaveBeenCalledTimes(2);
+    expect(deps.phoneStopped).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps watching a phone listener started while the last one was closing (S9)", async () => {
+    vi.useFakeTimers();
+    let connected = true;
+    const { preview, server, deps } = previewOf({ hasAddress: () => connected });
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    // Off the Wi-Fi: the window is told at once, while the listener is still closing.
+    let closed: () => void = () => undefined;
+    server.stop.mockImplementationOnce(
+      () =>
+        new Promise<undefined>((resolve) => {
+          closed = () => resolve(undefined);
+        }),
+    );
+    connected = false;
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(deps.phoneStopped).toHaveBeenCalledOnce();
+
+    // Back on, and the person asks again before that close is done.
+    connected = true;
+    await preview.phone(SITE_A, site("Bakery"), "index.html");
+    closed();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(deps.phoneStopped).toHaveBeenCalledOnce();
+
+    // The new listener has its own check.
+    connected = false;
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(server.stop).toHaveBeenCalledTimes(2);
+    expect(deps.phoneStopped).toHaveBeenCalledTimes(2);
   });
 
   it("stops the server and the builder when closed; the next open starts afresh", async () => {

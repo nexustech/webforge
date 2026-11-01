@@ -94,6 +94,13 @@ export function registerPreviewCommands(
       },
     });
   };
+  // Main stops the phone's listener by itself once no phone has used it for a while, or the
+  // computer left its network (S9): the cue goes, the address shown goes, and the person is told.
+  const stopPhoneStopped = api.onPhoneStopped(() => {
+    phoneOff();
+    if (phone.getState().status === "ready") phone.setState({ status: "closed" }, true);
+    notify(t("preview.phone.stopped"));
+  });
   const follow = () => {
     if (following !== undefined) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -175,6 +182,7 @@ export function registerPreviewCommands(
   ];
   return () => {
     for (const remove of removers) remove();
+    stopPhoneStopped();
     phoneOff();
     following?.();
     following = undefined;
