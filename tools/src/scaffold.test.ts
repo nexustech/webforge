@@ -52,11 +52,12 @@ const LAYERS = ["apps/desktop/src/renderer/layers/area.ts", "packages/i18n/src/e
 
 /** A kind of field's. */
 const FIELD_KIND = [
-  "apps/desktop/src/renderer/editor/EditPanelHost.tsx",
+  "apps/desktop/src/renderer/editor/edit-panel-fields.ts",
   "apps/desktop/src/renderer/fields/field-kinds.ts",
   "apps/desktop/src/renderer/fields/field-renderers.ts",
   "packages/site-components/src/schema.ts",
   "packages/site-components/src/define.ts",
+  "packages/site-components/src/field-values.ts",
   "packages/engine/src/puck/config.tsx",
   "packages/engine/src/puck/config.test.tsx",
   "packages/editor-ui/src/components/edit/field-spec.ts",
@@ -302,9 +303,19 @@ describe("scaffold", () => {
     expect(result.written).toContain(
       "apps/desktop/src/renderer/fields/rating/RatingField.stories.tsx",
     );
-    expect(result.changed).toHaveLength(8);
+    expect(result.changed).toHaveLength(9);
     expect(read(root, "packages/site-components/src/schema.ts")).toContain(
       '| { readonly kind: "rating"; readonly label: string }',
+    );
+    // What it may hold: a string, until it's something else (#667).
+    expect(read(root, "packages/site-components/src/field-values.ts")).toContain(
+      '        | "rating"\n        | "code";',
+    );
+    expect(read(root, "packages/site-components/src/field-values.ts")).toContain(
+      '      case "rating":\n      case "icon":',
+    );
+    expect(read(root, "apps/desktop/src/renderer/editor/edit-panel-fields.ts")).toContain(
+      '    case "rating":\n      return { kind: "rating", label };',
     );
     expect(read(root, "apps/desktop/src/renderer/fields/field-kinds.ts")).toContain(
       'rating: { editPanel: "rating", story: "Edit/Fields/Rating" },',

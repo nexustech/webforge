@@ -12,7 +12,7 @@ import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components
 import { useRef, useState } from "react";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
-import { specOf } from "../../editor/EditPanelHost.js";
+import { specOf } from "../../editor/edit-panel-fields.js";
 import { isOverridden, valueAt, withValueAt } from "../../editor/responsive-value.js";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey } from "../theme-controls.js";
 import { StudioLookPreview } from "./StudioLookPreview.js";

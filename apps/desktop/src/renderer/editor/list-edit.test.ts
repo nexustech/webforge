@@ -1,7 +1,13 @@
 import type { NodeDoc } from "@webforge/model";
 import { type FieldDef, siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
-import { applyListChange, editableList, listChangeLabel, listItems } from "./list-edit.js";
+import {
+  acceptedListChange,
+  applyListChange,
+  editableList,
+  listChangeLabel,
+  listItems,
+} from "./list-edit.js";
 
 const testimonials: FieldDef = {
   kind: "list",
@@ -131,6 +137,48 @@ describe("list items and changes", () => {
     expect(applyListChange(items, { type: "move", id: "b", to: 2 }, plain)).toBe(false);
     expect(applyListChange(items, { type: "move", id: "b", to: 1 }, plain)).toBe(false);
     expect(items).toEqual([{ id: "a" }, { id: "b" }]);
+  });
+
+  it("edits only a field the items have, with a value it takes (#667)", () => {
+    const items: unknown[] = [{ id: "a", quote: "Hi", rating: "5" }];
+
+    expect(
+      applyListChange(items, { type: "edit", id: "a", name: "price", value: "4" }, plain),
+    ).toBe(false);
+    expect(
+      applyListChange(items, { type: "edit", id: "a", name: "rating", value: "9" }, plain),
+    ).toBe(false);
+    expect(items).toEqual([{ id: "a", quote: "Hi", rating: "5" }]);
+  });
+
+  it("takes from the panel only a change the list takes (#667)", () => {
+    expect(acceptedListChange({ type: "add", extra: 1 }, plain)).toEqual({ type: "add" });
+    expect(acceptedListChange({ type: "move", id: "a", to: 1 }, plain)).toEqual({
+      type: "move",
+      id: "a",
+      to: 1,
+    });
+    expect(acceptedListChange({ type: "remove", id: "a" }, plain)).toEqual({
+      type: "remove",
+      id: "a",
+    });
+    expect(
+      acceptedListChange({ type: "edit", id: "a", name: "quote", value: "Yes" }, plain),
+    ).toEqual({ type: "edit", id: "a", name: "quote", value: "Yes" });
+
+    for (const refused of [
+      "add",
+      null,
+      { type: "replace" },
+      { type: "remove" },
+      { type: "move", id: "a", to: 1.5 },
+      { type: "move", id: "a" },
+      { type: "edit", id: "a", name: "price", value: "4" },
+      { type: "edit", id: "a", name: "rating", value: "9" },
+      { type: "edit", name: "quote", value: "Yes" },
+    ]) {
+      expect(acceptedListChange(refused, plain)).toBeUndefined();
+    }
   });
 
   it("labels each change by the item's name (D2)", () => {
