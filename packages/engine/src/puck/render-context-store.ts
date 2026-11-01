@@ -135,18 +135,27 @@ export function createContextTracker(source: RenderContextSource): ContextTracke
         return Reflect.has(target, entry);
       },
     });
+  /**
+   * Checks the context as it is now against what was read, once per context: a change that came
+   * before the component subscribed (between its first drawing and its effect) counts too.
+   */
+  const check = () => {
+    const now = source.get();
+    if (now === seen) return;
+    seen = now;
+    if (reads.some((read) => changes(read, now))) version += 1;
+  };
   return {
     subscribe: (listener) =>
       source.subscribe(() => {
-        const now = source.get();
-        if (now === seen) return;
-        seen = now;
-        if (reads.some((read) => changes(read, now))) {
-          version += 1;
-          listener();
-        }
+        const before = version;
+        check();
+        if (version !== before) listener();
       }),
-    snapshot: () => version,
+    snapshot: () => {
+      check();
+      return version;
+    },
     track() {
       const context = source.get();
       seen = context;

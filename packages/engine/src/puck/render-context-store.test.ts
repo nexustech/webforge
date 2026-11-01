@@ -79,6 +79,22 @@ describe("the render context's parts, followed by what each component read (#727
     expect([nothing, nav, whole, keys].map((followed) => followed.reached())).toEqual([0, 1, 1, 1]);
   });
 
+  it("sees a change that came before it subscribed, as a component's first drawing can", () => {
+    const base: RenderContext = { ...EDITOR_RENDER_CONTEXT, looks: {} };
+    const store = createRenderContextStore(base);
+    const tracker = createContextTracker(store);
+    void tracker.track().looks?.Heading;
+    const drawn = tracker.snapshot();
+
+    // Between the drawing and the subscription (React subscribes in an effect).
+    store.set({ ...base, looks: { Heading: { lookItalic: true } } });
+    tracker.subscribe(() => undefined);
+
+    expect(tracker.snapshot()).not.toBe(drawn);
+    // Asked again, with nothing new: the same answer.
+    expect(tracker.snapshot()).toBe(tracker.snapshot());
+  });
+
   it("forgets what it read the drawing before", () => {
     const base: RenderContext = { ...EDITOR_RENDER_CONTEXT, firstSection: "a" };
     const store = createRenderContextStore(base);
