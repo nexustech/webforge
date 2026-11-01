@@ -506,8 +506,9 @@ const REACT_ATTRIBUTE_NAMES: Readonly<Record<string, string>> = { tabindex: "tab
 /**
  * A component's output with the node's Advanced-mode options (F-ED-11) on its root element: the
  * extra classes after its own, the attributes, and the anchor as its `id`. The options are checked
- * again here, so nothing outside the allow-list reaches a page whatever the document holds. Output
- * whose root isn't an HTML element is left as it is.
+ * again here, so nothing outside the allow-list reaches a page whatever the document holds. An
+ * attribute the component wrote itself stays its own (#650): its scripts read some of them, such as
+ * a Carousel's `data-interval`. Output whose root isn't an HTML element is left as it is.
  */
 export function withAdvanced(output: ReactNode, advanced: unknown): ReactNode {
   if (advanced === undefined || !isValidElement(output) || typeof output.type !== "string") {
@@ -519,13 +520,13 @@ export function withAdvanced(output: ReactNode, advanced: unknown): ReactNode {
     return output;
   }
   const { className, attributes = {}, anchorId } = parsed.data;
-  const own = (output.props as { readonly className?: unknown }).className;
+  const props = output.props as Readonly<Record<string, unknown>>;
+  const own = props.className;
   return cloneElement(output, {
     ...Object.fromEntries(
-      Object.entries(attributes).map(([name, value]) => [
-        REACT_ATTRIBUTE_NAMES[name] ?? name,
-        value,
-      ]),
+      Object.entries(attributes)
+        .map(([name, value]) => [REACT_ATTRIBUTE_NAMES[name] ?? name, value] as const)
+        .filter(([name]) => props[name] === undefined),
     ),
     ...(anchorId === undefined || anchorId === "" ? {} : { id: anchorId }),
     ...(className === undefined || className === ""
