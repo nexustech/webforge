@@ -12,9 +12,9 @@ import { ImagePlusIcon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import type { ImagePickRequests } from "../editor/image-picks.js";
 import { useDocument } from "../editor/use-document.js";
 import { siteSession } from "../storage/index.js";
-import type { ImagePickRequests } from "./image-picks.js";
 import { importItems } from "./import-media.js";
 import { addMedia } from "./media-commands.js";
 

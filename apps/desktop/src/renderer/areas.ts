@@ -1,6 +1,7 @@
 import { addPanelArea } from "./add/area.js";
 import { aiRequestsArea } from "./ai/area.js";
 import { clipboardCommandsArea, styleCommandsArea } from "./clipboard/area.js";
+import { editPanelArea } from "./edit-panel/area.js";
 import type { Area, EditorContext, WindowContext } from "./editor/areas.js";
 import {
   canvasCommandsArea,
@@ -25,6 +26,7 @@ import { canvasSettingsArea, siteCodeArea, siteSettingsArea } from "./site-setti
 import { saveSiteZipArea } from "./start/save-site-zip.js";
 import { crashReportsArea } from "./storage/area.js";
 import { themePanelArea } from "./theme/area.js";
+import { undoHistoryArea } from "./undo-history/area.js";
 
 /*
  * The composition root (2.20, B1): every area the editor window registers, in order. Menus, the
@@ -40,6 +42,9 @@ import { themePanelArea } from "./theme/area.js";
 
 /** The areas the editor registers (Editor), in order. */
 export const EDITOR_AREAS: readonly Area<EditorContext>[] = [
+  // First, so Undo and Redo head the Edit menu, and the Edit panel tops the right column.
+  undoHistoryArea,
+  editPanelArea,
   siteCssArea,
   canvasImagesArea,
   canvasSettingsArea,
