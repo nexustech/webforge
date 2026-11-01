@@ -28,6 +28,10 @@ const SITE_CHANNELS = [
   "ai:listening",
   "trust:untrusted-code",
   "trust:trust-code",
+  "publish:destinations",
+  "publish:saveDestination",
+  "publish:removeDestination",
+  "publish:testSavedDestination",
 ] as const;
 
 /** The others, and why none of them needs the opening. */

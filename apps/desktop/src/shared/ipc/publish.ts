@@ -1,11 +1,14 @@
 import {
+  DESTINATION_NAME_MAX,
   fileTransferDestinationSchema,
   fileTransferTrustSchema,
   HOST_MAX,
   hostKeySchema,
+  publishDestinationSchema,
   SECRET_MAX,
 } from "@webforge/model";
 import { z } from "zod";
+import { sessionIdSchema } from "./project.js";
 
 /**
  * Why a connection test failed (`PublishErrorCode` of `@webforge/publish`), which the destination
@@ -88,6 +91,91 @@ const keyFileResultSchema = z.discriminatedUnion("status", [
 /** A private key file the person chose. */
 export type KeyFileResult = z.infer<typeof keyFileResultSchema>;
 
+/**
+ * Whether a destination's sign-in is saved on this computer (4.4a, security review S2): `saved` for
+ * the destination as it is now; `changed` when it was saved for another protocol, host, port, user
+ * or host key than the site file now names, so it is given to no one until typed again; `none`.
+ */
+const signInStateSchema = z.enum(["saved", "changed", "none"]);
+
+/** See {@link signInStateSchema}. */
+export type SignInState = z.infer<typeof signInStateSchema>;
+
+/** Why a call about the open site's destinations did nothing. */
+const destinationsFailureSchema = z.strictObject({
+  status: z.literal("failed"),
+  reason: z.enum([
+    "no-site",
+    "stale-session",
+    "read-only",
+    // This computer can't keep secrets encrypted (no keychain on some Linux desktops).
+    "no-keychain",
+    // A key file the main process no longer holds: chosen too long ago.
+    "bad-key",
+    // The site has as many destinations as it may.
+    "full",
+    "unknown",
+  ]),
+});
+
+/** One destination of the open site, with what this computer keeps for it. */
+const listedDestinationSchema = z.strictObject({
+  destination: publishDestinationSchema,
+  signIn: signInStateSchema,
+  /** What this computer trusts about it: kept beside the secret, never in the site file. */
+  trust: fileTransferTrustSchema,
+});
+
+const destinationsResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("listed"), destinations: z.array(listedDestinationSchema) }),
+  destinationsFailureSchema,
+]);
+
+/** See {@link publishChannels}' `publishDestinations`. */
+export type DestinationsResult = z.infer<typeof destinationsResultSchema>;
+
+/** A file-transfer destination as the destination form saves it: a new one has no id yet. */
+const destinationDraftSchema = z.strictObject({
+  id: z.uuid().optional(),
+  name: z.string().trim().min(1).max(DESTINATION_NAME_MAX),
+  settings: fileTransferDestinationSchema,
+});
+
+/** See {@link destinationDraftSchema}. */
+type DestinationDraft = z.input<typeof destinationDraftSchema>;
+
+/**
+ * How a saved destination signs in: as typed, or `keep` to keep the sign-in saved for it, which
+ * main allows only while the protocol, host, port, user and host key are those it was saved for.
+ */
+const savedSignInSchema = z.union([signInRefSchema, z.strictObject({ keep: z.literal(true) })]);
+
+/** See {@link savedSignInSchema}. */
+type SavedSignInRef = z.infer<typeof savedSignInSchema>;
+
+const saveDestinationResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("saved"), destination: publishDestinationSchema }),
+  /** `keep` for a destination whose sign-in isn't saved for it as it is now: type it again. */
+  z.strictObject({ status: z.literal("sign-in-needed") }),
+  destinationsFailureSchema,
+]);
+
+/** See {@link publishChannels}' `publishSaveDestination`. */
+export type SaveDestinationResult = z.infer<typeof saveDestinationResultSchema>;
+
+const removeDestinationResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("removed") }),
+  destinationsFailureSchema,
+]);
+
+/** See {@link publishChannels}' `publishRemoveDestination`. */
+export type RemoveDestinationResult = z.infer<typeof removeDestinationResultSchema>;
+
+const testSavedResultSchema = z.union([connectionResultSchema, destinationsFailureSchema]);
+
+/** See {@link publishChannels}' `publishTestSavedDestination`. */
+type TestSavedResult = z.infer<typeof testSavedResultSchema>;
+
 /** IPC channels of the `publish` domain (`publish:*`). Each one's arguments are checked. */
 export const publishChannels = {
   /**
@@ -115,6 +203,46 @@ export const publishChannels = {
     request: z.tuple([]),
     response: keyFileResultSchema,
   },
+  /** The open site's destinations (4.4a), with whether each one's sign-in is saved here. */
+  publishDestinations: {
+    channel: "publish:destinations",
+    request: z.tuple([sessionIdSchema]),
+    response: destinationsResultSchema,
+  },
+  /**
+   * Adds a destination to the open site, or changes one: its settings to the site file, its
+   * sign-in and trust to this computer's keychain and data (S2), never the site file.
+   */
+  publishSaveDestination: {
+    channel: "publish:saveDestination",
+    request: z.tuple([
+      sessionIdSchema,
+      destinationDraftSchema,
+      savedSignInSchema,
+      fileTransferTrustSchema,
+    ]),
+    response: saveDestinationResultSchema,
+  },
+  /** Removes a destination from the open site, and its sign-in and trust from this computer. */
+  publishRemoveDestination: {
+    channel: "publish:removeDestination",
+    request: z.tuple([sessionIdSchema, z.uuid()]),
+    response: removeDestinationResultSchema,
+  },
+  /**
+   * Test connection for a saved destination being edited, with the sign-in saved for it: only
+   * while `settings` and `trust` are what it was saved for (S2), and `unauthorized` otherwise.
+   */
+  publishTestSavedDestination: {
+    channel: "publish:testSavedDestination",
+    request: z.tuple([
+      sessionIdSchema,
+      z.uuid(),
+      fileTransferDestinationSchema,
+      fileTransferTrustSchema,
+    ]),
+    response: testSavedResultSchema,
+  },
 } as const;
 
 /** `window.webforge.publish`: publishing's calls to the main process (Phase 4). */
@@ -129,4 +257,22 @@ export interface PublishApi {
   readHostKey(host: string, port?: number): Promise<HostKeyResult>;
   /** A private key file the person chooses, read. */
   chooseKeyFile(): Promise<KeyFileResult>;
+  /** The destinations of the site `sessionId` opened, with what this computer keeps for each. */
+  destinations(sessionId: string): Promise<DestinationsResult>;
+  /** Adds or changes one of the site's destinations, with how it signs in and what is trusted. */
+  saveDestination(
+    sessionId: string,
+    draft: DestinationDraft,
+    signIn: SavedSignInRef,
+    trust: z.input<typeof fileTransferTrustSchema>,
+  ): Promise<SaveDestinationResult>;
+  /** Removes one of the site's destinations, with what this computer kept for it. */
+  removeDestination(sessionId: string, id: string): Promise<RemoveDestinationResult>;
+  /** Test connection for destination `id` as edited, with the sign-in saved for it. */
+  testSavedDestination(
+    sessionId: string,
+    id: string,
+    settings: z.input<typeof fileTransferDestinationSchema>,
+    trust: z.input<typeof fileTransferTrustSchema>,
+  ): Promise<TestSavedResult>;
 }
