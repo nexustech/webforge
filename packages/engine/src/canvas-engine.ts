@@ -251,8 +251,22 @@ export interface CanvasEngine {
    * sections in `shared` (F-ED-23; none if left out).
    */
   loadPage(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): void;
-  /** Shows a change made outside the engine, e.g. by undo. Keeps the selection if it still exists. */
+  /**
+   * Shows a change made outside the engine, e.g. by undo. Keeps the selection if it still exists.
+   *
+   * Called while an {@link onUserEdit} listener runs, it is that edit's echo: the canvas shows it
+   * already, so it shows nothing new, whatever the change holds. That makes the echo contract
+   * (A24): the change must be the edit's result unchanged. A development or test build throws when
+   * it isn't. Any other change, at any other time, is shown as it is.
+   */
   applyChange(change: DocChange): void;
+  /**
+   * Calls `cb` with each edit made on the canvas, which shows it already. The app owns the document
+   * (C6): `cb` takes the edit over at once and unchanged, recording `edit.page` (with its `layout`
+   * and `sharedSection`) as it is, and hands the result back through {@link applyChange} before it
+   * returns. Where an edit can't be taken over as it is (refused, or waiting for an answer), `cb`
+   * records nothing and later hands back the document as it is then, which the canvas shows.
+   */
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
   select(nodeId: string | null): void;
   /**
