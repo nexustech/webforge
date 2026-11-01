@@ -303,6 +303,38 @@ describe("createPuckEngine", () => {
     expect(headings()).toEqual(["Typed", "Second"]);
   });
 
+  it("throws, in a test build, when the app takes its edit over changed, naming no content (A24)", async () => {
+    const thrown: unknown[] = [];
+    const handBack = (next: PageDoc) => {
+      try {
+        engine.applyChange({ page: next });
+      } catch (error) {
+        thrown.push(error);
+      }
+    };
+    const type = async (text: string) => {
+      const field = element.querySelector<HTMLElement>(".t-heading [data-puck-overlay-portal]");
+      await act(async () => {
+        if (field === null) return;
+        field.innerText = text;
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      await settle();
+    };
+    const stop = engine.onUserEdit((edit) => handBack(structuredClone(edit.page)));
+    await type("Same");
+    // The same content as other objects is the edit unchanged.
+    expect(thrown).toEqual([]);
+    stop();
+
+    engine.onUserEdit((edit) => handBack({ ...edit.page, content: edit.page.content.slice(1) }));
+    await type("Typed");
+
+    expect(thrown).toHaveLength(1);
+    expect(String(thrown[0])).toContain("changed an edit as it took it over (page)");
+    expect(String(thrown[0])).not.toContain("Typed");
+  });
+
   describe("selection chrome (1.12)", () => {
     const action = (title: string) =>
       element.querySelector<HTMLButtonElement>(`[title="${title}"]`);

@@ -78,6 +78,13 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 - **Order:** see *Priority order* under [Phase 4](#phase-4-publish--versions). 4.10 merges before the Edit panel refactor [#667](https://github.com/nexustech/webforge/issues/667), not after it as the review proposed: 4.10 is finished on its branch, so the refactor follows it.
 - **New dates:** Phase 4's open work is 26 estimated days of plan items, 3 for 0.2 and 21 out of plan. At Phase 3's pace (0.68 for plan items, 1.10 for out-of-plan work) that is about 43 actual days: about 14 working days with three streams, set by the chain 0.2 → 4.2 → 4.4 → 4.5 → 4.6. So Phase 4 ends about **14 working days after it resumes**, not 13 Nov; its milestone date is set on resuming. Phase 5 gains about 12.5 actual days for the moved issues, inside its hardening weeks.
 - **Resumed, 31 Oct 2026 (product owner):** the streams are assigned (queues under [Phase 4](#phase-4-publish--versions)) and the milestone is due **19 Nov 2026**, 14 working days from 2 Nov. The Layers bug [#673](https://github.com/nexustech/webforge/issues/673) (1.5 days, out of plan, found by the product owner on 30 Oct) goes first after 4.10 in stream A. Plan-item days are unchanged, so there is no scope change. Later that day the CI review (research/stack/09 §8) added three flaky-test bugs, [#676](https://github.com/nexustech/webforge/issues/676)–[#678](https://github.com/nexustech/webforge/issues/678), 2 days out of plan, early in A's and C's queues.
+- **Publishing without waiting on 0.2, 1 Nov 2026 (product owner):** the product owner runs 0.2 ([#12](https://github.com/nexustech/webforge/issues/12)) later in the week, which left 0.2 → 4.2 → 4.4 → 4.5 → 4.6 (14 estimated days after 0.2) to fit before 19 Nov. Only Netlify needs 0.2, and the FTP/FTPS/SFTP publisher (4.3) has merged, so two items are split and the chain starts now:
+  - 4.4 becomes 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), 2.5 days: the destinations list, the keychain store and FTP/FTPS/SFTP, after 4.3) and 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), 0.5 day: Netlify's sign-in and site choice, after 4.2 and 4.4a);
+  - 4.5 ([#73](https://github.com/nexustech/webforge/issues/73)) waits on 4.4a only, and its mocked-Netlify E2E moves to 4.4b;
+  - 4.6 becomes 4.6a ([#74](https://github.com/nexustech/webforge/issues/74), 4 days: Version History on storage format 2, [#664](https://github.com/nexustech/webforge/issues/664), now) and 4.6b ([#724](https://github.com/nexustech/webforge/issues/724), 1 day: republishing a version, after 4.5 and 4.6a);
+  - 4.9 ([#171](https://github.com/nexustech/webforge/issues/171)) waits on 4.4a's credential store, not on 4.2.
+
+  The longest chain is now 4.4a → 4.5 → 4.6b, 5.5 estimated days, and 0.2 → 4.2 → 4.4b is 4.5 after the product owner's run. Plan-item days are unchanged (3 = 2.5 + 0.5, 5 = 4 + 1), so there is no scope change. The same day, with every stream's Phase 4 queue blocked on 0.2, the coordinator pulled seven Phase 5 issues forward: [#653](https://github.com/nexustech/webforge/issues/653) and [#645](https://github.com/nexustech/webforge/issues/645) (A); [#654](https://github.com/nexustech/webforge/issues/654), [#659](https://github.com/nexustech/webforge/issues/659) and [#643](https://github.com/nexustech/webforge/issues/643) (B); [#669](https://github.com/nexustech/webforge/issues/669) and [#671](https://github.com/nexustech/webforge/issues/671)'s A18, A24 and A25 (C). [#658](https://github.com/nexustech/webforge/issues/658) had moved from C to A, as A waited on 4.4.
 
 **Re-plan, 30 Oct 2026 (Phase 3 exit):** Phase 3's exit criteria are met, with evidence, and the milestone is closed on the product owner's sign-off (30 Oct 2026), a week before its 6 Nov date: all 47 issues closed, none out of plan left open. The five review notes from the Phase 3 feedback items (3.18–3.22) went to Phase 5 as four chores ([#643](https://github.com/nexustech/webforge/issues/643)–[#646](https://github.com/nexustech/webforge/issues/646)).
 - **Evidence:**
@@ -270,9 +277,11 @@ gantt
     4.1 Publish core – Publisher interface, manifests,… :crit, t4_1, 2027-08-27, 3d
     4.2 Netlify publisher and Netlify Forms :crit, t4_2, 2027-09-02, 4d
     4.3 FTP/FTPS/SFTP publisher :t4_3, 2027-09-08, 3d
-    4.4 Publish destinations UI and keychain credentials :crit, t4_4, 2027-09-13, 3d
+    4.4a Publish destinations UI and keychain credentials :crit, t4_4a, 2027-09-13, 2.5d
+    4.4b Netlify destination in the destinations UI :t4_4b, after t4_2 t4_4a, 0.5d
     4.5 Publish flow UI :crit, t4_5, 2027-09-16, 2d
-    4.6 Version History :crit, t4_6, 2027-09-20, 5d
+    4.6a Version History :t4_6a, 2027-09-20, 4d
+    4.6b Republish a version :crit, t4_6b, after t4_5 t4_6a, 1d
     4.7 Project export/import as ZIP :t4_7, 2027-09-27, 2d
     4.8 Command API for AI apps :t4_8, after t4_7, 3d
     4.9 Local MCP server and AI app approvals :t4_9, after t4_8, 5d
@@ -928,7 +937,7 @@ The editor's seven registries (site components, behaviours, panels, commands and
 - [ ] `pnpm typecheck` fails on a `t()` call missing a placeholder's param
 
 **2.21 One form engine for the Edit panel and dialogs** (added 24 Oct 2026, [extensibility review](../docs/reviews/2026-10-24-extensibility-review.md))  
-A field is described three ways today (`FieldDef`, editor-ui's loose `FieldSpec`, and hand-written dialog forms: Site Settings is 713 lines, and Page Settings and the link dialog each carry their own `Field`). `FormSpec` in editor-ui lists fields in `FieldDef`'s kinds (after R11) with groups and layout; a `Form` component draws them through the field registry; values are validated by the model's zod schemas, so limits and messages come from one place (B3). It builds on R10's form primitives and the model limits R10 exports, rather than replacing them. `FormDialog` adds the title, Save and Cancel, the undo label and `useMenuDialog` as the one way a menu opens a dialog (B4). Site Settings, Page Settings, Device and Name move onto it; Theme Studio (2.3b), the merged Settings dialog (LF-12, in 1.39, which comes after it) and Publish destinations (4.4) are written on it, and Settings sections become entries an area registers.
+A field is described three ways today (`FieldDef`, editor-ui's loose `FieldSpec`, and hand-written dialog forms: Site Settings is 713 lines, and Page Settings and the link dialog each carry their own `Field`). `FormSpec` in editor-ui lists fields in `FieldDef`'s kinds (after R11) with groups and layout; a `Form` component draws them through the field registry; values are validated by the model's zod schemas, so limits and messages come from one place (B3). It builds on R10's form primitives and the model limits R10 exports, rather than replacing them. `FormDialog` adds the title, Save and Cancel, the undo label and `useMenuDialog` as the one way a menu opens a dialog (B4). Site Settings, Page Settings, Device and Name move onto it; Theme Studio (2.3b), the merged Settings dialog (LF-12, in 1.39, which comes after it) and Publish destinations (4.4a) are written on it, and Settings sections become entries an area registers.
 
 - [ ] The four existing dialogs are `FormSpec`s; no dialog defines its own `Field` or `Check`
 - [ ] A value the schema rejects shows the schema's message; no `maxLength` literal remains in a dialog
@@ -1218,21 +1227,23 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 
 **Priority order (re-plan, 30 Oct 2026, product owner).** The streams' queues below follow it (assigned when Phase 4 resumed, 31 Oct 2026). Each step starts once the ones it names are merged:
 1. **First:** finish the three paused items, 4.10 ([#612](https://github.com/nexustech/webforge/issues/612)), 4.7 ([#75](https://github.com/nexustech/webforge/issues/75), after [#651](https://github.com/nexustech/webforge/issues/651), with the site-package criterion) and 4.3 ([#71](https://github.com/nexustech/webforge/issues/71), with manifest v2); [#661](https://github.com/nexustech/webforge/issues/661) storage clean-up and [#656](https://github.com/nexustech/webforge/issues/656) Renovate and the audit; and 0.2 ([#12](https://github.com/nexustech/webforge/issues/12)), which the product owner runs, as early as possible: it starts the longest chain.
-2. **Before 4.4:** [#662](https://github.com/nexustech/webforge/issues/662) (the publish and destinations ADR), [#666](https://github.com/nexustech/webforge/issues/666), [#668](https://github.com/nexustech/webforge/issues/668), and 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) after 0.2; [#667](https://github.com/nexustech/webforge/issues/667) after 4.10.
-3. **Before 4.5:** [#649](https://github.com/nexustech/webforge/issues/649), [#650](https://github.com/nexustech/webforge/issues/650), [#663](https://github.com/nexustech/webforge/issues/663), [#665](https://github.com/nexustech/webforge/issues/665) and [#657](https://github.com/nexustech/webforge/issues/657)'s manifest part (with 4.3); then 4.4 ([#72](https://github.com/nexustech/webforge/issues/72)) and 4.5 ([#73](https://github.com/nexustech/webforge/issues/73)).
-4. **Before 4.6 and 4.9:** [#664](https://github.com/nexustech/webforge/issues/664) and R17 ([#250](https://github.com/nexustech/webforge/issues/250)), then 4.6 ([#74](https://github.com/nexustech/webforge/issues/74)); [#658](https://github.com/nexustech/webforge/issues/658), then 4.9 ([#171](https://github.com/nexustech/webforge/issues/171)).
+2. **Before 4.4a:** [#662](https://github.com/nexustech/webforge/issues/662) (the publish and destinations ADR), [#666](https://github.com/nexustech/webforge/issues/666) and [#668](https://github.com/nexustech/webforge/issues/668); [#667](https://github.com/nexustech/webforge/issues/667) after 4.10. 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) follows 0.2, and only 4.4b ([#723](https://github.com/nexustech/webforge/issues/723)) waits on it (re-plan, 1 Nov 2026).
+3. **Before 4.5:** [#649](https://github.com/nexustech/webforge/issues/649), [#650](https://github.com/nexustech/webforge/issues/650), [#663](https://github.com/nexustech/webforge/issues/663), [#665](https://github.com/nexustech/webforge/issues/665) and [#657](https://github.com/nexustech/webforge/issues/657)'s manifest part (with 4.3); then 4.4a ([#72](https://github.com/nexustech/webforge/issues/72)) and 4.5 ([#73](https://github.com/nexustech/webforge/issues/73)).
+4. **Before 4.6a and 4.9:** [#664](https://github.com/nexustech/webforge/issues/664) and R17 ([#250](https://github.com/nexustech/webforge/issues/250)), then 4.6a ([#74](https://github.com/nexustech/webforge/issues/74)), and 4.6b ([#724](https://github.com/nexustech/webforge/issues/724)) once 4.5 has merged; [#658](https://github.com/nexustech/webforge/issues/658) and 4.4a, then 4.9 ([#171](https://github.com/nexustech/webforge/issues/171)).
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
 | 4.1 | Publish core: Publisher interface, manifests, upload order, verify | [#69](https://github.com/nexustech/webforge/issues/69) | publish | [stack/08](../research/stack/08-publishing.md), architecture §6 | 3 | 3.3, 0.2, 0.3 |
 | 4.2 | Netlify publisher and Netlify Forms | [#70](https://github.com/nexustech/webforge/issues/70) | publish | B1, B6, F-PB-1, F-CM-1 | 4 | 4.1, 3.7 |
 | 4.3 | FTP/FTPS/SFTP publisher | [#71](https://github.com/nexustech/webforge/issues/71) | publish | B1, B5 | 3 | 4.1 |
-| 4.4 | Publish destinations UI and keychain credentials | [#72](https://github.com/nexustech/webforge/issues/72) | publish | F-PB-1, architecture §9 | 3 | 4.2, 4.3 |
-| 4.5 | Publish flow UI | [#73](https://github.com/nexustech/webforge/issues/73) | publish | F-PB-2, X5, F-CM-8 | 2 | 4.4, 3.6, 3.5 |
-| 4.6 | Version History | [#74](https://github.com/nexustech/webforge/issues/74) | storage | F-SITE-4, F-PB-3, P3, P5, D7 | 5 | 1.5, 1.26, 4.5 |
+| 4.4a | Publish destinations UI and keychain credentials | [#72](https://github.com/nexustech/webforge/issues/72) | publish | F-PB-1, architecture §9 | 2.5 | 4.3 |
+| 4.4b | Netlify destination in the destinations UI | [#723](https://github.com/nexustech/webforge/issues/723) | publish | F-PB-1, B1, B6 | 0.5 | 4.2, 4.4a |
+| 4.5 | Publish flow UI | [#73](https://github.com/nexustech/webforge/issues/73) | publish | F-PB-2, X5, F-CM-8 | 2 | 4.4a, 3.6, 3.5 |
+| 4.6a | Version History | [#74](https://github.com/nexustech/webforge/issues/74) | storage | F-SITE-4, P3, P5, D7 | 4 | 1.5, 1.26, [#664](https://github.com/nexustech/webforge/issues/664) |
+| 4.6b | Republish a version | [#724](https://github.com/nexustech/webforge/issues/724) | storage | F-PB-3 | 1 | 4.5, 4.6a |
 | 4.7 | Project export/import as ZIP | [#75](https://github.com/nexustech/webforge/issues/75) | storage | F-SITE-5 | 2 | 1.5 |
 | 4.8 | Command API for AI apps | [#170](https://github.com/nexustech/webforge/issues/170) | history | F-AI-1, G33, GA5, GA9 | 3 | 1.17, 1.18, 1.26, 1.29, 2.1, 2.3, 2.5 |
-| 4.9 | Local MCP server and AI app approvals | [#171](https://github.com/nexustech/webforge/issues/171) | ai | F-AI-1, G33, GA5, architecture §3, §9 | 5 | 4.8, 4.4, 3.2, 3.6 |
+| 4.9 | Local MCP server and AI app approvals | [#171](https://github.com/nexustech/webforge/issues/171) | ai | F-AI-1, G33, GA5, architecture §3, §9 | 5 | 4.8, 4.4a, 3.2, 3.6 |
 | 4.10 | Theme Studio › Components: apply changes together, and a larger before/after preview | [#612](https://github.com/nexustech/webforge/issues/612) | themes | CT-1, CT-2, F-DS-7, D7 | 2 | 3.12, 3.13 |
 
 **Streams (assigned 31 Oct 2026, when Phase 4 resumed; first assigned 30 Oct at the Phase 3 exit).** One item in progress per stream; a dependency counts as met when its PR has merged. 4.1 and 4.8 had merged in Phase 1–3. Each stream first finishes the item it paused on.
@@ -1243,7 +1254,15 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 | B: Data & site | [#651](https://github.com/nexustech/webforge/issues/651) (check a site file's tables) → 4.7 (finish, with the site-package criterion) → [#661](https://github.com/nexustech/webforge/issues/661) (storage clean-up) → 4.2 (Netlify publisher, once 0.2 has run and [#662](https://github.com/nexustech/webforge/issues/662) has merged) → [#649](https://github.com/nexustech/webforge/issues/649) (ask before another site's code runs) → [#664](https://github.com/nexustech/webforge/issues/664) (storage format 2) → 4.6 (Version History, once 4.5 has merged). B also helps the product owner with 0.2's two steps |
 | C: History & canvas | 4.3 (finish, with manifest v2) → [#677](https://github.com/nexustech/webforge/issues/677) (timing tests on slow runners) → [#657](https://github.com/nexustech/webforge/issues/657) (JSON-LD escaping and the manifest part) → [#662](https://github.com/nexustech/webforge/issues/662) (the publish and destinations ADR) → [#666](https://github.com/nexustech/webforge/issues/666) (userData helper, credential keys) → [#668](https://github.com/nexustech/webforge/issues/668) (renderer seams) → [#665](https://github.com/nexustech/webforge/issues/665) (main-process seams, three PRs) → [#658](https://github.com/nexustech/webforge/issues/658) (AI command checks) → 4.9 (MCP server, once 4.4 has merged) |
 
-0.2 ([#12](https://github.com/nexustech/webforge/issues/12)) is the product owner's: its code merged in Phase 0, and its live check and OAuth app registration need their Netlify account. It starts the longest chain, 0.2 → 4.2 → 4.4 → 4.5 → 4.6, so it's best run in the first days. About 16, 17.5 and 17 estimated days, the paused items counted in full, with the three flaky-test issues from the CI review of 31 Oct 2026 ([#676](https://github.com/nexustech/webforge/issues/676)–[#678](https://github.com/nexustech/webforge/issues/678), 2 days out of plan) put early because every stream re-runs CI for them. At Phase 3's pace (0.68 for plan items, 1.10 for out-of-plan work), less what the paused items have done, that is about 12–14 actual days each; B's 4.6 and C's 4.9 end the phase.
+**Queues from 1 Nov 2026 (re-plan: publishing without waiting on 0.2, product owner).** Everything above had merged except 4.2, 4.4, 4.5, 4.6, 4.9 and [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x by hand, stream A, from 3 Nov). [#658](https://github.com/nexustech/webforge/issues/658) moved from C to A and merged; the Phase 5 issues pulled forward are listed in §3.
+
+| Stream | Items, in order |
+|---|---|
+| A: Shell & panels | 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), destinations UI and keychain, FTP/FTPS/SFTP) → [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x) → 4.5 ([#73](https://github.com/nexustech/webforge/issues/73), publish flow UI) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), Netlify destination, once 4.2 has merged) |
+| B: Data & site | [#643](https://github.com/nexustech/webforge/issues/643) (pulled forward, in progress) → 4.6a ([#74](https://github.com/nexustech/webforge/issues/74), Version History) → 4.6b ([#724](https://github.com/nexustech/webforge/issues/724), republish, once 4.5 has merged). 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) goes first as soon as 0.2 has run, ahead of what is left |
+| C: History & canvas | [#671](https://github.com/nexustech/webforge/issues/671)'s A25 (pulled forward, in progress) → 4.9 ([#171](https://github.com/nexustech/webforge/issues/171), MCP server, once 4.4a has merged) |
+
+0.2 ([#12](https://github.com/nexustech/webforge/issues/12)) is the product owner's: its code merged in Phase 0, and its live check and OAuth app registration need their Netlify account. Since the 1 Nov re-plan it starts only 0.2 → 4.2 → 4.4b; the longest chain is 4.4a → 4.5 → 4.6b. The figures that follow are from 31 Oct. About 16, 17.5 and 17 estimated days, the paused items counted in full, with the three flaky-test issues from the CI review of 31 Oct 2026 ([#676](https://github.com/nexustech/webforge/issues/676)–[#678](https://github.com/nexustech/webforge/issues/678), 2 days out of plan) put early because every stream re-runs CI for them. At Phase 3's pace (0.68 for plan items, 1.10 for out-of-plan work), less what the paused items have done, that is about 12–14 actual days each; B's 4.6 and C's 4.9 end the phase.
 
 <details><summary>Scope and acceptance criteria</summary>
 
@@ -1266,36 +1285,48 @@ FTPS first then plain FTP (one-time warning), SFTP with password or key, host pr
 - [ ] Integration tests against containerised FTP/SFTP servers
 - [ ] Plain FTP warning shown once per destination
 - [ ] The packaged app publishes over SFTP to a local test server (`e2e:packaged`): `ssh2` ships as JavaScript, with no native module to rebuild (ADR 0006)
-- [ ] The SFTP host key, any FTPS certificate pin and the plain-FTP warning flag are kept in userData beside the saved secret, never in the `.wforge`, where an edited file could replace them (security review S2, with 4.4)
+- [ ] The SFTP host key, any FTPS certificate pin and the plain-FTP warning flag are kept in userData beside the saved secret, never in the `.wforge`, where an edited file could replace them (security review S2, with 4.4a)
 - [ ] The remote manifest (version 2, still reading 1) records the project, the destination and the publish time; publishing to a folder whose manifest names another project stops with `other-site` before uploading anything, and 4.5 asks before replacing it (architecture review 2, A8)
 
-**4.4 Publish destinations UI and keychain credentials**  
-Destinations list per site (several allowed), add/edit/test/remove; secrets via safeStorage keyed by site + destination; public URL fills Site Settings web address if empty.
+**4.4a Publish destinations UI and keychain credentials** (4.4 until the 1 Nov 2026 re-plan, which moved Netlify to 4.4b)  
+Destinations list per site (several allowed), add/edit/test/remove; secrets via safeStorage keyed by site + destination; public URL fills Site Settings web address if empty. FTP/FTPS/SFTP destinations, and Publish wired for them.
 
 - [ ] Secrets never written to .wforge (test)
 - [ ] Works on Windows DPAPI and macOS Keychain
 - [ ] A saved secret is given only to the destination it was typed for: a fingerprint of protocol, host, port, user and SFTP host key is kept in userData beside it, and a mismatch asks for the password again and shows the new host (security review S2; the review's test `publish-1-…` passes)
 - [ ] Destinations are stored outside the site document: per site, not undoable and not copied into versions, in one shape with `url` and `auth` that maps to each publisher; `publish` leaves `siteSettingsSchema` through an ADR 0012 step (architecture review 2, A3; as #662's ADR decides)
 
+**4.4b Netlify destination in the destinations UI** (split from 4.4, 1 Nov 2026)  
+*Add destination › Netlify* in 4.4a's list: 4.2's OAuth (loopback) with the token fallback, pick or create the Netlify site, the token kept as 4.4a keeps other secrets.
+
+- [ ] A Netlify destination can be added, tested, edited and removed; its token is never written to the `.wforge` (test)
+- [ ] E2E publish to a mocked Netlify API through 4.5's flow (moved from 4.5)
+- [ ] 'Netlify Forms' is offered once the site has a Netlify destination, end to end
+
 **4.5 Publish flow UI**  
 Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version. **Site Check tip for an out-of-date {year}** (moved from 3.6, 27 Oct 2026, no change to either estimate): a rule in 3.6's framework (`packages/site-check`) tips when the year a published site shows (3.5's `{year}`, F-CM-8) is older than this year, from the record of the last publish this item keeps.
 
 - [ ] Publish-strict errors stop publish with jump-to-fix
-- [ ] E2E publish to mock Netlify and local SFTP
+- [ ] E2E publish to local SFTP (to a mocked Netlify in 4.4b)
 - [ ] Publishing runs as a job in the export worker, with the secret passed for that job only; main runs the Site Check publish gate on the document it builds from before starting the job (architecture review 2, A2, A6; as #662's ADR decides)
 - [ ] The automatic version on publish is saved after the text session ends and autosave has flushed, and it is the version that was built and published (architecture review 2, A4)
 - [ ] The publish IPC carries the session id and an operation id for progress and cancel (#663, #665)
 
-**4.6 Version History**  
-Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before site-wide actions, on publish) with configurable retention (default 20), panel with thumbnails, read-only preview, restore as one undo step, open version as new site, republish a version.
+**4.6a Version History** (4.6 until the 1 Nov 2026 re-plan, which moved republishing to 4.6b)  
+Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before site-wide actions, on publish) with configurable retention (default 20), panel with thumbnails, read-only preview, restore as one undo step, open version as new site.
 
 - [ ] Manual versions never auto-deleted
 - [ ] Restore is undoable
-- [ ] Republishing a version works on all targets
 - [ ] Space used + Clean up shown
 - [ ] Built on storage format 2 (#664); restore goes through `restoreSite`, one undo step that dates the restored pages
-- [ ] Republish builds the stored version in main through `readVersionSite` and the same flow as 4.5, after the publish gate: a version with an external script can't be republished (test) (architecture review 2, A4, A6)
 - [ ] The scope says which actions take an automatic version before site-wide actions, including theme changes that ask no question, through `setBeforeSiteWideAction` (#668) (architecture review 2, A21)
+- [ ] A restored version's site goes through `siteWithCleanRichText` before `restoreSite` (S23, #659 review)
+
+**4.6b Republish a version** (split from 4.6, 1 Nov 2026)  
+*Republish this version* in 4.6a's panel, through 4.5's flow, and the "Published …" marker from each version's publish record.
+
+- [ ] Republishing a version works on all targets
+- [ ] Republish builds the stored version in main through `readVersionSite` and the same flow as 4.5, after the publish gate: a version with an external script can't be republished (test) (architecture review 2, A4, A6)
 
 **4.7 Project export/import as ZIP**  
 File → Export as .zip (JSON + media, documented) and import back to a new .wforge.
@@ -1312,7 +1343,7 @@ A typed, framework-free command layer in a new `packages/commands` (no React, no
 - [ ] Commands during an open transaction return `busy` and change nothing; a site-wide command waits for D7 and is `declined` after 60 s
 
 **4.9 Local MCP server and AI app approvals** (added 22 Oct 2026, GA5)  
-ADR on the transport (Q9). The MCP server runs in main on the official TypeScript SDK (MIT), maps tools to 4.8 plus *Run Site Check* and *Open Preview*, and runs only while a site is open. Preferences → *AI apps*: off by default; *Add AI app* pairs an app with a one-time code (never trusting the name an app reports about itself) and explains that open sites' content is shared with it; paired apps can be removed; tokens in the OS keychain (4.4's credential store). An HTTP transport checks `Origin` and `Host` on every request. Tool calls are never logged with their content. A status indicator shows when an app is connected. Help page for connecting Claude and ChatGPT desktop apps. Label the PR `full-ci`; while Windows/macOS CI is paused, run `pnpm e2e` locally on Windows and say so in the PR.
+ADR on the transport (Q9). The MCP server runs in main on the official TypeScript SDK (MIT), maps tools to 4.8 plus *Run Site Check* and *Open Preview*, and runs only while a site is open. Preferences → *AI apps*: off by default; *Add AI app* pairs an app with a one-time code (never trusting the name an app reports about itself) and explains that open sites' content is shared with it; paired apps can be removed; tokens in the OS keychain (4.4a's credential store). An HTTP transport checks `Origin` and `Host` on every request. Tool calls are never logged with their content. A status indicator shows when an app is connected. Help page for connecting Claude and ChatGPT desktop apps. Label the PR `full-ci`; while Windows/macOS CI is paused, run `pnpm e2e` locally on Windows and say so in the PR.
 
 - [ ] Off by default; nothing listens until turned on
 - [ ] Unpaired callers and requests with a wrong `Origin`/`Host` are refused; removing an app cuts it off
@@ -1441,7 +1472,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-SITE-1 | New Site from Template | 1.8, 2.14, 2.15, 3.11 (quick start) |
 | F-SITE-2 | Open / Recent Sites | 1.8, 3.18 |
 | F-SITE-3 | Periodic autosave | 1.6 |
-| F-SITE-4 | Version History | 4.6 |
+| F-SITE-4 | Version History | 4.6a |
 | F-SITE-5 | Export as .zip | 4.7 |
 | F-SITE-6 | Backups | 1.7 |
 | F-SITE-7 | Local crash reports | 1.7 |
@@ -1489,9 +1520,9 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-EX-4 | Include developer files | 3.3 |
 | F-EX-5 | AI-readable copies | 3.5, 3.15 |
 | F-EX-6 | Being found | 3.15 |
-| F-PB-1 | Publish destinations | 0.2, 4.2, 4.4 |
+| F-PB-1 | Publish destinations | 0.2, 4.2, 4.4a, 4.4b |
 | F-PB-2 | Publish | 0.2, 4.5 |
-| F-PB-3 | Republish a version | 4.6 |
+| F-PB-3 | Republish a version | 4.6b |
 | F-CM-1 | Contact form | 2.8, 3.7, 4.2 |
 | F-CM-2 | Buy button | 2.11 |
 | F-CM-3 | Analytics + consent | 3.8 |
@@ -1509,7 +1540,7 @@ Up to Phase 0 the schedule was simply the sum of effort. From Phase 1, up to thr
 | Chain | Items | Length (days) |
 |---|---|---|
 | Editor → components → templates → exported-site checks | 1.1 → 1.2 → 1.12 → 1.14 → 1.19 → 1.21 → 2.6 → 2.13 → 2.14 → 2.15 → 3.10 | 77 (70 before the 22–23 Oct additions to 2.6 and 2.14; 74 before 2.13d, 25 Oct) |
-| Editor → pipeline → publishing → versions | 1.1 → 1.2 → 1.12 → 1.14 → 2.5 → 3.1 → 3.3 → 4.1 → 4.2 → 4.4 → 4.5 → 4.6 | 44 |
+| Editor → pipeline → publishing → versions | 1.1 → 1.2 → 1.12 → 1.14 → 2.5 → 3.1 → 3.3 → 4.1 → 4.3 → 4.4a → 4.5 → 4.6b | 38.5 (44 through 4.2 → 4.4 → 4.5 → 4.6 before the 1 Nov 2026 re-plan) |
 | Signing → release workflow → beta (incl. enrolment wait) | 0.1 → 0.5 → 5.2 → 5.7 → 5.8 | 41 |
 
 Sequencing rules:

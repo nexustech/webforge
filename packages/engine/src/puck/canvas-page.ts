@@ -1,5 +1,5 @@
 import type { AppState, PuckAction } from "@puckeditor/core";
-import type { NodeDoc, PageDoc, SharedCopyNode } from "@webforge/model";
+import { type NodeDoc, type PageDoc, type SharedCopyNode, sameJson } from "@webforge/model";
 import { type ComponentLibrary, overfillsSlots } from "@webforge/site-components";
 import type { EngineEdit, Unsubscribe } from "../canvas-engine.js";
 import type { CanvasSelection } from "./canvas-selection.js";
@@ -66,6 +66,28 @@ export type CanvasPage = {
   /** Calls `cb` with each edit Puck made, as the document store will take it over. */
   onEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
 };
+
+/**
+ * Whether to check each echo (see {@link checkEcho}): in development and test builds, never in the
+ * app as it ships, where it would compare the whole page on every keystroke.
+ */
+const CHECK_ECHOES = import.meta.env.DEV;
+
+/**
+ * Throws unless `next`, the docs the app handed back while an edit was being reported, are `shown`,
+ * the docs that edit left the canvas with: the app must take an edit over unchanged and at once
+ * (`CanvasEngine.onUserEdit`, A24), as the canvas shows nothing new for its echo. Names no content.
+ */
+function checkEcho(shown: CanvasDocs, next: CanvasDocs): void {
+  const differs = (["page", "layout", "shared"] as const).filter(
+    (part) => !sameJson(shown[part], next[part]),
+  );
+  if (differs.length > 0) {
+    throw new Error(
+      `The app changed an edit as it took it over (${differs.join(", ")}): the canvas no longer shows the document (A24).`,
+    );
+  }
+}
 
 /** A new {@link CanvasPage}, showing an empty page until the app loads one. */
 export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
@@ -224,6 +246,7 @@ export function createCanvasPage(options: CanvasPageOptions): CanvasPage {
     apply(next) {
       if (sync.isReporting()) {
         // The document store just took over the edit Puck reported: same content, nothing to show.
+        if (CHECK_ECHOES) checkEcho(docs, next);
         docs = next;
         return;
       }
