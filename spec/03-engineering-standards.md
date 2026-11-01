@@ -45,6 +45,14 @@ Versions checked on npm on 2026-10-19.
 - **IDs:** branded types for IDs (`type PageId = string & { __brand: 'PageId' }`).
 - **Async:** `async`/`await`, no floating promises (convention + review, see §2a), `AbortSignal` for cancellable work (builds, publishing).
 - **Enums:** use `as const` objects or union literals instead.
+- **Optional properties** (`exactOptionalPropertyTypes`):
+  - Write `?: T` for a property that is either set or left out.
+  - Write `?: T | undefined` where a caller passes on a value that may itself be `undefined` (options filled from other options: `{ signal: options.signal }`).
+  - Write it also in every type a zod schema is checked against (`z.ZodType<T>`), since zod's `.optional()` gives `T | undefined` (`NodeAdvanced`). Without it the annotation fails, and a cast to quiet it hides real drift (R14).
+- **`readonly`:**
+  - Values passed between modules have `readonly` properties and `readonly T[]` arrays: options, results, events, IPC messages and component props.
+  - The site document's types are written as their schemas infer them, without `readonly`: `SiteDoc` and what it holds (`PageDoc`, `LayoutDoc`, `NodeDoc`). History already hands the document out read-only (`ReadonlyStore`), and recipes change an Immer `Draft` of it.
+  - A few document types still have `readonly` (`SharedSection`). Take it out when you next change them.
 
 ## 2a. Biome configuration
 - One root `biome.json` with `formatter` (2-space indent, line width 100, double quotes) and `linter` (recommended rules + the rules below). `biome ci` runs in CI.
@@ -79,7 +87,7 @@ Enforced in CI by dependency-cruiser:
 | Styling (editor) | shadcn/ui components + Tailwind tokens only; `cn()` for class merging; no inline styles, no ad-hoc colours; dark/light via CSS variables |
 | Styling (site components) | daisyUI + Tailwind utilities only; style props must map to **design tokens**, never free-form values (except Advanced classes) |
 | UI text | **No hard-coded user-facing strings.** Use `t('key')` from `packages/i18n`, with wording from the glossary ([terminology](../research/product/01-terminology.md)). Undo labels built from glossary terms (D2) |
-| Errors | Throw `WebforgeError` subclasses with a `code` and an i18n `messageKey`. Never show raw error text or stack traces to users. Log the details with electron-log |
+| Errors | Throw `WebforgeError` subclasses with a `code`. A failure reaches the renderer as a reason code in its IPC domain's zod contract, and the UI turns that into a `t()` key where it shows the message, as export does (`exportFailure`: `folder-not-empty` → `export.failed.folderNotEmpty`). `WebforgeError.messageKey` isn't used for this: an error never crosses IPC, so nothing in the app reads it. #671 removes it (A23). Never show raw error text or stack traces to users. Log the details with electron-log |
 | Logging | `log.info/warn/error` with structured context. **Never log** site content, credentials, tokens or personal data |
 | Comments | Explain *why*, not *what*. TSDoc on all exported functions/types of packages |
 | Dependencies | New runtime dependency needs: permissive licence (C1), active maintenance, a size check, and a note in the PR. Prefer small/pure-JS/WASM over native modules. **GSAP and libraries built on it are never a licence exception** (PG-6, 2026-10-24): since Webflow's acquisition its terms exclude competing no-code website builders, and Pinegrow's Interactions licence forbids the same. Site animations stay CSS presets with a small classic script (F-DS-5) |
@@ -135,7 +143,7 @@ Coverage is a floor, not a goal. Every bug fix adds a regression test.
 - **Auto-merge:** a PR stays in draft until it's ready (§7), then is marked ready. A high-effort code review of its full diff comes before every merge (product owner, 2026-10-23); auto-merge is turned on once that review passes, and GitHub squash-merges the PR, with its title and description as the commit message, once CI passes. The `Merge queue` workflow brings waiting PRs up to date with `main` one at a time, and the PR's author (its stream) resolves conflicts and fixes CI failures, through PR Auto-fix.
 - **Conventional Commits** (`feat(history): coalesce text sessions`), enforced by commitlint. release-please generates versions and the CHANGELOG.
 - **PR requirements:** green CI, 1 review, description with *what/why/how tested*, screenshots or GIFs for UI changes, ADR link for architectural changes.
-- **Versioning:** SemVer for the app. `format_version` for `.wforge` is independent and bumped with a migration + fixture.
+- **Versioning:** SemVer for the app. `format_version` for `.wforge` is independent and bumped with a migration + fixture; any change to what a stored document may hold bumps it ([ADR 0012](../docs/adr/0012-site-format-migrations.md)).
 - **AI-assisted development:** keep a concise `CLAUDE.md` / `AGENTS.md` at the repo root summarising these standards, commands and boundaries, so coding assistants follow them. Assistant-made changes follow the same rules as human ones, plus:
   - no AI attribution lines in commits or PR descriptions
   - problems are auto-fixed rather than reported (formatting, review findings, CI failures through PR Auto-fix)
