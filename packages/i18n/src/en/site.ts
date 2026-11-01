@@ -201,6 +201,9 @@ export const site = {
   "site.code.trust.part.bodyEnd": "Custom Code in Settings: End of page",
   "site.code.trust.part.js": "Custom Code in Settings: Script",
   "site.code.trust.allowList": "Addresses allowed in Custom Code",
+  // A Custom Code element on a page, in the prompt's list: "Custom Code element on Home"
+  // (product owner, 1 Nov 2026). Site Check keeps its "{element} on {page}".
+  "site.code.trust.place.page": "{element} element on {page}",
   "site.code.trust.review": "Review",
   "site.code.trust.leave": "Leave it out",
   "site.code.trust.keep": "Keep the code",

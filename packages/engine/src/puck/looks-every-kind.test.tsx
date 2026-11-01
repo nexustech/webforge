@@ -10,6 +10,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { toPuckConfig } from "./config.js";
+import { fixedRenderContext } from "./render-context-store.js";
 
 // Phase 3's exit (spec/04, #622): a kind's look in the theme (3.12, CT-1) restyles every kind, on
 // the canvas as in the export. For each kind that holds a look, its shadow from the look draws on an
@@ -64,7 +65,7 @@ function onCanvas(node: NodeDoc, context: RenderContext): string {
   const config = toPuckConfig(
     siteLibrary,
     () => 0,
-    () => context,
+    fixedRenderContext(() => context),
   );
   const render = config.components[node.type]?.render as
     | ((props: Record<string, unknown>) => ReactNode)

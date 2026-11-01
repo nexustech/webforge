@@ -63,6 +63,7 @@ Why:
 - The file is written through `createJsonStore` (#666), as the app's other files in userData are: atomically (temp file + rename, tried again while the file is briefly locked; owner-only permissions where supported), and one save at a time.
 - **Never in plain text:** if `isEncryptionAvailable()` is false, saving fails (`encryption-unavailable`) instead of falling back. On Linux, Electron may use a weak `basic_text` backend. Linux isn't a release target; if it becomes one, also refuse that backend.
 - A damaged file, or a secret that can't be decrypted (another OS user or machine), counts as missing, and the user signs in again. A damaged file is moved aside as `credentials.damaged-<time>.json` before the next save, never written over (#666). Any other read error (file locked, no permission) fails the save instead, because saving over a file we couldn't read would lose every other destination's secrets.
+- A destination's record (4.4a) holds its sign-in, its trust (SFTP host key, plain FTP's warning seen) and the S2 fingerprint of where it was typed for, encrypted together, so neither an edited site file nor an edited trust can pair the secret with another host.
 - Tokens stay in the main process. The renderer only learns whether a profile is signed in (Phase 4 IPC).
 
 ### 6. Netlify Forms on API deploys

@@ -51,6 +51,7 @@ import { showDropMark, showOutlineChip } from "./marks.js";
 import type { SlotsOf } from "./page-actions.js";
 import { createPuckOverrides } from "./puck-overrides.js";
 import { type CanvasParts, splitRenderContext } from "./render-context-sources.js";
+import { createRenderContextStore } from "./render-context-store.js";
 import { createRichTextTools } from "./rich-text-tools.js";
 import type { CanvasDocs } from "./route-edit.js";
 import { performOnCanvas } from "./selected-actions.js";
@@ -64,6 +65,9 @@ export type PuckEngineOptions = {
 };
 
 type GetPuck = ReturnType<typeof useGetPuck>;
+
+/** The canvas's looks while the theme has none (see `setLooks`). */
+const NO_LOOKS: NonNullable<RenderContext["looks"]> = {};
 
 /**
  * The Puck implementation of {@link CanvasEngine}: the wiring of the canvas's parts (R8).
@@ -96,21 +100,25 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
    * What the canvas renders with besides Site Settings: no navigation or links, the site's Media
    * images and what an Image without one shows, and the edit-only previews.
    */
-  let parts: CanvasParts = initial.parts;
+  let parts: CanvasParts = { ...initial.parts, looks: initial.parts.looks ?? NO_LOOKS };
   /**
    * Site Settings' values (`setSettings`), kept apart from the other parts so that replacing them
    * replaces nothing else (#367). Which method gives each part is listed, and checked, in
    * `render-context-sources.ts`.
    */
   let bindings: SiteBindings = initial.bindings;
-  /** The two together: what the canvas's components render with. */
-  let renderContext: RenderContext = { ...parts, ...bindings };
-  /** Takes `next` parts or bindings, and draws the page again with them. */
+  /**
+   * The two together: what the canvas's components render with. Each follows the parts it read, so
+   * a change draws only the components that read what changed, and Puck's config stays (#727).
+   */
+  const renderContext = createRenderContextStore({ ...parts, ...bindings });
+  /** Takes `next` parts or bindings, and draws again the components that read what changed. */
   const changeContext = (next: { parts: CanvasParts } | { bindings: SiteBindings }) => {
     if ("parts" in next) parts = next.parts;
     else bindings = next.bindings;
-    renderContext = { ...parts, ...bindings };
-    redraw();
+    // The caret of the text being typed in stays where it was, if its element draws again.
+    preserveCaret(frame.document());
+    renderContext.set({ ...parts, ...bindings });
   };
   /** Per node, bumped to remount its rich-text editors (see toPuckConfig). */
   const editorRevisions = new Map<string, number>();
@@ -216,25 +224,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
-    toPuckConfig(
-      forLibrary,
-      (id) => editorRevisions.get(id) ?? 0,
-      () => renderContext,
-      richText.tools,
-    );
-
-  /**
-   * Draws the page again with the current render context. Puck draws a component again only when
-   * its props or its config change, and an image or a Site Settings value can change without any
-   * props changing (deleted from Media, cropped, renamed): give Puck a new config.
-   */
-  const redraw = () => {
-    if (library !== null) {
-      config = configFor(library);
-      preserveCaret(frame.document());
-      render();
-    }
-  };
+    toPuckConfig(forLibrary, (id) => editorRevisions.get(id) ?? 0, renderContext, richText.tools);
 
   const render = () => {
     if (root === null || config === null) {
@@ -412,10 +402,12 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setViewOptions: frame.setViewOptions,
 
     setLooks(looks) {
+      // None as no kind's look, never as none at all: each element follows its own kind's look,
+      // which a theme's first look would otherwise change for every one of them (#727).
+      const next = looks ?? NO_LOOKS;
       // A theme change that leaves its looks as they were draws nothing again.
-      if (parts.looks === looks) return;
-      const { looks: _previous, ...rest } = parts;
-      changeContext({ parts: { ...rest, ...(looks === undefined ? {} : { looks }) } });
+      if (parts.looks === next) return;
+      changeContext({ parts: { ...parts, looks: next } });
     },
 
     setPreviews(previews) {

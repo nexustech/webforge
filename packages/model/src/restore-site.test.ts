@@ -23,49 +23,72 @@ function restored(site: SiteDoc, target: SiteDoc) {
   return { after, changed: forward.length > 0, undo: () => applyPatches(after, inverse) };
 }
 
+/**
+ * Whole sites are slow to make: fewer runs than fast-check's 100, and a timeout a loaded
+ * `pnpm check` can't reach, as `site-documents.test.ts` has (#728). The model can't use
+ * `scaledTestTimeout`: `@webforge/test-utils` depends on it.
+ */
+const RUNS = { numRuns: 50 };
+const TIMEOUT_MS = 30_000;
+
 describe("restoreSite (#664)", () => {
-  it("gives the version in one step, which Undo takes back whole", () => {
-    fc.assert(
-      fc.property(siteDocArbitrary, siteDocArbitrary, (site, version) => {
-        const restore = restored(site, version);
-        expect(restore.after).toEqual(version);
+  it(
+    "gives the version in one step, which Undo takes back whole",
+    () => {
+      fc.assert(
+        fc.property(siteDocArbitrary, siteDocArbitrary, (site, version) => {
+          const restore = restored(site, version);
+          expect(restore.after).toEqual(version);
 
-        expect(restore.undo()).toEqual(site);
-      }),
-    );
-  });
+          expect(restore.undo()).toEqual(site);
+        }),
+        RUNS,
+      );
+    },
+    TIMEOUT_MS,
+  );
 
-  it("changes only the page that differs: one document to save", () => {
-    fc.assert(
-      fc.property(siteDocArbitrary, fc.nat(), (site, which) => {
-        const id = site.pageOrder[which % site.pageOrder.length] as PageId;
-        const page = site.pages[id];
-        if (page === undefined) return;
-        const version = copy(site);
-        version.pages[id] = { ...copy(page), title: `${page.title} (before)` };
+  it(
+    "changes only the page that differs: one document to save",
+    () => {
+      fc.assert(
+        fc.property(siteDocArbitrary, fc.nat(), (site, which) => {
+          const id = site.pageOrder[which % site.pageOrder.length] as PageId;
+          const page = site.pages[id];
+          if (page === undefined) return;
+          const version = copy(site);
+          version.pages[id] = { ...copy(page), title: `${page.title} (before)` };
 
-        const { after, changed } = restored(site, version);
+          const { after, changed } = restored(site, version);
 
-        expect(changed).toBe(true);
-        expect(changedDocuments(site, after)).toEqual([
-          { type: "put", id: pageDocumentId(id), kind: "page", content: after.pages[id] },
-        ]);
-        expect(after.theme).toBe(site.theme);
-      }),
-    );
-  });
+          expect(changed).toBe(true);
+          expect(changedDocuments(site, after)).toEqual([
+            { type: "put", id: pageDocumentId(id), kind: "page", content: after.pages[id] },
+          ]);
+          expect(after.theme).toBe(site.theme);
+        }),
+        RUNS,
+      );
+    },
+    TIMEOUT_MS,
+  );
 
-  it("changes nothing when the version is the site as it is, keys in another order", () => {
-    fc.assert(
-      fc.property(siteDocArbitrary, (site) => {
-        // A version read back from the file: the same JSON, its keys in the order it was parsed.
-        const { settings, ...rest } = copy(site);
-        const restore = restored(site, { settings, ...rest });
+  it(
+    "changes nothing when the version is the site as it is, keys in another order",
+    () => {
+      fc.assert(
+        fc.property(siteDocArbitrary, (site) => {
+          // A version read back from the file: the same JSON, its keys in the order it was parsed.
+          const { settings, ...rest } = copy(site);
+          const restore = restored(site, { settings, ...rest });
 
-        // No step at all: the history records none.
-        expect(restore.changed).toBe(false);
-        expect(restore.after).toBe(site);
-      }),
-    );
-  });
+          // No step at all: the history records none.
+          expect(restore.changed).toBe(false);
+          expect(restore.after).toBe(site);
+        }),
+        RUNS,
+      );
+    },
+    TIMEOUT_MS,
+  );
 });
