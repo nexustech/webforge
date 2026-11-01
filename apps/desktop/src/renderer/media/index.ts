@@ -3,7 +3,7 @@
  * here is the area's own.
  */
 
+export type { ImagePickRequests } from "../editor/image-picks.js";
 export { ImageField, imageFieldRenderer } from "./ImageField.js";
-export type { ImagePickRequests } from "./image-picks.js";
 export { importMessages } from "./import-media.js";
 export { addMedia, putInMedia } from "./media-commands.js";

@@ -1,29 +1,23 @@
-import { FieldRenderersProvider, toast } from "@webforge/editor-ui";
+import { toast } from "@webforge/editor-ui";
 import {
   type CanvasEngine,
   createPuckEngine,
-  type HistoryCommand,
   installHistoryKeys,
   type ViewOptions,
 } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import { HistoryIcon, SlidersHorizontalIcon } from "lucide-react";
 import { type RefObject, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { shallow } from "zustand/shallow";
-import type { CustomDevice, EditPanelPreferences } from "../../shared/ipc/prefs.js";
+import type { CustomDevice } from "../../shared/ipc/prefs.js";
 import type { WebforgeApi } from "../../shared/webforge-api.js";
 import { createSectionPreviews } from "../add/index.js";
-import { APPEARANCE_GROUP_ID, LOOK_COMMANDS } from "../clipboard/index.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
-import { fieldRenderers } from "../fields/index.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
-import { createImagePickRequests } from "../media/image-picks.js";
 import { SharedSectionNameDialog } from "../shared-sections/SharedSectionCommands.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
-import { useCommand, useCommandRegistry } from "../shell/command-context.js";
-import { COMMAND_IDS } from "../shell/command-ids.js";
+import { useCommandRegistry } from "../shell/command-context.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { useContextualToolbars } from "../shell/contextual-toolbar-context.js";
@@ -40,7 +34,6 @@ import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import type { CanvasPointerHost } from "./canvas-pointer.js";
 import { isDialogText } from "./dialog-keys.js";
-import { EditPanelHost, type EditPanelHostProps } from "./EditPanelHost.js";
 import { canvasPreviews, createPreviewStore } from "./edit-previews.js";
 import {
   connectEngine,
@@ -49,30 +42,15 @@ import {
   runHistoryCommand,
 } from "./editor-session.js";
 import { createEngineHost } from "./engine-host.js";
-import { type ItemCssServices, itemCssThrough } from "./ItemCssView.js";
+import { createImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
 import { shownLayout } from "./shared-layout.js";
 import { type SharedSectionNaming, sharedSection } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
-import { UndoHistoryPanel, type UndoHistoryPanelProps } from "./UndoHistoryPanel.js";
 import { installUndoToasts } from "./undo-toasts.js";
 import { useUi } from "./use-document.js";
-
-/** `preferences` with `closed` as the option groups closed for component `type` (UX-13). */
-function withClosedGroups(
-  preferences: EditPanelPreferences,
-  type: string,
-  closed: readonly string[],
-): EditPanelPreferences {
-  const others = Object.entries(preferences.closedGroups).filter(([each]) => each !== type);
-  return {
-    closedGroups: Object.fromEntries(
-      closed.length === 0 ? others : [...others, [type, [...closed]]],
-    ),
-  };
-}
 
 /** Props of {@link Editor}. */
 export type EditorProps = {
@@ -111,7 +89,10 @@ export type EditorProps = {
    * Asks before what changes more than the page shown (D7): deleting or cutting an element of the
    * shared Header or Footer. Undo and Redo wait while it asks. Without it, they happen at once.
    */
-  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide" | "current">;
+  readonly siteWide?: Pick<
+    SiteWideConfirm,
+    "confirmSiteWide" | "current" | "setBeforeSiteWideAction"
+  >;
 };
 
 /** The View menu's options as the canvas takes them (F-ED-25). */
@@ -121,106 +102,6 @@ const viewOptionsOf = ({ preferences: { canvas } }: EditorPreferences): ViewOpti
   elementNames: canvas.elementNames,
   extraBottomSpace: canvas.extraBottomSpace,
 });
-
-/** The Undo History panel for `history`, jumping to a step with `jumpTo`. */
-function undoHistoryPanel(
-  history: EditorSession["history"],
-  jumpTo: UndoHistoryPanelProps["history"]["jumpTo"],
-) {
-  return function UndoHistory() {
-    const state = useSyncExternalStore(
-      history.state.subscribe,
-      history.state.getState,
-      history.state.getState,
-    );
-    return <UndoHistoryPanel history={{ jumpTo }} state={state} />;
-  };
-}
-
-/** The Theme tab's panel id (`theme/`'s THEME_PANEL_ID), which the editor area doesn't import. */
-const THEME_PANEL = "theme";
-
-/**
- * The Edit panel as the preferences have it: with the Advanced tab in Advanced mode, the Content
- * tab only in Content mode (R9), and the option groups the person closed (UX-13). The Appearance
- * group's right-click menu has *Apply Look to Every…* (2.27), the Edit menu's own commands, and the
- * Style tab *Style this ‹kind›…* (3.13a).
- */
-function PreferredEditPanel({
-  preferences,
-  itemCss,
-  ...props
-}: Omit<
-  EditPanelHostProps,
-  | "advanced"
-  | "contentOnly"
-  | "closedGroups"
-  | "onClosedGroupsChange"
-  | "groupActions"
-  | "styleAction"
-  | "itemCss"
-> & {
-  readonly preferences: PreferencesStore;
-  /** The CSS tab's worker and clipboard (#668), in Advanced mode. */
-  readonly itemCss: Omit<ItemCssServices, "onOpenCustomCode">;
-}) {
-  const advanced = usePreferences(
-    preferences,
-    (state) => state.preferences.editorLevel === "advanced",
-  );
-  const contentOnly = usePreferences(preferences, (state) => state.mode !== "design");
-  const closedGroups = usePreferences(
-    preferences,
-    (state) => state.preferences.editPanel.closedGroups,
-  );
-  const registry = useCommandRegistry();
-  // The Appearance group's own actions (2.27): its look given to every other one of the kind.
-  const onPage = useCommand(LOOK_COMMANDS.page);
-  const onSite = useCommand(LOOK_COMMANDS.site);
-  // The Style tab's *Style this ‹kind›…* (3.13a), while the selection has a look to style.
-  const styleThis = useCommand(COMMAND_IDS.styleThis);
-  // The Advanced tab's CSS points at Custom Code (3.14).
-  const customCode = useCommand(COMMAND_IDS.customCode);
-  const appearance = [onPage, onSite].flatMap((command) =>
-    command === undefined
-      ? []
-      : [
-          {
-            label: command.label,
-            enabled: command.enabled !== false,
-            onSelect: () => void registry.run(command.id),
-          },
-        ],
-  );
-  return (
-    <EditPanelHost
-      {...props}
-      groupActions={(id) => (id === APPEARANCE_GROUP_ID ? appearance : [])}
-      styleAction={
-        styleThis === undefined || styleThis.enabled === false
-          ? undefined
-          : { label: styleThis.label, onSelect: () => void registry.run(styleThis.id) }
-      }
-      advanced={advanced}
-      contentOnly={contentOnly}
-      itemCss={
-        advanced
-          ? {
-              ...itemCss,
-              onOpenCustomCode:
-                customCode === undefined ? undefined : () => void registry.run(customCode.id),
-            }
-          : undefined
-      }
-      closedGroups={closedGroups}
-      onClosedGroupsChange={(type, closed) =>
-        preferences.change({
-          editPanel: withClosedGroups(preferences.getState().preferences.editPanel, type, closed),
-        })
-      }
-    />
-  );
-}
 
 /**
  * The canvas frame's edge handles on `session`'s device view and `view`'s zoom: a width dragged or
@@ -253,8 +134,8 @@ function CanvasEdges({
 }
 
 /**
- * The site editor around one {@link EditorSession}: the canvas, plus the Undo and Redo commands
- * and the Undo History panel it contributes to the window shell.
+ * The site editor around one {@link EditorSession}: the canvas, and the areas it registers around
+ * it (`EDITOR_AREAS`), Undo and Redo, Undo History and the Edit panel first (#668).
  */
 export function Editor({
   session,
@@ -320,43 +201,6 @@ export function Editor({
     rename: setRenaming,
     pickImage: (nodeId) => pickImageRef.current(nodeId),
   }));
-  const state = useSyncExternalStore(
-    history.state.subscribe,
-    history.state.getState,
-    history.state.getState,
-  );
-
-  // Undo and Redo live in the title bar, the Edit menu and the command box (1.2); registered
-  // before the canvas's own commands so they head the Edit menu.
-  useEffect(() => {
-    const runCommand = (command: HistoryCommand) => {
-      host.flush();
-      runHistoryCommand(session, command);
-    };
-    const removeUndo = registry.register({
-      id: COMMAND_IDS.undo,
-      label: t("editor.undo"),
-      menu: "edit",
-      enabled: history.state.getState().canUndo,
-      run: () => runCommand("undo"),
-    });
-    const removeRedo = registry.register({
-      id: COMMAND_IDS.redo,
-      label: t("editor.redo"),
-      menu: "edit",
-      enabled: history.state.getState().canRedo,
-      run: () => runCommand("redo"),
-    });
-    return () => {
-      removeUndo();
-      removeRedo();
-    };
-  }, [registry, session, history, host]);
-  useEffect(() => {
-    registry.update(COMMAND_IDS.undo, { enabled: state.canUndo });
-    registry.update(COMMAND_IDS.redo, { enabled: state.canRedo });
-  }, [registry, state.canUndo, state.canRedo]);
-
   useEffect(() => {
     const container = canvasRef.current;
     if (container === null) {
@@ -494,53 +338,6 @@ export function Editor({
     [session, host],
   );
 
-  // Undo History goes in the left column's bottom (UI1).
-  useEffect(
-    () =>
-      panels.register({
-        id: "undoHistory",
-        slot: "left.bottom",
-        title: t("editor.undoHistory"),
-        icon: HistoryIcon,
-        component: undoHistoryPanel(history, (entryId) => {
-          host.flush();
-          return history.jumpTo(entryId);
-        }),
-      }),
-    [panels, history, host],
-  );
-
-  // The Edit panel replaces Puck's own fields (1.14). Registered once: it follows the editor level
-  // and the mode (Content shows its Content tab only) itself, so a switch redraws it alone (R9).
-  useEffect(() => {
-    // The fields the app draws itself (R11, fields/): images, links, icons, and colours with the
-    // theme's own colours and a contrast warning (1.37, UX-25).
-    const renderers = fieldRenderers({ api, session, preferences, imagePicks });
-    const itemCss = itemCssThrough(api);
-    function Edit() {
-      return (
-        <FieldRenderersProvider renderers={renderers}>
-          <PreferredEditPanel
-            session={session}
-            preferences={preferences}
-            itemCss={itemCss}
-            flush={() => host.flush()}
-            // An Appearance field's source shows in the Theme tab, or a kind's look in Theme
-            // Studio, which the Theme tab's registration opens (3.12, CT-3).
-            revealSource={(target) => panels.show(THEME_PANEL, target)}
-          />
-        </FieldRenderersProvider>
-      );
-    }
-    return panels.register({
-      id: "edit",
-      slot: "right.top",
-      title: t("editPanel.title"),
-      icon: SlidersHorizontalIcon,
-      component: Edit,
-    });
-  }, [api, panels, session, preferences, imagePicks, host]);
-
   // The areas' panels, commands, toolbars and connections to the canvas (2.20, B1), in the order
   // of the composition root's list. Each follows the mode itself, through the preferences.
   useEffect(
@@ -558,6 +355,7 @@ export function Editor({
         sectionPreviews,
         editPreviews,
         dialogs,
+        imagePicks,
       }),
     [
       api,
@@ -573,6 +371,7 @@ export function Editor({
       sectionPreviews,
       editPreviews,
       dialogs,
+      imagePicks,
     ],
   );
 
