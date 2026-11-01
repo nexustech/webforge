@@ -9,7 +9,6 @@ describe("compileCss", () => {
     const outcome = await compileCss(
       {
         type: "compile-css",
-        id: 7,
         theme: { ...DEFAULT_THEME, preset: "light" },
         candidates: ["btn", "text-4xl"],
         families: [],
@@ -17,7 +16,7 @@ describe("compileCss", () => {
       loadNodeResources,
     );
 
-    expect(outcome).toMatchObject({ type: "css", id: 7 });
+    expect(outcome).toMatchObject({ type: "css" });
     if (outcome.type !== "css") return;
     expect(outcome.css).toContain(".btn");
     expect(outcome.css).toContain(".text-4xl");
@@ -61,7 +60,7 @@ describe("compileCss", () => {
     } as const;
 
     const outcome = await compileCss(
-      { type: "compile-css", id: 8, theme, candidates: [], families: [comic] },
+      { type: "compile-css", theme, candidates: [], families: [comic] },
       loadNodeResources,
     );
 
@@ -74,7 +73,6 @@ describe("compileCss", () => {
     const outcome = await compileCss(
       {
         type: "compile-css",
-        id: 3,
         theme: { ...DEFAULT_THEME, preset: "light" },
         candidates: [],
         families: [],
@@ -82,6 +80,6 @@ describe("compileCss", () => {
       () => Promise.reject(new Error("no resources")),
     );
 
-    expect(outcome).toEqual({ type: "css-failed", id: 3 });
+    expect(outcome).toEqual({ type: "css-failed" });
   });
 });

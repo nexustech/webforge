@@ -9,14 +9,14 @@ describe("createClassCatalogues (#276)", () => {
     const answer = createClassCatalogues(load);
     const theme = { ...DEFAULT_THEME, preset: "light" };
 
-    const listed = await answer({ type: "class-catalogue", id: 1, theme });
-    expect(listed).toMatchObject({ type: "class-catalogue", id: 1 });
+    const listed = await answer({ type: "class-catalogue", theme });
+    expect(listed).toMatchObject({ type: "class-catalogue" });
     if (listed.type !== "class-catalogue") return;
     expect(listed.classes).toContain("bg-primary");
     expect(listed.variants).toContain("md");
 
-    const css = await answer({ type: "class-css", id: 2, theme, classes: ["btn", "pading-4"] });
-    expect(css).toMatchObject({ type: "class-css", id: 2 });
+    const css = await answer({ type: "class-css", theme, classes: ["btn", "pading-4"] });
+    expect(css).toMatchObject({ type: "class-css" });
     if (css.type !== "class-css") return;
     expect(css.css[0]).toContain(".btn");
     expect(css.css[1]).toBeNull();
@@ -28,8 +28,8 @@ describe("createClassCatalogues (#276)", () => {
       throw new Error("C:Users\rosa\no-tailwind");
     });
 
-    await expect(answer({ type: "class-catalogue", id: 3, theme: DEFAULT_THEME })).resolves.toEqual(
-      { type: "classes-failed", id: 3 },
-    );
+    await expect(answer({ type: "class-catalogue", theme: DEFAULT_THEME })).resolves.toEqual({
+      type: "classes-failed",
+    });
   });
 });
