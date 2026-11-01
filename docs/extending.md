@@ -44,6 +44,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **Main only through `ctx.api`** (#668): an area never reads `window.webforge`. It passes `ctx.api.<domain>` (or a call of it) to what it registers, as the Media panel gets `ctx.api.media`. `App` takes the API as one prop, `api`, which is `window.webforge` in the app, and gives the same object to both lists; it is fixed for the window's life. A new call needs no new prop or context field: add it to its IPC domain, and the area calls it.
 - **The canvas engine** is there only while the editor has one mounted. Use `ctx.engine.whileMounted(({ engine, connection }) => connect…)`: it connects to each engine as it mounts and undoes that as the engine goes. Flush the canvas's pending edit with `ctx.engine.flush()` before a command changes the document.
 - **Design or Content mode:** follow it with `followLayoutLock(ctx.preferences, (locked) => …)` (`shell/preferences-store.ts`). Never hold a ref for someone else to call.
+- **A build of the site** (Export, and Publish and Republish from 4.5) composes `editor/build-flow.ts` (#668): `gateOnSiteCheck(site, mode, …)` stops it on a *Must fix* in that mode and shows Site Check; `runWithProgress(…)` runs it with its progress in a toast whose Cancel button stops it.
 
 ### Two lists: the editor's and the window's
 
@@ -125,6 +126,8 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 - **listed** in `shared/ipc-contract.ts` (`ipcContract` and `ipcDomains`) and in `WebforgeApi`;
 - **the preload's builder,** `preload/api/<domain>.ts`, listed in `preload/api.ts`;
 - **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), called from `main/app.ts`.
+
+A call that reads or changes the open site names the opening of it the page was loaded for, as its first argument (`sessionIdSchema`, the renderer's `siteSession()`; R6, #663). Main reaches the site only through `projectSession.forSession(sessionId)`, so a call that waited for a dialog while a hand-off replaced the site changes nothing in the next one. `shared/ipc-sessions.test.ts` lists every channel, as the site's or another's with the reason, and fails on a new channel until it is listed.
 
 Never log or store site content, credentials or personal data on the way; secrets stay in the OS keychain.
 

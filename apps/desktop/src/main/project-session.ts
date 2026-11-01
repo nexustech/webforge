@@ -57,14 +57,36 @@ export type StoreAssetResult =
     };
 
 /**
- * The open site as one renderer's call may change it (R6): {@link ProjectSession.forSession}. Each
- * method checks the session again, so a call that waited (for a dialog, or the clipboard) while a
- * hand-off replaced the site changes nothing in the new one.
+ * The open site as one renderer's call may read or change it (R6, #663):
+ * {@link ProjectSession.forSession}, the only way to its Media, its export choices and its copy as
+ * a ZIP. Each method checks the session again, so a call that waited (for a dialog, the clipboard,
+ * or an export) while a hand-off replaced the site reads and changes nothing in the new one.
  */
-export type SessionSite = Pick<
-  ProjectSession,
-  "current" | "readMedia" | "importFile" | "storeCopiedMedia" | "storeBlobs"
->;
+export type SessionSite = {
+  /** The open site, or `null`. */
+  current(): ProjectSummary | null;
+  /** Why the call can't use the open site now (see {@link ProjectSession.staleReason}). */
+  staleReason(): "no-site" | "stale-session" | undefined;
+  /** The bytes of a Media file in the site, by hash; never a site document. */
+  readMedia(hash: string): Promise<StoredBlob | undefined>;
+  /** Imports a file as Media item `mediaId`'s asset (1.16, R13b). */
+  importFile(mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult>;
+  /** Stores a pasted Media item's bytes, unless the site has them (1.25). */
+  storeCopiedMedia(
+    item: MediaMeta,
+    read: () => Uint8Array | undefined,
+  ): Promise<StoreAssetResult | { readonly status: "missing" }>;
+  /** Stores files' bytes for the site's code, all or none (Download and bundle, 3.9). */
+  storeBlobs(
+    files: readonly { readonly data: Uint8Array; readonly mime: string }[],
+  ): Promise<StoreBlobsResult>;
+  /** What the person chose for the site's last export (3.3); the defaults once it isn't open. */
+  exportChoices(): Promise<ExportChoices>;
+  /** Remembers the person's export choices with the site; nothing once it isn't open. */
+  setExportChoices(choices: ExportChoices): Promise<void>;
+  /** Saves a copy of the site as a ZIP at `path` (4.7); `canceled` once it isn't open. */
+  saveSiteZip(path: string): Promise<SaveSiteZipResult>;
+};
 
 /** What came of storing files' bytes in the open site: their hashes, in order, or why not. */
 export type StoreBlobsResult =
@@ -233,17 +255,31 @@ export class ProjectSession {
   /**
    * The open site for a call from a renderer loaded for opening `sessionId` (R6): it reads no Media
    * bytes and stores nothing once another site has opened, however long the call waited before it
-   * did (for a dialog, the clipboard, or the gate), and says why (`stale-session`).
+   * did (for a dialog, the clipboard, or the gate), and says why (`stale-session`). An export or a
+   * preview takes it once, when it starts, and reads its Media through it (#663).
    */
   forSession(sessionId: string): SessionSite {
     return {
       current: () => this.current(),
+      staleReason: () => this.staleReason(sessionId),
       readMedia: (hash) => this.#readMedia(hash, sessionId),
       importFile: (mediaId, fileName, source) =>
         this.#importFile(mediaId, fileName, source, sessionId),
       storeCopiedMedia: (item, read) => this.#storeCopiedMedia(item, read, sessionId),
       storeBlobs: (files) => this.#storeBlobs(files, sessionId),
+      exportChoices: () => this.#exportChoices(sessionId),
+      setExportChoices: (choices) => this.#setExportChoices(choices, sessionId),
+      saveSiteZip: (path) => this.#saveSiteZip(path, sessionId),
     };
+  }
+
+  /**
+   * The bytes of a Media file in whichever site is open, by hash: for the `media://` protocol only,
+   * whose addresses name a file by its hash, not by the opening (1.16). A page that outlived its
+   * site gets the next one's file of that hash at most, read-only, until it reloads.
+   */
+  readOpenMedia(hash: string): Promise<StoredBlob | undefined> {
+    return this.#readMedia(hash);
   }
 
   /**
@@ -321,9 +357,14 @@ export class ProjectSession {
    * is the site as it was then, whatever is saved while the ZIP is written.
    *
    * Never over the open site's own file or the files SQLite keeps beside it: on macOS and Linux
-   * the ZIP's rename would replace the database the site is saved to (`own-file`).
+   * the ZIP's rename would replace the database the site is saved to (`own-file`). Once another
+   * site has opened than session `sessionId`'s, nothing is saved (`canceled`, #663): the person
+   * asked for a copy of the one that has gone.
    */
-  saveSiteZip(path: string): Promise<SaveSiteZipResult> {
+  #saveSiteZip(path: string, sessionId: string): Promise<SaveSiteZipResult> {
+    if (this.staleReason(sessionId) === "stale-session") {
+      return Promise.resolve({ status: "canceled" });
+    }
     const open = this.#path;
     if (
       open !== undefined &&
@@ -344,7 +385,9 @@ export class ProjectSession {
           return { status: "failed", reason: "unknown" };
         }
       },
-      () => ({ status: "failed", reason: "no-site" }),
+      (reason) =>
+        reason === "stale-session" ? { status: "canceled" } : { status: "failed", reason },
+      sessionId,
     );
   }
 
@@ -398,46 +441,6 @@ export class ProjectSession {
     );
   }
 
-  /**
-   * Imports a file as the asset of Media item `mediaId` (1.16): the storage writer reads, checks
-   * and stores its original bytes, unmodified, off the main thread (R13b, ADR 0013), holding the
-   * file alone meanwhile; then the asset that names them is recorded. The item itself joins the
-   * site when the renderer commits it; until then, and after an Undo, garbage collection when the
-   * site closes removes the unused bytes again.
-   */
-  importFile(mediaId: string, fileName: string, source: ImportSource): Promise<ImportFileResult> {
-    return this.#importFile(mediaId, fileName, source);
-  }
-
-  /**
-   * Stores a pasted Media item's bytes (1.25) unless the open site already has them under its id
-   * and hash. `read` gives the bytes kept with the clipboard, only when they are needed;
-   * `"missing"` when neither it nor the site has them. Like an import, the item joins the site when
-   * the renderer commits the paste.
-   */
-  storeCopiedMedia(
-    item: MediaMeta,
-    read: () => Uint8Array | undefined,
-  ): Promise<StoreAssetResult | { readonly status: "missing" }> {
-    return this.#storeCopiedMedia(item, read);
-  }
-
-  /**
-   * Stores files' bytes in the open site (Download and bundle, 3.9), all or none. Like an import,
-   * they stay once the renderer commits the site's code that names their hashes; until then, and
-   * after an Undo, garbage collection when the site closes removes them again.
-   */
-  storeBlobs(
-    files: readonly { readonly data: Uint8Array; readonly mime: string }[],
-  ): Promise<StoreBlobsResult> {
-    return this.#storeBlobs(files);
-  }
-
-  /** The bytes of a Media file in the open site, by hash; never a site document. */
-  readMedia(hash: string): Promise<StoredBlob | undefined> {
-    return this.#readMedia(hash);
-  }
-
   /** The open site's editor state, or `null` without an open site. */
   uiState(): Promise<SiteUiState | null> {
     return this.#shared<SiteUiState | null>(
@@ -449,19 +452,24 @@ export class ProjectSession {
     );
   }
 
-  /** What the person chose for the open site's last export (3.3); the defaults without a site. */
-  exportChoices(): Promise<ExportChoices> {
+  /**
+   * What the person chose for the last export of session `sessionId`'s site (3.3); the defaults
+   * without a site, or once another has opened.
+   */
+  #exportChoices(sessionId: string): Promise<ExportChoices> {
     return this.#shared<ExportChoices>(
       (store) => store.readExportChoices(),
       () => DEFAULT_EXPORT_CHOICES,
+      sessionId,
     );
   }
 
   /**
-   * Remembers what the person chose for an export with the open site, like the editor state. A
-   * read-only site keeps its earlier choices: that never stops the export.
+   * Remembers what the person chose for an export with session `sessionId`'s site, like the editor
+   * state; never with another that has opened since (#663). A read-only site keeps its earlier
+   * choices: that never stops the export.
    */
-  setExportChoices(choices: ExportChoices): Promise<void> {
+  #setExportChoices(choices: ExportChoices, sessionId: string): Promise<void> {
     return this.#shared<void>(
       (store) => {
         try {
@@ -473,6 +481,7 @@ export class ProjectSession {
         }
       },
       () => undefined,
+      sessionId,
     );
   }
 

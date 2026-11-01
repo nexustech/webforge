@@ -18,6 +18,8 @@ export type PreviewCommandsDeps = {
   readonly session: Pick<EditorSession, "history" | "ui">;
   readonly library: ComponentLibrary;
   readonly api: PreviewApi;
+  /** The opening of the site this page was loaded for, sent with the site (R6, #663). */
+  readonly sessionId: () => string;
   /** The phone dialog's state: the Preview on Phone command opens it. */
   readonly phone: StoreApi<PhoneState>;
   /** Tells the person something went wrong. */
@@ -41,7 +43,7 @@ export function registerPreviewCommands(
   registry: CommandRegistry,
   deps: PreviewCommandsDeps,
 ): () => void {
-  const { session, library, api, phone, notify } = deps;
+  const { session, library, api, sessionId, phone, notify } = deps;
   const site = () => session.history.document.getState();
   const content = () => siteContentFor(site(), library);
   const page = () => previewPageOf(site(), session.ui.getState().pageId);
@@ -77,7 +79,9 @@ export function registerPreviewCommands(
     let timer: ReturnType<typeof setTimeout> | undefined;
     let changedSince = false;
     const send = () => {
-      api.update(content()).catch((error: unknown) => reportFailure("preview.update", error));
+      api
+        .update(sessionId(), content())
+        .catch((error: unknown) => reportFailure("preview.update", error));
       timer = setTimeout(() => {
         timer = undefined;
         if (changedSince) {
@@ -109,7 +113,7 @@ export function registerPreviewCommands(
       run: () => {
         follow();
         api
-          .open(content(), page())
+          .open(sessionId(), content(), page())
           .then((opened) => {
             if (opened === "failed") notify(t("preview.failed"));
           })
@@ -127,7 +131,7 @@ export function registerPreviewCommands(
         follow();
         phone.setState({ status: "starting" }, true);
         api
-          .phone(content(), page())
+          .phone(sessionId(), content(), page())
           .then((address) => {
             // A phone can open it now, dialog open or not: the title bar says so until it stops.
             if (address.status === "ready") phoneOn();

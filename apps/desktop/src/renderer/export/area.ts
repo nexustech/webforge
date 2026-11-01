@@ -5,17 +5,22 @@ import type { SiteApi } from "../../shared/ipc/site.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { reportFailure } from "../log.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
+import { siteSession } from "../storage/index.js";
 import { exportDialogsFor } from "./ExportDialogs.js";
 import { type ExportSite, registerExportCommand } from "./export-command.js";
 import { createExportDialogs } from "./export-dialogs.js";
 
-/** Exports through main, telling `onProgress` each stage main reports until it answers. */
+/**
+ * Exports through main, telling `onProgress` each stage main reports until it answers. The export
+ * names the opening of the site this page was loaded for (R6, #663): main refuses it once a hand-off
+ * has replaced that site.
+ */
 const exportThrough =
   (site: Pick<SiteApi, "export" | "onExportProgress">): ExportSite =>
   async (request, onProgress) => {
     const stop = site.onExportProgress(onProgress);
     try {
-      return await site.export(request);
+      return await site.export(siteSession(), request);
     } finally {
       stop();
     }
@@ -33,7 +38,7 @@ export const exportCommandArea: Area<WindowContext> = {
     // Preview from disk: main opens what it exported itself, or says it isn't there any more.
     const openExport = () => {
       api.site
-        .openExport()
+        .openExport(siteSession())
         .then((opened) => {
           if (opened === "missing") toast.error(t("export.report.missing"));
         })
@@ -51,8 +56,8 @@ export const exportCommandArea: Area<WindowContext> = {
       advanced: () => preferences.getState().preferences.editorLevel === "advanced",
       exportSite: exportThrough(api.site),
       cancel: () => api.site.cancelExport(),
-      choices: () => api.site.exportChoices(),
-      saveChoices: (choices) => api.site.setExportChoices(choices),
+      choices: () => api.site.exportChoices(siteSession()),
+      saveChoices: (choices) => api.site.setExportChoices(siteSession(), choices),
       dialogs,
       showSettings: (part, group) => settings.show(part, group),
       showSiteCheck: () => panels.show(SITE_CHECK_PANEL_ID),

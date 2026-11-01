@@ -1,11 +1,10 @@
 import { toast } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import { DEFAULT_EXPORT_CHOICES, mediaItem, type SiteDoc, siteToSnapshot } from "@webforge/model";
-import { blockingCount, checkSite } from "@webforge/site-check";
 import type { ComponentLibrary } from "@webforge/site-components";
-import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import { gateOnSiteCheck, runWithProgress } from "../editor/build-flow.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -143,68 +142,31 @@ export type ExportFlow = {
 };
 
 /**
- * Whether `site` can be exported (X5): nothing Site Check lists as *Must fix*. If something is, it
- * says how many and shows Site Check, where each has its place and, often, a *Fix*.
- */
-function passesSiteCheck(flow: ExportFlow, site: SiteDoc): boolean {
-  // The site's allow-list counts as the owner's until the code trust step can tell (#649).
-  const blocking = blockingCount(
-    checkSite({ site, catalogue: CATALOGUE, allowListConfirmed: true }, "export"),
-  );
-  if (blocking === 0) return true;
-  toast.error(plural("siteCheck.exportBlocked", blocking));
-  flow.showSiteCheck();
-  return false;
-}
-
-/**
  * Exports `site` with `choices`, showing its progress as a toast whose Cancel button stops it
- * (3.1); the outcome comes back for the report.
+ * (3.1, `runWithProgress`); the outcome comes back for the report.
  */
-async function exportWithProgress(
+function exportWithProgress(
   flow: ExportFlow,
   site: SiteDoc,
   choices: ExportChoices,
 ): Promise<{ readonly result: ExportResult; readonly progress: string | number }> {
-  // Once it's cancelling or done, progress no longer changes the toast.
-  let quiet = false;
-  const cancelButton = {
-    label: t("export.cancel"),
-    onClick: (event: { preventDefault(): void }) => {
-      // The toast stays until the export answers; it says it's stopping meanwhile.
-      event.preventDefault();
-      quiet = true;
-      toast.loading(t("export.cancelling"), { id: progress, description: null, action: null });
-      flow.cancel().catch((error: unknown) => {
-        reportFailure("export.cancel", error);
-      });
-    },
-  };
-  const progress = toast.loading(t("export.working"), { action: cancelButton });
   // Simple mode doesn't offer developer files, so it writes none, while the site keeps Advanced
   // mode's choice (T2).
   const output = {
     minify: choices.minify,
     developerFiles: flow.advanced() && choices.developerFiles,
   };
-  const show = (reached: ExportProgress) => {
-    if (quiet) return;
-    toast.loading(t("export.working"), {
-      id: progress,
-      description: progressText(reached),
-      action: cancelButton,
-    });
-  };
-  try {
-    const request = exportRequestFor(site, flow.library, choices, output);
-    const result = await flow.exportSite(request, show);
-    return { result, progress };
-  } catch (error) {
-    reportFailure("export", error);
-    return { result: { status: "failed", reason: "build-failed" }, progress };
-  } finally {
-    quiet = true;
-  }
+  return runWithProgress<ExportProgress, ExportResult>({
+    working: t("export.working"),
+    describe: progressText,
+    cancelLabel: t("export.cancel"),
+    cancelling: t("export.cancelling"),
+    cancel: flow.cancel,
+    run: (onProgress) =>
+      flow.exportSite(exportRequestFor(site, flow.library, choices, output), onProgress),
+    failed: { status: "failed", reason: "build-failed" },
+    failureKey: "export",
+  });
 }
 
 /**
@@ -220,7 +182,13 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
   const run = async () => {
     registry.update(EXPORT_COMMAND_ID, { enabled: false });
     try {
-      if (!passesSiteCheck(flow, flow.site())) return;
+      const gate = {
+        blocked: (count: number) => plural("siteCheck.exportBlocked", count),
+        showSiteCheck: flow.showSiteCheck,
+        // The site's allow-list counts as the owner's until the code trust step can tell (#649).
+        allowListConfirmed: true,
+      };
+      if (!gateOnSiteCheck(flow.site(), "export", gate)) return;
       // A site whose choices can't be read exports from the defaults.
       let last = await flow.choices().catch((error: unknown) => {
         reportFailure("export.choices", error);
