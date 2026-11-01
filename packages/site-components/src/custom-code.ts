@@ -31,6 +31,19 @@ const SVG_ATTRIBUTES = [
 /** A style that could load or run something: a URL (an image from the web), or a CSS escape. */
 const RISKY_STYLE = /url\s*\(|image-set|expression\s*\(|@import|\\|javascript:|behaviou?r/i;
 
+/** A reference to something in the same code, such as a gradient: `url(#grad)`. */
+const SAME_DOCUMENT_URL = /url\(\s*(["']?)#[\w.:-]+\1\s*\)/gi;
+
+/**
+ * Whether an SVG attribute's value could load something (S22): `fill`, `stroke` and `clip-path`
+ * take `url()` as a style does, so each is checked as one, but a same-document `url(#id)` stays.
+ */
+const riskyAttribute = (value: string): boolean =>
+  RISKY_STYLE.test(value.replace(SAME_DOCUMENT_URL, ""));
+
+/** Each attribute a shape is drawn with, as its value is checked. */
+const SVG_ATTRIBUTE_NAMES: ReadonlySet<string> = new Set(SVG_ATTRIBUTES);
+
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: TAGS,
   allowedAttributes: {
@@ -58,9 +71,14 @@ const OPTIONS: sanitizeHtml.IOptions = {
   transformTags: {
     "*": (tagName, attribs) => {
       const { style, ...rest } = attribs;
+      const kept = Object.fromEntries(
+        Object.entries(rest).filter(
+          ([name, value]) => !SVG_ATTRIBUTE_NAMES.has(name) || !riskyAttribute(value),
+        ),
+      );
       return {
         tagName,
-        attribs: style === undefined || RISKY_STYLE.test(style) ? rest : { ...rest, style },
+        attribs: style === undefined || RISKY_STYLE.test(style) ? kept : { ...kept, style },
       };
     },
     // A link to a new tab can't reach back into the page that opened it.

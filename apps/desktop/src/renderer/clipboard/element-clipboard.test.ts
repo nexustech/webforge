@@ -124,6 +124,38 @@ describe("pasting Custom Code (#649)", () => {
   });
 });
 
+it("cleans pasted rich text as the editor's is, in a section's slots too (S23)", async () => {
+  const session = sessionWith();
+  select(session, "section-1");
+  const hostile: ClipboardReadResult = {
+    status: "elements",
+    elements: {
+      nodes: [
+        {
+          type: "Section",
+          props: {
+            id: "section-x",
+            content: [
+              {
+                type: "Text",
+                props: { id: "t", text: '<p onclick="x()">Hi<script>y()</script></p>' },
+              },
+            ],
+          },
+        },
+      ],
+      media: [],
+    },
+    missingImages: 0,
+  };
+
+  expect(await pasteElements(session, fakeClipboard(hostile), vi.fn())).toBe(true);
+
+  const pasted = JSON.stringify(content(session));
+  expect(pasted).toContain('"text":"<p>Hi</p>"');
+  expect(pasted).not.toMatch(/onclick|script/);
+});
+
 describe("copy and paste (1.25)", () => {
   it("pastes a copy after the selected element with new ids, as one step that selects it", async () => {
     const session = sessionWith();

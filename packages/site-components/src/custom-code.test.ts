@@ -94,4 +94,18 @@ describe("sanitizeCustomCode (2.11)", () => {
         '<a href="mailto:rosa@example.com">Mail</a></div>',
     );
   });
+
+  it.each([
+    ["an address written with entities", '<rect fill="url&#40;https://evil.example/a)"></rect>'],
+    ["a CSS escape", '<rect stroke="u\\72l(https://evil.example/a)"></rect>'],
+    ["a quoted address", "<rect clip-path=\"url('https://evil.example/a')\"></rect>"],
+    ["an address after a same-document one", '<rect fill="url(#g) url(https://evil.example)">'],
+  ])("drops an SVG attribute that could load something, as %s (S22)", (_name, code) => {
+    expect(sanitizeCustomCode(`<svg>${code}</svg>`)).toBe("<svg><rect></rect></svg>");
+  });
+
+  it("keeps a same-document url(), quoted or with a colour after it (S22)", () => {
+    const code = `<svg><rect fill="url('#g') red" clip-path="url( #c )" stroke="#333"></rect></svg>`;
+    expect(sanitizeCustomCode(code)).toBe(code);
+  });
 });

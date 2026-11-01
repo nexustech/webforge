@@ -42,6 +42,35 @@ describe("loadSite", () => {
     ).resolves.toEqual({ kind: "file", site, saved: site });
   });
 
+  it("cleans the file's rich text as the editor's is, and saves it with its next edit (S23)", async () => {
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("No home page");
+    const hostile = {
+      ...site,
+      pages: {
+        ...site.pages,
+        [home.id]: {
+          ...home,
+          doc: {
+            ...home.doc,
+            content: [
+              { type: "Text", props: { id: "t", text: '<p>Hi<img src=x onerror="y()"></p>' } },
+            ],
+          },
+        },
+      },
+    };
+
+    const loaded = await loadSite(project(summary, { status: "ok", site: hostile }), () => starter);
+
+    if (loaded.kind !== "file") throw new Error("Not loaded from the file");
+    expect(loaded.site.pages[home.id]?.doc.content).toEqual([
+      { type: "Text", props: { id: "t", text: "<p>Hi</p>" } },
+    ]);
+    // Opening writes nothing: autosave's baseline is what the editor now holds.
+    expect(loaded.saved).toBe(loaded.site);
+  });
+
   it("remembers the open site's session for the calls that change it, and none without a site (R6)", async () => {
     await loadSite(project(summary, { status: "ok", site }), () => starter);
     expect(siteSession()).toBe(summary.sessionId);
