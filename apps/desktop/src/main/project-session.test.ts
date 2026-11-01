@@ -21,15 +21,21 @@ import {
   pageDocumentId,
   siteDocuments,
 } from "@webforge/model";
-import { ProjectStore, ReadOnlyProjectError, readSiteZip } from "@webforge/storage";
+import {
+  FORMAT_VERSION,
+  ProjectStore,
+  ReadOnlyProjectError,
+  readSiteZip,
+  SiteFileWriter,
+} from "@webforge/storage";
 import { TEMPLATES_DIR } from "@webforge/templates/node";
 import { heroPhoto } from "@webforge/test-utils";
 import type { IpcMain } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createImportJobs } from "../worker/store-import.js";
+import { createWriterJobs } from "../worker/writer-jobs.js";
 import type { NewSiteTarget } from "./new-site.js";
 import { registerProjectHandlers } from "./project-ipc.js";
-import { ProjectSession, type SiteStoreAccess } from "./project-session.js";
+import { CLEAN_UP_WAIT_MS, ProjectSession, type SiteStoreAccess } from "./project-session.js";
 import { findProjectArgument, withProjectExtension } from "./site-paths.js";
 import { createStorageWriter, type StorageWriter } from "./storage-writer.js";
 import { createStoreGate } from "./store-gate.js";
@@ -75,7 +81,7 @@ describe("ProjectSession", () => {
       sessionId: expect.stringMatching(/^[0-9a-f-]{36}$/),
       name: "Rosa's Bakery",
       fileName: "Rosa's Bakery.wforge",
-      formatVersion: 1,
+      formatVersion: FORMAT_VERSION,
       syncService: null,
     };
     expect(result).toEqual({ status: "opened", project });
@@ -170,10 +176,10 @@ describe("ProjectSession", () => {
     }
   });
 
-  it("still closes the site when its garbage can't be collected, and logs why", async () => {
+  it("still closes the site when its file can't be cleaned up, and logs why", async () => {
     const path = join(dir, "site.wforge");
     await session.create(path);
-    vi.spyOn(ProjectStore.prototype, "collectGarbage").mockImplementation(() => {
+    vi.spyOn(SiteFileWriter.prototype, "cleanUp").mockImplementation(() => {
       throw new Error("disk full");
     });
 
@@ -657,6 +663,8 @@ describe("ProjectSession site (A13)", () => {
       prepare: vi.fn(),
       store,
       discard: vi.fn(),
+      putBlobs: vi.fn(),
+      cleanUp: vi.fn(async () => ({ status: "failed" as const })),
       stop,
     };
     const gated = new ProjectSession({}, { writer });
@@ -664,15 +672,15 @@ describe("ProjectSession site (A13)", () => {
     const sessionId = created.status === "opened" ? created.project.sessionId : "";
     const site = gated.site(sessionId);
     expect(Object.keys(site.writer).sort()).toEqual(["discard", "prepare"]);
-    const outcome = await createImportJobs().prepare(1, "photo.jpg", { data: heroPhoto() });
+    const outcome = await createWriterJobs().prepare(1, "photo.jpg", { data: heroPhoto() });
     if (outcome.status !== "prepared") throw new Error("The photo wasn't prepared");
     const prepared = { ...outcome, token: 1 };
     vi.useFakeTimers();
 
     // A turn whose store never finishes, as a writer thread that stops answering.
     void site.writerTurn(
-      (sitePath, storeImport) =>
-        storeImport(prepared, { sitePath, mediaId: "photo", originalName: "photo.jpg" }),
+      (sitePath, writing) =>
+        writing.store(prepared, { sitePath, mediaId: "photo", originalName: "photo.jpg" }),
       () => ({ status: "failed" }),
     );
     await vi.advanceTimersByTimeAsync(0);
@@ -790,6 +798,53 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
     }
   });
 
+  it("stores pasted and downloaded files through the storage writer, never this thread's connection (#664)", async () => {
+    await session.create(join(dir, "Through the writer.wforge"));
+    const putBlob = vi.spyOn(ProjectStore.prototype, "putBlob");
+    const putAsset = vi.spyOn(ProjectStore.prototype, "putAsset");
+    const written = vi.spyOn(SiteFileWriter.prototype, "putBlobs");
+    const code = new TextEncoder().encode("window.x = 1;");
+
+    expect(await scoped(session).storeCopiedMedia(photo, () => bytes)).toEqual({
+      status: "stored",
+      hash: photo.hash,
+    });
+    expect(await scoped(session).storeBlobs([{ data: code, mime: "text/javascript" }])).toEqual({
+      status: "stored",
+      hashes: [createHash("sha256").update(code).digest("hex")],
+    });
+    expect(await scoped(session).storeBlobs([])).toEqual({ status: "stored", hashes: [] });
+
+    expect(written).toHaveBeenCalledTimes(2);
+    expect(putBlob).not.toHaveBeenCalled();
+    expect(putAsset).not.toHaveBeenCalled();
+    expect((await scoped(session).readMedia(photo.hash))?.mime).toBe("image/jpeg");
+  });
+
+  it("refuses kept bytes that aren't the pasted item's, storing nothing, so a paste after can store it (#664)", async () => {
+    const path = join(dir, "Changed bytes.wforge");
+    await session.create(path);
+    const wrong = new Uint8Array([1, 2, 3]);
+
+    expect(await scoped(session).storeCopiedMedia(photo, () => wrong)).toEqual({
+      status: "failed",
+      reason: "unknown",
+    });
+    const refused = ProjectStore.open(path, { readOnly: true });
+    try {
+      // No asset naming the wrong bytes, which the next paste would take as the item's.
+      expect(refused.readAsset(photo.id)).toBeUndefined();
+      expect(refused.hasBlob(createHash("sha256").update(wrong).digest("hex"))).toBe(false);
+    } finally {
+      refused.close();
+    }
+    expect(await scoped(session).storeCopiedMedia(photo, () => bytes)).toEqual({
+      status: "stored",
+      hash: photo.hash,
+    });
+    expect((await scoped(session).readMedia(photo.hash))?.mime).toBe("image/jpeg");
+  });
+
   it("reports missing bytes, no site and a read-only site", async () => {
     expect(await scoped(session).storeCopiedMedia(photo, () => bytes)).toEqual({
       status: "failed",
@@ -808,10 +863,16 @@ describe("ProjectSession storeCopiedMedia (1.25)", () => {
 
     await session.close();
     const path = join(dir, "Missing.wforge");
-    vi.spyOn(ProjectStore.prototype, "putAsset").mockImplementation(() => {
-      throw new ReadOnlyProjectError();
-    });
     await session.open(path);
+    // As a site from a newer Webforge will be, once the editor can show one.
+    vi.spyOn(ProjectStore.prototype, "info", "get").mockReturnValue({
+      projectId: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
+      name: "Missing",
+      formatVersion: FORMAT_VERSION,
+      createdAt: "2026-11-01T10:00:00.000Z",
+      readOnly: true,
+      newerFormat: true,
+    });
     const fresh = { ...photo, id: "fresh" as MediaId };
     expect(await scoped(session).storeCopiedMedia(fresh, () => bytes)).toEqual({
       status: "failed",
@@ -1005,7 +1066,7 @@ describe("ProjectSession and the store gate (R13b)", () => {
   it("saves while an import's file is still being read: reading holds nothing (#408 review)", async () => {
     // A writer that reads as slowly as a network share: as long as the test says.
     let finishReading: () => void = () => undefined;
-    const jobs = createImportJobs();
+    const jobs = createWriterJobs();
     const slow: StorageWriter = {
       warm: () => undefined,
       prepare: async (fileName, source) => {
@@ -1017,6 +1078,8 @@ describe("ProjectSession and the store gate (R13b)", () => {
       },
       store: async (prepared, target) => jobs.store(prepared.token, target),
       discard: (prepared) => jobs.discard(prepared.token),
+      putBlobs: async (sitePath, blobs, asset) => jobs.putBlobs(sitePath, blobs, asset),
+      cleanUp: async (sitePath) => jobs.cleanUp(sitePath),
       stop: async () => undefined,
     };
     const gated = new ProjectSession({}, { writer: slow });
@@ -1077,9 +1140,12 @@ describe("ProjectSession and the store gate (R13b)", () => {
     ]);
     const closing = gated.close();
     await vi.advanceTimersByTimeAsync(5_000);
+    // The clean-up after it is never answered either: it is stopped in its turn (#664).
+    expect(thread.postMessage.mock.calls.at(-1)?.[0].type).toBe("clean-up");
+    await vi.advanceTimersByTimeAsync(CLEAN_UP_WAIT_MS);
     await closing;
 
-    expect(thread.terminate).toHaveBeenCalled();
+    expect(thread.terminate).toHaveBeenCalledTimes(2);
     expect(gated.current()).toBeNull();
     expect(await importing).toEqual({ status: "failed", reason: "unknown" });
     vi.useRealTimers();

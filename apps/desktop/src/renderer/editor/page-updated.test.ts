@@ -1,3 +1,4 @@
+import { restoreSite } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -31,6 +32,21 @@ describe("a page's last-changed date (3.15, SEO-3)", () => {
     expect(session.history.entries()).toHaveLength(1);
     session.history.undo();
     expect(doc().pages[home]).not.toHaveProperty("updated");
+  });
+
+  it("dates the pages a restored version changes, in the restore's one step (#664)", () => {
+    const { session, home, doc } = setUp();
+    const version = structuredClone(doc());
+    const restoredPage = version.pages[home];
+    if (restoredPage === undefined) throw new Error("no home page");
+    restoredPage.title = "As it was";
+    const other = doc().pageOrder.find((id) => id !== home);
+
+    session.edit("root", "Restored a version", (draft) => restoreSite(draft, version));
+
+    expect(doc().pages[home]).toMatchObject({ title: "As it was", updated: "2026-10-01" });
+    expect(other === undefined ? undefined : doc().pages[other]).not.toHaveProperty("updated");
+    expect(session.history.entries()).toHaveLength(1);
   });
 
   it("dates no page for a site-wide change: the theme, Header and Footer, shared sections", () => {

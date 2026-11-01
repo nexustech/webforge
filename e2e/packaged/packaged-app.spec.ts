@@ -13,7 +13,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
-import { ProjectStore } from "@webforge/storage";
+import { FORMAT_VERSION, ProjectStore } from "@webforge/storage";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
 import { FONT_BUDGET_BYTES, FONT_CATALOGUE } from "@webforge/themes";
 import { desktopVersion } from "../app/launch.js";
@@ -116,7 +116,7 @@ const summary = (name: string) => ({
   ),
   name,
   fileName: `${name}.wforge`,
-  formatVersion: 1,
+  formatVersion: FORMAT_VERSION,
   syncService: null,
 });
 

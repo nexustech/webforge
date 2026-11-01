@@ -8,7 +8,7 @@ import { readTemplates, TEMPLATES_DIR, type TemplateFolder } from "@webforge/tem
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { themePreset } from "@webforge/themes";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createImportJobs } from "../worker/store-import.js";
+import { createWriterJobs } from "../worker/writer-jobs.js";
 import { fillNewSite, newSiteImporter, shippedTemplateReader } from "./new-site.js";
 import { createInlineStorageWriter } from "./storage-writer.js";
 
@@ -42,7 +42,7 @@ afterEach(() => {
 /** The new file as the session hands it to the fill: its images stored as the writer stores them. */
 const target = () => ({
   store,
-  importFile: vi.fn(newSiteImporter(createInlineStorageWriter(createImportJobs()), sitePath)),
+  importFile: vi.fn(newSiteImporter(createInlineStorageWriter(createWriterJobs()), sitePath)),
 });
 
 describe("fillNewSite (2.14a)", () => {
