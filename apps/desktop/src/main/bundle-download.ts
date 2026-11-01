@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { BlockList, isIP } from "node:net";
 import { BUNDLE_MAX_NESTED } from "../shared/ipc/site.js";
 
 /**
@@ -124,35 +124,97 @@ function vendorName(url: URL, extension: string, data: Uint8Array): string {
   return `${stem === "" ? "file" : stem}-${hash}.${extension}`;
 }
 
-/** An IPv4 address's four numbers. */
-const IPV4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+/** IPv4's ranges that aren't another website (RFC 6890): `[network, prefix length]`. */
+const LOCAL_IPV4: readonly (readonly [string, number])[] = [
+  ["0.0.0.0", 8], // "this network"
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10], // carrier-grade NAT
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24], // protocol assignments
+  ["192.0.2.0", 24], // documentation
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15], // benchmarking
+  ["198.51.100.0", 24],
+  ["203.0.113.0", 24],
+  ["224.0.0.0", 3], // multicast, reserved and broadcast
+];
 
 /**
- * Whether `address` (an IP address) is this computer or its own network, never another website:
- * loopback, private, link-local, carrier-grade NAT, "this network", multicast and reserved IPv4,
- * and IPv6's loopback, unspecified, unique local and link-local addresses, an IPv4 one inside IPv6
- * by its IPv4 address.
+ * IPv6's ranges that aren't another website: unspecified, loopback, discard, unique local,
+ * link-local, site-local (deprecated, still routed by some networks), multicast, documentation,
+ * and NAT64's local-use prefix (RFC 8215), whose translation each network chooses itself.
+ */
+const LOCAL_IPV6: readonly (readonly [string, number])[] = [
+  ["::", 128],
+  ["::1", 128],
+  ["100::", 64],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["fec0::", 10],
+  ["ff00::", 8],
+  ["2001:db8::", 32],
+  ["64:ff9b:1::", 48],
+];
+
+/** {@link LOCAL_IPV4} and {@link LOCAL_IPV6}, parsed by Node (S10). */
+const LOCAL_ADDRESSES = new BlockList();
+for (const [network, prefix] of LOCAL_IPV4) LOCAL_ADDRESSES.addSubnet(network, prefix, "ipv4");
+for (const [network, prefix] of LOCAL_IPV6) LOCAL_ADDRESSES.addSubnet(network, prefix, "ipv6");
+
+/** An IPv6 address's eight 16-bit groups, or undefined when it isn't one. */
+function groupsOf(address: string): number[] | undefined {
+  let host: string;
+  try {
+    // The URL parser checks it and writes it one way: lower-case hex, without a dotted IPv4 tail.
+    host = new URL(`http://[${address}]/`).hostname.slice(1, -1);
+  } catch {
+    return undefined;
+  }
+  const [head = "", tail] = host.split("::");
+  const part = (text: string) =>
+    text === "" ? [] : text.split(":").map((group) => parseInt(group, 16));
+  const before = part(head);
+  const after = tail === undefined ? [] : part(tail);
+  return [...before, ...Array<number>(8 - before.length - after.length).fill(0), ...after];
+}
+
+/** The IPv4 address in two 16-bit groups. */
+const ipv4Of = (high: number, low: number) =>
+  [high >> 8, high & 0xff, low >> 8, low & 0xff].join(".");
+
+/**
+ * The IPv4 addresses an IPv6 address carries, which a request to it may reach: IPv4-mapped
+ * (`::ffff:0:0/96`), IPv4-compatible (`::/96`), NAT64's well-known prefix (`64:ff9b::/96`), 6to4
+ * (`2002::/16`), and Teredo's server and client (`2001::/32`, the client's bits inverted).
+ */
+function embeddedIpv4(groups: readonly number[]): string[] {
+  const [g0 = 0, g1 = 0, g2 = 0, g3 = 0, g4 = 0, g5 = 0, g6 = 0, g7 = 0] = groups;
+  const zeroTo = (end: number) => groups.slice(0, end).every((group) => group === 0);
+  if (zeroTo(5) && g5 === 0xffff) return [ipv4Of(g6, g7)];
+  if (zeroTo(6)) return [ipv4Of(g6, g7)];
+  if (g0 === 0x64 && g1 === 0xff9b && g2 === 0 && g3 === 0 && g4 === 0 && g5 === 0) {
+    return [ipv4Of(g6, g7)];
+  }
+  if (g0 === 0x2002) return [ipv4Of(g1, g2)];
+  if (g0 === 0x2001 && g1 === 0) return [ipv4Of(g2, g3), ipv4Of(g6 ^ 0xffff, g7 ^ 0xffff)];
+  return [];
+}
+
+/**
+ * Whether `address` (an IP address) is this computer or its own network, never another website
+ * (S10): IPv4's local ranges ({@link LOCAL_IPV4}), IPv6's ({@link LOCAL_IPV6}), and an IPv6
+ * address that carries a local IPv4 one, however it is written. Something that isn't an address
+ * counts as local: it can't be checked.
  */
 export function isLocalAddress(address: string): boolean {
-  const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(address)?.[1];
-  const v4 = IPV4.exec(mapped ?? address);
-  if (v4 !== null) {
-    const [a = 0, b = 0] = [Number(v4[1]), Number(v4[2])];
-    return (
-      a === 0 ||
-      a === 10 ||
-      a === 127 ||
-      (a === 100 && b >= 64 && b <= 127) ||
-      (a === 169 && b === 254) ||
-      (a === 172 && b >= 16 && b <= 31) ||
-      (a === 192 && b === 168) ||
-      a >= 224
-    );
-  }
-  const v6 = address.toLowerCase();
-  return (
-    v6 === "::" || v6 === "::1" || /^f[cd][0-9a-f]{2}:/.test(v6) || /^fe[89ab][0-9a-f]:/.test(v6)
-  );
+  if (isIP(address) === 4) return LOCAL_ADDRESSES.check(address, "ipv4");
+  const groups = groupsOf(address.replace(/%.*$/, ""));
+  if (groups === undefined) return true;
+  const ipv6 = groups.map((group) => group.toString(16)).join(":");
+  if (LOCAL_ADDRESSES.check(ipv6, "ipv6")) return true;
+  return embeddedIpv4(groups).some((ipv4) => LOCAL_ADDRESSES.check(ipv4, "ipv4"));
 }
 
 /**
@@ -179,8 +241,14 @@ async function whereIs(
   return addresses.some(isLocalAddress) ? "local" : "elsewhere";
 }
 
-/** The body of `response`, read as it comes, or `too-large` once it passes the limit. */
-async function bodyOf(response: Response): Promise<Uint8Array | "too-large"> {
+/**
+ * The body of `response`, read as it comes, or `too-large` once it passes `limit` bytes, when it
+ * stops reading: however the server sends it, chunked or compressed, with no length or a false one.
+ */
+export async function bodyOf(
+  response: Response,
+  limit: number,
+): Promise<Uint8Array<ArrayBuffer> | "too-large"> {
   const reader = response.body?.getReader();
   if (reader === undefined) return new Uint8Array();
   const chunks: Uint8Array[] = [];
@@ -189,7 +257,7 @@ async function bodyOf(response: Response): Promise<Uint8Array | "too-large"> {
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;
-    if (size > BUNDLE_MAX_BYTES) {
+    if (size > limit) {
       await reader.cancel().catch(() => undefined);
       return "too-large";
     }
@@ -259,7 +327,7 @@ async function get(
   }
   let data: Uint8Array | "too-large";
   try {
-    data = await bodyOf(response);
+    data = await bodyOf(response, BUNDLE_MAX_BYTES);
   } catch {
     return { failed: "offline" };
   }

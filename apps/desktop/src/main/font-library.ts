@@ -31,6 +31,7 @@ import type {
   FontDownloadResult,
   InstalledFont,
 } from "../shared/ipc/fonts.js";
+import { type BundleFetch, bodyOf } from "./bundle-download.js";
 import { createFontReader, type ExpectedFont, type FontReader } from "./fonts.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log, logFailure } from "./log.js";
@@ -52,8 +53,12 @@ const FONTSOURCE: FontSources = {
   listings: PACKAGE_LISTINGS,
 };
 
-/** Fetches a URL: Electron's `net.fetch` (the system's proxy settings apply), or a fake in tests. */
-export type FontFetch = (url: string, init: { readonly signal: AbortSignal }) => Promise<Response>;
+/**
+ * Fetches a URL, answering a redirect with itself rather than following it, so the library checks
+ * where it goes (S11): Electron's network (`electronBundleFetch`, the system's proxy settings
+ * apply), or a fake in tests.
+ */
+export type FontFetch = BundleFetch;
 
 /** The downloaded fonts and the list to browse (2.2, S4); see {@link createFontLibrary}. */
 export type FontLibrary = {
@@ -75,6 +80,9 @@ export type FontLibrary = {
 const BROWSE_FRESH_MS = 7 * 24 * 60 * 60 * 1000;
 /** How long one request may take. */
 const REQUEST_TIMEOUT_MS = 30_000;
+
+/** How many redirects a request follows, each to `https://` on one of the font sources' hosts. */
+const MAX_REDIRECTS = 5;
 /** The most a list or a package's listing may take (Fontsource's whole list is about 0.5 MB). */
 const MAX_JSON_BYTES = 8 * 1024 * 1024;
 /** The most one font file may take (a variable font's Latin file is about 50–300 KB). */
@@ -231,24 +239,46 @@ export function createFontLibrary({
     return families;
   };
 
+  /** The hosts a request, or a redirect, may go to: the font sources' own. */
+  const hosts = new Set(Object.values(sources).map((source) => new URL(source).host));
+
+  /**
+   * The body at `url`, at most `limit` bytes, read as it comes and stopped past it (S11).
+   * Redirects are followed by hand, each to `https://` on one of {@link hosts}; any other is
+   * refused.
+   */
   const get = async (url: string, limit: number): Promise<Uint8Array<ArrayBuffer>> => {
-    let response: Response;
-    try {
-      response = await fetch(url, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-    } catch {
-      throw new FontSourceError("offline");
+    const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    let at: URL | undefined = new URL(url);
+    for (let hop = 0; ; hop += 1) {
+      if (at?.protocol !== "https:" || !hosts.has(at.host) || hop > MAX_REDIRECTS) {
+        throw new FontSourceError("unknown");
+      }
+      let response: Response;
+      try {
+        response = await fetch(at.href, { signal, redirect: "manual" });
+      } catch {
+        throw new FontSourceError("offline");
+      }
+      const location = response.headers.get("location");
+      if (response.status >= 300 && response.status < 400 && location !== null) {
+        await response.body?.cancel().catch(() => undefined);
+        at = URL.parse(location, at.href) ?? undefined;
+        continue;
+      }
+      if (!response.ok || Number(response.headers.get("content-length") ?? 0) > limit) {
+        await response.body?.cancel().catch(() => undefined);
+        throw new FontSourceError("unknown");
+      }
+      let data: Uint8Array<ArrayBuffer> | "too-large";
+      try {
+        data = await bodyOf(response, limit);
+      } catch {
+        throw new FontSourceError("offline");
+      }
+      if (data === "too-large") throw new FontSourceError("unknown");
+      return data;
     }
-    if (!response.ok || Number(response.headers.get("content-length") ?? 0) > limit) {
-      throw new FontSourceError("unknown");
-    }
-    let data: Uint8Array<ArrayBuffer>;
-    try {
-      data = new Uint8Array(await response.arrayBuffer());
-    } catch {
-      throw new FontSourceError("offline");
-    }
-    if (data.byteLength > limit) throw new FontSourceError("unknown");
-    return data;
   };
 
   const getJson = async <T>(url: string, schema: z.ZodType<T>): Promise<T> => {

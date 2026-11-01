@@ -555,11 +555,21 @@ export const COMMANDS = {
       };
     },
   },
-  /** Sets theme tokens: colours, fonts, corners, spacing… Changes every page (D7). */
+  /**
+   * Sets theme tokens: colours, fonts, corners, spacing… Changes every page (D7). A group it names
+   * in part (`{ fonts: { heading } }`) keeps the values it doesn't name (#645).
+   */
   setThemeTokens: {
-    input: z.strictObject({ tokens: z.record(z.string(), z.unknown()) }),
+    input: z.strictObject({
+      tokens: z
+        .record(z.string(), z.unknown())
+        .describe(
+          "The tokens to change. Nested groups (fonts, radius, typeScale…) are merged one level " +
+            "deep: what a group leaves out stays as it is.",
+        ),
+    }),
     plan(site: SiteDoc, input: { tokens: Record<string, unknown> }): Plan | Failure {
-      const theme = themeTokensSchema.safeParse({ ...site.theme, ...input.tokens });
+      const theme = themeTokensSchema.safeParse(withTokens(site.theme, input.tokens));
       if (!theme.success) return fail("invalid", z.prettifyError(theme.error));
       const next = theme.data;
       return {
@@ -581,6 +591,25 @@ export const COMMANDS = {
 
 /** The name of a command. */
 export type CommandName = keyof typeof COMMANDS;
+
+/** Whether `value` is a group of tokens (`fonts`, `radius`…): an object, not a list. */
+const isGroup = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
+
+/**
+ * `theme` with `tokens` over it: a group both have is merged one level deep, so a partial `fonts`
+ * or `radius` keeps the values it doesn't name; anything else replaces what was there (#645).
+ * Only the theme's own groups are merged, and the rest spread, so a `__proto__` key never sets a
+ * prototype.
+ */
+function withTokens(theme: object, tokens: Record<string, unknown>): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...theme, ...tokens };
+  for (const [key, value] of Object.entries(tokens)) {
+    const before: unknown = Object.hasOwn(theme, key) ? Reflect.get(theme, key) : undefined;
+    if (isGroup(before) && isGroup(value)) merged[key] = { ...before, ...value };
+  }
+  return merged;
+}
 
 /** The list in `slot` of the node `parentId` among `nodes`, made if it isn't there yet. */
 function childrenOf(nodes: NodeDoc[], parentId: string, slot: string): NodeDoc[] | undefined {

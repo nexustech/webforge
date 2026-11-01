@@ -7,7 +7,7 @@ The command layer for AI apps (F-AI-1, plan item 4.8): typed queries that read t
 
 - `createCommandApi(host)` → `CommandApi`
   - `query(name, input)`: `outline`, `pageTree` (with linked copies of shared sections), `fields` (each field's kind, label, JSON Schema and value), `settings`, `theme`. Answers `{ status: "done", data }`, or `invalid` / `not-found` with a message.
-  - `run(name, input, { app })`: `addNode`, `updateFields`, `editText`, `moveNode`, `removeNode`, `addPage`, `setThemeTokens`. Answers `{ status: "done", label, id? }`, or why nothing changed: `invalid`, `not-found`, `refused`, `busy` or `declined`.
+  - `run(name, input, { app })`: `addNode`, `updateFields`, `editText`, `moveNode`, `removeNode`, `addPage`, `setThemeTokens` (a group of tokens named in part, such as `{ fonts: { heading } }`, keeps the values it leaves out). Answers `{ status: "done", label, id? }`, or why nothing changed: `invalid`, `not-found`, `refused`, `busy` or `declined`.
 - `CommandHost`: what the commands run against. The renderer gives one over the editor session (`apps/desktop/src/renderer/ai/`); tests give their own.
 - `COMMANDS`, `QUERIES`: each one's zod input schema, for the MCP server's tool list.
 - `CONFIRM_TIMEOUT_MS`: how long a change to more than one page waits for the person (D7).
