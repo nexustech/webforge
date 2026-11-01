@@ -1,4 +1,5 @@
 import type { IpcMain } from "electron";
+import type { AppFeature } from "./app-feature.js";
 import type { CodeTrust } from "./code-trust.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
@@ -45,4 +46,20 @@ export function registerTrustHandlers(
       return { status: "failed", reason: "unknown" };
     }
   });
+}
+
+/**
+ * Code trust as a feature of the app (#649, A12): its IPC calls, and the record's last write
+ * before Webforge exits.
+ */
+export function codeTrustFeature(
+  trust: Pick<CodeTrust, "trusted" | "trust" | "idle">,
+  session: Pick<ProjectSession, "staleReason" | "projectId">,
+): AppFeature {
+  return {
+    register: (ipc, isTrustedSender) => {
+      registerTrustHandlers(ipc, isTrustedSender, trust, session);
+    },
+    quit: () => trust.idle(),
+  };
 }

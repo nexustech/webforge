@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { createRecentSites, recentSiteId } from "./recent-sites.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createRecentSites, recentSiteId, recentSitesFeature } from "./recent-sites.js";
 
 let dir: string;
 let clock: Date;
@@ -247,5 +247,59 @@ describe("recentSiteId", () => {
       recentSiteId(join(dir, "x.wforge")),
     );
     expect(recentSiteId(join(dir, "x.wforge"))).toMatch(/^[0-9a-f]{32}$/);
+  });
+});
+
+describe("recentSitesFeature (A12)", () => {
+  const recent = () => ({
+    opened: vi.fn(async (_path: string, _name: string) => undefined),
+    edited: vi.fn(async (_path: string) => undefined),
+    idle: vi.fn(async () => undefined),
+  });
+  const path = join("C:", "Sites", "Bakery.wforge");
+  const open = { current: () => ({ name: "Bakery" }), currentPath: () => path };
+  const access = vi.fn();
+
+  it("puts a site that opens at the top, and marks it edited as it's saved", () => {
+    const list = recent();
+    const feature = recentSitesFeature(list, open);
+
+    feature.site?.opened?.(access, path);
+    feature.site?.committed?.();
+
+    expect(list.opened).toHaveBeenCalledWith(path, "Bakery");
+    expect(list.edited).toHaveBeenCalledWith(path);
+  });
+
+  it("does nothing while no site is open", () => {
+    const list = recent();
+    const feature = recentSitesFeature(list, {
+      current: () => null,
+      currentPath: () => undefined,
+    });
+
+    feature.site?.opened?.(access, path);
+    feature.site?.committed?.();
+
+    expect(list.opened).not.toHaveBeenCalled();
+    expect(list.edited).not.toHaveBeenCalled();
+  });
+
+  it("logs a write that fails by its code, and finishes its last write as Webforge quits", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const list = recent();
+    list.opened.mockRejectedValueOnce(Object.assign(new Error("EPERM"), { code: "EPERM" }));
+    const feature = recentSitesFeature(list, open);
+
+    feature.site?.opened?.(access, path);
+    await feature.quit?.();
+
+    await vi.waitFor(() =>
+      expect(error).toHaveBeenCalledWith(
+        "Webforge could not update the Recent list (code=Error EPERM)",
+      ),
+    );
+    expect(list.idle).toHaveBeenCalledOnce();
+    error.mockRestore();
   });
 });

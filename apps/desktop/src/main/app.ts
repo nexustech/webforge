@@ -1,11 +1,8 @@
-import { existsSync } from "node:fs";
 import { networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot, ThemeTokens } from "@webforge/model";
-import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
-import { type CatalogueFont, FONT_CATALOGUE, fontFacesFor } from "@webforge/themes";
+import type { SiteSnapshot } from "@webforge/model";
 import {
   type ThumbnailJob,
   type ThumbnailOutcome,
@@ -16,6 +13,7 @@ import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
+import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
@@ -32,18 +30,10 @@ import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
-import { type RunExport, registerExportHandlers } from "./export-ipc.js";
-import { createExportRunner } from "./export-worker-client.js";
+import { createExportFeature } from "./export-feature.js";
 import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
-import { createFontLibrary, type FontLibrary, registerFontHandlers } from "./font-library.js";
-import {
-  catalogueFile,
-  createFontReader,
-  createFontResponder,
-  FONT_SCHEME,
-  type FontReader,
-} from "./fonts.js";
+import { FONT_SCHEME } from "./fonts.js";
 import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
@@ -52,19 +42,18 @@ import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import { createMyThemes } from "./my-themes.js";
 import { localNetworkAddress } from "./network-address.js";
-import { shippedTemplateReader } from "./new-site.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
   registerPreferencesHandlers,
 } from "./preferences.js";
 import { createPreviewBuilder } from "./preview-builder.js";
-import { createPreview, registerPreviewHandlers } from "./preview-ipc.js";
+import { createPreview, previewFeature } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
 import { registerProjectHandlers } from "./project-ipc.js";
 import { findProjectArgument, ProjectSession } from "./project-session.js";
 import { registerPublishHandlers } from "./publish-ipc.js";
-import { createRecentSites } from "./recent-sites.js";
+import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 import {
   createSecureWebPreferences,
@@ -72,6 +61,7 @@ import {
   hardenWebContents,
   isAppUrl,
 } from "./security.js";
+import { siteFontsOf } from "./site-fonts.js";
 import { createSiteSwitch } from "./site-switch.js";
 import {
   installContextMenu,
@@ -79,9 +69,9 @@ import {
   spellCheckAvailable,
 } from "./spellcheck.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
-import { registerTemplatesHandlers } from "./templates-ipc.js";
-import { registerThemesHandlers } from "./themes-ipc.js";
-import { registerTrustHandlers } from "./trust-ipc.js";
+import { createTemplatesFeature } from "./templates-ipc.js";
+import { myThemesFeature } from "./themes-ipc.js";
+import { codeTrustFeature } from "./trust-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -199,33 +189,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const backupSchedule = createBackupSchedule(backups);
   // The start screen's Recent list (F-SITE-2, 1.8).
   const recentSites = createRecentSites({ dir: app.getPath("userData") });
-  /** The Recent list is a convenience: a write that fails is logged by its code, nothing more. */
-  const recentFailed = (error: unknown) =>
-    logFailure("Webforge could not update the Recent list", error);
   // My themes (2.23): the person's own themes, for every site on this computer.
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   // The code each site's owner trusts (#649): only that goes into a build.
   const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
   const projectSession = new ProjectSession(
-    {
-      opened: (access, path) => {
-        void backupSchedule.opened(access, path);
-        const name = projectSession.current()?.name;
-        if (name !== undefined) void recentSites.opened(path, name).catch(recentFailed);
-      },
-      committed: () => {
-        backupSchedule.committed();
-        const path = projectSession.currentPath();
-        if (path !== undefined) void recentSites.edited(path).catch(recentFailed);
-      },
-      closed: () => {
-        backupSchedule.closed();
-        // The export worker goes, and the images it kept in memory with it (R15); the preview
-        // too, its server and its worker (3.2).
-        exports.close();
-        void preview.close();
-      },
-    },
+    {},
     // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
     { writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)) },
   );
@@ -284,7 +253,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     testAnswer: testDialogAnswer,
   });
 
-  const fonts = siteFonts(electron);
+  const fonts = siteFontsOf(app, electron.net);
 
   // Copied elements, with their images' bytes kept in the user's data while the clipboard holds
   // them (1.25, R13d).
@@ -293,60 +262,23 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     join(app.getPath("userData"), "clipboard"),
   );
 
-  // The templates New Site offers (2.14a), outside app.asar: in the packaged app's resources, or
-  // where the build copied them while developing. The list is read once, when first shown; New Site
-  // reads only the template it makes (2.15c), so a damaged one never stops Blank.
-  const templatesDir = app.isPackaged
-    ? join(process.resourcesPath, "templates")
-    : join(app.getAppPath(), "out", "templates");
-  let shippedTemplates: readonly TemplateFolder[] | undefined;
-  const templates = () => {
-    shippedTemplates ??= readTemplates(templatesDir);
-    return shippedTemplates;
-  };
+  // The templates New Site offers (2.14a), outside app.asar.
+  const templates = createTemplatesFeature(
+    app.isPackaged
+      ? join(process.resourcesPath, "templates")
+      : join(app.getAppPath(), "out", "templates"),
+  );
 
-  // Each export runs in its own utility process, so building never blocks the window (07). The
-  // worker resolves nothing itself: it gets the site's font files, read and checked here, and asks
-  // for each image and document as it reaches it, read from the open site (R15). Every worker's
-  // crash becomes a local report (R3).
+  // Every worker's crash becomes a local report (R3).
   const forkWorker = (serviceName: string) =>
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
-  // One export worker while the site is open, keeping the images it encoded in memory (R15).
-  const exports = createExportRunner(() => forkWorker("Webforge export"));
-  /**
-   * The font files `theme` can use and the downloaded families among them, read and checked here:
-   * the accent font's too (3.22), which the build leaves out when nothing uses it.
-   */
-  const fontsOf = async (theme: ThemeTokens) => {
-    const families = await fonts.downloadedFamiliesOf(theme);
-    return {
-      fonts: fontFacesFor(theme, [...FONT_CATALOGUE, ...families], { accent: true }).flatMap(
-        (face) => {
-          const data = fonts.reader.read(face);
-          return data === undefined ? [] : [{ file: face.file, data }];
-        },
-      ),
-      families,
-    };
-  };
   // Every build gets only the code the open site's owner trusts (#649).
   const trustedOnly = (snapshot: SiteSnapshot) =>
     withTrustedCode(snapshot, projectSession.projectId(), codeTrust);
-  // Each export reads the Media of the site it is of, which its handler took as it started (#663).
-  const runExport: RunExport = async (sent, target, { readMedia, signal, onProgress }) => {
-    const snapshot = await trustedOnly(sent);
-    return exports.run(
-      { type: "export", snapshot, ...target, ...(await fontsOf(snapshot.theme)) },
-      { readMedia, signal, onProgress },
-    );
-  };
 
   // The preview server (3.2): its builds in a worker of their own while a preview is open, so an
   // export never waits behind one; opened in the default browser, which the site's scripts run in,
   // never in an Electron window.
-  // The preview's font files, read once for the theme's fonts while every face could be read (a
-  // family still downloading is read again next time): each edit sends them to its worker again.
-  let previewFonts: { key: string; fonts: Awaited<ReturnType<typeof fontsOf>> } | undefined;
   const preview = createPreview({
     startServer: createPreviewServer,
     // A preview's builds read the Media of the opening it was started for (#663).
@@ -355,16 +287,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     site: (sessionId) => projectSession.forSession(sessionId),
     jobFor: async (sent) => {
       const snapshot = await trustedOnly(sent);
-      const key = JSON.stringify(snapshot.theme.fonts);
-      if (previewFonts?.key !== key) {
-        const read = await fontsOf(snapshot.theme);
-        const faces = fontFacesFor(snapshot.theme, [...FONT_CATALOGUE, ...read.families], {
-          accent: true,
-        });
-        if (read.fonts.length < faces.length) return { type: "preview", snapshot, ...read };
-        previewFonts = { key, fonts: read };
-      }
-      return { type: "preview", snapshot, ...previewFonts.fonts };
+      return { type: "preview", snapshot, ...(await fonts.previewFontsOf(snapshot.theme)) };
     },
     // Only the preview's own address, which this process makes: never one from the renderer.
     openInBrowser: async (url) => {
@@ -377,6 +300,37 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     },
     networkAddress: () => localNetworkAddress(networkInterfaces()),
   });
+
+  /**
+   * The app's features (A12): each is told as sites open, are saved and close (a hand-off's
+   * included), registered once Electron is ready, and given its last work before Webforge exits.
+   */
+  const features: readonly AppFeature[] = [
+    // Rolling backups of the open site: as it opens, then every 30 minutes it was edited.
+    { site: backupSchedule },
+    recentSitesFeature(recentSites, projectSession),
+    myThemesFeature(myThemes),
+    fonts,
+    templates,
+    createExportFeature({
+      dialogs: dialogs.export,
+      startWorker: () => forkWorker("Webforge export"),
+      fontsOf: fonts.fontsOf,
+      // Only the code the site's owner trusts (#649).
+      snapshotFor: trustedOnly,
+      sendProgress: (progress) =>
+        lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
+      // The site each export call is for (#663): its Media and its export choices.
+      site: (sessionId) => projectSession.forSession(sessionId),
+      // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
+      shell: electron.shell,
+    }),
+    previewFeature(preview),
+    codeTrustFeature(codeTrust, projectSession),
+  ];
+  for (const feature of features) {
+    if (feature.site !== undefined) projectSession.listen(feature.site);
+  }
 
   // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
   const requestThumbnail = createWorkerRequests<ThumbnailOutcome, ThumbnailJob>(
@@ -494,11 +448,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       recovery: { backups, dialogs: parts.recoveryDialogs },
       recent: recentSites,
       beforeSwitch: () => siteSwitch.leaveSite(),
-      template: shippedTemplateReader(templatesDir),
+      template: templates.template,
       flush: requestFlush,
     });
     registerCanvasHandlers(ipcMain, isTrustedSender, canvasStyles);
-    registerFontHandlers(ipcMain, isTrustedSender, fonts.downloaded());
     registerSpellCheckHandlers(
       ipcMain,
       isTrustedSender,
@@ -530,26 +483,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         if (lifecycle.quitting) app.quit();
       },
     });
-    registerExportHandlers(ipcMain, isTrustedSender, {
-      dialogs: dialogs.export,
-      runExport,
-      sendProgress: (progress) =>
-        lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
-      // The site each export call is for (#663): its Media and its export choices.
-      site: (sessionId) => projectSession.forSession(sessionId),
-      // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
-      open: async ({ destination, format }) => {
-        if (format === "zip") {
-          if (!existsSync(destination)) return "missing";
-          electron.shell.showItemInFolder(destination);
-          return "opened";
-        }
-        // An error message, rather than a throw, when the folder was moved or deleted.
-        const failed = await electron.shell.openPath(join(destination, "index.html"));
-        return failed === "" ? "opened" : "missing";
-      },
-    });
-    registerTemplatesHandlers(ipcMain, isTrustedSender, templates);
+    for (const feature of features) feature.register?.(ipcMain, isTrustedSender);
     // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
     const ai = registerAiHandlers(
       ipcMain,
@@ -558,10 +492,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       projectSession,
     );
     exposeForE2eTests(ai, app.isPackaged);
-    registerThemesHandlers(ipcMain, isTrustedSender, myThemes);
-    registerPreviewHandlers(ipcMain, isTrustedSender, preview);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish);
-    registerTrustHandlers(ipcMain, isTrustedSender, codeTrust, projectSession);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
@@ -617,11 +548,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // quit: the images are the running Webforge's, in the same user data.
     if (primaryInstance) elementClipboard.forgetKept();
     void closeThenExit({
-      // And My themes' and the Recent list's last writes, if any are under way (2.23).
-      close: async () => {
-        await projectSession.close();
-        await Promise.all([myThemes.idle(), recentSites.idle(), codeTrust.idle()]);
-      },
+      close: () => projectSession.close(),
+      // Then each feature's last work, such as My themes' and the Recent list's last writes.
+      features,
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).
@@ -643,46 +572,4 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   });
 
   return started;
-}
-
-/**
- * The site's fonts (2.2): the installer's, outside app.asar, and those downloaded on demand into
- * the user's data. Every font file is checked before it's used: the installer's against the
- * catalogue, a downloaded one against what its download measured.
- */
-function siteFonts({ app, net }: Pick<AppElectron, "app" | "net">) {
-  // In the packaged app's resources, or where the build copied them while developing.
-  const bundled = createFontReader(
-    app.isPackaged ? join(process.resourcesPath, "fonts") : join(app.getAppPath(), "out", "fonts"),
-  );
-  let library: FontLibrary | undefined;
-  /** The fonts downloaded on demand, made when first needed, once Electron is ready. */
-  const downloaded = (): FontLibrary => {
-    library ??= createFontLibrary({
-      dir: join(app.getPath("userData"), "fonts"),
-      // Looked up at call time, so the E2E tests can stand in for Fontsource, or cut it off.
-      fetch: (url, init) => net.fetch(url, init),
-    });
-    return library;
-  };
-  const reader: FontReader = {
-    read: (face) =>
-      catalogueFile(face.file) === undefined ? downloaded().reader.read(face) : bundled.read(face),
-  };
-  return {
-    downloaded,
-    reader,
-    respondWithFont: createFontResponder(
-      reader,
-      (name) => catalogueFile(name) ?? downloaded().file(name),
-    ),
-    /**
-     * The downloaded families `theme` sets its headings, text or accent in: the canvas and an
-     * export need them.
-     */
-    async downloadedFamiliesOf(theme: ThemeTokens): Promise<CatalogueFont[]> {
-      const used = Object.values(theme.fonts).map((font) => font.family);
-      return (await downloaded().downloaded()).filter((family) => used.includes(family.family));
-    },
-  };
 }

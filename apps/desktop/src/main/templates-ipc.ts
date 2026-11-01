@@ -1,9 +1,11 @@
 import { existsSync, readFileSync } from "node:fs";
 import type { TemplateCategory } from "@webforge/templates";
-import type { TemplateFolder } from "@webforge/templates/node";
+import { readTemplates, type TemplateFolder } from "@webforge/templates/node";
 import type { IpcMain } from "electron";
 import type { TemplateSummary } from "../shared/ipc/templates.js";
+import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
+import { shippedTemplateReader, type TemplateReader } from "./new-site.js";
 
 /**
  * What New Site shows of a template (2.14a): never its content, which only main reads, but its
@@ -55,4 +57,24 @@ export function registerTemplatesHandlers(
     );
     return [...summaries];
   });
+}
+
+/**
+ * The templates New Site offers (2.14a, A12), in `dir`: the packaged app's resources, or where the
+ * build copied them while developing. The list is read once, when first shown; New Site reads only
+ * the template it makes (`template`, 2.15c), so a damaged one never stops Blank.
+ */
+export function createTemplatesFeature(
+  dir: string,
+): AppFeature & { readonly template: TemplateReader } {
+  let shipped: readonly TemplateFolder[] | undefined;
+  return {
+    register: (ipc, isTrustedSender) => {
+      registerTemplatesHandlers(ipc, isTrustedSender, () => {
+        shipped ??= readTemplates(dir);
+        return shipped;
+      });
+    },
+    template: shippedTemplateReader(dir),
+  };
 }

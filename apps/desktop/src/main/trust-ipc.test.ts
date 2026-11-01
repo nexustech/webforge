@@ -1,7 +1,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { CodeTrust } from "./code-trust.js";
-import { registerTrustHandlers } from "./trust-ipc.js";
+import { codeTrustFeature, registerTrustHandlers } from "./trust-ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -64,5 +64,25 @@ describe("registerTrustHandlers (#649)", () => {
     await expect(
       handlers({ trusted: false }).invoke("trust:untrusted-code", SESSION, []),
     ).rejects.toThrow();
+  });
+});
+
+describe("codeTrustFeature (A12)", () => {
+  it("handles the trust calls, and finishes the record's last write before Webforge exits", async () => {
+    const handle = vi.fn();
+    const trust = { trusted: vi.fn(), trust: vi.fn(), idle: vi.fn(async () => {}) };
+    const feature = codeTrustFeature(trust, {
+      staleReason: () => undefined,
+      projectId: () => SITE,
+    });
+
+    feature.register?.({ handle }, () => true);
+    await feature.quit?.();
+
+    expect(handle.mock.calls.map(([channel]) => channel)).toEqual([
+      "trust:untrusted-code",
+      "trust:trust-code",
+    ]);
+    expect(trust.idle).toHaveBeenCalledOnce();
   });
 });
