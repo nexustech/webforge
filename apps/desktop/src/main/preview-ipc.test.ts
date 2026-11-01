@@ -4,7 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
 import type { SiteContent } from "../shared/ipc/site.js";
 import type { PreviewBuilder } from "./preview-builder.js";
-import { createPreview, type PreviewDeps, registerPreviewHandlers } from "./preview-ipc.js";
+import {
+  createPreview,
+  type Preview,
+  type PreviewDeps,
+  previewFeature,
+  registerPreviewHandlers,
+} from "./preview-ipc.js";
 import type { PreviewBuild, PreviewServer } from "./preview-server.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -308,5 +314,20 @@ describe("registerPreviewHandlers (3.2)", () => {
     await expect(
       invoker("preview:open", false).call(SITE_A, site("A"), "index.html"),
     ).rejects.toThrow();
+  });
+});
+
+describe("previewFeature (A12)", () => {
+  it("handles the preview calls, and stops the preview when the site closes", () => {
+    const close = vi.fn(async () => undefined);
+    const preview = { close } as Partial<Preview> as Preview;
+    const feature = previewFeature(preview);
+    const handle = vi.fn();
+
+    feature.register?.({ handle }, () => true);
+    feature.site?.closed?.();
+
+    expect(handle).toHaveBeenCalledTimes(5);
+    expect(close).toHaveBeenCalledOnce();
   });
 });

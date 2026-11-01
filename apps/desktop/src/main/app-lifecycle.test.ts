@@ -82,6 +82,70 @@ describe("closeThenExit", () => {
     expect(error).toHaveBeenCalledWith("Webforge could not close the site (code=Error EBUSY)");
   });
 
+  it("waits for every feature's last work once the site has closed, then exits (A12)", async () => {
+    const order: string[] = [];
+    let finishThemes: () => void = () => undefined;
+
+    const exiting = closeThenExit({
+      close: async () => {
+        order.push("close");
+      },
+      features: [
+        {
+          quit: () =>
+            new Promise<void>((resolve) => {
+              order.push("themes");
+              finishThemes = resolve;
+            }),
+        },
+        {},
+        {
+          quit: async () => {
+            order.push("recent");
+          },
+        },
+      ],
+      releaseLock: () => order.push("release"),
+      exit: (code) => order.push(`exit ${code}`),
+    });
+    await vi.waitFor(() => expect(order).toEqual(["close", "themes", "recent"]));
+    await Promise.resolve();
+    expect(order).not.toContain("release");
+
+    finishThemes();
+    await exiting;
+
+    expect(order).toEqual(["close", "themes", "recent", "release", "exit 0"]);
+  });
+
+  it("lets the features finish when the site fails to close, and exits when one of them fails", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const quit = vi.fn(async () => undefined);
+    const exit = vi.fn();
+
+    await closeThenExit({
+      close: async () => {
+        throw Object.assign(new Error("EBUSY"), { code: "EBUSY" });
+      },
+      features: [
+        {
+          quit: async () => {
+            throw Object.assign(new Error("EPERM: C:UsersSam"), { code: "EPERM" });
+          },
+        },
+        { quit },
+      ],
+      releaseLock: () => undefined,
+      exit,
+    });
+
+    expect(quit).toHaveBeenCalledOnce();
+    expect(exit).toHaveBeenCalledWith(0);
+    expect(error).toHaveBeenCalledWith(
+      "Webforge could not finish a feature's work before quitting (code=Error EPERM)",
+    );
+  });
+
   it("exits after 10 s when closing never finishes", async () => {
     vi.useFakeTimers();
     vi.spyOn(console, "error").mockImplementation(() => undefined);
