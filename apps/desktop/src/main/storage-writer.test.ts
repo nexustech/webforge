@@ -1,4 +1,4 @@
-import { writeFileSync } from "node:fs";
+import { statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
 import { ProjectStore } from "@webforge/storage";
@@ -103,6 +103,41 @@ describe("createStorageWriter", () => {
     expect(fake.sent.map(({ transfer }) => transfer?.length)).toEqual([1, 0, 0]);
   });
 
+  it("copies pasted and downloaded bytes to the thread, which the caller may still use (#664)", async () => {
+    const fake = fakeThread();
+    const writer = createStorageWriter(() => fake.thread);
+    const data = new Uint8Array([1, 2, 3]);
+
+    const putting = writer.putBlobs("site.wforge", [{ data, mime: "image/png" }]);
+    fake.emit("message", { id: 1, outcome: { status: "put", hashes: ["c".repeat(64)] } });
+
+    expect(await putting).toEqual({ status: "put", hashes: ["c".repeat(64)] });
+    expect(fake.sent[0]).toMatchObject({
+      message: { type: "put-blobs", sitePath: "site.wforge" },
+      transfer: [],
+    });
+    expect(data.byteLength).toBe(3);
+    // An answer with a hash for each file, or none at all.
+    const short = writer.putBlobs("site.wforge", [{ data, mime: "image/png" }]);
+    fake.emit("message", { id: 2, outcome: { status: "put", hashes: [] } });
+    expect(await short).toEqual({ status: "failed" });
+    const cleaning = writer.cleanUp("site.wforge");
+    fake.emit("message", {
+      id: 3,
+      outcome: { status: "cleaned", blobs: 2, bytes: 9, assets: 1, vacuumed: true },
+    });
+    expect(await cleaning).toEqual({
+      status: "cleaned",
+      blobs: 2,
+      bytes: 9,
+      assets: 1,
+      vacuumed: true,
+    });
+    const wrong = writer.cleanUp("site.wforge");
+    fake.emit("message", { id: 4, outcome: { status: "stored" } });
+    expect(await wrong).toEqual({ status: "failed" });
+  });
+
   it("tells the thread to forget an import that goes no further", async () => {
     const fake = fakeThread();
     const writer = createStorageWriter(() => fake.thread);
@@ -185,13 +220,36 @@ describe("the storage writer thread (R13b)", () => {
     }
   }, 60_000);
 
+  it("cleans a closing site's file up keeping the main thread busy for less than 50 ms (#664)", async () => {
+    const sitePath = join(tempDir(), "Cluttered.wforge");
+    const store = ProjectStore.create(sitePath, { name: "Cluttered" });
+    // 120 MB that nothing names any more, as undone imports leave behind: garbage collection, then
+    // a VACUUM that rewrites the file.
+    for (let index = 0; index < 12; index += 1) {
+      store.putBlob(new Uint8Array(10 * 1024 * 1024).fill(index + 1), "image/png");
+    }
+    store.close();
+    const before = statSync(sitePath).size;
+    const session = new ProjectSession({}, { writer: createStorageWriter(startThread) });
+    await session.open(sitePath);
+
+    const cpu = process.threadCpuUsage();
+    await session.close();
+    const { user, system } = process.threadCpuUsage(cpu);
+
+    // As for an import: this thread's CPU time, which an IPC call would wait behind.
+    expect((user + system) / 1000).toBeLessThan(50);
+    expect(statSync(sitePath).size).toBeLessThan(before / 10);
+    ProjectStore.open(sitePath).close();
+  }, 120_000);
+
   /** Imports `photo`, checking the main thread is never held up for 50 ms or more. */
   async function expectQuickImport(session: ProjectSession, photo: string) {
     // The CPU time this thread spent while the import ran, which an IPC call would wait behind: a
     // total under 50 ms means no single hold-up reached 50 ms. CPU time rather than wall or
     // event-loop time, which a loaded machine stretches (CI runs test files side by side). It
     // doesn't count waiting for the disk, so the import also writes nothing on this thread: its
-    // bytes, asset and fingerprint are all the writer's (AssetWriter).
+    // bytes, asset and fingerprint are all the writer's (SiteFileWriter).
     const before = process.threadCpuUsage();
     const result = await scoped(session).importFile("poster", "poster.png", { path: photo });
     const { user, system } = process.threadCpuUsage(before);

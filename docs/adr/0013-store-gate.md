@@ -37,4 +37,15 @@ A second connection can do the write on another thread. But under the rollback j
 - A long backup holds the shared side. A writer, or a close, waits for it, at most 5 s for a close; saves meanwhile go on.
 - The writer's connection is a second reader and writer of the file. The backup already opens a read-only one, so nothing new for SQLite. Opening it per import means nothing stays open when the file is closed, replaced or restored.
 - A backup reads through its own read-only connection and renames its file into place only when it is complete, so a close that runs out of time leaves either a whole backup or none.
-- Not covered: pasting copied elements stores their images through the main connection (`storeCopiedMedia`). Those are images from Webforge's clipboard cache, and the same rule could move them to the writer if they prove slow.
+- Pasted images and downloaded files once went through the main connection (`storeCopiedMedia`, `storeBlobs`). The addendum below moves them to the writer.
+
+## Addendum (2026-11-01, #664): the writer cleans up, and stores pasted and downloaded files
+The architecture review of 30 Oct 2026 (A5) found that garbage collection, and the VACUUM Version History's Clean up needs (4.6), would run on the main connection. A VACUUM of a 300 MB file rewrites all of it, and would hold IPC and autosave up for seconds.
+- **Two more jobs for the writer**, each taken on the gate's exclusive side, through `SiteFileWriter` (formerly `AssetWriter`):
+  - **`put-blobs`** stores files' bytes, all or none, hashing them on the thread: a pasted Media item's, with its asset when the site has no copy yet (`storeCopiedMedia`), and the files the site's code downloads (`storeBlobs`, 3.9). The bytes are copied to the thread, never moved, since the caller may still use them. A pasted item whose kept bytes don't hash to its own fails, rather than naming a file the site doesn't have.
+  - **`clean-up`** runs garbage collection, then a VACUUM once at least 4 MB and a quarter of the file are free: a VACUUM rewrites the file, which a sync folder then uploads again (ADR 0003), so it waits until that pays. The VACUUM keeps the header's fingerprint and application id.
+- **Closing cleans up on the writer,** after the main connection has closed, still inside the close's exclusive turn, so nothing else opens the file meanwhile. Measured by the main thread's CPU time, as for an import, cleaning up 120 MB of garbage costs it under 50 ms (`storage-writer.test.ts`).
+- **A clean-up gets 5 s,** then the writer is stopped, so a writer that never finishes can't hold up opening the next site; SQLite rolls back what it had done the next time the file opens. Quitting already exits after 10 s at most (`closeThenExit`).
+- **The writer's turn refuses a read-only site** (`read-only`), whatever it writes: its own connection can't tell, as the store's can.
+- The main connection keeps its reads, its commits and the backups. `ProjectStore.collectGarbage` stays for tests and tools.
+

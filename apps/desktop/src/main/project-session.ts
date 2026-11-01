@@ -27,7 +27,7 @@ import type {
   SiteUiState,
   UiStateResult,
 } from "../shared/ipc-contract.js";
-import { createImportJobs } from "../worker/store-import.js";
+import { createWriterJobs } from "../worker/writer-jobs.js";
 import { setUiState, uiState } from "./editor-state.js";
 import { exportChoices, setExportChoices } from "./export-choices.js";
 import { log, logFailure } from "./log.js";
@@ -134,6 +134,13 @@ export type ProjectSessionEvents = {
 /** How long closing the site waits for work on it before closing anyway (R13b). */
 const CLOSE_WAIT_MS = 5_000;
 
+/**
+ * How long the storage writer may clean a closing site's file up before it is stopped, so a writer
+ * that never finishes can't hold up opening the next site (#664). SQLite rolls back what it had
+ * done the next time the file opens.
+ */
+export const CLEAN_UP_WAIT_MS = 5_000;
+
 /** What a {@link ProjectSession} is made with, injectable for tests. */
 export type ProjectSessionOptions = {
   /** Who may use the open site's file when: the main process, or the storage writer (R13b). */
@@ -178,7 +185,7 @@ export class ProjectSession {
     this.#openStore = options.openStore ?? ((path) => ProjectStore.open(path));
     this.#createStore =
       options.createStore ?? ((path, name) => ProjectStore.create(path, { name }));
-    this.#writer = options.writer ?? createInlineStorageWriter(createImportJobs());
+    this.#writer = options.writer ?? createInlineStorageWriter(createWriterJobs());
   }
 
   /**
@@ -277,11 +284,15 @@ export class ProjectSession {
           const reason = this.#staleFor(sessionId);
           const path = this.#path;
           if (reason !== undefined || path === undefined) return none(reason ?? "no-site");
+          if (this.#store?.info.readOnly === true) return none("read-only");
           // Its own token: an import a close stopped can't clear the mark of the one after it.
           const writing = {};
           this.#writing = writing;
           try {
-            return await work(path, (prepared, target) => writer.store(prepared, target));
+            return await work(path, {
+              store: (prepared, target) => writer.store(prepared, target),
+              putBlobs: (sitePath, blobs, asset) => writer.putBlobs(sitePath, blobs, asset),
+            });
           } finally {
             if (this.#writing === writing) this.#writing = undefined;
           }
@@ -449,30 +460,48 @@ export class ProjectSession {
    * Closes the open site's store. Let in while the storage writer still writes (its time was up),
    * it stops the writer first: the import fails, and garbage collection removes its bytes.
    *
-   * Garbage collection runs here, after the last save and with the file to itself (A1): every save
+   * The file is cleaned up here, after the last save and with the file to itself (A1): every save
    * of a page leaves its previous JSON behind, as do undone imports and pastes, and Undo can no
-   * longer bring any of it back. A read-only store (a newer format, once the editor can show one)
-   * is left as it is. A failure is logged and the site still closes; the next close tries again.
+   * longer bring any of it back. The storage writer does it, once this connection has closed:
+   * garbage collection, and a VACUUM when enough of the file is free, which would hold the main
+   * thread up for seconds on a large site (#664, ADR 0013). A read-only store (a newer format,
+   * once the editor can show one) is left as it is. A failure is logged and the site still closes;
+   * the next close tries again.
    */
   async #closeNow(): Promise<void> {
     if (this.#writing !== undefined) {
       await this.#writer.stop();
     }
-    if (this.#store !== undefined) {
-      this.#tell("closed");
-      if (!this.#store.info.readOnly) {
-        try {
-          this.#store.collectGarbage();
-        } catch (error) {
-          logFailure("Webforge could not clean up a site file as it closed", error);
-        }
-      }
-    }
-    this.#store?.close();
+    const store = this.#store;
+    const path = this.#path;
+    if (store !== undefined) this.#tell("closed");
+    store?.close();
     this.#store = undefined;
     this.#path = undefined;
     this.#site = undefined;
     this.#sessionId = undefined;
+    if (store !== undefined && path !== undefined && !store.info.readOnly) {
+      await this.#cleanUp(path);
+    }
+  }
+
+  /** Has the storage writer clean the file at `path` up, for {@link CLEAN_UP_WAIT_MS} at most. */
+  async #cleanUp(path: string): Promise<void> {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const late = new Promise<"late">((resolve) => {
+      timer = setTimeout(() => resolve("late"), CLEAN_UP_WAIT_MS);
+    });
+    try {
+      const cleaned = await Promise.race([this.#writer.cleanUp(path), late]);
+      if (cleaned === "late") {
+        await this.#writer.stop();
+        log.error("Webforge stopped cleaning up a site file that took too long");
+      } else if (cleaned.status === "failed") {
+        log.error("Webforge could not clean up a site file as it closed");
+      }
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /** The site in `store`, kept as the one commits build on. Inside the gate only. */

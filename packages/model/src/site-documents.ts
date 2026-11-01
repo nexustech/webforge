@@ -332,7 +332,8 @@ function sameJson(a: unknown, b: unknown): boolean {
  * what it changed ({@link changedDocuments}).
  */
 export function restoreSite(draft: SiteDoc, target: SiteDoc): void {
-  const take = <T>(value: T): T => structuredClone(value);
+  // A copy, never the version's own objects: a site is JSON.
+  const take = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
   if (draft.formatVersion !== target.formatVersion) draft.formatVersion = target.formatVersion;
   if (!sameJson(draft.pageOrder, target.pageOrder)) draft.pageOrder = take(target.pageOrder);
   if (draft.homePageId !== target.homePageId) draft.homePageId = target.homePageId;

@@ -9,6 +9,9 @@ import { changedDocuments, pageDocumentId, restoreSite } from "./site-documents.
 // restoreSite (#664, for 4.6's Restore): a version replaces the site in one history step, and only
 // the documents that differ change.
 
+/** A copy of `value`, as the file gives a version back: JSON. */
+const copy = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
 /** `site` in a history, restored to `target` in one step. */
 function restored(site: SiteDoc, target: SiteDoc) {
   const history = createHistoryManager({ initial: site });
@@ -36,8 +39,8 @@ describe("restoreSite (#664)", () => {
         const id = site.pageOrder[which % site.pageOrder.length] as PageId;
         const page = site.pages[id];
         if (page === undefined) return;
-        const version = structuredClone(site);
-        version.pages[id] = { ...structuredClone(page), title: `${page.title} (before)` };
+        const version = copy(site);
+        version.pages[id] = { ...copy(page), title: `${page.title} (before)` };
 
         const history = restored(site, version);
         const after = history.document.getState();
@@ -55,7 +58,7 @@ describe("restoreSite (#664)", () => {
     fc.assert(
       fc.property(siteDocArbitrary, (site) => {
         // A version read back from the file: the same JSON, its keys in the order it was parsed.
-        const { settings, ...rest } = structuredClone(site);
+        const { settings, ...rest } = copy(site);
         const history = restored(site, { settings, ...rest });
 
         expect(history.state.getState().entries).toEqual([]);

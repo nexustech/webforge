@@ -1,11 +1,14 @@
+import type { BlobAsset } from "@webforge/storage";
 import {
+  type CleanUpOutcome,
   type ImportSource,
   type PrepareOutcome,
+  type PutBlobsOutcome,
   type StorageWriterMessage,
   type StoreOutcome,
   storageWriterAnswerSchema,
 } from "../shared/storage-writer-protocol.js";
-import type { ImportJobs } from "../worker/store-import.js";
+import type { WriterJobs } from "../worker/writer-jobs.js";
 
 /** The parts of a `worker_threads` Worker the storage writer uses; a fake in tests. */
 export type WriterThread = {
@@ -29,7 +32,10 @@ type ImportTarget = {
   readonly originalName: string;
 };
 
-/** Stores imports in the open site's file, off the main thread (R13b, ADR 0013). */
+/**
+ * Stores imports, pasted and downloaded files in the open site's file, and cleans it up as it
+ * closes, off the main thread (R13b, ADR 0013, #664).
+ */
 export type StorageWriter = {
   /**
    * Starts the thread now, if it isn't running, so the first import doesn't wait for it: starting
@@ -48,6 +54,21 @@ export type StorageWriter = {
   store(prepared: PreparedImport, target: ImportTarget): Promise<StoreOutcome>;
   /** Forgets a prepared import that goes no further, such as one for a site that has closed. */
   discard(prepared: PreparedImport): void;
+  /**
+   * Stores files' bytes in `sitePath`, all or none, hashing them on the thread: a pasted Media
+   * item's (with its asset, when `asset` says so), or files the site's code downloaded. While its
+   * caller holds the store gate alone. Never throws.
+   */
+  putBlobs(
+    sitePath: string,
+    blobs: readonly { readonly data: Uint8Array; readonly mime: string }[],
+    asset?: BlobAsset,
+  ): Promise<PutBlobsOutcome>;
+  /**
+   * Cleans `sitePath` up as its site closes, with the file to itself: garbage collection, and a
+   * VACUUM when enough of it is free. Never throws.
+   */
+  cleanUp(sitePath: string): Promise<CleanUpOutcome>;
   /**
    * Stops what the writer is doing, as closing the site does when it can wait no longer: the
    * thread ends, and an import it was storing fails. Its transaction is rolled back the next time
@@ -73,7 +94,7 @@ function transferable(source: ImportSource): ArrayBuffer[] {
     : [];
 }
 
-type Outcome = PrepareOutcome | StoreOutcome;
+type Outcome = PrepareOutcome | StoreOutcome | PutBlobsOutcome | CleanUpOutcome;
 
 /**
  * The storage writer, in the thread `start` makes, started when the first import comes (or
@@ -144,9 +165,11 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
         token = id;
         return { id, type: "prepare", fileName, source };
       }, transferable(source));
-      // A store's answer to a prepare is no answer at all.
-      if (outcome.status === "stored") return { status: "failed" };
-      return outcome.status === "prepared" ? { ...outcome, token } : outcome;
+      if (outcome.status === "prepared") return { ...outcome, token };
+      // Another step's answer to a prepare is no answer at all.
+      return outcome.status === "rejected" || outcome.status === "skipped"
+        ? outcome
+        : { status: "failed" };
     },
     async store(prepared, target) {
       const outcome = await ask((id) => ({
@@ -164,6 +187,23 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
         // A thread that has ended has forgotten it anyway.
       }
     },
+    async putBlobs(sitePath, blobs, asset) {
+      // Copied, never moved: the caller may still use the bytes.
+      const outcome = await ask((id) => ({
+        id,
+        type: "put-blobs",
+        sitePath,
+        blobs: blobs.map(({ data, mime }) => ({ data, mime })),
+        ...(asset === undefined ? {} : { asset }),
+      }));
+      return outcome.status === "put" && outcome.hashes.length === blobs.length
+        ? outcome
+        : { status: "failed" };
+    },
+    async cleanUp(sitePath) {
+      const outcome = await ask((id) => ({ id, type: "clean-up", sitePath }));
+      return outcome.status === "cleaned" ? outcome : { status: "failed" };
+    },
     async stop() {
       const current = thread;
       thread = undefined;
@@ -177,7 +217,7 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
  * A storage writer that runs on the calling thread, for tests. Same results, but it holds up its
  * thread while it reads and stores.
  */
-export function createInlineStorageWriter(jobs: ImportJobs): StorageWriter {
+export function createInlineStorageWriter(jobs: WriterJobs): StorageWriter {
   let nextToken = 1;
   return {
     warm: () => undefined,
@@ -189,6 +229,8 @@ export function createInlineStorageWriter(jobs: ImportJobs): StorageWriter {
     },
     store: async (prepared, target) => jobs.store(prepared.token, target),
     discard: (prepared) => jobs.discard(prepared.token),
+    putBlobs: async (sitePath, blobs, asset) => jobs.putBlobs(sitePath, blobs, asset),
+    cleanUp: async (sitePath) => jobs.cleanUp(sitePath),
     stop: async () => undefined,
   };
 }

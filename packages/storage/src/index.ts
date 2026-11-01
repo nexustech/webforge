@@ -1,4 +1,3 @@
-export { AssetWriter } from "./asset-writer.js";
 export {
   type GarbageReport,
   type JsonValue,
@@ -28,6 +27,7 @@ export {
   versionPublishSchema,
 } from "./project-store.js";
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
+export { type BlobAsset, type CleanUpReport, SiteFileWriter } from "./site-file-writer.js";
 export {
   fillFromSitePackage,
   type SitePackage,

@@ -2,13 +2,15 @@ import { createHash } from "node:crypto";
 import { constants } from "node:fs";
 import { type FileHandle, open, stat } from "node:fs/promises";
 import { MAX_IMAGE_PIXELS } from "@webforge/model";
-import { AssetWriter } from "@webforge/storage";
+import { type BlobAsset, SiteFileWriter } from "@webforge/storage";
 import { isTextName } from "../main/document-files.js";
 import { sniffMedia } from "../main/media-files.js";
 import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import type {
+  CleanUpOutcome,
   ImportSource,
   PrepareOutcome,
+  PutBlobsOutcome,
   StoreOutcome,
 } from "../shared/storage-writer-protocol.js";
 
@@ -75,6 +77,9 @@ type Prepared = {
   readonly media: Exclude<ReturnType<typeof sniffMedia>, undefined>;
 };
 
+/** What the jobs write a site's file with: a {@link SiteFileWriter}, or a fake in tests. */
+type FileWriter = Pick<SiteFileWriter, "put" | "putBlobs" | "cleanUp" | "close">;
+
 /**
  * The storage writer's work (R13b, ADR 0013), in its thread or, for tests, on the calling one. An
  * import takes two steps:
@@ -83,11 +88,27 @@ type Prepared = {
  *   so the main process goes on saving meanwhile, however slow the file is to read.
  * - `store` writes the prepared bytes, unmodified (X2), as a Media item's asset, in the site's
  *   file through a connection of its own, while the main process waits at the store gate.
- * Prepared bytes are kept by id until stored or discarded. `openWriter` is for tests.
+ * Prepared bytes are kept by id until stored or discarded. `putBlobs` stores pasted or downloaded
+ * files, and `cleanUp` cleans a closing site's file up, each in one step, while the main process
+ * waits at the gate (#664). `openWriter` is for tests.
  */
-export function createImportJobs(
-  openWriter: (path: string) => Pick<AssetWriter, "put" | "close"> = AssetWriter.open,
-) {
+export function createWriterJobs(openWriter: (path: string) => FileWriter = SiteFileWriter.open) {
+  /** `work` with a writer to the file at `sitePath`, closed after it; `undefined` if either fails. */
+  const withWriter = <T>(sitePath: string, work: (writer: FileWriter) => T): T | undefined => {
+    let writer: FileWriter;
+    try {
+      writer = openWriter(sitePath);
+    } catch {
+      return undefined;
+    }
+    try {
+      return work(writer);
+    } catch {
+      return undefined;
+    } finally {
+      writer.close();
+    }
+  };
   const prepared = new Map<number, Prepared>();
   return {
     async prepare(id: number, fileName: string, source: ImportSource): Promise<PrepareOutcome> {
@@ -119,13 +140,7 @@ export function createImportJobs(
         return { status: "failed" };
       }
       const { data, hash, media } = ready;
-      let writer: Pick<AssetWriter, "put" | "close">;
-      try {
-        writer = openWriter(at.sitePath);
-      } catch {
-        return { status: "failed" };
-      }
-      try {
+      const stored = withWriter(at.sitePath, (writer) =>
         writer.put(
           {
             mediaId: at.mediaId,
@@ -135,19 +150,27 @@ export function createImportJobs(
             originalName: at.originalName,
           },
           hash,
-        );
-        return { status: "stored" };
-      } catch {
-        return { status: "failed" };
-      } finally {
-        writer.close();
-      }
+        ),
+      );
+      return stored === undefined ? { status: "failed" } : { status: "stored" };
     },
     discard(id: number): void {
       prepared.delete(id);
     },
+    putBlobs(
+      sitePath: string,
+      blobs: readonly { readonly data: Uint8Array; readonly mime: string }[],
+      asset?: BlobAsset,
+    ): PutBlobsOutcome {
+      const hashes = withWriter(sitePath, (writer) => writer.putBlobs(blobs, asset));
+      return hashes === undefined ? { status: "failed" } : { status: "put", hashes };
+    },
+    cleanUp(sitePath: string): CleanUpOutcome {
+      const report = withWriter(sitePath, (writer) => writer.cleanUp());
+      return report === undefined ? { status: "failed" } : { status: "cleaned", ...report };
+    },
   };
 }
 
-/** See {@link createImportJobs}. */
-export type ImportJobs = ReturnType<typeof createImportJobs>;
+/** See {@link createWriterJobs}. */
+export type WriterJobs = ReturnType<typeof createWriterJobs>;

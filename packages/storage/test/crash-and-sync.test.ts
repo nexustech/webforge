@@ -65,7 +65,7 @@ describe("crash safety", () => {
   }, 120_000);
 
   it("opens after the storage writer is killed mid-import, keeping every import it finished (R13b)", async () => {
-    // As support/asset-writer.ts makes them.
+    // As support/site-file-writer.ts makes them.
     const blobOf = (seq: number) => new Uint8Array(2 * 1024 * 1024).fill(seq % 251);
     const hash = (seq: number) => createHash("sha256").update(blobOf(seq)).digest("hex");
     const delays = [0, 20, 60];
