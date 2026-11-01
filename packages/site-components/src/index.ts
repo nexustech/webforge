@@ -29,6 +29,8 @@ export { consentBannerHtml } from "./consent-banner.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";
 export { videoEmbed } from "./embed.js";
+export type { FieldValueShape } from "./field-values.js";
+export { acceptsFieldValue, fieldValueSchema, MAX_TEXT_LENGTH } from "./field-values.js";
 export { ICON_NAMES, isIconName, LucideIcon } from "./icons.js";
 export type {
   ComponentDef,

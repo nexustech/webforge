@@ -164,15 +164,15 @@ export default {
       name: "catalogue-data-no-react",
       severity: "error",
       comment:
-        "The catalogue as data, and the rich-text cleaning it offers, load without React or the " +
-        "components (4.8).",
+        "The catalogue as data, the rich-text cleaning it offers, and what a field may hold " +
+        "(field-values, #667), load without React or the components (4.8).",
       from: {
-        path: "^packages/site-components/src/(catalogue-data|rich-text-html|document-path)\\.ts$",
+        path: "^packages/site-components/src/(catalogue-data|rich-text-html|document-path|field-values)\\.ts$",
       },
       to: {
         path: [REACT, "^packages/site-components/src/"],
         pathNot:
-          "^packages/site-components/src/(catalogue-data\\.(ts|json)|rich-text-html\\.ts|document-path\\.ts)$",
+          "^packages/site-components/src/(catalogue-data\\.(ts|json)|rich-text-html\\.ts|document-path\\.ts|field-values\\.ts)$",
       },
     },
     {

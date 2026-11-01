@@ -1,15 +1,9 @@
 import { sameValue } from "@webforge/editor-ui";
 import type { CanvasEngine, FieldDrag, Unsubscribe } from "@webforge/engine";
-import { boxValueSchema } from "@webforge/model";
-import type { FieldDef } from "@webforge/site-components";
+import { acceptsFieldValue } from "@webforge/site-components";
 import type { EditorSession, Gesture } from "./editor-session.js";
 import { fieldTarget } from "./field-target.js";
 import { breakpointOf, withValueAt } from "./responsive-value.js";
-
-/** Whether a drag may set `field` to `value`. */
-function accepts(field: FieldDef, value: unknown): boolean {
-  return field.kind === "box" ? boxValueSchema.safeParse(value).success : value !== undefined;
-}
 
 /**
  * Records drags of field values on the canvas (1.32), such as the spacing handles, in the history.
@@ -52,7 +46,8 @@ export function connectFieldDrags(
       drag,
       gesture,
       set: (value) => {
-        if (!accepts(field, value)) return;
+        // Only a value the field takes, for the device shown (#667).
+        if (!acceptsFieldValue(field, value, { responsive: false })) return;
         gesture.update(
           target.recipe(drag.field, (stored) =>
             field.responsive === true ? withValueAt(stored, breakpoint, value) : value,

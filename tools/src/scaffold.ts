@@ -706,6 +706,16 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
             `: Field extends { readonly kind: "${kind}" }\n ? string\n `,
           ),
       ],
+      // 1. And what it may hold (#667): a string, like a text field.
+      "packages/site-components/src/field-values.ts": [
+        (text) => insertBefore(text, '        | "code";\n', `        | "${kind}"\n`),
+        (text) =>
+          insertBefore(
+            text,
+            '      case "icon":\n        return z.string().max(MAX_TEXT_LENGTH);',
+            `      case "${kind}":\n`,
+          ),
+      ],
       // 2. How render reads it.
       "packages/site-components/src/define.ts": [
         (text) =>
@@ -749,7 +759,7 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
           ),
       ],
       // 6. The Edit panel's spec for it.
-      [`${RENDERER}/editor/EditPanelHost.tsx`]: [
+      [`${RENDERER}/editor/edit-panel-fields.ts`]: [
         (text) =>
           insertBefore(
             text,
@@ -769,7 +779,7 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
     },
     next: [
       `The "${kind}" kind stores a string and is drawn as a text box. Make it what it should be:`,
-      "what it stores (schema.ts's StoredOne, define.ts's valueReader, EditPanelHost's accepts),",
+      "what it stores (schema.ts's StoredOne, define.ts's valueReader, field-values.ts's fieldValueSchema),",
       `what its renderer needs (field-spec.ts) and how it draws (${dir}/${pascal}Field.tsx).`,
     ],
   };
