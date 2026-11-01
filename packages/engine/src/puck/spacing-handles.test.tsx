@@ -253,6 +253,32 @@ describe("spacing handles (1.32)", () => {
     }
   });
 
+  it("moves the padding grips to the column the canvas draws after they render (#643)", async () => {
+    const rects = vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (
+      this: Element,
+    ) {
+      const [left, right] = this.classList.contains(PADDED_COLUMN_CLASS) ? [192, 1088] : [0, 1280];
+      return { left, right, top: 0, bottom: 400, width: right - left, height: 400 } as DOMRect;
+    });
+    try {
+      // Wide: a section that holds its own padding.
+      show({ top: "m", bottom: "m" });
+      const box = () => host.querySelector<HTMLElement>(".wf-padding-grips")?.style.left;
+      expect(box()).toBe("0px");
+
+      // Medium, drawn by the canvas with no new render of the grips, nor a resize of the outline.
+      await act(async () => {
+        const column = document.createElement("div");
+        column.className = PADDED_COLUMN_CLASS;
+        document.querySelector("section")?.append(column);
+      });
+
+      expect(box()).toBe("192px");
+    } finally {
+      rects.mockRestore();
+    }
+  });
+
   it("keeps the padding grips on the outline's edges for a section that holds its padding", () => {
     show({});
     const box = host.querySelector<HTMLElement>(".wf-padding-grips");
