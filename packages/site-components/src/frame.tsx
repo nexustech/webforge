@@ -33,6 +33,17 @@ import { SectionSubtitleAppearance, SectionTitleAppearance } from "./typography.
 /** A section's own padding (`px-4 py-16`), for the sides left unset (1.32). */
 export const SECTION_PADDING = { top: 16, right: 4, bottom: 16, left: 4 } as const;
 
+/** A section's padding classes ({@link PADDING_FIELD}), {@link SECTION_PADDING} for unset sides. */
+export function sectionPadding(value: unknown): string {
+  return boxClasses(value, "padding", SECTION_PADDING);
+}
+
+/**
+ * The column that holds a section's padding when the section, a band across the page, holds none
+ * itself (#643): the editor's padding grips measure it.
+ */
+export const PADDED_COLUMN_CLASS = "site-section-column";
+
 /** A section's padding, per side and device (1.32). */
 export const PADDING_FIELD = {
   kind: "box",
@@ -196,6 +207,11 @@ export type SectionSpec<F extends Fields, Variant extends string = never> = Omit
   readonly frameAttributes?: (
     values: ValuesOf<F & FrameFields, Variant>,
   ) => Readonly<Record<string, string>>;
+  /**
+   * Whether the section's padding goes on its column instead, which its render draws with
+   * {@link sectionPadding} and {@link PADDED_COLUMN_CLASS}: the section is then a band without it.
+   */
+  readonly paddedColumn?: (values: ValuesOf<F & FrameFields, Variant>) => boolean;
   /** The inside of the frame. */
   readonly render: (props: RenderPropsOf<F & FrameFields, Variant>) => ReactNode;
 };
@@ -214,10 +230,10 @@ function frameText(classes: string): string | undefined {
  * A section (2.19): {@link defineComponent} for a page band, which adds what every section has.
  * It gets its content width ({@link CONTENT_WIDTH_FIELD}), whose default each section gives, its
  * colours ({@link COLORS_FIELD}), a padding (from {@link SECTION_PADDING} for the sides
- * left unset) and a margin, and is drawn in one frame: `<section class="site-<name> <its frame's
- * classes> <padding> <margin>">`, with `data-theme` when its colours are reversed, holding what
- * `render` draws. `defineComponent` refuses a section, so every section has the same frame and
- * the same frame fields.
+ * left unset; on its column instead with `paddedColumn`) and a margin, and is drawn in one frame:
+ * `<section class="site-<name> <its frame's classes> <padding> <margin>">`, with `data-theme` when
+ * its colours are reversed, holding what `render` draws. `defineComponent` refuses a section, so
+ * every section has the same frame and the same frame fields.
  */
 export function defineSection<const F extends Fields, const Variant extends string = never>(
   spec: SectionSpec<F, Variant> & {
@@ -226,8 +242,18 @@ export function defineSection<const F extends Fields, const Variant extends stri
     };
   },
 ): ComponentDef {
-  const { name, frame, frameAttributes, render, fields, behaviours, titled, background, ...rest } =
-    spec;
+  const {
+    name,
+    frame,
+    frameAttributes,
+    paddedColumn,
+    render,
+    fields,
+    behaviours,
+    titled,
+    background,
+    ...rest
+  } = spec;
   const appearance = titled === false ? APPEARANCE_FIELDS_WITHOUT_TEXT : APPEARANCE_FIELDS;
   for (const own of FRAME_FIELDS) {
     if (Object.hasOwn(fields, own)) {
@@ -280,7 +306,7 @@ export function defineSection<const F extends Fields, const Variant extends stri
       const classes = [
         `site-${name}`,
         frame?.(values) ?? "",
-        `${boxClasses(stored.padding, "padding", SECTION_PADDING)}${marginClasses(stored.margin)}${entranceClasses(stored)}`,
+        `${paddedColumn?.(values) === true ? "" : sectionPadding(stored.padding)}${marginClasses(stored.margin)}${entranceClasses(stored)}`.trim(),
         appearanceBoxClasses(stored),
         backgroundClasses(stored),
       ].filter((part) => part !== "");

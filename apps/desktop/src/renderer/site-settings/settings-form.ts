@@ -199,7 +199,7 @@ function formServiceOf(form: SettingsForm): Record<string, string> | undefined {
 
 /**
  * The settings the form describes, unchecked: `previous` supplies what the dialog doesn't edit
- * (publish destinations, allowed external addresses). {@link settingsSchema} checks it.
+ * (allowed external addresses). {@link settingsSchema} checks it.
  */
 export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): unknown {
   const service = formServiceOf(form);
@@ -253,7 +253,6 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
       ...optional("consentMessage", form.consentMessage),
     },
     forms: service === undefined ? {} : { service },
-    publish: previous.publish,
     allowedExternalUrls: previous.allowedExternalUrls,
   };
 }

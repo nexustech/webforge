@@ -34,6 +34,7 @@ const READERS = [
   "readEditorMode",
   "readExportChoices",
   "readSiteCheckIgnored",
+  "readPublishDestinations",
   "backupTo",
   "close",
 ];
@@ -80,6 +81,7 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
   writeEditorMode: (store) => store.writeEditorMode("content"),
   writeExportChoices: (store) => store.writeExportChoices(DEFAULT_EXPORT_CHOICES),
   writeSiteCheckIgnored: (store) => store.writeSiteCheckIgnored(["brokenLinks:a"]),
+  writePublishDestinations: (store) => store.writePublishDestinations([]),
   collectGarbage: (store) => store.collectGarbage(),
 };
 

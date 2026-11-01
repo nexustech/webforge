@@ -31,6 +31,7 @@ export { createLibrary, defineComponent } from "./define.js";
 export { videoEmbed } from "./embed.js";
 export type { FieldValueShape } from "./field-values.js";
 export { acceptsFieldValue, fieldValueSchema, MAX_TEXT_LENGTH } from "./field-values.js";
+export { PADDED_COLUMN_CLASS } from "./frame.js";
 export { ICON_NAMES, isIconName, LucideIcon } from "./icons.js";
 export type {
   ComponentDef,

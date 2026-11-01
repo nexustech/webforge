@@ -1,6 +1,13 @@
 import { t } from "@webforge/i18n";
 import { defineComponent } from "../define.js";
-import { contentWidthClass, defineSection, MARGIN_FIELD, marginClasses } from "../frame.js";
+import {
+  contentWidthClass,
+  defineSection,
+  MARGIN_FIELD,
+  marginClasses,
+  PADDED_COLUMN_CLASS,
+  sectionPadding,
+} from "../frame.js";
 import { boundText, type ComponentDef, colorClass, responsiveClasses } from "../library.js";
 import {
   ENTRANCE_FIELDS,
@@ -52,23 +59,22 @@ const section = defineSection({
   // Wide, as Features and the other grids, so a new Section lines up with them (3.21, PF-4).
   // Sections saved before then are Medium (format 10).
   defaults: { gap: "medium", contentWidth: "wide", content: [] },
-  // At Medium on the page's colours, the section itself is the 896 px column, padding included, as
-  // every Section was before 3.21, so one made then doesn't move. Otherwise (and on reversed
-  // colours, 2.4) it is a band across the page, with its column inside it.
-  frame: (values) => {
-    if (!boxedColumn(values)) return "";
-    return `mx-auto max-w-4xl ${responsiveClasses(values.gap, (value) => GAP_CLASS[value])}`;
-  },
+  // A band across the page, its background too, with its column inside it (#643). At Medium on
+  // the page's colours the column holds the padding, so it is 896 px padding included, as every
+  // Section's was before 3.21: one made then doesn't move.
+  paddedColumn,
   render: ({ values, slots }) => {
     const Content = slots.content;
-    if (boxedColumn(values)) return <Content />;
     const gap = responsiveClasses(values.gap, (value) => GAP_CLASS[value]);
-    return <Content className={`mx-auto ${contentWidthClass(values.contentWidth)} ${gap}`} />;
+    const column = paddedColumn(values)
+      ? `${PADDED_COLUMN_CLASS} mx-auto max-w-4xl ${sectionPadding(values.padding)}`
+      : `mx-auto ${contentWidthClass(values.contentWidth)}`;
+    return <Content className={`${column} ${gap}`} />;
   },
 });
 
-/** Whether a Section is its own column, as before 3.21: at Medium on the page's colours. */
-function boxedColumn(values: { readonly contentWidth: string; readonly colors: string }) {
+/** Whether a Section's column holds its padding, as before 3.21: Medium, on the page's colours. */
+function paddedColumn(values: { readonly contentWidth: string; readonly colors: string }) {
   return values.contentWidth === "medium" && values.colors !== "inverse";
 }
 
