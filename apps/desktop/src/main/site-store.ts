@@ -26,14 +26,20 @@ export type SiteStore = {
     work: (store: ProjectStore) => T | Promise<T>,
     none: (reason: StaleReason) => T,
   ): Promise<T>;
-  /** Reads, checks and hashes imports off the main thread, and stores them (R13b, ADR 0013). */
-  readonly writer: Pick<StorageWriter, "prepare" | "store" | "discard">;
   /**
-   * Runs `work` with the open site's file on the gate's exclusive side, as the storage writer's
-   * turn: a close that can wait no longer stops the writer first (R13b). `none` as for
-   * {@link withStore}.
+   * Reads, checks and hashes imports off the main thread (R13b, ADR 0013), and forgets one that
+   * goes no further. Only {@link writerTurn} stores one.
    */
-  writerTurn<T>(work: (path: string) => Promise<T>, none: (reason: StaleReason) => T): Promise<T>;
+  readonly writer: Pick<StorageWriter, "prepare" | "discard">;
+  /**
+   * Runs `work` with the open site's file and the writer's `store` on the gate's exclusive side, as
+   * the storage writer's turn: a close that can wait no longer stops the writer first (R13b).
+   * `none` as for {@link withStore}.
+   */
+  writerTurn<T>(
+    work: (path: string, store: StorageWriter["store"]) => Promise<T>,
+    none: (reason: StaleReason) => T,
+  ): Promise<T>;
 };
 
 /** How a change to the store failed, as the renderer may be told it. */

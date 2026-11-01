@@ -68,8 +68,8 @@ export async function importFile(
   // Then store it alone, the bytes and the asset together: the main process's reads and saves
   // wait at the gate, as promises, and nothing of the import is written on its thread.
   const stored = await site.writerTurn<ImportFileResult | "stored" | "not-stored">(
-    async (sitePath) => {
-      const outcome = await site.writer.store(prepared, {
+    async (sitePath, store) => {
+      const outcome = await store(prepared, {
         sitePath,
         mediaId,
         originalName: fileName,

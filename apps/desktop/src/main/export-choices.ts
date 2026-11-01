@@ -1,5 +1,7 @@
 import { DEFAULT_EXPORT_CHOICES, type ExportChoices } from "@webforge/model";
-import { type SiteStore, storeFailure } from "./site-store.js";
+import { ReadOnlyProjectError } from "@webforge/storage";
+import { logFailure } from "./log.js";
+import type { SiteStore } from "./site-store.js";
 
 /**
  * What the person chose for the site's last export (3.3); the defaults without a site, or once
@@ -25,7 +27,9 @@ export function setExportChoices(site: SiteStore, choices: ExportChoices): Promi
       try {
         store.writeExportChoices(choices);
       } catch (error) {
-        storeFailure(error, "Webforge could not remember the export choices");
+        if (!(error instanceof ReadOnlyProjectError)) {
+          logFailure("Webforge could not remember the export choices", error);
+        }
       }
     },
     () => undefined,

@@ -28,6 +28,7 @@ import type {
   UiStateResult,
 } from "../shared/ipc-contract.js";
 import { createImportJobs } from "../worker/store-import.js";
+import { setUiState, uiState } from "./editor-state.js";
 import { exportChoices, setExportChoices } from "./export-choices.js";
 import { log, logFailure } from "./log.js";
 import { type NewSiteFill, newSiteImporter } from "./new-site.js";
@@ -45,7 +46,7 @@ import { samePath, withProjectExtension } from "./site-paths.js";
 import { type SiteStore, type StaleReason, storeFailure } from "./site-store.js";
 import { saveSiteZip } from "./site-zip.js";
 import { createInlineStorageWriter, type StorageWriter } from "./storage-writer.js";
-import { createStoreGate, type StoreGate } from "./store-gate.js";
+import { createStoreGate, type GateKind, type StoreGate } from "./store-gate.js";
 
 /**
  * The open site as one renderer's call may read or change it (R6, #663):
@@ -223,7 +224,7 @@ export class ProjectSession {
    * site while a save was on its way. `undefined`: it is the open site's.
    */
   staleReason(sessionId: string): StaleReason | undefined {
-    return this.site(sessionId).staleReason();
+    return this.#staleFor(sessionId);
   }
 
   /**
@@ -262,40 +263,50 @@ export class ProjectSession {
    * opening again once the gate lets them in.
    */
   site(sessionId?: string): SiteStore {
-    /** Why `work` can't run now that the gate has let it in, if it can't. */
-    const stale = (): StaleReason | undefined =>
-      this.#store === undefined
-        ? "no-site"
-        : sessionId !== undefined && sessionId !== this.#sessionId
-          ? "stale-session"
-          : undefined;
+    const writer = this.#writer;
     return {
-      staleReason: stale,
+      staleReason: () => this.#staleFor(sessionId),
       openPath: () => this.#path,
-      withStore: (kind, work, none) =>
-        this.#gate.run(kind, () => {
-          const reason = stale();
-          const store = this.#store;
-          return reason !== undefined || store === undefined
-            ? none(reason ?? "no-site")
-            : work(store);
-        }),
-      writer: this.#writer,
+      withStore: (kind, work, none) => this.#withStore(kind, sessionId, work, none),
+      writer: {
+        prepare: (fileName, source) => writer.prepare(fileName, source),
+        discard: (prepared) => writer.discard(prepared),
+      },
       writerTurn: (work, none) =>
         this.#gate.run("exclusive", async () => {
-          const reason = stale();
+          const reason = this.#staleFor(sessionId);
           const path = this.#path;
           if (reason !== undefined || path === undefined) return none(reason ?? "no-site");
           // Its own token: an import a close stopped can't clear the mark of the one after it.
           const writing = {};
           this.#writing = writing;
           try {
-            return await work(path);
+            return await work(path, (prepared, target) => writer.store(prepared, target));
           } finally {
             if (this.#writing === writing) this.#writing = undefined;
           }
         }),
     };
+  }
+
+  /** Why work for opening `sessionId` (any, without one) can't use the open site now, if it can't. */
+  #staleFor(sessionId: string | undefined): StaleReason | undefined {
+    if (this.#store === undefined) return "no-site";
+    return sessionId === undefined || sessionId === this.#sessionId ? undefined : "stale-session";
+  }
+
+  /** See {@link SiteStore.withStore}: `work` with the store on the gate's `kind` side, or `none`. */
+  #withStore<T>(
+    kind: GateKind,
+    sessionId: string | undefined,
+    work: (store: ProjectStore) => T | Promise<T>,
+    none: (reason: StaleReason) => T,
+  ): Promise<T> {
+    return this.#gate.run(kind, () => {
+      const reason = this.#staleFor(sessionId);
+      const store = this.#store;
+      return reason !== undefined || store === undefined ? none(reason ?? "no-site") : work(store);
+    });
   }
 
   /**
@@ -373,7 +384,9 @@ export class ProjectSession {
    * them.
    */
   readSite(): Promise<ReadSiteResult> {
-    return this.#shared<ReadSiteResult>(
+    return this.#withStore<ReadSiteResult>(
+      "shared",
+      undefined,
       (store) => this.#readSiteFrom(store),
       () => ({ status: "none" }),
     );
@@ -385,7 +398,9 @@ export class ProjectSession {
    * `sessionId`, when given, must still be the open site's once the gate lets the save in (R6).
    */
   commit(changes: readonly SiteDocumentChange[], sessionId?: string): Promise<CommitResult> {
-    return this.#shared<CommitResult>(
+    return this.#withStore<CommitResult>(
+      "shared",
+      sessionId,
       (store) => {
         // Changes always build on the stored site; read it first if the editor hasn't yet.
         if (this.#site === undefined && !store.isEmpty()) {
@@ -409,41 +424,17 @@ export class ProjectSession {
         return { status: "saved" };
       },
       (reason) => ({ status: "failed", reason }),
-      sessionId,
     );
   }
 
-  /** The open site's editor state, or `null` without an open site. */
+  /** The open site's editor state, or `null` without an open site; see `editor-state.ts`. */
   uiState(): Promise<SiteUiState | null> {
-    return this.#shared<SiteUiState | null>(
-      (store) => ({
-        editorMode: store.readEditorMode(),
-        siteCheckIgnored: store.readSiteCheckIgnored(),
-      }),
-      () => null,
-    );
+    return uiState(this.site());
   }
 
-  /**
-   * Remembers the parts of the editor state in `change` with the open site (not a site change:
-   * never versioned).
-   */
+  /** Remembers the parts of the editor state in `change` with the open site. */
   setUiState(change: SiteUiChange, sessionId?: string): Promise<UiStateResult> {
-    return this.#shared<UiStateResult>(
-      (store) => {
-        try {
-          if (change.editorMode !== undefined) store.writeEditorMode(change.editorMode);
-          if (change.siteCheckIgnored !== undefined) {
-            store.writeSiteCheckIgnored(change.siteCheckIgnored);
-          }
-          return { status: "saved" };
-        } catch (error) {
-          return storeFailure(error, "Webforge could not remember the editor state");
-        }
-      },
-      (reason) => ({ status: "failed", reason }),
-      sessionId,
-    );
+    return setUiState(this.site(sessionId), change);
   }
 
   /**
@@ -482,15 +473,6 @@ export class ProjectSession {
     this.#path = undefined;
     this.#site = undefined;
     this.#sessionId = undefined;
-  }
-
-  /** Runs `work` with the open store on the gate's shared side; see {@link SiteStore.withStore}. */
-  #shared<T>(
-    work: (store: ProjectStore) => T | Promise<T>,
-    none: (reason: StaleReason) => T,
-    sessionId?: string,
-  ): Promise<T> {
-    return this.site(sessionId).withStore("shared", work, none);
   }
 
   /** The site in `store`, kept as the one commits build on. Inside the gate only. */
