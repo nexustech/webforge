@@ -26,6 +26,8 @@ const SITE_CHANNELS = [
   "preview:update",
   "preview:phone",
   "ai:listening",
+  "trust:untrusted-code",
+  "trust:trust-code",
 ] as const;
 
 /** The others, and why none of them needs the opening. */
