@@ -20,9 +20,15 @@ What the AI apps can connect to, as of 1 Nov 2026:
 
 So no single transport reaches both kinds of app. Loopback HTTP reaches only the developer tools, and stdio reaches Claude Desktop only through a bridge that Claude Desktop runs.
 
+**The threat that comes with a remembered port: squatting.** Loopback is shared by every process on the computer, including those in another person's session on it. While Webforge isn't listening, any of them can bind the port. A client that connects then talks to the squatter, which can do two things:
+- **take the key**, sent in `Authorization` with the client's first request;
+- **answer as Webforge**, with tool descriptions of its own that carry instructions into the person's AI app, whose other tools may reach their files or accounts.
+
+The server's checks (decision 1) protect Webforge from its callers. Nothing in them protects the callers from a server that isn't Webforge.
+
 ## Decision
 1. **One server: MCP over Streamable HTTP, in main, on loopback.** It uses the official TypeScript SDK (MIT), with its logging off. Each MCP session is one connection: an app's `initialize` starts it.
-   - **It binds the literal `127.0.0.1`,** never `localhost` or `0.0.0.0`, and only while *AI apps* is on in Preferences and a site is open. With the preference off, nothing listens.
+   - **It binds the literal `127.0.0.1`,** never `localhost` or `0.0.0.0`, whenever *AI apps* is on in Preferences and Webforge is running, so its port is never left free for the length of a session. While no site is open, every tool answers "no site open" and nothing else. With the preference off, nothing listens.
    - **The port is drawn at random from the ephemeral range** the first time *AI apps* is turned on, and remembered. The apps' configs hold the address, so a new port each start would cut every app off. Only when that port is taken is a new one drawn: Preferences → *AI apps* then says each app has to be added again.
    - **Every request is checked before the SDK sees it:**
      - one with an `Origin` header is refused, since a browser page is never a client;
@@ -38,10 +44,18 @@ So no single transport reaches both kinds of app. Loopback HTTP reaches only the
    - **Failed attempts back off,** doubling after the third in a minute. A 256-bit key can't be guessed, but the back-off stops a local process from hammering the server.
 3. **Claude Desktop connects through a Webforge desktop extension.** It is a small relay, `webforge-bridge`, bundled with esbuild into one file in the app's resources.
    - It takes MCP over stdio from Claude Desktop and sends each message on to the server, with the key in the header. Nothing else: it holds no state and logs nothing.
-   - *Add AI app* → *Claude Desktop* writes an `.mcpb` for that pairing, holding the bridge and a manifest with the address and the app's name, which aren't secrets. It then opens the file, and Claude Desktop shows its install dialog.
+   - **It checks that it is talking to Webforge before it sends the key.** Each pairing has a second random value, the *server proof*, which Webforge keeps in the keychain beside the key's hash:
+     - the bridge opens each connection with a fresh nonce, sent in a request that carries no key;
+     - the server answers with HMAC-SHA256 of the nonce under the proof;
+     - the bridge compares that in constant time. If it doesn't match, it sends nothing more and tells Claude that Webforge isn't answering at its address.
+
+     So a squatter gets neither the key nor a chance to describe tools. The proof is no use to a caller of the server, which still needs the key.
+   - *Add AI app* → *Claude Desktop* writes an `.mcpb` for that pairing. It holds the bridge and a manifest with the address, the app's name and the server proof. The proof isn't the key: it lets the bridge recognise the server, and grants nothing on it. The file sits in the person's own profile, with the rest of Claude's extensions, out of another account's reach. Webforge then opens the file, and Claude Desktop shows its install dialog.
    - The key is the extension's one `sensitive` setting. The person pastes it there, and Claude Desktop stores it securely. The key is never written into the file, which would leave it in plain text in Downloads and in Claude's extensions folder.
    - It runs on Claude Desktop's own Node.js, so `RunAsNode` stays off and Webforge ships no Node binary.
 4. **The developer tools connect directly.** *Add AI app* → *Another app* shows the URL and the header, ready to paste into Claude Code, Cursor or VS Code.
+   - **They can't check the server,** so the risk remains, and the dialog and the help page name it: a developer tool sends its key to whatever answers at that address. While Webforge isn't running, another program on the computer could be answering.
+   - The help page tells the person to turn that tool's Webforge server off while Webforge is closed. A tool that can run a stdio command can use the bridge instead, which does check.
 5. **ChatGPT isn't supported at first.** Its desktop app can't reach a server on this computer, short of a tunnel to OpenAI, which would send the site's content through OpenAI's servers, or Codex. The help page says so. When ChatGPT can start local servers, the bridge in 3 should serve it too.
 6. **Each request goes through what the security review asks for:**
    - **Checks:** main validates every request against the `ai` contract (S21);
@@ -58,11 +72,15 @@ So no single transport reaches both kinds of app. Loopback HTTP reaches only the
 
 ## Consequences
 - **What a person can connect:** Claude Desktop, in two steps (open the file, paste the key), and developer tools, by pasting the URL and the header. ChatGPT waits for OpenAI. The help page covers the first two.
-- **Two pieces to build in 4.9:** the server in main, and the bridge with the `.mcpb` it goes in. The bridge needs its own test: a stdio client through the bridge to a test server, checking the header and that a wrong key is refused. It also needs a check that the `.mcpb` passes the MCPB CLI's validation.
+- **Two pieces to build in 4.9:** the server in main, and the bridge with the `.mcpb` it goes in. The bridge needs tests of its own, with a stdio client through the bridge to a test server:
+  - it sends the header, and a wrong key is refused;
+  - against a server that doesn't know the proof, it sends no key and no message after the challenge.
+
+  The `.mcpb` also needs to pass the MCPB CLI's validation.
 - **Not reachable from another computer:** it binds `127.0.0.1` only. A test connects through the machine's other addresses and is refused.
 - **The remembered port** is a second loopback port beside the preview server's (ADR 0015). The preview server keeps drawing a new one each time.
 - **Changes to #171's acceptance criteria,** to agree before 4.9 starts:
-  - "Binds the literal `127.0.0.1` on an ephemeral port" becomes "on a port from the ephemeral range, drawn once and remembered".
+  - "Binds the literal `127.0.0.1` on an ephemeral port" becomes "on a port from the ephemeral range, drawn once and remembered, listening whenever *AI apps* is on and Webforge runs (answering 'no site open' while none is), and the bridge checks the server's proof before it sends the key".
   - "Pairing codes are single-use, expire after about 5 minutes and lock after a few failures" becomes "A key is shown once, is revoked unless used within 5 minutes, and failed attempts back off".
   - "Help page: how to connect Claude and ChatGPT desktop apps" becomes "Claude Desktop and developer tools; ChatGPT once it can reach local servers".
   - New: "Claude Desktop connects through a Webforge `.mcpb` desktop extension; the key is its sensitive setting, never in the file".
