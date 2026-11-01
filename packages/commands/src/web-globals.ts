@@ -12,6 +12,11 @@ declare global {
     readonly signal: AbortSignal;
     abort(): void;
   }
+  class URL {
+    constructor(url: string);
+    readonly host: string;
+    readonly href: string;
+  }
 }
 
 export {};

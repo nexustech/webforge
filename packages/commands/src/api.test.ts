@@ -819,6 +819,34 @@ describe("where visitors' money and details go (S18, #658)", () => {
     );
   });
 
+  it("names where a browser really sends visitors, keeping a long address's end", async () => {
+    const { history, host, confirm } = setup(false, shop);
+    const api = createCommandApi(host);
+    const location = home(history);
+    const repoint = async (link: string) => {
+      await api.run("updateFields", { location, nodeId: "buy", values: { link } }, app);
+      return confirm.mock.calls.at(-1)?.[0].description;
+    };
+
+    // A browser reads `\` as `/`: this pays evil.example, not buy.stripe.com.
+    expect(await repoint("https://evil.example\\@buy.stripe.com/p")).toBe(
+      "Payment link: from buy.stripe.com to evil.example.",
+    );
+    // A Cyrillic "у" in a look-alike host shows as punycode.
+    const lookAlike = await repoint("https://buу.stripe.com/rosas");
+    expect(lookAlike).toMatch(/^Payment link: from buy\.stripe\.com to xn--/);
+    expect(lookAlike).not.toContain("у");
+    // `../` that leaves the account's own path is resolved.
+    expect(await repoint(`${PAY}/x/x/../../../theirs`)).toBe(
+      `Payment link: from ${PAY} to https://buy.stripe.com/theirs.`,
+    );
+    // A long address is cut in the middle: where on the host it goes still shows.
+    const long = await repoint(`https://buy.stripe.com/rosas/${"x".repeat(1_000)}/theirs`);
+    expect(long).toContain("…");
+    expect(long).toMatch(/\/theirs\.$/);
+    expect(long?.length).toBeLessThan(500);
+  });
+
   it("doesn't ask for its other fields, nor for the same address again", async () => {
     const { history, host, confirm } = setup(true, shop);
     const api = createCommandApi(host);

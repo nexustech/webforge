@@ -240,29 +240,43 @@ function confirmationAt(site: SiteDoc, location: Location): Plan["confirm"] {
 /** A field's address as it is set, without the spaces around it. */
 const addressOf = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-/** The host of `address` (`pay.example`), or `undefined` for text that isn't a web address. */
-function hostOf(address: string): string | undefined {
-  const authority = /^[a-z][a-z\d+.-]*:\/\/([^/?#\s]+)/i.exec(address)?.[1];
-  const host = authority?.slice(authority.lastIndexOf("@") + 1).toLowerCase();
-  return host === "" ? undefined : host;
+/**
+ * `address` as a browser reads it (WHATWG URL), or `undefined` for text that isn't a web address:
+ * `\` taken as `/`, `../` resolved, and a look-alike host in punycode (`xn--…`), so a question
+ * names where visitors really go.
+ */
+function webAddress(address: string): { readonly host: string; readonly href: string } | undefined {
+  try {
+    const { host, href } = new URL(address);
+    return host === "" ? undefined : { host, href };
+  } catch {
+    return undefined;
+  }
 }
 
-/** `address` as a confirmation names it, cut short past 80 characters. */
-const shown = (address: string) =>
-  address === ""
-    ? t("ai.confirm.noAddress")
-    : address.length > 80
-      ? `${address.slice(0, 79)}…`
-      : address;
+/** The most of an address a confirmation shows; a longer one is cut in the middle. */
+const SHOWN_MAX_CHARS = 400;
+
+/**
+ * `address` as a confirmation names it: as a browser reads it, and cut in the middle past
+ * {@link SHOWN_MAX_CHARS}, keeping its start (the host) and its end (where on the host).
+ */
+function shown(address: string): string {
+  if (address === "") return t("ai.confirm.noAddress");
+  const read = webAddress(address)?.href ?? address;
+  if (read.length <= SHOWN_MAX_CHARS) return read;
+  const start = 100;
+  return `${read.slice(0, start)}…${read.slice(read.length - (SHOWN_MAX_CHARS - start - 1))}`;
+}
 
 /**
  * Where a field sends visitors before and after a change, as a confirmation names them: each
  * address's host, or the whole addresses when the hosts are the same (a payment page of another
- * account on the same service).
+ * account on the same service) or one isn't a web address.
  */
 function fromTo(before: string, after: string): { readonly from: string; readonly to: string } {
-  const from = hostOf(before);
-  const to = hostOf(after);
+  const from = webAddress(before)?.host;
+  const to = webAddress(after)?.host;
   return from !== undefined && to !== undefined && from !== to
     ? { from, to }
     : { from: shown(before), to: shown(after) };
