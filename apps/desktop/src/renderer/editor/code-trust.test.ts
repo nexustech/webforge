@@ -1,10 +1,13 @@
-import type { NodeDoc, SiteDoc } from "@webforge/model";
-import { describe, expect, it, vi } from "vitest";
+import { allowListText, type NodeDoc, type SiteDoc } from "@webforge/model";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { TrustApi } from "../../shared/ipc/trust.js";
 import { starterSite } from "../../shared/starter-site.js";
+import { applyLook, lookChange } from "../clipboard/index.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { toggleSelectedHidden } from "./bulk-layers.js";
 import { type CodeAnswer, createCodeTrust } from "./code-trust.js";
-import { currentPage } from "./editor-session.js";
+import { currentPage, type EditorSession } from "./editor-session.js";
+import { setLayerHidden } from "./layers.js";
 
 const SESSION = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 
@@ -29,6 +32,22 @@ function siteWithCode(): SiteDoc {
   };
 }
 
+/** The starter site with `node` hidden on the home page, or as the Header's first section. */
+function siteHiding(node: NodeDoc, where: "page" | "header" = "page"): SiteDoc {
+  const site = starterSite();
+  const hidden = { ...node, props: { ...node.props, hidden: true } };
+  if (where === "header") return { ...site, layout: { ...site.layout, header: [hidden] } };
+  const home = site.pages[site.homePageId];
+  if (home === undefined) throw new Error("no home page");
+  return {
+    ...site,
+    pages: {
+      ...site.pages,
+      [site.homePageId]: { ...home, doc: { ...home.doc, content: [...home.doc.content, hidden] } },
+    },
+  };
+}
+
 /** Main's trust calls, over a record that trusts `trusted`. */
 function fakeTrust(trusted: Iterable<string> = []) {
   const kept = new Set(trusted);
@@ -45,12 +64,20 @@ function fakeTrust(trusted: Iterable<string> = []) {
   return { api, kept };
 }
 
+/** What each test connected, disconnected after it. */
+const connected: (() => void)[] = [];
+afterEach(() => {
+  for (const disconnect of connected.splice(0)) disconnect();
+  vi.useRealTimers();
+});
+
 function setUp(site = siteWithCode(), trusted: Iterable<string> = []) {
   const session = sessionWith(site);
   const { api, kept } = fakeTrust(trusted);
   const review = vi.fn();
   const notify = vi.fn();
   const codeTrust = createCodeTrust({ api, session, sessionId: () => SESSION, review, notify });
+  connected.push(codeTrust.connect());
   /** Answers the prompt with `answer` once it asks. */
   const answerWith = async (answer: CodeAnswer) => {
     await vi.waitFor(() => expect(codeTrust.question.getState().question).not.toBeNull());
@@ -58,7 +85,23 @@ function setUp(site = siteWithCode(), trusted: Iterable<string> = []) {
     asked?.answer(answer);
     return asked?.pieces ?? [];
   };
-  return { session, api, kept, review, notify, codeTrust, answerWith };
+  /** What the next export would be asked about, answered with Cancel. */
+  const asked = async () => {
+    const deciding = codeTrust.confirm(session.history.document.getState());
+    const pieces = await answerWith("cancel");
+    await deciding;
+    return pieces.map((piece) => piece.text);
+  };
+  return { session, api, kept, review, notify, codeTrust, answerWith, asked };
+}
+
+/** Writes `text` in Settings' Custom Code part `part`, as its field says it does. */
+function write(session: EditorSession, part: "js" | "head" | "bodyEnd", text: string) {
+  const before = session.history.document.getState().code[part];
+  session.edit("props", "Changed Custom Code", (draft) => {
+    draft.code[part] = text;
+  });
+  session.codeWritten(before, text);
 }
 
 describe("the code trust step (#649)", () => {
@@ -129,30 +172,37 @@ describe("the code trust step (#649)", () => {
     expect(notify).toHaveBeenCalledWith("trust-failed");
   });
 
-  it("trusts code the owner writes here, once they stop, never the steps on the way", async () => {
+  it("follows whether the site's allowed addresses are confirmed, for Site Check", async () => {
+    const { codeTrust, session, kept } = setUp(siteWithCode());
+    await Promise.resolve();
+    expect(codeTrust.allowListConfirmed.getState()).toBe(false);
+
+    kept.add("https://cdn.example.com/\nhttps://fonts.example.com/");
+    vi.useFakeTimers();
+    session.edit("insert", "Imported settings", (draft) => {
+      draft.settings.allowedExternalUrls.push("https://fonts.example.com/");
+    });
+    await vi.advanceTimersByTimeAsync(400);
+    vi.useRealTimers();
+    await vi.waitFor(() => expect(codeTrust.allowListConfirmed.getState()).toBe(true));
+  });
+});
+
+describe("what the owner writes (#649)", () => {
+  it("is trusted once they stop, never the steps on the way", async () => {
     const { session, api } = setUp(starterSite());
     vi.useFakeTimers();
-    try {
-      for (const js of ["m", "mi", "mine()"]) {
-        session.edit("props", "Changed Custom Code", (draft) => {
-          draft.code.js = js;
-        });
-      }
-      expect(api.trust).not.toHaveBeenCalled();
-      await vi.advanceTimersByTimeAsync(1000);
-    } finally {
-      vi.useRealTimers();
-    }
+    for (const js of ["m", "mi", "mine()"]) write(session, "js", js);
+    expect(api.trust).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1000);
 
     expect(api.trust).toHaveBeenCalledOnce();
     expect(api.trust).toHaveBeenCalledWith(SESSION, ["mine()"]);
   });
 
-  it("trusts what was just written before it asks, so it never asks about it", async () => {
+  it("is trusted before an export asks, so it's never asked about", async () => {
     const { session, api, codeTrust } = setUp(starterSite());
-    session.edit("props", "Changed Custom Code", (draft) => {
-      draft.code.js = "mine()";
-    });
+    write(session, "js", "mine()");
 
     expect(await codeTrust.confirm(session.history.document.getState())).toMatchObject({
       go: true,
@@ -161,41 +211,105 @@ describe("the code trust step (#649)", () => {
     expect(codeTrust.question.getState().question).toBeNull();
   });
 
-  it("trusts nothing a paste or an Undo brings", async () => {
-    const { session, api } = setUp(starterSite());
+  it("stays trusted as they change code they trust", async () => {
+    const site = starterSite();
+    const { session, api } = setUp({ ...site, code: { ...site.code, js: "go()" } }, ["go()"]);
     vi.useFakeTimers();
-    try {
+    for (const js of ["go(1)", "go(12)"]) write(session, "js", js);
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(api.trust).toHaveBeenCalledWith(SESSION, ["go(12)"]);
+  });
+
+  it("leaves code they changed but haven't confirmed to the prompt, whole", async () => {
+    const { session, api, asked } = setUp(siteWithCode(), ["<script>skim()</script>"]);
+    vi.useFakeTimers();
+    // A fix to a line of the file's script, and an address added to its list.
+    for (const js of ["go(1)", "go(12)"]) write(session, "js", js);
+    const before = allowListText(session.history.document.getState().settings.allowedExternalUrls);
+    session.edit("props", "Changed Custom Code", (draft) => {
+      draft.settings.allowedExternalUrls.push("https://mine.example.com/");
+    });
+    session.codeWritten(
+      before,
+      allowListText(session.history.document.getState().settings.allowedExternalUrls),
+    );
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.useRealTimers();
+
+    expect(api.trust).not.toHaveBeenCalled();
+    expect(await asked()).toEqual([
+      "go(12)",
+      "https://cdn.example.com/\nhttps://mine.example.com/",
+    ]);
+  });
+
+  it("isn't followed once the window's areas disconnect", async () => {
+    const { session, api } = setUp(starterSite());
+    for (const disconnect of connected.splice(0)) disconnect();
+    vi.useFakeTimers();
+    write(session, "js", "mine()");
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(api.trust).not.toHaveBeenCalled();
+  });
+});
+
+describe("what trusts no code (#649)", () => {
+  /** After `act`, nothing was trusted, and the next export asks about the skimmer. */
+  async function asksAfter(site: SiteDoc, act: (session: EditorSession) => void) {
+    const { session, api, asked } = setUp(site);
+    vi.useFakeTimers();
+    act(session);
+    await vi.advanceTimersByTimeAsync(1000);
+    vi.useRealTimers();
+
+    expect(api.trust).not.toHaveBeenCalled();
+    expect(await asked()).toContain("<script>skim()</script>");
+  }
+
+  it("a paste, an Undo and a Redo", async () => {
+    await asksAfter(starterSite(), (session) => {
       session.edit("insert", "Pasted Custom Code", (draft) => {
-        const page = draft.pages[draft.homePageId];
-        page?.doc.content.push(skimmer);
+        draft.pages[draft.homePageId]?.doc.content.push(skimmer);
       });
       session.history.undo();
       session.history.redo();
-      await vi.advanceTimersByTimeAsync(1000);
-    } finally {
-      vi.useRealTimers();
-    }
-
-    expect(currentPage(session)?.doc.content).toContainEqual(skimmer);
-    expect(api.trust).not.toHaveBeenCalled();
+      expect(currentPage(session)?.doc.content).toContainEqual(skimmer);
+    });
   });
 
-  it("follows whether the site's allowed addresses are confirmed, for Site Check", async () => {
-    const { codeTrust, session, kept } = setUp(siteWithCode());
-    await Promise.resolve();
-    expect(codeTrust.allowListConfirmed.getState()).toBe(false);
+  it("showing a hidden Custom Code element in Layers", async () => {
+    await asksAfter(siteHiding(skimmer), (session) => setLayerHidden(session, "skim", false));
+  });
 
-    kept.add("https://cdn.example.com/\nhttps://fonts.example.com/");
-    vi.useFakeTimers();
-    try {
-      session.edit("insert", "Imported settings", (draft) => {
-        draft.settings.allowedExternalUrls.push("https://fonts.example.com/");
-      });
-      await vi.advanceTimersByTimeAsync(400);
-    } finally {
-      vi.useRealTimers();
-    }
-    await vi.waitFor(() => expect(codeTrust.allowListConfirmed.getState()).toBe(true));
-    codeTrust.dispose();
+  it("showing several at once", async () => {
+    await asksAfter(siteHiding(skimmer), (session) => {
+      session.selectElements(["skim"]);
+      toggleSelectedHidden(session);
+    });
+  });
+
+  it("showing the Header with its eye", async () => {
+    await asksAfter(siteHiding(skimmer, "header"), (session) =>
+      setLayerHidden(session, "skim", false),
+    );
+  });
+
+  it("Apply Look to Every, which gives the look alone", async () => {
+    const site = siteWithCode();
+    const mine: NodeDoc = {
+      type: "CustomCode",
+      props: { id: "mine", code: "<p>Mine</p>", lookOpacity: "50" },
+    };
+    site.pages[site.homePageId]?.doc.content.push(mine);
+    await asksAfter(site, (session) => {
+      session.select("mine");
+      const change = lookChange(session, "site");
+      expect(change?.targets.map((each) => each.node.props.id)).toEqual(["skim"]);
+      if (change !== undefined) expect(applyLook(session, change)).toBe(true);
+      const skim = currentPage(session)?.doc.content.find((each) => each.props.id === "skim");
+      expect(skim?.props).toMatchObject({ code: "<script>skim()</script>", lookOpacity: "50" });
+    });
   });
 });

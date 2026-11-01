@@ -14,7 +14,7 @@ import { Profiler } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { CanvasApi } from "../../shared/ipc/canvas.js";
 import { starterSite } from "../../shared/starter-site.js";
-import { classesFieldRenderer } from "../fields/index.js";
+import { classesFieldRenderer, codeField } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
 import { sessionWith } from "../testing/fixtures.js";
@@ -1183,5 +1183,51 @@ describe("EditPanelHost with a layout that leaves fields out (#311)", () => {
     expect(imageField()).not.toBeNull();
     const hero = currentPage(session)?.doc.content.find((node) => node.props.id === "hero");
     expect(hero?.props.image).toEqual(image);
+  });
+});
+
+describe("the Custom Code element's code (#649)", () => {
+  /** The Edit panel for Custom Code `theirs`, with another, `mine`, on the page. */
+  function customCode() {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.doc.content.push(
+      { type: "CustomCode", props: { id: "theirs", code: "<script>skim()</script>" } },
+      { type: "CustomCode", props: { id: "mine", code: "<p>Mine</p>" } },
+    );
+    const session = sessionWith(site);
+    const written = vi.fn();
+    session.onCodeWritten(written);
+    session.select("theirs");
+    render(
+      <FieldRenderersProvider renderers={{ code: codeField() }}>
+        <EditPanelHost session={session} flush={vi.fn()} />
+      </FieldRenderersProvider>,
+    );
+    const codeOf = (id: string) =>
+      currentPage(session)?.doc.content.find((each) => each.props.id === id)?.props.code;
+    return { session, written, codeOf, user: userEvent.setup() };
+  }
+
+  it("is on the Content tab, and says what the owner writes there", async () => {
+    const { written, codeOf, user } = customCode();
+    const field = screen.getByRole("textbox", { name: "HTML" });
+
+    await user.type(field, "!");
+
+    expect(codeOf("theirs")).toBe("<script>skim()</script>!");
+    expect(written).toHaveBeenLastCalledWith("<script>skim()</script>", "<script>skim()</script>!");
+  });
+
+  it("an option group's paste carries it without saying it was written", async () => {
+    const { session, written, codeOf, user } = customCode();
+    await user.click(screen.getByRole("button", { name: "Copy Text" }));
+    act(() => session.select("mine"));
+
+    await user.click(screen.getByRole("button", { name: "Paste Text" }));
+
+    expect(codeOf("mine")).toBe("<script>skim()</script>");
+    expect(written).not.toHaveBeenCalled();
   });
 });

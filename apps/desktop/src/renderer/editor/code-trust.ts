@@ -1,4 +1,3 @@
-import { stateBefore } from "@webforge/history";
 import { type SiteCodePiece, type SiteDoc, siteCodePieces } from "@webforge/model";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { TrustApi } from "../../shared/ipc/trust.js";
@@ -41,7 +40,7 @@ export type CodeQuestion = {
 /** What the window's code trust step works with. */
 type CodeTrustOptions = {
   readonly api: TrustApi;
-  readonly session: Pick<EditorSession, "history" | "onEntryAdded">;
+  readonly session: Pick<EditorSession, "history" | "onCodeWritten">;
   /** This opening of the site, as main knows it (R6). */
   readonly sessionId: () => string;
   /** Shows the first piece the owner wants to look at (Review): Settings, or the element. */
@@ -62,7 +61,11 @@ export type CodeTrust = {
   readonly question: StoreApi<{ readonly question: CodeQuestion }>;
   /** Whether the site's allowed addresses are confirmed, for Site Check (false while unknown). */
   readonly allowListConfirmed: StoreApi<boolean>;
-  dispose(): void;
+  /**
+   * Starts following what the owner writes and the site's allow-list, while the window's areas
+   * are connected. Returns how to stop.
+   */
+  connect(): () => void;
 };
 
 /** The texts of `site`'s code. */
@@ -83,22 +86,22 @@ export function createCodeTrust({
   const question = createStore<{ readonly question: CodeQuestion }>(() => ({ question: null }));
   const allowListConfirmed = createStore<boolean>(() => false);
 
-  /** Which of `pieces` main doesn't trust; all of them when it can't say. */
-  const untrustedOf = async (pieces: readonly SiteCodePiece[]): Promise<SiteCodePiece[]> => {
-    if (pieces.length === 0) return [];
+  /** Which of `texts` main doesn't trust, by position; all of them when it can't say. */
+  const untrustedAt = async (texts: readonly string[]): Promise<ReadonlySet<number>> => {
+    if (texts.length === 0) return new Set();
     try {
-      const result = await api.untrusted(
-        sessionId(),
-        pieces.map((piece) => piece.text),
-      );
-      if (result.status === "checked") {
-        const untrusted = new Set(result.untrusted);
-        return pieces.filter((_, index) => untrusted.has(index));
-      }
+      const result = await api.untrusted(sessionId(), texts);
+      if (result.status === "checked") return new Set(result.untrusted);
     } catch (error) {
       reportFailure("codeTrust.check", error);
     }
-    return [...pieces];
+    return new Set(texts.keys());
+  };
+
+  /** Which of `pieces` main doesn't trust; all of them when it can't say. */
+  const untrustedOf = async (pieces: readonly SiteCodePiece[]): Promise<SiteCodePiece[]> => {
+    const untrusted = await untrustedAt(pieces.map((piece) => piece.text));
+    return pieces.filter((_, index) => untrusted.has(index));
   };
 
   const trust = async (texts: readonly string[]): Promise<boolean> => {
@@ -136,48 +139,60 @@ export function createCodeTrust({
     });
   };
 
-  // What the owner writes here is theirs (#649): code a change of a field or of Settings' Custom
-  // Code adds is trusted. A paste, an added section, an Undo or a Redo trusts nothing. Typing in a
-  // Custom Code element changes it at every key, so what was written is trusted once the owner
-  // stops, as far as the site still has it: never the steps on the way.
-  const written = new Set<string>();
+  // What the owner writes here is theirs (#649), as the fields they write code in say
+  // (`codeWritten`): never a paste, a copied style, a shown element, an Undo or a Redo. Writing in
+  // a piece only makes it the owner's when the piece was theirs already, or blank: a fix to a line
+  // of someone else's script, or an address added to their list, leaves the rest to the prompt.
+  // Typing changes a piece at every key, so what was written is trusted once the owner stops, as
+  // far as the site still has it: never the steps on the way.
+  /** Each text written, with the text it was first written from, or null when that was blank. */
+  const written = new Map<string, string | null>();
   let writing: ReturnType<typeof setTimeout> | undefined;
-  const trustWritten = async () => {
-    clearTimeout(writing);
-    writing = undefined;
+  /** What was written being trusted now, which an export or a Preview waits for. */
+  let trusting: Promise<void> = Promise.resolve();
+  const trustNow = async () => {
     const current = textsOf(session.history.document.getState());
-    const texts = [...written].filter((text) => current.has(text));
+    const kept = [...written].filter(([text]) => current.has(text));
     written.clear();
+    const origins = [...new Set(kept.flatMap(([, origin]) => (origin === null ? [] : [origin])))];
+    const untrusted = await untrustedAt(origins);
+    const theirs = new Set(origins.filter((_, index) => !untrusted.has(index)));
+    const texts = kept.flatMap(([text, origin]) =>
+      origin === null || theirs.has(origin) ? [text] : [],
+    );
     if (texts.length > 0 && (await trust(texts))) void checkAllowList();
   };
-  const stopWatching = session.onEntryAdded((entry, kind) => {
-    if (kind !== "props") return;
-    const after = session.history.document.getState();
-    const before = textsOf(stateBefore(after, entry));
-    const added = [...textsOf(after)].filter((text) => !before.has(text));
-    if (added.length === 0) return;
-    for (const text of added) written.add(text);
+  const trustWritten = () => {
+    clearTimeout(writing);
+    writing = undefined;
+    const next = trusting.then(trustNow);
+    trusting = next;
+    return next;
+  };
+  const onWritten = (before: string, after: string) => {
+    // Written over text written just now: from where that was written.
+    const earlier = written.get(before);
+    written.set(after, before.trim() === "" ? null : earlier !== undefined ? earlier : before);
     clearTimeout(writing);
     writing = setTimeout(() => void trustWritten(), WRITTEN_DELAY_MS);
-  });
+  };
 
   let timer: ReturnType<typeof setTimeout> | undefined;
-  let lastAllowList = allowListOf(session.history.document.getState())?.text;
-  const stopFollowing = session.history.document.subscribe((site) => {
+  let lastAllowList: string | undefined;
+  const followAllowList = (site: SiteDoc) => {
     const text = allowListOf(site)?.text;
     if (text === lastAllowList) return;
     lastAllowList = text;
     clearTimeout(timer);
     timer = setTimeout(() => void checkAllowList(), ALLOW_LIST_DELAY_MS);
-  });
-  void checkAllowList();
+  };
 
   return {
     question,
     allowListConfirmed,
     async confirm(site) {
       // What the owner has just written is theirs: it's never asked about.
-      if (writing !== undefined) await trustWritten();
+      await (writing === undefined ? trusting : trustWritten());
       const pieces = siteCodePieces(site);
       const untrusted = await untrustedOf(pieces);
       if (untrusted.length === 0) {
@@ -204,13 +219,21 @@ export function createCodeTrust({
       if (answer === "review" && first !== undefined) review(first);
       return { go: false };
     },
-    dispose() {
-      clearTimeout(timer);
-      clearTimeout(writing);
-      asked++;
-      stopWatching();
-      stopFollowing();
-      question.getState().question?.answer("cancel");
+    connect() {
+      const stopWatching = session.onCodeWritten(onWritten);
+      const stopFollowing = session.history.document.subscribe(followAllowList);
+      lastAllowList = allowListOf(session.history.document.getState())?.text;
+      void checkAllowList();
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(writing);
+        writing = undefined;
+        written.clear();
+        asked++;
+        stopWatching();
+        stopFollowing();
+        question.getState().question?.answer("cancel");
+      };
     },
   };
 }

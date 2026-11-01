@@ -210,6 +210,7 @@ export {
 export { SITE_CHECK_IGNORED_MAX, siteCheckIgnoredSchema } from "./site-check-ignored.js";
 export {
   allowListText,
+  RUNNING_PARTS,
   type RunningCodePart,
   type SiteCodePiece,
   siteCodePieces,

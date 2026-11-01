@@ -1,6 +1,12 @@
 import { type FormField, type FormSchema, type FormSpec, sameValue } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { type SiteCode, type SiteDoc, siteCodeSchema } from "@webforge/model";
+import {
+  allowListText,
+  RUNNING_PARTS,
+  type SiteCode,
+  type SiteDoc,
+  siteCodeSchema,
+} from "@webforge/model";
 import { z } from "zod";
 import type { EditorSession } from "../editor/editor-session.js";
 import {
@@ -147,9 +153,10 @@ export function codeSpec(): FormSpec<CodeForm, SavedCode> {
 
 /**
  * Saves the site's code and allowed addresses as one undo step, or nothing when neither changed.
+ * What the owner wrote in its running parts and its addresses is theirs (#649).
  */
 export function saveSiteCode(
-  session: Pick<EditorSession, "edit"> & {
+  session: Pick<EditorSession, "edit" | "codeWritten"> & {
     readonly history: Pick<EditorSession["history"], "document">;
   },
   saved: SavedCode,
@@ -170,6 +177,11 @@ export function saveSiteCode(
     };
     draft.settings.allowedExternalUrls = [...saved.allowedExternalUrls];
   });
+  for (const part of RUNNING_PARTS) session.codeWritten(site.code[part], saved.code[part]);
+  session.codeWritten(
+    allowListText(site.settings.allowedExternalUrls),
+    allowListText(saved.allowedExternalUrls),
+  );
   return true;
 }
 

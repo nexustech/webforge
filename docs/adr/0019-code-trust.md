@@ -19,7 +19,9 @@ An export wrote it as it stood, and Preview ran it in the owner's everyday brows
   - A copy of a site that keeps its project id matches only pieces its owner already trusted, which are the same code.
   - A damaged file is read as empty: the owner is asked again.
 - **A piece becomes trusted in two ways:**
-  - **The owner writes it here.** A `props` edit (a field, Settings' Custom Code) that adds a piece's text trusts that text once the owner stops writing, if the site still has it (`renderer/editor/code-trust.ts`). A paste, an added section, Undo, Redo or opening a file trusts nothing.
+  - **The owner writes it here.** Only the fields code is written in say so, through `EditorSession.codeWritten(before, after)`: a Custom Code element's code field in the Edit panel, and Settings' Head, End of page, Script and allowed addresses. What they wrote is trusted once the owner stops writing, if the site still has it (`renderer/editor/code-trust.ts`).
+    - It's trusted only when the piece was the owner's before the edit: trusted already, or blank. A fix to a line of someone else's script, or an address added to their list, leaves the whole piece to the prompt.
+    - Nothing else trusts code, whatever step it records: a paste, Copy Style or an option group's paste, Apply Look, showing a hidden element, an added section, Undo, Redo, opening a file. The trust step doesn't read history steps at all.
   - **The owner confirms it.** Before an export, a Preview or a Preview on Phone, the window lists the pieces main doesn't trust:
     - *Keep the code* trusts them.
     - *Leave it out* builds without them, this time only.
@@ -38,5 +40,5 @@ An export wrote it as it stood, and Preview ran it in the owner's everyday brows
 ## Consequences
 - An owner who opens their own site on a new computer is asked once, and keeps it with one click.
 - **4.5 (publish):** its job carries a `SiteDoc` (ADR 0018 §3). Main must filter it with `withKeptCode` and the site's `trusted` predicate before the job, and the renderer must ask through `codeTrust.confirm` before publishing, as the export does.
-- **4.6 (Version History):** restoring a version must not count as the owner writing the code. A restore that records a `props` step would trust what the version holds, so it should use another kind of step, or trust nothing.
+- **4.6 (Version History):** a restore must not call `codeWritten`, so the code a version brings back is asked about like any other the owner hasn't confirmed. Whatever kind of step it records, it trusts nothing.
 - The Site Check panel shows the allow-list as unconfirmed until main answers, a moment after the site opens.

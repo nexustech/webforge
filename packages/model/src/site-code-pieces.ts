@@ -8,7 +8,8 @@ const CUSTOM_CODE = "CustomCode";
 /** The parts of Settings' Custom Code that run for the site's visitors: CSS isn't one. */
 export type RunningCodePart = "js" | "head" | "bodyEnd";
 
-const RUNNING_PARTS: readonly RunningCodePart[] = ["head", "bodyEnd", "js"];
+/** Those parts, in the order the prompt lists them. */
+export const RUNNING_PARTS: readonly RunningCodePart[] = ["head", "bodyEnd", "js"];
 
 /**
  * A piece of the site's own code that runs for its visitors, or lets other code in (#649, S1):

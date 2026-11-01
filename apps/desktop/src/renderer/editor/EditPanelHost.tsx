@@ -663,6 +663,7 @@ export function EditPanelHost({
       component,
     );
     const recipe = live.recipe(name, next);
+    const codeBefore = live.storedOr(name, live.node.props[name]);
     session.edit(
       field.kind === "text" ? "text" : "props",
       live.labelOf(name, field, at),
@@ -674,6 +675,10 @@ export function EditPanelHost({
           },
       { selectionAfter, ...(typed ? { coalesceKey: textKey } : {}) },
     );
+    // Code the owner writes in a Custom Code element is theirs (#649).
+    if (field.kind === "code" && typeof value === "string") {
+      session.codeWritten(typeof codeBefore === "string" ? codeBefore : "", value);
+    }
     if (typed) {
       openRun.current = {
         nodeId: id,
