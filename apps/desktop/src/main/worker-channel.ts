@@ -1,7 +1,7 @@
 import type { z } from "zod";
 import { workerCrashSchema } from "../shared/error-details.js";
 import type { WorkerJob } from "../shared/export-worker-protocol.js";
-import type { ExportProgress } from "../shared/ipc/site.js";
+import type { JobProgress } from "../shared/worker-channel-protocol.js";
 import { fromWorkerSchema, type ToWorker } from "../shared/worker-channel-protocol.js";
 import type { WorkerProcess } from "./worker-process.js";
 
@@ -35,7 +35,7 @@ type JobOptions<O> = {
   /** Cancels it: the worker is told, and the job ends with what the worker answers. */
   readonly signal?: AbortSignal | undefined;
   /** Told how far it has come (an export, 3.1). */
-  readonly onProgress?: ((progress: ExportProgress) => void) | undefined;
+  readonly onProgress?: ((progress: JobProgress) => void) | undefined;
   /** Reads the bytes it asks for, one at a time (R15); none are there without it. */
   readonly readMedia?: ReadMedia | undefined;
 };

@@ -1,11 +1,10 @@
 import { t } from "@webforge/i18n";
 import { type PageId, pagePath, type SiteDoc } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import { type ComponentLibrary, siteContentFor } from "@webforge/site-components";
 import type { StoreApi } from "zustand/vanilla";
 import type { PreviewApi, PreviewPage } from "../../shared/ipc/preview.js";
 import type { CodeDecision } from "../editor/code-trust.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { siteContentFor } from "../export/index.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";

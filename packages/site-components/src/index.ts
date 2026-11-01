@@ -103,4 +103,5 @@ export type {
   StoredValue,
   ValuesOf,
 } from "./schema.js";
+export { type SiteContent, siteContentFor, siteSnapshotFor } from "./site-content.js";
 export { siteWithCleanRichText, withCleanRichText } from "./stored-rich-text.js";

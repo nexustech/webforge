@@ -14,6 +14,7 @@ function dispatchOf(handlers: Partial<JobHandlers>) {
     {
       export: unexpected,
       preview: unexpected,
+      publish: unexpected,
       thumbnail: unexpected,
       "class-catalogue": unexpected,
       "class-css": unexpected,

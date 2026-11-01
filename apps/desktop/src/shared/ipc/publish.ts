@@ -92,6 +92,23 @@ const keyFileResultSchema = z.discriminatedUnion("status", [
 export type KeyFileResult = z.infer<typeof keyFileResultSchema>;
 
 /**
+ * How far a publish has come (4.5): the build's stages as an export's, then comparing with what
+ * the host has (`preparing`), each file sent (`uploading`, which one of how many), and the live
+ * site's check (`verifying`).
+ */
+export const publishProgressSchema = z.discriminatedUnion("stage", [
+  z.strictObject({
+    stage: z.enum(["images", "pages", "uploading"]),
+    done: z.int().nonnegative(),
+    total: z.int().nonnegative(),
+  }),
+  z.strictObject({ stage: z.enum(["styles", "fonts", "preparing", "verifying"]) }),
+]);
+
+/** How far a publish has come. */
+export type PublishProgress = z.infer<typeof publishProgressSchema>;
+
+/**
  * Whether a destination's sign-in is saved on this computer (4.4a, security review S2): `saved` for
  * the destination as it is now; `changed` when it was saved for another protocol, host, port, user
  * or host key than the site file now names, so it is given to no one until typed again; `none`.
