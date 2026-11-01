@@ -133,59 +133,93 @@ Site (.wforge)
 
 ## 6. Key interfaces
 
+The contracts other areas build on, as each package exports them. Each block names its file; members not listed (the canvas's display setters and events, the store's media and metadata reads) are in that file, with their TSDoc.
+
 ```ts
-// packages/engine
+// packages/engine: canvas-engine.ts (abridged: also outline, markDrop, showSelected, setZoom,
+// onCanvasSize, setSiteCss, setImages, setLinkPicker, setSettings, setNavigation, setViewOptions,
+// setPreviews, setLooks, perform, onElementRequest, onTextSplit, onContextMenu, onAddRequest,
+// addDragSource, onFrameWindow)
 interface CanvasEngine {
-  mount(el: HTMLElement, opts: { library: ComponentLibrary; theme: Theme }): void
-  loadPage(page: PageDoc, layout: LayoutDoc, shared: SharedSectionsDoc): void   // shared: F-ED-23
+  mount(el: HTMLElement, opts: MountOptions): void   // { library, theme, … }
+  loadPage(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): void   // shared: F-ED-23
   applyChange(change: DocChange): void
   onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe
   select(nodeId: string | null): void
-  onSelectionChange(cb: (nodeId: string | null) => void): Unsubscribe
+  onSelectionChange(cb: (nodeId: string | null, adding: boolean) => void): Unsubscribe   // adding: Ctrl/Shift-click (1.31)
   onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe   // canvas handles: one step from start to commit, Esc cancels (1.32)
-  onHistoryCommand(cb: (command: 'undo' | 'redo') => void): Unsubscribe   // keys pressed inside the canvas iframe (ADR 0004)
-  setViewport(v: 'desktop' | 'tablet' | 'mobile' | number): void
-  setMode(mode: 'design' | 'content'): void            // M3
+  onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe   // 'undo' | 'redo' | 'cancel' pressed inside the canvas iframe (ADR 0004)
+  setViewport(v: Viewport): void                       // 'desktop' | 'tablet' | 'mobile' | number
+  onViewportChange(cb: (viewport: Viewport) => void): Unsubscribe
+  setMode(mode: EditorMode): void                      // 'design' | 'content' (M3)
   destroy(): void
 }
 
-// packages/history
-interface HistoryManager {
-  readonly document: ReadonlyStore<SiteDoc>   // read-only; changes go through run/begin
-  run(label: Label, recipe: (draft: SiteDraft) => void, opts?: { coalesceKey?: string }): void
-  begin(label: Label): Transaction            // gestures: drag, slider (commit / cancel)
+// packages/history: history-manager.ts. D is the document (SiteDoc), S the selection.
+interface HistoryManager<D, S> {
+  readonly document: ReadonlyStore<D>                  // read-only; changes go through run/begin
+  readonly state: ReadonlyStore<HistoryState<S>>       // can undo/redo, the open transaction
+  run(label: string, recipe: Recipe<D>, options?: RunOptions<S>): void   // { coalesceKey, coalesceWindowMs, selectionAfter }
+  begin(label: string): Transaction<D, S>              // gestures: drag, slider (commit / cancel)
   undo(): boolean; redo(): boolean; jumpTo(entryId: string | null): boolean   // null = before the first step
-  entries(): readonly HistoryEntry[]          // Undo History panel (D3)
-  endSession(coalesceKey: string): void       // text session ends: merge its chunks into one step (D1)
+  entries(): readonly HistoryEntry<S>[]                // Undo History panel (D3)
   breakCoalescing(): void
+  endSession(coalesceKey: string): void                // text session ends: merge its chunks into one step (D1)
+  mergeSince(entryId: string | null, label: string): boolean
+  clear(): void; isChanging(): boolean
 }
 
-// packages/commands (F-AI-1): main forwards tool calls over typed IPC; the renderer runs them
-interface CommandApi {
-  query<Q extends QueryName>(name: Q, input: QueryInput<Q>): QueryResult<Q>      // outline, page tree, fields, settings, theme
-  run<C extends CommandName>(name: C, input: CommandInput<C>, actor: { app: string }): Promise<CommandResult>
-  // zod-validated; one HistoryManager step labelled "AI (‹app›): …"; refused with 'busy' while a transaction
-  // or text session is open; site-wide commands await the D7 confirmation ('declined' after 60 s)
+// packages/commands (F-AI-1): api.ts. Main forwards tool calls over typed IPC; the renderer runs them.
+type CommandApi = {
+  query(name: string, input: unknown): QueryResult     // outline, page tree, fields, settings, theme
+  run(name: string, input: unknown, actor: Actor): Promise<CommandResult>   // Actor = { app: string }
+  // zod-validated against COMMANDS; one HistoryManager step labelled "AI (‹app›): …"; refused with
+  // 'busy' while a transaction or text session is open; site-wide commands await the D7
+  // confirmation ('declined' after 60 s)
 }
 
-// packages/storage
-interface ProjectStore {
-  open(path: string): Promise<SiteSnapshot>   // runs migrations
-  commit(patches: Patch[]): Promise<void>     // autosave transaction (P2)
-  saveVersion(name: string, kind: 'manual' | 'auto'): Promise<VersionId>
-  restoreVersion(id: VersionId): Promise<SiteSnapshot>
-  exportZip(path: string): Promise<void>; gc(): Promise<void>
+// packages/storage: project-store.ts. Synchronous (better-sqlite3), used only in the main process.
+class ProjectStore {
+  static create(path: string, options: CreateProjectOptions): ProjectStore
+  static open(path: string, options?: OpenProjectOptions): ProjectStore   // checks the file; migrates an older format; a newer one opens read-only
+  readSite(): SiteDoc                                  // migrated in memory; the next commit writes it
+  saveSite(site: SiteDoc): void
+  commit(changes: readonly DocumentChange[]): void     // autosave transaction (P2)
+  saveVersion(name: string, kind: VersionKind): VersionInfo   // 'manual' | 'auto'
+  listVersions(): VersionInfo[]
+  readVersion(id: string): StoredDocument[] | undefined   // as stored, not migrated; 4.6 adds readVersionSite (A4)
+  putBlob(data: Uint8Array, mime: string): string; readBlob(hash: string): StoredBlob | undefined
+  putAsset(asset: NewAsset): AssetInfo; listAssets(): AssetInfo[]
+  collectGarbage(): GarbageReport
+  backupTo(path: string): Promise<void>
+  close(): void
+}
+// Site zips are separate functions (site-zip.ts: writeSiteZip, readSiteZip, fillFromSiteZip).
+
+// apps/desktop/src/main: site-store.ts. Main reaches the open site's store only through the store
+// gate (ADR 0013), on its shared or exclusive side, checked against the opening it was given for.
+type SiteStore = {
+  withStore<T>(kind: GateKind, work: (store: ProjectStore) => T | Promise<T>,
+               none: (reason: StaleReason) => T): Promise<T>   // 'shared' | 'exclusive'; 'no-site' | 'stale-session'
+  writerTurn<T>(work: (path: string, store: StorageWriter['store']) => Promise<T>,
+                none: (reason: StaleReason) => T): Promise<T>   // the storage writer's exclusive turn (R13b)
+  // … staleReason(), openPath(), writer
 }
 
-// packages/pipeline
-interface Pipeline {
-  build(snapshot: SiteSnapshot, mode: 'preview' | 'export' | 'publish'): AsyncIterable<BuildEvent>
+// packages/pipeline: pipeline.ts and build.ts
+type Pipeline = {   // createPipeline(library, options?): keeps caches between builds (3.1, R15)
+  build(snapshot: SiteSnapshot, resources: PipelineResources,
+        options: PipelineBuildOptions): AsyncIterable<PipelineEvent>   // mode: 'preview' | 'export' | 'publish'; signal, output
 }
+function buildSite(snapshot: SiteSnapshot, library: ComponentLibrary, resources: PipelineResources,
+                   options?: BuildOptions): Promise<BuiltSite>   // one export build, no caches kept
 
-// packages/publish
-interface Publisher {
-  test(dest: Destination, signal?: AbortSignal): Promise<TestResult>
-  publish(build: BuildOutput, dest: Destination, signal: AbortSignal): AsyncIterable<PublishEvent>
+// packages/publish: publisher.ts. D holds a destination's settings; credentials are given when
+// the publisher is created, never through D.
+interface Publisher<D> {
+  test(dest: Omit<D, 'site' | 'replaceOtherSite'>, signal?: AbortSignal): Promise<TestResult>
+  publish(build: BuildOutput, dest: D, signal: AbortSignal): AsyncIterable<PublishEvent>
+  verify?(published: PublishedEvent, dest: D, signal: AbortSignal): Promise<Verification>
 }
 ```
 
@@ -246,14 +280,14 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 - **Crash reports (local only):**
   - Electron `crashReporter.start({ uploadToServer: false })` for native crashes (minidumps in `app.getPath('crashDumps')`).
   - Main, renderer and worker handlers for uncaught errors and unhandled rejections write a JSON report to `<userData>/crash-reports/crash-<YYYYMMDD-HHMMSS>-<process>.json` (UTC; Windows-safe filename).
-  - **Report contents:**
-    - app, Electron and OS versions
-    - process type
-    - error name, message and stack
-    - the last ~50 breadcrumbs (action *types* and panel names only)
-    - memory usage
-  - **Never included:** site content, file paths beyond the app's own, credentials or personal data.
-  - Retention: last 50 reports / 90 days.
+  - **Report contents** (`apps/desktop/src/main/crash-reports.ts`):
+    - the time, the process, and the kind (main's `uncaught-exception` or `unhandled-rejection`; the renderer's `render-error`, `uncaught-error` or `unhandled-rejection`; or Electron's reason a process went away, with its exit code)
+    - whether it was fatal (an error the editor survived, such as a panel showing its fallback, is reported but not announced at the next launch)
+    - app, Electron, Chrome, Node and OS versions
+    - the error's name and up to 30 stack frames, with paths replaced: the app's own folder becomes `<app>`, any other `<path>`
+    - memory usage (RSS and heap, in MB)
+  - **Never included:** the error's message (it can quote what the code was working on), breadcrumbs, site content, paths outside the app's own folder, credentials or personal data.
+  - Retention: the newest 20 reports, none older than 30 days.
   - **No automatic upload.** Future enhancement: an in-app viewer and an optional, user-initiated "Share with support".
 - **Exported sites:** privacy-first by default (self-hosted fonts, consent banner for GA, click-to-load embeds).
 
