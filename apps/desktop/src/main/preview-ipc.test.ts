@@ -305,7 +305,7 @@ describe("createPreview (3.2)", () => {
     const { preview, server, deps } = previewOf({ hasAddress: () => connected });
     await preview.phone(SITE_A, site("Bakery"), "index.html");
     // Off the Wi-Fi: the window is told at once, while the listener is still closing.
-    let closed = () => undefined as void;
+    let closed: () => void = () => undefined;
     server.stop.mockImplementationOnce(
       () =>
         new Promise<undefined>((resolve) => {
