@@ -3,7 +3,7 @@ import type { PublishApi } from "../../shared/ipc/publish.js";
 import { FileTransferDestinationDialog } from "./FileTransferDestinationDialog.js";
 
 /** A host that answers every test: connected, with a host key to trust. */
-const publish: PublishApi = {
+const publish: Pick<PublishApi, "testConnection" | "readHostKey" | "chooseKeyFile"> = {
   testConnection: async () => ({ ok: true }),
   readHostKey: async () => ({
     status: "read",

@@ -19,8 +19,9 @@ import type { NewAsset, ProjectStore, StoredBlob } from "./project-store.js";
  *
  * Not carried, so a package always opens as a new site: the project's id and creation time (the
  * new file has its own, so publishing tells the copy from the original, A8), its storage format,
- * its backups, and its saved publish passwords and code trust, which the app keeps in its own data
- * under the project id (security review S1 and S2).
+ * its backups, its publish destinations (ADR 0018 §2: a copy adds its own, so it can't publish over
+ * the original's folder unasked), and its saved publish passwords and code trust, which the app
+ * keeps in its own data under the project id (security review S1 and S2).
  */
 export const sitePackageProjectSchema = z.strictObject({
   editorMode: z.enum(["design", "content"]),

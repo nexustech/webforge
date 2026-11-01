@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { DEFAULT_EXPORT_CHOICES, type ExportChoices } from "@webforge/model";
+import {
+  createSite,
+  DEFAULT_EXPORT_CHOICES,
+  type ExportChoices,
+  type PublishDestination,
+} from "@webforge/model";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import Database from "better-sqlite3";
 import { describe, expect, it } from "vitest";
@@ -692,6 +697,86 @@ describe("ProjectStore Site Check ignores (3.6)", () => {
 
     expect(() => store.writeSiteCheckIgnored(["a:b"])).toThrow(ReadOnlyProjectError);
     store.close();
+  });
+});
+
+describe("ProjectStore publish destinations (4.4a, ADR 0018 §2)", () => {
+  const sftp: PublishDestination = {
+    id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
+    name: "My host",
+    kind: "file-transfer",
+    settings: {
+      protocol: "sftp",
+      host: "ftp.example.com",
+      user: "rosa",
+      folder: "/www",
+      signIn: "key",
+    },
+  };
+  const ftps: PublishDestination = {
+    id: "0b9a8f6e-3c2d-4e1f-8a7b-6c5d4e3f2a10",
+    name: "Old host",
+    kind: "file-transfer",
+    settings: { protocol: "ftps", host: "ftp.old.example", user: "rosa", folder: "/" },
+  };
+
+  it("remembers the destinations across opens, none at first", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    expect(store.readPublishDestinations()).toEqual([]);
+
+    store.writePublishDestinations([sftp, ftps]);
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.readPublishDestinations()).toEqual([sftp, ftps]);
+    reopened.writePublishDestinations([ftps]);
+    expect(reopened.readPublishDestinations()).toEqual([ftps]);
+    reopened.close();
+  });
+
+  it("keeps them out of the site document and its versions: restoring one leaves them", () => {
+    const store = ProjectStore.open(createProject());
+    store.saveSite(
+      createSite({ name: "Rosa's", language: "en", homeTitle: "Home", notFoundTitle: "Oops" }),
+    );
+    const version = store.saveVersion("Before", "manual");
+    store.writePublishDestinations([sftp]);
+    store.saveSite(store.readSite());
+
+    expect(store.readSite().settings).not.toHaveProperty("publish");
+    expect(JSON.stringify(store.readVersion(version.id))).not.toContain(sftp.id);
+    store.saveSite(store.readVersionSite(version.id) ?? store.readSite());
+    expect(store.readPublishDestinations()).toEqual([sftp]);
+    store.close();
+  });
+
+  it("leaves out a damaged entry and keeps the others, and still opens", () => {
+    for (const [value, kept] of [
+      ["not json", []],
+      ['{"id":1}', []],
+      [JSON.stringify([sftp, { ...ftps, kind: "dropbox" }, ftps]), [sftp, ftps]],
+    ] as const) {
+      const path = createProject();
+      tamper(path, (db) =>
+        db.prepare("INSERT INTO meta (key, value) VALUES ('publish_destinations', ?)").run(value),
+      );
+      const store = ProjectStore.open(path);
+
+      expect(store.readPublishDestinations(), value).toEqual(kept);
+      store.close();
+    }
+  });
+
+  it("refuses a list that isn't valid, and to change a read-only site's", () => {
+    const store = ProjectStore.open(createProject());
+    expect(() => store.writePublishDestinations([sftp, { ...ftps, id: sftp.id }])).toThrow();
+    expect(store.readPublishDestinations()).toEqual([]);
+    store.close();
+
+    const readOnly = ProjectStore.open(createProject(), { readOnly: true });
+    expect(() => readOnly.writePublishDestinations([sftp])).toThrow(ReadOnlyProjectError);
+    readOnly.close();
   });
 });
 

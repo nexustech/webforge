@@ -97,7 +97,6 @@ const settings: fc.Arbitrary<SiteSettings> = fc.record({
     { requiredKeys: ["consentBanner"] },
   ),
   forms: fc.constant({}),
-  publish: fc.constant({ destinations: [] }),
   allowedExternalUrls: fc.array(fc.constant("https://fonts.example.com"), { maxLength: 1 }),
 }) as fc.Arbitrary<SiteSettings>;
 

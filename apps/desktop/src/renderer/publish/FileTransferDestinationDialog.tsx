@@ -347,7 +347,7 @@ export type FileTransferDestinationDialogProps = {
   /** What this computer trusts about it, from the app's own data (4.4): never the site's file. */
   readonly trust?: FileTransferTrust | undefined;
   /** Test connection, the host key and the key file, through the main process. */
-  readonly publish: PublishApi;
+  readonly publish: Pick<PublishApi, "testConnection" | "readHostKey" | "chooseKeyFile">;
   readonly onSave: (saved: FileTransferSaved) => void;
   readonly onCancel: () => void;
 };

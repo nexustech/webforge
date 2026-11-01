@@ -6,7 +6,10 @@ import {
   type ExportChoices,
   exportChoicesSchema,
   migrateSite,
+  type PublishDestination,
   pageDocumentId,
+  publishDestinationsFrom,
+  publishDestinationsSchema,
   type SiteDoc,
   type SiteDocumentChange,
   siteCheckIgnoredSchema,
@@ -222,6 +225,8 @@ const metaSchema = z.strictObject({
   export_choices: z.string().optional(),
   /** JSON, checked when read (see `readSiteCheckIgnored`), likewise. */
   site_check_ignored: z.string().optional(),
+  /** JSON, checked entry by entry when read (see `readPublishDestinations`), likewise. */
+  publish_destinations: z.string().optional(),
 });
 
 const schemaRowSchema = z.object({
@@ -1082,6 +1087,34 @@ export class ProjectStore {
     this.#write(() => {
       this.#prepare(
         `INSERT INTO meta (key, value) VALUES ('site_check_ignored', ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      ).run(value);
+    });
+  }
+
+  /**
+   * Where this site is published to (4.4a, ADR 0018 §2): beside the site document, so never undone
+   * or copied into a version. A damaged entry is left out, keeping the others; none until then.
+   */
+  readPublishDestinations(): PublishDestination[] {
+    const row = this.#prepare("SELECT value FROM meta WHERE key = 'publish_destinations'").get() as
+      | { value: unknown }
+      | undefined;
+    let stored: unknown;
+    try {
+      stored = typeof row?.value === "string" ? JSON.parse(row.value) : undefined;
+    } catch {
+      stored = undefined;
+    }
+    return publishDestinationsFrom(stored);
+  }
+
+  /** Remembers where this site is published to, replacing the list that was there. */
+  writePublishDestinations(destinations: readonly PublishDestination[]): void {
+    const value = JSON.stringify(publishDestinationsSchema.parse(destinations));
+    this.#write(() => {
+      this.#prepare(
+        `INSERT INTO meta (key, value) VALUES ('publish_destinations', ?)
          ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
       ).run(value);
     });

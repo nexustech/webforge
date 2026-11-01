@@ -1,4 +1,6 @@
 // @vitest-environment happy-dom
+
+import { PADDED_COLUMN_CLASS } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ViewOptions } from "../canvas-engine.js";
 import { applyViewOptions } from "./view-options.js";
@@ -131,6 +133,26 @@ describe("applyViewOptions (F-ED-25)", () => {
     document.documentElement.dispatchEvent(new Event("pointerleave"));
     expect(document.querySelector(".wf-view-margin")).toBeNull();
     stop();
+  });
+
+  it("draws a Medium Section's padding on its column, which holds it (#643)", () => {
+    const band = element("section", 100);
+    band.style.padding = "0px";
+    const column = document.createElement("div");
+    column.className = PADDED_COLUMN_CLASS;
+    column.style.padding = "64px 16px";
+    column.getBoundingClientRect = () => new DOMRect(200, 100, 896, 40);
+    band.append(column);
+    apply(document, { ...NONE, spacingOnHover: true }, () => undefined);
+
+    column.dispatchEvent(new Event("pointermove", { bubbles: true }));
+
+    const padding = document.querySelector<HTMLElement>(".wf-view-padding");
+    expect(padding?.style.left).toBe("200px");
+    expect(padding?.style.width).toBe("896px");
+    expect(padding?.style.getPropertyValue("border-top-width")).toBe("64px");
+    // The margin is still the band's.
+    expect(document.querySelector<HTMLElement>(".wf-view-margin")?.style.left).toBe("10px");
   });
 
   it("doesn't redraw names for Puck's overlays, and looks for the selected element once a draw", async () => {

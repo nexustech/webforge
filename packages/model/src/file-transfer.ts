@@ -54,7 +54,9 @@ const folderSchema = z
   .regex(/^\P{Cc}+$/u);
 
 /** The address the site is visited at once published (X3): `https://` only. */
-const siteAddressSchema = z.url({ protocol: /^https$/, hostname: z.regexes.domain }).max(2048);
+export const siteAddressSchema = z
+  .url({ protocol: /^https$/, hostname: z.regexes.domain })
+  .max(2048);
 
 /** An SSH host key's fingerprint as OpenSSH shows it: `SHA256:` and 43 base64 characters. */
 export const hostKeySchema = z.string().regex(/^SHA256:[A-Za-z0-9+/]{43}$/);
