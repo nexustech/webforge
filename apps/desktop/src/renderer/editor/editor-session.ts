@@ -38,6 +38,9 @@ export type EditKind = EngineEditKind;
 /** Called for each new history entry (not for edits that merge into the current one). */
 type EntryListener = (entry: HistoryEntry<EditorSelection>, kind: EditKind) => void;
 
+/** Called with a piece of the site's code as it was, and as the owner wrote it (#649). */
+type CodeListener = (before: string, after: string) => void;
+
 /**
  * A gesture in progress, such as a slider drag: its updates show live and become one undo step on
  * `commit`; `cancel` (or Esc) puts the document back as it was (U2).
@@ -73,6 +76,15 @@ export type EditorSession = {
   /** Cancels the gesture in progress; false if there is none. */
   cancelGesture(): boolean;
   onEntryAdded(listener: EntryListener): Unsubscribe;
+  /**
+   * Says the owner wrote `after` in place of `before` in a piece of the site's code (#649): a
+   * Custom Code element's code, a part of Settings' Custom Code or its allowed addresses, each
+   * written in its own field. Only those fields call it, never a command that copies, pastes,
+   * shows or restores code, so only what the owner writes here can become trusted.
+   */
+  codeWritten(before: string, after: string): void;
+  /** Calls `listener` whenever {@link codeWritten} is. */
+  onCodeWritten(listener: CodeListener): Unsubscribe;
   /** Shows another page, with nothing selected; not an undo step (U6). */
   showPage(pageId: PageId): void;
   /** Selects `nodeId` (or nothing) alone, on the page shown; not an undo step (U6). */
@@ -151,6 +163,7 @@ export function createEditorSession(
     finish: datePages(today),
   });
   const listeners = new Set<EntryListener>();
+  const codeListeners = new Set<CodeListener>();
   const currentEntry = () => {
     const { entries, cursor } = history.state.getState();
     return entries[cursor - 1];
@@ -224,6 +237,16 @@ export function createEditorSession(
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
+      };
+    },
+    codeWritten(before, after) {
+      if (before === after) return;
+      for (const listener of codeListeners) listener(before, after);
+    },
+    onCodeWritten(listener) {
+      codeListeners.add(listener);
+      return () => {
+        codeListeners.delete(listener);
       };
     },
     showPage(next) {

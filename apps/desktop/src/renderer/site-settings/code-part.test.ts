@@ -104,6 +104,24 @@ describe("saveSiteCode", () => {
     expect(session.history.document.getState().code).toEqual(before.code);
     expect(session.history.document.getState().settings.allowedExternalUrls).toEqual([]);
   });
+
+  it("says what the owner wrote in the code that runs and the addresses, never the CSS (#649)", () => {
+    const session = sessionWith();
+    const written = vi.fn();
+    session.onCodeWritten(written);
+
+    saveSiteCode(session, {
+      code: CODE,
+      allowedExternalUrls: ["https://maps.example.com", "https://fonts.example.com"],
+    });
+
+    expect(written.mock.calls).toEqual([
+      ["", CODE.head],
+      ["", CODE.bodyEnd],
+      ["", CODE.js],
+      ["", "https://maps.example.com\nhttps://fonts.example.com"],
+    ]);
+  });
 });
 
 describe("registerSiteCode", () => {

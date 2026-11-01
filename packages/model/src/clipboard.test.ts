@@ -102,4 +102,20 @@ describe("copiedElementsSchema", () => {
       ).success,
     ).toBe(false);
   });
+
+  it("pastes elements another program put there without the attributes only the export writes (#650)", () => {
+    const advanced = { attributes: { "data-wf-consent": "", "data-track": "x" } };
+    const copied = copiedElementsSchema.parse({
+      nodes: [
+        {
+          type: "Section",
+          props: { id: "s", content: [{ type: "Heading", props: { id: "h", advanced } }] },
+        },
+      ],
+      media: [],
+    });
+
+    const [inner] = (copied.nodes[0]?.props.content ?? []) as readonly NodeDoc[];
+    expect(inner?.props.advanced).toEqual({ attributes: { "data-track": "x" } });
+  });
 });

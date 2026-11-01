@@ -1,6 +1,6 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { siteToSnapshot } from "@webforge/model";
+import { type SiteSnapshot, siteToSnapshot } from "@webforge/model";
 import { buildSite } from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { siteLibrary } from "@webforge/site-components";
@@ -25,11 +25,15 @@ export async function exportTemplate(
   const blobs = new Map(
     images.map((image) => [image.hash, new Uint8Array(readFileSync(join(imagesDir, image.file)))]),
   );
-  const built = await buildSite(
-    siteToSnapshot(site, blobs),
-    siteLibrary,
-    await loadNodeResources(),
-  );
+  return exportSnapshot(siteToSnapshot(site, blobs), dir);
+}
+
+/**
+ * Exports `snapshot` into `dir` through the export pipeline, without the app. Returns the pages'
+ * paths in the export.
+ */
+export async function exportSnapshot(snapshot: SiteSnapshot, dir: string): Promise<string[]> {
+  const built = await buildSite(snapshot, siteLibrary, await loadNodeResources());
   for (const [path, bytes] of built.files) {
     mkdirSync(dirname(join(dir, path)), { recursive: true });
     writeFileSync(join(dir, path), bytes);

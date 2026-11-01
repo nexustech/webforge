@@ -3,6 +3,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ExportChoices, ExportProgress } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
+import type { CodeDecision } from "../editor/code-trust.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
@@ -17,6 +18,9 @@ import {
 import { createExportDialogs, type ExportDialogShown } from "./export-dialogs.js";
 
 const EXPORT_COMMAND_ID = COMMAND_IDS.exportSite;
+
+/** The owner trusts all of the site's code, or has none to be asked about (#649). */
+const GO: CodeDecision = { go: true, keeps: () => true, allowListConfirmed: true };
 
 const toast = vi.hoisted(() => ({
   loading: vi.fn(() => "progress"),
@@ -241,6 +245,7 @@ describe("registerExportCommand", () => {
       showSettings: vi.fn(async () => true),
       saveChoices: vi.fn(async () => null),
       showSiteCheck: vi.fn(),
+      confirmCode: vi.fn(async (): Promise<CodeDecision> => GO),
       ...overrides,
     } satisfies ExportFlow;
     registerExportCommand(registry, flow);
@@ -275,6 +280,72 @@ describe("registerExportCommand", () => {
     expect(flow.showSiteCheck).toHaveBeenCalled();
     expect(dialogs.shown()).toBeNull();
     expect(flow.exportSite).not.toHaveBeenCalled();
+  });
+
+  describe("the site's code (#649)", () => {
+    /** The bakery with a Custom Code element that loads a script from another website. */
+    const withScript = (): SiteDoc => {
+      const site = withAddress(bakery());
+      const home = site.pages[site.homePageId];
+      if (home === undefined) throw new Error("no home page");
+      const widget = {
+        type: "CustomCode",
+        props: { id: "widget", code: '<script src="https://cdn.example.com/w.js"></script>' },
+      };
+      return {
+        ...site,
+        settings: { ...site.settings, allowedExternalUrls: ["https://cdn.example.com/"] },
+        pages: {
+          ...site.pages,
+          [site.homePageId]: { ...home, doc: { ...home.doc, content: [widget] } },
+        },
+      };
+    };
+
+    it("asks first, and stops when the owner doesn't go on", async () => {
+      const confirmCode = vi.fn(async (): Promise<CodeDecision> => ({ go: false }));
+      const { registry, flow, dialogs, finished } = setUp({ confirmCode }, withScript());
+
+      registry.run(EXPORT_COMMAND_ID);
+      await finished();
+
+      expect(confirmCode).toHaveBeenCalledOnce();
+      expect(dialogs.shown()).toBeNull();
+      expect(flow.exportSite).not.toHaveBeenCalled();
+    });
+
+    it("applies the allowed addresses only once confirmed", async () => {
+      const unconfirmed = setUp(
+        { confirmCode: async () => ({ go: true, keeps: () => true, allowListConfirmed: false }) },
+        withScript(),
+      );
+      unconfirmed.registry.run(EXPORT_COMMAND_ID);
+      await unconfirmed.finished();
+      expect(unconfirmed.flow.showSiteCheck).toHaveBeenCalled();
+
+      const confirmed = setUp({}, withScript());
+      confirmed.registry.run(EXPORT_COMMAND_ID);
+      await confirmed.shown("options");
+      expect(confirmed.flow.showSiteCheck).not.toHaveBeenCalled();
+    });
+
+    it("checks the site without the code the owner leaves out, which won't be exported", async () => {
+      const left = setUp(
+        {
+          confirmCode: async () => ({
+            go: true,
+            keeps: (text) => !text.includes("w.js"),
+            allowListConfirmed: false,
+          }),
+        },
+        withScript(),
+      );
+
+      left.registry.run(EXPORT_COMMAND_ID);
+      await left.shown("options");
+
+      expect(left.flow.showSiteCheck).not.toHaveBeenCalled();
+    });
   });
 
   it("passes a script that reaches an address Settings allow (#649)", async () => {

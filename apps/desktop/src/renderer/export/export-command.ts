@@ -1,10 +1,17 @@
 import { toast } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
-import { DEFAULT_EXPORT_CHOICES, mediaItem, type SiteDoc, siteToSnapshot } from "@webforge/model";
+import {
+  DEFAULT_EXPORT_CHOICES,
+  mediaItem,
+  type SiteDoc,
+  siteToSnapshot,
+  withKeptCode,
+} from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { ExportChoices, ExportProgress, ExportRequest } from "../../shared/ipc/site.js";
 import type { ExportResult } from "../../shared/ipc-contract.js";
 import { gateOnSiteCheck, runWithProgress } from "../editor/build-flow.js";
+import type { CodeDecision } from "../editor/code-trust.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -139,6 +146,8 @@ export type ExportFlow = {
   readonly showSettings: (part: string, group: string) => Promise<boolean>;
   /** Shows the Site Check panel (3.6). */
   readonly showSiteCheck: () => void;
+  /** Asks about the site's code its owner hasn't written here or confirmed (#649). */
+  readonly confirmCode: (site: SiteDoc) => Promise<CodeDecision>;
 };
 
 /**
@@ -170,7 +179,8 @@ function exportWithProgress(
 }
 
 /**
- * Registers File → Export Site… (3.3). Something Site Check lists as *Must fix* stops it at once,
+ * Registers File → Export Site… (3.3). It first asks about code the owner hasn't written here or
+ * confirmed (#649). Something Site Check lists as *Must fix* stops it at once,
  * showing Site Check (3.6, X5). While the site has no web address it first asks to add one
  * (X3), unless the person said not to for this site; *Add address* opens Site Settings there and
  * goes on once they save. Then the export dialog: a folder or a ZIP, and its options, starting from
@@ -182,13 +192,16 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
   const run = async () => {
     registry.update(EXPORT_COMMAND_ID, { enabled: false });
     try {
+      // Code from someone else's file first (#649): what the owner leaves out isn't checked, as
+      // it won't be exported, and the allowed addresses count once they're confirmed.
+      const code = await flow.confirmCode(flow.site());
+      if (!code.go) return;
       const gate = {
         blocked: (count: number) => plural("siteCheck.exportBlocked", count),
         showSiteCheck: flow.showSiteCheck,
-        // The site's allow-list counts as the owner's until the code trust step can tell (#649).
-        allowListConfirmed: true,
+        allowListConfirmed: code.allowListConfirmed,
       };
-      if (!gateOnSiteCheck(flow.site(), "export", gate)) return;
+      if (!gateOnSiteCheck(withKeptCode(flow.site(), code.keeps), "export", gate)) return;
       // A site whose choices can't be read exports from the defaults.
       let last = await flow.choices().catch((error: unknown) => {
         reportFailure("export.choices", error);

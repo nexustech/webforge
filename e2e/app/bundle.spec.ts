@@ -92,7 +92,8 @@ test("keeps a copy of a file from another website with the site, once the person
   const folder = join(dir, "exported");
   if (app === undefined) throw new Error("The app is not running");
   await stubFileDialogs(app, folder);
-  await exportFromEditor(page);
+  // The stylesheet's link came with the site's file: the owner keeps it (#649).
+  await exportFromEditor(page, 30_000, "Keep the code");
   const vendor = readdirSync(join(folder, "assets", "vendor")).sort();
   expect(vendor).toEqual([
     expect.stringMatching(/^kit-[0-9a-f]{8}\.css$/),

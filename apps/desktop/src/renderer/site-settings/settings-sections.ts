@@ -326,7 +326,13 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           help: t("site.settings.measurementIdHint"),
           maxLength: MEASUREMENT_ID_MAX,
         },
-        { kind: "toggle", name: "consentBanner", label: t("site.settings.consentBanner") },
+        {
+          kind: "toggle",
+          name: "consentBanner",
+          label: t("site.settings.consentBanner"),
+          // Without it, Google Analytics keeps its cookies off (B4, amended; #650).
+          help: t("site.settings.consentBannerHint"),
+        },
         {
           kind: "text",
           name: "consentMessage",

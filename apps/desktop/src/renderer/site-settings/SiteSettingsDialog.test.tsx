@@ -136,6 +136,25 @@ describe("SiteSettingsDialog", () => {
   );
 
   it(
+    "says beside the banner switch that, with it off, visits are counted without cookies (#650)",
+    async () => {
+      const { user } = setUp();
+      await user.click(screen.getByRole("tab", { name: "Analytics" }));
+
+      const banner = screen.getByLabelText("Ask visitors before counting them (cookie banner)");
+      expect(
+        (banner.getAttribute("aria-describedby") ?? "")
+          .split(" ")
+          .map((id) => document.getElementById(id)?.textContent)
+          .join(" "),
+      ).toContain(
+        "With the banner off, visits are still counted, without cookies and in less detail.",
+      );
+    },
+    SLOW,
+  );
+
+  it(
     "closes without saving on Cancel",
     async () => {
       const { onSave, onCancel, user } = setUp();

@@ -3,6 +3,7 @@ import { type PageId, pagePath, type SiteDoc } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { StoreApi } from "zustand/vanilla";
 import type { PreviewApi, PreviewPage } from "../../shared/ipc/preview.js";
+import type { CodeDecision } from "../editor/code-trust.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { siteContentFor } from "../export/index.js";
 import { reportFailure } from "../log.js";
@@ -24,6 +25,16 @@ export type PreviewCommandsDeps = {
   readonly phone: StoreApi<PhoneState>;
   /** Tells the person something went wrong. */
   readonly notify: (message: string) => void;
+  /**
+   * Asks about the site's code its owner hasn't written here or confirmed (#649), before a preview
+   * runs it in their browser or on their phone.
+   */
+  readonly confirmCode: (site: SiteDoc) => Promise<CodeDecision>;
+  /**
+   * Calls `listener` when more of the site's code is trusted, which the preview then builds with:
+   * code the owner has just written is trusted a moment after their last change (#649).
+   */
+  readonly onCodeTrusted: (listener: () => void) => () => void;
 };
 
 /** The file of page `pageId` in the preview, as the build names it: `index.html`, `about.html`. */
@@ -34,7 +45,8 @@ export function previewPageOf(site: SiteDoc, pageId: PageId): PreviewPage {
 
 /**
  * Registers File → Preview (the title bar's Preview button, Ctrl/Cmd+I) and File → Preview on
- * Phone… (3.2, F-PV-1). Preview opens the site at the page shown in the default browser. Once
+ * Phone… (3.2, F-PV-1). Each first asks about code the owner hasn't written here or confirmed
+ * (#649). Preview opens the site at the page shown in the default browser. Once
  * either has run, the preview follows the editor: each change of the site goes to it, at most one
  * every {@link PREVIEW_UPDATE_MS} (the first at once, so a lone change shows at once), and the page
  * shown, so the browser goes there. Returns a function that removes them and stops following.
@@ -43,7 +55,15 @@ export function registerPreviewCommands(
   registry: CommandRegistry,
   deps: PreviewCommandsDeps,
 ): () => void {
-  const { session, library, api, sessionId, phone, notify } = deps;
+  const { session, library, api, sessionId, phone, notify, confirmCode, onCodeTrusted } = deps;
+  /** Runs `start` once the owner has said what to do with code they haven't confirmed (#649). */
+  const afterCode = (start: () => void) => {
+    confirmCode(site())
+      .then((code) => {
+        if (code.go) start();
+      })
+      .catch((error: unknown) => reportFailure("preview.code", error));
+  };
   const site = () => session.history.document.getState();
   const content = () => siteContentFor(site(), library);
   const page = () => previewPageOf(site(), session.ui.getState().pageId);
@@ -90,16 +110,20 @@ export function registerPreviewCommands(
         }
       }, PREVIEW_UPDATE_MS);
     };
-    const stopSite = session.history.document.subscribe(() => {
+    const changed = () => {
       if (timer === undefined) send();
       else changedSince = true;
-    });
+    };
+    const stopSite = session.history.document.subscribe(changed);
+    // Main builds only trusted code: once more is trusted, the preview builds again to show it.
+    const stopTrusted = onCodeTrusted(changed);
     const stopPage = session.ui.subscribe((ui, before) => {
       if (ui.pageId === before.pageId) return;
       api.show(page()).catch((error: unknown) => reportFailure("preview.show", error));
     });
     following = () => {
       stopSite();
+      stopTrusted();
       stopPage();
       if (timer !== undefined) clearTimeout(timer);
     };
@@ -110,39 +134,43 @@ export function registerPreviewCommands(
       id: COMMAND_IDS.preview,
       label: t("command.preview"),
       menu: "file",
-      run: () => {
-        follow();
-        api
-          .open(sessionId(), content(), page())
-          .then((opened) => {
-            if (opened === "failed") notify(t("preview.failed"));
-          })
-          .catch((error: unknown) => {
-            reportFailure("preview.open", error);
-            notify(t("preview.failed"));
-          });
-      },
+      run: () =>
+        afterCode(() => {
+          follow();
+          api
+            .open(sessionId(), content(), page())
+            .then((opened) => {
+              if (opened === "failed") notify(t("preview.failed"));
+            })
+            .catch((error: unknown) => {
+              reportFailure("preview.open", error);
+              notify(t("preview.failed"));
+            });
+        }),
     }),
     registry.register({
       id: COMMAND_IDS.previewOnPhone,
       label: t("command.previewOnPhone"),
       menu: "file",
-      run: () => {
-        follow();
-        phone.setState({ status: "starting" }, true);
-        api
-          .phone(sessionId(), content(), page())
-          .then((address) => {
-            // A phone can open it now, dialog open or not: the title bar says so until it stops.
-            if (address.status === "ready") phoneOn();
-            // Closed while it started: it stays closed.
-            if (phone.getState().status === "starting") phone.setState(address, true);
-          })
-          .catch((error: unknown) => {
-            reportFailure("preview.phone", error);
-            if (phone.getState().status === "starting") phone.setState({ status: "failed" }, true);
-          });
-      },
+      run: () =>
+        afterCode(() => {
+          follow();
+          phone.setState({ status: "starting" }, true);
+          api
+            .phone(sessionId(), content(), page())
+            .then((address) => {
+              // A phone can open it now, dialog open or not: the title bar says so until it stops.
+              if (address.status === "ready") phoneOn();
+              // Closed while it started: it stays closed.
+              if (phone.getState().status === "starting") phone.setState(address, true);
+            })
+            .catch((error: unknown) => {
+              reportFailure("preview.phone", error);
+              if (phone.getState().status === "starting") {
+                phone.setState({ status: "failed" }, true);
+              }
+            });
+        }),
     }),
   ];
   return () => {

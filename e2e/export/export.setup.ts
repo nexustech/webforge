@@ -20,10 +20,11 @@ import { stubFileDialogs } from "../app/sites.js";
 import {
   CHECK_TEMPLATES,
   EXPORTED_SITE_DIR,
+  NO_BANNER_SITE_DIR,
   TEMPLATES_DIR,
   THEMED_SITE_DIR,
 } from "./exported-site.js";
-import { exportTemplate } from "./template-export.js";
+import { exportSnapshot, exportTemplate } from "./template-export.js";
 
 type ExportRequest = {
   snapshot: SiteSnapshot;
@@ -36,6 +37,7 @@ type ExportingWindow = {
   webforge: {
     project: { getCurrent(): Promise<{ sessionId: string } | null> };
     site: { export(sessionId: string, request: ExportRequest): Promise<unknown> };
+    trust: { trust(sessionId: string, texts: readonly string[]): Promise<unknown> };
   };
 };
 
@@ -45,6 +47,22 @@ const exportFromPage = async (request: ExportRequest) => {
   const current = await webforge.project.getCurrent();
   return webforge.site.export(current?.sessionId ?? "", request);
 };
+
+/**
+ * The fixture's own code: Settings' Script, Head and End of page, and each Custom Code element's.
+ * Main builds it only once the owner trusts it (#649), as *Keep the code* does.
+ */
+function codeOf(site: SiteSnapshot): string[] {
+  const texts = [site.code?.js ?? "", site.code?.head ?? "", site.code?.bodyEnd ?? ""];
+  JSON.stringify(site, (_key, value: unknown) => {
+    const node = value as { type?: unknown; props?: { code?: unknown } } | null;
+    if (node?.type === "CustomCode" && typeof node.props?.code === "string") {
+      texts.push(node.props.code);
+    }
+    return value;
+  });
+  return texts.filter((text) => text.trim() !== "");
+}
 
 // Exports the three-page fixture site, and its "Page not found" page, (with its photo and price list)
 // through the real app: preload API, IPC, export utility process. The browser projects then open
@@ -311,6 +329,13 @@ setup("export the fixture site from the app", async () => {
     const page = await app.firstWindow();
     await page.waitForLoadState("domcontentloaded");
     await stubFileDialogs(app, EXPORTED_SITE_DIR);
+    await page.evaluate(
+      async (texts) => {
+        const { project, trust } = (window as unknown as ExportingWindow).webforge;
+        await trust.trust((await project.getCurrent())?.sessionId ?? "", texts);
+      },
+      [...codeOf(site), ...codeOf(themed(site))],
+    );
 
     const result = await page.evaluate(exportFromPage, {
       snapshot: { ...site, media: [], documents: [] },
@@ -339,6 +364,26 @@ setup("export the fixture site from the app", async () => {
     await app.close();
     await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
   }
+});
+
+setup("export a site whose owner turned the consent banner off (#650)", async () => {
+  const sample = sampleSite();
+  const [home] = sample.pages;
+  if (home === undefined) throw new Error("The fixture site has no pages");
+  const heading: NodeDoc = { type: "Heading", props: { id: "welcome", text: "Welcome" } };
+  rmSync(NO_BANNER_SITE_DIR, { recursive: true, force: true });
+  // One page and no files, through the pipeline alone: only its analytics matter here.
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      pages: [{ ...home, doc: { root: { props: {} }, content: [heading] } }],
+      analytics: { measurementId: "G-ABC123DEF4", consentBanner: false },
+    },
+    NO_BANNER_SITE_DIR,
+  );
+  expect(pages).toContain("index.html");
 });
 
 setup("export every template, as a site made from it starts (3.10)", async () => {

@@ -1,13 +1,16 @@
 // Google Analytics and its consent banner (3.8, B4, B7). The banner shows until the visitor
 // chooses, and the choice is kept in this browser. Google's script loads only once they accept,
-// with Consent Mode v2's default denied and then analytics granted; or at once when the site has no
-// banner (the owner's choice). Opened from disk (a preview of the export), nothing is ever counted.
-// "Accept all" also loads the page's embeds: it marks the page (`data-wf-consent-all`, for a
-// returning visitor before the embed script runs) and tells the embed script
-// (`webforge:consent-all`). Cookie settings in the Footer reopen the banner: declining after
+// with Consent Mode v2's default denied and then analytics granted. When the site has no banner (the
+// owner's choice), it loads at once with analytics storage denied for every visitor, so visits are
+// counted without cookies (B4, amended 30 Oct 2026). Opened from disk (a preview of the export),
+// nothing is ever counted. "Accept all" also loads the page's embeds: it marks the page
+// (`data-wf-consent-all`, for a returning visitor before the embed script runs) and tells the embed
+// script (`webforge:consent-all`). Cookie settings in the Footer reopen the banner: declining after
 // accepting stops the counting and removes Google's cookies (#539).
 (() => {
-  const banner = document.querySelector("[data-wf-consent]");
+  // Only the banner the export wrote counts: the last of its kind directly in <body>, after the
+  // Footer. An element of the page can't stand in for it (S3, #650).
+  const banner = [...document.querySelectorAll("body > [data-wf-consent]")].at(-1);
   if (!(banner instanceof HTMLElement)) {
     return;
   }
@@ -93,8 +96,9 @@
     }
   };
 
+  // No banner to ask with: counted without cookies, as no visitor has chosen (#650).
   if (!banner.hasAttribute("data-ask")) {
-    loadAnalytics(true);
+    loadAnalytics(false);
     return;
   }
   const accept = banner.querySelector("[data-wf-consent-accept]");

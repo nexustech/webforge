@@ -2,6 +2,7 @@ import { networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
+import type { SiteSnapshot } from "@webforge/model";
 import {
   type ThumbnailJob,
   type ThumbnailOutcome,
@@ -24,6 +25,7 @@ import { captureCanvas } from "./canvas-capture.js";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
+import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 import type { startCrashReports } from "./crash-wiring.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
@@ -70,6 +72,7 @@ import {
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
+import { codeTrustFeature } from "./trust-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -189,6 +192,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const recentSites = createRecentSites({ dir: app.getPath("userData") });
   // My themes (2.23): the person's own themes, for every site on this computer.
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
+  // The code each site's owner trusts (#649): only that goes into a build.
+  const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
   const projectSession = new ProjectSession(
     {},
     // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
@@ -268,6 +273,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // Every worker's crash becomes a local report (R3).
   const forkWorker = (serviceName: string) =>
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
+  // Every build gets only the code the open site's owner trusts (#649).
+  const trustedOnly = (snapshot: SiteSnapshot) =>
+    withTrustedCode(snapshot, projectSession.projectId(), codeTrust);
 
   // The preview server (3.2): its builds in a worker of their own while a preview is open, so an
   // export never waits behind one; opened in the default browser, which the site's scripts run in,
@@ -278,11 +286,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     startBuilder: (onBuilt, readMedia) =>
       createPreviewBuilder(() => forkWorker("Webforge preview"), { readMedia, onBuilt }),
     site: (sessionId) => projectSession.forSession(sessionId),
-    jobFor: async (snapshot) => ({
-      type: "preview",
-      snapshot,
-      ...(await fonts.previewFontsOf(snapshot.theme)),
-    }),
+    jobFor: async (sent) => {
+      const snapshot = await trustedOnly(sent);
+      return { type: "preview", snapshot, ...(await fonts.previewFontsOf(snapshot.theme)) };
+    },
     // Only the preview's own address, which this process makes: never one from the renderer.
     openInBrowser: async (url) => {
       try {
@@ -310,6 +317,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       dialogs: dialogs.export,
       startWorker: () => forkWorker("Webforge export"),
       fontsOf: fonts.fontsOf,
+      // Only the code the site's owner trusts (#649).
+      snapshotFor: trustedOnly,
       sendProgress: (progress) =>
         lifecycle.mainWindow()?.webContents.send(siteEvents.exportProgress.channel, progress),
       // The site each export call is for (#663): its Media and its export choices.
@@ -318,6 +327,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       shell: electron.shell,
     }),
     previewFeature(preview),
+    codeTrustFeature(codeTrust, projectSession),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);

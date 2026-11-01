@@ -1,4 +1,4 @@
-import { type ResizableLayout, Toaster, TooltipProvider } from "@webforge/editor-ui";
+import { type ResizableLayout, Toaster, TooltipProvider, toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
@@ -10,6 +10,7 @@ import { createItemPreviews, createKindPreviews } from "./add/index.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
+import { createCodeTrust } from "./editor/code-trust.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
@@ -39,6 +40,7 @@ import { ShortcutSheet } from "./shell/ShortcutSheet.js";
 import { TitleBar } from "./shell/TitleBar.js";
 import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
 import { createWindowDialogs, WindowDialogs } from "./shell/window-dialogs.js";
+import { jumpTo } from "./site-check/index.js";
 import { SiteCommands } from "./start/SiteCommands.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import type { LoadedSite } from "./storage/load-site.js";
@@ -143,6 +145,20 @@ export function App({
       // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
       kindPreviews: createKindPreviews(previewSource),
       itemPreviews: createItemPreviews(previewSource),
+      codeTrust: createCodeTrust({
+        api: api.trust,
+        session,
+        sessionId: siteSession,
+        // Review: Settings' Custom Code, or the element, as Site Check shows a finding there.
+        review: (piece) =>
+          jumpTo(
+            piece.kind === "element"
+              ? { kind: "element", on: piece.on, nodeId: piece.nodeId }
+              : { kind: "code", part: piece.kind === "code" ? piece.part : "head" },
+            { session, panels, settings, commands: registry, openGuide: () => {} },
+          ),
+        notify: () => toast.error(t("site.code.trust.failed")),
+      }),
       siteCheckIgnored: {
         initial: uiState?.siteCheckIgnored ?? [],
         save: (ignored) => {
