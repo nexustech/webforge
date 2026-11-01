@@ -3,8 +3,9 @@ import { siteLibrary } from "@webforge/site-components";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import type { PhoneAddress, PreviewApi } from "../../shared/ipc/preview.js";
+import type { TrustApi } from "../../shared/ipc/trust.js";
 import { starterSite } from "../../shared/starter-site.js";
-import type { CodeDecision } from "../editor/code-trust.js";
+import { type CodeDecision, createCodeTrust } from "../editor/code-trust.js";
 import { setFailureLog } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
@@ -128,6 +129,57 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
     remove();
     codeTrusted();
     expect(api.update).toHaveBeenCalledOnce();
+  });
+
+  it("shows code the owner has just written once it's trusted, which main builds with", async () => {
+    const session = sessionWith();
+    const trust = {
+      untrusted: vi.fn<TrustApi["untrusted"]>(async () => ({ status: "checked", untrusted: [] })),
+      trust: vi.fn<TrustApi["trust"]>(async () => ({ status: "trusted" })),
+    };
+    const codeTrust = createCodeTrust({
+      api: trust,
+      session,
+      sessionId: () => SESSION,
+      review: vi.fn(),
+      notify: vi.fn(),
+    });
+    const disconnect = codeTrust.connect();
+    const registry = createCommandRegistry();
+    const api = {
+      open: vi.fn<PreviewApi["open"]>(async () => "opened"),
+      update: vi.fn<PreviewApi["update"]>(async () => null),
+      show: vi.fn<PreviewApi["show"]>(async () => null),
+      phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "offline" })),
+      stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
+    };
+    const remove = registerPreviewCommands(registry, {
+      session,
+      library: siteLibrary,
+      api,
+      sessionId: () => SESSION,
+      phone: createStore<PhoneState>(() => ({ status: "closed" })),
+      notify: vi.fn(),
+      confirmCode: (site) => codeTrust.confirm(site),
+      onCodeTrusted: (listener) => codeTrust.onTrusted(listener),
+    });
+    await runSettled(registry, COMMAND_IDS.preview);
+    await vi.waitFor(() => expect(api.open).toHaveBeenCalledOnce());
+
+    // Written in Settings' Script: sent at once, before main trusts it, so main leaves it out.
+    session.edit("props", "Changed Custom Code", (draft) => {
+      draft.code.js = "mine()";
+    });
+    session.codeWritten("", "mine()");
+    expect(api.update).toHaveBeenCalledOnce();
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(trust.trust).toHaveBeenCalledWith(SESSION, ["mine()"]);
+    expect(api.update).toHaveBeenCalledTimes(2);
+    const [trusted] = trust.trust.mock.invocationCallOrder;
+    expect(api.update.mock.invocationCallOrder[1]).toBeGreaterThan(trusted ?? Infinity);
+    remove();
+    disconnect();
   });
 });
 
