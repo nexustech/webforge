@@ -38,11 +38,21 @@ function setUp() {
     empty: NO_AI_APPS,
     onDamaged: "move-aside",
   });
-  const apps = createAiApps(file, credentials, () => time);
+  /** How long each held-back answer waited; nothing waits in a test. */
+  const waited: number[] = [];
+  const apps = createAiApps(
+    file,
+    credentials,
+    () => time,
+    async (ms) => {
+      waited.push(ms);
+    },
+  );
   return {
     dir,
     apps,
     credentials,
+    waited,
     later: (ms: number) => {
       time += ms;
     },
@@ -101,20 +111,25 @@ describe("paired AI apps (4.9, ADR 0021)", () => {
     expect(await credentials.get(mcpCredentialKey(app.id))).toBeNull();
   });
 
-  it("backs off after three failures in a minute, doubling, a right key included", async () => {
-    const { apps, later } = setUp();
+  it("always accepts a right key, and holds back wrong ones' answers after a few, never for long (#746 review)", async () => {
+    const { apps, waited, later } = setUp();
     const { key } = await pair(apps, "Claude");
     const wrong = "w".repeat(43);
 
     for (let attempt = 0; attempt < 3; attempt++) await apps.authenticate(wrong);
-    expect(await apps.authenticate(key)).toBeUndefined();
-    later(1_001);
+    // Three wrong keys, as any program on the computer can send: a right one is let in at once.
+    expect(await apps.authenticate(key)).toMatchObject({ name: "Claude" });
+    expect(waited).toEqual([250]);
+
+    // Each further wrong key waits longer, doubling, never past 2 s.
+    for (let attempt = 0; attempt < 5; attempt++) await apps.authenticate(wrong);
+    expect(waited).toEqual([250, 500, 1_000, 2_000, 2_000, 2_000]);
     expect(await apps.authenticate(key)).toMatchObject({ name: "Claude" });
 
-    // A success starts the count again.
-    for (let attempt = 0; attempt < 3; attempt++) await apps.authenticate(wrong);
-    later(1_001);
-    expect(await apps.authenticate(key)).toMatchObject({ name: "Claude" });
+    // A minute later, wrong keys are answered at once again.
+    later(60_001);
+    await apps.authenticate(wrong);
+    expect(waited).toHaveLength(6);
   });
 
   it("remembers the port it was given", async () => {

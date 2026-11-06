@@ -86,18 +86,18 @@ export function createMcpService(options: McpServiceOptions): McpService {
    */
   const askFor = (app: McpApp) => {
     let saved: Promise<unknown> | null = null;
-    return async (request: AiRequest): Promise<AiResponse> => {
-      if (request.kind === "command") {
-        saved ??= options
-          .saveVersionBefore(t("ai.version.before", { app: app.name }))
-          .catch(() => "failed" as const)
-          .then((result) => {
-            if (result === "failed") logFailure("mcp safety version", new Error("failed"));
-          });
-        await saved;
-      }
-      return limits.ask(app.id, request);
+    // Once a command is let through its limits: one refused for its rate takes no version.
+    const versionFirst = async () => {
+      saved ??= options
+        .saveVersionBefore(t("ai.version.before", { app: app.name }))
+        .catch(() => "failed" as const)
+        .then((result) => {
+          if (result === "failed") logFailure("mcp safety version", new Error("failed"));
+        });
+      await saved;
     };
+    return (request: AiRequest): Promise<AiResponse> =>
+      limits.ask(app.id, request, request.kind === "command" ? versionFirst : undefined);
   };
 
   const listenOn = (port: number) =>

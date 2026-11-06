@@ -7,11 +7,14 @@ import type { McpApp } from "./mcp-server.js";
 /** How long a new key stays valid without being used: then it's revoked (ADR 0021). */
 export const UNCLAIMED_KEY_MS = 5 * 60_000;
 
-/** Failed attempts in a minute before the server backs off. */
-const FAILURES_BEFORE_BACK_OFF = 3;
-/** The first back-off, doubling with each further failure, up to {@link MAX_BACK_OFF_MS}. */
-const FIRST_BACK_OFF_MS = 1_000;
-const MAX_BACK_OFF_MS = 60_000;
+/** Wrong keys in a minute before each further wrong key's answer is held back. */
+const FAILURES_BEFORE_DELAY = 3;
+/**
+ * How long a wrong key's answer then waits, doubling with each, up to {@link MAX_DELAY_MS}: a
+ * caller hammering the server is slowed, and a connection is never held open for long.
+ */
+const FIRST_DELAY_MS = 250;
+const MAX_DELAY_MS = 2_000;
 const FAILURE_WINDOW_MS = 60_000;
 
 /** The longest app name, as the AI contract takes it ("AI (‹app›): …"). */
@@ -81,8 +84,10 @@ export type AiApps = {
   remove(id: string): Promise<void>;
   /**
    * The app `key` belongs to, if any: compared by hash, in constant time. Its first use claims
-   * it; a key not used within {@link UNCLAIMED_KEY_MS} is revoked. After a few failures in a
-   * minute, every attempt fails for a while, doubling (back-off).
+   * it; a key not used within {@link UNCLAIMED_KEY_MS} is revoked. A right key is always
+   * accepted at once. After a few wrong keys in a minute, each further wrong key's answer is held
+   * back a little longer, up to {@link MAX_DELAY_MS}: no caller can lock the paired apps out, as a
+   * refusal of right keys would let any program on the computer do (#746 review).
    */
   authenticate(key: string): Promise<McpApp | undefined>;
   /** The server proof of app `id`, which its bridge checks (ADR 0021); `null` if none. */
@@ -115,6 +120,10 @@ export function createAiApps(
   file: JsonStore<AiAppsFile>,
   credentials: CredentialStore,
   now: () => number = Date.now,
+  sleep: (ms: number) => Promise<void> = (ms) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    }),
 ): AiApps {
   /** Each app's secret, read once: the store decrypts on every read. */
   const secrets = new Map<string, z.infer<typeof secretSchema> | null>();
@@ -152,15 +161,12 @@ export function createAiApps(
   };
 
   let failures: number[] = [];
-  let backOffUntil = 0;
-  let backOffMs = FIRST_BACK_OFF_MS;
-  const failed = () => {
+  /** A wrong key: counted, and its answer held back once there have been a few in a minute. */
+  const failed = async () => {
     const at = now();
     failures = [...failures.filter((time) => at - time < FAILURE_WINDOW_MS), at];
-    if (failures.length >= FAILURES_BEFORE_BACK_OFF) {
-      backOffUntil = at + backOffMs;
-      backOffMs = Math.min(backOffMs * 2, MAX_BACK_OFF_MS);
-    }
+    const over = failures.length - FAILURES_BEFORE_DELAY;
+    if (over >= 0) await sleep(Math.min(FIRST_DELAY_MS * 2 ** over, MAX_DELAY_MS));
     return undefined;
   };
 
@@ -183,7 +189,6 @@ export function createAiApps(
     },
     remove,
     async authenticate(key) {
-      if (now() < backOffUntil) return undefined;
       const hash = hashOf(key);
       for (const app of await list()) {
         const stored = await secretOf(app.id);
@@ -191,8 +196,6 @@ export function createAiApps(
         if (known === null || known.length !== hash.length || !timingSafeEqual(known, hash)) {
           continue;
         }
-        failures = [];
-        backOffMs = FIRST_BACK_OFF_MS;
         if (app.claimedAt === null) {
           await file.update((current) => ({
             ...current,

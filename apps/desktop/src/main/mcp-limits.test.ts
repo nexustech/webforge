@@ -55,6 +55,16 @@ describe("each AI app's limits (S20, ADR 0021)", () => {
     expect((await limits.ask("claude", command)).status).toBe("done");
   });
 
+  it("runs what comes first only for a request it lets through (S20's version)", async () => {
+    const { limits } = setUp();
+    const before = vi.fn(async () => undefined);
+    for (let n = 0; n < PER_MINUTE.command; n++) await limits.ask("claude", command, before);
+    expect(before).toHaveBeenCalledTimes(PER_MINUTE.command);
+
+    expect(await limits.ask("claude", command, before)).toMatchObject({ status: "busy" });
+    expect(before).toHaveBeenCalledTimes(PER_MINUTE.command);
+  });
+
   it("forgets a removed app's limits", async () => {
     const { limits } = setUp({ status: "declined", message: "No." });
     await limits.ask("claude", command);

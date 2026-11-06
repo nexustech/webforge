@@ -21,8 +21,12 @@ const BACKING_OFF: AiResponse = {
 
 /** What an app may ask now (S20, ADR 0021). */
 export type AppLimits = {
-  /** `ask`, for app `appId`: `busy` at once past its rate, or while it backs off after a decline. */
-  ask(appId: string, request: AiRequest): Promise<AiResponse>;
+  /**
+   * `ask`, for app `appId`: `busy` at once past its rate, or while it backs off after a decline.
+   * `before` runs once the request is let through, just before it is asked (the version before an
+   * app's changes, S20).
+   */
+  ask(appId: string, request: AiRequest, before?: () => Promise<void>): Promise<AiResponse>;
   /** Forgets app `appId`: it was removed. */
   forget(appId: string): void;
 };
@@ -52,7 +56,7 @@ export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.n
     return state;
   };
   return {
-    async ask(appId, request) {
+    async ask(appId, request, before) {
       const state = stateOf(appId);
       const at = now();
       const times = state.times[request.kind].filter((time) => at - time < MINUTE_MS);
@@ -60,6 +64,7 @@ export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.n
       if (times.length >= PER_MINUTE[request.kind]) return TOO_FAST;
       if (request.kind === "command" && at < state.backOffUntil) return BACKING_OFF;
       times.push(at);
+      await before?.();
       const response = await ask(request);
       if (request.kind === "command") {
         if (response.status === "declined") {
