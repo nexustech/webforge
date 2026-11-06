@@ -6,6 +6,8 @@ import {
   type SitePackage,
   sitePackageOf,
   type VersionInfo,
+  type VersionManifest,
+  type VersionPublish,
   type VersionReason,
 } from "@webforge/storage";
 import type {
@@ -61,6 +63,13 @@ export type VersionToSave = {
   readonly thumbnail: Uint8Array | undefined;
   /** How many automatic versions to keep: older ones are deleted once an automatic one is saved. */
   readonly kept: number;
+  /**
+   * The documents a publish read as it started (`ProjectStore.readManifest`), for the version it
+   * went live with (`on-publish`, ADR 0018 §3); the site's file as it is by default.
+   */
+  readonly documents?: VersionManifest;
+  /** Where that version was published, and what the live check found. */
+  readonly publishedTo?: VersionPublish;
 };
 
 /**
@@ -90,6 +99,8 @@ export function saveVersionIn(store: ProjectStore, version: VersionToSave): Vers
     version.thumbnail === undefined ? undefined : store.putBlob(version.thumbnail, "image/jpeg");
   const saved = store.saveVersion(version.name, version.reason, {
     ...(thumbnailHash === undefined ? {} : { thumbnailHash }),
+    ...(version.documents === undefined ? {} : { documents: version.documents }),
+    ...(version.publishedTo === undefined ? {} : { publishedTo: version.publishedTo }),
   });
   if (saved.kind === "auto") store.pruneAutoVersions(version.kept);
   return saved;
