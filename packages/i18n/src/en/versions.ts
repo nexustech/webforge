@@ -17,7 +17,7 @@ export const versions = {
   "versionHistory.reason.beforeSiteWide": "Before a change to every page",
   "versionHistory.reason.onPublish": "Published",
   "versionHistory.automatic": "Saved by {appName}",
-  "versionHistory.beforeAction": "Before “{action}”",
+  "versionHistory.beforeAction": "Before: {action}",
   "versionHistory.beforeThemeChanges": "Before theme changes",
   // Save version (Ctrl/Cmd+Alt+S).
   "versionHistory.saveDialog.title": "Save Version",
