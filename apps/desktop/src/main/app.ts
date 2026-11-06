@@ -10,9 +10,11 @@ import {
 } from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
+import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
+import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
@@ -39,7 +41,9 @@ import { FONT_SCHEME } from "./fonts.js";
 import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
+import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
+import { createMcpService, type McpService } from "./mcp-service.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import { createMyThemes } from "./my-themes.js";
@@ -77,6 +81,7 @@ import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
+import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -199,8 +204,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   // The code each site's owner trusts (#649): only that goes into a build.
   const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
+  /** How many of Webforge's own versions each site keeps: the person's choice (P3). */
+  const versionsKept = () =>
+    lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   // Publish passwords, keys and tokens (#666, 4.4a), encrypted with the OS's keychain (Windows
   // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
+  /** The MCP server for AI apps (4.9), once Electron is ready. */
+  let mcp: McpService | undefined;
   const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
     isEncryptionAvailable: () => electron.safeStorage.isEncryptionAvailable(),
     encryptString: (text) => electron.safeStorage.encryptString(text),
@@ -210,8 +220,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const keyFiles = createKeyFiles();
   const projectSession = new ProjectSession(
     {},
-    // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
-    { writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)) },
+    {
+      // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
+      writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)),
+      // The site as it was before each day's first change, in Version History (F-SITE-4, 4.6).
+      dailyVersion: { kept: versionsKept },
+    },
   );
 
   // Before another site replaces the open one: save it, and capture its canvas for Recent.
@@ -519,7 +533,32 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       projectSession,
     );
     exposeForE2eTests(ai, app.isPackaged);
+    // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
+    // 0021): nothing listens until the person turns it on.
+    mcp = createMcpService({
+      apps: createAiApps(
+        createJsonStore(join(app.getPath("userData"), "ai-apps.json"), aiAppsFileSchema, {
+          empty: NO_AI_APPS,
+          onDamaged: "move-aside",
+        }),
+        credentials,
+      ),
+      ask: (request) => ai.ask(request),
+      info: { name: t("app.name"), version: app.getVersion() },
+      // Version History's (4.6a part 1, stream B) takes its place once that has merged.
+      saveVersionBefore: async () => "failed",
+    });
+    void mcp.start().catch((error: unknown) => logFailure("mcp start", error));
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
+    registerVersionsHandlers(ipcMain, isTrustedSender, {
+      session: projectSession,
+      dialogs: dialogs.project,
+      captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
+      versionsKept: async () => versionsKept(),
+      beforeSwitch: () => siteSwitch.leaveSite(),
+      // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
+      flush: requestFlush,
+    });
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
@@ -575,7 +614,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // quit: the images are the running Webforge's, in the same user data.
     if (primaryInstance) elementClipboard.forgetKept();
     void closeThenExit({
-      close: () => projectSession.close(),
+      // The MCP server first: no AI app's request reaches a site that is closing.
+      close: async () => {
+        await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
+        await projectSession.close();
+      },
       // Then each feature's last work, such as My themes' and the Recent list's last writes.
       features,
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
