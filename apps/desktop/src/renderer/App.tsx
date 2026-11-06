@@ -7,6 +7,7 @@ import type { AppInfo, Preferences, SiteUiState } from "../shared/ipc-contract.j
 import { starterSite } from "../shared/starter-site.js";
 import type { WebforgeApi } from "../shared/webforge-api.js";
 import { createItemPreviews, createKindPreviews } from "./add/index.js";
+import { AiAppsStatus } from "./ai-apps/AiAppsStatus.js";
 import { EDITOR_AREAS, WINDOW_AREAS } from "./areas.js";
 import { connectAreas, type WindowContext } from "./editor/areas.js";
 import { createCanvasPointer } from "./editor/canvas-pointer.js";
@@ -235,6 +236,9 @@ export function App({
                 // On macOS the menus are the menu bar's (LF-13).
                 menuBar={isMac() ? api.app : undefined}
                 saveStatus={<AutosaveStatus session={session} loaded={loaded} api={api} />}
+                aiStatus={
+                  <AiAppsStatus mcp={api.mcp} onOpen={() => registry.run(COMMAND_IDS.aiApps)} />
+                }
                 undoSteps={
                   <UndoStepsMenu
                     state={session.history.state}
