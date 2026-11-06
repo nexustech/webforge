@@ -45,6 +45,34 @@ const control = (key: string) => {
 const BRAND = { l: 0.5, c: 0.2, h: 30 };
 
 describe("the Theme tab's edits (2.3a)", () => {
+  it("runs Version History's hook before a change that asks nothing, and not before one it asks about (4.6)", async () => {
+    const { session, theme } = setUp();
+    const order: string[] = [];
+    const siteWide = {
+      confirmSiteWide: vi.fn(async () => {
+        order.push("asked");
+        return true;
+      }),
+      beforeUnaskedChange: vi.fn(async () => {
+        // The version holds the site before the change.
+        order.push(`before, ${String(theme().cards.style)}`);
+      }),
+    };
+
+    await setToken(session, { siteWide }, control("cards.style"), "raised");
+    await setTextSize(session, { siteWide }, "h1", "6xl");
+    // Fonts are asked about: the confirmed action's own hook runs instead.
+    await setFont(session, { siteWide }, "heading", { family: "Lora", fallback: "serif" });
+
+    expect(siteWide.beforeUnaskedChange).toHaveBeenCalledWith({
+      action: "Changed card style",
+      confirm: "Changed card style",
+      affectedPages: Object.keys(session.history.document.getState().pages).length,
+    });
+    expect(order).toEqual(["before, flat", "before, raised", "asked"]);
+    expect(siteWide.beforeUnaskedChange).toHaveBeenCalledTimes(2);
+  });
+
   it("sets a token as one step named for its group, and none for the value it has", async () => {
     const { session, labels, theme } = setUp();
 

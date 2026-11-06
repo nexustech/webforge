@@ -4,7 +4,7 @@ import type { ProjectResult } from "./project.js";
 import { projectResultSchema, sessionIdSchema } from "./project.js";
 
 /** The longest name the person can give a version (Save version…, 4.6). */
-const VERSION_NAME_MAX = 100;
+export const VERSION_NAME_MAX = 100;
 
 /**
  * Why a version was saved (ADR 0020): by the person (`manual`), or by Webforge on the site's first
@@ -71,6 +71,11 @@ export type ListVersionsResult = z.infer<typeof listResultSchema>;
 
 const saveResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved"), version: versionSummarySchema }),
+  /**
+   * Not saved: a version before a change to every page was saved in this opening less than five
+   * minutes ago, and holds the site from before the burst of changes (4.6, coordinator 6 Nov).
+   */
+  z.strictObject({ status: z.literal("skipped") }),
   failureSchema,
 ]);
 
@@ -111,8 +116,8 @@ export const versionsChannels = {
     response: listResultSchema,
   },
   /**
-   * Saves the site as it is in its file as a version, with a picture of the canvas. The renderer
-   * saves its last changes first (ADR 0018 §3). An automatic one deletes the oldest automatic
+   * Saves the site as a version, with a picture of the canvas, once main has asked the renderer to
+   * save its last changes (ADR 0018 §3). An automatic one deletes the oldest automatic
    * versions past the person's Versions kept.
    */
   saveVersion: {
@@ -155,7 +160,7 @@ export const versionsChannels = {
 export interface VersionsApi {
   /** The open site's versions, newest first, and the space they take. */
   list(sessionId: string): Promise<ListVersionsResult>;
-  /** Saves the site's file as it is as a version; save the editor's last changes first. */
+  /** Saves the site as a version, its last changes saved first; end the canvas's edit before. */
   save(
     sessionId: string,
     version: { readonly name: string; readonly reason: z.infer<typeof requestedReasonSchema> },

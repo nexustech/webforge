@@ -35,7 +35,7 @@ describe("confirmSiteWide (D7)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Delete Page" }));
 
     await expect(answer).resolves.toBe(true);
-    expect(before).toHaveBeenCalledWith(deletePage(6));
+    expect(before).toHaveBeenCalledWith(deletePage(6), { asked: true });
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
@@ -72,6 +72,23 @@ describe("confirmSiteWide (D7)", () => {
     const third = confirm.confirmSiteWide(deletePage(1));
     confirm.answer(true);
     await expect(third).resolves.toBe(true);
+  });
+
+  it("runs the hook before a change that asks no question, which a failed hook never blocks (4.6)", async () => {
+    const confirm = createSiteWideConfirm();
+    const before = vi.fn();
+    const remove = confirm.setBeforeSiteWideAction(before);
+    const fonts = { action: "Changed fonts", confirm: "Changed fonts", affectedPages: 4 };
+
+    await confirm.beforeUnaskedChange(fonts);
+    expect(before).toHaveBeenCalledWith(fonts, { asked: false });
+    expect(confirm.current()).toBeNull();
+
+    remove();
+    confirm.setBeforeSiteWideAction(() => {
+      throw new Error("no version");
+    });
+    await expect(confirm.beforeUnaskedChange(fonts)).resolves.toBeUndefined();
   });
 
   it("pauses the window's commands while it asks, so nothing changes the site meanwhile", () => {

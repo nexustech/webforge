@@ -32,7 +32,6 @@ import type { OwnTheme } from "../../shared/ipc/themes.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
 import { shownRatio, TEXT_PX, themeFieldRenderers } from "../fields/index.js";
-import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { OwnThemes } from "./own-themes.js";
 import { useOwnThemeList } from "./own-themes-list.js";
 import type { StudioState } from "./studio/studio-state.js";
@@ -49,6 +48,7 @@ import {
   setToken,
   switchPreset,
   type ThemeAsks,
+  type ThemeSiteWide,
   themeName,
 } from "./theme-edits.js";
 import { named } from "./theme-words.js";
@@ -211,7 +211,7 @@ function themeFields(theme: ThemeTokens, own: readonly OwnTheme[]): EditPanelFie
 export type ThemePanelProps = {
   readonly session: EditorSession;
   /** Asks before a change to every page (D7): a preset, a colour, the fonts. */
-  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+  readonly siteWide?: ThemeSiteWide | undefined;
   /** Theme Studio's state (2.3b): the tab's button opens it; the window draws it. */
   readonly studio?: StoreApi<StudioState> | undefined;
   /**
