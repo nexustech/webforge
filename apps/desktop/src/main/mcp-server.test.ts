@@ -4,6 +4,7 @@ import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { AI_TOOLS } from "@webforge/commands";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiResponse } from "../shared/ipc/ai.js";
+import { APP_TOOLS } from "../shared/ipc/ai.js";
 import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 
@@ -52,7 +53,16 @@ describe("the MCP server (4.9)", () => {
     const memory = await (await inMemory()).listTools();
     const http = await (await overHttp()).listTools();
 
-    expect(memory.tools.map((tool) => tool.name)).toEqual(AI_TOOLS.map((tool) => tool.name));
+    expect(memory.tools.map((tool) => tool.name)).toEqual([
+      ...AI_TOOLS.map((tool) => tool.name),
+      ...Object.keys(APP_TOOLS),
+    ]);
+    // Run Site Check and Open Preview take nothing: no address, path or host.
+    expect(memory.tools.find((tool) => tool.name === "openPreview")?.inputSchema).toEqual({
+      type: "object",
+      properties: {},
+      additionalProperties: false,
+    });
     expect(http.tools).toEqual(memory.tools);
     expect(memory.tools[0]?.inputSchema).toEqual(AI_TOOLS[0]?.inputSchema);
   });
@@ -70,6 +80,8 @@ describe("the MCP server (4.9)", () => {
       input: { title: "Menu" },
       app: "Claude",
     });
+    await client.callTool({ name: "runSiteCheck", arguments: {} });
+    expect(ask).toHaveBeenNthCalledWith(3, { kind: "query", name: "runSiteCheck", input: {} });
     expect(outline).toEqual({
       content: [
         { type: "text", text: JSON.stringify({ status: "done", data: { name: "Rosa's Bakery" } }) },

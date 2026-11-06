@@ -1,6 +1,28 @@
 import { z } from "zod";
 import { sessionIdSchema } from "./project.js";
 
+/**
+ * The tools the window answers itself, beside the command layer's (4.9): what each does, for an AI
+ * app. Each takes nothing, so none can be pointed at an address, a path or a host.
+ */
+export const APP_TOOLS = {
+  runSiteCheck:
+    "Runs Site Check on the open site, as the person's Site Check panel does for an export: " +
+    "each rule that found something, by its id, its title and its level (must, should or tip), " +
+    "with the places by id (a page, an element, a Media item, a menu item). It never gives a " +
+    "finding's text: read the place with pageTree or fields.",
+  openPreview:
+    "Opens the open site's preview in the person's browser on this computer, as the Preview " +
+    "command does, showing the page shown in Webforge. It takes nothing, and never opens the " +
+    "phone preview. A second request within a few seconds opens nothing more.",
+} as const;
+
+/** The name of one of {@link APP_TOOLS}. */
+export type AppToolName = keyof typeof APP_TOOLS;
+
+/** Whether `name` is one of {@link APP_TOOLS}. */
+export const isAppTool = (name: string): name is AppToolName => Object.hasOwn(APP_TOOLS, name);
+
 /** A query's or command's name: `outline`, `addNode`. Which ones exist, the renderer checks. */
 const nameSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
 
