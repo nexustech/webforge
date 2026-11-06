@@ -1,6 +1,9 @@
 import { join } from "node:path";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
+import type { AiResponse } from "../shared/ipc/ai.js";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { createCredentialStore, type SecretCipher } from "./credential-store.js";
 import { createJsonStore } from "./json-store.js";
@@ -44,14 +47,26 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     };
   });
   const ports = [...drawn];
+  const saveVersionBefore = vi.fn(async (_name: string): Promise<"saved" | "failed"> => "saved");
+  const ask = vi.fn(async (): Promise<AiResponse> => ({ status: "done", data: {} }));
   const service = createMcpService({
     apps,
-    ask: async () => ({ status: "done", data: {} }),
+    ask,
     info: { name: "Webforge", version: "1" },
+    saveVersionBefore,
     listen,
     drawPort: () => ports.shift() ?? 59_999,
   });
-  return { apps, service, listen, listened, disconnected, closed: () => closed };
+  return {
+    apps,
+    service,
+    listen,
+    listened,
+    disconnected,
+    saveVersionBefore,
+    ask,
+    closed: () => closed,
+  };
 }
 
 describe("the MCP service (4.9, ADR 0021)", () => {
@@ -113,5 +128,52 @@ describe("the MCP service (4.9, ADR 0021)", () => {
     expect(disconnected).toEqual([app.id]);
     expect(await service.list()).toEqual([]);
     expect(await apps.authenticate(key)).toBeUndefined();
+  });
+});
+
+/** A client on a new connection of `app` to what the service listens with. */
+async function connection(options: McpListenerOptions, app: { id: string; name: string }) {
+  const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+  await options.serverFor(app).connect(serverSide);
+  const client = new Client({ name: "test", version: "1" });
+  await client.connect(clientSide);
+  return client;
+}
+
+describe("the version before an AI app's changes (S20)", () => {
+  const claude = { id: "app-1", name: "Claude" };
+
+  it("is saved before each connection's first command, once, and never for a query", async () => {
+    const { service, listened, saveVersionBefore, ask } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+
+    const first = await connection(options, claude);
+    await first.callTool({ name: "outline", arguments: {} });
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+    await first.callTool({ name: "addPage", arguments: { title: "Menu" } });
+    await first.callTool({ name: "addPage", arguments: { title: "Team" } });
+    expect(saveVersionBefore).toHaveBeenCalledExactlyOnceWith("Before Claude's changes");
+    expect(ask).toHaveBeenCalledTimes(3);
+
+    // Another connection, another version before its first change.
+    const second = await connection(options, claude);
+    await second.callTool({ name: "addPage", arguments: { title: "Shop" } });
+    expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+  });
+
+  it("lets the command run when the version can't be saved", async () => {
+    const { service, listened, saveVersionBefore, ask } = setUp();
+    saveVersionBefore.mockResolvedValue("failed");
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+
+    const client = await connection(options, claude);
+    const result = await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
+
+    expect(result.isError).toBeUndefined();
+    expect(ask).toHaveBeenCalledOnce();
   });
 });

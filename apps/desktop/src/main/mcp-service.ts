@@ -1,9 +1,12 @@
 import { randomInt } from "node:crypto";
+import { t } from "@webforge/i18n";
+import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import type { AiApps, NewPairing, PairedApp } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
+import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
 import { type McpListener, type McpListenerOptions, startMcpListener } from "./mcp-listener.js";
-import { createMcpServer, type McpServerInfo } from "./mcp-server.js";
+import { createMcpServer, type McpApp, type McpServerInfo } from "./mcp-server.js";
 
 /** The ephemeral range a port is drawn from (ADR 0021). */
 const EPHEMERAL = { from: 49152, to: 65535 } as const;
@@ -46,6 +49,12 @@ export type McpServiceOptions = {
   readonly apps: AiApps;
   readonly ask: AiBridge["ask"];
   readonly info: McpServerInfo;
+  /**
+   * Saves an automatic version of the open site named `name`, after the window's last edits
+   * (reason `before-site-wide`): the one taken before an app's first change in each connection
+   * (S20). Version History's own (4.6a).
+   */
+  readonly saveVersionBefore: (name: string) => Promise<"saved" | "failed">;
   readonly listen?: (options: McpListenerOptions) => Promise<McpListener>;
   readonly drawPort?: () => number;
 };
@@ -70,12 +79,32 @@ export function createMcpService(options: McpServiceOptions): McpService {
   let listener: McpListener | null = null;
   let moved = false;
 
+  /**
+   * `app`'s requests in one connection: before its first command, a version "Before ‹app›'s
+   * changes", so a burst of changes can't push the site as it was past the undo limit (S20). A
+   * command still runs when the version can't be saved, which is logged by its code alone.
+   */
+  const askFor = (app: McpApp) => {
+    let saved: Promise<unknown> | null = null;
+    return async (request: AiRequest): Promise<AiResponse> => {
+      if (request.kind === "command") {
+        saved ??= options
+          .saveVersionBefore(t("ai.version.before", { app: app.name }))
+          .catch(() => "failed" as const)
+          .then((result) => {
+            if (result === "failed") logFailure("mcp safety version", new Error("failed"));
+          });
+        await saved;
+      }
+      return limits.ask(app.id, request);
+    };
+  };
+
   const listenOn = (port: number) =>
     listen({
       port,
       authenticate: (key) => apps.authenticate(key),
-      serverFor: (app) =>
-        createMcpServer(options.info, app, (request) => limits.ask(app.id, request)),
+      serverFor: (app) => createMcpServer(options.info, app, askFor(app)),
     });
 
   const open = async () => {
