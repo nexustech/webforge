@@ -48,7 +48,7 @@ import { createMcpService, type McpService } from "./mcp-service.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import { createMyThemes } from "./my-themes.js";
-import { hasAddress, localNetworkAddress } from "./network-address.js";
+import { hasAddress, phoneAddressFor } from "./network-address.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
@@ -329,7 +329,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         return false;
       }
     },
-    networkAddress: () => localNetworkAddress(networkInterfaces()),
+    networkAddress: phoneAddressFor(app.isPackaged),
     hasAddress: (address) => hasAddress(networkInterfaces(), address),
     phoneStopped: () =>
       lifecycle.mainWindow()?.webContents.send(previewEvents.phoneStopped.channel),
