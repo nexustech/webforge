@@ -121,7 +121,9 @@ describe("the MCP service (4.9, ADR 0021)", () => {
   it("cuts a removed app off at once", async () => {
     const { apps, service, disconnected } = setUp();
     await service.setEnabled(true);
-    const { app, key } = await service.add("Claude");
+    const pairing = await service.add("Claude");
+    if (pairing.status !== "paired") throw new Error("not paired");
+    const { app, key } = pairing;
 
     await service.remove(app.id);
 

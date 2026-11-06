@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { t } from "@webforge/i18n";
 import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
-import type { AiApps, NewPairing, PairedApp } from "./ai-apps.js";
+import type { AiApps, PairedApp, Pairing } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
 import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
@@ -15,7 +15,7 @@ const EPHEMERAL = { from: 49152, to: 65535 } as const;
 const PORT_TRIES = 5;
 
 /** What Preferences › AI apps shows of the server. */
-export type McpStatus = {
+type McpStatus = {
   readonly enabled: boolean;
   /** The port it listens on, while it does. */
   readonly port: number | null;
@@ -35,7 +35,7 @@ export type McpService = {
   /** Turns *AI apps* on or off: listening, or not, at once. */
   setEnabled(enabled: boolean): Promise<void>;
   /** Pairs an app (*Add AI app*). */
-  add(name: string): Promise<NewPairing>;
+  add(name: string): Promise<Pairing>;
   /** Removes an app, ending its connections at once. */
   remove(id: string): Promise<void>;
   list(): Promise<readonly PairedApp[]>;

@@ -60,12 +60,24 @@ export type NewPairing = {
   readonly proof: string;
 };
 
+/**
+ * What pairing an app came to: paired, or refused for a name that's empty once cleaned, or one
+ * another paired app has (compared without case). Each app's name is its own: its changes are
+ * named by it in Undo History, and its limits go by it as the bridge keeps them (#744 review).
+ */
+export type Pairing =
+  | ({ readonly status: "paired" } & NewPairing)
+  | { readonly status: "name-empty" | "name-taken" };
+
 /** The paired AI apps (4.9, ADR 0021). */
 export type AiApps = {
   /** The paired apps, those whose key waited too long left out (and removed). */
   list(): Promise<readonly PairedApp[]>;
-  /** Pairs an app named `name` (the person's name for it, cleaned), with a new key and proof. */
-  add(name: string): Promise<NewPairing>;
+  /**
+   * Pairs an app named `name` (the person's name for it, cleaned), with a new key and proof, unless
+   * the name is empty or another app's.
+   */
+  add(name: string): Promise<Pairing>;
   remove(id: string): Promise<void>;
   /**
    * The app `key` belongs to, if any: compared by hash, in constant time. Its first use claims
@@ -156,14 +168,18 @@ export function createAiApps(
     list,
     async add(name) {
       const cleaned = cleanAppName(name);
-      if (cleaned === "") throw new Error("An AI app needs a name");
+      if (cleaned === "") return { status: "name-empty" };
+      const same = cleaned.toLocaleLowerCase();
+      if ((await list()).some((app) => app.name.toLocaleLowerCase() === same)) {
+        return { status: "name-taken" };
+      }
       const app: PairedApp = { id: randomUUID(), name: cleaned, pairedAt: now(), claimedAt: null };
       const pairing = { app, key: secret(), proof: secret() };
       const stored = { keyHash: hashOf(pairing.key).toString("base64url"), proof: pairing.proof };
       await credentials.set(mcpCredentialKey(app.id), JSON.stringify(stored));
       secrets.set(app.id, stored);
       await file.update((current) => ({ ...current, apps: [...current.apps, app] }));
-      return pairing;
+      return { status: "paired", ...pairing };
     },
     remove,
     async authenticate(key) {
