@@ -5,6 +5,9 @@ export const ai = {
   "ai.history.theme": "Changed the theme",
   // Several fields of one element at once: "AI (Claude): Edited Hero".
   "ai.history.fields": "Edited {item}",
+  // The automatic version taken before an AI app's first change in a connection (S20), in Version
+  // History.
+  "ai.version.before": "Before {app}'s changes",
   // The D7 question an AI app's change to more than one page waits for; the dialog then says how
   // many pages change ("This changes 3 pages.").
   "ai.confirm.theme": "Allow {app} to change the theme?",
