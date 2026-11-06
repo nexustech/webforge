@@ -1,4 +1,4 @@
-import type { NetworkInterfaceInfo } from "node:os";
+import { type NetworkInterfaceInfo, networkInterfaces } from "node:os";
 
 /** A private IPv4 address (RFC 1918): one a home or office network gives its devices. */
 const PRIVATE = /^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/;
@@ -40,4 +40,23 @@ export function hasAddress(
   address: string,
 ): boolean {
   return Object.values(interfaces).some((each) => each?.some((info) => info.address === address));
+}
+
+/** The environment variable E2E tests launch Webforge with, to keep the phone preview local (#748). */
+const E2E_PHONE_VARIABLE = "WEBFORGE_E2E_PHONE";
+
+/**
+ * Where a phone preview listens: {@link localNetworkAddress} from this computer's adapters, as they
+ * are when it starts. In an unpackaged app launched with `WEBFORGE_E2E_PHONE=1`, as the E2E tests
+ * launch it, `127.0.0.1` instead: nothing the tests start listens beyond this computer, so Windows
+ * Firewall doesn't ask about each worktree's Electron (#748). Never in the installed app, nor in
+ * `pnpm dev`.
+ */
+export function phoneAddressFor(
+  packaged: boolean,
+  env: NodeJS.ProcessEnv = process.env,
+  interfaces: () => NodeJS.Dict<NetworkInterfaceInfo[]> = networkInterfaces,
+): () => string | undefined {
+  if (!packaged && env[E2E_PHONE_VARIABLE] === "1") return () => "127.0.0.1";
+  return () => localNetworkAddress(interfaces());
 }

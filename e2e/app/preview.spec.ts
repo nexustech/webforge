@@ -1,6 +1,5 @@
 // CommonJS: the module is the function, with `default` pointing at itself. TypeScript sees the
 // module as the namespace's `default`, so the function is its `default` again.
-import { networkInterfaces } from "node:os";
 import {
   type Browser,
   chromium,
@@ -234,19 +233,9 @@ function decode(path: string, size: number): string | undefined {
 }
 
 test("shows the preview's address on the local network as a QR code a phone reads (3.2)", async () => {
-  // A phone reaches the preview only on a private network (a home or office one, as main checks),
-  // as CI runners have; a machine on none says so instead of showing a code.
-  test.skip(
-    !Object.values(networkInterfaces())
-      .flatMap((each) => each ?? [])
-      .some(
-        (info) =>
-          info.family === "IPv4" &&
-          !info.internal &&
-          /^(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)/.test(info.address),
-      ),
-    "This machine has no private network address for a phone to reach",
-  );
+  // The E2E launch keeps the phone's listener on 127.0.0.1 (WEBFORGE_E2E_PHONE, #748), so no test
+  // listens beyond this computer and Windows Firewall never asks; the app chooses a private
+  // network's address otherwise, as main's unit tests check.
   await chooseFromMenu(app, page, "File", "Preview on Phone…");
   const dialog = page.getByRole("dialog", { name: "Preview on your phone" });
   const code = dialog.getByRole("img", { name: "QR code of the preview's address" });
@@ -257,12 +246,10 @@ test("shows the preview's address on the local network as a QR code a phone read
   }));
 
   const read = decode(drawn.path, drawn.size);
-  // What the camera reads is the address written under it: this computer's on the local network,
-  // under the preview's secret path, at the page shown, which it serves.
+  // What the camera reads is the address written under it: the phone listener's, under the
+  // preview's secret path, at the page shown, which it serves.
   await expect(dialog).toContainText(read ?? "(unreadable)");
-  expect(read).toMatch(
-    /^http:\/\/(?:10\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.)[\d.]+:\d+\/[0-9a-f]{32}\/[\w/-]+\.html$/,
-  );
+  expect(read).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/[0-9a-f]{32}\/[\w/-]+\.html$/);
   const served = await fetch(read ?? "");
   expect(served.status).toBe(200);
   expect(await served.text()).toContain("<html");
