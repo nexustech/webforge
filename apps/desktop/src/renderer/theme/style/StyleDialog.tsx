@@ -57,7 +57,14 @@ export type StyleDialogProps = {
  * for its kind (3.12). Apply makes it one labelled step; Cancel takes it back. 3.13b adds the
  * deeper groups beside the Appearance fields.
  */
-export function StyleDialog({
+export function StyleDialog(props: StyleDialogProps) {
+  const open = useStore(props.state, (dialog) => dialog.open);
+  // Closed, it follows nothing of the document or the selection, which the canvas changes (R9).
+  return open ? <OpenStyleDialog {...props} /> : null;
+}
+
+/** The dialog while it's open: the item as it is, its preview following the site. */
+function OpenStyleDialog({
   session,
   state,
   preferences,
@@ -65,7 +72,7 @@ export function StyleDialog({
   itemPreviews,
   itemCss,
 }: StyleDialogProps) {
-  const { open, since, scope } = useStore(state);
+  const { since, scope } = useStore(state);
   const advanced = usePreferences(
     preferences,
     (prefs) => prefs.preferences.editorLevel === "advanced",
@@ -75,7 +82,7 @@ export function StyleDialog({
   const site = useDocument(session, (doc) => doc);
   const selection = useUi(session, (ui) => ui);
   const item = styledItemIn(site, session.library, selection);
-  if (!open || item === undefined) return null;
+  if (item === undefined) return null;
   const { node } = item;
   const name = item.component.label;
   const close = () => state.setState({ open: false, since: null, scope: "this" });

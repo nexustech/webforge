@@ -8,13 +8,7 @@ import {
   type FileTransferTrust,
   PRIVATE_KEY_MAX,
 } from "@webforge/model";
-import {
-  describePrivateKey,
-  ftpPublisher,
-  PublishError,
-  readSftpHostKey,
-  sftpPublisher,
-} from "@webforge/publish";
+import { describePrivateKey, PublishError, publisherFor, readSftpHostKey } from "@webforge/publish";
 import type { IpcMain } from "electron";
 import type {
   ConnectionResult,
@@ -32,8 +26,8 @@ const KEYS_HELD = 16;
 
 /**
  * The private keys the person chose this session, by a random handle (4.3, review): the renderer
- * gets only the handle, never the key's text. 4.4 moves a destination's key to the keychain from
- * here. Kept in memory only, and only the last {@link KEYS_HELD}.
+ * gets only the handle, never the key's text. Saving a destination moves its key to the keychain
+ * from here (4.4a). Kept in memory only, and only the last {@link KEYS_HELD}.
  */
 export type KeyFiles = {
   /** Holds `privateKey`, giving its handle. */
@@ -64,7 +58,10 @@ export function createKeyFiles(): KeyFiles {
  * How `signIn` signs in: the password, or the key its handle names, with its passphrase.
  * Undefined for a handle no key is held under.
  */
-function signInOf(signIn: SignInRef, keys: KeyFiles): FileTransferSignIn | undefined {
+export function signInOf(
+  signIn: SignInRef,
+  keys: Pick<KeyFiles, "get">,
+): FileTransferSignIn | undefined {
   if ("password" in signIn) return { password: signIn.password };
   const privateKey = keys.get(signIn.keyHandle);
   if (privateKey === undefined) return undefined;
@@ -92,40 +89,27 @@ export async function testConnection(
   destination: FileTransferDestination,
   ref: SignInRef,
   trust: FileTransferTrust,
-  keys: KeyFiles,
+  keys: Pick<KeyFiles, "get">,
   timeoutMs = TIMEOUT_MS,
 ): Promise<ConnectionResult> {
   const signIn = signInOf(ref, keys);
   if (signIn === undefined) return { ok: false, code: "bad-key" };
-  const { host, user, folder } = destination;
-  const port = destination.port ?? DEFAULT_PORTS[destination.protocol];
-  if (destination.protocol === "sftp") {
-    if (trust.hostKey === undefined) return { ok: false, code: "untrusted-host" };
-    const options =
-      "password" in signIn
-        ? { password: signIn.password, timeoutMs }
-        : {
-            privateKey: signIn.privateKey,
-            ...(signIn.passphrase === undefined ? {} : { passphrase: signIn.passphrase }),
-            timeoutMs,
-          };
-    return sftpPublisher(options).test({
-      host,
-      port,
-      user,
-      folder,
-      hostKey: trust.hostKey,
-    });
-  }
-  // FTPS and FTP sign in with a password only.
-  if (!("password" in signIn)) return { ok: false, code: "unauthorized" };
-  return ftpPublisher({ password: signIn.password, timeoutMs }).test({
-    protocol: destination.protocol,
-    host,
-    port,
-    user,
-    folder,
-  });
+  return testSignIn(destination, signIn, trust, timeoutMs);
+}
+
+/**
+ * Test connection with a sign-in main holds: typed for this test, or saved for the destination
+ * (4.4a). Through the publisher the destination publishes with (`publisherFor`).
+ */
+export function testSignIn(
+  destination: FileTransferDestination,
+  signIn: FileTransferSignIn,
+  trust: FileTransferTrust,
+  timeoutMs = TIMEOUT_MS,
+): Promise<ConnectionResult> {
+  return publisherFor({ kind: "file-transfer", settings: destination }, signIn, trust, {
+    timeoutMs,
+  }).test();
 }
 
 /** The key an SFTP host presents, or why it couldn't be read. Never throws. */

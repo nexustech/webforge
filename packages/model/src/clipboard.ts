@@ -2,6 +2,8 @@ import { z } from "zod";
 import { isNodeDoc, type NodeDoc, nodeDocSchema, withoutUnsafeKeys } from "./documents.js";
 import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
 import { type MediaMeta, mediaMetaSchema } from "./media.js";
+import { MIGRATIONS, type MigrateOptions, migrateSiteWith, type RawSite } from "./migrations.js";
+import { SITE_FORMAT_VERSION } from "./site-doc.js";
 
 /**
  * Elements on the clipboard (1.25, F-ED-16): copies of the nodes, and the Media items they show,
@@ -31,6 +33,95 @@ export const copiedElementsSchema: z.ZodType<CopiedElements> = withoutUnsafeKeys
     sharedSectionId: sharedSectionIdSchema.optional(),
   }),
 );
+
+/**
+ * Copied elements as the system clipboard holds them: with the site format they were copied in
+ * (ADR 0012), so a later build migrates them as it migrates a site, and an older one refuses them.
+ */
+export type ClipboardPayload = CopiedElements & { readonly formatVersion: number };
+
+/**
+ * The format of copied elements written before the clipboard named one: every such build wrote
+ * format 12 or older, and none was released, so 12 is assumed.
+ */
+const UNVERSIONED_FORMAT = 12;
+
+/** `elements` as the clipboard holds them, in this build's site format. */
+export function clipboardPayload(elements: CopiedElements): ClipboardPayload {
+  return { formatVersion: SITE_FORMAT_VERSION, ...elements };
+}
+
+/** What {@link readClipboardPayload} makes of the clipboard's data. */
+export type ReadClipboardPayload =
+  | { readonly status: "elements"; readonly elements: CopiedElements }
+  /** Copied in a newer build, whose format this one can't read. */
+  | { readonly status: "newer-format" }
+  /** Not copied elements, or not valid ones. */
+  | { readonly status: "invalid" };
+
+/**
+ * The copied elements in `raw`, read from the system clipboard, where any program can put data in
+ * Webforge's format: brought from the format they were copied in up to this build's, through the
+ * site migration chain (ADR 0012), then validated. Elements copied in a newer build are refused.
+ * Never throws. `chain` is this build's, unless a test gives another.
+ */
+export function readClipboardPayload(
+  raw: unknown,
+  chain: MigrateOptions = { migrations: MIGRATIONS, currentVersion: SITE_FORMAT_VERSION },
+): ReadClipboardPayload {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { status: "invalid" };
+  const { formatVersion, ...rest } = raw as Record<string, unknown>;
+  const version = formatVersion ?? UNVERSIONED_FORMAT;
+  if (typeof version !== "number" || !Number.isInteger(version) || version < 1) {
+    return { status: "invalid" };
+  }
+  if (version > chain.currentVersion) return { status: "newer-format" };
+  const parsed = copiedElementsSchema.safeParse(
+    version === chain.currentVersion ? rest : migratedElements(rest, version, chain),
+  );
+  return parsed.success ? { status: "elements", elements: parsed.data } : { status: "invalid" };
+}
+
+/** The page of the site that carries copied elements through the migration chain. */
+const CARRIED_PAGE = "clipboard";
+
+/**
+ * `copied`, of site format `version`, brought up to this build's: its nodes on a page of a site
+ * holding nothing else, and its Media items as that site's, migrated as a site would be. `null`
+ * when the chain can't take them; validating then refuses it.
+ */
+function migratedElements(
+  copied: Record<string, unknown>,
+  version: number,
+  chain: MigrateOptions,
+): unknown {
+  const { nodes, media, ...rest } = copied;
+  if (!Array.isArray(nodes) || !Array.isArray(media)) return null;
+  const items = media.filter(
+    (item): item is Record<string, unknown> =>
+      typeof item === "object" && item !== null && typeof item.id === "string",
+  );
+  const carrier: RawSite = {
+    formatVersion: version,
+    pages: { [CARRIED_PAGE]: { doc: { root: { props: {} }, content: nodes } } },
+    layout: { header: [], footer: [] },
+    media: Object.fromEntries(items.map((item) => [item.id, item])),
+  };
+  try {
+    const migrated = migrateSiteWith(carrier, chain);
+    // What the chain left of the carrier, read as untrusted as what went in.
+    const page = isRecord(migrated.pages) ? migrated.pages[CARRIED_PAGE] : undefined;
+    const doc = isRecord(page) ? page.doc : undefined;
+    if (!isRecord(doc) || !isRecord(migrated.media)) return null;
+    return { ...rest, nodes: doc.content, media: Object.values(migrated.media) };
+  } catch {
+    // Anything the chain can't take, as `migrateSite` treats it: not elements to paste.
+    return null;
+  }
+}
+
+const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Copies of `nodes` to paste: every element in them, slots included, gets a new id. A section

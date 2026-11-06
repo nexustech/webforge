@@ -1,7 +1,16 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { copiedElementsSchema, pastedCopies } from "./clipboard.js";
+import {
+  clipboardPayload,
+  copiedElementsSchema,
+  pastedCopies,
+  readClipboardPayload,
+} from "./clipboard.js";
 import type { NodeDoc } from "./documents.js";
+import type { MediaId } from "./ids.js";
+import type { MediaMeta } from "./media.js";
+import type { RawSite } from "./migrations.js";
+import { SITE_FORMAT_VERSION } from "./site-doc.js";
 
 const section: NodeDoc = {
   type: "Section",
@@ -117,5 +126,118 @@ describe("copiedElementsSchema", () => {
 
     const [inner] = (copied.nodes[0]?.props.content ?? []) as readonly NodeDoc[];
     expect(inner?.props.advanced).toEqual({ attributes: { "data-track": "x" } });
+  });
+});
+
+describe("copied elements across builds (ADR 0012)", () => {
+  const photo: MediaMeta = {
+    id: "photo" as MediaId,
+    hash: "a".repeat(64),
+    name: "shop",
+    fileName: "shop.jpg",
+    kind: "image",
+    mimeType: "image/jpeg",
+    width: 10,
+    height: 10,
+    alt: "",
+  };
+
+  it("names this build's site format, and reads it back as it was", () => {
+    const copied = { nodes: [section], media: [photo], sharedSectionId: undefined };
+    const payload = clipboardPayload(copied);
+
+    expect(payload.formatVersion).toBe(SITE_FORMAT_VERSION);
+    expect(readClipboardPayload(JSON.parse(JSON.stringify(payload)))).toEqual({
+      status: "elements",
+      elements: { nodes: [section], media: [photo] },
+    });
+  });
+
+  it("brings elements copied in an older format up to this one, through the whole chain", () => {
+    // Format 1: a Hero's image was a media id with its description beside it, and a Section's
+    // padding one size, and full width a toggle.
+    const old = {
+      formatVersion: 1,
+      nodes: [
+        {
+          type: "Section",
+          props: {
+            id: "s",
+            padding: "small",
+            fullWidth: true,
+            content: [
+              { type: "Hero", props: { id: "h", image: "photo", imageDescription: "Our shop" } },
+            ],
+          },
+        },
+      ],
+      media: [photo],
+    };
+
+    const read = readClipboardPayload(old);
+
+    expect(read.status).toBe("elements");
+    if (read.status !== "elements") return;
+    const [copied] = read.elements.nodes;
+    expect(copied?.props.padding).toEqual({ top: "s", bottom: "s" });
+    expect(copied?.props.contentWidth).toBe("full");
+    expect(copied?.props.fullWidth).toBeUndefined();
+    const [hero] = (copied?.props.content ?? []) as readonly NodeDoc[];
+    expect(hero?.props.image).toEqual({ mediaId: "photo", alt: "Our shop" });
+    expect(read.elements.media).toEqual([photo]);
+  });
+
+  it("takes elements copied before the clipboard named a format as format 12", () => {
+    const read = readClipboardPayload({ nodes: [section], media: [] });
+    expect(read).toEqual({ status: "elements", elements: { nodes: [section], media: [] } });
+  });
+
+  it("reads as invalid whatever a step leaves of the carrier, never throwing", () => {
+    const copied = { formatVersion: 1, nodes: [section], media: [photo] };
+    // Steps that drop the page's document, drop Media, or throw.
+    const leaving = (change: (site: RawSite) => RawSite) => ({
+      migrations: { 1: (site: RawSite) => ({ ...change(site), formatVersion: 2 }) },
+      currentVersion: 2,
+    });
+    const chains = [
+      leaving((site) => ({ ...site, pages: { clipboard: {} } })),
+      leaving((site) => ({ ...site, pages: "none" })),
+      leaving(({ media: _media, ...site }) => ({ ...site, formatVersion: 1 })),
+      leaving(() => {
+        throw new Error("a step's bug");
+      }),
+    ];
+
+    for (const chain of chains) {
+      expect(readClipboardPayload(copied, chain)).toEqual({ status: "invalid" });
+    }
+    // The same through a chain that keeps it: the elements, as they were.
+    expect(
+      readClipboardPayload(
+        copied,
+        leaving((site) => site),
+      ),
+    ).toEqual({
+      status: "elements",
+      elements: { nodes: [section], media: [photo] },
+    });
+  });
+
+  it("refuses elements copied in a newer build, and anything that isn't elements", () => {
+    expect(
+      readClipboardPayload({ formatVersion: SITE_FORMAT_VERSION + 1, nodes: [section], media: [] }),
+    ).toEqual({ status: "newer-format" });
+    for (const raw of [
+      null,
+      [section],
+      "nodes",
+      { formatVersion: 0, nodes: [section], media: [] },
+      { formatVersion: "12", nodes: [section], media: [] },
+      { formatVersion: 3, nodes: "x", media: [] },
+      { formatVersion: 3, nodes: [{ type: "Heading" }], media: [] },
+      { formatVersion: SITE_FORMAT_VERSION, nodes: [], media: [] },
+    ]) {
+      expect(readClipboardPayload(raw)).toEqual({ status: "invalid" });
+    }
   });
 });

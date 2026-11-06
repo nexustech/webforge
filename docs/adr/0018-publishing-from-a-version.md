@@ -50,6 +50,7 @@
 - **Secrets and trust stay on this computer.**
   - Secrets go in the keychain-encrypted credential store, keyed `publish/<projectId>/<destinationId>` (#666).
   - The S2 fingerprint and trust state go in userData beside them: protocol, host, port, user, the SFTP host key, and that plain FTP's warning was seen (ADR 0006 §7).
+  - **Addendum (4.4a, 1 Nov 2026):** the fingerprint and trust live *in the same encrypted record* as the secret (`main/publish-secrets.ts`), not in a plain file beside it. Neither an edited site file nor an edited trust file can then pair a secret with another host. Don't move the trust to a plain file of its own.
   - Removing a destination deletes its secret, fingerprint and trust.
 - **`publish` leaves `siteSettingsSchema`** through a trivial ADR 0012 step in the next site format, which drops it. It has always been `[]`.
 - **A copy starts with none.** The site package's `project` block (4.7) doesn't carry destinations, so a site opened from a ZIP or from a version (4.6) has no destinations. Such a site gets a new project id, so its secrets wouldn't match anyway. And a copy can't publish over the original's folder without the person adding the destination again, where manifest v2's question then applies.

@@ -7,4 +7,10 @@ export const publishApi = (call: Call): PublishApi => ({
     call("publishTestConnection", destination, signIn, trust),
   readHostKey: (host, port) => call("publishReadHostKey", host, port),
   chooseKeyFile: () => call("publishChooseKeyFile"),
+  destinations: (sessionId) => call("publishDestinations", sessionId),
+  saveDestination: (sessionId, draft, signIn, trust) =>
+    call("publishSaveDestination", sessionId, draft, signIn, trust),
+  removeDestination: (sessionId, id) => call("publishRemoveDestination", sessionId, id),
+  testSavedDestination: (sessionId, id, settings, trust) =>
+    call("publishTestSavedDestination", sessionId, id, settings, trust),
 });

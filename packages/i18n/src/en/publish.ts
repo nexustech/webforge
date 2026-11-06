@@ -5,6 +5,9 @@ export const publish = {
   "publish.fileTransfer.description":
     "{appName} uploads your site to the folder your web host serves. Your host's control panel shows these details.",
   "publish.fileTransfer.confirm": "Save",
+  "publish.fileTransfer.name": "Name",
+  "publish.fileTransfer.name.help":
+    "How the list of destinations shows it. Leave it empty to use the host's name.",
   "publish.fileTransfer.preset": "Control panel",
   "publish.fileTransfer.preset.help": "Fills in the usual settings for it.",
   "publish.fileTransfer.preset.cpanel": "cPanel",
@@ -24,6 +27,8 @@ export const publish = {
   "publish.fileTransfer.signIn.key": "A private key file",
   "publish.fileTransfer.password": "Password",
   "publish.fileTransfer.password.help": "Kept safely by your computer, never in your site's file.",
+  "publish.fileTransfer.password.saved":
+    "Saved on this computer. Leave it empty to keep it, or type a new one.",
   "publish.fileTransfer.passphrase": "Key passphrase",
   "publish.fileTransfer.folder": "Folder",
   "publish.fileTransfer.folder.help":
@@ -31,6 +36,47 @@ export const publish = {
   "publish.fileTransfer.url": "Web address",
   "publish.fileTransfer.url.help":
     "Where visitors find your site, such as https://www.example.com.",
+  // The site's publish destinations (4.4a): where the Publish button publishes to.
+  "publish.destinations.title": "Publish",
+  "publish.destinations.description":
+    "Where {appName} publishes this site. Each destination's password is kept by this computer, never in your site's file.",
+  "publish.destinations.loading": "Reading the destinations…",
+  "publish.destinations.empty":
+    "No destinations yet. Add your web host: its address, your user name and the folder it serves.",
+  "publish.destinations.add": "Add Destination",
+  "publish.destinations.close": "Close",
+  "publish.destinations.where": "{host} · {folder}",
+  "publish.destinations.netlify": "Netlify",
+  "publish.destinations.signIn.none":
+    "No password saved on this computer. Edit the destination to add one.",
+  "publish.destinations.signIn.changed":
+    "Its host changed since the password was saved here. Edit the destination to type the password again.",
+  "publish.destinations.test": "Test Connection",
+  "publish.destinations.test.label": "Test the connection to {name}",
+  "publish.destinations.testing": "Testing…",
+  "publish.destinations.edit": "Edit",
+  "publish.destinations.edit.label": "Edit {name}",
+  "publish.destinations.remove": "Remove",
+  "publish.destinations.remove.label": "Remove {name}",
+  "publish.destinations.removeTitle": "Remove '{name}'?",
+  "publish.destinations.removeBody":
+    "{appName} stops publishing there, and this computer forgets its password. Nothing on your host changes.",
+  "publish.destinations.removeCancel": "Cancel",
+  "publish.destinations.removeConfirm": "Remove",
+  "publish.destinations.signInNeeded":
+    "Type the password again: the host, the user name or the host's key changed since it was saved.",
+  "publish.destinations.addressStep": "Changed Site Settings: Web address",
+  // Why the destinations couldn't be read or changed.
+  "publish.destinations.failed.no-site": "No site is open.",
+  "publish.destinations.failed.stale-session":
+    "Another site has opened in this window. Open this site again to change its destinations.",
+  "publish.destinations.failed.read-only":
+    "This site's file can't be changed here, so neither can its destinations.",
+  "publish.destinations.failed.no-keychain":
+    "This computer can't keep passwords safely, so {appName} can't save one.",
+  "publish.destinations.failed.bad-key": "Choose the private key file again.",
+  "publish.destinations.failed.full": "A site can have up to {max} destinations.",
+  "publish.destinations.failed.unknown": "The destinations couldn't be changed. Try again.",
   // Problems the form words itself.
   "publish.fileTransfer.error.host": "Use the host's name, such as ftp.example.com.",
   "publish.fileTransfer.error.folder": "Use a folder, such as /public_html.",

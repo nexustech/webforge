@@ -317,7 +317,8 @@ export interface CanvasEngine {
   /**
    * Shows the site's Media images on the canvas (1.16): `image` turns a placed image's media id
    * into an image to show, or `null`; `emptyImage` is what an Image element without its image shows
-   * instead (2.9, a hint). Called again when Media changes; the page is drawn again.
+   * instead (2.9, a hint). Called again when Media changes; the elements whose image changed draw
+   * again (#727).
    */
   setImages(
     image: (mediaId: string) => ResolvedImage | null,
@@ -333,12 +334,12 @@ export interface CanvasEngine {
   /**
    * Shows the site's Site Settings on the canvas (1.17, 2.8): the values elements are bound to,
    * what an empty one shows instead (a hint), and the opening hours. Called again when Site
-   * Settings change; the page is drawn again.
+   * Settings change; the elements that read a value that changed draw again (#727).
    */
   setSettings(bindings: SiteBindings): void;
   /**
    * Shows the site's navigation menu in the Header on the canvas (1.21), as the export draws it.
-   * Called again when the menu, the pages or the page shown change; the page is drawn again.
+   * Called again when the menu, the pages or the page shown change; what shows it draws again.
    */
   setNavigation(navigation: RenderContext["navigation"]): void;
   setMode(mode: EditorMode): void;
@@ -346,13 +347,14 @@ export interface CanvasEngine {
   setViewOptions(options: ViewOptions): void;
   /**
    * Shows the edit-only previews on the canvas (UX-26): the Header's small-screen menu open, for
-   * one. View state, never an undo step (U6), and never in the export. None until called; the page
-   * is drawn again.
+   * one. View state, never an undo step (U6), and never in the export. None until called; the
+   * elements that show a preview draw again.
    */
   setPreviews(previews: EditPreviews): void;
   /**
    * Draws each element with its kind's look from the theme (3.12, CT-1) under what it sets itself,
-   * as the export does. Called again when the theme's looks change; the page is drawn again.
+   * as the export does. Called again when the theme's looks change; the elements of a kind whose
+   * look changed draw again (#727).
    */
   setLooks(looks: RenderContext["looks"]): void;
   /**

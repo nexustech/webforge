@@ -33,8 +33,30 @@ afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 600));
 });
 
+/** How often each counted component was drawn (#727). */
+const drawn = { counted: 0, photo: 0 };
+
 const library: ComponentLibrary = {
   components: {
+    Counted: {
+      label: "Counted",
+      fields: {},
+      defaults: {},
+      // Reads nothing of the render context.
+      render: () => {
+        drawn.counted += 1;
+        return <p className="t-counted" />;
+      },
+    },
+    Photo: {
+      label: "Photo",
+      fields: {},
+      defaults: {},
+      render: ({ context }) => {
+        drawn.photo += 1;
+        return <p className="t-photo">{context.image("m1")?.src ?? "none"}</p>;
+      },
+    },
     Heading: {
       label: "Heading",
       fields: { text: { kind: "text", label: "Text", inline: true } },
@@ -620,6 +642,49 @@ describe("createPuckEngine", () => {
     await act(async () => engine.setPreviews({}));
     await settle();
     expect(open()).toBe(false);
+  });
+
+  it("draws again only the elements that read what changed, with Puck's config as it was (#727)", async () => {
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [
+            { type: "Counted", props: { id: "c" } },
+            { type: "Photo", props: { id: "p" } },
+          ],
+        },
+      }),
+    );
+    await settle();
+    const counted = drawn.counted;
+    const photo = drawn.photo;
+
+    // A new config would draw every element again: one that reads nothing never draws again.
+    await act(async () => engine.setLooks({ Heading: { lookItalic: true } }));
+    await act(async () => engine.setPreviews({ mobileMenu: true }));
+    await act(async () => engine.setSettings({ setting: () => "Rosa's Bakery" }));
+    await settle();
+    expect([drawn.counted, drawn.photo]).toEqual([counted, photo]);
+
+    await act(async () =>
+      engine.setImages((id) =>
+        id === "m1"
+          ? {
+              sources: [],
+              src: "webforge-media://m1",
+              fallback: { type: "image/jpeg", srcset: "" },
+              width: 10,
+              height: 10,
+              alt: "",
+            }
+          : null,
+      ),
+    );
+    await settle();
+    expect(element.querySelector(".t-photo")?.textContent).toBe("webforge-media://m1");
+    expect(drawn.counted).toBe(counted);
+    expect(drawn.photo).toBeGreaterThan(photo);
   });
 
   it("still draws an Image's hint after Site Settings change (#367)", async () => {

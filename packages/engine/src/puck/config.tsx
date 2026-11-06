@@ -10,8 +10,22 @@ import {
   withAdvanced,
   withLook,
 } from "@webforge/site-components";
-import { type ComponentType, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
+import {
+  type ComponentType,
+  cloneElement,
+  Fragment,
+  isValidElement,
+  type ReactNode,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { SECTIONS_ZONE_CLASS } from "./puck-dom.js";
+import {
+  type ContextTracker,
+  createContextTracker,
+  fixedRenderContext,
+  type RenderContextSource,
+} from "./render-context-store.js";
 import { FormatToolbar, richTextField } from "./rich-text.js";
 import { ROOT_ZONE } from "./tree.js";
 
@@ -67,7 +81,7 @@ function toPuckComponent(
   type: string,
   def: ComponentDef,
   revision: EditorRevision,
-  context: () => RenderContext,
+  context: RenderContextSource,
   richText: RichTextTools,
 ): ComponentConfig {
   const fieldsOfKind = (kind: FieldDef["kind"]) =>
@@ -85,32 +99,63 @@ function toPuckComponent(
     // no fields of its own keeps the bindings as they are (1.17).
     fields.bindings = { type: "object", objectFields: {} };
   }
+  const draw = (props: Record<string, unknown>, context: RenderContext) => {
+    const { puck: _puck, id: rawId, ...own } = props;
+    // The theme's look for its kind under what it sets itself (3.12, CT-1), as the export does.
+    const values = withLook(own, type, context.looks);
+    const id = typeof rawId === "string" ? rawId : "";
+    for (const name of richTextNames) {
+      values[name] = <Fragment key={revision(id)}>{values[name] as ReactNode}</Fragment>;
+    }
+    const slots = Object.fromEntries(
+      slotNames
+        .map((name) => [name, values[name]] as const)
+        .filter(
+          (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
+        ),
+    );
+    const output = withAdvanced(def.render({ id, values, slots, context }), values.advanced);
+    return values.hidden === true ? markedHidden(output) : output;
+  };
   return {
     label: def.label,
     fields,
     defaultProps: withoutChildIds(def.defaults),
-    render: (props: Record<string, unknown>) => {
-      const { puck: _puck, id: rawId, ...own } = props;
-      // The theme's look for its kind under what it sets itself (3.12, CT-1), as the export does.
-      const values = withLook(own, type, context().looks);
-      const id = typeof rawId === "string" ? rawId : "";
-      for (const name of richTextNames) {
-        values[name] = <Fragment key={revision(id)}>{values[name] as ReactNode}</Fragment>;
-      }
-      const slots = Object.fromEntries(
-        slotNames
-          .map((name) => [name, values[name]] as const)
-          .filter(
-            (entry): entry is readonly [string, ComponentType] => typeof entry[1] === "function",
-          ),
-      );
-      const output = withAdvanced(
-        def.render({ id, values, slots, context: context() }),
-        values.advanced,
-      );
-      return <>{values.hidden === true ? markedHidden(output) : output}</>;
-    },
+    render: (props: Record<string, unknown>) => (
+      <Drawn props={props} draw={draw} context={context} />
+    ),
   };
+}
+
+/**
+ * One component on the canvas, drawn with the render context (#727). It follows the parts of the
+ * context it read as it last drew, and draws again only when one of them changes, or its props.
+ */
+function Drawn({
+  props,
+  draw,
+  context,
+}: {
+  readonly props: Record<string, unknown>;
+  readonly draw: (props: Record<string, unknown>, context: RenderContext) => ReactNode;
+  readonly context: RenderContextSource;
+}) {
+  const [tracker] = useState(() => createContextTracker(context));
+  const version = useSyncExternalStore(tracker.subscribe, tracker.snapshot, tracker.snapshot);
+  return <>{drawWith(tracker, draw, props, version)}</>;
+}
+
+/**
+ * `draw` with a context that records what it reads. `version` is what changes when a part read
+ * changes, so a memoised call draws again then.
+ */
+function drawWith(
+  tracker: ContextTracker,
+  draw: (props: Record<string, unknown>, context: RenderContext) => ReactNode,
+  props: Record<string, unknown>,
+  _version: number,
+): ReactNode {
+  return draw(props, tracker.track());
 }
 
 /**
@@ -153,14 +198,15 @@ function withoutChildIds(defaults: Readonly<Record<string, unknown>>): Record<st
  * the first undo after a text session; the engine bumps the revision to remount the editor with
  * the right content instead (ADR 0004).
  *
- * `context` is read on every render, so a newer one (the site's Media images) shows when the page
- * is drawn again. `richText` is what rich text being edited has: the format toolbar over it, and
- * the editor's extensions.
+ * `context` is what the components render with. Each component follows the parts of it it read,
+ * and draws again when one of them changes (a theme's look, a Media image, Site Settings), with the
+ * config as it was (#727). `richText` is what rich text being edited has: the format toolbar over
+ * it, and the editor's extensions.
  */
 export function toPuckConfig(
   library: ComponentLibrary,
   revision: EditorRevision = () => 0,
-  context: () => RenderContext = () => EDITOR_RENDER_CONTEXT,
+  context: RenderContextSource = fixedRenderContext(() => EDITOR_RENDER_CONTEXT),
   richText: RichTextTools = DEFAULT_RICH_TEXT_TOOLS,
 ): Config {
   // The page's top level takes sections only (F-ED-1): elements go inside them, and the shared

@@ -64,6 +64,8 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await save();
 
     expect(onSave).toHaveBeenCalledWith({
+      // Left unnamed, it is listed by its host.
+      name: "ftp.rosasbakery.co.uk",
       destination: {
         protocol: "ftps",
         host: "ftp.rosasbakery.co.uk",
@@ -136,6 +138,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await save();
     // Remembered with what this computer trusts, never in the site's settings.
     expect(onSave).toHaveBeenCalledWith({
+      name: plain.host,
       destination: plain,
       signIn: { password: "test-only-password" },
       trust: { plainFtpWarned: true },
@@ -241,6 +244,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await save();
 
     expect(onSave).toHaveBeenCalledWith({
+      name: "sftp.rosasbakery.co.uk",
       destination: expect.objectContaining({ signIn: "key" }),
       // The key's handle: its text stays in the main process.
       signIn: { keyHandle: KEY_HANDLE, passphrase: "test-only-passphrase" },
@@ -260,7 +264,7 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
           folder: "/site",
           signIn: "key",
         }}
-        signIn={{ keyHandle: KEY_HANDLE }}
+        savedSignIn
         trust={{ hostKey: HOST_KEY }}
         publish={fakePublish()}
         onSave={vi.fn()}
@@ -286,12 +290,78 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("isn't a private key");
   });
 
-  it("reads a destination back into the form", () => {
+  it("reads a destination back into the form, never its password", () => {
     expect(
       valuesOf(
         { protocol: "ftps", host: "h.example", port: 990, user: "u", folder: "/httpdocs" },
-        { password: "p" },
+        "Shop",
       ),
-    ).toMatchObject({ preset: "plesk", port: "990", password: "p", signIn: "password" });
+    ).toMatchObject({
+      name: "Shop",
+      preset: "plesk",
+      port: "990",
+      password: "",
+      signIn: "password",
+    });
+  });
+
+  it("names the destination as typed", async () => {
+    const { fill, save, onSave } = setUp();
+    await fill("Name", "  My shop  ");
+    await fill("Host", "ftp.rosasbakery.co.uk");
+    await fill("User name", "rosa");
+    await fill("Password", "test-only-password");
+    await save();
+
+    expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ name: "My shop" }));
+  });
+
+  it("keeps a saved password left empty, while the host, user and key are the same (S2)", async () => {
+    const saved: FileTransferDestination = {
+      protocol: "sftp",
+      host: "sftp.rosasbakery.co.uk",
+      user: "rosa",
+      folder: "/site",
+      signIn: "password",
+    };
+    const testSaved = vi.fn(async () => ({ ok: true as const }));
+    const onSave = vi.fn();
+    const publish = fakePublish();
+    render(
+      <FileTransferDestinationDialog
+        open
+        destination={saved}
+        name="Live"
+        savedSignIn
+        trust={{ hostKey: HOST_KEY }}
+        publish={publish}
+        testSaved={testSaved}
+        onSave={onSave}
+        onCancel={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    const field = (name: string) => screen.getByLabelText(name, { exact: true });
+    expect(screen.getByText(/Leave it empty to keep it/)).toBeTruthy();
+
+    // Tested with the saved password, which the renderer never has.
+    await user.click(screen.getByRole("button", { name: "Test Connection" }));
+    expect(await screen.findByText(/connected/i)).toBeTruthy();
+    expect(testSaved).toHaveBeenCalledWith(saved, { hostKey: HOST_KEY });
+    expect(publish.testConnection).not.toHaveBeenCalled();
+
+    await user.clear(field("Folder"));
+    await user.type(field("Folder"), "/shop");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "Live", signIn: { keep: true } }),
+    );
+
+    // Another host: the password is typed again.
+    onSave.mockClear();
+    await user.clear(field("Host"));
+    await user.type(field("Host"), "evil.example");
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(onSave).not.toHaveBeenCalled();
   });
 });

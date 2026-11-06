@@ -18,6 +18,7 @@ import { layersPanelArea } from "./layers/area.js";
 import { canvasImagesArea, mediaPanelArea } from "./media/area.js";
 import { canvasNavigationArea } from "./menu/area.js";
 import { previewArea } from "./preview/area.js";
+import { publishArea } from "./publish/area.js";
 import { settingsArea } from "./settings/area.js";
 import { sharedSectionCommandsArea } from "./shared-sections/area.js";
 import { viewCommandsArea } from "./shell/area.js";
@@ -73,6 +74,7 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   codeTrustArea,
   exportCommandArea,
   saveSiteZipArea,
+  publishArea,
   previewArea,
   settingsArea,
   siteSettingsArea,

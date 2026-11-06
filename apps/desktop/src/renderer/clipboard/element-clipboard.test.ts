@@ -347,11 +347,17 @@ describe("copy and paste (1.25)", () => {
 
     await pasteElements(session, fakeClipboard(), notify);
     await pasteElements(session, fakeClipboard({ status: "failed", reason: "read-only" }), notify);
+    await pasteElements(
+      session,
+      fakeClipboard({ status: "failed", reason: "newer-format" }),
+      notify,
+    );
     await pasteElements(session, { read: vi.fn().mockRejectedValue(new Error("gone")) }, notify);
 
     expect(notify.mock.calls.map(([message]) => message)).toEqual([
       "There's nothing to paste. Copy a section or element first.",
       "This site is read-only, so nothing can be pasted into it.",
+      "That was copied in a newer version of Webforge. Update Webforge to paste it here.",
       "Webforge couldn't paste that.",
     ]);
   });

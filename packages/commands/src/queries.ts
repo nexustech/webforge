@@ -57,6 +57,8 @@ function jsonSchema(schema: z.ZodType): unknown {
 export const QUERIES = {
   /** The site at a glance: its name, pages, shared sections and theme. */
   outline: {
+    description:
+      "The open site at a glance: its name, language, home page, pages (id, title, file name, kind, folder), shared sections and theme preset. Start here: the other tools take the ids it gives.",
     input: z.strictObject({}),
     read: (site: SiteDoc) => ({
       name: site.settings.general.name,
@@ -74,6 +76,8 @@ export const QUERIES = {
   },
   /** The elements at a location, as a tree: a page's, the Header's or a shared section's. */
   pageTree: {
+    description:
+      'The elements at a location, as a tree of ids and types: a page\'s content (kind "page"), the Header or Footer every page shares ("layout"), or a shared section ("shared").',
     input: z.strictObject({ location: locationSchema }),
     read: (site: SiteDoc, { location }: { location: Location }) => {
       const nodes = nodesAt(site, location);
@@ -82,6 +86,8 @@ export const QUERIES = {
   },
   /** An element's fields: their kinds, labels and value schemas, and what each holds now. */
   fields: {
+    description:
+      "One element's fields: each one's kind, label, help, JSON Schema for its value, and what it holds now. Read it before updateFields, which takes these names and values.",
     input: z.strictObject({ location: locationSchema, nodeId: z.string().min(1).max(200) }),
     read: (site: SiteDoc, { location, nodeId }: { location: Location; nodeId: string }) => {
       const nodes = nodesAt(site, location);
@@ -115,6 +121,8 @@ export const QUERIES = {
   },
   /** Site Settings that say what the business is: never publishing, forms or analytics. */
   settings: {
+    description:
+      "Site Settings that say what the business is: its name, address, social profiles, contact details and search settings. Never publishing, forms or analytics.",
     input: z.strictObject({}),
     read: (site: SiteDoc) => {
       const { general, address, social, contact, search } = site.settings;
@@ -123,6 +131,8 @@ export const QUERIES = {
   },
   /** The theme's tokens: colours, fonts, corners, spacing… */
   theme: {
+    description:
+      "The theme's tokens (colours, fonts, corners, spacing and the rest), as setThemeTokens takes them.",
     input: z.strictObject({}),
     read: (site: SiteDoc) => site.theme,
   },

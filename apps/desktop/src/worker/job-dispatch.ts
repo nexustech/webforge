@@ -1,6 +1,6 @@
 import type { StoredMedia } from "@webforge/pipeline";
 import { type WorkerJob, workerJobSchema } from "../shared/export-worker-protocol.js";
-import type { ExportProgress } from "../shared/ipc/site.js";
+import type { JobProgress } from "../shared/worker-channel-protocol.js";
 import { type FromWorker, toWorkerSchema } from "../shared/worker-channel-protocol.js";
 
 /** What a job's handler gets besides the job: the site's bytes, its cancel, its progress. */
@@ -10,7 +10,7 @@ export type JobContext = {
   /** Aborted when the main process cancels this job, and only this one. */
   readonly signal: AbortSignal;
   /** Tells the main process how far the job has come (an export, 3.1). */
-  readonly onProgress: (progress: ExportProgress) => void;
+  readonly onProgress: (progress: JobProgress) => void;
 };
 
 /** A handler for each kind of job the worker takes: its outcome, as its job's schema has it. */

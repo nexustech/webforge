@@ -58,7 +58,8 @@ const readResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("empty") }),
   z.strictObject({
     status: z.literal("failed"),
-    reason: z.enum(["no-site", "stale-session", "read-only", "unknown"]),
+    // `newer-format`: copied in a newer build, whose site format this one can't read (ADR 0012).
+    reason: z.enum(["no-site", "stale-session", "read-only", "newer-format", "unknown"]),
   }),
 ]);
 

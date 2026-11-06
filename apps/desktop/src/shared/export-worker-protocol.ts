@@ -1,4 +1,13 @@
-import { IMAGE_MIME_TYPES, siteSnapshotSchema, themeSchema } from "@webforge/model";
+import {
+  fileTransferSignInSchema,
+  fileTransferTrustSchema,
+  IMAGE_MIME_TYPES,
+  publishDestinationSchema,
+  SECRET_MAX,
+  siteDocSchema,
+  siteSnapshotSchema,
+  themeSchema,
+} from "@webforge/model";
 import { catalogueFontSchema } from "@webforge/themes";
 import { z } from "zod";
 import { exportWarningSchema, MAX_REPORTED_WARNINGS } from "./ipc/site.js";
@@ -48,6 +57,44 @@ const previewJobSchema = exportJobSchema
 
 /** Builds the open site for the preview server. */
 export type PreviewJob = z.infer<typeof previewJobSchema>;
+
+/** A SHA-256, as hex: of a piece of code, or of a stored file. */
+const sha256Schema = z.string().regex(/^[0-9a-f]{64}$/);
+
+/**
+ * Publishes a site to a destination (4.5, ADR 0018 §1): the site main read from the file and
+ * gated, the destination with the sign-in main read from the keychain for this job only, and what
+ * this computer trusts about it. The worker makes the snapshot (§3), builds it and uploads it; it
+ * holds the sign-in for the job and never logs it, nor puts it in an outcome.
+ */
+const publishJobSchema = z.strictObject({
+  type: z.literal("publish"),
+  site: siteDocSchema,
+  destination: publishDestinationSchema,
+  signIn: z.union([
+    fileTransferSignInSchema,
+    z.strictObject({ token: z.string().min(1).max(SECRET_MAX) }),
+  ]),
+  trust: fileTransferTrustSchema,
+  /** The site and destination the remote manifest records (A8), and leave to replace another. */
+  target: z.strictObject({
+    site: z.strictObject({
+      projectId: z.string().min(1).max(200),
+      destinationId: z.string().min(1).max(200),
+    }),
+    replaceOtherSite: z.boolean().optional(),
+  }),
+  /**
+   * The SHA-256 of each piece of the site's code its owner trusts on this computer (#649): the
+   * rest is built blank, as an export leaves it.
+   */
+  trustedCode: z.array(sha256Schema).max(10_000),
+  fonts: exportJobSchema.shape.fonts,
+  families: downloadedFamiliesSchema,
+});
+
+/** Publishes a site to a destination. */
+export type PublishJob = z.infer<typeof publishJobSchema>;
 
 /** Compiles the site CSS for the canvas; a long-lived worker answers many of these (1.12). */
 const compileCssJobSchema = z.strictObject({
@@ -129,6 +176,7 @@ export type ThumbnailJob = z.infer<typeof thumbnailJobSchema>;
 export const workerJobSchema = z.discriminatedUnion("type", [
   exportJobSchema,
   previewJobSchema,
+  publishJobSchema,
   compileCssJobSchema,
   classCatalogueJobSchema,
   classCssJobSchema,
@@ -242,6 +290,59 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
 
 /** What the export worker reports back. */
 export type ExportOutcome = z.infer<typeof exportOutcomeSchema>;
+
+/**
+ * Why a publish failed (4.5): the publisher's codes (`PublishErrorCode` of `@webforge/publish`),
+ * or the build's, as an export's.
+ */
+const PUBLISH_FAILURES = [
+  "unauthorized",
+  "not-found",
+  "rate-limited",
+  "rejected",
+  "network",
+  "untrusted-host",
+  "no-encryption",
+  "bad-key",
+  "other-site",
+  "failed",
+  "build-failed",
+  "reserved-name",
+  "unreadable-image",
+] as const;
+
+/**
+ * What a publish job reports back (ADR 0018 §1): what went up and the live site's check, with the
+ * publisher's version of it (Netlify's deploy id), for main to record; cancelled, the previous site
+ * left as it was; or why it failed, by its code only (standards §4).
+ */
+const publishOutcomeSchema = z.discriminatedUnion("type", [
+  z.strictObject({
+    type: z.literal("published"),
+    /** The address the live site was checked at: none for a destination without one. */
+    url: z.string().max(2048),
+    uploaded: z.int().nonnegative(),
+    unchanged: z.int().nonnegative(),
+    removed: z.int().nonnegative(),
+    version: z.string().min(1).max(200).optional(),
+    check: z.enum(["live", "different", "unreachable", "unchecked"]),
+    durationMs: z.number().nonnegative(),
+  }),
+  z.strictObject({ type: z.literal("cancelled") }),
+  z.strictObject({
+    type: z.literal("failed"),
+    code: z.enum(PUBLISH_FAILURES),
+    /** A machine-readable detail such as a BuildError code; safe to log. */
+    detail: z.string().max(200),
+    /** The title of the page to fix, for `reserved-name`: shown to the person, never logged. */
+    page: z.string().max(500).optional(),
+    /** The id of the Media image to replace, for `unreadable-image` (S12). */
+    image: z.string().max(500).optional(),
+  }),
+]);
+
+/** What a publish job reports back. */
+export type PublishOutcome = z.infer<typeof publishOutcomeSchema>;
 
 /** A built file's path, as the build names them: `about.html`, `assets/css/site.css`. */
 const builtPathSchema = z

@@ -9,6 +9,7 @@ import { createJobDispatch } from "./job-dispatch.js";
 import { thumbnailFor } from "./make-thumbnail.js";
 import { runExport } from "./run-export.js";
 import { createPreviewBuilds } from "./run-preview.js";
+import { runPublish } from "./run-publish.js";
 
 // Entry of the export utility process (pipeline "where the work runs", 07). An export runs in a
 // process of its own; the canvas keeps one process for compiling its CSS (1.12), Media one for its
@@ -40,6 +41,15 @@ const dispatch = createJobDispatch(
     export: (job, { readMedia, signal, onProgress }) =>
       runExport(job, loadBundledResources, { readMedia, signal, pipeline, onProgress }),
     preview: (job, { readMedia }) => preview(job, { readMedia }),
+    // A publish (4.5, ADR 0018 §1): built here, where an export is, and sent from here.
+    publish: (job, { readMedia, signal, onProgress }) =>
+      runPublish(job, loadBundledResources, {
+        readMedia,
+        signal,
+        pipeline,
+        library: siteLibrary,
+        onProgress,
+      }),
     thumbnail: (job) => thumbnailFor(job, loadBundledResources),
     "class-catalogue": (job) => classes(job),
     "class-css": (job) => classes(job),

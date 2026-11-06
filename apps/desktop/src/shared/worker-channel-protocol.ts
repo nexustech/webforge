@@ -1,6 +1,13 @@
 import { z } from "zod";
 import { bytesSchema } from "./export-worker-protocol.js";
+import { publishProgressSchema } from "./ipc/publish.js";
 import { exportProgressSchema } from "./ipc/site.js";
+
+/** How far a job has come: an export's (3.1) or a publish's (4.5). */
+const jobProgressSchema = z.union([exportProgressSchema, publishProgressSchema]);
+
+/** How far a job has come. */
+export type JobProgress = z.infer<typeof jobProgressSchema>;
 
 /**
  * The envelope every message between the main process and a utility process travels in (A14): a
@@ -38,8 +45,8 @@ export const fromWorkerSchema = z.discriminatedUnion("message", [
     id: idSchema,
     detail: z.enum(["invalid-job", "unexpected"]),
   }),
-  /** How far job `id` has come (an export, 3.1). */
-  z.strictObject({ message: z.literal("progress"), id: idSchema, progress: exportProgressSchema }),
+  /** How far job `id` has come (an export, 3.1; a publish, 4.5). */
+  z.strictObject({ message: z.literal("progress"), id: idSchema, progress: jobProgressSchema }),
   /** Job `id` asks, as `read`, for the bytes the site stores under `hash` (R15). */
   z.strictObject({
     message: z.literal("read-blob"),

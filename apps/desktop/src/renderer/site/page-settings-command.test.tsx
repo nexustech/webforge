@@ -6,6 +6,7 @@ import { createCommandRegistry } from "../shell/commands.js";
 import { openedDialog } from "../shell/opened-dialog.test-helper.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
 import { sessionWith } from "../testing/fixtures.js";
+import { followersOf } from "../testing/followers.test-helper.js";
 import { addPage } from "./page-actions.js";
 import { registerPageSettingsCommand } from "./page-settings-command.js";
 
@@ -39,6 +40,28 @@ describe("registerPageSettingsCommand (3.17)", () => {
       "Who we are.",
     );
     expect(session.history.entries()).toHaveLength(steps + 1);
+  });
+
+  it("follows nothing of the document while it's closed (R9)", async () => {
+    const session = sessionWith();
+    const followers = followersOf(session.history.document);
+    const commands = createCommandRegistry();
+    const dialogs = createWindowDialogs();
+    registerPageSettingsCommand(commands, dialogs, session);
+    render(<WindowDialogs registry={dialogs} />);
+    const about = addPage(session, "About");
+    if (about === null) throw new Error("not added");
+    session.showPage(about);
+    expect(followers()).toBe(0);
+
+    act(() => {
+      commands.run("page.settings");
+    });
+    const dialog = await openedDialog("Settings for 'About'");
+    expect(followers()).toBeGreaterThan(0);
+    await userEvent.click(dialog.getByRole("button", { name: "Cancel" }));
+
+    expect(followers()).toBe(0);
   });
 
   it("removes the command and the dialog when asked", () => {

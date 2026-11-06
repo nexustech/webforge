@@ -33,6 +33,10 @@ const SITE_CHANNELS = [
   "versions:delete",
   "versions:read-site",
   "versions:open-as-new-site",
+  "publish:destinations",
+  "publish:saveDestination",
+  "publish:removeDestination",
+  "publish:testSavedDestination",
 ] as const;
 
 /** The others, and why none of them needs the opening. */

@@ -2,7 +2,14 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { CopiedElements, ImageMeta, MediaId, MediaMeta, NodeDoc } from "@webforge/model";
+import {
+  type CopiedElements,
+  type ImageMeta,
+  type MediaId,
+  type MediaMeta,
+  type NodeDoc,
+  SITE_FORMAT_VERSION,
+} from "@webforge/model";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   type ClipboardContent,
@@ -147,7 +154,26 @@ describe("element clipboard (1.25)", () => {
     const clipboard = elementClipboard(fakeSite(false).site);
     await clipboard.write({ nodes: [hero], media: [photo] });
     expect(existsSync(join(dir, photo.hash))).toBe(false);
-    expect(JSON.parse(held ?? "")).toEqual({ nodes: [hero], media: [] });
+    expect(JSON.parse(held ?? "")).toEqual({
+      formatVersion: SITE_FORMAT_VERSION,
+      nodes: [hero],
+      media: [],
+    });
+  });
+
+  it("pastes elements copied in an older format as this one has them, and refuses a newer one (ADR 0012)", async () => {
+    const clipboard = elementClipboard(fakeSite().site);
+    // A Section of format 5, whose padding was one size.
+    const old = { type: "Section", props: { id: "s", padding: "large", content: [] } };
+    held = JSON.stringify({ formatVersion: 5, nodes: [old], media: [] });
+    const read = await clipboard.read();
+    expect(read.status === "elements" && read.elements.nodes[0]?.props.padding).toEqual({
+      top: "l",
+      bottom: "l",
+    });
+
+    held = JSON.stringify({ formatVersion: SITE_FORMAT_VERSION + 1, nodes: [hero], media: [] });
+    expect(await clipboard.read()).toEqual({ status: "failed", reason: "newer-format" });
   });
 
   it("forgets the copied images once the clipboard holds something else, and on quitting (R13d)", async () => {

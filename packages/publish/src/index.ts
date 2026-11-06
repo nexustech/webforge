@@ -37,6 +37,14 @@ export {
   throwIfCancelled,
   type Verification,
 } from "./publisher.js";
+export {
+  type DestinationPublisher,
+  type PublisherForOptions,
+  type PublishSignIn,
+  type PublishTarget,
+  type PublishTo,
+  publisherFor,
+} from "./publisher-for.js";
 export { type FolderPublish, MANIFEST_FILE } from "./remote-folder.js";
 export { type PublishRunEvent, type PublishRunOptions, publishSite } from "./run.js";
 export {

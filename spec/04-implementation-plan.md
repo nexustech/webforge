@@ -1348,6 +1348,7 @@ The transport is [ADR 0021](../docs/adr/0021-mcp-transport.md) (Q9, accepted 1 N
 - [ ] Off by default; nothing listens until turned on
 - [ ] Unpaired callers and requests with a wrong `Origin`/`Host` are refused; removing an app cuts it off
 - [ ] Not reachable from another computer (test)
+- [ ] The MCP server is built as a factory that connects to the loopback transport or an in-memory one, so a later in-app assistant uses the same tools and checks (AIA-4, product owner, 1 Nov 2026; no change to the estimate)
 - [ ] AI edits appear in Undo History labelled with the app's name and undo cleanly (E2E with a test MCP client)
 - [ ] ADR written
 - [ ] Claude Desktop connects through a Webforge `.mcpb` desktop extension; the key is its sensitive setting, never in the file; the bridge checks the server's proof before it sends the key
