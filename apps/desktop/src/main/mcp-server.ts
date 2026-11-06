@@ -4,14 +4,28 @@ import {
   type CallToolResult,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { AI_TOOLS } from "@webforge/commands";
-import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
+import { AI_TOOLS, UNTRUSTED_SITE_TEXT } from "@webforge/commands";
+import { type AiRequest, type AiResponse, APP_TOOLS } from "../shared/ipc/ai.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
 export type McpApp = { readonly id: string; readonly name: string };
 
 /** What the server says it is to an AI app: Webforge, by the name the build has, and its version. */
 export type McpServerInfo = { readonly name: string; readonly version: string };
+
+/**
+ * Every tool an AI app sees: the command layer's (`AI_TOOLS`), then those the window answers
+ * itself (`APP_TOOLS`), each a query, taking nothing.
+ */
+const TOOLS = [
+  ...AI_TOOLS,
+  ...Object.entries(APP_TOOLS).map(([name, description]) => ({
+    kind: "query" as const,
+    name,
+    description: `${description} ${UNTRUSTED_SITE_TEXT}`,
+    inputSchema: { type: "object" as const, properties: {}, additionalProperties: false },
+  })),
+];
 
 /** A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done. */
 function toolResult(response: AiResponse): CallToolResult {
@@ -22,7 +36,7 @@ function toolResult(response: AiResponse): CallToolResult {
 }
 
 /**
- * The MCP server for one connection of `app` (4.9, AIA-4): `AI_TOOLS` as its tools, each call
+ * The MCP server for one connection of `app` (4.9, AIA-4): {@link TOOLS} as its tools, each call
  * asked of the open site through `ask`, a command on `app`'s behalf. It holds no state of its own,
  * so any transport can carry it: the loopback HTTP one for AI apps (ADR 0021), or an in-memory one
  * for an in-app assistant. Nothing of a call or its answer is logged, the SDK's errors included.
@@ -36,14 +50,14 @@ export function createMcpServer(
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: AI_TOOLS.map(({ name, description, inputSchema }) => ({
+    tools: TOOLS.map(({ name, description, inputSchema }) => ({
       name,
       description,
       inputSchema,
     })),
   }));
   server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
-    const tool = AI_TOOLS.find((each) => each.name === params.name);
+    const tool = TOOLS.find((each) => each.name === params.name);
     if (tool === undefined) {
       return toolResult({ status: "invalid", message: "There is no such tool." });
     }

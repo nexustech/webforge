@@ -1,6 +1,6 @@
 import type { NetworkInterfaceInfo } from "node:os";
 import { describe, expect, it } from "vitest";
-import { hasAddress, localNetworkAddress } from "./network-address.js";
+import { hasAddress, localNetworkAddress, phoneAddressFor } from "./network-address.js";
 
 const v4 = (address: string, internal = false) =>
   ({ address, family: "IPv4", internal }) as NetworkInterfaceInfo;
@@ -65,5 +65,25 @@ describe("hasAddress (#653)", () => {
     expect(hasAddress(interfaces, "192.168.0.14")).toBe(true);
     expect(hasAddress(interfaces, "192.168.0.15")).toBe(false);
     expect(hasAddress({}, "192.168.0.14")).toBe(false);
+  });
+});
+
+describe("phoneAddressFor (#748)", () => {
+  const wifi = () => ({ wifi: [v4("192.168.1.23")] });
+
+  it("is this computer's own address only in an unpackaged E2E launch, else the network's", () => {
+    expect(phoneAddressFor(false, { WEBFORGE_E2E_PHONE: "1" }, wifi)()).toBe("127.0.0.1");
+    // The installed app, and `pnpm dev`: the Wi-Fi or Ethernet address a phone reaches.
+    expect(phoneAddressFor(true, { WEBFORGE_E2E_PHONE: "1" }, wifi)()).toBe("192.168.1.23");
+    expect(phoneAddressFor(false, {}, wifi)()).toBe("192.168.1.23");
+    expect(phoneAddressFor(false, { WEBFORGE_E2E_PHONE: "0" }, wifi)()).toBe("192.168.1.23");
+  });
+
+  it("reads the adapters as each phone preview starts", () => {
+    let adapters: NodeJS.Dict<NetworkInterfaceInfo[]> = {};
+    const address = phoneAddressFor(true, {}, () => adapters);
+    expect(address()).toBe(undefined);
+    adapters = wifi();
+    expect(address()).toBe("192.168.1.23");
   });
 });
