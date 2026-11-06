@@ -23,7 +23,7 @@ import {
   useState,
 } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
-import { elementOf } from "./puck-dom.js";
+import { componentSelector, elementOf } from "./puck-dom.js";
 
 /**
  * The box that holds `element`'s padding: itself, or the column inside it of a section that is a
@@ -225,14 +225,27 @@ export function SpacingHandles({
       };
       setInset((now) => (BOX_SIDES.every((side) => now[side] === next[side]) ? now : next));
     };
-    // The column moves as the outline resizes; a change of width, which can take the column away,
-    // is a new render (below).
+    // The column moves as the outline resizes. A change of width adds or takes the column away
+    // in the canvas, which can draw it after these grips render, without resizing the outline;
+    // and the site's styles for a class it was just given arrive later, into the frame's head.
     const resizes = new frame.ResizeObserver(() => measure());
     resizes.observe(outline);
+    const changes = new frame.MutationObserver(() => measure());
+    const wrapper = document.querySelector(componentSelector(nodeId));
+    if (wrapper !== null) {
+      changes.observe(wrapper, {
+        subtree: true,
+        childList: true,
+        attributes: true,
+        attributeFilter: ["class"],
+      });
+    }
+    changes.observe(document.head, { childList: true, subtree: true, characterData: true });
     remeasure.current = measure;
     measure();
     return () => {
       resizes.disconnect();
+      changes.disconnect();
       remeasure.current = null;
     };
   }, [nodeId]);

@@ -32,8 +32,13 @@ describe("parsePreferences", () => {
       canvas: DEFAULT_PREFERENCES.canvas,
       add: DEFAULT_PREFERENCES.add,
       editPanel: DEFAULT_PREFERENCES.editPanel,
+      versionsKept: 20,
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
+    // Versions kept (P3): 5 to 100, else the default 20.
+    expect(parsePreferences({ versionsKept: 50 }).versionsKept).toBe(50);
+    expect(parsePreferences({ versionsKept: 2 }).versionsKept).toBe(20);
+    expect(parsePreferences({ versionsKept: 20.5 }).versionsKept).toBe(20);
     // A device too narrow for the canvas makes the canvas preferences the defaults.
     const device = { id: "phone", name: "Old phone", width: 240, height: 320 };
     expect(
