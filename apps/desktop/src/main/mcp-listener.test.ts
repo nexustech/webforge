@@ -3,7 +3,14 @@ import { networkInterfaces } from "node:os";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { afterEach, describe, expect, it } from "vitest";
-import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
+import {
+  MAX_SESSIONS_PER_APP,
+  MCP_HOST,
+  MCP_PATH,
+  type McpListener,
+  SESSION_IDLE_MS,
+  startMcpListener,
+} from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 
 const CLAUDE: McpApp = { id: "app-1", name: "Claude" };
@@ -14,13 +21,17 @@ const KEYS: Readonly<Record<string, McpApp>> = {
 };
 
 let listener: McpListener;
+/** The listener's time, which a test moves on. */
+let time = 0;
 afterEach(async () => {
   await listener.close();
+  time = 0;
 });
 
 async function start(): Promise<McpListener> {
   listener = await startMcpListener({
     port: 0,
+    now: () => time,
     authenticate: async (key) => (Object.hasOwn(KEYS, key) ? KEYS[key] : undefined),
     serverFor: (app) =>
       createMcpServer({ name: "Webforge", version: "1" }, app, async () => ({
@@ -142,6 +153,42 @@ describe("the MCP server's loopback listener (ADR 0021)", () => {
     expect(
       (await send({ headers: { ...claude, "mcp-session-id": session }, body: list })).status,
     ).toBe(404);
+  });
+
+  it("keeps at most a few connections per app, ending the least recently used", async () => {
+    await start();
+    const list = JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+    const sessions: string[] = [];
+    for (let n = 0; n <= MAX_SESSIONS_PER_APP; n++) {
+      time += 1_000;
+      const { session } = await send({ headers: claude });
+      if (session === undefined) throw new Error("no session");
+      sessions.push(session);
+    }
+    const cursor = await send({ headers: as("d".repeat(43)) });
+
+    const reached = async (id: string, headers = claude) =>
+      (await send({ headers: { ...headers, "mcp-session-id": id }, body: list })).status;
+    expect(await reached(sessions[0] ?? "")).toBe(404);
+    for (const id of sessions.slice(1)) expect(await reached(id)).not.toBe(404);
+    // Another app's connections don't count against Claude's.
+    expect(await reached(cursor.session ?? "", as("d".repeat(43)))).not.toBe(404);
+  });
+
+  it("ends a connection left unused, as a crashed client leaves it, and says so", async () => {
+    await start();
+    const { session } = await send({ headers: claude });
+    expect(listener.connectedApps()).toEqual([CLAUDE.id]);
+
+    time += SESSION_IDLE_MS;
+
+    expect(listener.connectedApps()).toEqual([]);
+    const list = JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+    const after = await send({
+      headers: { ...claude, "mcp-session-id": session ?? "" },
+      body: list,
+    });
+    expect(after.status).toBe(404);
   });
 
   it("can't be reached from another computer: only 127.0.0.1 listens", async () => {

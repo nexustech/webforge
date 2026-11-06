@@ -15,6 +15,15 @@ export const MCP_PATH = "/mcp";
 /** The most a request's body may hold: an AI request's input, with room for its envelope. */
 const MAX_BODY_BYTES = AI_INPUT_MAX_CHARS * 4 + 64 * 1024;
 
+/** The most connections one app keeps at once: a new one ends its least recently used. */
+export const MAX_SESSIONS_PER_APP = 4;
+
+/** How long a connection lasts unused: a client that crashed never says it has gone. */
+export const SESSION_IDLE_MS = 10 * 60_000;
+
+/** How often idle connections are looked for, besides on each request and status. */
+const SWEEP_EVERY_MS = 60_000;
+
 /** A key as `Authorization: Bearer` carries it: 256 bits or more, base64url (ADR 0021). */
 const BEARER = /^Bearer ([A-Za-z0-9_-]{43,128})$/;
 
@@ -26,6 +35,8 @@ export type McpListenerOptions = {
   readonly authenticate: (key: string) => Promise<McpApp | undefined>;
   /** The MCP server for one connection of `app` (`createMcpServer`). */
   readonly serverFor: (app: McpApp) => Server;
+  /** The time, for tests. */
+  readonly now?: () => number;
 };
 
 /** A listener started by {@link startMcpListener}. */
@@ -40,11 +51,12 @@ export type McpListener = {
   close(): Promise<void>;
 };
 
-/** One MCP session: its transport and server, and the app it's for. */
+/** One MCP session: its transport and server, the app it's for, and when it was last used. */
 type Session = {
   readonly transport: StreamableHTTPServerTransport;
   readonly server: Server;
   readonly app: McpApp;
+  lastUsed: number;
 };
 
 /** Answers `status` with nothing more: no detail of why reaches a caller. */
@@ -91,10 +103,13 @@ function bodyOf(req: IncomingMessage): Promise<{ readonly json: unknown } | numb
  * - a body over its cap (413) or not JSON (400);
  * - a session that isn't the caller's app's, with 404, as an unknown one is.
  *
- * Nothing of a request is logged.
+ * Each app keeps at most {@link MAX_SESSIONS_PER_APP} connections, and one unused for
+ * {@link SESSION_IDLE_MS} ends: a client that crashed never ends its own. Nothing of a request is
+ * logged.
  */
 export async function startMcpListener(options: McpListenerOptions): Promise<McpListener> {
   const sessions = new Map<string, Session>();
+  const now = options.now ?? Date.now;
   let host = "";
 
   const endSession = async (id: string) => {
@@ -104,7 +119,25 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
     await session.server.close().catch(() => undefined);
   };
 
+  /** Ends the connections unused for {@link SESSION_IDLE_MS}. */
+  const sweep = () => {
+    const at = now();
+    for (const [id, session] of sessions) {
+      if (at - session.lastUsed >= SESSION_IDLE_MS) void endSession(id);
+    }
+  };
+
+  /** Keeps `app`'s connections under the cap, ending its least recently used. */
+  const makeRoom = (app: McpApp) => {
+    const own = [...sessions].filter(([, session]) => session.app.id === app.id);
+    own.sort(([, a], [, b]) => a.lastUsed - b.lastUsed);
+    for (const [id] of own.slice(0, Math.max(0, own.length - MAX_SESSIONS_PER_APP + 1))) {
+      void endSession(id);
+    }
+  };
+
   const handle = async (req: IncomingMessage, res: ServerResponse) => {
+    sweep();
     if (req.headers.origin !== undefined || req.headers.host !== host) return refuse(res, 403);
     if (new URL(req.url ?? "/", "http://placeholder").pathname !== MCP_PATH) {
       return refuse(res, 404);
@@ -124,6 +157,7 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
     if (sessionId !== undefined) {
       const session = sessions.get(sessionId);
       if (session === undefined || session.app.id !== app.id) return refuse(res, 404);
+      session.lastUsed = now();
       await session.transport.handleRequest(req, res, body);
       return;
     }
@@ -134,7 +168,8 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
       sessionIdGenerator: () => randomUUID(),
       enableJsonResponse: true,
       onsessioninitialized: (id) => {
-        sessions.set(id, { transport, server, app });
+        makeRoom(app);
+        sessions.set(id, { transport, server, app, lastUsed: now() });
       },
       onsessionclosed: (id) => endSession(id),
     });
@@ -156,18 +191,24 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
       resolve();
     });
   });
+  const sweeping = setInterval(sweep, SWEEP_EVERY_MS);
+  sweeping.unref();
   const address = http.address();
   const port = typeof address === "object" && address !== null ? address.port : options.port;
   host = `${MCP_HOST}:${port}`;
 
   return {
     port,
-    connectedApps: () => [...new Set([...sessions.values()].map(({ app }) => app.id))],
+    connectedApps() {
+      sweep();
+      return [...new Set([...sessions.values()].map(({ app }) => app.id))];
+    },
     async disconnect(appId) {
       const ids = [...sessions].filter(([, { app }]) => app.id === appId).map(([id]) => id);
       await Promise.all(ids.map(endSession));
     },
     async close() {
+      clearInterval(sweeping);
       await Promise.all([...sessions.keys()].map(endSession));
       http.closeAllConnections();
       await new Promise<void>((resolve) => http.close(() => resolve()));
