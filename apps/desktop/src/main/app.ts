@@ -10,6 +10,7 @@ import {
 } from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
+import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
 import { publishEvents } from "../shared/ipc/publish.js";
 import { siteEvents } from "../shared/ipc/site.js";
@@ -79,6 +80,7 @@ import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
+import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
@@ -201,6 +203,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const myThemes = createMyThemes({ dir: app.getPath("userData") });
   // The code each site's owner trusts (#649): only that goes into a build.
   const codeTrust = createCodeTrust({ dir: app.getPath("userData") });
+  /** How many of Webforge's own versions each site keeps: the person's choice (P3). */
+  const versionsKept = () =>
+    lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   // Publish passwords, keys and tokens (#666, 4.4a), encrypted with the OS's keychain (Windows
   // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
   const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
@@ -212,8 +217,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const keyFiles = createKeyFiles();
   const projectSession = new ProjectSession(
     {},
-    // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
-    { writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)) },
+    {
+      // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
+      writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)),
+      // The site as it was before each day's first change, in Version History (F-SITE-4, 4.6).
+      dailyVersion: { kept: versionsKept },
+    },
   );
 
   // Before another site replaces the open one: save it, and capture its canvas for Recent.
@@ -372,6 +381,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         lifecycle
           .mainWindow()
           ?.webContents.send(publishEvents.progress.channel, operationId, progress),
+      versionsKept,
     }),
   ];
   for (const feature of features) {
@@ -539,6 +549,15 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     );
     exposeForE2eTests(ai, app.isPackaged);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
+    registerVersionsHandlers(ipcMain, isTrustedSender, {
+      session: projectSession,
+      dialogs: dialogs.project,
+      captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
+      versionsKept: async () => versionsKept(),
+      beforeSwitch: () => siteSwitch.leaveSite(),
+      // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
+      flush: requestFlush,
+    });
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

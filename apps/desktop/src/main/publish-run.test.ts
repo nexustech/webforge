@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublishJob, PublishOutcome } from "../shared/export-worker-protocol.js";
 import type { ExportRunner } from "./export-worker-client.js";
 import { type PublishRunDeps, registerPublishRun } from "./publish-run.js";
+import type { SiteStore } from "./site-store.js";
+import { saveVersion } from "./site-versions.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -57,11 +59,13 @@ function handlers({
   outcome = async (): Promise<PublishOutcome> => LIVE,
   signedIn = true,
   siteOpen = true,
+  saveFails = false,
 }: {
   readonly site?: SiteDoc;
   readonly outcome?: (job: PublishJob, signal: AbortSignal | undefined) => Promise<PublishOutcome>;
   readonly signedIn?: boolean;
   readonly siteOpen?: boolean;
+  readonly saveFails?: boolean;
 } = {}) {
   const store = ProjectStore.create(join(tempDir(), "site.wforge"), { name: "Rosa's" });
   open.push(store);
@@ -74,11 +78,18 @@ function handlers({
     }),
   };
   const sendProgress = vi.fn();
+  const siteStore: Pick<SiteStore, "withStore"> = {
+    withStore: async (_kind, work, none) => (siteOpen ? work(store) : none("no-site")),
+  };
   const deps: PublishRunDeps = {
     site: () => ({
-      withStore: async (_kind, work, none) => (siteOpen ? work(store) : none("no-site")),
+      ...siteStore,
       staleReason: () => (siteOpen ? undefined : "no-site"),
       readMedia: async () => undefined,
+      saveVersion: async (version) =>
+        saveFails
+          ? { status: "failed", reason: "read-only" }
+          : saveVersion(siteStore as SiteStore, version),
     }),
     secrets: {
       signInFor: async () =>
@@ -88,6 +99,7 @@ function handlers({
     fontsOf: async () => ({ fonts: [], families: [] }),
     runner,
     sendProgress,
+    versionsKept: () => 30,
     now: () => new Date("2026-11-01T14:02:00Z"),
   };
   const registered = new Map<string, Handler>();
@@ -140,7 +152,7 @@ describe("Publish (4.5, ADR 0018)", () => {
     const [version] = store.listVersions();
     expect(version).toMatchObject({
       reason: "on-publish",
-      name: expect.stringMatching(/^Published /),
+      name: "",
       publishedTo: {
         destinationId: destination.id,
         publishedAt: "2026-11-01T14:02:00.000Z",
@@ -205,6 +217,12 @@ describe("Publish (4.5, ADR 0018)", () => {
     expect(await cancelled.invoke("publish:cancel", OPERATION)).toBeNull();
     expect(await publishing).toEqual({ status: "cancelled" });
     expect(cancelled.store.listVersions()).toEqual([]);
+  });
+
+  it("still says the site is live when its version couldn't be saved", async () => {
+    const { store, publish } = handlers({ saveFails: true });
+    expect(await publish()).toMatchObject({ status: "published", versionSaved: false });
+    expect(store.listVersions()).toEqual([]);
   });
 
   it("answers for no other site, and no destination it doesn't have", async () => {

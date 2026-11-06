@@ -1,5 +1,4 @@
 import { createHash } from "node:crypto";
-import { t } from "@webforge/i18n";
 import {
   allowListText,
   type PublishDestination,
@@ -21,14 +20,14 @@ import type { SessionSite } from "./project-session.js";
 import type { PublishSecrets } from "./publish-secrets.js";
 import type { SiteFonts } from "./site-fonts.js";
 import type { SiteStore } from "./site-store.js";
-import { saveSiteVersion } from "./site-versions.js";
 
 /** What the publish calls reach outside themselves; fakes in tests. */
 export type PublishRunDeps = {
   /** The open site as opening `sessionId` reaches it (A13): its file, its Media. */
   readonly site: (
     sessionId: string,
-  ) => Pick<SiteStore, "withStore"> & Pick<SessionSite, "staleReason" | "readMedia">;
+  ) => Pick<SiteStore, "withStore"> &
+    Pick<SessionSite, "staleReason" | "readMedia" | "saveVersion">;
   readonly secrets: Pick<PublishSecrets, "signInFor">;
   /** Which of the site `projectId`'s code its owner trusts on this computer (#649). */
   readonly trusted: (projectId: string) => Promise<TrustedCode>;
@@ -36,7 +35,9 @@ export type PublishRunDeps = {
   /** The export worker's runner, which publishes too (ADR 0018 §1). */
   readonly runner: Pick<ExportRunner, "publish">;
   readonly sendProgress: (operationId: string, progress: PublishProgress) => void;
-  /** Now, for the version's name and the publish record; the clock unless a test says. */
+  /** How many automatic versions the person keeps (Settings), pruned as one is saved. */
+  readonly versionsKept: () => number;
+  /** Now, for the publish record; the clock unless a test says. */
   readonly now?: () => Date;
 };
 
@@ -49,17 +50,6 @@ type Read = {
 };
 
 const hashOf = (text: string) => createHash("sha256").update(text).digest("hex");
-
-/** "Published 19 Oct, 14:02", in the system's own format. */
-function versionName(at: Date): string {
-  const when = new Intl.DateTimeFormat(undefined, {
-    day: "numeric",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(at);
-  return t("publish.version.name", { when });
-}
 
 /** A failed publish's result, from the worker's outcome. */
 function failedResult(outcome: Extract<PublishOutcome, { type: "failed" }>): PublishResult {
@@ -158,9 +148,14 @@ export function registerPublishRun(
         if (outcome.type === "cancelled") return { status: "cancelled" };
         if (outcome.type === "failed") return failedResult(outcome);
 
-        // 4. Live: the version it built, from the manifest read with it.
+        // 4. Live: the version it built, from the manifest read with it. Like every automatic
+        // version it has no name of its own: the list names it by its reason and time.
         const at = now();
-        const version = await saveSiteVersion(site, versionName(at), "on-publish", {
+        const version = await site.saveVersion({
+          name: "",
+          reason: "on-publish",
+          thumbnail: undefined,
+          kept: deps.versionsKept(),
           documents: manifest,
           publishedTo: {
             destinationId,

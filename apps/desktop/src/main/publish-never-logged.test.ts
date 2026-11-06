@@ -100,12 +100,14 @@ describe("a publish's sign-in reaches no log (ADR 0018 §1)", () => {
           },
           staleReason: () => undefined,
           readMedia: async () => undefined,
+          saveVersion: async () => ({ status: "failed", reason: "unknown" }),
         }),
         secrets: { signInFor: async () => undefined },
         trusted: async () => () => false,
         fontsOf: async () => ({ fonts: [], families: [] }),
         runner: { publish: vi.fn() },
         sendProgress: vi.fn(),
+        versionsKept: () => 30,
       },
     );
 
