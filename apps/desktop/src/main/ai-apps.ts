@@ -1,0 +1,229 @@
+import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { z } from "zod";
+import { type CredentialStore, mcpCredentialKey } from "./credential-store.js";
+import type { JsonStore } from "./json-store.js";
+import type { McpApp } from "./mcp-server.js";
+
+/** How long a new key stays valid without being used: then it's revoked (ADR 0021). */
+export const UNCLAIMED_KEY_MS = 5 * 60_000;
+
+/** Wrong keys in a minute before each further wrong key's answer is held back. */
+const FAILURES_BEFORE_DELAY = 3;
+/**
+ * How long a wrong key's answer then waits, doubling with each, up to {@link MAX_DELAY_MS}: a
+ * caller hammering the server is slowed, and a connection is never held open for long.
+ */
+const FIRST_DELAY_MS = 250;
+const MAX_DELAY_MS = 2_000;
+const FAILURE_WINDOW_MS = 60_000;
+
+/** The longest app name, as the AI contract takes it ("AI (‹app›): …"). */
+const NAME_MAX = 80;
+
+/** A paired AI app, as Preferences › AI apps lists it: never its key. */
+export type PairedApp = {
+  readonly id: string;
+  /** The name the person gave it, cleaned. */
+  readonly name: string;
+  readonly pairedAt: number;
+  /** When it first connected with its key; `null` while the key waits to be used. */
+  readonly claimedAt: number | null;
+};
+
+const pairedAppSchema = z.strictObject({
+  id: z.uuid(),
+  name: z.string().min(1).max(NAME_MAX),
+  pairedAt: z.number().int().nonnegative(),
+  claimedAt: z.number().int().nonnegative().nullable(),
+});
+
+/** The paired apps (`<userData>/ai-apps.json`), and the port they reach Webforge on. */
+export const aiAppsFileSchema = z.strictObject({
+  version: z.literal(1),
+  apps: z.array(pairedAppSchema).max(50),
+  /** Whether *AI apps* is on in Preferences: off by default, and then nothing listens. */
+  enabled: z.boolean(),
+  /** Drawn once, the first time AI apps is turned on (ADR 0021); `null` until then. */
+  port: z.int().min(1024).max(65535).nullable(),
+});
+
+/** See {@link aiAppsFileSchema}. */
+export type AiAppsFile = z.infer<typeof aiAppsFileSchema>;
+
+/** An empty {@link AiAppsFile}. */
+export const NO_AI_APPS: AiAppsFile = { version: 1, apps: [], enabled: false, port: null };
+
+/** What the credential store keeps of an app: its key's hash and its server proof, never the key. */
+const secretSchema = z.strictObject({ keyHash: z.string(), proof: z.string() });
+
+/** A new pairing: the app, its key (shown once), and the proof its bridge checks Webforge by. */
+export type NewPairing = {
+  readonly app: PairedApp;
+  readonly key: string;
+  readonly proof: string;
+};
+
+/**
+ * What pairing an app came to: paired, or refused for a name that's empty once cleaned, or one
+ * another paired app has (compared without case). Each app's name is its own: its changes are
+ * named by it in Undo History, and its limits go by it as the bridge keeps them (#744 review).
+ */
+export type Pairing =
+  | ({ readonly status: "paired" } & NewPairing)
+  | { readonly status: "name-empty" | "name-taken" };
+
+/** The paired AI apps (4.9, ADR 0021). */
+export type AiApps = {
+  /** The paired apps, those whose key waited too long left out (and removed). */
+  list(): Promise<readonly PairedApp[]>;
+  /**
+   * Pairs an app named `name` (the person's name for it, cleaned), with a new key and proof, unless
+   * the name is empty or another app's.
+   */
+  add(name: string): Promise<Pairing>;
+  remove(id: string): Promise<void>;
+  /**
+   * The app `key` belongs to, if any: compared by hash, in constant time. Its first use claims
+   * it; a key not used within {@link UNCLAIMED_KEY_MS} is revoked. A right key is always
+   * accepted at once. After a few wrong keys in a minute, each further wrong key's answer is held
+   * back a little longer, up to {@link MAX_DELAY_MS}: no caller can lock the paired apps out, as a
+   * refusal of right keys would let any program on the computer do (#746 review).
+   */
+  authenticate(key: string): Promise<McpApp | undefined>;
+  /** The server proof of app `id`, which its bridge checks (ADR 0021); `null` if none. */
+  proofOf(id: string): Promise<string | null>;
+  /** Whether *AI apps* is on. */
+  enabled(): Promise<boolean>;
+  setEnabled(enabled: boolean): Promise<void>;
+  /** The remembered port, or `null` before the first time AI apps is on. */
+  port(): Promise<number | null>;
+  setPort(port: number): Promise<void>;
+};
+
+/** `name` as an app's name: one line, no control characters, trimmed, at most {@link NAME_MAX}. */
+export function cleanAppName(name: string): string {
+  return name
+    .replace(/[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .slice(0, NAME_MAX)
+    .trim();
+}
+
+const hashOf = (key: string) => createHash("sha256").update(key, "utf8").digest();
+
+/** 256 random bits, base64url: a key or a proof. */
+const secret = () => randomBytes(32).toString("base64url");
+
+/** The paired apps in `file`, their secrets in `credentials`. */
+export function createAiApps(
+  file: JsonStore<AiAppsFile>,
+  credentials: CredentialStore,
+  now: () => number = Date.now,
+  sleep: (ms: number) => Promise<void> = (ms) =>
+    new Promise((resolve) => {
+      setTimeout(resolve, ms);
+    }),
+): AiApps {
+  /** Each app's secret, read once: the store decrypts on every read. */
+  const secrets = new Map<string, z.infer<typeof secretSchema> | null>();
+  const secretOf = async (id: string) => {
+    if (!secrets.has(id)) {
+      const stored = await credentials.get(mcpCredentialKey(id));
+      let parsed: z.infer<typeof secretSchema> | null = null;
+      try {
+        parsed = stored === null ? null : secretSchema.parse(JSON.parse(stored));
+      } catch {
+        parsed = null;
+      }
+      secrets.set(id, parsed);
+    }
+    return secrets.get(id) ?? null;
+  };
+
+  const expired = (app: PairedApp) =>
+    app.claimedAt === null && now() - app.pairedAt > UNCLAIMED_KEY_MS;
+
+  const remove = async (id: string) => {
+    secrets.delete(id);
+    await credentials.delete(mcpCredentialKey(id));
+    await file.update((current) =>
+      current.apps.some((app) => app.id === id)
+        ? { ...current, apps: current.apps.filter((app) => app.id !== id) }
+        : undefined,
+    );
+  };
+
+  const list = async () => {
+    const { apps } = await file.read();
+    for (const app of apps.filter(expired)) await remove(app.id);
+    return apps.filter((app) => !expired(app));
+  };
+
+  let failures: number[] = [];
+  /** A wrong key: counted, and its answer held back once there have been a few in a minute. */
+  const failed = async () => {
+    const at = now();
+    failures = [...failures.filter((time) => at - time < FAILURE_WINDOW_MS), at];
+    const over = failures.length - FAILURES_BEFORE_DELAY;
+    if (over >= 0) await sleep(Math.min(FIRST_DELAY_MS * 2 ** over, MAX_DELAY_MS));
+    return undefined;
+  };
+
+  return {
+    list,
+    async add(name) {
+      const cleaned = cleanAppName(name);
+      if (cleaned === "") return { status: "name-empty" };
+      const same = cleaned.toLocaleLowerCase();
+      if ((await list()).some((app) => app.name.toLocaleLowerCase() === same)) {
+        return { status: "name-taken" };
+      }
+      const app: PairedApp = { id: randomUUID(), name: cleaned, pairedAt: now(), claimedAt: null };
+      const pairing = { app, key: secret(), proof: secret() };
+      const stored = { keyHash: hashOf(pairing.key).toString("base64url"), proof: pairing.proof };
+      await credentials.set(mcpCredentialKey(app.id), JSON.stringify(stored));
+      secrets.set(app.id, stored);
+      await file.update((current) => ({ ...current, apps: [...current.apps, app] }));
+      return { status: "paired", ...pairing };
+    },
+    remove,
+    async authenticate(key) {
+      const hash = hashOf(key);
+      for (const app of await list()) {
+        const stored = await secretOf(app.id);
+        const known = stored === null ? null : Buffer.from(stored.keyHash, "base64url");
+        if (known === null || known.length !== hash.length || !timingSafeEqual(known, hash)) {
+          continue;
+        }
+        if (app.claimedAt === null) {
+          await file.update((current) => ({
+            ...current,
+            apps: current.apps.map((each) =>
+              each.id === app.id ? { ...each, claimedAt: now() } : each,
+            ),
+          }));
+        }
+        return { id: app.id, name: app.name };
+      }
+      return failed();
+    },
+    async proofOf(id) {
+      return (await secretOf(id))?.proof ?? null;
+    },
+    async enabled() {
+      return (await file.read()).enabled;
+    },
+    async setEnabled(enabled) {
+      await file.update((current) =>
+        current.enabled === enabled ? undefined : { ...current, enabled },
+      );
+    },
+    async port() {
+      return (await file.read()).port;
+    },
+    async setPort(port) {
+      await file.update((current) => (current.port === port ? undefined : { ...current, port }));
+    },
+  };
+}
