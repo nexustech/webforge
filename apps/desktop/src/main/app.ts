@@ -545,12 +545,15 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       ),
       ask: (request) => ai.ask(request),
       info: { name: t("app.name"), version: app.getVersion() },
-      // Version History's (4.6a part 1, stream B) takes its place once that has merged.
-      saveVersionBefore: async () => "failed",
+      // Version History's, for the site open now: none to save without one.
+      saveVersionBefore: async (name) => {
+        const open = projectSession.current();
+        return open === null ? "failed" : versions.saveVersionBefore(open.sessionId, name);
+      },
     });
     void mcp.start().catch((error: unknown) => logFailure("mcp start", error));
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
-    registerVersionsHandlers(ipcMain, isTrustedSender, {
+    const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,
       dialogs: dialogs.project,
       captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
