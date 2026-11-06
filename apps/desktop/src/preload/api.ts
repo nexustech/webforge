@@ -5,6 +5,7 @@ import { createCall, type Invoke, type Subscribe } from "./api/call.js";
 import { canvasApi } from "./api/canvas.js";
 import { clipboardApi } from "./api/clipboard.js";
 import { fontsApi } from "./api/fonts.js";
+import { mcpApi } from "./api/mcp.js";
 import { mediaApi, type PathOfFile } from "./api/media.js";
 import { prefsApi } from "./api/prefs.js";
 import { previewApi } from "./api/preview.js";
@@ -45,5 +46,6 @@ export function createWebforgeApi(
     publish: publishApi(call),
     trust: trustApi(call),
     versions: versionsApi(call),
+    mcp: mcpApi(call),
   };
 }

@@ -43,6 +43,7 @@ import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
+import { registerMcpHandlers } from "./mcp-ipc.js";
 import { createMcpService, type McpService } from "./mcp-service.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
@@ -535,7 +536,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     exposeForE2eTests(ai, app.isPackaged);
     // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
     // 0021): nothing listens until the person turns it on.
-    mcp = createMcpService({
+    const service = createMcpService({
       apps: createAiApps(
         createJsonStore(join(app.getPath("userData"), "ai-apps.json"), aiAppsFileSchema, {
           empty: NO_AI_APPS,
@@ -551,7 +552,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         return open === null ? "failed" : versions.saveVersionBefore(open.sessionId, name);
       },
     });
-    void mcp.start().catch((error: unknown) => logFailure("mcp start", error));
+    mcp = service;
+    void service.start().catch((error: unknown) => logFailure("mcp start", error));
+    registerMcpHandlers(ipcMain, isTrustedSender, service);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,
