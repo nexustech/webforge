@@ -205,9 +205,9 @@ const operationIdSchema = z.uuid();
 
 /**
  * What became of a publish (4.5, ADR 0018): live at `url` (the live check's result with it, and
- * whether its "Published …" version was saved: not to a read-only site); refused before anything
- * was built, for `count` *Must fix* findings, or a sign-in not saved for the destination as it is
- * (S2); cancelled; or why it failed, by its code.
+ * whether the version it went live with was saved: not to a read-only site); refused before
+ * anything was built, for `count` *Must fix* findings, or a sign-in not saved for the destination
+ * as it is (S2); cancelled; or why it failed, by its code.
  */
 const publishResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
@@ -305,8 +305,8 @@ export const publishChannels = {
   /**
    * Publishes the open site to one of its destinations (4.5, ADR 0018): main reads the site from
    * its file as the window has just saved it, gates it, builds and sends it in the export worker,
-   * and saves the "Published …" version once it is live. As `operationId`, for its progress and
-   * its cancel; `replaceOtherSite` once the person agreed to replace another site's folder (A8).
+   * and saves the version it went live with. As `operationId`, for its progress and its cancel;
+   * `replaceOtherSite` once the person agreed to replace another site's folder (A8).
    */
   publishSite: {
     channel: "publish:publish",

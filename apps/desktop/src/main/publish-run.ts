@@ -71,8 +71,9 @@ function failedResult(outcome: Extract<PublishOutcome, { type: "failed" }>): Pub
  *    on what is left (§4): any *Must fix* stops it, with nothing built or saved;
  * 3. reads the destination's sign-in from the keychain, only for the destination it was typed for
  *    (S2), and publishes in the export worker, the sign-in passed for that job only (§1);
- * 4. once it is live, whatever the live check found, saves the "Published …" version from the
- *    manifest it read, recording where it went; a publish that fails or is cancelled saves none.
+ * 4. once it is live, whatever the live check found, saves the version it went live with, from
+ *    the manifest it read, recording where it went; a publish that fails or is cancelled saves
+ *    none.
  */
 export function registerPublishRun(
   ipc: Pick<IpcMain, "handle">,
