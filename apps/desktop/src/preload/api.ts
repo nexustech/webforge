@@ -14,6 +14,7 @@ import { siteApi } from "./api/site.js";
 import { templatesApi } from "./api/templates.js";
 import { themesApi } from "./api/themes.js";
 import { trustApi } from "./api/trust.js";
+import { versionsApi } from "./api/versions.js";
 
 export type { Invoke, Subscribe } from "./api/call.js";
 export type { PathOfFile } from "./api/media.js";
@@ -43,5 +44,6 @@ export function createWebforgeApi(
     preview: previewApi(call, subscribe),
     publish: publishApi(call),
     trust: trustApi(call),
+    versions: versionsApi(call),
   };
 }
