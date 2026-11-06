@@ -13,7 +13,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  ScrollArea,
   useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
@@ -81,7 +80,8 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
           {t("versionHistory.save")}
         </Button>
       </div>
-      <ScrollArea className="min-h-0 flex-1">
+      {/* A plain scroller: ScrollArea's table-like content box would stop long names being cut short. */}
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {state.status !== "ready" ? (
           <p className="m-0 p-3 text-xs text-muted-foreground" role="status">
             {state.status === "loading"
@@ -155,7 +155,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
             })}
           </ol>
         )}
-      </ScrollArea>
+      </div>
       <AlertDialog
         open={asked !== null}
         onOpenChange={(open) => {
