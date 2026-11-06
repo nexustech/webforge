@@ -17,6 +17,7 @@
     "build:perf": "electron-vite build --mode perf"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.32.2",
     "better-sqlite3": "catalog:",
     "electron-log": "5.4.4",
     "ssh2": "1.17.0",
