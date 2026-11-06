@@ -50,19 +50,18 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
   const [busy, setBusy] = useState(false);
   const menuDialog = useMenuDialog<Asked>(setAsked);
 
-  const run = async (work: () => Promise<unknown>) => {
+  const run = (work: () => Promise<unknown>) => {
     setBusy(true);
-    try {
-      await work();
-    } finally {
-      setBusy(false);
-    }
+    // Each action says itself what went wrong; the panel only waits for it.
+    void work()
+      .catch(() => undefined)
+      .then(() => setBusy(false));
   };
   const answer = () => {
     const question = asked;
     setAsked(null);
     if (question === null) return;
-    void run(() =>
+    run(() =>
       question.kind === "restore"
         ? actions.restore(question.version)
         : actions.remove(question.version),
@@ -139,9 +138,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
                       >
                         {t("versionHistory.restore")}
                       </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => void run(() => actions.openAsNewSite(version))}
-                      >
+                      <DropdownMenuItem onSelect={() => run(() => actions.openAsNewSite(version))}>
                         {t("versionHistory.openAsNewSite")}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />

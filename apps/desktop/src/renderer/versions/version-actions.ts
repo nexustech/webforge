@@ -13,10 +13,10 @@ import type { EditorSelection } from "../editor/selection.js";
 import { reportFailure } from "../log.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import type { VersionList } from "./version-list.js";
-import { versionName } from "./version-words.js";
+import { fit, newSiteName, versionName } from "./version-words.js";
 
 /** What the person is told: a toast in the app. */
-export type VersionNotices = {
+type VersionNotices = {
   readonly success: (message: string) => void;
   readonly error: (message: string) => void;
 };
@@ -55,7 +55,7 @@ export type VersionActions = {
 };
 
 /** A name that fits a version's: `name`, cut to the longest a version may have. */
-const fitted = (name: string) => Array.from(name).slice(0, VERSION_NAME_MAX).join("").trim();
+const fitted = (name: string) => fit(name, VERSION_NAME_MAX).trim();
 
 /**
  * Version History's actions on the open site (F-SITE-4, 4.6), through main's `versions` calls on
@@ -64,8 +64,9 @@ const fitted = (name: string) => Array.from(name).slice(0, VERSION_NAME_MAX).joi
  */
 export function createVersionActions(deps: VersionActionsDeps): VersionActions {
   const { versions, sessionId, session, list, notify, restart } = deps;
-  // Whether the version before this opening's first unasked theme change is saved.
-  let themeVersionTaken = false;
+  // The version before this opening's first unasked theme change, once asked for: a later change
+  // waits for it, so the version never holds a change made while it saved.
+  let themeVersion: Promise<boolean> | undefined;
 
   /** Saves a version for `reason`; the failure's message if it wasn't saved. */
   const saveFor = async (
@@ -168,7 +169,7 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
     async openAsNewSite(version) {
       session.flush();
       const site = session.history.document.getState().settings.general.name;
-      const name = t("versionHistory.newSiteName", { site, version: versionName(version) });
+      const name = newSiteName(site, versionName(version));
       let result: ProjectResult;
       try {
         result = await versions.openAsNewSite(sessionId(), version.id, name);
@@ -189,17 +190,22 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
     },
 
     async beforeSiteWide(action, { asked }) {
-      if (!asked) {
-        if (themeVersionTaken) return;
-        themeVersionTaken = true;
-      }
-      const name = asked
-        ? t("versionHistory.beforeAction", { action: action.confirm })
-        : t("versionHistory.beforeThemeChanges");
-      const failure = await saveFor(name, "before-site-wide");
       // The change goes ahead either way: it's one undo step, and the daily version holds the day.
-      // An unasked change tries again next time.
-      if (failure !== undefined && !asked) themeVersionTaken = false;
+      if (asked) {
+        await saveFor(
+          t("versionHistory.beforeAction", { action: action.confirm }),
+          "before-site-wide",
+        );
+        return;
+      }
+      if (themeVersion === undefined || !(await themeVersion)) {
+        const saving = saveFor(t("versionHistory.beforeThemeChanges"), "before-site-wide").then(
+          (failure) => failure === undefined,
+        );
+        themeVersion = saving;
+        // One that wasn't saved is tried again at the next change.
+        if (!(await saving)) themeVersion = undefined;
+      }
     },
   };
 }

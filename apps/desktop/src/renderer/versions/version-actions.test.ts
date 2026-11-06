@@ -277,6 +277,35 @@ describe("Version History's actions (4.6)", () => {
     expect(notify.error).not.toHaveBeenCalled();
   });
 
+  it("holds a second unasked theme change until the first one's version is saved", async () => {
+    let saveFirst: (result: Awaited<ReturnType<VersionsApi["save"]>>) => void = () => undefined;
+    const save = vi.fn<VersionsApi["save"]>(
+      () =>
+        new Promise((resolve) => {
+          saveFirst = resolve;
+        }),
+    );
+    const { actions } = setUp(fakeVersions({ save }));
+    const cardStyle = {
+      action: "Changed card style",
+      confirm: "Changed card style",
+      affectedPages: 6,
+    };
+
+    let secondDone = false;
+    const first = actions.beforeSiteWide(cardStyle, { asked: false });
+    const second = actions.beforeSiteWide(cardStyle, { asked: false }).then(() => {
+      secondDone = true;
+    });
+    await Promise.resolve();
+    expect(secondDone).toBe(false);
+
+    saveFirst({ status: "saved", version: summary() });
+    await Promise.all([first, second]);
+    expect(secondDone).toBe(true);
+    expect(save).toHaveBeenCalledOnce();
+  });
+
   it("tries the theme changes' version again when it couldn't be saved", async () => {
     const save = vi
       .fn<VersionsApi["save"]>()
