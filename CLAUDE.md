@@ -20,7 +20,7 @@ A desktop builder for non-technical small-business owners that produces self-con
   - Core packages contain no React.
 - **Every document change goes through `HistoryManager.run/begin`.** It must be undoable, with a meaningful label ("Edited Header text").
 - **No hard-coded UI strings.** Use `t('key')`, with wording from the glossary in `research/product/01-terminology.md`. Hierarchy: Site → Page → Section → Element.
-- **Help pages stay current.** A change people can see updates its page in `docs/help/` in the same PR, and the page's `updated` date (HP-4). Rules in `docs/help/README.md`.
+- **Help pages stay current.** A change people can see updates its page in `docs/help/` in the same PR, and the page's `updated` date (HP-4). Rules in `docs/help/README.md`; `pnpm help-check` checks the pages (HP-5).
 - **The app's name is `{appName}` in every message,** filled in from `app.name`; a rename changes that and `productName` only (`docs/branding.md`).
 - **Exported sites:**
   - no CDNs or external requests (except allowed GA4: behind consent, or cookieless when the banner is off)
@@ -37,7 +37,7 @@ A desktop builder for non-technical small-business owners that produces self-con
 
 ## Commands (pnpm 12, run from the repo root)
 - `pnpm dev`: start the desktop app with hot reload.
-- `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `ui-strings`, `react-compiler`, `test`, `test:compiled`). Run it before opening a PR.
+- `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `ui-strings`, `help-check`, `react-compiler`, `test`, `test:compiled`). Run it before opening a PR.
 - `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI on Linux, Windows and macOS for every ready PR, with Firefox and WebKit only when the exported site can change. Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
 - `pnpm e2e:packaged`: packages the app (`electron-builder --dir`) and runs `e2e/packaged/` against it (CI on Windows + macOS for every ready PR). Run it when touching packaging, Fuses or native modules.
 - `pnpm visual`: builds the editor UI's and the site components' Storybooks and runs `e2e/visual/` (screenshots only in CI's Linux container). Run it when touching `packages/editor-ui`, `packages/site-components` or `packages/templates`.

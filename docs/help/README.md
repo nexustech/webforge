@@ -66,3 +66,4 @@ These rules keep the pages readable for people who've never made a website, and 
   - `updated`: the date the page was last checked against the app;
   - optionally `status: partial`, for a feature that's only partly there.
 - **Keeping it current:** a PR that changes what people see, or how something works, updates the page in the same PR and its `updated` date. A new site component is added to a page's `components` and given a heading.
+- **Checked:** `pnpm help-check`, part of `pnpm check`, fails when front matter doesn't parse, an `id` is repeated or isn't its file's name, a link or `#anchor` between pages doesn't resolve, a page links outside `docs/help/`, a `related` page isn't there, a component type is on no page or on two, a page spells out the app's name, or raw HTML or a picture appears.

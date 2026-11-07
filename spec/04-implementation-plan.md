@@ -1261,7 +1261,7 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), destinations UI and keychain, FTP/FTPS/SFTP) → [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x) → 4.5 ([#73](https://github.com/nexustech/webforge/issues/73), publish flow UI) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), Netlify destination, once 4.2 has merged) |
+| A: Shell & panels | 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), destinations UI and keychain, FTP/FTPS/SFTP) → [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x) → 4.5 ([#73](https://github.com/nexustech/webforge/issues/73), publish flow UI) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), Netlify destination, once 4.2 has merged) → 5.4b ([#763](https://github.com/nexustech/webforge/issues/763), pulled forward from Phase 5, 7 Nov 2026, coordinator) |
 | B: Data & site | [#643](https://github.com/nexustech/webforge/issues/643) (pulled forward, in progress) → 4.6a ([#74](https://github.com/nexustech/webforge/issues/74), Version History) → 4.6b ([#724](https://github.com/nexustech/webforge/issues/724), republish, once 4.5 has merged). 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) goes first as soon as 0.2 has run, ahead of what is left |
 | C: History & canvas | [#671](https://github.com/nexustech/webforge/issues/671)'s A25 (pulled forward, in progress) → 4.9 ([#171](https://github.com/nexustech/webforge/issues/171), MCP server, once 4.4a has merged) |
 
