@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
+    "@modelcontextprotocol/sdk": "1.32.2",
     "@playwright/test": "1.64.1",
     "@types/node": "catalog:",
     "@types/ssh2": "1.15.6",

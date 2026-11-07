@@ -3,12 +3,13 @@ import { PaletteIcon } from "lucide-react";
 import { createStore, type StoreApi } from "zustand/vanilla";
 import type { FontsApi } from "../../shared/ipc/fonts.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
+
 import type { PanelRegistry } from "../shell/panels.js";
 import type { OwnThemes } from "./own-themes.js";
 import { draftChanges } from "./studio/look-draft.js";
 import type { StudioState } from "./studio/studio-state.js";
 import { ThemePanel } from "./ThemePanel.js";
+import type { ThemeSiteWide } from "./theme-edits.js";
 
 /** The Theme tab's id, which View → Theme… shows. */
 export const THEME_PANEL_ID = "theme";
@@ -26,7 +27,7 @@ export const THEME_PANEL_ID = "theme";
 export function registerThemePanel(
   panels: PanelRegistry,
   session: EditorSession,
-  siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
+  siteWide?: ThemeSiteWide,
   studio?: StoreApi<StudioState>,
   ownThemes?: OwnThemes,
   fonts?: () => FontsApi,

@@ -29,6 +29,7 @@ export {
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
 export {
   type BlobAsset,
+  type CleanUpOptions,
   type CleanUpReport,
   type NewBlob,
   SiteFileWriter,

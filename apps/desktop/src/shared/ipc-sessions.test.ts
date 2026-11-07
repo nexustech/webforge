@@ -32,11 +32,14 @@ const SITE_CHANNELS = [
   "versions:save",
   "versions:delete",
   "versions:read-site",
+  "versions:clean-up",
+  "preview:version",
   "versions:open-as-new-site",
   "publish:destinations",
   "publish:saveDestination",
   "publish:removeDestination",
   "publish:testSavedDestination",
+  "publish:publish",
 ] as const;
 
 /** The others, and why none of them needs the opening. */
@@ -53,9 +56,14 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "canvas:class-css": "a class's CSS",
   "canvas:item-html": "an element's HTML, from what the renderer sends",
   "clipboard:copy-text": "plain text to the system's clipboard",
+  "clipboard:copy-secret": "an AI app's key to the system's clipboard, cleared in a minute",
   "fonts:list": "the app's font catalogue",
   "fonts:browse": "the app's font catalogue",
   "fonts:download": "a font for the app, not the site",
+  "mcp:status": "AI apps, which are the app's, whichever site is open",
+  "mcp:set-enabled": "AI apps, which are the app's, whichever site is open",
+  "mcp:add": "AI apps, which are the app's, whichever site is open",
+  "mcp:remove": "AI apps, which are the app's, whichever site is open",
   "prefs:get": "the person's preferences",
   "prefs:set": "the person's preferences",
   "project:create": "opens another site: a hand-off of its own",
@@ -81,6 +89,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "publish:testConnection": "a destination's connection, nothing of the site",
   "publish:readHostKey": "a server's key, nothing of the site",
   "publish:chooseKeyFile": "a key file the person chooses, nothing of the site",
+  "publish:cancel": "cancels whichever publish is under way",
+  "publish:open-live": "opens where a publish went live, by its operation, nothing of the site",
 };
 
 const channels = Object.values(ipcContract);

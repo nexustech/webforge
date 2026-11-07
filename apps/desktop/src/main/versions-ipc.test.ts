@@ -7,7 +7,11 @@ import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { VersionSummary } from "../shared/ipc/versions.js";
 import { ProjectSession } from "./project-session.js";
-import { registerVersionsHandlers, type VersionsOptions } from "./versions-ipc.js";
+import {
+  BEFORE_SITE_WIDE_GAP_MS,
+  registerVersionsHandlers,
+  type VersionsOptions,
+} from "./versions-ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -105,10 +109,12 @@ describe("the versions IPC calls (4.6)", () => {
   });
 
   it("keeps the person's Versions kept of Webforge's own versions, and every one of the person's", async () => {
-    const { invoke, sessionId } = setUp({ versionsKept: async () => 2 });
+    let time = 0;
+    const { invoke, sessionId } = setUp({ versionsKept: async () => 2, now: () => time });
     await invoke("versions:save", sessionId, { name: "Mine", reason: "manual" });
     for (let index = 0; index < 4; index++) {
       await invoke("versions:save", sessionId, { name: "", reason: "before-site-wide" });
+      time += BEFORE_SITE_WIDE_GAP_MS;
     }
 
     const versions = await listed(invoke, sessionId);
@@ -117,6 +123,88 @@ describe("the versions IPC calls (4.6)", () => {
       "before-site-wide",
       "manual",
     ]);
+  });
+
+  it("asks the renderer to save its last changes before it saves a version (ADR 0018 §3)", async () => {
+    const order: string[] = [];
+    const { invoke, sessionId } = setUp({
+      flush: async () => {
+        order.push("flush");
+      },
+      captureCanvas: async () => {
+        order.push("capture");
+        return JPEG;
+      },
+    });
+    await invoke("versions:save", sessionId, { name: "Mine", reason: "manual" });
+    expect(order).toEqual(["flush", "capture"]);
+  });
+
+  it("saves one version before a burst of changes to every page, and keeps the daily one (4.6)", async () => {
+    let time = Date.parse("2026-11-06T10:00:00Z");
+    const { invoke, sessionId } = setUp({ now: () => time, versionsKept: async () => 5 });
+    await session.forSession(sessionId).saveVersion({
+      name: "",
+      reason: "daily",
+      thumbnail: undefined,
+      kept: 5,
+    });
+
+    // Ten pages deleted inside five minutes.
+    const results = [];
+    for (let page = 0; page < 10; page++) {
+      results.push(
+        await invoke("versions:save", sessionId, { name: "", reason: "before-site-wide" }),
+      );
+      time += 20_000;
+    }
+
+    expect(results.map((result) => (result as { status: string }).status)).toEqual([
+      "saved",
+      ...Array.from({ length: 9 }, () => "skipped"),
+    ]);
+    expect((await listed(invoke, sessionId)).map((version) => version.reason)).toEqual([
+      "before-site-wide",
+      "daily",
+    ]);
+    // Five minutes after the first, the next change is a new burst; the person's own are never held back.
+    time = Date.parse("2026-11-06T10:05:00Z");
+    expect(
+      await invoke("versions:save", sessionId, { name: "", reason: "before-site-wide" }),
+    ).toMatchObject({ status: "saved" });
+    expect(
+      await invoke("versions:save", sessionId, { name: "Mine", reason: "manual" }),
+    ).toMatchObject({ status: "saved" });
+  });
+
+  it("counts main's own version before an app's changes in the same burst (4.9, S20)", async () => {
+    const versions = registerVersionsHandlers({ handle: () => undefined } as never, () => true, {
+      session,
+      dialogs: { chooseNewProjectPath: async () => undefined },
+      captureCanvas: async () => undefined,
+      versionsKept: async () => 5,
+      now: () => 0,
+    });
+    const sessionId = session.current()?.sessionId ?? "";
+
+    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toBe("saved");
+    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toBe("saved");
+
+    const result = await session.forSession(sessionId).listVersions();
+    expect(result.status === "ok" ? result.versions.length : 0).toBe(1);
+  });
+
+  it("cleans up once the renderer has saved its last changes, for its own opening only (P3)", async () => {
+    const flush = vi.fn(async () => undefined);
+    const { invoke, sessionId } = setUp({ flush });
+
+    expect(await invoke("versions:clean-up", sessionId)).toMatchObject({ status: "cleaned" });
+    expect(flush).toHaveBeenCalledOnce();
+    expect(await invoke("versions:clean-up", "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d")).toEqual({
+      status: "failed",
+      reason: "stale-session",
+    });
+    expect(flush).toHaveBeenCalledOnce();
   });
 
   it("saves without a picture when the canvas can't be captured", async () => {
@@ -242,7 +330,8 @@ describe("the versions IPC calls (4.6)", () => {
       "failed",
     );
 
-    expect(flush).toHaveBeenCalledTimes(2);
+    // Once, for the opening it saves in; another opening's request saves nothing.
+    expect(flush).toHaveBeenCalledOnce();
     expect((await session.forSession(sessionId).listVersions()).status).toBe("ok");
     const listed = await session.forSession(sessionId).listVersions();
     expect(listed.status === "ok" ? listed.versions : []).toMatchObject([

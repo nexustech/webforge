@@ -101,6 +101,8 @@ test("places a copy from the Add panel, asks before deleting inside one, marks c
   await deleteHeading(1);
   await confirmation().getByRole("button", { name: "Delete" }).click();
   await expect(headings()).toHaveCount(0);
+  // Deleted once Version History's version is saved (4.6), while the question may still fade out.
+  await expect(confirmation()).toHaveCount(0);
 
   await page.locator(".editor__canvas").focus();
   await page.keyboard.press("ControlOrMeta+z");

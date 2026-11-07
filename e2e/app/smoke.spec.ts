@@ -120,6 +120,7 @@ test.describe("desktop shell", () => {
         "publish",
         "trust",
         "versions",
+        "mcp",
       ],
     });
   });

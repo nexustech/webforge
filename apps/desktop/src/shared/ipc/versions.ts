@@ -4,7 +4,7 @@ import type { ProjectResult } from "./project.js";
 import { projectResultSchema, sessionIdSchema } from "./project.js";
 
 /** The longest name the person can give a version (Save version…, 4.6). */
-const VERSION_NAME_MAX = 100;
+export const VERSION_NAME_MAX = 100;
 
 /**
  * Why a version was saved (ADR 0020): by the person (`manual`), or by Webforge on the site's first
@@ -71,6 +71,11 @@ export type ListVersionsResult = z.infer<typeof listResultSchema>;
 
 const saveResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved"), version: versionSummarySchema }),
+  /**
+   * Not saved: a version before a change to every page was saved in this opening less than five
+   * minutes ago, and holds the site from before the burst of changes (4.6, coordinator 6 Nov).
+   */
+  z.strictObject({ status: z.literal("skipped") }),
   failureSchema,
 ]);
 
@@ -102,6 +107,15 @@ const readSiteResultSchema = z.discriminatedUnion("status", [
 /** A version's site, to preview or restore it. */
 export type ReadVersionSiteResult = z.infer<typeof readSiteResultSchema>;
 
+const cleanUpResultSchema = z.discriminatedUnion("status", [
+  /** Cleaned up: `freedBytes` is what the file gave back to the disk. */
+  z.strictObject({ status: z.literal("cleaned"), freedBytes: z.int().nonnegative() }),
+  failureSchema,
+]);
+
+/** Outcome of Clean up. */
+export type CleanUpVersionsResult = z.infer<typeof cleanUpResultSchema>;
+
 /** IPC channels of the `versions` domain (`versions:*`), on the open site (F-SITE-4, 4.6). */
 export const versionsChannels = {
   /** The open site's versions, and the space they take. */
@@ -111,8 +125,8 @@ export const versionsChannels = {
     response: listResultSchema,
   },
   /**
-   * Saves the site as it is in its file as a version, with a picture of the canvas. The renderer
-   * saves its last changes first (ADR 0018 §3). An automatic one deletes the oldest automatic
+   * Saves the site as a version, with a picture of the canvas, once main has asked the renderer to
+   * save its last changes (ADR 0018 §3). An automatic one deletes the oldest automatic
    * versions past the person's Versions kept.
    */
   saveVersion: {
@@ -131,6 +145,16 @@ export const versionsChannels = {
     channel: "versions:delete",
     request: z.tuple([sessionIdSchema, z.uuid()]),
     response: deleteResultSchema,
+  },
+  /**
+   * Clean up (P3): removes what nothing in the site, its versions or Undo needs any more, and gives
+   * the free space back to the disk, however long that takes; saves wait meanwhile. Main asks the
+   * renderer to save its last changes first.
+   */
+  cleanUpVersions: {
+    channel: "versions:clean-up",
+    request: z.tuple([sessionIdSchema]),
+    response: cleanUpResultSchema,
   },
   /** A version's site, to preview or restore it in the editor. */
   readVersionSite: {
@@ -155,7 +179,7 @@ export const versionsChannels = {
 export interface VersionsApi {
   /** The open site's versions, newest first, and the space they take. */
   list(sessionId: string): Promise<ListVersionsResult>;
-  /** Saves the site's file as it is as a version; save the editor's last changes first. */
+  /** Saves the site as a version, its last changes saved first; end the canvas's edit before. */
   save(
     sessionId: string,
     version: { readonly name: string; readonly reason: z.infer<typeof requestedReasonSchema> },
@@ -164,6 +188,8 @@ export interface VersionsApi {
   delete(sessionId: string, id: string): Promise<DeleteVersionResult>;
   /** Version `id`'s site, to preview or restore it. */
   readSite(sessionId: string, id: string): Promise<ReadVersionSiteResult>;
+  /** Clean up: removes what nothing needs any more and gives the space back to the disk. */
+  cleanUp(sessionId: string): Promise<CleanUpVersionsResult>;
   /** Opens version `id` as a new site named `name`, which replaces the open one. */
   openAsNewSite(sessionId: string, id: string, name: string): Promise<ProjectResult>;
 }

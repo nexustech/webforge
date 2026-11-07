@@ -35,7 +35,7 @@ describe("confirmSiteWide (D7)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Delete Page" }));
 
     await expect(answer).resolves.toBe(true);
-    expect(before).toHaveBeenCalledWith(deletePage(6));
+    expect(before).toHaveBeenCalledWith(deletePage(6), { asked: true });
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
@@ -74,6 +74,23 @@ describe("confirmSiteWide (D7)", () => {
     await expect(third).resolves.toBe(true);
   });
 
+  it("runs the hook before a change that asks no question, which a failed hook never blocks (4.6)", async () => {
+    const confirm = createSiteWideConfirm();
+    const before = vi.fn();
+    const remove = confirm.setBeforeSiteWideAction(before);
+    const fonts = { action: "Changed fonts", confirm: "Changed fonts", affectedPages: 4 };
+
+    await confirm.beforeUnaskedChange(fonts);
+    expect(before).toHaveBeenCalledWith(fonts, { asked: false });
+    expect(confirm.current()).toBeNull();
+
+    remove();
+    confirm.setBeforeSiteWideAction(() => {
+      throw new Error("no version");
+    });
+    await expect(confirm.beforeUnaskedChange(fonts)).resolves.toBeUndefined();
+  });
+
   it("pauses the window's commands while it asks, so nothing changes the site meanwhile", () => {
     const confirm = createSiteWideConfirm();
     const registry = createCommandRegistry();
@@ -91,5 +108,44 @@ describe("confirmSiteWide (D7)", () => {
     stop();
     expect(registry.run("edit.undo")).toBe(true);
     expect(undo).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps Undo paused until the answered change has its version, so Undo never lands first (4.6)", async () => {
+    const confirm = createSiteWideConfirm();
+    const registry = createCommandRegistry();
+    registry.register({ id: "edit.undo", label: "Undo", run: vi.fn() });
+    pauseCommandsWhileAsking(confirm, registry);
+    let saved: () => void = () => undefined;
+    confirm.setBeforeSiteWideAction(
+      () =>
+        new Promise<void>((resolve) => {
+          saved = resolve;
+        }),
+    );
+
+    const answer = confirm.confirmSiteWide(deletePage(2));
+    confirm.answer(true);
+    await Promise.resolve();
+    expect(confirm.current()).toBeNull();
+    expect(confirm.landing()).toBe(true);
+    expect(registry.run("edit.undo")).toBe(false);
+
+    let made = false;
+    const change = answer.then(() => {
+      made = true;
+      // The change is made before Undo works again: nothing pressed meanwhile came first.
+      expect(confirm.landing()).toBe(false);
+    });
+    saved();
+    await change;
+    expect(made).toBe(true);
+    expect(registry.run("edit.undo")).toBe(true);
+
+    // An unasked theme change waits the same way.
+    const unasked = confirm.beforeUnaskedChange(deletePage(2));
+    expect(confirm.landing()).toBe(true);
+    saved();
+    await unasked;
+    expect(confirm.landing()).toBe(false);
   });
 });

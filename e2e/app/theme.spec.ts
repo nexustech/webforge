@@ -134,6 +134,8 @@ test("Theme Studio opens from the View menu, switches theme from a card, and und
     "true",
   );
   await expect.poll(async () => (await themeOf(page)).preset).toBe("atelier");
+  // Switched once Version History's version is saved (4.6), while the question may still fade out.
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
 
   // The card keeps the focus: the site's undo, from inside Theme Studio.
   await page.keyboard.press("ControlOrMeta+z");

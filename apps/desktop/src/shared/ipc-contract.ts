@@ -4,6 +4,7 @@ import { appChannels } from "./ipc/app.js";
 import { canvasChannels } from "./ipc/canvas.js";
 import { clipboardChannels } from "./ipc/clipboard.js";
 import { fontsChannels } from "./ipc/fonts.js";
+import { mcpChannels } from "./ipc/mcp.js";
 import { mediaChannels } from "./ipc/media.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { previewChannels } from "./ipc/preview.js";
@@ -57,6 +58,7 @@ export const ipcContract = {
   ...publishChannels,
   ...trustChannels,
   ...versionsChannels,
+  ...mcpChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -76,6 +78,7 @@ export const ipcDomains = {
   publish: publishChannels,
   trust: trustChannels,
   versions: versionsChannels,
+  mcp: mcpChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

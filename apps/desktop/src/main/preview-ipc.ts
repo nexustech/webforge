@@ -8,7 +8,7 @@ import { snapshotOf } from "./export-ipc.js";
 import { registerIpcHandler } from "./ipc.js";
 import { log } from "./log.js";
 import type { PreviewBuilder } from "./preview-builder.js";
-import type { PreviewScope, PreviewServer } from "./preview-server.js";
+import { type PreviewScope, type PreviewServer, VERSION_PATH } from "./preview-server.js";
 import type { SessionSite } from "./project-session.js";
 
 /** The open site as a preview of one opening of it reaches it (R6, #663): its Media. */
@@ -49,6 +49,16 @@ const ADDRESS_CHECK_MS = 5_000;
  */
 export type Preview = {
   open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
+  /**
+   * Opens a version's site (Version History's Preview, 4.6) at `page` in the default browser, as
+   * it was: built once, by a builder of its own so the editor's builds never drop it, and served
+   * apart from the live preview, which never changes it.
+   */
+  openVersion(
+    sessionId: string,
+    site: SiteContent,
+    page: PreviewPage,
+  ): Promise<"opened" | "failed">;
   update(sessionId: string, site: SiteContent): Promise<void>;
   show(page: PreviewPage): void;
   phone(sessionId: string, site: SiteContent, page: PreviewPage): Promise<PhoneAddress>;
@@ -167,6 +177,40 @@ export function createPreview(deps: PreviewDeps): Preview {
         return "failed";
       }
     },
+    async openVersion(sessionId, site, page) {
+      if (!current(sessionId)) return "failed";
+      try {
+        if (running?.sessionId !== sessionId) await stop();
+        const { server } = await start(sessionId);
+        const job = await deps.jobFor(snapshotOf(site));
+        const media = deps.site(sessionId);
+        const built = await new Promise<PreviewOutcome>((resolve) => {
+          const builder = deps.startBuilder(
+            (outcome) => {
+              builder.close();
+              resolve(outcome);
+            },
+            (hash) => media.readMedia(hash),
+          );
+          builder.request(job);
+        });
+        if (built.type !== "previewed") {
+          log.error("Webforge could not build a version's preview", { detail: built.detail });
+          return "failed";
+        }
+        // The site closed, or another opened, while it built: its server has stopped.
+        if (running?.server !== server) return "failed";
+        server.showVersion(built);
+        const port = await server.listen("local");
+        const url = pageUrl("127.0.0.1", port, `${server.base}${VERSION_PATH}`, page);
+        return (await deps.openInBrowser(url)) ? "opened" : "failed";
+      } catch (error) {
+        log.error("Webforge could not preview a version", {
+          code: error instanceof Error && "code" in error ? String(error.code) : "unknown",
+        });
+        return "failed";
+      }
+    },
     async update(sessionId, site) {
       if (running?.sessionId !== sessionId || !current(sessionId)) return;
       await take(site);
@@ -212,6 +256,9 @@ export function registerPreviewHandlers(
 ): void {
   registerIpcHandler(ipc, "previewOpen", isTrustedSender, (sessionId, site, page) =>
     preview.open(sessionId, site, page),
+  );
+  registerIpcHandler(ipc, "previewVersion", isTrustedSender, (sessionId, site, page) =>
+    preview.openVersion(sessionId, site, page),
   );
   registerIpcHandler(ipc, "previewUpdate", isTrustedSender, async (sessionId, site) => {
     await preview.update(sessionId, site);

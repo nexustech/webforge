@@ -22,8 +22,29 @@ const VACUUM_MIN_FREE_SHARE = 0.25;
  */
 const VACUUM_MAX_KEPT_BYTES = 16 * 1024 * 1024;
 
-/** What {@link SiteFileWriter.cleanUp} did: the blobs and assets it removed, and whether the file shrank. */
-export type CleanUpReport = GarbageReport & { readonly vacuumed: boolean };
+/**
+ * What {@link SiteFileWriter.cleanUp} did: the blobs and assets it removed, whether it VACUUMed,
+ * and how many bytes the file gave back to the disk.
+ */
+export type CleanUpReport = GarbageReport & {
+  readonly vacuumed: boolean;
+  readonly freedBytes: number;
+};
+
+/** How {@link SiteFileWriter.cleanUp} cleans up. */
+export type CleanUpOptions = {
+  /**
+   * Blobs to keep though nothing in the file refers to them: while the site is open, what Undo can
+   * still bring back and what a publish holds (Version History's Clean up, 4.6).
+   */
+  readonly keep?: Iterable<string>;
+  /**
+   * `bounded` (as a site closes): a VACUUM only when the clean-up removed something, enough of the
+   * file is free and it's small enough to rewrite quickly. `always` (Version History's Clean up,
+   * which shows it's working): a VACUUM whenever any of the file is free, however large.
+   */
+  readonly vacuum?: "bounded" | "always";
+};
 
 /**
  * A file's bytes for {@link SiteFileWriter.putBlobs}, with the hash they must have when the caller
@@ -115,23 +136,28 @@ export class SiteFileWriter {
    * Cleans the file up as its site closes: garbage collection (see `ProjectStore.collectGarbage`),
    * then, when that removed something, a VACUUM once enough of the file is free and the file is
    * small enough to rewrite quickly ({@link VACUUM_MAX_KEPT_BYTES}), which gives the space back to
-   * the disk. Run it only once no undo step can bring a reference back, with the file to itself:
-   * the VACUUM rewrites the whole file. With nothing to remove it writes nothing, however much is
-   * free, so a site opened and closed unedited stays as it was (#661).
+   * the disk. Run it only once no undo step can bring a reference back, or with what one can in
+   * `keep`, with the file to itself: the VACUUM rewrites the whole file. With nothing to remove it
+   * writes nothing, however much is free, so a site opened and closed unedited stays as it was
+   * (#661). Version History's Clean up asks for `vacuum: "always"` (see {@link CleanUpOptions}).
    */
-  cleanUp(): CleanUpReport {
-    const removed = stamped(this.#db, () => collectGarbage(this.#db));
+  cleanUp({ keep = [], vacuum = "bounded" }: CleanUpOptions = {}): CleanUpReport {
+    const kept = new Set(keep);
+    const removed = stamped(this.#db, () => collectGarbage(this.#db, kept));
     const pageSize = Number(this.#db.pragma("page_size", { simple: true }));
+    const pages = () => Number(this.#db.pragma("page_count", { simple: true })) * pageSize;
     const free = Number(this.#db.pragma("freelist_count", { simple: true })) * pageSize;
-    const size = Number(this.#db.pragma("page_count", { simple: true })) * pageSize;
+    const size = pages();
     const vacuumed =
-      removed.blobs + removed.assets > 0 &&
-      free >= VACUUM_MIN_FREE_BYTES &&
-      free >= size * VACUUM_MIN_FREE_SHARE &&
-      size - free <= VACUUM_MAX_KEPT_BYTES;
+      vacuum === "always"
+        ? free > 0
+        : removed.blobs + removed.assets > 0 &&
+          free >= VACUUM_MIN_FREE_BYTES &&
+          free >= size * VACUUM_MIN_FREE_SHARE &&
+          size - free <= VACUUM_MAX_KEPT_BYTES;
     // VACUUM keeps the header's fingerprint and application id, and writes the rows as they are.
     if (vacuumed) this.#db.exec("VACUUM");
-    return { ...removed, vacuumed };
+    return { ...removed, vacuumed, freedBytes: Math.max(0, size - pages()) };
   }
 
   #upsertAsset(asset: Omit<NewAsset, "data">, hash: string): void {

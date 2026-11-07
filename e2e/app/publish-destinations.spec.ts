@@ -1,8 +1,9 @@
-import { mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { createSite } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { startSftpServer } from "../packaged/sftp-server.js";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
@@ -95,4 +96,77 @@ test("adds an SFTP destination and keeps its password in the keychain, never the
   const reopened = again.getByRole("dialog", { name: "Publish" });
   await reopened.getByRole("button", { name: "Test the connection to Test host" }).click();
   await expect(reopened.getByText(/Connected/)).toBeVisible();
+});
+
+test("publishes the site to an SFTP host, then keeps the version it went live with (4.5)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "the OS keychain is Windows' and macOS's (ADR 0006 §5)",
+  );
+  server = await startSftpServer({ user: "baker", password: PASSWORD });
+  // A site Site Check lets publish: nothing to fill in, and its web address. The destination has
+  // none, so the live check reaches no other website.
+  const path = join(dir, "Rosa's Bakery.wforge");
+  const created = ProjectStore.create(path, { name: "Rosa's Bakery" });
+  const site = createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Not found",
+  });
+  site.settings.address.url = "https://www.rosas-bakery.example";
+  created.saveSite(site);
+  created.close();
+
+  const page = await openPublish(path);
+  const publish = page.getByRole("dialog", { name: "Publish" });
+  await publish.getByRole("button", { name: "Add Destination" }).click();
+  const form = page.getByRole("dialog", { name: "Publish to your web host" });
+  await form.getByLabel("Name", { exact: true }).fill("Test host");
+  await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
+  await form.getByLabel("Host", { exact: true }).fill("127.0.0.1");
+  await form.getByLabel("Port", { exact: true }).fill(String(server.port));
+  await form.getByLabel("User name", { exact: true }).fill("baker");
+  await form.getByLabel("Password", { exact: true }).fill(PASSWORD);
+  await form.getByLabel("Folder", { exact: true }).fill("/site");
+  await form.getByRole("button", { name: "Test Connection" }).click();
+  await form.getByRole("button", { name: "Trust This Host" }).click();
+  await expect(form.getByText(/Connected/)).toBeVisible();
+  await form.getByRole("button", { name: "Save" }).click();
+  await expect(form).toBeHidden();
+
+  await publish.getByRole("button", { name: "Publish to Test host" }).click();
+  const live = page.getByRole("dialog", { name: "Your site is live" });
+  await expect(live).toBeVisible({ timeout: 60_000 });
+  await expect(live.getByText(/Edit the destination to add its web address/)).toBeVisible();
+  await expect(live.getByText(/^Sent: \d+ · Unchanged: 0 · Removed: 0$/)).toBeVisible();
+  await expect(live.getByText(/Version History/)).toHaveCount(0);
+  // On the host: the built site, with the record that names it as this site's.
+  expect(existsSync(join(server.site, "index.html"))).toBe(true);
+  expect(readFileSync(join(server.site, "index.html"), "utf8")).toContain("<html");
+  await live.getByRole("button", { name: "Done" }).click();
+
+  // Published again, nothing has changed: nothing is sent.
+  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await page
+    .getByRole("dialog", { name: "Publish" })
+    .getByRole("button", { name: "Publish to Test host" })
+    .click();
+  await expect(live.getByText(/^Sent: 0 · Unchanged: \d+ · Removed: 0$/)).toBeVisible({
+    timeout: 60_000,
+  });
+  await app?.close();
+  app = undefined;
+
+  // Each publish kept the version it went live with, recording where it went.
+  const store = ProjectStore.open(path, { readOnly: true });
+  try {
+    const versions = store.listVersions().filter(({ reason }) => reason === "on-publish");
+    expect(versions.length).toBeGreaterThanOrEqual(1);
+    expect(versions[0]).toMatchObject({
+      publishedTo: expect.objectContaining({ check: "unchecked" }),
+    });
+  } finally {
+    store.close();
+  }
 });

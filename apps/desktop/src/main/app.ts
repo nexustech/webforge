@@ -12,6 +12,7 @@ import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
+import { publishEvents } from "../shared/ipc/publish.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
@@ -43,6 +44,7 @@ import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
+import { registerMcpHandlers } from "./mcp-ipc.js";
 import { createMcpService, type McpService } from "./mcp-service.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
@@ -60,9 +62,11 @@ import { registerProjectHandlers } from "./project-ipc.js";
 import { ProjectSession } from "./project-session.js";
 import { publishDestinationsFeature } from "./publish-destinations-ipc.js";
 import { createKeyFiles, registerPublishHandlers, testSignIn } from "./publish-ipc.js";
+import { publishRunFeature } from "./publish-run.js";
 import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import {
   createSecureWebPreferences,
   hardenSession,
@@ -290,6 +294,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     systemClipboard(electron),
     join(app.getPath("userData"), "clipboard"),
   );
+  // An AI app's key, copied out of clipboard history and cleared in a minute (4.9).
+  const secretClipboard = createSecretClipboard(
+    electronSecretClipboard(electron, process.platform),
+  );
 
   // The templates New Site offers (2.14a), outside app.asar.
   const templates = createTemplatesFeature(
@@ -333,6 +341,23 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       lifecycle.mainWindow()?.webContents.send(previewEvents.phoneStopped.channel),
   });
 
+  // The export, whose runner Publish shares (ADR 0018 §1).
+  const exportFeature = createExportFeature({
+    dialogs: dialogs.export,
+    startWorker: () => forkWorker("Webforge export"),
+    fontsOf: fonts.fontsOf,
+    // Only the code the site's owner trusts (#649).
+    snapshotFor: trustedOnly,
+    sendProgress: (operationId, progress) =>
+      lifecycle
+        .mainWindow()
+        ?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
+    // The site each export call is for (#663): its Media and its export choices.
+    site: (sessionId) => projectSession.forSession(sessionId),
+    // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
+    shell: electron.shell,
+  });
+  const publishSecrets = createPublishSecrets(credentials);
   /**
    * The app's features (A12): each is told as sites open, are saved and close (a hand-off's
    * included), registered once Electron is ready, and given its last work before Webforge exits.
@@ -344,29 +369,36 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     myThemesFeature(myThemes),
     fonts,
     templates,
-    createExportFeature({
-      dialogs: dialogs.export,
-      startWorker: () => forkWorker("Webforge export"),
-      fontsOf: fonts.fontsOf,
-      // Only the code the site's owner trusts (#649).
-      snapshotFor: trustedOnly,
-      sendProgress: (operationId, progress) =>
-        lifecycle
-          .mainWindow()
-          ?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
-      // The site each export call is for (#663): its Media and its export choices.
-      site: (sessionId) => projectSession.forSession(sessionId),
-      // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
-      shell: electron.shell,
-    }),
+    exportFeature,
     previewFeature(preview),
     codeTrustFeature(codeTrust, projectSession),
     // The open site's publish destinations (4.4a): the list in its file, sign-ins in the keychain.
     publishDestinationsFeature({
       site: (sessionId) => projectSession.site(sessionId),
-      secrets: createPublishSecrets(credentials),
+      secrets: publishSecrets,
       keys: keyFiles,
       test: testSignIn,
+    }),
+    // Publish (4.5): read, gated, built and sent in the export worker, then saved as a version.
+    publishRunFeature({
+      site: (sessionId) => ({
+        ...projectSession.forSession(sessionId),
+        withStore: projectSession.site(sessionId).withStore,
+      }),
+      secrets: publishSecrets,
+      trusted: (projectId) => codeTrust.trusted(projectId),
+      fontsOf: fonts.fontsOf,
+      runner: exportFeature.runner,
+      sendProgress: (operationId, progress) =>
+        lifecycle
+          .mainWindow()
+          ?.webContents.send(publishEvents.progress.channel, operationId, progress),
+      versionsKept,
+      flush: requestFlush,
+      // So Clean up keeps what a publish under way reaches (4.6).
+      holdManifest: (manifest) => projectSession.holdManifest(manifest),
+      // Looked up as it's called, as the export's shell is.
+      openExternal: (url) => electron.shell.openExternal(url),
     }),
   ];
   for (const feature of features) {
@@ -511,8 +543,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         app.isPackaged,
       ),
     );
-    registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession, (text) =>
-      electron.clipboard.writeText(text),
+    registerClipboardHandlers(
+      ipcMain,
+      isTrustedSender,
+      elementClipboard,
+      projectSession,
+      (text) => electron.clipboard.writeText(text),
+      (secret) => secretClipboard.copy(secret),
     );
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
@@ -535,7 +572,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     exposeForE2eTests(ai, app.isPackaged);
     // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
     // 0021): nothing listens until the person turns it on.
-    mcp = createMcpService({
+    const service = createMcpService({
       apps: createAiApps(
         createJsonStore(join(app.getPath("userData"), "ai-apps.json"), aiAppsFileSchema, {
           empty: NO_AI_APPS,
@@ -551,7 +588,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         return open === null ? "failed" : versions.saveVersionBefore(open.sessionId, name);
       },
     });
-    void mcp.start().catch((error: unknown) => logFailure("mcp start", error));
+    mcp = service;
+    void service.start().catch((error: unknown) => logFailure("mcp start", error));
+    registerMcpHandlers(ipcMain, isTrustedSender, service);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,
@@ -619,6 +658,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     void closeThenExit({
       // The MCP server first: no AI app's request reaches a site that is closing.
       close: async () => {
+        // No AI app's key stays on the clipboard after Webforge has quit (4.9).
+        await secretClipboard
+          .clearIfHeld()
+          .catch((error: unknown) => logFailure("secret clipboard clear", error));
         await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
         await projectSession.close();
       },

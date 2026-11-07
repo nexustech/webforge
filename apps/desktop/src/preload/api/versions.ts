@@ -7,5 +7,6 @@ export const versionsApi = (call: Call): VersionsApi => ({
   save: (sessionId, version) => call("saveVersion", sessionId, version),
   delete: (sessionId, id) => call("deleteVersion", sessionId, id),
   readSite: (sessionId, id) => call("readVersionSite", sessionId, id),
+  cleanUp: (sessionId) => call("cleanUpVersions", sessionId),
   openAsNewSite: (sessionId, id, name) => call("openVersionAsNewSite", sessionId, id, name),
 });

@@ -1,4 +1,5 @@
 import { ai } from "./en/ai.js";
+import { aiApps } from "./en/aiApps.js";
 import { app } from "./en/app.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components/index.js";
@@ -15,6 +16,7 @@ import { siteCheck } from "./en/siteCheck.js";
 import { storage } from "./en/storage.js";
 import { templates } from "./en/templates.js";
 import { theme } from "./en/theme.js";
+import { versions } from "./en/versions.js";
 
 /**
  * The per-area catalogues that make up the English UI strings. Each area lives in its own file under
@@ -39,6 +41,8 @@ export const areas = {
   theme,
   templates,
   ai,
+  aiApps,
+  versions,
 } as const;
 
 /**
@@ -63,4 +67,6 @@ export const en = {
   ...theme,
   ...templates,
   ...ai,
+  ...aiApps,
+  ...versions,
 } as const;
