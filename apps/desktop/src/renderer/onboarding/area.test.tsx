@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES, type OnboardingPreferences } from "../../shared/ipc/prefs.js";
 import { WINDOW_AREAS } from "../areas.js";
 import type { WindowContext } from "../editor/areas.js";
+import { bundledHelpLibrary } from "../help/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
@@ -12,6 +13,7 @@ import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { fakePreloadApi } from "../testing/preload.js";
 import { onboardingArea } from "./area.js";
 import { offerTour } from "./offer.js";
+import { TOUR_STEPS } from "./tour-steps.js";
 
 afterEach(cleanup);
 
@@ -118,6 +120,13 @@ describe("the tour (5.4a, OB-1…OB-3)", () => {
       });
     });
     expect(screen.getByRole("heading", { name: "See it as visitors will" })).toBeTruthy();
+  });
+
+  it("links each step to a help page that exists", () => {
+    const pages = bundledHelpLibrary().pages;
+    for (const step of TOUR_STEPS) {
+      if (step.helpPage !== undefined) expect(pages.has(step.helpPage), step.id).toBe(true);
+    }
   });
 
   it("is removed with the area", () => {
