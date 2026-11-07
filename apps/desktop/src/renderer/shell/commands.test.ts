@@ -454,6 +454,47 @@ describe("shortcuts", () => {
       }
     });
 
+    it("runs a function key marked everywhere in a field or on a button too, but not in a dialog (5.5)", () => {
+      const registry = withKeys({
+        next: { keys: ["F6"], everywhere: true },
+        rename: { keys: ["F2"] },
+      });
+      const next = vi.fn();
+      const rename = vi.fn();
+      registry.register({ id: "next", label: "Next Part of the Window", run: next });
+      registry.register({ id: "rename", label: "Rename…", run: rename });
+      expect(registry.get("next")?.everywhere).toBe(true);
+      expect(registry.get("rename")?.everywhere).toBeUndefined();
+      remove = installCommandShortcuts(window, registry);
+      const field = document.createElement("input");
+      const button = document.createElement("button");
+      const dialog = document.createElement("div");
+      dialog.setAttribute("role", "dialog");
+      const inDialog = document.createElement("input");
+      dialog.append(inDialog);
+      document.body.append(field, button, dialog);
+
+      for (const target of [field, button, inDialog]) {
+        target.dispatchEvent(key({ key: "F6", bubbles: true }));
+        target.dispatchEvent(key({ key: "F2", bubbles: true }));
+      }
+
+      // In the field and on the button, but a dialog keeps its keys.
+      expect(next).toHaveBeenCalledTimes(2);
+      expect(rename).not.toHaveBeenCalled();
+
+      // Editable text that keeps its keys to itself, as the page's does, doesn't keep F6.
+      const text = document.createElement("span");
+      text.contentEditable = "true";
+      text.addEventListener("keydown", (event) => event.stopPropagation());
+      document.body.append(text);
+      text.dispatchEvent(key({ key: "F6", bubbles: true }));
+      expect(next).toHaveBeenCalledTimes(3);
+      text.remove();
+      field.remove();
+      button.remove();
+      dialog.remove();
+    });
     it("leaves plain-key shortcuts to a focused field, list or editable text", () => {
       const registry = withKeys({ delete: { keys: ["Delete"] }, box: { keys: ["Mod+K"] } });
       const remove_ = vi.fn();

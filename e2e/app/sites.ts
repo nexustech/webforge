@@ -18,6 +18,10 @@ export type RendererWindow = {
       readSite(): Promise<unknown>;
       commit(sessionId: string, changes: readonly unknown[]): Promise<unknown>;
     };
+    /** The person's preferences: only the part a test reads (the tour's state, 5.4a). */
+    prefs: {
+      get(): Promise<{ onboarding: { tour: string; tipsSeen: string[]; showTips: boolean } }>;
+    };
   };
 };
 

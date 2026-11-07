@@ -15,9 +15,39 @@ export function Tooltip(props: ComponentProps<typeof TooltipPrimitive.Root>) {
   return <TooltipPrimitive.Root data-slot="tooltip" {...props} />;
 }
 
-/** The element the tooltip describes; use `asChild` around a button. */
-export function TooltipTrigger(props: ComponentProps<typeof TooltipPrimitive.Trigger>) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />;
+/**
+ * Whether `element` has the focus the keyboard gave it (`:focus-visible`), not a click's or the
+ * focus a dialog gives back after a click.
+ */
+function focusVisible(element: Element): boolean {
+  try {
+    return element.matches(":focus-visible");
+  } catch {
+    // A DOM without the selector (a test's): as a keyboard's.
+    return true;
+  }
+}
+
+/**
+ * The element the tooltip describes; use `asChild` around a button. Focus opens the tooltip only
+ * when it's the keyboard's (5.5): a dialog closed with the mouse gives its button the focus back,
+ * and a tooltip shown then would sit over whatever is clicked next.
+ */
+export function TooltipTrigger({
+  onFocus,
+  ...props
+}: ComponentProps<typeof TooltipPrimitive.Trigger>) {
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      {...props}
+      onFocus={(event) => {
+        onFocus?.(event);
+        // Radix opens the tooltip on focus unless the event's default is prevented.
+        if (!focusVisible(event.currentTarget)) event.preventDefault();
+      }}
+    />
+  );
 }
 
 /** The tooltip's text. */

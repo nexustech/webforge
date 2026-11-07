@@ -1,3 +1,4 @@
+import { t } from "@webforge/i18n";
 import type { EditorMode, ViewOptions } from "../canvas-engine.js";
 import { keepElementsGroups } from "./element-roles.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
@@ -42,9 +43,16 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
   let stopGroups: (() => void) | null = null;
   let documentInfo: CanvasDocumentInfo | null = null;
 
-  /** Gives `document` the site's name as its title, and its language (#465). */
+  /**
+   * Gives `document` the site's name as its title, and its language (#465), and names the frame it's
+   * in for screen readers (5.5): a frame needs a name of its own (axe's frame-title).
+   */
   const applyDocumentInfo = (document: Document, info: CanvasDocumentInfo) => {
     document.title = info.title;
+    document.defaultView?.frameElement?.setAttribute(
+      "title",
+      t("canvas.frame", { site: info.title }),
+    );
     if (info.language === undefined || info.language === "") {
       document.documentElement.removeAttribute("lang");
     } else {

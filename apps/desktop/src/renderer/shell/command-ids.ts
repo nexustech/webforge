@@ -31,6 +31,8 @@ export const COMMAND_IDS = {
   // Style this ‹kind›… (3.13a): the Style tab's button, the quick actions and the element menu.
   styleThis: "edit.styleThis",
   commandBox: "view.commandBox",
+  nextRegion: "view.nextRegion",
+  previousRegion: "view.previousRegion",
   zoomIn: "view.zoomIn",
   zoomOut: "view.zoomOut",
   zoomActual: "view.zoomActual",
@@ -47,6 +49,8 @@ export const COMMAND_IDS = {
   editorLevel: "view.editorLevel",
   help: "help.open",
   helpForElement: "help.forElement",
+  // Help › Take the Tour (5.4a, OB-1).
+  tour: "help.tour",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
   licences: "help.licences",

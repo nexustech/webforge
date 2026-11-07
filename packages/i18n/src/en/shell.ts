@@ -135,6 +135,8 @@ export const shell = {
   "command.stopPhonePreview": "Stop Phone Preview",
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
+  "command.nextRegion": "Next Part of the Window",
+  "command.previousRegion": "Previous Part of the Window",
   "command.about": "About {appName}",
   "command.licences": "Open-Source Licences",
   // Help → Open-Source Licences (5.3): every package the app ships, with its licence.

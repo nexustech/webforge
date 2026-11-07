@@ -2,9 +2,11 @@ import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState } from "react";
 import type { AiApi, BriefOutcome } from "../../shared/ipc/ai.js";
+import type { PrefsApi } from "../../shared/ipc/prefs.js";
 import type { NewSiteRequest, ProjectApi, ProjectResult } from "../../shared/ipc/project.js";
 import type { TemplateSummary, TemplatesApi } from "../../shared/ipc/templates.js";
 import { reportFailure } from "../log.js";
+import { offerTour } from "../onboarding/index.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { NewSiteDialog, templateName } from "./NewSiteDialog.js";
@@ -32,6 +34,8 @@ export type SiteCommandsProps = {
   readonly ai?: Pick<AiApi, "onBrief">;
   /** Whether a brief is refused now: in Content mode (§5.10). */
   readonly refuseBrief?: () => boolean;
+  /** The person's preferences, where the quick start asks for the tour (OB-1); injectable for tests. */
+  readonly prefs?: Pick<PrefsApi, "get" | "set">;
 };
 
 /** An AI app's brief, shown as the quick start filled in: its answers, and how to say what became of it. */
@@ -63,6 +67,7 @@ export function SiteCommands({
   recent,
   ai,
   refuseBrief,
+  prefs,
 }: SiteCommandsProps) {
   const registry = useCommandRegistry();
   // The dialog open, New Site or the quick start, with the templates it shows, and the AI app's
@@ -185,21 +190,28 @@ export function SiteCommands({
 
   const create = (request: NewSiteRequest) => {
     const brief = open?.brief;
+    const quickStart = open?.dialog === "quickStart";
     setOpen(null);
+    // A site the quick start made opens with the tour offered (OB-1), asked for before the window
+    // starts over with it.
+    const made = async () => {
+      const result = await (project ?? window.webforge.project).create(request);
+      if (result.status === "opened" && quickStart) {
+        await offerTour(prefs ?? window.webforge.prefs);
+      }
+      return result;
+    };
     if (brief === undefined) {
-      openWith(restart, () => (project ?? window.webforge.project).create(request));
+      openWith(restart, made);
       return;
     }
     // The AI app hears it was made before the window starts over with the new site.
     let created = false;
     const startOver = restart ?? (() => window.location.reload());
-    void openSiteWith(
-      () => (project ?? window.webforge.project).create(request),
-      () => {
-        created = true;
-        void brief.answer("created").finally(startOver);
-      },
-    ).then((message) => {
+    void openSiteWith(made, () => {
+      created = true;
+      void brief.answer("created").finally(startOver);
+    }).then((message) => {
       if (message !== undefined) toast.error(message);
       if (!created) void brief.answer("declined");
     });

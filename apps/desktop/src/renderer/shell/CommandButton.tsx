@@ -62,6 +62,8 @@ export function CommandButton({
       // A disabled button mutes its colour-coded icon too.
       className={cn("[&_svg]:transition-colors [&:disabled_svg]:text-disabled", className)}
       disabled={disabled}
+      // Found by the tour, which points at it (OB-3).
+      data-command={commandId}
       aria-label={text === undefined ? name : undefined}
       onClick={() => registry.run(commandId)}
     >
