@@ -28,6 +28,9 @@ export default defineConfig({
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   snapshotPathTemplate: "{testDir}/__screenshots__/{arg}{ext}",
   expect: {
+    // Likewise, a tall page's full-page screenshot, taken until two in a row match, took over the
+    // default 5 s under a full local run's load (Themes › Atelier, #754).
+    timeout: 15_000,
     toHaveScreenshot: { animations: "disabled", caret: "hide", ...SCREENSHOT_TOLERANCE },
   },
   use: {
