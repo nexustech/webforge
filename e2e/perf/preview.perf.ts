@@ -10,6 +10,7 @@ import {
   test,
 } from "@playwright/test";
 import { OPEN_WAIT } from "../app/budget.js";
+import { selectText } from "../app/caret.js";
 import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
 
 // The preview's targets (architecture §10, 3.2): a change to the styles alone reaches the browser
@@ -215,9 +216,12 @@ test("a changed page is re-rendered and sent to the browser in under 200 ms", as
   // Open before typing: each keystroke can rebuild the page, and on a slow machine the reload
   // for the typed text can come before the click that ends the edit (#76).
   const reloads = await serverEvents(site.url(), "reload");
-  await page.bringToFront();
-  await canvas.locator("h1").dblclick();
-  await page.keyboard.press("ControlOrMeta+a");
+  // Into the heading's own text, as the app's E2E tests type (caret.ts): a double click on the h1
+  // selected the element on Windows' runner without focusing its text, and Ctrl+A then selected
+  // the window (#76).
+  const heading = canvas.locator(".site-heading [contenteditable]").first();
+  await heading.click();
+  await selectText(heading);
   await page.keyboard.type("Fresh bread daily");
   // The text is on the canvas before the edit ends: a miss here is the typing's, not the preview's.
   await expect(canvas.locator("h1")).toHaveText("Fresh bread daily");
