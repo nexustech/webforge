@@ -50,16 +50,17 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
   const ports = [...drawn];
   const saveVersionBefore = vi.fn(async (_name: string): Promise<"saved" | "failed"> => "saved");
   const ask = vi.fn(async (): Promise<AiResponse> => ({ status: "done", data: {} }));
+  const briefs = {
+    ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
+    choices: () => ({ status: "done", data: siteChoices([]) }) as const,
+    status: vi.fn(() => ({ status: "not-found", message: "none" }) as const),
+  };
   const service = createMcpService({
     apps,
     ask,
     info: { name: "Webforge", version: "1" },
     saveVersionBefore,
-    briefs: {
-      ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
-      choices: () => ({ status: "done", data: siteChoices([]) }) as const,
-      status: () => ({ status: "not-found", message: "none" }) as const,
-    },
+    briefs,
     listen,
     drawPort: () => ports.shift() ?? 59_999,
   });
@@ -71,6 +72,7 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     disconnected,
     saveVersionBefore,
     ask,
+    briefs,
     closed: () => closed,
   };
 }
@@ -189,6 +191,40 @@ describe("the version before an AI app's changes (S20)", () => {
     const second = await connection(options, claude);
     await second.callTool({ name: "addPage", arguments: { title: "Shop" } });
     expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+  });
+
+  it("is saved before every plan, a build of many changes, which is the connection's first too (4.12a)", async () => {
+    const { service, listened, saveVersionBefore } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const plan = {
+      title: "Build the site",
+      commands: [{ name: "addPage", input: { title: "Menu" } }],
+    };
+
+    const client = await connection(options, claude);
+    await client.callTool({ name: "plan", arguments: plan });
+    await client.callTool({ name: "plan", arguments: plan });
+    await client.callTool({ name: "addPage", arguments: { title: "Team" } });
+
+    expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+  });
+
+  it("isn't saved for a brief, which is the app's by its id, not its name (4.12a)", async () => {
+    const { service, listened, saveVersionBefore, briefs } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+
+    // Removed and added again under the same name: another pairing, which can't read the first's.
+    const client = await connection(options, { id: "app-2", name: "Claude" });
+    await client.callTool({ name: "createSiteFromBrief", arguments: {} });
+    await client.callTool({ name: "briefStatus", arguments: { briefId: "brief-1" } });
+
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+    expect(briefs.ask).toHaveBeenCalledWith(expect.anything(), "app-2", expect.anything());
+    expect(briefs.status).toHaveBeenCalledWith(expect.anything(), "app-2");
   });
 
   it("lets the command run when the version can't be saved", async () => {
