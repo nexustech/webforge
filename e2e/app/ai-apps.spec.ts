@@ -1,12 +1,18 @@
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { unzipSync } from "fflate";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
 
 // AI apps (F-AI-1, 4.9): off until the person lets them connect; an app paired in AI apps…
 // reaches the open site through the MCP server on this computer, with the key it was given, and
-// its changes are undo steps named after it. Removing it cuts it off.
+// its changes are undo steps named after it. Removing it cuts it off. Claude Desktop connects
+// through the extension AI apps… writes for it (ADR 0021), with the key pasted into its settings.
 
 let app: ElectronApplication;
 let page: Page;
@@ -64,6 +70,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
 
   await allow.click();
   await dialog().getByRole("button", { name: "Add AI app" }).click();
+  await dialog().getByRole("radio", { name: "Another app" }).click();
   await dialog().getByRole("textbox", { name: "Name" }).fill("Test client");
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Test client is added" });
@@ -110,4 +117,96 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   await expect(dialog().getByText("No AI apps yet.")).toBeVisible();
   await expect(client.callTool({ name: "outline", arguments: {} })).rejects.toThrow();
   await expect(connect(address, key)).rejects.toThrow();
+});
+
+test("Claude Desktop connects through the extension AI apps… writes, with its key pasted in", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  // What Install in Claude Desktop opens, instead of opening it: Claude Desktop is this test.
+  await app.evaluate(({ shell }) => {
+    const opened: string[] = [];
+    Object.assign(globalThis, { opened });
+    Object.assign(shell, {
+      openPath: async (path: string) => {
+        opened.push(path);
+        return "";
+      },
+    });
+  });
+  await chooseFromMenu(app, page, "File", "AI apps…");
+  await dialog().getByRole("checkbox", { name: "Let AI apps connect" }).click();
+  await dialog().getByRole("button", { name: "Add AI app" }).click();
+  // Claude Desktop is the first choice, named so.
+  await expect(dialog().getByRole("textbox", { name: "Name" })).toHaveValue("Claude Desktop");
+  await dialog().getByRole("button", { name: "Add", exact: true }).click();
+  const shown = dialog().getByRole("region", { name: "Claude Desktop is added" });
+  const [key] = await shown.locator("dd").allTextContents();
+  if (key === undefined) throw new Error("no key shown");
+  await shown.getByRole("button", { name: "Install in Claude Desktop" }).click();
+  await expect(shown.getByText(/Claude Desktop is opening the extension/)).toBeVisible();
+  const [file] = await app.evaluate(() =>
+    (globalThis as unknown as { opened: string[] }).opened.slice(),
+  );
+  if (file === undefined) throw new Error("no extension opened");
+  expect(file).toMatch(/\.mcpb$/);
+
+  // Installed as Claude Desktop installs it: unpacked, and run with the key pasted in.
+  const installed = mkdtempSync(join(tmpdir(), "webforge-e2e-extension-"));
+  try {
+    for (const [name, bytes] of Object.entries(unzipSync(readFileSync(file)))) {
+      mkdirSync(dirname(join(installed, name)), { recursive: true });
+      writeFileSync(join(installed, name), bytes);
+    }
+    const text = readFileSync(join(installed, "manifest.json"), "utf8");
+    // The key is the person's to paste: never in the file.
+    expect(text).not.toContain(key);
+    // What Claude Desktop runs: the manifest's command, with the folder and the key filled in.
+    const { mcp_config: config } = (
+      JSON.parse(text) as {
+        server: { mcp_config: { args: string[]; env: Record<string, string> } };
+      }
+    ).server;
+    const fill = (value: string) =>
+      value.replaceAll("${__dirname}", installed).replaceAll("${user_config.key}", key);
+    const client = new Client({ name: "claude-ai", version: "1" });
+    await client.connect(
+      new StdioClientTransport({
+        // Claude Desktop's own Node.js; here, the one running the tests.
+        command: process.execPath,
+        args: config.args.map(fill),
+        env: Object.fromEntries(
+          Object.entries(config.env).map(([name, value]) => [name, fill(value)]),
+        ),
+      }),
+    );
+    try {
+      const outline = answer(await client.callTool({ name: "outline", arguments: {} }));
+      const added = answer(
+        await client.callTool({
+          name: "addNode",
+          arguments: {
+            location: { kind: "page", pageId: outline.data?.homePageId },
+            type: "Hero",
+            values: { title: "Fresh bread every morning" },
+            index: 0,
+          },
+        }),
+      );
+      expect(added).toMatchObject({ status: "done", label: "AI (Claude Desktop): Added Hero" });
+      await expect(dialog().getByText("Connected")).toBeVisible();
+    } finally {
+      await client.close();
+    }
+  } finally {
+    rmSync(installed, { recursive: true, force: true });
+  }
+
+  // Removed, its extension goes with it.
+  await shown.getByRole("button", { name: "Done" }).click();
+  await dialog().getByRole("button", { name: "Remove Claude Desktop" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
+  await expect(dialog().getByText("No AI apps yet.")).toBeVisible();
+  expect(existsSync(file)).toBe(false);
 });

@@ -39,6 +39,8 @@ export type McpService = {
   /** Removes an app, ending its connections at once. */
   remove(id: string): Promise<void>;
   list(): Promise<readonly PairedApp[]>;
+  /** The server proof of paired app `id`, which its Claude Desktop extension holds; or `null`. */
+  proofOf(id: string): Promise<string | null>;
   status(): Promise<McpServiceStatus>;
   /** Stops listening: Webforge is quitting. */
   close(): Promise<void>;
@@ -100,10 +102,19 @@ export function createMcpService(options: McpServiceOptions): McpService {
       limits.ask(app.id, request, request.kind === "command" ? versionFirst : undefined);
   };
 
+  /**
+   * A paired app's server proof, looked up only for an app in the list: a caller naming made-up
+   * ids reaches neither the credential store nor its cache, which would grow with each (ADR 0021).
+   * Not an app whose key waited too long, either, though its secret is still known.
+   */
+  const proofOf = async (id: string) =>
+    (await apps.list()).some((app) => app.id === id) ? apps.proofOf(id) : null;
+
   const listenOn = (port: number) =>
     listen({
       port,
       authenticate: (key) => apps.authenticate(key),
+      proofOf,
       serverFor: (app) => createMcpServer(options.info, app, askFor(app)),
     });
 
@@ -147,6 +158,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
       await listener?.disconnect(id);
     },
     list: () => apps.list(),
+    proofOf,
     async status() {
       return {
         enabled: await apps.enabled(),
