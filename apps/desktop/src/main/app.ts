@@ -1,5 +1,5 @@
 import { networkInterfaces } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
@@ -46,6 +46,7 @@ import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
+import { licenceFiles, registerLicenceHandlers } from "./licences.js";
 import { logFailure } from "./log.js";
 import { registerMcpHandlers } from "./mcp-ipc.js";
 import { createMcpService, type McpService } from "./mcp-service.js";
@@ -589,6 +590,19 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
     registerGuideHandlers(ipcMain, isTrustedSender, (url) => electron.shell.openExternal(url));
+    // Help → Open-Source Licences (5.3): the build's notices, and Chromium's own.
+    registerLicenceHandlers(
+      ipcMain,
+      isTrustedSender,
+      licenceFiles({
+        packaged: app.isPackaged,
+        platform: process.platform,
+        appPath: app.getAppPath(),
+        resourcesPath: process.resourcesPath,
+        execDir: dirname(process.execPath),
+      }),
+      (path) => electron.shell.openPath(path),
+    );
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
       // The flush has just run; capture the canvas for the Recent list before the window goes.
       beforeClose: () => siteSwitch.leaveSite(),
