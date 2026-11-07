@@ -26,6 +26,8 @@ export type TitleBarProps = {
   readonly saveStatus?: ReactNode;
   /** The latest steps to undo, beside Undo (UX-16), contributed by the open site. */
   readonly undoSteps?: ReactNode;
+  /** Whether an AI app is connected (F-AI-1, 4.9), contributed by AI apps: nothing while none is. */
+  readonly aiStatus?: ReactNode;
   /** Panel toggles and the Design | Content switch, before the site actions. */
   readonly tools?: ReactNode;
   /**
@@ -47,7 +49,14 @@ const NO_DRAG = "[-webkit-app-region:no-drag]";
  * (macOS) are drawn over it by Electron; the padding keeps them clear, using the Window Controls
  * Overlay area the window reports.
  */
-export function TitleBar({ siteName, saveStatus, undoSteps, tools, menuBar }: TitleBarProps) {
+export function TitleBar({
+  siteName,
+  saveStatus,
+  undoSteps,
+  aiStatus,
+  tools,
+  menuBar,
+}: TitleBarProps) {
   const registry = useCommandRegistry();
   useEffect(
     () => (menuBar === undefined ? undefined : syncNativeMenus(registry, menuBar)),
@@ -75,6 +84,7 @@ export function TitleBar({ siteName, saveStatus, undoSteps, tools, menuBar }: Ti
           label={t("shell.open")}
         />
         {saveStatus}
+        {aiStatus}
         <div className="mx-1 h-5 w-px bg-border" aria-hidden />
         <CommandButton commandId={COMMAND_IDS.undo} icon={<Undo2Icon />} label={t("editor.undo")} />
         {undoSteps}

@@ -6,4 +6,5 @@ export const clipboardApi = (call: Call): ClipboardApi => ({
   write: (sessionId, elements) => call("writeClipboard", sessionId, elements),
   read: (sessionId) => call("readClipboard", sessionId),
   copyText: (text) => call("copyText", text),
+  copySecret: (secret) => call("copySecret", secret),
 });

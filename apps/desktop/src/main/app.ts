@@ -44,6 +44,7 @@ import { createHandOff } from "./hand-off.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
+import { registerMcpHandlers } from "./mcp-ipc.js";
 import { createMcpService, type McpService } from "./mcp-service.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
@@ -65,6 +66,7 @@ import { publishRunFeature } from "./publish-run.js";
 import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import {
   createSecureWebPreferences,
   hardenSession,
@@ -291,6 +293,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const elementClipboard = createElementClipboard(
     systemClipboard(electron),
     join(app.getPath("userData"), "clipboard"),
+  );
+  // An AI app's key, copied out of clipboard history and cleared in a minute (4.9).
+  const secretClipboard = createSecretClipboard(
+    electronSecretClipboard(electron, process.platform),
   );
 
   // The templates New Site offers (2.14a), outside app.asar.
@@ -532,8 +538,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         app.isPackaged,
       ),
     );
-    registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession, (text) =>
-      electron.clipboard.writeText(text),
+    registerClipboardHandlers(
+      ipcMain,
+      isTrustedSender,
+      elementClipboard,
+      projectSession,
+      (text) => electron.clipboard.writeText(text),
+      (secret) => secretClipboard.copy(secret),
     );
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
@@ -556,7 +567,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     exposeForE2eTests(ai, app.isPackaged);
     // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
     // 0021): nothing listens until the person turns it on.
-    mcp = createMcpService({
+    const service = createMcpService({
       apps: createAiApps(
         createJsonStore(join(app.getPath("userData"), "ai-apps.json"), aiAppsFileSchema, {
           empty: NO_AI_APPS,
@@ -572,7 +583,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         return open === null ? "failed" : versions.saveVersionBefore(open.sessionId, name);
       },
     });
-    void mcp.start().catch((error: unknown) => logFailure("mcp start", error));
+    mcp = service;
+    void service.start().catch((error: unknown) => logFailure("mcp start", error));
+    registerMcpHandlers(ipcMain, isTrustedSender, service);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,
@@ -640,6 +653,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     void closeThenExit({
       // The MCP server first: no AI app's request reaches a site that is closing.
       close: async () => {
+        // No AI app's key stays on the clipboard after Webforge has quit (4.9).
+        await secretClipboard
+          .clearIfHeld()
+          .catch((error: unknown) => logFailure("secret clipboard clear", error));
         await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
         await projectSession.close();
       },

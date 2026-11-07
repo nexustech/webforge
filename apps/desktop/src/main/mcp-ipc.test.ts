@@ -1,0 +1,119 @@
+import type { IpcMain, IpcMainInvokeEvent } from "electron";
+import { describe, expect, it, vi } from "vitest";
+import type { PairedApp, Pairing } from "./ai-apps.js";
+import { registerMcpHandlers } from "./mcp-ipc.js";
+import type { McpService, McpServiceStatus } from "./mcp-service.js";
+
+type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
+
+const CLAUDE: PairedApp = {
+  id: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e",
+  name: "Claude",
+  pairedAt: 1,
+  claimedAt: 2,
+};
+const KEY = "k".repeat(43);
+
+/** A service whose status, apps and answers a test sets. */
+function fakeService(status: Partial<McpServiceStatus> = {}) {
+  let current: McpServiceStatus = {
+    enabled: true,
+    port: 51_234,
+    moved: false,
+    connected: [],
+    ...status,
+  };
+  let apps: PairedApp[] = [CLAUDE];
+  const service = {
+    start: vi.fn(async () => undefined),
+    setEnabled: vi.fn(async (enabled: boolean) => {
+      current = { ...current, enabled, port: enabled ? 51_234 : null };
+    }),
+    add: vi.fn(
+      async (name: string): Promise<Pairing> => ({
+        status: "paired",
+        app: { id: "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5", name, pairedAt: 3, claimedAt: null },
+        key: KEY,
+        proof: "p".repeat(43),
+      }),
+    ),
+    remove: vi.fn(async (id: string) => {
+      apps = apps.filter((app) => app.id !== id);
+    }),
+    list: vi.fn(async () => apps),
+    status: vi.fn(async () => current),
+    close: vi.fn(async () => undefined),
+  } satisfies McpService;
+  return service;
+}
+
+/** Each channel's handler, called as from a renderer that `trusted` says it trusts or not. */
+function handlers(service: McpService, trusted = true) {
+  const registered = new Map<string, Handler>();
+  const ipc = {
+    handle: (name: string, handler: Handler) => registered.set(name, handler),
+  } as unknown as Pick<IpcMain, "handle">;
+  registerMcpHandlers(ipc, () => trusted, service);
+  return (channel: string, ...args: unknown[]) =>
+    registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
+}
+
+describe("the mcp IPC calls (4.9)", () => {
+  it("shows AI apps: on, at which address, each app and whether it's connected", async () => {
+    const call = handlers(fakeService({ connected: [CLAUDE.id] }));
+
+    expect(await call("mcp:status")).toEqual({
+      enabled: true,
+      address: "http://127.0.0.1:51234/mcp",
+      moved: false,
+      apps: [{ id: CLAUDE.id, name: "Claude", claimed: true, connected: true }],
+    });
+  });
+
+  it("pairs an app while on, with its key once and the address to give it", async () => {
+    const service = fakeService();
+    const call = handlers(service);
+
+    expect(await call("mcp:add", "Cursor")).toEqual({
+      status: "paired",
+      app: expect.objectContaining({ name: "Cursor", claimed: false, connected: false }),
+      key: KEY,
+      address: "http://127.0.0.1:51234/mcp",
+    });
+    service.add.mockResolvedValueOnce({ status: "name-taken" });
+    expect(await call("mcp:add", "Claude")).toEqual({ status: "name-taken" });
+  });
+
+  it("pairs nothing while off, nor when the key can't be kept", async () => {
+    expect(
+      await handlers(fakeService({ enabled: false, port: null }))("mcp:add", "Cursor"),
+    ).toEqual({ status: "off" });
+    const service = fakeService();
+    service.add.mockRejectedValueOnce(new Error("encryption-unavailable"));
+    expect(await handlers(service)("mcp:add", "Cursor")).toEqual({ status: "failed" });
+  });
+
+  it("turns AI apps on and off, and says so even when it couldn't start listening", async () => {
+    const service = fakeService({ enabled: false, port: null });
+    const call = handlers(service);
+
+    expect(await call("mcp:set-enabled", true)).toMatchObject({ enabled: true });
+    expect(await call("mcp:set-enabled", false)).toMatchObject({ enabled: false, address: null });
+    service.setEnabled.mockRejectedValueOnce(new Error("No free port"));
+    expect(await call("mcp:set-enabled", true)).toMatchObject({ address: null });
+  });
+
+  it("removes an app", async () => {
+    const service = fakeService();
+
+    expect(await handlers(service)("mcp:remove", CLAUDE.id)).toMatchObject({ apps: [] });
+    expect(service.remove).toHaveBeenCalledWith(CLAUDE.id);
+  });
+
+  it("checks what it's given, and refuses a renderer it doesn't trust", async () => {
+    const call = handlers(fakeService());
+    await expect(call("mcp:remove", "not an id")).rejects.toThrow();
+    await expect(call("mcp:set-enabled", "yes")).rejects.toThrow();
+    await expect(handlers(fakeService(), false)("mcp:status")).rejects.toThrow();
+  });
+});
