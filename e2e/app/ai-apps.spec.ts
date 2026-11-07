@@ -6,6 +6,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { heroPhoto } from "@webforge/test-utils";
 import { unzipSync } from "fflate";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
@@ -300,6 +301,66 @@ test("an AI app's brief opens the quick start filled in; Create makes the site, 
     await quickStart.getByRole("button", { name: "Cancel" }).click();
     expect(answer(await declined)).toMatchObject({ status: "declined" });
     await expect(quickStart).toHaveCount(0);
+  } finally {
+    await client.close();
+  }
+});
+
+test("an AI app asks for pictures with its reason; the person chooses them in Add files (4.12b)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  const { address, key } = await pairAnotherApp("Test client");
+  const client = await connect(address, key);
+  const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-media-"));
+  folders.push(dir);
+  try {
+    const photo = join(dir, "Workshop.jpg");
+    writeFileSync(photo, heroPhoto());
+    await stubFileDialogs(app, photo);
+    const asked = page.getByRole("alertdialog", {
+      name: "Test client asks you to add pictures or files",
+    });
+
+    // Add Files…: the file the person chooses, by its id, and Media lists it.
+    const request = client.callTool({
+      name: "requestMedia",
+      arguments: { reason: "Photos of your workshop" },
+    });
+    await expect(asked.getByText('Its reason: "Photos of your workshop"')).toBeVisible();
+    await asked.getByRole("button", { name: "Add Files…" }).click();
+    const added = answer(await request) as unknown as {
+      status: string;
+      data: { added: { id: string; fileName: string; kind: string }[] };
+    };
+    expect(added).toMatchObject({
+      status: "done",
+      data: { added: [{ fileName: "Workshop.jpg", kind: "image" }] },
+    });
+    const media = answer(await client.callTool({ name: "media", arguments: {} })) as unknown as {
+      data: { id: string; fileName: string; width: number }[];
+    };
+    expect(media.data).toEqual([
+      expect.objectContaining({ id: added.data.added[0]?.id, fileName: "Workshop.jpg" }),
+    ]);
+    // The person's own step: it undoes as any other.
+    await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
+
+    // Not now: nothing more is added, and the app is told; as after any decline, it waits.
+    const notNow = client.callTool({
+      name: "requestMedia",
+      arguments: { reason: "Photos of your team" },
+    });
+    await expect(asked.getByText('Its reason: "Photos of your team"')).toBeVisible();
+    await asked.getByRole("button", { name: "Not Now" }).click();
+    expect(answer(await notNow)).toMatchObject({ status: "declined" });
+    expect(
+      answer(await client.callTool({ name: "requestMedia", arguments: { reason: "Photos" } })),
+    ).toMatchObject({ status: "busy" });
+    expect(answer(await client.callTool({ name: "media", arguments: {} }))).toMatchObject({
+      data: [expect.objectContaining({ fileName: "Workshop.jpg" })],
+    });
   } finally {
     await client.close();
   }

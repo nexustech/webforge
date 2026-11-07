@@ -42,6 +42,12 @@ export const ai = {
   // Whether search engines may show the site, before and after (4.11): "…: from yes to no."
   "ai.confirm.yes": "yes",
   "ai.confirm.no": "no",
+  // An AI app asks for pictures or files (4.12b): its reason in its own words, quoted.
+  "ai.media.title": "{app} asks you to add pictures or files",
+  "ai.media.description":
+    'Its reason: "{reason}" Only the files you choose are added to Media, and you can undo it.',
+  "ai.media.addFiles": "Add Files…",
+  "ai.media.notNow": "Not Now",
   "ai.part.header": "Header",
   "ai.part.footer": "Footer",
 } as const;

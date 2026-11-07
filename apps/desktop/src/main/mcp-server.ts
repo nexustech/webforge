@@ -14,7 +14,7 @@ import {
   catalogueResourceText,
   UNTRUSTED_SITE_TEXT,
 } from "@webforge/commands";
-import { type AiRequest, type AiResponse, APP_TOOLS } from "../shared/ipc/ai.js";
+import { type AiRequest, type AiResponse, APP_TOOLS, REQUEST_MEDIA } from "../shared/ipc/ai.js";
 import { MAIN_TOOLS } from "./site-brief.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
@@ -25,7 +25,7 @@ export type McpServerInfo = { readonly name: string; readonly version: string };
 
 /**
  * Every tool an AI app sees: the command layer's (`AI_TOOLS`), then those the window answers
- * itself (`APP_TOOLS`), each a query, taking nothing.
+ * itself (`APP_TOOLS`, each a query taking nothing, and `requestMedia`, which asks the person).
  */
 const TOOLS = [
   ...AI_TOOLS,
@@ -35,6 +35,17 @@ const TOOLS = [
     description: `${description} ${UNTRUSTED_SITE_TEXT}`,
     inputSchema: { type: "object" as const, properties: {}, additionalProperties: false },
   })),
+  {
+    kind: "command" as const,
+    name: REQUEST_MEDIA.name,
+    description: `${REQUEST_MEDIA.description} ${UNTRUSTED_SITE_TEXT}`,
+    inputSchema: {
+      type: "object" as const,
+      properties: { reason: { type: "string", minLength: 1, maxLength: 200 } },
+      required: ["reason"],
+      additionalProperties: false,
+    },
+  },
   // Main's own (4.12a): a new site from a brief, and what it chooses from.
   ...Object.entries(MAIN_TOOLS).map(([name, tool]) => ({
     kind: tool.kind,
