@@ -6,6 +6,7 @@ import type { TemplateSummary } from "../shared/ipc/templates.js";
 import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
 import { shippedTemplateReader, type TemplateReader } from "./new-site.js";
+import type { BriefTemplate } from "./site-brief.js";
 
 /**
  * What New Site shows of a template (2.14a): never its content, which only main reads, but its
@@ -64,11 +65,33 @@ export function registerTemplatesHandlers(
  * build copied them while developing. The list is read once, when first shown; New Site reads only
  * the template it makes (`template`, 2.15c), so a damaged one never stops Blank.
  */
-export function createTemplatesFeature(
-  dir: string,
-): AppFeature & { readonly template: TemplateReader } {
+export function createTemplatesFeature(dir: string): AppFeature & {
+  readonly template: TemplateReader;
+  /** The templates as an AI app's brief chooses from them (4.12a): Blank's left out. */
+  readonly briefTemplates: () => readonly BriefTemplate[];
+} {
   let shipped: readonly TemplateFolder[] | undefined;
   return {
+    briefTemplates: () => {
+      shipped ??= readTemplates(dir);
+      return shipped.flatMap(({ template }) => {
+        if (template.category === null) return [];
+        const { site } = template;
+        return [
+          {
+            id: template.id,
+            category: template.category,
+            theme: site.theme.preset,
+            pages: site.pageOrder.flatMap((id) => {
+              const page = site.pages[id];
+              return page?.kind === "page"
+                ? [{ id: page.id, title: page.title, home: page.id === site.homePageId }]
+                : [];
+            }),
+          },
+        ];
+      });
+    },
     register: (ipc, isTrustedSender) => {
       registerTemplatesHandlers(ipc, isTrustedSender, () => {
         shipped ??= readTemplates(dir);

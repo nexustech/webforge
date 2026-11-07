@@ -3,11 +3,12 @@ import {
   allowListText,
   type PublishDestination,
   type SiteDoc,
+  SiteFormatError,
   siteCodePieces,
   withKeptCode,
 } from "@webforge/model";
 import { publishGate } from "@webforge/site-check";
-import type { VersionManifest } from "@webforge/storage";
+import type { ProjectStore, VersionManifest, VersionPublish } from "@webforge/storage";
 import type { IpcMain } from "electron";
 import type { PublishOutcome } from "../shared/export-worker-protocol.js";
 import type { PublishProgress, PublishResult } from "../shared/ipc/publish.js";
@@ -34,6 +35,61 @@ async function recordLive(site: Pick<SiteStore, "withStore">, at: Date): Promise
     );
   } catch (error) {
     logFailure("Webforge could not record when the site was published", error);
+  }
+}
+
+/**
+ * Records on version `versionId` that a republish of it went live (4.6b, ADR 0018 §3), and gives
+ * whether it did: not in a read-only site, nor once the version is gone. The publish has happened
+ * whatever becomes of this, so a failure is logged, never reported as the publish's.
+ */
+async function recordRepublish(
+  site: Pick<SiteStore, "withStore">,
+  versionId: string,
+  publishedTo: VersionPublish,
+): Promise<boolean> {
+  try {
+    return await site.withStore(
+      "shared",
+      (store) => !store.info.readOnly && store.recordPublish(versionId, publishedTo),
+      () => false,
+    );
+  } catch (error) {
+    logFailure("Webforge could not record where a version was republished", error);
+    return false;
+  }
+}
+
+/** Why a publish read nothing to publish. */
+type Unread = {
+  readonly reason: "no-site" | "stale-session" | "no-version" | "unreadable-version";
+};
+
+/**
+ * What a publish builds, in one turn of the event loop: the working copy as autosave left it, or
+ * saved version `versionId` (4.6b), migrated as the site is; and the manifest of its documents,
+ * held as it's read (`hold`), so no Clean up comes between.
+ */
+function readToPublish(
+  store: ProjectStore,
+  versionId: string | undefined,
+  hold: (manifest: VersionManifest) => void,
+): { readonly site: SiteDoc; readonly manifest: VersionManifest } | Unread {
+  if (versionId === undefined) {
+    const manifest = store.readManifest();
+    hold(manifest);
+    return { site: store.readSite(), manifest };
+  }
+  const manifest = store.readVersionManifest(versionId);
+  if (manifest === undefined) return { reason: "no-version" };
+  hold(manifest);
+  try {
+    const site = store.readVersionSite(versionId);
+    return site === undefined ? { reason: "no-version" } : { site, manifest };
+  } catch (error) {
+    // Saved by a newer Webforge, or not a site this one can read: nothing to build.
+    if (error instanceof SiteFormatError) return { reason: "unreadable-version" };
+    throw error;
   }
 }
 
@@ -95,7 +151,9 @@ function failedResult(outcome: Extract<PublishOutcome, { type: "failed" }>): Pub
 
 /**
  * Registers Publish's calls (4.5, ADR 0018): `publish:publish` and its cancel, each publish by the
- * renderer's operation id (#665), its progress sent as it goes. A publish:
+ * renderer's operation id (#665), its progress sent as it goes. A republish (4.6b) is the same
+ * flow with a saved version's id: it reads that version rather than the working copy (so nothing
+ * needs saving first), and records where it went on it rather than saving another. A publish:
  * 1. asks the window to flush autosave (the window ended its text session before calling), then
  *    reads the site, the manifest of its documents and the destination in one turn of main's
  *    event loop, so no autosave commit lands between them (§3), from the opening the call names
@@ -105,8 +163,8 @@ function failedResult(outcome: Extract<PublishOutcome, { type: "failed" }>): Pub
  * 3. reads the destination's sign-in from the keychain, only for the destination it was typed for
  *    (S2), and publishes in the export worker, the sign-in passed for that job only (§1);
  * 4. once it is live, whatever the live check found, saves the version it went live with, from
- *    the manifest it read, recording where it went; a publish that fails or is cancelled saves
- *    none.
+ *    the manifest it read, recording where it went (or records it on the version republished); a
+ *    publish that fails or is cancelled saves and records nothing.
  */
 export function registerPublishRun(
   ipc: Pick<IpcMain, "handle">,
@@ -122,25 +180,25 @@ export function registerPublishRun(
     ipc,
     "publishSite",
     isTrustedSender,
-    async (sessionId, destinationId, operationId, { replaceOtherSite }) => {
+    async (sessionId, destinationId, operationId, { replaceOtherSite, versionId }) => {
       const site = deps.site(sessionId);
       if (underWay.has(operationId)) return { status: "cancelled" };
       const controller = new AbortController();
       underWay.set(operationId, controller);
       let release: (() => void) | undefined;
       try {
-        // 1. What the person sees, saved; then all at once: `work` is synchronous, so nothing
-        // commits in between.
-        await deps.flush();
-        const read = await site.withStore<Read | { readonly reason: "no-site" | "stale-session" }>(
+        // 1. What the person sees, saved (a saved version needs nothing saved); then all at once:
+        // `work` is synchronous, so nothing commits in between.
+        if (versionId === undefined) await deps.flush();
+        const read = await site.withStore<Read | Unread>(
           "shared",
           (store) => {
-            const manifest = store.readManifest();
-            // Held in the same turn as it's read, so no Clean up comes between.
-            release = deps.holdManifest(manifest);
+            const built = readToPublish(store, versionId, (manifest) => {
+              release = deps.holdManifest(manifest);
+            });
+            if ("reason" in built) return built;
             return {
-              site: store.readSite(),
-              manifest,
+              ...built,
               destination: store.readPublishDestinations().find(({ id }) => id === destinationId),
               projectId: store.info.projectId,
             };
@@ -195,22 +253,28 @@ export function registerPublishRun(
         // 4. Live: when, kept apart from the versions, so the year Site Check says the site shows
         // (F-CM-8) survives deleting one. Then the version it built, from the manifest read with
         // it. Like every automatic version it has no name of its own: the list names it by its
-        // reason and time.
+        // reason and time. A republished version is already saved: it records where it went.
         const at = now();
         await recordLive(site, at);
-        const version = await site.saveVersion({
-          name: "",
-          reason: "on-publish",
-          thumbnail: undefined,
-          kept: deps.versionsKept(),
-          documents: manifest,
-          publishedTo: {
-            destinationId,
-            publishedAt: at.toISOString(),
-            check: outcome.check,
-            ...(outcome.version === undefined ? {} : { deploy: outcome.version }),
-          },
-        });
+        const publishedTo: VersionPublish = {
+          destinationId,
+          publishedAt: at.toISOString(),
+          check: outcome.check,
+          ...(outcome.version === undefined ? {} : { deploy: outcome.version }),
+        };
+        const versionSaved =
+          versionId === undefined
+            ? (
+                await site.saveVersion({
+                  name: "",
+                  reason: "on-publish",
+                  thumbnail: undefined,
+                  kept: deps.versionsKept(),
+                  documents: manifest,
+                  publishedTo,
+                })
+              ).status === "saved"
+            : await recordRepublish(site, versionId, publishedTo);
         if (/^https?:\/\//.test(outcome.url)) {
           live.set(operationId, outcome.url);
           // The newest few only: an older publish's success screen has long closed.
@@ -223,7 +287,7 @@ export function registerPublishRun(
           uploaded: outcome.uploaded,
           unchanged: outcome.unchanged,
           removed: outcome.removed,
-          versionSaved: version.status === "saved",
+          versionSaved,
         };
       } catch (error) {
         logFailure("Webforge could not publish the site", error);

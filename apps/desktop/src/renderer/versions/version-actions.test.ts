@@ -51,6 +51,7 @@ function setUp(
     working: vi.fn((_message: string) => working),
   };
   const restart = vi.fn();
+  const republish = vi.fn();
   const actions = createVersionActions({
     versions,
     preview,
@@ -59,9 +60,22 @@ function setUp(
     list,
     notify,
     restart,
+    republish,
   });
   const doc = () => session.history.document.getState();
-  return { actions, versions, preview, session, flush, list, notify, working, restart, doc };
+  return {
+    actions,
+    versions,
+    preview,
+    session,
+    flush,
+    list,
+    notify,
+    working,
+    restart,
+    republish,
+    doc,
+  };
 }
 
 /**
@@ -229,6 +243,20 @@ describe("Version History's actions (4.6)", () => {
 
     expect(notify.error).toHaveBeenCalledWith(t("versionHistory.restore.notSaved"));
     expect(session.history.entries()).toEqual([]);
+  });
+
+  it("asks Publish to republish a version, by its id and the name the panel shows (4.6b)", () => {
+    const { actions, republish, versions } = setUp();
+    const version = summary({ name: "", reason: "daily" });
+
+    actions.republish(version);
+
+    expect(republish).toHaveBeenCalledWith({
+      id: version.id,
+      name: t("versionHistory.reason.daily"),
+    });
+    // Main reads the version as it publishes it: the window reads nothing here.
+    expect(versions.readSite).not.toHaveBeenCalled();
   });
 
   it("deletes a version, and says so", async () => {

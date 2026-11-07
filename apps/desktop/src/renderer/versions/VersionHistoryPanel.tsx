@@ -23,14 +23,14 @@ import type { VersionSummary } from "../../shared/ipc/versions.js";
 import { fileSizeLabel } from "../media/index.js";
 import type { VersionActions } from "./version-actions.js";
 import type { VersionListState } from "./version-list.js";
-import { versionDate, versionName } from "./version-words.js";
+import { versionDate, versionName, versionPublished } from "./version-words.js";
 
 /** Props of {@link VersionHistoryPanel}. */
 export type VersionHistoryPanelProps = {
   readonly state: VersionListState;
   readonly actions: Pick<
     VersionActions,
-    "preview" | "restore" | "remove" | "openAsNewSite" | "cleanUp"
+    "preview" | "restore" | "republish" | "remove" | "openAsNewSite" | "cleanUp"
   >;
   /** Save Version…: asks for the version's name. */
   readonly onSave: () => void;
@@ -41,16 +41,24 @@ export type VersionHistoryPanelProps = {
 /** A question before what a version's menu does. */
 type Asked = { readonly kind: "restore" | "delete"; readonly version: VersionSummary };
 
+/** What a version's menu opens once it has closed: a question, or Publish's destinations. */
+type MenuChoice = Asked | { readonly kind: "republish"; readonly version: VersionSummary };
+
 /**
  * Version History (F-SITE-4, 4.6): the site's versions, newest first, each with a picture of the
- * canvas, its name (or why {appName} saved it) and when; Save Version…; and for each, Restore, Open
- * as New Site… and Delete…, the first and last asked about first. Beside Undo History in the left
- * column's bottom (A21), with the space the versions use.
+ * canvas, its name (or why {appName} saved it), when, and where and when it was last published;
+ * Save Version…; and for each, Preview, Restore…, Republish…, Open as New Site… and Delete…,
+ * Restore and Delete asked about first. Beside Undo History in the left column's bottom (A21), with
+ * the space the versions use.
  */
 export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionHistoryPanelProps) {
   const [asked, setAsked] = useState<Asked | null>(null);
   const [busy, setBusy] = useState(false);
-  const menuDialog = useMenuDialog<Asked>(setAsked);
+  // Opened once the menu has closed, so the dialog keeps the focus.
+  const menuDialog = useMenuDialog<MenuChoice>((choice) => {
+    if (choice.kind === "republish") actions.republish(choice.version);
+    else setAsked(choice);
+  });
 
   const run = (work: () => Promise<unknown>) => {
     setBusy(true);
@@ -92,6 +100,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
           <ol aria-label={t("versionHistory.list")} className="flex flex-col gap-0.5 p-1">
             {state.versions.map((version) => {
               const name = versionName(version);
+              const published = versionPublished(version, locale);
               return (
                 <li
                   key={version.id}
@@ -117,6 +126,12 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
                       {versionDate(version, locale)}
                       {version.reason === "manual" ? null : ` · ${t("versionHistory.automatic")}`}
                     </p>
+                    {published === undefined ? null : (
+                      // Cut short in a narrow panel: the whole of it on hover.
+                      <p className="m-0 truncate text-xs text-muted-foreground" title={published}>
+                        {published}
+                      </p>
+                    )}
                   </div>
                   <DropdownMenu modal={false}>
                     <DropdownMenuTrigger asChild>
@@ -138,6 +153,11 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
                         onSelect={() => menuDialog.choose({ kind: "restore", version })}
                       >
                         {t("versionHistory.restore")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onSelect={() => menuDialog.choose({ kind: "republish", version })}
+                      >
+                        {t("versionHistory.republish")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => run(() => actions.openAsNewSite(version))}>
                         {t("versionHistory.openAsNewSite")}

@@ -24,6 +24,23 @@ export const EMPTY_DETAILS: DetailsValues = {
   webAddress: "",
 };
 
+/** The form's values for answers' details (an AI app's brief, 4.12a): opening hours with ids. */
+export function detailsValuesOf(
+  answers: Pick<QuickStartAnswers, "email" | "phone" | "address" | "openingHours" | "webAddress">,
+): DetailsValues {
+  return {
+    email: answers.email,
+    phone: answers.phone,
+    address: answers.address,
+    openingHours: answers.openingHours.map((hours, index) => ({
+      id: `hours-${index}`,
+      ...hours,
+      days: [...hours.days],
+    })),
+    webAddress: answers.webAddress,
+  };
+}
+
 /** The answers' details from the form's values: opening hours without the form's ids. */
 export function detailsAnswers(
   values: DetailsValues,

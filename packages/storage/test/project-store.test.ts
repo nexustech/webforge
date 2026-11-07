@@ -387,6 +387,37 @@ describe("ProjectStore versions in storage format 2 (#664)", () => {
     store.close();
   });
 
+  it("keeps the version republished most recently when pruning, older though it is (4.6b)", () => {
+    const store = ProjectStore.open(createProject());
+    store.commit([page("One")]);
+    const at = (day: number) => ({
+      destinationId: "d1",
+      publishedAt: `2026-11-0${day}T10:00:00.000Z`,
+      check: "live" as const,
+    });
+    const monday = store.saveVersion("Monday", "daily");
+    const published = store.saveVersion("", "on-publish", { publishedTo: at(2) });
+    for (const day of ["Wednesday", "Thursday"]) store.saveVersion(day, "daily");
+    // Monday's version, republished after the publish: the live site came from it.
+    store.recordPublish(monday.id, at(5));
+
+    expect(store.pruneAutoVersions(0)).toBe(2);
+    expect(store.listVersions().map((version) => version.id)).toEqual([published.id, monday.id]);
+    store.close();
+  });
+
+  it("reads a version's manifest as the working copy's is read, for a republish to hold", () => {
+    const store = ProjectStore.open(createProject());
+    expect(store.readVersionManifest("no-such-version")).toBeUndefined();
+    store.commit([page("Then")]);
+    const then = store.readManifest();
+    const version = store.saveVersion("Then", "manual");
+    store.commit([page("Now")]);
+
+    expect(store.readVersionManifest(version.id)).toEqual(then);
+    store.close();
+  });
+
   it("says how much space the versions keep, all of them and each alone", () => {
     const store = ProjectStore.open(createProject());
     const old = store.putBlob(new Uint8Array(1000), "image/png");
@@ -464,6 +495,18 @@ describe("ProjectStore versions in storage format 2 (#664)", () => {
 
     const reopened = ProjectStore.open(path);
     expect(reopened.listVersions()[0]?.publishedTo).toBeUndefined();
+    // Pruning reads it as none, and keeps a version published since over it (4.6b).
+    reopened.commit([page("Later")]);
+    const later = reopened.saveVersion("", "daily", {
+      publishedTo: {
+        destinationId: "d1",
+        publishedAt: "2026-11-05T10:00:00.000Z",
+        check: "live",
+      },
+    });
+    reopened.saveVersion("", "daily");
+    expect(reopened.pruneAutoVersions(0)).toBe(1);
+    expect(reopened.listVersions().map(({ id }) => id)).toEqual([later.id, version.id]);
     reopened.close();
   });
 

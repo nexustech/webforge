@@ -53,6 +53,14 @@ To stop an app reaching your sites, click **Remove *name*** beside it, then **Re
 
 If AI apps says **{appName}'s address for AI apps has changed**, another program took {appName}'s place while it was closed. Remove your AI apps and add them again. For Claude Desktop, install its new extension too.
 
+## Starting a new site from a description
+
+You can ask an app to start a whole new site, such as "a site for my garage, Rapidfix Vehicle Repair, in red". The app never makes the site itself. {appName} opens **Start a site** filled in with what the app chose: the kind of business, the name, what you do, a template, its pages, the colours and any contact details. It opens on the last step, so you can check each step with **Back** and change anything.
+
+Nothing is made until you click **Create site**. The site you have open is saved first, and the new one opens in its place. Click **Cancel** and nothing is made: the app is told you said no.
+
+An app can't start a new site while you're in [Content mode](the-editor.md#design-and-content-mode), or while you have **Start a site** or **New Site** open yourself.
+
 ## What an app can do
 
 An app works on the site you have open in {appName}, and only that one. It can:
@@ -71,7 +79,7 @@ Some changes ask you first, with **Allow**:
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or *Page not found*.
 
-In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings.
+In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings.
 
 Before an app's first change each time it connects, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
 

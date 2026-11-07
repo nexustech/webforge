@@ -13,7 +13,7 @@ status: partial
 
 Click **Publish** in the title bar, choose **File › Publish…**, or press Ctrl+U (Cmd+U on a Mac) when you're not typing text.
 
-Publishing to Netlify, and publishing an earlier version again, are coming in a later version.
+Publishing to Netlify is coming in a later version.
 
 ## Adding your web host
 
@@ -41,7 +41,7 @@ If the folder already has another site that {appName} published, it asks before 
 
 When it's done, **Your site is live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open Site** opens it in your browser and **Copy Link** copies its address. A new site can take a few minutes to appear.
 
-Each publish is kept in [Version History](version-history.md) as *Published*.
+Each publish is kept in [Version History](version-history.md) as *Published*. To put an earlier version back on your host, use its **Republish…** there: see [Publishing an earlier version](version-history.md#publishing-an-earlier-version).
 
 Where your text uses `{year}`, your published site shows the year you published it in. In a new year, [Site Check](site-check.md#tips) reminds you to publish again.
 

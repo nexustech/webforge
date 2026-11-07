@@ -108,6 +108,40 @@ describe("the versions IPC calls (4.6)", () => {
     expect((await session.forSession(sessionId).readMedia(hash))?.mime).toBe("image/jpeg");
   });
 
+  it("says where and when each version was last published, by its destination's name (4.6b)", async () => {
+    const { invoke, sessionId } = setUp();
+    await invoke("versions:save", sessionId, { name: "Spring", reason: "manual" });
+    await invoke("versions:save", sessionId, { name: "Summer", reason: "manual" });
+    const [summer, spring] = await listed(invoke, sessionId);
+    const destination = {
+      id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
+      name: "Rosa's host",
+      kind: "file-transfer" as const,
+      settings: { protocol: "ftps" as const, host: "ftp.example.com", user: "rosa", folder: "/" },
+    };
+    const at = (destinationId: string) => ({
+      destinationId,
+      publishedAt: "2026-11-07T09:15:00.000Z",
+      check: "live" as const,
+    });
+    await session.site(sessionId).withStore(
+      "shared",
+      (store) => {
+        store.writePublishDestinations([destination]);
+        store.recordPublish(summer?.id ?? "", at(destination.id));
+        // Published to a destination removed since.
+        store.recordPublish(spring?.id ?? "", at("0b9a8f6e-3c2d-4e1f-8a7b-6c5d4e3f2a10"));
+      },
+      () => undefined,
+    );
+
+    const versions = await listed(invoke, sessionId);
+    expect(versions.map((version) => version.published)).toEqual([
+      { at: "2026-11-07T09:15:00.000Z", to: "Rosa's host" },
+      { at: "2026-11-07T09:15:00.000Z" },
+    ]);
+  });
+
   it("keeps the person's Versions kept of Webforge's own versions, and every one of the person's", async () => {
     let time = 0;
     const { invoke, sessionId } = setUp({ versionsKept: async () => 2, now: () => time });
