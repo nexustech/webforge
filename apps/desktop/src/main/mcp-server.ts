@@ -53,11 +53,14 @@ const PROGRESS_EVERY_MS = 10_000;
 /** The catalogue resource's content (AIB-1): the same for every connection, made once. */
 let catalogueText: string | undefined;
 
-/** A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done. */
+/**
+ * A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done, or a
+ * brief still waiting for the person.
+ */
 function toolResult(response: AiResponse): CallToolResult {
   return {
     content: [{ type: "text", text: JSON.stringify(response) }],
-    ...(response.status === "done" ? {} : { isError: true }),
+    ...(response.status === "done" || response.status === "waiting" ? {} : { isError: true }),
   };
 }
 
@@ -71,7 +74,7 @@ function toolResult(response: AiResponse): CallToolResult {
 export function createMcpServer(
   info: McpServerInfo,
   app: McpApp,
-  ask: (request: AiRequest) => Promise<AiResponse>,
+  ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
   progressEveryMs = PROGRESS_EVERY_MS,
 ): Server {
   const server = new Server(info, { capabilities: { tools: {}, resources: {} } });
@@ -125,6 +128,8 @@ export function createMcpServer(
           tool.kind === "query"
             ? { kind: "query", name: tool.name, input }
             : { kind: "command", name: tool.name, input, app: app.name },
+          // The app giving up on the request: a brief stops waiting for the person.
+          extra.signal,
         ),
       );
     } finally {

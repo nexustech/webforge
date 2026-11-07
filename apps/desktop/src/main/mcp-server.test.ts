@@ -76,15 +76,25 @@ describe("the MCP server (4.9)", () => {
     const outline = await client.callTool({ name: "outline", arguments: {} });
     await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
 
-    expect(ask).toHaveBeenNthCalledWith(1, { kind: "query", name: "outline", input: {} });
-    expect(ask).toHaveBeenNthCalledWith(2, {
-      kind: "command",
-      name: "addPage",
-      input: { title: "Menu" },
-      app: "Claude",
-    });
+    // Each with the request's signal: a brief stops waiting when the app gives up (4.12a).
+    const signal = expect.any(AbortSignal);
+    expect(ask).toHaveBeenNthCalledWith(1, { kind: "query", name: "outline", input: {} }, signal);
+    expect(ask).toHaveBeenNthCalledWith(
+      2,
+      {
+        kind: "command",
+        name: "addPage",
+        input: { title: "Menu" },
+        app: "Claude",
+      },
+      signal,
+    );
     await client.callTool({ name: "runSiteCheck", arguments: {} });
-    expect(ask).toHaveBeenNthCalledWith(3, { kind: "query", name: "runSiteCheck", input: {} });
+    expect(ask).toHaveBeenNthCalledWith(
+      3,
+      { kind: "query", name: "runSiteCheck", input: {} },
+      signal,
+    );
     expect(outline).toEqual({
       content: [
         { type: "text", text: JSON.stringify({ status: "done", data: { name: "Rosa's Bakery" } }) },

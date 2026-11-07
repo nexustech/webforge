@@ -58,6 +58,7 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     briefs: {
       ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
       choices: () => ({ status: "done", data: siteChoices([]) }) as const,
+      status: () => ({ status: "not-found", message: "none" }) as const,
     },
     listen,
     drawPort: () => ports.shift() ?? 59_999,

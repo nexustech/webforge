@@ -24,7 +24,7 @@ const brief = {
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
 /** Briefs over a fake window, which records what it's sent and can start over. */
-function setUp(options: { window?: boolean; timeoutMs?: number } = {}) {
+function setUp(options: { window?: boolean; timeoutMs?: number; answerWithinMs?: number } = {}) {
   const sent: unknown[][] = [];
   let navigate: ((details: { isMainFrame: boolean; isSameDocument: boolean }) => void) | undefined;
   const window: AiWindow = {
@@ -42,6 +42,7 @@ function setUp(options: { window?: boolean; timeoutMs?: number } = {}) {
     window: () => (options.window === false ? undefined : window),
     templates: () => [TRADES],
     ...(options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+    ...(options.answerWithinMs === undefined ? {} : { answerWithinMs: options.answerWithinMs }),
   });
   const handlers = new Map<string, Handler>();
   briefs.register(
@@ -110,7 +111,7 @@ describe("a brief, shown to the person (4.12a, AIB-5)", () => {
   it("opens in the window, and answers done with the site once the person creates it", async () => {
     const { briefs, sent, answer } = setUp();
 
-    const asked = briefs.ask(brief);
+    const asked = briefs.ask(brief, "Claude");
     await vi.waitFor(() => expect(sent).toHaveLength(1));
     const [channel, id, shown] = sent[0] ?? [];
     expect(channel).toBe("ai:brief");
@@ -129,7 +130,7 @@ describe("a brief, shown to the person (4.12a, AIB-5)", () => {
     ["busy", "busy"],
   ])("answers %s when the window says so", async (outcome, status) => {
     const { briefs, sent, answer } = setUp();
-    const asked = briefs.ask(brief);
+    const asked = briefs.ask(brief, "Claude");
     await vi.waitFor(() => expect(sent).toHaveLength(1));
 
     await answer(sent[0]?.[1], outcome);
@@ -139,10 +140,10 @@ describe("a brief, shown to the person (4.12a, AIB-5)", () => {
 
   it("shows one brief at a time, and takes no answer for another", async () => {
     const { briefs, sent, answer } = setUp();
-    const first = briefs.ask(brief);
+    const first = briefs.ask(brief, "Claude");
     await vi.waitFor(() => expect(sent).toHaveLength(1));
 
-    expect(await briefs.ask(brief)).toMatchObject({ status: "busy" });
+    expect(await briefs.ask(brief, "Claude")).toMatchObject({ status: "busy" });
     await answer(99, "created");
     await answer(sent[0]?.[1], "declined");
     expect(await first).toMatchObject({ status: "declined" });
@@ -150,14 +151,14 @@ describe("a brief, shown to the person (4.12a, AIB-5)", () => {
 
   it("declines one the window started over without answering, or that waited too long", async () => {
     const reloaded = setUp();
-    const asked = reloaded.briefs.ask(brief);
+    const asked = reloaded.briefs.ask(brief, "Claude");
     await vi.waitFor(() => expect(reloaded.sent).toHaveLength(1));
     reloaded.startOver();
     expect(await asked).toMatchObject({ status: "declined" });
 
     vi.useFakeTimers();
     const slow = setUp({ timeoutMs: 1_000 });
-    const waiting = slow.briefs.ask(brief);
+    const waiting = slow.briefs.ask(brief, "Claude");
     await vi.advanceTimersByTimeAsync(1_000);
     expect(await waiting).toMatchObject({ status: "declined" });
   });
@@ -165,14 +166,77 @@ describe("a brief, shown to the person (4.12a, AIB-5)", () => {
   it("refuses a brief that isn't one, or that doesn't fit, before showing anything", async () => {
     const { briefs, sent } = setUp();
 
-    expect(await briefs.ask({ name: "No type" })).toMatchObject({ status: "invalid" });
-    expect(await briefs.ask({ ...brief, colours: { colour: "red" } })).toMatchObject({
+    expect(await briefs.ask({ name: "No type" }, "Claude")).toMatchObject({ status: "invalid" });
+    expect(await briefs.ask({ ...brief, colours: { colour: "red" } }, "Claude")).toMatchObject({
       status: "invalid",
     });
-    expect(await briefs.ask({ ...brief, template: "cafe" })).toMatchObject({ status: "invalid" });
+    expect(await briefs.ask({ ...brief, template: "cafe" }, "Claude")).toMatchObject({
+      status: "invalid",
+    });
     expect(sent).toEqual([]);
-    expect(await setUp({ window: false }).briefs.ask(brief)).toMatchObject({
+    expect(await setUp({ window: false }).briefs.ask(brief, "Claude")).toMatchObject({
       status: "not-found",
     });
+  });
+});
+
+describe("a brief the person takes a while over (4.12a, #778 review)", () => {
+  it("answers waiting with its id after the wait, and briefStatus gives the outcome, once", async () => {
+    vi.useFakeTimers();
+    const { briefs, sent, answer } = setUp({ answerWithinMs: 45_000 });
+
+    const asked = briefs.ask(brief, "Claude");
+    await vi.advanceTimersByTimeAsync(45_000);
+    const first = await asked;
+    expect(first).toEqual({
+      status: "waiting",
+      data: { briefId: sent[0]?.[1] },
+      message:
+        "The person is checking the quick start: ask briefStatus with this briefId in a while.",
+    });
+    const briefId = (first as { data: { briefId: number } }).data.briefId;
+    expect(briefs.status({ briefId }, "Claude")).toMatchObject({ status: "waiting" });
+    // Still shown: another brief waits its turn.
+    expect(await briefs.ask(brief, "Claude")).toMatchObject({ status: "busy" });
+
+    await answer(briefId, "created");
+    expect(briefs.status({ briefId }, "Claude")).toEqual({
+      status: "done",
+      data: { created: true, name: "Rapidfix Vehicle Repair" },
+    });
+    // Read once.
+    expect(briefs.status({ briefId }, "Claude")).toMatchObject({ status: "not-found" });
+  });
+
+  it("stops waiting when the app gives up on the request, without declining the brief", async () => {
+    const { briefs, sent, answer } = setUp();
+    const cancel = new AbortController();
+
+    const asked = briefs.ask(brief, "Claude", cancel.signal);
+    await vi.waitFor(() => expect(sent).toHaveLength(1));
+    cancel.abort();
+    const briefId = sent[0]?.[1] as number;
+    expect(await asked).toMatchObject({ status: "waiting", data: { briefId } });
+
+    // The quick start stays open, and the person still decides.
+    await answer(briefId, "declined");
+    expect(briefs.status({ briefId }, "Claude")).toMatchObject({ status: "declined" });
+  });
+
+  it("shows an app its own briefs only, and forgets an unread outcome after a while", async () => {
+    vi.useFakeTimers();
+    const { briefs, sent, answer } = setUp({ answerWithinMs: 1_000 });
+    const asked = briefs.ask(brief, "Claude");
+    await vi.advanceTimersByTimeAsync(1_000);
+    await asked;
+    const briefId = sent[0]?.[1] as number;
+
+    expect(briefs.status({ briefId }, "Cursor")).toMatchObject({ status: "not-found" });
+    expect(briefs.status({ briefId: 999 }, "Claude")).toMatchObject({ status: "not-found" });
+    expect(briefs.status({ briefId: "one" }, "Claude")).toMatchObject({ status: "invalid" });
+
+    await answer(briefId, "created");
+    await vi.advanceTimersByTimeAsync(30 * 60_000);
+    expect(briefs.status({ briefId }, "Claude")).toMatchObject({ status: "not-found" });
   });
 });

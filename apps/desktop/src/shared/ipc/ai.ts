@@ -79,6 +79,15 @@ const aiResponseSchema = z.union([
     status: z.enum(["invalid", "not-found", "refused", "busy", "declined"]),
     message: z.string(),
   }),
+  /**
+   * A brief the person is still checking (4.12a): main's own answer, never the window's. The app
+   * asks `briefStatus` with its id later.
+   */
+  z.strictObject({
+    status: z.literal("waiting"),
+    data: z.strictObject({ briefId: z.int().positive() }),
+    message: z.string(),
+  }),
 ]);
 
 /** See {@link aiResponseSchema}. */
