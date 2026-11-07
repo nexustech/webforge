@@ -125,7 +125,7 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     requestAnimationFrame(watch);
   }, before);
   let started = 0;
-  const swapped = await nextEvent(site.url(), "values");
+  const swapped = await serverEvents(site.url(), "values");
   await brandColour("2a6fb0", async () => {
     const confirm = page.getByRole("alertdialog").getByRole("button", { name: "Change Colour" });
     started = Date.now();
@@ -141,7 +141,7 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   const shown = await site.evaluate(() => (window as unknown as { colourAt: number }).colourAt);
   const edited = await lastChange();
   const took = shown - edited;
-  const told = (await swapped.told) - edited;
+  const told = (await swapped.after(edited)) - edited;
   record("css", took);
   record("css: build", told);
   record("css: from the click", shown - started);
@@ -153,61 +153,74 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   expect(took).toBeLessThan(CSS_BUDGET_MS);
 });
 
+/** The server's `event`s (reloads, or the theme's values) as they come, by this process's clock. */
+type ServerEvents = {
+  /**
+   * When the first one at or after `time` came, waiting for it if it hasn't yet: what the editor
+   * and the build take after the edit at `time`, apart from what the browser does with it. An
+   * earlier one, sent for a part of the edit (a keystroke's), doesn't count.
+   */
+  after(time: number): Promise<number>;
+};
+
 /**
- * When the server next sends `event` (a reload, or the theme's values), as this process's clock
- * has it: what the editor and the build take, apart from what the browser does with it.
+ * Listens for the server's `event`s from now on, resolving once the stream is open: one opened
+ * after the edit would miss its event. Gives up after OPEN_WAIT rather than hang the run.
  */
-async function nextEvent(
-  url: string,
-  event: "reload" | "values",
-): Promise<{ readonly told: Promise<number> }> {
+async function serverEvents(url: string, event: "reload" | "values"): Promise<ServerEvents> {
   const { origin, pathname } = new URL(url);
   const base = pathname.slice(0, pathname.indexOf("/", 1) + 1);
-  // Resolves once the stream is open, with the event's time to come (in an object: a promise
-  // resolved with a promise would wait for it). An edit made before the stream opened would go
-  // untold. Gives up after OPEN_WAIT rather than hang the run.
-  return new Promise((opened, failed) => {
-    let at: (time: number) => void = () => undefined;
-    let missed: (error: Error) => void = () => undefined;
-    const told = new Promise<number>((resolve, reject) => {
-      at = resolve;
-      missed = reject;
-    });
-    const timer = setTimeout(() => {
-      missed(new Error(`No ${event} event within ${OPEN_WAIT} ms`));
-      sent.destroy();
-    }, OPEN_WAIT);
-    const sent = request(`${origin}${base}__webforge/events`, (response) => {
-      opened({ told });
+  const times: number[] = [];
+  const waiting = new Set<() => void>();
+  const sent = await new Promise<ReturnType<typeof request>>((opened, failed) => {
+    const stream = request(`${origin}${base}__webforge/events`, (response) => {
+      opened(stream);
       response.on("data", (chunk: Buffer) => {
-        if (chunk.toString("utf8").includes(`event: ${event}`)) {
-          clearTimeout(timer);
-          at(Date.now());
-          sent.destroy();
-        }
+        if (!chunk.toString("utf8").includes(`event: ${event}`)) return;
+        times.push(Date.now());
+        for (const wake of waiting) wake();
       });
     });
-    sent.on("error", failed);
-    sent.end();
+    stream.on("error", failed);
+    stream.end();
   });
+  return {
+    after: (time) =>
+      new Promise((resolve, reject) => {
+        const check = () => {
+          const found = times.find((at) => at >= time);
+          if (found === undefined) return;
+          waiting.delete(check);
+          clearTimeout(timer);
+          sent.destroy();
+          resolve(found);
+        };
+        const timer = setTimeout(() => {
+          waiting.delete(check);
+          sent.destroy();
+          reject(new Error(`No ${event} event within ${OPEN_WAIT} ms of the edit`));
+        }, OPEN_WAIT);
+        waiting.add(check);
+        check();
+      }),
+  };
 }
 
 test("a changed page is re-rendered and sent to the browser in under 200 ms", async () => {
   const canvas = page.frameLocator(".editor__canvas iframe");
+  // Open before typing: each keystroke can rebuild the page, and on a slow machine the reload
+  // for the typed text can come before the click that ends the edit (#76).
+  const reloads = await serverEvents(site.url(), "reload");
   await canvas.locator("h1").dblclick();
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("Fresh bread daily");
-  const reloaded = await nextEvent(site.url(), "reload");
-  // The reloaded page's load, as it fires: an expect would see it only at its next poll.
-  const loaded = site.waitForEvent("load", { timeout: OPEN_WAIT });
   const started = Date.now();
   await canvas.locator("body").click({ position: { x: 5, y: 5 } });
-  await loaded;
+  await expect(site.locator("h1")).toHaveText("Fresh bread daily", { timeout: OPEN_WAIT });
   const shown = Date.now();
   const edited = await lastChange();
   const took = shown - edited;
-  await expect(site.locator("h1")).toHaveText("Fresh bread daily");
-  const told = (await reloaded.told) - edited;
+  const told = (await reloads.after(edited)) - edited;
   record("page", told);
   record("page: with the browser's reload", took);
   // The page is re-rendered and sent within the budget; how long the browser takes to reload a page
