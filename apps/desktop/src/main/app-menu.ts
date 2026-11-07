@@ -17,6 +17,34 @@ const UNDO_REDO: readonly string[] = ["edit.undo", "edit.redo"];
 
 type NativeItem = NativeMenus[number]["items"][number];
 
+/** A window whose text Undo and Redo can reach: the Help window (5.4b). */
+type TextWindow = { readonly webContents: { undo(): void; redo(): void } };
+
+/**
+ * Runs the menu bar's command `id` (LF-13) in the editor, except Undo and Redo while another
+ * window of the app is in front (the Help window, 5.4b): their keys are the only ones the menu bar
+ * takes, and Cmd+Z in Help's search box must undo its typing, never the site behind it.
+ */
+export function runMenuCommand(
+  id: string,
+  windows: {
+    /** The window in front: `BrowserWindow.getFocusedWindow()`. */
+    readonly focused: () => TextWindow | null;
+    /** Whether `window` is one of the app's other windows rather than the editor's. */
+    readonly isOther: (window: TextWindow) => boolean;
+    /** Runs the command in the editor's window. */
+    readonly runInEditor: (id: string) => void;
+  },
+): void {
+  const focused = windows.focused();
+  if (focused !== null && windows.isOther(focused) && UNDO_REDO.includes(id)) {
+    if (id === "edit.undo") focused.webContents.undo();
+    else focused.webContents.redo();
+    return;
+  }
+  windows.runInEditor(id);
+}
+
 /** An item of the renderer's menus, running its command when chosen. */
 const command = (
   renderer: RendererMenus | undefined,

@@ -117,6 +117,8 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.toggleLeftPanels]: { group: "view", keys: ["Mod+Alt+B"] },
   [COMMAND_IDS.toggleDrawer]: { group: "view", keys: ["Mod+J"] },
   [COMMAND_IDS.shortcuts]: { group: "view", keys: ["?"] },
+  // The Help window (5.4b), as F1 opens help in most Windows apps.
+  [COMMAND_IDS.help]: { group: "view", keys: ["F1"] },
 };
 
 /** A shortcut that isn't a command's: something else handles its keys, so only the sheet lists it. */

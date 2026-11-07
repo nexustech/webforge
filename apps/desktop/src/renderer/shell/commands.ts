@@ -14,9 +14,9 @@ export type MenuId = "file" | "edit" | "view" | "help";
 
 /**
  * The command palette's group for a command that isn't one of the app's own (F-ED-26, UX-11):
- * a page to go to, or a section or element to add.
+ * a page to go to, a section or element to add, or a help page to read (5.4b).
  */
-export type PaletteGroup = "pages" | "add";
+export type PaletteGroup = "pages" | "add" | "help";
 
 /** One action. `label` is already translated (`t()`). */
 export type Command = {

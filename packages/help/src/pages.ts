@@ -7,6 +7,8 @@
 import { Lexer, type Token, type Tokens } from "marked";
 import { z } from "zod";
 
+export type { Token, Tokens } from "marked";
+
 /**
  * A page's front matter (HP-2, `docs/help/README.md`): its `id` is its file name without `.md`,
  * which never changes once the app links to it; `components` are the site component types it
@@ -32,6 +34,8 @@ export type HelpHeading = {
   /** As written, without its Markdown. */
   readonly text: string;
   readonly anchor: string;
+  /** Its token in the page's {@link HelpPage.tokens}, for drawing it with its anchor. */
+  readonly token: Tokens.Heading;
 };
 
 /** A help page: its front matter, and its text as Markdown tokens for the Help window to draw. */
@@ -169,7 +173,12 @@ export function parseHelpPage(text: string): HelpPage {
     if (token.type === "heading") {
       const heading = token as Tokens.Heading;
       const plain = plainText(heading.tokens);
-      headings.push({ depth: heading.depth, text: plain, anchor: anchorFor(plain, taken) });
+      headings.push({
+        depth: heading.depth,
+        text: plain,
+        anchor: anchorFor(plain, taken),
+        token: heading,
+      });
     } else if (token.type === "link") {
       links.push((token as Tokens.Link).href);
     }

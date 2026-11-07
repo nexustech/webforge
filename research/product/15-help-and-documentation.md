@@ -1,6 +1,6 @@
 # Help and documentation: pages now, in the app later
 
-**Status:** ✅ Decided (HP-1…HP-9, §9, product owner, 7 Nov 2026: each as proposed). The pages are in [`docs/help/`](../../docs/help/README.md). The decisions are recorded in `spec/02` §7, standards §8 and §9, CLAUDE.md and the plan (5.4a, 5.4b).
+**Status:** ✅ Decided (HP-1…HP-9, §9, product owner, 7 Nov 2026: each as proposed; HP-10 the same day, when 5.4b started). The pages are in [`docs/help/`](../../docs/help/README.md). The decisions are recorded in `spec/02` §7, standards §8 and §9, CLAUDE.md and the plan (5.4a, 5.4b).
 
 **The product owner's question (6 Nov 2026):** Webforge should have documentation for its key features. It should start as Markdown documents that are kept up to date, and later be readable from the UI. Which features should have help text, and what does Webforge offer today?
 
@@ -141,8 +141,8 @@ The pages are written so the app can show them as they are:
 - **Phase 4:** about half a day spread across 4.4b, 4.5, 4.6a, 4.6b and 4.9, for their pages. Within their estimates.
 - **5.4 grows**, and splits in two because it goes over 5 days (the Phase 2 rule):
   - **5.4a, Onboarding and tour** (4 days, unchanged): the first-run tour, first-time tips, and the usability test.
-  - **5.4b, Help in the app** (2.5 days, new):
-    - the bundled pages and the Help window with search (1.5 days);
+  - **5.4b, Help in the app** (2.5 days, new; 3.5 days with HP-10):
+    - the bundled pages and the Help window with search (1.5 days; 2.5 days as a window of its own, HP-10);
     - the ways in, including *Help for this element* (0.5 day);
     - `pnpm help-check` (0.5 day).
 
@@ -163,6 +163,7 @@ Decided by the product owner on 7 Nov 2026, each as proposed.
 | HP-7 | **5.4 splits** into 5.4a *Onboarding and tour* (4 days) and 5.4b *Help in the app* (2.5 days, new): Phase 5 +2.5 days |
 | HP-8 | **Fix the gaps in the app, not in help:** Netlify Forms is offered only once the site has a Netlify destination, which 4.4b's acceptance criteria already require (#723). The Layers lock icon stays out of help until something locks |
 | HP-9 | **A help review at each phase exit,** and beta testers' questions feed the pages (§6, 4–5) |
+| HP-10 | **The Help window is a separate window beside the editor** (product owner, 7 Nov 2026), so the owner can read and work at once: +1 day for 5.4b, which becomes 3.5 days |
 
 The changes, following CLAUDE.md's *Working the plan*:
 - a line in `spec/02` §7 and in standards §8 and §9;

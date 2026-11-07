@@ -3,6 +3,7 @@ import type { AppApi } from "./ipc/app.js";
 import type { CanvasApi } from "./ipc/canvas.js";
 import type { ClipboardApi } from "./ipc/clipboard.js";
 import type { FontsApi } from "./ipc/fonts.js";
+import type { HelpApi } from "./ipc/help.js";
 import type { McpApi } from "./ipc/mcp.js";
 import type { MediaApi } from "./ipc/media.js";
 import type { PrefsApi } from "./ipc/prefs.js";
@@ -37,4 +38,5 @@ export interface WebforgeApi {
   readonly trust: TrustApi;
   readonly versions: VersionsApi;
   readonly mcp: McpApi;
+  readonly help: HelpApi;
 }
