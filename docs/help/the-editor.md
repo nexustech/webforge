@@ -30,6 +30,17 @@ When a site is open, the editor fills the window.
 - Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
 - **View › Reset Panels** puts everything back as it was.
 
+## Using the keyboard
+
+You can do everything in the editor without a mouse.
+- **F6** moves to the next part of the window: the title bar, the left panels, the page, the bottom panel and the right panels, in that order. **Shift+F6** goes back. Each part remembers where you were in it.
+- **Tab** moves between the buttons and options in a part. In a row of tabs, use the arrow keys.
+- On the page, the arrow keys select the next or previous item, **Enter** edits its text and **Esc** stops. See [Editing on the page](editing-on-the-page.md).
+- **Shift+F10**, or the menu key, opens the right-click menu for what you've selected.
+- **Esc** closes a dialog and takes you back to where you were.
+
+Every key is listed in [Keyboard shortcuts](keyboard-shortcuts.md).
+
 ## Design and Content mode
 
 The **Design | Content** switch in the title bar sets what you can change.

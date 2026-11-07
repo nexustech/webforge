@@ -38,6 +38,21 @@ describe("CanvasFrame (R8)", () => {
     expect(document.documentElement.hasAttribute("lang")).toBe(false);
   });
 
+  it("names the frame its document is in, for screen readers (5.5)", () => {
+    // happy-dom loads no frame's page: a document whose window is in a frame, as the canvas's is.
+    const iframe = document.createElement("iframe");
+    const inner = {
+      title: "",
+      documentElement: document.createElement("html"),
+      defaultView: { frameElement: iframe },
+    } as unknown as Document;
+    const frame = createCanvasFrame(() => undefined);
+
+    frame.setDocumentInfo({ title: "Rosa's Bakery" });
+    frame.attach(inner);
+    expect(iframe.getAttribute("title")).toBe("Page you're editing: Rosa's Bakery");
+  });
+
   it("keeps the elements' wrappers groups while there is a document (#465)", () => {
     const frame = createCanvasFrame(() => undefined);
 

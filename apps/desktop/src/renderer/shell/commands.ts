@@ -37,6 +37,12 @@ export type Command = {
    * in editable text or some text is selected, so the text gets them. From the standard.
    */
   readonly textKeys?: readonly string[];
+  /**
+   * Whether its keys run it while a control has the focus (a field, a button, a menu bar), as Mod
+   * keys do: F1 for Help and F6 between the window's parts, which no control types (5.5). From the
+   * standard.
+   */
+  readonly everywhere?: boolean;
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
   /**
@@ -100,10 +106,14 @@ const keysOf = (command: Command): readonly string[] => [
  * A command as an area registers it: its keys come from the shortcut standard, never from the
  * area, so they can't differ between the menus, the command box and the sheet.
  */
-export type CommandSpec = Omit<Command, "shortcut" | "extraShortcuts" | "textKeys"> & {
+export type CommandSpec = Omit<
+  Command,
+  "shortcut" | "extraShortcuts" | "textKeys" | "everywhere"
+> & {
   readonly shortcut?: never;
   readonly extraShortcuts?: never;
   readonly textKeys?: never;
+  readonly everywhere?: never;
 };
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
@@ -154,6 +164,7 @@ function withKeys(
     ...(shown === undefined ? {} : { shortcut: shown }),
     ...(others.length === 0 ? {} : { extraShortcuts: others }),
     ...(text.length === 0 ? {} : { textKeys: text }),
+    ...(standard.everywhere === true ? { everywhere: true } : {}),
   };
 }
 
@@ -512,9 +523,11 @@ function typedWithAltGr(
  * the history keys) never run a command twice. Shortcuts without `Mod` (arrows, Delete, `?`) don't
  * run while a control that uses those keys has focus: a text field, editable text, a list or a
  * menu. Text's own keys (Copy, Cut, Paste, Mod+K) don't run a command while text would take them.
+ * A command that works `everywhere` (F6, F1) listens in the capture phase instead, so no control
+ * keeps its key from it: the page's text stops the keys it gets from going further (5.5).
  */
 export function installCommandShortcuts(target: Window, registry: CommandRegistry): () => void {
-  const onKeyDown = (event: KeyboardEvent) => {
+  const onKeyDown = (event: KeyboardEvent, everywhere: boolean) => {
     // While a dialog (the sheet, Link, Rename) or a menu is open, no command runs: the page behind
     // it must not change, and Mod keys such as Mod+D would change it.
     if (event.defaultPrevented || event.repeat || isInDialog(event.target, document)) {
@@ -528,18 +541,26 @@ export function installCommandShortcuts(target: Window, registry: CommandRegistr
     const inControl = isFocusedControl(event.target);
     const command = registry
       .list()
-      .find((entry) =>
-        keysOf(entry).some(
-          (shortcut) =>
-            (!inControl || parseShortcut(shortcut).mod) &&
-            matchesShortcut(event, shortcut) &&
-            !(entry.textKeys?.includes(shortcut) === true && isForText(target, event)),
-        ),
+      .find(
+        (entry) =>
+          (entry.everywhere === true) === everywhere &&
+          keysOf(entry).some(
+            (shortcut) =>
+              (everywhere || !inControl || parseShortcut(shortcut).mod) &&
+              matchesShortcut(event, shortcut) &&
+              !(entry.textKeys?.includes(shortcut) === true && isForText(target, event)),
+          ),
       );
     if (command !== undefined && registry.run(command.id)) {
       event.preventDefault();
     }
   };
-  target.addEventListener("keydown", onKeyDown);
-  return () => target.removeEventListener("keydown", onKeyDown);
+  const early = (event: KeyboardEvent) => onKeyDown(event, true);
+  const late = (event: KeyboardEvent) => onKeyDown(event, false);
+  target.addEventListener("keydown", early, { capture: true });
+  target.addEventListener("keydown", late);
+  return () => {
+    target.removeEventListener("keydown", early, { capture: true });
+    target.removeEventListener("keydown", late);
+  };
 }

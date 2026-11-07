@@ -18,6 +18,7 @@ import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { syncNativeMenus } from "./native-menus.js";
 import { PhonePreviewCue } from "./PhonePreviewCue.js";
+import { REGION_ATTRIBUTE } from "./regions.js";
 
 /** Props of {@link TitleBar}. */
 export type TitleBarProps = {
@@ -65,6 +66,7 @@ export function TitleBar({
   return (
     <header
       data-slot="title-bar"
+      {...{ [REGION_ATTRIBUTE]: "" }}
       // As tall as the native window controls, whatever the type scale makes a rem (#484).
       style={{ height: TITLE_BAR_HEIGHT }}
       className="flex shrink-0 items-center gap-2 border-b border-border-strong bg-titlebar pr-[calc(100vw-env(titlebar-area-x,0px)-env(titlebar-area-width,100vw))] pl-[max(env(titlebar-area-x,0px),4px)] select-none [-webkit-app-region:drag]"

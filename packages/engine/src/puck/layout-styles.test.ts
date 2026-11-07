@@ -23,5 +23,11 @@ describe("hidePuckLayout (#274)", () => {
       expect(css).toContain(`[${CANVAS_HOST_ATTRIBUTE}] [class*="${part}"]`);
     }
     expect(css).toContain("--puck-pluginbar-width: 0px");
+    // Puck's spinner, faded out once the page has loaded, is hidden from screen readers too (5.5).
+    expect(css).toMatch(
+      new RegExp(
+        `\\[${CANVAS_HOST_ATTRIBUTE}\\] \\[class\\*="_PuckCanvas--ready_"\\] \\[class\\*="_PuckCanvas-loader_"\\] \\{\\s*visibility: hidden;`,
+      ),
+    );
   });
 });

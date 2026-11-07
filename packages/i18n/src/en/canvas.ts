@@ -1,6 +1,8 @@
 /** The page canvas (stream C). */
 export const canvas = {
   "editor.canvas": "Page",
+  // The page's frame, as a screen reader names it (5.5).
+  "canvas.frame": "Page you're editing: {site}",
   // The canvas ran into an error (R3): it shows this instead, and the panels keep working.
   "canvas.error.message": "Something went wrong showing this page. Your work is saved.",
   "canvas.error.reload": "Reload page",

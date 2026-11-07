@@ -135,6 +135,8 @@ export const shell = {
   "command.stopPhonePreview": "Stop Phone Preview",
   "command.publish": "Publish…",
   "command.commandBox": "Search Commands…",
+  "command.nextRegion": "Next Part of the Window",
+  "command.previousRegion": "Previous Part of the Window",
   "command.about": "About {appName}",
   "command.toggleLeftPanels": "Show or Hide Left Panels",
   "command.toggleRightPanels": "Show or Hide Right Panels",

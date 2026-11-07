@@ -1,4 +1,4 @@
-import { CANVAS, LAYOUT } from "./puck-dom.js";
+import { CANVAS, CANVAS_LOADER, CANVAS_READY, LAYOUT } from "./puck-dom.js";
 import { ensureStyle } from "./styles.js";
 
 /** Marks the element the canvas is mounted in, which {@link PUCK_LAYOUT_CSS} is scoped to. */
@@ -31,6 +31,13 @@ const PUCK_LAYOUT_CSS = `
   --puck-canvas-color-bg: transparent;
   background: transparent;
   padding-top: 0 !important;
+}
+/*
+ * 5.5: once the page has loaded, Puck only fades its spinner out, which leaves it in the
+ * accessibility tree: a span with a label and no role (axe's aria-prohibited-attr). Hidden instead.
+ */
+[${CANVAS_HOST_ATTRIBUTE}] ${CANVAS_READY} ${CANVAS_LOADER} {
+  visibility: hidden;
 }
 `;
 
