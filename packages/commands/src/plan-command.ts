@@ -26,7 +26,7 @@ type Summary = {
 };
 
 /** What a step's planned change counts as in the summary. */
-function count(summary: Summary, name: string, site: SiteDoc, input: unknown, plan: Plan): void {
+function count(summary: Summary, name: string, site: SiteDoc, input: unknown): void {
   const pageId = (input as { pageId?: string }).pageId;
   switch (name) {
     case "addPage":
@@ -51,8 +51,6 @@ function count(summary: Summary, name: string, site: SiteDoc, input: unknown, pl
     case "updateFields":
       summary.elements.changed += 1;
       return;
-    default:
-      void plan;
   }
 }
 
@@ -121,7 +119,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         if (failed(planned)) {
           return fail(planned.status, `${where}: ${planned.message} Nothing changed.`);
         }
-        count(summary, step.name, working, parsed.data, planned);
+        count(summary, step.name, working, parsed.data);
         const asked = planned.confirm?.("{app}");
         if (asked !== undefined) {
           summary.asks.push([asked.action, asked.description].filter(Boolean).join(" "));
