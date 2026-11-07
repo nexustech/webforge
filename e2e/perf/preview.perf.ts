@@ -222,6 +222,12 @@ test("a changed page is re-rendered and sent to the browser in under 200 ms", as
   // Replacing the text didn't reach the canvas on CI's runners: a double click on the h1, or the
   // text selected by script, left the typing nowhere (#76).
   const heading = canvas.locator(".site-heading [contenteditable]").first();
+  // From the editor as a person would leave it after the colour test: its colour field may still
+  // hold the focus, so close whatever is open and click the page first (on Windows' runner the
+  // test's first attempt, after the colour test, typed into nothing; its retry, in a fresh app,
+  // didn't).
+  await page.keyboard.press("Escape");
+  await canvas.locator("body").click({ position: { x: 5, y: 5 } });
   // The editor's window, in front: the preview's browser, started beside it, can take the focus.
   await app.evaluate(({ BrowserWindow }) => {
     const window = BrowserWindow.getAllWindows().find((each) => !each.isDestroyed());

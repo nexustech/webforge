@@ -941,7 +941,8 @@ jobs:
           if-no-files-found: ignore
 
       - name: Upload the failures' traces and screenshots
-        if: failure()
+        # Also when a retry passed: a miss that repeats only sometimes is worth seeing.
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: perf-failures-${{ matrix.os }}
