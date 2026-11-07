@@ -29,6 +29,7 @@ const READERS = [
   "readVersion",
   "readVersionSite",
   "versionSpace",
+  "blobsReachedBy",
   "readAsset",
   "listAssets",
   "readEditorMode",

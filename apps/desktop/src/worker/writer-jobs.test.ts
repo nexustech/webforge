@@ -15,7 +15,7 @@ const tempDir = tempDirFactory("webforge-writer-jobs-");
 function recordingWriter() {
   const put = vi.fn((_asset: unknown, hash?: string) => hash ?? "");
   const putBlobs = vi.fn((blobs: readonly unknown[]) => blobs.map(() => "b".repeat(64)));
-  const cleanUp = vi.fn(() => ({ blobs: 1, bytes: 10, assets: 0, vacuumed: false }));
+  const cleanUp = vi.fn(() => ({ blobs: 1, bytes: 10, assets: 0, vacuumed: false, freedBytes: 0 }));
   const close = vi.fn();
   return { put, putBlobs, cleanUp, close, open: vi.fn(() => ({ put, putBlobs, cleanUp, close })) };
 }
@@ -72,14 +72,17 @@ describe("createWriterJobs", () => {
       bytes: 10,
       assets: 0,
       vacuumed: false,
+      freedBytes: 0,
     });
-    expect(writer.close).toHaveBeenCalledTimes(2);
+    jobs.cleanUp("site.wforge", { keep: ["e".repeat(64)], vacuum: "always" });
+    expect(writer.cleanUp).toHaveBeenLastCalledWith({ keep: ["e".repeat(64)], vacuum: "always" });
+    expect(writer.close).toHaveBeenCalledTimes(3);
 
     writer.cleanUp.mockImplementationOnce(() => {
       throw new Error("disk full");
     });
     expect(jobs.cleanUp("site.wforge")).toEqual({ status: "failed" });
-    expect(writer.close).toHaveBeenCalledTimes(3);
+    expect(writer.close).toHaveBeenCalledTimes(4);
     const unopenable = createWriterJobs(() => {
       throw new Error("gone");
     });

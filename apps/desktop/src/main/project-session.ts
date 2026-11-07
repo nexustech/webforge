@@ -7,6 +7,7 @@ import {
   type SiteDoc,
   type SiteDocumentChange,
   SiteFormatError,
+  siteDocuments,
   validateSiteChanges,
 } from "@webforge/model";
 import {
@@ -15,9 +16,12 @@ import {
   type ProjectFileErrorCode,
   ProjectStore,
   ReadOnlyProjectError,
+  reachableBlobs,
   type StoredBlob,
+  type VersionManifest,
 } from "@webforge/storage";
 import type {
+  CleanUpVersionsResult,
   DeleteVersionResult,
   ListVersionsResult,
   ReadVersionSiteResult,
@@ -214,6 +218,21 @@ export class ProjectSession {
   #dailyChecked: string | undefined;
   /** The import the storage writer is writing to the open site's file now, holding the gate. */
   #writing: object | undefined;
+  /**
+   * The blobs a clean-up of the open site keeps though nothing in the file names them now
+   * (Version History's Clean up, 4.6): what this opening stored or imported, what the working copy
+   * reached before its first change, and what a version read this opening (to restore) reaches.
+   * Undo can bring any of them back.
+   */
+  #undoable = new Set<string>();
+  /**
+   * Whether {@link #undoable} has what the working copy reached before this opening's first
+   * change: `pending` until that change or a clean-up, `lost` when it couldn't be read, after which
+   * Clean up can't know what Undo needs and does nothing.
+   */
+  #openReach: "pending" | "taken" | "lost" = "pending";
+  /** Manifests held for later (4.5's publish), whose blobs a clean-up keeps; see {@link holdManifest}. */
+  readonly #held = new Set<VersionManifest>();
 
   constructor(events: ProjectSessionEvents = {}, options: ProjectSessionOptions = {}) {
     this.#listeners = [events];
@@ -301,7 +320,14 @@ export class ProjectSession {
       listVersions: () => listVersions(site),
       saveVersion: (version) => saveVersion(site, version),
       deleteVersion: (id) => deleteVersion(site, id),
-      readVersionSite: (id) => readVersionSite(site, id),
+      readVersionSite: async (id) => {
+        const read = await readVersionSite(site, id);
+        // Restored, Undo and Redo can bring its pages back, with what they name.
+        if (read.status === "ok") {
+          for (const hash of reachableBlobs(siteDocuments(read.site))) this.#undoable.add(hash);
+        }
+        return read;
+      },
       versionPackage: (id) => versionPackage(site, id),
     };
   }
@@ -341,8 +367,17 @@ export class ProjectSession {
           this.#writing = writing;
           try {
             return await work(path, {
-              store: (prepared, target) => writer.store(prepared, target),
-              putBlobs: (sitePath, blobs, asset) => writer.putBlobs(sitePath, blobs, asset),
+              store: async (prepared, target) => {
+                const outcome = await writer.store(prepared, target);
+                if (outcome.status === "stored") this.#undoable.add(prepared.hash);
+                return outcome;
+              },
+              putBlobs: async (sitePath, blobs, asset) => {
+                const outcome = await writer.putBlobs(sitePath, blobs, asset);
+                if (outcome.status === "put")
+                  for (const hash of outcome.hashes) this.#undoable.add(hash);
+                return outcome;
+              },
             });
           } finally {
             if (this.#writing === writing) this.#writing = undefined;
@@ -477,6 +512,7 @@ export class ProjectSession {
           return { status: "failed", reason: "invalid" };
         }
         this.#takeDailyVersion(store);
+        this.#takeOpenReach(store);
         try {
           store.commit(changes);
         } catch (error) {
@@ -532,8 +568,81 @@ export class ProjectSession {
     this.#path = undefined;
     this.#site = undefined;
     this.#sessionId = undefined;
+    this.#undoable = new Set();
+    this.#openReach = "pending";
+    this.#held.clear();
     if (store !== undefined && path !== undefined && !store.info.readOnly) {
       await this.#cleanUp(path);
+    }
+  }
+
+  /**
+   * Holds `manifest` (a publish's documents, read as it started, 4.5) until the returned function
+   * is called: a clean-up of the open site keeps every blob it reaches, so the version saved once
+   * the publish has gone live still has them. Closing the site lets go of it.
+   */
+  holdManifest(manifest: VersionManifest): () => void {
+    this.#held.add(manifest);
+    return () => {
+      this.#held.delete(manifest);
+    };
+  }
+
+  /**
+   * Version History's Clean up (4.6): garbage collection, then a VACUUM of the open site's file
+   * whenever any of it is free, on the storage writer while saves wait at the gate. Keeps what Undo
+   * can bring back ({@link #undoable}) and what the held manifests reach. Ask the renderer to save
+   * its last changes first. A close that can wait no longer stops it, and SQLite undoes what it had
+   * done.
+   */
+  cleanUp(sessionId: string): Promise<CleanUpVersionsResult> {
+    return this.#gate.run("exclusive", async (): Promise<CleanUpVersionsResult> => {
+      const stale = this.#staleFor(sessionId);
+      const store = this.#store;
+      const path = this.#path;
+      if (stale !== undefined || store === undefined || path === undefined) {
+        return { status: "failed", reason: stale ?? "no-site" };
+      }
+      if (store.info.readOnly) return { status: "failed", reason: "read-only" };
+      const keep = new Set<string>();
+      try {
+        this.#takeOpenReach(store);
+        if (this.#openReach === "lost") return { status: "failed", reason: "unknown" };
+        for (const hash of this.#undoable) keep.add(hash);
+        for (const manifest of this.#held) {
+          for (const hash of store.blobsReachedBy(manifest)) keep.add(hash);
+        }
+      } catch (error) {
+        logFailure("Webforge could not tell what a clean-up of a site must keep", error);
+        return { status: "failed", reason: "unknown" };
+      }
+      const writing = {};
+      this.#writing = writing;
+      try {
+        const cleaned = await this.#writer.cleanUp(path, { keep, vacuum: "always" });
+        if (cleaned.status === "failed") {
+          log.error("Webforge could not clean up a site file");
+          return { status: "failed", reason: "unknown" };
+        }
+        return { status: "cleaned", freedBytes: cleaned.freedBytes };
+      } finally {
+        if (this.#writing === writing) this.#writing = undefined;
+      }
+    });
+  }
+
+  /**
+   * Adds what the working copy reaches to {@link #undoable}, once an opening, before its first
+   * change: the site as it opened, which Undo can go back to. Inside the gate only.
+   */
+  #takeOpenReach(store: ProjectStore): void {
+    if (this.#openReach !== "pending") return;
+    try {
+      for (const hash of store.blobsReachedBy(store.readManifest())) this.#undoable.add(hash);
+      this.#openReach = "taken";
+    } catch (error) {
+      this.#openReach = "lost";
+      logFailure("Webforge could not read what a site reaches as it opened", error);
     }
   }
 

@@ -11,6 +11,7 @@ import { openFailureMessage } from "../../shared/open-failure.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { EditorSelection } from "../editor/selection.js";
 import { reportFailure } from "../log.js";
+import { fileSizeLabel } from "../media/index.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import type { VersionList } from "./version-list.js";
 import { fit, newSiteName, versionName } from "./version-words.js";
@@ -19,6 +20,8 @@ import { fit, newSiteName, versionName } from "./version-words.js";
 type VersionNotices = {
   readonly success: (message: string) => void;
   readonly error: (message: string) => void;
+  /** Says something is under way until the returned function is called. */
+  readonly working: (message: string) => () => void;
 };
 
 /** What {@link createVersionActions} works with; injectable for tests. */
@@ -46,6 +49,11 @@ export type VersionActions = {
   remove(version: VersionSummary): Promise<boolean>;
   /** Opens `version` as a new site where the person chooses (P5), which replaces this one. */
   openAsNewSite(version: VersionSummary): Promise<void>;
+  /**
+   * Clean up (P3): removes what nothing needs any more and gives the space back to the disk,
+   * saying it's working meanwhile; true once done.
+   */
+  cleanUp(): Promise<boolean>;
   /**
    * The automatic version before a change to every page (`setBeforeSiteWideAction`, A21): one for
    * each action the person confirms, named after it, and one before the first theme change that
@@ -186,6 +194,35 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
             ? t("versionHistory.openFailed.gone")
             : openFailureMessage(result.reason),
         );
+      }
+    },
+
+    async cleanUp() {
+      session.flush();
+      const done = notify.working(t("versionHistory.cleaningUp"));
+      try {
+        const result = await versions.cleanUp(sessionId());
+        if (result.status === "failed") {
+          notify.error(
+            result.reason === "read-only"
+              ? t("versionHistory.readOnly")
+              : t("versionHistory.cleanUpFailed"),
+          );
+          return false;
+        }
+        notify.success(
+          result.freedBytes > 0
+            ? t("versionHistory.cleanedUp", { size: fileSizeLabel(result.freedBytes) })
+            : t("versionHistory.nothingToCleanUp"),
+        );
+        return true;
+      } catch (error) {
+        reportFailure("versions.cleanUp", error);
+        notify.error(t("versionHistory.cleanUpFailed"));
+        return false;
+      } finally {
+        done();
+        void list.refresh();
       }
     },
 

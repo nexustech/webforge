@@ -40,6 +40,10 @@ export const versionHistoryArea: Area<WindowContext> = {
       notify: {
         success: (message) => toast.success(message),
         error: (message) => toast.error(message),
+        working: (message) => {
+          const id = toast.loading(message);
+          return () => toast.dismiss(id);
+        },
       },
       restart: () => window.location.reload(),
     });

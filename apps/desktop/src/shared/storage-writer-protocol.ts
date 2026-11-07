@@ -80,11 +80,17 @@ export const storageWriterMessageSchema = z.discriminatedUnion("type", [
       .max(1000),
     asset: blobAssetSchema.optional(),
   }),
-  /** Clean `sitePath` up as its site closes: garbage collection, then VACUUM when it pays. */
+  /**
+   * Clean `sitePath` up: garbage collection, then a VACUUM when it pays as its site closes, or
+   * whenever any of it is free for Version History's Clean up (`vacuum: "always"`), keeping the
+   * blobs in `keep` (4.6).
+   */
   z.strictObject({
     id: z.number().int(),
     type: z.literal("clean-up"),
     sitePath: z.string().min(1),
+    keep: z.array(hashSchema).max(1_000_000).optional(),
+    vacuum: z.enum(["bounded", "always"]).optional(),
   }),
 ]);
 
@@ -142,6 +148,8 @@ const cleanUpOutcomeSchema = z.discriminatedUnion("status", [
     bytes: z.number().int().nonnegative(),
     assets: z.number().int().nonnegative(),
     vacuumed: z.boolean(),
+    /** How many bytes the file gave back to the disk. */
+    freedBytes: z.number().int().nonnegative(),
   }),
   z.strictObject({ status: z.literal("failed") }),
 ]);
