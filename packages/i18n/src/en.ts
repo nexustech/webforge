@@ -8,6 +8,7 @@ import { exportSite } from "./en/export.js";
 import { fonts } from "./en/fonts.js";
 import { help } from "./en/help.js";
 import { history } from "./en/history.js";
+import { onboarding } from "./en/onboarding.js";
 import { panels } from "./en/panels.js";
 import { publish } from "./en/publish.js";
 import { puck } from "./en/puck.js";
@@ -45,6 +46,7 @@ export const areas = {
   aiApps,
   versions,
   help,
+  onboarding,
 } as const;
 
 /**
@@ -72,4 +74,5 @@ export const en = {
   ...aiApps,
   ...versions,
   ...help,
+  ...onboarding,
 } as const;

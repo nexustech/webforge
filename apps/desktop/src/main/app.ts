@@ -1,5 +1,5 @@
 import { networkInterfaces } from "node:os";
-import { join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
@@ -46,6 +46,7 @@ import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
+import { licenceFiles, registerLicenceHandlers } from "./licences.js";
 import { logFailure } from "./log.js";
 import { registerMcpHandlers } from "./mcp-ipc.js";
 import { createMcpService, type McpService } from "./mcp-service.js";
@@ -76,6 +77,7 @@ import {
   hardenWebContents,
   isAppUrl,
 } from "./security.js";
+import { createSiteBriefs } from "./site-brief.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
@@ -588,6 +590,19 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
     registerGuideHandlers(ipcMain, isTrustedSender, (url) => electron.shell.openExternal(url));
+    // Help → Open-Source Licences (5.3): the build's notices, and Chromium's own.
+    registerLicenceHandlers(
+      ipcMain,
+      isTrustedSender,
+      licenceFiles({
+        packaged: app.isPackaged,
+        platform: process.platform,
+        appPath: app.getAppPath(),
+        resourcesPath: process.resourcesPath,
+        execDir: dirname(process.execPath),
+      }),
+      (path) => electron.shell.openPath(path),
+    );
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
       // The flush has just run; capture the canvas for the Recent list before the window goes.
       beforeClose: () => siteSwitch.leaveSite(),
@@ -604,6 +619,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       projectSession,
     );
     exposeForE2eTests(ai, app.isPackaged);
+    // AI apps' briefs (4.12a): main shows them in the window as the quick start, filled in.
+    const briefs = createSiteBriefs({
+      window: () => lifecycle.mainWindow(),
+      templates: () => templates.briefTemplates(),
+    });
+    briefs.register(ipcMain, isTrustedSender);
     // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
     // 0021): nothing listens until the person turns it on.
     const service = createMcpService({
@@ -615,6 +636,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         credentials,
       ),
       ask: (request) => ai.ask(request),
+      briefs,
       info: { name: t("app.name"), version: app.getVersion() },
       // Version History's, for the site open now: none to save without one.
       saveVersionBefore: async (name) => {

@@ -42,8 +42,26 @@ export function newSiteName(site: string, version: string): string {
     : fit(site, SITE_NAME_MAX).trim();
 }
 
+/** `at` (ISO 8601) as the person's computer writes a date and time ("6 Nov 2026, 20:41"). */
+const dateTime = (at: string, locale?: string): string =>
+  new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(at));
+
 /** When a version was saved, as the person's computer writes a date and time ("6 Nov 2026, 20:41"). */
 export const versionDate = (version: Pick<VersionSummary, "createdAt">, locale?: string): string =>
-  new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(version.createdAt),
-  );
+  dateTime(version.createdAt, locale);
+
+/**
+ * Where and when a version was last published (4.6b): "Published to My host, 6 Nov 2026, 20:41",
+ * or without the destination once it's been removed; undefined for one never published.
+ */
+export function versionPublished(
+  version: Pick<VersionSummary, "published">,
+  locale?: string,
+): string | undefined {
+  const { published } = version;
+  if (published === undefined) return undefined;
+  const date = dateTime(published.at, locale);
+  return published.to === undefined
+    ? t("versionHistory.publishedOn", { date })
+    : t("versionHistory.publishedTo", { destination: published.to, date });
+}

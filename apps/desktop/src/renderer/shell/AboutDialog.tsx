@@ -1,7 +1,9 @@
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@webforge/editor-ui";
@@ -11,7 +13,10 @@ import type { AppInfo } from "../../shared/ipc-contract.js";
 import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 
-/** Help → About Webforge: the app's name and version. Registers its own command. */
+/**
+ * Help → About Webforge: the app's name and version, and Open-Source Licences (5.3). Registers its
+ * own command.
+ */
 export function AboutDialog({ info }: { readonly info: AppInfo }) {
   const registry = useCommandRegistry();
   const [open, setOpen] = useState(false);
@@ -34,6 +39,17 @@ export function AboutDialog({ info }: { readonly info: AppInfo }) {
           <DialogTitle>{info.name}</DialogTitle>
           <DialogDescription>{t("app.version", { version: info.version })}</DialogDescription>
         </DialogHeader>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setOpen(false);
+              registry.run(COMMAND_IDS.licences);
+            }}
+          >
+            {t("command.licences")}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

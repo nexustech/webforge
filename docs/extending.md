@@ -81,7 +81,9 @@ A command is in the command box, and in a menu if it names one (`shell/commands.
 - **Register it** with `registry.register({ id, label: t(…), run, menu?, shortcut?, enabled?, palette?, keywords? })`, from a `register…Commands(registry, …)` function; it returns how to remove it. `registry.update(id, { enabled })` changes it later. A command with `submenu: <id of another command>` is listed in that command's submenu instead of a menu of its own (File › Open Recent), after a separator with `separated: true`; the title bar and macOS's menu bar both draw it. The command box leaves out the item that opens the submenu and lists the submenu's commands, by `paletteLabel` where their menu label needs the submenu's name ("Open Recent: Rosa's Bakery").
 - **Ids are dotted** (`edit.cut`, `site.export`); shared ones are in `shell/command-ids.ts`.
 - **A change to the site goes through `session.history`** as one undo step with a meaningful label ("Changed Hero button link"), never around it.
-- **Shortcuts** follow the standard (Mod for Ctrl or Cmd). Text keeps its own keys while it's being edited (`textKeys`).
+- **Shortcuts** follow the standard (Mod for Ctrl or Cmd). Text keeps its own keys while it's being edited (`textKeys`). Keys without Mod are left to a focused field, list or menu, except a function key marked `everywhere` in the standard (F1, F6), which no control types with.
+- **Parts of the window:** a new top-level part (a panel column, a bar) carries `data-region` (`REGION_ATTRIBUTE` from `shell/regions.ts`), so F6 and Shift+F6 reach it, in document order.
+- **Dialogs** built on editor-ui's `DialogContent` or `AlertDialogContent` give the focus back to what had it when they opened, with or without a trigger; an `onCloseAutoFocus` that prevents the default places it itself.
 
 ## Contextual toolbars
 
@@ -130,6 +132,8 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 - **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), called from `main/app.ts`.
 
 Two windows call main: the editor's, and the Help window (5.4b, HP-10), whose page has its own preload (`preload/help.ts`, `window.webforgeHelp`). `startApp`'s `isTrustedSender` is the editor's page only. A call for the Help window is registered with `helpWindows.isHelpPage` instead, as `help:open-external` is (`main/help-ipc.ts`), so neither window can make the other's calls.
+
+A **?** that opens Help at a page and heading (5.4b) is a topic in `renderer/help/help-links.json` and a `<HelpButton topic="…" />` where it's drawn; `pnpm help-check` fails on a topic whose page or heading isn't there. A new site component needs a heading on its help page for *Help for This Element*, which `help-check` checks too.
 
 A domain with work that must stop when its site closes, or finish before Webforge exits, is a feature (`AppFeature` in `main/app-feature.ts`, A12): its `register`, its `site` events (opened, committed, closed, a site a hand-off replaced included) and its `quit`, made beside its handlers, as `createExportFeature` is, and listed in `startApp`'s `features`. `startApp` registers each, has the project session tell each as sites open and close, and has quitting wait for each `quit` once the site has closed.
 

@@ -1,3 +1,5 @@
+import { BUSINESS_TYPES, SITE_NAME_MAX, siteSettingsSchema } from "@webforge/model";
+import { businessDetailsSchema, TEMPLATE_IDS } from "@webforge/templates";
 import { z } from "zod";
 import { sessionIdSchema } from "./project.js";
 
@@ -77,6 +79,15 @@ const aiResponseSchema = z.union([
     status: z.enum(["invalid", "not-found", "refused", "busy", "declined"]),
     message: z.string(),
   }),
+  /**
+   * A brief the person is still checking (4.12a): main's own answer, never the window's. The app
+   * asks `briefStatus` with its id later.
+   */
+  z.strictObject({
+    status: z.literal("waiting"),
+    data: z.strictObject({ briefId: z.int().positive() }),
+    message: z.string(),
+  }),
 ]);
 
 /** See {@link aiResponseSchema}. */
@@ -84,6 +95,53 @@ export type AiResponse = z.infer<typeof aiResponseSchema>;
 
 /** A request's id, which its answer names. */
 const requestIdSchema = z.int().positive();
+
+/**
+ * A site an AI app describes (4.12a, AIB-5): the quick start's answers, which Webforge opens the
+ * quick start with for the person to check and create, or not. The type is the one answer it
+ * needs; the rest is the quick start's to fill in as it would (QS-6).
+ */
+export const siteBriefSchema = z.strictObject({
+  /** The business type, the quick start's first answer: `food`, `trades`… */
+  businessType: z.enum(BUSINESS_TYPES),
+  /** Its kind for search engines, one of the type's (`AutoRepair` for a garage). */
+  businessKind: siteSettingsSchema.shape.general.shape.businessKind,
+  name: z.string().trim().min(1).max(SITE_NAME_MAX),
+  /** *What you do*: one line, Site Settings' description. */
+  whatYouDo: businessDetailsSchema.shape.description,
+  /** One of the type's templates; its first when left out. */
+  template: z.enum(TEMPLATE_IDS).optional(),
+  /** A theme preset; the template's when left out. */
+  theme: z.string().min(1).max(40).optional(),
+  /** A brand colour (`#c62828`), or a curated theme's palette by its preset: the theme's own when left out. */
+  colours: z
+    .union([
+      z.strictObject({ colour: z.string().regex(/^#[0-9a-fA-F]{6}$/) }),
+      z.strictObject({ palette: z.string().min(1).max(40) }),
+    ])
+    .optional(),
+  /** The template's pages to leave out, by id: never its home page. */
+  leaveOut: z.array(z.string().min(1).max(100)).max(100).optional(),
+  /** The type's page recipes to add, by id. */
+  recipes: z.array(z.string().min(1).max(100)).max(50).optional(),
+  phone: businessDetailsSchema.shape.phone,
+  email: businessDetailsSchema.shape.email,
+  address: businessDetailsSchema.shape.address,
+  openingHours: businessDetailsSchema.shape.openingHours,
+  webAddress: businessDetailsSchema.shape.webAddress,
+});
+
+/** See {@link siteBriefSchema}. */
+export type SiteBrief = z.infer<typeof siteBriefSchema>;
+
+/**
+ * What became of a brief in the window: the person created the site, or closed the quick start;
+ * or the window refused it (Content mode) or had a New Site or quick start of the person's open.
+ */
+const BRIEF_OUTCOMES = ["created", "declined", "refused", "busy"] as const;
+
+/** One of {@link BRIEF_OUTCOMES}. */
+export type BriefOutcome = (typeof BRIEF_OUTCOMES)[number];
 
 /** IPC channels of the `ai` domain (`ai:*`). Each one's arguments are checked. */
 export const aiChannels = {
@@ -103,12 +161,23 @@ export const aiChannels = {
     request: z.tuple([sessionIdSchema, z.boolean()]),
     response: z.null(),
   },
+  /**
+   * What became of the brief sent with this id (4.12a): sent before the window starts over with a
+   * site it created, so it arrives.
+   */
+  aiBriefAnswer: {
+    channel: "ai:brief-answer",
+    request: z.tuple([requestIdSchema, z.enum(BRIEF_OUTCOMES)]),
+    response: z.null(),
+  },
 } as const;
 
 /** Messages the main process sends to the renderer in the `ai` domain. */
 export const aiEvents = {
   /** An AI app's request, with an id; the renderer answers with `ai:answer` and that id. */
   request: { channel: "ai:request", args: z.tuple([requestIdSchema, aiRequestSchema]) },
+  /** An AI app's brief (4.12a): the window opens the quick start with it, filled in. */
+  brief: { channel: "ai:brief", args: z.tuple([requestIdSchema, siteBriefSchema]) },
 } as const;
 
 /** `window.webforge.ai`. */
@@ -118,4 +187,12 @@ export interface AiApi {
    * main process knows a site is open to ask.
    */
   onRequest(sessionId: string, answer: (request: AiRequest) => Promise<AiResponse>): () => void;
+  /**
+   * Calls `open` with each AI app's brief (4.12a) until the returned function is called: the window
+   * shows the quick start filled in, and tells main what became of it with `answer`, which it waits
+   * for before starting over with a new site.
+   */
+  onBrief(
+    open: (brief: SiteBrief, answer: (outcome: BriefOutcome) => Promise<void>) => void,
+  ): () => void;
 }

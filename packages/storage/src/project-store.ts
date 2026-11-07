@@ -884,9 +884,10 @@ export class ProjectStore {
 
   /**
    * Deletes all but the newest `keep` of the versions Webforge saved (P3), and gives how many it
-   * deleted. The person's own versions are never deleted, nor the newest `on-publish` one: the
-   * version the live site came from, which a restore or a republish may need however many daily
-   * versions followed it.
+   * deleted. The person's own versions are never deleted, nor the version the live site came from,
+   * which a restore or a republish may need however many daily versions followed it: the newest
+   * `on-publish` one, and the one published most recently, which a republish (4.6b) can make an
+   * older one. A publish record that can't be read counts as none, as {@link listVersions} shows.
    */
   pruneAutoVersions(keep: number): number {
     const kept = z.int().nonnegative().parse(keep);
@@ -897,7 +898,13 @@ export class ProjectStore {
            AND rowid NOT IN (
              SELECT rowid FROM versions WHERE kind = 'auto' ORDER BY rowid DESC LIMIT ?
            )
-           AND rowid IS NOT (SELECT max(rowid) FROM versions WHERE reason = 'on-publish')`,
+           AND rowid IS NOT (SELECT max(rowid) FROM versions WHERE reason = 'on-publish')
+           AND rowid IS NOT (
+             SELECT rowid FROM versions WHERE published_to IS NOT NULL
+             ORDER BY CASE WHEN json_valid(published_to)
+               THEN json_extract(published_to, '$.publishedAt') END DESC, rowid DESC
+             LIMIT 1
+           )`,
         ).run(kept).changes,
     );
   }
@@ -917,14 +924,23 @@ export class ProjectStore {
       .map(toVersionInfo);
   }
 
-  /** The documents of a saved version sorted by id, or `undefined` if there is no such version. */
-  readVersion(id: string): StoredDocument[] | undefined {
+  /**
+   * A saved version's documents as {@link readManifest} lists the working copy's (each one's id,
+   * kind and blob), or `undefined` if there is no such version: what a republish holds while it
+   * runs (4.6b), so a clean-up keeps what it reaches even if the version is deleted meanwhile.
+   */
+  readVersionManifest(id: string): VersionManifest | undefined {
     const row = this.#prepare("SELECT manifest FROM versions WHERE id = ?").get(id);
     if (row === undefined) {
       return undefined;
     }
     const { manifest } = z.object({ manifest: z.string() }).parse(row);
-    return parseManifest(manifest).documents.map(({ id: documentId, kind, hash }) => ({
+    return parseManifest(manifest).documents;
+  }
+
+  /** The documents of a saved version sorted by id, or `undefined` if there is no such version. */
+  readVersion(id: string): StoredDocument[] | undefined {
+    return this.readVersionManifest(id)?.map(({ id: documentId, kind, hash }) => ({
       id: documentId,
       kind,
       content: this.#readJsonBlob(hash),

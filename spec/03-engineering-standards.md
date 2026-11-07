@@ -108,7 +108,7 @@ Enforced in CI by dependency-cruiser:
 | **Accessibility** | @axe-core/playwright | All templates and components exported: zero serious/critical violations | `e2e/a11y/` for exported sites and templates (Phase 3); Storybook stories (editor UI and site components) are checked in `e2e/visual/` |
 | **E2E (app)** | Playwright `_electron` on Windows + macOS | Critical journeys: new site from template → edit text → change theme → undo/redo → add page → export → opens from disk; publish to a mocked Netlify; version restore; crash during save | `e2e/app/` |
 | **Exported-site compatibility** | Playwright Chromium/Firefox/WebKit with `file://` | Fonts, scripts, links work from disk; **network blocked → zero external requests** (C8) | `e2e/export/` |
-| **Performance** | `vitest bench` + Playwright traces | Budgets from [architecture §10](01-architecture.md#10-performance-targets); CI fails on >20% regression | `bench/` |
+| **Performance** | `vitest bench` + Playwright traces | Budgets from [architecture §10](01-architecture.md#10-performance-targets); CI fails on >20% regression against `main`, both run in the same job ([ADR 0022](../docs/adr/0022-benchmarks.md)) | `bench/` (`pnpm bench`); the app end to end in `e2e/perf/` |
 
 ### Coverage targets (enforced per package)
 **Minimum for every package: 80%** (lines, branches, functions, statements), enforced by Vitest coverage thresholds in CI.

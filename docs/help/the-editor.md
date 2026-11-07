@@ -30,6 +30,17 @@ When a site is open, the editor fills the window.
 - Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
 - **View › Reset Panels** puts everything back as it was.
 
+## Using the keyboard
+
+You can do everything in the editor without a mouse.
+- **F6** moves to the next part of the window: the title bar, the left panels, the page, the bottom panel and the right panels, in that order. **Shift+F6** goes back. Each part remembers where you were in it.
+- **Tab** moves between the buttons and options in a part. In a row of tabs, use the arrow keys.
+- On the page, the arrow keys select the next or previous item, **Enter** edits its text and **Esc** stops. See [Editing on the page](editing-on-the-page.md).
+- **Shift+F10**, or the menu key, opens the right-click menu for what you've selected.
+- **Esc** closes a dialog and takes you back to where you were.
+
+Every key is listed in [Keyboard shortcuts](keyboard-shortcuts.md).
+
 ## Design and Content mode
 
 The **Design | Content** switch in the title bar sets what you can change.
@@ -70,3 +81,14 @@ Changes you make while viewing Tablet or Mobile can apply to that device only. S
 ## Help
 
 **Help › {appName} Help**, or F1, opens these help pages in a window of their own, beside the editor, so you can read and work at once. Choose a page from the contents on the left, or search them all. Links between pages stay in the Help window, and **Back** returns to the page before; a link to a website opens in your web browser. The pages come with {appName}, so they work without an internet connection.
+
+Help is also where you need it:
+- a small **?** beside the Edit panel's heading, at the top of each section of [Settings](settings.md) and [Site Settings](site-settings.md), in the Export, Publish, Page Settings and Preview on Phone dialogs, when {appName} asks about code from somewhere else, and on each check in [Site Check](site-check.md) opens the help for it;
+- **Help for This Element**, in the [right-click menu](editing-on-the-page.md#the-right-click-menu) on the page and in Layers, opens the help for the selected section or element;
+- the start screen's **Help** tab lists the pages to start with.
+
+**Help › Take the Tour** shows you around the editor in three short steps. See [Getting started](getting-started.md#the-tour).
+
+### Open-source licences
+
+{appName} is made with open-source software. **Help › Open-Source Licences**, or **Open-Source Licences** in **Help › About {appName}**, lists every part of it that comes with {appName}, the fonts included, each with its version and licence. Click one to read its licence, or type in **Find a package or licence** to find one. **Chromium's Licences** opens the licences of Chromium, which {appName} runs on, in your web browser.

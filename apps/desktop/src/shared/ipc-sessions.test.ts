@@ -50,6 +50,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "app:log-failure": "a failure's code, kept locally without site content",
   "app:set-native-menus": "the menus macOS shows, made from the renderer's commands",
   "app:open-guide": "a guide page of the app's",
+  "app:list-licences": "the app's own third-party notices",
+  "app:open-chromium-licences": "Electron's own Chromium licences file",
   "app:set-spellcheck-language": "the spelling checker's language",
   "canvas:compile-css": "CSS compiled from what the renderer sends, nothing read from the file",
   "canvas:class-catalogue": "the classes the site's CSS supports",
@@ -89,6 +91,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "preview:show": "takes the browsers to a page: no site content",
   "preview:stop-phone": "stops the preview's listener on the network",
   "ai:answer": "answers a request by its id; a reload settles those waiting (ai-ipc.ts)",
+  "ai:brief-answer":
+    "what became of an AI app's brief, a new site the window makes whichever is open (site-brief.ts)",
   "publish:testConnection": "a destination's connection, nothing of the site",
   "publish:readHostKey": "a server's key, nothing of the site",
   "publish:chooseKeyFile": "a key file the person chooses, nothing of the site",

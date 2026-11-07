@@ -413,6 +413,30 @@ describe("Tooltip", () => {
     });
     expect(await screen.findByRole("tooltip")).toBeTruthy();
   });
+
+  it("stays shut for focus the keyboard didn't give, such as a dialog's after a click (5.5)", async () => {
+    render(
+      <TooltipProvider delayDuration={0}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button>Publish…</Button>
+          </TooltipTrigger>
+          <TooltipContent>Publish your site</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>,
+    );
+    const button = screen.getByRole("button", { name: "Publish…" });
+    const matches = button.matches.bind(button);
+    // As Chromium answers after a click: the focus isn't the keyboard's.
+    vi.spyOn(button, "matches").mockImplementation((selector) =>
+      selector === ":focus-visible" ? false : matches(selector),
+    );
+    await act(async () => {
+      button.focus();
+    });
+    await act(() => new Promise((resolve) => setTimeout(resolve, 10)));
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
 });
 
 describe("ScrollArea", () => {

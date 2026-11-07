@@ -58,6 +58,8 @@ export type FormProps<V extends FormValues, Out> = {
   readonly groupsLabel?: string;
   /** The tab it opens on; its first when left out. */
   readonly initialGroup?: string;
+  /** Drawn at the top of a group's tab, at its end: a **?** for that section (5.4b). */
+  readonly groupHelp?: (group: string) => ReactNode;
 };
 
 /**
@@ -69,6 +71,7 @@ export function Form<V extends FormValues, Out>({
   form,
   groupsLabel,
   initialGroup,
+  groupHelp,
 }: FormProps<V, Out>) {
   const renderers: FieldRenderers = { ...PANEL_RENDERERS, ...useFieldRenderers(), ...FORM_OWN };
   const navId = useId();
@@ -84,6 +87,13 @@ export function Form<V extends FormValues, Out>({
     if (first !== undefined && !hasIssue(tab)) setTab(first.id);
   }
 
+  /** A group's **?**, at its tab's top end, if it has one. */
+  const helpOf = (group: string) => {
+    const help = groupHelp?.(group);
+    return help === undefined || help === null ? null : (
+      <div className="float-right -mt-1 ml-2">{help}</div>
+    );
+  };
   const after = form.spec.after?.(form.values) ?? {};
   const draw = (shown: readonly FormField[]) => (
     <div className="grid gap-3">
@@ -175,6 +185,7 @@ export function Form<V extends FormValues, Out>({
           <div className="min-w-0">
             {groups.map((group) => (
               <TabsContent key={group.id} value={group.id} className="bg-transparent">
+                {helpOf(group.id)}
                 {draw(fields.filter((field) => field.group === group.id))}
               </TabsContent>
             ))}
@@ -201,6 +212,7 @@ export function Form<V extends FormValues, Out>({
         </TabsList>
         {groups.map((group) => (
           <TabsContent key={group.id} value={group.id} className="pt-3">
+            {helpOf(group.id)}
             {draw(fields.filter((field) => field.group === group.id))}
           </TabsContent>
         ))}

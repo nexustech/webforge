@@ -65,6 +65,10 @@ export const CANVAS_INNER = '[class*="PuckCanvas-inner"]';
 /** Puck's scrolling canvas area around the canvas root (LF-2: its padding and background). */
 export const CANVAS = '[class*="_PuckCanvas_"]';
 
+/** The canvas area once its page has loaded, and the spinner it shows until then (5.5). */
+export const CANVAS_READY = '[class*="_PuckCanvas--ready_"]';
+export const CANVAS_LOADER = '[class*="_PuckCanvas-loader_"]';
+
 /**
  * Puck's box around a component's action bar, which it places with inline styles, and the sticky
  * layer that holds it, shown only for the selected component (LF-3, SP-1).

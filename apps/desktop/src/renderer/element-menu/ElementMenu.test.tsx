@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { currentPage } from "../editor/editor-session.js";
 import type { Layer } from "../editor/layers.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { CanvasElementMenu, type CanvasElementMenuProps } from "./CanvasElementMenu.js";
@@ -199,6 +200,28 @@ describe("ElementMenu (1.35)", () => {
     ]);
   });
 
+  it("offers Help for This Element just before Delete, and runs it (5.4b, UX-24)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const help = vi.fn();
+    commands.register({
+      id: COMMAND_IDS.helpForElement,
+      label: "Help for This Element",
+      run: help,
+    });
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <ElementMenu at={{ x: 0, y: 0 }} onClose={vi.fn()} onRename={vi.fn()} />
+      </CommandRegistryProvider>,
+    );
+
+    expect(
+      items()
+        .slice(-2)
+        .map(([label]) => label),
+    ).toEqual(["Help for This Element", expect.stringMatching(/^Delete/)]);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Help for This Element" }));
+    expect(help).toHaveBeenCalledOnce();
+  });
   it("offers Style this ‹kind›… first among the style items, opened once it has closed (3.13a)", async () => {
     const { commands } = registry({ save: true, detach: false });
     const style = vi.fn();

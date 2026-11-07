@@ -10,10 +10,20 @@ export type HelpItem = {
 
 /**
  * The start screen's Help tab (2.14b, LF-10): each entry a command, so the same thing runs from
- * the Help menu and the command box. Nothing here opens a web page. 5.4 adds the bundled guide
- * with one line.
+
+ * the Help menu and the command box. Nothing here opens a web page: the help pages come with the
+ * app, and open in the Help window (5.4b).
  */
 export const HELP_ITEMS: readonly HelpItem[] = [
+  {
+    command: "help.page.getting-started",
+    description: () => t("site.start.help.gettingStarted"),
+  },
+  { command: "help.page.the-editor", description: () => t("site.start.help.editor") },
+  {
+    command: "help.page.keyboard-shortcuts",
+    description: () => t("site.start.help.shortcutsPage"),
+  },
   { command: COMMAND_IDS.shortcuts, description: () => t("site.start.help.shortcuts") },
   { command: COMMAND_IDS.tryExample, description: () => t("site.start.help.example") },
 ];

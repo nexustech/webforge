@@ -1,0 +1,26 @@
+{
+  "editPanel": { "page": "edit-panel" },
+  "export": { "page": "export" },
+  "publish": { "page": "publish" },
+  "pageSettings": { "page": "pages", "anchor": "page-settings" },
+  "codeTrust": { "page": "custom-code", "anchor": "code-from-somewhere-else" },
+  "phonePreview": { "page": "preview", "anchor": "on-your-phone" },
+  "siteCheck.must": { "page": "site-check", "anchor": "must-fix" },
+  "siteCheck.should": { "page": "site-check", "anchor": "should-fix" },
+  "siteCheck.tip": { "page": "site-check", "anchor": "tips" },
+  "siteCheck.found": { "page": "site-check", "anchor": "being-found" },
+  "settings.interface:": { "page": "settings", "anchor": "interface" },
+  "settings.devices:": { "page": "settings", "anchor": "devices" },
+  "settings.versions:": { "page": "settings", "anchor": "version-history" },
+  "settings.site:general": { "page": "site-settings", "anchor": "general" },
+  "settings.site:address": { "page": "site-settings", "anchor": "web-address" },
+  "settings.site:social": { "page": "site-settings", "anchor": "social--sharing" },
+  "settings.site:contact": {
+    "page": "site-settings",
+    "anchor": "contact-details-and-opening-hours"
+  },
+  "settings.site:search": { "page": "site-settings", "anchor": "search-engines" },
+  "settings.site:analytics": { "page": "site-settings", "anchor": "analytics" },
+  "settings.site:forms": { "page": "site-settings", "anchor": "forms" },
+  "settings.code:code": { "page": "custom-code", "anchor": "code-for-every-page" }
+}

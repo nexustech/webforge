@@ -9,6 +9,7 @@ import { createCredentialStore, type SecretCipher } from "./credential-store.js"
 import { createJsonStore } from "./json-store.js";
 import type { McpListener, McpListenerOptions } from "./mcp-listener.js";
 import { createMcpService } from "./mcp-service.js";
+import { siteChoices } from "./site-brief.js";
 
 const cipher: SecretCipher = {
   isEncryptionAvailable: () => true,
@@ -49,11 +50,17 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
   const ports = [...drawn];
   const saveVersionBefore = vi.fn(async (_name: string): Promise<"saved" | "failed"> => "saved");
   const ask = vi.fn(async (): Promise<AiResponse> => ({ status: "done", data: {} }));
+  const briefs = {
+    ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
+    choices: () => ({ status: "done", data: siteChoices([]) }) as const,
+    status: vi.fn(() => ({ status: "not-found", message: "none" }) as const),
+  };
   const service = createMcpService({
     apps,
     ask,
     info: { name: "Webforge", version: "1" },
     saveVersionBefore,
+    briefs,
     listen,
     drawPort: () => ports.shift() ?? 59_999,
   });
@@ -65,6 +72,7 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     disconnected,
     saveVersionBefore,
     ask,
+    briefs,
     closed: () => closed,
   };
 }
@@ -201,6 +209,22 @@ describe("the version before an AI app's changes (S20)", () => {
     await client.callTool({ name: "addPage", arguments: { title: "Team" } });
 
     expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+  });
+
+  it("isn't saved for a brief, which is the app's by its id, not its name (4.12a)", async () => {
+    const { service, listened, saveVersionBefore, briefs } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+
+    // Removed and added again under the same name: another pairing, which can't read the first's.
+    const client = await connection(options, { id: "app-2", name: "Claude" });
+    await client.callTool({ name: "createSiteFromBrief", arguments: {} });
+    await client.callTool({ name: "briefStatus", arguments: { briefId: "brief-1" } });
+
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+    expect(briefs.ask).toHaveBeenCalledWith(expect.anything(), "app-2", expect.anything());
+    expect(briefs.status).toHaveBeenCalledWith(expect.anything(), "app-2");
   });
 
   it("lets the command run when the version can't be saved", async () => {

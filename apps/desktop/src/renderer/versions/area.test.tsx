@@ -5,6 +5,7 @@ import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VersionSummary } from "../../shared/ipc/versions.js";
 import type { WindowContext } from "../editor/areas.js";
+import { createPublishRequests } from "../editor/publish-requests.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
@@ -40,6 +41,7 @@ function setUp() {
       cleanUp: vi.fn(),
     },
   });
+  const publishing = createPublishRequests();
   // Only what the area uses of the window's context.
   const context = {
     ...registries,
@@ -48,10 +50,11 @@ function setUp() {
     windowDialogs,
     settings,
     siteWide,
+    publishing,
   } as unknown as WindowContext;
   const remove = versionHistoryArea.register(context);
   render(<WindowDialogs registry={windowDialogs} />);
-  return { registries, settings, siteWide, api, remove };
+  return { registries, settings, siteWide, api, remove, publishing };
 }
 
 describe("versionHistoryArea (4.6)", () => {
@@ -113,9 +116,17 @@ describe("versionHistoryArea (4.6)", () => {
     expect(registries.preferences.getState().preferences.versionsKept).toBe(50);
   });
 
+  it("lists the versions again once a publish goes live, to show where each went (4.6b)", () => {
+    const { api, publishing } = setUp();
+    publishing.published();
+    expect(api.versions.list).toHaveBeenCalledOnce();
+  });
+
   it("removes all it added, and the hook too", async () => {
-    const { registries, settings, siteWide, api, remove } = setUp();
+    const { registries, settings, siteWide, api, remove, publishing } = setUp();
     remove();
+    publishing.published();
+    expect(api.versions.list).not.toHaveBeenCalled();
 
     expect(registries.commands.get(COMMAND_IDS.saveVersion)).toBeUndefined();
     expect(registries.panels.list()).toEqual([]);

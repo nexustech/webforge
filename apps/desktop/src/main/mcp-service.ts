@@ -7,6 +7,7 @@ import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
 import { type McpListener, type McpListenerOptions, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp, type McpServerInfo } from "./mcp-server.js";
+import { isMainTool, type SiteBriefs } from "./site-brief.js";
 
 /** The ephemeral range a port is drawn from (ADR 0021). */
 const EPHEMERAL = { from: 49152, to: 65535 } as const;
@@ -57,6 +58,8 @@ export type McpServiceOptions = {
    * (S20). Version History's own (4.6a).
    */
   readonly saveVersionBefore: (name: string) => Promise<"saved" | "failed">;
+  /** AI apps' briefs (4.12a), which main answers itself: no site need be open. */
+  readonly briefs: Pick<SiteBriefs, "ask" | "choices" | "status">;
   readonly listen?: (options: McpListenerOptions) => Promise<McpListener>;
   readonly drawPort?: () => number;
 };
@@ -78,6 +81,20 @@ export function createMcpService(options: McpServiceOptions): McpService {
   const listen = options.listen ?? startMcpListener;
   const drawPort = options.drawPort ?? (() => randomInt(EPHEMERAL.from, EPHEMERAL.to + 1));
   const limits = createAppLimits(options.ask);
+
+  /** Main's own tools (4.12a), for `app`: a brief, its status, and what it chooses from. */
+  const mainTool =
+    (app: McpApp, signal: AbortSignal | undefined) =>
+    async (request: AiRequest): Promise<AiResponse> => {
+      switch (request.name) {
+        case "siteChoices":
+          return options.briefs.choices();
+        case "briefStatus":
+          return options.briefs.status(request.input, app.id);
+        default:
+          return options.briefs.ask(request.input, app.id, signal);
+      }
+    };
   let listener: McpListener | null = null;
   let moved = false;
 
@@ -107,16 +124,13 @@ export function createMcpService(options: McpServiceOptions): McpService {
       saved ??= now;
       await now;
     };
-    return (request: AiRequest): Promise<AiResponse> =>
-      limits.ask(
-        app.id,
-        request,
-        request.kind !== "command"
-          ? undefined
-          : request.name === "plan"
-            ? versionNow
-            : versionFirst,
-      );
+    const versionFor = (request: AiRequest) =>
+      request.kind !== "command" ? undefined : request.name === "plan" ? versionNow : versionFirst;
+    return (request: AiRequest, signal?: AbortSignal): Promise<AiResponse> =>
+      isMainTool(request.name)
+        ? // A brief changes no open site: no version before it.
+          limits.ask(app.id, request, undefined, mainTool(app, signal))
+        : limits.ask(app.id, request, versionFor(request));
   };
 
   /**

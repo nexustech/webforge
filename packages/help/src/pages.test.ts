@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   anchorFor,
   checkHelpPages,
+  componentHelp,
   type HelpPage,
   HelpPageError,
+  helpComponentsOf,
   parseHelpContents,
   parseHelpPage,
   searchHelp,
@@ -29,7 +31,7 @@ const check = (
 ) =>
   checkHelpPages({
     files,
-    componentTypes: options.componentTypes ?? [],
+    components: (options.componentTypes ?? []).map((type) => ({ type, label: type, children: [] })),
     appName: "Webforge",
     ...(options.links === undefined ? {} : { links: options.links }),
   });
@@ -167,7 +169,7 @@ describe("checkHelpPages (HP-5)", () => {
     const files = [
       page(
         "export",
-        "# Export\n\nSee [Publish](publish.md) and [its host](publish.md#your-host).",
+        "# Export\n\nSee [Publish](publish.md) and [its host](publish.md#your-host).\n\n## Hero",
         {
           related: "[publish]",
           components: "[Hero]",
@@ -175,7 +177,7 @@ describe("checkHelpPages (HP-5)", () => {
       ),
       page(
         "publish",
-        "# Publish\n\n## Your host\n\nBack to [Export](export.md), or [up](#publish).",
+        "# Publish\n\n## Your host\n\nBack to [Export](export.md), or [up](#publish).\n\n## Gallery",
         {
           components: "[Gallery]",
         },
@@ -222,13 +224,20 @@ describe("checkHelpPages (HP-5)", () => {
 
   it("fails a component type on no page, on two, or one that isn't in the catalogue", () => {
     const files = [
-      page("sections", "# Sections", { components: "[Hero, Gallery, Banner]" }),
+      page("sections", "# Sections\n\n## Hero", { components: "[Hero, Gallery, Banner]" }),
       page("elements", "# Elements", { components: "[Gallery]" }),
     ];
     expect(check(files, { componentTypes: ["Hero", "Gallery", "Map"] })).toEqual([
       "sections.md: lists a component that isn't one: Banner",
       "components: Gallery is on sections and elements",
       "components: Map is on no page",
+    ]);
+  });
+
+  it("fails a component type with no heading on its page for Help for this element", () => {
+    const files = [page("sections", "# Sections\n\n## Hero banner", { components: "[Hero, Map]" })];
+    expect(check(files, { componentTypes: ["Hero", "Map"] })).toEqual([
+      "components: Map has no heading on sections.md for Help for this element",
     ]);
   });
 
@@ -259,5 +268,63 @@ describe("checkHelpPages (HP-5)", () => {
         ],
       }),
     ).toEqual(["? links: no heading export#choices", "? links: no page publish"]);
+  });
+});
+
+describe("componentHelp (UX-24)", () => {
+  const pages = [
+    parseHelpPage(
+      page(
+        "sections",
+        "# Sections\n\n## What every section has\n\n## Text + Image\n\n## FAQ\n\n## Gallery",
+        { components: "[TextImage, Faq, FaqItem, Gallery, GalleryImage]" },
+      ).text,
+    ),
+    parseHelpPage(
+      page(
+        "header-and-footer",
+        "# Header, Footer and shared sections\n\n## Header and Footer\n\n## Shared sections",
+        {
+          components: "[Header, Footer]",
+        },
+      ).text,
+    ),
+    parseHelpPage(page("elements", "# Elements\n\n## Image", { components: "[Image]" }).text),
+  ];
+  const components = helpComponentsOf({
+    TextImage: { label: "Text + Image", fields: {} },
+    Faq: {
+      label: "FAQ",
+      fields: { items: { kind: "slot", allow: ["FaqItem"] }, title: { kind: "text" } },
+    },
+    FaqItem: { label: "Question", place: "child", fields: {} },
+    Gallery: { label: "Gallery", fields: { images: { kind: "slot", allow: ["GalleryImage"] } } },
+    GalleryImage: { label: "Image", place: "child", fields: {} },
+    Image: { label: "Image", fields: {} },
+    Header: { label: "Header", place: "layout", fields: {} },
+    Footer: { label: "Footer", place: "layout", fields: {} },
+    Missing: { label: "Missing", fields: {} },
+    Section: { label: "Section", fields: { content: { kind: "slot", allow: ["Image", "Faq"] } } },
+  });
+
+  it("takes each component's child items from its slots", () => {
+    expect(components.find((each) => each.type === "Faq")?.children).toEqual(["FaqItem"]);
+    // A section's elements aren't its child items.
+    expect(components.find((each) => each.type === "Section")?.children).toEqual([]);
+  });
+
+  it("opens each type's page at its own heading, its parent's, or one that names it", () => {
+    const help = componentHelp(pages, components);
+    expect(Object.fromEntries(help)).toEqual({
+      TextImage: { page: "sections", anchor: "text--image" },
+      Faq: { page: "sections", anchor: "faq" },
+      FaqItem: { page: "sections", anchor: "faq" },
+      Gallery: { page: "sections", anchor: "gallery" },
+      // Not elements' Image: the page that lists it is the sections page.
+      GalleryImage: { page: "sections", anchor: "gallery" },
+      Image: { page: "elements", anchor: "image" },
+      Header: { page: "header-and-footer", anchor: "header-and-footer" },
+      Footer: { page: "header-and-footer", anchor: "header-and-footer" },
+    });
   });
 });

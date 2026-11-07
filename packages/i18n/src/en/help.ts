@@ -1,6 +1,8 @@
 /** Help in the app (5.4b, HP-6; `apps/desktop/src/renderer/help/`): the Help window and its ways in. */
 export const help = {
   "command.help": "{appName} Help",
+  "command.helpForElement": "Help for This Element",
+  "help.button": "Help: {topic}",
   "help.window.title": "{appName} Help",
   "help.topic": "Help: {title}",
   "help.openFailed": "The Help window didn't open. Try again in a moment.",

@@ -197,6 +197,28 @@ The follow-up above, done.
 - **The other rows** show nothing this change explains. They come before the step in each run, and `main`'s slower typing and load on these runs are this machine's noise (A25's runs of the same code gave p50 48 ms and 1.4–2.0 s).
 - **A test checks it:** `puck-engine.test.tsx` mounts the engine with an element that reads nothing of the context and one that reads an image. A look, a preview and a Site Settings change draw neither again, and a new image draws only the second. A new config would draw both.
 
+## Addendum: nightly on Windows and macOS (5.1, 2026-11-07)
+
+`pnpm e2e:perf` stays off pull requests, as decided above, but now runs nightly in CI's Performance job on `windows-latest` and `macos-latest`, 5.1's reference machines. The benchmarks' comparison gates PRs (ADR 0022).
+- **It adds** a 20-page export, timed twice, the second with the export worker's caches warm: §10's "images cached" (`export.perf.ts`).
+- **Then the job builds the installers** and checks each against §10's 150 MB (`tools/src/check-installer-size.ts`).
+- **The preview's page timing** now listens for the server's events before typing. On the Windows runner the reload for the typed text came before the stream opened, and the test waited 30 s for a reload that had already been sent.
+
+**First run** (Run workflow 42398191584, before that fix):
+
+| What | Windows | macOS | Budget |
+|---|---|---|---|
+| Open a template's site | 1.3–1.7 s | 1.4–2.4 s | < 3 s |
+| Commit one page (1 / 21 pages) | 21 / 21 ms | 11 / 5 ms | < 50 ms |
+| Export 20 pages: first / caches warm | 2.2 / 0.8 s | 2.8 / 0.7 s | < 5 s |
+| A theme colour reaches the browser | 18 ms | 83 ms | < 100 ms |
+| A changed page reaches the reload | (the race above) | 34 ms | < 200 ms |
+| Jump to start / end in Undo History | 81 / 83 ms | – | < 100 ms |
+| Long tasks while dragging (drop) | 8, the longest 148 ms | 3 | none |
+| Windows installer | 121 MB (built locally) | – | ≤ 150 MB |
+
+Everything is within §10 except the drop hitch, mitigation 5 above, which 5.1's part 3 takes up.
+
 ## Upstream reports (drafts)
 
 **1. `InlineTextField` moves the caret to the start when its value changes from outside**

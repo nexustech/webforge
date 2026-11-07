@@ -18,6 +18,10 @@ name: CI
 #   packages never come from the runners' slow Ubuntu mirror. On a pull request Firefox runs on
 #   Linux only (one engine on every OS); Windows and macOS run it nightly. E2E is skipped when a
 #   PR changes only unit tests, stories, screenshots or tooling.
+# - The benchmarks (`bench/`, 5.1, ADR 0022) run when a PR changes what they measure: the PR's
+#   merge commit and the `main` it merges into, in two interleaved rounds in the same job, so the
+#   runner's own speed cancels out. More than 20% slower than `main` in both rounds fails. Nightly,
+#   `main` is compared with itself, which shows the runner's spread.
 # - To keep runs short: E2E runs in two shards on every OS, and Storybook in two; `export-browsers`
 #   waits only for Linux's E2E, whose exported site it opens; and the static checks (lint,
 #   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
@@ -65,6 +69,7 @@ jobs:
       audit: ${{ steps.decide.outputs.audit }}
       transfer: ${{ steps.decide.outputs.transfer }}
       help: ${{ steps.decide.outputs.help }}
+      bench: ${{ steps.decide.outputs.bench }}
     steps:
       - name: Decide which jobs to run
         id: decide
@@ -77,7 +82,7 @@ jobs:
         run: |
           set -euo pipefail
           everything() {
-            for output in run e2e all-browsers storybook audit transfer help; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            for output in run e2e all-browsers storybook audit transfer help bench; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
           case "$EVENT" in
@@ -129,17 +134,22 @@ jobs:
           deps='(^|/)package.json$|^pnpm-(lock|workspace).yaml$'
           # The FTP, FTPS and SFTP publishers, which the file-transfer job publishes with (4.3).
           transfer='^packages/(publish|errors)/'
+          # What the benchmarks measure (bench/, 5.1): the history, storage, pipeline and Site Check,
+          # and what they're built from. Their unit tests change nothing measured.
+          bench='^(bench/|packages/(history|model|storage|pipeline|site-check|site-components|themes|test-utils)/src/)'
           echo "run=true" >> "$GITHUB_OUTPUT"
           # Code can change what the help pages are checked against: the catalogue, the strings.
           echo "help=true" >> "$GITHUB_OUTPUT"
           if matches "$deps"; then audit=true; else audit=false; fi
           if matches "$shared" || matches "$transfer"; then transfer=true; else transfer=false; fi
           if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
+          measured=$(grep -Ev '(\.test\.tsx?|\.test-helper\.ts|\.stories\.tsx)$' <<< "$files" || true)
+          if matches "$shared" || grep -Eq "$bench" <<< "$measured"; then bench=true; else bench=false; fi
           # Unit tests don't change what the exported site or the stories look like.
           files=$(grep -Ev '(\.test\.tsx?|\.test-helper\.ts|\.snap)$|^packages/[^/]+/test/' <<< "$files" || true)
           if matches "$shared" || matches "$export_site"; then all=true; else all=false; fi
           if matches "$shared" || matches "$storybook"; then sb=true; else sb=false; fi
-          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; echo "audit=$audit"; echo "transfer=$transfer"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "e2e=$e2e"; echo "all-browsers=$all"; echo "storybook=$sb"; echo "audit=$audit"; echo "transfer=$transfer"; echo "bench=$bench"; } | tee -a "$GITHUB_OUTPUT"
 
   audit:
     # Known vulnerabilities in the installed dependencies, from the lockfile: when a PR changes
@@ -763,13 +773,189 @@ jobs:
           docker logs webforge-sftp || true
           docker logs webforge-ftps || true
 
+  bench:
+    # The benchmarks of the editor's and the pipeline's hot paths (bench/, 5.1, standards §5),
+    # compared with a base on the same runner (ADR 0022). On a pull request the base is `main` as
+    # the PR would merge into it (the merge commit's first parent); otherwise, nightly or from "Run
+    # workflow", the commit itself, which measures the runner's own spread. Two rounds, interleaved
+    # (base, head, base, head), each side installed once; `tools/src/compare-bench.ts` fails a
+    # benchmark only when the head is more than 20% slower in both rounds and at its best
+    # (`bench/thresholds.json` gives one more room). Linux only: the comparison, not the machine,
+    # is what counts. §10's budgets are the app's end to end, checked by `pnpm e2e:perf`.
+    name: Benchmarks
+    needs: changes
+    if: needs.changes.outputs.bench == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          # The merge commit and its first parent, `main`.
+          fetch-depth: 2
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install the base
+        id: base
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          base="$RUNNER_TEMP/base"
+          if [ "$EVENT" = pull_request ]; then ref=HEAD^1; else ref=HEAD; fi
+          git worktree add --detach "$base" "$ref"
+          if [ ! -f "$base/bench/package.json" ]; then
+            echo "The base has no benchmarks yet: nothing to compare with."
+            exit 0
+          fi
+          (cd "$base" && pnpm install --frozen-lockfile)
+          echo "dir=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Two rounds, interleaved
+        shell: bash
+        env:
+          BASE: ${{ steps.base.outputs.dir }}
+        run: |
+          set -euo pipefail
+          results="$RUNNER_TEMP/bench-results"
+          mkdir -p "$results"
+          for round in 1 2; do
+            if [ -n "$BASE" ]; then
+              echo "::group::Round $round: the base"
+              (cd "$BASE" && rm -rf bench/results && pnpm bench)
+              cp -r "$BASE/bench/results" "$results/base-$round"
+              echo "::endgroup::"
+            fi
+            echo "::group::Round $round: this commit"
+            rm -rf bench/results
+            pnpm bench
+            cp -r bench/results "$results/head-$round"
+            echo "::endgroup::"
+            # Without a base, one round shows this commit's benchmarks run.
+            [ -n "$BASE" ] || break
+          done
+
+      - name: Compare with the base
+        if: steps.base.outputs.dir != ''
+        shell: bash
+        run: |
+          results="$RUNNER_TEMP/bench-results"
+          node tools/src/compare-bench.ts --thresholds bench/thresholds.json \
+            --base "$results/base-1" "$results/base-2" --head "$results/head-1" "$results/head-2"
+
+  perf:
+    # The app's own timings against architecture §10's budgets (`pnpm e2e:perf`, e2e/perf/, ADR 0007
+    # and 0022), on the reference machines 5.1 names: Windows and macOS. Nightly and from "Run
+    # workflow" only: timings on a shared runner are too noisy to gate a PR (ADR 0007), and the
+    # benchmarks' comparison does that. Then the installers are built, and their size checked
+    # against §10's 150 MB.
+    name: Performance (${{ matrix.os }})
+    needs: changes
+    if: github.event_name != 'pull_request' && vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
+      electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Screen size (Windows)
+        # Windows runners start at 1024 × 768, smaller than the app's 1280 × 800 window.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Cache keys
+        id: keys
+        shell: bash
+        run: |
+          playwright=$(node -p "require('./e2e/node_modules/@playwright/test/package.json').version")
+          electron=$(node -p "require('./apps/desktop/node_modules/electron/package.json').version")
+          echo "browsers=playwright-${{ runner.os }}-$playwright-chromium" >> "$GITHUB_OUTPUT"
+          echo "electron=electron-${{ runner.os }}-$electron" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Playwright browsers
+        uses: actions/cache/restore@v6
+        with:
+          path: .ci-cache/ms-playwright
+          key: ${{ steps.keys.outputs.browsers }}
+
+      - name: Restore Electron
+        uses: actions/cache/restore@v6
+        with:
+          path: .ci-cache/electron
+          key: ${{ steps.keys.outputs.electron }}
+
+      - name: Install Chromium
+        # The preview's timings open the site in a browser.
+        run: pnpm --filter @webforge/e2e exec playwright install chromium
+
+      - name: The app's timings against §10
+        run: pnpm e2e:perf
+
+      - name: Save Electron
+        # The first app start downloads Electron's binary.
+        if: always() && hashFiles('.ci-cache/electron/**') != ''
+        uses: actions/cache/save@v6
+        continue-on-error: true
+        with:
+          path: .ci-cache/electron
+          key: ${{ steps.keys.outputs.electron }}
+
+      - name: Upload the timings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-results-${{ matrix.os }}
+          path: e2e/perf-results/
+          if-no-files-found: ignore
+
+      - name: Build the installer and check its size (§10, 150 MB)
+        # Whatever the timings found: each budget is reported on its own.
+        if: success() || failure()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = Windows ]; then pnpm --filter @webforge/desktop package:win; else pnpm --filter @webforge/desktop package:mac; fi
+          node tools/src/check-installer-size.ts apps/desktop/release
+
   passed:
     # The one required check on `main` (spec/03 §7). Every job above can be skipped, and a skipped
     # job's check never reports, so `main` requires this instead: it always runs, and fails if any
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, audit, help, check, e2e-linux, e2e, export-browsers, visual, package, file-transfer]
+    needs: [changes, audit, help, check, bench, e2e-linux, e2e, export-browsers, visual, package, file-transfer, perf]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

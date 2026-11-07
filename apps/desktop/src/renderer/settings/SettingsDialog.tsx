@@ -2,6 +2,7 @@ import { combineForms, FieldRenderersProvider, FormDialog } from "@webforge/edit
 import { t } from "@webforge/i18n";
 import type { OpenSettings } from "../editor/settings-registry.js";
 import { codeField } from "../fields/index.js";
+import { HelpButton, settingsHelpTopic } from "../help/index.js";
 
 /** The fields Settings draws the app's way: the site's code (3.9). */
 const RENDERERS = { code: codeField() };
@@ -41,6 +42,10 @@ export function SettingsDialog({
         spec={spec}
         initial={initial}
         groupsLabel={t("settings.sections")}
+        groupHelp={(group) => {
+          const topic = settingsHelpTopic(group);
+          return topic === undefined ? null : <HelpButton topic={topic} />;
+        }}
         {...(initialGroup === undefined ? {} : { initialGroup })}
         size="xl"
         onSave={(output) => {

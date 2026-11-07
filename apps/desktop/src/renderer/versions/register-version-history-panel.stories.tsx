@@ -13,6 +13,7 @@ const nothing = async () => false;
 const actions = {
   preview: nothing,
   restore: nothing,
+  republish: () => undefined,
   remove: nothing,
   openAsNewSite: async () => undefined,
   cleanUp: nothing,
@@ -34,6 +35,14 @@ export const VersionHistory: Story = storyOf({
   status: "ok",
   bytes: 2_516_582,
   versions: [
+    {
+      id: "2d3e4f50-6a7b-4c8d-9e0f-1a2b3c4d5e6f",
+      name: "",
+      reason: "on-publish",
+      createdAt: "2026-11-06T16:20:00.000Z",
+      bytes: 0,
+      published: { at: "2026-11-06T16:20:00.000Z", to: "Rosa's host" },
+    },
     {
       id: "4f0c1a52-8d3e-4b6a-9f21-7c5d8e9a0b11",
       name: "",

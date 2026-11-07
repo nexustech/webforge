@@ -48,3 +48,6 @@ desktop.ini
 .claude/launch.json
 # Each theme preset's stylesheet and fonts, for the site components' theme stories (2.13).
 packages/site-components/.storybook/themes/
+
+# The benchmarks write their results here (bench/, 5.1).
+bench/results/

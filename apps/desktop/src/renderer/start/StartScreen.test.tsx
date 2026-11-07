@@ -2,6 +2,8 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { BriefOutcome, SiteBrief } from "../../shared/ipc/ai.js";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import type { ProjectResult, RecentSite } from "../../shared/ipc-contract.js";
@@ -71,10 +73,20 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
   };
 }
 
+/** The person's preferences, where the quick start asks for the tour (OB-1). */
+const prefs = {
+  get: vi.fn(async () => DEFAULT_PREFERENCES),
+  set: vi.fn(async () => DEFAULT_PREFERENCES),
+};
+
+/** The Help window, as the start screen opens it (5.4b). */
+const helpWindow = { open: vi.fn(async () => true) };
+
 async function render(
   project: ReturnType<typeof api>,
   restart = vi.fn(),
   templates: () => Promise<TemplateSummary[]> = async () => [],
+  ai?: { onBrief: (open: BriefOpener) => () => void },
 ) {
   await act(async () =>
     root.render(
@@ -85,6 +97,9 @@ async function render(
         app={{ onFlushRequest: flushRequests }}
         restart={restart}
         locale="en-GB"
+        help={helpWindow}
+        prefs={prefs}
+        {...(ai === undefined ? {} : { ai })}
       />,
     ),
   );
@@ -120,6 +135,11 @@ describe("StartScreen", () => {
       business: {},
       pages: { leaveOut: [], recipes: [] },
     });
+    // The site the quick start made opens with the tour offered (OB-1).
+    expect(prefs.set).toHaveBeenCalledWith({
+      onboarding: { ...DEFAULT_PREFERENCES.onboarding, tour: "offer" },
+    });
+    prefs.set.mockClear();
 
     await act(async () => button("Choose a template yourself…")?.click());
     // New Site's dialog, in a portal on the body (2.14a).
@@ -129,6 +149,8 @@ describe("StartScreen", () => {
     await act(async () => create?.click());
     expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light", business: {} });
     expect(restart).toHaveBeenCalled();
+    // New Site's: no tour offered.
+    expect(prefs.set).not.toHaveBeenCalled();
     await act(async () => button("Open a site…")?.click());
     expect(project.open).toHaveBeenCalled();
   });
@@ -280,7 +302,7 @@ describe("StartScreen", () => {
     expect(button("Try an example")).toBeUndefined();
   });
 
-  it("lists the shortcuts and the example on the Help tab, and runs them (2.14b)", async () => {
+  it("lists the help pages to start with, the shortcuts and the example on the Help tab, and runs them (2.14b, 5.4b)", async () => {
     const example: TemplateSummary = {
       id: "cafe",
       category: "food",
@@ -301,9 +323,19 @@ describe("StartScreen", () => {
     });
     const panel = container.querySelector('[role="tabpanel"][data-state="active"]');
     expect([...(panel?.querySelectorAll("li") ?? [])].map((item) => item.textContent)).toEqual([
+      expect.stringContaining("Getting started"),
+      expect.stringContaining("The editor"),
+      expect.stringMatching(/^Keyboard shortcutsEach keyboard shortcut explained/),
       expect.stringContaining("Keyboard Shortcuts"),
       expect.stringContaining("Try an Example"),
     ]);
+
+    // A help page opens in the Help window.
+    const started = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
+      each.textContent?.includes("Getting started"),
+    );
+    await act(async () => started?.click());
+    expect(helpWindow.open).toHaveBeenCalledWith({ page: "getting-started" });
 
     const tryIt = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
       each.textContent?.includes("Try an Example"),
@@ -378,5 +410,104 @@ describe("StartScreen", () => {
     await render(project);
 
     expect(container.textContent).toContain("Welcome to Webforge");
+  });
+});
+
+/** How the window is handed an AI app's brief. */
+type BriefOpener = (brief: SiteBrief, answer: (outcome: BriefOutcome) => Promise<void>) => void;
+
+describe("an AI app's brief (4.12a, AIB-5)", () => {
+  const trades: TemplateSummary = {
+    id: "trades",
+    category: "trades",
+    example: false,
+    pages: 3,
+    pageList: [
+      { id: "home", title: "Home", home: true },
+      { id: "services", title: "Services", home: false },
+      { id: "about", title: "About", home: false },
+    ],
+    theme: "workshop",
+    thumbnail: null,
+  };
+  const brief: SiteBrief = {
+    businessType: "trades",
+    businessKind: "AutoRepair",
+    name: "Rapidfix Vehicle Repair",
+    whatYouDo: "Servicing, MOTs and repairs",
+    leaveOut: ["about"],
+    colours: { colour: "#C62828" },
+    phone: "01234 567890",
+  };
+
+  /** The start screen, with a brief to hand it: what it was answered, in order. */
+  async function withBrief(result?: ProjectResult) {
+    let open: BriefOpener | undefined;
+    const answers: string[] = [];
+    const project = api([], result);
+    const restart = vi.fn(() => answers.push("restart"));
+    await render(project, restart, async () => [trades], {
+      onBrief: (opener) => {
+        open = opener;
+        return () => undefined;
+      },
+    });
+    const hand = async () =>
+      act(async () => {
+        open?.(brief, async (outcome) => {
+          answers.push(outcome);
+        });
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    return { project, answers, hand };
+  }
+
+  const dialogButton = (name: string) =>
+    [...document.querySelectorAll("[role=dialog] button")].find(
+      (element) => element.textContent?.trim() === name,
+    ) as HTMLButtonElement | undefined;
+
+  it("opens the quick start filled in, and makes the site only when the person creates it", async () => {
+    const { project, answers, hand } = await withBrief();
+
+    await hand();
+    expect(document.querySelector("[role=dialog]")?.textContent).toContain("Start a site");
+    expect(project.create).not.toHaveBeenCalled();
+    await act(async () => dialogButton("Create site")?.click());
+
+    await vi.waitFor(() => expect(answers).toEqual(["created", "restart"]));
+    const request = project.create.mock.calls[0]?.[0];
+    expect(request).toMatchObject({
+      name: "Rapidfix Vehicle Repair",
+      template: "trades",
+      business: {
+        description: "Servicing, MOTs and repairs",
+        phone: "01234 567890",
+        businessType: "trades",
+        businessKind: "AutoRepair",
+      },
+      pages: { leaveOut: ["about"], recipes: [] },
+    });
+    expect(request?.themeTokens).toBeDefined();
+  });
+
+  it("answers declined when the person closes it, and makes nothing", async () => {
+    const { project, answers, hand } = await withBrief();
+
+    await hand();
+    await act(async () => dialogButton("Cancel")?.click());
+
+    expect(answers).toEqual(["declined"]);
+    expect(project.create).not.toHaveBeenCalled();
+  });
+
+  it("answers declined when the site couldn't be made, and busy while one is shown", async () => {
+    const failed = await withBrief({ status: "failed", reason: "newer-format" });
+    await failed.hand();
+    await failed.hand();
+    expect(failed.answers).toEqual(["busy"]);
+    await act(async () => dialogButton("Create site")?.click());
+
+    await vi.waitFor(() => expect(failed.answers).toEqual(["busy", "declined"]));
   });
 });

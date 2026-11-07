@@ -10,10 +10,14 @@ import {
 import { t } from "@webforge/i18n";
 import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
+import type { HelpApi } from "../../shared/ipc/help.js";
+import type { PrefsApi } from "../../shared/ipc/prefs.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
+import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import {
@@ -54,6 +58,12 @@ export type StartScreenProps = {
   readonly restart?: () => void;
   /** Formats times on the Recent list; injectable for tests. */
   readonly locale?: string;
+  /** Opens the Help window (5.4b); injectable for tests. */
+  readonly help?: Pick<HelpApi, "open">;
+  /** AI apps' briefs (4.12a), for New Site's quick start; injectable for tests. */
+  readonly ai?: Pick<AiApi, "onBrief">;
+  /** The person's preferences, where the quick start asks for the tour (OB-1); injectable for tests. */
+  readonly prefs?: Pick<PrefsApi, "get" | "set">;
 };
 
 /**
@@ -61,7 +71,17 @@ export type StartScreenProps = {
  * start a site (the quick start, QS-4, or New Site's dialog, 2.14a), open one or try an example
  * (PG-3); on the right, the recent sites, searchable, pinned ones first, and a Help tab.
  */
-export function StartScreen({ info, project, templates, app, restart, locale }: StartScreenProps) {
+export function StartScreen({
+  info,
+  project,
+  templates,
+  app,
+  restart,
+  locale,
+  help,
+  ai,
+  prefs,
+}: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
   // returning user never sees the first start's welcome flash past (#456 review).
@@ -159,6 +179,8 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
             </section>
           </main>
         </div>
+        {/* First, so it heads the Help menu: F1, and the help pages in Search Commands (5.4b). */}
+        <HelpCommands help={help ?? window.webforge.help} />
         <SiteCommands
           example
           project={api}
@@ -166,6 +188,8 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
           recent={{ sites: recent, changed: relist }}
           {...(templates === undefined ? {} : { templates })}
           {...(restart === undefined ? {} : { restart })}
+          {...(ai === undefined ? {} : { ai })}
+          {...(prefs === undefined ? {} : { prefs })}
         />
         <AboutDialog info={info} />
         <ShortcutSheet editor={false} />

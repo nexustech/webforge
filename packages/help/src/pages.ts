@@ -249,12 +249,88 @@ export function searchHelp(pages: readonly HelpPage[], query: string): readonly 
 /** A **?** link's destination (5.4b): a page, and maybe a heading on it. */
 export type HelpLink = { readonly page: string; readonly anchor?: string };
 
+/** A site component as *Help for this element* needs it: its type, name and child items' types. */
+export type HelpComponent = {
+  readonly type: string;
+  /** Its name, as the Add panel and the page's heading for it have it. */
+  readonly label: string;
+  /** The child items its slots hold (a Gallery's images), which have no heading of their own. */
+  readonly children: readonly string[];
+};
+
+/** A component as the catalogue's data has it (`@webforge/site-components/catalogue-data`). */
+type CatalogueComponent = {
+  readonly label: string;
+  readonly place?: string;
+  readonly fields: Readonly<Record<string, unknown>>;
+};
+
+/**
+ * The catalogue's `components` as {@link HelpComponent}s: a component's children are the child
+ * items (`place: "child"`) its slots allow.
+ */
+export function helpComponentsOf(
+  catalogue: Readonly<Record<string, CatalogueComponent>>,
+): readonly HelpComponent[] {
+  const items = new Set(
+    Object.entries(catalogue)
+      .filter(([, component]) => component.place === "child")
+      .map(([type]) => type),
+  );
+  return Object.entries(catalogue).map(([type, component]) => ({
+    type,
+    label: component.label,
+    children: Object.values(component.fields).flatMap((field) => {
+      const { kind, allow } = field as { kind?: unknown; allow?: unknown };
+      if (kind !== "slot" || !Array.isArray(allow)) return [];
+      return allow.filter((each): each is string => typeof each === "string" && items.has(each));
+    }),
+  }));
+}
+
+/**
+ * Where *Help for this element* opens for each component type (UX-24): the page whose `components`
+ * lists it, at the heading named after it; a child item (a Gallery's image) at its parent's, on
+ * the same page; else the first heading that names it (the Header, under *Header and Footer*). A
+ * type with none of those is left out, which `pnpm help-check` fails.
+ */
+export function componentHelp(
+  pages: readonly HelpPage[],
+  components: readonly HelpComponent[],
+): ReadonlyMap<string, Required<HelpLink>> {
+  const byType = new Map(components.map((component) => [component.type, component]));
+  const resolve = (type: string, seen: ReadonlySet<string>): Required<HelpLink> | undefined => {
+    const component = byType.get(type);
+    const page = pages.find((each) => each.components?.includes(type));
+    if (component === undefined || page === undefined || seen.has(type)) return undefined;
+    const sections = page.headings.filter((heading) => heading.depth > 1);
+    const own = sections.find((heading) => heading.anchor === anchorFor(component.label));
+    if (own !== undefined) return { page: page.id, anchor: own.anchor };
+    const parent = components.find((each) => each.children.includes(type));
+    const inherited =
+      parent === undefined ? undefined : resolve(parent.type, new Set([...seen, type]));
+    if (inherited?.page === page.id) return inherited;
+    const name = component.label.toLowerCase();
+    const named = sections.find((heading) => heading.text.toLowerCase().includes(name));
+    return named === undefined ? undefined : { page: page.id, anchor: named.anchor };
+  };
+  const found = new Map<string, Required<HelpLink>>();
+  for (const { type } of components) {
+    const link = resolve(type, new Set());
+    if (link !== undefined) found.set(type, link);
+  }
+  return found;
+}
+
 /** What {@link checkHelpPages} checks. */
 export type HelpCheckInput = {
   /** Each page's file name (`export.md`) and contents; not the README. */
   readonly files: readonly { readonly name: string; readonly text: string }[];
-  /** Every site component type in the catalogue: each must be on exactly one page. */
-  readonly componentTypes: readonly string[];
+  /**
+   * Every site component in the catalogue: each must be on exactly one page, with a heading there
+   * for *Help for this element* ({@link componentHelp}).
+   */
+  readonly components: readonly HelpComponent[];
   /** The app's name, which pages write as `{appName}` (`docs/branding.md`). */
   readonly appName: string;
   /** The app's **?** links, each of which must reach a page and heading. */
@@ -267,8 +343,9 @@ const PAGE_LINK = /^(?:([a-z0-9-]+)\.md)?(?:#([^#\s]+))?$/;
 /**
  * What's wrong with the help pages (HP-5): front matter that doesn't parse, an `id` that's repeated
  * or isn't its file's name, a link or anchor between pages that doesn't resolve, a link outside the
- * help pages, a `related` page that isn't there, a component type on no page or on two, a page that
- * spells out the app's name, raw HTML or a picture, and a **?** link that reaches no page or heading.
+ * help pages, a `related` page that isn't there, a component type on no page, on two or with no
+ * heading there, a page that spells out the app's name, raw HTML or a picture, and a **?** link that
+ * reaches no page or heading.
  * Each problem is one line, starting with the file it's in. None means all is well.
  */
 export function checkHelpPages(input: HelpCheckInput): readonly string[] {
@@ -316,7 +393,7 @@ export function checkHelpPages(input: HelpCheckInput): readonly string[] {
     }
   }
 
-  const known = new Set(input.componentTypes);
+  const known = new Set(input.components.map(({ type }) => type));
   const on = new Map<string, string[]>();
   for (const [id, page] of pages) {
     for (const type of page.components ?? []) {
@@ -324,10 +401,14 @@ export function checkHelpPages(input: HelpCheckInput): readonly string[] {
       on.set(type, [...(on.get(type) ?? []), id]);
     }
   }
-  for (const type of input.componentTypes) {
+  const headings = componentHelp([...pages.values()], input.components);
+  for (const { type } of input.components) {
     const ids = on.get(type) ?? [];
     if (ids.length === 0) problems.push(`components: ${type} is on no page`);
     if (ids.length > 1) problems.push(`components: ${type} is on ${ids.join(" and ")}`);
+    if (ids.length === 1 && !headings.has(type)) {
+      problems.push(`components: ${type} has no heading on ${ids[0]}.md for Help for this element`);
+    }
   }
 
   for (const { page, anchor } of input.links ?? []) {

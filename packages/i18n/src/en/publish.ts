@@ -142,6 +142,16 @@ export const publish = {
   "publish.progress.preparing": "Comparing with what's on your host",
   "publish.progress.uploading": "Sending file {done} of {total}",
   "publish.progress.verifying": "Checking your site is live",
+  // Republishing a saved version from Version History (4.6b): the destinations, to choose where.
+  "publish.republish.title": "Republish “{name}”",
+  "publish.republish.description":
+    "Choose where to publish this version. The site you're editing stays as it is.",
+  "publish.republish.button": "Republish",
+  "publish.republish.button.label": "Republish to {name}",
+  "publish.republish.mustFix.one":
+    "This version has 1 thing to fix before it's published. Restore it, fix it in Site Check, then publish.",
+  "publish.republish.mustFix.other":
+    "This version has {count} things to fix before it's published. Restore it, fix them in Site Check, then publish.",
   // Your site is live: where, what the live check found, and Open and Copy Link.
   "publish.live.title": "Your site is live",
   "publish.live.at": "Visitors can see it at {url}.",
@@ -193,5 +203,9 @@ export const publish = {
   "publish.failed.stale-session":
     "Another site has opened in this window. Open this site again to publish it.",
   "publish.failed.no-destination": "That destination has been removed. Choose another.",
+  "publish.failed.no-version":
+    "That version is no longer in this site, so it can't be republished.",
+  "publish.failed.unreadable-version":
+    "{appName} can't read that version, so it can't be republished.",
   "publish.failed.unknown": "Publishing didn't work. Publish again.",
 } as const;

@@ -73,6 +73,7 @@ const meta = {
     restart: () => undefined,
     locale: "en-GB",
     project: project([]),
+    help: { open: async () => true },
   },
 } satisfies Meta<typeof StartScreen>;
 export default meta;

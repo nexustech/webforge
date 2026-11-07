@@ -15,9 +15,10 @@ import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { createCodeTrust } from "./editor/code-trust.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
+import { createPublishRequests } from "./editor/publish-requests.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
-import { HelpCommands } from "./help/HelpCommands.js";
+import { HelpCommands, HelpProvider, openHelpWith } from "./help/index.js";
 import { reportFailure } from "./log.js";
 import { SettingsHost } from "./settings/SettingsHost.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
@@ -34,6 +35,7 @@ import {
 } from "./shell/confirm-site-wide.js";
 import { ContextualToolbarsProvider } from "./shell/contextual-toolbar-context.js";
 import { createContextualToolbars } from "./shell/contextual-toolbars.js";
+import { OpenSourceLicences } from "./shell/LicencesDialog.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
@@ -177,6 +179,7 @@ export function App({
         },
       },
       publishedYear: createStore<number | undefined>(() => yearOf(uiState?.lastPublishedAt)),
+      publishing: createPublishRequests(),
     };
   });
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
@@ -234,87 +237,100 @@ export function App({
 
   return (
     <CommandRegistryProvider registry={registry}>
-      <PanelRegistryProvider registry={panels}>
-        <ContextualToolbarsProvider registry={toolbars}>
-          <TooltipProvider>
-            <div className="flex h-full flex-col">
-              <TitleBar
-                siteName={siteName}
-                // On macOS the menus are the menu bar's (LF-13).
-                menuBar={isMac() ? api.app : undefined}
-                saveStatus={<AutosaveStatus session={session} loaded={loaded} api={api} />}
-                aiStatus={
-                  <AiAppsStatus mcp={api.mcp} onOpen={() => registry.run(COMMAND_IDS.aiApps)} />
-                }
-                undoSteps={
-                  <UndoStepsMenu
-                    state={session.history.state}
-                    undoTo={(entryId) => session.undoTo(entryId)}
-                  />
-                }
-                tools={
-                  <>
-                    <ModeToggle mode={mode} onModeChange={(next) => preferences.changeMode(next)} />
-                    <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                    <CommandButton
-                      commandId={COMMAND_IDS.toggleLeftPanels}
-                      icon={<PanelLeftIcon />}
-                      label={t("command.toggleLeftPanels")}
+      {/* The **?** buttons in its panels and dialogs open the Help window (5.4b). */}
+      <HelpProvider open={(target) => openHelpWith(api.help, target)}>
+        <PanelRegistryProvider registry={panels}>
+          <ContextualToolbarsProvider registry={toolbars}>
+            <TooltipProvider>
+              <div className="flex h-full flex-col">
+                <TitleBar
+                  siteName={siteName}
+                  // On macOS the menus are the menu bar's (LF-13).
+                  menuBar={isMac() ? api.app : undefined}
+                  saveStatus={<AutosaveStatus session={session} loaded={loaded} api={api} />}
+                  aiStatus={
+                    <AiAppsStatus mcp={api.mcp} onOpen={() => registry.run(COMMAND_IDS.aiApps)} />
+                  }
+                  undoSteps={
+                    <UndoStepsMenu
+                      state={session.history.state}
+                      undoTo={(entryId) => session.undoTo(entryId)}
                     />
-                    <CommandButton
-                      commandId={COMMAND_IDS.toggleDrawer}
-                      icon={<PanelBottomIcon />}
-                      label={t("command.toggleDrawer")}
-                    />
-                    <CommandButton
-                      commandId={COMMAND_IDS.toggleRightPanels}
-                      icon={<PanelRightIcon />}
-                      label={t("command.toggleRightPanels")}
-                    />
-                    <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                  </>
-                }
-              />
-              <main className="min-h-0 flex-1">
-                <ShellLayout
-                  layout={panelLayout}
-                  onLayoutChange={rememberLayout}
-                  editorLevel={editorLevel}
-                  center={
-                    <div className="flex h-full flex-col">
-                      <CanvasToolbarHost
-                        session={session}
-                        view={canvasView}
-                        preferences={preferences}
+                  }
+                  tools={
+                    <>
+                      <ModeToggle
+                        mode={mode}
+                        onModeChange={(next) => preferences.changeMode(next)}
                       />
-                      <div className="min-h-0 flex-1">
-                        <Editor
-                          session={session}
-                          api={api}
-                          areas={EDITOR_AREAS}
-                          {...(createEngine === undefined ? {} : { createEngine })}
-                          preferences={preferences}
-                          siteWide={siteWide}
-                          canvasView={canvasView}
-                          canvasPointer={canvasPointer}
-                        />
-                      </div>
-                    </div>
+                      <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                      <CommandButton
+                        commandId={COMMAND_IDS.toggleLeftPanels}
+                        icon={<PanelLeftIcon />}
+                        label={t("command.toggleLeftPanels")}
+                      />
+                      <CommandButton
+                        commandId={COMMAND_IDS.toggleDrawer}
+                        icon={<PanelBottomIcon />}
+                        label={t("command.toggleDrawer")}
+                      />
+                      <CommandButton
+                        commandId={COMMAND_IDS.toggleRightPanels}
+                        icon={<PanelRightIcon />}
+                        label={t("command.toggleRightPanels")}
+                      />
+                      <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                    </>
                   }
                 />
-              </main>
-            </div>
-            <HelpCommands help={api.help} />
-            <AboutDialog info={info} />
-            <ShortcutSheet />
-            <SiteCommands project={api.project} templates={api.templates} />
-            <SettingsHost registry={settings} />
-            <WindowDialogs registry={windowDialogs} />
-            <SiteWideConfirmDialog confirm={siteWide} />
-            <Toaster theme={theme} />
-          </TooltipProvider>
-        </ContextualToolbarsProvider>
-      </PanelRegistryProvider>
+                <main className="min-h-0 flex-1">
+                  <ShellLayout
+                    layout={panelLayout}
+                    onLayoutChange={rememberLayout}
+                    editorLevel={editorLevel}
+                    center={
+                      <div className="flex h-full flex-col">
+                        <CanvasToolbarHost
+                          session={session}
+                          view={canvasView}
+                          preferences={preferences}
+                        />
+                        <div className="min-h-0 flex-1">
+                          <Editor
+                            session={session}
+                            api={api}
+                            areas={EDITOR_AREAS}
+                            {...(createEngine === undefined ? {} : { createEngine })}
+                            preferences={preferences}
+                            siteWide={siteWide}
+                            canvasView={canvasView}
+                            canvasPointer={canvasPointer}
+                          />
+                        </div>
+                      </div>
+                    }
+                  />
+                </main>
+              </div>
+              <HelpCommands help={api.help} />
+              <AboutDialog info={info} />
+              <OpenSourceLicences licences={api.app} />
+              <ShortcutSheet />
+              <SiteCommands
+                project={api.project}
+                templates={api.templates}
+                ai={api.ai}
+                // Content mode refuses an AI app's brief for a new site (4.12a, §5.10).
+                refuseBrief={() => preferences.getState().mode === "content"}
+              />
+              <SettingsHost registry={settings} />
+              <WindowDialogs registry={windowDialogs} />
+              <SiteWideConfirmDialog confirm={siteWide} />
+              <Toaster theme={theme} />
+            </TooltipProvider>
+          </ContextualToolbarsProvider>
+        </PanelRegistryProvider>
+      </HelpProvider>
     </CommandRegistryProvider>
   );
 }
