@@ -138,7 +138,11 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     before,
     { polling: "raf", timeout: OPEN_WAIT },
   );
-  const shown = await site.evaluate(() => (window as unknown as { colourAt: number }).colourAt);
+  const shown = await site.evaluate(() => (window as unknown as { colourAt?: number }).colourAt);
+  // The watcher's mark is gone when the page reloaded instead of swapping its stylesheet in place,
+  // as a late reload of the earlier change can make it: say so, rather than time NaN.
+  if (shown === undefined)
+    throw new Error("The page reloaded instead of swapping the colour in place");
   const edited = await lastChange();
   const took = shown - edited;
   const told = (await swapped.after(edited)) - edited;
@@ -211,9 +215,12 @@ test("a changed page is re-rendered and sent to the browser in under 200 ms", as
   // Open before typing: each keystroke can rebuild the page, and on a slow machine the reload
   // for the typed text can come before the click that ends the edit (#76).
   const reloads = await serverEvents(site.url(), "reload");
+  await page.bringToFront();
   await canvas.locator("h1").dblclick();
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.type("Fresh bread daily");
+  // The text is on the canvas before the edit ends: a miss here is the typing's, not the preview's.
+  await expect(canvas.locator("h1")).toHaveText("Fresh bread daily");
   const started = Date.now();
   await canvas.locator("body").click({ position: { x: 5, y: 5 } });
   await expect(site.locator("h1")).toHaveText("Fresh bread daily", { timeout: OPEN_WAIT });

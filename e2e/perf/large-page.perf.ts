@@ -20,8 +20,8 @@ const INSTANT_MS = 100;
  * task over 350 ms while dragging, and the move recorded within 1 s of the drop. §10's "no dropped
  * frames" is missed by Puck's drag library on a page this large: each drag has a few long tasks
  * (its draggables re-rendering, finding the page's scrolling containers, the style recalculation
- * its hit-testing forces on each move). A follow-up issue takes up the Puck patch that could
- * remove them.
+ * its hit-testing forces on each move). #786 takes up the Puck patch that could remove most of
+ * them.
  */
 const DRAG_LONGEST_TASK_MS = 350;
 const DROP_RECORDED_MS = 1_000;

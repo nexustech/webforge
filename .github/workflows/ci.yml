@@ -940,6 +940,14 @@ jobs:
           path: e2e/perf-results/
           if-no-files-found: ignore
 
+      - name: Upload the failures' traces and screenshots
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-failures-${{ matrix.os }}
+          path: e2e/test-results/
+          if-no-files-found: ignore
+
       - name: Build the installer and check its size (§10, 150 MB)
         # Whatever the timings found: each budget is reported on its own.
         if: success() || failure()
