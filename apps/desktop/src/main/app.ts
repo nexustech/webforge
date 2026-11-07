@@ -19,7 +19,7 @@ import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
-import { applicationMenu } from "./app-menu.js";
+import { applicationMenu, runMenuCommand } from "./app-menu.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
@@ -539,7 +539,14 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       if (process.platform !== "darwin") return null;
       const template = applicationMenu(process.platform, devServerUrl !== undefined, {
         menus,
-        run: (id) => lifecycle.mainWindow()?.webContents.send(appEvents.runCommand.channel, id),
+        // Undo and Redo, whose keys the menu bar takes, act on the Help window when it's in front.
+        run: (id) =>
+          runMenuCommand(id, {
+            focused: () => BrowserWindow.getFocusedWindow(),
+            isOther: (window) => helpWindows.is(window),
+            runInEditor: (command) =>
+              lifecycle.mainWindow()?.webContents.send(appEvents.runCommand.channel, command),
+          }),
       });
       Menu.setApplicationMenu(template === null ? null : Menu.buildFromTemplate(template));
       return null;
