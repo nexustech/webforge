@@ -52,6 +52,10 @@ const answer = (result: unknown) => {
 };
 
 test("an AI app paired in AI apps… changes the site, as undo steps named after it, until removed", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
   await chooseFromMenu(app, page, "File", "AI apps…");
   const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
   // Off by default: nothing listens, and nothing can be added.
