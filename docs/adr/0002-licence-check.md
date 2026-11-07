@@ -24,3 +24,10 @@ Webforge is a paid, closed-source product, so every dependency must have a permi
 - The macOS-only binary packages are not checked until a macOS CI job exists.
 - Adding a dependency with a new licence needs either a policy change here or a reviewed exception in `tools/src/check-licences.ts`.
 - Not covered yet: the in-app "Open-source licences" screen (MVP §4) and a vulnerability audit (standards §7).
+- **Addendum (5.3, 7 Nov 2026):** the screen is Help › Open-Source Licences. The app's build writes the notices (`tools/src/third-party-notices.ts`, from `apps/desktop/electron.vite.config.ts`). They list what the app actually ships, not this check's whole report:
+  - the packages whose files the main, preload and renderer bundles and the Claude Desktop bridge hold;
+  - the main process's dependencies with all of theirs;
+  - the installer's fonts;
+  - Electron, with Chromium's own LICENSES.chromium.html.
+
+  So build-time exceptions such as argparse never appear in them. They go beside app.asar as `notices/notices.json` and `THIRD_PARTY_NOTICES.txt`.

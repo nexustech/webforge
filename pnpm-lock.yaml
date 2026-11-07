@@ -391,6 +391,9 @@ importers:
       '@webforge/themes':
         specifier: workspace:*
         version: link:../../packages/themes
+      '@webforge/tools':
+        specifier: workspace:*
+        version: link:../../tools
       ajv:
         specifier: 8.20.0
         version: 8.20.0
