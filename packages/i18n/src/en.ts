@@ -6,6 +6,7 @@ import { components } from "./en/components/index.js";
 import { errors } from "./en/errors.js";
 import { exportSite } from "./en/export.js";
 import { fonts } from "./en/fonts.js";
+import { help } from "./en/help.js";
 import { history } from "./en/history.js";
 import { panels } from "./en/panels.js";
 import { publish } from "./en/publish.js";
@@ -43,6 +44,7 @@ export const areas = {
   ai,
   aiApps,
   versions,
+  help,
 } as const;
 
 /**
@@ -69,4 +71,5 @@ export const en = {
   ...ai,
   ...aiApps,
   ...versions,
+  ...help,
 } as const;

@@ -166,8 +166,12 @@ export default defineConfig(({ command }) => {
     },
     preload: {
       build: {
-        // Sandboxed preload scripts cannot be ES modules.
-        rolldownOptions: { output: { format: "cjs" } },
+        rolldownOptions: {
+          // The editor window's, and the Help window's own (5.4b), which gives its page far less.
+          input: { index: "src/preload/index.ts", help: "src/preload/help.ts" },
+          // Sandboxed preload scripts cannot be ES modules.
+          output: { format: "cjs" },
+        },
       },
     },
     renderer: {
@@ -185,6 +189,15 @@ export default defineConfig(({ command }) => {
         contentSecurityPolicy(devNonce),
       ],
       ...(devNonce === undefined ? {} : { html: { cspNonce: devNonce } }),
+      build: {
+        rolldownOptions: {
+          // The editor's page, and the Help window's (5.4b), each with the same policy.
+          input: {
+            index: fileURLToPath(new URL("src/renderer/index.html", import.meta.url)),
+            help: fileURLToPath(new URL("src/renderer/help.html", import.meta.url)),
+          },
+        },
+      },
     },
   };
 });

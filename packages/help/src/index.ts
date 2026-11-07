@@ -12,4 +12,6 @@ export {
   parseHelpContents,
   parseHelpPage,
   searchHelp,
+  type Token,
+  type Tokens,
 } from "./pages.js";

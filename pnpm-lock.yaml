@@ -352,6 +352,9 @@ importers:
       '@webforge/errors':
         specifier: workspace:*
         version: link:../../packages/errors
+      '@webforge/help':
+        specifier: workspace:*
+        version: link:../../packages/help
       '@webforge/history':
         specifier: workspace:*
         version: link:../../packages/history

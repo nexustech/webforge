@@ -42,6 +42,8 @@ import { createFlushOnClose } from "./flush-on-close.js";
 import { FONT_SCHEME } from "./fonts.js";
 import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
+import { registerHelpHandlers } from "./help-ipc.js";
+import { createHelpWindows } from "./help-window.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
@@ -160,7 +162,23 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // electron-vite sets ELECTRON_RENDERER_URL to the Vite dev server in development only.
   const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
   const appUrl = devServerUrl ?? pathToFileURL(rendererHtml).href;
-  const isTrustedSender = (senderUrl: string) => isAppUrl(senderUrl, appUrl);
+  // The Help window (5.4b, HP-10): its own page and preload, beside the editor's.
+  const helpWindows = createHelpWindows({
+    create: (options) => new BrowserWindow(options),
+    pageUrl:
+      devServerUrl === undefined
+        ? pathToFileURL(join(parts.dir, "../renderer/help.html")).href
+        : new URL("help.html", devServerUrl).href,
+    preload: join(parts.dir, "../preload/help.cjs"),
+    title: t("help.window.title"),
+    theme: () => lifecycle.preferences?.get().theme ?? DEFAULT_PREFERENCES.theme,
+    background: windowBackground,
+    onLoadFailed: (error) => logFailure("Webforge could not load the Help window", error),
+  });
+  // The editor's page only: on the dev server the Help page has the same origin, and it may make
+  // only its own calls (`help-ipc.ts`).
+  const isTrustedSender = (senderUrl: string) =>
+    isAppUrl(senderUrl, appUrl) && !helpWindows.isHelpPage(senderUrl);
 
   // In development the running bundle is Electron's own, named after the package: the app's name
   // for the About panel and menus, as the packaged app has it from its bundle (#450). Its user data
@@ -198,7 +216,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     hardenWebContents(contents, appUrl);
   });
 
-  const lifecycle = new AppLifecycle(() => BrowserWindow.getAllWindows());
+  // The editor's window: never the Help window.
+  const lifecycle = new AppLifecycle(() =>
+    BrowserWindow.getAllWindows().filter((window) => !helpWindows.is(window)),
+  );
 
   // Rolling backups of the open site (F-SITE-6), the way back from a damaged file (1.7).
   const backups = createBackups({ root: join(app.getPath("userData"), "backups") });
@@ -466,6 +487,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     // Autosave writes the last changes before the window closes (P2).
     lifecycle.flushOnClose?.install(window);
+    // Help goes with the editor, so the app quits with it (5.4b).
+    window.on("closed", () => helpWindows.close());
     const load =
       devServerUrl === undefined ? window.loadFile(rendererHtml) : window.loadURL(devServerUrl);
     // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
@@ -496,13 +519,16 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         return;
       }
       windowTheme = theme;
-      // The native window controls follow the theme (macOS's traffic lights need nothing).
+      // The native window controls follow the theme (macOS's traffic lights need nothing). The
+      // Help window has the system's own title bar, and follows the theme in its page.
       for (const window of BrowserWindow.getAllWindows()) {
+        if (helpWindows.is(window)) continue;
         window.setBackgroundColor(windowBackground(theme));
         if (process.platform !== "darwin") {
           window.setTitleBarOverlay(titleBarOverlay(theme));
         }
       }
+      helpWindows.setTheme(theme);
     });
     registerIpcHandler(ipcMain, "getAppInfo", isTrustedSender, () => ({
       name: t("app.name"),
@@ -617,6 +643,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
       flush: requestFlush,
     });
+    registerHelpHandlers(ipcMain, isTrustedSender, helpWindows, (url) =>
+      electron.shell.openExternal(url),
+    );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
