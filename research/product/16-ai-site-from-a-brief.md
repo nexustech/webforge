@@ -1,6 +1,6 @@
 # A whole site from one prompt: what AI apps need next
 
-**Status:** ⏳ Proposed (AIB-1…AIB-10, §6), for the product owner to decide. Nothing in `spec/` or the plan changes until they do.
+**Status:** ✅ Decided (AIB-1…AIB-10, §6, product owner, 7 Nov 2026: each as proposed). Recorded in `spec/02` (F-AI-1 and §7 item 33) and the plan: 4.11 ([#768](https://github.com/nexustech/webforge/issues/768)), 4.12a ([#769](https://github.com/nexustech/webforge/issues/769)) and 4.12b ([#770](https://github.com/nexustech/webforge/issues/770)).
 
 **The product owner's question (7 Nov 2026):** refine the design of the Claude Desktop integration. Could Webforge build a site from a prompt such as this one, and what's missing?
 
@@ -172,9 +172,11 @@ An E2E test with a scripted MCP client, with no model in the loop, runs the Rapi
 
 The same client checks each refusal: a plan with one bad command changes nothing, and a declined brief makes no site.
 
-## 6. Decisions proposed
+## 6. Decisions
 
-| ID | Proposal | Days |
+Decided by the product owner on 7 Nov 2026, each as proposed. 4.12 is split into 4.12a (AIB-5, AIB-6: 5 days) and 4.12b (AIB-7…AIB-9: 3 days).
+
+| ID | Decision | Days |
 |---|---|---|
 | AIB-1 | **The catalogue for apps:** an MCP resource and a `components` query from `catalogue-data.json`, and valid types listed in "There is no component…" | 0.5 |
 | AIB-2 | **`updateSettings`** for the business part of Site Settings only, one undo step, asking once; contact details name old and new values | 1.5 |
@@ -196,7 +198,7 @@ At Phase 3's measured pace (0.68 actual days per estimated day for plan items, `
 - **4.12** is about 5.5 working days. In Phase 4 it would end about 20 Nov, past the milestone. So it goes to **Phase 5**, before 5.7 (pre-beta checks): Phase 5 goes from 46.5 to 54.5 days, and the total from 425.5 to 437.25. 19 Nov doesn't move.
 - If Phase 5 can't take 4.12 either, it moves to v1.1 with the assistant: the person runs the quick start themselves, then asks the app to fill the site in. 4.11 alone makes that work end to end.
 
-Once decided, the changes follow CLAUDE.md's *Working the plan*:
+The changes, following CLAUDE.md's *Working the plan*:
 - a line in `spec/02` §7, and F-AI-1's tool list;
 - 4.11 and 4.12 in the plan's five places, with issues in the Phase 4 and Phase 5 milestones, and 4.11 at the end of stream C's queue;
 - a scope-change line in `spec/04` §3;

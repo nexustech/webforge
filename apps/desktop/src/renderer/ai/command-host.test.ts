@@ -1,4 +1,5 @@
 import { createCommandApi } from "@webforge/commands";
+import { insertPage, newId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -20,6 +21,25 @@ const confirmation = {
 };
 
 describe("commandHost (4.8)", () => {
+  it("shows the Home page when an AI app deletes the page shown, and undo shows it again (4.11)", async () => {
+    const { session, siteWide, api } = setup();
+    const home = session.history.document.getState().homePageId;
+    // A page of the person's, shown.
+    const other = newId("page");
+    session.edit("insert", "Added page 'Prices'", (draft) => insertPage(draft, other, "Prices"));
+    session.showPage(other);
+
+    const deleting = api.run("removePage", { pageId: other }, { app: "Claude" });
+    // The person allows it, in the window's site-wide question (D7).
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    siteWide.answer(true);
+    expect(await deleting).toMatchObject({ status: "done" });
+
+    expect(session.ui.getState().pageId).toBe(home);
+    session.history.undo();
+    expect(session.ui.getState().pageId).toBe(other);
+  });
+
   it("runs a command as the session's own edit, of its kind", () => {
     const { session, host } = setup();
     const added = vi.fn();
