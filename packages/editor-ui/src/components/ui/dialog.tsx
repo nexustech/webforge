@@ -3,6 +3,7 @@ import { XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
+import { useReturnFocus } from "./return-focus.js";
 
 /** Overlay and panel classes shared with AlertDialog. */
 export const dialogStyles = {
@@ -31,13 +32,19 @@ export function DialogClose(props: ComponentProps<typeof DialogPrimitive.Close>)
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
-/** The dialog panel, over a dimmed backdrop, with a close button unless `showClose` is false. */
+/**
+ * The dialog panel, over a dimmed backdrop, with a close button unless `showClose` is false. It
+ * gives the focus back to what had it when it opened ({@link useReturnFocus}).
+ */
 export function DialogContent({
   className,
   children,
   showClose = true,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: ComponentProps<typeof DialogPrimitive.Content> & { readonly showClose?: boolean }) {
+  const returnFocus = useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus });
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay data-slot="dialog-overlay" className={dialogStyles.overlay} />
@@ -45,6 +52,7 @@ export function DialogContent({
         data-slot="dialog-content"
         className={cn(dialogStyles.content, className)}
         {...props}
+        {...returnFocus}
       >
         {children}
         {showClose && (

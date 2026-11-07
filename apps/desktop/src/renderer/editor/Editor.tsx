@@ -29,6 +29,7 @@ import {
   type PreferencesStore,
   usePreferences,
 } from "../shell/preferences-store.js";
+import { REGION_ATTRIBUTE } from "../shell/regions.js";
 import { type Area, connectAreas, type EditorContext, type EditorDialogs } from "./areas.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
@@ -388,7 +389,12 @@ export function Editor({
         onRenamingChange={setRenaming}
       />
       <div className="editor__stage">
-        <section className="editor__canvas" aria-label={t("editor.canvas")} ref={canvasRef} />
+        <section
+          className="editor__canvas"
+          aria-label={t("editor.canvas")}
+          {...{ [REGION_ATTRIBUTE]: "" }}
+          ref={canvasRef}
+        />
         {canvasView !== undefined && (
           <CanvasEdges
             session={session}

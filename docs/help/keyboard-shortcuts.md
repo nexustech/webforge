@@ -63,6 +63,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+9 | Zoom to fit |
 | Ctrl+Alt+B | Show or hide the left panels |
 | Ctrl+J | Show or hide the bottom panel (Site Check) |
+| F6 · Shift+F6 | Next · previous part of the window: the title bar, the left panels, the page, the bottom panel, the right panels |
 | ? | Keyboard shortcuts |
 | F1 | {appName} Help |
 

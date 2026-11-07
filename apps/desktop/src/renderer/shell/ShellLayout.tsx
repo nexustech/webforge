@@ -20,6 +20,7 @@ import { COMMAND_IDS } from "./command-ids.js";
 import { CanvasErrorBoundary, PanelErrorBoundary } from "./error-boundaries.js";
 import { usePanelRegistry, usePanels } from "./panel-context.js";
 import { type PanelSlot, panelsInSlot } from "./panels.js";
+import { REGION_ATTRIBUTE } from "./regions.js";
 
 /** The panel groups whose sizes are remembered, by id. */
 export const PANEL_GROUPS = {
@@ -222,7 +223,11 @@ function PanelStrip({
   const registered = usePanels();
   const panels = slots.flatMap((slot) => panelsInSlot(registered, slot, editorLevel));
   return (
-    <nav aria-label={label} className="flex h-full flex-col items-center gap-1 bg-panel py-2">
+    <nav
+      aria-label={label}
+      {...{ [REGION_ATTRIBUTE]: "" }}
+      className="flex h-full flex-col items-center gap-1 bg-panel py-2"
+    >
       {panels.map((panel) => (
         <button
           key={panel.id}
@@ -432,7 +437,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             groupResizeBehavior="preserve-pixel-size"
           >
             {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
-            <section aria-label={t("panels.left")} className="h-full" hidden={collapsed.left}>
+            <section
+              aria-label={t("panels.left")}
+              {...{ [REGION_ATTRIBUTE]: "" }}
+              className="h-full"
+              hidden={collapsed.left}
+            >
               {showLower ? (
                 // The tabs over the lower pane, both shown at once (ADR 0011).
                 <ResizablePanelGroup
@@ -483,7 +493,11 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
           </ResizablePanel>
           <ResizableHandle aria-label={t("panels.resizeDrawer")} />
           <ResizablePanel id="drawer" panelRef={drawer} minSize="10%" maxSize="60%" collapsible>
-            <section aria-label={t("panels.drawer")} className="h-full">
+            <section
+              aria-label={t("panels.drawer")}
+              {...{ [REGION_ATTRIBUTE]: "" }}
+              className="h-full"
+            >
               <PanelTabs slots={SLOTS.drawer} editorLevel={editorLevel} />
             </section>
           </ResizablePanel>
@@ -504,7 +518,12 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
             groupResizeBehavior="preserve-pixel-size"
           >
             {/* Kept while collapsed, so the panel chosen and the panels asked for are kept too. */}
-            <section aria-label={t("panels.right")} className="h-full" hidden={collapsed.right}>
+            <section
+              aria-label={t("panels.right")}
+              {...{ [REGION_ATTRIBUTE]: "" }}
+              className="h-full"
+              hidden={collapsed.right}
+            >
               <PanelTabs slots={SLOTS.right} editorLevel={editorLevel} />
             </section>
             {collapsed.right ? (

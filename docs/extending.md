@@ -81,7 +81,9 @@ A command is in the command box, and in a menu if it names one (`shell/commands.
 - **Register it** with `registry.register({ id, label: t(…), run, menu?, shortcut?, enabled?, palette?, keywords? })`, from a `register…Commands(registry, …)` function; it returns how to remove it. `registry.update(id, { enabled })` changes it later. A command with `submenu: <id of another command>` is listed in that command's submenu instead of a menu of its own (File › Open Recent), after a separator with `separated: true`; the title bar and macOS's menu bar both draw it. The command box leaves out the item that opens the submenu and lists the submenu's commands, by `paletteLabel` where their menu label needs the submenu's name ("Open Recent: Rosa's Bakery").
 - **Ids are dotted** (`edit.cut`, `site.export`); shared ones are in `shell/command-ids.ts`.
 - **A change to the site goes through `session.history`** as one undo step with a meaningful label ("Changed Hero button link"), never around it.
-- **Shortcuts** follow the standard (Mod for Ctrl or Cmd). Text keeps its own keys while it's being edited (`textKeys`).
+- **Shortcuts** follow the standard (Mod for Ctrl or Cmd). Text keeps its own keys while it's being edited (`textKeys`). Keys without Mod are left to a focused field, list or menu, except a function key marked `everywhere` in the standard (F1, F6), which no control types with.
+- **Parts of the window:** a new top-level part (a panel column, a bar) carries `data-region` (`REGION_ATTRIBUTE` from `shell/regions.ts`), so F6 and Shift+F6 reach it, in document order.
+- **Dialogs** built on editor-ui's `DialogContent` or `AlertDialogContent` give the focus back to what had it when they opened, with or without a trigger; an `onCloseAutoFocus` that prevents the default places it itself.
 
 ## Contextual toolbars
 
