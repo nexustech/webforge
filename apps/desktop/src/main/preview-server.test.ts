@@ -1,4 +1,5 @@
 import { request } from "node:http";
+import { connect } from "node:net";
 import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -68,6 +69,25 @@ function get(port: number, path: string, method = "GET", headers: Record<string,
       sent.end();
     },
   );
+}
+
+/**
+ * Resolves once nothing listens on `port` any more: a listener's close is done. Polls on
+ * `setImmediate`, which tests don't fake, so it never moves a fake clock on.
+ */
+async function closed(port: number): Promise<void> {
+  for (;;) {
+    const refused = await new Promise<boolean>((resolve) => {
+      const socket = connect({ host: "127.0.0.1", port });
+      socket.once("connect", () => {
+        socket.destroy();
+        resolve(false);
+      });
+      socket.once("error", () => resolve(true));
+    });
+    if (refused) return;
+    await new Promise((resolve) => setImmediate(resolve));
+  }
 }
 
 /** The server's event stream, collecting each event as it comes. */
@@ -402,19 +422,20 @@ ${THEME_VALUES_MARKER}
     preview.update(FIRST);
     const stopped = vi.fn();
     preview.onPhoneStopped(stopped);
-    await preview.listen("network", "127.0.0.1");
+    const firstPort = await preview.listen("network", "127.0.0.1");
 
     // Unused: everyone is told in the same moment it goes, before its close is done.
     vi.advanceTimersByTime(150);
     expect(stopped).toHaveBeenCalledOnce();
     expect(preview.phoneBase()).toBe(undefined);
 
-    // So a phone listener started straight after is never taken for the one that stopped.
-    vi.useRealTimers();
+    // So a phone listener started straight after is never taken for the one that stopped, and the
+    // old one's close, once done, leaves it on. Its own idle timer stays on the test's clock: a real
+    // 150 ms could run out before the request under load, closing it mid-request (#757).
     const phonePort = await preview.listen("network", "127.0.0.1");
     const phoneBase = preview.phoneBase() ?? "";
     expect(phoneBase).not.toBe("");
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await closed(firstPort);
     expect((await get(phonePort, phoneBase)).status).toBe(200);
     expect(stopped).toHaveBeenCalledOnce();
   });
