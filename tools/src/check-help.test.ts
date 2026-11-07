@@ -12,17 +12,27 @@ afterEach(() => {
 });
 
 /** A repository with `pages` in docs/help, a catalogue of `types` and `app.name` set. */
-function repository(pages: Record<string, string>, types: string[] = []): string {
+function repository(
+  pages: Record<string, string>,
+  types: string[] = [],
+  links: Record<string, { page: string; anchor?: string }> = {},
+): string {
   const root = mkdtempSync(join(tmpdir(), "webforge-help-check-"));
   made.push(root);
-  for (const folder of [HELP_PATHS.pages, HELP_PATHS.strings, "packages/site-components/src"]) {
+  for (const folder of [
+    HELP_PATHS.pages,
+    HELP_PATHS.strings,
+    "packages/site-components/src",
+    "apps/desktop/src/renderer/help",
+  ]) {
     mkdirSync(join(root, folder), { recursive: true });
   }
   for (const [name, text] of Object.entries(pages)) {
     writeFileSync(join(root, HELP_PATHS.pages, name), text);
   }
-  const components = Object.fromEntries(types.map((type) => [type, {}]));
+  const components = Object.fromEntries(types.map((type) => [type, { label: type, fields: {} }]));
   writeFileSync(join(root, HELP_PATHS.catalogue), JSON.stringify({ components }));
+  writeFileSync(join(root, HELP_PATHS.links), JSON.stringify(links));
   writeFileSync(
     join(root, HELP_PATHS.strings, "app.ts"),
     'export const app = { "app.name": "Webforge" };',
@@ -38,12 +48,21 @@ describe("check-help (5.4b, HP-5)", () => {
     const root = repository(
       {
         "README.md": "# Help\n\nWebforge's help, with <b>HTML</b> allowed here.",
-        "export.md": `${front("export", "components: [Hero]\n")}# Export\n\nSee [Publish](publish.md).`,
+        "export.md": `${front("export", "components: [Hero]\n")}# Export\n\nSee [Publish](publish.md).\n\n## Hero`,
         "publish.md": `${front("publish")}# Publish\n\n{appName} sends it.`,
       },
       ["Hero"],
     );
     expect(checkHelp(root)).toEqual([]);
+  });
+
+  it("checks the app's ? links against the pages", () => {
+    const root = repository({ "export.md": `${front("export")}# Export\n\n## Options` }, [], {
+      export: { page: "export" },
+      options: { page: "export", anchor: "options" },
+      gone: { page: "export", anchor: "gone" },
+    });
+    expect(checkHelp(root)).toEqual(["? links: no heading export#gone"]);
   });
 
   it("finds what's wrong in the pages, against the catalogue and the app's name", () => {

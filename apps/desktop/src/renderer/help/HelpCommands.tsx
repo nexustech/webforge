@@ -7,6 +7,19 @@ import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { bundledHelpLibrary, type HelpLibrary } from "./help-library.js";
 
+/** Opens the Help window at `target` through `help`, saying so if it didn't open. */
+export function openHelpWith(help: Pick<HelpApi, "open">, target: HelpTarget): void {
+  help
+    .open(target)
+    .then((opened) => {
+      if (!opened) toast.error(t("help.openFailed"));
+    })
+    .catch((error: unknown) => {
+      reportFailure("help.open", error);
+      toast.error(t("help.openFailed"));
+    });
+}
+
 export type HelpCommandsProps = {
   /** `window.webforge.help`. */
   readonly help: Pick<HelpApi, "open">;
@@ -22,17 +35,7 @@ export type HelpCommandsProps = {
 export function HelpCommands({ help, library }: HelpCommandsProps) {
   const registry = useCommandRegistry();
   useEffect(() => {
-    const open = (target: HelpTarget) => {
-      help
-        .open(target)
-        .then((opened) => {
-          if (!opened) toast.error(t("help.openFailed"));
-        })
-        .catch((error: unknown) => {
-          reportFailure("help.open", error);
-          toast.error(t("help.openFailed"));
-        });
-    };
+    const open = (target: HelpTarget) => openHelpWith(help, target);
     const removers = [
       registry.register({
         id: COMMAND_IDS.help,

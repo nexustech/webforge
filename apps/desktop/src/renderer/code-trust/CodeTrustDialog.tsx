@@ -12,6 +12,7 @@ import type { SiteCodePiece } from "@webforge/model";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { CodeQuestion } from "../editor/code-trust.js";
+import { HelpButton } from "../help/index.js";
 
 /** Settings' Custom Code parts, as the prompt lists them. */
 const PART_KEYS = {
@@ -76,6 +77,8 @@ export function CodeTrustDialog({
           </Button>
           <Button onClick={() => answer?.("keep")}>{t("site.code.trust.keep")}</Button>
         </AlertDialogFooter>
+        {/* Last, so the dialog's own first control still takes the focus as it opens. */}
+        <HelpButton topic="codeTrust" className="absolute top-2.5 right-3" />
       </AlertDialogContent>
     </AlertDialog>
   );

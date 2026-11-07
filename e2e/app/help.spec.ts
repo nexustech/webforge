@@ -86,3 +86,32 @@ test("opens at a page and heading, and the same window again at another", async 
   await expect(main.getByRole("heading", { level: 1, name: "Keyboard shortcuts" })).toBeVisible();
   expect(app.windows()).toHaveLength(2);
 });
+
+test("opens Help from a ? at its section, and for the selected element at its heading", async () => {
+  // Site Check's rules each have a ?, which opens the section that explains them.
+  await editor.getByRole("button", { name: "Show or Hide Bottom Panel" }).click();
+  const placeholders = editor
+    .getByRole("region", { name: "Bottom panel" })
+    .locator('[data-rule="placeholders"]');
+  const opened = app.waitForEvent("window");
+  await placeholders.getByRole("button", { name: "Help: Placeholder text" }).click();
+  const help = await opened;
+  const main = help.getByRole("main");
+  await expect(main.getByRole("heading", { level: 2, name: "Should fix" })).toBeInViewport();
+
+  // Selected from Site Check, the starter page's Text: Help for This Element opens its heading.
+  await editor.bringToFront();
+  await placeholders
+    .getByRole("button", { name: /^Show Text on / })
+    .first()
+    .click();
+  await editor.getByRole("button", { name: /^Search commands/ }).click();
+  await editor
+    .getByRole("dialog", { name: "Commands" })
+    .getByRole("combobox")
+    .fill("Help for This Element");
+  await editor.keyboard.press("Enter");
+  await expect(main.getByRole("heading", { level: 1, name: "Elements" })).toBeVisible();
+  await expect(main.getByRole("heading", { level: 3, name: "Text" })).toBeInViewport();
+  expect(app.windows()).toHaveLength(2);
+});

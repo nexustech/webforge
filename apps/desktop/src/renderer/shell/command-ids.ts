@@ -46,6 +46,7 @@ export const COMMAND_IDS = {
   editorMode: "view.editorMode",
   editorLevel: "view.editorLevel",
   help: "help.open",
+  helpForElement: "help.forElement",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
   about: "help.about",

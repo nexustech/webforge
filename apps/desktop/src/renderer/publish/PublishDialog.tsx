@@ -29,6 +29,7 @@ import type {
   ListedDestination,
   PublishApi,
 } from "../../shared/ipc/publish.js";
+import { HelpButton } from "../help/index.js";
 import {
   connectionMessage,
   FileTransferDestinationDialog,
@@ -233,6 +234,8 @@ export function PublishDialog({
               {t("publish.destinations.close")}
             </Button>
           </DialogFooter>
+          {/* Last, so the dialog's own first control still takes the focus as it opens. */}
+          <HelpButton topic="publish" className="absolute top-2.5 right-9" />
         </DialogContent>
       </Dialog>
       {/* Drawn only while open, so each opening starts afresh: no key or trust from the last. */}

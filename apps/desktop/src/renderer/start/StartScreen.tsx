@@ -12,9 +12,11 @@ import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lu
 import { useCallback, useEffect, useState } from "react";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
+import type { HelpApi } from "../../shared/ipc/help.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
+import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import {
@@ -55,6 +57,8 @@ export type StartScreenProps = {
   readonly restart?: () => void;
   /** Formats times on the Recent list; injectable for tests. */
   readonly locale?: string;
+  /** Opens the Help window (5.4b); injectable for tests. */
+  readonly help?: Pick<HelpApi, "open">;
   /** AI apps' briefs (4.12a), for New Site's quick start; injectable for tests. */
   readonly ai?: Pick<AiApi, "onBrief">;
 };
@@ -71,6 +75,7 @@ export function StartScreen({
   app,
   restart,
   locale,
+  help,
   ai,
 }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
@@ -170,6 +175,8 @@ export function StartScreen({
             </section>
           </main>
         </div>
+        {/* First, so it heads the Help menu: F1, and the help pages in Search Commands (5.4b). */}
+        <HelpCommands help={help ?? window.webforge.help} />
         <SiteCommands
           example
           project={api}
