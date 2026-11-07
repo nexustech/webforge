@@ -20,7 +20,8 @@ export type Tour = {
 /**
  * The tour's state (OB-1…OB-3): offered when `preferences` say so, the quick start having asked
  * (`offerTour`), and answered in them, never in the site. Taken, it's `done`, and skipping it then
- * doesn't change that; *Not now* makes it `skipped`. Either way it's never offered again by itself.
+ * doesn't change that; shown, the offer is `skipped` until *Show me around* is chosen. Either way it's never
+ * offered again by itself.
  */
 export function createTour(preferences: PreferencesStore): Tour {
   const onboarding = () => preferences.getState().preferences.onboarding;
@@ -28,7 +29,11 @@ export function createTour(preferences: PreferencesStore): Tour {
     if (onboarding().tour === tour) return;
     preferences.change({ onboarding: { ...onboarding(), tour } });
   };
-  const stage = createStore<TourStage>(() => (onboarding().tour === "offer" ? "offer" : "closed"));
+  const offered = onboarding().tour === "offer";
+  const stage = createStore<TourStage>(() => (offered ? "offer" : "closed"));
+  // Offered once: unanswered (the window closed first), it lapses as skipped, so it isn't offered
+  // again on another site or in another window (#787 review).
+  if (offered) remember("skipped");
   const go = (next: TourStage) => stage.setState(next, true);
   const at = () => stage.getState();
   return {

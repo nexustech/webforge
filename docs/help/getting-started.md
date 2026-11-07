@@ -50,6 +50,17 @@ The tour has three steps, each in a small card beside the button or text it's ab
 
 A last card says where help is. Each card has **Back**, **Next**, **Skip tour** and a **Learn more** link to its help page. The cards never get in your way: you can keep working while one is open, and **Esc** closes the tour. On the keyboard, Tab moves from a card's buttons on to the rest of the window, and F6 moves between the card and the other parts of the window.
 
+## First-time tips
+
+The first time you reach some parts of {appName}, a short tip says what's there. Each tip shows once, and **Got it** (or Esc) closes it:
+- the first time you **select** something on the page: how to change it;
+- the first time you switch to **Content mode**: what it locks;
+- the first **Must fix** in [Site Check](site-check.md): that it stops Export and Publish until it's fixed;
+- after your first **export**: that your website is a folder to upload, as it is;
+- after you first close **Theme Studio**: that a theme changes every page, and Undo takes it back.
+
+To see no more tips, turn off **Show tips** in [Settings](settings.md#interface). **Show the tour and tips again** there starts over.
+
 ## Choose a template yourself
 
 **New Site** (Ctrl+N on Windows, Cmd+N on a Mac) shows every template.

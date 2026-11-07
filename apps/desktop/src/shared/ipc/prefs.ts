@@ -108,7 +108,8 @@ const MAX_TIPS_SEEN = 50;
  * Where the person is with the tour and the first-time tips (OB-6, 5.4a): theirs, on this computer,
  * whatever site is open; never in a site or its undo history.
  * - `tour`: `new` until a site is made with the quick start, which makes it `offer`: the editor then
- *   offers the tour once (OB-1). Answered, it's `skipped` (*Not now*, *Skip tour*) or `done` (taken).
+ *   offers the tour once (OB-1). Shown, it's `skipped` (also *Not now*, *Skip tour*, or the window
+ *   closing first), or `done` once taken.
  * - `tipsSeen`: the tips shown once each (OB-4), by id.
  * - `showTips`: Settings › Interface › *Show tips* (OB-5).
  */

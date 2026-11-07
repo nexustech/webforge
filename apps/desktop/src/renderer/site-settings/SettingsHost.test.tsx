@@ -138,6 +138,41 @@ describe("SettingsHost (LF-12)", () => {
   );
 
   it(
+    "turns the tips off, and shows the tour and tips again from the start (OB-5)",
+    async () => {
+      const { preferences, run, user } = setUp();
+      act(() =>
+        preferences.change({
+          onboarding: { tour: "done", tipsSeen: ["selection", "export"], showTips: true },
+        }),
+      );
+      run(COMMAND_IDS.settings);
+      await user.click(await screen.findByRole("checkbox", { name: "Show tips" }));
+      await user.click(screen.getByRole("button", { name: "Save" }));
+      expect(preferences.getState().preferences.onboarding).toEqual({
+        tour: "done",
+        tipsSeen: ["selection", "export"],
+        showTips: false,
+      });
+
+      run(COMMAND_IDS.settings);
+      // Off once saved, as the person left it.
+      expect(
+        (await screen.findByRole<HTMLInputElement>("checkbox", { name: "Show tips" })).checked,
+      ).toBe(false);
+      await user.click(screen.getByRole("checkbox", { name: "Show the tour and tips again" }));
+      await user.click(screen.getByRole("button", { name: "Save" }));
+      // Offered when a site next opens, every tip unseen.
+      expect(preferences.getState().preferences.onboarding).toEqual({
+        tour: "offer",
+        tipsSeen: [],
+        showTips: false,
+      });
+    },
+    SLOW,
+  );
+
+  it(
     "keeps the person's devices, adding one and renaming another",
     async () => {
       const { preferences, run, user } = setUp();
