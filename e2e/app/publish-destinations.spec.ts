@@ -166,6 +166,8 @@ test("publishes the site to an SFTP host, then keeps the version it went live wi
     expect(versions[0]).toMatchObject({
       publishedTo: expect.objectContaining({ check: "unchecked" }),
     });
+    // And when it last went live, for the year Site Check says it shows (F-CM-8).
+    expect(store.readLastPublishedAt()).toBe(versions[0]?.publishedTo?.publishedAt);
   } finally {
     store.close();
   }

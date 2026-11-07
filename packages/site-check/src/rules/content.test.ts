@@ -260,6 +260,32 @@ describe("outdated year (F-CM-8)", () => {
     ).toEqual([expect.objectContaining({ place: { kind: "page", pageId: plain.homePageId } })]);
   });
 
+  it("tips at Custom Code with {year} outside its scripts and styles, as the export fills it in", () => {
+    const check = (code: string, settings?: { head?: string; bodyEnd?: string }) => {
+      const custom = siteWith([element("CustomCode", "widget", { code })]);
+      return outdatedYearRule.check({
+        site:
+          settings === undefined ? custom : { ...custom, code: { ...custom.code, ...settings } },
+        catalogue: CATALOGUE,
+        published: { year: 2026, thisYear: 2027 },
+      });
+    };
+    const inScript = "<script>const year = `{year}`;</script><style>/* {year} */</style>";
+
+    expect(check("<p>© {year} Rosa's</p>")).toEqual([
+      expect.objectContaining({
+        place: { kind: "element", on: expect.any(String), nodeId: "widget" },
+      }),
+    ]);
+    // A script's or a style's {year} stays as written: nothing to say.
+    expect(check(inScript)).toEqual([]);
+    // Settings' Custom Code goes into every page: its HTML, but not its scripts.
+    expect(check(inScript, { bodyEnd: "<footer>© {year}</footer>" })).toEqual([
+      expect.objectContaining({ place: { kind: "code", part: "bodyEnd" } }),
+    ]);
+    expect(check(inScript, { head: inScript })).toEqual([]);
+  });
+
   it("says nothing when no text has {year}", () => {
     expect(
       outdatedYearRule.check({

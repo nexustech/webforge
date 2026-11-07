@@ -575,18 +575,21 @@ describe("ProjectSession editor mode", () => {
     });
   });
 
-  it("says when the site was last published, as its versions record it, for Site Check (F-CM-8)", async () => {
+  it("says when the site last went live, for Site Check (F-CM-8), whatever became of its versions", async () => {
     const path = join(dir, "Bakery.wforge");
     await session.create(path);
     await session.close();
     const store = ProjectStore.open(path);
-    const publish = (publishedAt: string) => ({
-      publishedTo: { destinationId: "host", publishedAt, check: "live" as const },
+    // The version that publish saved has been deleted since: the time is kept apart.
+    const version = store.saveVersion("", "on-publish", {
+      publishedTo: {
+        destinationId: "host",
+        publishedAt: "2027-01-03T09:00:00.000Z",
+        check: "live",
+      },
     });
-    store.saveVersion("", "on-publish", publish("2027-01-03T09:00:00.000Z"));
-    store.saveVersion("Before the menu", "manual");
-    // Republished since: the newest publish counts, whichever version it kept.
-    store.saveVersion("", "on-publish", publish("2026-12-30T09:00:00.000Z"));
+    store.writeLastPublishedAt("2027-01-03T09:00:00.000Z");
+    store.deleteVersion(version.id);
     store.close();
 
     await session.open(path);

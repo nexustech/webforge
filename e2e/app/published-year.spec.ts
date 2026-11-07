@@ -8,8 +8,8 @@ import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp, newUserDataDir, type WebforgeApp, waitForCanvas } from "./launch.js";
 
 // The year a published site shows (F-CM-8, 4.5): `{year}` is filled in when the site is built, so
-// once the year has turned, Site Check tips to publish again, from the record of the last publish
-// the site's versions keep, and its Fix opens Publish.
+// once the year has turned, Site Check tips to publish again, from when the site's file says it
+// last went live, and its Fix opens Publish.
 
 let dir: string;
 let userData: string;
@@ -44,14 +44,8 @@ test("tips to publish again when the published site shows last year, and opens P
   });
   const store = ProjectStore.create(path, { name: "Rosa's Bakery" });
   store.saveSite(site);
-  // Published in the summer of last year.
-  store.saveVersion("", "on-publish", {
-    publishedTo: {
-      destinationId: "host",
-      publishedAt: `${lastYear}-07-01T12:00:00.000Z`,
-      check: "live",
-    },
-  });
+  // Published in the summer of last year, as the site's file records it.
+  store.writeLastPublishedAt(`${lastYear}-07-01T12:00:00.000Z`);
   store.close();
 
   app = await launchDesktopApp({ userDataDir: userData, args: [path] });

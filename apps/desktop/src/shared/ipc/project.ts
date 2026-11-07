@@ -117,7 +117,7 @@ const siteUiStateSchema = z.strictObject({
   editorMode: z.enum(["design", "content"]),
   siteCheckIgnored: siteCheckIgnoredSchema.optional(),
   /**
-   * When the site was last published (4.5), as its versions record it: ISO 8601, UTC. Site Check
+   * When the site last went live (4.5), as the site's file records it: ISO 8601, UTC. Site Check
    * tips when the year it shows is out of date (F-CM-8). Read only; none when it hasn't been.
    */
   lastPublishedAt: z.iso.datetime().optional(),
