@@ -83,6 +83,14 @@ function handlers({
   };
   const sendProgress = vi.fn();
   const openExternal = vi.fn(async (_url: string) => undefined);
+  // The manifests held now, as Clean up would keep them.
+  const held = new Set<unknown>();
+  const holdManifest = vi.fn((manifest: unknown) => {
+    held.add(manifest);
+    return () => {
+      held.delete(manifest);
+    };
+  });
   // What happened, in order: the window's flush, then each read of the site's file.
   const order: string[] = [];
   const flush = vi.fn(async () => {
@@ -115,6 +123,7 @@ function handlers({
     sendProgress,
     versionsKept: () => 30,
     flush,
+    holdManifest,
     openExternal,
     now: () => new Date("2026-11-01T14:02:00Z"),
   };
@@ -127,7 +136,7 @@ function handlers({
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
   const publish = (replaceOtherSite = false) =>
     invoke("publish:publish", SESSION, destination.id, OPERATION, { replaceOtherSite });
-  return { store, runner, sendProgress, invoke, publish, order, openExternal };
+  return { store, runner, sendProgress, invoke, publish, order, openExternal, held, holdManifest };
 }
 
 /** The job the runner was given. */
@@ -203,6 +212,39 @@ describe("Publish (4.5, ADR 0018)", () => {
     expect(await publish()).toMatchObject({ status: "published" });
     expect(silent.webContents.send).toHaveBeenCalledWith("app:flush", expect.any(Number));
     expect(order.slice(0, 2)).toEqual(["flush", "read"]);
+  });
+
+  it.each([
+    ["went live", LIVE],
+    ["failed", { type: "failed", code: "network", detail: "network" }],
+    ["was cancelled", { type: "cancelled" }],
+  ] as const)(
+    "holds the manifest it read while it publishes, and lets go once it %s",
+    async (_, end) => {
+      let heldDuring = 0;
+      const { publish, held, holdManifest, store } = handlers({
+        outcome: async () => {
+          heldDuring = held.size;
+          return end;
+        },
+      });
+      await publish();
+
+      expect(heldDuring).toBe(1);
+      expect(holdManifest).toHaveBeenCalledWith(store.readManifest());
+      expect(held.size).toBe(0);
+    },
+  );
+
+  it("lets go of the manifest when the gate stops it", async () => {
+    const { publish, held, holdManifest } = handlers({
+      site: publishable((site) => {
+        site.settings.address = {};
+      }),
+    });
+    expect(await publish()).toMatchObject({ status: "must-fix" });
+    expect(holdManifest).toHaveBeenCalledOnce();
+    expect(held.size).toBe(0);
   });
 
   it("builds only the code its owner trusts here (#649)", async () => {
