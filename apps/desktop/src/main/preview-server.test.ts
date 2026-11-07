@@ -435,7 +435,9 @@ ${THEME_VALUES_MARKER}
     const phonePort = await preview.listen("network", "127.0.0.1");
     const phoneBase = preview.phoneBase() ?? "";
     expect(phoneBase).not.toBe("");
-    await closed(firstPort);
+    // The new listener may be given the old one's port: then the old one is already gone, and the
+    // port answers again.
+    if (phonePort !== firstPort) await closed(firstPort);
     expect((await get(phonePort, phoneBase)).status).toBe(200);
     expect(stopped).toHaveBeenCalledOnce();
   });
