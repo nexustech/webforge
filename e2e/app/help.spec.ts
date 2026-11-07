@@ -49,9 +49,19 @@ test("opens Help with F1, with its contents, pages, links between them, Back and
 
   // The app's name is filled in, and the page has none of the editor's API.
   await expect(main.getByText("{appName}")).toHaveCount(0);
-  expect(await help.evaluate(() => typeof (window as { webforge?: unknown }).webforge)).toBe(
-    "undefined",
-  );
+  expect(
+    await help.evaluate(() => ({
+      require: typeof (globalThis as { require?: unknown }).require,
+      process: typeof (globalThis as { process?: unknown }).process,
+      webforge: typeof (globalThis as { webforge?: unknown }).webforge,
+      webforgeHelp: Object.keys((globalThis as { webforgeHelp?: object }).webforgeHelp ?? {}),
+    })),
+  ).toEqual({
+    require: "undefined",
+    process: "undefined",
+    webforge: "undefined",
+    webforgeHelp: ["openExternal", "onShow", "onTheme"],
+  });
 });
 
 test("opens at a page and heading, and the same window again at another", async () => {

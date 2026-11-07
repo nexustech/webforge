@@ -121,6 +121,7 @@ test.describe("desktop shell", () => {
         "trust",
         "versions",
         "mcp",
+        "help",
       ],
     });
   });
