@@ -25,6 +25,9 @@ export const versions = {
   "versionHistory.reason.beforeSiteWide": "Before a change to every page",
   "versionHistory.reason.onPublish": "Published",
   "versionHistory.automatic": "Saved by {appName}",
+  // Where and when a version was last published (4.6b): its destination's name, unless removed.
+  "versionHistory.publishedTo": "Published to {destination}, {date}",
+  "versionHistory.publishedOn": "Published {date}",
   "versionHistory.beforeAction": "Before: {action}",
   "versionHistory.beforeThemeChanges": "Before theme changes",
   // Save version (Ctrl/Cmd+Alt+S).
@@ -51,6 +54,8 @@ export const versions = {
   "versionHistory.unreadable.invalid": "That version can't be read.",
   "versionHistory.restore.notSaved":
     "{appName} couldn't save a version of the site as it is now, so nothing was restored.",
+  // Republish: the site's destinations, to publish the version to one (4.6b).
+  "versionHistory.republish": "Republish…",
   // Open as new site.
   "versionHistory.openAsNewSite": "Open as New Site…",
   // Preview: the version's site in the browser, as it was.

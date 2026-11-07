@@ -1,6 +1,7 @@
 import { createSite, type MediaId, type PublishDestination, type SiteDoc } from "@webforge/model";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { PublishApi, PublishProgress, PublishResult } from "../../shared/ipc/publish.js";
+import type { ReadVersionSiteResult, VersionsApi } from "../../shared/ipc/versions.js";
 import type { CodeDecision } from "../editor/code-trust.js";
 import { setFailureLog } from "../log.js";
 import {
@@ -8,6 +9,7 @@ import {
   publishFailure,
   publishProgressText,
   publishTo,
+  republishTo,
 } from "./publish-flow.js";
 
 const toast = vi.hoisted(() => ({
@@ -65,11 +67,14 @@ function flowOf({
   results = [LIVE],
   code = GO,
   replace = true,
+  version = { status: "ok", site: publishable() },
 }: {
   readonly site?: SiteDoc;
   readonly results?: PublishResult[];
   readonly code?: CodeDecision;
   readonly replace?: boolean;
+  /** What reading the saved version to republish gives. */
+  readonly version?: ReadVersionSiteResult;
 } = {}) {
   // What happened, in order.
   const order: string[] = [];
@@ -99,6 +104,7 @@ function flowOf({
     confirmCode: vi.fn(async () => code),
     showSiteCheck: vi.fn(),
     api,
+    versions: { readSite: vi.fn<VersionsApi["readSite"]>(async () => version) },
     sessionId: () => SESSION,
     askReplace: vi.fn(async () => replace),
     showLive: vi.fn(),
@@ -248,6 +254,88 @@ describe("publishTo (4.5, F-PB-2)", () => {
       expect.anything(),
     );
     setFailureLog(undefined);
+  });
+});
+
+describe("republishTo (4.6b, F-PB-3)", () => {
+  const VERSION = { id: "2a3b4c5d-6e7f-4a8b-9c0d-1e2f3a4b5c6d", name: "Before the menu" };
+
+  it("asks main to publish the saved version, its code asked about, the canvas left be", async () => {
+    const old = publishable();
+    old.settings.general.name = "The old bakery";
+    const { flow, api, order } = flowOf({ version: { status: "ok", site: old } });
+    await republishTo(flow, destination, VERSION);
+
+    expect(flow.versions.readSite).toHaveBeenCalledWith(SESSION, VERSION.id);
+    expect(flow.confirmCode).toHaveBeenCalledWith(old);
+    // The version is in the file: nothing to save from the canvas.
+    expect(order).toEqual(["publish"]);
+    expect(api.publish.mock.calls[0]?.[3]).toEqual({
+      replaceOtherSite: false,
+      versionId: VERSION.id,
+    });
+    expect(flow.showLive).toHaveBeenCalled();
+  });
+
+  it("leaves the gate to main, which reads the version: the open site's Site Check isn't asked", async () => {
+    // The open site has something to fix; the version is main's to check.
+    const site = publishable();
+    site.settings.address = {};
+    const { flow, api } = flowOf({ site });
+    await republishTo(flow, destination, VERSION);
+    expect(api.publish).toHaveBeenCalled();
+  });
+
+  it("says a version with something to fix must be restored to be fixed, Site Check left shut", async () => {
+    const { flow } = flowOf({ results: [{ status: "must-fix", count: 2 }] });
+    await republishTo(flow, destination, VERSION);
+    expect(toast.error).toHaveBeenCalledWith(
+      "This version has 2 things to fix before it's published. Restore it, fix them in Site Check, then publish.",
+      expect.objectContaining({ id: "progress" }),
+    );
+    expect(flow.showSiteCheck).not.toHaveBeenCalled();
+  });
+
+  it("keeps the version when it asks before replacing another site in the folder (A8)", async () => {
+    const { flow, api } = flowOf({ results: [{ status: "failed", reason: "other-site" }, LIVE] });
+    await republishTo(flow, destination, VERSION);
+    expect(api.publish.mock.calls.map((call) => call[3])).toEqual([
+      { replaceOtherSite: false, versionId: VERSION.id },
+      { replaceOtherSite: true, versionId: VERSION.id },
+    ]);
+  });
+
+  it.each([
+    [
+      { status: "not-found" },
+      "That version is no longer in this site, so it can't be republished.",
+    ],
+    [
+      { status: "unreadable", reason: "newer-format" },
+      "Webforge can't read that version, so it can't be republished.",
+    ],
+    [{ status: "failed", reason: "stale-session" }, "Publishing didn't work. Publish again."],
+  ] as const)("publishes nothing when the version can't be read (%o)", async (version, said) => {
+    const { flow, api } = flowOf({ version });
+    await republishTo(flow, destination, VERSION);
+    expect(api.publish).not.toHaveBeenCalled();
+    expect(flow.confirmCode).not.toHaveBeenCalled();
+    expect(toast.error).toHaveBeenCalledWith(said);
+  });
+
+  it("publishes nothing when the owner stops at the question about the version's code", async () => {
+    const { flow, api } = flowOf({ code: { go: false } });
+    await republishTo(flow, destination, VERSION);
+    expect(api.publish).not.toHaveBeenCalled();
+  });
+
+  it("says what main found when the version went while it was asked about", async () => {
+    const { flow } = flowOf({ results: [{ status: "failed", reason: "no-version" }] });
+    await republishTo(flow, destination, VERSION);
+    expect(toast.error).toHaveBeenCalledWith(
+      "That version is no longer in this site, so it can't be republished.",
+      expect.objectContaining({ id: "progress" }),
+    );
   });
 });
 

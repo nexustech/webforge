@@ -27,6 +27,7 @@ const READERS = [
   "readManifest",
   "listVersions",
   "readVersion",
+  "readVersionManifest",
   "readVersionSite",
   "versionSpace",
   "blobsReachedBy",
