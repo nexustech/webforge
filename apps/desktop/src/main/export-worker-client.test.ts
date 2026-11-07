@@ -93,6 +93,56 @@ function runnerOf(timeoutMs?: number) {
   return { runner, workers, latest, sent };
 }
 
+describe("createExportRunner's publish (4.5, ADR 0018 §1)", () => {
+  const publishJob = {
+    type: "publish",
+    site: {},
+    destination: {},
+    signIn: { password: "test-only-password" },
+    trust: {},
+    target: { site: { projectId: "p", destinationId: "d" } },
+    trustedCode: [],
+    fonts: [],
+    families: [],
+  } as unknown as Parameters<ReturnType<typeof createExportRunner>["publish"]>[0];
+
+  it("publishes in the export's worker, after the export before it, passing on its progress", async () => {
+    const { runner, workers, latest, sent } = runnerOf();
+    const progress = vi.fn();
+
+    const exporting = runner.run(job, options());
+    const publishing = runner.publish(publishJob, { ...options(), onProgress: progress });
+    await sent();
+    latest().reply(exported);
+    await expect(exporting).resolves.toEqual(exported);
+
+    await sent(2);
+    const id = latest().lastJob();
+    latest().send({ message: "progress", id, progress: { stage: "uploading", done: 1, total: 3 } });
+    latest().reply({
+      type: "published",
+      url: "https://rosas.example/",
+      uploaded: 3,
+      unchanged: 0,
+      removed: 0,
+      check: "live",
+      durationMs: 5,
+    });
+    await expect(publishing).resolves.toMatchObject({ type: "published", check: "live" });
+    expect(progress).toHaveBeenCalledWith({ stage: "uploading", done: 1, total: 3 });
+    expect(workers).toHaveLength(1);
+  });
+
+  it("fails a publish whose worker answers something else, by code only", async () => {
+    const { runner, latest, sent } = runnerOf();
+    const publishing = runner.publish(publishJob, { readMedia: async () => undefined });
+    await sent();
+    latest().reply({ type: "exported" });
+
+    await expect(publishing).resolves.toMatchObject({ type: "failed", code: "failed" });
+  });
+});
+
 describe("createExportRunner", () => {
   it("runs an export in its worker and keeps the worker for the next one (R15)", async () => {
     const { runner, workers, latest, sent } = runnerOf();

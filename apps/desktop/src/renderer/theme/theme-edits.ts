@@ -31,9 +31,17 @@ type ThemeSession = Pick<EditorSession, "edit"> & {
  * before the first change to a built-in theme, which is read-only (2.23, PH2-17). Without them,
  * changes happen at once.
  */
+/** What a theme change asks of the window's site-wide confirmations. */
+export type ThemeSiteWide = Pick<SiteWideConfirm, "confirmSiteWide"> &
+  Partial<Pick<SiteWideConfirm, "beforeUnaskedChange">>;
+
 export type ThemeAsks =
   | {
-      readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+      /**
+       * Asks before a change to every page (D7); a change that asks nothing runs its
+       * `beforeUnaskedChange` first, where Version History saves a version (4.6).
+       */
+      readonly siteWide?: ThemeSiteWide | undefined;
       readonly names?: OwnThemeNames | undefined;
       /**
        * Says that a change was cancelled at one of its questions ("Not changed", #614): an Escape
@@ -178,6 +186,13 @@ async function changeTheme(
     own = { id: newId("theme"), name: chosen };
   }
   if (question !== undefined && !(await confirmed(session, asks, question))) return false;
+  if (question === undefined) {
+    await asks?.siteWide?.beforeUnaskedChange?.({
+      action: label,
+      confirm: label,
+      affectedPages: pageCount(session),
+    });
+  }
   session.edit(
     "props",
     own === undefined ? label : t("theme.history.saved", { name: own.name }),

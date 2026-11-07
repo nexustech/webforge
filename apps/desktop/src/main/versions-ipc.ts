@@ -15,9 +15,19 @@ export type VersionsOptions = {
   readonly versionsKept: () => Promise<number>;
   /** Runs before another site replaces the open one, as for Open Site (the Recent list's picture). */
   readonly beforeSwitch?: () => Promise<void>;
-  /** Asks the renderer to save its last changes, before main saves a version itself. */
+  /** Asks the renderer to save its last changes, before a version is saved. */
   readonly flush?: () => Promise<void>;
+  /** The time, in milliseconds: `Date.now` unless a test sets it. */
+  readonly now?: () => number;
 };
+
+/**
+ * The least time between two versions before a change to every page in one opening (4.6): the
+ * first of a burst of changes (deleting ten pages, trying five themes) holds the site from before
+ * them, and a burst can't push the daily versions out of Versions kept. AI apps' versions (4.9,
+ * S20) are among them.
+ */
+export const BEFORE_SITE_WIDE_GAP_MS = 5 * 60_000;
 
 /** What main's own callers save versions with. */
 export type Versions = {
@@ -40,6 +50,9 @@ export function registerVersionsHandlers(
   options: VersionsOptions,
 ): Versions {
   const { session, dialogs, captureCanvas, versionsKept, beforeSwitch, flush } = options;
+  const now = options.now ?? Date.now;
+  /** When each opening's last version before a change to every page was saved. */
+  const lastBeforeSiteWide = new Map<string, number>();
   /** Saves the site's file as it is as a version of the opening `sessionId`, with its picture. */
   const save = async (
     sessionId: string,
@@ -49,13 +62,25 @@ export function registerVersionsHandlers(
     const site = session.forSession(sessionId);
     const stale = site.staleReason();
     if (stale !== undefined) return { status: "failed", reason: stale };
+    const throttled = reason === "before-site-wide";
+    if (throttled) {
+      const last = lastBeforeSiteWide.get(sessionId);
+      if (last !== undefined && now() - last < BEFORE_SITE_WIDE_GAP_MS)
+        return { status: "skipped" };
+      // Taken now, so a second request while this one saves is skipped too.
+      lastBeforeSiteWide.set(sessionId, now());
+    }
+    // The site as the person sees it: autosave's last changes saved first (ADR 0018 §3).
+    await flush?.();
     const [thumbnail, kept] = await Promise.all([captureCanvas(), versionsKept()]);
-    return site.saveVersion({ name, reason, thumbnail, kept });
+    const saved = await site.saveVersion({ name, reason, thumbnail, kept });
+    // One that wasn't saved doesn't count: the next change tries again.
+    if (throttled && saved.status !== "saved") lastBeforeSiteWide.delete(sessionId);
+    return saved;
   };
   registerIpcHandler(ipc, "listVersions", isTrustedSender, (sessionId) =>
     session.forSession(sessionId).listVersions(),
   );
-  // The renderer saved its last changes before it asked (ADR 0018 §3).
   registerIpcHandler(ipc, "saveVersion", isTrustedSender, (sessionId, { name, reason }) =>
     save(sessionId, name, reason),
   );
@@ -87,9 +112,8 @@ export function registerVersionsHandlers(
   });
   return {
     saveVersionBefore: async (sessionId, name) => {
-      await flush?.();
       const saved = await save(sessionId, name, "before-site-wide");
-      return saved.status === "saved" ? "saved" : "failed";
+      return saved.status === "failed" ? "failed" : "saved";
     },
   };
 }

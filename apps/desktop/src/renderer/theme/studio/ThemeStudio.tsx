@@ -20,7 +20,7 @@ import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
 import { addFontPreviews, ColourField } from "../../fields/index.js";
-import type { SiteWideConfirm } from "../../shell/confirm-site-wide.js";
+
 import type { OwnThemes } from "../own-themes.js";
 import { useOwnThemeList } from "../own-themes-list.js";
 import { TOKEN_CONTROLS, tokenKey } from "../theme-controls.js";
@@ -34,6 +34,7 @@ import {
   setToken,
   switchPreset,
   type ThemeAsks,
+  type ThemeSiteWide,
 } from "../theme-edits.js";
 import { changeDraft, draftChange, draftChanges, themeWithDraft } from "./look-draft.js";
 import { StudioColours } from "./StudioColours.js";
@@ -58,7 +59,7 @@ export type ThemeStudioProps = {
   readonly session: EditorSession;
   readonly studio: StoreApi<StudioState>;
   /** Asks before a change to every page (D7): a preset, a colour. */
-  readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
+  readonly siteWide?: ThemeSiteWide | undefined;
   /**
    * My themes (2.23): listed first, with New theme, Rename and Delete, and asked for a name before
    * the first change to a built-in theme, which is read-only.
