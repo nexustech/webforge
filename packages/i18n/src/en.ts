@@ -1,4 +1,5 @@
 import { ai } from "./en/ai.js";
+import { aiApps } from "./en/aiApps.js";
 import { app } from "./en/app.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components/index.js";
@@ -40,6 +41,7 @@ export const areas = {
   theme,
   templates,
   ai,
+  aiApps,
   versions,
 } as const;
 
@@ -65,5 +67,6 @@ export const en = {
   ...theme,
   ...templates,
   ...ai,
+  ...aiApps,
   ...versions,
 } as const;

@@ -1,5 +1,6 @@
 import { addPanelArea } from "./add/area.js";
 import { aiRequestsArea } from "./ai/area.js";
+import { aiAppsArea } from "./ai-apps/area.js";
 import { clipboardCommandsArea, styleCommandsArea } from "./clipboard/area.js";
 import { codeTrustArea } from "./code-trust/index.js";
 import { editPanelArea } from "./edit-panel/area.js";
@@ -84,4 +85,5 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   themePanelArea,
   siteCheckArea,
   aiRequestsArea,
+  aiAppsArea,
 ];
