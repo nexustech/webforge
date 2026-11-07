@@ -295,7 +295,7 @@ export type ExportOutcome = z.infer<typeof exportOutcomeSchema>;
  * Why a publish failed (4.5): the publisher's codes (`PublishErrorCode` of `@webforge/publish`),
  * or the build's, as an export's.
  */
-const PUBLISH_FAILURES = [
+export const PUBLISH_FAILURES = [
   "unauthorized",
   "not-found",
   "rate-limited",
@@ -316,7 +316,7 @@ const PUBLISH_FAILURES = [
  * publisher's version of it (Netlify's deploy id), for main to record; cancelled, the previous site
  * left as it was; or why it failed, by its code only (standards §4).
  */
-const publishOutcomeSchema = z.discriminatedUnion("type", [
+export const publishOutcomeSchema = z.discriminatedUnion("type", [
   z.strictObject({
     type: z.literal("published"),
     /** The address the live site was checked at: none for a destination without one. */
