@@ -203,6 +203,15 @@ describe("createPreview (3.2)", () => {
 
     expect(await opening).toBe("failed");
     expect(server.showVersion).not.toHaveBeenCalled();
+
+    // Closed while it built: its stopped server isn't started again.
+    const closing = preview.openVersion(SITE_A, site("Before"), "index.html");
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledTimes(2));
+    await preview.close();
+    finish({ type: "previewed", full: true, changed: [], removed: [] });
+    expect(await closing).toBe("failed");
+    expect(server.showVersion).not.toHaveBeenCalled();
+
     opened.sessionId = SITE_B;
     expect(await preview.openVersion(SITE_A, site("Before"), "index.html")).toBe("failed");
     expect(deps.openInBrowser).not.toHaveBeenCalled();

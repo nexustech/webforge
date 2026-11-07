@@ -198,6 +198,8 @@ export function createPreview(deps: PreviewDeps): Preview {
           log.error("Webforge could not build a version's preview", { detail: built.detail });
           return "failed";
         }
+        // The site closed, or another opened, while it built: its server has stopped.
+        if (running?.server !== server) return "failed";
         server.showVersion(built);
         const port = await server.listen("local");
         const url = pageUrl("127.0.0.1", port, `${server.base}${VERSION_PATH}`, page);
