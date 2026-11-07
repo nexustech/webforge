@@ -2,7 +2,7 @@
 id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
-related: [the-editor, templates, pages, themes, preview, export]
+related: [the-editor, templates, pages, themes, preview, publish, export]
 updated: 2026-11-07
 ---
 
@@ -38,6 +38,17 @@ Four short steps. Every question is optional, you can go back to any step, and *
 4. **Colours and details:** keep the theme's colours, pick your own brand colour, or choose **From my logo…** to take colours from your logo. {appName} reads the logo on this computer and doesn't add it to your site. Then add your email, phone number, address, opening hours and web address, if you have them.
 
 {appName} asks where to save the site's file, then opens it. Your answers replace the template's sample business wherever it appeared: in the text, the Header, the Footer and [Site Settings](site-settings.md). Anything you skipped keeps the template's sample text. [Site Check](site-check.md) points that text out before you export.
+
+## The tour
+
+The first time a site you made with **Start a site…** opens, {appName} offers a short tour. Choose **Show me around**, or **Not now** to start working straight away. It isn't offered again either way, and **Help › Take the Tour** starts it at any time.
+
+The tour has three steps, each in a small card beside the button or text it's about:
+1. **Change your words:** click any text on your page and type. The tour moves on once you've changed something.
+2. **See it as visitors will:** [Preview](preview.md).
+3. **Put it online:** [Publish](publish.md).
+
+A last card says where help is. Each card has **Back**, **Next**, **Skip tour** and a **Learn more** link to its help page. The cards never get in your way: you can keep working while one is open, and **Esc** closes the tour. On the keyboard, Tab moves from a card's buttons on to the rest of the window.
 
 ## Choose a template yourself
 

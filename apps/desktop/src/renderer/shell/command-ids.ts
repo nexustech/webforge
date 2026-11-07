@@ -47,6 +47,8 @@ export const COMMAND_IDS = {
   editorLevel: "view.editorLevel",
   help: "help.open",
   helpForElement: "help.forElement",
+  // Help › Take the Tour (5.4a, OB-1).
+  tour: "help.tour",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
   licences: "help.licences",

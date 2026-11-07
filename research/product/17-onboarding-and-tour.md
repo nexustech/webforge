@@ -1,6 +1,6 @@
 # Onboarding: the first-run tour and first-time tips
 
-**Status:** Proposed (OB-1…OB-7, §6), for the product owner. Plan item 5.4a ([#79](https://github.com/nexustech/webforge/issues/79), 4 days), pulled forward from Phase 5 on 7 Nov 2026.
+**Status:** Decided (OB-1…OB-7, product owner, 7 Nov 2026): each as proposed in §6. Plan item 5.4a ([#79](https://github.com/nexustech/webforge/issues/79), 4 days), pulled forward from Phase 5 on 7 Nov 2026.
 
 **The question:** what does a small-business owner see the first time they use {appName}, so they get from a new site to a published one without help from anyone?
 
@@ -85,6 +85,8 @@ Within 5.4a's 4 days:
 - **The usability test's script, 0.5 day.**
 
 ## 6. Proposals
+
+All seven adopted as proposed (product owner, 7 Nov 2026).
 
 | ID | Proposal | Alternatives |
 |---|---|---|

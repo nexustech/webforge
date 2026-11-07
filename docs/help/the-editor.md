@@ -76,6 +76,8 @@ Help is also where you need it:
 - **Help for This Element**, in the [right-click menu](editing-on-the-page.md#the-right-click-menu) on the page and in Layers, opens the help for the selected section or element;
 - the start screen's **Help** tab lists the pages to start with.
 
+**Help › Take the Tour** shows you around the editor in three short steps. See [Getting started](getting-started.md#the-tour).
+
 ### Open-source licences
 
 {appName} is made with open-source software. **Help › Open-Source Licences**, or **Open-Source Licences** in **Help › About {appName}**, lists every part of it that comes with {appName}, the fonts included, each with its version and licence. Click one to read its licence, or type in **Find a package or licence** to find one. **Chromium's Licences** opens the licences of Chromium, which {appName} runs on, in your web browser.

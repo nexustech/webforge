@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BriefOutcome, SiteBrief } from "../../shared/ipc/ai.js";
+import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import type { ProjectResult, RecentSite } from "../../shared/ipc-contract.js";
@@ -72,6 +73,12 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
   };
 }
 
+/** The person's preferences, where the quick start asks for the tour (OB-1). */
+const prefs = {
+  get: vi.fn(async () => DEFAULT_PREFERENCES),
+  set: vi.fn(async () => DEFAULT_PREFERENCES),
+};
+
 /** The Help window, as the start screen opens it (5.4b). */
 const helpWindow = { open: vi.fn(async () => true) };
 
@@ -91,6 +98,7 @@ async function render(
         restart={restart}
         locale="en-GB"
         help={helpWindow}
+        prefs={prefs}
         {...(ai === undefined ? {} : { ai })}
       />,
     ),
@@ -127,6 +135,11 @@ describe("StartScreen", () => {
       business: {},
       pages: { leaveOut: [], recipes: [] },
     });
+    // The site the quick start made opens with the tour offered (OB-1).
+    expect(prefs.set).toHaveBeenCalledWith({
+      onboarding: { ...DEFAULT_PREFERENCES.onboarding, tour: "offer" },
+    });
+    prefs.set.mockClear();
 
     await act(async () => button("Choose a template yourself…")?.click());
     // New Site's dialog, in a portal on the body (2.14a).
@@ -136,6 +149,8 @@ describe("StartScreen", () => {
     await act(async () => create?.click());
     expect(project.create).toHaveBeenCalledWith({ name: "My site", theme: "light", business: {} });
     expect(restart).toHaveBeenCalled();
+    // New Site's: no tour offered.
+    expect(prefs.set).not.toHaveBeenCalled();
     await act(async () => button("Open a site…")?.click());
     expect(project.open).toHaveBeenCalled();
   });

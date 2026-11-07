@@ -101,6 +101,26 @@ const editPanelPreferencesSchema = z.strictObject({
 /** The Edit panel's remembered option groups. */
 export type EditPanelPreferences = z.infer<typeof editPanelPreferencesSchema>;
 
+/** At most this many first-time tips are remembered as seen. */
+const MAX_TIPS_SEEN = 50;
+
+/**
+ * Where the person is with the tour and the first-time tips (OB-6, 5.4a): theirs, on this computer,
+ * whatever site is open; never in a site or its undo history.
+ * - `tour`: `new` until a site is made with the quick start, which makes it `offer`: the editor then
+ *   offers the tour once (OB-1). Answered, it's `skipped` (*Not now*, *Skip tour*) or `done` (taken).
+ * - `tipsSeen`: the tips shown once each (OB-4), by id.
+ * - `showTips`: Settings › Interface › *Show tips* (OB-5).
+ */
+const onboardingPreferencesSchema = z.strictObject({
+  tour: z.enum(["new", "offer", "skipped", "done"]),
+  tipsSeen: z.array(z.string().min(1).max(64)).max(MAX_TIPS_SEEN),
+  showTips: z.boolean(),
+});
+
+/** Where the person is with the tour and the first-time tips. */
+export type OnboardingPreferences = z.infer<typeof onboardingPreferencesSchema>;
+
 /** The fewest and the most automatic versions a site may keep (P3). */
 export const VERSIONS_KEPT_MIN = 5;
 export const VERSIONS_KEPT_MAX = 100;
@@ -126,6 +146,7 @@ export const preferencesSchema = z.strictObject({
    * deleted as a new one is saved. The person's own versions are never deleted.
    */
   versionsKept: z.int().min(VERSIONS_KEPT_MIN).max(VERSIONS_KEPT_MAX),
+  onboarding: onboardingPreferencesSchema,
 });
 
 /** One person's editor preferences. */
@@ -147,6 +168,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   add: { favourites: [], recent: [] },
   editPanel: { closedGroups: {} },
   versionsKept: 20,
+  onboarding: { tour: "new", tipsSeen: [], showTips: true },
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -169,6 +191,7 @@ export function applyPreferencesChange(
     add: change.add ?? preferences.add,
     editPanel: change.editPanel ?? preferences.editPanel,
     versionsKept: change.versionsKept ?? preferences.versionsKept,
+    onboarding: change.onboarding ?? preferences.onboarding,
   };
 }
 

@@ -67,6 +67,7 @@ export function parsePreferences(raw: unknown): Preferences {
     add: field("add"),
     editPanel: field("editPanel"),
     versionsKept: field("versionsKept"),
+    onboarding: field("onboarding"),
   };
 }
 
