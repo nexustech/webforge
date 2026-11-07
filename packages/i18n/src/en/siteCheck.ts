@@ -85,6 +85,12 @@ export const siteCheck = {
     "1 underlined text isn't a link, which visitors may click",
   "siteCheck.rule.underlinedText.fail.other":
     "{count} underlined texts aren't links, which visitors may click",
+  "siteCheck.rule.outdatedYear": "Year on your site",
+  "siteCheck.rule.outdatedYear.pass": "Your published site shows this year",
+  "siteCheck.rule.outdatedYear.fail.one":
+    "Your published site still shows the year you last published it in. Publish again to show this year",
+  "siteCheck.rule.outdatedYear.fail.other":
+    "Your published site still shows the year you last published it in. Publish again to show this year",
 
   // Being found (3.17): what stops people finding the site. Nothing on keywords or lengths (SEO-11).
   "siteCheck.group.found": "Being found",
@@ -171,6 +177,7 @@ export const siteCheck = {
   "siteCheck.detail.noHeading": "No main heading: add a large Heading or a Hero",
   "siteCheck.detail.headings": "{count} main headings: keep one large Heading or Hero",
   "siteCheck.detail.sameAs": "The same as {file}",
+  "siteCheck.detail.publishedYear": "Shows {year}",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",

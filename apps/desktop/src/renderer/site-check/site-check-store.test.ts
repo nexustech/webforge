@@ -169,3 +169,51 @@ describe("Site Check and the site's allowed addresses (#649)", () => {
     check.dispose();
   });
 });
+
+describe("Site Check and the year a published site shows (F-CM-8)", () => {
+  /** The starter site with `{year}` in its home page's text. */
+  const withYear = (): SiteDoc => {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const copyright = { type: "Text", props: { id: "copyright", text: "<p>© {year} Rosa's</p>" } };
+    return {
+      ...site,
+      pages: {
+        ...site.pages,
+        [home.id]: { ...home, doc: { ...home.doc, content: [...home.doc.content, copyright] } },
+      },
+    };
+  };
+  const outdated = (check: ReturnType<typeof createSiteCheck>) =>
+    check.state.getState().report.results.find((result) => result.rule === "outdatedYear")
+      ?.findings;
+
+  it("tips while the site was last published in an earlier year, and checks again after a publish", () => {
+    const document = createStore<SiteDoc>()(() => withYear());
+    const publishedYear = createStore<number | undefined>()(() => undefined);
+    const check = createSiteCheck(document, {
+      ignored: [],
+      saveIgnored: () => {},
+      publishedYear,
+      thisYear: () => 2027,
+    });
+    // Never published: nothing shows a year yet.
+    expect(outdated(check)).toEqual([]);
+
+    const recheck = () => {
+      vi.advanceTimersByTime(400);
+      while (idle.length > 0) idlePeriod(100);
+    };
+    publishedYear.setState(2026, true);
+    recheck();
+    expect(outdated(check)).toEqual([
+      expect.objectContaining({ key: "2026/2027", values: { publishedYear: 2026 } }),
+    ]);
+
+    publishedYear.setState(2027, true);
+    recheck();
+    expect(outdated(check)).toEqual([]);
+    check.dispose();
+  });
+});

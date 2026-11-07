@@ -36,6 +36,7 @@ const READERS = [
   "readExportChoices",
   "readSiteCheckIgnored",
   "readPublishDestinations",
+  "readLastPublishedAt",
   "backupTo",
   "close",
 ];
@@ -83,6 +84,7 @@ const WRITERS: Record<string, (store: ProjectStore) => unknown> = {
   writeExportChoices: (store) => store.writeExportChoices(DEFAULT_EXPORT_CHOICES),
   writeSiteCheckIgnored: (store) => store.writeSiteCheckIgnored(["brokenLinks:a"]),
   writePublishDestinations: (store) => store.writePublishDestinations([]),
+  writeLastPublishedAt: (store) => store.writeLastPublishedAt("2026-10-30T10:00:00.000Z"),
   collectGarbage: (store) => store.collectGarbage(),
 };
 

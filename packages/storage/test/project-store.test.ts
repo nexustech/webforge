@@ -715,6 +715,43 @@ describe("ProjectStore Site Check ignores (3.6)", () => {
   });
 });
 
+describe("ProjectStore last publish (4.5, F-CM-8)", () => {
+  it("remembers when the site last went live across opens, apart from its versions", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    expect(store.readLastPublishedAt()).toBeUndefined();
+
+    store.writeLastPublishedAt("2026-12-30T09:00:00.000Z");
+    store.writeLastPublishedAt("2027-01-03T09:00:00.000Z");
+    store.close();
+
+    const reopened = ProjectStore.open(path);
+    expect(reopened.readLastPublishedAt()).toBe("2027-01-03T09:00:00.000Z");
+    reopened.close();
+  });
+
+  it("reads nothing from a value it can't use, and still opens; refuses to write one", () => {
+    const path = createProject();
+    tamper(path, (db) =>
+      db.prepare("INSERT INTO meta (key, value) VALUES ('last_published_at', ?)").run("soon"),
+    );
+    const store = ProjectStore.open(path);
+
+    expect(store.readLastPublishedAt()).toBeUndefined();
+    expect(() => store.writeLastPublishedAt("yesterday")).toThrow();
+    store.close();
+  });
+
+  it("refuses to change a read-only site's", () => {
+    const store = ProjectStore.open(createProject(), { readOnly: true });
+
+    expect(() => store.writeLastPublishedAt("2027-01-03T09:00:00.000Z")).toThrow(
+      ReadOnlyProjectError,
+    );
+    store.close();
+  });
+});
+
 describe("ProjectStore publish destinations (4.4a, ADR 0018 §2)", () => {
   const sftp: PublishDestination = {
     id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",

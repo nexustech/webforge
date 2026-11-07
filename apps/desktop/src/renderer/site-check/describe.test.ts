@@ -124,4 +124,9 @@ describe("describeDetail", () => {
       "The same as menu/cakes.html",
     );
   });
+
+  it("gives the year a published site shows (F-CM-8)", () => {
+    const place = { kind: "element", on: "footer", nodeId: "copyright" } as const;
+    expect(describeDetail(at(place, { publishedYear: 2026 }))).toBe("Shows 2026");
+  });
 });
