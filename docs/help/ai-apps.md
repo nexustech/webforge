@@ -93,6 +93,19 @@ In [Content mode](the-editor.md#design-and-content-mode), an app can change text
 
 Before an app's first change each time it connects, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
 
+### Many changes at once
+
+For a bigger job, such as building out your pages, an app can send its changes together, with a title such as "Build the Rapidfix site". {appName} checks every change first. If any of them can't be made, nothing changes and the app is told which one. Then it asks you once, with **Allow**, and says what the changes would do:
+- the pages added, deleted, renamed and moved, and those whose **Page Settings** change;
+- any page it hides from navigation or from search engines, or shows again, from before to after;
+- whether the theme changes;
+- how many sections and elements are added, changed, moved and removed;
+- each change that would have asked on its own, such as a new phone number, from the old one to the new one.
+
+If you allow it, {appName} saves a version of your site first, then makes every change as one step in Undo History, named after the title, such as **AI (Claude Desktop): Build the Rapidfix site**. One Undo takes it all back.
+
+In Content mode, a set of changes that holds even one change Content mode doesn't allow is refused whole.
+
 An app reads your site's content to work on it, and what it does with it is up to the app: Claude, for example, sends what it reads to Anthropic to answer you. Only add an app you trust with your site.
 
 ChatGPT can't connect to {appName} yet.

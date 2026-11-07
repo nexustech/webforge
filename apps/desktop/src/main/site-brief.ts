@@ -187,7 +187,7 @@ const KEEP_MS = 30 * 60_000;
 
 /** A brief shown to the person: whose it is, and what became of it once they've decided. */
 type Kept = {
-  /** The app that sent it, by the name the person gave it: no other app can read it. */
+  /** The app that sent it, by its pairing id: no other app, nor one added again under its name, reads it. */
   readonly app: string;
   readonly name: string;
   outcome?: BriefOutcome;
