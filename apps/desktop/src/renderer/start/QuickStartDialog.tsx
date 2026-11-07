@@ -52,6 +52,7 @@ import {
   type DetailsValues,
   detailsAnswers,
   detailsSpec,
+  detailsValuesOf,
   EMPTY_DETAILS,
 } from "./quick-start-form.js";
 
@@ -74,8 +75,10 @@ export type QuickStartDialogProps = {
   readonly onCancel: () => void;
   /** Reads a picture's pixels; drawn on a canvas by default. */
   readonly read?: (url: string) => Promise<ArrayLike<number>>;
-  /** The step it opens on: the first, but for stories. */
+  /** The step it opens on: the first, but for stories and an AI app's brief. */
   readonly initialStep?: QuickStartStep;
+  /** The answers it opens with: none, but for an AI app's brief (4.12a), filled in to check. */
+  readonly initialAnswers?: QuickStartAnswers;
 };
 
 /**
@@ -108,15 +111,23 @@ function QuickStartBody({
   onCancel,
   read = readPixels,
   initialStep = "business",
+  initialAnswers,
 }: Omit<QuickStartDialogProps, "open">) {
   const untitled = t("site.untitledName");
-  const [answers, setAnswers] = useState(() => emptyAnswers(untitled));
+  const [answers, setAnswers] = useState(() => initialAnswers ?? emptyAnswers(untitled));
   const [step, setStep] = useState(QUICK_START_STEPS.indexOf(initialStep));
   const [spec] = useState(detailsSpec);
-  const details = useForm(spec, EMPTY_DETAILS);
+  const details = useForm(
+    spec,
+    initialAnswers === undefined ? EMPTY_DETAILS : detailsValuesOf(initialAnswers),
+  );
   // Kept while the person moves between steps: the logo's colours once read, and their own colour.
   const [logo, setLogo] = useState<readonly ImageColour[] | null>(null);
-  const [hex, setHex] = useState(() => hexOf(DEFAULT_THEME.colors.primary));
+  const [hex, setHex] = useState(() =>
+    initialAnswers?.colours.kind === "colour"
+      ? initialAnswers.colours.hex
+      : hexOf(DEFAULT_THEME.colors.primary),
+  );
   const last = step === QUICK_START_STEPS.length - 1;
   const change = (patch: Partial<QuickStartAnswers>) =>
     setAnswers((current) => ({ ...current, ...patch }));

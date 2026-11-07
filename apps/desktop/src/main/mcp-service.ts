@@ -1,12 +1,13 @@
 import { randomInt } from "node:crypto";
 import { t } from "@webforge/i18n";
-import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
+import { type AiRequest, type AiResponse, aiRequestSchema } from "../shared/ipc/ai.js";
 import type { AiApps, PairedApp, Pairing } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
 import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
 import { type McpListener, type McpListenerOptions, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp, type McpServerInfo } from "./mcp-server.js";
+import { isMainTool, type SiteBriefs } from "./site-brief.js";
 
 /** The ephemeral range a port is drawn from (ADR 0021). */
 const EPHEMERAL = { from: 49152, to: 65535 } as const;
@@ -57,6 +58,8 @@ export type McpServiceOptions = {
    * (S20). Version History's own (4.6a).
    */
   readonly saveVersionBefore: (name: string) => Promise<"saved" | "failed">;
+  /** AI apps' briefs (4.12a), which main answers itself: no site need be open. */
+  readonly briefs: Pick<SiteBriefs, "ask" | "choices">;
   readonly listen?: (options: McpListenerOptions) => Promise<McpListener>;
   readonly drawPort?: () => number;
 };
@@ -77,7 +80,14 @@ export function createMcpService(options: McpServiceOptions): McpService {
   const { apps } = options;
   const listen = options.listen ?? startMcpListener;
   const drawPort = options.drawPort ?? (() => randomInt(EPHEMERAL.from, EPHEMERAL.to + 1));
-  const limits = createAppLimits(options.ask);
+  // Main's own tools first; the rest are the open site's, which the window answers.
+  const limits = createAppLimits((asked) => {
+    const request = aiRequestSchema.safeParse(asked);
+    if (!request.success || !isMainTool(request.data.name)) return options.ask(asked);
+    return request.data.name === "siteChoices"
+      ? Promise.resolve(options.briefs.choices())
+      : options.briefs.ask(request.data.input);
+  });
   let listener: McpListener | null = null;
   let moved = false;
 
@@ -99,7 +109,12 @@ export function createMcpService(options: McpServiceOptions): McpService {
       await saved;
     };
     return (request: AiRequest): Promise<AiResponse> =>
-      limits.ask(app.id, request, request.kind === "command" ? versionFirst : undefined);
+      // A brief changes no open site: no version before it.
+      limits.ask(
+        app.id,
+        request,
+        request.kind === "command" && !isMainTool(request.name) ? versionFirst : undefined,
+      );
   };
 
   /**

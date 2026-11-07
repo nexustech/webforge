@@ -15,6 +15,7 @@ import {
   UNTRUSTED_SITE_TEXT,
 } from "@webforge/commands";
 import { type AiRequest, type AiResponse, APP_TOOLS } from "../shared/ipc/ai.js";
+import { MAIN_TOOLS } from "./site-brief.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
 export type McpApp = { readonly id: string; readonly name: string };
@@ -34,7 +35,20 @@ const TOOLS = [
     description: `${description} ${UNTRUSTED_SITE_TEXT}`,
     inputSchema: { type: "object" as const, properties: {}, additionalProperties: false },
   })),
+  // Main's own (4.12a): a new site from a brief, and what it chooses from.
+  ...Object.entries(MAIN_TOOLS).map(([name, tool]) => ({
+    kind: tool.kind,
+    name,
+    description: `${tool.description} ${UNTRUSTED_SITE_TEXT}`,
+    inputSchema: tool.inputSchema,
+  })),
 ];
+
+/**
+ * How often a call that waits (a brief the person is checking, a change waiting for Allow) reports
+ * progress, when the app asked for it: a client may take each report to put off its timeout.
+ */
+const PROGRESS_EVERY_MS = 10_000;
 
 /** The catalogue resource's content (AIB-1): the same for every connection, made once. */
 let catalogueText: string | undefined;
@@ -58,6 +72,7 @@ export function createMcpServer(
   info: McpServerInfo,
   app: McpApp,
   ask: (request: AiRequest) => Promise<AiResponse>,
+  progressEveryMs = PROGRESS_EVERY_MS,
 ): Server {
   const server = new Server(info, { capabilities: { tools: {}, resources: {} } });
   // The SDK reports a transport's or handler's errors here; they may quote a request.
@@ -83,19 +98,38 @@ export function createMcpServer(
       ],
     };
   });
-  server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
+  server.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
     const tool = TOOLS.find((each) => each.name === params.name);
     if (tool === undefined) {
       return toolResult({ status: "invalid", message: "There is no such tool." });
     }
     const input = params.arguments ?? {};
-    return toolResult(
-      await ask(
-        tool.kind === "query"
-          ? { kind: "query", name: tool.name, input }
-          : { kind: "command", name: tool.name, input, app: app.name },
-      ),
-    );
+    // While it waits for the person, it says it's still going, if the app asked to be told (4.12a).
+    const progressToken = params._meta?.progressToken;
+    let progress = 0;
+    const still =
+      progressToken === undefined
+        ? undefined
+        : setInterval(() => {
+            progress += 1;
+            void extra
+              .sendNotification({
+                method: "notifications/progress",
+                params: { progressToken, progress },
+              })
+              .catch(() => undefined);
+          }, progressEveryMs);
+    try {
+      return toolResult(
+        await ask(
+          tool.kind === "query"
+            ? { kind: "query", name: tool.name, input }
+            : { kind: "command", name: tool.name, input, app: app.name },
+        ),
+      );
+    } finally {
+      clearInterval(still);
+    }
   });
   return server;
 }

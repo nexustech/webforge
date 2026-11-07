@@ -10,6 +10,7 @@ import {
 import { t } from "@webforge/i18n";
 import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
@@ -54,6 +55,8 @@ export type StartScreenProps = {
   readonly restart?: () => void;
   /** Formats times on the Recent list; injectable for tests. */
   readonly locale?: string;
+  /** AI apps' briefs (4.12a), for New Site's quick start; injectable for tests. */
+  readonly ai?: Pick<AiApi, "onBrief">;
 };
 
 /**
@@ -61,7 +64,15 @@ export type StartScreenProps = {
  * start a site (the quick start, QS-4, or New Site's dialog, 2.14a), open one or try an example
  * (PG-3); on the right, the recent sites, searchable, pinned ones first, and a Help tab.
  */
-export function StartScreen({ info, project, templates, app, restart, locale }: StartScreenProps) {
+export function StartScreen({
+  info,
+  project,
+  templates,
+  app,
+  restart,
+  locale,
+  ai,
+}: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
   // returning user never sees the first start's welcome flash past (#456 review).
@@ -166,6 +177,7 @@ export function StartScreen({ info, project, templates, app, restart, locale }: 
           recent={{ sites: recent, changed: relist }}
           {...(templates === undefined ? {} : { templates })}
           {...(restart === undefined ? {} : { restart })}
+          {...(ai === undefined ? {} : { ai })}
         />
         <AboutDialog info={info} />
         <ShortcutSheet editor={false} />

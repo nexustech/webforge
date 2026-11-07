@@ -7,6 +7,7 @@ import type { AiResponse } from "../shared/ipc/ai.js";
 import { APP_TOOLS } from "../shared/ipc/ai.js";
 import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
+import { MAIN_TOOLS } from "./site-brief.js";
 
 const INFO = { name: "Webforge", version: "1.0.0" };
 const CLAUDE: McpApp = { id: "app-1", name: "Claude" };
@@ -57,6 +58,7 @@ describe("the MCP server (4.9)", () => {
     expect(memory.tools.map((tool) => tool.name)).toEqual([
       ...AI_TOOLS.map((tool) => tool.name),
       ...Object.keys(APP_TOOLS),
+      ...Object.keys(MAIN_TOOLS),
     ]);
     // Run Site Check and Open Preview take nothing: no address, path or host.
     expect(memory.tools.find((tool) => tool.name === "openPreview")?.inputSchema).toEqual({
@@ -88,6 +90,28 @@ describe("the MCP server (4.9)", () => {
         { type: "text", text: JSON.stringify({ status: "done", data: { name: "Rosa's Bakery" } }) },
       ],
     });
+  });
+
+  it("reports progress while a call waits, when the app asks to be told (4.12a)", async () => {
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    const slow = vi.fn(
+      () =>
+        new Promise<AiResponse>((resolve) => {
+          setTimeout(() => resolve({ status: "declined", message: "closed" }), 150);
+        }),
+    );
+    await createMcpServer(INFO, CLAUDE, slow, 20).connect(serverSide);
+    const client = new Client({ name: "test", version: "1" });
+    await client.connect(clientSide);
+    const onprogress = vi.fn();
+
+    await client.callTool({ name: "createSiteFromBrief", arguments: {} }, undefined, {
+      onprogress,
+      resetTimeoutOnProgress: true,
+    });
+
+    expect(onprogress.mock.calls.length).toBeGreaterThanOrEqual(2);
+    expect(onprogress).toHaveBeenCalledWith(expect.objectContaining({ progress: 1 }));
   });
 
   it("offers the catalogue as a resource, without asking the open site (AIB-1)", async () => {
