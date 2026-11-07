@@ -27,6 +27,7 @@ import { registerBundleHandlers } from "./bundle-ipc.js";
 import { electronBundleFetch } from "./bundle-net.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
+import { createClaudeExtensions } from "./claude-extension.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
@@ -590,7 +591,22 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     mcp = service;
     void service.start().catch((error: unknown) => logFailure("mcp start", error));
-    registerMcpHandlers(ipcMain, isTrustedSender, service);
+    registerMcpHandlers(
+      ipcMain,
+      isTrustedSender,
+      service,
+      // Claude Desktop's extensions, in the person's own profile, with the bundled bridge.
+      createClaudeExtensions({
+        dir: join(app.getPath("userData"), "ai-apps"),
+        bridgeFile: app.isPackaged
+          ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
+          : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
+        version: app.getVersion(),
+        // Looked up as they're called, so the E2E tests can stand in for Claude Desktop.
+        open: (path) => electron.shell.openPath(path),
+        show: (path) => electron.shell.showItemInFolder(path),
+      }),
+    );
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,
@@ -665,8 +681,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
         await projectSession.close();
       },
-      // Then each feature's last work, such as My themes' and the Recent list's last writes.
-      features,
+      // Then each feature's last work, such as My themes' and the Recent list's last writes, and
+      // the preferences' last writes: a panel resized just before quitting keeps its size (#740).
+      features: [...features, { quit: async () => await lifecycle.preferences?.idle() }],
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).

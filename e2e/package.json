@@ -23,6 +23,7 @@
     "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "fflate": "0.8.3",
     "jsqr": "1.4.0",
     "ssh2": "1.17.0",
     "zod": "catalog:"

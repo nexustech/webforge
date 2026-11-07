@@ -32,6 +32,9 @@ extraResources:
   # images, read and checked by the main process when it lists them or makes a site from one.
   - from: out/templates
     to: templates
+  # The bridge Claude Desktop runs (4.9, ADR 0021), written into each paired app's extension.
+  - from: out/bridge
+    to: bridge
 asar: true
 # Native addons can't be loaded from inside an asar archive.
 asarUnpack:

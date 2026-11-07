@@ -44,6 +44,17 @@ const addResultSchema = z.discriminatedUnion("status", [
 /** See {@link mcpChannels}' `mcpAdd`. */
 export type McpAddResult = z.infer<typeof addResultSchema>;
 
+/**
+ * What *Install in Claude Desktop* came to: the extension written and opened, or shown in its
+ * folder as nothing opened it (Claude Desktop isn't installed?); or why not.
+ */
+const installResultSchema = z.strictObject({
+  status: z.enum(["opened", "shown", "off", "unknown", "failed"]),
+});
+
+/** See {@link mcpChannels}' `mcpInstallClaude`. */
+export type McpInstallResult = z.infer<typeof installResultSchema>;
+
 /** IPC channels of the `mcp` domain (`mcp:*`). Each one's arguments are checked. */
 export const mcpChannels = {
   /** AI apps as they are now: on or off, the address, the paired apps and who's connected. */
@@ -64,6 +75,15 @@ export const mcpChannels = {
     request: z.tuple([z.string().max(1_000)]),
     response: addResultSchema,
   },
+  /**
+   * Writes a paired app's Claude Desktop extension (ADR 0021): the bridge, with the address and the
+   * app's server proof, never its key. Then opens it, for Claude Desktop to install.
+   */
+  mcpInstallClaude: {
+    channel: "mcp:install-claude",
+    request: z.tuple([z.uuid()]),
+    response: installResultSchema,
+  },
   /** Removes a paired app, cutting it off at once. */
   mcpRemove: {
     channel: "mcp:remove",
@@ -77,5 +97,6 @@ export interface McpApi {
   status(): Promise<McpStatus>;
   setEnabled(enabled: boolean): Promise<McpStatus>;
   add(name: string): Promise<McpAddResult>;
+  installClaude(id: string): Promise<McpInstallResult>;
   remove(id: string): Promise<McpStatus>;
 }

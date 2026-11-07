@@ -15,6 +15,11 @@ export type PreferencesStore = {
   get(): Preferences;
   /** Applies `change`, saves the file and returns all preferences. */
   set(change: PreferencesChange): Promise<Preferences>;
+  /**
+   * Resolves once every save asked so far is written: awaited before Webforge exits, so a panel
+   * resized just before quitting keeps its size (#740).
+   */
+  idle(): Promise<void>;
 };
 
 /**
@@ -39,6 +44,7 @@ export async function openPreferencesStore(file: string): Promise<PreferencesSto
       // A failed write doesn't block later ones; its caller still sees the error.
       return store.update(() => snapshot).then(() => snapshot);
     },
+    idle: () => store.idle(),
   };
 }
 
@@ -71,7 +77,7 @@ export function parsePreferences(raw: unknown): Preferences {
 export function registerPreferencesHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
-  store: PreferencesStore,
+  store: Pick<PreferencesStore, "get" | "set">,
   onChange: (preferences: Preferences) => void,
 ): void {
   registerIpcHandler(ipc, "getPreferences", isTrustedSender, () => store.get());

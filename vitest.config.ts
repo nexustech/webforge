@@ -13,6 +13,7 @@ const CORE_PACKAGES = new Set([
   "publish",
   "commands",
   "site-check",
+  "help",
 ]);
 const CORE: Thresholds = { lines: 90, branches: 85, functions: 90, statements: 90 };
 const DEFAULT: Thresholds = { lines: 80, branches: 80, functions: 80, statements: 80 };
@@ -46,6 +47,8 @@ export default defineConfig({
         "**/*.d.ts",
         // Process entry points only wire tested modules together; Playwright E2E tests cover them.
         "apps/desktop/src/main/index.ts",
+        // The bridge's entry point reads its settings and runs it; bridge.test.ts runs it bundled.
+        "packages/mcp-bridge/src/main.ts",
         // Native message boxes and file dialogs only; recovery.ts holds the tested flow.
         "apps/desktop/src/main/recovery-dialogs.ts",
         // Electron wiring of the crash reports; crash-reports.ts and crash-handlers.ts are tested.

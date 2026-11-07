@@ -2,12 +2,12 @@
 // Run with `pnpm deps`. Paths are relative to the repository root.
 
 /** Packages that hold core logic and stay framework-free. */
-const CORE = "^packages/(errors|model|history|storage|pipeline|publish|commands|site-check)/";
+const CORE = "^packages/(errors|model|history|storage|pipeline|publish|commands|site-check|help)/";
 
 /** Code that runs in a renderer (or must render without Node): no Node built-ins, no Electron. */
 const RENDERER_SAFE = [
   "^apps/desktop/src/(renderer|shared)/",
-  "^packages/(model|history|engine|site-components|themes|editor-ui|i18n|commands|site-check)/",
+  "^packages/(model|history|engine|site-components|themes|editor-ui|i18n|commands|site-check|help)/",
 ];
 
 const REACT = "^(react|react-dom)(/|$)|(^|/)node_modules/(react|react-dom)/";
@@ -43,7 +43,7 @@ export default {
       name: "core-no-react-or-electron",
       severity: "error",
       comment:
-        "errors, model, history, storage, pipeline, publish, commands and site-check are framework-free (standards §3).",
+        "errors, model, history, storage, pipeline, publish, commands, site-check and help are framework-free (standards §3).",
       from: { path: CORE },
       to: { path: [REACT, ELECTRON] },
     },
@@ -154,6 +154,9 @@ export default {
           // Declared subpath export: @webforge/engine/puck-dom (Puck's DOM contract, without React or
           // Puck, for the canvas styles worker and the E2E tests, A19 and A20).
           "^packages/engine/src/puck/puck-dom\\.ts$",
+          // Declared subpath export: @webforge/mcp-bridge/build (bundles the bridge with esbuild,
+          // for the desktop app's build and the tests that run it bundled, ADR 0021).
+          "^packages/mcp-bridge/src/build\\.ts$",
         ],
       },
     },
