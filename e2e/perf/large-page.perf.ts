@@ -24,6 +24,8 @@ const INSTANT_MS = 100;
  * them.
  */
 const DRAG_LONGEST_TASK_MS = 350;
+/** Typing on the large page: no long task over 120 ms (5.1, from CI's runners; ADR 0007). */
+const TYPING_LONGEST_TASK_MS = 120;
 const DROP_RECORDED_MS = 1_000;
 
 type PerfWindow = Window & {
@@ -288,7 +290,12 @@ test("a page with 200+ elements against the editing budgets", async () => {
     );
     results.typing = typing;
     expect.soft(typing.overBudget, "keystrokes whose handlers took over a frame").toBe(0);
-    expect.soft(typing.longTasks, "long tasks while typing").toEqual([]);
+    // ADR 0007's target after 1.27 was no long task at all. On macOS' runner a run sometimes has
+    // one or two of 54–102 ms among 37 keystrokes while the handlers stay within the frame, so the
+    // budget set from the runners in 5.1 is none over 120 ms.
+    expect
+      .soft(Math.max(0, ...typing.longTasks), "the longest task while typing (ms)")
+      .toBeLessThan(TYPING_LONGEST_TASK_MS);
   });
 
   await test.step("dragging an element: one smooth step (§10)", async () => {

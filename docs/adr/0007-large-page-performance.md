@@ -239,6 +239,8 @@ Everything is within §10 except the drop hitch, mitigation 5 above, which 5.1's
 | The longest | 102–159 ms | 94–170 ms | < 350 ms |
 | The move recorded after the drop | 400–483 ms | 394–564 ms | < 1 s |
 
+**Typing on the large page** keeps §10's frame for the editor's own handlers per keystroke (CI: at most 9 ms). The target after 1.27, no long task at all, is relaxed to none over 120 ms. On macOS' runner a run sometimes has one or two of 54–102 ms among 37 keystrokes; Windows' runner and this laptop had none.
+
 **A theme look's redraw** (A25, #727) gets #727's targets as its budget: p50 within U7's 100 ms (CI: 31–33 ms), and no long task over 200 ms (CI: none).
 
 **The 50-step jump** keeps U7's 100 ms: CI measured 46–88 ms on Windows, and 50–134 ms on macOS.
