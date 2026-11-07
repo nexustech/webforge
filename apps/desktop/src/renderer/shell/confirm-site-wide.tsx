@@ -24,8 +24,15 @@ export type SiteWideAction = {
   readonly affectedPages: number;
 };
 
-/** Runs before every confirmed site-wide action; Version History (4.6) saves a version here. */
-type BeforeSiteWideAction = (action: SiteWideAction) => void | Promise<void>;
+/**
+ * Runs before every confirmed site-wide action, and before a change to every page that asks no
+ * question (`asked` false, {@link SiteWideConfirm.beforeUnaskedChange}): Version History (4.6) saves
+ * a version here.
+ */
+type BeforeSiteWideAction = (
+  action: SiteWideAction,
+  options: { readonly asked: boolean },
+) => void | Promise<void>;
 
 /**
  * The window's site-wide confirmations: asked by any part of the editor (the App hands it to the
@@ -41,6 +48,12 @@ export type SiteWideConfirm = {
   confirmSiteWide(action: SiteWideAction): Promise<boolean>;
   /** Sets what runs before every confirmed action (nothing until Version History); returns undo. */
   setBeforeSiteWideAction(hook: BeforeSiteWideAction): () => void;
+  /**
+   * Runs the {@link BeforeSiteWideAction} for a change to every page that asks no question first
+   * (a theme control's, 4.6), before the change is made. Resolves once it has run; a failed hook
+   * never blocks the change.
+   */
+  beforeUnaskedChange(action: SiteWideAction): Promise<void>;
   /** The question shown, if any; for the dialog. */
   current(): SiteWideAction | null;
   /** The last question asked, kept once answered; the dialog shows it while it fades out. */
@@ -76,7 +89,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
               resolve(false);
               return;
             }
-            void Promise.resolve(before(action)).then(
+            void Promise.resolve(before(action, { asked: true })).then(
               () => resolve(true),
               // A failed hook (a version not saved) never blocks the person's action.
               () => resolve(true),
@@ -88,6 +101,10 @@ export function createSiteWideConfirm(): SiteWideConfirm {
         changed();
       });
     },
+    beforeUnaskedChange: (action) =>
+      Promise.resolve()
+        .then(() => before(action, { asked: false }))
+        .catch(() => undefined),
     setBeforeSiteWideAction(hook) {
       before = hook;
       return () => {

@@ -34,12 +34,13 @@ function handlers(
   clipboard: ElementClipboard,
   session: Parameters<typeof registerClipboardHandlers>[3],
   writeText: (text: string) => void = vi.fn(),
+  copySecret: (secret: string) => Promise<void> = vi.fn(async () => undefined),
 ) {
   const registered = new Map<string, Handler>();
   const ipc = {
     handle: (channel: string, handler: Handler) => registered.set(channel, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerClipboardHandlers(ipc, () => true, clipboard, session, writeText);
+  registerClipboardHandlers(ipc, () => true, clipboard, session, writeText, copySecret);
   return (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
@@ -76,6 +77,16 @@ describe("registerClipboardHandlers (1.25)", () => {
     expect(await invoke("clipboard:copy-text", ".p-4 { padding: 1rem; }")).toBeNull();
     expect(writeText).toHaveBeenCalledWith(".p-4 { padding: 1rem; }");
     await expect(invoke("clipboard:copy-text", 42)).rejects.toThrow("ipc-failed");
+  });
+
+  it("copies a secret, an AI app's key, through the secret clipboard (4.9)", async () => {
+    const copySecret = vi.fn(async () => undefined);
+    const invoke = handlers(clipboard(), session, vi.fn(), copySecret);
+
+    expect(await invoke("clipboard:copy-secret", "k".repeat(43))).toBeNull();
+    expect(copySecret).toHaveBeenCalledWith("k".repeat(43));
+    await expect(invoke("clipboard:copy-secret", "")).rejects.toThrow("ipc-failed");
+    await expect(invoke("clipboard:copy-secret", "k".repeat(257))).rejects.toThrow("ipc-failed");
   });
 
   it("refuses a renderer loaded for a site another one has replaced (R6)", async () => {
