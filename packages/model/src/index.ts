@@ -147,7 +147,19 @@ export type {
 } from "./migrations.js";
 export { MIGRATIONS, migrateSite, migrateSiteWith, SiteFormatError } from "./migrations.js";
 export { findNode, removeNode } from "./node-tree.js";
-export { insertPage, pageSlugFor, pageTitle, slugsInFolder } from "./pages.js";
+export {
+  canDeletePage,
+  deletePageFrom,
+  insertPage,
+  pageNeighbour,
+  pageSlugFor,
+  pagesChangedByDeleting,
+  pageTitle,
+  renamePageIn,
+  slugAfterRename,
+  slugsInFolder,
+  swapPages,
+} from "./pages.js";
 export type { PublishDestination } from "./publish-destinations.js";
 export {
   DESTINATION_NAME_MAX,

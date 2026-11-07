@@ -160,6 +160,8 @@ export const BUSINESS_KINDS = {
     "HousePainter",
     "Locksmith",
     "RoofingContractor",
+    // A garage (4.11, AIB-4): the Trades template and the Workshop theme already suit one.
+    "AutoRepair",
   ],
   services: ["ProfessionalService", "AccountingService", "LegalService", "FinancialService"],
   creative: ["LocalBusiness"],
