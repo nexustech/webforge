@@ -2,7 +2,7 @@ import type { ScreenBox } from "@webforge/editor-ui";
 import { elementOf } from "@webforge/engine/puck-dom";
 
 /** The box of `element` in its own window, or null without one or while it isn't drawn. */
-export const boxOf = (element: Element | null | undefined): ScreenBox | null => {
+const boxOf = (element: Element | null | undefined): ScreenBox | null => {
   if (element === null || element === undefined) return null;
   const box = element.getBoundingClientRect();
   return box.width > 0 && box.height > 0 ? box : null;
@@ -13,7 +13,7 @@ export const boxOf = (element: Element | null | undefined): ScreenBox | null => 
  * frame is scaled by its zoom, so the box is scaled and moved by the frame's place. Null while it
  * isn't there, or is scrolled out of the canvas.
  */
-export function onCanvas(
+function onCanvas(
   document: Document,
   find: (page: Document) => Element | null | undefined,
 ): ScreenBox | null {

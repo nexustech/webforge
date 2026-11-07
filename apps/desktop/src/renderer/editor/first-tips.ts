@@ -6,7 +6,7 @@
  * - `export`: the first export, once its report has closed;
  * - `themeStudio`: the first Theme Studio, once it has closed.
  */
-export const TIP_IDS = ["selection", "contentMode", "mustFix", "export", "themeStudio"] as const;
+const TIP_IDS = ["selection", "contentMode", "mustFix", "export", "themeStudio"] as const;
 
 /** A first-time tip, by id. */
 export type TipId = (typeof TIP_IDS)[number];

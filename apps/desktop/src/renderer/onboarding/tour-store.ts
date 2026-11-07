@@ -3,7 +3,7 @@ import type { OnboardingPreferences } from "../../shared/ipc/prefs.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import { TOUR_STEPS } from "./tour-steps.js";
 
-/** What the tour shows: nothing, the offer (OB-1), or a step, by its place in {@link TOUR_STEPS}. */
+/** What the tour shows: nothing, the offer (OB-1), or a step by its place in {@link TOUR_STEPS}. */
 type TourStage = "closed" | "offer" | number;
 
 /** The tour as the window shows it, and how it moves on. */
@@ -20,8 +20,8 @@ export type Tour = {
 /**
  * The tour's state (OB-1…OB-3): offered when `preferences` say so, the quick start having asked
  * (`offerTour`), and answered in them, never in the site. Taken, it's `done`, and skipping it then
- * doesn't change that; shown, the offer is `skipped` until *Show me around* is chosen. Either way it's never
- * offered again by itself.
+ * doesn't change that; shown, the offer is `skipped` until *Show me around* is chosen. Either way
+ * it's never offered again by itself.
  */
 export function createTour(preferences: PreferencesStore): Tour {
   const onboarding = () => preferences.getState().preferences.onboarding;
