@@ -113,6 +113,7 @@ export const shell = {
   "shell.commandBox.commands": "Commands",
   "shell.commandBox.pages": "Go to page",
   "shell.commandBox.add": "Add",
+  "shell.commandBox.help": "Help",
 
   // Commands (menus and the command box).
   "command.newSite": "New Site…",

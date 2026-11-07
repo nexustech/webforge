@@ -54,7 +54,9 @@ export default defineConfig({
         // Electron wiring of the crash reports; crash-reports.ts and crash-handlers.ts are tested.
         "apps/desktop/src/main/crash-wiring.ts",
         "apps/desktop/src/preload/index.ts",
+        "apps/desktop/src/preload/help.ts",
         "apps/desktop/src/renderer/main.tsx",
+        "apps/desktop/src/renderer/help/main.tsx",
         "apps/desktop/src/worker/export-worker.ts",
         // Exists only in the electron-vite bundle (?base64 imports); the app E2E export covers it.
         "apps/desktop/src/worker/bundled-resources.ts",

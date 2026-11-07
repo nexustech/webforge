@@ -1,6 +1,6 @@
 import type { MenuItemConstructorOptions } from "electron";
 import { describe, expect, it, vi } from "vitest";
-import { applicationMenu } from "./app-menu.js";
+import { applicationMenu, runMenuCommand } from "./app-menu.js";
 
 describe("applicationMenu (F-ED-27)", () => {
   it("gives Windows and Linux no menu, so no zoom or reload keys of its own", () => {
@@ -111,6 +111,57 @@ describe("applicationMenu (F-ED-27)", () => {
     });
     submenu("File")[0]?.click?.({} as never, undefined, {} as never);
     expect(run).toHaveBeenCalledWith("site.settings");
+  });
+
+  it("takes only Undo's and Redo's keys from the page, so no other key reaches the editor from Help (5.4b)", () => {
+    const item = (id: string, accelerator: string) => ({
+      id,
+      label: id,
+      enabled: true,
+      accelerator,
+    });
+    const menu = applicationMenu("darwin", false, {
+      menus: [
+        { id: "file", label: "File", items: [item("site.export", "CmdOrCtrl+E")] },
+        {
+          id: "edit",
+          label: "Edit",
+          items: [
+            item("edit.undo", "CmdOrCtrl+Z"),
+            item("edit.redo", "CmdOrCtrl+Shift+Z"),
+            item("edit.delete", "Backspace"),
+          ],
+        },
+        { id: "help", label: "Help", items: [item("help.open", "F1")] },
+      ],
+      run: vi.fn(),
+    });
+    const registered = (menu ?? [])
+      .flatMap((each) => (each.submenu ?? []) as MenuItemConstructorOptions[])
+      .filter((each) => each.registerAccelerator === true)
+      .map((each) => each.id);
+    expect(registered).toEqual(["edit.undo", "edit.redo"]);
+  });
+
+  it("runs Undo and Redo in the Help window while it's in front, never in the editor behind it (5.4b)", () => {
+    const help = { webContents: { undo: vi.fn(), redo: vi.fn() } };
+    const editor = { webContents: { undo: vi.fn(), redo: vi.fn() } };
+    const runInEditor = vi.fn();
+    const run = (id: string, focused: typeof help | null) =>
+      runMenuCommand(id, { focused: () => focused, isOther: (w) => w === help, runInEditor });
+
+    run("edit.undo", help);
+    run("edit.redo", help);
+    expect(help.webContents.undo).toHaveBeenCalledOnce();
+    expect(help.webContents.redo).toHaveBeenCalledOnce();
+    expect(runInEditor).not.toHaveBeenCalled();
+
+    // Any other command, from Help's menu bar too, is the editor's; so is Undo in the editor.
+    run("site.export", help);
+    run("edit.undo", editor);
+    run("edit.redo", null);
+    expect(runInEditor.mock.calls).toEqual([["site.export"], ["edit.undo"], ["edit.redo"]]);
+    expect(editor.webContents.undo).not.toHaveBeenCalled();
   });
 
   it("shows a submenu of the editor's, with its separators (File › Open Recent, 3.18)", () => {

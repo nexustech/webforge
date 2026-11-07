@@ -42,6 +42,7 @@
     "@webforge/editor-ui": "workspace:*",
     "@webforge/engine": "workspace:*",
     "@webforge/errors": "workspace:*",
+    "@webforge/help": "workspace:*",
     "@webforge/history": "workspace:*",
     "@webforge/i18n": "workspace:*",
     "@webforge/mcp-bridge": "workspace:*",

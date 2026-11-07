@@ -17,6 +17,7 @@ import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
+import { HelpCommands } from "./help/HelpCommands.js";
 import { reportFailure } from "./log.js";
 import { SettingsHost } from "./settings/SettingsHost.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
@@ -303,6 +304,7 @@ export function App({
                 />
               </main>
             </div>
+            <HelpCommands help={api.help} />
             <AboutDialog info={info} />
             <ShortcutSheet />
             <SiteCommands
