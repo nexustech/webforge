@@ -4,7 +4,6 @@ title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
 updated: 2026-11-07
-status: partial
 ---
 
 # AI apps
@@ -17,28 +16,68 @@ This is off until you turn it on. When it's on, only apps on this computer that 
 
 Choose **File › AI apps…** (or search for it in **Search Commands…**) and tick **Let AI apps connect**. Untick it to cut off every app at once.
 
-## Adding an app
+## Connecting Claude Desktop
 
-1. Click **Add AI app**, give it a **Name** such as "Claude Desktop", and click **Add**. Its changes will be named after it.
-2. {appName} shows an **Address** and a **Key**. Copy both into the app now, with **Copy the address** and **Copy the key**: you won't see the key again, and it stops working if the app doesn't use it within 5 minutes.
-3. In the app's settings for MCP servers, add one at that address, with the header `Authorization: Bearer` followed by the key. Your AI app's own help says where those settings are.
+You need Claude Desktop installed on this computer.
 
-The key is cleared from the clipboard a minute after you copy it.
+1. Click **Add AI app**. **Claude Desktop** is already chosen, and named so. Click **Add**.
+2. {appName} shows the app's **Key**. Click **Copy the key**: you won't see it again, and it stops working if Claude Desktop doesn't use it within 5 minutes.
+3. Click **Install in Claude Desktop**. Claude Desktop opens {appName}'s extension and asks whether to install it.
+4. In Claude Desktop, paste the key into **Key**, and install the extension.
+5. Back in {appName}, click **Done**.
 
-A simpler way to connect Claude Desktop is coming in a later version.
+Now ask Claude about your site, or ask it to make a change.
+
+If {appName} says **Nothing opened the extension**, Claude Desktop may not be installed. Install it, then open the file {appName} shows in its folder with Claude Desktop.
+
+If Claude says {appName} isn't answering, open {appName} and check that **Let AI apps connect** is ticked: Claude can reach your site only while {appName} is open. Before it sends the key, the extension checks that it really is {appName} answering. If another program answers in its place, Claude says so, and the key isn't sent.
+
+The key is cleared from the clipboard a minute after you copy it, and Windows doesn't keep it in its clipboard history.
 
 ## Your AI apps
 
 **Your AI apps** lists each app as *Connected*, *Not connected* or *Waiting for its key*. While one is connected, an icon in the title bar says so; click it to open AI apps.
 
-To stop an app reaching your sites, click **Remove *name*** beside it. To use it again, add it again with a new key.
+To stop an app reaching your sites, click **Remove *name*** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, also remove {appName}'s extension in Claude Desktop's settings.
+
+If AI apps says **{appName}'s address for AI apps has changed**, another program took {appName}'s place while it was closed. Remove your AI apps and add them again.
 
 ## What an app can do
 
-An app can read your site's pages, settings and theme, run [Site Check](site-check.md) and open the [Preview](preview.md). It can add, change, move and delete sections and elements, change text, add pages and change the theme.
+An app works on the site you have open in {appName}, and only that one. It can read your site's pages, settings and theme, run [Site Check](site-check.md) and open the [Preview](preview.md). It can add, change, move and delete sections and elements, change text, add pages and change the theme.
 
 Some changes ask you first, with **Allow**:
 - changes that reach every page: the theme, a new page with a menu entry, the Header or Footer, or a shared section;
 - changing where visitors' money or details go, such as a Buy button's payment link, even on one page.
 
-Before an app's first change, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
+Before an app's first change each time it connects, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
+
+An app reads your site's content to work on it, and what it does with it is up to the app: Claude, for example, sends what it reads to Anthropic to answer you. Only add an app you trust with your site.
+
+ChatGPT can't connect to {appName} yet.
+
+## For developers: other AI apps
+
+An app that connects to an MCP server at an address, such as Claude Code, Cursor or VS Code, connects to {appName} directly.
+
+1. Click **Add AI app**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
+2. {appName} shows an **Address** and a **Key**. Copy both with **Copy the address** and **Copy the key**. The address is `http://127.0.0.1:<port>/mcp`, on this computer only.
+3. In the app's settings for MCP servers, add an HTTP (Streamable HTTP) server at that address, with this header:
+
+   ```
+   Authorization: Bearer <key>
+   ```
+
+   For Claude Code, for example:
+
+   ```
+   claude mcp add --transport http my-site http://127.0.0.1:<port>/mcp --header "Authorization: Bearer <key>"
+   ```
+
+Unlike Claude Desktop's extension, these apps can't check who answers at the address. While {appName} is closed, another program on this computer could answer there and get the key, so turn {appName}'s server off in the app while {appName} is closed.
+
+Some things to know:
+- The port is chosen once and kept, so the address stays the same each time {appName} starts.
+- Requests from web pages are refused, as is any request without an added app's key.
+- The key goes only in the `Authorization` header, never in the address.
+- {appName} never logs what an app sends or reads, only which tool it used.
