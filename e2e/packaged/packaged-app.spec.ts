@@ -243,6 +243,33 @@ test("ships the templates beside app.asar, and New Site lists them (2.14a)", asy
   );
 });
 
+test("ships the bridge beside app.asar, which Node.js starts as Claude Desktop does (4.9, ADR 0021)", async () => {
+  const dir = resourcesDir();
+  test.skip(dir === undefined, "Linux is not a release target");
+  if (dir === undefined) return;
+  const bridge = join(dir, "bridge", "webforge-bridge.mjs");
+  expect(existsSync(bridge)).toBe(true);
+
+  // Without its extension's settings, it exits 1 and says nothing: Node.js loaded it whole (a file
+  // that didn't load would say why on stderr).
+  // Nor the test runner's colour settings, which Node.js warns about when both are set.
+  const env = Object.fromEntries(
+    Object.entries(process.env).filter(
+      ([name]) => !name.startsWith("WEBFORGE_") && name !== "FORCE_COLOR" && name !== "NO_COLOR",
+    ),
+  );
+  const run = spawn(process.execPath, [bridge], { env, stdio: ["ignore", "pipe", "pipe"] });
+  let output = "";
+  run.stdout?.on("data", (chunk: Buffer) => {
+    output += chunk.toString("utf8");
+  });
+  run.stderr?.on("data", (chunk: Buffer) => {
+    output += chunk.toString("utf8");
+  });
+  const [code] = (await once(run, "exit")) as [number | null];
+  expect({ code, output }).toEqual({ code: 1, output: "" });
+});
+
 test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.3, ADR 0006)", async () => {
   test.skip(child === undefined, "Needs the running packaged app");
   const server = await startSftpServer({ user: "baker", password: "test-only-password" });

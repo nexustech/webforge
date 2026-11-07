@@ -50,6 +50,8 @@ The server's checks (decision 1) protect Webforge from its callers. Nothing in t
      - the bridge compares that in constant time. If it doesn't match, it sends nothing more and tells Claude that Webforge isn't answering at its address.
 
      So a squatter gets neither the key nor a chance to describe tools. The proof is no use to a caller of the server, which still needs the key.
+
+     As built (4.9, part 4): the challenge is `POST /mcp/proof` with the app's id and the nonce, and the HMAC covers the address too (`127.0.0.1:<port>`), so a squatter on Webforge's old port can't pass the challenge on to Webforge at a new one. An unknown app's challenge is answered under a decoy proof. The bridge checks each TCP connection it opens, and sends the key only on the connection it checked: if Webforge quits mid-session and another program takes the port, the next message goes nowhere until that check passes.
    - *Add AI app* → *Claude Desktop* writes an `.mcpb` for that pairing. It holds the bridge and a manifest with the address, the app's name and the server proof. The proof isn't the key: it lets the bridge recognise the server, and grants nothing on it. The file sits in the person's own profile, with the rest of Claude's extensions, out of another account's reach. Webforge then opens the file, and Claude Desktop shows its install dialog.
    - The key is the extension's one `sensitive` setting. The person pastes it there, and Claude Desktop stores it securely. The key is never written into the file, which would leave it in plain text in Downloads and in Claude's extensions folder.
    - It runs on Claude Desktop's own Node.js, so `RunAsNode` stays off and Webforge ships no Node binary.

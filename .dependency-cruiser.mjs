@@ -154,6 +154,9 @@ export default {
           // Declared subpath export: @webforge/engine/puck-dom (Puck's DOM contract, without React or
           // Puck, for the canvas styles worker and the E2E tests, A19 and A20).
           "^packages/engine/src/puck/puck-dom\\.ts$",
+          // Declared subpath export: @webforge/mcp-bridge/build (bundles the bridge with esbuild,
+          // for the desktop app's build and the tests that run it bundled, ADR 0021).
+          "^packages/mcp-bridge/src/build\\.ts$",
         ],
       },
     },

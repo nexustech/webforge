@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
+import { buildBridge } from "@webforge/mcp-bridge/build";
 import { defineConfig } from "electron-vite";
 import type { Plugin } from "vite";
 import { buildContentSecurityPolicy } from "./src/shared/content-security-policy.js";
@@ -129,6 +130,20 @@ function bundleTemplates(): Plugin {
   };
 }
 
+/**
+ * Bundles the bridge (ADR 0021) into `out/bridge/webforge-bridge.mjs`, which electron-builder puts
+ * beside app.asar (`extraResources`): *Install in Claude Desktop* writes it into each extension.
+ */
+function bundleBridge(): Plugin {
+  const root = fileURLToPath(new URL(".", import.meta.url));
+  return {
+    name: "webforge:bundle-bridge",
+    async closeBundle() {
+      await buildBridge(join(root, "out", "bridge", "webforge-bridge.mjs"));
+    },
+  };
+}
+
 export default defineConfig(({ command }) => {
   // The dev server injects inline scripts and styles (HMR, React Refresh); a per-run nonce lets
   // them through without weakening the policy to 'unsafe-inline'.
@@ -136,7 +151,7 @@ export default defineConfig(({ command }) => {
 
   return {
     main: {
-      plugins: [inlineBase64(), bundleFonts(), bundleTemplates()],
+      plugins: [inlineBase64(), bundleFonts(), bundleTemplates(), bundleBridge()],
       build: {
         rolldownOptions: {
           // The export worker runs in its own utility process (07); it bundles the pipeline. The

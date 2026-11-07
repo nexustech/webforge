@@ -1,5 +1,6 @@
 import type { IpcMain } from "electron";
-import type { McpAddResult, McpStatus } from "../shared/ipc/mcp.js";
+import type { McpAddResult, McpInstallResult, McpStatus } from "../shared/ipc/mcp.js";
+import type { ClaudeExtensions } from "./claude-extension.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { MCP_HOST, MCP_PATH } from "./mcp-listener.js";
@@ -27,13 +28,14 @@ async function statusOf(service: McpService): Promise<McpStatus> {
 
 /**
  * Registers the `mcp` IPC calls (4.9): AI apps on or off, paired, listed and removed, through
- * `service`. A key leaves main once, in *Add AI app*'s answer, for the person to copy; nothing of
- * it is logged.
+ * `service`, and Claude Desktop's extension written through `extensions`. A key leaves main once,
+ * in *Add AI app*'s answer, for the person to copy; nothing of it is logged.
  */
 export function registerMcpHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   service: McpService,
+  extensions: Pick<ClaudeExtensions, "install" | "remove">,
 ): void {
   registerIpcHandler(ipc, "mcpStatus", isTrustedSender, () => statusOf(service));
   registerIpcHandler(ipc, "mcpSetEnabled", isTrustedSender, async (enabled) => {
@@ -63,8 +65,37 @@ export function registerMcpHandlers(
       return { status: "failed" };
     }
   });
+  registerIpcHandler(
+    ipc,
+    "mcpInstallClaude",
+    isTrustedSender,
+    async (id): Promise<McpInstallResult> => {
+      const { port } = await service.status();
+      if (port === null) return { status: "off" };
+      try {
+        // Not listed: removed, or its key waited too long and it went.
+        const app = (await service.list()).find((each) => each.id === id);
+        const proof = app === undefined ? null : await service.proofOf(id);
+        if (app === undefined || proof === null) return { status: "unknown" };
+        const { outcome } = await extensions.install({
+          appId: id,
+          address: addressAt(port),
+          proof,
+          pairedAt: app.pairedAt,
+        });
+        return { status: outcome };
+      } catch (error) {
+        logFailure("mcp claude extension", error);
+        return { status: "failed" };
+      }
+    },
+  );
   registerIpcHandler(ipc, "mcpRemove", isTrustedSender, async (id) => {
     await service.remove(id);
+    // Its extension goes too: its proof is no use without the app, but nothing is left behind.
+    await extensions
+      .remove(id)
+      .catch((error: unknown) => logFailure("mcp claude extension", error));
     return statusOf(service);
   });
 }

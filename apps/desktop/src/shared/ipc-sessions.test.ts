@@ -63,6 +63,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "mcp:status": "AI apps, which are the app's, whichever site is open",
   "mcp:set-enabled": "AI apps, which are the app's, whichever site is open",
   "mcp:add": "AI apps, which are the app's, whichever site is open",
+  "mcp:install-claude": "an AI app's Claude Desktop extension, the app's, whichever site is open",
   "mcp:remove": "AI apps, which are the app's, whichever site is open",
   "prefs:get": "the person's preferences",
   "prefs:set": "the person's preferences",

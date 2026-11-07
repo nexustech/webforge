@@ -12,6 +12,7 @@
     { "path": "./packages/help" },
     { "path": "./packages/history" },
     { "path": "./packages/i18n" },
+    { "path": "./packages/mcp-bridge" },
     { "path": "./packages/model" },
     { "path": "./packages/pipeline" },
     { "path": "./packages/publish" },

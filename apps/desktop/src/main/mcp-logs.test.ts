@@ -85,6 +85,7 @@ describe("what AI apps send and get, kept out of the logs (4.9, security review)
     listener = await startMcpListener({
       port: 0,
       authenticate: async (key) => (key === KEY ? CLAUDE : undefined),
+      proofOf: async () => null,
       serverFor: (app) =>
         createMcpServer({ name: "Webforge", version: "1" }, app, (asked) =>
           limits.ask(app.id, asked),

@@ -46,7 +46,6 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 **Still to come**, written with the features as they merge:
 - *Version History*: publishing an earlier version again (4.6b)
 - *Publish*: Netlify (4.4b)
-- *AI apps*: connecting Claude Desktop without copying a key (4.9)
 
 ## Writing a help page
 

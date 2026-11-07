@@ -6,5 +6,6 @@ export const mcpApi = (call: Call): McpApi => ({
   status: () => call("mcpStatus"),
   setEnabled: (enabled) => call("mcpSetEnabled", enabled),
   add: (name) => call("mcpAdd", name),
+  installClaude: (id) => call("mcpInstallClaude", id),
   remove: (id) => call("mcpRemove", id),
 });
