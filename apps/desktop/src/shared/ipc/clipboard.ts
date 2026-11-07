@@ -92,6 +92,16 @@ export const clipboardChannels = {
     request: z.tuple([z.string().max(1_000_000)]),
     response: z.null(),
   },
+  /**
+   * Puts a secret, an AI app's key (4.9), on the system clipboard: kept out of clipboard history
+   * and cloud clipboard on Windows, and cleared in a minute if the clipboard still holds it.
+   * Never logged.
+   */
+  copySecret: {
+    channel: "clipboard:copy-secret",
+    request: z.tuple([z.string().min(1).max(256)]),
+    response: z.null(),
+  },
 } as const;
 
 /** `window.webforge.clipboard`. */
@@ -105,4 +115,6 @@ export interface ClipboardApi {
   read(sessionId: string): Promise<ClipboardReadResult>;
   /** Puts `text` on the system clipboard. */
   copyText(text: string): Promise<null>;
+  /** Puts a secret on the system clipboard, out of its history, for a minute. */
+  copySecret(secret: string): Promise<null>;
 }

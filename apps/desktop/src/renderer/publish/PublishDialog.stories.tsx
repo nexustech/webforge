@@ -61,6 +61,7 @@ const meta = {
     sessionId: () => "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
     notify: () => undefined,
     onSaved: () => undefined,
+    onPublish: () => undefined,
     onClose: () => undefined,
   },
 } satisfies Meta<typeof PublishDialog>;

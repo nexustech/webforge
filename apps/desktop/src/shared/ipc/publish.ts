@@ -324,6 +324,15 @@ export const publishChannels = {
     request: z.tuple([operationIdSchema]),
     response: z.null(),
   },
+  /**
+   * Opens the address publish `operationId` went live at in the default browser: only an address
+   * main published to itself, never one from the window. False if there is none, or it couldn't.
+   */
+  publishOpenLive: {
+    channel: "publish:open-live",
+    request: z.tuple([operationIdSchema]),
+    response: z.boolean(),
+  },
 } as const;
 
 /** Events main sends the window about publishing. */
@@ -367,6 +376,8 @@ export interface PublishApi {
   ): Promise<PublishResult>;
   /** Cancels publish `operationId`. */
   cancel(operationId: string): Promise<null>;
+  /** Opens the address publish `operationId` went live at; false if it couldn't. */
+  openLive(operationId: string): Promise<boolean>;
   /** Calls `listener` with each publish's progress; returns how to stop. */
   onProgress(listener: (operationId: string, progress: PublishProgress) => void): () => void;
   /** Test connection for destination `id` as edited, with the sign-in saved for it. */

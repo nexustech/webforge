@@ -14,8 +14,8 @@ const EPHEMERAL = { from: 49152, to: 65535 } as const;
 /** How many ports to try when the remembered one is taken. */
 const PORT_TRIES = 5;
 
-/** What Preferences › AI apps shows of the server. */
-type McpStatus = {
+/** What AI apps shows of the server. */
+export type McpServiceStatus = {
   readonly enabled: boolean;
   /** The port it listens on, while it does. */
   readonly port: number | null;
@@ -39,7 +39,7 @@ export type McpService = {
   /** Removes an app, ending its connections at once. */
   remove(id: string): Promise<void>;
   list(): Promise<readonly PairedApp[]>;
-  status(): Promise<McpStatus>;
+  status(): Promise<McpServiceStatus>;
   /** Stops listening: Webforge is quitting. */
   close(): Promise<void>;
 };

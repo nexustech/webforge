@@ -24,6 +24,7 @@ export const COMMAND_IDS = {
   pageSettings: "page.settings",
   customCode: "site.customCode",
   settings: "app.settings",
+  aiApps: "app.aiApps",
   publish: "site.publish",
   saveVersion: "site.saveVersion",
   pasteLinked: "edit.pasteLinked",
