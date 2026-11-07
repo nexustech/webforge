@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_PREFERENCES, type OnboardingPreferences } from "../../shared/ipc/prefs.js";
 import { WINDOW_AREAS } from "../areas.js";
 import type { WindowContext } from "../editor/areas.js";
+import { createFirstTips } from "../editor/first-tips.js";
 import { bundledHelpLibrary } from "../help/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
@@ -18,14 +19,17 @@ import { TOUR_STEPS } from "./tour-steps.js";
 afterEach(cleanup);
 
 /** The window with the onboarding area registered, the tour as `tour` left it. */
-function setUp(tour: OnboardingPreferences["tour"] = "new") {
+function setUp(
+  tour: OnboardingPreferences["tour"] = "new",
+  onboarding: Partial<OnboardingPreferences> = {},
+) {
   const registries = registriesForTest();
   const saved = vi.fn(async () => undefined);
   const preferences = createPreferencesStore(
     {
       preferences: {
         ...DEFAULT_PREFERENCES,
-        onboarding: { ...DEFAULT_PREFERENCES.onboarding, tour },
+        onboarding: { ...DEFAULT_PREFERENCES.onboarding, tour, ...onboarding },
       },
     },
     { preferences: saved },
@@ -33,16 +37,29 @@ function setUp(tour: OnboardingPreferences["tour"] = "new") {
   const session = sessionWith();
   const windowDialogs = createWindowDialogs();
   const open = vi.fn(async () => true);
+  const places = createFirstTips();
   const remove = onboardingArea.register({
     ...registries,
     preferences,
     session,
     windowDialogs,
+    tips: places,
     api: fakePreloadApi({ help: { open } }),
   } as unknown as WindowContext);
   render(<WindowDialogs registry={windowDialogs} />);
   const tourState = () => preferences.getState().preferences.onboarding.tour;
-  return { commands: registries.commands, session, open, remove, tourState, saved };
+  const seen = () => preferences.getState().preferences.onboarding.tipsSeen;
+  return {
+    commands: registries.commands,
+    session,
+    open,
+    remove,
+    tourState,
+    saved,
+    places,
+    preferences,
+    seen,
+  };
 }
 
 const card = () => screen.getByRole("region");
@@ -57,6 +74,8 @@ describe("the tour (5.4a, OB-1…OB-3)", () => {
     expect(card().getAttribute("aria-labelledby")).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Want a quick tour?" })).toBeTruthy();
     expect(document.activeElement).toBe(card());
+    // Shown once: left unanswered (the window closes), it isn't offered again (#787 review).
+    expect(tourState()).toBe("skipped");
     await userEvent.click(screen.getByRole("button", { name: "Not now" }));
     expect(screen.queryByRole("region")).toBeNull();
     expect(tourState()).toBe("skipped");
@@ -133,6 +152,87 @@ describe("the tour (5.4a, OB-1…OB-3)", () => {
     const { commands, remove } = setUp("offer");
     remove();
     expect(commands.get(COMMAND_IDS.tour)).toBeUndefined();
+  });
+});
+
+/** The first element on the page shown. */
+const firstElement = (session: ReturnType<typeof sessionWith>) =>
+  session.history.document.getState().pages[session.ui.getState().pageId]?.doc.content[0]?.props
+    .id ?? null;
+
+describe("the first-time tips (5.4a, OB-4…OB-6)", () => {
+  it("shows a tip the first time its place is reached, once, closed with Got it", async () => {
+    const { session, seen } = setUp();
+    act(() => session.select(firstElement(session)));
+    expect(screen.getByRole("heading", { name: "Change what you've selected" })).toBeTruthy();
+    expect(card().textContent).toContain("Press Enter, or Edit on its bar");
+    expect(seen()).toEqual(["selection"]);
+    await userEvent.click(screen.getByRole("button", { name: "Got it" }));
+    expect(screen.queryByRole("region")).toBeNull();
+    act(() => session.select(null));
+    act(() => session.select(firstElement(session)));
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+
+  it("shows the others where the areas say, and Content mode's on the first switch", async () => {
+    const { places, preferences, seen } = setUp();
+    act(() => places.reached("export"));
+    expect(screen.getByRole("heading", { name: "Your website is a folder" })).toBeTruthy();
+    // It leaves the focus where it was, and is read out as it appears.
+    expect(card().contains(document.activeElement)).toBe(false);
+    expect(card().getAttribute("aria-live")).toBe("polite");
+    await userEvent.click(screen.getByRole("button", { name: "Got it" }));
+    expect(screen.queryByRole("region")).toBeNull();
+    act(() => preferences.changeMode("content"));
+    expect(screen.getByRole("heading", { name: "Content mode" })).toBeTruthy();
+    expect(seen()).toEqual(["export", "contentMode"]);
+  });
+
+  it("shows one at a time, never over the tour; one that can't show waits for the next time", async () => {
+    const { places, commands, seen } = setUp();
+    act(() => places.reached("mustFix"));
+    // Another while one shows: not shown, not seen.
+    act(() => places.reached("themeStudio"));
+    expect(seen()).toEqual(["mustFix"]);
+    // The tour takes the tip's place, and no tip shows over it.
+    await act(async () => {
+      await commands.run(COMMAND_IDS.tour);
+    });
+    expect(screen.getByRole("heading", { name: "Change your words" })).toBeTruthy();
+    act(() => places.reached("themeStudio"));
+    expect(screen.queryByRole("heading", { name: "Themes change every page" })).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    act(() => places.reached("themeStudio"));
+    expect(screen.getByRole("heading", { name: "Themes change every page" })).toBeTruthy();
+  });
+
+  it("closes once the person moves on: a change, another selection, or a mode", () => {
+    const { places, session, preferences } = setUp();
+    act(() => places.reached("export"));
+    act(() => session.select(firstElement(session)));
+    // The selection takes the export tip's place: it's seen once it shows.
+    expect(screen.queryByRole("heading", { name: "Your website is a folder" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Change what you've selected" })).toBeTruthy();
+    act(() => session.select(null));
+    expect(screen.queryByRole("region")).toBeNull();
+    act(() => places.reached("themeStudio"));
+    act(() => preferences.changeMode("content"));
+    expect(screen.queryByRole("heading", { name: "Themes change every page" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Content mode" })).toBeTruthy();
+    act(() =>
+      session.edit("props", "Edited Header text", (draft) => {
+        const shown = draft.pages[session.ui.getState().pageId];
+        if (shown !== undefined) shown.title = "Today";
+      }),
+    );
+    expect(screen.queryByRole("region")).toBeNull();
+  });
+
+  it("shows none while Show tips is off", () => {
+    const { places, seen } = setUp("new", { showTips: false });
+    act(() => places.reached("export"));
+    expect(screen.queryByRole("region")).toBeNull();
+    expect(seen()).toEqual([]);
   });
 });
 

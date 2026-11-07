@@ -27,4 +27,27 @@ export const onboarding = {
   "tour.next": "Next",
   "tour.skip": "Skip tour",
   "tour.done": "Done",
+  // First-time tips (OB-4), each shown once, the first time the person reaches its place.
+  "tip.label": "Tip",
+  "tip.gotIt": "Got it",
+  "tip.selection.title": "Change what you've selected",
+  "tip.selection.text":
+    "Press Enter, or Edit on its bar, to change its text. The bar also moves, hides, copies and deletes it.",
+  "tip.contentMode.title": "Content mode",
+  "tip.contentMode.text":
+    "Content mode locks the layout, so you can change the words and pictures without moving anything.",
+  "tip.mustFix.title": "Must fix",
+  "tip.mustFix.text": "A Must fix stops Export and Publish until it's fixed. Click it to go there.",
+  "tip.export.title": "Your website is a folder",
+  "tip.export.text":
+    "Your website is a folder of files. Upload all of it to your web host, keeping the folders as they are.",
+  "tip.themeStudio.title": "Themes change every page",
+  "tip.themeStudio.text": "A theme changes every page at once. Undo takes it back.",
+  // Settings › Interface (OB-5).
+  "settings.interface.showTips": "Show tips",
+  "settings.interface.showTipsHelp":
+    "A short tip the first time you reach some parts of {appName}, each shown once.",
+  "settings.interface.showAgain": "Show the tour and tips again",
+  "settings.interface.showAgainHelp":
+    "The tour is offered when a site next opens, and each tip shows once more.",
 } as const;
