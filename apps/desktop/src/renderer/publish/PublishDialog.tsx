@@ -63,6 +63,8 @@ export type PublishDialogProps = {
   readonly notify: (message: string) => void;
   /** A destination was saved: Site Settings may take its web address. */
   readonly onSaved: (destination: PublishDestination) => void;
+  /** Publishes the site to `destination` (4.5); the dialog closes as it starts. */
+  readonly onPublish: (destination: PublishDestination) => void;
   readonly onClose: () => void;
 };
 
@@ -75,7 +77,8 @@ type Tests = Readonly<Record<string, ConnectionResult | "testing">>;
 /**
  * Publish (F-PB-1, 4.4a): the site's publish destinations, several allowed, each with its name,
  * host and folder, and whether this computer has its password. Add one, edit it, test it or
- * remove it; 4.3's form adds and edits them. 4.5 adds publishing to one.
+ * remove it; 4.3's form adds and edits them. Publish, each one's first action, publishes the site
+ * there (4.5) once this computer has its password.
  */
 export function PublishDialog({
   open,
@@ -83,6 +86,7 @@ export function PublishDialog({
   sessionId,
   notify,
   onSaved,
+  onPublish,
   onClose,
 }: PublishDialogProps) {
   const [listed, setListed] = useState<readonly ListedDestination[] | undefined>();
@@ -194,6 +198,7 @@ export function PublishDialog({
                       })),
                     );
                   }}
+                  onPublish={() => onPublish(each.destination)}
                   onEdit={() => setEditing({ listed: each })}
                   onRemove={() => setRemoving(each)}
                 />
@@ -268,12 +273,14 @@ export function PublishDialog({
 function DestinationRow({
   listed: { destination, signIn },
   test,
+  onPublish,
   onTest,
   onEdit,
   onRemove,
 }: {
   readonly listed: ListedDestination;
   readonly test: ConnectionResult | "testing" | undefined;
+  readonly onPublish: () => void;
   readonly onTest: () => void;
   readonly onEdit: () => void;
   readonly onRemove: () => void;
@@ -310,10 +317,17 @@ function DestinationRow({
           )}
         </p>
       </div>
-      {/* 4.5 puts Publish here, as each destination's first action. */}
       <div className="flex flex-wrap gap-2">
         {fileTransfer && (
           <>
+            <Button
+              size="sm"
+              aria-label={t("publish.run.publish.label", { name })}
+              disabled={signIn !== "saved"}
+              onClick={onPublish}
+            >
+              {t("publish.run.publish")}
+            </Button>
             <Button
               size="sm"
               variant="outline"

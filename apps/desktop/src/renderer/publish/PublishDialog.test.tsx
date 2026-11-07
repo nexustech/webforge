@@ -72,6 +72,7 @@ function fakePublish(listed: ListedDestination[]) {
 function setUp(listed: ListedDestination[] = [], publish = fakePublish(listed)) {
   const notify = vi.fn();
   const onSaved = vi.fn();
+  const onPublish = vi.fn();
   render(
     <PublishDialog
       open
@@ -79,11 +80,12 @@ function setUp(listed: ListedDestination[] = [], publish = fakePublish(listed)) 
       sessionId={() => SESSION}
       notify={notify}
       onSaved={onSaved}
+      onPublish={onPublish}
       onClose={vi.fn()}
     />,
   );
   const user = userEvent.setup({ delay: null });
-  return { publish, notify, onSaved, user };
+  return { publish, notify, onSaved, onPublish, user };
 }
 
 describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
@@ -104,6 +106,23 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       (second.getByRole("button", { name: "Test the connection to Old host" }) as HTMLButtonElement)
         .disabled,
     ).toBe(true);
+  });
+
+  it("publishes to a destination as its first action, once its password is here (4.5)", async () => {
+    const { onPublish, user } = setUp([
+      { destination: live, signIn: "saved", trust: { hostKey: HOST_KEY } },
+      { destination: old, signIn: "changed", trust: {} },
+    ]);
+
+    const rows = await screen.findAllByRole("listitem");
+    const first = within(rows[0] as HTMLElement);
+    const second = within(rows[1] as HTMLElement);
+    expect(first.getAllByRole("button")[0]?.getAttribute("aria-label")).toBe("Publish to Live");
+    expect(
+      (second.getByRole("button", { name: "Publish to Old host" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    await user.click(screen.getByRole("button", { name: "Publish to Live" }));
+    expect(onPublish).toHaveBeenCalledWith(live);
   });
 
   it("says when there are none yet", async () => {

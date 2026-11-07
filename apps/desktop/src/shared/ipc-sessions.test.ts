@@ -83,6 +83,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "publish:readHostKey": "a server's key, nothing of the site",
   "publish:chooseKeyFile": "a key file the person chooses, nothing of the site",
   "publish:cancel": "cancels whichever publish is under way",
+  "publish:open-live": "opens where a publish went live, by its operation, nothing of the site",
 };
 
 const channels = Object.values(ipcContract);

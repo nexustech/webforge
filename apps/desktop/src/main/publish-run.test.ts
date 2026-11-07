@@ -78,8 +78,17 @@ function handlers({
     }),
   };
   const sendProgress = vi.fn();
+  const openExternal = vi.fn(async (_url: string) => undefined);
+  // What happened, in order: the window's flush, then each read of the site's file.
+  const order: string[] = [];
+  const flush = vi.fn(async () => {
+    order.push("flush");
+  });
   const siteStore: Pick<SiteStore, "withStore"> = {
-    withStore: async (_kind, work, none) => (siteOpen ? work(store) : none("no-site")),
+    withStore: async (_kind, work, none) => {
+      order.push("read");
+      return siteOpen ? work(store) : none("no-site");
+    },
   };
   const deps: PublishRunDeps = {
     site: () => ({
@@ -100,6 +109,8 @@ function handlers({
     runner,
     sendProgress,
     versionsKept: () => 30,
+    flush,
+    openExternal,
     now: () => new Date("2026-11-01T14:02:00Z"),
   };
   const registered = new Map<string, Handler>();
@@ -111,7 +122,7 @@ function handlers({
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
   const publish = (replaceOtherSite = false) =>
     invoke("publish:publish", SESSION, destination.id, OPERATION, { replaceOtherSite });
-  return { store, runner, sendProgress, invoke, publish };
+  return { store, runner, sendProgress, invoke, publish, order, openExternal };
 }
 
 /** The job the runner was given. */
@@ -162,6 +173,12 @@ describe("Publish (4.5, ADR 0018)", () => {
     expect(store.readVersion(version?.id ?? "")?.map(({ id, kind }) => ({ id, kind }))).toEqual(
       manifest.map(({ id, kind }) => ({ id, kind })),
     );
+  });
+
+  it("has the window save what the person sees before it reads the site (A4)", async () => {
+    const { order, publish } = handlers();
+    await publish();
+    expect(order.slice(0, 2)).toEqual(["flush", "read"]);
   });
 
   it("builds only the code its owner trusts here (#649)", async () => {
@@ -223,6 +240,16 @@ describe("Publish (4.5, ADR 0018)", () => {
     const { store, publish } = handlers({ saveFails: true });
     expect(await publish()).toMatchObject({ status: "published", versionSaved: false });
     expect(store.listVersions()).toEqual([]);
+  });
+
+  it("opens only where a publish of its own went live (Open, 4.5)", async () => {
+    const { invoke, publish, openExternal } = handlers();
+    expect(await invoke("publish:open-live", OPERATION)).toBe(false);
+    await publish();
+    expect(await invoke("publish:open-live", OPERATION)).toBe(true);
+    expect(openExternal).toHaveBeenCalledWith("https://rosas.example/");
+    expect(await invoke("publish:open-live", "2e3f4051-6c7d-4e8f-9091-a1b2c3d4e5f6")).toBe(false);
+    expect(openExternal).toHaveBeenCalledOnce();
   });
 
   it("answers for no other site, and no destination it doesn't have", async () => {
