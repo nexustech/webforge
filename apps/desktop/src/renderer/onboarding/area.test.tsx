@@ -178,7 +178,10 @@ describe("the first-time tips (5.4a, OB-4…OB-6)", () => {
     const { places, preferences, seen } = setUp();
     act(() => places.reached("export"));
     expect(screen.getByRole("heading", { name: "Your website is a folder" })).toBeTruthy();
-    await userEvent.keyboard("{Escape}");
+    // It leaves the focus where it was, and is read out as it appears.
+    expect(card().contains(document.activeElement)).toBe(false);
+    expect(card().getAttribute("aria-live")).toBe("polite");
+    await userEvent.click(screen.getByRole("button", { name: "Got it" }));
     expect(screen.queryByRole("region")).toBeNull();
     act(() => preferences.changeMode("content"));
     expect(screen.getByRole("heading", { name: "Content mode" })).toBeTruthy();
@@ -201,6 +204,28 @@ describe("the first-time tips (5.4a, OB-4…OB-6)", () => {
     await userEvent.keyboard("{Escape}");
     act(() => places.reached("themeStudio"));
     expect(screen.getByRole("heading", { name: "Themes change every page" })).toBeTruthy();
+  });
+
+  it("closes once the person moves on: a change, another selection, or a mode", () => {
+    const { places, session, preferences } = setUp();
+    act(() => places.reached("export"));
+    act(() => session.select(firstElement(session)));
+    // The selection takes the export tip's place: it's seen once it shows.
+    expect(screen.queryByRole("heading", { name: "Your website is a folder" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Change what you've selected" })).toBeTruthy();
+    act(() => session.select(null));
+    expect(screen.queryByRole("region")).toBeNull();
+    act(() => places.reached("themeStudio"));
+    act(() => preferences.changeMode("content"));
+    expect(screen.queryByRole("heading", { name: "Themes change every page" })).toBeNull();
+    expect(screen.getByRole("heading", { name: "Content mode" })).toBeTruthy();
+    act(() =>
+      session.edit("props", "Edited Header text", (draft) => {
+        const shown = draft.pages[session.ui.getState().pageId];
+        if (shown !== undefined) shown.title = "Today";
+      }),
+    );
+    expect(screen.queryByRole("region")).toBeNull();
   });
 
   it("shows none while Show tips is off", () => {

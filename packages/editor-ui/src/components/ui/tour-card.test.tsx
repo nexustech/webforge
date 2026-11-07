@@ -48,6 +48,21 @@ describe("TourCard (OB-3)", () => {
     expect(onEscape).toHaveBeenCalledOnce();
   });
 
+  it("leaves the focus where it is with takeFocus off, and is read out instead", () => {
+    render(
+      <>
+        <button type="button">Your page</button>
+        <TourCard title="Content mode" takeFocus={false} onEscape={vi.fn()} actions={null}>
+          <p>Content mode locks the layout.</p>
+        </TourCard>
+      </>,
+    );
+    expect(document.activeElement).toBe(document.body);
+    expect(screen.getByRole("region", { name: "Content mode" }).getAttribute("aria-live")).toBe(
+      "polite",
+    );
+  });
+
   it("takes the focus again for the next card only if the last one had it", async () => {
     const { rerender } = render(<Editor step="one" onEscape={vi.fn()} />);
     rerender(<Editor step="two" onEscape={vi.fn()} />);

@@ -118,7 +118,7 @@ test("offers the tour after the quick start, and shows the three steps beside th
 });
 
 test("shows each first-time tip once: the first selection, Content mode, and after Theme Studio", async () => {
-  app = await launchDesktopApp({ userDataDir: join(dir, "user-data") });
+  app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), tips: true });
   const page = await app.firstWindow();
   await waitForCanvas(page);
   // A site not made by the quick start: no tour offered.
@@ -137,9 +137,10 @@ test("shows each first-time tip once: the first selection, Content mode, and aft
   await page.getByRole("radio", { name: "Content", exact: true }).click();
   const content = tourCard(page, "Content mode");
   await expect(content).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(content).toHaveCount(0);
+  // A tip never takes the focus from what the person is doing; it closes once they move on.
+  await expect(content).not.toBeFocused();
   await page.getByRole("radio", { name: "Design", exact: true }).click();
+  await expect(content).toHaveCount(0);
 
   // Theme Studio's, once it has closed.
   await chooseFromMenu(app, page, "View", "Theme Studio…");

@@ -14,7 +14,8 @@ export type TipCardProps = {
 
 /**
  * The first-time tip shown, if any (OB-4): a card as the tour's are, beside its place or centred,
- * closed with *Got it* or Esc.
+ * closed with *Got it* or Esc. It leaves the focus where it is, and is read out as it appears; F6
+ * reaches it.
  */
 export function TipCard({ tips, session }: TipCardProps) {
   const tip = useStore(tips.shown);
@@ -32,6 +33,8 @@ export function TipCard({ tips, session }: TipCardProps) {
           : () => anchor(document, session.ui.getState().nodeId ?? null)
       }
       focusKey={tip}
+      // Shown as the person works: it never takes the focus from what they're doing.
+      takeFocus={false}
       onEscape={tips.dismiss}
       actions={
         <Button size="sm" onClick={tips.dismiss}>
