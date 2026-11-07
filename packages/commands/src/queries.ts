@@ -1,6 +1,13 @@
 import { isSharedCopy, type NodeDoc, type SiteDoc } from "@webforge/model";
 import { CATALOGUE, fieldValueSchema } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
+import {
+  componentDetail,
+  componentSummaries,
+  jsonSchema,
+  type Place,
+  usableComponents,
+} from "./catalogue.js";
 import { isSlot, type Location, locate, locationSchema, nodesAt } from "./locations.js";
 
 /** A node in a page tree: what it is, and what its slots hold. */
@@ -44,13 +51,15 @@ function treeNode(node: NodeDoc, site: SiteDoc): TreeNode {
   };
 }
 
-/** A field's value schema as JSON Schema, for an AI app to read; none when it can't be one. */
-function jsonSchema(schema: z.ZodType): unknown {
-  try {
-    return z.toJSONSchema(schema, { unrepresentable: "any" });
-  } catch {
-    return undefined;
-  }
+/**
+ * Why a query has nothing to give, in words of its own: a query's `read` answers with one where
+ * "that isn't there" wouldn't help (a type there isn't lists the ones there are).
+ */
+export class QueryRefusal {
+  constructor(
+    readonly status: "invalid" | "not-found",
+    readonly message: string,
+  ) {}
 }
 
 /** The queries AI apps can make (F-AI-1), each with its input and what it reads. */
@@ -127,6 +136,33 @@ export const QUERIES = {
     read: (site: SiteDoc) => {
       const { general, address, social, contact, search } = site.settings;
       return { general, address, social, contact, search };
+    },
+  },
+  /**
+   * The catalogue (AIB-1): every type AI apps may add, at a glance, or one type in full, so an app
+   * can choose what to add and fill its fields before adding it.
+   */
+  components: {
+    description:
+      "The section and element types you can add. Without type: each type's place (section, element or child), label and category, place narrowing them. With type: its fields (kind, label, help, JSON Schema of the value; a slot's types), presets and defaults, as addNode and updateFields take them. The catalogue resource holds them all at once.",
+    input: z.strictObject({
+      type: z.string().min(1).max(64).optional(),
+      place: z.enum(["section", "element", "child"]).optional(),
+    }),
+    read: (
+      _site: SiteDoc,
+      { type, place }: { type?: string | undefined; place?: Place | undefined },
+    ) => {
+      if (type === undefined) return componentSummaries(place);
+      return (
+        componentDetail(type) ??
+        new QueryRefusal(
+          "invalid",
+          `There is no component "${type}". There are: ${usableComponents()
+            .map(([each]) => each)
+            .join(", ")}.`,
+        )
+      );
     },
   },
   /** The theme's tokens: colours, fonts, corners, spacing… */

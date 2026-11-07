@@ -293,6 +293,7 @@ export const site = {
   "site.settings.businessKind.HousePainter": "Painter and decorator",
   "site.settings.businessKind.Locksmith": "Locksmith",
   "site.settings.businessKind.RoofingContractor": "Roofer",
+  "site.settings.businessKind.AutoRepair": "Vehicle repair",
   "site.settings.businessKind.ProfessionalService": "Professional services",
   "site.settings.businessKind.AccountingService": "Accountant",
   "site.settings.businessKind.LegalService": "Solicitor or legal services",

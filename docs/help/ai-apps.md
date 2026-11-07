@@ -55,11 +55,23 @@ If AI apps says **{appName}'s address for AI apps has changed**, another program
 
 ## What an app can do
 
-An app works on the site you have open in {appName}, and only that one. It can read your site's pages, settings and theme, run [Site Check](site-check.md) and open the [Preview](preview.md). It can add, change, move and delete sections and elements, change text, add pages and change the theme.
+An app works on the site you have open in {appName}, and only that one. It can:
+- read your site's pages, settings and theme, and the sections and elements it can add, with their options;
+- add, change, move and delete sections and elements, and change text;
+- add, rename, move and delete pages, and change a page's title, description, **Hide from navigation** and **Hide this page from search engines**, as [Page Settings](pages.md) does;
+- change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
+- change the theme;
+- run [Site Check](site-check.md) and open the [Preview](preview.md).
+
+It can't change publishing, forms, analytics, Custom Code, your site's icon or its pictures: those stay yours.
 
 Some changes ask you first, with **Allow**:
-- changes that reach every page: the theme, a new page with a menu entry, the Header or Footer, or a shared section;
-- changing where visitors' money or details go, such as a Buy button's payment link, even on one page.
+- changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
+- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your phone number, email address or a social profile names the old one and the new one too.
+
+Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or *Page not found*.
+
+In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings.
 
 Before an app's first change each time it connects, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
 
