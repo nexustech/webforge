@@ -1,18 +1,24 @@
 import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
-  findBrokenLinks,
+  canDeletePage,
+  deletePageFrom,
   insertPage,
   type MediaId,
   newId,
   PAGE_DESCRIPTION_MAX,
   type PageEntry,
   type PageId,
+  pageNeighbour,
   pageSlugFor,
+  pagesChangedByDeleting,
   pageTitle,
+  renamePageIn,
   type SiteDoc,
+  slugAfterRename,
   slugify,
   slugsInFolder,
+  swapPages,
   syncMenuWithPages,
   uniqueSlug,
 } from "@webforge/model";
@@ -69,21 +75,8 @@ export function fileNameInFolder(site: SiteDoc, pageId: PageId, name: string): s
   return `${folder}/${slug}.html`;
 }
 
-/**
- * How many pages deleting `pageId` changes (D7): the page itself, and every page left with a link
- * to it, in its content or in what all pages share (the menu, the Header, the Footer).
- */
-export function pagesChangedByDeleting(site: SiteDoc, pageId: PageId): number {
-  const { [pageId]: _deleted, ...rest } = site.pages;
-  const others = site.pageOrder.filter((id) => id !== pageId && site.pages[id] !== undefined);
-  const linking = new Set(
-    findBrokenLinks({ ...site, pages: rest })
-      .filter((link) => "pageId" in link && link.pageId === pageId)
-      .map((link) => link.on),
-  );
-  const shared = linking.has("menu") || linking.has("header") || linking.has("footer");
-  return 1 + (shared ? others.length : others.filter((id) => linking.has(id)).length);
-}
+/** How many pages deleting a page changes (D7): the model's, shared with AI apps (4.11). */
+export { pagesChangedByDeleting };
 
 /** Runs `recipe` as one undo step, then shows `pageId` (the step remembers it for redo). */
 function editShowing(
@@ -133,16 +126,6 @@ export function addSuggestedPage(session: PagesSession, recipeId: string): PageI
   return id;
 }
 
-/**
- * The slug a page gets when renamed to `title`: it follows the name (`About us` → `about-us`)
- * while it still matches the old name, and stays as it is once set by hand in Page Settings, so
- * a rename never breaks links to a file name the person chose.
- */
-function slugAfterRename(site: SiteDoc, page: PageEntry, title: string): string {
-  const followsName = page.slug === pageSlugFor(site, page.title, page.folder, page.id);
-  return followsName ? pageSlugFor(site, title, page.folder, page.id) : page.slug;
-}
-
 /** The file a page would get if renamed to `name`, as the rename dialog shows it. */
 export function renamedFileName(site: SiteDoc, pageId: PageId, name: string): string {
   const page = site.pages[pageId];
@@ -161,14 +144,9 @@ export function renamePage(session: PagesSession, pageId: PageId, name: string):
   if (page === undefined || title === "" || title === page.title) {
     return;
   }
-  const slug = slugAfterRename(site, page, title);
-  session.edit("props", t("pages.history.renamed", { name: title }), (draft) => {
-    const target = draft.pages[pageId];
-    if (target !== undefined) {
-      target.title = title;
-      target.slug = slug;
-    }
-  });
+  session.edit("props", t("pages.history.renamed", { name: title }), (draft) =>
+    renamePageIn(draft, pageId, title),
+  );
 }
 
 /** Whether `page` can be duplicated: any page but "Page not found". */
@@ -202,15 +180,8 @@ export function duplicatePage(session: PagesSession, pageId: PageId): PageId | n
   return id;
 }
 
-/**
- * The page next to `pageId` in `direction` among the pages in the same folder, or undefined at
- * either end. The Pages panel shows each folder's pages together, so moves stay within one.
- */
-export function neighbour(site: SiteDoc, pageId: PageId, direction: -1 | 1): PageId | undefined {
-  const folder = site.pages[pageId]?.folder;
-  const siblings = site.pageOrder.filter((id) => site.pages[id]?.folder === folder);
-  return siblings[siblings.indexOf(pageId) + direction];
-}
+/** The page next to a page among its folder's pages: the model's, shared with AI apps (4.11). */
+export const neighbour = pageNeighbour;
 
 /** Moves a page up or down (the navigation order while the menu follows the pages). */
 export function movePage(session: PagesSession, pageId: PageId, direction: -1 | 1): void {
@@ -220,13 +191,9 @@ export function movePage(session: PagesSession, pageId: PageId, direction: -1 | 
   if (page === undefined || other === undefined) {
     return;
   }
-  session.edit("move", t("history.moved", { item: pageItem(page.title) }), (draft) => {
-    const from = draft.pageOrder.indexOf(pageId);
-    const to = draft.pageOrder.indexOf(other);
-    draft.pageOrder[from] = other;
-    draft.pageOrder[to] = pageId;
-    draft.menu = syncMenuWithPages(draft);
-  });
+  session.edit("move", t("history.moved", { item: pageItem(page.title) }), (draft) =>
+    swapPages(draft, pageId, other),
+  );
 }
 
 /** Whether `page` can go into a folder: not the Home page or the "Page not found" page. */
@@ -324,8 +291,7 @@ export function setHiddenFromNavigation(
 }
 
 /** Whether `page` can be deleted: not the Home page or the "Page not found" page. */
-export const canDelete = (site: SiteDoc, page: PageEntry) =>
-  page.kind === "page" && page.id !== site.homePageId;
+export const canDelete = canDeletePage;
 
 /**
  * Deletes a page (after the Pages panel's confirmation, D5). If it was shown, the Home page is
@@ -344,11 +310,7 @@ export function deletePage(session: PagesSession, pageId: PageId): void {
     "remove",
     t("history.deleted", { item: pageItem(page.title) }),
     next,
-    (draft) => {
-      delete draft.pages[pageId];
-      draft.pageOrder.splice(draft.pageOrder.indexOf(pageId), 1);
-      draft.menu = syncMenuWithPages(draft);
-    },
+    (draft) => deletePageFrom(draft, pageId),
   );
 }
 

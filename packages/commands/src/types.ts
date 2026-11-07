@@ -1,5 +1,5 @@
 import type { HistoryManager } from "@webforge/history";
-import type { SiteDoc } from "@webforge/model";
+import type { PageId, SiteDoc } from "@webforge/model";
 // AbortSignal, as the renderer and Node both have it.
 import type {} from "./web-globals.js";
 
@@ -25,8 +25,17 @@ export type Confirmation = {
 export type CommandHost = {
   /** The site, and whether a gesture (a drag, a slider) is open. */
   readonly history: Pick<HistoryManager<SiteDoc, unknown>, "document" | "state">;
-  /** The one way a command changes the site: one undo step labelled `label`, of `kind`. */
-  readonly run: (label: string, recipe: (draft: SiteDoc) => void, kind: ChangeKind) => void;
+  /**
+   * The one way a command changes the site: one undo step labelled `label`, of `kind`. A step that
+   * deletes page `removesPage` shows the Home page instead if that page was shown, as the person's
+   * own *Delete Page* does (4.11).
+   */
+  readonly run: (
+    label: string,
+    recipe: (draft: SiteDoc) => void,
+    kind: ChangeKind,
+    removesPage?: PageId,
+  ) => void;
   /**
    * Whether the person is busy otherwise: typing in a text on the canvas (a text session, D1), or
    * answering a question that a change of their own asked.

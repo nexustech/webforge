@@ -3,7 +3,7 @@ id: site-settings
 title: Site Settings
 summary: Your site's name, web address, business details, social profiles, search engine and analytics settings, and form service.
 related: [settings, forms, pages, site-check, custom-code]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # Site Settings
@@ -19,7 +19,7 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 - **Language:** the language your site is written in, as a code such as `en`, `en-GB` or `de`. Spelling checks use it too.
 - **Site icon:** the small picture in browser tabs and bookmarks. Choose a square picture from Media.
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
-- **Business type** and **More precisely:** what kind of business this is, such as *Restaurant* or *Plumber*. Search engines use it.
+- **Business type** and **More precisely:** what kind of business this is, such as *Restaurant*, *Plumber* or *Vehicle repair*. Search engines use it.
 - **Help AI tools read your site:** adds a plain-text copy of each page to your website, for AI tools that read them. Search engines don't read them. Off unless you turn it on.
 
 ## Web address
