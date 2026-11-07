@@ -3,6 +3,7 @@
   "references": [
     { "path": "./tsconfig.tools.json" },
     { "path": "./apps/desktop" },
+    { "path": "./bench" },
     { "path": "./e2e" },
     { "path": "./tools" },
     { "path": "./packages/commands" },

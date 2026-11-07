@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../packages/history" },
+    { "path": "../packages/model" },
+    { "path": "../packages/pipeline" },
+    { "path": "../packages/site-check" },
+    { "path": "../packages/site-components" },
+    { "path": "../packages/storage" },
+    { "path": "../packages/test-utils" }
+  ]
+}
