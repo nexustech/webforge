@@ -131,6 +131,26 @@ describe("the MCP service (4.9, ADR 0021)", () => {
     expect(await service.list()).toEqual([]);
     expect(await apps.authenticate(key)).toBeUndefined();
   });
+
+  it("gives a paired app's proof to its bridge's challenge, and none for an app it doesn't list", async () => {
+    const { apps, service, listened } = setUp();
+    await service.setEnabled(true);
+    const pairing = await service.add("Claude Desktop");
+    if (pairing.status !== "paired") throw new Error("not paired");
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const stored = vi.spyOn(apps, "proofOf");
+
+    expect(await options.proofOf(pairing.app.id)).toBe(pairing.proof);
+    expect(await service.proofOf(pairing.app.id)).toBe(pairing.proof);
+    // A made-up id never reaches the credential store.
+    stored.mockClear();
+    expect(await options.proofOf("6f1c1b8e-6a43-4f53-9a0b-4a4f8f3c2d11")).toBeNull();
+    expect(stored).not.toHaveBeenCalled();
+
+    await service.remove(pairing.app.id);
+    expect(await options.proofOf(pairing.app.id)).toBeNull();
+  });
 });
 
 /** A client on a new connection of `app` to what the service listens with. */

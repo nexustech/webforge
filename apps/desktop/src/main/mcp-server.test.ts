@@ -37,6 +37,7 @@ async function overHttp(): Promise<Client> {
   listener = await startMcpListener({
     port: 0,
     authenticate: async (key) => (key === KEY ? CLAUDE : undefined),
+    proofOf: async () => null,
     serverFor: (app) => createMcpServer(INFO, app, ask),
   });
   const url = new URL(`http://${MCP_HOST}:${listener.port}${MCP_PATH}`);
