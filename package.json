@@ -11,6 +11,7 @@
     "dev": "turbo run dev --filter=@webforge/desktop",
     "build": "turbo run build",
     "test": "vitest run --coverage",
+    "bench": "pnpm --filter @webforge/bench bench",
     "test:compiled": "vitest run --config vitest.compiled.config.ts --maxWorkers=50%",
     "e2e": "turbo run build --filter=@webforge/desktop && pnpm --filter @webforge/e2e e2e",
     "e2e:packaged": "pnpm --filter @webforge/desktop package:e2e && pnpm --filter @webforge/e2e e2e:packaged",

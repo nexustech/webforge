@@ -452,6 +452,36 @@ importers:
         specifier: 5.0.15
         version: 5.0.15(@types/react@19.3.0)(immer@11.1.21)(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
 
+  bench:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.19.2
+      '@webforge/history':
+        specifier: workspace:*
+        version: link:../packages/history
+      '@webforge/model':
+        specifier: workspace:*
+        version: link:../packages/model
+      '@webforge/pipeline':
+        specifier: workspace:*
+        version: link:../packages/pipeline
+      '@webforge/site-check':
+        specifier: workspace:*
+        version: link:../packages/site-check
+      '@webforge/site-components':
+        specifier: workspace:*
+        version: link:../packages/site-components
+      '@webforge/storage':
+        specifier: workspace:*
+        version: link:../packages/storage
+      '@webforge/test-utils':
+        specifier: workspace:*
+        version: link:../packages/test-utils
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.5(@types/node@24.19.2)(@vitest/coverage-v8@5.0.5)(happy-dom@21.0.4)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(yaml@2.9.1))
+
   e2e:
     devDependencies:
       '@axe-core/playwright':
