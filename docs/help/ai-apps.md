@@ -86,7 +86,8 @@ Before an app's first change each time it connects, {appName} saves a version of
 ### Many changes at once
 
 For a bigger job, such as building out your pages, an app can send its changes together, with a title such as "Build the Rapidfix site". {appName} checks every change first. If any of them can't be made, nothing changes and the app is told which one. Then it asks you once, with **Allow**, and says what the changes would do:
-- the pages added and deleted;
+- the pages added, deleted, renamed and moved, and those whose **Page Settings** change;
+- any page it hides from navigation or from search engines, or shows again, from before to after;
 - whether the theme changes;
 - how many sections and elements are added, changed, moved and removed;
 - each change that would have asked on its own, such as a new phone number, from the old one to the new one.

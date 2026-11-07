@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
+import { produce } from "immer";
 import { z } from "zod";
 import { type Failure, fail, failed, type Plan } from "./plan.js";
 
@@ -19,6 +20,11 @@ type Command = {
 type Summary = {
   readonly pagesAdded: string[];
   readonly pagesRemoved: string[];
+  /** Pages renamed, by their titles before and after. */
+  readonly pagesRenamed: { readonly from: string; readonly to: string }[];
+  readonly pagesMoved: Set<string>;
+  /** Pages whose Page Settings change, besides their title. */
+  readonly pagesSet: Set<string>;
   theme: boolean;
   elements: { added: number; changed: number; moved: number; removed: number };
   /** The questions its commands would each have asked: the question, and what it names. */
@@ -28,13 +34,33 @@ type Summary = {
 /** What a step's planned change counts as in the summary. */
 function count(summary: Summary, name: string, site: SiteDoc, input: unknown): void {
   const pageId = (input as { pageId?: string }).pageId;
+  const page = pageId === undefined ? undefined : site.pages[pageId as PageId];
+  const renamed = (to: string | undefined) => {
+    if (page !== undefined && to !== undefined && to.trim() !== page.title) {
+      summary.pagesRenamed.push({ from: page.title, to: to.trim() });
+    }
+  };
   switch (name) {
     case "addPage":
       summary.pagesAdded.push((input as { title: string }).title.trim());
       return;
     case "removePage":
-      summary.pagesRemoved.push(site.pages[pageId as PageId]?.title ?? "");
+      summary.pagesRemoved.push(page?.title ?? "");
       return;
+    case "renamePage":
+      renamed((input as { title: string }).title);
+      return;
+    case "movePage":
+      summary.pagesMoved.add(page?.title ?? "");
+      return;
+    case "updatePageSettings": {
+      const { title, ...others } = input as { title?: string };
+      renamed(title);
+      if (Object.keys(others).some((key) => key !== "pageId")) {
+        summary.pagesSet.add(page?.title ?? "");
+      }
+      return;
+    }
     case "setThemeTokens":
       summary.theme = true;
       return;
@@ -54,16 +80,60 @@ function count(summary: Summary, name: string, site: SiteDoc, input: unknown): v
   }
 }
 
-/** The plan's one question's details: what it adds, deletes and changes, and what would have asked. */
-function described(summary: Summary): string {
+/** A page of the site document. */
+type Page = SiteDoc["pages"][PageId];
+
+/** Whether a page is hidden from navigation, and from search engines: Page Settings' switches. */
+const SWITCHES = [
+  ["pageSettings.hideFromNavigation", (page: Page) => page.settings.hideFromNavigation],
+  ["pageSettings.hideFromSearch", (page: Page) => page.settings.hideFromSearch === true],
+] as const;
+
+/**
+ * Each page the plan keeps that it hides from navigation or search engines, or shows again, from
+ * and to: the switches that decide whether it's found at all, whichever command changed them.
+ */
+function switchesChanged(before: SiteDoc, after: SiteDoc): string[] {
+  const shown = (on: boolean) => t(on ? "ai.confirm.yes" : "ai.confirm.no");
   const lines: string[] = [];
-  const list = (names: readonly string[]) => names.map((name) => `"${name}"`).join(", ");
+  for (const id of before.pageOrder) {
+    const [from, to] = [before.pages[id], after.pages[id]];
+    if (from === undefined || to === undefined) continue;
+    for (const [field, on] of SWITCHES) {
+      if (on(from) === on(to)) continue;
+      lines.push(
+        t("ai.plan.pageSwitch", {
+          page: `"${to.title}"`,
+          field: t(field),
+          from: shown(on(from)),
+          to: shown(on(to)),
+        }),
+      );
+    }
+  }
+  return lines;
+}
+
+/** The plan's one question's details: what it adds, deletes and changes, and what would have asked. */
+function described(summary: Summary, switches: readonly string[]): string {
+  const lines: string[] = [];
+  const list = (names: Iterable<string>) => [...names].map((name) => `"${name}"`).join(", ");
   if (summary.pagesAdded.length > 0) {
     lines.push(t("ai.plan.pagesAdded", { pages: list(summary.pagesAdded) }));
   }
   if (summary.pagesRemoved.length > 0) {
     lines.push(t("ai.plan.pagesRemoved", { pages: list(summary.pagesRemoved) }));
   }
+  for (const { from, to } of summary.pagesRenamed) {
+    lines.push(t("ai.plan.pageRenamed", { from, to }));
+  }
+  if (summary.pagesMoved.size > 0) {
+    lines.push(t("ai.plan.pagesMoved", { pages: list(summary.pagesMoved) }));
+  }
+  if (summary.pagesSet.size > 0) {
+    lines.push(t("ai.plan.pageSettings", { pages: list(summary.pagesSet) }));
+  }
+  lines.push(...switches);
   if (summary.theme) lines.push(t("ai.plan.theme"));
   const { added, changed, moved, removed } = summary.elements;
   if (added + changed + moved + removed > 0) {
@@ -77,7 +147,9 @@ function described(summary: Summary): string {
  * A plan (4.12a, AIB-6): an AI app's titled list of commands, run as **one** change. Every command
  * is planned first, each against the site as the ones before it leave it; if any can't be, nothing
  * changes and the answer says which. The person is asked once, with a summary: the pages added and
- * removed, the theme, the sections and elements added, changed, moved and removed, and each question
+ * removed, renamed, moved and given other Page Settings, any page newly hidden from navigation or
+ * search engines or shown again (from and to), the theme, the sections and elements added, changed,
+ * moved and removed, and each question
  * a command would have asked on its own (its Site Settings and payment changes, from and to). On
  * Allow it runs as one undo step, "AI (‹app›): ‹title›", and counts as one command against the app's
  * limits; main saves a version before it (S20). Content mode refuses it if any command in it is
@@ -95,13 +167,17 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         .max(MOST_COMMANDS),
     }),
     plan(site: SiteDoc, input: { title: string; commands: readonly Step[] }): Plan | Failure {
-      // Each command against the site as the ones before it leave it.
-      let working: SiteDoc = structuredClone(site);
+      // Each command against the site as the ones before it leave it: immer's copies share what a
+      // step leaves alone, as the history's do, so a long build isn't the whole site copied per step.
+      let working: SiteDoc = site;
       const recipes: ((draft: SiteDoc) => void)[] = [];
       const removesPages: PageId[] = [];
       const summary: Summary = {
         pagesAdded: [],
         pagesRemoved: [],
+        pagesRenamed: [],
+        pagesMoved: new Set(),
+        pagesSet: new Set(),
         theme: false,
         elements: { added: 0, changed: 0, moved: 0, removed: 0 },
         asks: [],
@@ -127,10 +203,12 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         structural ||= planned.structural;
         if (planned.removesPages !== undefined) removesPages.push(...planned.removesPages);
         recipes.push(planned.recipe);
-        planned.recipe(working);
-        // A step's recipe may have kept references into the copy: the next plans read it afresh.
-        working = structuredClone(working);
+        // Frozen as each step leaves it, so nothing a recipe keeps from it can change under it.
+        working = produce(working, (draft) => {
+          planned.recipe(draft);
+        });
       }
+      const switches = switchesChanged(site, working);
       return {
         action: input.title,
         structural,
@@ -138,10 +216,10 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         kind: summary.pagesRemoved.length > 0 || summary.elements.removed > 0 ? "remove" : "props",
         confirm: (app) => ({
           action: t("ai.confirm.plan", { app, title: input.title }),
-          description: described({
-            ...summary,
-            asks: summary.asks.map((ask) => ask.replaceAll("{app}", app)),
-          }),
+          description: described(
+            { ...summary, asks: summary.asks.map((ask) => ask.replaceAll("{app}", app)) },
+            switches,
+          ),
           confirm: t("ai.confirm.allow"),
           affectedPages: site.pageOrder.length,
         }),

@@ -19,6 +19,11 @@ export const ai = {
   "ai.confirm.plan": "Allow {app} to make these changes: {title}?",
   "ai.plan.pagesAdded": "It adds the pages {pages}.",
   "ai.plan.pagesRemoved": "It deletes the pages {pages}.",
+  "ai.plan.pageRenamed": 'It renames the page "{from}" to "{to}".',
+  "ai.plan.pagesMoved": "It moves the pages {pages}.",
+  "ai.plan.pageSettings": "It changes the Page Settings of {pages}.",
+  // A page newly hidden or shown: '"Home": Hide this page from search engines, from no to yes.'
+  "ai.plan.pageSwitch": "{page}: {field}, from {from} to {to}.",
   "ai.plan.theme": "It changes the theme.",
   "ai.plan.elements":
     "Sections and elements: {added} added, {changed} changed, {moved} moved, {removed} removed.",

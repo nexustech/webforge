@@ -1,5 +1,5 @@
 import type { SiteDoc } from "@webforge/model";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createCommandApi } from "./api.js";
 import { app, content, home, setup } from "./api.test-helper.js";
 
@@ -60,6 +60,63 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(content(history).map(({ type }) => type)).toContain("Hero");
     history.undo();
     expect(history.document.getState()).toEqual(before);
+  });
+
+  it("names the pages it renames, moves and hides, which ask nothing on their own", async () => {
+    const { host, history, confirm } = setup();
+    const doc = history.document.getState();
+    const about = aboutOf(doc);
+
+    const result = await createCommandApi(host).run(
+      "plan",
+      {
+        title: "Tidy the pages",
+        commands: [
+          { name: "renamePage", input: { pageId: about, title: "About us" } },
+          { name: "movePage", input: { pageId: about, direction: "up" } },
+          { name: "updatePageSettings", input: { pageId: about, description: "Who we are" } },
+          { name: "updatePageSettings", input: { pageId: doc.homePageId, hideFromSearch: true } },
+          {
+            name: "updatePageSettings",
+            input: { pageId: about, title: "Our story", hideFromNavigation: true },
+          },
+        ],
+      },
+      app,
+    );
+
+    expect(result).toMatchObject({ status: "done" });
+    const description = confirm.mock.calls[0]?.[0].description;
+    expect(description).toContain('It renames the page "About" to "About us".');
+    expect(description).toContain('It renames the page "About us" to "Our story".');
+    expect(description).toContain('It moves the pages "About us".');
+    expect(description).toContain('It changes the Page Settings of "About us", "Home".');
+    // The switches that decide whether a page is found, from and to, by its title after.
+    expect(description).toContain('"Home": Hide this page from search engines, from no to yes.');
+    expect(description).toContain('"Our story": Hide from navigation, from no to yes.');
+    expect(description).not.toContain("Sections and elements");
+  });
+
+  it("plans a 200-step build without copying the whole site at each step", async () => {
+    const { host, history } = setup();
+    const copies = vi.spyOn(globalThis, "structuredClone");
+
+    const result = await createCommandApi(host).run(
+      "plan",
+      {
+        title: "Write the heading",
+        commands: Array.from({ length: 200 }, (_, at) => ({
+          name: "editText",
+          input: { location: home(history), nodeId: "heading", field: "text", text: `Draft ${at}` },
+        })),
+      },
+      app,
+    );
+
+    expect(result).toMatchObject({ status: "done" });
+    expect(copies).not.toHaveBeenCalled();
+    expect(history.state.getState().entries).toHaveLength(1);
+    copies.mockRestore();
   });
 
   it("changes nothing when one command can't be done, saying which, and asks nothing", async () => {
