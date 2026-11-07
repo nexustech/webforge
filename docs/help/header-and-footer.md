@@ -4,7 +4,7 @@ title: Header, Footer and shared sections
 summary: The parts that are the same on every page, and sections you share between pages.
 components: [Header, Footer]
 related: [pages, layers, add-panel]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # Header, Footer and shared sections
@@ -23,7 +23,7 @@ The Header's menu lists your pages. Change it in the [Site panel's Menu](pages.m
 
 On phones the menu folds into a button. To see and edit it open, view Mobile, select the Header and turn on **Show mobile menu**.
 
-The **Footer** has a **Text** and a layout, *Centred* or *Columns*. Type `{year}` in its text, or in any text, and your website shows the year it was exported in, such as "© {year} Rosie's Café". Export again in the new year to update it.
+The **Footer** has a **Text** and a layout, *Centred* or *Columns*. Type `{year}` in its text, or in any text, and your website shows the year it was exported or published in, such as "© {year} Rosie's Café". Export or publish again in the new year to update it: once your site is published, [Site Check](site-check.md#tips) reminds you.
 
 You can't move, duplicate or delete the Header or Footer. To leave one off a page, use the page's [Page Settings](pages.md#page-settings) (*Hide the Header on this page*), or click its eye in [Layers](layers.md).
 
