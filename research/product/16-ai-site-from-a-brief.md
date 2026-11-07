@@ -61,7 +61,7 @@ The quick start (3.11) already does most of what the prompt asks: Trades, a bran
 5. **Too many interruptions for a whole build.** A site is roughly 5–10 **Allow**s and 40–80 undo steps, at 30 commands a minute. Each step is fine on its own; together they're a chore, and undoing the build is 80 clicks rather than one.
 6. **No pictures.** An app can't see what's in Media, add a file, or put a picture in an Image or a section background.
 7. **No garage business kind** for the structured data (§3).
-8. **Connecting Claude Desktop** still means copying an address and a key by hand. The desktop extension in ADR 0021 is 4.9's remaining work, so it isn't a gap in this note.
+8. **Connecting Claude Desktop.** Today it means copying an address and a key by hand. 4.9's desktop extension ([#764](https://github.com/nexustech/webforge/pull/764), in review) carries the address, so only the key is pasted, once, into the extension's secure setting. That paste stays by the product owner's choice (ADR 0021, decision 3), so it isn't a gap in this note.
 
 ## 5. The design
 
@@ -149,7 +149,22 @@ Add `AutoRepair`, labelled *Vehicle repair*, to Trades' business kinds, for the 
 
 Choosing photos, the form service, analytics, publishing, Custom Code and passwords. These are where mistakes cost money, privacy or the live site, and F-AI-1 already keeps them out.
 
-### 5.10 How it's tested
+### 5.10 Content mode
+
+F-AI-1 limits AI apps to content edits in Content mode, and refuses structural commands there. The new tools follow the same line:
+- **Allowed:**
+  - the catalogue and `media` queries;
+  - `requestMedia`, since the person picks the files;
+  - in `updateSettings`: the name, description, contact details, opening hours and social profiles;
+  - in `updatePageSettings`: the search title and description.
+- **Refused, like other structural commands:**
+  - `removePage`, `renamePage` and `movePage`;
+  - *Hide from navigation* and *Hide this page from search engines*;
+  - in `updateSettings`: language, business type and kind, web address and search settings;
+  - `createSiteFromBrief`;
+  - a plan holding any command Content mode refuses. The whole plan is refused, and nothing in it is applied.
+
+### 5.11 How it's tested
 
 An E2E test with a scripted MCP client, with no model in the loop, runs the Rapidfix prompt as tool calls:
 - brief → *Create* → plan → *Allow* → Site Check → preview;
@@ -170,16 +185,19 @@ The same client checks each refusal: a plan with one bad command changes nothing
 | AIB-7 | **Pictures:** a `media` query, `requestMedia` through Webforge's own dialog, and a Site Check tip for the template's placeholder pictures. No downloads | 1.75 |
 | AIB-8 | **The *Build a site from a description* prompt** offered by the server | 0.5 |
 | AIB-9 | **The Rapidfix test:** an E2E run of the prompt by a scripted MCP client, with its refusals | 0.75 |
-| AIB-10 | **Order:** AIB-1…AIB-4 first, as 4.11 *AI apps: settings, pages and the catalogue* (3.75 days), right after 4.9, since without them an app can't finish an ordinary site. AIB-5…AIB-9 next, as 4.12 *AI apps: a site from a brief* (8 days), before the beta (5.7). The in-app assistant (v1.1, AIA-4) gets all of it through the same server | – |
+| AIB-10 | **Order:** AIB-1…AIB-4 first, as 4.11 *AI apps: settings, pages and the catalogue* (3.75 days), in Phase 4, on stream C right after 4.9, since without them an app can't finish an ordinary site. AIB-5…AIB-9 next, as 4.12 *AI apps: a site from a brief* (8 days), in **Phase 5** before 5.7, so Phase 4's milestone (19 Nov 2026) holds (§7). The in-app assistant (v1.1, AIA-4) gets all of it through the same server | – |
 
 **Total:** 11.75 days. 4.11 is 3.75 days and 4.12 is 8, which is over 5 days, so it would be split when planned.
 
-If the dates can't take it:
-- 4.11 alone makes ordinary edits work end to end;
-- 4.12 can move to v1.1 with the assistant, since the person can run the quick start themselves and then ask the app to fill it in.
+## 7. What it does to the dates
+
+At Phase 3's measured pace (0.68 actual days per estimated day for plan items, `spec/04` §3):
+- **4.11** is about 2.5 working days. Stream C's queue ends with 4.9, whose last part (the Claude Desktop extension, #764) is in review. 4.11 should therefore end about **13 Nov 2026**, inside Phase 4's milestone (**19 Nov 2026**). Phase 4 goes from 32 to 35.75 days.
+- **4.12** is about 5.5 working days. In Phase 4 it would end about 20 Nov, past the milestone. So it goes to **Phase 5**, before 5.7 (pre-beta checks): Phase 5 goes from 46.5 to 54.5 days, and the total from 425.5 to 437.25. 19 Nov doesn't move.
+- If Phase 5 can't take 4.12 either, it moves to v1.1 with the assistant: the person runs the quick start themselves, then asks the app to fill the site in. 4.11 alone makes that work end to end.
 
 Once decided, the changes follow CLAUDE.md's *Working the plan*:
 - a line in `spec/02` §7, and F-AI-1's tool list;
-- 4.11 and 4.12 in the plan's five places, with issues in the Phase 4 milestone;
+- 4.11 and 4.12 in the plan's five places, with issues in the Phase 4 and Phase 5 milestones, and 4.11 at the end of stream C's queue;
 - a scope-change line in `spec/04` §3;
 - help: [ai-apps](../../docs/help/ai-apps.md) gains *Building a site from a description* when 4.12 merges (HP-4).
