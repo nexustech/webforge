@@ -323,24 +323,12 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
       name: "Test client asks you to add pictures or files",
     });
 
-    // Not now: nothing is added, and the app is told.
-    const notNow = client.callTool({
-      name: "requestMedia",
-      arguments: { reason: "Photos of your workshop" },
-    });
-    await expect(asked.getByText('Its reason: "Photos of your workshop"')).toBeVisible();
-    await asked.getByRole("button", { name: "Not Now" }).click();
-    expect(answer(await notNow)).toMatchObject({ status: "declined" });
-    expect(answer(await client.callTool({ name: "media", arguments: {} }))).toMatchObject({
-      status: "done",
-      data: [],
-    });
-
     // Add Files…: the file the person chooses, by its id, and Media lists it.
     const request = client.callTool({
       name: "requestMedia",
       arguments: { reason: "Photos of your workshop" },
     });
+    await expect(asked.getByText('Its reason: "Photos of your workshop"')).toBeVisible();
     await asked.getByRole("button", { name: "Add Files…" }).click();
     const added = answer(await request) as unknown as {
       status: string;
@@ -358,6 +346,21 @@ test("an AI app asks for pictures with its reason; the person chooses them in Ad
     ]);
     // The person's own step: it undoes as any other.
     await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
+
+    // Not now: nothing more is added, and the app is told; as after any decline, it waits.
+    const notNow = client.callTool({
+      name: "requestMedia",
+      arguments: { reason: "Photos of your team" },
+    });
+    await expect(asked.getByText('Its reason: "Photos of your team"')).toBeVisible();
+    await asked.getByRole("button", { name: "Not Now" }).click();
+    expect(answer(await notNow)).toMatchObject({ status: "declined" });
+    expect(
+      answer(await client.callTool({ name: "requestMedia", arguments: { reason: "Photos" } })),
+    ).toMatchObject({ status: "busy" });
+    expect(answer(await client.callTool({ name: "media", arguments: {} }))).toMatchObject({
+      data: [expect.objectContaining({ fileName: "Workshop.jpg" })],
+    });
   } finally {
     await client.close();
   }
