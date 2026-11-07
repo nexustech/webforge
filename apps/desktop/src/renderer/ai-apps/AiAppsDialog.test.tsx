@@ -44,6 +44,7 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
       status = { ...status, apps: [...status.apps, app] };
       return { status: "paired", app, key: KEY, address: ADDRESS };
     }),
+    installClaude: vi.fn<McpApi["installClaude"]>(async () => ({ status: "opened" })),
     remove: vi.fn(async (id: string) => {
       status = { ...status, apps: status.apps.filter((app) => app.id !== id) };
       return status;
@@ -94,12 +95,51 @@ describe("AI apps (4.9)", () => {
     expect(dialog().getByText("Connected")).toBeTruthy();
   });
 
-  it("adds an app, showing its key once to copy, with the address to give it", async () => {
+  it("adds Claude Desktop, with its key once to copy and its extension to install", async () => {
+    const { dialog, mcp, copySecret, user } = setUp();
+    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    // Claude Desktop first, named so already.
+    expect(
+      dialog().getByRole("radio", { name: "Claude Desktop" }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty(
+      "value",
+      "Claude Desktop",
+    );
+    await user.click(dialog().getByRole("button", { name: "Add" }));
+
+    expect(mcp.add).toHaveBeenCalledWith("Claude Desktop");
+    expect(await dialog().findByText(KEY)).toBeTruthy();
+    // The extension holds the address: none to copy.
+    expect(dialog().queryByText(ADDRESS)).toBeNull();
+    expect(dialog().getByText(/paste the key into Key/)).toBeTruthy();
+    await user.click(dialog().getByRole("button", { name: "Copy the key" }));
+    expect(copySecret).toHaveBeenCalledWith(KEY);
+    await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
+    expect(mcp.installClaude).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
+    await waitFor(() =>
+      expect(
+        dialog()
+          .getAllByRole("status")
+          .some((status) =>
+            /Claude Desktop is opening the extension/.test(status.textContent ?? ""),
+          ),
+      ).toBe(true),
+    );
+
+    mcp.installClaude.mockResolvedValueOnce({ status: "shown" });
+    await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
+    expect(await dialog().findByText(/Nothing opened the extension/)).toBeTruthy();
+  });
+
+  it("adds another app, showing its key once to copy, with the address to give it", async () => {
     const { dialog, mcp, copyText, copySecret, user } = setUp();
     await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
     expect(
       dialog().getByText("The app will read and change the sites you open in Webforge."),
     ).toBeTruthy();
+    await user.click(dialog().getByRole("radio", { name: "Another app" }));
+    expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "");
     await user.type(dialog().getByRole("textbox", { name: "Name" }), "Cursor");
     await user.click(dialog().getByRole("button", { name: "Add" }));
 
@@ -107,6 +147,9 @@ describe("AI apps (4.9)", () => {
     expect(await dialog().findByText(KEY)).toBeTruthy();
     expect(dialog().getByText(ADDRESS)).toBeTruthy();
     expect(dialog().getByText(/You won't see it again/)).toBeTruthy();
+    // It can't check who answers at the address: the dialog says so.
+    expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
+    expect(dialog().queryByRole("button", { name: "Install in Claude Desktop" })).toBeNull();
     await user.click(dialog().getByRole("button", { name: "Copy the key" }));
     // The key as a secret, out of clipboard history and cleared in a minute; never as plain text.
     expect(copySecret).toHaveBeenCalledWith(KEY);
@@ -126,6 +169,7 @@ describe("AI apps (4.9)", () => {
     const { dialog, mcp, user } = setUp();
     mcp.add.mockResolvedValueOnce({ status: "name-taken" });
     await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.clear(dialog().getByRole("textbox", { name: "Name" }));
     await user.type(dialog().getByRole("textbox", { name: "Name" }), "Claude");
     await user.click(dialog().getByRole("button", { name: "Add" }));
     expect(

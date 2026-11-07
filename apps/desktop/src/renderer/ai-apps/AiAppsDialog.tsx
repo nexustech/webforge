@@ -16,10 +16,17 @@ import {
   DialogTitle,
   ErrorText,
   TextInput,
+  ToggleGroup,
+  ToggleGroupItem,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useEffect, useState } from "react";
-import { AI_APP_NAME_MAX, type McpApi, type McpStatus } from "../../shared/ipc/mcp.js";
+import { useEffect, useId, useState } from "react";
+import {
+  AI_APP_NAME_MAX,
+  type McpApi,
+  type McpInstallResult,
+  type McpStatus,
+} from "../../shared/ipc/mcp.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
 export const STATUS_EVERY_MS = 2_000;
@@ -46,8 +53,33 @@ const statusText = (app: AppStatus) =>
       ? t("aiApps.status.idle")
       : t("aiApps.status.waiting");
 
+/**
+ * Which kind of app is added: Claude Desktop, through an extension that checks it's Webforge it
+ * talks to; or another app, such as a developer tool, at the address (ADR 0021).
+ */
+type Kind = "claude" | "other";
+
+/** An app being added: its kind, and the name typed so far. */
+type Adding = { readonly kind: Kind; readonly name: string };
+
 /** A pairing just made: shown once, then gone. */
-type Shown = { readonly name: string; readonly key: string; readonly address: string };
+type Shown = {
+  readonly id: string;
+  readonly kind: Kind;
+  readonly name: string;
+  readonly key: string;
+  readonly address: string;
+};
+
+/** What *Install in Claude Desktop* came to, in words. */
+const installText = (status: McpInstallResult["status"]) =>
+  status === "opened"
+    ? t("aiApps.claude.opened")
+    : status === "shown"
+      ? t("aiApps.claude.shown")
+      : status === "off"
+        ? t("aiApps.add.failed.off")
+        : t("aiApps.claude.failed");
 
 /**
  * AI apps (F-AI-1, 4.9): whether they may connect, the paired ones with whether each is connected
@@ -63,11 +95,13 @@ export function AiAppsDialog({
   onClose,
 }: AiAppsDialogProps) {
   const [status, setStatus] = useState<McpStatus | null>(null);
-  const [adding, setAdding] = useState<string | null>(null);
+  const [adding, setAdding] = useState<Adding | null>(null);
   const [addError, setAddError] = useState<string | undefined>(undefined);
   const [shown, setShown] = useState<Shown | null>(null);
   const [copied, setCopied] = useState<"key" | "address" | null>(null);
   const [removing, setRemoving] = useState<AppStatus | null>(null);
+  const [installed, setInstalled] = useState<McpInstallResult["status"] | null>(null);
+  const whichId = useId();
 
   useEffect(() => {
     if (!open) return;
@@ -93,12 +127,19 @@ export function AiAppsDialog({
   const act = (work: Promise<McpStatus>) => work.then(setStatus, () => notify(t("aiApps.failed")));
 
   const add = async () => {
-    const result = await mcp.add(adding ?? "").catch(() => null);
+    if (adding === null) return;
+    const result = await mcp.add(adding.name).catch(() => null);
     if (result === null) return notify(t("aiApps.failed"));
     if (result.status !== "paired") return setAddError(t(`aiApps.add.failed.${result.status}`));
     setAdding(null);
     setAddError(undefined);
-    setShown({ name: result.app.name, key: result.key, address: result.address });
+    setShown({
+      id: result.app.id,
+      kind: adding.kind,
+      name: result.app.name,
+      key: result.key,
+      address: result.address,
+    });
     await act(mcp.status());
   };
 
@@ -110,10 +151,29 @@ export function AiAppsDialog({
     );
   };
 
+  /** Switches the kind of app being added, offering Claude Desktop's name for it. */
+  const choose = (kind: Kind) => {
+    setAdding((current) => {
+      const claudeName = t("aiApps.add.claude");
+      const name = current?.name ?? "";
+      if (kind === "claude") return { kind, name: name === "" ? claudeName : name };
+      return { kind, name: name === claudeName ? "" : name };
+    });
+    setAddError(undefined);
+  };
+
+  const install = (id: string) => {
+    void mcp.installClaude(id).then(
+      (result: McpInstallResult | undefined) => setInstalled(result?.status ?? "failed"),
+      () => setInstalled("failed"),
+    );
+  };
+
   const closeShown = () => {
     // The key goes with the dialog's state: it is never shown again.
     setShown(null);
     setCopied(null);
+    setInstalled(null);
   };
 
   const enabled = status?.enabled ?? false;
@@ -137,16 +197,32 @@ export function AiAppsDialog({
               <section aria-label={t("aiApps.key.title", { name: shown.name })}>
                 <h3 className="font-medium">{t("aiApps.key.title", { name: shown.name })}</h3>
                 <p className="text-sm">{t("aiApps.key.once", { name: shown.name })}</p>
+                {shown.kind === "claude" ? (
+                  <>
+                    <h4 className="mt-2 text-sm font-medium">{t("aiApps.claude.steps")}</h4>
+                    <ol className="list-decimal pl-5 text-sm">
+                      <li>{t("aiApps.claude.step1")}</li>
+                      <li>{t("aiApps.claude.step2")}</li>
+                      <li>{t("aiApps.claude.step3")}</li>
+                    </ol>
+                  </>
+                ) : null}
                 <dl className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
-                  <dt>{t("aiApps.key.address")}</dt>
-                  <dd className="break-all font-mono">{shown.address}</dd>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copy("address", shown.address)}
-                  >
-                    {copied === "address" ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")}
-                  </Button>
+                  {shown.kind === "other" ? (
+                    <>
+                      <dt>{t("aiApps.key.address")}</dt>
+                      <dd className="break-all font-mono">{shown.address}</dd>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => copy("address", shown.address)}
+                      >
+                        {copied === "address"
+                          ? t("aiApps.key.copied")
+                          : t("aiApps.key.copyAddress")}
+                      </Button>
+                    </>
+                  ) : null}
                   <dt>{t("aiApps.key.key")}</dt>
                   <dd className="break-all font-mono">{shown.key}</dd>
                   <Button variant="outline" size="sm" onClick={() => copy("key", shown.key)}>
@@ -157,20 +233,58 @@ export function AiAppsDialog({
                 <p role="status" className={copied === "key" ? "mt-2 text-sm" : "text-sm"}>
                   {copied === "key" ? t("aiApps.key.cleared") : null}
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">{t("aiApps.key.how")}</p>
-                <Button className="mt-2" onClick={closeShown}>
+                {shown.kind === "claude" ? (
+                  <>
+                    <Button className="mt-2" variant="outline" onClick={() => install(shown.id)}>
+                      {t("aiApps.claude.install")}
+                    </Button>
+                    <p role="status" className={installed === null ? "text-sm" : "mt-2 text-sm"}>
+                      {installed === null ? null : installText(installed)}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm text-muted-foreground">{t("aiApps.key.how")}</p>
+                    <p className="mt-2 text-sm">{t("aiApps.key.risk")}</p>
+                  </>
+                )}
+                <Button className="mt-2 block" onClick={closeShown}>
                   {t("aiApps.key.done")}
                 </Button>
               </section>
             ) : adding !== null ? (
               <section aria-label={t("aiApps.add")} className="flex flex-col gap-2">
+                <p id={whichId} className="text-sm font-medium">
+                  {t("aiApps.add.which")}
+                </p>
+                <ToggleGroup
+                  type="single"
+                  aria-labelledby={whichId}
+                  className="flex w-full"
+                  value={adding.kind}
+                  onValueChange={(next) => {
+                    if (next === "claude" || next === "other") choose(next);
+                  }}
+                >
+                  <ToggleGroupItem value="claude" className="flex-1">
+                    {t("aiApps.add.claude")}
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="other" className="flex-1">
+                    {t("aiApps.add.other")}
+                  </ToggleGroupItem>
+                </ToggleGroup>
+                <p className="text-sm text-muted-foreground">
+                  {adding.kind === "claude"
+                    ? t("aiApps.add.claudeHint")
+                    : t("aiApps.add.otherHint")}
+                </p>
                 <TextInput
                   label={t("aiApps.add.name")}
                   hint={t("aiApps.add.nameHint")}
-                  value={adding}
+                  value={adding.name}
                   maxLength={AI_APP_NAME_MAX}
                   onChange={(name) => {
-                    setAdding(name);
+                    setAdding({ kind: adding.kind, name });
                     setAddError(undefined);
                   }}
                 />
@@ -184,7 +298,7 @@ export function AiAppsDialog({
                 </div>
               </section>
             ) : (
-              <Button className="self-start" disabled={!enabled} onClick={() => setAdding("")}>
+              <Button className="self-start" disabled={!enabled} onClick={() => choose("claude")}>
                 {t("aiApps.add")}
               </Button>
             )}

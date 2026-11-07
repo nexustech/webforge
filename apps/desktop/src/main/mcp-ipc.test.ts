@@ -1,6 +1,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { PairedApp, Pairing } from "./ai-apps.js";
+import type { ExtensionPairing } from "./claude-extension.js";
 import { registerMcpHandlers } from "./mcp-ipc.js";
 import type { McpService, McpServiceStatus } from "./mcp-service.js";
 
@@ -41,19 +42,33 @@ function fakeService(status: Partial<McpServiceStatus> = {}) {
       apps = apps.filter((app) => app.id !== id);
     }),
     list: vi.fn(async () => apps),
+    proofOf: vi.fn(async (id: string) =>
+      apps.some((app) => app.id === id) ? "p".repeat(43) : null,
+    ),
     status: vi.fn(async () => current),
     close: vi.fn(async () => undefined),
   } satisfies McpService;
   return service;
 }
 
+/** Claude Desktop's extensions, written nowhere: what they were asked to do is kept. */
+function fakeExtensions(outcome: "opened" | "shown" | Error = "opened") {
+  return {
+    install: vi.fn(async (pairing: ExtensionPairing) => {
+      if (outcome instanceof Error) throw outcome;
+      return { file: `${pairing.appId}.mcpb`, outcome };
+    }),
+    remove: vi.fn(async () => undefined),
+  };
+}
+
 /** Each channel's handler, called as from a renderer that `trusted` says it trusts or not. */
-function handlers(service: McpService, trusted = true) {
+function handlers(service: McpService, trusted = true, extensions = fakeExtensions()) {
   const registered = new Map<string, Handler>();
   const ipc = {
     handle: (name: string, handler: Handler) => registered.set(name, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerMcpHandlers(ipc, () => trusted, service);
+  registerMcpHandlers(ipc, () => trusted, service, extensions);
   return (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
@@ -103,11 +118,46 @@ describe("the mcp IPC calls (4.9)", () => {
     expect(await call("mcp:set-enabled", true)).toMatchObject({ address: null });
   });
 
-  it("removes an app", async () => {
+  it("removes an app, and its Claude Desktop extension", async () => {
     const service = fakeService();
+    const extensions = fakeExtensions();
 
-    expect(await handlers(service)("mcp:remove", CLAUDE.id)).toMatchObject({ apps: [] });
+    expect(await handlers(service, true, extensions)("mcp:remove", CLAUDE.id)).toMatchObject({
+      apps: [],
+    });
     expect(service.remove).toHaveBeenCalledWith(CLAUDE.id);
+    expect(extensions.remove).toHaveBeenCalledWith(CLAUDE.id);
+  });
+
+  it("writes a paired app's Claude Desktop extension with the address and its proof, and opens it", async () => {
+    const extensions = fakeExtensions();
+    const call = handlers(fakeService(), true, extensions);
+
+    expect(await call("mcp:install-claude", CLAUDE.id)).toEqual({ status: "opened" });
+    expect(extensions.install).toHaveBeenCalledWith({
+      appId: CLAUDE.id,
+      address: "http://127.0.0.1:51234/mcp",
+      proof: "p".repeat(43),
+    });
+  });
+
+  it("says when nothing opened the extension, and why none was written", async () => {
+    expect(
+      await handlers(fakeService(), true, fakeExtensions("shown"))("mcp:install-claude", CLAUDE.id),
+    ).toEqual({ status: "shown" });
+    expect(await handlers(fakeService({ port: null }))("mcp:install-claude", CLAUDE.id)).toEqual({
+      status: "off",
+    });
+    expect(
+      await handlers(fakeService())("mcp:install-claude", "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5"),
+    ).toEqual({ status: "unknown" });
+    expect(
+      await handlers(
+        fakeService(),
+        true,
+        fakeExtensions(new Error("EACCES")),
+      )("mcp:install-claude", CLAUDE.id),
+    ).toEqual({ status: "failed" });
   });
 
   it("checks what it's given, and refuses a renderer it doesn't trust", async () => {

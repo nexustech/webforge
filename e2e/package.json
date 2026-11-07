@@ -10,6 +10,7 @@
     "e2e:visual": "playwright test --config playwright.visual.config.ts"
   },
   "devDependencies": {
+    "@anthropic-ai/mcpb": "2.1.2",
     "@axe-core/playwright": "4.14.0",
     "@modelcontextprotocol/sdk": "1.32.2",
     "@playwright/test": "1.64.1",
@@ -23,6 +24,7 @@
     "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "fflate": "0.8.3",
     "jsqr": "1.4.0",
     "ssh2": "1.17.0",
     "zod": "catalog:"
