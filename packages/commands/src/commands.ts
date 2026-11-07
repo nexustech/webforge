@@ -39,6 +39,7 @@ import {
   pagesShowing,
 } from "./locations.js";
 import { type Failure, fail, failed, type Plan } from "./plan.js";
+import { planCommand } from "./plan-command.js";
 import { updateSettings } from "./settings-command.js";
 
 /** Whether a field is about what an element says (Content mode's), not how it looks. */
@@ -328,8 +329,8 @@ const placement = {
 
 const pageId = z.string().min(1).max(200).describe("A page's id, as the outline gives it.");
 
-/** The commands AI apps can run (F-AI-1): each takes its input and plans one undo step. */
-export const COMMANDS = {
+/** The commands a plan can hold: every command but a plan. */
+const STEPS = {
   /** Adds a section to a page, or an element to a slot, with `values` over its defaults. */
   addNode: {
     description:
@@ -612,7 +613,7 @@ export const COMMANDS = {
           confirm: t("ai.confirm.allow"),
           affectedPages: pagesChangedByDeleting(site, id),
         }),
-        removesPage: id,
+        removesPages: [id],
         recipe: (draft) => deletePageFrom(draft, id),
       };
     },
@@ -807,6 +808,12 @@ export const COMMANDS = {
     },
   },
 } as const;
+
+/**
+ * The commands AI apps can run (F-AI-1): each takes its input and plans one undo step; a plan runs
+ * several as one (4.12a).
+ */
+export const COMMANDS = { ...STEPS, plan: planCommand(STEPS) };
 
 /** The name of a command. */
 export type CommandName = keyof typeof COMMANDS;

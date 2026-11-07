@@ -550,6 +550,9 @@ importers:
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../site-components
+      immer:
+        specifier: 11.1.21
+        version: 11.1.21
       zod:
         specifier: 'catalog:'
         version: 4.6.7

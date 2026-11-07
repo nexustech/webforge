@@ -106,7 +106,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
       if ("status" in plan) return plan;
       if (busy(host)) return { status: "busy", message: BUSY };
       const label = t("ai.history", { app: actor.app, action: plan.action });
-      host.run(label, plan.recipe, plan.kind, plan.removesPage);
+      host.run(label, plan.recipe, plan.kind, plan.removesPages);
       return { status: "done", label, ...(plan.id === undefined ? {} : { id: plan.id }) };
     },
   };

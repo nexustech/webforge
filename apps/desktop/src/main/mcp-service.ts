@@ -90,9 +90,9 @@ export function createMcpService(options: McpServiceOptions): McpService {
         case "siteChoices":
           return options.briefs.choices();
         case "briefStatus":
-          return options.briefs.status(request.input, app.name);
+          return options.briefs.status(request.input, app.id);
         default:
-          return options.briefs.ask(request.input, app.name, signal);
+          return options.briefs.ask(request.input, app.id, signal);
       }
     };
   let listener: McpListener | null = null;
@@ -106,20 +106,31 @@ export function createMcpService(options: McpServiceOptions): McpService {
   const askFor = (app: McpApp) => {
     let saved: Promise<unknown> | null = null;
     // Once a command is let through its limits: one refused for its rate takes no version.
-    const versionFirst = async () => {
-      saved ??= options
+    const saveVersion = () =>
+      options
         .saveVersionBefore(t("ai.version.before", { app: app.name }))
         .catch(() => "failed" as const)
         .then((result) => {
           if (result === "failed") logFailure("mcp safety version", new Error("failed"));
         });
+    const versionFirst = async () => {
+      saved ??= saveVersion();
       await saved;
     };
+    // A plan (4.12a) is a build of many changes: a version before each, which is the connection's
+    // first too.
+    const versionNow = async () => {
+      const now = saveVersion();
+      saved ??= now;
+      await now;
+    };
+    const versionFor = (request: AiRequest) =>
+      request.kind !== "command" ? undefined : request.name === "plan" ? versionNow : versionFirst;
     return (request: AiRequest, signal?: AbortSignal): Promise<AiResponse> =>
       isMainTool(request.name)
         ? // A brief changes no open site: no version before it.
           limits.ask(app.id, request, undefined, mainTool(app, signal))
-        : limits.ask(app.id, request, request.kind === "command" ? versionFirst : undefined);
+        : limits.ask(app.id, request, versionFor(request));
   };
 
   /**
