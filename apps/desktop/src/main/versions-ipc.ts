@@ -7,7 +7,7 @@ import type { ProjectSession } from "./project-session.js";
 
 /** What the `versions` calls are made with: injectable for tests. */
 export type VersionsOptions = {
-  readonly session: Pick<ProjectSession, "forSession" | "create">;
+  readonly session: Pick<ProjectSession, "forSession" | "create" | "cleanUp">;
   readonly dialogs: Pick<ProjectDialogs, "chooseNewProjectPath">;
   /** A JPEG of the canvas as it is now, for a version's picture; none when it can't be taken. */
   readonly captureCanvas: () => Promise<Uint8Array | undefined>;
@@ -87,6 +87,13 @@ export function registerVersionsHandlers(
   registerIpcHandler(ipc, "deleteVersion", isTrustedSender, (sessionId, id) =>
     session.forSession(sessionId).deleteVersion(id),
   );
+  // Clean up (P3): the last changes saved first, then collection and a VACUUM while saves wait.
+  registerIpcHandler(ipc, "cleanUpVersions", isTrustedSender, async (sessionId) => {
+    const stale = session.forSession(sessionId).staleReason();
+    if (stale !== undefined) return { status: "failed", reason: stale };
+    await flush?.();
+    return session.cleanUp(sessionId);
+  });
   registerIpcHandler(ipc, "readVersionSite", isTrustedSender, (sessionId, id) =>
     session.forSession(sessionId).readVersionSite(id),
   );

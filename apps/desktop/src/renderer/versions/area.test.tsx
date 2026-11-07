@@ -36,6 +36,7 @@ function setUp() {
       delete: vi.fn(),
       readSite: vi.fn(),
       openAsNewSite: vi.fn(),
+      cleanUp: vi.fn(),
     },
   });
   // Only what the area uses of the window's context.

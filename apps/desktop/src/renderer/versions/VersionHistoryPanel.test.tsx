@@ -32,6 +32,7 @@ function draw(props: Partial<VersionHistoryPanelProps> = {}) {
     restore: vi.fn(async () => true),
     remove: vi.fn(async () => true),
     openAsNewSite: vi.fn(async () => undefined),
+    cleanUp: vi.fn(async () => true),
   };
   const onSave = vi.fn();
   render(
@@ -115,6 +116,14 @@ describe("the Version History panel (4.6)", () => {
     expect(onSave).toHaveBeenCalledOnce();
   });
 
+  it("shows the space the versions use with Clean up, which cleans up (P3)", async () => {
+    const { actions } = draw();
+
+    await userEvent.click(screen.getByRole("button", { name: t("versionHistory.cleanUp") }));
+
+    expect(actions.cleanUp).toHaveBeenCalledOnce();
+  });
+
   it("says when there are no versions yet, while they're found, and when they can't be", () => {
     draw({ state: { status: "ready", versions: [], bytes: 0 } });
     expect(screen.getByText(t("versionHistory.empty"))).toBeTruthy();
@@ -132,7 +141,7 @@ describe("the Version History panel (4.6)", () => {
     const remove = registerVersionHistoryPanel(
       panels,
       createVersionList(list),
-      { restore: vi.fn(), remove: vi.fn(), openAsNewSite: vi.fn() },
+      { restore: vi.fn(), remove: vi.fn(), openAsNewSite: vi.fn(), cleanUp: vi.fn() },
       vi.fn(),
     );
 

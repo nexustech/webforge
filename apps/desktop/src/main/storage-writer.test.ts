@@ -121,10 +121,20 @@ describe("createStorageWriter", () => {
     const short = writer.putBlobs("site.wforge", [{ data, mime: "image/png" }]);
     fake.emit("message", { id: 2, outcome: { status: "put", hashes: [] } });
     expect(await short).toEqual({ status: "failed" });
-    const cleaning = writer.cleanUp("site.wforge");
+    const cleaning = writer.cleanUp("site.wforge", {
+      keep: new Set(["d".repeat(64)]),
+      vacuum: "always",
+    });
     fake.emit("message", {
       id: 3,
-      outcome: { status: "cleaned", blobs: 2, bytes: 9, assets: 1, vacuumed: true },
+      outcome: {
+        status: "cleaned",
+        blobs: 2,
+        bytes: 9,
+        assets: 1,
+        vacuumed: true,
+        freedBytes: 4096,
+      },
     });
     expect(await cleaning).toEqual({
       status: "cleaned",
@@ -132,6 +142,13 @@ describe("createStorageWriter", () => {
       bytes: 9,
       assets: 1,
       vacuumed: true,
+      freedBytes: 4096,
+    });
+    // What Version History's Clean up keeps, and how it VACUUMs (4.6).
+    expect(fake.sent.at(-1)?.message).toMatchObject({
+      type: "clean-up",
+      keep: ["d".repeat(64)],
+      vacuum: "always",
     });
     const wrong = writer.cleanUp("site.wforge");
     fake.emit("message", { id: 4, outcome: { status: "stored" } });

@@ -19,6 +19,7 @@ import {
 import Database from "better-sqlite3";
 import { z } from "zod";
 import {
+  blobsReachedBy,
   collectGarbage,
   decodeDocument,
   type GarbageReport,
@@ -768,7 +769,8 @@ export class ProjectStore {
   /**
    * The working copy's documents as a version would hold them: each one's id, kind and blob,
    * sorted by id. {@link saveVersion} saves them later, as long as the site stays open: garbage
-   * collection runs only as it closes, so their blobs stay in the file until then.
+   * collection runs as it closes, or while it's open with what's held kept
+   * ({@link blobsReachedBy}).
    */
   readManifest(): VersionManifest {
     return this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id")
@@ -978,6 +980,18 @@ export class ProjectStore {
     return this.#prepare(`SELECT ${ASSET_COLUMNS} FROM assets ORDER BY media_id`)
       .all()
       .map(toAssetInfo);
+  }
+
+  /**
+   * The blobs `documents` reach: their own, and every hash their content names (a Media item's
+   * original, a bundled file). What a clean-up of the open site keeps of a manifest held for later
+   * (4.5's publish), or of the working copy as the site opened, which Undo can bring back (4.6).
+   */
+  blobsReachedBy(documents: VersionManifest): Set<string> {
+    return blobsReachedBy(
+      this.#db,
+      documents.map(({ hash }) => hash),
+    );
   }
 
   /**

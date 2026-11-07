@@ -194,6 +194,19 @@ describe("the versions IPC calls (4.6)", () => {
     expect(result.status === "ok" ? result.versions.length : 0).toBe(1);
   });
 
+  it("cleans up once the renderer has saved its last changes, for its own opening only (P3)", async () => {
+    const flush = vi.fn(async () => undefined);
+    const { invoke, sessionId } = setUp({ flush });
+
+    expect(await invoke("versions:clean-up", sessionId)).toMatchObject({ status: "cleaned" });
+    expect(flush).toHaveBeenCalledOnce();
+    expect(await invoke("versions:clean-up", "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d")).toEqual({
+      status: "failed",
+      reason: "stale-session",
+    });
+    expect(flush).toHaveBeenCalledOnce();
+  });
+
   it("saves without a picture when the canvas can't be captured", async () => {
     const { invoke, sessionId } = setUp({ captureCanvas: async () => undefined });
     await invoke("versions:save", sessionId, { name: "No picture", reason: "manual" });

@@ -141,6 +141,7 @@ describe("SiteFileWriter", () => {
       bytes: 8 * 1024 * 1024 + 1,
       assets: 0,
       vacuumed: true,
+      freedBytes: expect.any(Number),
     });
     writer.close();
 
@@ -164,7 +165,13 @@ describe("SiteFileWriter", () => {
     expect(writer.cleanUp()).toMatchObject({ blobs: 1, vacuumed: false });
     const before = readFileSync(path);
 
-    expect(writer.cleanUp()).toEqual({ blobs: 0, bytes: 0, assets: 0, vacuumed: false });
+    expect(writer.cleanUp()).toEqual({
+      blobs: 0,
+      bytes: 0,
+      assets: 0,
+      vacuumed: false,
+      freedBytes: 0,
+    });
     writer.close();
 
     expect(readFileSync(path).equals(before)).toBe(true);
@@ -181,7 +188,13 @@ describe("SiteFileWriter", () => {
     const modified = statSync(path).mtimeMs;
 
     const writer = SiteFileWriter.open(path);
-    expect(writer.cleanUp()).toEqual({ blobs: 0, bytes: 0, assets: 0, vacuumed: false });
+    expect(writer.cleanUp()).toEqual({
+      blobs: 0,
+      bytes: 0,
+      assets: 0,
+      vacuumed: false,
+      freedBytes: 0,
+    });
     writer.close();
 
     expect(readFileSync(path).equals(before)).toBe(true);
@@ -200,6 +213,57 @@ describe("SiteFileWriter", () => {
     // Garbage goes, but a VACUUM of what's kept could outlast the time a clean-up is given.
     expect(writer.cleanUp()).toMatchObject({ blobs: 1, vacuumed: false });
     writer.close();
+  });
+
+  it("keeps what it's asked to while the site is open, with its Media item (4.6)", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    // An image deleted from the page this session, which Undo can bring back, and real garbage.
+    const { hash: undoable } = store.putAsset({
+      mediaId: "shop",
+      data: photo,
+      mime: "image/jpeg",
+      originalName: "shop.jpg",
+    });
+    const garbage = store.putBlob(new Uint8Array([4]), "image/png");
+    store.close();
+
+    const writer = SiteFileWriter.open(path);
+    expect(writer.cleanUp({ keep: [undoable] })).toMatchObject({ blobs: 1, assets: 0 });
+    writer.close();
+
+    const reopened = ProjectStore.open(path);
+    try {
+      expect(reopened.hasBlob(undoable)).toBe(true);
+      expect(reopened.readAsset("shop")).toMatchObject({ hash: undoable });
+      expect(reopened.hasBlob(garbage)).toBe(false);
+    } finally {
+      reopened.close();
+    }
+  });
+
+  it("gives every free byte back for Version History's Clean up, however large the file (4.6)", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    const kept = store.putBlob(new Uint8Array(17 * 1024 * 1024).fill(1), "image/png");
+    store.commit([{ type: "put", id: "page:home", kind: "page", content: { image: kept } }]);
+    store.putBlob(new Uint8Array(24 * 1024 * 1024).fill(2), "image/png");
+    store.close();
+    const before = statSync(path).size;
+
+    const writer = SiteFileWriter.open(path);
+    const report = writer.cleanUp({ vacuum: "always" });
+    writer.close();
+
+    expect(report).toMatchObject({ blobs: 1, vacuumed: true });
+    expect(report.freedBytes).toBeGreaterThan(20 * 1024 * 1024);
+    expect(statSync(path).size).toBeLessThan(before - 20 * 1024 * 1024);
+    // Freed already, nothing's left to give back: the file isn't written again.
+    const again = SiteFileWriter.open(path);
+    const unchanged = readFileSync(path);
+    expect(again.cleanUp({ vacuum: "always" })).toMatchObject({ vacuumed: false, freedBytes: 0 });
+    again.close();
+    expect(readFileSync(path).equals(unchanged)).toBe(true);
   });
 
   it("opens only a Webforge project", () => {

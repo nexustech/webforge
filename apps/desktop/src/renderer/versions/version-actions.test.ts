@@ -27,6 +27,7 @@ function fakeVersions(overrides: Partial<VersionsApi> = {}) {
     delete: vi.fn(async () => ({ status: "deleted" as const })),
     readSite: vi.fn<VersionsApi["readSite"]>(async () => ({ status: "not-found" })),
     openAsNewSite: vi.fn<VersionsApi["openAsNewSite"]>(async () => ({ status: "canceled" })),
+    cleanUp: vi.fn<VersionsApi["cleanUp"]>(async () => ({ status: "cleaned", freedBytes: 0 })),
     ...overrides,
   } satisfies VersionsApi;
 }
@@ -35,7 +36,12 @@ function setUp(versions = fakeVersions(), site: SiteDoc = starterSite()) {
   const session = sessionWith(site);
   const flush = vi.spyOn(session, "flush");
   const list = { state: undefined as never, refresh: vi.fn(async () => undefined) };
-  const notify = { success: vi.fn(), error: vi.fn() };
+  const working = vi.fn();
+  const notify = {
+    success: vi.fn(),
+    error: vi.fn(),
+    working: vi.fn((_message: string) => working),
+  };
   const restart = vi.fn();
   const actions = createVersionActions({
     versions,
@@ -46,7 +52,7 @@ function setUp(versions = fakeVersions(), site: SiteDoc = starterSite()) {
     restart,
   });
   const doc = () => session.history.document.getState();
-  return { actions, versions, session, flush, list, notify, restart, doc };
+  return { actions, versions, session, flush, list, notify, working, restart, doc };
 }
 
 /**
@@ -304,6 +310,39 @@ describe("Version History's actions (4.6)", () => {
     await Promise.all([first, second]);
     expect(secondDone).toBe(true);
     expect(save).toHaveBeenCalledOnce();
+  });
+
+  it("cleans up, saying it's working until it's done, and how much it gave back (P3)", async () => {
+    const { actions, versions, flush, list, notify, working } = setUp(
+      fakeVersions({
+        cleanUp: vi.fn<VersionsApi["cleanUp"]>(async () => ({
+          status: "cleaned",
+          freedBytes: 3_145_728,
+        })),
+      }),
+    );
+
+    expect(await actions.cleanUp()).toBe(true);
+
+    expect(flush).toHaveBeenCalledOnce();
+    expect(versions.cleanUp).toHaveBeenCalledWith(SESSION_ID);
+    expect(notify.working).toHaveBeenCalledWith(t("versionHistory.cleaningUp"));
+    expect(working).toHaveBeenCalledOnce();
+    expect(notify.success).toHaveBeenCalledWith(t("versionHistory.cleanedUp", { size: "3 MB" }));
+    expect(list.refresh).toHaveBeenCalledOnce();
+  });
+
+  it("says when Clean up had nothing to give back, or couldn't clean up", async () => {
+    const nothing = setUp();
+    await nothing.actions.cleanUp();
+    expect(nothing.notify.success).toHaveBeenCalledWith(t("versionHistory.nothingToCleanUp"));
+
+    const failed = setUp(
+      fakeVersions({ cleanUp: async () => ({ status: "failed", reason: "unknown" }) }),
+    );
+    expect(await failed.actions.cleanUp()).toBe(false);
+    expect(failed.notify.error).toHaveBeenCalledWith(t("versionHistory.cleanUpFailed"));
+    expect(failed.working).toHaveBeenCalledOnce();
   });
 
   it("tries the theme changes' version again when it couldn't be saved", async () => {

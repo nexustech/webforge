@@ -414,6 +414,21 @@ describe("ProjectStore versions in storage format 2 (#664)", () => {
     store.close();
   });
 
+  it("says which blobs a manifest's documents reach: their own, and those they name (4.6)", () => {
+    const store = ProjectStore.open(createProject());
+    const image = store.putBlob(new Uint8Array(10), "image/png");
+    const other = store.putBlob(new Uint8Array(20), "image/png");
+    store.commit([page("With image", image)]);
+    const held = store.readManifest();
+    store.commit([page("Now", other)]);
+
+    const reached = store.blobsReachedBy(held);
+
+    expect(reached).toEqual(new Set([...held.map(({ hash }) => hash), image]));
+    expect(reached.has(other)).toBe(false);
+    store.close();
+  });
+
   it("keeps a version's picture when cleaning up, and lets it go with the version", () => {
     const store = ProjectStore.open(createProject());
     store.commit([page("One")]);
