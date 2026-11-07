@@ -13,6 +13,7 @@ const CORE_PACKAGES = new Set([
   "publish",
   "commands",
   "site-check",
+  "help",
 ]);
 const CORE: Thresholds = { lines: 90, branches: 85, functions: 90, statements: 90 };
 const DEFAULT: Thresholds = { lines: 80, branches: 80, functions: 80, statements: 80 };

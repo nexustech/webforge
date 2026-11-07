@@ -11,7 +11,8 @@ name: CI
 #   every night, as a new advisory needs no commit). "Run workflow"
 #   (`gh workflow run ci.yml --ref <branch>`) runs everything at once.
 # - The `changes` job looks at the files a PR changes, to keep runs short. Docs-only PRs run
-#   nothing but "CI passed". Storybook runs only when the editor UI or what its stories render
+#   nothing but "CI passed", and the help pages' check when they change `docs/help/` (HP-5).
+#   Storybook runs only when the editor UI or what its stories render
 #   changed. Firefox and WebKit (exported-site tests) run only when the exported site can have
 #   changed; on Linux they run in Playwright's container (`export-browsers`), so their system
 #   packages never come from the runners' slow Ubuntu mirror. On a pull request Firefox runs on
@@ -63,6 +64,7 @@ jobs:
       storybook: ${{ steps.decide.outputs.storybook }}
       audit: ${{ steps.decide.outputs.audit }}
       transfer: ${{ steps.decide.outputs.transfer }}
+      help: ${{ steps.decide.outputs.help }}
     steps:
       - name: Decide which jobs to run
         id: decide
@@ -75,7 +77,7 @@ jobs:
         run: |
           set -euo pipefail
           everything() {
-            for output in run e2e all-browsers storybook audit transfer; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
+            for output in run e2e all-browsers storybook audit transfer help; do echo "$output=true" >> "$GITHUB_OUTPUT"; done
             exit 0
           }
           case "$EVENT" in
@@ -107,6 +109,9 @@ jobs:
           if ! grep -Evq "$docs" <<< "$files"; then
             echo "Only docs changed."
             echo "run=false" >> "$GITHUB_OUTPUT"
+            # The help pages are checked whenever they change (pnpm help-check, HP-5).
+            if matches '^docs/help/'; then help=true; else help=false; fi
+            echo "help=$help" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
           # Shared configuration and dependencies can affect every job.
@@ -125,6 +130,8 @@ jobs:
           # The FTP, FTPS and SFTP publishers, which the file-transfer job publishes with (4.3).
           transfer='^packages/(publish|errors)/'
           echo "run=true" >> "$GITHUB_OUTPUT"
+          # Code can change what the help pages are checked against: the catalogue, the strings.
+          echo "help=true" >> "$GITHUB_OUTPUT"
           if matches "$deps"; then audit=true; else audit=false; fi
           if matches "$shared" || matches "$transfer"; then transfer=true; else transfer=false; fi
           if matches "$shared" || grep -Evq "$unit_only" <<< "$files"; then e2e=true; else e2e=false; fi
@@ -161,6 +168,33 @@ jobs:
 
       - name: pnpm audit of production dependencies (moderate and above)
         run: pnpm audit --prod --audit-level=moderate
+
+  help:
+    # The help pages in docs/help (5.4b, HP-5): their front matter, links, anchors and component
+    # types, checked on every run with code, and on a docs-only PR that changes them.
+    name: Help pages
+    needs: changes
+    if: needs.changes.outputs.help == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Help pages (pnpm help-check)
+        run: pnpm help-check
 
   check:
     name: Check (${{ matrix.os }})
@@ -735,7 +769,7 @@ jobs:
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, audit, check, e2e-linux, e2e, export-browsers, visual, package, file-transfer]
+    needs: [changes, audit, help, check, e2e-linux, e2e, export-browsers, visual, package, file-transfer]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
