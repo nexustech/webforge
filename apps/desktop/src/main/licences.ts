@@ -17,7 +17,7 @@ export type LicenceFiles = {
  * Where the licences are: in development, the build's `out/notices` and Electron's own copy of
  * Chromium's; packaged, the notices beside app.asar, and Chromium's beside the program on Windows,
  * where electron-builder leaves it, or in a Mac app's Resources, where its `afterExtract` hook
- * copies it (`build/chromium-licences.cjs`).
+ * copies it (`scripts/chromium-licences.cjs`).
  */
 export function licenceFiles(options: {
   readonly packaged: boolean;
