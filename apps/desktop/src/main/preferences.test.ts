@@ -124,6 +124,20 @@ describe("openPreferencesStore", () => {
     });
   });
 
+  it("is idle only once every save asked for is written, as quitting waits for (#740)", async () => {
+    const store = await openPreferencesStore(file);
+    // A panel resized with the arrow keys: one save a step, none awaited.
+    for (let step = 1; step <= 10; step += 1) {
+      void store.set({ panelLayout: { "shell.left": { tabs: 60 - step, lower: 40 + step } } });
+    }
+
+    await store.idle();
+
+    expect(JSON.parse(readFileSync(file, "utf8")).panelLayout).toEqual({
+      "shell.left": { tabs: 50, lower: 50 },
+    });
+  });
+
   it("keeps saving after a write fails", async () => {
     // A file where the folder should be, so the first write fails.
     const folder = join(tempDir(), "later");
