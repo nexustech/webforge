@@ -43,14 +43,24 @@ export function checkInstallers(
   };
 }
 
-if (import.meta.main) {
-  const [dir] = process.argv.slice(2);
+/** What the command line gives for `args`: the message, and the exit code (2: no folder named). */
+export function checkFromArgs(args: readonly string[]): {
+  readonly code: number;
+  readonly message: string;
+} {
+  const [dir] = args;
   if (dir === undefined) {
-    console.error("Usage: node tools/src/check-installer-size.ts <folder with the installers>");
-    process.exitCode = 2;
-  } else {
-    const { ok, message } = checkInstallers(findInstallers(dir));
-    (ok ? console.log : console.error)(message);
-    if (!ok) process.exitCode = 1;
+    return {
+      code: 2,
+      message: "Usage: node tools/src/check-installer-size.ts <folder with the installers>",
+    };
   }
+  const { ok, message } = checkInstallers(findInstallers(dir));
+  return { code: ok ? 0 : 1, message };
+}
+
+if (import.meta.main) {
+  const { code, message } = checkFromArgs(process.argv.slice(2));
+  (code === 0 ? console.log : console.error)(message);
+  process.exitCode = code;
 }

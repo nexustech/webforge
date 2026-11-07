@@ -2,7 +2,12 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { checkInstallers, findInstallers, INSTALLER_BUDGET_BYTES } from "./check-installer-size.js";
+import {
+  checkFromArgs,
+  checkInstallers,
+  findInstallers,
+  INSTALLER_BUDGET_BYTES,
+} from "./check-installer-size.js";
 
 let dir: string;
 beforeEach(() => {
@@ -35,5 +40,16 @@ describe("the installers' size (§10, 5.1)", () => {
     expect(over.ok).toBe(false);
     expect(over.message).toMatch(/^OVER big\.dmg/);
     expect(checkInstallers([]).ok).toBe(false);
+  });
+
+  it("checks the folder the command line names, and says how to name one", () => {
+    writeFileSync(join(dir, "Webforge-Setup.exe"), "installer");
+    expect(checkFromArgs([dir])).toEqual({
+      code: 0,
+      message: `ok   ${join(dir, "Webforge-Setup.exe")}: 0.0 MB (budget 150.0 MB)`,
+    });
+    expect(checkFromArgs([]).code).toBe(2);
+    rmSync(join(dir, "Webforge-Setup.exe"));
+    expect(checkFromArgs([dir]).code).toBe(1);
   });
 });
