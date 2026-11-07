@@ -40,6 +40,8 @@ extraResources:
   - from: out/notices
     to: notices
 asar: true
+# Chromium's licences in a Mac app's Resources (5.3): electron-builder deletes them from its folder.
+afterExtract: build/chromium-licences.cjs
 # Native addons can't be loaded from inside an asar archive.
 asarUnpack:
   - "**/*.node"
@@ -85,11 +87,6 @@ mac:
   minimumSystemVersion: "13.0"
   # Unsigned until a Developer ID certificate is set up in CI.
   identity: null
-  # Chromium's licences (5.3): electron-builder leaves Electron's LICENSES.chromium.html beside the
-  # program on Windows, but not in a Mac app, so it goes with the notices there.
-  extraResources:
-    - from: node_modules/electron/dist/LICENSES.chromium.html
-      to: notices/LICENSES.chromium.html
 
 dmg:
   artifactName: ${productName}-${version}-arm64.${ext}

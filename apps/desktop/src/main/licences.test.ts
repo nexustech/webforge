@@ -96,14 +96,14 @@ describe("licenceFiles", () => {
     });
   });
 
-  it("finds Chromium's beside the program on Windows, and with the notices on macOS", () => {
+  it("finds Chromium's beside the program on Windows, and in the app's Resources on macOS", () => {
     expect(licenceFiles({ ...where, packaged: true, platform: "win32" })).toEqual({
       noticesDir: join("/res", "notices"),
       chromium: join("/program", "LICENSES.chromium.html"),
     });
     expect(licenceFiles({ ...where, packaged: true, platform: "darwin" })).toEqual({
       noticesDir: join("/res", "notices"),
-      chromium: join("/res", "notices", "LICENSES.chromium.html"),
+      chromium: join("/res", "LICENSES.chromium.html"),
     });
   });
 });

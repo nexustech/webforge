@@ -183,10 +183,10 @@ test("ships the third-party notices beside app.asar, and Chromium's licences whe
     "better-sqlite3",
   );
   // Where the main process looks (licences.ts): beside the program on Windows, where
-  // electron-builder leaves it, and with the notices in a Mac app, whose build adds it.
+  // electron-builder leaves it, and in a Mac app's Resources, where its afterExtract hook copies it.
   const chromium =
     process.platform === "darwin"
-      ? join(dir, "notices", "LICENSES.chromium.html")
+      ? join(dir, "LICENSES.chromium.html")
       : join(dir, "..", "LICENSES.chromium.html");
   expect(existsSync(chromium)).toBe(true);
 });
