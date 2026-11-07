@@ -22,7 +22,7 @@ import { fillWebAddress } from "./web-address.js";
  */
 export const publishArea: Area<WindowContext> = {
   id: "publish",
-  register: ({ api, commands, session, windowDialogs, panels, codeTrust }) => {
+  register: ({ api, commands, session, windowDialogs, panels, codeTrust, publishedYear }) => {
     const opened = createStore<{ readonly open: boolean }>(() => ({ open: false }));
     const close = () => opened.setState({ open: false });
     const outcomes = createPublishOutcomes();
@@ -34,7 +34,11 @@ export const publishArea: Area<WindowContext> = {
       api: api.publish,
       sessionId: siteSession,
       askReplace: outcomes.askReplace,
-      showLive: outcomes.showLive,
+      // Live now: the site shows this year where its text has `{year}` (F-CM-8).
+      showLive: (live) => {
+        publishedYear.setState(new Date().getFullYear(), true);
+        outcomes.showLive(live);
+      },
       showDestinations: () => opened.setState({ open: true }),
     };
     // One publish at a time: another waits for none, it's simply not started.

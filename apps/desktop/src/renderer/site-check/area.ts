@@ -22,6 +22,7 @@ export const siteCheckArea: Area<WindowContext> = {
     siteCheckIgnored,
     windowDialogs,
     codeTrust,
+    publishedYear,
   }) => {
     // Download and bundle's question (3.9), drawn once in the window.
     const question = createBundleConfirm();
@@ -45,6 +46,7 @@ export const siteCheckArea: Area<WindowContext> = {
       ignored: siteCheckIgnored.initial,
       saveIgnored: siteCheckIgnored.save,
       allowListConfirmed: codeTrust.allowListConfirmed,
+      publishedYear,
       bundle: {
         confirm: question.confirm,
         download: (url) => api.site.bundleFile(siteSession(), url),

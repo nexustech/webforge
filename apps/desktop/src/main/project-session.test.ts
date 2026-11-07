@@ -575,6 +575,36 @@ describe("ProjectSession editor mode", () => {
     });
   });
 
+  it("says when the site last went live, for Site Check (F-CM-8), whatever became of its versions", async () => {
+    const path = join(dir, "Bakery.wforge");
+    await session.create(path);
+    await session.close();
+    const store = ProjectStore.open(path);
+    // The version that publish saved has been deleted since: the time is kept apart.
+    const version = store.saveVersion("", "on-publish", {
+      publishedTo: {
+        destinationId: "host",
+        publishedAt: "2027-01-03T09:00:00.000Z",
+        check: "live",
+      },
+    });
+    store.writeLastPublishedAt("2027-01-03T09:00:00.000Z");
+    store.deleteVersion(version.id);
+    store.close();
+
+    await session.open(path);
+    expect(await session.uiState()).toEqual({
+      editorMode: "design",
+      siteCheckIgnored: [],
+      lastPublishedAt: "2027-01-03T09:00:00.000Z",
+    });
+    // Read only: a change can't set it.
+    expect(
+      await session.setUiState({ lastPublishedAt: "2020-01-01T00:00:00.000Z" } as never),
+    ).toEqual({ status: "saved" });
+    expect((await session.uiState())?.lastPublishedAt).toBe("2027-01-03T09:00:00.000Z");
+  });
+
   it("reports a read-only site or a write error instead of throwing", async () => {
     await session.create(join(dir, "Bakery.wforge"));
     const write = vi.spyOn(ProjectStore.prototype, "writeEditorMode");

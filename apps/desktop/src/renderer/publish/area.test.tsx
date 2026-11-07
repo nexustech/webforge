@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { createSite } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
 import type { PublishResult } from "../../shared/ipc/publish.js";
 import type { WindowContext } from "../editor/areas.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -89,6 +90,8 @@ function setUp({
   const codeTrust = {
     confirm: vi.fn(async () => ({ go: true, keeps: () => true, allowListConfirmed: true })),
   };
+  // Published two years ago, as far as the window knows.
+  const publishedYear = createStore<number | undefined>(() => new Date().getFullYear() - 2);
   // Only what the area uses of the window's context.
   const context = {
     ...registries,
@@ -96,10 +99,11 @@ function setUp({
     session,
     windowDialogs,
     codeTrust,
+    publishedYear,
   } as unknown as WindowContext;
   const remove = publishArea.register(context);
   render(<WindowDialogs registry={windowDialogs} />);
-  return { registries, session, api, remove, flush, showPanel };
+  return { registries, session, api, remove, flush, showPanel, publishedYear };
 }
 
 /** Opens Publish and publishes to Rosa's Bakery. */
@@ -180,6 +184,21 @@ describe("publishArea (4.4a)", () => {
     const live = within(await screen.findByRole("dialog", { name: "Your site is live" }));
     expect(live.getByText("This publish couldn't be kept in Version History.")).toBeTruthy();
     expect(live.queryByRole("alert")).toBeNull();
+  });
+
+  it("tells Site Check the site now shows this year, once live and only then (F-CM-8)", async () => {
+    const before = new Date().getFullYear() - 2;
+    const failed = setUp({ published: { status: "cancelled" } });
+    await publishToRosas(failed.registries);
+    await waitFor(() => expect(failed.api.publish.publish).toHaveBeenCalled());
+    expect(failed.publishedYear.getState()).toBe(before);
+    failed.remove();
+    cleanup();
+
+    const { registries, publishedYear } = setUp();
+    await publishToRosas(registries);
+    await screen.findByRole("dialog", { name: "Your site is live" });
+    expect(publishedYear.getState()).toBe(new Date().getFullYear());
   });
 
   it("says what the live check found when the address shows another page", async () => {

@@ -9,8 +9,10 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore, type StoreApi } from "zustand/vanilla";
 import { starterSite } from "../../shared/starter-site.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
+import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { registerSiteCheckPanel, SITE_CHECK_PANEL_ID } from "./register-site-check-panel.js";
@@ -76,7 +78,11 @@ function siteWith({
   };
 }
 
-function setUp(site: SiteDoc = siteWith(), ignored: readonly string[] = []) {
+function setUp(
+  site: SiteDoc = siteWith(),
+  ignored: readonly string[] = [],
+  publishedYear?: StoreApi<number | undefined>,
+) {
   const session = sessionWith(site);
   const panels = createPanelRegistry();
   const settings = createSettingsRegistry();
@@ -92,6 +98,7 @@ function setUp(site: SiteDoc = siteWith(), ignored: readonly string[] = []) {
     openGuide,
     ignored,
     saveIgnored,
+    ...(publishedYear === undefined ? {} : { publishedYear }),
   });
   const panel = panels.list()[0];
   if (panel === undefined) throw new Error("not registered");
@@ -206,6 +213,23 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
     await userEvent.click(within(rule("webAddress")).getByRole("button", { name: "Fix" }));
     expect(showSettings).toHaveBeenCalledWith("site", "address");
+  });
+
+  it("tips when the published site shows an earlier year, and its Fix opens Publish (F-CM-8)", async () => {
+    const lastYear = new Date().getFullYear() - 1;
+    const site = siteWith({
+      content: [{ type: "Text", props: { id: "copyright", text: "<p>© {year} Rosa's</p>" } }],
+    });
+    const { rule, commands } = setUp(
+      site,
+      [],
+      createStore<number | undefined>(() => lastYear),
+    );
+    expect(rule("outdatedYear").dataset.status).toBe("warn");
+    expect(rule("outdatedYear").textContent).toContain(`Shows ${lastYear}`);
+
+    await userEvent.click(within(rule("outdatedYear")).getByRole("button", { name: "Fix" }));
+    expect(commands.run).toHaveBeenCalledWith(COMMAND_IDS.publish);
   });
 
   it("opens Site Settings at Forms for a form with no service; a Newsletter's address is its own (3.7)", async () => {
