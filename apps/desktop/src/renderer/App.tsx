@@ -34,6 +34,7 @@ import {
 } from "./shell/confirm-site-wide.js";
 import { ContextualToolbarsProvider } from "./shell/contextual-toolbar-context.js";
 import { createContextualToolbars } from "./shell/contextual-toolbars.js";
+import { OpenSourceLicences } from "./shell/LicencesDialog.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
@@ -306,6 +307,7 @@ export function App({
             </div>
             <HelpCommands help={api.help} />
             <AboutDialog info={info} />
+            <OpenSourceLicences licences={api.app} />
             <ShortcutSheet />
             <SiteCommands project={api.project} templates={api.templates} />
             <SettingsHost registry={settings} />

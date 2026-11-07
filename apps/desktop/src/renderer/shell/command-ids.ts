@@ -48,5 +48,6 @@ export const COMMAND_IDS = {
   help: "help.open",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
+  licences: "help.licences",
   about: "help.about",
 } as const;

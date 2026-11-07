@@ -2,8 +2,11 @@
   "name": "@webforge/tools",
   "version": "0.0.0",
   "private": true,
-  "description": "Repository scripts: licence check, UI-string guard (later: release, fixture generation)",
+  "description": "Repository scripts: licence check and third-party notices, UI-string guard (later: release, fixture generation)",
   "type": "module",
+  "exports": {
+    "./third-party-notices": "./src/third-party-notices.ts"
+  },
   "dependencies": {
     "@webforge/help": "workspace:*",
     "@webforge/themes": "workspace:*",

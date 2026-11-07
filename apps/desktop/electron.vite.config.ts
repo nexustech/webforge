@@ -7,6 +7,13 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { buildBridge } from "@webforge/mcp-bridge/build";
+import {
+  collectNotices,
+  dependencyDirs,
+  findPackageDir,
+  packageDirOf,
+  writeNotices,
+} from "@webforge/tools/third-party-notices";
 import { defineConfig } from "electron-vite";
 import type { Plugin } from "vite";
 import { buildContentSecurityPolicy } from "./src/shared/content-security-policy.js";
@@ -133,13 +140,62 @@ function bundleTemplates(): Plugin {
 /**
  * Bundles the bridge (ADR 0021) into `out/bridge/webforge-bridge.mjs`, which electron-builder puts
  * beside app.asar (`extraResources`): *Install in Claude Desktop* writes it into each extension.
+ * The files it holds go into `bundled`, for the third-party notices.
  */
-function bundleBridge(): Plugin {
+function bundleBridge(bundled: Set<string>): Plugin {
   const root = fileURLToPath(new URL(".", import.meta.url));
   return {
     name: "webforge:bundle-bridge",
     async closeBundle() {
-      await buildBridge(join(root, "out", "bridge", "webforge-bridge.mjs"));
+      for (const file of await buildBridge(join(root, "out", "bridge", "webforge-bridge.mjs"))) {
+        bundled.add(file);
+      }
+    },
+  };
+}
+
+/**
+ * Writes the third-party notices (5.3, C1) into `out/notices`, which electron-builder puts beside
+ * app.asar (`extraResources`): the Open-Source Licences screen's `notices.json`, and
+ * THIRD_PARTY_NOTICES.txt. They list every package the app ships: those whose files the main,
+ * preload and renderer bundles and the bridge loaded (`bundled`, which each build adds to), the
+ * main process's dependencies with all of theirs (electron-builder copies them as they are), the
+ * installer's fonts (2.2) and Electron. Written after each build, so the last has them all,
+ * whichever order the builds run in.
+ */
+function thirdPartyNotices(bundled: Set<string>): Plugin {
+  const root = fileURLToPath(new URL(".", import.meta.url));
+  return {
+    name: "webforge:third-party-notices",
+    buildEnd() {
+      for (const id of this.getModuleIds()) bundled.add(id);
+    },
+    async closeBundle() {
+      const dirs = new Set<string>();
+      for (const id of bundled) {
+        const dir = packageDirOf(id);
+        if (dir !== undefined) dirs.add(dir);
+      }
+      const desktop = JSON.parse(await readFile(join(root, "package.json"), "utf8")) as {
+        readonly dependencies: Readonly<Record<string, string>>;
+      };
+      for (const dir of dependencyDirs(root, Object.keys(desktop.dependencies))) dirs.add(dir);
+      const catalogue = JSON.parse(
+        await readFile(join(root, "../../packages/themes/src/fonts/catalogue.json"), "utf8"),
+      ) as FontCatalogue;
+      const shipped = [
+        ...catalogue.families.map((font) => ({
+          from: "../../packages/pipeline",
+          name: font.package,
+        })),
+        { from: ".", name: "electron" },
+      ];
+      for (const { from, name } of shipped) {
+        const dir = findPackageDir(join(root, from), name);
+        if (dir === undefined) throw new Error(`${name} isn't installed: run pnpm install`);
+        dirs.add(dir);
+      }
+      await writeNotices(join(root, "out", "notices"), collectNotices(dirs));
     },
   };
 }
@@ -148,10 +204,18 @@ export default defineConfig(({ command }) => {
   // The dev server injects inline scripts and styles (HMR, React Refresh); a per-run nonce lets
   // them through without weakening the policy to 'unsafe-inline'.
   const devNonce = command === "serve" ? randomBytes(16).toString("base64") : undefined;
+  // The files every build bundled, for the third-party notices: shared by the three builds.
+  const bundled = new Set<string>();
 
   return {
     main: {
-      plugins: [inlineBase64(), bundleFonts(), bundleTemplates(), bundleBridge()],
+      plugins: [
+        inlineBase64(),
+        bundleFonts(),
+        bundleTemplates(),
+        bundleBridge(bundled),
+        thirdPartyNotices(bundled),
+      ],
       build: {
         rolldownOptions: {
           // The export worker runs in its own utility process (07); it bundles the pipeline. The
@@ -165,6 +229,7 @@ export default defineConfig(({ command }) => {
       },
     },
     preload: {
+      plugins: [thirdPartyNotices(bundled)],
       build: {
         // A sandboxed preload can't load another file: each entry is one file, with no chunk shared
         // between them.
@@ -190,6 +255,7 @@ export default defineConfig(({ command }) => {
         }),
         tailwindcss(),
         contentSecurityPolicy(devNonce),
+        thirdPartyNotices(bundled),
       ],
       ...(devNonce === undefined ? {} : { html: { cspNonce: devNonce } }),
       build: {

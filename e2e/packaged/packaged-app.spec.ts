@@ -162,6 +162,35 @@ test("ships every catalogue font beside app.asar, byte for byte, within the font
   expect(total).toBeLessThanOrEqual(FONT_BUDGET_BYTES);
 });
 
+test("ships the third-party notices beside app.asar, and Chromium's licences where it reads them (5.3)", () => {
+  const dir = resourcesDir();
+  test.skip(dir === undefined, "Linux is not a release target");
+  if (dir === undefined) return;
+  const { packages } = JSON.parse(readFileSync(join(dir, "notices", "notices.json"), "utf8")) as {
+    packages: { name: string; licence: string }[];
+  };
+  const names = new Set(packages.map(({ name }) => name));
+  for (const name of [
+    "react",
+    "better-sqlite3",
+    "ssh2",
+    "electron",
+    ...FONT_CATALOGUE.map((font) => font.package),
+  ]) {
+    expect(names.has(name), name).toBe(true);
+  }
+  expect(readFileSync(join(dir, "notices", "THIRD_PARTY_NOTICES.txt"), "utf8")).toContain(
+    "better-sqlite3",
+  );
+  // Where the main process looks (licences.ts): beside the program on Windows, where
+  // electron-builder leaves it, and with the notices in a Mac app, whose build adds it.
+  const chromium =
+    process.platform === "darwin"
+      ? join(dir, "notices", "LICENSES.chromium.html")
+      : join(dir, "..", "LICENSES.chromium.html");
+  expect(existsSync(chromium)).toBe(true);
+});
+
 test("the packaged app opens a .wforge passed on the command line", async () => {
   test.skip(executable === undefined, "Packaged builds exist for Windows and macOS only");
   if (executable === undefined) {

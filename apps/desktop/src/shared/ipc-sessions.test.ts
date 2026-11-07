@@ -50,6 +50,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "app:log-failure": "a failure's code, kept locally without site content",
   "app:set-native-menus": "the menus macOS shows, made from the renderer's commands",
   "app:open-guide": "a guide page of the app's",
+  "app:list-licences": "the app's own third-party notices",
+  "app:open-chromium-licences": "Electron's own Chromium licences file",
   "app:set-spellcheck-language": "the spelling checker's language",
   "canvas:compile-css": "CSS compiled from what the renderer sends, nothing read from the file",
   "canvas:class-catalogue": "the classes the site's CSS supports",

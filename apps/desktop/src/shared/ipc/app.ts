@@ -72,6 +72,41 @@ const GUIDES = ["businessProfile", "searchConsole"] as const;
 /** One of {@link GUIDES}. */
 export type Guide = (typeof GUIDES)[number];
 
+/** One package the app ships, as the Open-Source Licences screen lists it (5.3, C1). */
+const noticeSchema = z.strictObject({
+  name: z.string().min(1).max(214),
+  version: z.string().min(1).max(256),
+  /** Its licence, as its package names it: an SPDX expression, usually. */
+  licence: z.string().min(1).max(500),
+  /** Its home page or repository. */
+  homepage: z
+    .url({ protocol: /^https?$/ })
+    .max(2048)
+    .optional(),
+  /** Its licence and notice files, as the package ships them. */
+  text: z.string().max(500_000).optional(),
+});
+
+/** One package the app ships, with its licence. */
+export type Notice = z.infer<typeof noticeSchema>;
+
+/**
+ * The third-party notices the build writes beside the app (`notices/notices.json`, 5.3): every
+ * package it ships, by name.
+ */
+export const noticesFileSchema = z.strictObject({
+  packages: z.array(noticeSchema).max(5000),
+});
+
+/** The app's packages and their licences; `failed` when the notices couldn't be read. */
+const licencesResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("listed"), packages: noticesFileSchema.shape.packages }),
+  z.strictObject({ status: z.literal("failed") }),
+]);
+
+/** What `listLicences` gives. */
+export type LicencesResult = z.infer<typeof licencesResultSchema>;
+
 /** IPC channels of the `app` domain (`app:*`). */
 export const appChannels = {
   getAppInfo: {
@@ -121,6 +156,24 @@ export const appChannels = {
     request: z.tuple([z.enum(GUIDES)]),
     response: z.boolean(),
   },
+  /**
+   * The packages the app ships and their licences (5.3, C1), from the notices its build wrote
+   * beside it, for Help → Open-Source Licences.
+   */
+  listLicences: {
+    channel: "app:list-licences",
+    request: z.tuple([]),
+    response: licencesResultSchema,
+  },
+  /**
+   * Opens Chromium's own licences, which Electron ships as LICENSES.chromium.html, in the default
+   * browser: a fixed file of the app's. `false` when it couldn't be opened.
+   */
+  openChromiumLicences: {
+    channel: "app:open-chromium-licences",
+    request: z.tuple([]),
+    response: z.boolean(),
+  },
   /** Spell checks text in the site's language (F-ED-19); Windows only, macOS chooses itself. */
   setSpellCheckLanguage: {
     channel: "app:set-spellcheck-language",
@@ -153,6 +206,10 @@ export interface AppApi {
   reportError(kind: RendererErrorKind, error: ErrorDetails): Promise<null>;
   /** Logs a handled failure: where (`clipboard.paste`) and the error's name and code only. */
   logFailure(context: string, code: string): Promise<null>;
+  /** The packages the app ships and their licences. */
+  listLicences(): Promise<LicencesResult>;
+  /** Opens Chromium's licences in the default browser; `false` when it couldn't. */
+  openChromiumLicences(): Promise<boolean>;
   /** Opens `guide`'s page in the default browser; `false` when it couldn't. */
   openGuide(guide: Guide): Promise<boolean>;
   /** Spell checks text in `language`, the site's (a language tag such as `en-GB`). */
