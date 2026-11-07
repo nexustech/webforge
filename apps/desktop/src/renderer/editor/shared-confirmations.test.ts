@@ -9,7 +9,7 @@ import {
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import type { SiteWideAction } from "../shell/confirm-site-wide.js";
+import { createSiteWideConfirm, type SiteWideAction } from "../shell/confirm-site-wide.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { connectEngine, currentPage } from "./editor-session.js";
 import { confirmSharedRemovals, sharedCutConfirmation } from "./shared-confirmations.js";
@@ -44,7 +44,7 @@ function setUp(answer?: boolean, site: SiteDoc = footerSite()) {
         if (answer !== undefined) settle(answer);
       }),
   );
-  const siteWide = { confirmSiteWide, current: () => (asking ? ({} as SiteWideAction) : null) };
+  const siteWide = { confirmSiteWide, busy: () => asking };
   connectEngine(confirmSharedRemovals(engine, session, siteWide), session);
   const removeHeading = () => {
     const { layout } = session.history.document.getState();
@@ -113,6 +113,59 @@ describe("confirmSharedRemovals (D7, F-ED-7)", () => {
     ]);
     expect(engine.command("undo")).toBe(true);
     expect(footer().map((props) => props.id)).toEqual(["footer", "fh", "fh2"]);
+  });
+
+  it("ignores the canvas's undo until the confirmed removal has its version, so undo never lands first (4.6)", async () => {
+    const site = footerSite();
+    const session = sessionWith(site);
+    const engine = createFakeEngine();
+    const siteWide = createSiteWideConfirm();
+    let saved: () => void = () => undefined;
+    siteWide.setBeforeSiteWideAction(
+      () =>
+        new Promise<void>((resolve) => {
+          saved = resolve;
+        }),
+    );
+    connectEngine(confirmSharedRemovals(engine, session, siteWide), session);
+    const labels = () => session.history.entries().map((entry) => entry.label);
+    session.edit("text", "Edited shared Heading text", (draft) => {
+      const heading = draft.layout.footer.find((node) => node.props.id === "fh2");
+      if (heading !== undefined) heading.props.text = "Closed on Mondays";
+    });
+    const { layout } = session.history.document.getState();
+    const page = currentPage(session)?.doc;
+    if (page === undefined) throw new Error("no page");
+    engine.edit({
+      kind: "remove",
+      nodeId: "fh",
+      componentType: "Heading",
+      page,
+      selection: null,
+      shared: true,
+      layout: { ...layout, footer: layout.footer.filter((node) => node.props.id !== "fh") },
+    });
+
+    // Answered, the question has closed, but the removal waits for its version: Ctrl/Cmd+Z on the
+    // canvas then would undo the edit before it, and the removal would land after.
+    siteWide.answer(true);
+    expect(siteWide.current()).toBeNull();
+    expect(engine.command("undo")).toBe(false);
+    expect(labels()).toEqual(["Edited shared Heading text"]);
+
+    saved();
+    await vi.waitFor(() =>
+      expect(labels()).toEqual(["Edited shared Heading text", "Deleted shared Heading"]),
+    );
+    // Undo then undoes the removal, not the edit before it.
+    const footerIds = () =>
+      session.history.document.getState().layout.footer.map((n) => n.props.id);
+    expect(footerIds()).toEqual(["footer", "fh2"]);
+    expect(engine.command("undo")).toBe(true);
+    expect(footerIds()).toEqual(["footer", "fh", "fh2"]);
+    expect(session.history.document.getState().layout.footer[2]?.props.text).toBe(
+      "Closed on Mondays",
+    );
   });
 
   it("puts the canvas back, recording nothing, when cancelled", async () => {
