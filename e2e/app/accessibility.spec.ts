@@ -42,7 +42,7 @@ test("the start screen, the editor and its main dialogs pass axe", async () => {
   expect(await windowAxe(page)).toEqual([]);
   // A new site has no web address yet, so Export asks for one first.
   for (const [role, name, open] of [
-    ["dialog", "Settings", () => page.keyboard.press("Control+,")],
+    ["dialog", "Settings", () => page.keyboard.press("ControlOrMeta+,")],
     [
       "alertdialog",
       "Add your site's web address?",
@@ -89,7 +89,7 @@ test("the core flows work from the keyboard alone", async () => {
   await page.keyboard.type("Typed from the keyboard ");
   await page.keyboard.press("Escape");
   await expect(canvas.getByText(/Typed from the keyboard/)).toHaveCount(1);
-  await page.keyboard.press("Control+Z");
+  await page.keyboard.press("ControlOrMeta+z");
   await expect(canvas.getByText(/Typed from the keyboard/)).toHaveCount(0);
 
   // The bottom panel, then the Edit panel: Tab reaches its options.
@@ -114,7 +114,7 @@ test("the core flows work from the keyboard alone", async () => {
   await expect(canvas.locator("section")).toHaveCount(before + 1);
 
   // A dialog from its shortcut, worked and closed from the keyboard, gives the focus back.
-  await page.keyboard.press("Control+,");
+  await page.keyboard.press("ControlOrMeta+,");
   const settings = page.getByRole("dialog", { name: "Settings" });
   await expect(settings).toBeVisible();
   await page.keyboard.press("Escape");
