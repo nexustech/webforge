@@ -126,7 +126,7 @@ export function TourCard({
       {...props}
     >
       {step === undefined ? null : <p className="m-0 text-xs text-muted-foreground">{step}</p>}
-      <h2 id={titleId} className="m-0 text-sm font-semibold">
+      <h2 id={titleId} className="m-0 text-base font-semibold">
         {title}
       </h2>
       <div className="flex flex-col gap-2 text-sm">{children}</div>
