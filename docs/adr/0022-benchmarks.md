@@ -37,7 +37,21 @@ Vitest 5 changed its benchmarks. They are tests in `*.bench.ts` files, run by `v
 ## Consequences
 - A PR that makes the history, a commit, an export, the preview's build or Site Check more than 20% slower fails CI, whatever runner it lands on. A slowdown spread over several PRs, each under 20%, passes. The nightly run's printed medians show that drift.
 - The job takes two installs and four runs, about 10 minutes. It runs only when measured code changes.
-- SPREAD
+- **The spread, measured on CI before relying on the gate.** Three "Run workflow" runs on 7 Nov 2026 (42397545174, 42398191584, 42399753720) compared a commit with itself, on three different runners:
+
+  | Benchmark | Each round's ratio, all three runs |
+  |---|---|
+  | autosave-commit | ×0.97 to ×1.12 |
+  | export-full | ×0.86 to ×1.07 |
+  | history-jump | ×0.98 to ×1.00 |
+  | history-keystroke | ×0.96 to ×1.06 |
+  | history-undo-redo | ×0.98 to ×1.02 |
+  | preview-page | ×0.98 to ×1.02 |
+  | preview-theme-colour | ×0.95 to ×1.01 |
+  | site-check-publish | ×0.96 to ×1.05 |
+
+  - No round went past ×1.12, and no benchmark past ×1.07 in both rounds of a run. That leaves the 20% threshold with room in every case, so `bench/thresholds.json` gives none more.
+  - Between runners, the same commit's absolute times differed by up to 25%: the export's best median was 128 ms on one and 161 ms on another. That is why the base and the head run on one runner.
 - A benchmark new in a PR has no baseline, so it can't fail until it is on `main`.
 - Results stay out of git (`bench/results/` is ignored).
 
