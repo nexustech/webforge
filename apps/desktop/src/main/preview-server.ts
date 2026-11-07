@@ -43,6 +43,12 @@ export type PreviewServer = {
   onPhoneStopped(listener: () => void): void;
   /** Takes a build: its files are served from now on, and the browsers told what changed. */
   update(build: PreviewBuild): void;
+  /**
+   * Takes a version's build (Version History's Preview, 4.6): served on this computer under
+   * {@link VERSION_PATH}, as it is, without the live reload script, so the editor's changes never
+   * reach it, until another version's replaces it.
+   */
+  showVersion(build: PreviewBuild): void;
   /** Takes the editor to `page` (`about.html`): the browsers showing another page go there. */
   show(page: string): void;
   /** A build failed: pages waiting for the first one are told it isn't ready, at once. */
@@ -54,6 +60,12 @@ export type PreviewServer = {
   /** Stops listening, closing every connection. */
   close(): Promise<void>;
 };
+
+/**
+ * Where a version's preview is served, under the base: in the server's own `__webforge/`, which no
+ * page of a site can be in.
+ */
+export const VERSION_PATH = "__webforge/version/";
 
 /** Content types by extension; anything else is served as bytes. */
 const CONTENT_TYPES: Readonly<Record<string, string>> = {
@@ -137,6 +149,9 @@ type Listener = {
 const hostsFor = (scope: PreviewScope, address: string, port: number) =>
   scope === "local" ? [`${address}:${port}`, `localhost:${port}`] : [`${address}:${port}`];
 
+/** The file a request's path names: a folder's `index.html`. */
+const pageFile = (path: string) => (path === "" || path.endsWith("/") ? `${path}index.html` : path);
+
 /**
  * `html` with the live reload script before its `</body>`, or at its end: it follows the editor,
  * swapping the stylesheet in place, reloading a changed page or going to the page shown.
@@ -164,6 +179,8 @@ export function createPreviewServer(
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
   let files = new Map<string, Uint8Array>();
+  /** The files of the version previewed last, if any (4.6). */
+  let versionFiles = new Map<string, Uint8Array>();
   // Each file's version, its ETag: a number that only ever goes up while the server runs.
   const versions = new Map<string, number>();
   let version = 0;
@@ -312,7 +329,23 @@ export function createPreviewServer(
       openStream(listener, request, response);
       return;
     }
-    const wanted = path === "" || path.endsWith("/") ? `${path}index.html` : path;
+    if (path.startsWith(VERSION_PATH)) {
+      // A version is previewed on this computer only.
+      const file = pageFile(path.slice(VERSION_PATH.length));
+      const data = scope === "local" ? versionFiles.get(file) : undefined;
+      if (data === undefined) {
+        notFound(response);
+        return;
+      }
+      response.writeHead(200, {
+        ...COMMON_HEADERS,
+        "Content-Type": contentTypeOf(file),
+        "Content-Length": data.byteLength,
+      });
+      response.end(head ? undefined : data);
+      return;
+    }
+    const wanted = pageFile(path);
     if (built) {
       serveFile(wanted, listener, request, response, head);
       return;
@@ -410,6 +443,9 @@ export function createPreviewServer(
       const pages = changed.filter((path) => path.endsWith(".html"));
       const assets = changed.some((path) => !path.endsWith(".html") && path !== PREVIEW_STYLESHEET);
       send("reload", { pages, all: build.full || assets });
+    },
+    showVersion(build) {
+      versionFiles = new Map(build.changed.map(({ path, data }) => [path, data]));
     },
     show(page) {
       send("show", { page });

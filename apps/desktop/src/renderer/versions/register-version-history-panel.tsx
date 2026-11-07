@@ -14,7 +14,7 @@ import type { VersionList } from "./version-list.js";
 export function registerVersionHistoryPanel(
   panels: PanelRegistry,
   list: VersionList,
-  actions: Pick<VersionActions, "restore" | "remove" | "openAsNewSite" | "cleanUp">,
+  actions: Pick<VersionActions, "preview" | "restore" | "remove" | "openAsNewSite" | "cleanUp">,
   onSave: () => void,
 ): () => void {
   function VersionHistory() {

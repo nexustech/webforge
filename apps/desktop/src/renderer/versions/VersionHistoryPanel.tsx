@@ -28,7 +28,10 @@ import { versionDate, versionName } from "./version-words.js";
 /** Props of {@link VersionHistoryPanel}. */
 export type VersionHistoryPanelProps = {
   readonly state: VersionListState;
-  readonly actions: Pick<VersionActions, "restore" | "remove" | "openAsNewSite" | "cleanUp">;
+  readonly actions: Pick<
+    VersionActions,
+    "preview" | "restore" | "remove" | "openAsNewSite" | "cleanUp"
+  >;
   /** Save Version…: asks for the version's name. */
   readonly onSave: () => void;
   /** How dates are written; the computer's way when left out. */
@@ -128,6 +131,9 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" onCloseAutoFocus={menuDialog.onCloseAutoFocus}>
+                      <DropdownMenuItem onSelect={() => run(() => actions.preview(version))}>
+                        {t("versionHistory.preview")}
+                      </DropdownMenuItem>
                       <DropdownMenuItem
                         onSelect={() => menuDialog.choose({ kind: "restore", version })}
                       >

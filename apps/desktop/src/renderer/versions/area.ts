@@ -34,6 +34,7 @@ export const versionHistoryArea: Area<WindowContext> = {
     const list = createVersionList(() => api.versions.list(siteSession()));
     const actions = createVersionActions({
       versions: api.versions,
+      preview: api.preview,
       sessionId: siteSession,
       session,
       list,

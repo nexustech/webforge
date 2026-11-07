@@ -11,6 +11,7 @@ type Story = StoryObj<typeof meta>;
 
 const nothing = async () => false;
 const actions = {
+  preview: nothing,
   restore: nothing,
   remove: nothing,
   openAsNewSite: async () => undefined,

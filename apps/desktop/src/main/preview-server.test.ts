@@ -7,6 +7,7 @@ import {
   createPreviewServer,
   type PreviewBuild,
   type PreviewServer,
+  VERSION_PATH,
 } from "./preview-server.js";
 
 const text = new TextEncoder();
@@ -156,6 +157,27 @@ describe("the preview server (3.2)", () => {
     expect(script.body).toContain("EventSource");
     // HEAD answers with no body.
     expect(await get(port, preview.base, "HEAD")).toMatchObject({ status: 200, body: "" });
+  });
+
+  it("serves a version's build apart, as it is, on this computer only (4.6)", async () => {
+    const { server: preview, port } = await started();
+    preview.update(FIRST);
+    preview.showVersion({
+      type: "previewed",
+      full: true,
+      changed: [{ path: "index.html", data: page("Home as it was") }],
+      removed: [],
+    });
+
+    const version = await get(port, `${preview.base}${VERSION_PATH}`);
+    expect(version).toMatchObject({ status: 200, type: "text/html; charset=utf-8" });
+    expect(version.body).toContain("Home as it was");
+    // Never followed by the editor: no live reload script.
+    expect(version.body).not.toContain("live.js");
+    expect((await get(port, `${preview.base}${VERSION_PATH}services/about.html`)).status).toBe(404);
+    // The live preview goes on as it was.
+    expect((await get(port, preview.base)).body).toContain("Home");
+    expect((await get(port, preview.base)).body).not.toContain("as it was");
   });
 
   it("serves nothing but the build's files, and nothing without its base", async () => {

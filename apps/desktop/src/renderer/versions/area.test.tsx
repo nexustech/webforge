@@ -30,6 +30,7 @@ function setUp() {
   const siteWide = createSiteWideConfirm();
   const session = sessionWith();
   const api = fakePreloadApi({
+    preview: { openVersion: vi.fn() } as never,
     versions: {
       list: vi.fn(async () => ({ status: "ok" as const, versions: [], bytes: 0 })),
       save: vi.fn(async () => ({ status: "saved" as const, version: saved })),

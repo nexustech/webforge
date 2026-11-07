@@ -41,6 +41,15 @@ export const previewChannels = {
     request: z.tuple([sessionIdSchema, siteContentSchema, pagePathSchema]),
     response: z.enum(["opened", "failed"]),
   },
+  /**
+   * Opens a version's site, read as it was, at `page` in the default browser (Version History's
+   * Preview, 4.6): apart from the live preview, which the editor's changes never reach it from.
+   */
+  previewVersion: {
+    channel: "preview:version",
+    request: z.tuple([sessionIdSchema, siteContentSchema, pagePathSchema]),
+    response: z.enum(["opened", "failed"]),
+  },
   /** The site changed: the browsers showing the preview get the change. Nothing while it's closed. */
   previewUpdate: {
     channel: "preview:update",
@@ -83,6 +92,12 @@ export const previewEvents = {
 export interface PreviewApi {
   /** Opens the preview of the site opened as `sessionId`, at `page`, in the default browser. */
   open(sessionId: string, site: SiteContent, page: PreviewPage): Promise<"opened" | "failed">;
+  /** Opens version `site` of the site opened as `sessionId`, at `page`, in the default browser. */
+  openVersion(
+    sessionId: string,
+    site: SiteContent,
+    page: PreviewPage,
+  ): Promise<"opened" | "failed">;
   /** Tells the preview the site opened as `sessionId` changed. */
   update(sessionId: string, site: SiteContent): Promise<null>;
   /** Tells the preview the editor shows `page`. */

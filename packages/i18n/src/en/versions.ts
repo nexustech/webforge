@@ -45,14 +45,17 @@ export const versions = {
   "versionHistory.restore.confirm": "Restore Version",
   "versionHistory.restored": "Restored “{name}”. Undo puts the site back as it was.",
   "versionHistory.history.restored": "Restored version “{name}”",
-  "versionHistory.restore.gone": "That version is no longer in this site.",
-  "versionHistory.restore.newer":
-    "That version was saved by a newer {appName}, so it can't be restored here.",
-  "versionHistory.restore.invalid": "That version can't be read, so it can't be restored.",
+  "versionHistory.unreadable.gone": "That version is no longer in this site.",
+  "versionHistory.unreadable.newer":
+    "That version was saved by a newer {appName}, so this one can't open it.",
+  "versionHistory.unreadable.invalid": "That version can't be read.",
   "versionHistory.restore.notSaved":
     "{appName} couldn't save a version of the site as it is now, so nothing was restored.",
   // Open as new site.
   "versionHistory.openAsNewSite": "Open as New Site…",
+  // Preview: the version's site in the browser, as it was.
+  "versionHistory.preview": "Preview",
+  "versionHistory.previewFailed": "{appName} couldn't preview the version.",
   "versionHistory.newSiteName": "{site} ({version})",
   "versionHistory.openFailed.gone":
     "That version is no longer in this site, so it can't be opened.",
