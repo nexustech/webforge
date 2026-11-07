@@ -8,6 +8,7 @@
     "./puck-dom": "./src/puck/puck-dom.ts"
   },
   "devDependencies": {
+    "@dnd-kit/react": "0.4.0",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "fast-check": "4.10.2",
