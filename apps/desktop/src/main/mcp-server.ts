@@ -17,7 +17,7 @@ import {
   UNTRUSTED_SITE_TEXT,
 } from "@webforge/commands";
 import { type AiRequest, type AiResponse, APP_TOOLS, REQUEST_MEDIA } from "../shared/ipc/ai.js";
-import { BUILD_SITE_PROMPT, buildSitePrompt } from "./mcp-prompts.js";
+import { buildSitePrompt, buildSitePromptInfo } from "./mcp-prompts.js";
 import { MAIN_TOOLS } from "./site-brief.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
@@ -117,12 +117,12 @@ export function createMcpServer(
     };
   });
   // The one prompt (4.12b, AIB-8): the order that builds a site, in the app's prompt menu.
-  server.setRequestHandler(ListPromptsRequestSchema, () => ({ prompts: [BUILD_SITE_PROMPT] }));
+  server.setRequestHandler(ListPromptsRequestSchema, () => ({ prompts: [buildSitePromptInfo()] }));
   server.setRequestHandler(GetPromptRequestSchema, ({ params }) => {
-    if (params.name !== BUILD_SITE_PROMPT.name) {
+    if (params.name !== buildSitePromptInfo().name) {
       throw new McpError(ErrorCode.InvalidParams, "There is no such prompt.");
     }
-    return buildSitePrompt(info.name, params.arguments?.description);
+    return buildSitePrompt(params.arguments?.description);
   });
   server.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
     const tool = TOOLS.find((each) => each.name === params.name);
