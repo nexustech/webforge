@@ -148,6 +148,7 @@ export {
   MenubarTrigger,
 } from "./components/ui/menubar.js";
 export { Picker, type PickerItem, type PickerProps } from "./components/ui/picker.js";
+export type { ScreenBox } from "./components/ui/place-card.js";
 export {
   ResizableHandle,
   type ResizableLayout,
@@ -166,4 +167,5 @@ export {
   TooltipProvider,
   TooltipTrigger,
 } from "./components/ui/tooltip.js";
+export { TourCard, type TourCardProps } from "./components/ui/tour-card.js";
 export { cn } from "./lib/cn.js";

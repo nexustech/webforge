@@ -33,6 +33,7 @@ describe("parsePreferences", () => {
       add: DEFAULT_PREFERENCES.add,
       editPanel: DEFAULT_PREFERENCES.editPanel,
       versionsKept: 20,
+      onboarding: { tour: "new", tipsSeen: [], showTips: true },
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
     // Versions kept (P3): 5 to 100, else the default 20.
@@ -66,6 +67,16 @@ describe("parsePreferences", () => {
       DEFAULT_PREFERENCES.editPanel,
     );
     expect(parsePreferences({}).editPanel).toEqual({ closedGroups: {} });
+  });
+
+  it("keeps where the person is with the tour and tips, or starts them over if invalid (OB-6)", () => {
+    const onboarding = { tour: "skipped", tipsSeen: ["firstSelection"], showTips: false };
+    expect(parsePreferences({ onboarding }).onboarding).toEqual(onboarding);
+    // A file from before 5.4a has none: the tour is new, no tip has been seen.
+    expect(parsePreferences({ theme: "light" }).onboarding).toEqual(DEFAULT_PREFERENCES.onboarding);
+    expect(parsePreferences({ onboarding: { ...onboarding, tour: "later" } }).onboarding).toEqual(
+      DEFAULT_PREFERENCES.onboarding,
+    );
   });
 });
 

@@ -3,3 +3,4 @@
 export { helpForElementArea } from "./area.js";
 export { HelpButton, HelpProvider, type HelpTopic, settingsHelpTopic } from "./HelpButton.js";
 export { HelpCommands, openHelpWith } from "./HelpCommands.js";
+export { bundledHelpLibrary, type HelpLibrary } from "./help-library.js";

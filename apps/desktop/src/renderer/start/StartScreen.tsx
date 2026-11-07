@@ -13,6 +13,7 @@ import { useCallback, useEffect, useState } from "react";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
+import type { PrefsApi } from "../../shared/ipc/prefs.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
@@ -61,6 +62,8 @@ export type StartScreenProps = {
   readonly help?: Pick<HelpApi, "open">;
   /** AI apps' briefs (4.12a), for New Site's quick start; injectable for tests. */
   readonly ai?: Pick<AiApi, "onBrief">;
+  /** The person's preferences, where the quick start asks for the tour (OB-1); injectable for tests. */
+  readonly prefs?: Pick<PrefsApi, "get" | "set">;
 };
 
 /**
@@ -77,6 +80,7 @@ export function StartScreen({
   locale,
   help,
   ai,
+  prefs,
 }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
@@ -185,6 +189,7 @@ export function StartScreen({
           {...(templates === undefined ? {} : { templates })}
           {...(restart === undefined ? {} : { restart })}
           {...(ai === undefined ? {} : { ai })}
+          {...(prefs === undefined ? {} : { prefs })}
         />
         <AboutDialog info={info} />
         <ShortcutSheet editor={false} />
