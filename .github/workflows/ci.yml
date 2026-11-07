@@ -854,13 +854,105 @@ jobs:
           results="$RUNNER_TEMP/bench-results"
           node tools/src/compare-bench.ts --thresholds bench/thresholds.json             --base "$results/base-1" "$results/base-2" --head "$results/head-1" "$results/head-2"
 
+  perf:
+    # The app's own timings against architecture §10's budgets (`pnpm e2e:perf`, e2e/perf/, ADR 0007
+    # and 0022), on the reference machines 5.1 names: Windows and macOS. Nightly and from "Run
+    # workflow" only: timings on a shared runner are too noisy to gate a PR (ADR 0007), and the
+    # benchmarks' comparison does that. Then the installers are built, and their size checked
+    # against §10's 150 MB.
+    name: Performance (${{ matrix.os }})
+    needs: changes
+    if: github.event_name != 'pull_request' && vars.FULL_CI_ENABLED == 'true' && needs.changes.outputs.run == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ci-cache/ms-playwright
+      electron_config_cache: ${{ github.workspace }}/.ci-cache/electron
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Screen size (Windows)
+        # Windows runners start at 1024 × 768, smaller than the app's 1280 × 800 window.
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
+      - name: Cache keys
+        id: keys
+        shell: bash
+        run: |
+          playwright=$(node -p "require('./e2e/node_modules/@playwright/test/package.json').version")
+          electron=$(node -p "require('./apps/desktop/node_modules/electron/package.json').version")
+          echo "browsers=playwright-${{ runner.os }}-$playwright-chromium" >> "$GITHUB_OUTPUT"
+          echo "electron=electron-${{ runner.os }}-$electron" >> "$GITHUB_OUTPUT"
+
+      - name: Restore Playwright browsers
+        uses: actions/cache/restore@v6
+        with:
+          path: .ci-cache/ms-playwright
+          key: ${{ steps.keys.outputs.browsers }}
+
+      - name: Restore Electron
+        uses: actions/cache/restore@v6
+        with:
+          path: .ci-cache/electron
+          key: ${{ steps.keys.outputs.electron }}
+
+      - name: Install Chromium
+        # The preview's timings open the site in a browser.
+        run: pnpm --filter @webforge/e2e exec playwright install chromium
+
+      - name: The app's timings against §10
+        run: pnpm e2e:perf
+
+      - name: Save Electron
+        # The first app start downloads Electron's binary.
+        if: always() && hashFiles('.ci-cache/electron/**') != ''
+        uses: actions/cache/save@v6
+        continue-on-error: true
+        with:
+          path: .ci-cache/electron
+          key: ${{ steps.keys.outputs.electron }}
+
+      - name: Upload the timings
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf-results-${{ matrix.os }}
+          path: e2e/perf-results/
+          if-no-files-found: ignore
+
+      - name: Build the installer and check its size (§10, 150 MB)
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = Windows ]; then pnpm --filter @webforge/desktop package:win; else pnpm --filter @webforge/desktop package:mac; fi
+          node tools/src/check-installer-size.ts apps/desktop/release
+
   passed:
     # The one required check on `main` (spec/03 §7). Every job above can be skipped, and a skipped
     # job's check never reports, so `main` requires this instead: it always runs, and fails if any
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, audit, help, check, bench, e2e-linux, e2e, export-browsers, visual, package, file-transfer]
+    needs: [changes, audit, help, check, bench, e2e-linux, e2e, export-browsers, visual, package, file-transfer, perf]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
