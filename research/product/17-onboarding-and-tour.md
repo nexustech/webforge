@@ -49,7 +49,7 @@ The tour and the tips fit what's left after the quick start. A checklist mostly 
   A last card says where help is (F1, the **?** buttons) and closes the tour.
 - **How it behaves:**
   - It never blocks the editor: the card sits beside its control, and the person can keep working.
-  - Esc skips, and the card is a labelled dialog that takes the focus, so it works with a keyboard and a screen reader.
+  - The card is non-modal: a labelled region that takes the focus as it opens, but doesn't trap it. Tab, and F6 between the window's parts, reach the editor, so a keyboard or screen-reader user can edit text on step 1. Esc skips the tour.
   - If a step's control isn't on screen (the left panels hidden, Content mode), the card shows centred instead.
 
 ### First-time tips (OB-4, OB-5)
@@ -79,7 +79,7 @@ The tour and the tips fit what's left after the quick start. A checklist mostly 
 ## 5. Effort
 
 Within 5.4a's 4 days:
-- **The tour, 1.5 days:** the card component, which places itself beside a control, falls back to the centre, traps the focus and takes Esc; the steps; the offer; and Help › *Take the Tour*.
+- **The tour, 1.5 days:** the card component, which places itself beside a control and falls back to the centre, takes the focus as it opens without trapping it (Tab and F6 reach the editor) and takes Esc; the steps; the offer; and Help › *Take the Tour*.
 - **The tips and their switches, 1 day:** five tips, the preferences group, and Settings' two controls.
 - **Tests, 1 day:** stories (axe, dark and light), unit tests, E2E (the tour from the quick start to Publish's card, a tip shown once), and the help pages for the tour and tips (HP-4).
 - **The usability test's script, 0.5 day.**
