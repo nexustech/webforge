@@ -24,11 +24,12 @@ import {
   submenuOpeners,
 } from "./commands.js";
 
-/** The palette's groups, in order: the app's commands, pages to go to, things to add. */
+/** The palette's groups, in order: the app's commands, pages to go to, things to add, help. */
 const GROUPS = [
   { id: "commands", heading: "shell.commandBox.commands" },
   { id: "pages", heading: "shell.commandBox.pages" },
   { id: "add", heading: "shell.commandBox.add" },
+  { id: "help", heading: "shell.commandBox.help" },
 ] as const satisfies readonly { id: PaletteGroup | "commands"; heading: string }[];
 
 /** Props of {@link CommandBox}. */

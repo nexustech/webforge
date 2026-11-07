@@ -166,6 +166,9 @@ export default defineConfig(({ command }) => {
     },
     preload: {
       build: {
+        // A sandboxed preload can't load another file: each entry is one file, with no chunk shared
+        // between them.
+        isolatedEntries: true,
         rolldownOptions: {
           // The editor window's, and the Help window's own (5.4b), which gives its page far less.
           input: { index: "src/preload/index.ts", help: "src/preload/help.ts" },

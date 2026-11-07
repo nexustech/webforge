@@ -60,6 +60,8 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "fonts:list": "the app's font catalogue",
   "fonts:browse": "the app's font catalogue",
   "fonts:download": "a font for the app, not the site",
+  "help:open": "the app's help pages, which come with it",
+  "help:open-external": "a page on the web a help page links to",
   "mcp:status": "AI apps, which are the app's, whichever site is open",
   "mcp:set-enabled": "AI apps, which are the app's, whichever site is open",
   "mcp:add": "AI apps, which are the app's, whichever site is open",
