@@ -852,7 +852,8 @@ jobs:
         shell: bash
         run: |
           results="$RUNNER_TEMP/bench-results"
-          node tools/src/compare-bench.ts --thresholds bench/thresholds.json             --base "$results/base-1" "$results/base-2" --head "$results/head-1" "$results/head-2"
+          node tools/src/compare-bench.ts --thresholds bench/thresholds.json \
+            --base "$results/base-1" "$results/base-2" --head "$results/head-1" "$results/head-2"
 
   perf:
     # The app's own timings against architecture §10's budgets (`pnpm e2e:perf`, e2e/perf/, ADR 0007

@@ -10,6 +10,7 @@ files:
   # The fonts and templates go beside app.asar instead (below).
   - "!out/fonts/**"
   - "!out/templates/**"
+  - "!out/notices/**"
   - package.json
   # Production dependencies (better-sqlite3, ssh2 and theirs) are added from node_modules
   # automatically.
@@ -35,7 +36,12 @@ extraResources:
   # The bridge Claude Desktop runs (4.9, ADR 0021), written into each paired app's extension.
   - from: out/bridge
     to: bridge
+  # The third-party notices (5.3): Help → Open-Source Licences' list, and THIRD_PARTY_NOTICES.txt.
+  - from: out/notices
+    to: notices
 asar: true
+# Chromium's licences in a Mac app's Resources (5.3): electron-builder deletes them from its folder.
+afterExtract: scripts/chromium-licences.cjs
 # Native addons can't be loaded from inside an asar archive.
 asarUnpack:
   - "**/*.node"

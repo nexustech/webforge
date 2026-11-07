@@ -8,6 +8,8 @@ export const appApi = (call: Call, subscribe: Subscribe): AppApi => ({
   reportError: (kind, error) => call("reportError", kind, error),
   logFailure: (context, code) => call("logFailure", context, code),
   openGuide: (guide) => call("openGuide", guide),
+  listLicences: () => call("listLicences"),
+  openChromiumLicences: () => call("openChromiumLicences"),
   setSpellCheckLanguage: (language) => call("setSpellCheckLanguage", language),
   setNativeMenus: (menus) => call("setNativeMenus", menus),
   onRunCommand: (run) =>
