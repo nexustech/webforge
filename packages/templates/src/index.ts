@@ -18,3 +18,4 @@ export {
   templateImageSchema,
   templateSchema,
 } from "./template.js";
+export { TEMPLATE_IMAGE_HASHES } from "./template-images.js";

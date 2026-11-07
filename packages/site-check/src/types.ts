@@ -73,6 +73,11 @@ export type CheckInput = {
    * been published, or isn't known.
    */
   readonly published?: { readonly year: number; readonly thisYear: number };
+  /**
+   * The SHA-256 of every picture the shipped templates come with (4.12b), from
+   * `@webforge/templates`: an image with one is still a template's placeholder. Left out, none is.
+   */
+  readonly templateImages?: ReadonlySet<string>;
 };
 
 /** One Site Check rule (F-CHK-1): its level, and what it finds in a site. */

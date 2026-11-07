@@ -1,7 +1,8 @@
 import type { MediaMeta } from "@webforge/model";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
 import { element, file, findIn, image, siteWith } from "../test-site.test-helper.js";
-import { largeFilesRule, largeImagesRule } from "./media.js";
+import { largeFilesRule, largeImagesRule, templateImagesRule } from "./media.js";
 
 const media = (...items: MediaMeta[]) => Object.fromEntries(items.map((item) => [item.id, item]));
 
@@ -80,5 +81,41 @@ describe("large files (F-ED-24)", () => {
       },
       expect.objectContaining({ key: "big" }),
     ]);
+  });
+});
+
+describe("pictures from the template (4.12b, AIB-7)", () => {
+  const template = "c".repeat(64);
+  const site = siteWith(
+    [
+      element("Image", "a", { image: { mediaId: "workshop" } }),
+      element("Image", "b", { image: { mediaId: "workshop" } }),
+      element("Image", "c", { image: { mediaId: "own" } }),
+      element("Image", "d", { image: { mediaId: "hidden" }, hidden: true }),
+    ],
+    {
+      media: media(
+        image("workshop", { hash: template }),
+        image("own", { hash: "d".repeat(64) }),
+        image("hidden", { hash: template }),
+        image("unused", { hash: template }),
+      ),
+    },
+  );
+
+  it("tips each picture the site shows that is still a template's, once", () => {
+    expect(
+      templateImagesRule.check({ site, catalogue: CATALOGUE, templateImages: new Set([template]) }),
+    ).toEqual([
+      {
+        key: "workshop",
+        place: { kind: "media", mediaId: "workshop" },
+        values: { name: "workshop.jpg" },
+      },
+    ]);
+  });
+
+  it("finds none without the templates' pictures to compare with", () => {
+    expect(findIn(templateImagesRule, site)).toEqual([]);
   });
 });

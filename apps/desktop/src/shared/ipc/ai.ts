@@ -19,6 +19,18 @@ export const APP_TOOLS = {
     "phone preview. A second request within a few seconds opens nothing more.",
 } as const;
 
+/**
+ * The window's one tool that changes the site (4.12b, AIB-7): it asks the person for pictures or
+ * files through Webforge's own *Add files* dialog, with the app's reason. The app never gives a
+ * path or an address, and Webforge fetches nothing: the person chooses what's added.
+ */
+export const REQUEST_MEDIA = {
+  name: "requestMedia",
+  description:
+    'Asks the person to add pictures or files to the site\'s Media, with your reason ("Photos of your workshop and team"), through Webforge\'s own Add files dialog. You never give a path or a web address, and nothing is downloaded: the person chooses the files on their computer, or adds none. Answers with the id, file name and kind of each one added, which updateFields takes as { "mediaId": id }. If it times out while the person is still choosing, the media query shows what they added.',
+  input: z.strictObject({ reason: z.string().trim().min(1).max(200) }),
+} as const;
+
 /** The name of one of {@link APP_TOOLS}. */
 export type AppToolName = keyof typeof APP_TOOLS;
 

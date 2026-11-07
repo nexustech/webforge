@@ -79,6 +79,12 @@ export const siteCheck = {
   "siteCheck.rule.largeFiles.fail.one": "1 linked file is over 10 MB, slow to download on a phone",
   "siteCheck.rule.largeFiles.fail.other":
     "{count} linked files are over 10 MB, slow to download on a phone",
+  "siteCheck.rule.templateImages": "Pictures from the template",
+  "siteCheck.rule.templateImages.pass": "Every picture is your own",
+  "siteCheck.rule.templateImages.fail.one":
+    "1 picture is still the template's: replace it with your own",
+  "siteCheck.rule.templateImages.fail.other":
+    "{count} pictures are still the template's: replace them with your own",
   "siteCheck.rule.underlinedText": "Underlined text",
   "siteCheck.rule.underlinedText.pass": "Only links are underlined",
   "siteCheck.rule.underlinedText.fail.one":

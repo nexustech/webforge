@@ -38,6 +38,36 @@ export const largeImagesRule: CheckRule = {
 };
 
 /**
+ * Pictures from the template (4.12b, AIB-7): images the site shows that are still the template's
+ * placeholders, by the hash of their bytes. A tip, each image once, so the person (or an AI app,
+ * through Run Site Check) knows which to replace with their own.
+ */
+export const templateImagesRule: CheckRule = {
+  id: "templateImages",
+  level: "tip",
+  check: (input) => {
+    const placeholders = input.templateImages;
+    if (placeholders === undefined || placeholders.size === 0) return [];
+    const used = new Set<MediaId>();
+    eachFieldValue(input, ["media"], ({ value }) => {
+      const image = imageValueSchema.safeParse(value);
+      if (image.success) used.add(image.data.mediaId);
+    });
+    return [...used].flatMap((mediaId) => {
+      const meta = mediaItem(input.site.media, mediaId);
+      if (meta?.kind !== "image" || !placeholders.has(meta.hash)) return [];
+      return [
+        {
+          key: mediaId,
+          place: { kind: "media", mediaId } as const,
+          values: { name: meta.fileName },
+        },
+      ];
+    });
+  },
+};
+
+/**
  * Files in Media that pages link to and that are over 10 MB (F-ED-24): a tip, as a visitor on a
  * phone waits for them. Files nothing links to aren't exported, so they don't count.
  */

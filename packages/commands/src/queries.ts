@@ -165,6 +165,34 @@ export const QUERIES = {
       );
     },
   },
+  /**
+   * The site's Media (4.12b, AIB-7): each picture and file, to place by id. Pictures go in Image
+   * fields as `{ mediaId }`; requestMedia asks the person for more.
+   */
+  media: {
+    description: `The site's Media: each picture and file by id, with its file name, kind ("image" or "file"), type, a picture's width, height and alt text, and a file's size in bytes. Put a picture in an Image field with updateFields, as { "mediaId": id }. runSiteCheck's templateImages tip lists those still the template's; requestMedia asks the person for their own.`,
+    input: z.strictObject({}),
+    read: (site: SiteDoc) =>
+      Object.values(site.media).map((item) =>
+        item.kind === "image"
+          ? {
+              id: item.id,
+              fileName: item.fileName,
+              kind: item.kind,
+              mimeType: item.mimeType,
+              width: item.width,
+              height: item.height,
+              alt: item.alt,
+            }
+          : {
+              id: item.id,
+              fileName: item.fileName,
+              kind: item.kind,
+              mimeType: item.mimeType,
+              ...(item.size === undefined ? {} : { size: item.size }),
+            },
+      ),
+  },
   /** The theme's tokens: colours, fonts, corners, spacing… */
   theme: {
     description:
