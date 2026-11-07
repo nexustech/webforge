@@ -63,11 +63,11 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - change the theme;
 - run [Site Check](site-check.md) and open the [Preview](preview.md).
 
-It can't change publishing, forms, analytics, Custom Code, your site's icon or its pictures: those stay yours.
+It can't change publishing, forms, analytics, Custom Code, search engines' verification codes, your site's icon or its pictures: those stay yours.
 
 Some changes ask you first, with **Allow**:
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
-- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your phone number, email address or a social profile names the old one and the new one too.
+- changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or *Page not found*.
 

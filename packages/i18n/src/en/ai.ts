@@ -26,6 +26,9 @@ export const ai = {
   "ai.confirm.destinationFromTo": "{field}: from {from} to {to}.",
   // Where a field with no address sends visitors.
   "ai.confirm.noAddress": "no address",
+  // Whether search engines may show the site, before and after (4.11): "…: from yes to no."
+  "ai.confirm.yes": "yes",
+  "ai.confirm.no": "no",
   "ai.part.header": "Header",
   "ai.part.footer": "Footer",
 } as const;

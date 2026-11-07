@@ -736,6 +736,17 @@ export const COMMANDS = {
       const title = input.title === undefined ? page.title : pageTitle(input.title);
       if (title === "") return fail("invalid", "A page needs a title.");
       const description = input.description?.trim();
+      const { settings } = page;
+      if (
+        title === page.title &&
+        (description === undefined || description === (settings.description ?? "")) &&
+        (input.hideFromNavigation === undefined ||
+          input.hideFromNavigation === settings.hideFromNavigation) &&
+        (input.hideFromSearch === undefined ||
+          input.hideFromSearch === (settings.hideFromSearch === true))
+      ) {
+        return fail("invalid", "The page's settings are already like that.");
+      }
       const { id } = page;
       return {
         action: t("history.changedPage"),

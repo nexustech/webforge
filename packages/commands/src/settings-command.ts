@@ -13,7 +13,7 @@ type Part = (typeof PARTS)[number];
 const notTheirs = {
   error: (issue: { code?: string; keys?: readonly string[] }) =>
     issue.code === "unrecognized_keys"
-      ? `AI apps can't change ${(issue.keys ?? []).join(", ")}: only the business's name, description, language and type, its web address, contact details, opening hours, social profiles and search settings. Publishing, forms, analytics, code, the icon and pictures stay the person's.`
+      ? `AI apps can't change ${(issue.keys ?? []).join(", ")}: only the business's name, description, language and type, its web address, contact details, opening hours, social profiles and search settings. Publishing, forms, analytics, code, search engines' verification codes, the icon and pictures stay the person's.`
       : undefined,
 };
 
@@ -66,7 +66,8 @@ const settingsChange = z
             allowIndexing: search.shape.allowIndexing.optional(),
             includeSitemap: search.shape.includeSitemap.optional(),
             readableByAi: search.shape.readableByAi.nullable(),
-            verification: search.shape.verification.nullable(),
+            // Not `verification`: a code proves to a search engine that the site is its owner's,
+            // so one planted in what an app reads would hand the site's listing to someone else.
           },
           notTheirs,
         )
@@ -117,14 +118,29 @@ function changed(settings: SiteSettings, change: SettingsChange): unknown {
 const same = (a: unknown, b: unknown) => JSON.stringify(a) === JSON.stringify(b);
 
 /**
- * Where visitors reach the business that changes (S18's way, for contact details): the email, the
- * phone and each network's profiles, from what they were to what they'd be, in the dialog's words.
+ * What the person should see before allowing it, from what it was to what it'd be, in the dialog's
+ * words (S18's way): the web address and whether search engines may show the site, which decide
+ * whether the site is found at all; and where visitors reach the business, its email, phone and
+ * each network's profiles.
  */
-function contactChanges(before: SiteSettings, after: SiteSettings): string[] {
+function namedChanges(before: SiteSettings, after: SiteSettings): string[] {
   const none = t("ai.confirm.noAddress");
   const line = (field: string, from: string | undefined, to: string | undefined) =>
     t("ai.confirm.destinationFromTo", { field, from: from || none, to: to || none });
   const lines: string[] = [];
+  if (before.address.url !== after.address.url) {
+    lines.push(line(t("site.settings.webAddress"), before.address.url, after.address.url));
+  }
+  if (before.search.allowIndexing !== after.search.allowIndexing) {
+    const shown = (allowed: boolean) => t(allowed ? "ai.confirm.yes" : "ai.confirm.no");
+    lines.push(
+      line(
+        t("site.settings.allowIndexing"),
+        shown(before.search.allowIndexing),
+        shown(after.search.allowIndexing),
+      ),
+    );
+  }
   if (before.contact.email !== after.contact.email) {
     lines.push(line(t("site.settings.email"), before.contact.email, after.contact.email));
   }
@@ -149,13 +165,14 @@ function contactChanges(before: SiteSettings, after: SiteSettings): string[] {
 /**
  * Changes the business part of Site Settings (4.11, AIB-2): its name, description, language and
  * type, web address, contact details, opening hours, social profiles and search settings. Never
- * publishing, forms, analytics, Custom Code or pictures: those stay the person's (F-AI-1). The name
- * and contact details show on every page, so it asks once (D7), naming where a changed phone,
- * email or social profile now goes and would go, as S18 does for payment links.
+ * publishing, forms, analytics, Custom Code, search engines' verification codes or pictures: those
+ * stay the person's (F-AI-1). The name and contact details show on every page, so it asks once (D7),
+ * naming a changed web address, search engines' permission, phone, email or social profile from
+ * what it was to what it'd be, as S18 does for payment links.
  */
 export const updateSettings = {
   description:
-    "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search. Each as the settings query gives it; null clears an optional one, and what's left out stays. Never publishing, forms, analytics, code, the icon or pictures. They show on every page, so it waits for the person to allow it. One undo step.",
+    "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search (allowIndexing, includeSitemap, readableByAi). Each as the settings query gives it; null clears an optional one, and what's left out stays. Never publishing, forms, analytics, code, search engines' verification codes, the icon or pictures. They show on every page, so it waits for the person to allow it. One undo step.",
   input: settingsChange,
   plan(site: SiteDoc, input: SettingsChange): Plan | Failure {
     const before = site.settings;
@@ -165,7 +182,7 @@ export const updateSettings = {
     const parts = PARTS.filter((part: Part) => !same(before[part], after[part]));
     if (parts.length === 0) return fail("invalid", "Site Settings are already like that.");
     const sections = parts.map((part) => t(`site.settings.section.${part}`)).join(", ");
-    const lines = contactChanges(before, after);
+    const lines = namedChanges(before, after);
     return {
       action: t("site.settings.historySections", { sections }),
       structural: structural(input),

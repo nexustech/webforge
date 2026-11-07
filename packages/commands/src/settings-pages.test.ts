@@ -228,6 +228,11 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
     ],
     ["the icon", { general: { icon: "media-1" } }, "icon"],
     ["the share image", { social: { shareImage: "media-1" } }, "shareImage"],
+    [
+      "search engines' verification codes",
+      { search: { verification: { google: "abcdefgh12345678" } } },
+      "verification",
+    ],
   ])("refuses %s settings, which stay the person's", async (_, change, key) => {
     const { host, history, confirm } = setup();
     const before = history.document.getState();
@@ -238,6 +243,24 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
     expect((result as { message: string }).message).toContain(`AI apps can't change ${key}`);
     expect(confirm).not.toHaveBeenCalled();
     expect(history.document.getState()).toBe(before);
+  });
+
+  it("names a new web address and hiding the site from search engines before they're allowed", async () => {
+    const { host, confirm } = setup(true, (doc) => {
+      doc.settings.address.url = "https://rosas.example";
+    });
+
+    await createCommandApi(host).run(
+      "updateSettings",
+      { address: { url: "https://rosas-garage.example" }, search: { allowIndexing: false } },
+      app,
+    );
+
+    expect(confirm.mock.calls[0]?.[0]).toMatchObject({
+      action: "Allow Claude to change Site Settings: Web address, Search engines?",
+      description:
+        "Web address: from https://rosas.example to https://rosas-garage.example. Let search engines show the site: from yes to no.",
+    });
   });
 
   it("refuses values Site Settings don't take, and a change that changes nothing", async () => {
@@ -387,6 +410,16 @@ describe("the page tools (4.11, AIB-3)", () => {
     expect(await api.run("updatePageSettings", { pageId: about }, app)).toMatchObject({
       status: "invalid",
     });
+    // Settings it already has: no step, as renamePage and updateSettings refuse theirs.
+    const steps = history.state.getState().entries.length;
+    expect(
+      await api.run(
+        "updatePageSettings",
+        { pageId: about, title: "About Rosa's", description: "", hideFromNavigation: true },
+        app,
+      ),
+    ).toEqual({ status: "invalid", message: "The page's settings are already like that." });
+    expect(history.state.getState().entries.length).toBe(steps);
   });
 });
 
