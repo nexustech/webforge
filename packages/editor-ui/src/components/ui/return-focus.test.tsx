@@ -1,6 +1,6 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AlertDialog,
@@ -17,11 +17,20 @@ afterEach(cleanup);
 function OpenedByCommand({
   kind,
   onCloseAutoFocus,
+  answerElsewhere = false,
 }: {
   readonly kind: "dialog" | "alert";
   readonly onCloseAutoFocus?: (event: Event) => void;
+  /** What the dialog answered puts the focus elsewhere as it closes, as a link's text does. */
+  readonly answerElsewhere?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const opened = useRef(false);
+  const elsewhere = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (open) opened.current = true;
+    else if (opened.current && answerElsewhere) elsewhere.current?.focus();
+  }, [open, answerElsewhere]);
   let dialog: ReactNode;
   if (kind === "dialog") {
     dialog = (
@@ -46,7 +55,9 @@ function OpenedByCommand({
   }
   return (
     <>
-      <button type="button">Elsewhere</button>
+      <button type="button" ref={elsewhere}>
+        Elsewhere
+      </button>
       <button type="button" onKeyDown={(event) => event.key === "F2" && setOpen(true)}>
         Where the focus was
       </button>
@@ -76,6 +87,12 @@ describe("a dialog with no trigger gives the focus back (5.5)", () => {
       expect(document.activeElement).toBe(button);
     },
   );
+
+  it("leaves the focus where what the dialog answered put it", async () => {
+    render(<OpenedByCommand kind="dialog" answerElsewhere />);
+    await openAndClose();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Elsewhere" }));
+  });
 
   it("leaves the focus to a dialog that keeps it its own way", async () => {
     const elsewhere = vi.fn((event: Event) => {

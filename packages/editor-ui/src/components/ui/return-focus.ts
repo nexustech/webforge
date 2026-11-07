@@ -11,7 +11,8 @@ type AutoFocusHandlers = {
  * it to the dialog's trigger, and a dialog opened from a command, a shortcut or a menu has none,
  * so the focus went to the page's body and the keyboard started again from the top of the window.
  * A handler of the dialog's own that prevents the default keeps the focus its own way, and with
- * nothing to go back to (it has gone from the page), Radix's way stays.
+ * nothing to go back to (it has gone from the page), Radix's way stays. Focus that something has
+ * already put elsewhere as the dialog closed stays where it is.
  */
 export function useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus }: AutoFocusHandlers): {
   readonly onOpenAutoFocus: (event: Event) => void;
@@ -32,6 +33,10 @@ export function useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus }: AutoFocusH
       opener.current = null;
       if (event.defaultPrevented || back === null || !back.isConnected) return;
       event.preventDefault();
+      // What the dialog answered may have put the focus somewhere already (a link's text, on the
+      // page): it stays there. Gone with the dialog, it's on the body.
+      const active = back.ownerDocument.activeElement;
+      if (active !== null && active !== back.ownerDocument.body) return;
       back.focus({ preventScroll: true });
     },
   };
