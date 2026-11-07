@@ -1,0 +1,15 @@
+export {
+  anchorFor,
+  checkHelpPages,
+  type HelpCheckInput,
+  type HelpContentsGroup,
+  type HelpFrontMatter,
+  type HelpHeading,
+  type HelpLink,
+  type HelpPage,
+  HelpPageError,
+  helpFrontMatterSchema,
+  parseHelpContents,
+  parseHelpPage,
+  searchHelp,
+} from "./pages.js";

@@ -30,8 +30,9 @@
     "catalogue-data": "pnpm --filter @webforge/site-components exec vitest run src/catalogue-data.test.ts -u -t \"is the library\"",
     "font-catalogue": "node tools/src/build-font-catalogue.ts && biome format --write packages/themes/src/fonts/catalogue.json",
     "ui-strings": "node tools/src/check-ui-strings.ts --catalogue packages/i18n/src/en apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
+    "help-check": "node tools/src/check-help.ts",
     "react-compiler": "node tools/src/check-react-compiler.ts apps/desktop/src/renderer packages/editor-ui/src packages/engine/src",
-    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm ui-strings && pnpm react-compiler && pnpm test && pnpm test:compiled"
+    "check": "pnpm lint && pnpm typecheck && pnpm deps && pnpm knip && pnpm licence-check && pnpm ui-strings && pnpm help-check && pnpm react-compiler && pnpm test && pnpm test:compiled"
   },
   "commitlint": {
     "extends": [
