@@ -10,7 +10,6 @@ import {
   test,
 } from "@playwright/test";
 import { OPEN_WAIT } from "../app/budget.js";
-import { selectText } from "../app/caret.js";
 import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
 
 // The preview's targets (architecture §10, 3.2): a change to the styles alone reaches the browser
@@ -211,32 +210,32 @@ async function serverEvents(url: string, event: "reload" | "values"): Promise<Se
   };
 }
 
+/** What the page test adds to the home page's heading. */
+const ADDED = " and fresh bread daily";
+
 test("a changed page is re-rendered and sent to the browser in under 200 ms", async () => {
   const canvas = page.frameLocator(".editor__canvas iframe");
   // Open before typing: each keystroke can rebuild the page, and on a slow machine the reload
   // for the typed text can come before the click that ends the edit (#76).
   const reloads = await serverEvents(site.url(), "reload");
-  // Into the heading's own text, as the app's E2E tests type (caret.ts): a double click on the h1
-  // selected the element on Windows' runner without focusing its text, and Ctrl+A then selected
-  // the window (#76).
+  // Into the heading's own text, added at its end, as large-page.perf.ts types on both runners.
+  // Replacing the text didn't reach the canvas on CI's runners: a double click on the h1, or the
+  // text selected by script, left the typing nowhere (#76).
   const heading = canvas.locator(".site-heading [contenteditable]").first();
-  // The editor's window, in front: on Windows' runner the preview's browser, started beside it,
-  // can leave it without focus, and typing then reaches nothing (a grey, unfocused selection in
-  // the failure's screenshot).
+  // The editor's window, in front: the preview's browser, started beside it, can take the focus.
   await app.evaluate(({ BrowserWindow }) => {
     const window = BrowserWindow.getAllWindows().find((each) => !each.isDestroyed());
     window?.show();
     window?.focus();
   });
-  await expect.poll(() => page.evaluate(() => document.hasFocus())).toBe(true);
   await heading.click();
-  await selectText(heading);
-  await page.keyboard.type("Fresh bread daily");
+  await page.keyboard.press("End");
+  await page.keyboard.type(ADDED, { delay: 60 });
   // The text is on the canvas before the edit ends: a miss here is the typing's, not the preview's.
-  await expect(canvas.locator("h1")).toHaveText("Fresh bread daily");
+  await expect(heading).toContainText(ADDED.trim());
   const started = Date.now();
   await canvas.locator("body").click({ position: { x: 5, y: 5 } });
-  await expect(site.locator("h1")).toHaveText("Fresh bread daily", { timeout: OPEN_WAIT });
+  await expect(site.locator("h1")).toContainText(ADDED.trim(), { timeout: OPEN_WAIT });
   const shown = Date.now();
   const edited = await lastChange();
   const took = shown - edited;
