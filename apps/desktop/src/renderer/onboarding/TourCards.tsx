@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { useStore } from "zustand";
 import type { HelpApi } from "../../shared/ipc/help.js";
 import { bundledHelpLibrary, type HelpLibrary, openHelpWith } from "../help/index.js";
+import { REGION_ATTRIBUTE } from "../shell/regions.js";
 import { NUMBERED_STEPS, TOUR_STEPS } from "./tour-steps.js";
 import type { Tour } from "./tour-store.js";
 
@@ -26,6 +27,8 @@ export function TourCards({ tour, help, library }: TourCardsProps) {
   if (stage === "offer") {
     return (
       <TourCard
+        // A part of the window F6 moves to (5.5), as the panels are.
+        {...{ [REGION_ATTRIBUTE]: "" }}
         title={t("tour.offer.title")}
         focusKey="offer"
         onEscape={tour.skip}
@@ -56,6 +59,7 @@ export function TourCards({ tour, help, library }: TourCardsProps) {
   const { anchor } = step;
   return (
     <TourCard
+      {...{ [REGION_ATTRIBUTE]: "" }}
       title={t(`tour.${step.id}.title`)}
       step={
         stage < NUMBERED_STEPS

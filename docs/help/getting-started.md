@@ -48,7 +48,7 @@ The tour has three steps, each in a small card beside the button or text it's ab
 2. **See it as visitors will:** [Preview](preview.md).
 3. **Put it online:** [Publish](publish.md).
 
-A last card says where help is. Each card has **Back**, **Next**, **Skip tour** and a **Learn more** link to its help page. The cards never get in your way: you can keep working while one is open, and **Esc** closes the tour. On the keyboard, Tab moves from a card's buttons on to the rest of the window.
+A last card says where help is. Each card has **Back**, **Next**, **Skip tour** and a **Learn more** link to its help page. The cards never get in your way: you can keep working while one is open, and **Esc** closes the tour. On the keyboard, Tab moves from a card's buttons on to the rest of the window, and F6 moves between the card and the other parts of the window.
 
 ## Choose a template yourself
 

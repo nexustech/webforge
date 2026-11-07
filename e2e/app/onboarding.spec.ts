@@ -60,6 +60,13 @@ test("offers the tour after the quick start, and shows the three steps beside th
   const words = tourCard(page, "Change your words");
   await expect(words).toContainText("Step 1 of 3");
   await expect(words).not.toHaveAttribute("data-side", "centre");
+  // Not a trap: F6 goes on to the title bar, and Shift+F6 comes back to the card (5.5).
+  await page.keyboard.press("F6");
+  expect(
+    await page.evaluate(() => document.activeElement?.closest("header[data-region]") !== null),
+  ).toBe(true);
+  await page.keyboard.press("Shift+F6");
+  await expect(words.getByRole("button", { name: /^Learn more/ })).toBeFocused();
   await words.getByRole("button", { name: "Next" }).click();
 
   // See it as visitors will, below Preview; Put it online, below Publish.
