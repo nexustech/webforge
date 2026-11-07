@@ -52,7 +52,7 @@ A last card says where help is. Each card has **Back**, **Next**, **Skip tour** 
 
 ## First-time tips
 
-The first time you reach some parts of {appName}, a short tip says what's there. Each tip shows once, and **Got it** (or Esc) closes it:
+The first time you reach some parts of {appName}, a short tip says what's there. Each tip shows once. **Got it** closes it, and it closes by itself as you carry on. A tip never takes you away from what you're doing; F6 reaches it from the keyboard:
 - the first time you **select** something on the page: how to change it;
 - the first time you switch to **Content mode**: what it locks;
 - the first **Must fix** in [Site Check](site-check.md): that it stops Export and Publish until it's fixed;
