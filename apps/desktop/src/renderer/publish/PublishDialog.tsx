@@ -289,7 +289,7 @@ function DestinationRow({
   const fileTransfer = destination.kind === "file-transfer";
   return (
     <li className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border p-3">
-      <div className="min-w-0 flex-1 space-y-1 text-sm">
+      <div className="min-w-0 flex-1 basis-64 space-y-1 text-sm">
         <p className="font-medium">{name}</p>
         <p className="break-all text-muted-foreground">
           {destination.kind === "file-transfer"
