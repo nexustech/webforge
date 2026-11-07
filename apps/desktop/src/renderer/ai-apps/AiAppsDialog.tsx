@@ -71,15 +71,17 @@ type Shown = {
   readonly address: string;
 };
 
-/** What *Install in Claude Desktop* came to, in words. */
-const installText = (status: McpInstallResult["status"]) =>
+/** What *Install in Claude Desktop* came to for `name`, in words. */
+const installText = (status: McpInstallResult["status"], name: string) =>
   status === "opened"
     ? t("aiApps.claude.opened")
     : status === "shown"
       ? t("aiApps.claude.shown")
       : status === "off"
         ? t("aiApps.add.failed.off")
-        : t("aiApps.claude.failed");
+        : status === "unknown"
+          ? t("aiApps.claude.unknown", { name })
+          : t("aiApps.claude.failed");
 
 /**
  * AI apps (F-AI-1, 4.9): whether they may connect, the paired ones with whether each is connected
@@ -239,7 +241,7 @@ export function AiAppsDialog({
                       {t("aiApps.claude.install")}
                     </Button>
                     <p role="status" className={installed === null ? "text-sm" : "mt-2 text-sm"}>
-                      {installed === null ? null : installText(installed)}
+                      {installed === null ? null : installText(installed, shown.name)}
                     </p>
                   </>
                 ) : (

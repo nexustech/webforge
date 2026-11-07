@@ -130,6 +130,15 @@ describe("AI apps (4.9)", () => {
     mcp.installClaude.mockResolvedValueOnce({ status: "shown" });
     await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
     expect(await dialog().findByText(/Nothing opened the extension/)).toBeTruthy();
+
+    // Its key waited too long, and it went: adding it again is what helps, not trying again.
+    mcp.installClaude.mockResolvedValueOnce({ status: "unknown" });
+    await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
+    expect(
+      await dialog().findByText(
+        "Claude Desktop's key wasn't used within 5 minutes, so Claude Desktop was removed. Add it again, then install its new extension.",
+      ),
+    ).toBeTruthy();
   });
 
   it("adds another app, showing its key once to copy, with the address to give it", async () => {

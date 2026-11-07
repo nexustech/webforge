@@ -73,12 +73,15 @@ export function registerMcpHandlers(
       const { port } = await service.status();
       if (port === null) return { status: "off" };
       try {
-        const proof = await service.proofOf(id);
-        if (proof === null) return { status: "unknown" };
+        // Not listed: removed, or its key waited too long and it went.
+        const app = (await service.list()).find((each) => each.id === id);
+        const proof = app === undefined ? null : await service.proofOf(id);
+        if (app === undefined || proof === null) return { status: "unknown" };
         const { outcome } = await extensions.install({
           appId: id,
           address: addressAt(port),
           proof,
+          pairedAt: app.pairedAt,
         });
         return { status: outcome };
       } catch (error) {

@@ -30,7 +30,18 @@ Now ask Claude about your site, or ask it to make a change.
 
 If {appName} says **Nothing opened the extension**, Claude Desktop may not be installed. Install it, then open the file {appName} shows in its folder with Claude Desktop.
 
-If Claude says {appName} isn't answering, open {appName} and check that **Let AI apps connect** is ticked: Claude can reach your site only while {appName} is open. Before it sends the key, the extension checks that it really is {appName} answering. If another program answers in its place, Claude says so, and the key isn't sent.
+If {appName} says the key wasn't used within 5 minutes, Claude Desktop was removed from your AI apps. Add it again, and install its new extension.
+
+### If Claude can't reach your site
+
+Claude can reach your site only while {appName} is open and **Let AI apps connect** is ticked. If Claude says {appName} isn't answering, open {appName} and check that box.
+
+Before it sends the key, the extension checks that it really is {appName} answering. If the check fails, Claude says {appName} didn't answer as it should, and the key isn't sent. That happens when:
+- you removed Claude Desktop from your AI apps: add it again, and install its new extension;
+- {appName}'s address for AI apps has changed: add Claude Desktop again, and install its new extension;
+- another program is answering at {appName}'s address while {appName} is closed: open {appName}, then ask Claude again.
+
+Each new extension is a newer version of the one Claude Desktop has, so it takes the old one's place. If Claude Desktop lists both, remove the older one in its settings.
 
 The key is cleared from the clipboard a minute after you copy it, and Windows doesn't keep it in its clipboard history.
 
@@ -38,9 +49,9 @@ The key is cleared from the clipboard a minute after you copy it, and Windows do
 
 **Your AI apps** lists each app as *Connected*, *Not connected* or *Waiting for its key*. While one is connected, an icon in the title bar says so; click it to open AI apps.
 
-To stop an app reaching your sites, click **Remove *name*** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, also remove {appName}'s extension in Claude Desktop's settings.
+To stop an app reaching your sites, click **Remove *name*** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
 
-If AI apps says **{appName}'s address for AI apps has changed**, another program took {appName}'s place while it was closed. Remove your AI apps and add them again.
+If AI apps says **{appName}'s address for AI apps has changed**, another program took {appName}'s place while it was closed. Remove your AI apps and add them again. For Claude Desktop, install its new extension too.
 
 ## What an app can do
 

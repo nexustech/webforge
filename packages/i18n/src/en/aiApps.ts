@@ -60,13 +60,15 @@ export const aiApps = {
   "aiApps.claude.shown":
     "Nothing opened the extension. If Claude Desktop is installed, open the file shown in its folder with it.",
   "aiApps.claude.failed": "{appName} couldn't make the extension. Try again.",
+  "aiApps.claude.unknown":
+    "{name}'s key wasn't used within 5 minutes, so {name} was removed. Add it again, then install its new extension.",
   "aiApps.extension.description": "Lets Claude work on the site you have open in {appName}.",
   "aiApps.extension.key": "Key",
   "aiApps.extension.keyHint": "The key {appName} showed when you added Claude Desktop in AI apps.",
   "aiApps.bridge.unreachable":
-    "{appName} isn't answering. Open {appName}, and in AI apps turn on Let AI apps connect.",
+    "{appName} isn't answering. Open {appName}, and in AI apps turn on Let AI apps connect. If AI apps says its address has changed, add Claude Desktop again there, and install its new extension.",
   "aiApps.bridge.notWebforge":
-    "Another program is answering at {appName}'s address, so the key wasn't sent to it. Open {appName}, then try again.",
+    "{appName} didn't answer as it should, so the key wasn't sent. If Claude Desktop was removed from {appName}'s AI apps, add it again there, and install its new extension. If not, another program may be answering at {appName}'s address: open {appName}, then try again.",
   "aiApps.bridge.keyRefused":
     "{appName} didn't take the key. In {appName}'s AI apps, remove Claude Desktop and add it again, then paste the new key into the extension's settings in Claude Desktop.",
   "aiApps.bridge.failed": "{appName} couldn't answer. Try again.",

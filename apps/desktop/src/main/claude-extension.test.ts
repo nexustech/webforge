@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -9,13 +9,15 @@ import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { Ajv } from "ajv";
 import { unzipSync } from "fflate";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createClaudeExtensions, extensionManifest } from "./claude-extension.js";
+import { createClaudeExtensions, extensionManifest, extensionVersion } from "./claude-extension.js";
 import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 
 const CLAUDE: McpApp = { id: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e", name: "Claude Desktop" };
 const KEY = "k".repeat(43);
 const PROOF = "p".repeat(43);
+/** When the app was paired: 7 Nov 2026, 09:00 UTC. */
+const PAIRED_AT = Date.UTC(2026, 10, 7, 9);
 
 let dir: string;
 let bridgeFile: string;
@@ -104,10 +106,24 @@ function unpack(file: string) {
   return { target, manifest };
 }
 
+describe("each pairing's extension version", () => {
+  it("is Webforge's, with the pairing's time: a newer version of the same extension each time", () => {
+    expect(extensionVersion("1.2.3", PAIRED_AT)).toBe(`1.2.3-pairing.${PAIRED_AT / 1000}`);
+    // A pre-release of Webforge's own, or no version, still gives a valid one.
+    expect(extensionVersion("2.0.0-beta.1", 1_500)).toBe("2.0.0-pairing.1");
+    expect(extensionVersion("", 0)).toBe("0.0.0-pairing.0");
+  });
+});
+
 describe("Claude Desktop's extension (ADR 0021)", () => {
   it("is a valid MCPB extension, with the address, app and proof, and the key its one sensitive setting", async () => {
     const { extensions: written, open, show } = extensions();
-    const pairing = { appId: CLAUDE.id, address: "http://127.0.0.1:51234/mcp", proof: PROOF };
+    const pairing = {
+      appId: CLAUDE.id,
+      address: "http://127.0.0.1:51234/mcp",
+      proof: PROOF,
+      pairedAt: PAIRED_AT,
+    };
 
     const { file, outcome } = await written.install(pairing);
 
@@ -121,6 +137,14 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
     expect(validManifest({ ...manifest, manifest_version: "9.9" })).not.toEqual([]);
     expect(validManifest({ ...manifest, server: undefined })).not.toEqual([]);
     expect(manifest).toEqual(extensionManifest(pairing, "1.2.3"));
+    expect((manifest as unknown as { version: string }).version).toBe(
+      `1.2.3-pairing.${PAIRED_AT / 1000}`,
+    );
+    // Only the person can read it: the proof is in it. Windows has no such modes to check.
+    if (process.platform !== "win32") {
+      expect(statSync(file).mode & 0o777).toBe(0o600);
+      expect(statSync(dirname(file)).mode & 0o777).toBe(0o700);
+    }
     expect(manifest.server.mcp_config.env).toMatchObject({
       [BRIDGE_ENV.address]: pairing.address,
       [BRIDGE_ENV.app]: CLAUDE.id,
@@ -136,7 +160,12 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
 
   it("shows the file in its folder when nothing opens it, and is deleted with its app", async () => {
     const { extensions: written, show } = extensions("No application is associated");
-    const pairing = { appId: CLAUDE.id, address: "http://127.0.0.1:51234/mcp", proof: PROOF };
+    const pairing = {
+      appId: CLAUDE.id,
+      address: "http://127.0.0.1:51234/mcp",
+      proof: PROOF,
+      pairedAt: PAIRED_AT,
+    };
 
     const { file, outcome } = await written.install(pairing);
 
@@ -165,6 +194,7 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
         appId: CLAUDE.id,
         address: `http://${MCP_HOST}:${listener.port}${MCP_PATH}`,
         proof: PROOF,
+        pairedAt: PAIRED_AT,
       });
       const { target, manifest } = unpack(file);
 

@@ -1,4 +1,4 @@
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { chmod, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { t } from "@webforge/i18n";
 import { BRIDGE_ENV, type BridgeConfig } from "@webforge/mcp-bridge";
@@ -17,7 +17,20 @@ export type ExtensionPairing = {
   readonly address: string;
   /** The pairing's server proof: not the key, and no use to a caller of the server. */
   readonly proof: string;
+  /** When the app was paired, which makes each pairing's extension a newer version. */
+  readonly pairedAt: number;
 };
+
+/**
+ * The extension's version for a pairing: Webforge's own, with the pairing's time as a pre-release,
+ * `1.2.3-pairing.1762500000`. Its name is the same for every pairing, so Claude Desktop takes a
+ * pairing's extension for a newer version of the one it has: an app added again replaces the
+ * extension of its last pairing, address, app id and proof with it, and never installs beside it.
+ */
+export function extensionVersion(appVersion: string, pairedAt: number): string {
+  const release = /^\d+\.\d+\.\d+/.exec(appVersion)?.[0] ?? "0.0.0";
+  return `${release}-pairing.${Math.floor(pairedAt / 1000)}`;
+}
 
 /** The bridge's messages to the AI app, in the person's language. */
 const bridgeMessages = (): BridgeConfig["messages"] => ({
@@ -40,12 +53,12 @@ const slug = (name: string) =>
  * one setting, `sensitive`: Claude Desktop masks it, keeps it securely and passes it in
  * `WEBFORGE_KEY`. It is never written into the file.
  */
-export function extensionManifest(pairing: ExtensionPairing, version: string) {
+export function extensionManifest(pairing: ExtensionPairing, appVersion: string) {
   return {
     manifest_version: MANIFEST_VERSION,
     name: slug(t("app.name")),
     display_name: t("app.name"),
-    version,
+    version: extensionVersion(appVersion, pairing.pairedAt),
     description: t("aiApps.extension.description"),
     author: { name: t("app.name") },
     server: {
@@ -113,10 +126,13 @@ export function createClaudeExtensions(options: ClaudeExtensionsOptions) {
         "manifest.json": strToU8(`${JSON.stringify(manifest, null, 2)}\n`),
         [BRIDGE_ENTRY]: new Uint8Array(await readFile(options.bridgeFile)),
       });
+      // The proof is in it: the person's alone, whatever their profile folder lets others do.
       const folder = join(options.dir, pairing.appId);
-      await mkdir(folder, { recursive: true });
+      await mkdir(folder, { recursive: true, mode: 0o700 });
       const file = join(folder, `${manifest.name}.mcpb`);
-      await writeFile(file, archive);
+      await writeFile(file, archive, { mode: 0o600 });
+      // A file written before keeps its mode: set it again.
+      await chmod(file, 0o600);
       if ((await options.open(file)) === "") return { file, outcome: "opened" };
       options.show(file);
       return { file, outcome: "shown" };

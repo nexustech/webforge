@@ -138,6 +138,7 @@ describe("the mcp IPC calls (4.9)", () => {
       appId: CLAUDE.id,
       address: "http://127.0.0.1:51234/mcp",
       proof: "p".repeat(43),
+      pairedAt: CLAUDE.pairedAt,
     });
   });
 
