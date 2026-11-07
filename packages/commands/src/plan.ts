@@ -14,8 +14,8 @@ export type Plan = {
   readonly recipe: (draft: SiteDoc) => void;
   /** What it makes: a new element's or page's id. */
   readonly id?: string;
-  /** The page it deletes: the window shows the Home page instead, if it showed this one. */
-  readonly removesPage?: PageId;
+  /** The pages it deletes: the window shows the Home page instead, if it showed one of them. */
+  readonly removesPages?: readonly PageId[];
 };
 
 /** Why a command can't be planned. */

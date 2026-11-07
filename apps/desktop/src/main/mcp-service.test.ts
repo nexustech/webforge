@@ -185,6 +185,24 @@ describe("the version before an AI app's changes (S20)", () => {
     expect(saveVersionBefore).toHaveBeenCalledTimes(2);
   });
 
+  it("is saved before every plan, a build of many changes, which is the connection's first too (4.12a)", async () => {
+    const { service, listened, saveVersionBefore } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const plan = {
+      title: "Build the site",
+      commands: [{ name: "addPage", input: { title: "Menu" } }],
+    };
+
+    const client = await connection(options, claude);
+    await client.callTool({ name: "plan", arguments: plan });
+    await client.callTool({ name: "plan", arguments: plan });
+    await client.callTool({ name: "addPage", arguments: { title: "Team" } });
+
+    expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+  });
+
   it("lets the command run when the version can't be saved", async () => {
     const { service, listened, saveVersionBefore, ask } = setUp();
     saveVersionBefore.mockResolvedValue("failed");

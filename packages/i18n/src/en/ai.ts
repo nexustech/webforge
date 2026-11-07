@@ -15,6 +15,14 @@ export const ai = {
   // Deleting a page, as the person's Delete Page asks (4.11): the dialog then says how many pages
   // change, links to it on other pages included.
   "ai.confirm.removePage": "Allow {app} to delete the page {title}?",
+  // A plan (4.12a): one question for a build of many changes, its title the app's.
+  "ai.confirm.plan": "Allow {app} to make these changes: {title}?",
+  "ai.plan.pagesAdded": "It adds the pages {pages}.",
+  "ai.plan.pagesRemoved": "It deletes the pages {pages}.",
+  "ai.plan.theme": "It changes the theme.",
+  "ai.plan.elements":
+    "Sections and elements: {added} added, {changed} changed, {moved} moved, {removed} removed.",
+  "ai.plan.asks": "On their own, these would each have asked first:",
   // Site Settings show on every page (4.11): "Allow Claude to change Site Settings: Contact & hours?"
   "ai.confirm.settings": "Allow {app} to change Site Settings: {sections}?",
   "ai.confirm.layout": "Allow {app} to change the {part}?",

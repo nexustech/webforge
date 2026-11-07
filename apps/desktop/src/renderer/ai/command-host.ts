@@ -16,9 +16,9 @@ export function commandHost(
 ): CommandHost {
   return {
     history: session.history,
-    run(label, recipe, kind, removesPage) {
+    run(label, recipe, kind, removesPages) {
       const shown = session.ui.getState();
-      if (removesPage === undefined || shown.pageId !== removesPage) {
+      if (removesPages?.includes(shown.pageId) !== true) {
         session.edit(kind, label, recipe);
         return;
       }

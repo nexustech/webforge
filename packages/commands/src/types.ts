@@ -27,14 +27,14 @@ export type CommandHost = {
   readonly history: Pick<HistoryManager<SiteDoc, unknown>, "document" | "state">;
   /**
    * The one way a command changes the site: one undo step labelled `label`, of `kind`. A step that
-   * deletes page `removesPage` shows the Home page instead if that page was shown, as the person's
+   * deletes pages `removesPages` shows the Home page instead if one of them was shown, as the person's
    * own *Delete Page* does (4.11).
    */
   readonly run: (
     label: string,
     recipe: (draft: SiteDoc) => void,
     kind: ChangeKind,
-    removesPage?: PageId,
+    removesPages?: readonly PageId[],
   ) => void;
   /**
    * Whether the person is busy otherwise: typing in a text on the canvas (a text session, D1), or
