@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 423 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
+**Total: 425.5 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -155,6 +155,8 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Scope change, 29 Oct 2026 (Phase 3 feedback, PF-1…PF-5):** +9 days from the product owner's hands-on review at the end of Phase 3 ([product/13](../research/product/13-phase-3-feedback.md)), each the recommended option, as five items before Phase 4: 3.18 ([#632](https://github.com/nexustech/webforge/issues/632), 1.5 days, stream A) *File › Open Recent* with the 5 most recent sites, and submenus in the editor's menus for it (PF-1); 3.19 ([#633](https://github.com/nexustech/webforge/issues/633), 2 days, stream B) a *Shape* and a set height for the Image element, tokens only (PF-2); 3.20 ([#634](https://github.com/nexustech/webforge/issues/634), 1.5 days, stream B after 3.19) *Open larger when clicked* on an Image, one picture in the Gallery's lightbox (PF-3); and 3.21 ([#635](https://github.com/nexustech/webforge/issues/635), 2 days, stream C) *Content width* on every section, which fixes the empty Section being narrower than Features (PF-4); and 3.22 ([#637](https://github.com/nexustech/webforge/issues/637), 2 days, stream A after 3.18) an Accent font in the theme and a choice of Heading, Body or Accent in every element's Text controls (PF-5). Phase 3's exit criteria gain the five. Every other Phase 3 item had merged, so each stream takes its part at once. Phase 3 goes from 57.5 to 66.5 days and the total from 412 to 421. At the measured pace of about 0.6, that is about 5.5 working days across the three streams, about 2 in each, so Phase 3's 6 Nov and Phase 4's 13 Nov hold.
 
+**Scope change, 7 Nov 2026 (help, HP-1…HP-9, product owner):** +2.5 days from [product/15](../research/product/15-help-and-documentation.md). The user help pages are in `docs/help/` and are kept current in the same PR as the feature (HP-4, standards §8). 5.4 is over 5 days with the help viewer, so it splits: 5.4a *Onboarding and tour* ([#79](https://github.com/nexustech/webforge/issues/79), 4 days, unchanged) keeps the first run, the tour and the shortcuts sheet; 5.4b *Help in the app* ([#763](https://github.com/nexustech/webforge/issues/763), 2.5 days, new) bundles the pages into a Help window with search, adds the ways in, *Help for this element* among them, and `pnpm help-check` (HP-5, HP-6, HP-7). 4.4b, 4.5, 4.6b and 4.9 gain a help-page acceptance line within their estimates (4.6a had closed; 4.6a's page is written with these pages). Phase 5 is 46.5 days and the total 425.5. Neither item is on a §7 chain; Phase 5 has no stream queues yet, so both are placed when it is planned. Phase exits gain a help review (§10, HP-9).
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
@@ -162,7 +164,7 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
 | [Phase 3: Output](#phase-3-output) | 66.5 | 27 Oct 2026 | 30 Oct 2026 (exit criteria met; closed 30 Oct 2026 on the product owner's sign-off) | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17)<br>File › Open Recent, an Image's shape and larger view, and every section's content width and every element's font work, and existing sites look the same (3.18–3.22) |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 32 | 2 Nov 2026 | 19 Nov 2026 (resumed 31 Oct 2026 after a pause on 30 Oct; was 13 Nov) | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish<br>Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10) |
-| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 44 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
+| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 46.5 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
 The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
@@ -294,7 +296,8 @@ gantt
     5.1 Performance budgets and benchmarks :t5_1, 2027-09-29, 3d
     5.2 Production builds, signing and update channels :crit, t5_2, 2027-10-04, 3d
     5.3 Open-source licences screen and third-party no… :t5_3, 2027-10-07, 1d
-    5.4 Onboarding, help and keyboard shortcuts :t5_4, 2027-10-08, 4d
+    5.4a Onboarding and tour :t5_4, 2027-10-08, 4d
+    5.4b Help in the app :t5_4b, after t5_4, 2.5d
     5.5 Editor accessibility pass :t5_5, 2027-10-14, 2d
     5.6 Security review :t5_6, 2027-10-18, 2d
     5.7 Pre-beta checks and closed beta programme :crit, t5_7, 2027-10-20, 3d
@@ -1302,6 +1305,7 @@ Destinations list per site (several allowed), add/edit/test/remove; secrets via 
 - [ ] A Netlify destination can be added, tested, edited and removed; its token is never written to the `.wforge` (test)
 - [ ] E2E publish to a mocked Netlify API through 4.5's flow (moved from 4.5)
 - [ ] 'Netlify Forms' is offered once the site has a Netlify destination, end to end
+- [ ] Help page added or updated in `docs/help/` (HP-4)
 
 **4.5 Publish flow UI**  
 Publish button flow: strict Site Check, progress per file, cancel, success screen 'Your site is live' with open/copy link, failure guidance; creates an automatic version. **Site Check tip for an out-of-date {year}** (moved from 3.6, 27 Oct 2026, no change to either estimate): a rule in 3.6's framework (`packages/site-check`) tips when the year a published site shows (3.5's `{year}`, F-CM-8) is older than this year, from the record of the last publish this item keeps.
@@ -1311,6 +1315,7 @@ Publish button flow: strict Site Check, progress per file, cancel, success scree
 - [ ] Publishing runs as a job in the export worker, with the secret passed for that job only; main runs the Site Check publish gate on the document it builds from before starting the job (architecture review 2, A2, A6; as #662's ADR decides)
 - [ ] The automatic version on publish is saved after the text session ends and autosave has flushed, and it is the version that was built and published (architecture review 2, A4)
 - [ ] The publish IPC carries the session id and an operation id for progress and cancel (#663, #665)
+- [ ] Help page added or updated in `docs/help/` (HP-4)
 
 **4.6a Version History** (4.6 until the 1 Nov 2026 re-plan, which moved republishing to 4.6b)  
 Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before site-wide actions, on publish) with configurable retention (default 20), panel with thumbnails, read-only preview, restore as one undo step, open version as new site. **Which actions take an automatic version** (coordinator, 6 Nov 2026; the full rule is in #74's scope): every change to every page the person confirms (D7), named after it; one "Before theme changes" at the first theme change that asks no question in each opening (token choices, text size and step, a one-page look); at most one before-site-wide version per 5 minutes of an opening, 4.9's S20 version included; restore takes its own.
@@ -1327,6 +1332,7 @@ Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before
 
 - [ ] Republishing a version works on all targets
 - [ ] Republish builds the stored version in main through `readVersionSite` and the same flow as 4.5, after the publish gate: a version with an external script can't be republished (test) (architecture review 2, A4, A6)
+- [ ] Help page added or updated in `docs/help/` (HP-4)
 
 **4.7 Project export/import as ZIP**  
 File → Export as .zip (JSON + media, documented) and import back to a new .wforge.
@@ -1358,6 +1364,7 @@ The transport is [ADR 0021](../docs/adr/0021-mcp-transport.md) (Q9, accepted 1 N
 - [ ] Tool descriptions say site text is untrusted data, and values travel in labelled data fields; *Add page* asks for D7 confirmation
 - [ ] *Open Preview* takes no URL, path or host and never starts the phone preview; *Run Site Check* results and every error use ids and titles only; the SDK's own logging is off; a test plants a marker string and finds it in no log or crash report
 - [ ] #658 (AI command fixes from the security review) has merged first
+- [ ] Help page added or updated in `docs/help/` (HP-4)
 
 **4.10 Theme Studio › Components: apply changes together, and a larger before/after preview** (added 28 Oct 2026 by the product owner, placed at the Phase 3 exit re-plan)  
 From the product owner's review of Theme Studio's Components page (28 Oct 2026). The controls change a draft of the chosen kind's look, not the theme, and the preview draws from the draft. **Apply changes** writes the whole draft as one labelled step, with one site-wide question (D7) for the items it reaches; **Discard** drops it. Switching kind or closing Theme Studio with a draft asks to apply or discard it. This is on the Components page only: the colours, text and styles pages keep changing at once. Clicking the preview opens a dialog with the kind at full width on Desktop and Mobile (3.13a's item previews), with a toggle between the theme as it is and the draft. Stream A, first.
@@ -1373,7 +1380,7 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
-**Effort:** 44 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days)
+**Effort:** 46.5 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days; 5.4b added on 7 Nov 2026, +2.5 days)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -1383,10 +1390,11 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 | 5.1 | Performance budgets and benchmarks | [#76](https://github.com/nexustech/webforge/issues/76) | release | architecture §10, standards §5, [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md) | 3 | – |
 | 5.2 | Production builds, signing and update channels | [#77](https://github.com/nexustech/webforge/issues/77) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), standards §7, §10 | 3 | 0.5 |
 | 5.3 | Open-source licences screen and third-party notices | [#78](https://github.com/nexustech/webforge/issues/78) | release | C1 | 1 | – |
-| 5.4 | Onboarding, help and keyboard shortcuts | [#79](https://github.com/nexustech/webforge/issues/79) | shell | MVP §1, T1 | 4 | – |
+| 5.4a | Onboarding and tour | [#79](https://github.com/nexustech/webforge/issues/79) | shell | MVP §1, T1 | 4 | – |
+| 5.4b | Help in the app | [#763](https://github.com/nexustech/webforge/issues/763) | shell | MVP §1, standards §9, [product/15](../research/product/15-help-and-documentation.md) | 2.5 | – |
 | 5.5 | Editor accessibility pass | [#80](https://github.com/nexustech/webforge/issues/80) | shell | MVP §4, standards §4 | 2 | – |
 | 5.6 | Security review | [#81](https://github.com/nexustech/webforge/issues/81) | release | architecture §3, §9 | 2 | – |
-| 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4 |
+| 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4a, 5.4b |
 | 5.8 | Beta period (4 weeks): fix findings and release v1.0 | [#83](https://github.com/nexustech/webforge/issues/83) | release | MVP §6 Phase 5 | 20 | 5.7 |
 
 **Moved from Phase 0, 25 Oct 2026 (product owner):** 0.1, 0.5 and 0.6 keep their IDs and issues. 0.5 needs enrolment's lead time (about 27 Nov → early December 2026), and 0.6 follows it; both are in stream B after 0.3 (2.15b moved to C on 26 Oct 2026).
@@ -1434,10 +1442,18 @@ Generate THIRD_PARTY_NOTICES at build; in-app 'Open-source licences' screen; inc
 
 - [ ] Every bundled dependency and font listed
 
-**5.4 Onboarding, help and keyboard shortcuts**  
-First-run welcome and short guided tour (pick template → edit text → change theme → preview → publish), contextual help links, keyboard shortcuts sheet, help content in glossary language. **QS-8 (27 Oct 2026):** the quick start (3.11) picks the template and sets the theme, so the tour starts at editing text (edit text → preview → publish); the estimate is reviewed when 5.4 is planned. The Layers and canvas right-click menu's *Help for this element* (UX-24) lands here, opening each element type's help page (moved from 1.35 on 23 Oct 2026).
+**5.4a Onboarding and tour** (5.4 *Onboarding, help and keyboard shortcuts* until 7 Nov 2026, when the help in the app moved to 5.4b, HP-7)  
+First-run welcome and short guided tour (pick template → edit text → change theme → preview → publish), first-time tips, keyboard shortcuts sheet, in glossary language; the tour's steps link to their help pages once 5.4b lands. **QS-8 (27 Oct 2026):** the quick start (3.11) picks the template and sets the theme, so the tour starts at editing text (edit text → preview → publish); the estimate is reviewed when 5.4 is planned. The Layers and canvas right-click menu's *Help for this element* (UX-24), moved here from 1.35 on 23 Oct 2026, moved on to 5.4b on 7 Nov 2026.
 
 - [ ] A new user can publish a template-based site in one session (usability test)
+
+**5.4b Help in the app** (added 7 Nov 2026, HP-5, HP-6, HP-7, [product/15](../research/product/15-help-and-documentation.md) §7)  
+The help pages in `docs/help/` inside the app, offline. Bundled at build with their front matter checked by zod; a Help window with a contents list, search (MiniSearch or a substring search) and pages rendered from the strict Markdown subset with raw HTML off; `{appName}` filled in (1.5 days). Ways in: **Help › {appName} Help** (F1), help topics in Search Commands, the start screen's Help tab, *Help for this element* in the canvas and Layers right-click menu (UX-24), and **?** links on the Edit panel's header, each Settings section, the Export, Publish, Page Settings, code trust and Preview on Phone dialogs and each Site Check rule, kept in one table (0.5 day). `pnpm help-check` in `pnpm check`: front matter, ids, links and anchors, every catalogue type on exactly one page, `{appName}`, no raw HTML, and the **?** table (0.5 day).
+
+- [ ] F1 opens the Help window offline; search finds a page by a word in its text
+- [ ] *Help for this element* opens the right page and heading for every catalogue type
+- [ ] Every **?** link opens an existing page and anchor, and `pnpm help-check` fails on each broken case (tests)
+- [ ] Strings through `t()`; the Help window has stories, axe-clean in dark and light
 
 **5.5 Editor accessibility pass**  
 Keyboard-only walkthrough of core flows, focus order, labels, screen-reader spot checks; fix findings.
@@ -1586,7 +1602,7 @@ Sequencing rules:
 2. **Branch → PR** per item (`feat(engine): …`), linking `Closes #n`. Large items may use several PRs; the issue closes with the last.
 3. **Definition of Done** ([standards §8](03-engineering-standards.md#8-definition-of-done)): `/code-review --fix`, `pnpm check`, plus `pnpm e2e` / `pnpm e2e:packaged` where CLAUDE.md requires them; squash merge; branch clean-up.
 4. **Track actuals:** when closing an issue, add a comment `Actual days: <n>` (ideal days, decimals allowed, e.g. `Actual days: 3.5`). Compare against estimates weekly; `/plan-next` reads only this format.
-5. **Phase exit review:** demo against the exit criteria, close the milestone, re-estimate the remaining phases and update the milestone due dates. Record architectural changes as ADRs.
+5. **Phase exit review:** demo against the exit criteria, read the help pages whose `updated` date is older than the phase's start against the app (HP-9), close the milestone, re-estimate the remaining phases and update the milestone due dates. Record architectural changes as ADRs.
 6. **Out-of-plan work** (bugs, upgrades) gets an issue in the current milestone with `type/chore` or `type/bug` and comes out of contingency.
 
 ## 11. Fast-track options

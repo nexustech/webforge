@@ -176,6 +176,7 @@ A change is done when:
 - [ ] Code follows these standards; `biome ci`, typecheck and boundaries pass
 - [ ] Tests added/updated at the right level; coverage floors met
 - [ ] User-facing text uses i18n keys and glossary terms; undo labels are meaningful
+- [ ] A change people can see updates its help page in `docs/help/`, and the page's `updated` date (HP-4)
 - [ ] Undoable if it changes the site (D-rules); confirmation rule respected (D7)
 - [ ] Accessible (keyboard, labels; axe clean for site output)
 - [ ] No new external requests in exported sites (C8) unless explicitly allowed
@@ -188,7 +189,7 @@ A change is done when:
 - `research/`: background and rationale (frozen unless decisions change).
 - `docs/adr/`: decisions taken during implementation.
 - **Package READMEs:** purpose, public API, example.
-- **User help** content written in glossary language, stored with the app.
+- **User help:** Markdown pages in `docs/help/`, written for the small-business owner in glossary language, with `{appName}` for the app's name; the writing rules are in its README. They describe only what `main` does, and the app bundles them and shows them offline (5.4b, HP-2, HP-3, HP-6, [product/15](../research/product/15-help-and-documentation.md)).
 
 ## 10. Release & support policy
 - **Channels:** *Beta* (opt-in) and *Stable*. Staged rollout via the update feed.
