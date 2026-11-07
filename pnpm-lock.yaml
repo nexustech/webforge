@@ -225,7 +225,7 @@ overrides:
   editorconfig>minimatch: 11.0.3
 
 patchedDependencies:
-  '@puckeditor/core@0.24.0': e1b3d9dc48ea20a83eb65dd2c73703d31a8de3e4ebb755cfb7d5e86d8ffe9077
+  '@puckeditor/core@0.24.0': 503e69337fe2675e0d8ab223de63768fbfdbdf2ba962a46937553d903e932cd4
 
 importers:
 
@@ -668,7 +668,7 @@ importers:
     dependencies:
       '@puckeditor/core':
         specifier: 0.24.0
-        version: 0.24.0(patch_hash=e1b3d9dc48ea20a83eb65dd2c73703d31a8de3e4ebb755cfb7d5e86d8ffe9077)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
+        version: 0.24.0(patch_hash=503e69337fe2675e0d8ab223de63768fbfdbdf2ba962a46937553d903e932cd4)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))
       '@tiptap/core':
         specifier: 3.32.0
         version: 3.32.0(@tiptap/pm@3.32.0)
@@ -7698,7 +7698,7 @@ snapshots:
 
   '@preact/signals-core@1.14.4': {}
 
-  '@puckeditor/core@0.24.0(patch_hash=e1b3d9dc48ea20a83eb65dd2c73703d31a8de3e4ebb755cfb7d5e86d8ffe9077)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))':
+  '@puckeditor/core@0.24.0(patch_hash=503e69337fe2675e0d8ab223de63768fbfdbdf2ba962a46937553d903e932cd4)(@floating-ui/dom@1.8.0)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(immer@11.1.21)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(use-sync-external-store@1.7.0(react@19.3.1))':
     dependencies:
       '@dnd-kit/abstract': 0.4.0
       '@dnd-kit/dom': 0.4.0
