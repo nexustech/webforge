@@ -92,7 +92,8 @@ jobs:
             gh api "repos/$GH_REPO/compare/main...$1" --jq .behind_by
           }
           # Whether PR `$1` changes docs only, by the rule of ci.yml's `changes` job (keep the two in
-          # step): its CI runs nothing but "CI passed", so it merges within a minute of its update.
+          # step): its CI runs nothing but "CI passed" (and the help pages' check when it changes
+          # them), so it merges within a few minutes of its update.
           docs_only() {
             local files
             files=$(gh api "repos/$GH_REPO/pulls/$1/files" --paginate --jq '.[].filename')

@@ -9,6 +9,7 @@
     { "path": "./packages/editor-ui" },
     { "path": "./packages/engine" },
     { "path": "./packages/errors" },
+    { "path": "./packages/help" },
     { "path": "./packages/history" },
     { "path": "./packages/i18n" },
     { "path": "./packages/mcp-bridge" },
