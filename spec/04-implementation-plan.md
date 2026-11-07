@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 425.5 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
+**Total: 437.25 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -157,14 +157,16 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Scope change, 7 Nov 2026 (help, HP-1…HP-9, product owner):** +2.5 days from [product/15](../research/product/15-help-and-documentation.md). The user help pages are in `docs/help/` and are kept current in the same PR as the feature (HP-4, standards §8). 5.4 is over 5 days with the help viewer, so it splits: 5.4a *Onboarding and tour* ([#79](https://github.com/nexustech/webforge/issues/79), 4 days, unchanged) keeps the first run, the tour and the shortcuts sheet; 5.4b *Help in the app* ([#763](https://github.com/nexustech/webforge/issues/763), 2.5 days, new) bundles the pages into a Help window with search, adds the ways in, *Help for this element* among them, and `pnpm help-check` (HP-5, HP-6, HP-7). 4.4b, 4.5, 4.6b and 4.9 gain a help-page acceptance line within their estimates (4.6a had closed; 4.6a's page is written with these pages). Phase 5 is 46.5 days and the total 425.5. Neither item is on a §7 chain; Phase 5 has no stream queues yet, so both are placed when it is planned. Phase exits gain a help review (§10, HP-9).
 
+**Scope change, 7 Nov 2026 (AI apps build a site, AIB-1…AIB-10, product owner):** +11.75 days from [product/16](../research/product/16-ai-site-from-a-brief.md), all ten proposals adopted. 4.11 [#768](https://github.com/nexustech/webforge/issues/768) (3.75 days, Phase 4, stream C after 4.9) offers AI apps the catalogue, the business part of Site Settings, page tools and a *Vehicle repair* business kind (AIB-1…AIB-4); at Phase 3's pace (0.68) it ends about 13 Nov, so Phase 4's milestone (19 Nov 2026) holds. 4.12 (8 days) would end about 20 Nov, so it goes to Phase 5 before 5.7, split as it is over 5 days: 4.12a [#769](https://github.com/nexustech/webforge/issues/769) (5 days), a site from a brief through the filled-in quick start, and plans with one approval and one undo step (AIB-5, AIB-6); 4.12b [#770](https://github.com/nexustech/webforge/issues/770) (3 days), pictures through Webforge's own dialog, the *Build a site from a description* prompt and the Rapidfix E2E test (AIB-7…AIB-9). Phase 4 is 35.75 days, Phase 5 54.5 and the total 437.25. 4.11 is not on a §7 chain; 5.7 now also depends on 4.12b. If Phase 5 can't take 4.12a and 4.12b, they move to v1.1 with the in-app assistant (AIB-10).
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
 | [Phase 1: Editor core](#phase-1-editor-core) | 128 | 22 Oct 2026 | 25 Oct 2026 (exit criteria met; closed 26 Oct 2026 on the product owner's sign-off) | – | Build a 3-page site from blank, close, reopen: everything restored<br>Undo-all property tests green; every edit has a meaningful label<br>Shell matches UI1 as amended by UI6 in dark and light (Storybook screenshots) |
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
 | [Phase 3: Output](#phase-3-output) | 66.5 | 27 Oct 2026 | 30 Oct 2026 (exit criteria met; closed 30 Oct 2026 on the product owner's sign-off) | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17)<br>File › Open Recent, an Image's shape and larger view, and every section's content width and every element's font work, and existing sites look the same (3.18–3.22) |
-| [Phase 4: Publish & versions](#phase-4-publish--versions) | 32 | 2 Nov 2026 | 19 Nov 2026 (resumed 31 Oct 2026 after a pause on 30 Oct; was 13 Nov) | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish<br>Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10) |
-| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 46.5 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
+| [Phase 4: Publish & versions](#phase-4-publish--versions) | 35.75 | 2 Nov 2026 | 19 Nov 2026 (resumed 31 Oct 2026 after a pause on 30 Oct; was 13 Nov) | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish<br>Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10) |
+| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 54.5 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
 The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
@@ -288,6 +290,7 @@ gantt
     4.8 Command API for AI apps :t4_8, after t4_7, 3d
     4.9 Local MCP server and AI app approvals :t4_9, after t4_8, 5d
     4.10 Theme Studio Components – apply together, before/after preview :t4_10, after t4_9, 2d
+    4.11 AI apps – settings, pages and the catalogue :t4_11, after t4_10, 3.75d
     section Phase 5
     %% 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026; drawn at their baseline dates
     0.1 Start code-signing enrolment (Apple Developer… :crit, t0_1, 2026-10-26, 1d
@@ -298,6 +301,8 @@ gantt
     5.3 Open-source licences screen and third-party no… :t5_3, 2027-10-07, 1d
     5.4a Onboarding and tour :t5_4, 2027-10-08, 4d
     5.4b Help in the app :t5_4b, after t5_4, 2.5d
+    4.12a AI apps – a site from a brief, and plans :t4_12a, after t5_4b, 5d
+    4.12b AI apps – pictures, a build prompt, the Rapidfix test :t4_12b, after t4_12a, 3d
     5.5 Editor accessibility pass :t5_5, 2027-10-14, 2d
     5.6 Security review :t5_6, 2027-10-18, 2d
     5.7 Pre-beta checks and closed beta programme :crit, t5_7, 2027-10-20, 3d
@@ -1226,7 +1231,7 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 
 ### Phase 4: Publish & versions
 **Goal:** Publish to Netlify and FTP/FTPS/SFTP with incremental uploads, plus Version History with restore and republish, and connecting AI apps over MCP.  
-**Effort:** 32 days · **Scheduled:** 2 Nov → 19 Nov 2026 (resumed 31 Oct 2026, product owner; re-plan after the two reviews, 30 Oct 2026; was 2 Nov → 13 Nov 2026 at the Phase 3 exit re-plan, with 4.10; Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 23 Nov → 4 Dec; baseline 27 Aug → 28 Sep 2027; 4.8 and 4.9 added 22 Oct 2026)
+**Effort:** 35.75 days · **Scheduled:** 2 Nov → 19 Nov 2026 (resumed 31 Oct 2026, product owner; re-plan after the two reviews, 30 Oct 2026; was 2 Nov → 13 Nov 2026 at the Phase 3 exit re-plan, with 4.10; Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 23 Nov → 4 Dec; baseline 27 Aug → 28 Sep 2027; 4.8 and 4.9 added 22 Oct 2026)
 
 **Priority order (re-plan, 30 Oct 2026, product owner).** The streams' queues below follow it (assigned when Phase 4 resumed, 31 Oct 2026). Each step starts once the ones it names are merged:
 1. **First:** finish the three paused items, 4.10 ([#612](https://github.com/nexustech/webforge/issues/612)), 4.7 ([#75](https://github.com/nexustech/webforge/issues/75), after [#651](https://github.com/nexustech/webforge/issues/651), with the site-package criterion) and 4.3 ([#71](https://github.com/nexustech/webforge/issues/71), with manifest v2); [#661](https://github.com/nexustech/webforge/issues/661) storage clean-up and [#656](https://github.com/nexustech/webforge/issues/656) Renovate and the audit; and 0.2 ([#12](https://github.com/nexustech/webforge/issues/12)), which the product owner runs, as early as possible: it starts the longest chain.
@@ -1248,6 +1253,7 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 | 4.8 | Command API for AI apps | [#170](https://github.com/nexustech/webforge/issues/170) | history | F-AI-1, G33, GA5, GA9 | 3 | 1.17, 1.18, 1.26, 1.29, 2.1, 2.3, 2.5 |
 | 4.9 | Local MCP server and AI app approvals | [#171](https://github.com/nexustech/webforge/issues/171) | ai | F-AI-1, G33, GA5, architecture §3, §9 | 5 | 4.8, 4.4a, 3.2, 3.6 |
 | 4.10 | Theme Studio › Components: apply changes together, and a larger before/after preview | [#612](https://github.com/nexustech/webforge/issues/612) | themes | CT-1, CT-2, F-DS-7, D7 | 2 | 3.12, 3.13 |
+| 4.11 | AI apps: settings, pages and the catalogue | [#768](https://github.com/nexustech/webforge/issues/768) | ai | F-AI-1, [product/16](../research/product/16-ai-site-from-a-brief.md) (AIB-1…AIB-4) | 3.75 | 4.9 |
 
 **Streams (assigned 31 Oct 2026, when Phase 4 resumed; first assigned 30 Oct at the Phase 3 exit).** One item in progress per stream; a dependency counts as met when its PR has merged. 4.1 and 4.8 had merged in Phase 1–3. Each stream first finishes the item it paused on.
 
@@ -1263,7 +1269,7 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 |---|---|
 | A: Shell & panels | 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), destinations UI and keychain, FTP/FTPS/SFTP) → [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x) → 4.5 ([#73](https://github.com/nexustech/webforge/issues/73), publish flow UI) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), Netlify destination, once 4.2 has merged) |
 | B: Data & site | [#643](https://github.com/nexustech/webforge/issues/643) (pulled forward, in progress) → 4.6a ([#74](https://github.com/nexustech/webforge/issues/74), Version History) → 4.6b ([#724](https://github.com/nexustech/webforge/issues/724), republish, once 4.5 has merged). 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) goes first as soon as 0.2 has run, ahead of what is left |
-| C: History & canvas | [#671](https://github.com/nexustech/webforge/issues/671)'s A25 (pulled forward, in progress) → 4.9 ([#171](https://github.com/nexustech/webforge/issues/171), MCP server, once 4.4a has merged) |
+| C: History & canvas | [#671](https://github.com/nexustech/webforge/issues/671)'s A25 (pulled forward, in progress) → 4.9 ([#171](https://github.com/nexustech/webforge/issues/171), MCP server, once 4.4a has merged) → 4.11 ([#768](https://github.com/nexustech/webforge/issues/768), AI apps: settings, pages and the catalogue; added 7 Nov 2026, AIB-10) |
 
 0.2 ([#12](https://github.com/nexustech/webforge/issues/12)) is the product owner's: its code merged in Phase 0, and its live check and OAuth app registration need their Netlify account. Since the 1 Nov re-plan it starts only 0.2 → 4.2 → 4.4b; the longest chain is 4.4a → 4.5 → 4.6b. The figures that follow are from 31 Oct. About 16, 17.5 and 17 estimated days, the paused items counted in full, with the three flaky-test issues from the CI review of 31 Oct 2026 ([#676](https://github.com/nexustech/webforge/issues/676)–[#678](https://github.com/nexustech/webforge/issues/678), 2 days out of plan) put early because every stream re-runs CI for them. At Phase 3's pace (0.68 for plan items, 1.10 for out-of-plan work), less what the paused items have done, that is about 12–14 actual days each; B's 4.6 and C's 4.9 end the phase.
 
@@ -1374,13 +1380,23 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 - [ ] The preview follows the draft; the larger preview shows Desktop and Mobile and toggles between the current look and the draft
 - [ ] Strings through `t()`; stories with axe; `pnpm visual:docker` screenshots committed
 
+**4.11 AI apps: settings, pages and the catalogue** (added 7 Nov 2026, AIB-1…AIB-4, [product/16](../research/product/16-ai-site-from-a-brief.md) §5.2–§5.4, §5.8, §5.10)  
+What an AI app needs to finish an ordinary site. The catalogue (`catalogue-data.json`) as an MCP resource and a `components` query, and "There is no component…" listing the valid types (0.5 day). `updateSettings` for the business part of Site Settings only (general, address, contact, social, search; never publishing, forms, analytics or code), one undo step after one D7 question, a contact or social change naming the old and new value as S18 does (1.5 days). `removePage` (never the home page or *Page not found*; it asks, and says so when other pages link to it), `renamePage`, `movePage` and `updatePageSettings` (1.5 days). `AutoRepair`, *Vehicle repair*, in Trades' business kinds (0.25 day). Content mode allows the reads, `updateSettings` for name, description, contact, opening hours and social profiles, and `updatePageSettings` for the search title and description, and refuses the rest. Stream C after 4.9.
+
+- [ ] An app can list the types and their fields before adding anything; a wrong type's error lists the valid ones
+- [ ] `updateSettings` changes the business details as one undo step after one **Allow**; publishing, forms, analytics and code are refused (tests)
+- [ ] Removing, renaming and moving a page and its search settings work with the person's own confirmations (tests)
+- [ ] *Vehicle repair* writes `AutoRepair` in the structured data
+- [ ] Content mode allows and refuses as listed (tests)
+- [ ] Help page added or updated in `docs/help/` (HP-4)
+
 </details>
 
 **Phase exit:** Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP); Version History: save, auto-retention, preview, restore, open as new site, republish; a paired AI app's edits are undoable, and the MCP server can't be reached from another computer; Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10).
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
-**Effort:** 46.5 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days; 5.4b added on 7 Nov 2026, +2.5 days)
+**Effort:** 54.5 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days; 5.4b added on 7 Nov 2026, +2.5 days; 4.12a and 4.12b added the same day, +8 days)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -1392,9 +1408,11 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 | 5.3 | Open-source licences screen and third-party notices | [#78](https://github.com/nexustech/webforge/issues/78) | release | C1 | 1 | – |
 | 5.4a | Onboarding and tour | [#79](https://github.com/nexustech/webforge/issues/79) | shell | MVP §1, T1 | 4 | – |
 | 5.4b | Help in the app | [#763](https://github.com/nexustech/webforge/issues/763) | shell | MVP §1, standards §9, [product/15](../research/product/15-help-and-documentation.md) | 2.5 | – |
+| 4.12a | AI apps: a site from a brief, and plans | [#769](https://github.com/nexustech/webforge/issues/769) | ai | F-AI-1, QS-1…QS-8, WF-2, [product/16](../research/product/16-ai-site-from-a-brief.md) (AIB-5, AIB-6) | 5 | 4.11 |
+| 4.12b | AI apps: pictures, a build prompt and the Rapidfix test | [#770](https://github.com/nexustech/webforge/issues/770) | ai | F-AI-1, [product/16](../research/product/16-ai-site-from-a-brief.md) (AIB-7…AIB-9) | 3 | 4.12a |
 | 5.5 | Editor accessibility pass | [#80](https://github.com/nexustech/webforge/issues/80) | shell | MVP §4, standards §4 | 2 | – |
 | 5.6 | Security review | [#81](https://github.com/nexustech/webforge/issues/81) | release | architecture §3, §9 | 2 | – |
-| 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4a, 5.4b |
+| 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4a, 5.4b, 4.12b |
 | 5.8 | Beta period (4 weeks): fix findings and release v1.0 | [#83](https://github.com/nexustech/webforge/issues/83) | release | MVP §6 Phase 5 | 20 | 5.7 |
 
 **Moved from Phase 0, 25 Oct 2026 (product owner):** 0.1, 0.5 and 0.6 keep their IDs and issues. 0.5 needs enrolment's lead time (about 27 Nov → early December 2026), and 0.6 follows it; both are in stream B after 0.3 (2.15b moved to C on 26 Oct 2026).
@@ -1454,6 +1472,23 @@ The help pages in `docs/help/` inside the app, offline. Bundled at build with th
 - [ ] *Help for this element* opens the right page and heading for every catalogue type
 - [ ] Every **?** link opens an existing page and anchor, and `pnpm help-check` fails on each broken case (tests)
 - [ ] Strings through `t()`; the Help window has stories, axe-clean in dark and light
+
+**4.12a AI apps: a site from a brief, and plans** (added 7 Nov 2026, AIB-5, AIB-6, [product/16](../research/product/16-ai-site-from-a-brief.md) §5.1, §5.5; 4.12 split as it is over 5 days)  
+`createSiteFromBrief` takes the quick start's answers and opens the quick start filled in, on the step the person checks last; nothing is made until they click **Create**, and closing it answers `declined` (2 days). Plans: an app sends a titled list of commands; Webforge checks them all, shows one summary (pages, theme, Site Settings old → new, counts, and every change that would have asked on its own), and on **Allow** saves a version and runs them as one undo step, counted as one command against the rate limit; if any fails, nothing changes (3 days). Content mode refuses briefs, and plans holding a command it refuses.
+
+- [ ] A brief opens the quick start filled in; **Create** makes the site, closing it makes nothing (E2E)
+- [ ] A plan is one summary, one **Allow**, one version and one undo step; a plan with one bad command changes nothing (tests)
+- [ ] Content mode refuses briefs and plans as listed (tests)
+- [ ] Help page added or updated in `docs/help/` (HP-4)
+
+**4.12b AI apps: pictures, a build prompt and the Rapidfix test** (added 7 Nov 2026, AIB-7…AIB-9, [product/16](../research/product/16-ai-site-from-a-brief.md) §5.6, §5.7, §5.11)  
+A `media` query; `requestMedia`, which opens Webforge's own *Add files* dialog with the app's reason and answers with the ids added, never taking a path; and a Site Check tip, *Pictures from the template* (1.75 days). Nothing is downloaded. The *Build a site from a description* MCP prompt (0.5 day). The Rapidfix E2E: a scripted MCP client runs product/16's garage prompt through brief, plan, Site Check and preview, and checks the result and the refusals (0.75 day).
+
+- [ ] An app lists Media and asks for files only through Webforge's dialog; nothing is fetched from the web (tests)
+- [ ] The Site Check tip lists the template's placeholder pictures
+- [ ] The server lists the prompt
+- [ ] The Rapidfix E2E passes, with its refusals
+- [ ] Help page added or updated in `docs/help/` (HP-4)
 
 **5.5 Editor accessibility pass**  
 Keyboard-only walkthrough of core flows, focus order, labels, screen-reader spot checks; fix findings.
@@ -1550,7 +1585,7 @@ Every MVP feature ID maps to at least one work item (checked when this plan was 
 | F-CM-7 | Booking button | 2.11 |
 | F-CM-8 | Dynamic year | 3.5, 4.5 |
 | F-CM-9 | Back-to-top button | 2.9 |
-| F-AI-1 | Connect AI apps | 4.8, 4.9 |
+| F-AI-1 | Connect AI apps | 4.8, 4.9, 4.11, 4.12a, 4.12b |
 
 ## 7. Critical path and sequencing
 Up to Phase 0 the schedule was simply the sum of effort. From Phase 1, up to three streams run in parallel, so dependency chains set the length as well as the order. Three dependency chains form the backbone (marked `crit` in the Gantt). They must not slip, and they set the floor if help is added later:
