@@ -3,6 +3,7 @@ import type { ComponentProps } from "react";
 import { cn } from "../../lib/cn.js";
 import { buttonVariants } from "./button.js";
 import { dialogStyles } from "./dialog.js";
+import { useReturnFocus } from "./return-focus.js";
 
 /** A confirmation that needs an answer (D5/D7: "Delete page 'About'?"). */
 export function AlertDialog(props: ComponentProps<typeof AlertDialogPrimitive.Root>) {
@@ -14,11 +15,17 @@ export function AlertDialogTrigger(props: ComponentProps<typeof AlertDialogPrimi
   return <AlertDialogPrimitive.Trigger data-slot="alert-dialog-trigger" {...props} />;
 }
 
-/** The confirmation panel. It has no close button: the person picks an action or presses Esc. */
+/**
+ * The confirmation panel. It has no close button: the person picks an action or presses Esc. It
+ * gives the focus back to what had it when it opened ({@link useReturnFocus}).
+ */
 export function AlertDialogContent({
   className,
+  onOpenAutoFocus,
+  onCloseAutoFocus,
   ...props
 }: ComponentProps<typeof AlertDialogPrimitive.Content>) {
+  const returnFocus = useReturnFocus({ onOpenAutoFocus, onCloseAutoFocus });
   return (
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Overlay
@@ -29,6 +36,7 @@ export function AlertDialogContent({
         data-slot="alert-dialog-content"
         className={cn(dialogStyles.content, className)}
         {...props}
+        {...returnFocus}
       />
     </AlertDialogPrimitive.Portal>
   );
