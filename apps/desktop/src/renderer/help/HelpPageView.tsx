@@ -33,7 +33,7 @@ function Link({ token, context }: { readonly token: Tokens.Link; readonly contex
   return (
     <a
       href={web ? destination.url : `#${destination.target.anchor ?? ""}`}
-      className="text-primary underline underline-offset-2 hover:no-underline"
+      className="font-medium underline underline-offset-2 hover:no-underline"
       {...(web ? { title: t("help.link.external", { text: withAppName(token.text) }) } : {})}
       onClick={(event) => {
         event.preventDefault();
