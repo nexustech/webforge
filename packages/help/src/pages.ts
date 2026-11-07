@@ -159,7 +159,8 @@ export function parseHelpPage(text: string): HelpPage {
       `Front matter: ${problem?.path.join(".") || "page"}: ${problem?.message ?? "invalid"}`,
     );
   }
-  // GitHub's Markdown: tables, no raw HTML is checked separately (`checkHelpPages`).
+  // GitHub's Markdown, for its tables. Raw HTML comes out as tokens of its own, which the Help
+  // window never draws as HTML and `checkHelpPages` fails.
   const tokens = new Lexer({ gfm: true }).lex(body);
   const taken = new Map<string, number>();
   const headings: HelpHeading[] = [];
