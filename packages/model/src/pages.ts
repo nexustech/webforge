@@ -1,6 +1,7 @@
+import { findBrokenLinks } from "./broken-links.js";
 import type { PageId } from "./ids.js";
 import { syncMenuWithPages } from "./menu-sync.js";
-import { PAGE_TITLE_MAX, type SiteDoc } from "./site-doc.js";
+import { PAGE_TITLE_MAX, type PageEntry, type SiteDoc } from "./site-doc.js";
 import { slugify, uniqueSlug } from "./slugs.js";
 
 /** A name as a page title: trimmed, and short enough to save. */
@@ -48,4 +49,81 @@ export function insertPage(draft: SiteDoc, id: PageId, title: string): void {
   const beforeNotFound = last !== undefined && draft.pages[last]?.kind === "not-found";
   draft.pageOrder.splice(beforeNotFound ? -1 : draft.pageOrder.length, 0, id);
   draft.menu = syncMenuWithPages(draft, id);
+}
+
+/**
+ * The page actions the Pages panel and AI apps share (F-ED-13, 4.11): what each may do, and the
+ * change to the site it makes, in an undo step's draft. The panel and the command layer each make
+ * the step and its label.
+ */
+
+/** Whether `page` can be deleted: not the Home page or the "Page not found" page. */
+export const canDeletePage = (site: SiteDoc, page: PageEntry) =>
+  page.kind === "page" && page.id !== site.homePageId;
+
+/**
+ * How many pages deleting `pageId` changes (D7): the page itself, and every page left with a link
+ * to it, in its content or in what all pages share (the menu, the Header, the Footer).
+ */
+export function pagesChangedByDeleting(site: SiteDoc, pageId: PageId): number {
+  const { [pageId]: _deleted, ...rest } = site.pages;
+  const others = site.pageOrder.filter((id) => id !== pageId && site.pages[id] !== undefined);
+  const linking = new Set(
+    findBrokenLinks({ ...site, pages: rest })
+      .filter((link) => "pageId" in link && link.pageId === pageId)
+      .map((link) => link.on),
+  );
+  const shared = linking.has("menu") || linking.has("header") || linking.has("footer");
+  return 1 + (shared ? others.length : others.filter((id) => linking.has(id)).length);
+}
+
+/** Deletes page `pageId` from `draft`, and from the menu if it follows the pages. */
+export function deletePageFrom(draft: SiteDoc, pageId: PageId): void {
+  delete draft.pages[pageId];
+  const at = draft.pageOrder.indexOf(pageId);
+  if (at !== -1) draft.pageOrder.splice(at, 1);
+  draft.menu = syncMenuWithPages(draft);
+}
+
+/**
+ * The slug a page gets when renamed to `title`: it follows the name (`About us` → `about-us`)
+ * while it still matches the old name, and stays as it is once set by hand in Page Settings, so
+ * a rename never breaks links to a file name the person chose.
+ */
+export function slugAfterRename(site: SiteDoc, page: PageEntry, title: string): string {
+  const followsName = page.slug === pageSlugFor(site, page.title, page.folder, page.id);
+  return followsName ? pageSlugFor(site, title, page.folder, page.id) : page.slug;
+}
+
+/** Renames page `pageId` in `draft` to `title`, its slug as {@link slugAfterRename} says. */
+export function renamePageIn(draft: SiteDoc, pageId: PageId, title: string): void {
+  const page = draft.pages[pageId];
+  if (page === undefined) return;
+  page.slug = slugAfterRename(draft, page, title);
+  page.title = title;
+}
+
+/**
+ * The page next to `pageId` in `direction` among the pages in the same folder, or undefined at
+ * either end. The Pages panel shows each folder's pages together, so moves stay within one.
+ */
+export function pageNeighbour(
+  site: SiteDoc,
+  pageId: PageId,
+  direction: -1 | 1,
+): PageId | undefined {
+  const folder = site.pages[pageId]?.folder;
+  const siblings = site.pageOrder.filter((id) => site.pages[id]?.folder === folder);
+  const at = siblings.indexOf(pageId);
+  return at === -1 ? undefined : siblings[at + direction];
+}
+
+/** Swaps pages `pageId` and `other` in `draft`'s page order, and in the menu if it follows them. */
+export function swapPages(draft: SiteDoc, pageId: PageId, other: PageId): void {
+  const from = draft.pageOrder.indexOf(pageId);
+  const to = draft.pageOrder.indexOf(other);
+  if (from === -1 || to === -1) return;
+  draft.pageOrder[from] = other;
+  draft.pageOrder[to] = pageId;
+  draft.menu = syncMenuWithPages(draft);
 }

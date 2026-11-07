@@ -2,9 +2,18 @@ import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import {
   CallToolRequestSchema,
   type CallToolResult,
+  ErrorCode,
+  ListResourcesRequestSchema,
   ListToolsRequestSchema,
+  McpError,
+  ReadResourceRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
-import { AI_TOOLS, UNTRUSTED_SITE_TEXT } from "@webforge/commands";
+import {
+  AI_TOOLS,
+  CATALOGUE_RESOURCE,
+  catalogueResourceText,
+  UNTRUSTED_SITE_TEXT,
+} from "@webforge/commands";
 import { type AiRequest, type AiResponse, APP_TOOLS } from "../shared/ipc/ai.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
@@ -27,6 +36,9 @@ const TOOLS = [
   })),
 ];
 
+/** The catalogue resource's content (AIB-1): the same for every connection, made once. */
+let catalogueText: string | undefined;
+
 /** A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done. */
 function toolResult(response: AiResponse): CallToolResult {
   return {
@@ -37,7 +49,8 @@ function toolResult(response: AiResponse): CallToolResult {
 
 /**
  * The MCP server for one connection of `app` (4.9, AIA-4): {@link TOOLS} as its tools, each call
- * asked of the open site through `ask`, a command on `app`'s behalf. It holds no state of its own,
+ * asked of the open site through `ask`, a command on `app`'s behalf; and the catalogue as its one
+ * resource (AIB-1), which is Webforge's, not the site's, so needs no site open. It holds no state of its own,
  * so any transport can carry it: the loopback HTTP one for AI apps (ADR 0021), or an in-memory one
  * for an in-app assistant. Nothing of a call or its answer is logged, the SDK's errors included.
  */
@@ -46,7 +59,7 @@ export function createMcpServer(
   app: McpApp,
   ask: (request: AiRequest) => Promise<AiResponse>,
 ): Server {
-  const server = new Server(info, { capabilities: { tools: {} } });
+  const server = new Server(info, { capabilities: { tools: {}, resources: {} } });
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -56,6 +69,20 @@ export function createMcpServer(
       inputSchema,
     })),
   }));
+  server.setRequestHandler(ListResourcesRequestSchema, () => ({
+    resources: [CATALOGUE_RESOURCE],
+  }));
+  server.setRequestHandler(ReadResourceRequestSchema, ({ params }) => {
+    if (params.uri !== CATALOGUE_RESOURCE.uri) {
+      throw new McpError(ErrorCode.InvalidParams, "There is no such resource.");
+    }
+    catalogueText ??= catalogueResourceText();
+    return {
+      contents: [
+        { uri: CATALOGUE_RESOURCE.uri, mimeType: CATALOGUE_RESOURCE.mimeType, text: catalogueText },
+      ],
+    };
+  });
   server.setRequestHandler(CallToolRequestSchema, async ({ params }) => {
     const tool = TOOLS.find((each) => each.name === params.name);
     if (tool === undefined) {

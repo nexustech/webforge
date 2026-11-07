@@ -168,6 +168,12 @@ describe("structured data (3.15, SEO-1)", () => {
     expect(dataOn(open, "index")[1]).toMatchObject({ "@type": "LocalBusiness" });
   });
 
+  it("marks a garage up as Vehicle repair, AutoRepair, among the trades (4.11, AIB-4)", () => {
+    expect(
+      dataOn(site({ business: { type: "trades", kind: "AutoRepair" } }), "index")[1],
+    ).toMatchObject({ "@type": "AutoRepair" });
+  });
+
   it("marks a personal site up as a website only", () => {
     const data = dataOn(site({ business: { type: "personal" } }), "index");
 

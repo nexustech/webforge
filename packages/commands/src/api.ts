@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { z } from "zod";
 import { COMMANDS, type CommandName, type Failure, type Plan } from "./commands.js";
-import { QUERIES, type QueryName } from "./queries.js";
+import { QUERIES, type QueryName, QueryRefusal } from "./queries.js";
 import type { Actor, CommandHost, CommandResult } from "./types.js";
 
 /** How long a change to more than one page waits for the person to allow it (D7). */
@@ -76,6 +76,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
         host.history.document.getState(),
         parsed.data,
       );
+      if (data instanceof QueryRefusal) return { status: data.status, message: data.message };
       return data === undefined
         ? { status: "not-found", message: "That page, element or shared section isn't there." }
         : { status: "done", data };

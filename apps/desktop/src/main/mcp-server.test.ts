@@ -89,6 +89,31 @@ describe("the MCP server (4.9)", () => {
     });
   });
 
+  it("offers the catalogue as a resource, without asking the open site (AIB-1)", async () => {
+    const client = await inMemory();
+
+    expect((await client.listResources()).resources).toEqual([
+      expect.objectContaining({ uri: "webforge://catalogue", mimeType: "application/json" }),
+    ]);
+    const [content] = (await client.readResource({ uri: "webforge://catalogue" })).contents;
+    const catalogue = JSON.parse((content as { text: string }).text) as Record<
+      string,
+      { place: string; fields: Record<string, { kind: string }> }
+    >;
+    expect(catalogue.Hero).toMatchObject({ place: "section" });
+    // Not what AI apps can't add: the Header, the Footer and Custom Code.
+    expect(catalogue.Header).toBeUndefined();
+    expect(
+      Object.values(catalogue).some((type) =>
+        Object.values(type.fields).some(({ kind }) => kind === "code"),
+      ),
+    ).toBe(false);
+    await expect(client.readResource({ uri: "webforge://site" })).rejects.toThrow(
+      "There is no such resource.",
+    );
+    expect(ask).not.toHaveBeenCalled();
+  });
+
   it("answers what didn't happen as an error, and a tool it doesn't have without asking", async () => {
     const client = await inMemory();
     ask.mockResolvedValueOnce({ status: "declined", message: "The person said no." });
