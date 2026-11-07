@@ -22,4 +22,14 @@ export const aiApi = (call: Call, subscribe: Subscribe): AiApi => ({
       void call("aiListening", sessionId, false).catch(() => undefined);
     };
   },
+  onBrief(open) {
+    return subscribe(aiEvents.brief.channel, (...args) => {
+      const parsed = aiEvents.brief.args.safeParse(args);
+      if (!parsed.success) return;
+      const [id, brief] = parsed.data;
+      open(brief, async (outcome) => {
+        await call("aiBriefAnswer", id, outcome).catch(() => undefined);
+      });
+    });
+  },
 });

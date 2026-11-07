@@ -26,7 +26,16 @@ export type AppLimits = {
    * `before` runs once the request is let through, just before it is asked (the version before an
    * app's changes, S20).
    */
-  ask(appId: string, request: AiRequest, before?: () => Promise<void>): Promise<AiResponse>;
+  /**
+   * Asks `request` of `answer` (the window by default) on `appId`'s behalf, within its limits;
+   * `before` runs once it's let through.
+   */
+  ask(
+    appId: string,
+    request: AiRequest,
+    before?: () => Promise<void>,
+    answer?: (request: AiRequest) => Promise<AiResponse>,
+  ): Promise<AiResponse>;
   /** Forgets app `appId`: it was removed. */
   forget(appId: string): void;
 };
@@ -56,7 +65,7 @@ export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.n
     return state;
   };
   return {
-    async ask(appId, request, before) {
+    async ask(appId, request, before, answer = ask) {
       const state = stateOf(appId);
       const at = now();
       const times = state.times[request.kind].filter((time) => at - time < MINUTE_MS);
@@ -65,7 +74,7 @@ export function createAppLimits(ask: AiBridge["ask"], now: () => number = Date.n
       if (request.kind === "command" && at < state.backOffUntil) return BACKING_OFF;
       times.push(at);
       await before?.();
-      const response = await ask(request);
+      const response = await answer(request);
       if (request.kind === "command") {
         if (response.status === "declined") {
           state.backOffUntil = now() + state.backOffMs;

@@ -309,7 +309,13 @@ export function App({
             <HelpCommands help={api.help} />
             <AboutDialog info={info} />
             <ShortcutSheet />
-            <SiteCommands project={api.project} templates={api.templates} />
+            <SiteCommands
+              project={api.project}
+              templates={api.templates}
+              ai={api.ai}
+              // Content mode refuses an AI app's brief for a new site (4.12a, §5.10).
+              refuseBrief={() => preferences.getState().mode === "content"}
+            />
             <SettingsHost registry={settings} />
             <WindowDialogs registry={windowDialogs} />
             <SiteWideConfirmDialog confirm={siteWide} />

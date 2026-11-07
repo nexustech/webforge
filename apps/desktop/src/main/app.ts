@@ -76,6 +76,7 @@ import {
   hardenWebContents,
   isAppUrl,
 } from "./security.js";
+import { createSiteBriefs } from "./site-brief.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
@@ -604,6 +605,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       projectSession,
     );
     exposeForE2eTests(ai, app.isPackaged);
+    // AI apps' briefs (4.12a): main shows them in the window as the quick start, filled in.
+    const briefs = createSiteBriefs({
+      window: () => lifecycle.mainWindow(),
+      templates: () => templates.briefTemplates(),
+    });
+    briefs.register(ipcMain, isTrustedSender);
     // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
     // 0021): nothing listens until the person turns it on.
     const service = createMcpService({
@@ -615,6 +622,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         credentials,
       ),
       ask: (request) => ai.ask(request),
+      briefs,
       info: { name: t("app.name"), version: app.getVersion() },
       // Version History's, for the site open now: none to save without one.
       saveVersionBefore: async (name) => {

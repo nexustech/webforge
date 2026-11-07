@@ -2,6 +2,7 @@ import { CURATED_THEMES, contrastRatio, themePreset } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import {
+  answersFromBrief,
   emptyAnswers,
   palettesFor,
   type QuickStartAnswers,
@@ -151,5 +152,65 @@ describe("the quick start's colours (QS-1)", () => {
         themeOf(answers({ colours })),
       );
     }
+  });
+});
+
+describe("answers from an AI app's brief (4.12a, AIB-5)", () => {
+  const template = (id: string, category: "trades" | "food", theme: string): TemplateSummary => ({
+    id: id as TemplateSummary["id"],
+    category,
+    example: false,
+    pages: 1,
+    pageList: [{ id: "home", title: "Home", home: true }],
+    theme,
+    thumbnail: null,
+  });
+  const templates = [template("cafe", "food", "bistro"), template("trades", "trades", "workshop")];
+
+  it("gives the type's first template and theme, and what the brief says, as the person would", () => {
+    const answers = answersFromBrief(
+      {
+        businessType: "trades",
+        businessKind: "AutoRepair",
+        name: "Rapidfix",
+        colours: { colour: "#C62828" },
+        recipes: ["trades-areas"],
+        openingHours: [{ days: ["mon"], opens: "08:00", closes: "17:30" }],
+      },
+      templates,
+      "My site",
+    );
+
+    expect(answers).toMatchObject({
+      category: "trades",
+      businessKind: "AutoRepair",
+      name: "Rapidfix",
+      template: "trades",
+      theme: "workshop",
+      colours: { kind: "colour", hex: "#c62828" },
+      recipes: ["trades-areas"],
+      openingHours: [{ days: ["mon"], opens: "08:00", closes: "17:30" }],
+      phone: "",
+    });
+    expect(quickStartRequest(answers, "My site").business).toMatchObject({
+      businessType: "trades",
+      businessKind: "AutoRepair",
+    });
+  });
+
+  it("takes a palette and a theme of its own, and drops a kind the type changed away from", () => {
+    const answers = answersFromBrief(
+      { businessType: "food", name: "Rosa's", theme: "light", colours: { palette: "bistro" } },
+      templates,
+      "My site",
+    );
+    expect(answers).toMatchObject({
+      template: "cafe",
+      theme: "light",
+      colours: { kind: "palette", preset: "bistro" },
+    });
+
+    const changed = withCategory({ ...answers, businessKind: "Bakery" }, "trades", templates);
+    expect(changed.businessKind).toBeUndefined();
   });
 });

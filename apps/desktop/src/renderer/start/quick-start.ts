@@ -1,4 +1,4 @@
-import type { OpeningHours, ThemeTokens } from "@webforge/model";
+import type { BusinessKind, OpeningHours, ThemeTokens } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
 import {
   type PageRecipe,
@@ -15,6 +15,7 @@ import {
   type ImageColour,
   themePreset,
 } from "@webforge/themes";
+import type { SiteBrief } from "../../shared/ipc/ai.js";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 
@@ -33,6 +34,11 @@ export type QuickStartColours =
 export type QuickStartAnswers = {
   /** *Your business*: the business type, the name, and one line of what it does. */
   readonly category: TemplateCategory | null;
+  /**
+   * Its kind for search engines (SEO-1), such as *Vehicle repair*: an AI app's brief gives it
+   * (4.12a); the person chooses it in Site Settings. Dropped when the type changes.
+   */
+  readonly businessKind?: BusinessKind;
   readonly name: string;
   readonly whatYouDo: string;
   /** *A look*: the template, the theme preset. */
@@ -101,7 +107,9 @@ export function withCategory(
   category: TemplateCategory | null,
   templates: readonly TemplateSummary[],
 ): QuickStartAnswers {
-  const next = { ...answers, category, recipes: [] };
+  const { businessKind: _kind, ...rest } = answers;
+  // A kind is its type's: another type's isn't kept.
+  const next = { ...(category === answers.category ? answers : rest), category, recipes: [] };
   const current = templates.find((each) => each.id === answers.template);
   if (category === null || current?.category === category) return next;
   return withTemplate(next, templatesOf(templates, category)[0] ?? null);
@@ -182,8 +190,50 @@ export function quickStartRequest(answers: QuickStartAnswers, untitled: string):
       ...(answers.openingHours.length === 0 ? {} : { openingHours: [...answers.openingHours] }),
       ...(webAddress === undefined ? {} : { webAddress }),
       ...(answers.category === null ? {} : { businessType: answers.category }),
+      ...(answers.businessKind === undefined || answers.category === null
+        ? {}
+        : { businessKind: answers.businessKind }),
     },
     pages: { leaveOut: [...answers.leaveOut], recipes: [...answers.recipes] },
     ...(answers.colours.kind === "theme" ? {} : { themeTokens: themeOf(answers) }),
+  };
+}
+
+/**
+ * The answers an AI app's brief gives (4.12a, AIB-5), as the person would have given them: the
+ * business type first, which chooses its first template unless the brief names one; then the rest,
+ * each left as the quick start would leave it when the brief doesn't say.
+ */
+export function answersFromBrief(
+  brief: SiteBrief,
+  templates: readonly TemplateSummary[],
+  untitled: string,
+): QuickStartAnswers {
+  let answers = withCategory(emptyAnswers(untitled), brief.businessType, templates);
+  const chosen = templates.find((template) => template.id === brief.template);
+  if (chosen !== undefined) answers = withTemplate(answers, chosen);
+  const colours: QuickStartColours | undefined =
+    brief.colours === undefined
+      ? undefined
+      : "colour" in brief.colours
+        ? { kind: "colour", hex: brief.colours.colour.toLowerCase() }
+        : { kind: "palette", preset: brief.colours.palette };
+  return {
+    ...answers,
+    // One of BUSINESS_KINDS' types: the brief's schema takes no other.
+    ...(brief.businessKind === undefined
+      ? {}
+      : { businessKind: brief.businessKind as BusinessKind }),
+    name: brief.name,
+    whatYouDo: brief.whatYouDo ?? "",
+    ...(brief.theme === undefined ? {} : { theme: brief.theme }),
+    leaveOut: [...(brief.leaveOut ?? [])],
+    recipes: [...(brief.recipes ?? [])],
+    ...(colours === undefined ? {} : { colours }),
+    phone: brief.phone ?? "",
+    email: brief.email ?? "",
+    address: brief.address ?? "",
+    openingHours: [...(brief.openingHours ?? [])],
+    webAddress: brief.webAddress ?? "",
   };
 }

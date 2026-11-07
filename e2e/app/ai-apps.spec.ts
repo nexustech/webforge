@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -8,6 +9,7 @@ import { type ElectronApplication, expect, type Page, test } from "@playwright/t
 import { unzipSync } from "fflate";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
+import { stubFileDialogs } from "./sites.js";
 
 // AI apps (F-AI-1, 4.9): off until the person lets them connect; an app paired in AI apps…
 // reaches the open site through the MCP server on this computer, with the key it was given, and
@@ -16,6 +18,8 @@ import { chooseFromMenu } from "./menus.js";
 
 let app: ElectronApplication;
 let page: Page;
+/** Folders a test made, deleted once the app has closed and let go of the sites in them. */
+const folders: string[] = [];
 
 test.beforeEach(async () => {
   app = await launchDesktopApp();
@@ -29,6 +33,9 @@ test.beforeEach(async () => {
 
 test.afterEach(async () => {
   await app.close();
+  for (const folder of folders.splice(0)) {
+    await rm(folder, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  }
 });
 
 const canvas = () => page.frameLocator(".editor__canvas iframe");
@@ -209,4 +216,91 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
   await page.getByRole("alertdialog").getByRole("button", { name: "Remove" }).click();
   await expect(dialog().getByText("No AI apps yet.")).toBeVisible();
   expect(existsSync(file)).toBe(false);
+});
+
+/** Adds "Another app" called `name` in AI apps…, turned on: its address and key. */
+async function pairAnotherApp(name: string): Promise<{ address: string; key: string }> {
+  await chooseFromMenu(app, page, "File", "AI apps…");
+  const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
+  if (!(await allow.isChecked())) await allow.click();
+  await dialog().getByRole("button", { name: "Add AI app" }).click();
+  await dialog().getByRole("radio", { name: "Another app" }).click();
+  await dialog().getByRole("textbox", { name: "Name" }).fill(name);
+  await dialog().getByRole("button", { name: "Add", exact: true }).click();
+  const shown = dialog().getByRole("region", { name: `${name} is added` });
+  const [address, key] = await shown.locator("dd").allTextContents();
+  if (address === undefined || key === undefined) throw new Error("no address or key shown");
+  await shown.getByRole("button", { name: "Done" }).click();
+  await dialog().getByRole("button", { name: "Close" }).click();
+  return { address, key };
+}
+
+test("an AI app's brief opens the quick start filled in; Create makes the site, closing it nothing (4.12a)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  const { address, key } = await pairAnotherApp("Test client");
+  const client = await connect(address, key);
+  const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-brief-"));
+  folders.push(dir);
+  try {
+    await stubFileDialogs(app, join(dir, "Rapidfix.wforge"));
+    const brief = {
+      businessType: "trades",
+      businessKind: "AutoRepair",
+      name: "Rapidfix Vehicle Repair",
+      whatYouDo: "Servicing, MOTs and repairs",
+      colours: { colour: "#c62828" },
+    };
+    // What the brief offers to choose from needs no site.
+    const choices = answer(
+      await client.callTool({ name: "siteChoices", arguments: {} }),
+    ) as unknown as {
+      data: { businessTypes: { type: string; kinds: { kind: string }[] }[] };
+    };
+    expect(
+      choices.data.businessTypes
+        .find(({ type }) => type === "trades")
+        ?.kinds.map(({ kind }) => kind),
+    ).toContain("AutoRepair");
+
+    // Nothing is made until the person clicks Create site, on the quick start the brief filled in.
+    const created = client.callTool({ name: "createSiteFromBrief", arguments: brief }, undefined, {
+      timeout: 120_000,
+    });
+    const quickStart = page.getByRole("dialog", { name: "Start a site" });
+    await expect(quickStart.getByRole("button", { name: "Create site" })).toBeVisible();
+    await quickStart.getByRole("button", { name: "Create site" }).click();
+    expect(answer(await created)).toEqual({
+      status: "done",
+      data: { created: true, name: "Rapidfix Vehicle Repair" },
+    });
+    await waitForCanvas(page);
+    const settings = (await page.evaluate(() =>
+      (
+        window as unknown as {
+          webforge: { project: { readSite(): Promise<{ site: { settings: unknown } }> } };
+        }
+      ).webforge.project.readSite(),
+    )) as { site: { settings: { general: Record<string, unknown> } } };
+    expect(settings.site.settings.general).toMatchObject({
+      name: "Rapidfix Vehicle Repair",
+      businessType: "trades",
+      businessKind: "AutoRepair",
+    });
+
+    // Another, closed: declined, and nothing made.
+    const declined = client.callTool(
+      { name: "createSiteFromBrief", arguments: { ...brief, name: "Elsewhere" } },
+      undefined,
+      { timeout: 120_000 },
+    );
+    await expect(quickStart.getByRole("button", { name: "Cancel" })).toBeVisible();
+    await quickStart.getByRole("button", { name: "Cancel" }).click();
+    expect(answer(await declined)).toMatchObject({ status: "declined" });
+    await expect(quickStart).toHaveCount(0);
+  } finally {
+    await client.close();
+  }
 });
