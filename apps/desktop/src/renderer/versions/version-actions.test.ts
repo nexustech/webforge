@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { type NodeDoc, newId, type SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
+import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { ProjectResult } from "../../shared/ipc/project.js";
 import type { VersionSummary, VersionsApi } from "../../shared/ipc/versions.js";
 import { starterSite } from "../../shared/starter-site.js";
@@ -32,8 +33,15 @@ function fakeVersions(overrides: Partial<VersionsApi> = {}) {
   } satisfies VersionsApi;
 }
 
-function setUp(versions = fakeVersions(), site: SiteDoc = starterSite()) {
+function setUp(
+  versions = fakeVersions(),
+  site: SiteDoc = starterSite(),
+  opens: "opened" | "failed" = "opened",
+) {
   const session = sessionWith(site);
+  const preview = {
+    openVersion: vi.fn<PreviewApi["openVersion"]>(async () => opens),
+  };
   const flush = vi.spyOn(session, "flush");
   const list = { state: undefined as never, refresh: vi.fn(async () => undefined) };
   const working = vi.fn();
@@ -45,6 +53,7 @@ function setUp(versions = fakeVersions(), site: SiteDoc = starterSite()) {
   const restart = vi.fn();
   const actions = createVersionActions({
     versions,
+    preview,
     sessionId: () => SESSION_ID,
     session,
     list,
@@ -52,7 +61,7 @@ function setUp(versions = fakeVersions(), site: SiteDoc = starterSite()) {
     restart,
   });
   const doc = () => session.history.document.getState();
-  return { actions, versions, session, flush, list, notify, working, restart, doc };
+  return { actions, versions, preview, session, flush, list, notify, working, restart, doc };
 }
 
 /**
@@ -151,11 +160,49 @@ describe("Version History's actions (4.6)", () => {
     expect(doc()).toEqual(before);
   });
 
+  it("previews a version's site as it was, its rich text cleaned, at the page shown (F-SITE-4)", async () => {
+    const { site, version } = siteAndVersion();
+    const { actions, preview, notify, session } = setUp(
+      fakeVersions({ readSite: async () => ({ status: "ok", site: version }) }),
+      site,
+    );
+
+    expect(await actions.preview(summary())).toBe(true);
+
+    const [sessionId, content, page] = preview.openVersion.mock.calls[0] ?? [];
+    expect(sessionId).toBe(SESSION_ID);
+    expect(page).toBe("index.html");
+    expect(JSON.stringify(content)).toContain("As it was");
+    expect(JSON.stringify(content)).not.toContain("<script>");
+    expect(notify.error).not.toHaveBeenCalled();
+    // Nothing of the site changes.
+    expect(session.history.entries()).toEqual([]);
+  });
+
+  it("says when a version can't be previewed", async () => {
+    const { site, version } = siteAndVersion();
+    const failed = setUp(
+      fakeVersions({ readSite: async () => ({ status: "ok", site: version }) }),
+      site,
+      "failed",
+    );
+    expect(await failed.actions.preview(summary())).toBe(false);
+    expect(failed.notify.error).toHaveBeenCalledWith(t("versionHistory.previewFailed"));
+
+    const gone = setUp();
+    expect(await gone.actions.preview(summary())).toBe(false);
+    expect(gone.notify.error).toHaveBeenCalledWith(t("versionHistory.unreadable.gone"));
+    expect(gone.preview.openVersion).not.toHaveBeenCalled();
+  });
+
   it.each([
-    [{ status: "not-found" } as const, t("versionHistory.restore.gone")],
-    [{ status: "unreadable", reason: "newer-format" } as const, t("versionHistory.restore.newer")],
-    [{ status: "unreadable", reason: "invalid" } as const, t("versionHistory.restore.invalid")],
-    [{ status: "failed", reason: "unknown" } as const, t("versionHistory.restore.invalid")],
+    [{ status: "not-found" } as const, t("versionHistory.unreadable.gone")],
+    [
+      { status: "unreadable", reason: "newer-format" } as const,
+      t("versionHistory.unreadable.newer"),
+    ],
+    [{ status: "unreadable", reason: "invalid" } as const, t("versionHistory.unreadable.invalid")],
+    [{ status: "failed", reason: "unknown" } as const, t("versionHistory.unreadable.invalid")],
   ])("restores nothing from a version that doesn't read (%o)", async (read, message) => {
     const { actions, versions, session, notify } = setUp(
       fakeVersions({ readSite: async () => read }),

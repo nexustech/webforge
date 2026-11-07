@@ -50,6 +50,7 @@ function setUp(phone: PhoneAddress = { status: "ready", url: "http://192.168.1.2
     show: vi.fn<PreviewApi["show"]>(async () => null),
     phone: vi.fn<PreviewApi["phone"]>(async () => phone),
     stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
+    openVersion: vi.fn<PreviewApi["openVersion"]>(async () => "opened"),
     onPhoneStopped: (listener: () => void) => {
       phoneStoppedListeners.add(listener);
       return () => phoneStoppedListeners.delete(listener);
@@ -163,6 +164,7 @@ describe("registerPreviewCommands: the site's code (#649)", () => {
       show: vi.fn<PreviewApi["show"]>(async () => null),
       phone: vi.fn<PreviewApi["phone"]>(async () => ({ status: "offline" })),
       stopPhone: vi.fn<PreviewApi["stopPhone"]>(async () => null),
+      openVersion: vi.fn<PreviewApi["openVersion"]>(async () => "opened"),
       onPhoneStopped: () => () => undefined,
     };
     const remove = registerPreviewCommands(registry, {

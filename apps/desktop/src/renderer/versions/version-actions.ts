@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { restoreSite, type SiteDoc } from "@webforge/model";
-import { siteWithCleanRichText } from "@webforge/site-components";
+import { siteContentFor, siteWithCleanRichText } from "@webforge/site-components";
+import type { PreviewApi } from "../../shared/ipc/preview.js";
 import type { ProjectResult } from "../../shared/ipc/project.js";
 import {
   VERSION_NAME_MAX,
@@ -12,6 +13,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import type { EditorSelection } from "../editor/selection.js";
 import { reportFailure } from "../log.js";
 import { fileSizeLabel } from "../media/index.js";
+import { previewPageOf } from "../preview/index.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import type { VersionList } from "./version-list.js";
 import { fit, newSiteName, versionName } from "./version-words.js";
@@ -27,6 +29,8 @@ type VersionNotices = {
 /** What {@link createVersionActions} works with; injectable for tests. */
 export type VersionActionsDeps = {
   readonly versions: VersionsApi;
+  /** The preview server, which shows a version's site in the browser apart from the live one. */
+  readonly preview: Pick<PreviewApi, "openVersion">;
   /** Which opening of the site this window was loaded for (R6). */
   readonly sessionId: () => string;
   readonly session: Pick<EditorSession, "flush" | "edit" | "history" | "ui" | "library">;
@@ -38,6 +42,11 @@ export type VersionActionsDeps = {
 
 /** What the Version History panel and its commands do. */
 export type VersionActions = {
+  /**
+   * Shows `version`'s site in the browser as it was, read-only, at the page the editor shows (or
+   * its home page); true once opened.
+   */
+  preview(version: VersionSummary): Promise<boolean>;
   /** Saves the person's own version, named `name` (Save Version…); true once saved. */
   save(name: string): Promise<boolean>;
   /**
@@ -71,7 +80,7 @@ const fitted = (name: string) => fit(name, VERSION_NAME_MAX).trim();
  * version holds what the person sees; main saves the last changes before it saves a version.
  */
 export function createVersionActions(deps: VersionActionsDeps): VersionActions {
-  const { versions, sessionId, session, list, notify, restart } = deps;
+  const { versions, preview, sessionId, session, list, notify, restart } = deps;
   // The version before this opening's first unasked theme change, once asked for: a later change
   // waits for it, so the version never holds a change made while it saved.
   let themeVersion: Promise<boolean> | undefined;
@@ -99,6 +108,30 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
     }
   };
 
+  /**
+   * Version `version`'s site, its rich text as this Webforge stores it, never a version's own
+   * markup (S23); none, said why, when it can't be read.
+   */
+  const siteOf = async (version: VersionSummary): Promise<SiteDoc | undefined> => {
+    let read: Awaited<ReturnType<VersionsApi["readSite"]>>;
+    try {
+      read = await versions.readSite(sessionId(), version.id);
+    } catch (error) {
+      reportFailure("versions.readSite", error);
+      notify.error(t("versionHistory.unreadable.invalid"));
+      return undefined;
+    }
+    if (read.status === "ok") return siteWithCleanRichText(read.site, session.library);
+    notify.error(
+      read.status === "not-found"
+        ? t("versionHistory.unreadable.gone")
+        : read.status === "unreadable" && read.reason === "newer-format"
+          ? t("versionHistory.unreadable.newer")
+          : t("versionHistory.unreadable.invalid"),
+    );
+    return undefined;
+  };
+
   /** Where the editor goes after a restore: the page shown, or the home page if it's gone. */
   const selectionIn = (site: SiteDoc): EditorSelection => {
     const { pageId, viewport } = session.ui.getState();
@@ -117,34 +150,35 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
       return true;
     },
 
+    async preview(version) {
+      const site = await siteOf(version);
+      if (site === undefined) return false;
+      const page = previewPageOf(site, session.ui.getState().pageId);
+      try {
+        if (
+          (await preview.openVersion(sessionId(), siteContentFor(site, session.library), page)) ===
+          "opened"
+        ) {
+          return true;
+        }
+      } catch (error) {
+        reportFailure("versions.preview", error);
+      }
+      notify.error(t("versionHistory.previewFailed"));
+      return false;
+    },
+
     async restore(version) {
       const name = versionName(version);
       session.flush();
-      let read: Awaited<ReturnType<VersionsApi["readSite"]>>;
-      try {
-        read = await versions.readSite(sessionId(), version.id);
-      } catch (error) {
-        reportFailure("versions.readSite", error);
-        notify.error(t("versionHistory.restore.invalid"));
-        return false;
-      }
-      if (read.status !== "ok") {
-        notify.error(
-          read.status === "not-found"
-            ? t("versionHistory.restore.gone")
-            : read.status === "unreadable" && read.reason === "newer-format"
-              ? t("versionHistory.restore.newer")
-              : t("versionHistory.restore.invalid"),
-        );
-        return false;
-      }
+      const read = await siteOf(version);
+      if (read === undefined) return false;
       // The site as it is now, so the restore can be gone back on even past Undo History.
       if ((await saveFor("", "before-restore")) !== undefined) {
         notify.error(t("versionHistory.restore.notSaved"));
         return false;
       }
-      // Rich text as this Webforge stores it, never a version's own markup (S23).
-      const restored = siteWithCleanRichText(read.site, session.library);
+      const restored = read;
       session.edit(
         "root",
         t("versionHistory.history.restored", { name }),

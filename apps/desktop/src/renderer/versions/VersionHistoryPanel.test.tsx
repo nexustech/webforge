@@ -29,6 +29,7 @@ const daily: VersionSummary = {
 
 function draw(props: Partial<VersionHistoryPanelProps> = {}) {
   const actions = {
+    preview: vi.fn(async () => true),
     restore: vi.fn(async () => true),
     remove: vi.fn(async () => true),
     openAsNewSite: vi.fn(async () => undefined),
@@ -106,8 +107,11 @@ describe("the Version History panel (4.6)", () => {
     expect(actions.remove).toHaveBeenCalledWith(daily);
   });
 
-  it("opens a version as a new site, and saves one", async () => {
+  it("opens a version as a new site, previews one, and saves one", async () => {
     const { actions, onSave } = draw();
+
+    await choose("Before the new menu", t("versionHistory.preview"));
+    expect(actions.preview).toHaveBeenCalledWith(mine);
 
     await choose("Before the new menu", t("versionHistory.openAsNewSite"));
     expect(actions.openAsNewSite).toHaveBeenCalledWith(mine);
@@ -141,7 +145,13 @@ describe("the Version History panel (4.6)", () => {
     const remove = registerVersionHistoryPanel(
       panels,
       createVersionList(list),
-      { restore: vi.fn(), remove: vi.fn(), openAsNewSite: vi.fn(), cleanUp: vi.fn() },
+      {
+        preview: vi.fn(),
+        restore: vi.fn(),
+        remove: vi.fn(),
+        openAsNewSite: vi.fn(),
+        cleanUp: vi.fn(),
+      },
       vi.fn(),
     );
 

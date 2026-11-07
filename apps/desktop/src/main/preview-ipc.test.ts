@@ -57,6 +57,7 @@ function previewOf(overrides: Partial<PreviewDeps> = {}) {
     ),
     stop: vi.fn(async (_scope: "local" | "network") => undefined),
     update: vi.fn((_build: PreviewBuild) => undefined),
+    showVersion: vi.fn((_build: PreviewBuild) => undefined),
     show: vi.fn((_page: string) => undefined),
     watching: () => watching,
     onWatch: (listener: () => void) => watchers.push(listener),
@@ -173,6 +174,38 @@ describe("createPreview (3.2)", () => {
     // Opened again: the same server, nothing new to build.
     await preview.open(SITE_A, site("Bakery"), "index.html");
     expect(deps.startServer).toHaveBeenCalledOnce();
+  });
+
+  it("previews a version apart: built once by a builder of its own, under its own path (4.6)", async () => {
+    const { preview, deps, server, builder, finish } = previewOf();
+
+    const opening = preview.openVersion(SITE_A, site("Before"), "services/about.html");
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledOnce());
+    const build: PreviewOutcome = { type: "previewed", full: true, changed: [], removed: [] };
+    finish(build);
+
+    expect(await opening).toBe("opened");
+    // The live preview's builder, and the version's, which closes once it has built.
+    expect(deps.startBuilder).toHaveBeenCalledTimes(2);
+    expect(builder.close).toHaveBeenCalledOnce();
+    expect(server.showVersion).toHaveBeenCalledWith(build);
+    expect(server.update).not.toHaveBeenCalled();
+    expect(deps.openInBrowser).toHaveBeenCalledWith(
+      `http://127.0.0.1:5001${BASE}__webforge/version/services/about.html`,
+    );
+  });
+
+  it("previews no version whose build failed, nor one for another opening", async () => {
+    const { preview, deps, server, builder, finish, opened } = previewOf();
+    const opening = preview.openVersion(SITE_A, site("Before"), "index.html");
+    await vi.waitFor(() => expect(builder.request).toHaveBeenCalledOnce());
+    finish({ type: "preview-failed", detail: "missing-font" });
+
+    expect(await opening).toBe("failed");
+    expect(server.showVersion).not.toHaveBeenCalled();
+    opened.sessionId = SITE_B;
+    expect(await preview.openVersion(SITE_A, site("Before"), "index.html")).toBe("failed");
+    expect(deps.openInBrowser).not.toHaveBeenCalled();
   });
 
   it("says so when the browser couldn't open, or the server couldn't start", async () => {
@@ -404,7 +437,7 @@ describe("previewFeature (A12)", () => {
     feature.register?.({ handle }, () => true);
     feature.site?.closed?.();
 
-    expect(handle).toHaveBeenCalledTimes(5);
+    expect(handle).toHaveBeenCalledTimes(6);
     expect(close).toHaveBeenCalledOnce();
   });
 });

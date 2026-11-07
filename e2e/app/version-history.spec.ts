@@ -105,3 +105,54 @@ test("Clean Up gives free space back, and Undo still brings back what it changed
   await page.keyboard.press("ControlOrMeta+z");
   await expect(aboutPage()).toHaveCount(1);
 });
+
+test("previews a version in the browser as it was, the site as it is untouched (F-SITE-4)", async () => {
+  // The addresses Preview would open in the default browser, instead of opening them.
+  await app.evaluate(({ shell }) => {
+    const opened: string[] = [];
+    Object.assign(globalThis, { opened });
+    Object.assign(shell, {
+      openExternal: async (url: string) => {
+        opened.push(url);
+      },
+    });
+  });
+  const opened = () =>
+    app.evaluate(() => (globalThis as unknown as { opened: string[] }).opened.slice());
+  await page.keyboard.press("ControlOrMeta+Alt+s");
+  const naming = page.getByRole("dialog", { name: "Save Version" });
+  await naming.getByLabel("Version name").fill("With About");
+  await naming.getByRole("button", { name: "Save Version" }).click();
+  await right().getByRole("tab", { name: "Site" }).click();
+  await page
+    .getByRole("list", { name: "Pages" })
+    .getByRole("button", { name: "Actions for About" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete Page" }).click();
+  await expect(aboutPage()).toHaveCount(0);
+
+  await left().getByRole("tab", { name: "Version History" }).click();
+  await versions().getByRole("button", { name: "More for “With About”" }).click();
+  await page.getByRole("menuitem", { name: "Preview" }).click();
+
+  await expect.poll(opened).toHaveLength(1);
+  const [url = ""] = await opened();
+  expect(url).toMatch(
+    /^http:\/\/127\.0\.0\.1:\d+\/[0-9a-f]{32}\/__webforge\/version\/index\.html$/,
+  );
+  const fetched = (path: string) =>
+    app.evaluate(
+      async (_, address) => {
+        const response = await fetch(address);
+        return { status: response.status, body: await response.text() };
+      },
+      url.replace(/index\.html$/, path),
+    );
+  // The version's About page, which the site no longer has, without the live preview's script.
+  const about = await fetched("about.html");
+  expect(about.status).toBe(200);
+  expect(about.body).toContain("About");
+  expect(about.body).not.toContain("live.js");
+  await expect(aboutPage()).toHaveCount(0);
+});
