@@ -39,6 +39,12 @@ export type PublishRunDeps = {
    * once autosave has written them, or the window didn't answer in time.
    */
   readonly flush: () => Promise<void>;
+  /**
+   * Holds a publish's manifest until the returned release is called: Version History's Clean up
+   * keeps every blob it reaches, for the build's images and the version it saves
+   * (`ProjectSession.holdManifest`).
+   */
+  readonly holdManifest: (manifest: VersionManifest) => () => void;
   /** Opens an address in the default browser: `shell.openExternal`. */
   readonly openExternal: (url: string) => Promise<void>;
   readonly sendProgress: (operationId: string, progress: PublishProgress) => void;
@@ -77,7 +83,7 @@ function failedResult(outcome: Extract<PublishOutcome, { type: "failed" }>): Pub
  * 1. asks the window to flush autosave (the window ended its text session before calling), then
  *    reads the site, the manifest of its documents and the destination in one turn of main's
  *    event loop, so no autosave commit lands between them (§3), from the opening the call names
- *    (R6);
+ *    (R6), and holds the manifest until the publish ends, so Clean up keeps what it reaches;
  * 2. leaves out the code its owner hasn't trusted here (#649), and runs Site Check's publish gate
  *    on what is left (§4): any *Must fix* stops it, with nothing built or saved;
  * 3. reads the destination's sign-in from the keychain, only for the destination it was typed for
@@ -105,18 +111,24 @@ export function registerPublishRun(
       if (underWay.has(operationId)) return { status: "cancelled" };
       const controller = new AbortController();
       underWay.set(operationId, controller);
+      let release: (() => void) | undefined;
       try {
         // 1. What the person sees, saved; then all at once: `work` is synchronous, so nothing
         // commits in between.
         await deps.flush();
         const read = await site.withStore<Read | { readonly reason: "no-site" | "stale-session" }>(
           "shared",
-          (store) => ({
-            site: store.readSite(),
-            manifest: store.readManifest(),
-            destination: store.readPublishDestinations().find(({ id }) => id === destinationId),
-            projectId: store.info.projectId,
-          }),
+          (store) => {
+            const manifest = store.readManifest();
+            // Held in the same turn as it's read, so no Clean up comes between.
+            release = deps.holdManifest(manifest);
+            return {
+              site: store.readSite(),
+              manifest,
+              destination: store.readPublishDestinations().find(({ id }) => id === destinationId),
+              projectId: store.info.projectId,
+            };
+          },
           (reason) => ({ reason }),
         );
         if ("reason" in read) return { status: "failed", reason: read.reason };
@@ -198,6 +210,7 @@ export function registerPublishRun(
         logFailure("Webforge could not publish the site", error);
         return { status: "failed", reason: "unknown" };
       } finally {
+        release?.();
         underWay.delete(operationId);
       }
     },
