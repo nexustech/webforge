@@ -4,7 +4,7 @@ import type { PreferencesStore } from "../shell/preferences-store.js";
 import { TOUR_STEPS } from "./tour-steps.js";
 
 /** What the tour shows: nothing, the offer (OB-1), or a step, by its place in {@link TOUR_STEPS}. */
-export type TourStage = "closed" | "offer" | number;
+type TourStage = "closed" | "offer" | number;
 
 /** The tour as the window shows it, and how it moves on. */
 export type Tour = {

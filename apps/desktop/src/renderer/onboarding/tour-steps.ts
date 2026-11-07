@@ -21,7 +21,7 @@ const boxOf = (element: Element | null): ScreenBox | null => {
  * The first heading on the page in the canvas, as a box in the editor's window: the canvas's
  * frame is scaled by its zoom, so the heading's box is scaled and moved by the frame's place.
  */
-export function firstHeadingOnPage(document: Document): ScreenBox | null {
+function firstHeadingOnPage(document: Document): ScreenBox | null {
   const frame = document.querySelector<HTMLIFrameElement>(".editor__canvas iframe");
   const heading = frame?.contentDocument?.querySelector("h1, h2, h3") ?? null;
   const inside = boxOf(heading);
