@@ -9,6 +9,7 @@ import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { PhoneAddress } from "../../shared/ipc/preview.js";
+import { HelpButton } from "../help/index.js";
 import { QrCode } from "./QrCode.js";
 
 /** What the phone dialog shows: closed, starting the preview, its address, or why there is none. */
@@ -63,6 +64,8 @@ export function PhonePreviewDialog({ state }: { readonly state: StoreApi<PhoneSt
             <p className="text-xs text-muted-foreground">{t("preview.phone.privacy")}</p>
           </div>
         ) : null}
+        {/* Last, so the dialog's own first control still takes the focus as it opens. */}
+        <HelpButton topic="phonePreview" className="absolute top-2.5 right-9" />
       </DialogContent>
     </Dialog>
   );

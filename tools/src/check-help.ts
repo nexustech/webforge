@@ -8,20 +8,23 @@
 // catalogue (`packages/site-components/src/catalogue-data.json`) and the app's name (`app.name` in
 // `packages/i18n/src/en`), and fails when `checkHelpPages` (`@webforge/help`) finds anything:
 // front matter that doesn't parse, an id that's repeated or isn't its file's name, a link or anchor
-// between pages that doesn't resolve, a component type on no page or on two, the app's name spelled
-// out, raw HTML or a picture.
+// between pages that doesn't resolve, a component type on no page, on two or with no heading there,
+// the app's name spelled out, raw HTML or a picture, and a **?** link (the table
+// `apps/desktop/src/renderer/help/help-links.json`) to a page or heading that isn't there.
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { checkHelpPages } from "@webforge/help/pages";
+import { checkHelpPages, helpComponentsOf } from "@webforge/help/pages";
 
 /** Where the pages, the catalogue and the strings are, from the repository root. */
 export const HELP_PATHS = {
   pages: "docs/help",
   catalogue: "packages/site-components/src/catalogue-data.json",
   strings: "packages/i18n/src/en",
+  /** The app's **?** links, each a page and maybe a heading. */
+  links: "apps/desktop/src/renderer/help/help-links.json",
 } as const;
 
 /** The app's name, as `app.name` in the string catalogue under `folder` has it. */
@@ -42,12 +45,18 @@ export function checkHelp(root: string): readonly string[] {
     .toSorted()
     .map((name) => ({ name, text: readFileSync(join(folder, name), "utf8") }));
   const catalogue = JSON.parse(readFileSync(join(root, HELP_PATHS.catalogue), "utf8")) as {
-    components: Record<string, unknown>;
+    components: Parameters<typeof helpComponentsOf>[0];
   };
   return checkHelpPages({
     files,
-    componentTypes: Object.keys(catalogue.components),
+    components: helpComponentsOf(catalogue.components),
     appName: appNameIn(join(root, HELP_PATHS.strings)),
+    links: Object.values(
+      JSON.parse(readFileSync(join(root, HELP_PATHS.links), "utf8")) as Record<
+        string,
+        { page: string; anchor?: string }
+      >,
+    ),
   });
 }
 

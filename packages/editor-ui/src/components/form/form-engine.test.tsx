@@ -253,6 +253,30 @@ describe("FormDialog (2.21, B4)", () => {
       { groups: ["general"] },
     );
   });
+
+  it("draws a help link beside the title, and one for each section that has one (5.4b)", async () => {
+    render(
+      <FormDialog
+        open
+        title="Site Settings"
+        confirm="Save"
+        spec={spec}
+        initial={initial}
+        help={<button type="button">Help: Site Settings</button>}
+        groupHelp={(group) =>
+          group === "contact" ? <button type="button">Help: Contact</button> : null
+        }
+        onSave={vi.fn()}
+        onCancel={vi.fn()}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    expect(screen.getByRole("button", { name: "Help: Site Settings" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Help: Contact" })).toBeNull();
+
+    await user.click(screen.getByRole("tab", { name: "Contact" }));
+    expect(screen.getByRole("button", { name: "Help: Contact" })).toBeTruthy();
+  });
 });
 
 describe("a form's list (2.21, PH2-13)", () => {

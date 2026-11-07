@@ -3,7 +3,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # Editing on the page
@@ -73,6 +73,7 @@ Right-click a section or element, on the page or in [Layers](layers.md), for:
 - **Select similar** (every item like this one on the page) and **Select parent**;
 - **Cut**, **Copy**, **Paste** and **Paste as Linked Copy**;
 - **Style This…**, **Copy Style**, **Paste Style**, and **Apply Look to Every…** on this page or the whole site (see [Styling](styling.md));
+- **Help for This Element**, which opens its help page at what it says about that kind of section or element (see [The editor](the-editor.md#help));
 - **Delete**.
 
 On the keyboard, Shift+F10 or the menu key opens the same menu.

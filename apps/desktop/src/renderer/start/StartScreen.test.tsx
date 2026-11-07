@@ -72,6 +72,9 @@ function api(recent: RecentSite[], result: ProjectResult = { status: "opened", p
   };
 }
 
+/** The Help window, as the start screen opens it (5.4b). */
+const helpWindow = { open: vi.fn(async () => true) };
+
 async function render(
   project: ReturnType<typeof api>,
   restart = vi.fn(),
@@ -87,6 +90,7 @@ async function render(
         app={{ onFlushRequest: flushRequests }}
         restart={restart}
         locale="en-GB"
+        help={helpWindow}
         {...(ai === undefined ? {} : { ai })}
       />,
     ),
@@ -283,7 +287,7 @@ describe("StartScreen", () => {
     expect(button("Try an example")).toBeUndefined();
   });
 
-  it("lists the shortcuts and the example on the Help tab, and runs them (2.14b)", async () => {
+  it("lists the help pages to start with, the shortcuts and the example on the Help tab, and runs them (2.14b, 5.4b)", async () => {
     const example: TemplateSummary = {
       id: "cafe",
       category: "food",
@@ -304,9 +308,19 @@ describe("StartScreen", () => {
     });
     const panel = container.querySelector('[role="tabpanel"][data-state="active"]');
     expect([...(panel?.querySelectorAll("li") ?? [])].map((item) => item.textContent)).toEqual([
+      expect.stringContaining("Getting started"),
+      expect.stringContaining("The editor"),
+      expect.stringMatching(/^Keyboard shortcutsEach keyboard shortcut explained/),
       expect.stringContaining("Keyboard Shortcuts"),
       expect.stringContaining("Try an Example"),
     ]);
+
+    // A help page opens in the Help window.
+    const started = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
+      each.textContent?.includes("Getting started"),
+    );
+    await act(async () => started?.click());
+    expect(helpWindow.open).toHaveBeenCalledWith({ page: "getting-started" });
 
     const tryIt = [...(panel?.querySelectorAll("button") ?? [])].find((each) =>
       each.textContent?.includes("Try an Example"),

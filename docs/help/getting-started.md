@@ -3,7 +3,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, export]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # Getting started
@@ -26,7 +26,7 @@ On the right, **Recent sites** lists the sites you've opened, newest first.
 - The pin keeps a site at the top of the list.
 - The **×** takes a site off the list. It doesn't delete the site's file.
 
-The **Help** tab lists the keyboard shortcuts and the example site.
+The **Help** tab lists the help pages to start with (this one, *The editor* and *Keyboard shortcuts*), then the keyboard shortcuts and the example site.
 
 ## Start a site (the quick start)
 
