@@ -23,8 +23,18 @@ import type { SiteStore, StaleReason } from "./site-store.js";
 // The open site's versions (F-SITE-4, 4.6): each call on the opening it was made for (R6), through
 // the gate's shared side, as the site's other operations are (A13).
 
-/** A version as the renderer is told of it, with what it alone keeps. */
-function summaryOf(version: VersionInfo, bytes: ReadonlyMap<string, number>): VersionSummary {
+/**
+ * A version as the renderer is told of it, with what it alone keeps, and when it was last
+ * published and where: the destination's name, from `destinations` (by id), unless it's been
+ * removed since (4.6b).
+ */
+function summaryOf(
+  version: VersionInfo,
+  bytes: ReadonlyMap<string, number>,
+  destinations: ReadonlyMap<string, string> = new Map(),
+): VersionSummary {
+  const published = version.publishedTo;
+  const to = published === undefined ? undefined : destinations.get(published.destinationId);
   return {
     id: version.id,
     name: version.name,
@@ -32,6 +42,9 @@ function summaryOf(version: VersionInfo, bytes: ReadonlyMap<string, number>): Ve
     createdAt: version.createdAt,
     ...(version.thumbnailHash === undefined ? {} : { thumbnailHash: version.thumbnailHash }),
     bytes: bytes.get(version.id) ?? 0,
+    ...(published === undefined
+      ? {}
+      : { published: { at: published.publishedAt, ...(to === undefined ? {} : { to }) } }),
   };
 }
 
@@ -45,9 +58,12 @@ export function listVersions(site: SiteStore): Promise<ListVersionsResult> {
     (store) => {
       const space = store.versionSpace();
       const bytes = new Map(space.versions.map(({ id, bytes: own }) => [id, own]));
+      const destinations = new Map(
+        store.readPublishDestinations().map(({ id, name }) => [id, name]),
+      );
       return {
         status: "ok",
-        versions: store.listVersions().map((version) => summaryOf(version, bytes)),
+        versions: store.listVersions().map((version) => summaryOf(version, bytes, destinations)),
         bytes: space.bytes,
       };
     },

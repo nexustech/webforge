@@ -205,9 +205,11 @@ const operationIdSchema = z.uuid();
 
 /**
  * What became of a publish (4.5, ADR 0018): live at `url` (the live check's result with it, and
- * whether the version it went live with was saved: not to a read-only site); refused before
- * anything was built, for `count` *Must fix* findings, or a sign-in not saved for the destination
- * as it is (S2); cancelled; or why it failed, by its code.
+ * whether the version it went live with was saved, or a republished one's record of it written:
+ * not to a read-only site); refused before anything was built, for `count` *Must fix* findings, or
+ * a sign-in not saved for the destination as it is (S2); cancelled; or why it failed, by its code.
+ * A republish (4.6b) also fails for a version no longer in the site (`no-version`), or one this
+ * Webforge can't read (`unreadable-version`).
  */
 const publishResultSchema = z.discriminatedUnion("status", [
   z.strictObject({
@@ -224,7 +226,15 @@ const publishResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("cancelled") }),
   z.strictObject({
     status: z.literal("failed"),
-    reason: z.enum([...PUBLISH_FAILURES, "no-site", "stale-session", "no-destination", "unknown"]),
+    reason: z.enum([
+      ...PUBLISH_FAILURES,
+      "no-site",
+      "stale-session",
+      "no-destination",
+      "no-version",
+      "unreadable-version",
+      "unknown",
+    ]),
     /** The title of the page to fix, for `reserved-name`. */
     page: z.string().max(500).optional(),
     /** The id of the Media image to replace, for `unreadable-image`. */
@@ -306,7 +316,9 @@ export const publishChannels = {
    * Publishes the open site to one of its destinations (4.5, ADR 0018): main reads the site from
    * its file as the window has just saved it, gates it, builds and sends it in the export worker,
    * and saves the version it went live with. As `operationId`, for its progress and its cancel;
-   * `replaceOtherSite` once the person agreed to replace another site's folder (A8).
+   * `replaceOtherSite` once the person agreed to replace another site's folder (A8). With
+   * `versionId`, it republishes that saved version instead (4.6b, ADR 0018 §3): main reads and
+   * gates the version, and records the publish on it rather than saving another.
    */
   publishSite: {
     channel: "publish:publish",
@@ -314,7 +326,7 @@ export const publishChannels = {
       sessionIdSchema,
       z.uuid(),
       operationIdSchema,
-      z.strictObject({ replaceOtherSite: z.boolean() }),
+      z.strictObject({ replaceOtherSite: z.boolean(), versionId: z.uuid().optional() }),
     ]),
     response: publishResultSchema,
   },
@@ -367,12 +379,15 @@ export interface PublishApi {
   ): Promise<SaveDestinationResult>;
   /** Removes one of the site's destinations, with what this computer kept for it. */
   removeDestination(sessionId: string, id: string): Promise<RemoveDestinationResult>;
-  /** Publishes the site `sessionId` opened to destination `destinationId`, as `operationId`. */
+  /**
+   * Publishes the site `sessionId` opened to destination `destinationId`, as `operationId`; or,
+   * with `versionId`, that saved version of it.
+   */
   publish(
     sessionId: string,
     destinationId: string,
     operationId: string,
-    options: { readonly replaceOtherSite: boolean },
+    options: { readonly replaceOtherSite: boolean; readonly versionId?: string },
   ): Promise<PublishResult>;
   /** Cancels publish `operationId`. */
   cancel(operationId: string): Promise<null>;

@@ -1,4 +1,4 @@
-import { SITE_NAME_MAX, siteDocSchema } from "@webforge/model";
+import { DESTINATION_NAME_MAX, SITE_NAME_MAX, siteDocSchema } from "@webforge/model";
 import { z } from "zod";
 import type { ProjectResult } from "./project.js";
 import { projectResultSchema, sessionIdSchema } from "./project.js";
@@ -40,6 +40,16 @@ const versionSummarySchema = z.strictObject({
     .optional(),
   /** What it alone keeps in the file: what deleting it would free. */
   bytes: z.int().nonnegative(),
+  /**
+   * When it was last published (ISO 8601, UTC), and to which of the site's destinations, by name:
+   * none once that destination is removed (4.6b).
+   */
+  published: z
+    .strictObject({
+      at: z.iso.datetime(),
+      to: z.string().max(DESTINATION_NAME_MAX).optional(),
+    })
+    .optional(),
 });
 
 /** A version as Version History lists it. */

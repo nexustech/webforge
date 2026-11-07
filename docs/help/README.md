@@ -36,7 +36,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 
 **Your work**
 - [Undo and Undo History](undo-and-history.md)
-- [Version History](version-history.md): save versions, preview, restore or open one as a new site
+- [Version History](version-history.md): save versions, preview, restore, publish one again or open one as a new site
 - [Saving, copies and backups](saving-and-backups.md)
 - [Settings](settings.md): {appName}'s own preferences
 - [Keyboard shortcuts](keyboard-shortcuts.md)
@@ -44,7 +44,6 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [AI apps](ai-apps.md): let an AI app on this computer work on your site
 
 **Still to come**, written with the features as they merge:
-- *Version History*: publishing an earlier version again (4.6b)
 - *Publish*: Netlify (4.4b)
 
 ## Writing a help page
