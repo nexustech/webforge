@@ -940,6 +940,8 @@ jobs:
           if-no-files-found: ignore
 
       - name: Build the installer and check its size (§10, 150 MB)
+        # Whatever the timings found: each budget is reported on its own.
+        if: success() || failure()
         shell: bash
         run: |
           set -euo pipefail
