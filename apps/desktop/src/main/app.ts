@@ -665,8 +665,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
         await projectSession.close();
       },
-      // Then each feature's last work, such as My themes' and the Recent list's last writes.
-      features,
+      // Then each feature's last work, such as My themes' and the Recent list's last writes, and
+      // the preferences' last writes: a panel resized just before quitting keeps its size (#740).
+      features: [...features, { quit: async () => await lifecycle.preferences?.idle() }],
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).
