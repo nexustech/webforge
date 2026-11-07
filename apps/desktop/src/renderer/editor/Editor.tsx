@@ -91,7 +91,7 @@ export type EditorProps = {
    */
   readonly siteWide?: Pick<
     SiteWideConfirm,
-    "confirmSiteWide" | "current" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
+    "confirmSiteWide" | "current" | "busy" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
   >;
 };
 
@@ -241,9 +241,9 @@ export function Editor({
     const removeKeys = installHistoryKeys(
       window,
       (command) => {
-        // Nothing changes while a question about the whole site waits for its answer (D7); Esc
-        // goes to its dialog.
-        if (siteWide !== undefined && siteWide.current() !== null) return false;
+        // Nothing changes while a question about the whole site waits for its answer (D7), or
+        // the answered change for its version (4.6); Esc goes to the dialog.
+        if (siteWide !== undefined && siteWide.busy()) return false;
         connection.flush();
         return runHistoryCommand(session, command);
       },
