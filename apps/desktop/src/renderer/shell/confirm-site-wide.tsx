@@ -57,10 +57,11 @@ export type SiteWideConfirm = {
   /** The question shown, if any; for the dialog. */
   current(): SiteWideAction | null;
   /**
-   * Whether a change is waiting for the {@link BeforeSiteWideAction} to run before it's made (4.6:
-   * its version saving), so nothing else, Undo included, changes the site in between.
+   * Whether a question is open, or an answered change waits for the {@link BeforeSiteWideAction}
+   * to run before it's made (4.6: its version saving). Nothing else, Undo included, may change the
+   * site meanwhile: every way in checks this, not {@link SiteWideConfirm.current} alone.
    */
-  landing(): boolean;
+  busy(): boolean;
   /** The last question asked, kept once answered; the dialog shows it while it fades out. */
   last(): SiteWideAction | null;
   subscribe(listener: () => void): () => void;
@@ -81,7 +82,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
   const changed = () => {
     for (const listener of listeners) listener();
   };
-  /** Runs the hook for `action`, counted as {@link SiteWideConfirm.landing} until it has. */
+  /** Runs the hook for `action`, counted as {@link SiteWideConfirm.busy} until it has. */
   const runBefore = async (action: SiteWideAction, asked: boolean): Promise<void> => {
     waiting += 1;
     changed();
@@ -126,7 +127,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
       };
     },
     current: () => open?.action ?? null,
-    landing: () => waiting > 0,
+    busy: () => open !== null || waiting > 0,
     last: () => last,
     subscribe(listener) {
       listeners.add(listener);
@@ -146,13 +147,13 @@ export function createSiteWideConfirm(): SiteWideConfirm {
  * question and the change. Returns a function that stops.
  */
 export function pauseCommandsWhileAsking(
-  confirm: Pick<SiteWideConfirm, "current" | "landing" | "subscribe">,
+  confirm: Pick<SiteWideConfirm, "busy" | "subscribe">,
   registry: Pick<CommandRegistry, "pause">,
 ): () => void {
   let resume: (() => void) | null = null;
   const follow = () => {
     // Asking, or the answered change still waiting for its version (4.6).
-    const asking = confirm.current() !== null || confirm.landing();
+    const asking = confirm.busy();
     if (asking && resume === null) {
       resume = registry.pause();
     } else if (!asking && resume !== null) {

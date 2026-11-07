@@ -65,4 +65,8 @@ Changes you make while viewing Tablet or Mobile can apply to that device only. S
 
 ## Finding a command
 
-**Search Commands…** (Ctrl+P, Cmd+P on a Mac, or click the box in the title bar) finds any command by name. It also finds a page to go to and a section or element to add. Every command's keyboard shortcut is listed in [Keyboard shortcuts](keyboard-shortcuts.md), or press **?**.
+**Search Commands…** (Ctrl+P, Cmd+P on a Mac, or click the box in the title bar) finds any command by name. It also finds a page to go to, a section or element to add, and a help page to read. Every command's keyboard shortcut is listed in [Keyboard shortcuts](keyboard-shortcuts.md), or press **?**.
+
+## Help
+
+**Help › {appName} Help**, or F1, opens these help pages in a window of their own, beside the editor, so you can read and work at once. Choose a page from the contents on the left, or search them all. Links between pages stay in the Help window, and **Back** returns to the page before; a link to a website opens in your web browser. The pages come with {appName}, so they work without an internet connection.

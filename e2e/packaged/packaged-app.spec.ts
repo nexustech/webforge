@@ -270,6 +270,29 @@ test("ships the bridge beside app.asar, which Node.js starts as Claude Desktop d
   expect({ code, output }).toEqual({ code: 1, output: "" });
 });
 
+test("opens the Help window from app.asar, with its pages and its own preload (5.4b)", async () => {
+  test.skip(child === undefined || browser === undefined, "Needs the running packaged app");
+  const context = browser?.contexts()[0];
+  if (context === undefined) return;
+  const opened = context.waitForEvent("page");
+  await page.evaluate(() =>
+    (
+      window as unknown as { webforge: { help: { open(target: object): Promise<boolean> } } }
+    ).webforge.help.open({ page: "export" }),
+  );
+  const help = await opened;
+  expect(help.url()).toMatch(/\/renderer\/help\.html\?page=export/);
+  await expect(help.getByRole("heading", { level: 1, name: "Export" })).toBeVisible();
+  // Its own small API, not the editor's.
+  expect(
+    await help.evaluate(() => [
+      typeof (window as { webforge?: unknown }).webforge,
+      typeof (window as { webforgeHelp?: unknown }).webforgeHelp,
+    ]),
+  ).toEqual(["undefined", "object"]);
+  await help.close();
+});
+
 test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.3, ADR 0006)", async () => {
   test.skip(child === undefined, "Needs the running packaged app");
   const server = await startSftpServer({ user: "baker", password: "test-only-password" });

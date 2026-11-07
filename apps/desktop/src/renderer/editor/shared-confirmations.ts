@@ -69,19 +69,17 @@ function confirmShared(
  * confirms them (D7): the quick action, the Delete key, the Edit menu and Layers all report one
  * this way. Confirmed, the removal is recorded as usual, one undo step, against the document as it
  * is then; cancelled, the canvas is put back as the document still is. While a question is open,
- * undo and redo from the canvas do nothing.
+ * or the confirmed removal waits for its version (4.6), undo and redo from the canvas do nothing.
  */
 export function confirmSharedRemovals(
   engine: CanvasEngine,
   session: Session,
-  siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "current">,
+  siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "busy">,
 ): CanvasEngine {
   return {
     ...engine,
     onHistoryCommand: (listener) =>
-      engine.onHistoryCommand((command) =>
-        siteWide.current() === null ? listener(command) : false,
-      ),
+      engine.onHistoryCommand((command) => (siteWide.busy() ? false : listener(command))),
     onUserEdit: (listener) =>
       engine.onUserEdit((edit) => {
         const site = session.history.document.getState();

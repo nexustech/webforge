@@ -67,10 +67,16 @@ describe("parseHelpPage", () => {
       updated: "2026-11-07",
       status: "partial",
     });
-    expect(read.headings).toEqual([
+    expect(read.headings.map(({ token: _, ...heading }) => heading)).toEqual([
       { depth: 1, text: "Export", anchor: "export" },
       { depth: 2, text: "Options and choices", anchor: "options-and-choices" },
       { depth: 2, text: "Options and choices", anchor: "options-and-choices-1" },
+    ]);
+    // Each with its token, for the Help window to draw with its anchor.
+    expect(read.headings.map(({ token }) => read.tokens.includes(token))).toEqual([
+      true,
+      true,
+      true,
     ]);
     expect(read.links).toEqual(["site-check.md#tips", "#options-and-choices"]);
     expect(read.text).toContain("Export makes your website. See Site Check.");
