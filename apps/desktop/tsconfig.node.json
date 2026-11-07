@@ -13,6 +13,9 @@
       "path": "../../packages/i18n"
     },
     {
+      "path": "../../packages/mcp-bridge"
+    },
+    {
       "path": "../../packages/model"
     },
     {

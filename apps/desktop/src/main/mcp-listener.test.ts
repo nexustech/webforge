@@ -1,7 +1,9 @@
 import { request } from "node:http";
 import { networkInterfaces } from "node:os";
+import { PassThrough } from "node:stream";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { PROOF_PATH, proofFor, runBridge } from "@webforge/mcp-bridge";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   MAX_SESSIONS_PER_APP,
@@ -19,6 +21,11 @@ const KEYS: Readonly<Record<string, McpApp>> = {
   ["c".repeat(43)]: CLAUDE,
   ["d".repeat(43)]: CURSOR,
 };
+/** Each app's server proof, which its bridge checks the server by. */
+const PROOFS: Readonly<Record<string, string>> = {
+  [CLAUDE.id]: "p".repeat(43),
+  [CURSOR.id]: "q".repeat(43),
+};
 
 let listener: McpListener;
 /** The listener's time, which a test moves on. */
@@ -33,6 +40,7 @@ async function start(): Promise<McpListener> {
     port: 0,
     now: () => time,
     authenticate: async (key) => (Object.hasOwn(KEYS, key) ? KEYS[key] : undefined),
+    proofOf: async (id) => PROOFS[id] ?? null,
     serverFor: (app) =>
       createMcpServer({ name: "Webforge", version: "1" }, app, async () => ({
         status: "done",
@@ -60,14 +68,19 @@ function send(options: {
   readonly path?: string;
   readonly headers?: Readonly<Record<string, string>>;
   readonly body?: string;
-}): Promise<{ readonly status: number; readonly session: string | undefined }> {
+  readonly method?: string;
+}): Promise<{
+  readonly status: number;
+  readonly session: string | undefined;
+  readonly body: string;
+}> {
   return new Promise((resolve, reject) => {
     const req = request(
       {
         host: options.address ?? MCP_HOST,
         port: listener.port,
         path: options.path ?? MCP_PATH,
-        method: "POST",
+        method: options.method ?? "POST",
         headers: {
           host: options.host ?? `${MCP_HOST}:${listener.port}`,
           "content-type": "application/json",
@@ -76,12 +89,14 @@ function send(options: {
         },
       },
       (res) => {
-        res.resume();
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
         res.on("end", () => {
           const session = res.headers["mcp-session-id"];
           resolve({
             status: res.statusCode ?? 0,
             session: typeof session === "string" ? session : undefined,
+            body: Buffer.concat(chunks).toString("utf8"),
           });
         });
       },
@@ -214,5 +229,89 @@ describe("the MCP server's loopback listener (ADR 0021)", () => {
 
     expect((await client.listTools()).tools.length).toBeGreaterThan(0);
     await client.close();
+  });
+});
+
+describe("the listener's proof, which a bridge checks before it sends its key (ADR 0021)", () => {
+  const nonce = "n".repeat(43);
+  const challenge = (app: string, headers: Readonly<Record<string, string>> = {}) =>
+    send({ path: PROOF_PATH, headers, body: JSON.stringify({ app, nonce }) });
+
+  it("answers a challenge with the HMAC of its nonce and address under the app's proof, keyless", async () => {
+    await start();
+    const host = `${MCP_HOST}:${listener.port}`;
+
+    const answer = await challenge(CLAUDE.id);
+
+    expect(answer.status).toBe(200);
+    expect(JSON.parse(answer.body)).toEqual({
+      proof: proofFor(PROOFS[CLAUDE.id] ?? "", host, nonce),
+    });
+    // Another app's is its own.
+    expect(JSON.parse((await challenge(CURSOR.id)).body)).toEqual({
+      proof: proofFor(PROOFS[CURSOR.id] ?? "", host, nonce),
+    });
+    expect(listener.connectedApps()).toEqual([]);
+  });
+
+  it("answers an unknown app's under a decoy, which tells nothing of which apps there are", async () => {
+    await start();
+    const host = `${MCP_HOST}:${listener.port}`;
+
+    const answer = await challenge("app-unknown");
+
+    expect(answer.status).toBe(200);
+    const { proof } = JSON.parse(answer.body) as { proof: string };
+    expect(proof).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(Object.values(PROOFS).map((each) => proofFor(each, host, nonce))).not.toContain(proof);
+  });
+
+  it("checks a challenge as every request: Origin, Host, method, size and shape", async () => {
+    await start();
+    const body = JSON.stringify({ app: CLAUDE.id, nonce });
+
+    expect((await challenge(CLAUDE.id, { origin: "https://example.com" })).status).toBe(403);
+    expect(
+      (await send({ path: PROOF_PATH, host: `localhost:${listener.port}`, body })).status,
+    ).toBe(403);
+    expect((await send({ path: PROOF_PATH, method: "PUT", body })).status).toBe(405);
+    expect((await send({ path: PROOF_PATH, body: "{" })).status).toBe(400);
+    expect(
+      (await send({ path: PROOF_PATH, body: JSON.stringify({ app: CLAUDE.id, nonce: "short" }) }))
+        .status,
+    ).toBe(400);
+    expect(
+      (await send({ path: PROOF_PATH, body: JSON.stringify({ app: "x".repeat(2000), nonce }) }))
+        .status,
+    ).toBe(413);
+  });
+
+  it("lets a bridge with the app's key and proof through, its tools listed", async () => {
+    await start();
+    const input = new PassThrough();
+    const output = new PassThrough();
+    const lines: string[] = [];
+    output.on("data", (chunk: Buffer) => lines.push(...chunk.toString("utf8").split("\n")));
+    const running = runBridge({
+      input,
+      output,
+      config: {
+        address: `http://${MCP_HOST}:${listener.port}${MCP_PATH}`,
+        app: CLAUDE.id,
+        proof: PROOFS[CLAUDE.id] ?? "",
+        key: "c".repeat(43),
+        messages: { unreachable: "u", notWebforge: "n", keyRefused: "k", failed: "f" },
+      },
+    });
+    input.write(`${INITIALIZE}\n`);
+    input.write(`${JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" })}\n`);
+    input.write(`${JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list" })}\n`);
+    input.end();
+    await running;
+
+    const answers = lines.filter((line) => line !== "").map((line) => JSON.parse(line));
+    expect(answers.map(({ id }) => id)).toEqual([1, 2]);
+    expect(answers[1].result.tools.length).toBeGreaterThan(0);
+    expect(listener.connectedApps()).toEqual([CLAUDE.id]);
   });
 });

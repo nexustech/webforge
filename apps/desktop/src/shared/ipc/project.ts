@@ -116,13 +116,20 @@ export type CommitResult = z.infer<typeof commitResultSchema>;
 const siteUiStateSchema = z.strictObject({
   editorMode: z.enum(["design", "content"]),
   siteCheckIgnored: siteCheckIgnoredSchema.optional(),
+  /**
+   * When the site last went live (4.5), as the site's file records it: ISO 8601, UTC. Site Check
+   * tips when the year it shows is out of date (F-CM-8). Read only; none when it hasn't been.
+   */
+  lastPublishedAt: z.iso.datetime().optional(),
 });
 
 /** The open site's editor state that isn't part of the site. */
 export type SiteUiState = z.infer<typeof siteUiStateSchema>;
 
 /** A change to the editor state: only the parts given are remembered anew. */
-const siteUiChangeSchema = siteUiStateSchema.partial();
+const siteUiChangeSchema = siteUiStateSchema
+  .pick({ editorMode: true, siteCheckIgnored: true })
+  .partial();
 
 /** A change to the open site's editor state. */
 export type SiteUiChange = z.infer<typeof siteUiChangeSchema>;
