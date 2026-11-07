@@ -683,6 +683,56 @@ describe("Editor", () => {
     expect(session.history.state.getState().cursor).toBe(0);
   });
 
+  it("ignores Ctrl+Z while an answered site-wide change waits for its version (4.6)", async () => {
+    const siteWide = createSiteWideConfirm();
+    let saved: () => void = () => undefined;
+    siteWide.setBeforeSiteWideAction(
+      () =>
+        new Promise<void>((resolve) => {
+          saved = resolve;
+        }),
+    );
+    await act(async () =>
+      root.render(
+        <CommandRegistryProvider registry={registry}>
+          <PanelRegistryProvider registry={panels}>
+            <ContextualToolbarsProvider registry={createContextualToolbars()}>
+              <Editor
+                areas={EDITOR_AREAS}
+                session={session}
+                api={fakePreloadApi()}
+                createEngine={createEngine}
+                compileCss={compileCss}
+                siteWide={siteWide}
+              />
+            </ContextualToolbarsProvider>
+          </PanelRegistryProvider>
+        </CommandRegistryProvider>,
+      ),
+    );
+    await removeSection();
+    const pressUndo = () =>
+      act(async () => {
+        document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "z", ctrlKey: true }));
+      });
+
+    const answered = siteWide.confirmSiteWide({
+      action: "Delete?",
+      confirm: "Delete",
+      affectedPages: 2,
+    });
+    await act(async () => siteWide.answer(true));
+    // The question has closed, but the change isn't made yet: Ctrl+Z would undo the step before.
+    expect(siteWide.current()).toBeNull();
+    await pressUndo();
+    expect(session.history.state.getState().cursor).toBe(1);
+
+    saved();
+    await act(async () => answered);
+    await pressUndo();
+    expect(session.history.state.getState().cursor).toBe(0);
+  });
+
   it("jumps to a step clicked in Undo History", async () => {
     await removeSection();
     const opened = [...container.querySelectorAll<HTMLButtonElement>(".undo-history__step")].at(-1);
