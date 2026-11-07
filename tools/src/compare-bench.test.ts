@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
+  compareFromArgs,
   compareRuns,
   DEFAULT_THRESHOLD,
   formatComparison,
@@ -85,6 +86,46 @@ describe("compareRuns (ADR 0022)", () => {
     expect(text).toBe(
       "ok        keystroke                best 0.060 ms against 0.050 ms, rounds ×1.00 ×1.20",
     );
+  });
+});
+
+describe("compareFromArgs: the command line CI runs", () => {
+  let dir: string;
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), "webforge-bench-compare-"));
+  });
+  afterEach(() => rmSync(dir, { recursive: true, force: true }));
+
+  /** A results folder `name` with `medians`, as `pnpm bench` writes them. */
+  const results = (name: string, medians: Record<string, number>) => {
+    const folder = join(dir, name);
+    mkdirSync(folder);
+    for (const [bench, p50] of Object.entries(medians)) {
+      writeFileSync(join(folder, `${bench}.json`), JSON.stringify({ latency: { p50, mean: p50 } }));
+    }
+    return folder;
+  };
+
+  it("compares the folders after --base and --head, with the thresholds file's room", () => {
+    const base = [results("base-1", { commit: 10 }), results("base-2", { commit: 10 })];
+    const head = [results("head-1", { commit: 14 }), results("head-2", { commit: 14 })];
+    const args = ["--base", ...base, "--head", ...head];
+
+    const failed = compareFromArgs(args);
+    expect(failed.ok).toBe(false);
+    expect(failed.report).toContain("1 benchmark(s) slower than the base in every round");
+
+    const thresholds = join(dir, "thresholds.json");
+    writeFileSync(
+      thresholds,
+      JSON.stringify({ commit: { regression: 0.5, noiseMs: 1, reason: "spread up to ×1.4" } }),
+    );
+    expect(compareFromArgs(["--thresholds", thresholds, ...args])).toEqual({
+      ok: true,
+      report: "ok        commit                   best 14.0 ms against 10.0 ms, rounds ×1.40 ×1.40",
+    });
+    // A thresholds file that isn't there leaves the default.
+    expect(compareFromArgs(["--thresholds", join(dir, "none.json"), ...args]).ok).toBe(false);
   });
 });
 

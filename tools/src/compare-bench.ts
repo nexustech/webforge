@@ -124,8 +124,14 @@ function foldersAfter(args: readonly string[], flag: string): string[] {
   return end === -1 ? rest : rest.slice(0, end);
 }
 
-function main(): void {
-  const args = process.argv.slice(2);
+/**
+ * Runs the comparison the command line asks for (`--thresholds <file> --base <dirs> --head
+ * <dirs>`): what to print, and whether every benchmark passed.
+ */
+export function compareFromArgs(args: readonly string[]): {
+  readonly ok: boolean;
+  readonly report: string;
+} {
   const [thresholdsFile] = foldersAfter(args, "--thresholds");
   const thresholds =
     thresholdsFile !== undefined && existsSync(thresholdsFile)
@@ -136,16 +142,18 @@ function main(): void {
     foldersAfter(args, "--head").map(readRun),
     thresholds,
   );
-  console.log(formatComparison(comparisons));
   const regressed = comparisons.filter((each) => each.regressed);
-  if (regressed.length > 0) {
-    console.error(
-      `\n${regressed.length} benchmark(s) slower than the base in every round (ADR 0022): ${regressed.map((each) => each.name).join(", ")}`,
-    );
-    process.exitCode = 1;
-  }
+  const report = formatComparison(comparisons);
+  return regressed.length === 0
+    ? { ok: true, report }
+    : {
+        ok: false,
+        report: `${report}\n\n${regressed.length} benchmark(s) slower than the base in every round (ADR 0022): ${regressed.map((each) => each.name).join(", ")}`,
+      };
 }
 
 if (import.meta.main) {
-  main();
+  const { ok, report } = compareFromArgs(process.argv.slice(2));
+  (ok ? console.log : console.error)(report);
+  if (!ok) process.exitCode = 1;
 }
