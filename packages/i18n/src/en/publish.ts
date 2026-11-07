@@ -129,4 +129,69 @@ export const publish = {
     "The host now shows {hostKey}. Trust it only if your host says it changed its key; otherwise someone may be in the way.",
   "publish.hostKey.trust": "Trust This Host",
   "publish.hostKey.unreadable": "The host's key couldn't be read.",
+  // Publishing the site to a destination (4.5, F-PB-2): its progress, in a toast with Cancel.
+  "publish.run.publish": "Publish",
+  "publish.run.publish.label": "Publish to {name}",
+  "publish.run.working": "Publishing…",
+  "publish.run.cancel": "Cancel",
+  "publish.run.cancelling": "Cancelling…",
+  "publish.progress.images": "Preparing image {done} of {total}",
+  "publish.progress.pages": "Building page {done} of {total}",
+  "publish.progress.styles": "Building the styles",
+  "publish.progress.fonts": "Adding the fonts",
+  "publish.progress.preparing": "Comparing with what's on your host",
+  "publish.progress.uploading": "Sending file {done} of {total}",
+  "publish.progress.verifying": "Checking your site is live",
+  // Your site is live: where, what the live check found, and Open and Copy Link.
+  "publish.live.title": "Your site is live",
+  "publish.live.at": "Visitors can see it at {url}.",
+  "publish.live.noAddress":
+    "It's on your host now. Edit the destination to add its web address, so {appName} can check it and link to it.",
+  "publish.live.check.different":
+    "That address shows another page for now. Your host may take a few minutes, or the address may point somewhere else.",
+  "publish.live.check.unreachable":
+    "That address couldn't be reached to check it. A new site can take a few minutes to appear.",
+  "publish.live.summary": "Sent: {uploaded} · Unchanged: {unchanged} · Removed: {removed}",
+  "publish.live.versionNotSaved": "This publish couldn't be kept in Version History.",
+  "publish.live.open": "Open Site",
+  "publish.live.copy": "Copy Link",
+  "publish.live.copied": "Link copied",
+  "publish.live.openFailed": "Your site couldn't be opened in your browser.",
+  "publish.live.done": "Done",
+  // A folder another site was published to with {appName} (A8): replace it only when asked.
+  "publish.replace.title": "Replace the site in this folder?",
+  "publish.replace.body":
+    "The folder on {name} has another site that {appName} published. Publishing this one replaces it.",
+  "publish.replace.cancel": "Cancel",
+  "publish.replace.confirm": "Replace It",
+  // Why a publish didn't happen, and what to do; nothing on the host changed unless it says so.
+  "publish.failed.signInNeeded":
+    "Type the password again: edit the destination to save it on this computer.",
+  "publish.failed.unauthorized":
+    "Your host refused the user name or password. Edit the destination to check them.",
+  "publish.failed.not-found":
+    "Your host has no folder of that name. Edit the destination to check the folder.",
+  "publish.failed.rate-limited": "Your host asked to wait. Publish again in a few minutes.",
+  "publish.failed.rejected":
+    "Your host refused the files. Check the folder, and that your account can change it.",
+  "publish.failed.network":
+    "Your host couldn't be reached. Check your internet connection and publish again.",
+  "publish.failed.untrusted-host":
+    "This computer doesn't trust your host's security certificate, so nothing was sent.",
+  "publish.failed.no-encryption":
+    "Your host doesn't offer FTPS. Edit the destination to choose SFTP, or plain FTP.",
+  "publish.failed.bad-key":
+    "The private key couldn't be opened. Edit the destination to choose it again.",
+  "publish.failed.other-site": "This folder has another site that {appName} published.",
+  "publish.failed.failed": "Publishing didn't finish. Publish again to send the rest.",
+  "publish.failed.build-failed": "Your site could not be built. Nothing was sent.",
+  "publish.failed.reserved-name":
+    "The page “{page}” can't be published: Windows keeps its name, or its folder's, for itself. Rename it in the Pages panel and publish again.",
+  "publish.failed.unreadable-image":
+    "The image “{image}” can't be published: it's larger than 50 megapixels, or its file is damaged. Replace it in Media and publish again.",
+  "publish.failed.no-site": "No site is open.",
+  "publish.failed.stale-session":
+    "Another site has opened in this window. Open this site again to publish it.",
+  "publish.failed.no-destination": "That destination has been removed. Choose another.",
+  "publish.failed.unknown": "Publishing didn't work. Publish again.",
 } as const;

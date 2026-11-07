@@ -394,6 +394,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           .mainWindow()
           ?.webContents.send(publishEvents.progress.channel, operationId, progress),
       versionsKept,
+      flush: requestFlush,
+      // Looked up as it's called, as the export's shell is.
+      openExternal: (url) => electron.shell.openExternal(url),
     }),
   ];
   for (const feature of features) {

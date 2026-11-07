@@ -34,6 +34,13 @@ export type PublishRunDeps = {
   readonly fontsOf: SiteFonts["fontsOf"];
   /** The export worker's runner, which publishes too (ADR 0018 §1). */
   readonly runner: Pick<ExportRunner, "publish">;
+  /**
+   * Asks the window to save its last changes (`app:flush`), as closing and Ctrl/Cmd+S do; resolves
+   * once autosave has written them, or the window didn't answer in time.
+   */
+  readonly flush: () => Promise<void>;
+  /** Opens an address in the default browser: `shell.openExternal`. */
+  readonly openExternal: (url: string) => Promise<void>;
   readonly sendProgress: (operationId: string, progress: PublishProgress) => void;
   /** How many automatic versions the person keeps (Settings), pruned as one is saved. */
   readonly versionsKept: () => number;
@@ -48,6 +55,9 @@ type Read = {
   readonly destination: PublishDestination | undefined;
   readonly projectId: string;
 };
+
+/** How many publishes' addresses Open remembers. */
+const LIVE_KEPT = 5;
 
 const hashOf = (text: string) => createHash("sha256").update(text).digest("hex");
 
@@ -64,9 +74,10 @@ function failedResult(outcome: Extract<PublishOutcome, { type: "failed" }>): Pub
 /**
  * Registers Publish's calls (4.5, ADR 0018): `publish:publish` and its cancel, each publish by the
  * renderer's operation id (#665), its progress sent as it goes. A publish:
- * 1. reads the site, the manifest of its documents and the destination in one turn of main's
+ * 1. asks the window to flush autosave (the window ended its text session before calling), then
+ *    reads the site, the manifest of its documents and the destination in one turn of main's
  *    event loop, so no autosave commit lands between them (§3), from the opening the call names
- *    (R6): the window has ended its text session and flushed autosave first;
+ *    (R6);
  * 2. leaves out the code its owner hasn't trusted here (#649), and runs Site Check's publish gate
  *    on what is left (§4): any *Must fix* stops it, with nothing built or saved;
  * 3. reads the destination's sign-in from the keychain, only for the destination it was typed for
@@ -81,6 +92,8 @@ export function registerPublishRun(
   deps: PublishRunDeps,
 ): void {
   const underWay = new Map<string, AbortController>();
+  // Where each recent publish went live, by its operation id: the only addresses Open opens.
+  const live = new Map<string, string>();
   const now = deps.now ?? (() => new Date());
 
   registerIpcHandler(
@@ -93,7 +106,9 @@ export function registerPublishRun(
       const controller = new AbortController();
       underWay.set(operationId, controller);
       try {
-        // 1. All at once: `work` is synchronous, so nothing commits in between.
+        // 1. What the person sees, saved; then all at once: `work` is synchronous, so nothing
+        // commits in between.
+        await deps.flush();
         const read = await site.withStore<Read | { readonly reason: "no-site" | "stale-session" }>(
           "shared",
           (store) => ({
@@ -165,6 +180,11 @@ export function registerPublishRun(
             ...(outcome.version === undefined ? {} : { deploy: outcome.version }),
           },
         });
+        if (/^https?:\/\//.test(outcome.url)) {
+          live.set(operationId, outcome.url);
+          // The newest few only: an older publish's success screen has long closed.
+          for (const old of live.keys()) if (live.size > LIVE_KEPT) live.delete(old);
+        }
         return {
           status: "published",
           url: outcome.url,
@@ -186,6 +206,18 @@ export function registerPublishRun(
   registerIpcHandler(ipc, "publishCancel", isTrustedSender, (operationId) => {
     underWay.get(operationId)?.abort();
     return null;
+  });
+
+  registerIpcHandler(ipc, "publishOpenLive", isTrustedSender, async (operationId) => {
+    const url = live.get(operationId);
+    if (url === undefined) return false;
+    try {
+      await deps.openExternal(url);
+      return true;
+    } catch (error) {
+      logFailure("Webforge could not open the published site", error);
+      return false;
+    }
   });
 }
 

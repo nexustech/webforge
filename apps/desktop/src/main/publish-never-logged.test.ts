@@ -108,6 +108,8 @@ describe("a publish's sign-in reaches no log (ADR 0018 §1)", () => {
         runner: { publish: vi.fn() },
         sendProgress: vi.fn(),
         versionsKept: () => 30,
+        flush: async () => undefined,
+        openExternal: async () => undefined,
       },
     );
 

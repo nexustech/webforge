@@ -16,6 +16,7 @@ export const publishApi = (call: Call, subscribe: Subscribe): PublishApi => ({
   publish: (sessionId, destinationId, operationId, options) =>
     call("publishSite", sessionId, destinationId, operationId, options),
   cancel: (operationId) => call("publishCancel", operationId),
+  openLive: (operationId) => call("publishOpenLive", operationId),
   onProgress: (listener) =>
     subscribe(publishEvents.progress.channel, (...args) => {
       const parsed = publishEvents.progress.args.safeParse(args);
