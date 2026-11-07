@@ -247,6 +247,10 @@ export function fixFor(
   if (rule === "searchHidden" || rule === "searchConsole") {
     return () => showSiteSettings(actions.settings, "search");
   }
+  // A published site's year (F-CM-8) is brought up to date by publishing it again.
+  if (rule === "outdatedYear") {
+    return () => actions.commands.run(COMMAND_IDS.publish);
+  }
   // A file from another website: Download and bundle keeps a copy with the site (3.9), once the
   // person says yes.
   const { bundle } = actions;

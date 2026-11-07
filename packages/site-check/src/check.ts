@@ -2,6 +2,7 @@ import {
   altTextRule,
   brokenLinksRule,
   missingImagesRule,
+  outdatedYearRule,
   placeholdersRule,
 } from "./rules/content.js";
 import { externalResourcesRule } from "./rules/external.js";
@@ -47,6 +48,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   largeImagesRule,
   largeFilesRule,
   underlinedTextRule,
+  outdatedYearRule,
   searchHiddenRule,
   webAddressRule,
   pageDescriptionsRule,

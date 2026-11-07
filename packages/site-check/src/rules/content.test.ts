@@ -6,9 +6,16 @@ import {
   SHARED_COPY_TYPE,
   type SharedSectionId,
 } from "@webforge/model";
+import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
 import { element, findIn, image, siteWith } from "../test-site.test-helper.js";
-import { altTextRule, brokenLinksRule, missingImagesRule, placeholdersRule } from "./content.js";
+import {
+  altTextRule,
+  brokenLinksRule,
+  missingImagesRule,
+  outdatedYearRule,
+  placeholdersRule,
+} from "./content.js";
 
 const media = (...items: MediaMeta[]) => Object.fromEntries(items.map((item) => [item.id, item]));
 
@@ -201,5 +208,65 @@ describe("placeholders", () => {
         }),
       ]),
     ).toEqual(["choice/options.1.label"]);
+  });
+});
+
+describe("outdated year (F-CM-8)", () => {
+  const site = siteWith([
+    element("Text", "hidden", { text: "<p>© {year} Rosa's</p>", hidden: true }),
+    element("Heading", "title", { text: "Rosa's Bakery" }),
+    element("Text", "copyright", { text: "<p>© {YEAR} Rosa's Bakery</p>" }),
+    element("Text", "again", { text: "<p>Since 1990, still baking in {year}</p>" }),
+  ]);
+  const year = (published?: { year: number; thisYear: number }) =>
+    outdatedYearRule.check({
+      site,
+      catalogue: CATALOGUE,
+      ...(published === undefined ? {} : { published }),
+    });
+
+  it("tips once, at the first exported text with {year}, when the site was published in an earlier year", () => {
+    expect(year({ year: 2026, thisYear: 2027 })).toEqual([
+      {
+        key: "2026/2027",
+        place: { kind: "element", on: site.homePageId, nodeId: "copyright" },
+        values: { publishedYear: 2026 },
+      },
+    ]);
+  });
+
+  it("says nothing when the site was published this year, or hasn't been", () => {
+    expect(year({ year: 2027, thisYear: 2027 })).toEqual([]);
+    expect(year()).toEqual([]);
+  });
+
+  it("tips at a page whose title or description has {year}, when no element's text does", () => {
+    const plain = siteWith([element("Text", "copyright", { text: "<p>© Rosa's</p>" })]);
+    const home = plain.pages[plain.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const offers = {
+      ...plain,
+      pages: {
+        ...plain.pages,
+        [home.id]: { ...home, settings: { ...home.settings, description: "Our {year} cakes" } },
+      },
+    };
+    expect(
+      outdatedYearRule.check({
+        site: offers,
+        catalogue: CATALOGUE,
+        published: { year: 2026, thisYear: 2027 },
+      }),
+    ).toEqual([expect.objectContaining({ place: { kind: "page", pageId: plain.homePageId } })]);
+  });
+
+  it("says nothing when no text has {year}", () => {
+    expect(
+      outdatedYearRule.check({
+        site: siteWith([element("Text", "copyright", { text: "<p>© 2026 Rosa's</p>" })]),
+        catalogue: CATALOGUE,
+        published: { year: 2026, thisYear: 2027 },
+      }),
+    ).toEqual([]);
   });
 });

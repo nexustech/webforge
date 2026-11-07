@@ -15,7 +15,7 @@ import {
   type PlacedValue,
   plainText,
 } from "../fields.js";
-import type { CheckRule, Finding } from "../types.js";
+import type { CheckRule, Finding, FindingPlace } from "../types.js";
 
 /**
  * Links to a page, a section or a document that isn't there any more (F-ED-18): *Should fix*, and
@@ -174,6 +174,51 @@ function isExampleLink(value: unknown): boolean {
 const linksToExample = (html: string) =>
   html.includes("href=") &&
   [...html.matchAll(/href="([^"]*)"/g)].some(([, href = ""]) => EXAMPLE_DOMAIN.test(href));
+
+/** `{year}`, as the export fills it in (`@webforge/pipeline`'s `withYear`): any case. */
+const YEAR_TOKEN = /\{year\}/i;
+
+/**
+ * The year a published site shows is out of date (F-CM-8): its text has `{year}`, which the export
+ * fills in with the year it's built in, and the site was last published in an earlier year. A tip,
+ * at the first element that has it, or else the first page whose title or description does, to
+ * publish again; ignoring it lasts until the next year.
+ */
+export const outdatedYearRule: CheckRule = {
+  id: "outdatedYear",
+  level: "tip",
+  check: (input) => {
+    const { published } = input;
+    if (published === undefined || published.year >= published.thisYear) return [];
+    const using: PlacedValue[] = [];
+    eachFieldValue(input, ["text", "richtext"], (placed) => {
+      if (typeof placed.value === "string" && YEAR_TOKEN.test(placed.value)) using.push(placed);
+    });
+    const [first] = using;
+    const page =
+      first === undefined
+        ? Object.values(input.site.pages).find(
+            ({ title, settings }) =>
+              YEAR_TOKEN.test(title) || YEAR_TOKEN.test(settings.description ?? ""),
+          )
+        : undefined;
+    const place: FindingPlace | undefined =
+      first !== undefined
+        ? elementPlace(first)
+        : page === undefined
+          ? undefined
+          : { kind: "page", pageId: page.id };
+    return place === undefined
+      ? []
+      : [
+          {
+            key: `${published.year}/${published.thisYear}`,
+            place,
+            values: { publishedYear: published.year },
+          },
+        ];
+  },
+};
 
 /**
  * Placeholder text and links (X5): a starter text's instruction, a default naming its field, dummy
