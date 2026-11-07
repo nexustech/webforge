@@ -21,7 +21,10 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  timeout: 30_000,
+  // The slowest stories and thumbnails take 4–5 s on CI's runners, but up to 18 s in a local
+  // `pnpm visual:docker` run, where a full run's six workers slow them further. At 30 s, whichever
+  // was unluckiest timed out (#754). A minute still fails a story that hangs.
+  timeout: 60_000,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   snapshotPathTemplate: "{testDir}/__screenshots__/{arg}{ext}",
   expect: {
