@@ -220,6 +220,15 @@ test("a changed page is re-rendered and sent to the browser in under 200 ms", as
   // selected the element on Windows' runner without focusing its text, and Ctrl+A then selected
   // the window (#76).
   const heading = canvas.locator(".site-heading [contenteditable]").first();
+  // The editor's window, in front: on Windows' runner the preview's browser, started beside it,
+  // can leave it without focus, and typing then reaches nothing (a grey, unfocused selection in
+  // the failure's screenshot).
+  await app.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows().find((each) => !each.isDestroyed());
+    window?.show();
+    window?.focus();
+  });
+  await expect.poll(() => page.evaluate(() => document.hasFocus())).toBe(true);
   await heading.click();
   await selectText(heading);
   await page.keyboard.type("Fresh bread daily");

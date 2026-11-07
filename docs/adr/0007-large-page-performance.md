@@ -219,6 +219,34 @@ The follow-up above, done.
 
 Everything is within §10 except the drop hitch, mitigation 5 above, which 5.1's part 3 takes up.
 
+## Addendum: a drag's budget, set from CI's runners (5.1, part 3, 2026-11-07)
+
+§10's "no dropped frames" while dragging is the one budget the app still misses, and only on a page this large: the 225-element page is far above a typical small-business page. As this ADR left it to 5.1, the budget is set from what CI's reference runners measure (coordinator's decision, 7 Nov 2026).
+- **No long task over 350 ms** during a drag.
+- **The move recorded within 1 s** of the drop: from the mouse's release to the Undo History's "Moved Heading".
+
+**What each drag costs.** On the 2018 i7 laptop above, a drag has 6–7 long tasks of 100–330 ms. They fall at its start, on its moves and at the drop. A trace and a CPU profile, on an unminified perf build, put almost all of it in Puck's drag library:
+- **At the drag's start and at the drop,** the drag state's change re-renders every `DraggableComponent`. React's work is about 480 ms over a drag.
+- **At the start,** `Scroller.getScrollableElements` walks the page for its scrolling containers, about 135 ms.
+- **On each move,** hit-testing (`elementFromPoint`) and `getBoundingClientRect` force a style and layout pass over the whole page. Style recalculation is 620 ms over 220 passes, up to 63 ms each.
+- **The editor's own part** is about 18 ms (`syncDraft`, above).
+
+**On CI's runners** (Run workflow 42408964869 and 42411225219):
+
+| | Windows | macOS | Budget |
+|---|---|---|---|
+| Long tasks per drag | 1–6 | 1–3 | – |
+| The longest | 102–159 ms | 94–170 ms | < 350 ms |
+| The move recorded after the drop | 400–483 ms | 394–564 ms | < 1 s |
+
+**A theme look's redraw** (A25, #727) gets #727's targets as its budget: p50 within U7's 100 ms (CI: 31–33 ms), and no long task over 200 ms (CI: none).
+
+**The 50-step jump** keeps U7's 100 ms: CI measured 46–88 ms on Windows, and 50–134 ms on macOS.
+
+**Noise.** `pnpm e2e:perf` now retries once on CI, so a miss must repeat to fail, and keeps a failure's trace and screenshot. In these runs a commit (82 ms once) and the macOS jump each missed once and passed on their retry.
+
+**Taking the hitch further** is #786: memoise the draggables on drag-state changes, and cache the scrolling containers per drag, as a fourth item of the Puck patch. Then measure against the figures here. Drawing only the visible sections (`_experimentalVirtualization`, "What next" above) was set aside: it's a product call.
+
 ## Upstream reports (drafts)
 
 **1. `InlineTextField` moves the caret to the start when its value changes from outside**
