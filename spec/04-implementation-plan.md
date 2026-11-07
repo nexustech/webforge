@@ -44,7 +44,7 @@ Still open in Phase 0: the publishing spikes (Netlify, FTP/SFTP). The Puck large
 Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k · pipeline 1.1k · site-components 1.0k · storage 0.6k · model 0.3k. `editor-ui`, `publish` and `themes` are placeholders.
 
 ## 3. Timeline
-**Total: 425.5 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
+**Total: 426.5 working days** (≈ 85 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -157,6 +157,8 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 
 **Scope change, 7 Nov 2026 (help, HP-1…HP-9, product owner):** +2.5 days from [product/15](../research/product/15-help-and-documentation.md). The user help pages are in `docs/help/` and are kept current in the same PR as the feature (HP-4, standards §8). 5.4 is over 5 days with the help viewer, so it splits: 5.4a *Onboarding and tour* ([#79](https://github.com/nexustech/webforge/issues/79), 4 days, unchanged) keeps the first run, the tour and the shortcuts sheet; 5.4b *Help in the app* ([#763](https://github.com/nexustech/webforge/issues/763), 2.5 days, new) bundles the pages into a Help window with search, adds the ways in, *Help for this element* among them, and `pnpm help-check` (HP-5, HP-6, HP-7). 4.4b, 4.5, 4.6b and 4.9 gain a help-page acceptance line within their estimates (4.6a had closed; 4.6a's page is written with these pages). Phase 5 is 46.5 days and the total 425.5. Neither item is on a §7 chain; Phase 5 has no stream queues yet, so both are placed when it is planned. Phase exits gain a help review (§10, HP-9).
 
+**Scope change, 7 Nov 2026 (Help window, HP-10, product owner):** +1 day for 5.4b ([#763](https://github.com/nexustech/webforge/issues/763)): the Help window is a window of its own beside the editor, so the owner can read and work at once, rather than a dialog over it. It gets a second page and preload, secured as the editor's, and main accepts only its own calls from it. 5.4b goes from 2.5 to 3.5 days. Phase 5 is 47.5 days and the total 426.5. Not on a §7 chain.
+
 | Phase | Effort (days) | Starts | Ends (100%) | Ends (+25%) | Exit criteria |
 |---|---|---|---|---|---|
 | [Phase 0: Prototype (finish)](#phase-0-prototype-finish) | 7 | 26 Oct 2026 | 13 Nov 2026 (0.2 and 0.3) | – | Netlify and SFTP/FTPS publish spikes meet the spike criteria in research/stack/08<br>A large page (200+ elements) stays within the editing performance budget |
@@ -164,7 +166,7 @@ Phase 2 is 145.5 days and the total 386.5. Phase 2's exit criteria gain the Appe
 | [Phase 2: Design & components](#phase-2-design--components) | 145.5 | 23 Oct 2026 | 28 Oct 2026 (exit criteria met; closed 28 Oct 2026 on the product owner's sign-off) | – | Every component has stories × 3 themes × Desktop/Mobile, axe-clean (colour contrast in site themes reported, not blocking)<br>New Site from each of the 8 templates works and looks distinct<br>Theme changes restyle every component; contrast warnings work<br>Every section and element has the Appearance group, and a theme switch restyles it (ST-8) |
 | [Phase 3: Output](#phase-3-output) | 66.5 | 27 Oct 2026 | 30 Oct 2026 (exit criteria met; closed 30 Oct 2026 on the product owner's sign-off) | – | Exported templates open from disk in Chromium, Firefox, WebKit (+ Edge on Windows) with no external requests<br>Site Check blocks only Must-fix issues on export<br>Preview CSS hot-swap < 100 ms; phone preview via QR works<br>A site made by the quick start carries the person's name, pages, colours and contact details (3.11)<br>A kind's look in the theme restyles every item without an override, and every Appearance control says where its value comes from (3.12, 3.13)<br>Every business template's home page carries valid `LocalBusiness` structured data (its type's subtype) from its Site Settings, and Personal and Blank a `WebSite` only (SEO-1); Site Check's *Being found* rules run (3.15, 3.17)<br>File › Open Recent, an Image's shape and larger view, and every section's content width and every element's font work, and existing sites look the same (3.18–3.22) |
 | [Phase 4: Publish & versions](#phase-4-publish--versions) | 32 | 2 Nov 2026 | 19 Nov 2026 (resumed 31 Oct 2026 after a pause on 30 Oct; was 13 Nov) | – | Publish + rollback on all targets in E2E tests (mock Netlify, local FTP/SFTP)<br>A paired AI app's edits are undoable, and the MCP server can't be reached from another computer<br>Version History: save, auto-retention, preview, restore, open as new site, republish<br>Theme Studio's Components page applies a draft as one step, with a before/after preview (4.10) |
-| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 46.5 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
+| [Phase 5: Beta hardening](#phase-5-beta-hardening) | 47.5 | 16 Nov 2026 | 23 Dec 2026 (hardening by late November, then the 4-week beta) | – | All performance budgets met on Windows and macOS<br>Signed NSIS and DMG builds install, and auto-update from a test feed on both OSes (0.5)<br>Signed, notarised builds auto-update from the production feed<br>ADRs written; architecture §6 interfaces updated (0.6)<br>Beta running with 10–20 users; no open Must-fix bugs |
 
 The signed-installer item (0.5, in Phase 5 since 25 Oct 2026) waits on enrolment (lead time), so other work goes on while it waits. **Enrolment (0.1) starts by 13 Nov 2026** (product owner, 25 Oct 2026, replacing the 24 Oct deferral), about two weeks before 0.5 and the beta. The product owner does this step: it needs their accounts and payment. The Gantt chart shows the baseline schedule at 100% of the estimates, not the Phase 1 exit dates in the table. Items added on 22 Oct 2026 (1.28, 1.29, 4.8, 4.9, and 3.5's extra day) are drawn after their predecessors, so some overlap the baseline bars that follow them until the Phase 1 exit re-plan.
 
@@ -297,7 +299,7 @@ gantt
     5.2 Production builds, signing and update channels :crit, t5_2, 2027-10-04, 3d
     5.3 Open-source licences screen and third-party no… :t5_3, 2027-10-07, 1d
     5.4a Onboarding and tour :t5_4, 2027-10-08, 4d
-    5.4b Help in the app :t5_4b, after t5_4, 2.5d
+    5.4b Help in the app :t5_4b, after t5_4, 3.5d
     5.5 Editor accessibility pass :t5_5, 2027-10-14, 2d
     5.6 Security review :t5_6, 2027-10-18, 2d
     5.7 Pre-beta checks and closed beta programme :crit, t5_7, 2027-10-20, 3d
@@ -1261,7 +1263,7 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 
 | Stream | Items, in order |
 |---|---|
-| A: Shell & panels | 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), destinations UI and keychain, FTP/FTPS/SFTP) → [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x) → 4.5 ([#73](https://github.com/nexustech/webforge/issues/73), publish flow UI) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), Netlify destination, once 4.2 has merged) → 5.4b ([#763](https://github.com/nexustech/webforge/issues/763), pulled forward from Phase 5, 7 Nov 2026, coordinator) |
+| A: Shell & panels | 4.4a ([#72](https://github.com/nexustech/webforge/issues/72), destinations UI and keychain, FTP/FTPS/SFTP) → [#693](https://github.com/nexustech/webforge/issues/693) (Electron 44.x) → 4.5 ([#73](https://github.com/nexustech/webforge/issues/73), publish flow UI) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), Netlify destination, once 4.2 has merged) → 5.4b ([#763](https://github.com/nexustech/webforge/issues/763), help in the app with its own Help window, pulled forward from Phase 5, 7 Nov 2026, coordinator) |
 | B: Data & site | [#643](https://github.com/nexustech/webforge/issues/643) (pulled forward, in progress) → 4.6a ([#74](https://github.com/nexustech/webforge/issues/74), Version History) → 4.6b ([#724](https://github.com/nexustech/webforge/issues/724), republish, once 4.5 has merged). 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) goes first as soon as 0.2 has run, ahead of what is left |
 | C: History & canvas | [#671](https://github.com/nexustech/webforge/issues/671)'s A25 (pulled forward, in progress) → 4.9 ([#171](https://github.com/nexustech/webforge/issues/171), MCP server, once 4.4a has merged) |
 
@@ -1380,7 +1382,7 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 
 ### Phase 5: Beta hardening
 **Goal:** Production-ready signed builds, performance, onboarding and a closed beta with 10–20 small-business users on Windows and macOS.  
-**Effort:** 46.5 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days; 5.4b added on 7 Nov 2026, +2.5 days)
+**Effort:** 47.5 days · **Scheduled:** 16 Nov 2026 → 23 Dec 2026 (Phase 2 exit re-plan, 28 Oct 2026; Phase 1 exit re-plan 7 Dec → 22 Jan 2027; baseline 29 Sep → 19 Nov 2027; 0.1, 0.5 and 0.6 moved from Phase 0 on 25 Oct 2026, +6 days; 5.4b added on 7 Nov 2026, +2.5 days; its Help window a window of its own, 7 Nov 2026, +1 day)
 
 | ID | Item | Issue | Area | Refs | Est | Depends on |
 |---|---|---|---|---|---|---|
@@ -1391,7 +1393,7 @@ From the product owner's review of Theme Studio's Components page (28 Oct 2026).
 | 5.2 | Production builds, signing and update channels | [#77](https://github.com/nexustech/webforge/issues/77) | release | [stack/01](../research/stack/01-electron-vs-tauri.md), standards §7, §10 | 3 | 0.5 |
 | 5.3 | Open-source licences screen and third-party notices | [#78](https://github.com/nexustech/webforge/issues/78) | release | C1 | 1 | – |
 | 5.4a | Onboarding and tour | [#79](https://github.com/nexustech/webforge/issues/79) | shell | MVP §1, T1 | 4 | – |
-| 5.4b | Help in the app | [#763](https://github.com/nexustech/webforge/issues/763) | shell | MVP §1, standards §9, [product/15](../research/product/15-help-and-documentation.md) | 2.5 | – |
+| 5.4b | Help in the app | [#763](https://github.com/nexustech/webforge/issues/763) | shell | MVP §1, standards §9, [product/15](../research/product/15-help-and-documentation.md) | 3.5 | – |
 | 5.5 | Editor accessibility pass | [#80](https://github.com/nexustech/webforge/issues/80) | shell | MVP §4, standards §4 | 2 | – |
 | 5.6 | Security review | [#81](https://github.com/nexustech/webforge/issues/81) | release | architecture §3, §9 | 2 | – |
 | 5.7 | Pre-beta checks and closed beta programme | [#82](https://github.com/nexustech/webforge/issues/82) | release | MVP §6 Phase 5, [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md) | 3 | 5.2, 5.4a, 5.4b |
@@ -1447,8 +1449,8 @@ First-run welcome and short guided tour (pick template → edit text → change 
 
 - [ ] A new user can publish a template-based site in one session (usability test)
 
-**5.4b Help in the app** (added 7 Nov 2026, HP-5, HP-6, HP-7, [product/15](../research/product/15-help-and-documentation.md) §7)  
-The help pages in `docs/help/` inside the app, offline. Bundled at build with their front matter checked by zod; a Help window with a contents list, search (MiniSearch or a substring search) and pages rendered from the strict Markdown subset with raw HTML off; `{appName}` filled in (1.5 days). Ways in: **Help › {appName} Help** (F1), help topics in Search Commands, the start screen's Help tab, *Help for this element* in the canvas and Layers right-click menu (UX-24), and **?** links on the Edit panel's header, each Settings section, the Export, Publish, Page Settings, code trust and Preview on Phone dialogs and each Site Check rule, kept in one table (0.5 day). `pnpm help-check` in `pnpm check`: front matter, ids, links and anchors, every catalogue type on exactly one page, `{appName}`, no raw HTML, and the **?** table (0.5 day).
+**5.4b Help in the app** (added 7 Nov 2026, HP-5, HP-6, HP-7, HP-10, [product/15](../research/product/15-help-and-documentation.md) §7)  
+The help pages in `docs/help/` inside the app, offline. Bundled at build with their front matter checked by zod; a Help window of its own beside the editor (HP-10: one window, secured as the editor's with its own preload, opened again where it's asked for, closing with the editor), with a contents list, search (MiniSearch or a substring search) and pages rendered from the strict Markdown subset with raw HTML off; `{appName}` filled in (2.5 days). Ways in: **Help › {appName} Help** (F1), help topics in Search Commands, the start screen's Help tab, *Help for this element* in the canvas and Layers right-click menu (UX-24), and **?** links on the Edit panel's header, each Settings section, the Export, Publish, Page Settings, code trust and Preview on Phone dialogs and each Site Check rule, kept in one table (0.5 day). `pnpm help-check` in `pnpm check`: front matter, ids, links and anchors, every catalogue type on exactly one page, `{appName}`, no raw HTML, and the **?** table (0.5 day).
 
 - [ ] F1 opens the Help window offline; search finds a page by a word in its text
 - [ ] *Help for this element* opens the right page and heading for every catalogue type

@@ -64,6 +64,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+Alt+B | Show or hide the left panels |
 | Ctrl+J | Show or hide the bottom panel (Site Check) |
 | ? | Keyboard shortcuts |
+| F1 | {appName} Help |
 
 ## While typing text
 
