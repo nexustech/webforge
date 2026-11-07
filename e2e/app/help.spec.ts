@@ -76,8 +76,12 @@ test("opens at a page and heading, and the same window again at another", async 
 
   // Again, from Search Commands' Help group: the same window, at that page.
   await editor.bringToFront();
-  await editor.keyboard.press("Control+P");
-  await editor.getByRole("combobox").fill("Help: Keyboard shortcuts");
+  // The title bar's box, as Ctrl+P is Cmd+P on a Mac.
+  await editor.getByRole("button", { name: /^Search commands/ }).click();
+  await editor
+    .getByRole("dialog", { name: "Commands" })
+    .getByRole("combobox")
+    .fill("Help: Keyboard shortcuts");
   await editor.keyboard.press("Enter");
   await expect(main.getByRole("heading", { level: 1, name: "Keyboard shortcuts" })).toBeVisible();
   expect(app.windows()).toHaveLength(2);
@@ -101,8 +105,11 @@ test("opens Help from a ? at its section, and for the selected element at its he
     .getByRole("button", { name: /^Show Text on / })
     .first()
     .click();
-  await editor.keyboard.press("Control+P");
-  await editor.getByRole("combobox").fill("Help for This Element");
+  await editor.getByRole("button", { name: /^Search commands/ }).click();
+  await editor
+    .getByRole("dialog", { name: "Commands" })
+    .getByRole("combobox")
+    .fill("Help for This Element");
   await editor.keyboard.press("Enter");
   await expect(main.getByRole("heading", { level: 1, name: "Elements" })).toBeVisible();
   await expect(main.getByRole("heading", { level: 3, name: "Text" })).toBeInViewport();

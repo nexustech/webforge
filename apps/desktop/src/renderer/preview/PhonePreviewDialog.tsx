@@ -34,7 +34,6 @@ export function PhonePreviewDialog({ state }: { readonly state: StoreApi<PhoneSt
       }}
     >
       <DialogContent className="sm:max-w-sm">
-        <HelpButton topic="phonePreview" className="absolute top-2.5 right-9" />
         <DialogHeader>
           <DialogTitle>{t("preview.phone.title")}</DialogTitle>
           <DialogDescription>
@@ -65,6 +64,8 @@ export function PhonePreviewDialog({ state }: { readonly state: StoreApi<PhoneSt
             <p className="text-xs text-muted-foreground">{t("preview.phone.privacy")}</p>
           </div>
         ) : null}
+        {/* Last, so the dialog's own first control still takes the focus as it opens. */}
+        <HelpButton topic="phonePreview" className="absolute top-2.5 right-9" />
       </DialogContent>
     </Dialog>
   );

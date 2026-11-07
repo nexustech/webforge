@@ -75,8 +75,9 @@ export function FormDialog<V extends FormValues, Out>({
           size === "xl" && "sm:max-w-3xl",
         )}
       >
-        {help === undefined ? null : <div className="absolute top-2.5 right-9">{help}</div>}
         <FormDialogBody {...body} onCancel={onCancel} />
+        {/* Last, so the dialog's first field still takes the focus as it opens. */}
+        {help === undefined ? null : <div className="absolute top-2.5 right-9">{help}</div>}
       </DialogContent>
     </Dialog>
   );

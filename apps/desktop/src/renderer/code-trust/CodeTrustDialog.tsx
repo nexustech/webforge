@@ -49,7 +49,6 @@ export function CodeTrustDialog({
       }}
     >
       <AlertDialogContent>
-        <HelpButton topic="codeTrust" className="absolute top-2.5 right-3" />
         <AlertDialogHeader>
           <AlertDialogTitle>{t("site.code.trust.title")}</AlertDialogTitle>
           <AlertDialogDescription>{t("site.code.trust.body")}</AlertDialogDescription>
@@ -78,6 +77,8 @@ export function CodeTrustDialog({
           </Button>
           <Button onClick={() => answer?.("keep")}>{t("site.code.trust.keep")}</Button>
         </AlertDialogFooter>
+        {/* Last, so the dialog's own first control still takes the focus as it opens. */}
+        <HelpButton topic="codeTrust" className="absolute top-2.5 right-3" />
       </AlertDialogContent>
     </AlertDialog>
   );
