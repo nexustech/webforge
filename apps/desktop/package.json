@@ -55,6 +55,7 @@
     "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "@webforge/tools": "workspace:*",
     "ajv": "8.20.0",
     "babel-plugin-react-compiler": "catalog:",
     "daisyui": "catalog:",

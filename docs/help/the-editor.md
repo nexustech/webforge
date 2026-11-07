@@ -86,3 +86,7 @@ Help is also where you need it:
 - a small **?** beside the Edit panel's heading, at the top of each section of [Settings](settings.md) and [Site Settings](site-settings.md), in the Export, Publish, Page Settings and Preview on Phone dialogs, when {appName} asks about code from somewhere else, and on each check in [Site Check](site-check.md) opens the help for it;
 - **Help for This Element**, in the [right-click menu](editing-on-the-page.md#the-right-click-menu) on the page and in Layers, opens the help for the selected section or element;
 - the start screen's **Help** tab lists the pages to start with.
+
+### Open-source licences
+
+{appName} is made with open-source software. **Help › Open-Source Licences**, or **Open-Source Licences** in **Help › About {appName}**, lists every part of it that comes with {appName}, the fonts included, each with its version and licence. Click one to read its licence, or type in **Find a package or licence** to find one. **Chromium's Licences** opens the licences of Chromium, which {appName} runs on, in your web browser.

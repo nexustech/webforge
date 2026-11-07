@@ -51,5 +51,6 @@ export const COMMAND_IDS = {
   helpForElement: "help.forElement",
   shortcuts: "help.shortcuts",
   tryExample: "help.tryExample",
+  licences: "help.licences",
   about: "help.about",
 } as const;
