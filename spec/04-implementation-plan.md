@@ -1313,7 +1313,7 @@ Publish button flow: strict Site Check, progress per file, cancel, success scree
 - [ ] The publish IPC carries the session id and an operation id for progress and cancel (#663, #665)
 
 **4.6a Version History** (4.6 until the 1 Nov 2026 re-plan, which moved republishing to 4.6b)  
-Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before site-wide actions, on publish) with configurable retention (default 20), panel with thumbnails, read-only preview, restore as one undo step, open version as new site.
+Save version (Ctrl/Cmd+Alt+S), automatic versions (daily, before restore, before site-wide actions, on publish) with configurable retention (default 20), panel with thumbnails, read-only preview, restore as one undo step, open version as new site. **Which actions take an automatic version** (coordinator, 6 Nov 2026; the full rule is in #74's scope): every change to every page the person confirms (D7), named after it; one "Before theme changes" at the first theme change that asks no question in each opening (token choices, text size and step, a one-page look); at most one before-site-wide version per 5 minutes of an opening, 4.9's S20 version included; restore takes its own.
 
 - [ ] Manual versions never auto-deleted
 - [ ] Restore is undoable

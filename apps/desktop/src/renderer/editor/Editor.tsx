@@ -91,7 +91,7 @@ export type EditorProps = {
    */
   readonly siteWide?: Pick<
     SiteWideConfirm,
-    "confirmSiteWide" | "current" | "setBeforeSiteWideAction"
+    "confirmSiteWide" | "current" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
   >;
 };
 

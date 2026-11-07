@@ -4,6 +4,7 @@
  */
 
 export type { ImagePickRequests } from "../editor/image-picks.js";
+export { fileSizeLabel } from "./document-types.js";
 export { ImageField, imageFieldRenderer } from "./ImageField.js";
 export { importMessages } from "./import-media.js";
 export { addMedia, putInMedia } from "./media-commands.js";

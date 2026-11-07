@@ -87,6 +87,9 @@ test("deleting a page says how many pages change, and undo brings it back", asyn
   await confirmation().getByRole("button", { name: "Delete Page" }).click();
   const about = page.getByRole("list", { name: "Pages" }).getByRole("button", { name: /^About/ });
   await expect(about).toHaveCount(0);
+  // Deleted once Version History's version is saved (4.6), while the question still fades out:
+  // Undo is for the editor, once the question has gone.
+  await expect(confirmation()).toHaveCount(0);
 
   await page.keyboard.press("ControlOrMeta+z");
   await expect(about).toHaveCount(1);

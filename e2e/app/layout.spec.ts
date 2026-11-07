@@ -52,12 +52,13 @@ const savedPreferences = (): { panelLayout?: Record<string, unknown>; theme?: st
 };
 
 test.describe("window layout", () => {
-  test("puts Add, then Undo History, in the left column", async () => {
+  test("puts Add, then Undo History and Version History, in the left column", async () => {
     const left = page.getByRole("region", { name: "Left panels" });
     // The column's own tabs, not the Add panel's Sections and Elements.
     await expect(left.getByRole("tablist").first().getByRole("tab")).toHaveText([
       "Add",
       "Undo History",
+      "Version History",
     ]);
     await expect(left.getByRole("tab", { name: "Add" })).toHaveAttribute("aria-selected", "true");
     await left.getByRole("tab", { name: "Undo History" }).click();
@@ -119,7 +120,7 @@ test.describe("window layout", () => {
     await toggle.click();
     const strip = page.getByRole("navigation", { name: "Left panels, collapsed" });
     // Layers too, from the column's lower pane (ADR 0011).
-    await expect(strip.getByRole("button")).toHaveText(["", "", ""]);
+    await expect(strip.getByRole("button")).toHaveText(["", "", "", ""]);
     await expect(strip.getByRole("button", { name: "Add" })).toBeVisible();
     await expect(strip.getByRole("button", { name: "Layers" })).toBeVisible();
 
