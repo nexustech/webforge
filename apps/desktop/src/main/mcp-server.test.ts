@@ -58,8 +58,16 @@ describe("the MCP server (4.9)", () => {
     expect(memory.tools.map((tool) => tool.name)).toEqual([
       ...AI_TOOLS.map((tool) => tool.name),
       ...Object.keys(APP_TOOLS),
+      "requestMedia",
       ...Object.keys(MAIN_TOOLS),
     ]);
+    // requestMedia takes the app's reason: never a path or an address (4.12b).
+    expect(memory.tools.find((tool) => tool.name === "requestMedia")?.inputSchema).toEqual({
+      type: "object",
+      properties: { reason: { type: "string", minLength: 1, maxLength: 200 } },
+      required: ["reason"],
+      additionalProperties: false,
+    });
     // Run Site Check and Open Preview take nothing: no address, path or host.
     expect(memory.tools.find((tool) => tool.name === "openPreview")?.inputSchema).toEqual({
       type: "object",

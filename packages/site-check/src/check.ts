@@ -18,7 +18,7 @@ import {
   searchHiddenRule,
 } from "./rules/found.js";
 import { contrastRule, underlinedTextRule } from "./rules/look.js";
-import { largeFilesRule, largeImagesRule } from "./rules/media.js";
+import { largeFilesRule, largeImagesRule, templateImagesRule } from "./rules/media.js";
 import { deviceNamesRule, homePageRule, pageTitlesRule, webAddressRule } from "./rules/pages.js";
 import type {
   CheckInput,
@@ -47,6 +47,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   contrastRule,
   largeImagesRule,
   largeFilesRule,
+  templateImagesRule,
   underlinedTextRule,
   outdatedYearRule,
   searchHiddenRule,

@@ -10,6 +10,7 @@ import {
   SITE_CHECK_RULES,
 } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
+import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
 import { createStore } from "zustand/vanilla";
 
 /** How long the site has to stay unchanged before it's checked again: typing doesn't recheck it. */
@@ -94,6 +95,7 @@ export function createSiteCheck(
       site,
       catalogue: CATALOGUE,
       allowListConfirmed: allowListConfirmed?.getState() ?? false,
+      templateImages: TEMPLATE_IMAGE_HASHES,
       ...(year === undefined ? {} : { published: { year, thisYear: thisYear() } }),
     };
   };

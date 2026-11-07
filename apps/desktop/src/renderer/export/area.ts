@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import type { SiteApi } from "../../shared/ipc/site.js";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { whenClosed } from "../editor/first-tips.js";
 import { reportFailure } from "../log.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
 import { siteSession } from "../storage/index.js";
@@ -36,9 +37,24 @@ const exportThrough =
 export const exportCommandArea: Area<WindowContext> = {
   id: "exportCommand",
   register: (context) => {
-    const { api, commands, session, settings, preferences, windowDialogs, panels, codeTrust } =
-      context;
+    const {
+      api,
+      commands,
+      session,
+      settings,
+      preferences,
+      windowDialogs,
+      panels,
+      codeTrust,
+      tips,
+    } = context;
     const dialogs = createExportDialogs();
+    // The first export's tip (OB-4), once its report has closed.
+    const stopTip = whenClosed(
+      dialogs.subscribe,
+      () => dialogs.shown()?.kind === "report",
+      () => tips.reached("export"),
+    );
     // Preview from disk: main opens what it exported itself, or says it isn't there any more.
     const openExport = () => {
       api.site
@@ -68,6 +84,7 @@ export const exportCommandArea: Area<WindowContext> = {
       confirmCode: (site) => codeTrust.confirm(site),
     });
     return () => {
+      stopTip();
       removeCommand();
       removeDialogs();
     };

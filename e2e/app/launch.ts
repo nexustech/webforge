@@ -1,6 +1,6 @@
 import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdtempSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
@@ -98,10 +98,26 @@ export async function launchDesktopApp(
     readonly userDataDir?: string;
     /** Whether to open a new, empty site when `args` name none; true by default. */
     readonly site?: boolean;
+    /**
+     * Whether the first-time tips show (5.4a). Off by default, as for someone who has seen them,
+     * so a tip never covers what a test clicks next; onboarding.spec.ts turns them on.
+     */
+    readonly tips?: boolean;
   } = {},
 ): Promise<WebforgeApp> {
   const { executablePath, env } = electronCommand();
   const userData = options.userDataDir ?? newUserDataDir();
+  // Only where there are no preferences yet: a test that restarts the app keeps its own.
+  const preferences = join(userData, "preferences.json");
+  if (!existsSync(preferences)) {
+    mkdirSync(userData, { recursive: true });
+    writeFileSync(
+      preferences,
+      JSON.stringify({
+        onboarding: { tour: "new", tipsSeen: [], showTips: options.tips === true },
+      }),
+    );
+  }
   const args = [...(options.args ?? [])];
   let siteDir: string | undefined;
   if (options.site !== false && !args.some((arg) => arg.toLowerCase().endsWith(".wforge"))) {

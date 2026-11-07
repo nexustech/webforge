@@ -2,6 +2,7 @@ import { isMessageKey, t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
+import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
 import { type AiRequest, type AiResponse, isAppTool } from "../../shared/ipc/ai.js";
 
 /** How long after one Open Preview another opens nothing more, so an app can't flood the browser. */
@@ -40,7 +41,12 @@ export function createAppTools(deps: AppToolsDeps): (request: AiRequest) => AiRe
     if (request.kind !== "query" || !isAppTool(request.name)) return undefined;
     if (request.name === "runSiteCheck") {
       const report = checkSite(
-        { site: deps.site(), catalogue: CATALOGUE, allowListConfirmed: deps.allowListConfirmed() },
+        {
+          site: deps.site(),
+          catalogue: CATALOGUE,
+          allowListConfirmed: deps.allowListConfirmed(),
+          templateImages: TEMPLATE_IMAGE_HASHES,
+        },
         "export",
         new Set(deps.ignored()),
       );
