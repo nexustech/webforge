@@ -127,14 +127,14 @@ describe("confirmSiteWide (D7)", () => {
     confirm.answer(true);
     await Promise.resolve();
     expect(confirm.current()).toBeNull();
-    expect(confirm.landing()).toBe(true);
+    expect(confirm.busy()).toBe(true);
     expect(registry.run("edit.undo")).toBe(false);
 
     let made = false;
     const change = answer.then(() => {
       made = true;
       // The change is made before Undo works again: nothing pressed meanwhile came first.
-      expect(confirm.landing()).toBe(false);
+      expect(confirm.busy()).toBe(false);
     });
     saved();
     await change;
@@ -143,9 +143,9 @@ describe("confirmSiteWide (D7)", () => {
 
     // An unasked theme change waits the same way.
     const unasked = confirm.beforeUnaskedChange(deletePage(2));
-    expect(confirm.landing()).toBe(true);
+    expect(confirm.busy()).toBe(true);
     saved();
     await unasked;
-    expect(confirm.landing()).toBe(false);
+    expect(confirm.busy()).toBe(false);
   });
 });

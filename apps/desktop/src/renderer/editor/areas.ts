@@ -70,7 +70,12 @@ export type WindowContext = AreaContext & {
   /** Asks before what changes more than the page shown (D7); AI apps' changes too, and close it. */
   readonly siteWide: Pick<
     SiteWideConfirm,
-    "confirmSiteWide" | "current" | "answer" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
+    | "confirmSiteWide"
+    | "current"
+    | "busy"
+    | "answer"
+    | "setBeforeSiteWideAction"
+    | "beforeUnaskedChange"
   >;
   /** The canvas toolbar's zoom and size readout (1.15). */
   readonly canvasView: CanvasView;
@@ -114,7 +119,7 @@ export type EditorContext = AreaContext & {
   /** Asks before what changes more than the page shown (D7); without it, changes happen at once. */
   readonly siteWide?: Pick<
     SiteWideConfirm,
-    "confirmSiteWide" | "current" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
+    "confirmSiteWide" | "current" | "busy" | "setBeforeSiteWideAction" | "beforeUnaskedChange"
   >;
   /** Compiles the site CSS for the canvas. */
   readonly compileCss: CompileCanvasCss;

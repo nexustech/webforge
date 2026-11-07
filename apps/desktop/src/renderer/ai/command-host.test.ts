@@ -38,7 +38,7 @@ describe("commandHost (4.8)", () => {
     );
   });
 
-  it("is editing while the person types in a text, or answers a question of their own", () => {
+  it("is editing while the person types in a text, or answers a question of their own", async () => {
     const { session, siteWide, host } = setup("content");
     expect(host.editing()).toBe(false);
     expect(host.mode()).toBe("content");
@@ -59,6 +59,25 @@ describe("commandHost (4.8)", () => {
     void siteWide.confirmSiteWide({ action: "Delete page?", confirm: "Delete", affectedPages: 2 });
     expect(host.editing()).toBe(true);
     siteWide.answer(false);
+    expect(host.editing()).toBe(false);
+
+    // Answered yes, until the change has its version and is made (4.6).
+    let saved: () => void = () => undefined;
+    siteWide.setBeforeSiteWideAction(
+      () =>
+        new Promise<void>((resolve) => {
+          saved = resolve;
+        }),
+    );
+    const answered = siteWide.confirmSiteWide({
+      action: "Delete page?",
+      confirm: "Delete",
+      affectedPages: 2,
+    });
+    siteWide.answer(true);
+    expect(host.editing()).toBe(true);
+    saved();
+    await answered;
     expect(host.editing()).toBe(false);
 
     // A dialog changing the site live holds others' changes until it is done (3.13a).
