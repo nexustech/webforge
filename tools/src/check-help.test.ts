@@ -1,12 +1,14 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
-import { appNameIn, checkHelp, HELP_PATHS } from "./check-help.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { appNameIn, checkHelp, HELP_PATHS, main } from "./check-help.js";
 
 const made: string[] = [];
 afterEach(() => {
   for (const dir of made.splice(0)) rmSync(dir, { recursive: true, force: true });
+  vi.restoreAllMocks();
+  process.exitCode = undefined;
 });
 
 /** A repository with `pages` in docs/help, a catalogue of `types` and `app.name` set. */
@@ -56,9 +58,25 @@ describe("check-help (5.4b, HP-5)", () => {
     ]);
   });
 
+  it("says the pages are in order, or lists each problem and fails", () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    main(repository({ "export.md": `${front("export")}# Export` }));
+    expect(log).toHaveBeenCalledWith("The help pages in docs/help are all in order.");
+    expect(process.exitCode).toBeUndefined();
+
+    main(repository({ "export.md": `${front("export")}# Export\n\n[Gone](gone.md)` }));
+    expect(error).toHaveBeenCalledWith("  export.md: links to a page that isn't there: gone.md");
+    expect(process.exitCode).toBe(1);
+  });
+
   it("reads the app's name from the string catalogue, or says it can't", () => {
     const root = repository({});
-    expect(appNameIn(join(root, HELP_PATHS.strings))).toBe("Webforge");
+    const strings = join(root, HELP_PATHS.strings);
+    // Tests and other files in the folder aren't read for it.
+    writeFileSync(join(strings, "a.test.ts"), 'const x = { "app.name": "Testforge" };');
+    writeFileSync(join(strings, "README.md"), '"app.name": "Readforge"');
+    expect(appNameIn(strings)).toBe("Webforge");
     expect(() => appNameIn(join(root, HELP_PATHS.pages))).toThrow(/No "app.name"/);
   });
 });

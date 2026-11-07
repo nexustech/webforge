@@ -51,8 +51,9 @@ export function checkHelp(root: string): readonly string[] {
   });
 }
 
-function main(): void {
-  const problems = checkHelp(process.cwd());
+/** Checks the help pages under `root` and says what it found; sets a failing exit code if any. */
+export function main(root = process.cwd()): void {
+  const problems = checkHelp(root);
   if (problems.length > 0) {
     console.error(`The help pages in ${HELP_PATHS.pages} have ${problems.length} problem(s):`);
     for (const problem of problems) console.error(`  ${problem}`);
