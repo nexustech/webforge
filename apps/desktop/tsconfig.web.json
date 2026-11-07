@@ -4,7 +4,7 @@
     "types": ["vite/client"],
     "outDir": "${configDir}/dist/types/web"
   },
-  "include": ["src/renderer", "src/shared"],
+  "include": ["src/renderer", "src/shared", "src/renderer/**/*.json"],
   "references": [
     {
       "path": "../../packages/commands"

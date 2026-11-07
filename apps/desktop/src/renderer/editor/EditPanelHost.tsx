@@ -1,6 +1,6 @@
 import { EditPanel, type GroupAction } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useEffect, useMemo } from "react";
+import { type ReactNode, useEffect, useMemo } from "react";
 import { createEditPanelController } from "./edit-panel-controller.js";
 import { type DialogGroups, fieldsFor, panelSlice, sameSlice } from "./edit-panel-fields.js";
 import type { EditorSession } from "./editor-session.js";
@@ -43,6 +43,8 @@ export type EditPanelHostProps = {
   readonly dialogGroups?: DialogGroups | undefined;
   /** The Style tab's *Style this Feature…* button (3.13a); none without it. */
   readonly styleAction?: { readonly label: string; readonly onSelect: () => void } | undefined;
+  /** Beside the selected element's name: the Edit panel's **?** (5.4b). */
+  readonly headingAside?: ReactNode;
   /** The Advanced tab's read-only *CSS* of the item (3.14); none without it. */
   readonly itemCss?: ItemCssServices | undefined;
 };
@@ -63,6 +65,7 @@ export function EditPanelHost({
   appearanceOnly = false,
   dialogGroups,
   styleAction,
+  headingAside,
   itemCss,
 }: EditPanelHostProps) {
   const { library } = session;
@@ -115,6 +118,7 @@ export function EditPanelHost({
   return (
     <EditPanel
       heading={component.label}
+      headingAside={headingAside}
       headingHidden={appearanceOnly}
       fields={fields}
       device={t(`device.${breakpoint}`)}

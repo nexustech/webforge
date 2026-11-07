@@ -46,6 +46,19 @@ describe("EditPanel", () => {
     expect(screen.queryByRole("tablist")).toBeNull();
   });
 
+  it("draws a help link beside the element's name, outside its heading (5.4b)", () => {
+    render(
+      <EditPanel
+        heading="Heading"
+        headingAside={<button type="button">Help: The Edit panel</button>}
+        fields={fields}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("heading", { name: "Heading" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Help: The Edit panel" })).toBeDefined();
+  });
   it("shows the element's content fields first, its style fields on the Style tab", async () => {
     const { user } = setup();
 

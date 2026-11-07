@@ -20,6 +20,7 @@ import { t } from "@webforge/i18n";
 import { useState, useSyncExternalStore } from "react";
 import { z } from "zod";
 import type { ExportChoices } from "../../shared/ipc/site.js";
+import { HelpButton } from "../help/index.js";
 import type { ExportDialogs as Dialogs, ExportReport } from "./export-dialogs.js";
 
 type OptionValues = {
@@ -183,6 +184,7 @@ export function ExportDialogs({
           open
           title={t("export.dialog.title")}
           description={t("export.dialog.description")}
+          help={<HelpButton topic="export" />}
           confirm={t("export.dialog.confirm")}
           spec={optionsSpec(shown.advanced)}
           initial={{
