@@ -24,7 +24,6 @@
     "uqr": "0.1.3"
   },
   "devDependencies": {
-    "@anthropic-ai/mcpb": "2.1.2",
     "@babel/core": "catalog:",
     "@jsquash/jpeg": "catalog:",
     "@jsquash/png": "catalog:",
@@ -55,6 +54,7 @@
     "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "@webforge/themes": "workspace:*",
+    "ajv": "8.20.0",
     "babel-plugin-react-compiler": "catalog:",
     "daisyui": "catalog:",
     "electron": "44.10.2",

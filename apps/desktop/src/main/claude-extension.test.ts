@@ -1,17 +1,12 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
-import {
-  getMcpConfigForManifest,
-  hasRequiredConfigMissing,
-  type McpbManifestAny,
-  validateManifest,
-} from "@anthropic-ai/mcpb";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { BRIDGE_ENV } from "@webforge/mcp-bridge";
 import { buildBridge } from "@webforge/mcp-bridge/build";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { Ajv } from "ajv";
 import { unzipSync } from "fflate";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createClaudeExtensions, extensionManifest } from "./claude-extension.js";
@@ -54,6 +49,50 @@ function extensions(opened: string = "") {
   };
 }
 
+/** An extension's manifest, as far as these tests read it. */
+type Manifest = {
+  readonly server: {
+    readonly mcp_config: {
+      readonly command: string;
+      readonly args: readonly string[];
+      readonly env: Readonly<Record<string, string>>;
+    };
+  };
+  readonly user_config: Readonly<Record<string, { readonly required?: boolean }>>;
+};
+
+/** Whether `manifest` passes the MCPB manifest schema, version 0.3 (`./mcpb/README.md`). */
+function validManifest(manifest: unknown) {
+  const schema: unknown = JSON.parse(
+    readFileSync(new URL("./mcpb/manifest-v0.3.schema.json", import.meta.url), "utf8"),
+  );
+  const validate = new Ajv({ allErrors: true, strict: false, validateFormats: false }).compile(
+    schema as object,
+  );
+  return validate(manifest) ? [] : (validate.errors ?? []);
+}
+
+/**
+ * The command Claude Desktop runs for `manifest` installed at `target` with `userConfig`: its
+ * `${__dirname}` and `${user_config.…}` filled in, as MCPB hosts do.
+ */
+function commandOf(
+  manifest: Manifest,
+  target: string,
+  userConfig: Readonly<Record<string, string>>,
+) {
+  const fill = (value: string) =>
+    value
+      .replaceAll("${__dirname}", target)
+      .replace(/\$\{user_config\.([a-z_]+)\}/g, (_, name: string) => userConfig[name] ?? "");
+  const { command, args, env } = manifest.server.mcp_config;
+  return {
+    command,
+    args: args.map(fill),
+    env: Object.fromEntries(Object.entries(env).map(([name, value]) => [name, fill(value)])),
+  };
+}
+
 /** The `.mcpb` at `file`, unpacked into a folder of its own, as Claude Desktop installs it. */
 function unpack(file: string) {
   const target = mkdtempSync(join(dir, "installed-"));
@@ -61,9 +100,7 @@ function unpack(file: string) {
     mkdirSync(dirname(join(target, name)), { recursive: true });
     writeFileSync(join(target, name), bytes);
   }
-  const manifest = JSON.parse(
-    readFileSync(join(target, "manifest.json"), "utf8"),
-  ) as McpbManifestAny;
+  const manifest = JSON.parse(readFileSync(join(target, "manifest.json"), "utf8")) as Manifest;
   return { target, manifest };
 }
 
@@ -79,9 +116,10 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
     expect(show).not.toHaveBeenCalled();
     expect(file.startsWith(join(dir, "ai-apps", CLAUDE.id) + sep)).toBe(true);
     const { target, manifest } = unpack(file);
-    const log = vi.spyOn(console, "log").mockImplementation(() => undefined);
-    expect(validateManifest(join(target, "manifest.json"))).toBe(true);
-    log.mockRestore();
+    expect(validManifest(manifest)).toEqual([]);
+    // The schema does check: a manifest of another version, or without its server, fails it.
+    expect(validManifest({ ...manifest, manifest_version: "9.9" })).not.toEqual([]);
+    expect(validManifest({ ...manifest, server: undefined })).not.toEqual([]);
     expect(manifest).toEqual(extensionManifest(pairing, "1.2.3"));
     expect(manifest.server.mcp_config.env).toMatchObject({
       [BRIDGE_ENV.address]: pairing.address,
@@ -92,8 +130,6 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
     expect(manifest.user_config).toEqual({
       key: expect.objectContaining({ type: "string", sensitive: true, required: true }),
     });
-    // Claude Desktop won't run it until the key is pasted.
-    expect(hasRequiredConfigMissing({ manifest, userConfig: {} })).toBe(true);
     // The bridge in it is the bundled one, as it is.
     expect(readFileSync(join(target, "server", "index.mjs"))).toEqual(readFileSync(bridgeFile));
   });
@@ -133,22 +169,17 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
       const { target, manifest } = unpack(file);
 
       // What Claude Desktop runs: the manifest's command, its variables filled in.
-      const config = await getMcpConfigForManifest({
-        manifest,
-        extensionPath: target,
-        systemDirs: {},
-        userConfig: { key: KEY },
-        pathSeparator: sep,
-      });
-      if (config === undefined) throw new Error("no MCP config");
-      expect(config.env?.[BRIDGE_ENV.key]).toBe(KEY);
+      const config = commandOf(manifest, target, { key: KEY });
+      expect(config.command).toBe("node");
+      expect(config.args).toEqual([`${target}/server/index.mjs`]);
+      expect(config.env[BRIDGE_ENV.key]).toBe(KEY);
       const client = new Client({ name: "Claude", version: "1" });
       await client.connect(
         new StdioClientTransport({
           // Claude Desktop's own Node.js; here, the one running the tests.
-          command: config.command === "node" ? process.execPath : config.command,
-          args: config.args ?? [],
-          env: config.env ?? {},
+          command: process.execPath,
+          args: config.args,
+          env: config.env,
         }),
       );
       cleanups.push(() => client.close());

@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, sep } from "node:path";
-import { getMcpConfigForManifest, type McpbManifestAny } from "@anthropic-ai/mcpb";
+import { dirname, join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
@@ -163,21 +162,23 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
     const text = readFileSync(join(installed, "manifest.json"), "utf8");
     // The key is the person's to paste: never in the file.
     expect(text).not.toContain(key);
-    const config = await getMcpConfigForManifest({
-      manifest: JSON.parse(text) as McpbManifestAny,
-      extensionPath: installed,
-      systemDirs: {},
-      userConfig: { key },
-      pathSeparator: sep,
-    });
-    if (config === undefined) throw new Error("no MCP config");
+    // What Claude Desktop runs: the manifest's command, with the folder and the key filled in.
+    const { mcp_config: config } = (
+      JSON.parse(text) as {
+        server: { mcp_config: { args: string[]; env: Record<string, string> } };
+      }
+    ).server;
+    const fill = (value: string) =>
+      value.replaceAll("${__dirname}", installed).replaceAll("${user_config.key}", key);
     const client = new Client({ name: "claude-ai", version: "1" });
     await client.connect(
       new StdioClientTransport({
         // Claude Desktop's own Node.js; here, the one running the tests.
         command: process.execPath,
-        args: config.args ?? [],
-        env: config.env ?? {},
+        args: config.args.map(fill),
+        env: Object.fromEntries(
+          Object.entries(config.env).map(([name, value]) => [name, fill(value)]),
+        ),
       }),
     );
     try {
