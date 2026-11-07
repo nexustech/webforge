@@ -10,6 +10,7 @@ import {
 import { t } from "@webforge/i18n";
 import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
@@ -58,6 +59,8 @@ export type StartScreenProps = {
   readonly locale?: string;
   /** Opens the Help window (5.4b); injectable for tests. */
   readonly help?: Pick<HelpApi, "open">;
+  /** AI apps' briefs (4.12a), for New Site's quick start; injectable for tests. */
+  readonly ai?: Pick<AiApi, "onBrief">;
 };
 
 /**
@@ -73,6 +76,7 @@ export function StartScreen({
   restart,
   locale,
   help,
+  ai,
 }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
@@ -180,6 +184,7 @@ export function StartScreen({
           recent={{ sites: recent, changed: relist }}
           {...(templates === undefined ? {} : { templates })}
           {...(restart === undefined ? {} : { restart })}
+          {...(ai === undefined ? {} : { ai })}
         />
         <AboutDialog info={info} />
         <ShortcutSheet editor={false} />

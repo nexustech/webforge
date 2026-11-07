@@ -15,6 +15,7 @@ import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { createCodeTrust } from "./editor/code-trust.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
+import { createPublishRequests } from "./editor/publish-requests.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { HelpCommands, HelpProvider, openHelpWith } from "./help/index.js";
@@ -177,6 +178,7 @@ export function App({
         },
       },
       publishedYear: createStore<number | undefined>(() => yearOf(uiState?.lastPublishedAt)),
+      publishing: createPublishRequests(),
     };
   });
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);
@@ -312,7 +314,13 @@ export function App({
               <HelpCommands help={api.help} />
               <AboutDialog info={info} />
               <ShortcutSheet />
-              <SiteCommands project={api.project} templates={api.templates} />
+              <SiteCommands
+                project={api.project}
+                templates={api.templates}
+                ai={api.ai}
+                // Content mode refuses an AI app's brief for a new site (4.12a, §5.10).
+                refuseBrief={() => preferences.getState().mode === "content"}
+              />
               <SettingsHost registry={settings} />
               <WindowDialogs registry={windowDialogs} />
               <SiteWideConfirmDialog confirm={siteWide} />

@@ -16,8 +16,9 @@ import { registerVersionSettings } from "./versions-settings.js";
 /**
  * Version History (F-SITE-4, 4.6): its panel beside Undo History, File → Save Version…
  * (Ctrl/Cmd+Alt+S) with its name dialog, the automatic version before a change to every page
- * (`setBeforeSiteWideAction`, A21), and Versions kept in the app's Settings. Registered once, with
- * the window, on the opening of the site it was loaded for (R6).
+ * (`setBeforeSiteWideAction`, A21), and Versions kept in the app's Settings. Each version's
+ * Republish… asks Publish to republish it, and the list is read again once a publish goes live
+ * (4.6b). Registered once, with the window, on the opening of the site it was loaded for (R6).
  */
 export const versionHistoryArea: Area<WindowContext> = {
   id: "versionHistory",
@@ -30,6 +31,7 @@ export const versionHistoryArea: Area<WindowContext> = {
     windowDialogs,
     settings,
     preferences,
+    publishing,
   }) => {
     const list = createVersionList(() => api.versions.list(siteSession()));
     const actions = createVersionActions({
@@ -47,6 +49,7 @@ export const versionHistoryArea: Area<WindowContext> = {
         },
       },
       restart: () => window.location.reload(),
+      republish: (version) => publishing.republish(version),
     });
 
     const naming = createStore<{ readonly open: boolean }>(() => ({ open: false }));
@@ -83,6 +86,10 @@ export const versionHistoryArea: Area<WindowContext> = {
         actions.beforeSiteWide(action, options),
       ),
       registerVersionSettings(settings, preferences),
+      // A publish saves a version, and a republish records where one went.
+      publishing.onPublished(() => {
+        void list.refresh();
+      }),
     ];
     return () => {
       for (const stop of stops.toReversed()) stop();

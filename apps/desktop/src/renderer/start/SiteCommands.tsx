@@ -1,6 +1,7 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { AiApi, BriefOutcome } from "../../shared/ipc/ai.js";
 import type { NewSiteRequest, ProjectApi, ProjectResult } from "../../shared/ipc/project.js";
 import type { TemplateSummary, TemplatesApi } from "../../shared/ipc/templates.js";
 import { reportFailure } from "../log.js";
@@ -10,6 +11,7 @@ import { NewSiteDialog, templateName } from "./NewSiteDialog.js";
 import { OpenRecent, type ShownRecentSites } from "./OpenRecent.js";
 import { openSiteWith } from "./open-site.js";
 import { QuickStartDialog } from "./QuickStartDialog.js";
+import { answersFromBrief, type QuickStartAnswers } from "./quick-start.js";
 
 /** Props of {@link SiteCommands}. */
 export type SiteCommandsProps = {
@@ -26,7 +28,24 @@ export type SiteCommandsProps = {
   readonly example?: boolean;
   /** The Recent list the window shows (the start screen's), for File › Open Recent (3.18). */
   readonly recent?: ShownRecentSites;
+  /** AI apps' briefs (4.12a); injectable for tests. Defaults to the preload API. */
+  readonly ai?: Pick<AiApi, "onBrief">;
+  /** Whether a brief is refused now: in Content mode (§5.10). */
+  readonly refuseBrief?: () => boolean;
 };
+
+/** An AI app's brief, shown as the quick start filled in: its answers, and how to say what became of it. */
+type Brief = {
+  readonly answers: QuickStartAnswers;
+  readonly answer: (outcome: BriefOutcome) => Promise<void>;
+};
+
+/** The templates main lists; none when it can't, so a Blank site can still be made. */
+const listTemplates = (templates: Pick<TemplatesApi, "list"> | undefined) =>
+  (templates ?? window.webforge.templates).list().catch((error: unknown) => {
+    reportFailure("site.templates", error);
+    return [];
+  });
 
 /**
  * File → New Site… (Ctrl/Cmd+N), Start a Site… (the quick start, QS-1), Open Site… (Ctrl/Cmd+O),
@@ -42,21 +61,25 @@ export function SiteCommands({
   restart,
   example: offer = false,
   recent,
+  ai,
+  refuseBrief,
 }: SiteCommandsProps) {
   const registry = useCommandRegistry();
-  // The dialog open, New Site or the quick start, with the templates it shows; `null` for none.
+  // The dialog open, New Site or the quick start, with the templates it shows, and the AI app's
+  // brief it shows, if any; `null` for none.
   const [open, setOpen] = useState<{
     readonly dialog: "newSite" | "quickStart";
     readonly templates: readonly TemplateSummary[];
+    readonly brief?: Brief;
   } | null>(null);
+  // What's open, as a brief arriving reads it.
+  const shown = useRef(open);
+  useEffect(() => {
+    shown.current = open;
+  }, [open]);
 
   useEffect(() => {
-    // Without the templates, a Blank site can still be made.
-    const listed = () =>
-      (templates ?? window.webforge.templates).list().catch((error: unknown) => {
-        reportFailure("site.templates", error);
-        return [];
-      });
+    const listed = () => listTemplates(templates);
     const removeNew = registry.register({
       id: COMMAND_IDS.newSite,
       label: t("command.newSite"),
@@ -127,9 +150,59 @@ export function SiteCommands({
     });
   }, [registry, example, project, restart]);
 
+  // AI apps' briefs (4.12a): the quick start, filled in and on its last step, for the person to
+  // check and create, or not. Refused in Content mode, and while the person has a New Site or
+  // quick start of their own open, which a brief never replaces.
+  useEffect(() => {
+    const source = ai ?? window.webforge?.ai;
+    const stop = source?.onBrief?.((brief, answer) => {
+      if (refuseBrief?.() === true) {
+        void answer("refused");
+        return;
+      }
+      if (shown.current !== null) {
+        void answer("busy");
+        return;
+      }
+      void listTemplates(templates).then((list) => {
+        if (shown.current !== null) {
+          void answer("busy");
+          return;
+        }
+        const answers = answersFromBrief(brief, list, t("site.untitledName"));
+        setOpen({ dialog: "quickStart", templates: list, brief: { answers, answer } });
+      });
+    });
+    return () => {
+      if (typeof stop === "function") stop();
+    };
+  }, [ai, refuseBrief, templates]);
+
+  /** Says the brief shown, if any, came to nothing. */
+  const decline = () => {
+    void open?.brief?.answer("declined");
+  };
+
   const create = (request: NewSiteRequest) => {
+    const brief = open?.brief;
     setOpen(null);
-    openWith(restart, () => (project ?? window.webforge.project).create(request));
+    if (brief === undefined) {
+      openWith(restart, () => (project ?? window.webforge.project).create(request));
+      return;
+    }
+    // The AI app hears it was made before the window starts over with the new site.
+    let created = false;
+    const startOver = restart ?? (() => window.location.reload());
+    void openSiteWith(
+      () => (project ?? window.webforge.project).create(request),
+      () => {
+        created = true;
+        void brief.answer("created").finally(startOver);
+      },
+    ).then((message) => {
+      if (message !== undefined) toast.error(message);
+      if (!created) void brief.answer("declined");
+    });
   };
   const listedTemplates = open?.templates ?? [];
 
@@ -144,11 +217,28 @@ export function SiteCommands({
       <QuickStartDialog
         open={open?.dialog === "quickStart"}
         templates={listedTemplates}
+        // A brief opens it filled in, on the step the person checks last.
+        {...(open?.brief === undefined
+          ? {}
+          : { initialAnswers: open.brief.answers, initialStep: "details" as const })}
         onCreate={create}
-        onTryExample={(template) => create(exampleRequest(template))}
+        onTryExample={(template) => {
+          // The example is the template's, not the brief's.
+          decline();
+          setOpen(null);
+          openWith(restart, () =>
+            (project ?? window.webforge.project).create(exampleRequest(template)),
+          );
+        }}
         // New Site, with the templates already listed: one click away (QS-4).
-        onChooseTemplate={() => setOpen({ dialog: "newSite", templates: listedTemplates })}
-        onCancel={() => setOpen(null)}
+        onChooseTemplate={() => {
+          decline();
+          setOpen({ dialog: "newSite", templates: listedTemplates });
+        }}
+        onCancel={() => {
+          decline();
+          setOpen(null);
+        }}
       />
       <OpenRecent project={project} restart={restart} recent={recent} />
     </>

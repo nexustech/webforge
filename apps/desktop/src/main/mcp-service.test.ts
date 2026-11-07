@@ -9,6 +9,7 @@ import { createCredentialStore, type SecretCipher } from "./credential-store.js"
 import { createJsonStore } from "./json-store.js";
 import type { McpListener, McpListenerOptions } from "./mcp-listener.js";
 import { createMcpService } from "./mcp-service.js";
+import { siteChoices } from "./site-brief.js";
 
 const cipher: SecretCipher = {
   isEncryptionAvailable: () => true,
@@ -54,6 +55,11 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     ask,
     info: { name: "Webforge", version: "1" },
     saveVersionBefore,
+    briefs: {
+      ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
+      choices: () => ({ status: "done", data: siteChoices([]) }) as const,
+      status: () => ({ status: "not-found", message: "none" }) as const,
+    },
     listen,
     drawPort: () => ports.shift() ?? 59_999,
   });

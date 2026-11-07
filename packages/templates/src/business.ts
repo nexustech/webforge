@@ -20,6 +20,11 @@ export const businessDetailsSchema = siteSettingsSchema.shape.contact
     webAddress: webAddressSchema.optional(),
     /** The quick start's business type (SEO-9): Site Settings' own. */
     businessType: siteSettingsSchema.shape.general.shape.businessType,
+    /**
+     * Its schema.org kind (SEO-1), such as *Vehicle repair*: given by an AI app's brief (4.12a),
+     * Site Settings' *More precisely* otherwise.
+     */
+    businessKind: siteSettingsSchema.shape.general.shape.businessKind,
   });
 
 /** See {@link businessDetailsSchema}. */
@@ -68,6 +73,7 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
     site.settings.address.url = business.webAddress.replace(/\/$/, "");
   }
   if (business.businessType !== undefined) general.businessType = business.businessType;
+  if (business.businessKind !== undefined) general.businessKind = business.businessKind;
   if (business.openingHours !== undefined && business.openingHours.length > 0) {
     contact.openingHours = structuredClone(business.openingHours);
   }

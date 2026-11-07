@@ -17,6 +17,8 @@ const SESSION = "0c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f";
 const OPERATION = "1d2e3f40-5b6c-4d7e-8f80-9a0b1c2d3e4f";
 const TRUSTED = "<script>trusted()</script>";
 const UNTRUSTED = "<script>untrusted()</script>";
+/** A script from another site, which the owner trusts: publishing it is a Must fix (X5). */
+const EXTERNAL = '<script src="https://cdn.example.com/widget.js"></script>';
 
 const destination: PublishDestination = {
   id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
@@ -54,8 +56,12 @@ function publishable(change: (site: SiteDoc) => void = () => undefined): SiteDoc
   return site;
 }
 
-/** Publish's handlers over a site file holding `site` and `destination`, open as `SESSION`. */
+/**
+ * Publish's handlers over a site file holding `site` and `destination`, open as `SESSION`; with
+ * `saved`, a version of that site saved before `site`, which `republish` publishes (4.6b).
+ */
 function handlers({
+  saved,
   site = publishable(),
   outcome = async (): Promise<PublishOutcome> => LIVE,
   signedIn = true,
@@ -70,9 +76,15 @@ function handlers({
   readonly saveFails?: boolean;
   /** How the window's flush goes; at once by default. */
   readonly flushWith?: () => Promise<void>;
+  readonly saved?: SiteDoc;
 } = {}) {
   const store = ProjectStore.create(join(tempDir(), "site.wforge"), { name: "Rosa's" });
   open.push(store);
+  let versionId = "5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b";
+  if (saved !== undefined) {
+    store.saveSite(saved);
+    versionId = store.saveVersion("Before the menu", "manual").id;
+  }
   store.saveSite(site);
   store.writePublishDestinations([destination]);
   const runner = {
@@ -117,7 +129,7 @@ function handlers({
       signInFor: async () =>
         signedIn ? { signIn: { password: "test-only-password" }, trust: {} } : undefined,
     },
-    trusted: async () => (text: string) => text === TRUSTED,
+    trusted: async () => (text: string) => text === TRUSTED || text === EXTERNAL,
     fontsOf: async () => ({ fonts: [], families: [] }),
     runner,
     sendProgress,
@@ -136,7 +148,25 @@ function handlers({
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
   const publish = (replaceOtherSite = false) =>
     invoke("publish:publish", SESSION, destination.id, OPERATION, { replaceOtherSite });
-  return { store, runner, sendProgress, invoke, publish, order, openExternal, held, holdManifest };
+  const republish = (id = versionId) =>
+    invoke("publish:publish", SESSION, destination.id, OPERATION, {
+      replaceOtherSite: false,
+      versionId: id,
+    });
+  return {
+    store,
+    runner,
+    sendProgress,
+    invoke,
+    publish,
+    republish,
+    versionId,
+    order,
+    openExternal,
+    held,
+    holdManifest,
+    flush,
+  };
 }
 
 /** The job the runner was given. */
@@ -337,5 +367,107 @@ describe("Publish (4.5, ADR 0018)", () => {
         replaceOtherSite: false,
       }),
     ).toEqual({ status: "failed", reason: "no-destination" });
+  });
+});
+
+describe("Republish a version (4.6b, ADR 0018 §3)", () => {
+  /** The site as it was: its own name, and its home page called otherwise. */
+  const before = () =>
+    publishable((site) => {
+      site.settings.general.name = "Rosa's, as it was";
+    });
+
+  it("publishes the saved version, not the site as it is, and records where it went on it", async () => {
+    const { store, runner, republish, versionId, flush, holdManifest } = handlers({
+      saved: before(),
+    });
+
+    expect(await republish()).toMatchObject({ status: "published", versionSaved: true });
+    const { site } = jobOf(runner);
+    expect(site.settings.general.name).toBe("Rosa's, as it was");
+    // Gated and built like any publish: only the code its owner trusts here (#649).
+    expect(site.code.head).toBe(TRUSTED);
+    expect(site.code.bodyEnd).toBe("");
+    // The version is in the file already: nothing for the window to save, nothing new saved.
+    expect(flush).not.toHaveBeenCalled();
+    expect(holdManifest).toHaveBeenCalledWith(store.readVersionManifest(versionId));
+    const versions = store.listVersions();
+    expect(versions).toHaveLength(1);
+    expect(versions[0]).toMatchObject({
+      id: versionId,
+      reason: "manual",
+      publishedTo: {
+        destinationId: destination.id,
+        publishedAt: "2026-11-01T14:02:00.000Z",
+        check: "live",
+      },
+    });
+    // When it went live, for Site Check's year (F-CM-8), as a publish of the site records it.
+    expect(store.readLastPublishedAt()).toBe("2026-11-01T14:02:00.000Z");
+  });
+
+  it("won't republish a version with a script from another site, building nothing (A6, X5)", async () => {
+    const { store, runner, republish } = handlers({
+      saved: publishable((site) => {
+        site.code = { ...site.code, head: EXTERNAL };
+      }),
+    });
+
+    expect(await republish()).toEqual({ status: "must-fix", count: 1 });
+    expect(runner.publish).not.toHaveBeenCalled();
+    expect(store.listVersions()[0]?.publishedTo).toBeUndefined();
+    expect(store.readLastPublishedAt()).toBeUndefined();
+  });
+
+  it("gates the version, not the site as it is: a site with something to fix republishes a version without", async () => {
+    const { runner, republish } = handlers({
+      saved: before(),
+      site: publishable((site) => {
+        site.settings.address = {};
+      }),
+    });
+    expect(await republish()).toMatchObject({ status: "published" });
+    expect(runner.publish).toHaveBeenCalledOnce();
+  });
+
+  it("records nothing on the version when the republish fails or is cancelled", async () => {
+    const { store, republish, held } = handlers({
+      saved: before(),
+      outcome: async () => ({ type: "failed", code: "network", detail: "network" }),
+    });
+    expect(await republish()).toEqual({ status: "failed", reason: "network" });
+    expect(store.listVersions()[0]?.publishedTo).toBeUndefined();
+    expect(store.readLastPublishedAt()).toBeUndefined();
+    expect(held.size).toBe(0);
+  });
+
+  it("says when the version is no longer in the site, or can't be read", async () => {
+    const gone = handlers({ saved: before() });
+    expect(await gone.republish("0f1e2d3c-4b5a-4968-8776-655443322110")).toEqual({
+      status: "failed",
+      reason: "no-version",
+    });
+    expect(gone.runner.publish).not.toHaveBeenCalled();
+
+    // A version from a newer Webforge's site format.
+    const newer = handlers({
+      saved: { ...before(), formatVersion: 999 } as unknown as SiteDoc,
+    });
+    expect(await newer.republish()).toEqual({ status: "failed", reason: "unreadable-version" });
+    expect(newer.runner.publish).not.toHaveBeenCalled();
+  });
+
+  it("still says the site is live when the version went while it was republished", async () => {
+    let deleted = false;
+    const setUp = handlers({
+      saved: before(),
+      outcome: async () => {
+        deleted = setUp.store.deleteVersion(setUp.versionId);
+        return LIVE;
+      },
+    });
+    expect(await setUp.republish()).toMatchObject({ status: "published", versionSaved: false });
+    expect(deleted).toBe(true);
+    expect(setUp.store.readLastPublishedAt()).toBe("2026-11-01T14:02:00.000Z");
   });
 });

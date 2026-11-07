@@ -10,6 +10,7 @@ import {
 } from "../../shared/ipc/versions.js";
 import { openFailureMessage } from "../../shared/open-failure.js";
 import type { EditorSession } from "../editor/editor-session.js";
+import type { VersionToRepublish } from "../editor/publish-requests.js";
 import type { EditorSelection } from "../editor/selection.js";
 import { reportFailure } from "../log.js";
 import { fileSizeLabel } from "../media/index.js";
@@ -38,6 +39,8 @@ export type VersionActionsDeps = {
   readonly notify: VersionNotices;
   /** Starts the window over with the site a version opened as (as New Site does). */
   readonly restart: () => void;
+  /** Asks Publish to republish a version: its destinations open, to choose where (4.6b). */
+  readonly republish: (version: VersionToRepublish) => void;
 };
 
 /** What the Version History panel and its commands do. */
@@ -54,6 +57,8 @@ export type VersionActions = {
    * is now is saved; true once restored.
    */
   restore(version: VersionSummary): Promise<boolean>;
+  /** Republishes `version` (4.6b): the site's destinations open, to choose where. */
+  republish(version: VersionSummary): void;
   /** Deletes `version`; true once deleted. */
   remove(version: VersionSummary): Promise<boolean>;
   /** Opens `version` as a new site where the person chooses (P5), which replaces this one. */
@@ -80,7 +85,7 @@ const fitted = (name: string) => fit(name, VERSION_NAME_MAX).trim();
  * version holds what the person sees; main saves the last changes before it saves a version.
  */
 export function createVersionActions(deps: VersionActionsDeps): VersionActions {
-  const { versions, preview, sessionId, session, list, notify, restart } = deps;
+  const { versions, preview, sessionId, session, list, notify, restart, republish } = deps;
   // The version before this opening's first unasked theme change, once asked for: a later change
   // waits for it, so the version never holds a change made while it saved.
   let themeVersion: Promise<boolean> | undefined;
@@ -187,6 +192,10 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
       );
       notify.success(t("versionHistory.restored", { name }));
       return true;
+    },
+
+    republish(version) {
+      republish({ id: version.id, name: versionName(version) });
     },
 
     async remove(version) {

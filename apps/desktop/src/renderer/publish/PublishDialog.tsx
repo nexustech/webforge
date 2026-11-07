@@ -57,6 +57,11 @@ export type PublishDialogApi = Pick<
 
 export type PublishDialogProps = {
   readonly open: boolean;
+  /**
+   * The name of the saved version the destinations republish (4.6b), shown in the title, each
+   * one's Publish becoming Republish; the open site is published when left out.
+   */
+  readonly republishing?: string;
   readonly publish: PublishDialogApi;
   /** The opening of the site this window was loaded for (R6). */
   readonly sessionId: () => string;
@@ -79,10 +84,12 @@ type Tests = Readonly<Record<string, ConnectionResult | "testing">>;
  * Publish (F-PB-1, 4.4a): the site's publish destinations, several allowed, each with its name,
  * host and folder, and whether this computer has its password. Add one, edit it, test it or
  * remove it; 4.3's form adds and edits them. Publish, each one's first action, publishes the site
- * there (4.5) once this computer has its password.
+ * there (4.5) once this computer has its password; or, from Version History, Republish publishes
+ * a saved version there (4.6b).
  */
 export function PublishDialog({
   open,
+  republishing,
   publish,
   sessionId,
   notify,
@@ -173,8 +180,16 @@ export function PublishDialog({
       <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>{t("publish.destinations.title")}</DialogTitle>
-            <DialogDescription>{t("publish.destinations.description")}</DialogDescription>
+            <DialogTitle>
+              {republishing === undefined
+                ? t("publish.destinations.title")
+                : t("publish.republish.title", { name: republishing })}
+            </DialogTitle>
+            <DialogDescription>
+              {republishing === undefined
+                ? t("publish.destinations.description")
+                : t("publish.republish.description")}
+            </DialogDescription>
           </DialogHeader>
           {listed === undefined ? (
             <p role="status" className="text-sm text-muted-foreground">
@@ -191,6 +206,7 @@ export function PublishDialog({
                   key={each.destination.id}
                   listed={each}
                   test={tests[each.destination.id]}
+                  republish={republishing !== undefined}
                   onTest={() => {
                     test(each).catch(() =>
                       setTests((all) => ({
@@ -276,6 +292,7 @@ export function PublishDialog({
 function DestinationRow({
   listed: { destination, signIn },
   test,
+  republish,
   onPublish,
   onTest,
   onEdit,
@@ -283,6 +300,8 @@ function DestinationRow({
 }: {
   readonly listed: ListedDestination;
   readonly test: ConnectionResult | "testing" | undefined;
+  /** Its first action republishes a saved version, rather than publishing the site (4.6b). */
+  readonly republish: boolean;
   readonly onPublish: () => void;
   readonly onTest: () => void;
   readonly onEdit: () => void;
@@ -325,11 +344,15 @@ function DestinationRow({
           <>
             <Button
               size="sm"
-              aria-label={t("publish.run.publish.label", { name })}
+              aria-label={
+                republish
+                  ? t("publish.republish.button.label", { name })
+                  : t("publish.run.publish.label", { name })
+              }
               disabled={signIn !== "saved"}
               onClick={onPublish}
             >
-              {t("publish.run.publish")}
+              {republish ? t("publish.republish.button") : t("publish.run.publish")}
             </Button>
             <Button
               size="sm"
