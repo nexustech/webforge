@@ -18,9 +18,10 @@ name: CI
 #   packages never come from the runners' slow Ubuntu mirror. On a pull request Firefox runs on
 #   Linux only (one engine on every OS); Windows and macOS run it nightly. E2E is skipped when a
 #   PR changes only unit tests, stories, screenshots or tooling.
-# - The benchmarks (`bench/`, 5.1) run when a PR changes what they measure: the PR's merge commit
-#   and the `main` it merges into, one after the other in the same job, so the runner's own speed
-#   cancels out. More than 20% slower than `main` fails. Nightly, `main` runs them alone.
+# - The benchmarks (`bench/`, 5.1, ADR 0022) run when a PR changes what they measure: the PR's
+#   merge commit and the `main` it merges into, in two interleaved rounds in the same job, so the
+#   runner's own speed cancels out. More than 20% slower than `main` in both rounds fails. Nightly,
+#   `main` is compared with itself, which shows the runner's spread.
 # - To keep runs short: E2E runs in two shards on every OS, and Storybook in two; `export-browsers`
 #   waits only for Linux's E2E, whose exported site it opens; and the static checks (lint,
 #   typecheck, boundaries, knip, UI strings, React Compiler) run on Linux only, as they read the
@@ -773,17 +774,19 @@ jobs:
           docker logs webforge-ftps || true
 
   bench:
-    # The benchmarks of the editor's and the pipeline's hot paths (bench/, 5.1, standards §5). On a
-    # pull request: `main` as the PR would merge into it first (the merge commit's first parent),
-    # then the PR's merge commit, which fails any benchmark more than 20% slower than `main`'s
-    # (`bench/src/measure.ts`, each retried twice for noise). Nightly, `main` alone, so a broken
-    # benchmark shows before a PR meets it. Linux only: the comparison, not the machine, is what
-    # counts. §10's budgets are the app's end to end, checked by `pnpm e2e:perf`.
+    # The benchmarks of the editor's and the pipeline's hot paths (bench/, 5.1, standards §5),
+    # compared with a base on the same runner (ADR 0022). On a pull request the base is `main` as
+    # the PR would merge into it (the merge commit's first parent); otherwise, nightly or from "Run
+    # workflow", the commit itself, which measures the runner's own spread. Two rounds, interleaved
+    # (base, head, base, head), each side installed once; `tools/src/compare-bench.ts` fails a
+    # benchmark only when the head is more than 20% slower in both rounds and at its best
+    # (`bench/thresholds.json` gives one more room). Linux only: the comparison, not the machine,
+    # is what counts. §10's budgets are the app's end to end, checked by `pnpm e2e:perf`.
     name: Benchmarks
     needs: changes
     if: needs.changes.outputs.bench == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -803,27 +806,53 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      - name: Benchmarks of main
+      - name: Install the base
         id: base
-        if: github.event_name == 'pull_request'
         shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
           base="$RUNNER_TEMP/base"
-          git worktree add --detach "$base" HEAD^1
+          if [ "$EVENT" = pull_request ]; then ref=HEAD^1; else ref=HEAD; fi
+          git worktree add --detach "$base" "$ref"
           if [ ! -f "$base/bench/package.json" ]; then
-            echo "main has no benchmarks yet: nothing to compare with."
+            echo "The base has no benchmarks yet: nothing to compare with."
             exit 0
           fi
-          cd "$base"
-          pnpm install --frozen-lockfile
-          pnpm bench
-          echo "results=$base/bench/results" >> "$GITHUB_OUTPUT"
+          (cd "$base" && pnpm install --frozen-lockfile)
+          echo "dir=$base" >> "$GITHUB_OUTPUT"
 
-      - name: Benchmarks of this commit
+      - name: Two rounds, interleaved
+        shell: bash
         env:
-          BENCH_BASELINE: ${{ steps.base.outputs.results }}
-        run: pnpm bench
+          BASE: ${{ steps.base.outputs.dir }}
+        run: |
+          set -euo pipefail
+          results="$RUNNER_TEMP/bench-results"
+          mkdir -p "$results"
+          for round in 1 2; do
+            if [ -n "$BASE" ]; then
+              echo "::group::Round $round: the base"
+              (cd "$BASE" && rm -rf bench/results && pnpm bench)
+              cp -r "$BASE/bench/results" "$results/base-$round"
+              echo "::endgroup::"
+            fi
+            echo "::group::Round $round: this commit"
+            rm -rf bench/results
+            pnpm bench
+            cp -r bench/results "$results/head-$round"
+            echo "::endgroup::"
+            # Without a base, one round shows this commit's benchmarks run.
+            [ -n "$BASE" ] || break
+          done
+
+      - name: Compare with the base
+        if: steps.base.outputs.dir != ''
+        shell: bash
+        run: |
+          results="$RUNNER_TEMP/bench-results"
+          node tools/src/compare-bench.ts --thresholds bench/thresholds.json             --base "$results/base-1" "$results/base-2" --head "$results/head-1" "$results/head-2"
 
   passed:
     # The one required check on `main` (spec/03 §7). Every job above can be skipped, and a skipped

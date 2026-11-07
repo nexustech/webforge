@@ -10,7 +10,7 @@ import { homeOf, largeSite, PAGES } from "./sites.js";
 // Autosave's commit (architecture §10: < 50 ms, off the UI thread; ADR 0003): one changed page of
 // a 20-page site, written to its file in one transaction, as the storage writer commits it.
 
-describe(`autosave, a site of ${PAGES} large pages (§10)`, { retry: 2 }, () => {
+describe(`autosave, a site of ${PAGES} large pages (§10)`, () => {
   test("commit one changed page", async ({ bench }) => {
     const dir = mkdtempSync(join(tmpdir(), "webforge-bench-"));
     const store = ProjectStore.create(join(dir, "Large.wforge"), { name: "Large" });

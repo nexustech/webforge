@@ -31,7 +31,7 @@ function historyWith(steps: number) {
   return history;
 }
 
-describe(`history, a ${SECTIONS}-section page (ADR 0004)`, { retry: 2 }, () => {
+describe(`history, a ${SECTIONS}-section page (ADR 0004)`, () => {
   test("a keystroke: one text field edited, coalesced", async ({ bench }) => {
     const history = historyWith(0);
     let key = 0;

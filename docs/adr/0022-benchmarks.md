@@ -23,13 +23,21 @@ Vitest 5 changed its benchmarks. They are tests in `*.bench.ts` files, run by `v
    - a full export with its images cached;
    - the preview's build after a page edit, and after a theme colour change;
    - Site Check before a publish.
-2. **Each benchmark compares its median with `main`'s, on the same runner.** `measure()` (`bench/src/measure.ts`) writes the result to `bench/results/<name>.json`. When `BENCH_BASELINE` names another run's results folder, it reads the same benchmark back with `bench.from` and fails if the median is more than 20% slower. A difference under 0.1 ms never counts, since sub-millisecond benchmarks move more than that with noise alone. Each test retries twice before it fails.
-3. **CI's Benchmarks job** runs when a PR changes what the benchmarks measure (the `changes` job's `bench` output). It runs first on `main` as the PR would merge into it: the merge commit's first parent, checked out as a worktree with its own install. Then it runs on the merge commit with `BENCH_BASELINE` pointing at `main`'s results. "CI passed" needs it. Nightly, `main` runs alone, so a broken benchmark shows before a PR meets it. When `main` has no `bench/` yet, nothing is compared.
+2. **`pnpm bench` measures; it asserts nothing.** `measure()` (`bench/src/measure.ts`) writes each benchmark's result to `bench/results/<name>.json` and prints its median.
+3. **CI's Benchmarks job compares two commits on one runner, in interleaved rounds.**
+   - It runs when a PR changes what the benchmarks measure (the `changes` job's `bench` output), and "CI passed" needs it.
+   - The base is `main` as the PR would merge into it: the merge commit's first parent, checked out as a worktree. Each side is installed once.
+   - Then two rounds run: base, head, base, head.
+   - `tools/src/compare-bench.ts` fails a benchmark only when the head is **more than 20% slower in both rounds, and at its best** (each side's lowest median). A difference under 0.1 ms never counts: sub-millisecond benchmarks move more than that with noise alone. So one lucky-fast base run, or a drift between runs minutes apart, can't fail CI alone (coordinator's review, 7 Nov 2026).
+   - `bench/thresholds.json` gives a benchmark more room, with the spread that needed it.
+   - Nightly, and from "Run workflow", the base is the commit itself, so the job measures the runner's own spread.
+   - When the base has no `bench/` yet, the head runs once and nothing is compared.
 4. **The §10 budgets aren't asserted by the benchmarks.** Each prints its budget beside its median. The budgets are checked where §10 means them: the app's own end-to-end timings (`pnpm e2e:perf`), on the Windows and macOS reference machines (5.1's later parts).
 
 ## Consequences
 - A PR that makes the history, a commit, an export, the preview's build or Site Check more than 20% slower fails CI, whatever runner it lands on. A slowdown spread over several PRs, each under 20%, passes. The nightly run's printed medians show that drift.
-- The job takes two installs and two runs, about 5 minutes. It runs only when measured code changes.
+- The job takes two installs and four runs, about 10 minutes. It runs only when measured code changes.
+- SPREAD
 - A benchmark new in a PR has no baseline, so it can't fail until it is on `main`.
 - Results stay out of git (`bench/results/` is ignored).
 

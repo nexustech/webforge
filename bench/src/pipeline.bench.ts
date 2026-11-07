@@ -36,7 +36,7 @@ beforeAll(async () => {
   resources = await loadNodeResources();
 });
 
-describe(`export, ${PAGES} pages (§10)`, { retry: 2 }, () => {
+describe(`export, ${PAGES} pages (§10)`, () => {
   test("a full export, its images cached", async ({ bench }) => {
     // The images are encoded once, as the export worker's cache keeps them between exports.
     const imageCache = createMemoryImageCache(512 * 1024 * 1024);
@@ -52,7 +52,7 @@ describe(`export, ${PAGES} pages (§10)`, { retry: 2 }, () => {
   });
 });
 
-describe(`preview, ${PAGES} pages (§10)`, { retry: 2 }, () => {
+describe(`preview, ${PAGES} pages (§10)`, () => {
   // The preview's builder keeps its pages and stylesheet between builds, as the app's does.
   test("a page edited: its build for the preview", async ({ bench }) => {
     const pipeline = createPipeline(siteLibrary);
