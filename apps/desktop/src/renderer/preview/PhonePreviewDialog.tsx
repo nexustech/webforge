@@ -9,6 +9,7 @@ import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { PhoneAddress } from "../../shared/ipc/preview.js";
+import { HelpButton } from "../help/HelpButton.js";
 import { QrCode } from "./QrCode.js";
 
 /** What the phone dialog shows: closed, starting the preview, its address, or why there is none. */
@@ -33,6 +34,7 @@ export function PhonePreviewDialog({ state }: { readonly state: StoreApi<PhoneSt
       }}
     >
       <DialogContent className="sm:max-w-sm">
+        <HelpButton topic="phonePreview" className="absolute top-2.5 right-9" />
         <DialogHeader>
           <DialogTitle>{t("preview.phone.title")}</DialogTitle>
           <DialogDescription>

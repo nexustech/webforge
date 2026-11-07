@@ -29,6 +29,7 @@ import type {
   ListedDestination,
   PublishApi,
 } from "../../shared/ipc/publish.js";
+import { HelpButton } from "../help/HelpButton.js";
 import {
   connectionMessage,
   FileTransferDestinationDialog,
@@ -171,6 +172,7 @@ export function PublishDialog({
     <>
       <Dialog open={open} onOpenChange={(next) => (next ? undefined : onClose())}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-xl">
+          <HelpButton topic="publish" className="absolute top-2.5 right-9" />
           <DialogHeader>
             <DialogTitle>{t("publish.destinations.title")}</DialogTitle>
             <DialogDescription>{t("publish.destinations.description")}</DialogDescription>

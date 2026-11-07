@@ -117,6 +117,8 @@ export type GroupAction = {
 export type EditPanelProps = {
   /** The selected element's name, such as "Heading"; undefined when nothing is selected. */
   readonly heading?: string | undefined;
+  /** Drawn at the end of the heading's row: a **?** for the Edit panel (5.4b). */
+  readonly headingAside?: ReactNode;
   readonly fields: readonly EditPanelField[];
   onChange(name: string, value: unknown): void;
   /**
@@ -811,6 +813,7 @@ function DeviceRow({
  */
 export function EditPanel({
   heading,
+  headingAside,
   fields,
   onChange,
   onChangeOn,
@@ -928,7 +931,12 @@ export function EditPanel({
     <FieldRenderersProvider renderers={renderers}>
       <div className="flex h-full flex-col">
         {headingHidden ? null : (
-          <h2 className="truncate px-3 pt-2 text-sm font-semibold text-foreground">{heading}</h2>
+          <div className="flex items-center gap-1 px-3 pt-2">
+            <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+              {heading}
+            </h2>
+            {headingAside}
+          </div>
         )}
         <div className="px-3 pt-2">
           <input

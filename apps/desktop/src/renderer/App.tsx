@@ -17,7 +17,8 @@ import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
-import { HelpCommands } from "./help/HelpCommands.js";
+import { HelpProvider } from "./help/HelpButton.js";
+import { HelpCommands, openHelpWith } from "./help/HelpCommands.js";
 import { reportFailure } from "./log.js";
 import { SettingsHost } from "./settings/SettingsHost.js";
 import { AboutDialog } from "./shell/AboutDialog.js";
@@ -234,87 +235,93 @@ export function App({
 
   return (
     <CommandRegistryProvider registry={registry}>
-      <PanelRegistryProvider registry={panels}>
-        <ContextualToolbarsProvider registry={toolbars}>
-          <TooltipProvider>
-            <div className="flex h-full flex-col">
-              <TitleBar
-                siteName={siteName}
-                // On macOS the menus are the menu bar's (LF-13).
-                menuBar={isMac() ? api.app : undefined}
-                saveStatus={<AutosaveStatus session={session} loaded={loaded} api={api} />}
-                aiStatus={
-                  <AiAppsStatus mcp={api.mcp} onOpen={() => registry.run(COMMAND_IDS.aiApps)} />
-                }
-                undoSteps={
-                  <UndoStepsMenu
-                    state={session.history.state}
-                    undoTo={(entryId) => session.undoTo(entryId)}
-                  />
-                }
-                tools={
-                  <>
-                    <ModeToggle mode={mode} onModeChange={(next) => preferences.changeMode(next)} />
-                    <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                    <CommandButton
-                      commandId={COMMAND_IDS.toggleLeftPanels}
-                      icon={<PanelLeftIcon />}
-                      label={t("command.toggleLeftPanels")}
+      {/* The **?** buttons in its panels and dialogs open the Help window (5.4b). */}
+      <HelpProvider open={(target) => openHelpWith(api.help, target)}>
+        <PanelRegistryProvider registry={panels}>
+          <ContextualToolbarsProvider registry={toolbars}>
+            <TooltipProvider>
+              <div className="flex h-full flex-col">
+                <TitleBar
+                  siteName={siteName}
+                  // On macOS the menus are the menu bar's (LF-13).
+                  menuBar={isMac() ? api.app : undefined}
+                  saveStatus={<AutosaveStatus session={session} loaded={loaded} api={api} />}
+                  aiStatus={
+                    <AiAppsStatus mcp={api.mcp} onOpen={() => registry.run(COMMAND_IDS.aiApps)} />
+                  }
+                  undoSteps={
+                    <UndoStepsMenu
+                      state={session.history.state}
+                      undoTo={(entryId) => session.undoTo(entryId)}
                     />
-                    <CommandButton
-                      commandId={COMMAND_IDS.toggleDrawer}
-                      icon={<PanelBottomIcon />}
-                      label={t("command.toggleDrawer")}
-                    />
-                    <CommandButton
-                      commandId={COMMAND_IDS.toggleRightPanels}
-                      icon={<PanelRightIcon />}
-                      label={t("command.toggleRightPanels")}
-                    />
-                    <div className="mx-1 h-5 w-px bg-border" aria-hidden />
-                  </>
-                }
-              />
-              <main className="min-h-0 flex-1">
-                <ShellLayout
-                  layout={panelLayout}
-                  onLayoutChange={rememberLayout}
-                  editorLevel={editorLevel}
-                  center={
-                    <div className="flex h-full flex-col">
-                      <CanvasToolbarHost
-                        session={session}
-                        view={canvasView}
-                        preferences={preferences}
+                  }
+                  tools={
+                    <>
+                      <ModeToggle
+                        mode={mode}
+                        onModeChange={(next) => preferences.changeMode(next)}
                       />
-                      <div className="min-h-0 flex-1">
-                        <Editor
-                          session={session}
-                          api={api}
-                          areas={EDITOR_AREAS}
-                          {...(createEngine === undefined ? {} : { createEngine })}
-                          preferences={preferences}
-                          siteWide={siteWide}
-                          canvasView={canvasView}
-                          canvasPointer={canvasPointer}
-                        />
-                      </div>
-                    </div>
+                      <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                      <CommandButton
+                        commandId={COMMAND_IDS.toggleLeftPanels}
+                        icon={<PanelLeftIcon />}
+                        label={t("command.toggleLeftPanels")}
+                      />
+                      <CommandButton
+                        commandId={COMMAND_IDS.toggleDrawer}
+                        icon={<PanelBottomIcon />}
+                        label={t("command.toggleDrawer")}
+                      />
+                      <CommandButton
+                        commandId={COMMAND_IDS.toggleRightPanels}
+                        icon={<PanelRightIcon />}
+                        label={t("command.toggleRightPanels")}
+                      />
+                      <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+                    </>
                   }
                 />
-              </main>
-            </div>
-            <HelpCommands help={api.help} />
-            <AboutDialog info={info} />
-            <ShortcutSheet />
-            <SiteCommands project={api.project} templates={api.templates} />
-            <SettingsHost registry={settings} />
-            <WindowDialogs registry={windowDialogs} />
-            <SiteWideConfirmDialog confirm={siteWide} />
-            <Toaster theme={theme} />
-          </TooltipProvider>
-        </ContextualToolbarsProvider>
-      </PanelRegistryProvider>
+                <main className="min-h-0 flex-1">
+                  <ShellLayout
+                    layout={panelLayout}
+                    onLayoutChange={rememberLayout}
+                    editorLevel={editorLevel}
+                    center={
+                      <div className="flex h-full flex-col">
+                        <CanvasToolbarHost
+                          session={session}
+                          view={canvasView}
+                          preferences={preferences}
+                        />
+                        <div className="min-h-0 flex-1">
+                          <Editor
+                            session={session}
+                            api={api}
+                            areas={EDITOR_AREAS}
+                            {...(createEngine === undefined ? {} : { createEngine })}
+                            preferences={preferences}
+                            siteWide={siteWide}
+                            canvasView={canvasView}
+                            canvasPointer={canvasPointer}
+                          />
+                        </div>
+                      </div>
+                    }
+                  />
+                </main>
+              </div>
+              <HelpCommands help={api.help} />
+              <AboutDialog info={info} />
+              <ShortcutSheet />
+              <SiteCommands project={api.project} templates={api.templates} />
+              <SettingsHost registry={settings} />
+              <WindowDialogs registry={windowDialogs} />
+              <SiteWideConfirmDialog confirm={siteWide} />
+              <Toaster theme={theme} />
+            </TooltipProvider>
+          </ContextualToolbarsProvider>
+        </PanelRegistryProvider>
+      </HelpProvider>
     </CommandRegistryProvider>
   );
 }

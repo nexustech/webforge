@@ -70,3 +70,8 @@ Changes you make while viewing Tablet or Mobile can apply to that device only. S
 ## Help
 
 **Help › {appName} Help**, or F1, opens these help pages in a window of their own, beside the editor, so you can read and work at once. Choose a page from the contents on the left, or search them all. Links between pages stay in the Help window, and **Back** returns to the page before; a link to a website opens in your web browser. The pages come with {appName}, so they work without an internet connection.
+
+Help is also where you need it:
+- a small **?** beside the Edit panel's heading, at the top of each section of [Settings](settings.md) and [Site Settings](site-settings.md), in the Export, Publish, Page Settings and Preview on Phone dialogs, when {appName} asks about code from somewhere else, and on each check in [Site Check](site-check.md) opens the help for it;
+- **Help for This Element**, in the [right-click menu](editing-on-the-page.md#the-right-click-menu) on the page and in Layers, opens the help for the selected section or element;
+- the start screen's **Help** tab lists the pages to start with.

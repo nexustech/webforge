@@ -12,6 +12,7 @@ import type { SiteCodePiece } from "@webforge/model";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { CodeQuestion } from "../editor/code-trust.js";
+import { HelpButton } from "../help/HelpButton.js";
 
 /** Settings' Custom Code parts, as the prompt lists them. */
 const PART_KEYS = {
@@ -48,6 +49,7 @@ export function CodeTrustDialog({
       }}
     >
       <AlertDialogContent>
+        <HelpButton topic="codeTrust" className="absolute top-2.5 right-3" />
         <AlertDialogHeader>
           <AlertDialogTitle>{t("site.code.trust.title")}</AlertDialogTitle>
           <AlertDialogDescription>{t("site.code.trust.body")}</AlertDialogDescription>

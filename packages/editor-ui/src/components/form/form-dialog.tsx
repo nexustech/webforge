@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import type { ReactNode } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import {
@@ -30,6 +31,10 @@ export type FormDialogProps<V extends FormValues, Out> = {
   readonly initialGroup?: string;
   /** Wide, for a form with tabs (Site Settings); the dialogs' width otherwise. */
   readonly size?: "md" | "lg" | "xl";
+  /** Beside the close button: a **?** for the dialog (5.4b). */
+  readonly help?: ReactNode;
+  /** At the top of a group's tab: a **?** for that section (5.4b). */
+  readonly groupHelp?: (group: string) => ReactNode;
   /**
    * Saving: the checked value, and the groups whose fields changed, for the one undo step the
    * app records ("Changed Site Settings: Contact & hours"). The dialog doesn't close by itself.
@@ -48,6 +53,7 @@ export function FormDialog<V extends FormValues, Out>({
   open,
   size = "md",
   onCancel,
+  help,
   ...body
 }: FormDialogProps<V, Out>) {
   return (
@@ -69,6 +75,7 @@ export function FormDialog<V extends FormValues, Out>({
           size === "xl" && "sm:max-w-3xl",
         )}
       >
+        {help === undefined ? null : <div className="absolute top-2.5 right-9">{help}</div>}
         <FormDialogBody {...body} onCancel={onCancel} />
       </DialogContent>
     </Dialog>
@@ -83,9 +90,10 @@ function FormDialogBody<V extends FormValues, Out>({
   initial,
   groupsLabel,
   initialGroup,
+  groupHelp,
   onSave,
   onCancel,
-}: Omit<FormDialogProps<V, Out>, "open" | "size">) {
+}: Omit<FormDialogProps<V, Out>, "open" | "size" | "help">) {
   const form = useForm(spec, initial);
   return (
     <form
@@ -106,6 +114,7 @@ function FormDialogBody<V extends FormValues, Out>({
         form={form}
         {...(groupsLabel === undefined ? {} : { groupsLabel })}
         {...(initialGroup === undefined ? {} : { initialGroup })}
+        {...(groupHelp === undefined ? {} : { groupHelp })}
       />
       {/* After a Save that couldn't: why nothing happened, read out at once. */}
       {form.attempts > 0 && form.issues.length > 0 ? (

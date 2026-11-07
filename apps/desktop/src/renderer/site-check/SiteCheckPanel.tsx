@@ -3,6 +3,7 @@ import { isMessageKey, plural, t } from "@webforge/i18n";
 import type { CheckLevel, CheckReport, Finding, RuleResult } from "@webforge/site-check";
 import { ExternalLinkIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { HelpButton, type HelpTopic } from "../help/HelpButton.js";
 
 /** A finding as the panel writes it: where it is, and anything else worth saying. */
 type DescribedFinding = { readonly place: string; readonly detail?: string | undefined };
@@ -43,6 +44,16 @@ const DOT: Readonly<Record<Status, string>> = {
 function ruleText(key: string, count?: number): string {
   const counted = count === undefined ? key : `${key}.${count === 1 ? "one" : "other"}`;
   return isMessageKey(counted) ? t(counted, count === undefined ? undefined : { count }) : key;
+}
+
+/** The section of the Site Check help page that explains `result`'s rule (5.4b). */
+function helpTopicOf(result: RuleResult): HelpTopic {
+  if (result.group === "found") return "siteCheck.found";
+  return result.level === "must"
+    ? "siteCheck.must"
+    : result.level === "should"
+      ? "siteCheck.should"
+      : "siteCheck.tip";
 }
 
 /** "2 must fix · 1 should fix · 3 tips", or the all-clear. */
@@ -144,6 +155,11 @@ function RuleRow({
           </span>
         ) : null}
         <span className="text-muted-foreground">{verdict}</span>
+        <HelpButton
+          topic={helpTopicOf(result)}
+          about={ruleText(name)}
+          className="ml-auto size-5 self-center"
+        />
       </div>
       {count === 0 ? null : (
         <ul>
