@@ -1,6 +1,7 @@
 import type { ReadonlyStore } from "@webforge/history";
 import { SITE_CHECK_IGNORED_MAX, type SiteDoc } from "@webforge/model";
 import {
+  type CheckInput,
   type CheckReport,
   type CheckRule,
   type Finding,
@@ -61,6 +62,13 @@ type SiteCheckOptions = {
    * they allow nothing. Left out, they never do.
    */
   readonly allowListConfirmed?: ReadonlyStore<boolean>;
+  /**
+   * The year the site was last published in (F-CM-8), `undefined` when it hasn't been. Left out,
+   * Site Check doesn't know.
+   */
+  readonly publishedYear?: ReadonlyStore<number | undefined>;
+  /** This year; the clock's by default. */
+  readonly thisYear?: () => number;
 };
 
 /**
@@ -72,13 +80,23 @@ type SiteCheckOptions = {
  */
 export function createSiteCheck(
   document: ReadonlyStore<SiteDoc>,
-  { ignored: initial, saveIgnored, allowListConfirmed }: SiteCheckOptions,
+  {
+    ignored: initial,
+    saveIgnored,
+    allowListConfirmed,
+    publishedYear,
+    thisYear = () => new Date().getFullYear(),
+  }: SiteCheckOptions,
 ): SiteCheck {
-  const inputOf = (site: SiteDoc) => ({
-    site,
-    catalogue: CATALOGUE,
-    allowListConfirmed: allowListConfirmed?.getState() ?? false,
-  });
+  const inputOf = (site: SiteDoc): CheckInput => {
+    const year = publishedYear?.getState();
+    return {
+      site,
+      catalogue: CATALOGUE,
+      allowListConfirmed: allowListConfirmed?.getState() ?? false,
+      ...(year === undefined ? {} : { published: { year, thisYear: thisYear() } }),
+    };
+  };
   const runAll = (site: SiteDoc) =>
     new Map(SITE_CHECK_RULES.map((rule) => [rule, rule.check(inputOf(site))]));
   /** What each rule found in the latest check, before anything ignored is left out. */
@@ -132,9 +150,12 @@ export function createSiteCheck(
   const stopDocument = document.subscribe(later);
   // Confirming the allowed addresses changes what they allow (#649).
   const stopConfirmed = allowListConfirmed?.subscribe(later);
+  // A publish brings the year the site shows up to date (F-CM-8).
+  const stopPublished = publishedYear?.subscribe(later);
   const stop = () => {
     stopDocument();
     stopConfirmed?.();
+    stopPublished?.();
   };
   const changeIgnored = (ignored: ReadonlySet<string>) => {
     show(ignored);

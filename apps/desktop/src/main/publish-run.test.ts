@@ -187,6 +187,8 @@ describe("Publish (4.5, ADR 0018)", () => {
     expect(store.readVersion(version?.id ?? "")?.map(({ id, kind }) => ({ id, kind }))).toEqual(
       manifest.map(({ id, kind }) => ({ id, kind })),
     );
+    // When it went live, kept apart from the versions for Site Check (F-CM-8).
+    expect(store.readLastPublishedAt()).toBe("2026-11-01T14:02:00.000Z");
   });
 
   it("has the window save what the person sees before it reads the site (A4)", async () => {
@@ -233,6 +235,10 @@ describe("Publish (4.5, ADR 0018)", () => {
       expect(heldDuring).toBe(1);
       expect(holdManifest).toHaveBeenCalledWith(store.readManifest());
       expect(held.size).toBe(0);
+      // Only a publish that went live is recorded as one (F-CM-8).
+      expect(store.readLastPublishedAt()).toBe(
+        end.type === "published" ? "2026-11-01T14:02:00.000Z" : undefined,
+      );
     },
   );
 
@@ -306,6 +312,8 @@ describe("Publish (4.5, ADR 0018)", () => {
     const { store, publish } = handlers({ saveFails: true });
     expect(await publish()).toMatchObject({ status: "published", versionSaved: false });
     expect(store.listVersions()).toEqual([]);
+    // It went live all the same.
+    expect(store.readLastPublishedAt()).toBe("2026-11-01T14:02:00.000Z");
   });
 
   it("opens only where a publish of its own went live (Open, 4.5)", async () => {

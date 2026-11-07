@@ -21,6 +21,22 @@ import type { PublishSecrets } from "./publish-secrets.js";
 import type { SiteFonts } from "./site-fonts.js";
 import type { SiteStore } from "./site-store.js";
 
+/**
+ * Remembers in the site's file that it went live `at` (4.5). The publish has happened whatever
+ * becomes of this, so a failure is logged, never reported as the publish's.
+ */
+async function recordLive(site: Pick<SiteStore, "withStore">, at: Date): Promise<void> {
+  try {
+    await site.withStore(
+      "shared",
+      (store) => store.writeLastPublishedAt(at.toISOString()),
+      () => undefined,
+    );
+  } catch (error) {
+    logFailure("Webforge could not record when the site was published", error);
+  }
+}
+
 /** What the publish calls reach outside themselves; fakes in tests. */
 export type PublishRunDeps = {
   /** The open site as opening `sessionId` reaches it (A13): its file, its Media. */
@@ -176,9 +192,12 @@ export function registerPublishRun(
         if (outcome.type === "cancelled") return { status: "cancelled" };
         if (outcome.type === "failed") return failedResult(outcome);
 
-        // 4. Live: the version it built, from the manifest read with it. Like every automatic
-        // version it has no name of its own: the list names it by its reason and time.
+        // 4. Live: when, kept apart from the versions, so the year Site Check says the site shows
+        // (F-CM-8) survives deleting one. Then the version it built, from the manifest read with
+        // it. Like every automatic version it has no name of its own: the list names it by its
+        // reason and time.
         const at = now();
+        await recordLive(site, at);
         const version = await site.saveVersion({
           name: "",
           reason: "on-publish",

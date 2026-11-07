@@ -15,7 +15,7 @@ import {
   type PlacedValue,
   plainText,
 } from "../fields.js";
-import type { CheckRule, Finding } from "../types.js";
+import type { CheckRule, Finding, FindingPlace } from "../types.js";
 
 /**
  * Links to a page, a section or a document that isn't there any more (F-ED-18): *Should fix*, and
@@ -175,6 +175,64 @@ const linksToExample = (html: string) =>
   html.includes("href=") &&
   [...html.matchAll(/href="([^"]*)"/g)].some(([, href = ""]) => EXAMPLE_DOMAIN.test(href));
 
+/** `{year}`, as the export fills it in (`@webforge/pipeline`'s `withYear`): any case. */
+const YEAR_TOKEN = /\{year\}/i;
+
+/**
+ * A `<script>` or `<style>` element, which the export leaves as written: the same pattern as
+ * `withYear`'s in `@webforge/pipeline` (`site-files.ts`), which this package can't import. Keep
+ * them alike.
+ */
+const SCRIPT_OR_STYLE = /<(script|style)\b[\s\S]*?<\/\1\s*>/gi;
+
+/** Whether the export fills in `{year}` in `html`: anywhere but in its scripts and styles. */
+const showsYear = (html: string) => YEAR_TOKEN.test(html.replace(SCRIPT_OR_STYLE, ""));
+
+/** The parts of Settings' Custom Code that go into every page's HTML. */
+const PAGE_CODE_PARTS = ["head", "bodyEnd"] as const;
+
+/**
+ * The year a published site shows is out of date (F-CM-8): the export fills `{year}` in with the
+ * year it's built in, anywhere in a page's HTML but its scripts and styles, and the site was last
+ * published in an earlier year. A tip to publish again, at the first place that has it: an
+ * element's text or Custom Code, then Settings' Custom Code, then a page's title or description.
+ * Ignoring it lasts until the next year.
+ */
+export const outdatedYearRule: CheckRule = {
+  id: "outdatedYear",
+  level: "tip",
+  check: (input) => {
+    const { published, site } = input;
+    if (published === undefined || published.year >= published.thisYear) return [];
+    const using: PlacedValue[] = [];
+    eachFieldValue(input, ["text", "richtext", "code"], (placed) => {
+      if (typeof placed.value === "string" && showsYear(placed.value)) using.push(placed);
+    });
+    const [element] = using;
+    const part = PAGE_CODE_PARTS.find((each) => showsYear(site.code?.[each] ?? ""));
+    const page = Object.values(site.pages).find(
+      ({ title, settings }) =>
+        YEAR_TOKEN.test(title) || YEAR_TOKEN.test(settings.description ?? ""),
+    );
+    const place: FindingPlace | undefined =
+      element !== undefined
+        ? elementPlace(element)
+        : part !== undefined
+          ? { kind: "code", part }
+          : page !== undefined
+            ? { kind: "page", pageId: page.id }
+            : undefined;
+    return place === undefined
+      ? []
+      : [
+          {
+            key: `${published.year}/${published.thisYear}`,
+            place,
+            values: { publishedYear: published.year },
+          },
+        ];
+  },
+};
 /**
  * Placeholder text and links (X5): a starter text's instruction, a default naming its field, dummy
  * Latin, or a link to `example.com`. *Should fix*, and *Must fix* to publish; *Ignore* covers a false alarm.
