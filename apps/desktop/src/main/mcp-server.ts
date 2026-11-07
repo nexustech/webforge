@@ -3,6 +3,8 @@ import {
   CallToolRequestSchema,
   type CallToolResult,
   ErrorCode,
+  GetPromptRequestSchema,
+  ListPromptsRequestSchema,
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
   McpError,
@@ -15,6 +17,7 @@ import {
   UNTRUSTED_SITE_TEXT,
 } from "@webforge/commands";
 import { type AiRequest, type AiResponse, APP_TOOLS, REQUEST_MEDIA } from "../shared/ipc/ai.js";
+import { BUILD_SITE_PROMPT, buildSitePrompt } from "./mcp-prompts.js";
 import { MAIN_TOOLS } from "./site-brief.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
@@ -77,8 +80,9 @@ function toolResult(response: AiResponse): CallToolResult {
 
 /**
  * The MCP server for one connection of `app` (4.9, AIA-4): {@link TOOLS} as its tools, each call
- * asked of the open site through `ask`, a command on `app`'s behalf; and the catalogue as its one
- * resource (AIB-1), which is Webforge's, not the site's, so needs no site open. It holds no state of its own,
+ * asked of the open site through `ask`, a command on `app`'s behalf; the catalogue as its one
+ * resource (AIB-1), which is Webforge's, not the site's, so needs no site open; and *Build a site
+ * from a description* as its one prompt (AIB-8). It holds no state of its own,
  * so any transport can carry it: the loopback HTTP one for AI apps (ADR 0021), or an in-memory one
  * for an in-app assistant. Nothing of a call or its answer is logged, the SDK's errors included.
  */
@@ -88,7 +92,7 @@ export function createMcpServer(
   ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
   progressEveryMs = PROGRESS_EVERY_MS,
 ): Server {
-  const server = new Server(info, { capabilities: { tools: {}, resources: {} } });
+  const server = new Server(info, { capabilities: { tools: {}, resources: {}, prompts: {} } });
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
   server.setRequestHandler(ListToolsRequestSchema, () => ({
@@ -111,6 +115,14 @@ export function createMcpServer(
         { uri: CATALOGUE_RESOURCE.uri, mimeType: CATALOGUE_RESOURCE.mimeType, text: catalogueText },
       ],
     };
+  });
+  // The one prompt (4.12b, AIB-8): the order that builds a site, in the app's prompt menu.
+  server.setRequestHandler(ListPromptsRequestSchema, () => ({ prompts: [BUILD_SITE_PROMPT] }));
+  server.setRequestHandler(GetPromptRequestSchema, ({ params }) => {
+    if (params.name !== BUILD_SITE_PROMPT.name) {
+      throw new McpError(ErrorCode.InvalidParams, "There is no such prompt.");
+    }
+    return buildSitePrompt(info.name, params.arguments?.description);
   });
   server.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
     const tool = TOOLS.find((each) => each.name === params.name);

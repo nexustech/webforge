@@ -61,6 +61,15 @@ Nothing is made until you click **Create site**. The site you have open is saved
 
 An app can't start a new site while you're in [Content mode](the-editor.md#design-and-content-mode), or while you have **Start a site** or **New Site** open yourself.
 
+### Build a site from a description
+
+{appName} offers apps a prompt, **Build a site from a description**, which Claude Desktop lists with its other prompts. Choose it, describe your business and the site you want, and the app works in this order:
+1. it starts the site with **Start a site**, for you to check and create;
+2. it makes the pages, sections, text and colours as one set of changes, which you allow once (see [Many changes at once](#many-changes-at-once));
+3. it runs Site Check, and asks you for your own pictures to replace the template's;
+4. it opens the [Preview](preview.md) in your browser;
+5. it tells you what's still yours to do: your photos, where the contact form sends messages, and publishing.
+
 ## Pictures
 
 An app never adds a picture itself, and {appName} downloads nothing. To use your own photos, the app asks you: {appName} shows ***app* asks you to add pictures or files**, with the app's reason, such as "Photos of your workshop and team".
