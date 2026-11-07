@@ -29,6 +29,8 @@ export type AiAppsDialogProps = {
   readonly mcp: McpApi;
   /** Copies text, as the window's clipboard does. */
   readonly copyText: (text: string) => Promise<unknown>;
+  /** Copies the key: out of clipboard history, and cleared from the clipboard in a minute. */
+  readonly copySecret: (secret: string) => Promise<unknown>;
   /** Says what went wrong, in the window's toasts. */
   readonly notify: (message: string) => void;
   readonly onClose: () => void;
@@ -52,7 +54,14 @@ type Shown = { readonly name: string; readonly key: string; readonly address: st
  * now, *Add AI app* and *Remove*. Each acts at once: removing an app cuts it off. A new app's key
  * is shown once, to copy into the app, and never again.
  */
-export function AiAppsDialog({ open, mcp, copyText, notify, onClose }: AiAppsDialogProps) {
+export function AiAppsDialog({
+  open,
+  mcp,
+  copyText,
+  copySecret,
+  notify,
+  onClose,
+}: AiAppsDialogProps) {
   const [status, setStatus] = useState<McpStatus | null>(null);
   const [adding, setAdding] = useState<string | null>(null);
   const [addError, setAddError] = useState<string | undefined>(undefined);
@@ -94,7 +103,11 @@ export function AiAppsDialog({ open, mcp, copyText, notify, onClose }: AiAppsDia
   };
 
   const copy = (what: "key" | "address", text: string) => {
-    void copyText(text).then(() => setCopied(what));
+    const copying = what === "key" ? copySecret(text) : copyText(text);
+    void copying.then(
+      () => setCopied(what),
+      () => notify(t("aiApps.failed")),
+    );
   };
 
   const closeShown = () => {
@@ -140,6 +153,10 @@ export function AiAppsDialog({ open, mcp, copyText, notify, onClose }: AiAppsDia
                     {copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
                   </Button>
                 </dl>
+                {/* Empty, it takes no room: the screenshots of a key not yet copied stay as they were. */}
+                <p role="status" className={copied === "key" ? "mt-2 text-sm" : "text-sm"}>
+                  {copied === "key" ? t("aiApps.key.cleared") : null}
+                </p>
                 <p className="mt-2 text-sm text-muted-foreground">{t("aiApps.key.how")}</p>
                 <Button className="mt-2" onClick={closeShown}>
                   {t("aiApps.key.done")}

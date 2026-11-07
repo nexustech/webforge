@@ -38,6 +38,7 @@ export const aiApps = {
   "aiApps.key.copyAddress": "Copy the address",
   "aiApps.key.copyKey": "Copy the key",
   "aiApps.key.copied": "Copied",
+  "aiApps.key.cleared": "The key is cleared from the clipboard in a minute, once you've pasted it.",
   "aiApps.key.how":
     "In the app's settings for MCP servers, add one at this address, with the header Authorization: Bearer followed by the key.",
   "aiApps.key.done": "Done",

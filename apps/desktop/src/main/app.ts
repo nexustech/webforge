@@ -64,6 +64,7 @@ import { createKeyFiles, registerPublishHandlers, testSignIn } from "./publish-i
 import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import {
   createSecureWebPreferences,
   hardenSession,
@@ -291,6 +292,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     systemClipboard(electron),
     join(app.getPath("userData"), "clipboard"),
   );
+  // An AI app's key, copied out of clipboard history and cleared in a minute (4.9).
+  const secretClipboard = createSecretClipboard(
+    electronSecretClipboard(electron, process.platform),
+  );
 
   // The templates New Site offers (2.14a), outside app.asar.
   const templates = createTemplatesFeature(
@@ -512,8 +517,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         app.isPackaged,
       ),
     );
-    registerClipboardHandlers(ipcMain, isTrustedSender, elementClipboard, projectSession, (text) =>
-      electron.clipboard.writeText(text),
+    registerClipboardHandlers(
+      ipcMain,
+      isTrustedSender,
+      elementClipboard,
+      projectSession,
+      (text) => electron.clipboard.writeText(text),
+      (secret) => secretClipboard.copy(secret),
     );
     crashReports.registerHandlers(ipcMain, isTrustedSender);
     registerFailureLog(ipcMain, isTrustedSender);
@@ -622,6 +632,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     void closeThenExit({
       // The MCP server first: no AI app's request reaches a site that is closing.
       close: async () => {
+        // No AI app's key stays on the clipboard after Webforge has quit (4.9).
+        await secretClipboard
+          .clearIfHeld()
+          .catch((error: unknown) => logFailure("secret clipboard clear", error));
         await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
         await projectSession.close();
       },

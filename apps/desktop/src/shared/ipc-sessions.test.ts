@@ -53,6 +53,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "canvas:class-css": "a class's CSS",
   "canvas:item-html": "an element's HTML, from what the renderer sends",
   "clipboard:copy-text": "plain text to the system's clipboard",
+  "clipboard:copy-secret": "an AI app's key to the system's clipboard, cleared in a minute",
   "fonts:list": "the app's font catalogue",
   "fonts:browse": "the app's font catalogue",
   "fonts:download": "a font for the app, not the site",

@@ -39,6 +39,7 @@ const meta = {
     open: true,
     mcp: mcpWith(ON),
     copyText: async () => null,
+    copySecret: async () => null,
     notify: () => undefined,
     onClose: () => undefined,
   },

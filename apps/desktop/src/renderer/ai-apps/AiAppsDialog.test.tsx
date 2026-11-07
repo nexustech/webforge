@@ -63,18 +63,20 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
 function setUp(start: Partial<McpStatus> = {}) {
   const fake = fakeMcp(start);
   const copyText = vi.fn(async () => null);
+  const copySecret = vi.fn(async () => null);
   const notify = vi.fn();
   render(
     <AiAppsDialog
       open
       mcp={fake.mcp}
       copyText={copyText}
+      copySecret={copySecret}
       notify={notify}
       onClose={() => undefined}
     />,
   );
   const dialog = () => within(screen.getByRole("dialog", { name: "AI apps" }));
-  return { ...fake, copyText, notify, dialog, user: userEvent.setup({ delay: null }) };
+  return { ...fake, copyText, copySecret, notify, dialog, user: userEvent.setup({ delay: null }) };
 }
 
 describe("AI apps (4.9)", () => {
@@ -93,7 +95,7 @@ describe("AI apps (4.9)", () => {
   });
 
   it("adds an app, showing its key once to copy, with the address to give it", async () => {
-    const { dialog, mcp, copyText, user } = setUp();
+    const { dialog, mcp, copyText, copySecret, user } = setUp();
     await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
     expect(
       dialog().getByText("The app will read and change the sites you open in Webforge."),
@@ -106,8 +108,13 @@ describe("AI apps (4.9)", () => {
     expect(dialog().getByText(ADDRESS)).toBeTruthy();
     expect(dialog().getByText(/You won't see it again/)).toBeTruthy();
     await user.click(dialog().getByRole("button", { name: "Copy the key" }));
-    expect(copyText).toHaveBeenCalledWith(KEY);
+    // The key as a secret, out of clipboard history and cleared in a minute; never as plain text.
+    expect(copySecret).toHaveBeenCalledWith(KEY);
+    expect(copyText).not.toHaveBeenCalled();
     expect(dialog().getByRole("button", { name: "Copied" })).toBeTruthy();
+    expect(dialog().getByRole("status").textContent).toMatch(/cleared from the clipboard/);
+    await user.click(dialog().getByRole("button", { name: "Copy the address" }));
+    expect(copyText).toHaveBeenCalledWith(ADDRESS);
 
     // Done: the key is gone, for good.
     await user.click(dialog().getByRole("button", { name: "Done" }));

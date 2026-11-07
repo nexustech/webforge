@@ -24,6 +24,7 @@ export const aiAppsArea: Area<WindowContext> = {
         open,
         mcp: api.mcp,
         copyText: (text) => api.clipboard.copyText(text),
+        copySecret: (secret) => api.clipboard.copySecret(secret),
         notify: (message) => toast.error(message),
         onClose: close,
       });
