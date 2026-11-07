@@ -15,7 +15,7 @@ import {
 } from "@webforge/model";
 import { z } from "zod";
 import "../shell/form-messages.js";
-import { HelpButton } from "../help/HelpButton.js";
+import { HelpButton } from "../help/index.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
 import { pagePreview, SearchResultCard, ShareCard, thumbnailUrl } from "./page-preview.js";
 

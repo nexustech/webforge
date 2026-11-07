@@ -15,7 +15,7 @@ import type { HelpApi } from "../../shared/ipc/help.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
-import { HelpCommands } from "../help/HelpCommands.js";
+import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
 import {

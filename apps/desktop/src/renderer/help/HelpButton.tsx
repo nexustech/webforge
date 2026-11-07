@@ -13,7 +13,7 @@ import HELP_LINKS from "./help-links.json";
 export type HelpTopic = keyof typeof HELP_LINKS;
 
 /** Where `topic`'s **?** opens Help. */
-export const helpLinkOf = (topic: HelpTopic): HelpTarget => HELP_LINKS[topic];
+const helpLinkOf = (topic: HelpTopic): HelpTarget => HELP_LINKS[topic];
 
 /** The **?** topic of a Settings section, by its id in the dialog (`site:general`), if it has one. */
 export function settingsHelpTopic(group: string): HelpTopic | undefined {

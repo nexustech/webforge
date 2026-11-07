@@ -12,7 +12,7 @@ import type { SiteCodePiece } from "@webforge/model";
 import { useStore } from "zustand";
 import type { StoreApi } from "zustand/vanilla";
 import type { CodeQuestion } from "../editor/code-trust.js";
-import { HelpButton } from "../help/HelpButton.js";
+import { HelpButton } from "../help/index.js";
 
 /** Settings' Custom Code parts, as the prompt lists them. */
 const PART_KEYS = {

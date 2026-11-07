@@ -29,7 +29,7 @@ import type {
   ListedDestination,
   PublishApi,
 } from "../../shared/ipc/publish.js";
-import { HelpButton } from "../help/HelpButton.js";
+import { HelpButton } from "../help/index.js";
 import {
   connectionMessage,
   FileTransferDestinationDialog,

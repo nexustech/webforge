@@ -3,7 +3,7 @@ import { isMessageKey, plural, t } from "@webforge/i18n";
 import type { CheckLevel, CheckReport, Finding, RuleResult } from "@webforge/site-check";
 import { ExternalLinkIcon } from "lucide-react";
 import type { ReactNode } from "react";
-import { HelpButton, type HelpTopic } from "../help/HelpButton.js";
+import { HelpButton, type HelpTopic } from "../help/index.js";
 
 /** A finding as the panel writes it: where it is, and anything else worth saying. */
 type DescribedFinding = { readonly place: string; readonly detail?: string | undefined };

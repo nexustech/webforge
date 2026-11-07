@@ -9,7 +9,7 @@ import { t } from "@webforge/i18n";
 import { useSyncExternalStore } from "react";
 import type { StoreApi } from "zustand/vanilla";
 import type { PhoneAddress } from "../../shared/ipc/preview.js";
-import { HelpButton } from "../help/HelpButton.js";
+import { HelpButton } from "../help/index.js";
 import { QrCode } from "./QrCode.js";
 
 /** What the phone dialog shows: closed, starting the preview, its address, or why there is none. */

@@ -7,7 +7,7 @@ import type { Area, EditorContext } from "../editor/areas.js";
 import { EditPanelHost, type EditPanelHostProps } from "../editor/EditPanelHost.js";
 import { type ItemCssServices, itemCssThrough } from "../editor/ItemCssView.js";
 import { fieldRenderers } from "../fields/index.js";
-import { HelpButton } from "../help/HelpButton.js";
+import { HelpButton } from "../help/index.js";
 import { useCommand, useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { type PreferencesStore, usePreferences } from "../shell/preferences-store.js";

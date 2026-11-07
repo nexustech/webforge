@@ -20,7 +20,7 @@ import { t } from "@webforge/i18n";
 import { useState, useSyncExternalStore } from "react";
 import { z } from "zod";
 import type { ExportChoices } from "../../shared/ipc/site.js";
-import { HelpButton } from "../help/HelpButton.js";
+import { HelpButton } from "../help/index.js";
 import type { ExportDialogs as Dialogs, ExportReport } from "./export-dialogs.js";
 
 type OptionValues = {
