@@ -6,6 +6,7 @@ import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PublishJob, PublishOutcome } from "../shared/export-worker-protocol.js";
 import type { ExportRunner } from "./export-worker-client.js";
+import { type ClosableWindow, createFlushOnClose } from "./flush-on-close.js";
 import { type PublishRunDeps, registerPublishRun } from "./publish-run.js";
 import type { SiteStore } from "./site-store.js";
 import { saveVersion } from "./site-versions.js";
@@ -60,12 +61,15 @@ function handlers({
   signedIn = true,
   siteOpen = true,
   saveFails = false,
+  flushWith,
 }: {
   readonly site?: SiteDoc;
   readonly outcome?: (job: PublishJob, signal: AbortSignal | undefined) => Promise<PublishOutcome>;
   readonly signedIn?: boolean;
   readonly siteOpen?: boolean;
   readonly saveFails?: boolean;
+  /** How the window's flush goes; at once by default. */
+  readonly flushWith?: () => Promise<void>;
 } = {}) {
   const store = ProjectStore.create(join(tempDir(), "site.wforge"), { name: "Rosa's" });
   open.push(store);
@@ -83,6 +87,7 @@ function handlers({
   const order: string[] = [];
   const flush = vi.fn(async () => {
     order.push("flush");
+    await flushWith?.();
   });
   const siteStore: Pick<SiteStore, "withStore"> = {
     withStore: async (_kind, work, none) => {
@@ -178,6 +183,25 @@ describe("Publish (4.5, ADR 0018)", () => {
   it("has the window save what the person sees before it reads the site (A4)", async () => {
     const { order, publish } = handlers();
     await publish();
+    expect(order.slice(0, 2)).toEqual(["flush", "read"]);
+  });
+
+  it("reads the site anyway once a window that doesn't answer has had the close path's time", async () => {
+    // The close path's own request, with a window that never says it has saved: the flush is
+    // asked for before the gate is taken (autosave commits through it), and never blocks for ever.
+    const flushOnClose = createFlushOnClose({ handle: () => undefined }, () => true, {
+      timeoutMs: 20,
+    });
+    const silent = {
+      on: vi.fn(),
+      close: vi.fn(),
+      isDestroyed: () => false,
+      webContents: { send: vi.fn(), isCrashed: () => false, on: vi.fn() },
+    } satisfies ClosableWindow;
+    const { publish, order } = handlers({ flushWith: () => flushOnClose.requestFlush(silent) });
+
+    expect(await publish()).toMatchObject({ status: "published" });
+    expect(silent.webContents.send).toHaveBeenCalledWith("app:flush", expect.any(Number));
     expect(order.slice(0, 2)).toEqual(["flush", "read"]);
   });
 

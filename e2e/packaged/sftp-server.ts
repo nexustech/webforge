@@ -7,12 +7,12 @@ import {
   openSync,
   readSync,
   renameSync,
-  rmSync,
   type Stats,
   statSync,
   unlinkSync,
   writeSync,
 } from "node:fs";
+import { rm } from "node:fs/promises";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join, normalize, sep } from "node:path";
@@ -157,7 +157,7 @@ export async function startSftpServer(options: { user: string; password: string 
     site: join(root, "site"),
     async stop() {
       await new Promise<void>((resolve) => server.close(() => resolve()));
-      rmSync(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+      await rm(root, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
     },
   };
 }

@@ -1,5 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import type { PublishDestination } from "@webforge/model";
 import { createElement } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
@@ -38,6 +39,14 @@ export const publishArea: Area<WindowContext> = {
     };
     // One publish at a time: another waits for none, it's simply not started.
     let publishing = false;
+    const startPublish = (destination: PublishDestination) => {
+      if (publishing) return;
+      publishing = true;
+      close();
+      void publishTo(flow, destination).finally(() => {
+        publishing = false;
+      });
+    };
 
     function Publish() {
       const { open } = useStore(opened);
@@ -49,14 +58,7 @@ export const publishArea: Area<WindowContext> = {
         onSaved: (destination) => {
           fillWebAddress(session, destination);
         },
-        onPublish: (destination) => {
-          if (publishing) return;
-          publishing = true;
-          close();
-          void publishTo(flow, destination).finally(() => {
-            publishing = false;
-          });
-        },
+        onPublish: startPublish,
         onClose: close,
       });
     }

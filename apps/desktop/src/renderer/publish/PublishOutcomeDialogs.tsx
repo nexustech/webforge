@@ -43,18 +43,22 @@ export function createPublishOutcomes(): PublishOutcomes {
   return {
     state,
     askReplace: (destination) =>
-      new Promise((resolve) =>
+      new Promise((resolve) => {
+        // Answered once: Replace It closes the dialog too, which would answer again.
+        let answered = false;
         state.setState({
           shown: {
             kind: "replace",
             destination,
             answer: (replace) => {
+              if (answered) return;
+              answered = true;
               state.setState({ shown: null });
               resolve(replace);
             },
           },
-        }),
-      ),
+        });
+      }),
     showLive: (live) => state.setState({ shown: { kind: "live", live } }),
   };
 }
