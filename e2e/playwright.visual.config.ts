@@ -21,10 +21,16 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: Boolean(process.env.CI),
   retries: 0,
-  timeout: 30_000,
+  // The slowest stories and thumbnails take 4–5 s on CI's runners, but up to 18 s run alone in a
+  // local `pnpm visual:docker`, and over 30 s in a full one, with six workers. At 30 s, whichever
+  // was unluckiest timed out (#754). A minute still fails a story that hangs.
+  timeout: 60_000,
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "list",
   snapshotPathTemplate: "{testDir}/__screenshots__/{arg}{ext}",
   expect: {
+    // Likewise, a tall page's full-page screenshot, taken until two in a row match, took over the
+    // default 5 s under a full local run's load (Themes › Atelier, #754).
+    timeout: 15_000,
     toHaveScreenshot: { animations: "disabled", caret: "hide", ...SCREENSHOT_TOLERANCE },
   },
   use: {
