@@ -17,6 +17,7 @@ import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
+import type { PublishRequests } from "./publish-requests.js";
 
 /**
  * Theme Studio's previews of each kind (3.12): `type` with its defaults, in the site's theme or in
@@ -92,6 +93,8 @@ export type WindowContext = AreaContext & {
    * its versions record it when it opened, then each publish from this window (4.5).
    */
   readonly publishedYear: StoreApi<number | undefined>;
+  /** Version History's requests to republish a version, and Publish's word that one went live. */
+  readonly publishing: PublishRequests;
   /**
    * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
    * with its look; none without a CSS compiler.

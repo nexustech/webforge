@@ -15,6 +15,7 @@ import { createCanvasPointer } from "./editor/canvas-pointer.js";
 import { createCodeTrust } from "./editor/code-trust.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
+import { createPublishRequests } from "./editor/publish-requests.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { reportFailure } from "./log.js";
@@ -176,6 +177,7 @@ export function App({
         },
       },
       publishedYear: createStore<number | undefined>(() => yearOf(uiState?.lastPublishedAt)),
+      publishing: createPublishRequests(),
     };
   });
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);

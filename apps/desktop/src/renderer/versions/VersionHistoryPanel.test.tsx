@@ -31,6 +31,7 @@ function draw(props: Partial<VersionHistoryPanelProps> = {}) {
   const actions = {
     preview: vi.fn(async () => true),
     restore: vi.fn(async () => true),
+    republish: vi.fn(),
     remove: vi.fn(async () => true),
     openAsNewSite: vi.fn(async () => undefined),
     cleanUp: vi.fn(async () => true),
@@ -120,6 +121,28 @@ describe("the Version History panel (4.6)", () => {
     expect(onSave).toHaveBeenCalledOnce();
   });
 
+  it("says where and when each version was last published, and republishes one (4.6b)", async () => {
+    const published: VersionSummary = {
+      ...daily,
+      published: { at: "2026-11-07T09:15:00.000Z", to: "Rosa's host" },
+    };
+    const gone: VersionSummary = { ...mine, published: { at: "2026-11-02T18:00:00.000Z" } };
+    const { actions } = draw({
+      state: { status: "ready", versions: [gone, published], bytes: 1 },
+    });
+
+    const items = within(screen.getByRole("list", { name: t("versionHistory.list") })).getAllByRole(
+      "listitem",
+    );
+    expect(items[1]?.textContent).toContain("Published to Rosa's host, 7 Nov 2026, 09:15");
+    // Its destination has been removed since: when, without where.
+    expect(items[0]?.textContent).toContain("Published 2 Nov 2026, 18:00");
+    expect(items[0]?.textContent).not.toContain("Published to");
+
+    await choose(t("versionHistory.reason.daily"), t("versionHistory.republish"));
+    expect(actions.republish).toHaveBeenCalledWith(published);
+  });
+
   it("shows the space the versions use with Clean up, which cleans up (P3)", async () => {
     const { actions } = draw();
 
@@ -148,6 +171,7 @@ describe("the Version History panel (4.6)", () => {
       {
         preview: vi.fn(),
         restore: vi.fn(),
+        republish: vi.fn(),
         remove: vi.fn(),
         openAsNewSite: vi.fn(),
         cleanUp: vi.fn(),
