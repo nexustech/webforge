@@ -32,6 +32,7 @@ const SITE_CHANNELS = [
   "versions:save",
   "versions:delete",
   "versions:read-site",
+  "versions:clean-up",
   "versions:open-as-new-site",
   "publish:destinations",
   "publish:saveDestination",

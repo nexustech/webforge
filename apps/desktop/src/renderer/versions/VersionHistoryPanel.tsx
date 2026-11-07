@@ -16,7 +16,7 @@ import {
   useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { HistoryIcon, MoreHorizontalIcon, SaveIcon } from "lucide-react";
+import { BrushCleaningIcon, HistoryIcon, MoreHorizontalIcon, SaveIcon } from "lucide-react";
 import { useState } from "react";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 import type { VersionSummary } from "../../shared/ipc/versions.js";
@@ -28,7 +28,7 @@ import { versionDate, versionName } from "./version-words.js";
 /** Props of {@link VersionHistoryPanel}. */
 export type VersionHistoryPanelProps = {
   readonly state: VersionListState;
-  readonly actions: Pick<VersionActions, "restore" | "remove" | "openAsNewSite">;
+  readonly actions: Pick<VersionActions, "restore" | "remove" | "openAsNewSite" | "cleanUp">;
   /** Save Version…: asks for the version's name. */
   readonly onSave: () => void;
   /** How dates are written; the computer's way when left out. */
@@ -69,12 +69,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between gap-2 border-b px-2 py-1.5">
-        <span className="truncate text-xs text-muted-foreground">
-          {state.status === "ready" && state.versions.length > 0
-            ? t("versionHistory.space", { size: fileSizeLabel(state.bytes) })
-            : null}
-        </span>
+      <div className="flex items-center justify-end gap-2 border-b px-2 py-1.5">
         <Button variant="outline" size="sm" onClick={onSave} disabled={busy}>
           <SaveIcon aria-hidden />
           {t("versionHistory.save")}
@@ -156,6 +151,26 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
           </ol>
         )}
       </div>
+      {state.status === "ready" ? (
+        // The space the versions use, and Clean up (P3).
+        <div className="flex items-center justify-between gap-2 border-t px-2 py-1.5">
+          <span className="truncate text-xs text-muted-foreground">
+            {state.versions.length > 0
+              ? t("versionHistory.space", { size: fileSizeLabel(state.bytes) })
+              : null}
+          </span>
+          <Button
+            variant="ghost"
+            size="sm"
+            title={t("versionHistory.cleanUpHelp")}
+            onClick={() => run(() => actions.cleanUp())}
+            disabled={busy}
+          >
+            <BrushCleaningIcon aria-hidden />
+            {t("versionHistory.cleanUp")}
+          </Button>
+        </div>
+      ) : null}
       <AlertDialog
         open={asked !== null}
         onOpenChange={(open) => {

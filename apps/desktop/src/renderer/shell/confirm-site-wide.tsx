@@ -56,6 +56,11 @@ export type SiteWideConfirm = {
   beforeUnaskedChange(action: SiteWideAction): Promise<void>;
   /** The question shown, if any; for the dialog. */
   current(): SiteWideAction | null;
+  /**
+   * Whether a change is waiting for the {@link BeforeSiteWideAction} to run before it's made (4.6:
+   * its version saving), so nothing else, Undo included, changes the site in between.
+   */
+  landing(): boolean;
   /** The last question asked, kept once answered; the dialog shows it while it fades out. */
   last(): SiteWideAction | null;
   subscribe(listener: () => void): () => void;
@@ -70,9 +75,24 @@ export function createSiteWideConfirm(): SiteWideConfirm {
   let open: { action: SiteWideAction; settle: (confirmed: boolean) => void } | null = null;
   let last: SiteWideAction | null = null;
   let before = nothingBefore;
+  // How many changes wait for the hook before they're made.
+  let waiting = 0;
   const listeners = new Set<() => void>();
   const changed = () => {
     for (const listener of listeners) listener();
+  };
+  /** Runs the hook for `action`, counted as {@link SiteWideConfirm.landing} until it has. */
+  const runBefore = async (action: SiteWideAction, asked: boolean): Promise<void> => {
+    waiting += 1;
+    changed();
+    try {
+      await before(action, { asked });
+    } catch {
+      // A failed hook (a version not saved) never blocks the person's change.
+    } finally {
+      waiting -= 1;
+      changed();
+    }
   };
   return {
     confirmSiteWide(action) {
@@ -89,11 +109,8 @@ export function createSiteWideConfirm(): SiteWideConfirm {
               resolve(false);
               return;
             }
-            void Promise.resolve(before(action, { asked: true })).then(
-              () => resolve(true),
-              // A failed hook (a version not saved) never blocks the person's action.
-              () => resolve(true),
-            );
+            // The change is made as this resolves, before any key the person presses meanwhile.
+            void runBefore(action, true).then(() => resolve(true));
           },
         };
         open = asked;
@@ -101,10 +118,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
         changed();
       });
     },
-    beforeUnaskedChange: (action) =>
-      Promise.resolve()
-        .then(() => before(action, { asked: false }))
-        .catch(() => undefined),
+    beforeUnaskedChange: (action) => runBefore(action, false),
     setBeforeSiteWideAction(hook) {
       before = hook;
       return () => {
@@ -112,6 +126,7 @@ export function createSiteWideConfirm(): SiteWideConfirm {
       };
     },
     current: () => open?.action ?? null,
+    landing: () => waiting > 0,
     last: () => last,
     subscribe(listener) {
       listeners.add(listener);
@@ -127,15 +142,17 @@ export function createSiteWideConfirm(): SiteWideConfirm {
 
 /**
  * Pauses `registry`'s commands (Delete, Duplicate, Paste, Undo…) while `confirm` asks a question,
- * so nothing changes the site between the question and the answer. Returns a function that stops.
+ * and while the answered change waits for its version, so nothing changes the site between the
+ * question and the change. Returns a function that stops.
  */
 export function pauseCommandsWhileAsking(
-  confirm: Pick<SiteWideConfirm, "current" | "subscribe">,
+  confirm: Pick<SiteWideConfirm, "current" | "landing" | "subscribe">,
   registry: Pick<CommandRegistry, "pause">,
 ): () => void {
   let resume: (() => void) | null = null;
   const follow = () => {
-    const asking = confirm.current() !== null;
+    // Asking, or the answered change still waiting for its version (4.6).
+    const asking = confirm.current() !== null || confirm.landing();
     if (asking && resume === null) {
       resume = registry.pause();
     } else if (!asking && resume !== null) {

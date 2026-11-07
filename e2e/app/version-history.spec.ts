@@ -85,3 +85,23 @@ test("a version saved before a page is deleted brings it back, as one undo step"
   await page.keyboard.press("ControlOrMeta+z");
   await expect(aboutPage()).toHaveCount(0);
 });
+
+test("Clean Up gives free space back, and Undo still brings back what it changed (P3)", async () => {
+  await right().getByRole("tab", { name: "Site" }).click();
+  await page
+    .getByRole("list", { name: "Pages" })
+    .getByRole("button", { name: "Actions for About" })
+    .click();
+  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "Delete Page" }).click();
+  await expect(aboutPage()).toHaveCount(0);
+  await expect(page.getByRole("alertdialog")).toHaveCount(0);
+
+  await left().getByRole("tab", { name: "Version History" }).click();
+  await left().getByRole("button", { name: "Clean Up" }).click();
+  await expect(page.getByText(/^Cleaned up: /)).toBeVisible();
+
+  await page.locator(".editor__canvas").focus();
+  await page.keyboard.press("ControlOrMeta+z");
+  await expect(aboutPage()).toHaveCount(1);
+});

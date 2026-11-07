@@ -8,6 +8,14 @@ export const versions = {
     "No versions yet. Save one before a big change, and {appName} saves one each day you edit.",
   "versionHistory.space": "Versions use {size}",
   "versionHistory.list": "Versions",
+  // Clean up (P3).
+  "versionHistory.cleanUp": "Clean Up",
+  "versionHistory.cleanUpHelp":
+    "Removes what nothing in the site, its versions or Undo needs, and gives the space back to your disk.",
+  "versionHistory.cleaningUp": "Cleaning up the site's file… Changes are saved once it's done.",
+  "versionHistory.cleanedUp": "Cleaned up: {size} given back to your disk.",
+  "versionHistory.nothingToCleanUp": "Cleaned up: there was nothing more to give back.",
+  "versionHistory.cleanUpFailed": "{appName} couldn't clean up the site's file.",
   "versionHistory.actions": "More for “{name}”",
   "versionHistory.picture": "The site as it was then",
   // What a version Webforge saved is called, by why it was saved.

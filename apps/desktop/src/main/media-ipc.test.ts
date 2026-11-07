@@ -27,7 +27,7 @@ function setUp(chosen: readonly string[] | undefined, open = true) {
   const jobs = createWriterJobs(() => ({
     put: () => "a".repeat(64),
     putBlobs: () => [],
-    cleanUp: () => ({ blobs: 0, bytes: 0, assets: 0, vacuumed: false }),
+    cleanUp: () => ({ blobs: 0, bytes: 0, assets: 0, vacuumed: false, freedBytes: 0 }),
     close: () => undefined,
   }));
   const session = {

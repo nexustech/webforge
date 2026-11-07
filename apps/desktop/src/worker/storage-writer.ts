@@ -47,7 +47,13 @@ port.on("message", (message: unknown) => {
       port.postMessage({ id: job.id, outcome: jobs.putBlobs(job.sitePath, job.blobs, job.asset) });
       return;
     case "clean-up":
-      port.postMessage({ id: job.id, outcome: jobs.cleanUp(job.sitePath) });
+      port.postMessage({
+        id: job.id,
+        outcome: jobs.cleanUp(job.sitePath, {
+          ...(job.keep === undefined ? {} : { keep: job.keep }),
+          ...(job.vacuum === undefined ? {} : { vacuum: job.vacuum }),
+        }),
+      });
       return;
   }
 });

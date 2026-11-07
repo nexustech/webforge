@@ -109,4 +109,43 @@ describe("confirmSiteWide (D7)", () => {
     expect(registry.run("edit.undo")).toBe(true);
     expect(undo).toHaveBeenCalledTimes(2);
   });
+
+  it("keeps Undo paused until the answered change has its version, so Undo never lands first (4.6)", async () => {
+    const confirm = createSiteWideConfirm();
+    const registry = createCommandRegistry();
+    registry.register({ id: "edit.undo", label: "Undo", run: vi.fn() });
+    pauseCommandsWhileAsking(confirm, registry);
+    let saved: () => void = () => undefined;
+    confirm.setBeforeSiteWideAction(
+      () =>
+        new Promise<void>((resolve) => {
+          saved = resolve;
+        }),
+    );
+
+    const answer = confirm.confirmSiteWide(deletePage(2));
+    confirm.answer(true);
+    await Promise.resolve();
+    expect(confirm.current()).toBeNull();
+    expect(confirm.landing()).toBe(true);
+    expect(registry.run("edit.undo")).toBe(false);
+
+    let made = false;
+    const change = answer.then(() => {
+      made = true;
+      // The change is made before Undo works again: nothing pressed meanwhile came first.
+      expect(confirm.landing()).toBe(false);
+    });
+    saved();
+    await change;
+    expect(made).toBe(true);
+    expect(registry.run("edit.undo")).toBe(true);
+
+    // An unasked theme change waits the same way.
+    const unasked = confirm.beforeUnaskedChange(deletePage(2));
+    expect(confirm.landing()).toBe(true);
+    saved();
+    await unasked;
+    expect(confirm.landing()).toBe(false);
+  });
 });

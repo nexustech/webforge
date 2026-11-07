@@ -120,10 +120,10 @@ export function hasVersionFacts(db: Database.Database): boolean {
 }
 
 /**
- * What the working copy and each version reach, read once per document's blob: a document
- * unchanged since a version is shared with it, so its text is read and scanned once.
+ * The blobs documents reach, by their blobs' hashes: each document's blob and every hash its
+ * content names, read and scanned once per blob however many times it's asked about.
  */
-function readReach(db: Database.Database) {
+function reacher(db: Database.Database) {
   const readText = db.prepare("SELECT data FROM blobs WHERE hash = ?").pluck();
   const byDocument = new Map<string, Set<string>>();
   /** The blobs a document reaches: its own, and those it names. */
@@ -137,11 +137,27 @@ function readReach(db: Database.Database) {
     }
     return reached;
   };
-  const union = (hashes: Iterable<string>): Set<string> => {
+  return (hashes: Iterable<string>): Set<string> => {
     const reached = new Set<string>();
     for (const hash of hashes) for (const each of reachOf(hash)) reached.add(each);
     return reached;
   };
+}
+
+/** The blobs the documents stored in `documentHashes` reach: their own, and those they name. */
+export function blobsReachedBy(
+  db: Database.Database,
+  documentHashes: Iterable<string>,
+): Set<string> {
+  return reacher(db)(documentHashes);
+}
+
+/**
+ * What the working copy and each version reach, read once per document's blob: a document
+ * unchanged since a version is shared with it, so its text is read and scanned once.
+ */
+function readReach(db: Database.Database) {
+  const union = reacher(db);
   const working = union(db.prepare("SELECT blob_hash FROM documents").pluck().all().map(String));
   const facts = hasVersionFacts(db);
   const versions = db
@@ -184,12 +200,16 @@ export type GarbageReport = {
 /**
  * Deletes blobs nothing refers to any more, and the assets that point at them (06: "garbage
  * collection"). A blob is kept when the working copy or any version stores a document in it, a
- * hash in such a document names it (media metadata), or it is a version's picture. Run it inside a
- * transaction that stamps the content fingerprint, as every write does.
+ * hash in such a document names it (media metadata), it is a version's picture, or it's in `keep`
+ * (what Undo can still bring back while the site is open, 4.6). Run it inside a transaction that
+ * stamps the content fingerprint, as every write does.
  */
-export function collectGarbage(db: Database.Database): GarbageReport {
+export function collectGarbage(
+  db: Database.Database,
+  keep: ReadonlySet<string> = new Set(),
+): GarbageReport {
   const { working, versions } = readReach(db);
-  const referenced = new Set(working);
+  const referenced = new Set([...working, ...keep]);
   for (const { reached } of versions) for (const hash of reached) referenced.add(hash);
   const unreferenced = [...blobSizes(db)].filter(([hash]) => !referenced.has(hash));
   // Assets first: their foreign key keeps a blob from being deleted while a row points at it.

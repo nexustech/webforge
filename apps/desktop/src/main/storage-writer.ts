@@ -36,6 +36,12 @@ type ImportTarget = {
  * Stores imports, pasted and downloaded files in the open site's file, and cleans it up as it
  * closes, off the main thread (R13b, ADR 0013, #664).
  */
+/** How a clean-up runs: the blobs it keeps, and when it VACUUMs (see `CleanUpOptions`). */
+type WriterCleanUpOptions = {
+  readonly keep?: ReadonlySet<string>;
+  readonly vacuum?: "bounded" | "always";
+};
+
 export type StorageWriter = {
   /**
    * Starts the thread now, if it isn't running, so the first import doesn't wait for it: starting
@@ -66,10 +72,11 @@ export type StorageWriter = {
     asset?: BlobAsset,
   ): Promise<PutBlobsOutcome>;
   /**
-   * Cleans `sitePath` up as its site closes, with the file to itself: garbage collection, and a
-   * VACUUM when enough of it is free. Never throws.
+   * Cleans `sitePath` up with the file to itself: garbage collection, and a VACUUM when enough of
+   * it is free as its site closes, or whenever any is for Version History's Clean up, keeping the
+   * blobs `options` says to (4.6). Never throws.
    */
-  cleanUp(sitePath: string): Promise<CleanUpOutcome>;
+  cleanUp(sitePath: string, options?: WriterCleanUpOptions): Promise<CleanUpOutcome>;
   /**
    * Stops what the writer is doing, as closing the site does when it can wait no longer: the
    * thread ends, and an import it was storing fails. Its transaction is rolled back the next time
@@ -205,8 +212,14 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
         ? outcome
         : { status: "failed" };
     },
-    async cleanUp(sitePath) {
-      const outcome = await ask((id) => ({ id, type: "clean-up", sitePath }));
+    async cleanUp(sitePath, options = {}) {
+      const outcome = await ask((id) => ({
+        id,
+        type: "clean-up",
+        sitePath,
+        ...(options.keep === undefined ? {} : { keep: [...options.keep] }),
+        ...(options.vacuum === undefined ? {} : { vacuum: options.vacuum }),
+      }));
       return outcome.status === "cleaned" ? outcome : { status: "failed" };
     },
     async stop() {
@@ -235,7 +248,11 @@ export function createInlineStorageWriter(jobs: WriterJobs): StorageWriter {
     store: async (prepared, target) => jobs.store(prepared.token, target),
     discard: (prepared) => jobs.discard(prepared.token),
     putBlobs: async (sitePath, blobs, asset) => jobs.putBlobs(sitePath, blobs, asset),
-    cleanUp: async (sitePath) => jobs.cleanUp(sitePath),
+    cleanUp: async (sitePath, options = {}) =>
+      jobs.cleanUp(sitePath, {
+        ...(options.keep === undefined ? {} : { keep: [...options.keep] }),
+        ...(options.vacuum === undefined ? {} : { vacuum: options.vacuum }),
+      }),
     stop: async () => undefined,
   };
 }

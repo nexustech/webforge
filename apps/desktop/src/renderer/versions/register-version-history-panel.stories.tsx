@@ -10,7 +10,12 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const nothing = async () => false;
-const actions = { restore: nothing, remove: nothing, openAsNewSite: async () => undefined };
+const actions = {
+  restore: nothing,
+  remove: nothing,
+  openAsNewSite: async () => undefined,
+  cleanUp: nothing,
+};
 
 /** The panel on a site whose versions main lists as `listed`. */
 const storyOf = (listed: ListVersionsResult) =>
