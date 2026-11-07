@@ -1,8 +1,10 @@
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import type { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
+import { NONCE, PROOF_PATH, proofFor } from "@webforge/mcp-bridge";
+import { z } from "zod";
 import { AI_INPUT_MAX_CHARS } from "../shared/ipc/ai.js";
 import type { McpApp } from "./mcp-server.js";
 
@@ -14,6 +16,15 @@ export const MCP_PATH = "/mcp";
 
 /** The most a request's body may hold: an AI request's input, with room for its envelope. */
 const MAX_BODY_BYTES = AI_INPUT_MAX_CHARS * 4 + 64 * 1024;
+
+/** The most a challenge's body may hold: an app's id and a nonce. */
+const MAX_CHALLENGE_BYTES = 1024;
+
+/** A bridge's challenge: the app it's for, and a fresh nonce (ADR 0021). */
+const challengeSchema = z.strictObject({
+  app: z.string().min(1).max(64),
+  nonce: z.string().regex(NONCE),
+});
 
 /** The most connections one app keeps at once: a new one ends its least recently used. */
 export const MAX_SESSIONS_PER_APP = 4;
@@ -33,6 +44,8 @@ export type McpListenerOptions = {
   readonly port: number;
   /** The paired app a key belongs to, if any; how failures back off is its own (ADR 0021). */
   readonly authenticate: (key: string) => Promise<McpApp | undefined>;
+  /** The server proof of the paired app `appId`, which its bridge checks; `null` if none. */
+  readonly proofOf: (appId: string) => Promise<string | null>;
   /** The MCP server for one connection of `app` (`createMcpServer`). */
   readonly serverFor: (app: McpApp) => Server;
   /** The time, for tests. */
@@ -68,13 +81,16 @@ function refuse(res: ServerResponse, status: number): void {
  * `req`'s body as JSON, or why not: too large (413), not JSON (400). Past the cap it keeps only
  * reading, keeping nothing, so the caller gets its answer rather than a reset connection.
  */
-function bodyOf(req: IncomingMessage): Promise<{ readonly json: unknown } | number> {
+function bodyOf(
+  req: IncomingMessage,
+  max = MAX_BODY_BYTES,
+): Promise<{ readonly json: unknown } | number> {
   return new Promise((resolve) => {
     const chunks: Buffer[] = [];
     let size = 0;
     req.on("data", (chunk: Buffer) => {
       size += chunk.length;
-      if (size > MAX_BODY_BYTES) {
+      if (size > max) {
         chunks.length = 0;
         resolve(413);
       } else {
@@ -83,7 +99,7 @@ function bodyOf(req: IncomingMessage): Promise<{ readonly json: unknown } | numb
     });
     req.on("error", () => resolve(400));
     req.on("end", () => {
-      if (size > MAX_BODY_BYTES) return;
+      if (size > max) return;
       try {
         resolve({ json: JSON.parse(Buffer.concat(chunks).toString("utf8")) });
       } catch {
@@ -98,10 +114,15 @@ function bodyOf(req: IncomingMessage): Promise<{ readonly json: unknown } | numb
  * the SDK sees a request, it refuses:
  * - one with an `Origin` header (a browser page is never a client), or a `Host` other than
  *   `127.0.0.1:<port>` (DNS rebinding), with 403;
- * - another path than {@link MCP_PATH}, with 404;
+ * - another path than {@link MCP_PATH} or {@link PROOF_PATH}, with 404;
  * - one without a paired app's key in `Authorization: Bearer`, with 401;
  * - a body over its cap (413) or not JSON (400);
  * - a session that isn't the caller's app's, with 404, as an unknown one is.
+ *
+ * A bridge's challenge at {@link PROOF_PATH} needs no key: it is answered with HMAC-SHA256 of its
+ * nonce and this address under the app's server proof, which proves to the bridge that it is
+ * Webforge answering before it sends its key. An unknown app's is answered under a decoy, so the
+ * answer doesn't tell which apps there are.
  *
  * Each app keeps at most {@link MAX_SESSIONS_PER_APP} connections, and one unused for
  * {@link SESSION_IDLE_MS} ends: a client that crashed never ends its own. Nothing of a request is
@@ -111,6 +132,8 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
   const sessions = new Map<string, Session>();
   const now = options.now ?? Date.now;
   let host = "";
+  /** The proof an unknown app's challenge is answered under: no use to anyone. */
+  const decoy = randomBytes(32).toString("base64url");
 
   const endSession = async (id: string) => {
     const session = sessions.get(id);
@@ -136,12 +159,24 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
     }
   };
 
+  /** Answers a bridge's challenge with the proof that this is Webforge (ADR 0021). */
+  const answerChallenge = async (req: IncomingMessage, res: ServerResponse) => {
+    if (req.method !== "POST") return refuse(res, 405);
+    const read = await bodyOf(req, MAX_CHALLENGE_BYTES);
+    if (typeof read === "number") return refuse(res, read);
+    const challenge = challengeSchema.safeParse(read.json);
+    if (!challenge.success) return refuse(res, 400);
+    const { app, nonce } = challenge.data;
+    const proof = proofFor((await options.proofOf(app)) ?? decoy, host, nonce);
+    res.writeHead(200, { "content-type": "application/json" }).end(JSON.stringify({ proof }));
+  };
+
   const handle = async (req: IncomingMessage, res: ServerResponse) => {
     sweep();
     if (req.headers.origin !== undefined || req.headers.host !== host) return refuse(res, 403);
-    if (new URL(req.url ?? "/", "http://placeholder").pathname !== MCP_PATH) {
-      return refuse(res, 404);
-    }
+    const path = new URL(req.url ?? "/", "http://placeholder").pathname;
+    if (path === PROOF_PATH) return answerChallenge(req, res);
+    if (path !== MCP_PATH) return refuse(res, 404);
     const key = BEARER.exec(req.headers.authorization ?? "")?.[1];
     const app = key === undefined ? undefined : await options.authenticate(key);
     if (app === undefined) return refuse(res, 401);
