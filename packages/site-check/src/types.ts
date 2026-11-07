@@ -67,6 +67,12 @@ export type CheckInput = {
    * a file can't pass its own scripts' addresses.
    */
   readonly allowListConfirmed?: boolean;
+  /**
+   * The year the site was last published in, and this year (F-CM-8): a published site shows
+   * `{year}` as the year it was published in until it's published again. Left out when it hasn't
+   * been published, or isn't known.
+   */
+  readonly published?: { readonly year: number; readonly thisYear: number };
 };
 
 /** One Site Check rule (F-CHK-1): its level, and what it finds in a site. */

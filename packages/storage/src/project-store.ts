@@ -228,6 +228,8 @@ const metaSchema = z.strictObject({
   site_check_ignored: z.string().optional(),
   /** JSON, checked entry by entry when read (see `readPublishDestinations`), likewise. */
   publish_destinations: z.string().optional(),
+  /** An ISO time, checked when read (see `readLastPublishedAt`), likewise. */
+  last_published_at: z.string().optional(),
 });
 
 const schemaRowSchema = z.object({
@@ -1101,6 +1103,30 @@ export class ProjectStore {
     this.#write(() => {
       this.#prepare(
         `INSERT INTO meta (key, value) VALUES ('site_check_ignored', ?)
+         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
+      ).run(value);
+    });
+  }
+
+  /**
+   * When this site last went live (4.5): ISO 8601, UTC, or `undefined` if it never has. Kept apart
+   * from the versions, so deleting the one a publish saved doesn't lose it; Site Check reads it for
+   * the year a published site shows (F-CM-8).
+   */
+  readLastPublishedAt(): string | undefined {
+    const row = this.#prepare("SELECT value FROM meta WHERE key = 'last_published_at'").get() as
+      | { value: unknown }
+      | undefined;
+    const at = z.iso.datetime().safeParse(row?.value);
+    return at.success ? at.data : undefined;
+  }
+
+  /** Remembers that this site went live at `at`, an ISO 8601 time in UTC. */
+  writeLastPublishedAt(at: string): void {
+    const value = z.iso.datetime().parse(at);
+    this.#write(() => {
+      this.#prepare(
+        `INSERT INTO meta (key, value) VALUES ('last_published_at', ?)
          ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
       ).run(value);
     });

@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { createStore } from "zustand/vanilla";
 import type { AppInfo, Preferences, SiteUiState } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
 import type { WebforgeApi } from "../shared/webforge-api.js";
@@ -65,6 +66,10 @@ export type AppProps = {
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
   readonly uiState?: SiteUiState | null;
 };
+
+/** The local year `at`, an ISO time, falls in: the year an export then filled `{year}` in (F-CM-8). */
+const yearOf = (at: string | undefined) =>
+  at === undefined ? undefined : new Date(at).getFullYear();
 
 /** The perf check's hooks (ADR 0007), loaded only in perf builds. */
 const installPerf = (session: EditorSession) => {
@@ -170,6 +175,7 @@ export function App({
             });
         },
       },
+      publishedYear: createStore<number | undefined>(() => yearOf(uiState?.lastPublishedAt)),
     };
   });
   useEffect(() => connectAreas(WINDOW_AREAS, windowContext), [windowContext]);

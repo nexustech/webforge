@@ -43,6 +43,8 @@ When it's done, **Your site is live** says where visitors can see it, and how ma
 
 Each publish is kept in [Version History](version-history.md) as *Published*.
 
+Where your text uses `{year}`, your published site shows the year you published it in. In a new year, [Site Check](site-check.md#tips) reminds you to publish again.
+
 ### If publishing doesn't work
 
 {appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit**, or publishing again once your internet connection is back. Publishing again sends whatever didn't arrive.

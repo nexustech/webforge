@@ -32,6 +32,8 @@ type SiteCheckPanelOptions = {
   readonly bundle?: BundleActions;
   /** Whether the owner has confirmed the addresses Settings allow (#649). */
   readonly allowListConfirmed?: ReadonlyStore<boolean>;
+  /** The year the site was last published in, if it has been (F-CM-8). */
+  readonly publishedYear?: ReadonlyStore<number | undefined>;
 };
 
 /**
@@ -50,12 +52,14 @@ export function registerSiteCheckPanel(
     saveIgnored,
     bundle,
     allowListConfirmed,
+    publishedYear,
   }: SiteCheckPanelOptions,
 ): () => void {
   const siteCheck = createSiteCheck(session.history.document, {
     ignored,
     saveIgnored,
     ...(allowListConfirmed === undefined ? {} : { allowListConfirmed }),
+    ...(publishedYear === undefined ? {} : { publishedYear }),
   });
   const actions = {
     session,

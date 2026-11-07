@@ -88,6 +88,11 @@ export type WindowContext = AreaContext & {
     readonly save: (ignored: readonly string[]) => void;
   };
   /**
+   * The year the open site was last published in (F-CM-8), `undefined` when it hasn't been: as
+   * its versions record it when it opened, then each publish from this window (4.5).
+   */
+  readonly publishedYear: StoreApi<number | undefined>;
+  /**
    * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
    * with its look; none without a CSS compiler.
    */

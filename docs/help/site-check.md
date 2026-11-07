@@ -2,8 +2,8 @@
 id: site-check
 title: Site Check
 summary: What Site Check looks for, what each finding means, and how to fix it.
-related: [export, pages, media, forms, site-settings]
-updated: 2026-11-06
+related: [export, publish, pages, media, forms, site-settings]
+updated: 2026-11-07
 ---
 
 # Site Check
@@ -40,10 +40,11 @@ Each check shows a dot: green when all is well, amber or red when something need
 
 ## Tips
 
-| Check | What it means |
-|---|---|
-| **Large downloads** | A linked document is over 10 MB, which is slow to download on a phone |
-| **Underlined text** | Underlined text that isn't a link, which visitors may try to click |
+| Check | What it means | What to do |
+|---|---|---|
+| **Large downloads** | A linked document is over 10 MB, which is slow to download on a phone | Use a smaller copy of the document |
+| **Underlined text** | Underlined text that isn't a link, which visitors may try to click | Remove the underline, or make it a link |
+| **Year on your site** | Your text uses `{year}`, which your published site shows as the year you last published it in, and that year has passed. The finding says which year it shows | **Fix** opens [Publish](publish.md): publish again to show this year |
 
 ## Being found
 

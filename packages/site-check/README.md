@@ -13,6 +13,7 @@ Site Check's rules (F-CHK-1, X5, plan item 3.6): pure functions over the site do
 
 ## Rules
 - Each rule has an `id`, a `level`, optionally `strictOnPublish`, and `check({ site, catalogue })`. It returns findings with a stable `key` and a `place` the panel can jump to: an element, a menu item, a page, an item in Media, the theme or the web address.
+- What a rule knows besides the site comes in the input too: whether the owner confirmed the allowed addresses (`allowListConfirmed`, #649), and the year the site was last published in (`published`, F-CM-8), for the tip that its `{year}` is out of date.
 - Rules read the components as data (`@webforge/site-components/catalogue-data`), never the components themselves. They leave out hidden elements, which aren't exported.
 - Their words are in the app (`siteCheck.*` in `@webforge/i18n`), not here.
 - Ignoring hides *Should fix* findings and *Tips* only. A *Must fix* is always listed.
