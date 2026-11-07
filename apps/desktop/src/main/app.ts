@@ -395,6 +395,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           ?.webContents.send(publishEvents.progress.channel, operationId, progress),
       versionsKept,
       flush: requestFlush,
+      // So Clean up keeps what a publish under way reaches (4.6).
+      holdManifest: (manifest) => projectSession.holdManifest(manifest),
       // Looked up as it's called, as the export's shell is.
       openExternal: (url) => electron.shell.openExternal(url),
     }),
