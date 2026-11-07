@@ -3,7 +3,7 @@ id: keyboard-shortcuts
 title: Keyboard shortcuts
 summary: Every keyboard shortcut in {appName}, by what it does.
 related: [the-editor, editing-on-the-page, layers, edit-panel]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # Keyboard shortcuts
@@ -19,6 +19,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+N | New Site… |
 | Ctrl+O | Open Site… |
 | Ctrl+S | Save now ({appName} also saves by itself) |
+| Ctrl+Alt+S | Save Version… |
 | Ctrl+I | Preview (when you're not typing text) |
 | Ctrl+E | Export Site… |
 | Ctrl+U | Publish… (when you're not typing text) |

@@ -2,8 +2,8 @@
 id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
-related: [undo-and-history, export, getting-started]
-updated: 2026-11-06
+related: [version-history, undo-and-history, export, getting-started]
+updated: 2026-11-07
 ---
 
 # Saving, copies and backups
@@ -24,6 +24,10 @@ The title bar shows **Saved**, **Saving…**, or **Not saved. {appName} will try
 - **File › Open Recent** lists the last five sites you opened. **Clear Recent** empties the list but keeps pinned sites; it never deletes a site.
 - Opening another site saves the one that's open first.
 
+## Versions
+
+To keep your site as it is before a big change, and go back to it later, save a version: **File › Save Version…** (Ctrl+Alt+S). {appName} saves some by itself too, such as one at the start of each day you edit. See [Version History](version-history.md).
+
 ## A copy of your site as a ZIP file
 
 **File › Save a Copy as ZIP…** saves your whole site, with its pictures, versions and settings, as one ZIP file. Use it to keep a backup somewhere safe, or to move the site to another computer. Passwords for publishing don't go in it.
@@ -34,7 +38,7 @@ This isn't your website: to make that, see [Export](export.md).
 
 ## Backups
 
-While you work, {appName} keeps backups of your site's file on this computer: one when you open the site, then one every half hour while you edit. It keeps the last five.
+Backups are for when your site's file is damaged; to go back to an earlier state of your site, use [Version History](version-history.md). While you work, {appName} keeps backups of your site's file on this computer: one when you open the site, then one every half hour while you edit. It keeps the last five.
 
 If your site's file is ever damaged (for example by a sync service such as OneDrive or Dropbox), {appName} says so when you open it, and offers:
 - **Restore latest backup**;

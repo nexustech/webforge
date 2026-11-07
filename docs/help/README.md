@@ -1,6 +1,6 @@
 # {appName} Help
 
-The user help for {appName}: what each feature does and how to use it, in the words people see in the app. For now these are Markdown pages in the repository. Later the app bundles them and opens them from its Help menu, the start screen's *Help* tab and *Help for this element* (plan item 5.4). The plan for that, and for keeping these pages current, is [research/product/15](../../research/product/15-help-and-documentation.md).
+The user help for {appName}: what each feature does and how to use it, in the words people see in the app. For now these are Markdown pages in the repository. Later the app bundles them and opens them from its Help menu, the start screen's *Help* tab and *Help for this element* (plan item 5.4b). The plan for that, and for keeping these pages current, is [research/product/15](../../research/product/15-help-and-documentation.md).
 
 The pages describe `main` as it is. Each page's `updated` date says when it was last checked against the app.
 
@@ -32,19 +32,21 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Preview](preview.md), on this computer and on your phone
 - [Site Check](site-check.md)
 - [Export](export.md)
-- [Publish](publish.md): publish destinations (publishing itself is still to come)
+- [Publish](publish.md): publish destinations and publishing to your web host
 
 **Your work**
 - [Undo and Undo History](undo-and-history.md)
+- [Version History](version-history.md): save versions, preview, restore or open one as a new site
 - [Saving, copies and backups](saving-and-backups.md)
 - [Settings](settings.md): {appName}'s own preferences
 - [Keyboard shortcuts](keyboard-shortcuts.md)
 - [Custom Code](custom-code.md): Advanced mode
+- [AI apps](ai-apps.md): let an AI app on this computer work on your site
 
 **Still to come**, written with the features as they merge:
-- *Version History*: save, compare and restore versions (4.6a, 4.6b)
-- *Publishing*: the rest of the Publish page, and Netlify (4.4b, 4.5)
-- *AI apps*: connecting Claude Desktop and other AI apps (4.9)
+- *Version History*: publishing an earlier version again (4.6b)
+- *Publish*: Netlify (4.4b)
+- *AI apps*: connecting Claude Desktop without copying a key (4.9)
 
 ## Writing a help page
 

@@ -3,7 +3,7 @@ id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, and your devices.
 related: [site-settings, the-editor]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # Settings
@@ -22,3 +22,7 @@ Click **Save** to keep your changes.
 ## Devices
 
 **Your devices** adds screen sizes of your own to the canvas's device list, such as your own phone or a large monitor. Give each a **Name**, a **Width in pixels** and a **Height in pixels**, between 320 and 2560. You can also add one from the canvas toolbar's **Add device…**.
+
+## Version History
+
+**Versions kept:** how many of the versions {appName} saves by itself to keep for each site, from 5 to 100 (20 at first). Versions you save yourself are always kept. See [Version History](version-history.md).

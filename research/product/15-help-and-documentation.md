@@ -1,6 +1,6 @@
 # Help and documentation: pages now, in the app later
 
-**Status:** ⏳ Proposed (HP-1…HP-9, §9), for the product owner to decide. Nothing in `spec/` or the plan changes until they do. The pages themselves are in [`docs/help/`](../../docs/help/README.md) already, because they describe what `main` does today and are useful as they are.
+**Status:** ✅ Decided (HP-1…HP-9, §9, product owner, 7 Nov 2026: each as proposed). The pages are in [`docs/help/`](../../docs/help/README.md). The decisions are recorded in `spec/02` §7, standards §8 and §9, CLAUDE.md and the plan (5.4a, 5.4b).
 
 **The product owner's question (6 Nov 2026):** Webforge should have documentation for its key features. It should start as Markdown documents that are kept up to date, and later be readable from the UI. Which features should have help text, and what does Webforge offer today?
 
@@ -8,7 +8,7 @@
 
 ## 1. Method
 
-Read against `main` at `a43ea53b` (6 Nov 2026):
+Read against `main` at `a43ea53b` (6 Nov 2026), and again at `713b0300` (7 Nov 2026) once Version History, publishing and AI apps had merged:
 - **Strings:** every English UI string in `packages/i18n/src/en/`.
 - **Code:** each renderer area in `apps/desktop/src/renderer/`, the menus and the shortcut table (`shell/shortcut-standard.ts`), and the catalogue (`packages/site-components/src/catalogue-data.json`).
 - **Main and pipeline:** `apps/desktop/src/main/` and `packages/pipeline` for what export, preview, backups and publishing really do.
@@ -34,20 +34,20 @@ A feature counts as **available** only when a person can reach it in the app. Ma
 | Kind | What it is | Where it lives | State |
 |---|---|---|---|
 | **Inline help text** | Hints under fields, tooltips, empty states, warnings, confirmation text | `t()` strings in `packages/i18n` | Mature; gaps listed in §4 |
-| **Help pages** | One page per feature: what it does, where it is, how to use it, what to watch for | `docs/help/*.md` | 26 pages written with this note (§5) |
+| **Help pages** | One page per feature: what it does, where it is, how to use it, what to watch for | `docs/help/*.md` | 28 pages written with this note (§5) |
 | **Guided first run** | Welcome, a short tour (edit text → preview → publish, QS-8), first-time tips | Renderer, 5.4 | The welcome exists (2.14b); the tour is 5.4 |
 
 The three link together. A hint answers "what is this field?". A page answers "how do I…?" and "why did that happen?". The tour shows the way through once. An inline hint can end with a link to its page (§7) instead of growing longer.
 
 ## 4. Which features need help text
 
-**Every feature in the app gets a help page.** Inline help is where the gaps matter. The features below are ranked by how likely people are to get stuck. They're mostly where two things look alike, or where something happens outside the editor.
+**Every feature in the app gets a help page.** Inline help is where the gaps matter. The features below are ranked by how likely people are to get stuck; 15 and 16 merged after the first ranking and are added at the end. They're mostly where two things look alike, or where something happens outside the editor.
 
 | # | Feature | Why people get stuck | Inline help today | Help page | Contextual link (§7) |
 |---|---|---|---|---|---|
 | 1 | **Forms and the form service** | A static site can't receive messages itself; people need a third-party account | Canvas hint, Site Check finding | [forms](../../docs/help/forms.md) | Form and Contact form's Content tab; Site Settings › Forms |
 | 2 | **Export vs Save a Copy as ZIP** | Both make a ZIP; one is the website, one is the site | Toast after saving a copy | [export](../../docs/help/export.md), [saving-and-backups](../../docs/help/saving-and-backups.md) | Export dialog; File menu |
-| 3 | **Publish destinations** | FTP, SFTP, folders and keys are new to most people | Good field hints; test results | [publish](../../docs/help/publish.md) | Publish dialog and destination dialog |
+| 3 | **Publish destinations and publishing** | FTP, SFTP, folders and keys are new to most people; a publish can stop at Site Check, or fail on the host's side | Good field hints; test results; an error per failure that says what to do | [publish](../../docs/help/publish.md) | Publish dialog and destination dialog; *Your site is live* |
 | 4 | **Different on each device** | Changes made on Mobile apply to Mobile only, and the dots mean nothing until explained | Dot tooltips | [edit-panel#different-on-each-device](../../docs/help/edit-panel.md#different-on-each-device) | Edit panel, device buttons |
 | 5 | **Theme vs Template, and *your own version*** | Switching theme looks like it might lose content; a built-in theme forks on first change | Confirmation text | [themes](../../docs/help/themes.md), [templates](../../docs/help/templates.md) | Theme panel, Theme Studio, New Site |
 | 6 | **Header, Footer and shared sections** | One edit changes many pages | Banner over the canvas | [header-and-footer](../../docs/help/header-and-footer.md) | The banner; *Save as shared section* dialog |
@@ -59,31 +59,28 @@ The three link together. A hint answers "what is this field?". A page answers "h
 | 12 | **Preview on Phone** | Needs the same home or office network, and may fail on public Wi-Fi | Dialog text, error text | [preview](../../docs/help/preview.md) | The dialog |
 | 13 | **Colours: Reversed, shades, contrast** | "Reversed" is a new idea | Field hint | [styling#colours](../../docs/help/styling.md#colours) | Colours field |
 | 14 | **Backups and damaged files** | Only seen in a bad moment | Native dialog text | [saving-and-backups](../../docs/help/saving-and-backups.md) | Recovery dialog |
+| 15 | **Undo vs Version History vs backups** | Three ways back that look alike, and versions {appName} saves by itself appear unasked | Restore's confirmation; the empty list's line | [version-history](../../docs/help/version-history.md) | Version History panel; Save Version dialog |
+| 16 | **AI apps** | An address, a key shown once and an MCP setting in another app; what the app may change | The dialog's own text | [ai-apps](../../docs/help/ai-apps.md) | AI apps dialog |
 
 **Gaps found on the way.** Each should be fixed in the app; the help page then only needs to reflect the fix.
-- **Netlify Forms** can be chosen in Site Settings › Forms, but forms then show "Netlify Forms isn't ready yet". Until 4.2 lands, the option should be left out or marked *(coming soon)*, rather than explained in help. `type/bug`, stream B.
+- **Netlify Forms** can be chosen in Site Settings › Forms, but forms then show "Netlify Forms isn't ready yet". It should be offered only once the site has a Netlify destination, rather than explained in help: 4.4b ([#723](https://github.com/nexustech/webforge/issues/723)) already has that as an acceptance criterion.
 - **The Layers lock icon** is drawn for locked items, but nothing locks an item yet (`editor/layers.ts`). Leave it out of the help until something does.
-- **Two messages speak of publishing as if it works.** Page Settings' *Hide this page from search engines* hint mentions what happens "when you publish by FTP or SFTP", and the quick start's contact-details text says Site Check points out samples "before you publish". Both become true with 4.5; until then they're harmless, and the help pages say "export" instead.
+- **Two messages speak of publishing as if it works.** Page Settings' *Hide this page from search engines* hint mentions what happens "when you publish by FTP or SFTP", and the quick start's contact-details text says Site Check points out samples "before you publish". Both became true when 4.5's publish flow merged (7 Nov 2026), so this gap is closed.
 - **A stale comment** in `layers/register-layers-panel.tsx` calls Layers "Advanced mode only", though it's registered in both modes (ADR 0011). It misled this note's fact-check; the comment should be corrected.
 - **No Help topics entry** in the Help menu or the command box, so the pages can't be found from the app until 5.4 (§7).
 
 ## 5. The help pages
 
-There are 26 pages in [`docs/help/`](../../docs/help/README.md), one for each feature or panel rather than one per screen. Each has a stable `id`, a `summary`, `related` pages, an `updated` date, and `components` listing the site component types it explains. *Help for this element* uses `components` to find a page.
+There are 28 pages in [`docs/help/`](../../docs/help/README.md), one for each feature or panel rather than one per screen. Each has a stable `id`, a `summary`, `related` pages, an `updated` date, and `components` listing the site component types it explains. *Help for this element* uses `components` to find a page.
 
 - **Start here:** Getting started · Templates and example sites · The editor.
 - **Building pages:**
   - Editing on the page · The Add panel · Sections · Elements · Layers
   - The Edit panel · Styling · Header, Footer and shared sections · Links · Pages and the menu.
 - **Your site's look and content:** Themes, colours and fonts · Media · Forms · Site Settings.
-- **Checking and going live:** Preview · Site Check · Export · Publish (destinations only; `status: partial`).
-- **Your work:** Undo and Undo History · Saving, copies and backups · Settings · Keyboard shortcuts · Custom Code.
-- **Still to write, each in the PR that ships the feature:**
-  - *Version History* (4.6a, 4.6b);
-  - the rest of *Publish* (4.4b, 4.5);
-  - *AI apps* (4.9, whose scope already asks for it).
-
-  Main has the code for all three, but nobody can reach it yet.
+- **Checking and going live:** Preview · Site Check · Export · Publish (`status: partial`: no Netlify yet).
+- **Your work:** Undo and Undo History · Version History · Saving, copies and backups · Settings · Keyboard shortcuts · Custom Code · AI apps (`status: partial`: pairing by address and key only).
+- **Still to write, each in the PR that ships the feature:** publishing a version again (4.6b), Netlify (4.4b), and connecting Claude Desktop through its extension (4.9).
 
 Every Add-panel component type, child items included, appears in exactly one page's `components`, with a heading of its own: [sections](../../docs/help/sections.md), [elements](../../docs/help/elements.md), [header-and-footer](../../docs/help/header-and-footer.md) and [custom-code](../../docs/help/custom-code.md).
 
@@ -121,7 +118,7 @@ Pages go stale quietly, so the checks have to be mechanical where they can be:
 The pages are written so the app can show them as they are:
 - **Bundled, offline.** The renderer imports `docs/help/*.md` at build time and validates the front matter with zod, so a bad page fails the build. The pages ship inside the app, and nothing is fetched (standards §9, C8's spirit).
 - **A Help window:**
-  - a contents list from the README's groups, and a search over titles, summaries and text (a small local index, MIT-licensed such as MiniSearch, or a plain substring search over 26 pages);
+  - a contents list from the README's groups, and a search over titles, summaries and text (a small local index, MIT-licensed such as MiniSearch, or a plain substring search over 28 pages);
   - pages rendered from the strict Markdown subset by a permissive renderer with raw HTML off (marked or micromark, both MIT);
   - links between pages open in the window, and the rare outside link opens in the browser;
   - `{appName}` filled in by `template()`.
@@ -140,7 +137,7 @@ The pages are written so the app can show them as they are:
 
 ## 8. Effort
 
-- **This PR:** the 26 pages, this note, and the README. Docs only, so no plan days.
+- **This PR:** the 28 pages, this note, and the README. Docs only, so no plan days.
 - **Phase 4:** about half a day spread across 4.4b, 4.5, 4.6a, 4.6b and 4.9, for their pages. Within their estimates.
 - **5.4 grows**, and splits in two because it goes over 5 days (the Phase 2 rule):
   - **5.4a, Onboarding and tour** (4 days, unchanged): the first-run tour, first-time tips, and the usability test.
@@ -151,9 +148,11 @@ The pages are written so the app can show them as they are:
 
   Phase 5: +2.5 days.
 
-## 9. Decisions proposed
+## 9. Decisions
 
-| ID | Proposal |
+Decided by the product owner on 7 Nov 2026, each as proposed.
+
+| ID | Decision |
 |---|---|
 | HP-1 | **Three kinds of help:** inline help text (`t()` strings), help pages (Markdown) and a guided first run. Each has its own job (§3) |
 | HP-2 | **Help pages live in `docs/help/`** as Markdown with the front matter in §5, one page per feature or panel, written for the small-business owner in the glossary's words, with `{appName}` for the app's name. The README holds the writing rules |
@@ -162,11 +161,11 @@ The pages are written so the app can show them as they are:
 | HP-5 | **`pnpm help-check`** in `pnpm check` (§6, 2), built in 5.4b |
 | HP-6 | **Help in the app, offline:** bundled at build, a Help window with search, and the ways in listed in §7, *Help for this element* among them. No online help in the MVP |
 | HP-7 | **5.4 splits** into 5.4a *Onboarding and tour* (4 days) and 5.4b *Help in the app* (2.5 days, new): Phase 5 +2.5 days |
-| HP-8 | **Fix the gaps in the app, not in help:** Netlify Forms is hidden or marked until 4.2 merges (`type/bug`). The Layers lock icon stays out of help until something locks |
+| HP-8 | **Fix the gaps in the app, not in help:** Netlify Forms is offered only once the site has a Netlify destination, which 4.4b's acceptance criteria already require (#723). The Layers lock icon stays out of help until something locks |
 | HP-9 | **A help review at each phase exit,** and beta testers' questions feed the pages (§6, 4–5) |
 
-Once decided, the changes follow CLAUDE.md's *Working the plan*:
+The changes, following CLAUDE.md's *Working the plan*:
 - a line in `spec/02` §7 and in standards §8 and §9;
 - 5.4's five places, and a new 5.4b in all five;
 - acceptance-criteria lines on #723, #73, #74, #724 and #171;
-- the Netlify Forms issue.
+- no separate Netlify Forms issue: 4.4b (#723) covers it.

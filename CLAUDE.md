@@ -20,6 +20,7 @@ A desktop builder for non-technical small-business owners that produces self-con
   - Core packages contain no React.
 - **Every document change goes through `HistoryManager.run/begin`.** It must be undoable, with a meaningful label ("Edited Header text").
 - **No hard-coded UI strings.** Use `t('key')`, with wording from the glossary in `research/product/01-terminology.md`. Hierarchy: Site → Page → Section → Element.
+- **Help pages stay current.** A change people can see updates its page in `docs/help/` in the same PR, and the page's `updated` date (HP-4). Rules in `docs/help/README.md`.
 - **The app's name is `{appName}` in every message,** filled in from `app.name`; a rename changes that and `productName` only (`docs/branding.md`).
 - **Exported sites:**
   - no CDNs or external requests (except allowed GA4: behind consent, or cookieless when the banner is off)

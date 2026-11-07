@@ -3,7 +3,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-06
+updated: 2026-11-07
 ---
 
 # The editor
@@ -19,7 +19,7 @@ When a site is open, the editor fills the window.
   - the **Design | Content** switch;
   - buttons to show or hide the side panels;
   - **Preview**, **Export** and **Publish**.
-- **Left column:** the [Add](add-panel.md) panel and [Undo History](undo-and-history.md) as tabs, with [Layers](layers.md) underneath.
+- **Left column:** the [Add](add-panel.md) panel, [Undo History](undo-and-history.md) and [Version History](version-history.md) as tabs, with [Layers](layers.md) underneath.
 - **Middle:** your page, as visitors will see it. Above it are the canvas toolbar and a line showing where the selected item sits on the page.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
 - **Bottom panel:** [Site Check](site-check.md). Show or hide it with Ctrl+J (Cmd+J on a Mac).

@@ -1,17 +1,19 @@
 ---
 id: publish
 title: Publish
-summary: Set up where {appName} puts your website on the internet.
-related: [export, site-check, site-settings]
-updated: 2026-11-06
+summary: Put your website on your web host, and update it with one click whenever you change something.
+related: [export, site-check, site-settings, version-history]
+updated: 2026-11-07
 status: partial
 ---
 
 # Publish
 
-**Publish** will put your website on your web host for you, and update only what changed each time. Today you can set up and test where it goes, called a **publish destination**. Publishing itself is coming in a later version. Until then, [export](export.md) your site and upload it with your host's own tools.
+**Publish** puts your website on your web host for you, and after that sends only what changed. Where it goes is called a **publish destination**: your web host's address, your user name and the folder it serves. Set it up once, then publish with one click.
 
 Click **Publish** in the title bar, choose **File › Publish…**, or press Ctrl+U (Cmd+U on a Mac) when you're not typing text.
+
+Publishing to Netlify, and publishing an earlier version again, are coming in a later version.
 
 ## Adding your web host
 
@@ -28,9 +30,27 @@ Click **Add Destination**, then fill in the details from your web host's control
 
 The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
 
+## Publishing
+
+Click **Publish** beside a destination. {appName}:
+1. Runs [Site Check](site-check.md). If anything is *Must fix*, nothing is sent: Site Check opens to show what to fix first.
+2. Builds your site, compares it with what's on your host, and sends only new and changed files. A notice shows how far it's got; **Cancel** stops it before the next file, and your live site keeps working.
+3. Removes files your site no longer has. It only ever removes files it published itself, so anything else on your host is left alone.
+
+If the folder already has another site that {appName} published, it asks before replacing it.
+
+When it's done, **Your site is live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open Site** opens it in your browser and **Copy Link** copies its address. A new site can take a few minutes to appear.
+
+Each publish is kept in [Version History](version-history.md) as *Published*.
+
+### If publishing doesn't work
+
+{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit**, or publishing again once your internet connection is back. Publishing again sends whatever didn't arrive.
+
 ## Testing, changing and removing
 
 Each destination has:
+- **Publish**.
 - **Test Connection:** says whether {appName} can sign in and reach the folder, or what's wrong.
 - **Edit**.
 - **Remove:** {appName} forgets the destination and its password. Nothing on your host changes.
@@ -39,4 +59,4 @@ A site can have up to 20 destinations.
 
 ## Your passwords
 
-Passwords are kept safe by your computer's own password store, never in your site's file. So they don't travel with a copy of your site, and you'll type them again on another computer.
+Passwords are kept safe by your computer's own password store, never in your site's file. **Publish** and **Test Connection** wait until the destination's password is saved on this computer. So they don't travel with a copy of your site, and you'll type them again on another computer.
