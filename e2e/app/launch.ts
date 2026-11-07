@@ -44,7 +44,9 @@ function electronCommand(): { executablePath: string; env: Record<string, string
   // Main's AI bridge on its globals, for ai-commands.spec.ts (E2E_AI_VARIABLE in main's ai-ipc.ts),
   // a line on stderr once it has closed (E2E_CLOSED_VARIABLE in main's e2e-closed.ts, #534), and
   // Download and bundle's network stood in for, so no test reaches another website
-  // (E2E_BUNDLE_VARIABLE in main's bundle-download.ts, 3.9).
+  // (E2E_BUNDLE_VARIABLE in main's bundle-download.ts, 3.9), and the phone preview on 127.0.0.1
+  // (E2E_PHONE_VARIABLE in main's network-address.ts, #748). The rule: no E2E test listens on an
+  // address beyond this computer, or Windows Firewall asks about each worktree's Electron.
   return {
     executablePath,
     env: {
@@ -53,6 +55,7 @@ function electronCommand(): { executablePath: string; env: Record<string, string
       WEBFORGE_E2E_CLOSED: "1",
       WEBFORGE_E2E_BUNDLE: "1",
       WEBFORGE_E2E_FONTS: "1",
+      WEBFORGE_E2E_PHONE: "1",
     },
   };
 }
