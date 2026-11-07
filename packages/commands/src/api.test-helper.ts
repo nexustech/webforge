@@ -4,7 +4,7 @@ import { vi } from "vitest";
 import type { CommandHost } from "./types.js";
 
 /** A site with a home page (a Section holding a Heading, and a Hero) and an About page. */
-export function site(): SiteDoc {
+function site(): SiteDoc {
   const doc = createSite({
     name: "Rosa's Bakery",
     language: "en",

@@ -38,27 +38,8 @@ import {
   type Placed,
   pagesShowing,
 } from "./locations.js";
-import type { ChangeKind, Confirmation, Refusal } from "./types.js";
-
-/** What a command will do: one undo step, and the confirmation it waits for, if any (D7). */
-export type Plan = {
-  /** The step's action, before the app's name: "Added Hero". */
-  readonly action: string;
-  /** Changes the page's structure: refused in Content mode (1.26). */
-  readonly structural: boolean;
-  /** What kind of change it is, as the editor's own are: a removal offers Undo in a toast (D4). */
-  readonly kind: ChangeKind;
-  /** Asked first, for a change to more than one page (D7); `{app}` is the app's name. */
-  readonly confirm?: ((app: string) => Confirmation) | undefined;
-  readonly recipe: (draft: SiteDoc) => void;
-  /** What it makes: a new element's or page's id. */
-  readonly id?: string;
-};
-
-/** Why a command can't be planned. */
-export type Failure = { readonly status: Refusal; readonly message: string };
-
-const fail = (status: Refusal, message: string): Failure => ({ status, message });
+import { type Failure, fail, failed, type Plan } from "./plan.js";
+import { updateSettings } from "./settings-command.js";
 
 /** Whether a field is about what an element says (Content mode's), not how it looks. */
 function isContent(field: CatalogueField): boolean {
@@ -336,9 +317,6 @@ function pageOf(site: SiteDoc, pageId: string): PageEntry | Failure {
 
 /** "page 'About'", for the history's "Deleted {item}" labels, as the Pages panel's. */
 const pageItem = (title: string) => t("pages.item", { name: title });
-
-/** Whether a planning step failed. */
-const failed = (value: object): value is Failure => "status" in value;
 
 const nodeId = z.string().min(1).max(200);
 const values = z.record(z.string(), z.unknown());
@@ -634,6 +612,7 @@ export const COMMANDS = {
           confirm: t("ai.confirm.allow"),
           affectedPages: pagesChangedByDeleting(site, id),
         }),
+        removesPage: id,
         recipe: (draft) => deletePageFrom(draft, id),
       };
     },
@@ -781,6 +760,7 @@ export const COMMANDS = {
       };
     },
   },
+  updateSettings,
   /**
    * Sets theme tokens: colours, fonts, corners, spacing… Changes every page (D7). A group it names
    * in part (`{ fonts: { heading } }`) keeps the values it doesn't name (#645).

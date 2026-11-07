@@ -15,6 +15,8 @@ export const ai = {
   // Deleting a page, as the person's Delete Page asks (4.11): the dialog then says how many pages
   // change, links to it on other pages included.
   "ai.confirm.removePage": "Allow {app} to delete the page {title}?",
+  // Site Settings show on every page (4.11): "Allow Claude to change Site Settings: Contact & hours?"
+  "ai.confirm.settings": "Allow {app} to change Site Settings: {sections}?",
   "ai.confirm.layout": "Allow {app} to change the {part}?",
   "ai.confirm.shared": "Allow {app} to change the shared section {name}?",
   "ai.confirm.allow": "Allow",

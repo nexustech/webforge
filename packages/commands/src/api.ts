@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { z } from "zod";
-import { COMMANDS, type CommandName, type Failure, type Plan } from "./commands.js";
+import { COMMANDS, type CommandName } from "./commands.js";
+import type { Failure, Plan } from "./plan.js";
 import { QUERIES, type QueryName, QueryRefusal } from "./queries.js";
 import type { Actor, CommandHost, CommandResult } from "./types.js";
 
@@ -105,7 +106,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
       if ("status" in plan) return plan;
       if (busy(host)) return { status: "busy", message: BUSY };
       const label = t("ai.history", { app: actor.app, action: plan.action });
-      host.run(label, plan.recipe, plan.kind);
+      host.run(label, plan.recipe, plan.kind, plan.removesPage);
       return { status: "done", label, ...(plan.id === undefined ? {} : { id: plan.id }) };
     },
   };
