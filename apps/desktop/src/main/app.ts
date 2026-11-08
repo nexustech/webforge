@@ -643,6 +643,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         const open = projectSession.current();
         return open === null ? "failed" : versions.saveVersionBefore(open.sessionId, name);
       },
+      opening: () => projectSession.current()?.sessionId,
     });
     mcp = service;
     void service.start().catch((error: unknown) => logFailure("mcp start", error));

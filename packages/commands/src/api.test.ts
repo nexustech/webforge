@@ -773,6 +773,53 @@ describe("where visitors' money and details go (S18, #658)", () => {
     }
   });
 
+  it("asks before a Pricing plan's button link changes, naming both addresses (5.6)", async () => {
+    const plans = (doc: SiteDoc) => {
+      doc.pages[doc.homePageId]?.doc.content.push({
+        type: "Pricing",
+        props: {
+          id: "pricing",
+          items: [
+            {
+              type: "PricingPlan",
+              props: { id: "plan", name: "Cakes", link: { kind: "url", href: PAY } },
+            },
+          ],
+        },
+      });
+    };
+    const { history, host, confirm } = setup(false, plans);
+    const api = createCommandApi(host);
+    const repointed = await api.run(
+      "updateFields",
+      {
+        location: home(history),
+        nodeId: "plan",
+        values: { link: { kind: "url", href: "https://evil-checkout.example/pay" } },
+      },
+      app,
+    );
+    expect(repointed.status).toBe("declined");
+    expect(confirm.mock.calls[0]?.[0].description).toBe(
+      "Button link: from buy.stripe.com to evil-checkout.example.",
+    );
+    expect(history.state.getState().entries).toEqual([]);
+  });
+
+  it("refuses a field an element only inherits, rather than failing (5.6)", async () => {
+    const { history, host } = setup(true, shop);
+    const api = createCommandApi(host);
+    for (const name of ["constructor", "toString", "__proto__"]) {
+      const result = await api.run(
+        "updateFields",
+        { location: home(history), nodeId: "buy", values: { [name]: "x" } },
+        app,
+      );
+      expect(result.status, name).toBe("invalid");
+    }
+    expect(history.state.getState().entries).toEqual([]);
+  });
+
   it("names whole addresses on one host, and asks when one is added with an address", async () => {
     const { history, host, confirm } = setup(true, shop);
     const api = createCommandApi(host);

@@ -11,12 +11,12 @@ export type HelpLinkDestination =
 
 /**
  * Where `href`, a link on help page `page`, goes (5.4b, HP-6): `export.md#options` and `#tips`
- * stay in the Help window, an `https://` or `http://` page opens in the browser, and anything else
- * (a file, a `mailto:`, a page outside `docs/help/`) is shown as text. `pnpm help-check` keeps
- * the pages from linking anywhere else.
+ * stay in the Help window, an `https://` page opens in the browser, and anything else (a plain
+ * `http://` page, a file, a `mailto:`, a page outside `docs/help/`) is shown as text (5.6).
+ * `pnpm help-check` keeps the pages from linking anywhere else.
  */
 export function helpLinkDestination(href: string, page: string | undefined): HelpLinkDestination {
-  if (/^https?:\/\//i.test(href)) return { kind: "web", url: href };
+  if (/^https:\/\//i.test(href)) return { kind: "web", url: href };
   const link = /^(?:([a-z0-9-]+)\.md)?(?:#([\p{L}\p{N}_-]+))?$/u.exec(href);
   if (link === null || href === "") return { kind: "none" };
   const [, file, anchor] = link;

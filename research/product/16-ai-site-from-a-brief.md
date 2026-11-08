@@ -189,6 +189,8 @@ Decided by the product owner on 7 Nov 2026, each as proposed. 4.12 is split into
 | AIB-9 | **The Rapidfix test:** an E2E run of the prompt by a scripted MCP client, with its refusals | 0.75 |
 | AIB-10 | **Order:** AIB-1…AIB-4 first, as 4.11 *AI apps: settings, pages and the catalogue* (3.75 days), in Phase 4, on stream C right after 4.9, since without them an app can't finish an ordinary site. AIB-5…AIB-9 next, as 4.12 *AI apps: a site from a brief* (8 days), in **Phase 5** before 5.7, so Phase 4's milestone (19 Nov 2026) holds (§7). The in-app assistant (v1.1, AIA-4) gets all of it through the same server | – |
 
+**AIB-6, amended 7 Nov 2026 (security review 2, S26, #793):** a plan's one version is the one the person's **Allow** saves, named *Before ‹app›'s changes: ‹title›*. Main no longer saves one before each plan, and the version before an app's first single command is saved once per app per opening of the site, however often it reconnects. Before this, each new connection and each plan, even an invalid one refused before it asked, saved a version, so an app on its own could push the site as it was out of the versions kept. App versions are still pruned like any other version Webforge saves.
+
 **Total:** 11.75 days. 4.11 is 3.75 days and 4.12 is 8, which is over 5 days, so it would be split when planned.
 
 ## 7. What it does to the dates

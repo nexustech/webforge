@@ -343,9 +343,9 @@ const PAGE_LINK = /^(?:([a-z0-9-]+)\.md)?(?:#([^#\s]+))?$/;
 /**
  * What's wrong with the help pages (HP-5): front matter that doesn't parse, an `id` that's repeated
  * or isn't its file's name, a link or anchor between pages that doesn't resolve, a link outside the
- * help pages, a `related` page that isn't there, a component type on no page, on two or with no
- * heading there, a page that spells out the app's name, raw HTML or a picture, and a **?** link that
- * reaches no page or heading.
+ * help pages or to a plain `http://` page, a `related` page that isn't there, a component type on
+ * no page, on two or with no heading there, a page that spells out the app's name, raw HTML or a
+ * picture, and a **?** link that reaches no page or heading.
  * Each problem is one line, starting with the file it's in. None means all is well.
  */
 export function checkHelpPages(input: HelpCheckInput): readonly string[] {
@@ -376,7 +376,12 @@ export function checkHelpPages(input: HelpCheckInput): readonly string[] {
   for (const [id, page] of pages) {
     const name = `${id}.md`;
     for (const href of page.links) {
-      if (/^(https?:|mailto:)/.test(href)) continue;
+      // The Help window opens only https pages (5.6): plain http can be read or changed on the way.
+      if (/^http:/i.test(href)) {
+        problems.push(`${name}: links to a plain http page: ${href}; use https`);
+        continue;
+      }
+      if (/^(https:|mailto:)/i.test(href)) continue;
       const link = PAGE_LINK.exec(href);
       if (link === null || href === "") {
         problems.push(`${name}: links outside the help pages: ${href}`);

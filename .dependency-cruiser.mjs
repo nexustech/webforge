@@ -192,6 +192,23 @@ export default {
       },
     },
     {
+      name: "publish-secrets-only-through-publish-secrets",
+      severity: "error",
+      comment:
+        "A publish secret is saved only through PublishSecrets, tied to where it was typed for " +
+        "(security review S2, S38): the keychain's store is opened by app.ts and used by " +
+        "publish-secrets.ts and ai-apps.ts (its own MCP keys), and the publish IPC reads its " +
+        "error type.",
+      from: {
+        path: "^apps/desktop/src/",
+        pathNot: [
+          "\\.test\\.tsx?$",
+          "^apps/desktop/src/main/(app|publish-secrets|ai-apps|publish-destinations-ipc)\\.ts$",
+        ],
+      },
+      to: { path: "^apps/desktop/src/main/credential-store\\.ts$" },
+    },
+    {
       name: "test-utils-only-in-tests",
       severity: "error",
       comment: "test-utils holds fixtures and helpers for tests only.",
