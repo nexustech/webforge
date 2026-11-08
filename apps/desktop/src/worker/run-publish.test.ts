@@ -106,7 +106,8 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
       removed: 1,
       check: "live",
     });
-    expect(make).toHaveBeenCalledWith(destination, publishing.signIn, publishing.trust);
+    // Netlify's own API: the job names no other.
+    expect(make).toHaveBeenCalledWith(destination, publishing.signIn, publishing.trust, {});
     expect(stages).toEqual(
       expect.arrayContaining(["pages", "preparing", "uploading", "verifying"]),
     );
@@ -115,6 +116,20 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     expect(home).toContain("trusted()");
     expect(home).not.toContain("untrusted()");
   }, 60_000);
+
+  it("publishes to the API the job names: the E2E tests' mock Netlify (#70)", async () => {
+    const { make } = fakePublisher();
+    const publishing = {
+      ...(await job(site())),
+      netlifyApi: "http://127.0.0.1:51234/api/v1",
+    };
+
+    await runPublish(publishing, loadNodeResources, channel(make));
+
+    expect(make).toHaveBeenCalledWith(destination, publishing.signIn, publishing.trust, {
+      netlifyApi: "http://127.0.0.1:51234/api/v1",
+    });
+  });
 
   it("answers the publisher's failure by its code, and a cancel as cancelled", async () => {
     const otherSite = fakePublisher(new PublishError("other-site", "another project's folder"));

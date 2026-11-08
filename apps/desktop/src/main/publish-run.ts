@@ -124,6 +124,11 @@ export type PublishRunDeps = {
   readonly versionsKept: () => number;
   /** Now, for the publish record; the clock unless a test says. */
   readonly now?: () => Date;
+  /**
+   * Netlify's API, when not Netlify's own: the E2E tests' mock, which only an unpackaged app
+   * reaches (`netlifyApiFor`, #70).
+   */
+  readonly netlifyApi?: string | undefined;
 };
 
 /** What a publish reads of the site, in one turn of the event loop (ADR 0018 §3). */
@@ -234,6 +239,9 @@ export function registerPublishRun(
             },
             trustedCode: siteCodePieces(kept).map((piece) => hashOf(piece.text)),
             ...(await deps.fontsOf(kept.theme)),
+            ...(destination.kind === "netlify" && deps.netlifyApi !== undefined
+              ? { netlifyApi: deps.netlifyApi }
+              : {}),
           },
           {
             // A site replaced while it publishes cancels it, as Cancel would (#663).

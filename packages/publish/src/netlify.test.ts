@@ -1,5 +1,5 @@
+import { FAKE_TOKEN, fakeNetlify } from "@webforge/test-utils/netlify";
 import { describe, expect, it } from "vitest";
-import { FAKE_TOKEN, fakeNetlify } from "./fake-netlify.test-helper.js";
 import { netlifyClient, netlifyPublisher } from "./netlify.js";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 
@@ -240,7 +240,7 @@ describe("netlifyPublisher.publish", () => {
     );
 
     expect(String((error as Error).message)).not.toContain(FAKE_TOKEN);
-    expect((error as Error).message).toBe("Netlify answered 500 to POST /sites/site-1/deploys");
+    expect((error as Error).message).toBe(`Netlify answered 500 to POST /sites/${siteId}/deploys`);
   });
 });
 

@@ -91,6 +91,14 @@ const publishJobSchema = z.strictObject({
   trustedCode: z.array(sha256Schema).max(10_000),
   fonts: exportJobSchema.shape.fonts,
   families: downloadedFamiliesSchema,
+  /**
+   * Netlify's API, when not Netlify's own: the E2E tests' mock on this computer, which main sets
+   * only in an unpackaged app (`netlifyApiFor`, #70).
+   */
+  netlifyApi: z
+    .url({ protocol: /^http$/, hostname: /^(127\.0\.0\.1|localhost|\[::1\])$/ })
+    .max(200)
+    .optional(),
 });
 
 /** Publishes a site to a destination. */

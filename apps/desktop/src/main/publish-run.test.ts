@@ -68,8 +68,14 @@ function handlers({
   siteOpen = true,
   saveFails = false,
   flushWith,
+  to = destination,
+  netlifyApi,
 }: {
   readonly site?: SiteDoc;
+  /** The destination published to; an SFTP host by default. */
+  readonly to?: PublishDestination;
+  /** Netlify's API, as an unpackaged app launched by the E2E tests has it (#70). */
+  readonly netlifyApi?: string;
   readonly outcome?: (job: PublishJob, signal: AbortSignal | undefined) => Promise<PublishOutcome>;
   readonly signedIn?: boolean;
   readonly siteOpen?: boolean;
@@ -86,7 +92,7 @@ function handlers({
     versionId = store.saveVersion("Before the menu", "manual").id;
   }
   store.saveSite(site);
-  store.writePublishDestinations([destination]);
+  store.writePublishDestinations([to]);
   const runner = {
     publish: vi.fn<ExportRunner["publish"]>(async (job, options) => {
       options.onProgress?.({ stage: "uploading", done: 1, total: 12 });
@@ -138,6 +144,7 @@ function handlers({
     holdManifest,
     openExternal,
     now: () => new Date("2026-11-01T14:02:00Z"),
+    ...(netlifyApi === undefined ? {} : { netlifyApi }),
   };
   const registered = new Map<string, Handler>();
   const ipc = {
@@ -147,9 +154,9 @@ function handlers({
   const invoke = (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
   const publish = (replaceOtherSite = false) =>
-    invoke("publish:publish", SESSION, destination.id, OPERATION, { replaceOtherSite });
+    invoke("publish:publish", SESSION, to.id, OPERATION, { replaceOtherSite });
   const republish = (id = versionId) =>
-    invoke("publish:publish", SESSION, destination.id, OPERATION, {
+    invoke("publish:publish", SESSION, to.id, OPERATION, {
       replaceOtherSite: false,
       versionId: id,
     });
@@ -219,6 +226,27 @@ describe("Publish (4.5, ADR 0018)", () => {
     );
     // When it went live, kept apart from the versions for Site Check (F-CM-8).
     expect(store.readLastPublishedAt()).toBe("2026-11-01T14:02:00.000Z");
+  });
+
+  it("sends a publish to Netlify to the API main was given, and nothing else there (#70)", async () => {
+    const mock = "http://127.0.0.1:51234/api/v1";
+    const netlify: PublishDestination = {
+      id: "0b6a2c1e-7b3d-4a5e-9c8f-1d2e3f4a5b6c",
+      name: "Netlify",
+      kind: "netlify",
+      siteId: "3c9b6a2e-1d4f-4e8a-9b7c-5a6d7e8f9a0b",
+    };
+    const toNetlify = handlers({ to: netlify, netlifyApi: mock });
+    await toNetlify.publish();
+    expect(jobOf(toNetlify.runner).netlifyApi).toBe(mock);
+
+    // An SFTP host's job names no Netlify API; nor does one without the E2E tests' mock.
+    const toHost = handlers({ netlifyApi: mock });
+    await toHost.publish();
+    expect(jobOf(toHost.runner).netlifyApi).toBeUndefined();
+    const toNetlifyItself = handlers({ to: netlify });
+    await toNetlifyItself.publish();
+    expect(jobOf(toNetlifyItself.runner).netlifyApi).toBeUndefined();
   });
 
   it("has the window save what the person sees before it reads the site (A4)", async () => {

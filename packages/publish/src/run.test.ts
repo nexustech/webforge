@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { FAKE_TOKEN, fakeNetlify } from "@webforge/test-utils/netlify";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { FAKE_TOKEN, fakeNetlify } from "./fake-netlify.test-helper.js";
 import { ftpPublisher } from "./ftp.js";
 import { startFtpServer, TEST_TLS } from "./ftp-server.test-helper.js";
 import { netlifyClient, netlifyPublisher } from "./netlify.js";

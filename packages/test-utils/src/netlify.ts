@@ -1,8 +1,12 @@
-import { sha1 } from "./manifest.js";
+import { createHash } from "node:crypto";
 
-// An in-memory stand-in for the Netlify endpoints netlifyClient uses, as an injectable `fetch`.
-// It keeps state like the real service: content Netlify already has is not required again, a
-// deploy goes live once every required file is uploaded, and old deploys can be restored.
+// An in-memory stand-in for the Netlify endpoints netlifyClient uses, as an injectable `fetch`:
+// the publish package's tests call it directly, and e2e's mock Netlify server answers HTTP with it
+// (#70). It keeps state like the real service: content Netlify already has is not required again,
+// a deploy goes live once every required file is uploaded, and old deploys can be restored.
+
+/** A file's SHA-1, as Netlify's digest deploy names it. */
+const sha1 = (data: Uint8Array): string => createHash("sha1").update(data).digest("hex");
 
 type FakeDeploy = {
   id: string;
@@ -134,7 +138,10 @@ export function fakeNetlify() {
     if (route("GET", /^\/sites$/)) return json(200, [...sites.values()].map(siteJson));
     if (route("POST", /^\/sites$/)) {
       const body = JSON.parse(String(init?.body ?? "{}")) as { name?: string };
-      const site = { id: `site-${++ids}`, name: body.name ?? `random-${ids}`, current: null };
+      // Netlify's site ids are UUIDs, which a destination's `siteId` must be.
+      const n = ++ids;
+      const id = `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
+      const site = { id, name: body.name ?? `random-${n}`, current: null };
       sites.set(site.id, site);
       return json(201, siteJson(site));
     }
@@ -238,6 +245,10 @@ export function fakeNetlify() {
     /** Sign-in tickets are approved on the `polls`-th check, or never (`null`). */
     approveTickets(polls: number | null) {
       approveAfter = polls;
+    },
+    /** Forgets deploy `id`, as Netlify does once a deploy is older than the account keeps. */
+    dropDeploy(id: string) {
+      deploys.delete(id);
     },
     /** Deploys stay "processing" for `polls` polls, then end in `state`. */
     processing(polls: number, state = "ready") {

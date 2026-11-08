@@ -36,6 +36,7 @@ import { createCredentialStore } from "./credential-store.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
+import { netlifyApiFor } from "./e2e-netlify.js";
 import { createExportFeature } from "./export-feature.js";
 import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
@@ -430,6 +431,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       holdManifest: (manifest) => projectSession.holdManifest(manifest),
       // Looked up as it's called, as the export's shell is.
       openExternal: (url) => electron.shell.openExternal(url),
+      // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
+      netlifyApi: netlifyApiFor(app.isPackaged),
     }),
   ];
   for (const feature of features) {

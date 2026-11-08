@@ -57,6 +57,8 @@ export type PublishTo = PublishDestination extends infer D
 export type PublisherForOptions = {
   /** How long connecting and each step may take, for the file-transfer publishers. */
   readonly timeoutMs?: number;
+  /** Netlify's API, when not Netlify's own (`NETLIFY_API`): the E2E tests' mock (#70). */
+  readonly netlifyApi?: string;
 };
 
 /** A publisher that can't be used: each call fails with `code`, before anything is sent. */
@@ -108,7 +110,8 @@ export function publisherFor(
       return unusable("not-found", "The Netlify site hasn't been chosen yet");
     }
     const netlify = { siteId: destination.siteId };
-    return bound(netlifyPublisher({ token: signIn.token }), netlify, () => netlify);
+    const apiBase = options.netlifyApi === undefined ? {} : { apiBase: options.netlifyApi };
+    return bound(netlifyPublisher({ token: signIn.token, ...apiBase }), netlify, () => netlify);
   }
   const { settings } = destination;
   const at = {

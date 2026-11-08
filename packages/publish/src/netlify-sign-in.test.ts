@@ -1,5 +1,5 @@
+import { FAKE_CLIENT_ID, FAKE_TOKEN, fakeNetlify } from "@webforge/test-utils/netlify";
 import { describe, expect, it } from "vitest";
-import { FAKE_CLIENT_ID, FAKE_TOKEN, fakeNetlify } from "./fake-netlify.test-helper.js";
 import { signInToNetlify } from "./netlify-sign-in.js";
 
 function setUp() {

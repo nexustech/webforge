@@ -69,6 +69,7 @@ export async function runPublish(
       job.destination,
       job.signIn,
       job.trust,
+      job.netlifyApi === undefined ? {} : { netlifyApi: job.netlifyApi },
     );
     let published: PublishedEvent | undefined;
     let check: Extract<PublishOutcome, { type: "published" }>["check"] = "unchecked";
