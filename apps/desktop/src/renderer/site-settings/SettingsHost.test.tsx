@@ -21,7 +21,10 @@ function setUp(session = sessionWith()) {
   const commands = createCommandRegistry();
   const preferences = createPreferencesStore();
   const settings = createSettingsRegistry();
-  registerAppSettings(settings, preferences);
+  // As the window's settings area does: the line runs AI apps' command (#752).
+  registerAppSettings(settings, preferences, () => {
+    commands.run(COMMAND_IDS.aiApps);
+  });
   registerSiteSettings(settings, session);
   render(
     <CommandRegistryProvider registry={commands}>
@@ -68,10 +71,37 @@ describe("SettingsHost (LF-12)", () => {
     SLOW,
   );
 
+  it(
+    "opens AI apps from Settings › App, by keyboard, and stays open under it (#752)",
+    async () => {
+      const { commands, run, user } = setUp();
+      let opened = 0;
+      commands.register({
+        id: COMMAND_IDS.aiApps,
+        label: "AI apps…",
+        run: () => {
+          opened += 1;
+        },
+      });
+      run(COMMAND_IDS.settings);
+
+      await user.click(await screen.findByRole("tab", { name: "AI apps" }));
+      const open = screen.getByRole("button", { name: "Open AI apps…" });
+      open.focus();
+      await user.keyboard("{Enter}");
+
+      expect(opened).toBe(1);
+      // Settings stays, with what it holds: AI apps opens over it.
+      expect(screen.getByRole("dialog")).toBeTruthy();
+      expect(screen.getByRole("button", { name: "Save" })).toBeTruthy();
+    },
+    SLOW,
+  );
+
   it("keeps Site Settings… off while no site's part is there (#432 review)", () => {
     const commands = createCommandRegistry();
     const settings = createSettingsRegistry();
-    registerAppSettings(settings, createPreferencesStore());
+    registerAppSettings(settings, createPreferencesStore(), () => undefined);
     render(
       <CommandRegistryProvider registry={commands}>
         <SettingsHost registry={settings} />

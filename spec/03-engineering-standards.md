@@ -80,7 +80,7 @@ Enforced in CI by dependency-cruiser:
 ## 4. Code style & conventions
 | Topic | Rule |
 |---|---|
-| Files & folders | `kebab-case.ts`; React components `PascalCase.tsx`; one component per file; tests next to code as `*.test.ts(x)` |
+| Files & folders | `kebab-case.ts`; React components `PascalCase.tsx`; tests next to code as `*.test.ts(x)`. One exported component per file. Private helper components that only it uses may share the file, and so may the parts of one compound component used together (shadcn/ui's `Dialog` and `DialogContent`, a provider and the component that reads it), and a design system's small primitives of one kind kept as a set (editor-ui's form fields, site-components' typography) (A22) |
 | Naming | `camelCase` values/functions, `PascalCase` types/components, `useX` hooks, `SCREAMING_SNAKE` only for true constants; stores `*.store.ts` |
 | React | Function components only; React Compiler enabled for the editor (renderer, `editor-ui`, `engine`; [ADR 0010](../docs/adr/0010-react-compiler.md)), so no manual `useMemo`/`useCallback` unless measured, and nothing written to a ref or state while rendering. **`site-components` stay uncompiled on purpose:** compiled, they made `pnpm e2e:perf`'s 225-element page load in 2.1–2.3 s instead of 1.1–1.2 s and drag in 3.5–4.2 s instead of 1.3–1.5 s, and the export renders them uncompiled; measure before changing that. Correctness never depends on memoization (unit tests run uncompiled). No business logic in components (use hooks/stores); props typed explicitly |
 | State | Document state in the document store (via history). UI state (selection, panels, zoom) in a separate UI store, never in history (U6). Server/async state in dedicated hooks |

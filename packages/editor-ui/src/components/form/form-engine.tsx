@@ -9,6 +9,7 @@ import { PLAIN_RENDERERS } from "../edit/plain-renderers.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs.js";
 import { ErrorText, Field } from "./form.js";
 import {
+  ActionField,
   CheckField,
   ImageChoiceField,
   MultiChoiceField,
@@ -45,6 +46,7 @@ const FORM_OWN: FieldRenderers = {
   multiChoice: MultiChoiceField,
   imageChoice: ImageChoiceField,
   choice: ChoiceField,
+  action: ActionField,
 };
 
 /** Classes of a control `width` wide. */

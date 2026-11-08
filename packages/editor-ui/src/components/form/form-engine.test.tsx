@@ -110,6 +110,46 @@ describe("Form (2.21)", () => {
     expect(screen.getByRole("combobox", { name: "Service" })).toBeTruthy();
   });
 
+  it("draws an action as a button that runs at once, reached by Tab, and saves nothing (#752)", async () => {
+    const run = vi.fn();
+    const { saved, user } = setUp({
+      ...spec,
+      fields: (values) => [
+        ...(typeof spec.fields === "function" ? spec.fields(values) : spec.fields),
+        {
+          kind: "action",
+          name: "aiApps",
+          label: "AI apps",
+          help: "Let AI apps change your site.",
+          button: "Open AI apps…",
+          run,
+          group: "general",
+        },
+      ],
+    });
+
+    const button = screen.getByRole("button", { name: "Open AI apps…" });
+    expect(screen.getByText("AI apps")).toBeTruthy();
+    expect(button.getAttribute("aria-describedby")).toBeTruthy();
+    expect(
+      document.getElementById(button.getAttribute("aria-describedby") ?? "")?.textContent,
+    ).toBe("Let AI apps change your site.");
+    // From the last field before it, Tab reaches it; Enter runs it.
+    screen.getByRole("checkbox", { name: "Show a button" }).focus();
+    await user.tab();
+    expect(document.activeElement).toBe(button);
+    await user.keyboard("{Enter}");
+    expect(run).toHaveBeenCalledTimes(1);
+
+    // It holds no value: Save gives what it gave before, with nothing changed.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(saved).toHaveBeenCalledWith({
+      ok: true,
+      output: { name: "Rosa", open: false, service: "formspree", value: "x1" },
+      changedGroups: [],
+    });
+  });
+
   it("saves the values as the model takes them, with the groups that changed", async () => {
     const { saved, user } = setUp();
 
