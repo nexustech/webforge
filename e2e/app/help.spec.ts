@@ -115,3 +115,48 @@ test("opens Help from a ? at its section, and for the selected element at its he
   await expect(main.getByRole("heading", { level: 3, name: "Text" })).toBeInViewport();
   expect(app.windows()).toHaveLength(2);
 });
+
+test("gives the Help page its own Content Security Policy, with no Media, fonts or connections (S35)", async () => {
+  // Every page's console errors, from before the Help window opens, so its loading is covered.
+  const errors: string[] = [];
+  app.context().on("console", (message) => {
+    if (message.type() === "error" && message.page() !== editor) errors.push(message.text());
+  });
+  const help = await openHelp();
+  await expect(
+    help.getByRole("main").getByRole("heading", { level: 1, name: "All help pages" }),
+  ).toBeVisible();
+
+  const csp = await help
+    .locator('meta[http-equiv="Content-Security-Policy"]')
+    .getAttribute("content");
+  expect(csp).toContain("default-src 'none'");
+  expect(csp).toContain("connect-src 'none'");
+  expect(csp).toContain("img-src 'none'");
+  expect(csp).not.toContain("webforge-media");
+  expect(csp).not.toContain("webforge-font");
+
+  // The site's Media is out of reach: the policy stops the request before the scheme sees it.
+  const blocked = await help.evaluate(
+    () =>
+      new Promise<string>((resolve) => {
+        document.addEventListener("securitypolicyviolation", (event) =>
+          resolve(event.effectiveDirective),
+        );
+        const image = document.createElement("img");
+        image.src = "webforge-media://original/any";
+        document.body.append(image);
+      }),
+  );
+  expect(blocked).toBe("img-src");
+
+  // The pages themselves need nothing the policy refuses.
+  await help
+    .getByRole("navigation", { name: "Contents" })
+    .getByRole("button", { name: "Site Check", exact: true })
+    .click();
+  await expect(
+    help.getByRole("main").getByRole("heading", { level: 1, name: "Site Check" }),
+  ).toBeVisible();
+  expect(errors.filter((text) => !text.includes("webforge-media"))).toEqual([]);
+});
