@@ -1,3 +1,4 @@
+import { t } from "@webforge/i18n";
 import type { FormService, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
@@ -192,6 +193,36 @@ describe("Netlify Forms (4.2)", () => {
       expect(onNetlify.report.warnings).not.toContainEqual(
         expect.objectContaining({ code: "form-unset", detail: "netlify" }),
       );
+    },
+    scaledTestTimeout(90_000),
+  );
+
+  it(
+    "names two Forms with the same label apart, so Netlify keeps their messages apart",
+    async () => {
+      const base = withForms({ kind: "netlify" }, null);
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("The sample site has no home page");
+      const twoForms = [
+        { type: "Form", props: { id: "first" } },
+        { type: "Form", props: { id: "second" } },
+      ];
+      const site = {
+        ...base,
+        pages: [
+          { ...home, doc: { ...home.doc, content: [...home.doc.content, ...twoForms] } },
+          ...rest,
+        ],
+      };
+
+      const names = [
+        ...text(await built(site, "netlify"), "index.html").matchAll(
+          /<form[^>]*data-netlify="true"[^>]*>/g,
+        ),
+      ].map(([tag]) => / name="([^"]+)"/.exec(tag)?.[1]);
+
+      const label = t("starter.formLabel");
+      expect(names).toEqual([label, `${label} 2`]);
     },
     scaledTestTimeout(90_000),
   );

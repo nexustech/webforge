@@ -269,8 +269,10 @@ describe("httpsAddress", () => {
 });
 
 describe("netlifyFormName (4.2)", () => {
-  it("names a form for Netlify only in a build for Netlify", () => {
-    expect(netlifyFormName({ onNetlify: true }, "Contact form")).toBe("Contact form");
-    expect(netlifyFormName({}, "Contact form")).toBeUndefined();
+  it("names a form for Netlify only in a build for Netlify, by its element's id", () => {
+    const netlifyForms = new Map([["contact", "Contact form 2"]]);
+    expect(netlifyFormName({ netlifyForms }, "contact")).toBe("Contact form 2");
+    expect(netlifyFormName({ netlifyForms }, "other")).toBeUndefined();
+    expect(netlifyFormName({}, "contact")).toBeUndefined();
   });
 });

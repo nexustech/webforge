@@ -216,7 +216,7 @@ export const addressTarget = (address: string): FormTarget => ({
  * FormSubmit gives a random alias instead once the address is confirmed.
  *
  * Netlify Forms send only from a site Netlify serves (4.2): `netlifyForm`, the form's name there, is
- * given only by a build for a Netlify destination (`RenderContext.onNetlify`). Netlify takes the
+ * given only by a build for a Netlify destination (`RenderContext.netlifyForms`). Netlify takes the
  * post to the page itself, and shows the thank-you page after it (`thanksPage`, a path from the
  * site's root) or a page of its own.
  */
@@ -269,13 +269,13 @@ export function formAction(
 }
 
 /**
- * The name a form is listed under in Netlify Forms (4.2), when the site is built for Netlify
- * (`onNetlify`): its label, which the person chose ("Booking request"), or nothing elsewhere.
+ * The name element `id`'s form is listed under in Netlify Forms (4.2), when the site is built for
+ * Netlify (`netlifyForms`); nothing elsewhere.
  */
 export const netlifyFormName = (
-  context: { readonly onNetlify?: true },
-  label: string,
-): string | undefined => (context.onNetlify === true ? label : undefined);
+  context: { readonly netlifyForms?: ReadonlyMap<string, string> },
+  id: string,
+): string | undefined => context.netlifyForms?.get(id);
 
 /**
  * A form that posts its fields to `target`, a form service (F-CM-1, F-CM-6): plain HTML, no

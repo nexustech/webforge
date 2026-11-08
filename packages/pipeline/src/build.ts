@@ -31,6 +31,7 @@ import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
 import { processImage, UndecodableImageError } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
+import { netlifyFormNames } from "./netlify-forms.js";
 import type { PipelineResources } from "./resources.js";
 import {
   RUNS_ALL_CODE,
@@ -333,6 +334,8 @@ export async function* buildEvents(
     library,
     onNetlify,
   );
+  // Each form's own name in Netlify Forms, for a build for Netlify (4.2).
+  const netlifyForms = onNetlify ? netlifyFormNames(site) : undefined;
   // A page whose file Windows won't write (`con.html`, a folder `aux/`) stops the build before
   // anything else, naming the page, so the person can rename it (R16).
   const unwritable = site.pages.find((page) => page.path.split("/").some(isDeviceName));
@@ -532,7 +535,7 @@ export async function* buildEvents(
     bundled,
     thanksPage,
     cookieSettings: analytics?.consentBanner === true,
-    onNetlify,
+    netlifyForms,
   };
   const render = (page: SitePage, prefix: string): RenderedRegions => {
     const { context, regions, warnings: found } = pageRender(site, page, prefix, renderFiles);
@@ -564,8 +567,8 @@ export async function* buildEvents(
             images: [...images],
             missing: [...missing],
             documents: [...documentPaths],
-            // Forms are drawn for Netlify only in a build for it (4.2).
-            onNetlify,
+            // Forms are drawn for Netlify only in a build for it, each named across the site (4.2).
+            netlifyForms: netlifyForms === undefined ? null : [...netlifyForms],
           }),
         );
   // A page links to the others and its files `../` per folder up. The "Page not found" page is

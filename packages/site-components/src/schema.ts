@@ -325,10 +325,11 @@ export type RenderContext = SiteBindings & {
    */
   readonly cookieSettings?: true;
   /**
-   * Set by a build for a Netlify destination (4.2): forms whose service is Netlify Forms are drawn
-   * for Netlify to find and take their messages. Anywhere else they can't send (`FormUnset`).
+   * Each form's name in Netlify Forms by its element's id, set by a build for a Netlify destination
+   * (4.2): forms whose service is Netlify Forms are drawn for Netlify to find and take their
+   * messages, each under a name of its own. Anywhere else they can't send (`FormUnset`).
    */
-  readonly onNetlify?: true;
+  readonly netlifyForms?: ReadonlyMap<string, string>;
 };
 
 /**
