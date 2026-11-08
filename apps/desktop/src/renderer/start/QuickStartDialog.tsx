@@ -28,15 +28,6 @@ import { hexOf } from "../fields/index.js";
 import { recipeName } from "../site/index.js";
 import { readPixels } from "../theme/index.js";
 import {
-  Card,
-  presetLabel,
-  TEMPLATE_GRID,
-  TemplateDetails,
-  TemplatePreview,
-  ThemeOption,
-  templateName,
-} from "./NewSiteDialog.js";
-import {
   emptyAnswers,
   palettesFor,
   type QuickStartAnswers,
@@ -55,6 +46,11 @@ import {
   detailsValuesOf,
   EMPTY_DETAILS,
 } from "./quick-start-form.js";
+import { StartingPointCard } from "./StartingPointCard.js";
+import { TemplateDetails } from "./TemplateDetails.js";
+import { TemplatePreview } from "./TemplatePreview.js";
+import { ThemeOption } from "./ThemeOption.js";
+import { presetLabel, TEMPLATE_GRID, templateName } from "./template-labels.js";
 
 /** The quick start's steps, in order (QS-1). */
 const QUICK_START_STEPS = ["business", "look", "pages", "details"] as const;
@@ -365,7 +361,7 @@ function LookStep({
           )}
           <div className={TEMPLATE_GRID}>
             {shown.map((template) => (
-              <Card
+              <StartingPointCard
                 key={template.id}
                 name={choiceName}
                 checked={answers.template === template.id}
@@ -381,7 +377,7 @@ function LookStep({
                 details={() => setDetails(template)}
               />
             ))}
-            <Card
+            <StartingPointCard
               name={choiceName}
               checked={answers.template === null}
               onChoose={() => onTemplate(null)}
