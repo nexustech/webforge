@@ -25,11 +25,7 @@ export class UnknownComponentError extends WebforgeError<"unknown-component"> {
   readonly componentType: string;
 
   constructor(componentType: string) {
-    super(
-      "unknown-component",
-      "export.failed.buildFailed",
-      `Unknown component type "${componentType}"`,
-    );
+    super("unknown-component", `Unknown component type "${componentType}"`);
     this.componentType = componentType;
   }
 }

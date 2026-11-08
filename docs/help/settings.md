@@ -2,8 +2,8 @@
 id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, and your devices.
-related: [site-settings, the-editor]
-updated: 2026-11-07
+related: [site-settings, the-editor, ai-apps]
+updated: 2026-11-08
 ---
 
 # Settings
@@ -28,3 +28,7 @@ Click **Save** to keep your changes.
 ## Version History
 
 **Versions kept:** how many of the versions {appName} saves by itself to keep for each site, from 5 to 100 (20 at first). Versions you save yourself are always kept. See [Version History](version-history.md).
+
+## AI apps
+
+**Open AI apps…** opens [AI apps](ai-apps.md), where you let AI apps such as Claude work on your site. What you change there happens at once, without **Save**. Settings stays open behind it, with any changes you haven't saved yet.

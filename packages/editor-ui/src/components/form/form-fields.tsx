@@ -1,6 +1,7 @@
 import { cn } from "../../lib/cn.js";
 import type { FieldRendererProps } from "../edit/field-spec.js";
 import { describedBy, fieldControlClass } from "../edit/text-field.js";
+import { Button } from "../ui/button.js";
 import { ImageChoice } from "./form.js";
 
 // The renderers of the kinds only forms have (2.21), and a form's checkbox. Each draws its control
@@ -156,6 +157,26 @@ export function ImageChoiceField({
         />
       ))}
     </div>
+  );
+}
+
+/**
+ * A button that does something at once (#752): Settings › App's *AI apps…*, whose dialog acts as
+ * soon as it's used, so isn't a part of Settings. It holds no value, and Save keeps none. Named by
+ * what it says, and described by the field's help; the field's label is beside it.
+ */
+export function ActionField({ helpId, disabled = false, field }: FieldRendererProps<"action">) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      disabled={disabled}
+      aria-describedby={describedBy(helpId)}
+      onClick={field.run}
+    >
+      {field.button}
+    </Button>
   );
 }
 

@@ -57,16 +57,7 @@ export class WriteError extends WebforgeError<WriteErrorCode> {
   override readonly name = "WriteError";
 
   constructor(code: WriteErrorCode, message: string, options?: ErrorOptions) {
-    super(
-      code,
-      code === "folder-not-empty"
-        ? "export.failed.folderNotEmpty"
-        : code === "too-large"
-          ? "export.failed.tooLarge"
-          : "export.failed.writeFailed",
-      message,
-      options,
-    );
+    super(code, message, options);
   }
 }
 

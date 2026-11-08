@@ -3,7 +3,6 @@ import { aiApps } from "./en/aiApps.js";
 import { app } from "./en/app.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components/index.js";
-import { errors } from "./en/errors.js";
 import { exportSite } from "./en/export.js";
 import { fonts } from "./en/fonts.js";
 import { help } from "./en/help.js";
@@ -39,7 +38,6 @@ export const areas = {
   fonts,
   puck,
   publish,
-  errors,
   theme,
   templates,
   ai,
@@ -67,7 +65,6 @@ export const en = {
   ...fonts,
   ...puck,
   ...publish,
-  ...errors,
   ...theme,
   ...templates,
   ...ai,

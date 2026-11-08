@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { type NetlifyRequestOptions, netlifyRequester } from "./netlify.js";
-import { PublishError, throwIfCancelled } from "./publisher.js";
+import { PublishError } from "./publisher.js";
+import { sleep } from "./sleep.js";
 
 // Netlify sign-in with an OAuth "ticket" (ADR 0006), the flow netlify-cli uses: Webforge asks
 // Netlify for a ticket, the user approves it in their own browser, and Webforge exchanges the
@@ -26,21 +27,9 @@ export type NetlifySignInOptions = Omit<NetlifyRequestOptions, "token"> & {
   readonly signal?: AbortSignal;
 };
 
-function pause(ms: number, signal: AbortSignal | undefined): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(done, ms);
-    function done() {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", done);
-      resolve();
-    }
-    signal?.addEventListener("abort", done, { once: true });
-  });
-}
-
 /**
  * Signs in to Netlify in the user's browser and returns the access token. Fails with
- * `unauthorized` if the client ID is unknown, `cancelled` if `signal` aborts, and `failed` if
+ * `unauthorized` if the client ID is unknown, `cancelled` if `signal` aborts, and `timeout` if
  * the user does not approve within `timeoutMs` (default 5 minutes).
  */
 export async function signInToNetlify(options: NetlifySignInOptions): Promise<string> {
@@ -61,10 +50,9 @@ export async function signInToNetlify(options: NetlifySignInOptions): Promise<st
   const deadline = Date.now() + (options.timeoutMs ?? 5 * 60_000);
   for (let current = ticket; !current.authorized; ) {
     if (Date.now() > deadline) {
-      throw new PublishError("failed", "Netlify sign-in was not approved in time");
+      throw new PublishError("timeout", "Netlify sign-in was not approved in time");
     }
-    await pause(options.pollIntervalMs ?? 1_000, signal);
-    throwIfCancelled(signal);
+    await sleep(options.pollIntervalMs ?? 1_000, signal);
     current = await request("GET", ticketPath, ticketSchema, { signal });
   }
   const { access_token } = await request("POST", `${ticketPath}/exchange`, accessTokenSchema, {

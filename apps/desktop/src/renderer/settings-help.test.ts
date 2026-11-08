@@ -20,7 +20,7 @@ describe("Settings' ? links (5.4b)", () => {
       preferences: { ...createPreferencesStore().getState().preferences, editorLevel: "advanced" },
     });
     const session = sessionWith();
-    registerAppSettings(settings, preferences);
+    registerAppSettings(settings, preferences, () => undefined);
     registerVersionSettings(settings, preferences);
     registerSiteSettings(settings, session);
     registerSiteCode(settings, session, preferences, createCommandRegistry());
