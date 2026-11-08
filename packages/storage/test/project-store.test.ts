@@ -557,6 +557,44 @@ describe("ProjectStore.open with untrusted files", () => {
     expect(openResult(path)).toBe("corrupt");
   });
 
+  it("reports damage found after opening, when a read reaches it, as damaged (#807)", () => {
+    const path = createProject();
+    const store = ProjectStore.open(path);
+    const version = store.saveVersion("Before the menu", "manual");
+    store.close();
+    // The version's row, found by its id and name side by side (the id's index entry has no name).
+    // Before its record header (the header's size, then each column's type) is its rowid, 1. Made
+    // 0, the id's index entry points at a row that isn't there. Opening's quick check doesn't
+    // compare an index with its table, so the file opens, and a version read by its id finds the
+    // damage: the 5.6 fuzzing's case, which failed with SQLite's raw error.
+    const bytes = readFileSync(path);
+    const id = bytes.indexOf(`${version.id}Before the menu`);
+    const header = [...Array(16).keys()].find((size) => size > 1 && bytes[id - size] === size);
+    if (id < 0 || header === undefined) throw new Error("No version row in the file");
+    expect(bytes[id - header - 1]).toBe(1);
+    bytes[id - header - 1] = 0;
+    writeFileSync(path, bytes);
+
+    const damaged = ProjectStore.open(path, { readOnly: true });
+    try {
+      // The list reads the table itself, so it still works.
+      expect(damaged.listVersions().map(({ name }) => name)).toEqual(["Before the menu"]);
+      for (const read of [
+        () => damaged.readVersionManifest(version.id),
+        () => damaged.readVersion(version.id),
+        () => damaged.readVersionSite(version.id),
+      ]) {
+        expect(read).toThrow(
+          expect.objectContaining({ name: "ProjectFileError", code: "corrupt" }),
+        );
+      }
+      // What isn't damaged still reads.
+      expect(damaged.readDocuments()).toEqual([]);
+    } finally {
+      damaged.close();
+    }
+  });
+
   it("rejects a project with damaged pages", () => {
     const path = createProject();
     const store = ProjectStore.open(path);
