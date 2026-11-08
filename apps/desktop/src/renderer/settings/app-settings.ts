@@ -16,14 +16,21 @@ import { type SettingsRegistry, settingsPart } from "../editor/settings-registry
 type InterfaceValues = {
   readonly theme: Preferences["theme"];
   readonly editorLevel: Preferences["editorLevel"];
+  readonly showTips: boolean;
+  readonly showAgain: boolean;
 };
 
 const interfaceSchema = z.strictObject({
   theme: z.enum(["dark", "light"]),
   editorLevel: z.enum(["simple", "advanced"]),
+  showTips: z.boolean(),
+  showAgain: z.boolean(),
 });
 
-/** Interface (LF-12): the editor's theme and its level, which the View menu switches too. */
+/**
+ * Interface (LF-12): the editor's theme and its level, which the View menu switches too; and the
+ * first-time tips, with the tour and tips shown again from the start (OB-5).
+ */
 const INTERFACE: FormSpec<InterfaceValues, z.infer<typeof interfaceSchema>> = {
   fields: () => [
     {
@@ -46,6 +53,18 @@ const INTERFACE: FormSpec<InterfaceValues, z.infer<typeof interfaceSchema>> = {
         { label: t("settings.interface.advanced"), value: "advanced" },
       ],
       width: "md",
+    },
+    {
+      kind: "toggle",
+      name: "showTips",
+      label: t("settings.interface.showTips"),
+      help: t("settings.interface.showTipsHelp"),
+    },
+    {
+      kind: "toggle",
+      name: "showAgain",
+      label: t("settings.interface.showAgain"),
+      help: t("settings.interface.showAgainHelp"),
     },
   ],
   schema: interfaceSchema,
@@ -143,11 +162,23 @@ export function registerAppSettings(
           heading: "app",
           label: t("settings.interface"),
           spec: INTERFACE,
-          initial: { theme: now().theme, editorLevel: now().editorLevel },
-          save: (change) => {
-            const { theme, editorLevel } = now();
+          initial: {
+            theme: now().theme,
+            editorLevel: now().editorLevel,
+            showTips: now().onboarding.showTips,
+            showAgain: false,
+          },
+          save: ({ showTips, showAgain, ...change }) => {
+            const { theme, editorLevel, onboarding } = now();
             if (change.theme !== theme || change.editorLevel !== editorLevel) {
               preferences.change(change);
+            }
+            // Shown again: the tour is offered when a site next opens, and each tip once more.
+            const next = showAgain
+              ? { tour: "offer" as const, tipsSeen: [], showTips }
+              : { ...onboarding, showTips };
+            if (showAgain || showTips !== onboarding.showTips) {
+              preferences.change({ onboarding: next });
             }
           },
         }),

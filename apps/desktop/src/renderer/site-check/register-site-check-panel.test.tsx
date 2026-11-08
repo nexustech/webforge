@@ -122,6 +122,39 @@ function setUp(
   };
 }
 
+describe("Site Check's first-time tip (5.4a, OB-4)", () => {
+  /** The panel drawn on `site`, as tall as `height` (0: the drawer closed), and what it said. */
+  function drawn(site: SiteDoc, height: number) {
+    const tall = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockReturnValue(height);
+    const onMustFixSeen = vi.fn();
+    const panels = createPanelRegistry();
+    const remove = registerSiteCheckPanel(panels, {
+      session: sessionWith(site),
+      settings: createSettingsRegistry(),
+      commands: { run: vi.fn(() => true) },
+      openGuide: vi.fn(),
+      ignored: [],
+      saveIgnored: vi.fn(),
+      onMustFixSeen,
+    });
+    const SiteCheck = panels.list()[0]?.component;
+    if (SiteCheck === undefined) throw new Error("not registered");
+    render(<SiteCheck />);
+    tall.mockRestore();
+    remove();
+    cleanup();
+    return onMustFixSeen;
+  }
+
+  it("says a Must fix has been seen once the panel is on screen with one in it", () => {
+    const mustFix = siteWith({ slug: "con", folder: "aux/shop" });
+    expect(drawn(mustFix, 200)).toHaveBeenCalled();
+    // The drawer closed, or nothing to fix: not seen.
+    expect(drawn(mustFix, 0)).not.toHaveBeenCalled();
+    expect(drawn(siteWith(), 200)).not.toHaveBeenCalled();
+  });
+});
+
 describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
   it("is in the bottom drawer in Simple mode, under Must fix, Should fix and Tips", () => {
     const { panels, remove, rule } = setUp();

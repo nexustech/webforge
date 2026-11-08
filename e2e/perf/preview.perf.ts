@@ -138,7 +138,11 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     before,
     { polling: "raf", timeout: OPEN_WAIT },
   );
-  const shown = await site.evaluate(() => (window as unknown as { colourAt: number }).colourAt);
+  const shown = await site.evaluate(() => (window as unknown as { colourAt?: number }).colourAt);
+  // The watcher's mark is gone when the page reloaded instead of swapping its stylesheet in place,
+  // as a late reload of the earlier change can make it: say so, rather than time NaN.
+  if (shown === undefined)
+    throw new Error("The page reloaded instead of swapping the colour in place");
   const edited = await lastChange();
   const took = shown - edited;
   const told = (await swapped.after(edited)) - edited;
@@ -206,17 +210,38 @@ async function serverEvents(url: string, event: "reload" | "values"): Promise<Se
   };
 }
 
+/** What the page test adds to the home page's heading. */
+const ADDED = " and fresh bread daily";
+
 test("a changed page is re-rendered and sent to the browser in under 200 ms", async () => {
   const canvas = page.frameLocator(".editor__canvas iframe");
   // Open before typing: each keystroke can rebuild the page, and on a slow machine the reload
   // for the typed text can come before the click that ends the edit (#76).
   const reloads = await serverEvents(site.url(), "reload");
-  await canvas.locator("h1").dblclick();
-  await page.keyboard.press("ControlOrMeta+a");
-  await page.keyboard.type("Fresh bread daily");
+  // Into the heading's own text, added at its end, as large-page.perf.ts types on both runners.
+  // Replacing the text didn't reach the canvas on CI's runners: a double click on the h1, or the
+  // text selected by script, left the typing nowhere (#76).
+  const heading = canvas.locator(".site-heading [contenteditable]").first();
+  // From the editor as a person would leave it after the colour test: its colour field may still
+  // hold the focus, so close whatever is open and click the page first (on Windows' runner the
+  // test's first attempt, after the colour test, typed into nothing; its retry, in a fresh app,
+  // didn't).
+  await page.keyboard.press("Escape");
+  await canvas.locator("body").click({ position: { x: 5, y: 5 } });
+  // The editor's window, in front: the preview's browser, started beside it, can take the focus.
+  await app.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows().find((each) => !each.isDestroyed());
+    window?.show();
+    window?.focus();
+  });
+  await heading.click();
+  await page.keyboard.press("End");
+  await page.keyboard.type(ADDED, { delay: 60 });
+  // The text is on the canvas before the edit ends: a miss here is the typing's, not the preview's.
+  await expect(heading).toContainText(ADDED.trim());
   const started = Date.now();
   await canvas.locator("body").click({ position: { x: 5, y: 5 } });
-  await expect(site.locator("h1")).toHaveText("Fresh bread daily", { timeout: OPEN_WAIT });
+  await expect(site.locator("h1")).toContainText(ADDED.trim(), { timeout: OPEN_WAIT });
   const shown = Date.now();
   const edited = await lastChange();
   const took = shown - edited;

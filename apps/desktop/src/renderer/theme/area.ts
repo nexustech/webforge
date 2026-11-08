@@ -1,5 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { whenClosed } from "../editor/first-tips.js";
 import { itemCssThrough } from "../editor/ItemCssView.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
@@ -27,8 +28,15 @@ export const themePanelArea: Area<WindowContext> = {
     siteWide,
     kindPreviews,
     itemPreviews,
+    tips,
   }) => {
     const studio = createStudio();
+    // The first Theme Studio's tip (OB-4), once it has closed.
+    const stopTip = whenClosed(
+      studio.subscribe,
+      () => studio.getState().open,
+      () => tips.reached("themeStudio"),
+    );
     const ownThemes = createOwnThemes(() => api.themes, {
       notify: (message) => toast.error(message),
     });
@@ -65,6 +73,7 @@ export const themePanelArea: Area<WindowContext> = {
       },
     );
     return () => {
+      stopTip();
       removeStyle();
       removeOwn();
       removeStudio();

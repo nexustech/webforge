@@ -2,6 +2,7 @@ import type { ReadonlyStore } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import type { SearchGuide } from "@webforge/site-check";
 import { ListChecksIcon } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
@@ -34,6 +35,8 @@ type SiteCheckPanelOptions = {
   readonly allowListConfirmed?: ReadonlyStore<boolean>;
   /** The year the site was last published in, if it has been (F-CM-8). */
   readonly publishedYear?: ReadonlyStore<number | undefined>;
+  /** Called while the panel is on screen with a *Must fix* in it: its first-time tip (OB-4). */
+  readonly onMustFixSeen?: () => void;
 };
 
 /**
@@ -53,6 +56,7 @@ export function registerSiteCheckPanel(
     bundle,
     allowListConfirmed,
     publishedYear,
+    onMustFixSeen,
   }: SiteCheckPanelOptions,
 ): () => void {
   const siteCheck = createSiteCheck(session.history.document, {
@@ -73,23 +77,43 @@ export function registerSiteCheckPanel(
   function SiteCheck() {
     const report = useStore(siteCheck.state, (state) => state.report);
     const site = session.history.document.getState();
+    const mustFix = report.results.some(
+      (result) => result.level === "must" && result.findings.length > 0,
+    );
+    // Seen once the panel is on screen with a *Must fix* in it: the drawer may be closed.
+    const shown = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+      // The wrapper draws no box of its own (`contents`): the panel inside it is measured.
+      const panel = shown.current?.firstElementChild;
+      if (!mustFix || !(panel instanceof HTMLElement) || onMustFixSeen === undefined) return;
+      const check = () => {
+        if (panel.offsetHeight > 0) onMustFixSeen();
+      };
+      check();
+      if (typeof ResizeObserver !== "function") return;
+      const observer = new ResizeObserver(check);
+      observer.observe(panel);
+      return () => observer.disconnect();
+    }, [mustFix]);
     return (
-      <SiteCheckPanel
-        report={report}
-        // One-time tips marked *Done* aren't brought back, so they aren't counted.
-        ignored={report.results.reduce(
-          (count, result) => count + (result.oneTime === true ? 0 : result.ignored),
-          0,
-        )}
-        describe={(finding) => ({
-          place: describePlace(finding, site, session.library),
-          detail: describeDetail(finding),
-        })}
-        fixFor={(rule, finding) => fixFor(rule, finding, actions)}
-        onJump={(finding) => jumpTo(finding.place, actions)}
-        onIgnore={(rule, finding) => siteCheck.ignore(rule, finding.key)}
-        onRestore={() => siteCheck.restoreIgnored()}
-      />
+      <div ref={shown} className="contents">
+        <SiteCheckPanel
+          report={report}
+          // One-time tips marked *Done* aren't brought back, so they aren't counted.
+          ignored={report.results.reduce(
+            (count, result) => count + (result.oneTime === true ? 0 : result.ignored),
+            0,
+          )}
+          describe={(finding) => ({
+            place: describePlace(finding, site, session.library),
+            detail: describeDetail(finding),
+          })}
+          fixFor={(rule, finding) => fixFor(rule, finding, actions)}
+          onJump={(finding) => jumpTo(finding.place, actions)}
+          onIgnore={(rule, finding) => siteCheck.ignore(rule, finding.key)}
+          onRestore={() => siteCheck.restoreIgnored()}
+        />
+      </div>
     );
   }
 
