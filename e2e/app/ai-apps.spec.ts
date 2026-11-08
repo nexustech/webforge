@@ -44,6 +44,30 @@ const dialog = () => page.getByRole("dialog", { name: "AI apps" });
 const step = (label: string) =>
   page.getByRole("list", { name: "Undo History" }).getByRole("button", { name: label });
 
+test("Settings › App opens AI apps over Settings, which stays open under it (#752)", async () => {
+  // Its shortcut: on a Mac, Settings… is in the app's menu, not File.
+  await page.keyboard.press("ControlOrMeta+,");
+  const settings = page.getByRole("dialog", { name: "Settings", exact: true });
+  await settings.getByRole("tab", { name: "AI apps" }).click();
+  const open = settings.getByRole("button", { name: "Open AI apps…" });
+  await open.focus();
+  await page.keyboard.press("Enter");
+
+  // On top, and usable: its controls take clicks and keys, not Settings'.
+  await expect(dialog()).toBeVisible();
+  const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
+  await allow.click();
+  await expect(allow).toBeChecked();
+  await allow.click();
+  await expect(allow).not.toBeChecked();
+
+  // Escape closes AI apps only; Settings is still there, on its AI apps section.
+  await page.keyboard.press("Escape");
+  await expect(dialog()).toBeHidden();
+  await expect(settings).toBeVisible();
+  await expect(open).toBeVisible();
+});
+
 /** A client connected as an AI app at `address` with `key`, as Claude Code or Cursor would. */
 async function connect(address: string, key: string): Promise<Client> {
   const client = new Client({ name: "e2e", version: "1" });

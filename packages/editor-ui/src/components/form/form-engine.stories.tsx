@@ -91,6 +91,14 @@ const FORM_KINDS = {
       { value: "cakes", label: "cakes", thumbnail: swatch("#85cdca") },
     ],
   },
+  action: {
+    kind: "action",
+    name: "action",
+    label: "AI apps",
+    help: "Let AI apps on this computer change your site.",
+    button: "Open AI apps…",
+    run: () => undefined,
+  },
   themeColor: { kind: "themeColor", name: "themeColor", label: "Brand", warnings: [] },
   font: { kind: "font", name: "font", label: "Headings" },
   classes: {

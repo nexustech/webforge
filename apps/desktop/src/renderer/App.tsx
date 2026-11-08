@@ -36,8 +36,8 @@ import {
 } from "./shell/confirm-site-wide.js";
 import { ContextualToolbarsProvider } from "./shell/contextual-toolbar-context.js";
 import { createContextualToolbars } from "./shell/contextual-toolbars.js";
-import { OpenSourceLicences } from "./shell/LicencesDialog.js";
 import { ModeToggle } from "./shell/ModeToggle.js";
+import { OpenSourceLicences } from "./shell/OpenSourceLicences.js";
 import { PanelRegistryProvider } from "./shell/panel-context.js";
 import { createPanelRegistry } from "./shell/panels.js";
 import { createPreferencesStore, usePreferences } from "./shell/preferences-store.js";

@@ -29,6 +29,18 @@ export const ai = {
   "ai.plan.elements":
     "Sections and elements: {added} added, {changed} changed, {moved} moved, {removed} removed.",
   "ai.plan.asks": "On their own, these would each have asked first:",
+  // A plan's changes to where visitors' money or details go, and to Site Settings, first (S30).
+  "ai.plan.first":
+    "Check these first: they change where visitors' payments and details go, or your Site Settings.",
+  // A list cut short: '"Home", "About", … and 140 more'.
+  "ai.plan.more": "and {count} more",
+  // Counts: plural("ai.plan.moreRenamed", n) picks one or other (B10).
+  "ai.plan.moreRenamed.one": "It renames {count} more page.",
+  "ai.plan.moreRenamed.other": "It renames {count} more pages.",
+  "ai.plan.moreHidden.one": "It hides or shows {count} more page.",
+  "ai.plan.moreHidden.other": "It hides or shows {count} more pages.",
+  "ai.plan.moreAsks.one": "And {count} more question like these.",
+  "ai.plan.moreAsks.other": "And {count} more questions like these.",
   // Site Settings show on every page (4.11): "Allow Claude to change Site Settings: Contact & hours?"
   "ai.confirm.settings": "Allow {app} to change Site Settings: {sections}?",
   "ai.confirm.layout": "Allow {app} to change the {part}?",

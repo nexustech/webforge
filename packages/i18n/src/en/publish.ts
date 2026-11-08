@@ -112,6 +112,7 @@ export const publish = {
   "publish.test.rejected": "The host refused the request. Check the folder and your permissions.",
   "publish.test.network":
     "The host couldn't be reached. Check its name, the port and your internet connection.",
+  "publish.test.timeout": "The host didn't answer in time. Check its name and port, and try again.",
   "publish.test.untrusted-host":
     "This computer doesn't trust the host's security certificate, so nothing was sent.",
   "publish.test.no-encryption":
@@ -186,6 +187,8 @@ export const publish = {
     "Your host refused the files. Check the folder, and that your account can change it.",
   "publish.failed.network":
     "Your host couldn't be reached. Check your internet connection and publish again.",
+  "publish.failed.timeout":
+    "Your host didn't answer in time. Check your internet connection and publish again.",
   "publish.failed.untrusted-host":
     "This computer doesn't trust your host's security certificate, so nothing was sent.",
   "publish.failed.no-encryption":

@@ -11,6 +11,7 @@ import {
   throwIfCancelled,
   type Verification,
 } from "./publisher.js";
+import { sleep } from "./sleep.js";
 
 // Netlify publishing (research 08, spec/04 item 0.2) over its REST API, without the Netlify SDK:
 // a file-digest deploy sends every file's SHA-1, Netlify answers with the digests it doesn't have,
@@ -104,21 +105,6 @@ function encodePath(path: string): string {
   return path.split("/").map(encodeURIComponent).join("/");
 }
 
-function wait(ms: number, signal: AbortSignal | undefined): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const cancel = () => {
-      clearTimeout(timer);
-      reject(new PublishError("cancelled", "Publishing was cancelled"));
-    };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener("abort", cancel);
-      resolve();
-    }, ms);
-    if (signal?.aborted === true) cancel();
-    else signal?.addEventListener("abort", cancel, { once: true });
-  });
-}
-
 /**
  * How long to wait before retrying `response`: Netlify's `Retry-After` (seconds) or
  * `X-RateLimit-Reset` (Unix time) when given, else exponential backoff from `baseMs`.
@@ -184,7 +170,7 @@ export function netlifyRequester(options: NetlifyRequestOptions) {
             cause: error,
           });
         }
-        await wait(retryDelay(null, attempt, retryBaseMs), init.signal);
+        await sleep(retryDelay(null, attempt, retryBaseMs), init.signal);
         continue;
       }
       if (response.ok) break;
@@ -196,7 +182,7 @@ export function netlifyRequester(options: NetlifyRequestOptions) {
           `Netlify answered ${response.status} to ${what}`,
         );
       }
-      await wait(retryDelay(response, attempt, retryBaseMs), init.signal);
+      await sleep(retryDelay(response, attempt, retryBaseMs), init.signal);
     }
     const parsed = schema.safeParse(await response.json().catch(() => undefined));
     if (!parsed.success) {
@@ -302,9 +288,9 @@ export function netlifyPublisher(options: NetlifyOptions): Publisher<NetlifyDest
           throw new PublishError("rejected", "Netlify could not process the deploy");
         }
         if (Date.now() > deadline) {
-          throw new PublishError("failed", "Netlify did not finish the deploy in time");
+          throw new PublishError("timeout", "Netlify did not finish the deploy in time");
         }
-        await wait(pollIntervalMs, signal);
+        await sleep(pollIntervalMs, signal);
         deploy = await client.getDeploy(created.id, signal);
       }
 

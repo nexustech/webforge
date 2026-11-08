@@ -1,8 +1,15 @@
 import { act, cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { useEffect, useState } from "react";
+import { flushSync } from "react-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Button } from "./button.js";
+import type { ScreenBox } from "./place-card.js";
 import { TourCard } from "./tour-card.js";
+
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
 
 afterEach(cleanup);
 
@@ -76,5 +83,44 @@ describe("TourCard (OB-3)", () => {
       rerender(<Editor step="one" onEscape={vi.fn()} />);
     });
     expect(document.activeElement).toBe(page);
+  });
+
+  it("is at its new place as soon as it moves on to a step that points elsewhere (#808)", () => {
+    // The title bar's Preview button, after a heading on the page.
+    const anchors: Readonly<Record<string, ScreenBox>> = {
+      one: { left: 300, top: 400, width: 200, height: 40 },
+      two: { left: 600, top: 8, width: 32, height: 32 },
+    };
+    let moveOn: () => void = () => undefined;
+    function Tour() {
+      const [step, setStep] = useState("one");
+      useEffect(() => {
+        moveOn = () => setStep("two");
+      });
+      return (
+        <TourCard
+          title={step === "one" ? "Change your words" : "See it as visitors will"}
+          focusKey={step}
+          anchor={() => anchors[step] ?? null}
+          onEscape={vi.fn()}
+          actions={<Button>Next</Button>}
+        >
+          <p>Click any text on your page.</p>
+        </TourCard>
+      );
+    }
+    render(<Tour />);
+    const card = screen.getByRole("region", { name: "Change your words" });
+    expect(card.style.top).toBe("448px");
+
+    // As Next does: a discrete update, outside act, read straight after with nothing else run.
+    globalThis.IS_REACT_ACT_ENVIRONMENT = false;
+    try {
+      flushSync(() => moveOn());
+    } finally {
+      globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    }
+    expect(card.textContent).toContain("See it as visitors will");
+    expect(card.style.top).toBe("48px");
   });
 });

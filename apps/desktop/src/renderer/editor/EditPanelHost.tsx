@@ -4,7 +4,8 @@ import { type ReactNode, useEffect, useMemo } from "react";
 import { createEditPanelController } from "./edit-panel-controller.js";
 import { type DialogGroups, fieldsFor, panelSlice, sameSlice } from "./edit-panel-fields.js";
 import type { EditorSession } from "./editor-session.js";
-import { ItemCss, type ItemCssServices } from "./ItemCssView.js";
+import { ItemCss } from "./ItemCss.js";
+import type { ItemCssServices } from "./ItemCssView.js";
 import { breakpointOf, DEVICES } from "./responsive-value.js";
 import { useDocument, useUi } from "./use-document.js";
 

@@ -129,6 +129,7 @@ Severity is as the verifiers set it. **High** means a real bug. **Medium** means
 - **A18. Five value-equality helpers with different semantics** (low). editor-ui's `sameValue` counts `undefined` keys, while the engine's and `theme-edits.ts`'s ignore them. `differsFromDefault`, `setLook` (`theme-edits.ts:253`) and `makeThemeLook` use key-order-sensitive `JSON.stringify`. These decide whether an undo step and a D7 question happen. Fix: one `sameJson` in model.
 - **A21. `Editor.tsx` still registers Undo/Redo, Undo History and the Edit panel by hand** (low). They sit outside the area list (`Editor.tsx:312-341, 484, 517`; 583 lines, 469 on 23 Oct). Version History (4.6) belongs beside Undo History. Also, `SiteWideConfirm.setBeforeSiteWideAction`, the hook 4.6 is meant to use, is left out of both `WindowContext.siteWide` and `EditorContext.siteWide`. 4.6's scope doesn't say which actions take an automatic version. Fix: `undoHistoryArea` and `editPanelArea` in `editor-areas.ts`, expose the hook, and state the rule in #74.
 - **A22. One-component-per-file isn't followed, and spec/03 §4 still says it is** (low). `QuickStartDialog.tsx` has 8 components, editor-ui's `edit-panel.tsx` 7 in 1,000 lines, and `NewSiteDialog.tsx` 6, exporting 5. Phase 4's dialogs will copy whichever pattern they see. Decide: amend §4 to "one exported component per file", or split.
+  - **Decided (8 Nov 2026, #671):** amend. spec/03 §4 now says one exported component per file. Private helper components that only it uses may share the file, and so may the parts of one compound component used together (shadcn/ui's primitives, a provider and its reader) and a design system's small primitives of one kind kept as a set (editor-ui's form fields, site-components' typography). The app's files that exported more than one were split: `NewSiteDialog.tsx`'s four shared parts, Page Settings' two preview cards, the two error boundaries, `OpenSourceLicences`, Theme Studio's `TokenRow`, `ItemCss`, and the shortcut sheet's `SheetGroups`. `HelpButton.tsx` keeps `HelpProvider` with the button that reads it.
 
 **What holds**
 - **R9.** No `useSyncExternalStore` on the document. Reads go through `use-document.ts`, and the JSON.stringify page-list detectors are gone.
@@ -188,7 +189,13 @@ The interface is right. Where it runs (A2), where destinations live (A3) and wha
   - Add a `timeout` code and per-code `publish.failed.<code>` keys, with a ui-strings test.
   - Put credential states (no secret, S2 mismatch, encryption unavailable) in 4.4's IPC result.
   - Settle standards §4's `messageKey` in R17.
+  - **Done (8 Nov 2026, #671 part 3):**
+    - `PUBLISH_ERROR_CODES` is the type's source, with a `timeout` code. Netlify's deploy and sign-in deadlines, `ETIMEDOUT`, and FTP's and SFTP's own timeouts give it.
+    - The IPC contracts can't import `@webforge/publish`, so they keep their lists; a main-process test checks the lists match it, and that every code has its `publish.failed.` and `publish.test.` message.
+    - `WebforgeError.messageKey` is gone from the base class and its eleven subclasses, with the `errors.*` strings only it used.
+    - The credential states are 4.4's (#723).
 - **Three copies of an abortable sleep** (low): `netlify.ts:107` rejects on abort, while `netlify-sign-in.ts:29` and `verify.ts:31` resolve. Keep one `sleep(ms, signal)` when 4.4 or 4.5 next touch these files.
+  - **Done (8 Nov 2026, #671 part 3):** one `sleep(ms, signal)` in `packages/publish`, which ends as `cancelled` on abort. The sign-in loop threw `cancelled` straight after its pause anyway, and the live-site check, which never throws, catches it and gives up as before.
 
 **What holds**
 - **The interface matches architecture §6:** `test`, `publish` → `AsyncIterable<PublishEvent>` with an `AbortSignal`, and an optional `verify`. `publishSite` adds the live check with the cancel behaviour 4.5 needs.

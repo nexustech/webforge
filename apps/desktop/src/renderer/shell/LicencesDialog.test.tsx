@@ -8,7 +8,8 @@ import { AboutDialog } from "./AboutDialog.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { createCommandRegistry } from "./commands.js";
-import { LicencesDialog, OpenSourceLicences } from "./LicencesDialog.js";
+import { LicencesDialog } from "./LicencesDialog.js";
+import { OpenSourceLicences } from "./OpenSourceLicences.js";
 
 const toast = vi.hoisted(() => ({ error: vi.fn() }));
 vi.mock("@webforge/editor-ui", async (original) => ({

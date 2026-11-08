@@ -16,8 +16,8 @@ import { specOf } from "../../editor/edit-panel-fields.js";
 import { isOverridden, valueAt, withValueAt } from "../../editor/responsive-value.js";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey } from "../theme-controls.js";
 import { StudioLookPreview } from "./StudioLookPreview.js";
-import { TokenRow } from "./StudioStyles.js";
 import type { LookDraft } from "./studio-state.js";
+import { TokenRow } from "./TokenRow.js";
 
 /** The card style's own entry: cards are list items without an Appearance group (CT-1). */
 const CARD_KIND = "Card";

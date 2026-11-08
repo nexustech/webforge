@@ -142,7 +142,7 @@ export function sftpErrorCode(error: unknown): PublishErrorCode | undefined {
   const level =
     typeof error === "object" && error !== null && "level" in error ? error.level : undefined;
   if (level === "client-authentication") return "unauthorized";
-  if (level === "client-timeout") return "network";
+  if (level === "client-timeout") return "timeout";
   const status = statusOf(error);
   if (status === NO_SUCH_FILE) return "not-found";
   if (status === PERMISSION_DENIED) return "rejected";

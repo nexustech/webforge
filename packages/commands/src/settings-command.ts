@@ -192,6 +192,7 @@ export const updateSettings = {
         ...(lines.length === 0 ? {} : { description: lines.join(" ") }),
         confirm: t("ai.confirm.allow"),
         affectedPages: site.pageOrder.length,
+        first: true,
       }),
       recipe: (draft) => {
         draft.settings = structuredClone(after);

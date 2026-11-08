@@ -158,13 +158,14 @@ describe("writeSiteFolder", { timeout: 15_000 }, () => {
 });
 
 describe("the pipeline's errors (R12)", () => {
-  it("show the export's own message for each code", () => {
-    expect(new WriteError("folder-not-empty", "x").messageKey).toBe("export.failed.folderNotEmpty");
-    expect(new WriteError("write-failed", "x").messageKey).toBe("export.failed.writeFailed");
+  it("are Webforge errors with their code", () => {
+    expect(new WriteError("folder-not-empty", "x")).toMatchObject({
+      name: "WriteError",
+      code: "folder-not-empty",
+    });
     expect(new BuildError("missing-font", "x")).toMatchObject({
       name: "BuildError",
       code: "missing-font",
-      messageKey: "export.failed.buildFailed",
     });
   });
 });

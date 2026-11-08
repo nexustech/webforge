@@ -179,15 +179,16 @@ export default {
       severity: "error",
       comment:
         "The catalogue as data, the rich-text cleaning it offers, what a field may hold " +
-        "(field-values, #667) and which fields are hidden (hidden-fields, #670), load without " +
+        "(field-values, #667), which fields are hidden (hidden-fields, #670) and which pictures are " +
+        "behind the content (picture-behind, #670), load without " +
         "React or the components (4.8).",
       from: {
-        path: "^packages/site-components/src/(catalogue-data|rich-text-html|document-path|field-values|hidden-fields)\\.ts$",
+        path: "^packages/site-components/src/(catalogue-data|rich-text-html|document-path|field-values|hidden-fields|picture-behind)\\.ts$",
       },
       to: {
         path: [REACT, "^packages/site-components/src/"],
         pathNot:
-          "^packages/site-components/src/(catalogue-data\\.(ts|json)|rich-text-html\\.ts|document-path\\.ts|field-values\\.ts|hidden-fields\\.ts)$",
+          "^packages/site-components/src/(catalogue-data\\.(ts|json)|rich-text-html\\.ts|document-path\\.ts|field-values\\.ts|hidden-fields\\.ts|picture-behind\\.ts)$",
       },
     },
     {
