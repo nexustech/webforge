@@ -240,7 +240,7 @@ describe("netlifyPublisher.publish", () => {
     );
 
     expect(String((error as Error).message)).not.toContain(FAKE_TOKEN);
-    expect((error as Error).message).toBe("Netlify answered 500 to POST /sites/site-1/deploys");
+    expect((error as Error).message).toBe(`Netlify answered 500 to POST /sites/${siteId}/deploys`);
   });
 });
 
@@ -335,6 +335,24 @@ describe("netlifyClient", () => {
 
     await expect(client.listForms(siteId)).resolves.toEqual([
       { id: "form-contact", name: "contact", paths: ["/contact.html"] },
+    ]);
+  });
+
+  it("creates sites with form detection on, which Netlify Forms need (4.2, ADR 0006 decision 6)", async () => {
+    const netlify = fakeNetlify();
+    const options = { token: FAKE_TOKEN, fetch: netlify.fetch };
+    const sent: unknown[] = [];
+    const watching: typeof fetch = async (input, init) => {
+      if (init?.method === "POST" && String(input).endsWith("/sites")) {
+        sent.push(JSON.parse(String(init.body)));
+      }
+      return netlify.fetch(input, init);
+    };
+
+    await netlifyClient({ ...options, fetch: watching }).createSite("rosas-bakery");
+
+    expect(sent).toEqual([
+      { name: "rosas-bakery", processing_settings: { ignore_html_forms: false } },
     ]);
   });
 

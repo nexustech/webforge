@@ -58,6 +58,12 @@ Why:
 
 **Fallback:** a pasted personal access token, checked with `GET /user` before it is saved. `canSignIn()` is false until Webforge's OAuth client ID is set up. The product owner registers the OAuth application at app.netlify.com/applications; the ticket flow uses no redirect URI.
 
+**Wired up (4.2):**
+- **The client ID is a build setting:** `MAIN_VITE_NETLIFY_CLIENT_ID` in the environment of a release build. It's public, as an OAuth client ID is, and empty until the application is registered, so only a pasted token works until then.
+- **The `netlify:*` IPC calls** sign in and list or create the person's sites (`main/netlify-ipc.ts`).
+  - A sign-in's token stays in the main process, under a random handle the renderer holds, for up to 30 minutes, while the person picks the site (`main/netlify-auth.ts`).
+  - Saving the destination saves the token through `PublishSecrets`, tied to that site (S32), and drops the handle.
+
 ### 5. Credentials: `safeStorage`-encrypted, in user data
 - Each secret is encrypted with Electron `safeStorage`, whose key the OS keeps (Windows DPAPI, macOS Keychain). The encrypted bytes (base64) go in one file, `<userData>/credentials.json`, under a namespaced key (#666): `publish/<projectId>/<destinationId>` for a destination (`publishCredentialKey`), `mcp/<appId>` for an AI app (`mcpCredentialKey`).
 - The file is written through `createJsonStore` (#666), as the app's other files in userData are: atomically (temp file + rename, tried again while the file is briefly locked; owner-only permissions where supported), and one save at a time.
@@ -77,7 +83,12 @@ The product owner ran `netlify.live.test.ts` against a throwaway site on a free 
 
 It also found two things about Netlify sites:
 - **Visitor access can be on.** The first attempt was served Netlify's "Login Redirect" page (`app.netlify.com/edge-access`) in place of every file, because the project had site protection on. The deploy itself succeeded, and decision 8's API check would still report it `live`. A Netlify destination should warn when the site is protected, so the owner doesn't believe visitors can see it (4.4b).
-- **Netlify adds a script to served pages:** `<script async src="/.netlify/scripts/hud?variant=public" …>` after the page, on a free account. It comes from the site's own address, not another server, but it isn't in the site Webforge built. Decision 8's check reads the API, not the page, so it isn't misled; `netlify.live.test.ts` now compares only the start of each page. Whether a site setting turns it off is still to be found (4.2).
+- **Netlify adds a script to served pages:** `<script async src="/.netlify/scripts/hud?variant=public" …>` after the page, on a free account. It comes from the site's own address, not another server, but it isn't in the site Webforge built. Decision 8's check reads the API, not the page, so it isn't misled; `netlify.live.test.ts` now compares only the start of each page.
+  - **Found (4.2, 8 Nov 2026):** it's Netlify's **pre-launch toolbar**. It shows only while the project is private, and goes once the project is public ([Netlify's docs](https://docs.netlify.com/deploy/review-deploys/heads-up-display/)). The same private project explains the login page above.
+  - New projects start private on Netlify's credit-based plans, for teams created on or after 28 July 2026 ([project visibility](https://docs.netlify.com/manage/security/secure-access-to-sites/project-visibility/)).
+  - Netlify has no API, CLI or MCP for a project's visibility, only its dashboard, so Webforge can't turn it off for the sites it creates.
+  - The owner makes the project public in Netlify (**Make public**, after its first deploy). 4.4b's warning about a protected site tells them so, and its Help page says how.
+- **Form detection is off for new sites** (since 2023). Netlify Forms need it on. Webforge creates its sites with `processing_settings: { ignore_html_forms: false }` (4.2), a field Netlify uses but doesn't list in its published API reference. The next live run checks that a site Webforge creates finds its forms. For a site made in Netlify itself, the owner turns form detection on there.
 - **Not run live:** OAuth sign-in (decision 4). It waits on registering Webforge's OAuth application, before 4.4b; until then the pasted token is the only sign-in.
 
 ### 7. FTP, FTPS and SFTP: one publish flow over a remote folder (0.3)
@@ -170,5 +181,5 @@ Recorded in [ADR 0018](0018-publishing-from-a-version.md), with what a publish b
   1. run the live Netlify check with a throwaway site and token, and record the re-deploy, restore and forms results above;
   2. register Webforge's Netlify OAuth application and try the ticket sign-in once;
   3. ~~add 0.3's FTP/FTPS/SFTP decisions and the `safeStorage` round trip on Windows and macOS~~: done, decision 7.
-- The desktop modules (`credential-store.ts`, `netlify-auth.ts`) have no IPC yet. The publish UI (Phase 4) adds typed channels that never return a token to the renderer.
+- The desktop modules have their IPC: the publish destinations' calls (4.4a) and Netlify's (`netlify:*`, 4.2). None returns a token to the renderer.
 - Research 08's "OAuth … with a loopback redirect" is superseded by decision 4. Update the research note in the Phase 0 wrap-up (0.6).

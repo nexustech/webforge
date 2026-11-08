@@ -53,6 +53,8 @@ import { createMcpService, type McpService } from "./mcp-service.js";
 import { registerMediaHandlers } from "./media-ipc.js";
 import { createMediaResponder } from "./media-protocol.js";
 import { createMyThemes } from "./my-themes.js";
+import { createNetlifySignIns } from "./netlify-auth.js";
+import { registerNetlifyHandlers } from "./netlify-ipc.js";
 import { hasAddress, phoneAddressFor } from "./network-address.js";
 import {
   openPreferencesStore,
@@ -678,6 +680,17 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerHelpHandlers(ipcMain, isTrustedSender, helpWindows, (url) =>
       electron.shell.openExternal(url),
     );
+    // Netlify sign-in for publish destinations (4.2): the OAuth client ID is a build setting,
+    // empty until Webforge's Netlify app is registered, when only a pasted token works.
+    registerNetlifyHandlers(ipcMain, isTrustedSender, {
+      signIns: createNetlifySignIns({
+        clientId: import.meta.env.MAIN_VITE_NETLIFY_CLIENT_ID,
+        // Looked up as it's called: the E2E tests replace `shell.openExternal`.
+        openExternal: (url) => electron.shell.openExternal(url),
+      }),
+      site: (sessionId) => projectSession.site(sessionId),
+      secrets: publishSecrets,
+    });
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

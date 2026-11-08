@@ -178,7 +178,7 @@ const savedSignInSchema = z.union([signInRefSchema, z.strictObject({ keep: z.lit
 /** See {@link savedSignInSchema}. */
 export type SavedSignInRef = z.infer<typeof savedSignInSchema>;
 
-const saveDestinationResultSchema = z.discriminatedUnion("status", [
+export const saveDestinationResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved"), destination: publishDestinationSchema }),
   /** `keep` for a destination whose sign-in isn't saved for it as it is now: type it again. */
   z.strictObject({ status: z.literal("sign-in-needed") }),

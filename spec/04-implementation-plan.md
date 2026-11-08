@@ -1284,7 +1284,7 @@ Publisher interface (test, publish as AsyncIterable events, AbortSignal), manife
 - [ ] Cancel leaves the previous site usable
 
 **4.2 Netlify publisher and Netlify Forms**  
-OAuth (loopback) + PAT fallback, create/pick site, digest deploy, deploy history and restore; 'Netlify Forms' appears as a form destination when the site has a Netlify destination.
+OAuth (Netlify's ticket flow, ADR 0006 decision 4) + PAT fallback, create/pick site, digest deploy, deploy history and restore; 'Netlify Forms' appears as a form destination when the site has a Netlify destination.
 
 - [ ] Incremental deploys upload only changes
 - [ ] E2E against a mocked Netlify API (msw)
@@ -1309,7 +1309,7 @@ Destinations list per site (several allowed), add/edit/test/remove; secrets via 
 - [ ] Destinations are stored outside the site document: per site, not undoable and not copied into versions, in one shape with `url` and `auth` that maps to each publisher; `publish` leaves `siteSettingsSchema` through an ADR 0012 step (architecture review 2, A3; as #662's ADR decides)
 
 **4.4b Netlify destination in the destinations UI** (split from 4.4, 1 Nov 2026)  
-*Add destination › Netlify* in 4.4a's list: 4.2's OAuth (loopback) with the token fallback, pick or create the Netlify site, the token kept as 4.4a keeps other secrets.
+*Add destination › Netlify* in 4.4a's list: 4.2's OAuth (Netlify's ticket flow) with the token fallback, pick or create the Netlify site, the token kept as 4.4a keeps other secrets.
 
 - [ ] A Netlify destination can be added, tested, edited and removed; its token is never written to the `.wforge` (test)
 - [ ] E2E publish to a mocked Netlify API through 4.5's flow (moved from 4.5)

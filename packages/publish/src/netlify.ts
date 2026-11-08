@@ -207,9 +207,19 @@ export function netlifyClient(options: NetlifyOptions) {
       request("GET", "/sites?filter=all", z.array(siteSchema), { signal }),
     getSite: (siteId: string, signal?: AbortSignal) =>
       request("GET", site(siteId), siteSchema, { signal }),
-    /** Creates a site; Netlify picks a random name if `name` is not given or taken. */
+    /**
+     * Creates a site; Netlify picks a random name if `name` is not given or taken. With its form
+     * detection on (ADR 0006 decision 6), which new sites have off: Netlify Forms need it.
+     * `processing_settings` isn't in Netlify's published API reference, so a live run checks it.
+     */
     createSite: (name?: string, signal?: AbortSignal) =>
-      request("POST", "/sites", siteSchema, { body: name === undefined ? {} : { name }, signal }),
+      request("POST", "/sites", siteSchema, {
+        body: {
+          ...(name === undefined ? {} : { name }),
+          processing_settings: { ignore_html_forms: false },
+        },
+        signal,
+      }),
     /** Starts a file-digest deploy; `files` maps `/path` to SHA-1. */
     createDeploy: (siteId: string, files: Record<string, string>, signal?: AbortSignal) =>
       request("POST", `${site(siteId)}/deploys`, deploySchema, { body: { files }, signal }),
