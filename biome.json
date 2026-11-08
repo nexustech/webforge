@@ -71,7 +71,8 @@
         }
       },
       "suspicious": {
-        "noExplicitAny": "error"
+        "noExplicitAny": "error",
+        "noConsole": "error"
       },
       "nursery": {
         "noFloatingPromises": "error",
@@ -80,6 +81,39 @@
     }
   },
   "overrides": [
+    {
+      "includes": [
+        "**/*.{ts,tsx}",
+        "!packages/model/src/**",
+        "!packages/test-utils/**",
+        "!**/*.test.{ts,tsx}",
+        "!**/*.test-helper.ts",
+        "!**/test/**",
+        "!**/*.stories.tsx",
+        "!bench/**",
+        "!e2e/**"
+      ],
+      "plugins": ["./tools/biome/no-branded-id-cast.grit"]
+    },
+    {
+      "includes": [
+        "apps/desktop/src/main/log.ts",
+        "apps/desktop/src/renderer/log.ts",
+        "**/*.test.ts",
+        "**/*.test.tsx",
+        "**/test/**",
+        "tools/**",
+        "bench/**",
+        "e2e/**"
+      ],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    },
     {
       "includes": ["**/*.test.ts", "**/*.test.tsx", "packages/test-utils/**"],
       "linter": {

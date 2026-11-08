@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { newId } from "./ids.js";
-import { insertPage, pageSlugFor, pageTitle } from "./pages.js";
+import { insertPage, isPageIn, pageEntryOf, pageIdsOf, pageSlugFor, pageTitle } from "./pages.js";
 import { createSite } from "./site-doc.js";
 
 const site = () =>
@@ -29,5 +29,25 @@ describe("adding pages (4.8)", () => {
       second,
     ]);
     expect(pageSlugFor(draft, "About us", undefined, first)).toBe("about-us");
+  });
+});
+
+describe("looking up a page by an id from elsewhere (R10)", () => {
+  it("lists the site's page ids", () => {
+    const draft = site();
+    expect(pageIdsOf(draft.pages)).toEqual(Object.keys(draft.pages));
+    expect(pageIdsOf(draft.pages)).toContain(draft.homePageId);
+  });
+
+  it("finds a page by a plain string, and never a property every object has", () => {
+    const draft = site();
+    const home: string = draft.homePageId;
+
+    expect(isPageIn(draft.pages, home)).toBe(true);
+    expect(pageEntryOf(draft.pages, home)).toBe(draft.pages[draft.homePageId]);
+    for (const id of ["missing", "constructor", "toString", "__proto__"]) {
+      expect(isPageIn(draft.pages, id)).toBe(false);
+      expect(pageEntryOf(draft.pages, id)).toBeUndefined();
+    }
   });
 });

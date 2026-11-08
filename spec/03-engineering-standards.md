@@ -42,7 +42,7 @@ Versions checked on npm on 2026-10-19.
 - **No non-null assertions (`!`)** except in tests.
 - **Types:** prefer `type` aliases and discriminated unions for domain types; `interface` for public contracts (e.g. `CanvasEngine`).
 - **Exports:** named exports only. No default exports, except where a tool requires them (Storybook stories, Vite config).
-- **IDs:** branded types for IDs (`type PageId = string & { __brand: 'PageId' }`).
+- **IDs:** branded types for IDs (`type PageId = string & { __brand: 'PageId' }`). An id comes from its zod schema or `newId`, and a plain string is checked against the site with the model's helpers (`isPageIn`, `pageEntryOf`, `pageIdsOf`, `isSharedSectionIn`, `sharedSectionOf`, `mediaItem`), never cast. Biome's `tools/biome/no-branded-id-cast.grit` plugin enforces that outside the model and test code (R10).
 - **Async:** `async`/`await`, no floating promises (convention + review, see §2a), `AbortSignal` for cancellable work (builds, publishing).
 - **Enums:** use `as const` objects or union literals instead.
 - **Optional properties** (`exactOptionalPropertyTypes`):
@@ -88,7 +88,7 @@ Enforced in CI by dependency-cruiser:
 | Styling (site components) | daisyUI + Tailwind utilities only; style props must map to **design tokens**, never free-form values (except Advanced classes) |
 | UI text | **No hard-coded user-facing strings.** Use `t('key')` from `packages/i18n`, with wording from the glossary ([terminology](../research/product/01-terminology.md)). Undo labels built from glossary terms (D2) |
 | Errors | Throw `WebforgeError` subclasses with a `code`. A failure reaches the renderer as a reason code in its IPC domain's zod contract, and the UI turns that into a `t()` key where it shows the message, as export does (`exportFailure`: `folder-not-empty` → `export.failed.folderNotEmpty`). `WebforgeError.messageKey` isn't used for this: an error never crosses IPC, so nothing in the app reads it. #671 removes it (A23). Never show raw error text or stack traces to users. Log the details with electron-log |
-| Logging | `log.info/warn/error` with structured context. **Never log** site content, credentials, tokens or personal data |
+| Logging | `log.info/warn/error` with structured context, never `console` (Biome `noConsole`, off only in the two log modules, tests, tools, benchmarks and E2E). **Never log** site content, credentials, tokens or personal data |
 | Comments | Explain *why*, not *what*. TSDoc on all exported functions/types of packages |
 | Dependencies | New runtime dependency needs: permissive licence (C1), active maintenance, a size check, and a note in the PR. Prefer small/pure-JS/WASM over native modules. **GSAP and libraries built on it are never a licence exception** (PG-6, 2026-10-24): since Webflow's acquisition its terms exclude competing no-code website builders, and Pinegrow's Interactions licence forbids the same. Site animations stay CSS presets with a small classic script (F-DS-5) |
 | Security | No `eval`/`new Function`; no `shell.openExternal` with untrusted URLs without validation; no remote code loading; sanitise SVG and Custom HTML before canvas injection |
