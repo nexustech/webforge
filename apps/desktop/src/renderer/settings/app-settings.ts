@@ -123,6 +123,27 @@ const DEVICES: FormSpec<DeviceValues, z.infer<typeof devicesSchema>> = {
   }),
 };
 
+/**
+ * AI apps (F-AI-1, #752): a line that opens *AI apps…*. Its own dialog acts at once, so it isn't a
+ * part of Settings, which saves on Save; Settings stays open under it.
+ */
+const aiAppsSpec = (
+  openAiApps: () => void,
+): FormSpec<Record<string, never>, Record<string, never>> => ({
+  fields: () => [
+    {
+      kind: "action",
+      name: "aiApps",
+      label: t("settings.aiApps.label"),
+      help: t("settings.aiApps.help"),
+      button: t("settings.aiApps.open"),
+      run: openAiApps,
+    },
+  ],
+  schema: z.strictObject({}),
+  toModel: () => ({}),
+});
+
 /** Whether two device lists are the same devices, in the same order (#432 review). */
 const sameDevices = (a: readonly CustomDevice[], b: readonly CustomDevice[]) =>
   a.length === b.length &&
@@ -143,12 +164,14 @@ const itemOf = (device: CustomDevice): DeviceItem => ({
 });
 
 /**
- * The app's parts of Settings (LF-12): Interface and Devices. They save the person's preferences,
- * never an undo step. Backups and Updates join when they have settings of their own.
+ * The app's parts of Settings (LF-12): Interface and Devices, which save the person's preferences,
+ * never an undo step; and AI apps, a line that opens its own dialog with `openAiApps` (#752).
+ * Backups and Updates join when they have settings of their own.
  */
 export function registerAppSettings(
   registry: SettingsRegistry,
   preferences: PreferencesStore,
+  openAiApps: () => void,
 ): () => void {
   const now = () => preferences.getState().preferences;
   const stops = [
@@ -200,6 +223,22 @@ export function registerAppSettings(
               preferences.change({ canvas: { ...canvas, devices } });
             }
           },
+        }),
+    }),
+    registry.register({
+      id: "aiApps",
+      heading: "app",
+      // After Version History (2): the last of App's parts.
+      order: 3,
+      open: () =>
+        settingsPart({
+          id: "aiApps",
+          heading: "app",
+          label: t("settings.aiApps"),
+          spec: aiAppsSpec(openAiApps),
+          initial: {},
+          // Nothing to keep: what AI apps changes, it changes at once.
+          save: () => undefined,
         }),
     }),
   ];

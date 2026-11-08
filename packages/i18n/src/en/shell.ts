@@ -101,6 +101,12 @@ export const shell = {
   "settings.devices.item": "Device",
   "settings.devices.add": "Add a device",
   "settings.devices.remove": "Remove this device",
+  // A line that opens AI apps (#752), which act at once, so has its own dialog (F-AI-1).
+  "settings.aiApps": "AI apps",
+  "settings.aiApps.label": "AI apps on this computer",
+  "settings.aiApps.help":
+    "Let AI apps such as Claude work on your site. What you change there happens at once.",
+  "settings.aiApps.open": "Open AI apps…",
 
   // Command box.
   "shell.commandBox.open": "Search commands",
