@@ -266,3 +266,38 @@ describe("a plan in Content mode (4.12a, §5.10)", () => {
     expect(refused.history.document.getState()).toBe(before);
   });
 });
+
+describe("a long plan's question (S30, #795)", () => {
+  it("says a change to Site Settings first, set apart, and cuts long lists and titles short", async () => {
+    const { host, confirm } = setup();
+    const pages = Array.from({ length: 150 }, (_, at) => ({
+      name: "addPage",
+      input: { title: at === 0 ? `Services ${"x".repeat(150)}` : `Service ${at}` },
+    }));
+
+    await createCommandApi(host).run(
+      "plan",
+      {
+        title: "Add service pages",
+        commands: [
+          ...pages.slice(0, 75),
+          // Buried in the middle of the plan.
+          { name: "updateSettings", input: { contact: { phone: "09999 999999" } } },
+          ...pages.slice(75),
+        ],
+      },
+      app,
+    );
+
+    const description = confirm.mock.calls[0]?.[0].description ?? "";
+    const [first, ...rest] = description.split("\n\n");
+    expect(first).toMatch(
+      /^Check these first: .* Allow Claude to change Site Settings: Contact & hours\? Phone number: from no address to 09999 999999\.$/,
+    );
+    expect(rest.join(" ")).not.toContain("09999");
+    // 150 pages: ten named, the rest counted, and the long title cut short.
+    expect(description).toContain("and 140 more.");
+    expect(description).toContain(`"Services ${"x".repeat(50)}…"`);
+    expect(description).not.toContain("Service 11");
+  });
+});

@@ -759,6 +759,8 @@ describe("where visitors' money and details go (S18, #658)", () => {
         description: "Payment link: from buy.stripe.com to pay.example.net.",
         confirm: "Allow",
         affectedPages: 1,
+        // A plan says it first (S30).
+        first: true,
       });
       const text = await api.run(
         "editText",
