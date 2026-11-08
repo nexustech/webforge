@@ -9,6 +9,7 @@ import {
   type FormFieldKind,
   type FormTarget,
   formAction,
+  netlifyFormName,
   SiteForm,
 } from "../form.js";
 import {
@@ -39,6 +40,20 @@ const layoutVariants = FORM_LAYOUTS.map((value) => ({
 /** `value` as text, if it is some: what a plain text field holds in the export. */
 const plainText = (value: unknown) =>
   typeof value === "string" && value.trim() !== "" ? value.trim() : undefined;
+
+/**
+ * What a form posting to Site Settings' service is called: what screen readers hear, and the base
+ * of its name in Netlify Forms (4.2): "Contact form", or a Form's own label ("Booking request").
+ * `undefined` for any other element.
+ */
+export function serviceFormLabel(node: {
+  readonly type: string;
+  readonly props: Readonly<Record<string, unknown>>;
+}): string | undefined {
+  if (node.type === "ContactForm") return t("siteText.form.contact");
+  if (node.type === "Form") return plainText(node.props.label) ?? t("starter.formLabel");
+  return undefined;
+}
 
 /**
  * A section's title and text, and its form: above it, centred (`stacked`), or beside it on wide
@@ -125,7 +140,7 @@ const contactForm = defineSection({
       text={values.text}
       form={
         <SiteForm
-          target={formAction(context.formService, context.thanksPage)}
+          target={formAction(context.formService, context.thanksPage, netlifyFormName(context, id))}
           label={t("siteText.form.contact")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.contactFormButton")}
           hint={context.formHint}
@@ -397,8 +412,12 @@ const form = defineComponent({
       >
         <FieldNames value={createFieldNames(id)}>
           <SiteForm
-            target={formAction(context.formService, context.thanksPage)}
-            label={plainText(values.label) ?? t("starter.formLabel")}
+            target={formAction(
+              context.formService,
+              context.thanksPage,
+              netlifyFormName(context, id),
+            )}
+            label={serviceFormLabel({ type: "Form", props: values }) ?? t("starter.formLabel")}
             submitLabel={plainText(values.buttonLabel) ?? t("starter.formButton")}
             hint={context.formHint}
           >

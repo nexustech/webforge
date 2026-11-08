@@ -23,6 +23,7 @@ export const siteCheckArea: Area<WindowContext> = {
     windowDialogs,
     codeTrust,
     publishedYear,
+    onNetlify,
     tips,
   }) => {
     // Download and bundle's question (3.9), drawn once in the window.
@@ -48,6 +49,7 @@ export const siteCheckArea: Area<WindowContext> = {
       saveIgnored: siteCheckIgnored.save,
       allowListConfirmed: codeTrust.allowListConfirmed,
       publishedYear,
+      onNetlify,
       // The first *Must fix* the person sees (OB-4).
       onMustFixSeen: () => tips.reached("mustFix"),
       bundle: {

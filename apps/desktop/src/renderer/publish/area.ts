@@ -35,6 +35,7 @@ export const publishArea: Area<WindowContext> = {
     panels,
     codeTrust,
     publishedYear,
+    onNetlify,
     publishing: requests,
   }) => {
     const opened = createStore<Opened>(() => ({ open: false }));
@@ -95,6 +96,13 @@ export const publishArea: Area<WindowContext> = {
         notify: (message) => toast.error(message),
         onSaved: (destination) => {
           fillWebAddress(session, destination);
+        },
+        // Site Settings offers Netlify Forms once the site has a Netlify destination (4.2).
+        onListed: (destinations) => {
+          onNetlify.setState(
+            destinations.some(({ kind }) => kind === "netlify"),
+            true,
+          );
         },
         onPublish: startPublish,
         onClose: close,

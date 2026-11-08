@@ -116,6 +116,29 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     expect(home).not.toContain("untrusted()");
   }, 60_000);
 
+  it("builds for Netlify when the destination is Netlify's, so its forms can send (4.2)", async () => {
+    const pipeline = createPipeline(siteLibrary);
+    const build = vi.spyOn(pipeline, "build");
+    const netlify: PublishDestination = {
+      id: destination.id,
+      name: "Live",
+      kind: "netlify",
+      siteId: "3f8e2a1c-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
+    };
+    const publishing = { ...(await job(site())), destination: netlify, signIn: { token: "t" } };
+
+    await runPublish(publishing, loadNodeResources, {
+      ...channel(fakePublisher().make),
+      pipeline,
+    });
+    await runPublish(await job(site()), loadNodeResources, {
+      ...channel(fakePublisher().make),
+      pipeline,
+    });
+
+    expect(build.mock.calls.map(([, , options]) => options.host)).toEqual(["netlify", undefined]);
+  }, 60_000);
+
   it("answers the publisher's failure by its code, and a cancel as cancelled", async () => {
     const otherSite = fakePublisher(new PublishError("other-site", "another project's folder"));
     expect(await runPublish(await job(site()), loadNodeResources, channel(otherSite.make))).toEqual(

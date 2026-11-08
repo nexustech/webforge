@@ -217,3 +217,38 @@ describe("Site Check and the year a published site shows (F-CM-8)", () => {
     check.dispose();
   });
 });
+
+describe("Netlify Forms (4.2)", () => {
+  /** The starter site with a Contact form on its home page, posting to Netlify Forms. */
+  function withNetlifyForms(): SiteDoc {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const form = { type: "ContactForm", props: { id: "contact" } };
+    return {
+      ...site,
+      settings: { ...site.settings, forms: { service: { kind: "netlify" } } },
+      pages: {
+        ...site.pages,
+        [home.id]: { ...home, doc: { ...home.doc, content: [...home.doc.content, form] } },
+      },
+    };
+  }
+  const forms = (check: ReturnType<typeof createSiteCheck>) =>
+    check.state.getState().report.results.find((result) => result.rule === "forms")?.findings;
+
+  it("finds nothing to fix in them once the site has a Netlify destination", () => {
+    const document = createStore<SiteDoc>()(() => withNetlifyForms());
+    const onNetlify = createStore<boolean>()(() => false);
+    const check = createSiteCheck(document, { ignored: [], saveIgnored: () => {}, onNetlify });
+    expect(forms(check)).toEqual([
+      expect.objectContaining({ values: { reason: "netlify", form: "service" } }),
+    ]);
+
+    onNetlify.setState(true, true);
+    vi.advanceTimersByTime(400);
+    while (idle.length > 0) idlePeriod(100);
+    expect(forms(check)).toEqual([]);
+    check.dispose();
+  });
+});

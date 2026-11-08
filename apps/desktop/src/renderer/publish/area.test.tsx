@@ -96,6 +96,7 @@ function setUp({
   // Published two years ago, as far as the window knows.
   const publishedYear = createStore<number | undefined>(() => new Date().getFullYear() - 2);
   const publishing = createPublishRequests();
+  const onNetlify = createStore<boolean>(() => false);
   // Only what the area uses of the window's context.
   const context = {
     ...registries,
@@ -104,6 +105,7 @@ function setUp({
     windowDialogs,
     codeTrust,
     publishedYear,
+    onNetlify,
     publishing,
   } as unknown as WindowContext;
   const remove = publishArea.register(context);
@@ -116,6 +118,7 @@ function setUp({
     flush,
     showPanel,
     publishedYear,
+    onNetlify,
     publishing,
     codeTrust,
   };
@@ -145,6 +148,25 @@ describe("publishArea (4.4a)", () => {
 
     expect(await screen.findByRole("dialog", { name: "Publish" })).toBeTruthy();
     expect(api.publish.destinations).toHaveBeenCalledOnce();
+  });
+
+  it("tells Site Settings whether the site has a Netlify destination, as Publish lists them (4.2)", async () => {
+    const { registries, api, onNetlify } = setUp();
+    const netlify = {
+      destination: { id: "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d", name: "Live", kind: "netlify" },
+      signIn: "saved",
+      trust: {},
+    } as const;
+    vi.mocked(api.publish.destinations).mockResolvedValueOnce({
+      status: "listed",
+      destinations: [rosas, netlify],
+    });
+
+    act(() => {
+      registries.commands.run(COMMAND_IDS.publish);
+    });
+    await screen.findByText("Rosa's Bakery");
+    await vi.waitFor(() => expect(onNetlify.getState()).toBe(true));
   });
 
   it("fills the site's web address from a destination saved with one, as one undo step", async () => {

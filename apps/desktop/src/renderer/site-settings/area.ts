@@ -6,7 +6,8 @@ import { registerSiteSettings } from "./site-part.js";
 /** The open site's part of Settings, under *This site* (F-SET-1, LF-12). */
 export const siteSettingsArea: Area<WindowContext> = {
   id: "siteSettings",
-  register: ({ settings, session }) => registerSiteSettings(settings, session),
+  register: ({ settings, session, onNetlify }) =>
+    registerSiteSettings(settings, session, () => onNetlify.getState()),
 };
 
 /** The site's own code under *This site*, in Advanced mode (F-ED-15, 3.9). */

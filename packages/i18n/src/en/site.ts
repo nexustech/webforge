@@ -158,7 +158,7 @@ export const site = {
   // A form with nowhere to send submissions yet (2.8), on the canvas, by why.
   "site.binding.formHint.noService": "Choose where submissions go in Site Settings",
   "site.binding.formHint.netlify":
-    "Netlify Forms isn't ready yet: choose another form service in Site Settings for now",
+    "Netlify Forms send messages once the site is published to Netlify",
   "site.binding.formHint.insecure": "The form address must start with https://",
   "site.binding.formHint.noAddress":
     "Add the form address your newsletter service gives you, in the Edit panel",
