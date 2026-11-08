@@ -160,16 +160,23 @@ describe("the MCP server (4.9)", () => {
 
   it("reports progress while a call waits, when the app asks to be told (4.12a)", async () => {
     const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    // The call waits until two progress notices have reached the app, however slow the timers
+    // run on a busy machine (#823), not for a fixed time.
+    let finish: () => void = () => undefined;
     const slow = vi.fn(
       () =>
         new Promise<AiResponse>((resolve) => {
-          setTimeout(() => resolve({ status: "declined", message: "closed" }), 150);
+          finish = () => resolve({ status: "declined", message: "closed" });
         }),
     );
     await createMcpServer(INFO, CLAUDE, slow, 20).connect(serverSide);
     const client = new Client({ name: "test", version: "1" });
     await client.connect(clientSide);
-    const onprogress = vi.fn();
+    let notices = 0;
+    const onprogress = vi.fn(() => {
+      notices += 1;
+      if (notices === 2) finish();
+    });
 
     await client.callTool({ name: "createSiteFromBrief", arguments: {} }, undefined, {
       onprogress,

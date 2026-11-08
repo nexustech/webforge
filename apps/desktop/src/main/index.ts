@@ -10,7 +10,7 @@ import { recoveryDialogs } from "./recovery-dialogs.js";
 // are the real one and the modules that use it directly, which E2E tests cover.
 
 // From the first moment, logs go to the app's log file (standards §4): codes only, never content.
-setLogSink(fileLogSink(electron.app.isPackaged));
+setLogSink(fileLogSink(electron.app.isPackaged, electron.app.getPath("logs")));
 
 // Not awaited: Electron emits "ready" only after this module has finished evaluating.
 void startApp(electron, {

@@ -81,7 +81,8 @@ export async function launchSecondInstance(options: {
 
 /**
  * Launches the built desktop app (`apps/desktop/out`) with the Electron version the app depends on.
- * The app runs as it does in production: it loads the renderer from file://, not a dev server.
+ * The app runs as it does in production: it loads the renderer from webforge-app://, not a dev
+ * server.
  * Its user data goes to `userDataDir`, never the tester's own. Without one, it gets a new
  * temporary folder that is deleted when the app closes; a test that restarts the app passes its
  * own folder (from {@link newUserDataDir}) and deletes it.
