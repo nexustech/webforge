@@ -14,8 +14,6 @@ import { ChevronRightIcon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import type { AppApi, Notice } from "../../shared/ipc/app.js";
 import { reportFailure } from "../log.js";
-import { useCommandRegistry } from "./command-context.js";
-import { COMMAND_IDS } from "./command-ids.js";
 
 /** What the screen asks the main process for: the app's notices, and Chromium's licences. */
 export type LicencesApi = Pick<AppApi, "listLicences" | "openChromiumLicences">;
@@ -171,26 +169,4 @@ function NoticeRow({ notice }: { readonly notice: Notice }) {
       </details>
     </li>
   );
-}
-
-/**
- * Help → Open-Source Licences: registers its command, and draws {@link LicencesDialog} when it
- * runs. About {appName} opens it too.
- */
-export function OpenSourceLicences({ licences }: { readonly licences: LicencesApi }) {
-  const registry = useCommandRegistry();
-  const [open, setOpen] = useState(false);
-
-  useEffect(
-    () =>
-      registry.register({
-        id: COMMAND_IDS.licences,
-        label: t("command.licences"),
-        menu: "help",
-        run: () => setOpen(true),
-      }),
-    [registry],
-  );
-
-  return <LicencesDialog open={open} onOpenChange={setOpen} licences={licences} />;
 }

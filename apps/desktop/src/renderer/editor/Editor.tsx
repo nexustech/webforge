@@ -15,13 +15,13 @@ import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
 import { SharedSectionNameDialog } from "../shared-sections/SharedSectionCommands.js";
+import { CanvasErrorBoundary } from "../shell/CanvasErrorBoundary.js";
 import { widthOf } from "../shell/canvas-size.js";
 import { type CanvasView, connectCanvasView } from "../shell/canvas-view.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { installCommandShortcuts } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { useContextualToolbars } from "../shell/contextual-toolbar-context.js";
-import { CanvasErrorBoundary } from "../shell/error-boundaries.js";
 import { usePanelRegistry } from "../shell/panel-context.js";
 import {
   createPreferencesStore,

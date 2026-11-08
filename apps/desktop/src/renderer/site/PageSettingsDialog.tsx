@@ -17,7 +17,9 @@ import { z } from "zod";
 import "../shell/form-messages.js";
 import { HelpButton } from "../help/index.js";
 import { fileNameFor, type PageSettingsChange } from "./page-actions.js";
-import { pagePreview, SearchResultCard, ShareCard, thumbnailUrl } from "./page-preview.js";
+import { pagePreview, thumbnailUrl } from "./page-preview.js";
+import { SearchResultCard } from "./SearchResultCard.js";
+import { ShareCard } from "./ShareCard.js";
 
 /** Props of {@link PageSettingsDialog}. */
 export type PageSettingsDialogProps = {

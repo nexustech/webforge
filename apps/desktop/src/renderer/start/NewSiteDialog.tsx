@@ -13,14 +13,19 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@webforge/editor-ui";
-import { isMessageKey, plural, t } from "@webforge/i18n";
-import { DEFAULT_THEME, SITE_NAME_MAX, type ThemeTokens } from "@webforge/model";
+import { plural, t } from "@webforge/i18n";
+import { DEFAULT_THEME, SITE_NAME_MAX } from "@webforge/model";
 import { TEMPLATE_CATEGORIES, type TemplateCategory, type TemplateId } from "@webforge/templates";
-import { oklchCss, THEME_PRESETS } from "@webforge/themes";
+import { THEME_PRESETS } from "@webforge/themes";
 import { FileIcon } from "lucide-react";
-import { type ReactNode, useId, useState } from "react";
+import { useId, useState } from "react";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
+import { StartingPointCard } from "./StartingPointCard.js";
+import { TemplateDetails } from "./TemplateDetails.js";
+import { TemplatePreview } from "./TemplatePreview.js";
+import { ThemeOption } from "./ThemeOption.js";
+import { TEMPLATE_GRID, templateName } from "./template-labels.js";
 
 /** Props of {@link NewSiteDialog}. */
 export type NewSiteDialogProps = {
@@ -54,15 +59,6 @@ export function arrangeTemplates<T extends { readonly category: string }>(
         (sort === "category" ? names.category(a).localeCompare(names.category(b)) : 0) ||
         names.name(a).localeCompare(names.name(b)),
     );
-}
-
-/** A template's name, from its id. */
-export const templateName = (id: TemplateId): string => t(`template.${id}.name`);
-
-/** A theme preset's name; the preset's own name for one the catalogue hasn't named yet. */
-export function presetLabel(preset: string): string {
-  const key = `theme.preset.${preset}`;
-  return isMessageKey(key) ? t(key) : preset;
 }
 
 /**
@@ -174,7 +170,7 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
             <section className="flex flex-col gap-2">
               <h3 className="m-0 text-sm font-semibold">{t("newSite.blankHeading")}</h3>
               <div className={TEMPLATE_GRID}>
-                <Card
+                <StartingPointCard
                   name={choiceName}
                   checked={chosen === null}
                   onChoose={() => choose(null)}
@@ -227,7 +223,7 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
               ) : (
                 <div className={TEMPLATE_GRID}>
                   {shown.map((template) => (
-                    <Card
+                    <StartingPointCard
                       key={template.id}
                       name={choiceName}
                       checked={chosen === template.id}
@@ -253,185 +249,5 @@ function NewSiteBody({ templates, onCreate, onCancel }: Omit<NewSiteDialogProps,
         onClose={() => setDetails(null)}
       />
     </form>
-  );
-}
-
-export const TEMPLATE_GRID = "grid grid-cols-[repeat(auto-fill,minmax(13rem,1fr))] gap-3";
-
-/** The colours a theme's swatch row shows: its page, then its brand colours. */
-const SWATCHES = ["base-100", "primary", "secondary", "accent"] as const;
-
-/** A theme preset to choose: its name and a row of its main colours. */
-export function ThemeOption({
-  preset,
-  name,
-  checked,
-  onChoose,
-}: {
-  readonly preset: ThemeTokens;
-  readonly name: string;
-  readonly checked: boolean;
-  readonly onChoose: () => void;
-}) {
-  const { colors } = preset;
-  return (
-    <label
-      className={cn(
-        "flex cursor-pointer items-center gap-2 rounded-sm border border-transparent px-2 py-1.5 text-sm",
-        "hover:bg-hover has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground",
-        "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
-      )}
-    >
-      <input
-        type="radio"
-        name={name}
-        value={preset.preset}
-        checked={checked}
-        onChange={onChoose}
-        className="sr-only"
-      />
-      <span className="flex shrink-0" aria-hidden>
-        {SWATCHES.map((role) => (
-          <span
-            key={role}
-            className="-ml-1 size-4 rounded-full border border-border-strong first:ml-0"
-            style={{ backgroundColor: oklchCss(colors[role]) }}
-          />
-        ))}
-      </span>
-      <span className="truncate">{presetLabel(preset.preset)}</span>
-    </label>
-  );
-}
-
-/** A starting point to choose (Blank, or a template): a radio drawn as a card. */
-export function Card({
-  name,
-  checked,
-  onChoose,
-  preview,
-  title,
-  subtitle,
-  details,
-}: {
-  readonly name: string;
-  readonly checked: boolean;
-  readonly onChoose: () => void;
-  readonly preview: ReactNode;
-  readonly title: string;
-  readonly subtitle: string;
-  /** Opens the larger preview; none for Blank. */
-  readonly details?: () => void;
-}) {
-  return (
-    <div
-      className={cn(
-        "relative flex flex-col overflow-hidden rounded-md border border-border bg-card",
-        "hover:border-border-strong has-[:checked]:border-primary has-[:checked]:ring-1 has-[:checked]:ring-primary",
-        "has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-ring",
-      )}
-    >
-      <label className="flex cursor-pointer flex-col">
-        <input type="radio" name={name} checked={checked} onChange={onChoose} className="sr-only" />
-        <span className="flex aspect-video w-full items-center justify-center bg-muted">
-          {preview}
-        </span>
-        <span className={cn("flex flex-col gap-0.5 p-2", details !== undefined && "pr-20")}>
-          <span className="truncate text-sm font-medium">{title}</span>
-          <span className="line-clamp-2 text-xs text-muted-foreground">{subtitle}</span>
-        </span>
-      </label>
-      {details === undefined ? null : (
-        // Outside the label, so it opens the preview without choosing the card.
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          className="absolute right-1 bottom-2"
-          aria-label={t("newSite.detailsOf", { name: title })}
-          onClick={details}
-        >
-          {t("newSite.details")}
-        </Button>
-      )}
-    </div>
-  );
-}
-
-/**
- * A template's picture: its thumbnail (2.14b), its home page at desktop width; or, for one without,
- * its theme's colours, so cards in different themes still look different.
- */
-export function TemplatePreview({ template }: { readonly template: TemplateSummary }) {
-  if (template.thumbnail !== null) {
-    return (
-      <img
-        src={template.thumbnail}
-        alt=""
-        className="size-full object-cover object-top"
-        draggable={false}
-      />
-    );
-  }
-  const colors = (THEME_PRESETS.find((preset) => preset.preset === template.theme) ?? DEFAULT_THEME)
-    .colors;
-  return (
-    <span
-      className="flex size-full flex-col justify-end gap-1 p-3"
-      style={{ backgroundColor: oklchCss(colors["base-100"]) }}
-      aria-hidden
-    >
-      <span
-        className="h-2 w-1/2 rounded-full"
-        style={{ backgroundColor: oklchCss(colors["base-content"]) }}
-      />
-      <span
-        className="h-2 w-1/3 rounded-full"
-        style={{ backgroundColor: oklchCss(colors.primary) }}
-      />
-    </span>
-  );
-}
-
-/** A template's larger preview, its description, and Use this template. */
-export function TemplateDetails({
-  template,
-  onUse,
-  onClose,
-}: {
-  readonly template: TemplateSummary | null;
-  readonly onUse: (template: TemplateSummary) => void;
-  readonly onClose: () => void;
-}) {
-  return (
-    <Dialog
-      open={template !== null}
-      onOpenChange={(next) => {
-        if (!next) onClose();
-      }}
-    >
-      {template === null ? null : (
-        <DialogContent className="sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{templateName(template.id)}</DialogTitle>
-            <DialogDescription>{t(`template.${template.id}.description`)}</DialogDescription>
-          </DialogHeader>
-          <span className="flex aspect-video w-full overflow-hidden rounded-md border border-border">
-            <TemplatePreview template={template} />
-          </span>
-          <p className="m-0 text-xs text-muted-foreground">
-            {`${t(`template.category.${template.category}`)} · ${plural("newSite.pages", template.pages)} · ${presetLabel(template.theme)}`}
-          </p>
-          <DialogFooter>
-            <Button type="button" variant="secondary" onClick={onClose}>
-              {t("newSite.cancel")}
-            </Button>
-            <Button type="button" onClick={() => onUse(template)}>
-              {t("newSite.useTemplate")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      )}
-    </Dialog>
   );
 }
