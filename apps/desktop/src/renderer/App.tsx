@@ -180,6 +180,7 @@ export function App({
         },
       },
       publishedYear: createStore<number | undefined>(() => yearOf(uiState?.lastPublishedAt)),
+      onNetlify: createStore<boolean>(() => uiState?.onNetlify === true),
       publishing: createPublishRequests(),
       tips: createFirstTips(),
     };

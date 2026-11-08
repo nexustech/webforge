@@ -3,7 +3,7 @@ import { Window } from "happy-dom";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterAll, describe, expect, it } from "vitest";
-import { FormField, formAction, SiteForm } from "./form.js";
+import { FormField, formAction, netlifyFormName, SiteForm } from "./form.js";
 
 const happy = new Window();
 afterAll(() => happy.happyDOM.close());
@@ -103,6 +103,48 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
     expect(host.querySelector("script")).toBeNull();
   });
 
+  it("draws Netlify Forms for Netlify to find, on a site Netlify serves (4.2)", () => {
+    const form = drawn(
+      <SiteForm
+        target={formAction({ kind: "netlify" }, "/thank-you.html", "Booking request")}
+        label="Booking request"
+        submitLabel="Send"
+      >
+        {null}
+      </SiteForm>,
+    ).querySelector("form");
+
+    // Netlify finds the form by its name and `data-netlify`, and reads its honeypot's name.
+    expect(attributes(form)).toMatchObject({
+      name: "Booking request",
+      "data-netlify": "true",
+      "netlify-honeypot": "bot-field",
+      action: "/thank-you.html",
+      method: "post",
+    });
+    expect(form?.hasAttribute("data-wf-form-unset")).toBe(false);
+    expect(attributes(form?.querySelector('input[type="hidden"]'))).toEqual({
+      type: "hidden",
+      name: "form-name",
+      value: "Booking request",
+    });
+    expect(form?.querySelector('input[name="bot-field"]')?.closest("[hidden]")).not.toBeNull();
+    expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(false);
+
+    // With no thank-you page, it posts to the page itself, which Netlify takes.
+    const own = drawn(
+      <SiteForm
+        target={formAction({ kind: "netlify" }, undefined, "Contact form")}
+        label="Contact form"
+        submitLabel="Send"
+      >
+        {null}
+      </SiteForm>,
+    ).querySelector("form");
+    expect(own?.hasAttribute("action")).toBe(false);
+    expect(own?.getAttribute("name")).toBe("Contact form");
+  });
+
   it("adds the hidden fields a service needs", () => {
     const form = drawn(
       <SiteForm
@@ -183,9 +225,11 @@ describe("formAction (F-CM-1, B3)", () => {
     });
   });
 
-  it("says why there's nowhere to send: no service, Netlify Forms (3.7), or no https", () => {
+  it("says why there's nowhere to send: no service, Netlify Forms off Netlify (4.2), or no https", () => {
     expect(formAction(undefined)).toBe("noService");
+    // Only a build for Netlify names the form for Netlify (`onNetlify`).
     expect(formAction({ kind: "netlify" })).toBe("netlify");
+    expect(formAction({ kind: "netlify" }, "/thank-you.html")).toBe("netlify");
     // A custom address must be https, so a visitor's message never travels unencrypted.
     expect(formAction({ kind: "custom", url: "http://forms.example.com/in" })).toBe("insecure");
   });
@@ -224,5 +268,12 @@ describe("httpsAddress", () => {
     ]) {
       expect(httpsAddress(value)).toBeUndefined();
     }
+  });
+});
+
+describe("netlifyFormName (4.2)", () => {
+  it("names a form for Netlify only in a build for Netlify", () => {
+    expect(netlifyFormName({ onNetlify: true }, "Contact form")).toBe("Contact form");
+    expect(netlifyFormName({}, "Contact form")).toBeUndefined();
   });
 });

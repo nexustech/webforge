@@ -99,6 +99,11 @@ export type WindowContext = AreaContext & {
    * its versions record it when it opened, then each publish from this window (4.5).
    */
   readonly publishedYear: StoreApi<number | undefined>;
+  /**
+   * Whether the open site has a Netlify destination (4.2), for Site Settings' *Netlify Forms*: as
+   * the site's file said when it opened, then as Publish lists its destinations.
+   */
+  readonly onNetlify: StoreApi<boolean>;
   /** Version History's requests to republish a version, and Publish's word that one went live. */
   readonly publishing: PublishRequests;
   /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). */

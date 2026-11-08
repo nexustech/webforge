@@ -558,7 +558,11 @@ describe("ProjectSession editor mode", () => {
 
     const path = join(dir, "Bakery.wforge");
     await session.create(path);
-    expect(await session.uiState()).toEqual({ editorMode: "design", siteCheckIgnored: [] });
+    expect(await session.uiState()).toEqual({
+      editorMode: "design",
+      siteCheckIgnored: [],
+      onNetlify: false,
+    });
     expect(await session.setUiState({ editorMode: "content" })).toEqual({
       status: "saved",
     });
@@ -572,7 +576,22 @@ describe("ProjectSession editor mode", () => {
     expect(await session.uiState()).toEqual({
       editorMode: "content",
       siteCheckIgnored: ["altText:a"],
+      onNetlify: false,
     });
+  });
+
+  it("says whether the site has a Netlify destination, for Netlify Forms (4.2)", async () => {
+    const path = join(dir, "Bakery.wforge");
+    await session.create(path);
+    await session.close();
+    const store = ProjectStore.open(path);
+    store.writePublishDestinations([
+      { id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10", name: "Live", kind: "netlify" },
+    ]);
+    store.close();
+
+    await session.open(path);
+    expect(await session.uiState()).toMatchObject({ onNetlify: true });
   });
 
   it("says when the site last went live, for Site Check (F-CM-8), whatever became of its versions", async () => {
@@ -597,6 +616,7 @@ describe("ProjectSession editor mode", () => {
       editorMode: "design",
       siteCheckIgnored: [],
       lastPublishedAt: "2027-01-03T09:00:00.000Z",
+      onNetlify: false,
     });
     // Read only: a change can't set it.
     expect(

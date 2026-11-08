@@ -161,6 +161,8 @@ const HONEYPOTS = {
   web3forms: { name: "botcheck", checkbox: true },
   formsubmit: { name: "_honey" },
   custom: GOTCHA,
+  // Named by the form's `netlify-honeypot` attribute (4.2).
+  netlify: { name: "bot-field" },
 } as const satisfies Readonly<Record<string, Honeypot>>;
 
 /**
@@ -190,6 +192,11 @@ export type FormTarget = {
   readonly hidden: Readonly<Record<string, string>>;
   /** The honeypot, named as the service reads it (B6). */
   readonly honeypot: Honeypot;
+  /**
+   * The form's name in Netlify Forms (4.2), when Netlify takes its messages: Netlify finds the form
+   * in the deployed page by it, and lists what it receives under it.
+   */
+  readonly netlify?: string;
 };
 
 /** `address` as a form's target, Formspree's honeypot with it: a Newsletter's own address. */
@@ -207,12 +214,18 @@ export const addressTarget = (address: string): FormTarget => ({
  *
  * FormSubmit's address is the owner's email address, which is then in the page for anyone to read;
  * FormSubmit gives a random alias instead once the address is confirmed.
+ *
+ * Netlify Forms send only from a site Netlify serves (4.2): `netlifyForm`, the form's name there, is
+ * given only by a build for a Netlify destination (`RenderContext.onNetlify`). Netlify takes the
+ * post to the page itself, and shows the thank-you page after it (`thanksPage`, a path from the
+ * site's root) or a page of its own.
  */
 export function formAction(
   service: FormService | undefined,
   thanksPage?: string,
+  netlifyForm?: string,
 ): FormTarget | FormUnset {
-  const unset = formServiceUnset(service);
+  const unset = formServiceUnset(service, netlifyForm !== undefined);
   if (unset !== undefined || service === undefined) return unset ?? "noService";
   const thanksField = THANKS_FIELD[service.kind];
   const thanks =
@@ -244,9 +257,25 @@ export function formAction(
         honeypot: HONEYPOTS.custom,
       };
     default:
-      return "netlify";
+      // Netlify Forms, on Netlify: `formServiceUnset` answered for anywhere else.
+      return {
+        action: thanksPage ?? "",
+        // Netlify adds it as it finds the form; here too, so a post always names its form.
+        hidden: { "form-name": netlifyForm ?? "" },
+        honeypot: HONEYPOTS.netlify,
+        netlify: netlifyForm ?? "",
+      };
   }
 }
+
+/**
+ * The name a form is listed under in Netlify Forms (4.2), when the site is built for Netlify
+ * (`onNetlify`): its label, which the person chose ("Booking request"), or nothing elsewhere.
+ */
+export const netlifyFormName = (
+  context: { readonly onNetlify?: true },
+  label: string,
+): string | undefined => (context.onNetlify === true ? label : undefined);
 
 /**
  * A form that posts its fields to `target`, a form service (F-CM-1, F-CM-6): plain HTML, no
@@ -286,7 +315,18 @@ export function SiteForm({
       // no words of its own.
       {...(typeof target === "string"
         ? { "data-wf-form-unset": target }
-        : { action: target.action, "data-sending": t("siteText.form.sending") })}
+        : {
+            // Netlify Forms with no thank-you page post to the page itself, as Netlify expects.
+            ...(target.action === "" ? {} : { action: target.action }),
+            "data-sending": t("siteText.form.sending"),
+          })}
+      {...(typeof target !== "string" && target.netlify !== undefined
+        ? {
+            name: target.netlify,
+            "data-netlify": "true",
+            "netlify-honeypot": target.honeypot.name,
+          }
+        : {})}
     >
       {shownHint !== undefined && shownHint !== null && <p className="text-sm">{shownHint}</p>}
       {Object.entries(hidden).map(([name, value]) => (

@@ -121,6 +121,11 @@ const siteUiStateSchema = z.strictObject({
    * tips when the year it shows is out of date (F-CM-8). Read only; none when it hasn't been.
    */
   lastPublishedAt: z.iso.datetime().optional(),
+  /**
+   * Whether the site has a Netlify destination (4.2), for Site Settings' *Netlify Forms*, which only
+   * a site Netlify serves can use. Read only; Publish keeps it current as destinations change.
+   */
+  onNetlify: z.boolean().optional(),
 });
 
 /** The open site's editor state that isn't part of the site. */

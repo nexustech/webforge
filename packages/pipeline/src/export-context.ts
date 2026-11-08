@@ -59,6 +59,8 @@ export type PageRenderFiles = {
   readonly thanksPage?: string | undefined;
   /** Whether the Footer links back to the consent banner (#539). */
   readonly cookieSettings: boolean;
+  /** Whether the site is built for Netlify, whose forms it may then use (4.2). */
+  readonly onNetlify?: boolean | undefined;
 };
 
 /** A page ready to render: its context, its regions, and what it warns about as it renders. */
@@ -86,7 +88,7 @@ export function pageRender(
   prefix: string,
   files: PageRenderFiles,
 ): PageRender {
-  const { images, missing, documentPaths, bundled, thanksPage, cookieSettings } = files;
+  const { images, missing, documentPaths, bundled, thanksPage, cookieSettings, onNetlify } = files;
   const warnings: BuildWarning[] = [];
   const paths = new Set(site.pages.map((each) => each.path));
   const pathById = new Map(site.pages.map((each) => [each.id as string, each.path]));
@@ -150,6 +152,8 @@ export function pageRender(
     ...(thanksPage === undefined ? {} : { thanksPage }),
     // The Footer's link back to the consent banner, wherever it asks (#539).
     ...(cookieSettings ? { cookieSettings: true } : {}),
+    // Netlify Forms, drawn for Netlify only in a build for it (4.2).
+    ...(onNetlify === true ? { onNetlify: true } : {}),
   };
   // Custom Code pointing at the files kept with the site, `prefix` away (3.9).
   const own = (nodes: readonly NodeDoc[]) =>

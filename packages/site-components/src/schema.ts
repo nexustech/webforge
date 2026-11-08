@@ -324,6 +324,11 @@ export type RenderContext = SiteBindings & {
    * and its consent banner, so a visitor can change their choice at any time.
    */
   readonly cookieSettings?: true;
+  /**
+   * Set by a build for a Netlify destination (4.2): forms whose service is Netlify Forms are drawn
+   * for Netlify to find and take their messages. Anywhere else they can't send (`FormUnset`).
+   */
+  readonly onNetlify?: true;
 };
 
 /**

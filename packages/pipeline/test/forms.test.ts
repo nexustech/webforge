@@ -5,6 +5,7 @@ import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
+import { createPipeline } from "../src/pipeline.js";
 import type { PipelineResources } from "../src/resources.js";
 
 let resources: PipelineResources;
@@ -144,5 +145,53 @@ describe("forms with nowhere to send (3.7, X5)", () => {
       ]);
     },
     scaledTestTimeout(60_000),
+  );
+});
+
+describe("Netlify Forms (4.2)", () => {
+  /** The site built by one pipeline, for `host`: its pages' render cache kept between builds. */
+  const pipeline = createPipeline(siteLibrary);
+  const built = async (site: SiteSnapshot, host?: "netlify") => {
+    let done: BuiltSite | undefined;
+    for await (const event of pipeline.build(site, resources, { mode: "publish", host })) {
+      if (event.stage === "done") done = event.site;
+    }
+    if (done === undefined) throw new Error("The build didn't finish");
+    return done;
+  };
+
+  it(
+    "draws them for Netlify to find in a build for Netlify, and nowhere else, the page cache too",
+    async () => {
+      // No web address: Netlify serves the thank-you page from the site's root.
+      const site = withForms({ kind: "netlify" }, null);
+
+      // Built for elsewhere first: the form can't send, and nothing is drawn for Netlify.
+      const elsewhere = await built(site);
+      expect(contactForm(elsewhere)).toContain('data-wf-form-unset="netlify"');
+      expect(contactForm(elsewhere)).not.toContain("data-netlify");
+      expect(elsewhere.files.has("thank-you.html")).toBe(false);
+      expect(elsewhere.report.warnings).toContainEqual({
+        code: "form-unset",
+        page: "about",
+        detail: "netlify",
+      });
+
+      // Then for Netlify, by the same pipeline: its cached pages aren't reused.
+      const onNetlify = await built(site, "netlify");
+      const form = contactForm(onNetlify);
+      expect(form).toContain('name="Contact form"');
+      expect(form).toContain('data-netlify="true"');
+      expect(form).toContain('netlify-honeypot="bot-field"');
+      expect(form).toContain('action="/thank-you.html"');
+      expect(form).toContain('<input type="hidden" name="form-name" value="Contact form" />');
+      expect(form).toContain('name="bot-field"');
+      expect(form).not.toContain("data-wf-form-unset");
+      expect(text(onNetlify, "thank-you.html")).toContain("Your message is on its way.");
+      expect(onNetlify.report.warnings).not.toContainEqual(
+        expect.objectContaining({ code: "form-unset", detail: "netlify" }),
+      );
+    },
+    scaledTestTimeout(90_000),
   );
 });

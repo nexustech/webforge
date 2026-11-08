@@ -9,6 +9,7 @@ import {
   type FormFieldKind,
   type FormTarget,
   formAction,
+  netlifyFormName,
   SiteForm,
 } from "../form.js";
 import {
@@ -125,7 +126,11 @@ const contactForm = defineSection({
       text={values.text}
       form={
         <SiteForm
-          target={formAction(context.formService, context.thanksPage)}
+          target={formAction(
+            context.formService,
+            context.thanksPage,
+            netlifyFormName(context, t("siteText.form.contact")),
+          )}
           label={t("siteText.form.contact")}
           submitLabel={plainText(values.buttonLabel) ?? t("starter.contactFormButton")}
           hint={context.formHint}
@@ -397,7 +402,11 @@ const form = defineComponent({
       >
         <FieldNames value={createFieldNames(id)}>
           <SiteForm
-            target={formAction(context.formService, context.thanksPage)}
+            target={formAction(
+              context.formService,
+              context.thanksPage,
+              netlifyFormName(context, plainText(values.label) ?? t("starter.formLabel")),
+            )}
             label={plainText(values.label) ?? t("starter.formLabel")}
             submitLabel={plainText(values.buttonLabel) ?? t("starter.formButton")}
             hint={context.formHint}

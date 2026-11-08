@@ -2,9 +2,10 @@ import { z } from "zod";
 import type { FormService } from "./settings.js";
 
 /**
- * Why a form has nowhere to send (2.8, 3.7): no form service in Site Settings, Netlify Forms (which
- * its publisher adds, 4.2), an address that isn't `https://`, or a Newsletter without its form
- * address. The form still draws, without an `action`; Site Check and the export report it.
+ * Why a form has nowhere to send (2.8, 3.7): no form service in Site Settings, Netlify Forms where
+ * the site isn't published to Netlify (only Netlify takes their messages, 4.2), an address that
+ * isn't `https://`, or a Newsletter without its form address. The form still draws, without an
+ * `action`; Site Check and the export report it.
  */
 export type FormUnset = "noService" | "netlify" | "insecure" | "noAddress";
 
@@ -24,14 +25,18 @@ export function httpsAddress(value: unknown): string | undefined {
 
 /**
  * Why a form posting to Site Settings' `service` (the Contact form, a Form) can't send, or
- * `undefined` when it can.
+ * `undefined` when it can. Netlify Forms send only from a site Netlify serves (`onNetlify`, 4.2):
+ * Netlify takes the form's post itself, and anywhere else it would post to the page and be lost.
  */
-export function formServiceUnset(service: FormService | undefined): FormUnset | undefined {
+export function formServiceUnset(
+  service: FormService | undefined,
+  onNetlify = false,
+): FormUnset | undefined {
   switch (service?.kind) {
     case undefined:
       return "noService";
     case "netlify":
-      return "netlify";
+      return onNetlify ? undefined : "netlify";
     case "custom":
       return httpsAddress(service.url) === undefined ? "insecure" : undefined;
     default:

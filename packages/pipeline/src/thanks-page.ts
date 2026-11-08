@@ -97,21 +97,27 @@ function madeThanksPage(site: SiteSnapshot, library: ComponentLibrary): SitePage
  * Site Settings have the web address the service needs to make a whole address of. The site's own
  * page at `thank-you` is used if it has one; else the export makes one. Otherwise the site is as it
  * was, and the service shows its own thank-you page.
+ *
+ * Netlify Forms on Netlify (`onNetlify`, 4.2) show the page at the form's `action`, a path from the
+ * site's root, which Netlify serves: no web address is needed.
  */
 export function withThanksPage(
   site: SiteSnapshot,
   library: ComponentLibrary,
+  onNetlify = false,
 ): { readonly site: SiteSnapshot; readonly thanksPage?: string } {
   const address = site.settings?.["address.url"]?.trim().replace(/\/+$/, "") ?? "";
   const kind = site.formService?.kind;
+  const netlify = onNetlify && kind === "netlify";
   const redirects = kind !== undefined && THANKS_FIELD[kind] !== undefined;
   const forms = [
     site.layout.header,
     site.layout.footer,
     ...site.pages.map((page) => page.doc.content),
   ];
-  if (!redirects || !address.startsWith("https://") || !forms.some(holdsForm)) return { site };
-  const thanksPage = `${address}/${THANKS_PATH}.html`;
+  const canRedirect = netlify || (redirects && address.startsWith("https://"));
+  if (!canRedirect || !forms.some(holdsForm)) return { site };
+  const thanksPage = `${netlify ? "" : address}/${THANKS_PATH}.html`;
   if (site.pages.some((page) => page.path === THANKS_PATH)) return { site, thanksPage };
   return { site: { ...site, pages: [...site.pages, madeThanksPage(site, library)] }, thanksPage };
 }
