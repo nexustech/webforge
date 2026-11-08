@@ -69,7 +69,8 @@ export const contrastRule: CheckRule = {
         required: issue.required,
       },
     }));
-    eachFieldValue(input, ["richtext"], (placed) => {
+    // One walk for both: rich text's colour marks, and the fields that colour text.
+    const marks = (placed: PlacedValue) => {
       if (typeof placed.value !== "string") return;
       let surface: Surface | undefined;
       for (const [, name = ""] of placed.value.matchAll(/<span class="(text-[a-z-]+)"/g)) {
@@ -88,9 +89,13 @@ export const contrastRule: CheckRule = {
           break;
         }
       }
-    });
-    eachFieldValue(input, ["color"], (placed) => {
-      if (!TEXT_COLOUR_FIELDS.has(placed.field)) return;
+    };
+    eachFieldValue(input, ["richtext", "color"], (placed) => {
+      if (!TEXT_COLOUR_FIELDS.has(placed.field)) {
+        // A colour field's value is never rich text: only rich text has marks to read.
+        marks(placed);
+        return;
+      }
       // As the desktop shows it, where most pages are read.
       const ref = resolveResponsive(placed.value as Responsive<unknown>, "desktop");
       if (typeof ref !== "string") return;

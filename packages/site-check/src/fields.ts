@@ -18,7 +18,7 @@ import type { CheckInput } from "./types.js";
 export type PlacedValue = {
   readonly on: ElementPlace;
   readonly node: NodeDoc;
-  /** The elements holding it, outermost first: what it's drawn on (#670). */
+  /** The elements holding it, outermost first: what it's drawn on (#670). Only during the visit. */
   readonly ancestors: readonly NodeDoc[];
   /** The field's name; `items.2.text` for a list item's field. */
   readonly field: string;

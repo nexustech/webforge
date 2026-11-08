@@ -14,26 +14,32 @@ type EachElementOptions = {
   readonly skipHidden?: boolean;
 };
 
-/** What {@link eachElement} calls with each element: where it's kept, and what holds it. */
+/**
+ * What {@link eachElement} calls with each element: where it's kept, and what holds it, which is
+ * only so during the call (copy it to keep it).
+ */
 type Visit = (node: NodeDoc, on: ElementPlace, ancestors: readonly NodeDoc[]) => void;
 
 /**
  * Calls `visit` for each of `nodes` and the elements in their slots, depth first, with the
- * elements holding each, outermost first.
+ * elements holding each, outermost first: one array, `ancestors`, kept as the walk goes, so no
+ * element costs an array of its own (#670). It holds what it says only during the call.
  */
 function walk(
   nodes: readonly NodeDoc[],
   on: ElementPlace,
   visit: Visit,
   skipHidden: boolean,
-  ancestors: readonly NodeDoc[] = [],
+  ancestors: NodeDoc[] = [],
 ): void {
   for (const node of nodes) {
     if (skipHidden && node.props.hidden === true) continue;
     visit(node, on, ancestors);
-    const within = [...ancestors, node];
     for (const value of Object.values(node.props)) {
-      if (Array.isArray(value)) walk(value.filter(isNodeDoc), on, visit, skipHidden, within);
+      if (!Array.isArray(value)) continue;
+      ancestors.push(node);
+      walk(value.filter(isNodeDoc), on, visit, skipHidden, ancestors);
+      ancestors.pop();
     }
   }
 }
