@@ -68,8 +68,8 @@ const FONT_URL = /^webforge-font:\/\/fonts\/([a-z0-9-]+\.woff2)$/;
  * Answers `webforge-font://fonts/<file>` for the canvas (2.2), as `webforge-media:` answers Media
  * images: never by path, only a file `lookup` knows by name (the catalogue's, or a downloaded
  * one's), and only bytes the reader has checked against it. Fonts load in CORS mode, so the answer
- * allows any origin: the canvas's page is a `file:` one, whose origin is `null`, and the fonts are
- * the app's own, which every site may use.
+ * allows any origin: the canvas's page is the editor's, `webforge-app://editor` (#652), or the dev
+ * server, and the fonts are the app's own, which every site may use.
  */
 export function createFontResponder(
   reader: FontReader,

@@ -17,10 +17,12 @@ import {
   type ComponentLibrary,
   consentBannerHtml,
   documentsLinkedBy,
+  ENLARGE_ATTRIBUTE,
   mediaUsedBy,
   type RenderedPage,
   type ResolvedImage,
   renderPage,
+  singleLightboxHtml,
   UnknownComponentError,
 } from "@webforge/site-components";
 import { fontFacesFor, themeShape, usesAccentFont } from "@webforge/themes";
@@ -595,12 +597,22 @@ export async function* buildEvents(
 
   // The back-to-top button (F-CM-9) on the pages that show it, its classes compiled with theirs.
   const backToTop = backToTopHtml();
+  // One single-picture lightbox on each page with an Image that opens larger, which they share
+  // (#646), its classes compiled too.
+  const lightbox = singleLightboxHtml();
+  const enlarges = (entry: {
+    readonly header: string;
+    readonly main: string;
+    readonly footer: string;
+  }) =>
+    [entry.header, entry.main, entry.footer].some((html) => html.includes(`${ENLARGE_ATTRIBUTE}=`));
   // The consent banner on every page, its classes compiled too (3.8).
   const consent = analytics === undefined ? undefined : consentBannerHtml(analytics);
   const markup = rendered.flatMap((entry) => [
     entry.header,
     entry.main,
     entry.footer,
+    enlarges(entry) ? lightbox : "",
     showsBackToTop(site, entry.page) ? backToTop : "",
     consent ?? "",
   ]);
@@ -651,6 +663,7 @@ export async function* buildEvents(
       header: entry.header,
       main: entry.main,
       footer: entry.footer,
+      ...(enlarges(entry) ? { lightbox } : {}),
       ...(showsBackToTop(site, entry.page) ? { backToTop } : {}),
       ...(consent === undefined ? {} : { consent }),
       // The favicon set's links first (3.4); 3.5's share and search tags follow them.

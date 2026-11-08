@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { BEHAVIOUR_SCRIPTS } from "../behaviours.js";
 import { siteLibrary } from "../catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
+import { ENLARGE_ATTRIBUTE, singleLightboxHtml } from "../lightbox.js";
 import { renderNodesToHtml } from "../render-static.js";
 import type { RenderContext, ResolvedImage } from "../schema.js";
 
@@ -51,11 +52,11 @@ function page(ids = ["a", "b", "c"], nodes: readonly NodeDoc[] = [galleryOf(ids)
   windows.push(happy);
   const window = happy as unknown as typeof globalThis;
   const { document } = window;
-  document.body.innerHTML = `<button id="before">Before</button>${renderNodesToHtml(
-    nodes,
-    siteLibrary,
-    context,
-  )}`;
+  const html = renderNodesToHtml(nodes, siteLibrary, context);
+  // As the export does: the single-picture lightbox once, for a page with an Image that opens
+  // larger (#646).
+  const shared = html.includes(`${ENLARGE_ATTRIBUTE}=`) ? singleLightboxHtml() : "";
+  document.body.innerHTML = `<button id="before">Before</button>${html}${shared}`;
   new Function(
     "document",
     "window",
@@ -205,9 +206,9 @@ describe("the lightbox behaviour (2.7a)", () => {
 });
 
 describe("the lightbox of an Image that opens larger (3.20)", () => {
-  const enlarged = (props: Record<string, unknown>): NodeDoc => ({
+  const enlarged = (props: Record<string, unknown>, id = "it"): NodeDoc => ({
     type: "Image",
-    props: { id: "it", image: { mediaId: "shop" }, enlarge: true, ...props },
+    props: { id, image: { mediaId: "shop" }, enlarge: true, ...props },
   });
 
   it("opens its one picture whole, with its caption, without moving or counting", () => {
@@ -226,16 +227,11 @@ describe("the lightbox of an Image that opens larger (3.20)", () => {
     expect(dialog?.open).toBe(true);
     expect(shown()?.getAttribute("src")).toBe("assets/img/shop-1600.jpg");
     expect(shown()?.alt).toBe("Photo shop");
-    // The Image's caption, not the lightbox's own.
+    // The Image's caption.
     expect(text("[data-wf-lightbox-caption]")).toBe("The shop");
     // Whole: the picture's own shape, not the Image's crop.
     expect(shown()?.className).toContain("object-contain");
     expect(shown()?.className).not.toContain("aspect");
-    // The arrow keys have nowhere to go.
-    document.body.dispatchEvent(
-      new window.KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }),
-    );
-    expect(shown()?.getAttribute("src")).toBe("assets/img/shop-1600.jpg");
 
     items[0]?.focus();
     dialog?.close();
@@ -247,5 +243,52 @@ describe("the lightbox of an Image that opens larger (3.20)", () => {
     items[0]?.click();
 
     expect(text("[data-wf-lightbox-caption]")).toBe("");
+  });
+
+  it("shares one lightbox on a page, each Image opening its own picture and caption in it (#646)", () => {
+    const { items, shown, text, document } = page(
+      [],
+      [
+        enlarged({ image: { mediaId: "shop" }, caption: "The shop" }, "one"),
+        enlarged({ image: { mediaId: "oven" }, caption: "The oven" }, "two"),
+        enlarged({ image: { mediaId: "bread" } }, "three"),
+      ],
+    );
+    expect(document.querySelectorAll("dialog")).toHaveLength(1);
+    expect(items).toHaveLength(3);
+
+    items[1]?.click();
+    expect(shown()?.getAttribute("src")).toBe("assets/img/oven-1600.jpg");
+    expect(text("[data-wf-lightbox-caption]")).toBe("The oven");
+    document.querySelector<HTMLDialogElement>("dialog")?.close();
+
+    items[2]?.click();
+    expect(shown()?.getAttribute("src")).toBe("assets/img/bread-1600.jpg");
+    expect(text("[data-wf-lightbox-caption]")).toBe("");
+  });
+
+  it("leaves the arrow keys, Home, End and a swipe alone: there's nothing to go to (#646)", () => {
+    const { items, dialog, shown, document, window } = page(
+      [],
+      [enlarged({}, "one"), enlarged({ image: { mediaId: "oven" } }, "two")],
+    );
+    items[0]?.click();
+    // Anything that showed a picture again would set its address back.
+    shown()?.setAttribute("src", "untouched");
+
+    for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) {
+      const press = new window.KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
+      document.body.dispatchEvent(press);
+      expect(press.defaultPrevented, key).toBe(false);
+    }
+    dialog?.dispatchEvent(
+      new window.PointerEvent("pointerdown", { pointerType: "touch", clientX: 300 }),
+    );
+    dialog?.dispatchEvent(
+      new window.PointerEvent("pointerup", { pointerType: "touch", clientX: 100 }),
+    );
+
+    expect(shown()?.getAttribute("src")).toBe("untouched");
+    expect(dialog?.open).toBe(true);
   });
 });
