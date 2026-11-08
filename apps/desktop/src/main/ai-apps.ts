@@ -16,15 +16,29 @@ const FAILURES_BEFORE_DELAY = 3;
 const FIRST_DELAY_MS = 250;
 const MAX_DELAY_MS = 2_000;
 const FAILURE_WINDOW_MS = 60_000;
+/**
+ * The most wrong keys' answers held back at once (S28, #794): beyond it, a wrong key is answered
+ * at once, so a flood of them holds nothing open. A right key is never held back.
+ */
+const MAX_HELD_BACK = 16;
 
 /** The longest app name, as the AI contract takes it ("AI (‹app›): …"). */
 const NAME_MAX = 80;
+
+/**
+ * How an app reaches Webforge: Claude Desktop through its extension's bridge, which checks it's
+ * Webforge before it sends its key; or another app directly, which sends its key to whatever
+ * answers at the address (ADR 0021).
+ */
+export type AppKind = "claude" | "other";
 
 /** A paired AI app, as Preferences › AI apps lists it: never its key. */
 export type PairedApp = {
   readonly id: string;
   /** The name the person gave it, cleaned. */
   readonly name: string;
+  /** How it connects; left out by builds before #794, and then taken as `other`. */
+  readonly kind?: AppKind;
   readonly pairedAt: number;
   /** When it first connected with its key; `null` while the key waits to be used. */
   readonly claimedAt: number | null;
@@ -33,6 +47,7 @@ export type PairedApp = {
 const pairedAppSchema = z.strictObject({
   id: z.uuid(),
   name: z.string().min(1).max(NAME_MAX),
+  kind: z.enum(["claude", "other"]).exactOptional(),
   pairedAt: z.number().int().nonnegative(),
   claimedAt: z.number().int().nonnegative().nullable(),
 });
@@ -45,6 +60,11 @@ export const aiAppsFileSchema = z.strictObject({
   enabled: z.boolean(),
   /** Drawn once, the first time AI apps is turned on (ADR 0021); `null` until then. */
   port: z.int().min(1024).max(65535).nullable(),
+  /**
+   * The remembered port was taken, and Webforge listens on another (S27, #794): kept until the
+   * person has seen it in AI apps, so a warning shown once at start isn't lost.
+   */
+  moved: z.boolean().exactOptional(),
 });
 
 /** See {@link aiAppsFileSchema}. */
@@ -80,8 +100,19 @@ export type AiApps = {
    * Pairs an app named `name` (the person's name for it, cleaned), with a new key and proof, unless
    * the name is empty or another app's.
    */
-  add(name: string): Promise<Pairing>;
+  add(name: string, kind: AppKind): Promise<Pairing>;
   remove(id: string): Promise<void>;
+  /**
+   * Removes the apps that send their key to whatever answers at the address (`other`), with their
+   * keys, and records that the port moved (S27): a program that took the old port may have been
+   * sent their keys. Claude Desktop's bridge checks it's Webforge first, so its key never went.
+   * Resolves to the ids removed.
+   */
+  movedFrom(): Promise<readonly string[]>;
+  /** Whether the port moved since the person last saw AI apps. */
+  moved(): Promise<boolean>;
+  /** The person has seen that the port moved. */
+  seenMoved(): Promise<void>;
   /**
    * The app `key` belongs to, if any: compared by hash, in constant time. Its first use claims
    * it; a key not used within {@link UNCLAIMED_KEY_MS} is revoked. A right key is always
@@ -115,9 +146,38 @@ const hashOf = (key: string) => createHash("sha256").update(key, "utf8").digest(
 /** 256 random bits, base64url: a key or a proof. */
 const secret = () => randomBytes(32).toString("base64url");
 
-/** The paired apps in `file`, their secrets in `credentials`. */
+/**
+ * `store`, read once and then kept in memory (S28, #794): every authentication and challenge reads
+ * the apps, and a flood of them shouldn't queue behind the disk. Every change goes through here,
+ * so what's kept is what's written.
+ */
+function cached(store: JsonStore<AiAppsFile>): JsonStore<AiAppsFile> {
+  let kept: AiAppsFile | undefined;
+  return {
+    async read() {
+      kept ??= await store.read();
+      return kept;
+    },
+    async update(change) {
+      try {
+        await store.update((current) => {
+          const next = change(current);
+          kept = next ?? current;
+          return next;
+        });
+      } catch (error) {
+        // Not written: the next read goes to the file again.
+        kept = undefined;
+        throw error;
+      }
+    },
+    idle: () => store.idle(),
+  };
+}
+
+/** The paired apps in `store`, their secrets in `credentials`. */
 export function createAiApps(
-  file: JsonStore<AiAppsFile>,
+  store: JsonStore<AiAppsFile>,
   credentials: CredentialStore,
   now: () => number = Date.now,
   sleep: (ms: number) => Promise<void> = (ms) =>
@@ -125,6 +185,7 @@ export function createAiApps(
       setTimeout(resolve, ms);
     }),
 ): AiApps {
+  const file = cached(store);
   /** Each app's secret, read once: the store decrypts on every read. */
   const secrets = new Map<string, z.infer<typeof secretSchema> | null>();
   const secretOf = async (id: string) => {
@@ -160,26 +221,42 @@ export function createAiApps(
     return apps.filter((app) => !expired(app));
   };
 
-  let failures: number[] = [];
+  /** Wrong keys since `since`: a count, which a flood of them can't grow past a number (S28). */
+  let failures = { since: Number.NEGATIVE_INFINITY, count: 0 };
+  /** Wrong keys whose answers are being held back now. */
+  let heldBack = 0;
   /** A wrong key: counted, and its answer held back once there have been a few in a minute. */
   const failed = async () => {
     const at = now();
-    failures = [...failures.filter((time) => at - time < FAILURE_WINDOW_MS), at];
-    const over = failures.length - FAILURES_BEFORE_DELAY;
-    if (over >= 0) await sleep(Math.min(FIRST_DELAY_MS * 2 ** over, MAX_DELAY_MS));
+    if (at - failures.since >= FAILURE_WINDOW_MS) failures = { since: at, count: 0 };
+    failures.count += 1;
+    const over = failures.count - FAILURES_BEFORE_DELAY;
+    if (over < 0 || heldBack >= MAX_HELD_BACK) return undefined;
+    heldBack += 1;
+    try {
+      await sleep(Math.min(FIRST_DELAY_MS * 2 ** over, MAX_DELAY_MS));
+    } finally {
+      heldBack -= 1;
+    }
     return undefined;
   };
 
   return {
     list,
-    async add(name) {
+    async add(name, kind) {
       const cleaned = cleanAppName(name);
       if (cleaned === "") return { status: "name-empty" };
       const same = cleaned.toLocaleLowerCase();
       if ((await list()).some((app) => app.name.toLocaleLowerCase() === same)) {
         return { status: "name-taken" };
       }
-      const app: PairedApp = { id: randomUUID(), name: cleaned, pairedAt: now(), claimedAt: null };
+      const app: PairedApp = {
+        id: randomUUID(),
+        name: cleaned,
+        kind,
+        pairedAt: now(),
+        claimedAt: null,
+      };
       const pairing = { app, key: secret(), proof: secret() };
       const stored = { keyHash: hashOf(pairing.key).toString("base64url"), proof: pairing.proof };
       await credentials.set(mcpCredentialKey(app.id), JSON.stringify(stored));
@@ -188,6 +265,24 @@ export function createAiApps(
       return { status: "paired", ...pairing };
     },
     remove,
+    async movedFrom() {
+      const direct = (await file.read()).apps.filter((app) => app.kind !== "claude");
+      for (const app of direct) await remove(app.id);
+      await file.update((current) =>
+        current.moved === true ? undefined : { ...current, moved: true },
+      );
+      return direct.map((app) => app.id);
+    },
+    async moved() {
+      return (await file.read()).moved === true;
+    },
+    async seenMoved() {
+      await file.update((current) => {
+        if (current.moved !== true) return undefined;
+        const { moved: _seen, ...rest } = current;
+        return rest;
+      });
+    },
     async authenticate(key) {
       const hash = hashOf(key);
       for (const app of await list()) {

@@ -30,6 +30,7 @@ function fakeService(status: Partial<McpServiceStatus> = {}) {
     setEnabled: vi.fn(async (enabled: boolean) => {
       current = { ...current, enabled, port: enabled ? 51_234 : null };
     }),
+    seenMoved: vi.fn(async () => undefined),
     add: vi.fn(
       async (name: string): Promise<Pairing> => ({
         status: "paired",
@@ -89,23 +90,23 @@ describe("the mcp IPC calls (4.9)", () => {
     const service = fakeService();
     const call = handlers(service);
 
-    expect(await call("mcp:add", "Cursor")).toEqual({
+    expect(await call("mcp:add", "Cursor", "other")).toEqual({
       status: "paired",
       app: expect.objectContaining({ name: "Cursor", claimed: false, connected: false }),
       key: KEY,
       address: "http://127.0.0.1:51234/mcp",
     });
     service.add.mockResolvedValueOnce({ status: "name-taken" });
-    expect(await call("mcp:add", "Claude")).toEqual({ status: "name-taken" });
+    expect(await call("mcp:add", "Claude", "claude")).toEqual({ status: "name-taken" });
   });
 
   it("pairs nothing while off, nor when the key can't be kept", async () => {
     expect(
-      await handlers(fakeService({ enabled: false, port: null }))("mcp:add", "Cursor"),
+      await handlers(fakeService({ enabled: false, port: null }))("mcp:add", "Cursor", "other"),
     ).toEqual({ status: "off" });
     const service = fakeService();
     service.add.mockRejectedValueOnce(new Error("encryption-unavailable"));
-    expect(await handlers(service)("mcp:add", "Cursor")).toEqual({ status: "failed" });
+    expect(await handlers(service)("mcp:add", "Cursor", "other")).toEqual({ status: "failed" });
   });
 
   it("turns AI apps on and off, and says so even when it couldn't start listening", async () => {
