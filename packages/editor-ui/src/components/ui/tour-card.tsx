@@ -1,4 +1,12 @@
-import { type ComponentProps, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import {
+  type ComponentProps,
+  type ReactNode,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { cn } from "../../lib/cn.js";
 import { type CardPlace, placeCard, type ScreenBox } from "./place-card.js";
 
@@ -64,8 +72,11 @@ export function TourCard({
   // The card that last took the focus; null until the first has.
   const shownKey = useRef<string | null>(null);
 
-  // Follows what it points at, which can move (the page scrolls, a panel is resized).
-  useEffect(() => {
+  // Follows what it points at, which can move (the page scrolls, a panel is resized). Placed before
+  // it's drawn: a state set in a layout effect is drawn with it, so a card moved on to the next step
+  // is never shown, or focused, at the last step's place for a frame, as it was in a passive effect
+  // (#808).
+  useLayoutEffect(() => {
     const card = ref.current;
     const view = card?.ownerDocument.defaultView;
     if (card === null || view === null || view === undefined) return;

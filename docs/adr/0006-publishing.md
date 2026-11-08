@@ -1,6 +1,6 @@
 # 0006. Publishing: publisher core, Netlify, credentials
 
-- Status: Proposed. Started in spec/04 item 0.2 (Netlify, #12); item 0.3 (FTP/FTPS/SFTP, #13) added its part (decision 7), and item 4.1 (#69) the publish run and its check of the live site (decision 8). It is accepted once 0.2's live Netlify check is recorded
+- Status: Accepted (2026-11-08, after 0.2's live Netlify check, decision 6). Started in spec/04 item 0.2 (Netlify, #12); item 0.3 (FTP/FTPS/SFTP, #13) added its part (decision 7), and item 4.1 (#69) the publish run and its check of the live site (decision 8)
 - Date: 2026-10-20
 - Related: [research 08](../../research/stack/08-publishing.md) (B1, B5, B6), [architecture §6, §7, §9](../../spec/01-architecture.md#6-key-interfaces), `packages/publish`, `apps/desktop/src/main/credential-store.ts`, `apps/desktop/src/main/netlify-auth.ts`
 
@@ -67,7 +67,18 @@ Why:
 - Tokens stay in the main process. The renderer only learns whether a profile is signed in (Phase 4 IPC).
 
 ### 6. Netlify Forms on API deploys
-Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and the live check (`packages/publish/src/netlify.live.test.ts`) deploy a page with a `data-netlify="true"` form and report whether Netlify registered it. **Result: pending the live run.** If Netlify doesn't detect forms on API deploys, Netlify profiles fall back to the Formspree, Web3Forms and FormSubmit presets (B6), and the Form setting doesn't offer "Netlify Forms".
+Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and the live check (`packages/publish/src/netlify.live.test.ts`) deploy a page with a `data-netlify="true"` form and report whether Netlify registered it. **Result (live run, 2026-11-08): detected.** Netlify registered the form from an API deploy, with the site's form detection turned on. So "Netlify Forms" stays a form destination for sites with a Netlify destination (4.2), and it needs form detection on. Without it, Netlify profiles fall back to the Formspree, Web3Forms and FormSubmit presets (B6).
+
+#### The live run (0.2, 2026-11-08)
+The product owner ran `netlify.live.test.ts` against a throwaway site on a free Netlify account, with a personal access token:
+- **Digest deploy:** the first deploy uploaded all 4 files; the re-deploy, with one page changed, uploaded 1.
+- **Restore:** `restoreDeploy` put the first deploy back live.
+- **Forms:** detected (above).
+
+It also found two things about Netlify sites:
+- **Visitor access can be on.** The first attempt was served Netlify's "Login Redirect" page (`app.netlify.com/edge-access`) in place of every file, because the project had site protection on. The deploy itself succeeded, and decision 8's API check would still report it `live`. A Netlify destination should warn when the site is protected, so the owner doesn't believe visitors can see it (4.4b).
+- **Netlify adds a script to served pages:** `<script async src="/.netlify/scripts/hud?variant=public" …>` after the page, on a free account. It comes from the site's own address, not another server, but it isn't in the site Webforge built. Decision 8's check reads the API, not the page, so it isn't misled; `netlify.live.test.ts` now compares only the start of each page. Whether a site setting turns it off is still to be found (4.2).
+- **Not run live:** OAuth sign-in (decision 4). It waits on registering Webforge's OAuth application, before 4.4b; until then the pasted token is the only sign-in.
 
 ### 7. FTP, FTPS and SFTP: one publish flow over a remote folder (0.3)
 - **One flow, two adapters.** `publishToFolder` does what every file-transfer host needs:
