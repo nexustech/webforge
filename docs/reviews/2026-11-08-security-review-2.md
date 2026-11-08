@@ -32,7 +32,8 @@ The second review comes before the beta. Since the first one, nearly everything 
 - Each finding was then checked in the code before it was counted. A finding two reviewers found separately is counted once (S26).
 - Separately:
   - `pnpm audit`, for dependencies;
-  - a new fuzzing test of damaged and crafted `.wforge` files, `packages/storage/test/damaged-file.test.ts`: 300 runs of 1–16 random bytes changed, and 100 truncations, each opened and read in full. Every run either reads or fails with storage's own error.
+  - a new fuzzing test of damaged and crafted `.wforge` files, `packages/storage/test/damaged-file.test.ts`: 300 runs of 1–16 random bytes changed, and 100 truncations, each opened and read in full. Every run must either read or fail with storage's own error.
+    - On CI it found one that didn't: a header whose schema format number was changed to 5 failed with SQLite's raw "unsupported file format". The person would have seen an unexpected error rather than "damaged". Fixed here: storage reports it as a damaged site, with a regression test. 4,000 runs and 1,000 truncations then passed locally.
 
 Severity is as in the first review. **Medium:** reachable by an attacker who gets the user to open a file or paste content, with real harm. **Low:** defence in depth, or code not wired up yet. **Info:** a spec gap, robustness, or a decision.
 
@@ -148,7 +149,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 |---|---|
 | Electron hardening: Fuses, CSP, navigation handlers, sandbox | Holds, except S5 and S7 (#652, now including the Help window) and S15 (#655). |
 | IPC schema validation | Holds: every channel, both directions, both preloads. |
-| Untrusted `.wforge` fuzzing | Holds: the new fuzzing test, plus the crafted-file tests from S4. |
+| Untrusted `.wforge` fuzzing | Holds: the new fuzzing test (its one finding fixed here), plus the crafted-file tests from S4. |
 | Secrets and logging | Holds. S32 and S38 are before 4.4b (#796). |
 | Dependency audit | Holds: S40 is build-time only. |
 | MCP server: pairing, `Origin` and `Host` checks, tool scope, no content in logs (F-AI-1) | Holds: S26 fixed here, S27–S30 filed (#794, #795). |
