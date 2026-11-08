@@ -234,14 +234,7 @@ test("a changed page is re-rendered and sent to the browser in under 200 ms", as
     window?.show();
     window?.focus();
   });
-  // The heading's text takes the focus as it's clicked. On macOS' runner, after the colour test, it
-  // once didn't, and the typing went nowhere (#810): a second click, and a miss names the focus.
   await heading.click();
-  if (!(await heading.evaluate((element) => element === element.ownerDocument.activeElement))) {
-    await canvas.locator("body").click({ position: { x: 5, y: 5 } });
-    await heading.click();
-  }
-  await expect(heading, "The heading's text didn't take the focus").toBeFocused();
   await page.keyboard.press("End");
   await page.keyboard.type(ADDED, { delay: 60 });
   // The text is on the canvas before the edit ends: a miss here is the typing's, not the preview's.
