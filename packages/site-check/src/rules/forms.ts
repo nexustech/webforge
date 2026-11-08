@@ -7,7 +7,7 @@ const SERVICE_FORMS = new Set(["ContactForm", "Form"]);
 
 /**
  * A form with nowhere to send its messages (F-CM-1, 3.7, X5): no form service in Site Settings,
- * Netlify Forms before its publisher (4.2), an address that isn't `https://`, or a Newsletter
+ * Netlify Forms anywhere but a publish to Netlify (4.2), an address that isn't `https://`, or a Newsletter
  * without its form address. The export draws it without an `action` and a disabled button, so a
  * visitor's message can't be lost: *Should fix* for an export, *Must fix* for publishing. Each
  * finding says whether Site Settings (`form: "service"`) or the Newsletter itself is where to fix it.
@@ -16,10 +16,10 @@ export const formsRule: CheckRule = {
   id: "forms",
   level: "should",
   strictOnPublish: true,
-  check: ({ site }) => {
+  check: ({ site, host }) => {
     const found: Finding[] = [];
     const exported = exportedPlaces(site);
-    const service = formServiceUnset(site.settings.forms.service);
+    const service = formServiceUnset(site.settings.forms.service, host === "netlify");
     eachElement(
       site,
       (node, on) => {

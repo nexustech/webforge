@@ -3,7 +3,7 @@ import { type SiteStore, storeFailure } from "./site-store.js";
 
 /**
  * The open site's editor state, or `null` without an open site, with when it was last published
- * for Site Check (F-CM-8).
+ * for Site Check (F-CM-8), and whether it has a Netlify destination for its forms (4.2).
  */
 export function uiState(site: SiteStore): Promise<SiteUiState | null> {
   return site.withStore(
@@ -14,6 +14,7 @@ export function uiState(site: SiteStore): Promise<SiteUiState | null> {
         editorMode: store.readEditorMode(),
         siteCheckIgnored: store.readSiteCheckIgnored(),
         ...(published === undefined ? {} : { lastPublishedAt: published }),
+        onNetlify: store.readPublishDestinations().some(({ kind }) => kind === "netlify"),
       };
     },
     () => null,

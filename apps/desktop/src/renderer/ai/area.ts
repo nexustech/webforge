@@ -33,11 +33,13 @@ export const aiRequestsArea: Area<WindowContext> = {
     codeTrust,
     siteCheckIgnored,
     windowDialogs,
+    onNetlify,
   }) => {
     const commandApi = createCommandApi(commandHost(session, preferences, siteWide));
     const appTools = createAppTools({
       site: () => session.history.document.getState(),
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
+      onNetlify: () => onNetlify.getState(),
       ignored: () => siteCheckIgnored.initial,
       openPreview: () => {
         commands.run(COMMAND_IDS.preview);

@@ -1,3 +1,4 @@
+import { t } from "@webforge/i18n";
 import type { FormService, SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
@@ -5,6 +6,7 @@ import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { beforeAll, describe, expect, it } from "vitest";
 import { type BuiltSite, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
+import { createPipeline } from "../src/pipeline.js";
 import type { PipelineResources } from "../src/resources.js";
 
 let resources: PipelineResources;
@@ -144,5 +146,84 @@ describe("forms with nowhere to send (3.7, X5)", () => {
       ]);
     },
     scaledTestTimeout(60_000),
+  );
+});
+
+describe("Netlify Forms (4.2)", () => {
+  /** The site built by one pipeline, for `host`: its pages' render cache kept between builds. */
+  const pipeline = createPipeline(siteLibrary);
+  const built = async (site: SiteSnapshot, host?: "netlify") => {
+    let done: BuiltSite | undefined;
+    for await (const event of pipeline.build(site, resources, { mode: "publish", host })) {
+      if (event.stage === "done") done = event.site;
+    }
+    if (done === undefined) throw new Error("The build didn't finish");
+    return done;
+  };
+
+  it(
+    "draws them for Netlify to find in a build for Netlify, and nowhere else, the page cache too",
+    async () => {
+      // No web address: Netlify serves the thank-you page from the site's root.
+      const site = withForms({ kind: "netlify" }, null);
+
+      // Built for elsewhere first: the form can't send, and nothing is drawn for Netlify.
+      const elsewhere = await built(site);
+      expect(contactForm(elsewhere)).toContain('data-wf-form-unset="netlify"');
+      expect(contactForm(elsewhere)).not.toContain("data-netlify");
+      expect(elsewhere.files.has("thank-you.html")).toBe(false);
+      expect(elsewhere.report.warnings).toContainEqual({
+        code: "form-unset",
+        page: "about",
+        detail: "netlify",
+      });
+
+      // Then for Netlify, by the same pipeline: its cached pages aren't reused.
+      const onNetlify = await built(site, "netlify");
+      const form = contactForm(onNetlify);
+      expect(form).toContain('name="Contact form"');
+      expect(form).toContain('data-netlify="true"');
+      expect(form).toContain('netlify-honeypot="bot-field"');
+      expect(form).toContain('action="/thank-you.html"');
+      // Netlify adds the hidden `form-name` field itself as it finds the form.
+      expect(form).not.toContain('name="form-name"');
+      expect(form).toContain('name="bot-field"');
+      expect(form).not.toContain("data-wf-form-unset");
+      expect(text(onNetlify, "thank-you.html")).toContain("Your message is on its way.");
+      expect(onNetlify.report.warnings).not.toContainEqual(
+        expect.objectContaining({ code: "form-unset", detail: "netlify" }),
+      );
+    },
+    scaledTestTimeout(90_000),
+  );
+
+  it(
+    "names two Forms with the same label apart, so Netlify keeps their messages apart",
+    async () => {
+      const base = withForms({ kind: "netlify" }, null);
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("The sample site has no home page");
+      const twoForms = [
+        { type: "Form", props: { id: "first" } },
+        { type: "Form", props: { id: "second" } },
+      ];
+      const site = {
+        ...base,
+        pages: [
+          { ...home, doc: { ...home.doc, content: [...home.doc.content, ...twoForms] } },
+          ...rest,
+        ],
+      };
+
+      const names = [
+        ...text(await built(site, "netlify"), "index.html").matchAll(
+          /<form[^>]*data-netlify="true"[^>]*>/g,
+        ),
+      ].map(([tag]) => / name="([^"]+)"/.exec(tag)?.[1]);
+
+      const label = t("starter.formLabel");
+      expect(names).toEqual([label, `${label} 2`]);
+    },
+    scaledTestTimeout(90_000),
   );
 });
