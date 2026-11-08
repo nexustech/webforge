@@ -26,7 +26,7 @@ import {
   PUBLISH_DESTINATIONS_MAX,
   type PublishDestination,
 } from "@webforge/model";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type {
   ConnectionResult,
   DestinationsFailure,
@@ -149,6 +149,10 @@ export function PublishDialog({
   const [editing, setEditing] = useState<Editing | undefined>();
   const [removing, setRemoving] = useState<ListedDestination | undefined>();
   const [tests, setTests] = useState<Tests>({});
+  // A Netlify save under way, which a second Save leaves be; and the site the last one made, which
+  // a retry with the same sign-in and name uses rather than making another on the account.
+  const netlifySaving = useRef(false);
+  const madeSite = useRef<{ readonly key: string; readonly site: NetlifySite }>(undefined);
   // Raised to read the list again, after a change.
   const [version, setVersion] = useState(0);
   const reload = () => setVersion((last) => last + 1);
@@ -222,32 +226,48 @@ export function PublishDialog({
   };
 
   /** Saves a Netlify destination, making its new site first when it asks for one. */
-  const saveNetlify = async (saved: NetlifySaved) => {
-    if (netlify === undefined) return;
+  const saveNetlify = (saved: NetlifySaved) => {
+    if (netlify === undefined || netlifySaving.current) return;
+    netlifySaving.current = true;
+    saveNetlifyNow(netlify, saved)
+      .catch(() => notify(failureMessage("unknown")))
+      .finally(() => {
+        netlifySaving.current = false;
+      });
+  };
+
+  const saveNetlifyNow = async (calls: NetlifyPublishApi, saved: NetlifySaved) => {
     const id = editing?.listed?.destination.id;
     const account: NetlifyAccount =
       "handle" in saved.signIn ? { handle: saved.signIn.handle } : { saved: id ?? "" };
     let site: NetlifySite;
     let name = saved.name;
     if ("create" in saved.site) {
-      const created = await netlify.createSite(account, saved.site.create);
-      if (created.status === "failed") {
-        notify(netlifyFailureMessage(created.reason));
-        return;
+      const key = JSON.stringify([account, saved.site.create ?? null]);
+      let made = madeSite.current?.key === key ? madeSite.current.site : undefined;
+      if (made === undefined) {
+        const created = await calls.createSite(account, saved.site.create);
+        if (created.status === "failed") {
+          notify(netlifyFailureMessage(created.reason));
+          return;
+        }
+        made = created.site;
+        madeSite.current = { key, site: made };
       }
-      site = created.site;
+      site = made;
       // Left unnamed, as the new site was: listed by the name Netlify gave it.
       if (saved.site.create === undefined && name === t("publish.netlify.defaultName")) {
-        name = created.site.name;
+        name = made.name;
       }
     } else {
       site = saved.site;
     }
-    const result = await netlify.save(
+    const result = await calls.save(
       { ...(id === undefined ? {} : { id }), name, site },
       saved.signIn,
     );
     if (result.status === "saved") {
+      madeSite.current = undefined;
       setEditing(undefined);
       onSaved(result.destination);
       reload();
@@ -375,10 +395,11 @@ export function PublishDialog({
                 },
               })}
           netlify={netlify}
-          onSave={(saved) => {
-            saveNetlify(saved).catch(() => notify(failureMessage("unknown")));
+          onSave={saveNetlify}
+          onCancel={() => {
+            madeSite.current = undefined;
+            setEditing(undefined);
           }}
-          onCancel={() => setEditing(undefined)}
         />
       )}
       {editing?.kind === "file-transfer" && (

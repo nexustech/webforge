@@ -20,6 +20,10 @@ function fakeNetlify() {
     sites: vi.fn<NetlifyApi["sites"]>(async () => ({ status: "listed", sites: [SITE] })),
     createSite: vi.fn<NetlifyApi["createSite"]>(async () => ({ status: "created", site: SITE })),
     testSaved: vi.fn<NetlifyApi["testSaved"]>(async () => ({ ok: true })),
+    checkAccess: vi.fn<NetlifyApi["checkAccess"]>(async () => ({
+      status: "checked",
+      protected: false,
+    })),
     saveDestination: vi.fn<NetlifyApi["saveDestination"]>(async () => ({
       status: "failed",
       reason: "unknown",
@@ -65,12 +69,14 @@ describe("the Publish dialog's Netlify calls (4.4b)", () => {
     await api.sites({ handle: HANDLE });
     await api.createSite({ saved: SITE.id }, undefined);
     await api.testSaved(SITE.id);
+    await api.checkAccess({ saved: SITE.id }, SITE.id);
     await api.save({ name: "Shop", site: SITE }, { handle: HANDLE });
-    api.forgetSignIn?.(HANDLE);
+    api.forgetSignIn(HANDLE);
 
     expect(netlify.sites).toHaveBeenCalledWith(SESSION, { handle: HANDLE });
     expect(netlify.createSite).toHaveBeenCalledWith(SESSION, { saved: SITE.id }, undefined);
     expect(netlify.testSaved).toHaveBeenCalledWith(SESSION, SITE.id);
+    expect(netlify.checkAccess).toHaveBeenCalledWith(SESSION, { saved: SITE.id }, SITE.id);
     expect(netlify.saveDestination).toHaveBeenCalledWith(
       SESSION,
       { name: "Shop", site: SITE },

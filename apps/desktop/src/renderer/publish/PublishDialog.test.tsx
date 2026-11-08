@@ -260,12 +260,17 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
         reason: "not-set-up",
       })),
       cancelSignIn: vi.fn(),
+      forgetSignIn: vi.fn(),
       signInWithToken: vi.fn<NetlifyPublishApi["signInWithToken"]>(async () => ({
         status: "signed-in",
         handle: "8d2c1f0e-1111-4222-8333-444455556666",
       })),
       testSaved: vi.fn<NetlifyPublishApi["testSaved"]>(async () => ({ ok: true })),
       sites: vi.fn<NetlifyPublishApi["sites"]>(async () => ({ status: "listed", sites: [SITE] })),
+      checkAccess: vi.fn<NetlifyPublishApi["checkAccess"]>(async () => ({
+        status: "checked",
+        protected: false,
+      })),
       createSite: vi.fn<NetlifyPublishApi["createSite"]>(async () => ({
         status: "created",
         site: {
@@ -331,6 +336,34 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
           url: "https://brave-otter-1a2b.netlify.app",
         },
       },
+      { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
+    );
+  });
+
+  it("makes a new site once: a second Save, or one after a failed save, uses it (#826 review)", async () => {
+    const netlify = fakeNetlify();
+    netlify.save.mockResolvedValueOnce({ status: "failed", reason: "unknown" });
+    const { onSaved, user } = setUpNetlify([], netlify);
+    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Netlify…" }));
+    const dialog = await screen.findByRole("dialog", { name: "Add a Netlify Destination" });
+    await user.type(within(dialog).getByLabelText("Personal access token"), "nfp_token");
+    await user.click(within(dialog).getByRole("button", { name: "Connect" }));
+    await user.selectOptions(await within(dialog).findByLabelText("Netlify site"), "new");
+    const save = within(dialog).getByRole("button", { name: "Save Destination" });
+
+    // Twice at once: one save. It fails, so the dialog stays; Save again uses the site it made.
+    await Promise.all([user.click(save), user.click(save)]);
+    await waitFor(() => expect(netlify.save).toHaveBeenCalledTimes(1));
+    await user.click(save);
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(netlify.createSite).toHaveBeenCalledTimes(1);
+    expect(netlify.save).toHaveBeenCalledTimes(2);
+    expect(netlify.save).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        site: expect.objectContaining({ id: "9e8d7c6b-1111-4222-8333-444455556666" }),
+      }),
       { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
     );
   });

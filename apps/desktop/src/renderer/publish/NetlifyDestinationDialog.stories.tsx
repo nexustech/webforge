@@ -9,6 +9,7 @@ const netlify: NetlifyDestinationApi = {
   canSignIn: true,
   signIn: async () => ({ status: "signed-in", handle: "8d2c1f0e-1111-4222-8333-444455556666" }),
   cancelSignIn: () => undefined,
+  forgetSignIn: () => undefined,
   signInWithToken: async () => ({
     status: "signed-in",
     handle: "8d2c1f0e-1111-4222-8333-444455556666",

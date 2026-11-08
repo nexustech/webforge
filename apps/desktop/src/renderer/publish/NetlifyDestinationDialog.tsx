@@ -61,13 +61,13 @@ export type NetlifyDestinationApi = {
    * Drops a sign-in the dialog made and won't save, as it's cancelled or closed: main holds it no
    * longer than it needs to (4.2's `forgetSignIn`).
    */
-  readonly forgetSignIn?: (handle: string) => void;
+  readonly forgetSignIn: (handle: string) => void;
   /**
    * Whether site `siteId`'s visitors must log in to Netlify (site protection, or visitor access):
    * Netlify then reports a deploy live while visitors get its log-in page (0.2's live run, ADR 0006
-   * decision 6). Asked for the site chosen only; left out until 4.2 part 3 adds it.
+   * decision 6). Asked for the site chosen only (4.2 part 3).
    */
-  readonly checkAccess?: (
+  readonly checkAccess: (
     account: NetlifyAccount,
     siteId: string,
   ) => Promise<
@@ -184,6 +184,10 @@ export function NetlifyDestinationDialog({
       : netlify.signInWithToken(token)
     ).catch(() => ({ status: "failed" as const, reason: "failed" as const }));
     if (result.status === "signed-in") {
+      // Signed in again: the sign-in before it, not saved, is let go.
+      if (account !== undefined && "handle" in account && account.handle !== result.handle) {
+        netlify.forgetSignIn(account.handle);
+      }
       setSigning({ status: "idle" });
       setAccount({ handle: result.handle });
     } else {
@@ -215,17 +219,12 @@ export function NetlifyDestinationDialog({
             onCancel={netlify.cancelSignIn}
             onConnect={() => void signIn("token", values.token.trim())}
           />
-          {/* Until there's a picker to show it under: loading, or why it couldn't. */}
-          {sites.status !== "listed" && <SiteStatus sites={sites} />}
+          {/* The picker shows once they're listed: until then, loading, or why it couldn't. */}
+          <SiteStatus sites={sites} />
         </>
       ),
-      site: (
-        <>
-          <SiteStatus sites={sites} />
-          {account !== undefined && netlify.checkAccess !== undefined && siteOf(values.site) && (
-            <VisitorAccess check={netlify.checkAccess} account={account} siteId={values.site} />
-          )}
-        </>
+      site: account !== undefined && siteOf(values.site) && (
+        <VisitorAccess check={netlify.checkAccess} account={account} siteId={values.site} />
       ),
     }),
   };
@@ -247,7 +246,7 @@ export function NetlifyDestinationDialog({
       onSave={(saved) => onSave(saved)}
       onCancel={() => {
         // A sign-in made here and not saved: main lets it go now, not after its 30 minutes.
-        if (account !== undefined && "handle" in account) netlify.forgetSignIn?.(account.handle);
+        if (account !== undefined && "handle" in account) netlify.forgetSignIn(account.handle);
         onCancel();
       }}
     />
@@ -437,7 +436,7 @@ function VisitorAccess({
   account,
   siteId,
 }: {
-  readonly check: NonNullable<NetlifyDestinationApi["checkAccess"]>;
+  readonly check: NetlifyDestinationApi["checkAccess"];
   readonly account: NetlifyAccount;
   readonly siteId: string;
 }) {

@@ -33,6 +33,7 @@ export function netlifyThrough(
     },
     signInWithToken: (token) => netlify.signInWithToken(token),
     sites: (account) => netlify.sites(sessionId(), account),
+    checkAccess: (account, siteId) => netlify.checkAccess(sessionId(), account, siteId),
     createSite: (account, name) => netlify.createSite(sessionId(), account, name),
     testSaved: (id) => netlify.testSaved(sessionId(), id),
     save: (draft, signIn) => netlify.saveDestination(sessionId(), draft, signIn),

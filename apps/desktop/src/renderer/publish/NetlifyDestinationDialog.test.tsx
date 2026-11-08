@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -43,12 +43,10 @@ function fakeNetlify(overrides: Partial<NetlifyDestinationApi> = {}) {
       sites: [SHOP, STAGING],
     })),
     // Staging's visitors must log in to Netlify.
-    checkAccess: vi.fn<NonNullable<NetlifyDestinationApi["checkAccess"]>>(
-      async (_account, siteId) => ({
-        status: "checked",
-        protected: siteId === STAGING.id,
-      }),
-    ),
+    checkAccess: vi.fn<NetlifyDestinationApi["checkAccess"]>(async (_account, siteId) => ({
+      status: "checked",
+      protected: siteId === STAGING.id,
+    })),
     ...overrides,
   };
 }
@@ -171,6 +169,25 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     await screen.findByLabelText("Netlify site");
     await editing.user.keyboard("{Escape}");
     expect(editing.netlify.forgetSignIn).not.toHaveBeenCalled();
+  });
+
+  it("lets go of the sign-in before when it signs in again (#826 review)", async () => {
+    const OTHER = "1a2b3c4d-1111-4222-8333-444455556666";
+    const signInWithToken = vi
+      .fn<NetlifyDestinationApi["signInWithToken"]>()
+      .mockResolvedValueOnce({ status: "signed-in", handle: HANDLE })
+      .mockResolvedValueOnce({ status: "signed-in", handle: OTHER });
+    const { netlify, user, field, connect } = setUp(fakeNetlify({ signInWithToken }));
+    await connect("nfp_first");
+    await screen.findByLabelText("Netlify site");
+    expect(netlify.forgetSignIn).not.toHaveBeenCalled();
+
+    await user.clear(field("Personal access token"));
+    await connect("nfp_second");
+
+    await waitFor(() => expect(netlify.sites).toHaveBeenLastCalledWith({ handle: OTHER }));
+    expect(netlify.forgetSignIn).toHaveBeenCalledWith(HANDLE);
+    expect(netlify.forgetSignIn).not.toHaveBeenCalledWith(OTHER);
   });
 
   it("asks for a site once signed in", async () => {
