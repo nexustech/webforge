@@ -252,9 +252,25 @@ const versionRowSchema = z.object({
   published_to: z.string().nullable(),
 });
 
+/**
+ * `row`, read from the file, as `schema` takes it. A row the file holds in another shape (a version
+ * whose kind isn't one, a blob that isn't bytes) is damage, reported as storage's own
+ * {@link ProjectFileError} (#827, 5.6's fuzzing), as SQLite's own reports of damage are. Arguments
+ * a caller passes are checked with `parse` as before: a wrong one is the caller's mistake.
+ */
+function readRow<T>(schema: z.ZodType<T>, row: unknown): T {
+  const parsed = schema.safeParse(row);
+  if (!parsed.success) {
+    throw new ProjectFileError("corrupt", "A row of the project isn't in the shape it should be", {
+      cause: parsed.error,
+    });
+  }
+  return parsed.data;
+}
+
 /** A version's row as {@link VERSION_COLUMNS} reads it. */
 function toVersionInfo(row: unknown): VersionInfo {
-  const version = versionRowSchema.parse(row);
+  const version = readRow(versionRowSchema, row);
   // A newer Webforge may save for a reason this one doesn't know: who saved it is still known.
   const reason = z.enum(VERSION_REASONS).safeParse(version.reason);
   return {
@@ -315,7 +331,7 @@ const assetRowSchema = z.object({
 const ASSET_COLUMNS = "media_id, blob_hash, mime, width, height, original_name";
 
 function toAssetInfo(row: unknown): AssetInfo {
-  const asset = assetRowSchema.parse(row);
+  const asset = readRow(assetRowSchema, row);
   return {
     mediaId: asset.media_id,
     hash: asset.blob_hash,
@@ -466,7 +482,7 @@ function readMetaRows(db: Database.Database): Record<string, string> {
   const rows = db.prepare("SELECT key, value FROM meta").all();
   return Object.fromEntries(
     rows.map((row) => {
-      const { key, value } = z.object({ key: z.string(), value: z.string() }).parse(row);
+      const { key, value } = readRow(z.object({ key: z.string(), value: z.string() }), row);
       return [key, value];
     }),
   );
@@ -657,7 +673,7 @@ export class ProjectStore {
     return this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id")
       .all()
       .map((row) => {
-        const { id, kind, hash } = documentRowSchema.parse(row);
+        const { id, kind, hash } = readRow(documentRowSchema, row);
         return { id, kind, content: this.#readJsonBlob(hash) };
       });
   }
@@ -675,7 +691,7 @@ export class ProjectStore {
     if (row === undefined) {
       return undefined;
     }
-    const { kind, hash } = documentRowSchema.parse(row);
+    const { kind, hash } = readRow(documentRowSchema, row);
     return { id, kind, content: this.#readJsonBlob(hash) };
   }
 
@@ -775,7 +791,7 @@ export class ProjectStore {
   /** The blob stored under `hash`, or `undefined` if there is none. */
   readBlob(hash: string): StoredBlob | undefined {
     const row = this.#prepare("SELECT mime, data FROM blobs WHERE hash = ?").get(hash);
-    return row === undefined ? undefined : blobRowSchema.parse(row);
+    return row === undefined ? undefined : readRow(blobRowSchema, row);
   }
 
   /**
@@ -787,7 +803,7 @@ export class ProjectStore {
   readManifest(): VersionManifest {
     return this.#prepare("SELECT id, kind, blob_hash AS hash FROM documents ORDER BY id")
       .all()
-      .map((row) => documentRowSchema.parse(row));
+      .map((row) => readRow(documentRowSchema, row));
   }
 
   /**
@@ -944,7 +960,7 @@ export class ProjectStore {
     if (row === undefined) {
       return undefined;
     }
-    const { manifest } = z.object({ manifest: z.string() }).parse(row);
+    const { manifest } = readRow(z.object({ manifest: z.string() }), row);
     return parseManifest(manifest).documents;
   }
 
