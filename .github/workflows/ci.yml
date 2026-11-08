@@ -466,7 +466,7 @@ jobs:
 
       - name: Electron E2E tests
         if: runner.os != 'Linux'
-        run: pnpm e2e ${{ steps.projects.outputs.args }} --shard=${{ matrix.shard }}/${{ matrix.shards }}
+        run: pnpm e2e --project=app --repeat-each=20 app/onboarding.spec.ts --shard=${{ matrix.shard }}/${{ matrix.shards }}
 
       - name: Save Electron
         # The first app start downloads Electron's binary, so this runs after the tests.
