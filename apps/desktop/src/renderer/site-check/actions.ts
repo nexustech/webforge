@@ -3,6 +3,7 @@ import {
   copiedNodeId,
   isDeviceName,
   isNodeDoc,
+  isPageIn,
   isSharedCopy,
   type NodeDoc,
   type PageEntry,
@@ -91,8 +92,8 @@ export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
       const { on, nodeId } = place;
       if (on === "header" || on === "footer") {
         session.select(nodeId);
-      } else if (Object.hasOwn(site.pages, on)) {
-        session.showPage(on as PageId);
+      } else if (isPageIn(site.pages, on)) {
+        session.showPage(on);
         session.select(nodeId);
       } else {
         const holder = pageWithCopy(site, on, session.ui.getState().pageId);

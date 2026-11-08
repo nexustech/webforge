@@ -1,13 +1,14 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Toaster, TooltipProvider } from "@webforge/editor-ui";
+import { Toaster, TooltipProvider, toast } from "@webforge/editor-ui";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ProjectResult, RecentSite } from "../../shared/ipc-contract.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { type CommandRegistry, createCommandRegistry } from "../shell/commands.js";
 import { TitleBar } from "../shell/TitleBar.js";
+import { OpenRecent } from "./OpenRecent.js";
 import { SiteCommands } from "./SiteCommands.js";
 
 vi.mock("../log.js", () => ({ reportFailure: vi.fn() }));
@@ -203,6 +204,36 @@ describe("File › Open Recent (3.18, PF-1)", () => {
     expect(fake.openRecent).toHaveBeenCalledWith("1".repeat(32));
     expect(restart).toHaveBeenCalledOnce();
     expect(sub.isConnected).toBe(false);
+  });
+
+  it("keeps its commands when the start screen's list hands it a new `changed`, and calls the latest (R2)", async () => {
+    // ADR 0010: correctness never depends on memoization, so `changed` may be new on every render.
+    const fake = api([site("Bakery", 2)], { status: "failed", reason: "not-found" });
+    const registry = createCommandRegistry();
+    const register = vi.spyOn(registry, "register");
+    const sites = [site("Bakery", 2)];
+    const first = vi.fn();
+    const latest = vi.fn();
+    const shown = (changed: () => void) => (
+      <CommandRegistryProvider registry={registry}>
+        <OpenRecent project={fake} recent={{ sites, changed }} />
+      </CommandRegistryProvider>
+    );
+    const { rerender } = render(shown(first));
+    const registered = register.mock.calls.length;
+
+    rerender(shown(() => undefined));
+    rerender(shown(latest));
+    expect(register.mock.calls.length).toBe(registered);
+
+    // A site whose file has gone: the list is read again through the newest `changed`.
+    await act(async () => {
+      registry.run(`site.openRecent.${"2".repeat(32)}`);
+    });
+    await waitFor(() => expect(latest).toHaveBeenCalledOnce());
+    expect(first).not.toHaveBeenCalled();
+    // Its message would otherwise wait in the toasts' store for the next test's Toaster.
+    toast.dismiss();
   });
 
   it("says when a site's file has gone, and lists the sites again without it", async () => {

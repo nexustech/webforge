@@ -1,0 +1,10 @@
+// R10 (#671): a branded id (`PageId`, `MediaId`, …) is made by its zod schema or `newId`, and an id
+// from elsewhere is checked against the site with the model's helpers (`isPageIn`, `pageEntryOf`,
+// `pageIdsOf`, `isSharedSectionIn`, `sharedSectionOf`, `mediaItem`): never cast. biome.json leaves
+// out the model itself, which defines the brands, and test code.
+language js
+
+`$value as $type` where {
+  $type <: r"^(?:readonly\s+)?(?:PageId|MediaId|MenuItemId|SharedSectionId|ThemeId)(?:\[\])?$|^keyof\s+SiteDoc\b.*",
+  register_diagnostic(span=$value, message="Don't cast to a branded id: parse it with its schema, or look it up with the model's helpers (isPageIn, pageEntryOf, pageIdsOf, isSharedSectionIn, sharedSectionOf, mediaItem).")
+}

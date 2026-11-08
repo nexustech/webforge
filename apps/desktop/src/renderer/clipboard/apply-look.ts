@@ -6,9 +6,11 @@ import {
   LOOK_FIELDS,
   type NodeDoc,
   type PageId,
+  pageIdsOf,
   type SharedSectionId,
   type SiteDoc,
   sameJson,
+  sharedSectionOf,
 } from "@webforge/model";
 import {
   APPEARANCE_FIELDS,
@@ -106,7 +108,7 @@ function elementsOfType(
   pageId: PageId,
   scope: LookScope,
 ): LookTarget[] {
-  const pageIds = scope === "site" ? (Object.keys(site.pages) as PageId[]) : [pageId];
+  const pageIds = scope === "site" ? pageIdsOf(site.pages) : [pageId];
   const found: LookTarget[] = [];
   const sharedPages = new Map<SharedSectionId, PageId[]>();
   const layoutPages = new Map<SharedRegion, PageId[]>();
@@ -135,17 +137,15 @@ function elementsOfType(
   // What is shared is changed once, and on every page that shows it, not only those in scope.
   for (const region of REGIONS) {
     if (!layoutPages.has(region)) continue;
-    const pages = (Object.keys(site.pages) as PageId[]).filter(
-      (id) => shownLayout(site, id)[region].length > 0,
-    );
+    const pages = pageIdsOf(site.pages).filter((id) => shownLayout(site, id)[region].length > 0);
     for (const { node, hidden } of nodesOfType(site.layout[region], type)) {
       found.push({ place: { kind: "layout", region }, node, hidden, pages });
     }
   }
   for (const id of sharedPages.keys()) {
-    const shared = Object.hasOwn(site.sharedSections, id) ? site.sharedSections[id] : undefined;
+    const shared = sharedSectionOf(site.sharedSections, id);
     if (shared === undefined) continue;
-    const copies = (Object.keys(site.pages) as PageId[]).flatMap((page) =>
+    const copies = pageIdsOf(site.pages).flatMap((page) =>
       (site.pages[page]?.doc.content ?? [])
         .filter(isSharedCopy)
         .filter((copy) => copy.props.sharedSectionId === id)

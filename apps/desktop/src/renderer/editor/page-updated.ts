@@ -1,5 +1,5 @@
 import type { Finish } from "@webforge/history";
-import type { PageId, SiteDoc } from "@webforge/model";
+import { pageEntryOf, type SiteDoc } from "@webforge/model";
 
 /** Today on this computer, as the site format writes a day: `2026-10-28`. */
 export function localDay(at = new Date()): string {
@@ -23,7 +23,7 @@ export function datePages(today: () => string): Finish<SiteDoc> {
     if (changed.size === 0) return;
     const day = today();
     for (const id of changed) {
-      const page = draft.pages[id as PageId];
+      const page = pageEntryOf(draft.pages, id);
       if (page !== undefined && page.updated !== day) page.updated = day;
     }
   };
