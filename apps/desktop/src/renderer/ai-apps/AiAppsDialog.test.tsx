@@ -34,6 +34,7 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
       status = { ...status, enabled, address: enabled ? ADDRESS : null };
       return status;
     }),
+    seenMoved: vi.fn<McpApi["seenMoved"]>(async () => undefined),
     add: vi.fn<McpApi["add"]>(async (name) => {
       const app = {
         id: "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5",
@@ -95,6 +96,20 @@ describe("AI apps (4.9)", () => {
     expect(dialog().getByText("Connected")).toBeTruthy();
   });
 
+  it("says the address changed while it's open, and tells main it was seen (S27, #794)", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { dialog, mcp } = setUp({ moved: true });
+    await waitFor(() => expect(dialog().getByText(/address for AI apps has changed/)).toBeTruthy());
+    expect(mcp.seenMoved).toHaveBeenCalled();
+
+    // Main has forgotten it; the dialog still says it until it closes.
+    mcp.status.mockResolvedValue({ enabled: true, address: ADDRESS, moved: false, apps: [CLAUDE] });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(STATUS_EVERY_MS);
+    });
+    expect(dialog().getByText(/address for AI apps has changed/)).toBeTruthy();
+  });
+
   it("adds Claude Desktop, with its key once to copy and its extension to install", async () => {
     const { dialog, mcp, copySecret, user } = setUp();
     await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
@@ -108,7 +123,7 @@ describe("AI apps (4.9)", () => {
     );
     await user.click(dialog().getByRole("button", { name: "Add" }));
 
-    expect(mcp.add).toHaveBeenCalledWith("Claude Desktop");
+    expect(mcp.add).toHaveBeenCalledWith("Claude Desktop", "claude");
     expect(await dialog().findByText(KEY)).toBeTruthy();
     // The extension holds the address: none to copy.
     expect(dialog().queryByText(ADDRESS)).toBeNull();
@@ -152,7 +167,7 @@ describe("AI apps (4.9)", () => {
     await user.type(dialog().getByRole("textbox", { name: "Name" }), "Cursor");
     await user.click(dialog().getByRole("button", { name: "Add" }));
 
-    expect(mcp.add).toHaveBeenCalledWith("Cursor");
+    expect(mcp.add).toHaveBeenCalledWith("Cursor", "other");
     expect(await dialog().findByText(KEY)).toBeTruthy();
     expect(dialog().getByText(ADDRESS)).toBeTruthy();
     expect(dialog().getByText(/You won't see it again/)).toBeTruthy();

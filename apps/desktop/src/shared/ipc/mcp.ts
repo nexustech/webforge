@@ -72,8 +72,14 @@ export const mcpChannels = {
   /** Pairs an app by the name the person gives it; only while *AI apps* is on. */
   mcpAdd: {
     channel: "mcp:add",
-    request: z.tuple([z.string().max(1_000)]),
+    request: z.tuple([z.string().max(1_000), z.enum(["claude", "other"])]),
     response: addResultSchema,
+  },
+  /** The person has seen that Webforge's address for AI apps changed (S27): stop saying so. */
+  mcpSeenMoved: {
+    channel: "mcp:seen-moved",
+    request: z.tuple([]),
+    response: z.null(),
   },
   /**
    * Writes a paired app's Claude Desktop extension (ADR 0021): the bridge, with the address and the
@@ -96,7 +102,9 @@ export const mcpChannels = {
 export interface McpApi {
   status(): Promise<McpStatus>;
   setEnabled(enabled: boolean): Promise<McpStatus>;
-  add(name: string): Promise<McpAddResult>;
+  /** Pairs an app: Claude Desktop through its extension, or another app directly. */
+  add(name: string, kind: "claude" | "other"): Promise<McpAddResult>;
+  seenMoved(): Promise<void>;
   installClaude(id: string): Promise<McpInstallResult>;
   remove(id: string): Promise<McpStatus>;
 }

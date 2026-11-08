@@ -7,6 +7,13 @@ import { strToU8, zipSync } from "fflate";
 /** The MCPB manifest version written: the one Claude Desktop has taken longest. */
 const MANIFEST_VERSION = "0.3";
 
+/**
+ * How long an extension's file stays after it's written (S29, #794): long enough for Claude
+ * Desktop's install dialog, or for the person to open it from its folder. Its manifest holds the
+ * pairing's proof, which is only as secret as the profile folder, so it isn't left there.
+ */
+export const EXTENSION_KEPT_MS = 10 * 60_000;
+
 /** Where the bridge sits in the extension. */
 const BRIDGE_ENTRY = "server/index.mjs";
 
@@ -109,13 +116,26 @@ export type ClaudeExtensionsOptions = {
   readonly open: (path: string) => Promise<string>;
   /** Shows a file in its folder (`shell.showItemInFolder`). */
   readonly show: (path: string) => void;
+  /** Runs `then` after `ms`, without keeping Webforge open for it; a fake in tests. */
+  readonly later?: (then: () => void, ms: number) => void;
 };
 
 /**
  * The Claude Desktop extensions of paired apps (ADR 0021): each written to `<dir>/<app id>/`, out
- * of other accounts' reach, and opened, so Claude Desktop shows its install dialog.
+ * of other accounts' reach, and opened, so Claude Desktop shows its install dialog. Each is
+ * deleted {@link EXTENSION_KEPT_MS} after it's written, and any left when Webforge quit are
+ * deleted as it starts (S29, #794).
  */
 export function createClaudeExtensions(options: ClaudeExtensionsOptions) {
+  const later =
+    options.later ??
+    ((then: () => void, ms: number) => {
+      setTimeout(then, ms).unref();
+    });
+  /** Each app's latest extension: a newer one isn't deleted by an older one's timer. */
+  const latest = new Map<string, object>();
+  const removeFolder = (appId: string) =>
+    rm(join(options.dir, appId), { recursive: true, force: true });
   return {
     /** Writes `pairing`'s extension and opens it; resolves to the file and what became of it. */
     async install(
@@ -133,13 +153,25 @@ export function createClaudeExtensions(options: ClaudeExtensionsOptions) {
       await writeFile(file, archive, { mode: 0o600 });
       // A file written before keeps its mode: set it again.
       await chmod(file, 0o600);
+      const written = {};
+      latest.set(pairing.appId, written);
+      later(() => {
+        if (latest.get(pairing.appId) !== written) return;
+        latest.delete(pairing.appId);
+        void removeFolder(pairing.appId).catch(() => undefined);
+      }, EXTENSION_KEPT_MS);
       if ((await options.open(file)) === "") return { file, outcome: "opened" };
       options.show(file);
       return { file, outcome: "shown" };
     },
     /** Deletes app `appId`'s extension: the app was removed. */
     async remove(appId: string): Promise<void> {
-      await rm(join(options.dir, appId), { recursive: true, force: true });
+      latest.delete(appId);
+      await removeFolder(appId);
+    },
+    /** Deletes every extension left from before: as Webforge starts. */
+    async sweep(): Promise<void> {
+      await rm(options.dir, { recursive: true, force: true });
     },
   };
 }

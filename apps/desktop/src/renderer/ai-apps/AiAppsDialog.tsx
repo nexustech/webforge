@@ -97,6 +97,8 @@ export function AiAppsDialog({
   onClose,
 }: AiAppsDialogProps) {
   const [status, setStatus] = useState<McpStatus | null>(null);
+  // Shown for as long as the dialog stays open, though main forgets it once it's been seen (S27).
+  const [moved, setMoved] = useState(false);
   const [adding, setAdding] = useState<Adding | null>(null);
   const [addError, setAddError] = useState<string | undefined>(undefined);
   const [shown, setShown] = useState<Shown | null>(null);
@@ -106,12 +108,20 @@ export function AiAppsDialog({
   const whichId = useId();
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setMoved(false);
+      return;
+    }
     let live = true;
     const refresh = () => {
       mcp.status().then(
         (next: McpStatus | undefined) => {
-          if (live) setStatus(next ?? null);
+          if (!live) return;
+          setStatus(next ?? null);
+          if (next?.moved === true) {
+            setMoved(true);
+            void mcp.seenMoved().catch(() => undefined);
+          }
         },
         () => {
           if (live) notify(t("aiApps.failed"));
@@ -130,7 +140,7 @@ export function AiAppsDialog({
 
   const add = async () => {
     if (adding === null) return;
-    const result = await mcp.add(adding.name).catch(() => null);
+    const result = await mcp.add(adding.name, adding.kind).catch(() => null);
     if (result === null) return notify(t("aiApps.failed"));
     if (result.status !== "paired") return setAddError(t(`aiApps.add.failed.${result.status}`));
     setAdding(null);
@@ -194,7 +204,7 @@ export function AiAppsDialog({
               checked={enabled}
               onChange={(checked) => void act(mcp.setEnabled(checked))}
             />
-            {status.moved ? <p className="text-sm">{t("aiApps.moved")}</p> : null}
+            {moved ? <p className="text-sm">{t("aiApps.moved")}</p> : null}
             {shown !== null ? (
               <section aria-label={t("aiApps.key.title", { name: shown.name })}>
                 <h3 className="font-medium">{t("aiApps.key.title", { name: shown.name })}</h3>

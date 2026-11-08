@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   type AiApps,
   aiAppsFileSchema,
@@ -24,7 +24,7 @@ const tempDir = tempDirFactory("webforge-ai-apps-");
 
 /** `name` paired, as it must be. */
 async function pair(apps: Pick<AiApps, "add">, name: string): Promise<NewPairing> {
-  const pairing = await apps.add(name);
+  const pairing = await apps.add(name, "other");
   if (pairing.status !== "paired") throw new Error(`not paired: ${pairing.status}`);
   return pairing;
 }
@@ -145,7 +145,7 @@ describe("paired AI apps (4.9, ADR 0021)", () => {
     const { apps } = setUp();
     await pair(apps, "Claude");
 
-    expect(await apps.add(" claude ")).toEqual({ status: "name-taken" });
+    expect(await apps.add(" claude ", "other")).toEqual({ status: "name-taken" });
     expect((await pair(apps, "Claude Code")).app.name).toBe("Claude Code");
     expect((await apps.list()).map((app) => app.name)).toEqual(["Claude", "Claude Code"]);
   });
@@ -153,6 +153,83 @@ describe("paired AI apps (4.9, ADR 0021)", () => {
   it("cleans a name to one line without control characters, and refuses an empty one", async () => {
     expect(cleanAppName("Claude\u0000\u202e Code\r\n")).toBe("Claude Code");
     expect(cleanAppName("x".repeat(200))).toHaveLength(80);
-    expect(await setUp().apps.add(" \n ")).toEqual({ status: "name-empty" });
+    expect(await setUp().apps.add(" \n ", "other")).toEqual({ status: "name-empty" });
+  });
+});
+
+describe("the paired apps under a flood of wrong keys (S28, #794)", () => {
+  it("reads the apps file once, keeping it in memory, and writes every change through", async () => {
+    const dir = tempDir();
+    const store = createJsonStore(join(dir, "ai-apps.json"), aiAppsFileSchema, {
+      empty: NO_AI_APPS,
+      onDamaged: "move-aside",
+    });
+    let reads = 0;
+    const counted = {
+      ...store,
+      read: async () => {
+        reads += 1;
+        return store.read();
+      },
+    };
+    const apps = createAiApps(
+      counted,
+      createCredentialStore(join(dir, "credentials.json"), cipher),
+      Date.now,
+      async () => undefined,
+    );
+    const { key } = await pair(apps, "Cursor");
+
+    for (let n = 0; n < 50; n++) await apps.authenticate("x".repeat(43));
+    expect(await apps.authenticate(key)).toMatchObject({ name: "Cursor" });
+
+    expect(reads).toBe(1);
+    // What's kept is what's written: the claim is in the file.
+    const saved = aiAppsFileSchema.parse(
+      JSON.parse(readFileSync(join(dir, "ai-apps.json"), "utf8")),
+    );
+    expect(saved.apps[0]?.claimedAt).not.toBeNull();
+  });
+
+  it("holds back at most 16 wrong keys at once, answering the rest at once, and never a right key", async () => {
+    const dir = tempDir();
+    const releases: (() => void)[] = [];
+    const apps = createAiApps(
+      createJsonStore(join(dir, "ai-apps.json"), aiAppsFileSchema, {
+        empty: NO_AI_APPS,
+        onDamaged: "move-aside",
+      }),
+      createCredentialStore(join(dir, "credentials.json"), cipher),
+      () => 1_000_000,
+      // Held back until the test lets them go.
+      () =>
+        new Promise<void>((resolve) => {
+          releases.push(resolve);
+        }),
+    );
+    const { key } = await pair(apps, "Cursor");
+    const wrong = () => apps.authenticate("x".repeat(43));
+    // The first two wrong keys in the minute are answered at once.
+    for (let n = 0; n < 2; n++) await wrong();
+
+    const held = Array.from({ length: 16 }, wrong);
+    await vi.waitFor(() => expect(releases).toHaveLength(16));
+    // The 17th and later are answered at once; so is a right key.
+    expect(await wrong()).toBeUndefined();
+    expect(await apps.authenticate(key)).toMatchObject({ name: "Cursor" });
+    expect(releases).toHaveLength(16);
+
+    for (const release of releases) release();
+    expect(await Promise.all(held)).toEqual(Array(16).fill(undefined));
+  });
+
+  it("holds back wrong keys' answers by a count in the minute, which starts again after it", async () => {
+    const { apps, waited, later } = setUp();
+    for (let n = 0; n < 6; n++) await apps.authenticate("x".repeat(43));
+    expect(waited).toEqual([250, 500, 1_000, 2_000]);
+
+    later(60_000);
+    await apps.authenticate("x".repeat(43));
+    expect(waited).toHaveLength(4);
   });
 });
