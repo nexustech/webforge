@@ -16,19 +16,38 @@ import {
 } from "@webforge/tools/third-party-notices";
 import { defineConfig } from "electron-vite";
 import type { Plugin } from "vite";
-import { buildContentSecurityPolicy } from "./src/shared/content-security-policy.js";
+import {
+  buildContentSecurityPolicy,
+  type ContentSecurityPolicyPage,
+} from "./src/shared/content-security-policy.js";
 
 const CSP_PLACEHOLDER = 'content="%WEBFORGE_CSP%"';
 
-/** Fills the Content-Security-Policy meta tag of index.html; fails the build if it is missing. */
+/** Each HTML page of the renderer, by file name, and whose policy it gets (S35). */
+const CSP_PAGES: Readonly<Record<string, ContentSecurityPolicyPage>> = {
+  "index.html": "editor",
+  "help.html": "help",
+};
+
+/**
+ * Fills the Content-Security-Policy meta tag of each renderer page with that page's policy; fails
+ * the build if the tag is missing, or if a page isn't in {@link CSP_PAGES}, so a new page chooses.
+ */
 function contentSecurityPolicy(devNonce: string | undefined): Plugin {
-  const csp = buildContentSecurityPolicy(devNonce === undefined ? {} : { devNonce });
   return {
     name: "webforge:content-security-policy",
-    transformIndexHtml: (html) => {
-      if (!html.includes(CSP_PLACEHOLDER)) {
-        throw new Error(`index.html must contain a CSP meta tag with ${CSP_PLACEHOLDER}`);
+    transformIndexHtml: (html, context) => {
+      const file = context.filename.replaceAll("\\", "/").split("/").at(-1) ?? "";
+      const page = Object.hasOwn(CSP_PAGES, file) ? CSP_PAGES[file] : undefined;
+      if (page === undefined) {
+        throw new Error(`${file} needs a Content Security Policy: add it to CSP_PAGES`);
       }
+      if (!html.includes(CSP_PLACEHOLDER)) {
+        throw new Error(`${file} must contain a CSP meta tag with ${CSP_PLACEHOLDER}`);
+      }
+      const csp = buildContentSecurityPolicy(
+        devNonce === undefined ? { page } : { page, devNonce },
+      );
       return html.replace(CSP_PLACEHOLDER, `content="${csp}"`);
     },
   };
