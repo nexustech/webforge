@@ -68,6 +68,11 @@ type SiteCheckOptions = {
    * Site Check doesn't know.
    */
   readonly publishedYear?: ReadonlyStore<number | undefined>;
+  /**
+   * Whether the site has a Netlify destination (4.2): its Netlify Forms can send, published there.
+   * Left out, they can't.
+   */
+  readonly onNetlify?: ReadonlyStore<boolean>;
   /** This year; the clock's by default. */
   readonly thisYear?: () => number;
 };
@@ -86,6 +91,7 @@ export function createSiteCheck(
     saveIgnored,
     allowListConfirmed,
     publishedYear,
+    onNetlify,
     thisYear = () => new Date().getFullYear(),
   }: SiteCheckOptions,
 ): SiteCheck {
@@ -97,6 +103,7 @@ export function createSiteCheck(
       allowListConfirmed: allowListConfirmed?.getState() ?? false,
       templateImages: TEMPLATE_IMAGE_HASHES,
       ...(year === undefined ? {} : { published: { year, thisYear: thisYear() } }),
+      ...(onNetlify?.getState() === true ? { host: "netlify" as const } : {}),
     };
   };
   const runAll = (site: SiteDoc) =>
@@ -154,10 +161,13 @@ export function createSiteCheck(
   const stopConfirmed = allowListConfirmed?.subscribe(later);
   // A publish brings the year the site shows up to date (F-CM-8).
   const stopPublished = publishedYear?.subscribe(later);
+  // A Netlify destination added or removed (4.2).
+  const stopNetlify = onNetlify?.subscribe(later);
   const stop = () => {
     stopDocument();
     stopConfirmed?.();
     stopPublished?.();
+    stopNetlify?.();
   };
   const changeIgnored = (ignored: ReadonlySet<string>) => {
     show(ignored);

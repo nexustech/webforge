@@ -33,6 +33,7 @@ import { BODY_CLASS, iconLinks, pageDocument, type SiteIcon } from "./html.js";
 import { processImage, UndecodableImageError } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
+import { netlifyFormNames } from "./netlify-forms.js";
 import type { PipelineResources } from "./resources.js";
 import {
   RUNS_ALL_CODE,
@@ -169,6 +170,11 @@ export type BuildOptions = {
   readonly year?: number | undefined;
   /** Which of the site's own code goes in (#649): all of it when left out. */
   readonly runsCode?: RunsCode | undefined;
+  /**
+   * The host a publish is for (4.2): `netlify` draws Netlify Forms for Netlify to find (the render
+   * context's `onNetlify`). Any other build leaves them unable to send.
+   */
+  readonly host?: "netlify" | undefined;
 };
 
 /**
@@ -215,6 +221,7 @@ type BuildRun = {
   readonly year?: number | undefined;
   /** Which of the site's own code goes in (#649): none in a preview and all otherwise, when left out. */
   readonly runsCode?: RunsCode | undefined;
+  readonly host?: "netlify" | undefined;
 };
 
 const sha256 = (data: string | Uint8Array) => createHash("sha256").update(data).digest("hex");
@@ -294,6 +301,7 @@ export async function buildSite(
     output: options.output,
     year: options.year,
     runsCode: options.runsCode,
+    host: options.host,
   });
   for (;;) {
     const next = await events.next();
@@ -322,7 +330,14 @@ export async function* buildEvents(
   // says, as the editor doesn't, so a site file can't run a script in the person's browser unasked.
   const runsCode = run.runsCode ?? (run.mode === "preview" ? RUNS_NO_CODE : RUNS_ALL_CODE);
   // The thank-you page a form service sends visitors to (3.7), made if the site has none.
-  const { site, thanksPage } = withThanksPage(withRunnableCode(parsed.data, runsCode), library);
+  const onNetlify = run.host === "netlify";
+  const { site, thanksPage } = withThanksPage(
+    withRunnableCode(parsed.data, runsCode),
+    library,
+    onNetlify,
+  );
+  // Each form's own name in Netlify Forms, for a build for Netlify (4.2).
+  const netlifyForms = onNetlify ? netlifyFormNames(site) : undefined;
   // A page whose file Windows won't write (`con.html`, a folder `aux/`) stops the build before
   // anything else, naming the page, so the person can rename it (R16).
   const unwritable = site.pages.find((page) => page.path.split("/").some(isDeviceName));
@@ -522,6 +537,7 @@ export async function* buildEvents(
     bundled,
     thanksPage,
     cookieSettings: analytics?.consentBanner === true,
+    netlifyForms,
   };
   const render = (page: SitePage, prefix: string): RenderedRegions => {
     const { context, regions, warnings: found } = pageRender(site, page, prefix, renderFiles);
@@ -553,6 +569,8 @@ export async function* buildEvents(
             images: [...images],
             missing: [...missing],
             documents: [...documentPaths],
+            // Forms are drawn for Netlify only in a build for it, each named across the site (4.2).
+            netlifyForms: netlifyForms === undefined ? null : [...netlifyForms],
           }),
         );
   // A page links to the others and its files `../` per folder up. The "Page not found" page is

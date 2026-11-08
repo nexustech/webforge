@@ -178,6 +178,7 @@ export async function publishTo(flow: PublishFlow, destination: PublishDestinati
       blocked: (count: number) => plural("siteCheck.publishBlocked", count),
       showSiteCheck: flow.showSiteCheck,
       allowListConfirmed: code.allowListConfirmed,
+      host: destination.kind === "netlify" ? ("netlify" as const) : undefined,
     };
     if (!gateOnSiteCheck(withKeptCode(flow.site(), code.keeps), "publish", gate)) return;
     await publishChecked(flow, destination, { site });
