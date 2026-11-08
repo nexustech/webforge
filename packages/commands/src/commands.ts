@@ -4,6 +4,7 @@ import {
   deletePageFrom,
   insertPage,
   isNodeDoc,
+  linkValueSchema,
   type NodeDoc,
   newId,
   PAGE_DESCRIPTION_MAX,
@@ -101,7 +102,8 @@ function checkedValues(
   values: Readonly<Record<string, unknown>>,
 ): string | undefined {
   for (const [name, value] of Object.entries(values)) {
-    const field = component.fields[name];
+    // Its own fields only: `constructor` or `toString` would reach Object's (5.6).
+    const field = Object.hasOwn(component.fields, name) ? component.fields[name] : undefined;
     if (field === undefined || field.kind === "slot" || field.kind === "code") {
       return `${component.label} has no field "${name}" an AI app can set.`;
     }
@@ -236,7 +238,28 @@ function confirmationAt(site: SiteDoc, location: Location): Plan["confirm"] {
 }
 
 /** A field's address as it is set, without the spaces around it. */
-const addressOf = (value: unknown) => (typeof value === "string" ? value.trim() : "");
+/**
+ * Where a sensitive field's value sends visitors, as text to compare and show: the text itself, or
+ * a link's address (a web address, `mailto:`, `tel:`, a page or a Media file by its id), so a
+ * link field marked sensitive asks as a text one does (5.6).
+ */
+function addressOf(value: unknown): string {
+  if (typeof value === "string") return value.trim();
+  const link = linkValueSchema.safeParse(value);
+  if (!link.success) return "";
+  switch (link.data.kind) {
+    case "url":
+      return link.data.href;
+    case "email":
+      return `mailto:${link.data.address}`;
+    case "phone":
+      return `tel:${link.data.number}`;
+    case "page":
+      return `page:${link.data.pageId}${link.data.anchor === undefined ? "" : `#${link.data.anchor}`}`;
+    case "file":
+      return `file:${link.data.mediaId}`;
+  }
+}
 
 /**
  * `address` as a browser reads it (WHATWG URL), or `undefined` for text that isn't a web address:

@@ -54,21 +54,27 @@ export type McpServiceOptions = {
   readonly info: McpServerInfo;
   /**
    * Saves an automatic version of the open site named `name`, after the window's last edits
-   * (reason `before-site-wide`): the one taken before an app's first change in each connection
-   * (S20). Version History's own (4.6a).
+   * (reason `before-site-wide`): the one taken before an app's first change in each opening of the
+   * site (S20, S26). Version History's own (4.6a).
    */
   readonly saveVersionBefore: (name: string) => Promise<"saved" | "failed">;
+  /** The opening of the site open now (its session id), or undefined while none is. */
+  readonly opening: () => string | undefined;
   /** AI apps' briefs (4.12a), which main answers itself: no site need be open. */
   readonly briefs: Pick<SiteBriefs, "ask" | "choices" | "status">;
   readonly listen?: (options: McpListenerOptions) => Promise<McpListener>;
   readonly drawPort?: () => number;
 };
 
-/** Whether `error` says the port is taken. */
-const taken = (error: unknown) =>
-  typeof error === "object" &&
-  error !== null &&
-  (error as { code?: unknown }).code === "EADDRINUSE";
+/**
+ * Whether `error` says the port can't be had: in use, or (on Windows, where Hyper-V, WSL or Docker
+ * reserve blocks of ports) not allowed (5.6). Either way another port is drawn.
+ */
+const taken = (error: unknown) => {
+  const code =
+    typeof error === "object" && error !== null ? (error as { code?: unknown }).code : undefined;
+  return code === "EADDRINUSE" || code === "EACCES";
+};
 
 /**
  * The MCP server's lifecycle (ADR 0021): it listens whenever *AI apps* is on and Webforge runs,
@@ -97,14 +103,22 @@ export function createMcpService(options: McpServiceOptions): McpService {
     };
   let listener: McpListener | null = null;
   let moved = false;
+  /**
+   * The version "Before ‹app›'s changes" saved, or being saved, for each app in each opening of
+   * the site, by `<app id> <session id>`: one an app's reconnections can't add to (S26).
+   */
+  const firstVersions = new Map<string, Promise<unknown>>();
 
   /**
-   * `app`'s requests in one connection: before its first command, a version "Before ‹app›'s
-   * changes", so a burst of changes can't push the site as it was past the undo limit (S20). A
+   * `app`'s requests in one connection: before its first command in this opening of the site, a
+   * version "Before ‹app›'s changes", so a burst of changes can't push the site as it was past the
+   * undo limit (S20). Once per app per opening, not per connection: an app reconnecting can't
+   * push that version out of the ones kept with versions of its own (S26). A plan (4.12a) takes
+   * no version of its own here: it always asks, and the person's Allow saves one (the window's
+   * BeforeSiteWideAction), so a plan refused as invalid saves nothing (S26, AIB-6 amended). A
    * command still runs when the version can't be saved, which is logged by its code alone.
    */
   const askFor = (app: McpApp) => {
-    let saved: Promise<unknown> | null = null;
     // Once a command is let through its limits: one refused for its rate takes no version.
     const saveVersion = () =>
       options
@@ -114,18 +128,19 @@ export function createMcpService(options: McpServiceOptions): McpService {
           if (result === "failed") logFailure("mcp safety version", new Error("failed"));
         });
     const versionFirst = async () => {
-      saved ??= saveVersion();
+      const opening = options.opening();
+      // With no site open there is nothing to keep: the save says so itself.
+      if (opening === undefined) return saveVersion();
+      const key = `${app.id} ${opening}`;
+      let saved = firstVersions.get(key);
+      if (saved === undefined) {
+        saved = saveVersion();
+        firstVersions.set(key, saved);
+      }
       await saved;
     };
-    // A plan (4.12a) is a build of many changes: a version before each, which is the connection's
-    // first too.
-    const versionNow = async () => {
-      const now = saveVersion();
-      saved ??= now;
-      await now;
-    };
     const versionFor = (request: AiRequest) =>
-      request.kind !== "command" ? undefined : request.name === "plan" ? versionNow : versionFirst;
+      request.kind !== "command" || request.name === "plan" ? undefined : versionFirst;
     return (request: AiRequest, signal?: AbortSignal): Promise<AiResponse> =>
       isMainTool(request.name)
         ? // A brief changes no open site: no version before it.

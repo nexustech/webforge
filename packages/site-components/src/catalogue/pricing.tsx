@@ -184,7 +184,9 @@ const pricingPlan = defineComponent({
     period: { kind: "text", label: t("field.pricePeriod"), inline: true },
     details: { kind: "richtext", label: t("field.planDetails"), inline: true },
     buttonLabel: { kind: "text", label: t("field.buttonLabel") },
-    link: { kind: "link", label: t("field.buttonLink") },
+    // Where a visitor goes to buy the plan: an AI app's change to it is always asked about
+    // (S18, 5.6).
+    link: { kind: "link", label: t("field.buttonLink"), sensitive: true },
     featured: {
       kind: "toggle",
       label: t("field.featuredPlan"),

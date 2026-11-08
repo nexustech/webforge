@@ -328,10 +328,19 @@ describe("Version History's actions (4.6)", () => {
       affectedPages: 6,
     };
 
+    // An AI app's plan names its own (S26).
+    const plan = {
+      action: "Allow Claude to make these changes: Build the site?",
+      confirm: "Allow",
+      affectedPages: 6,
+      version: "Before Claude's changes: Build the site",
+    };
+
     await actions.beforeSiteWide(deletePage, { asked: true });
     await actions.beforeSiteWide(deletePage, { asked: true });
     await actions.beforeSiteWide(cardStyle, { asked: false });
     await actions.beforeSiteWide(cardStyle, { asked: false });
+    await actions.beforeSiteWide(plan, { asked: true });
 
     expect(save.mock.calls.map(([, request]) => request)).toEqual([
       {
@@ -343,6 +352,7 @@ describe("Version History's actions (4.6)", () => {
         reason: "before-site-wide",
       },
       { name: t("versionHistory.beforeThemeChanges"), reason: "before-site-wide" },
+      { name: "Before Claude's changes: Build the site", reason: "before-site-wide" },
     ]);
   });
 

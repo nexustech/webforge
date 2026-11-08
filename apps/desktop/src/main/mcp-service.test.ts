@@ -20,7 +20,11 @@ const cipher: SecretCipher = {
 const tempDir = tempDirFactory("webforge-mcp-service-");
 
 /** A service with a fake listener, which takes `busy` ports as taken; the ports drawn in turn. */
-function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001, 50_002]) {
+function setUp(
+  busy: readonly number[] = [],
+  drawn: readonly number[] = [50_001, 50_002],
+  refusal = "EADDRINUSE",
+) {
   const dir = tempDir();
   const apps = createAiApps(
     createJsonStore(join(dir, "ai-apps.json"), aiAppsFileSchema, {
@@ -33,8 +37,7 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
   const disconnected: string[] = [];
   let closed = 0;
   const listen = vi.fn(async (options: McpListenerOptions): Promise<McpListener> => {
-    if (busy.includes(options.port))
-      throw Object.assign(new Error("taken"), { code: "EADDRINUSE" });
+    if (busy.includes(options.port)) throw Object.assign(new Error("taken"), { code: refusal });
     listened.push(options);
     return {
       port: options.port,
@@ -49,6 +52,8 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
   });
   const ports = [...drawn];
   const saveVersionBefore = vi.fn(async (_name: string): Promise<"saved" | "failed"> => "saved");
+  // The opening of the site open now, by its session id.
+  let opening: string | undefined = "session-1";
   const ask = vi.fn(async (): Promise<AiResponse> => ({ status: "done", data: {} }));
   const briefs = {
     ask: vi.fn(async () => ({ status: "declined", message: "closed" }) as const),
@@ -60,6 +65,7 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     ask,
     info: { name: "Webforge", version: "1" },
     saveVersionBefore,
+    opening: () => opening,
     briefs,
     listen,
     drawPort: () => ports.shift() ?? 59_999,
@@ -74,6 +80,9 @@ function setUp(busy: readonly number[] = [], drawn: readonly number[] = [50_001,
     ask,
     briefs,
     closed: () => closed,
+    open: (session: string | undefined) => {
+      opening = session;
+    },
   };
 }
 
@@ -115,6 +124,15 @@ describe("the MCP service (4.9, ADR 0021)", () => {
 
     expect(await service.status()).toMatchObject({ port: 50_002, moved: true });
     expect(await apps.port()).toBe(50_002);
+  });
+
+  it("draws another port when Windows has reserved the remembered one (EACCES, 5.6)", async () => {
+    const { apps, service } = setUp([50_001], [50_002], "EACCES");
+    await apps.setPort(50_001);
+
+    await service.setEnabled(true);
+
+    expect(await service.status()).toMatchObject({ port: 50_002, moved: true });
   });
 
   it("starts listening as Webforge starts, if AI apps was left on", async () => {
@@ -173,8 +191,8 @@ async function connection(options: McpListenerOptions, app: { id: string; name: 
 describe("the version before an AI app's changes (S20)", () => {
   const claude = { id: "app-1", name: "Claude" };
 
-  it("is saved before each connection's first command, once, and never for a query", async () => {
-    const { service, listened, saveVersionBefore, ask } = setUp();
+  it("is saved before an app's first command in each opening of the site, once however often it reconnects, and never for a query (S26)", async () => {
+    const { service, listened, saveVersionBefore, ask, open } = setUp();
     await service.setEnabled(true);
     const [options] = listened;
     if (options === undefined) throw new Error("not listening");
@@ -187,14 +205,25 @@ describe("the version before an AI app's changes (S20)", () => {
     expect(saveVersionBefore).toHaveBeenCalledExactlyOnceWith("Before Claude's changes");
     expect(ask).toHaveBeenCalledTimes(3);
 
-    // Another connection, another version before its first change.
-    const second = await connection(options, claude);
-    await second.callTool({ name: "addPage", arguments: { title: "Shop" } });
-    expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+    // Reconnecting adds none: the app can't push its own version out with versions (S26).
+    for (let again = 0; again < 3; again++) {
+      const next = await connection(options, claude);
+      await next.callTool({ name: "addPage", arguments: { title: `Shop ${again}` } });
+    }
+    expect(saveVersionBefore).toHaveBeenCalledTimes(1);
+
+    // Another app has its own; another opening of the site, another for each.
+    const other = await connection(options, { id: "app-3", name: "Cursor" });
+    await other.callTool({ name: "addPage", arguments: { title: "Blog" } });
+    expect(saveVersionBefore).toHaveBeenLastCalledWith("Before Cursor's changes");
+    open("session-2");
+    const later = await connection(options, claude);
+    await later.callTool({ name: "addPage", arguments: { title: "News" } });
+    expect(saveVersionBefore).toHaveBeenCalledTimes(3);
   });
 
-  it("is saved before every plan, a build of many changes, which is the connection's first too (4.12a)", async () => {
-    const { service, listened, saveVersionBefore } = setUp();
+  it("saves none for a plan, valid or not: the person's Allow saves one, so an invalid plan saves nothing (S26)", async () => {
+    const { service, listened, saveVersionBefore, ask } = setUp();
     await service.setEnabled(true);
     const [options] = listened;
     if (options === undefined) throw new Error("not listening");
@@ -205,10 +234,23 @@ describe("the version before an AI app's changes (S20)", () => {
 
     const client = await connection(options, claude);
     await client.callTool({ name: "plan", arguments: plan });
-    await client.callTool({ name: "plan", arguments: plan });
+    await client.callTool({ name: "plan", arguments: {} });
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+    expect(ask).toHaveBeenCalled();
+    // A single command still takes the app's first version.
     await client.callTool({ name: "addPage", arguments: { title: "Team" } });
+    expect(saveVersionBefore).toHaveBeenCalledOnce();
+  });
 
-    expect(saveVersionBefore).toHaveBeenCalledTimes(2);
+  it("saves one with no site open each time, as there is no opening to remember it by", async () => {
+    const { service, listened, saveVersionBefore, open } = setUp();
+    open(undefined);
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    const client = await connection(options, claude);
+    await client.callTool({ name: "addPage", arguments: { title: "Team" } });
+    expect(saveVersionBefore).toHaveBeenCalledOnce();
   });
 
   it("isn't saved for a brief, which is the app's by its id, not its name (4.12a)", async () => {

@@ -222,6 +222,8 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
           ),
           confirm: t("ai.confirm.allow"),
           affectedPages: site.pageOrder.length,
+          // The one version before the plan, saved once it's allowed (S26).
+          version: t("ai.version.beforePlan", { app, title: input.title }),
         }),
         ...(removesPages.length === 0 ? {} : { removesPages }),
         recipe: (draft) => {

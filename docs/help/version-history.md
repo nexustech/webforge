@@ -3,7 +3,7 @@ id: version-history
 title: Version History
 summary: Save a version of your whole site, and go back to it, preview it, publish it again or open it as a new site.
 related: [undo-and-history, saving-and-backups, publish, settings]
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 
 # Version History
@@ -30,7 +30,7 @@ Versions you save yourself are always kept, until you delete them.
 - **Before theme changes:** before you first change the theme.
 - **Before a restore:** before you go back to another version.
 - **Published:** the site as it was when you [published](publish.md) it.
-- **Before *app*'s changes:** before an [AI app](ai-apps.md) first changes your site.
+- **Before *app*'s changes:** before an [AI app](ai-apps.md) first changes your site after you open it, and when you allow an app's [many changes at once](ai-apps.md#many-changes-at-once), named after them.
 
 {appName} keeps the last 20 of these for each site and deletes older ones. Change how many in **Settings › Version History › Versions kept**, from 5 to 100. The version your live site came from is always kept: the newest *Published* one, and any version you published again since.
 
