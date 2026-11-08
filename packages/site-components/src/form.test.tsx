@@ -123,11 +123,8 @@ describe("SiteForm (F-CM-1, F-CM-6, B6)", () => {
       method: "post",
     });
     expect(form?.hasAttribute("data-wf-form-unset")).toBe(false);
-    expect(attributes(form?.querySelector('input[type="hidden"]'))).toEqual({
-      type: "hidden",
-      name: "form-name",
-      value: "Booking request",
-    });
+    // Netlify adds the hidden `form-name` field itself as it finds the form (ADR 0006 decision 8).
+    expect(form?.querySelector('input[type="hidden"]')).toBeNull();
     expect(form?.querySelector('input[name="bot-field"]')?.closest("[hidden]")).not.toBeNull();
     expect(form?.querySelector("button")?.hasAttribute("disabled")).toBe(false);
 

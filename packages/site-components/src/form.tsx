@@ -260,8 +260,8 @@ export function formAction(
       // Netlify Forms, on Netlify: `formServiceUnset` answered for anywhere else.
       return {
         action: thanksPage ?? "",
-        // Netlify adds it as it finds the form; here too, so a post always names its form.
-        hidden: { "form-name": netlifyForm ?? "" },
+        // Netlify adds the hidden `form-name` field itself as it finds the form, as 0.2's live run saw.
+        hidden: {},
         honeypot: HONEYPOTS.netlify,
         netlify: netlifyForm ?? "",
       };

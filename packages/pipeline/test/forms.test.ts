@@ -184,7 +184,8 @@ describe("Netlify Forms (4.2)", () => {
       expect(form).toContain('data-netlify="true"');
       expect(form).toContain('netlify-honeypot="bot-field"');
       expect(form).toContain('action="/thank-you.html"');
-      expect(form).toContain('<input type="hidden" name="form-name" value="Contact form" />');
+      // Netlify adds the hidden `form-name` field itself as it finds the form.
+      expect(form).not.toContain('name="form-name"');
       expect(form).toContain('name="bot-field"');
       expect(form).not.toContain("data-wf-form-unset");
       expect(text(onNetlify, "thank-you.html")).toContain("Your message is on its way.");
