@@ -1,6 +1,7 @@
 import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
 import { changedDocuments, createSite, type SiteDoc } from "@webforge/model";
 import { FORMAT_VERSION } from "@webforge/storage";
@@ -73,8 +74,18 @@ test.describe("desktop shell", () => {
     expect(heights.bar).toBe(heights.controls);
   });
 
-  test("loads the production renderer from disk", () => {
-    expect(page.url()).toMatch(/^file:\/\/.*\/out\/renderer\/index\.html$/);
+  test("loads the production renderer from the app's own scheme, never file:// (#652, S5)", async () => {
+    expect(page.url()).toBe("webforge-app://editor/index.html");
+    // A file that is there, which a file:// page could have read.
+    const file = pathToFileURL(join(desktopDir, "package.json")).href;
+    const read = await page.evaluate(async (url) => {
+      try {
+        return `read: ${(await fetch(url)).status}`;
+      } catch {
+        return "refused";
+      }
+    }, file);
+    expect(read).toBe("refused");
   });
 
   test("runs the renderer in an OS-level sandbox", async () => {

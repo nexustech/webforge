@@ -63,6 +63,9 @@ electronFuses:
   enableNodeCliInspectArguments: false
   enableEmbeddedAsarIntegrityValidation: true
   onlyLoadAppFromAsar: true
+  # The editor and Help load from webforge-app://, so no page needs file://'s extra privileges,
+  # with which a script in the page could read any of the computer's files (#652, S5).
+  grantFileProtocolExtraPrivileges: false
   # Flipping fuses invalidates the macOS signature; re-sign ad hoc so unsigned arm64 builds still
   # launch (Apple Silicon refuses unsigned code). Only applies to .app bundles.
   resetAdHocDarwinSignature: true

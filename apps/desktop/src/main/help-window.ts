@@ -70,8 +70,8 @@ export function helpPageAddress(pageUrl: string, target: HelpTarget, theme: Them
 }
 
 /**
- * Whether `url` is the Help page at `pageUrl`: the same file, or on the dev server the same path.
- * The editor's page never is, though in development it has the same origin.
+ * Whether `url` is the Help page at `pageUrl`: the same path on the app's own scheme and host, or
+ * on the dev server (S33). The editor's page never is, though it has the same origin.
  */
 export function isHelpPageUrl(url: string, pageUrl: string): boolean {
   if (!isAppUrl(url, pageUrl)) return false;
