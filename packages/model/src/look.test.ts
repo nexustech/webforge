@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { looksSchema } from "./look.js";
+import { effectiveValues, looksSchema, valuesWithLook } from "./look.js";
 import { DEFAULT_THEME, themeTokensSchema } from "./theme.js";
 
 describe("looks (3.12, CT-1)", () => {
@@ -58,5 +58,39 @@ describe("looks (3.12, CT-1)", () => {
     expect(looksSchema.safeParse({ Button: { lookCorners: { desktop: "full" } } }).success).toBe(
       false,
     );
+  });
+});
+
+describe("an item's values with its kind's look (#670)", () => {
+  it("are its own, else the look's, else the default, with where each came from", () => {
+    const { values, sources } = effectiveValues(
+      "Text",
+      { text: "<p>Hi</p>", lookItalic: false, lookCase: undefined },
+      { text: "<p>Text</p>", lookAlign: "start" },
+      { Text: { lookItalic: true, lookCase: "upper", lookUnderline: true } },
+    );
+
+    expect(values).toEqual({
+      text: "<p>Hi</p>",
+      lookAlign: "start",
+      lookItalic: false,
+      lookCase: "upper",
+      lookUnderline: true,
+    });
+    expect(sources).toEqual({
+      text: "own",
+      lookAlign: "default",
+      lookItalic: "own",
+      lookCase: "look",
+      lookUnderline: "look",
+    });
+  });
+
+  it("leave an item without a look as it is", () => {
+    const values = { text: "<p>Hi</p>" };
+    expect(valuesWithLook(values, undefined)).toBe(values);
+    expect(effectiveValues("Text", values, {}, { Button: { lookItalic: true } }).sources).toEqual({
+      text: "own",
+    });
   });
 });

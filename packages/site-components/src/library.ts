@@ -16,6 +16,7 @@ import {
   type SpacingToken,
   storedAdvancedSchema,
   type TextStyle,
+  valuesWithLook,
 } from "@webforge/model";
 import { cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
@@ -205,10 +206,7 @@ export function withLook<Values extends Readonly<Record<string, unknown>>>(
   type: string,
   looks: RenderContext["looks"],
 ): Values {
-  const look = looks?.[type];
-  if (look === undefined) return values;
-  const own = Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined));
-  return { ...look, ...own } as Values;
+  return valuesWithLook(values, looks?.[type]);
 }
 
 /** The components available on the canvas and in exported sites, by component type. */

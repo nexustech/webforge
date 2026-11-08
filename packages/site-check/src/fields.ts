@@ -5,6 +5,7 @@ import {
   type NodeDoc,
   type SharedSectionId,
   type SiteDoc,
+  valuesWithLook,
 } from "@webforge/model";
 import type { CatalogueField } from "@webforge/site-components/catalogue-data";
 import type { CheckInput } from "./types.js";
@@ -16,6 +17,8 @@ export type PlacedValue = {
   /** The field's name; `items.2.text` for a list item's field. */
   readonly field: string;
   readonly value: unknown;
+  /** The value is its kind's look's (3.12), not the element's own: fix it in the theme (#670). */
+  readonly fromLook?: true;
 };
 
 /** The shared sections a page holds a copy of: the others aren't exported (F-ED-23). */
@@ -93,8 +96,9 @@ function planFor(
 
 /**
  * Calls `visit` with each value of a field of one of `kinds` on the site's elements, as the
- * catalogue describes them, list items' fields included. Hidden elements, and shared sections no
- * page holds, are left out: the export leaves them out too. Only the fields of those kinds are
+ * catalogue describes them, list items' fields included. A field the element doesn't set itself
+ * reads its kind's look in the theme, as the export draws it (#670). Hidden elements, and shared
+ * sections no page holds, are left out: the export leaves them out too. Only the fields of those kinds are
  * read, as each type's plan has them (#628).
  */
 export function eachFieldValue(
@@ -105,16 +109,21 @@ export function eachFieldValue(
   const wanted = new Set<string>(kinds);
   const kindsKey = [...wanted].sort().join(",");
   const exported = exportedPlaces(site);
+  const { looks } = site.theme;
   eachElement(
     site,
     (node, on) => {
       if (!exported(on)) return;
       const plan = planFor(catalogue, wanted, kindsKey, node.type);
+      const look: Readonly<Record<string, unknown>> | undefined = looks?.[node.type];
+      // The one rule the export draws by: its own value, else its kind's look.
+      const values = valuesWithLook(node.props, look);
       // In the component's order, a list's items where the list is, as before the plans (#628).
       for (const { name, visit: wantedField, items } of plan) {
-        const value = node.props[name];
+        const value = values[name];
         if (value === undefined) continue;
-        if (wantedField) visit({ on, node, field: name, value });
+        const fromLook = node.props[name] === undefined ? ({ fromLook: true } as const) : {};
+        if (wantedField) visit({ on, node, field: name, value, ...fromLook });
         if (items.length === 0 || !Array.isArray(value)) continue;
         value.forEach((item: unknown, index) => {
           if (typeof item !== "object" || item === null) return;
