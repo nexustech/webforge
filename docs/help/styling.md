@@ -26,7 +26,7 @@ The **Appearance** group, at the top of the Style tab, is on every section and e
 
 ## Colours
 
-Colour pickers show your theme's colours by their role: Brand, Accent, Second accent, Surface and Text, and Neutral for backgrounds. Some have lighter and darker **shades**, and you can make any colour see-through with **Opacity**. If a colour would be hard to read against what's behind it, the picker warns you. Icons and social logos need less contrast than text. Over a section's background picture it can't tell, so check that yourself.
+Colour pickers show your theme's colours by their role: Brand, Accent, Second accent, Surface and Text, and Neutral for backgrounds. Some have lighter and darker **shades**, and you can make any colour see-through with **Opacity**. If a colour would be hard to read against what's behind it, the picker warns you. Icons and social logos need less contrast than text. On a picture, such as a section's background picture or a Hero's picture behind its text, it can't tell, so check that yourself.
 
 In Advanced mode you can also choose a **Custom** colour. It stays the same when you change the theme.
 

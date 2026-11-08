@@ -4,11 +4,10 @@ import {
   type NodeDoc,
   type Responsive,
   resolveResponsive,
-  type SiteDoc,
   TEXT_COLOR_CLASSES,
   valuesWithLook,
 } from "@webforge/model";
-import { textStylesIn } from "@webforge/site-components/catalogue-data";
+import { drawsPictureBehind, textStylesIn } from "@webforge/site-components/catalogue-data";
 import {
   AA_LARGE,
   AA_TEXT,
@@ -26,7 +25,7 @@ import {
   fieldKey,
   type PlacedValue,
 } from "../fields.js";
-import type { CheckRule, Finding } from "../types.js";
+import type { CheckInput, CheckRule, Finding } from "../types.js";
 
 /** The theme colour each text colour mark's class shows (2.25): `text-secondary` → `secondary`. */
 const MARK_COLORS = new Map(
@@ -41,11 +40,22 @@ const MARK_COLORS = new Map(
  */
 const TEXT_COLOUR_FIELDS = new Set(["color", "lookColor", "lookTitleColor"]);
 
-/** What `placed`'s text is drawn on: its section's colours and the nearest background (#670). */
-function surfaceUnder(site: SiteDoc, placed: Pick<PlacedValue, "ancestors" | "node">): Surface {
+/**
+ * What `placed`'s text is drawn on: its section's colours and the nearest background, or a picture
+ * one of them draws behind its content, as the catalogue says (#670).
+ */
+function surfaceUnder(
+  { site, catalogue }: CheckInput,
+  placed: Pick<PlacedValue, "ancestors" | "node">,
+): Surface {
   const { looks } = site.theme;
-  const withLook = (node: NodeDoc) => valuesWithLook(node.props, looks?.[node.type]);
-  return surfaceOf(site.theme, [...placed.ancestors, placed.node].map(withLook));
+  const nodes: readonly NodeDoc[] = [...placed.ancestors, placed.node];
+  const chain = nodes.map((node) => valuesWithLook(node.props, looks?.[node.type]));
+  return surfaceOf(site.theme, chain, (at) => {
+    const component = catalogue[nodes[at]?.type ?? ""];
+    const values = chain[at];
+    return component !== undefined && values !== undefined && drawsPictureBehind(component, values);
+  });
 }
 
 /**
@@ -55,8 +65,10 @@ function surfaceUnder(site: SiteDoc, placed: Pick<PlacedValue, "ancestors" | "no
  * its size needs, as the colour field measures it: 3:1 for a large heading, 4.5:1 for other text.
  * A graphic component's colour (an Icon's, Social links' logos) needs 3:1, as graphics do (WCAG
  * 1.4.11), whatever its field is called. Each is measured on what the text is drawn on, a Reversed
- * section's colours or an Appearance background (#670). Nothing is measured over a section's
- * background picture, whose colours can't be known: the overlay's own check covers that (2.26).
+ * section's colours or an Appearance background (#670). Nothing is measured over a picture drawn
+ * behind the content (a section's background image, a Hero's in its background layout), whose
+ * colours can't be known. Site Check has no rule for those: the Edit panel's overlay field warns
+ * when a section's text is hard to read over its background image (2.26, `overlay-warning.ts`).
  * *Should fix* at most, never *Must fix* (F-CHK-1): contrast is a guideline the owner may weigh.
  */
 export const contrastRule: CheckRule = {
@@ -82,7 +94,7 @@ export const contrastRule: CheckRule = {
       for (const [, name = ""] of placed.value.matchAll(/<span class="(text-[a-z-]+)"/g)) {
         const role = MARK_COLORS.get(name);
         if (role === undefined) continue;
-        surface ??= surfaceUnder(input.site, placed);
+        surface ??= surfaceUnder(input, placed);
         if (surface.overPicture) return;
         const shown = resolveColorRef(theme, role, surface.palette);
         if (shown === undefined) continue;
@@ -106,7 +118,7 @@ export const contrastRule: CheckRule = {
       // As the desktop shows it, where most pages are read.
       const ref = resolveResponsive(placed.value as Responsive<unknown>, "desktop");
       if (typeof ref !== "string") return;
-      const surface = surfaceUnder(input.site, placed);
+      const surface = surfaceUnder(input, placed);
       if (surface.overPicture) return;
       const shown = resolveColorRef(theme, ref, surface.palette);
       if (shown === undefined) return;

@@ -1,5 +1,5 @@
 import type { FieldRenderer } from "@webforge/editor-ui";
-import { textStylesOf } from "@webforge/site-components";
+import { drawsPictureBehind, textStylesOf } from "@webforge/site-components";
 import { surfaceAt, surfaceOf } from "@webforge/themes";
 import { fieldTarget } from "../../editor/field-target.js";
 import type { FieldRendererContext } from "../field-context.js";
@@ -40,6 +40,10 @@ export const colourField = ({
       const target = fieldTarget(site, session.library, pageId, nodeId);
       if (target === undefined) return surfaceOf(site.theme, []);
       const on = target.region ?? target.inCopy?.shared.id ?? pageId;
-      return surfaceAt(site, on, target.node.props.id);
+      // A picture behind the content, as its component draws one: nothing is measured on it.
+      return surfaceAt(site, on, target.node.props.id, (node, values) => {
+        const def = session.library.components[node.type];
+        return def !== undefined && drawsPictureBehind(def, values);
+      });
     },
   });

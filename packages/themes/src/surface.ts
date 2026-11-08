@@ -1,6 +1,5 @@
 import {
   type ElementPlace,
-  imageValueSchema,
   isNodeDoc,
   type NodeDoc,
   type Oklch,
@@ -47,8 +46,9 @@ export function contrastNeeded(theme: ThemeTokens, styles: readonly TextStyle[])
 
 /**
  * What text is drawn on (#670): the palette its colours come from, the page's or a Reversed
- * section's (2.4), and the background colour behind it; or a section's background picture (2.26),
- * `overPicture`, whose colours can't be known, so no contrast is measured on it.
+ * section's (2.4), and the background colour behind it; or a picture behind it (a section's
+ * background image, 2.26, or a Hero's in its background layout), `overPicture`, whose colours
+ * can't be known, so no contrast is measured on it.
  */
 export type Surface = {
   readonly palette: "colors" | "inverse";
@@ -64,18 +64,20 @@ const onDesktop = (value: unknown) => resolveResponsive(value as Responsive<unkn
  * The surface under an element whose `chain` of values runs from its section to itself, each with
  * its kind's look (#670): a Reversed section (`colors: "inverse"`) switches to the inverse palette,
  * and the nearest Appearance background (`lookBackground`) is what's behind, else the palette's
- * page colour. A background's own opacity is left out: it's taken as drawn in full. A section's
- * background picture (2.26) is drawn over its colours, so what's on it is `overPicture`, unless an
- * element nearer has a background of its own.
+ * page colour. A background's own opacity is left out: it's taken as drawn in full. A picture
+ * one of them draws behind its content, as `pictureBehind` says by its place in the chain (the
+ * component library knows which do), is drawn over its colours, so what's on it is `overPicture`,
+ * unless an element nearer has a background of its own.
  */
 export function surfaceOf(
   theme: ThemeTokens,
   chain: readonly Readonly<Record<string, unknown>>[],
+  pictureBehind: (at: number) => boolean = () => false,
 ): Surface {
   let palette: Surface["palette"] = "colors";
   let background: Oklch | undefined;
   let overPicture = false;
-  for (const values of chain) {
+  for (const [at, values] of chain.entries()) {
     if (onDesktop(values.colors) === "inverse") {
       palette = "inverse";
       background = undefined;
@@ -89,13 +91,8 @@ export function surfaceOf(
         overPicture = false;
       }
     }
-    // Drawn over the section's own colours: its picture is what's behind its content.
-    if (
-      values.backgroundImage !== undefined &&
-      imageValueSchema.safeParse(values.backgroundImage).success
-    ) {
-      overPicture = true;
-    }
+    // Drawn over its own colours: its picture is what's behind its content.
+    if (pictureBehind(at)) overPicture = true;
   }
   const colors = palette === "inverse" ? inverseColors(theme) : theme.colors;
   const surface = { palette, background: background ?? colors["base-100"] };
@@ -129,14 +126,21 @@ function chainTo(nodes: readonly NodeDoc[], nodeId: string): readonly NodeDoc[] 
 
 /**
  * The surface under element `nodeId` kept at `on` (#670), each element on the way with its kind's
- * look: the page's colours when it isn't found.
+ * look: the page's colours when it isn't found. `pictureBehind` says whether an element, with its
+ * values, draws a picture behind its content, as its component does.
  */
-export function surfaceAt(site: SiteDoc, on: ElementPlace, nodeId: string): Surface {
+export function surfaceAt(
+  site: SiteDoc,
+  on: ElementPlace,
+  nodeId: string,
+  pictureBehind: (node: NodeDoc, values: Readonly<Record<string, unknown>>) => boolean,
+): Surface {
   const { looks } = site.theme;
-  return surfaceOf(
-    site.theme,
-    chainTo(nodesAt(site, on), nodeId).map((node) =>
-      valuesWithLook(node.props, looks?.[node.type]),
-    ),
-  );
+  const nodes = chainTo(nodesAt(site, on), nodeId);
+  const chain = nodes.map((node) => valuesWithLook(node.props, looks?.[node.type]));
+  return surfaceOf(site.theme, chain, (at) => {
+    const node = nodes[at];
+    const values = chain[at];
+    return node !== undefined && values !== undefined && pictureBehind(node, values);
+  });
 }

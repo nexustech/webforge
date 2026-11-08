@@ -142,7 +142,8 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
  * as it is. Below them, a warning when the colour is hard to read on the page (below what WCAG AA
  * asks of text of its size, `contrastNeeded`, or 3:1 of an icon or logo), measured on what the
  * text is drawn on: a Reversed section's colours or an Appearance background (#670); none over a
- * section's background picture, whose colours can't be known. Each choice is one change.
+ * picture behind the content (a section's background image, a Hero's), whose colours can't be
+ * known. Each choice is one change.
  */
 export function ColourField({
   id,

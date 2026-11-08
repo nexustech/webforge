@@ -35,7 +35,7 @@ Each check shows a dot: green when all is well, amber or red when something need
 | **Forms** | A form has nowhere to send messages | **Fix** opens Site Settings › Forms. See [Forms](forms.md) |
 | **Missing images** | A picture was deleted from Media but is still placed on a page | Choose another picture, or remove it |
 | **Alt text** | A picture has no description for people who can't see it | Add **Alt text** in [Media](media.md) |
-| **Colour contrast** | Some text is hard to read on its background: in your theme, in a text colour you chose, or in a heading's colour. It's measured on what the text sits on, such as a Reversed section or an element's own background. Large headings, icons and social logos need less contrast than other text. Text on a section's background picture isn't measured, as a picture's colours vary: check it yourself, or choose a stronger overlay | Choose a darker or lighter colour |
+| **Colour contrast** | Some text is hard to read on its background: in your theme, in a text colour you chose, or in a heading's colour. It's measured on what the text sits on, such as a Reversed section or an element's own background. Large headings, icons and social logos need less contrast than other text. Text on a picture isn't measured, as a picture's colours vary: a section's background picture, or a Hero's picture behind its text. Check it yourself; for a background picture, the **Overlay** setting warns you when its text is hard to read | Choose a darker or lighter colour |
 | **Large images** | A picture is over 4000 pixels wide or tall | Use a smaller copy: it loads faster |
 
 ## Tips

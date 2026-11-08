@@ -205,6 +205,22 @@ describe("contrast on what the text is drawn on (#670)", () => {
     ).toEqual([`${site.homePageId}/boxed/lookColor`, `${site.homePageId}/boxed/text/secondary`]);
   });
 
+  it("measures nothing on a Hero's picture in its background layout, but in its split one", () => {
+    const { light } = themeWithLightAccent();
+    const hero = (id: string, variant: string) =>
+      element("Hero", id, { variant, image: { mediaId: "loaves" }, lookTitleColor: "secondary" });
+    const site = siteWith([hero("behind", "background"), hero("beside", "split")], {
+      theme: light,
+    });
+
+    // Its title on the picture can't be measured; beside it, it's on the section's colour.
+    expect(
+      findIn(contrastRule, site)
+        .filter(({ place }) => place.kind === "element")
+        .map(({ key }) => key),
+    ).toEqual([`${site.homePageId}/beside/lookTitleColor`]);
+  });
+
   it("measures an element's text on its own Appearance background", () => {
     const { passing } = themeWithLightAccent();
     const site = siteWith(

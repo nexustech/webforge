@@ -12,6 +12,7 @@ import {
   CATALOGUE,
   catalogueFileSchema,
   catalogueSchema,
+  drawsPictureBehind,
   fieldValueSchema,
   hiddenFieldsOf,
   hideableFieldsOf,
@@ -61,6 +62,7 @@ function libraryAsData(): unknown {
       defaults,
       variantHides,
       graphic,
+      pictureBehind,
     } = def;
     const has = group.filter((name) => Object.hasOwn(fields, name));
     const appearance =
@@ -100,6 +102,7 @@ function libraryAsData(): unknown {
         defaults,
         variantHides,
         graphic,
+        pictureBehind,
         textStyle: textStyleAsData(def),
       },
     ];
@@ -191,6 +194,24 @@ describe("the catalogue as data (4.8)", () => {
       .filter(([, component]) => component.graphic === true)
       .map(([type]) => type);
     expect(graphic.sort()).toEqual(["Icon", "SocialLinks"]);
+  });
+
+  it("knows which pictures are drawn behind the content: a background image, a Hero's (#670)", () => {
+    const image = { mediaId: "loaves" };
+    for (const [type, component] of Object.entries(CATALOGUE)) {
+      // Every section with a background image draws it behind its content, once one is placed.
+      if (!Object.hasOwn(component.fields, "backgroundImage")) continue;
+      expect(drawsPictureBehind(component, { backgroundImage: image }), type).toBe(true);
+      expect(drawsPictureBehind(component, {}), type).toBe(false);
+    }
+    const hero = CATALOGUE.Hero;
+    if (hero === undefined) throw new Error("No Hero");
+    expect(drawsPictureBehind(hero, { variant: "background", image })).toBe(true);
+    expect(drawsPictureBehind(hero, { variant: "split", image })).toBe(false);
+    // Its first layout, split, when none is stored; and no picture without an image.
+    expect(drawsPictureBehind(hero, { image })).toBe(false);
+    expect(drawsPictureBehind(hero, { variant: "background" })).toBe(false);
+    expect(drawsPictureBehind(CATALOGUE.Text ?? {}, { image })).toBe(false);
   });
 
   it("never lets Custom Code be set", () => {
