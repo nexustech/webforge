@@ -103,6 +103,12 @@ export type ComponentDef = {
    */
   readonly textStyle?: (values: Readonly<Record<string, unknown>>) => TextStyle | undefined;
   /**
+   * Set on a component whose colour colours a drawing, not text (an Icon, Social links' logos):
+   * WCAG AA asks 3:1 of graphics (1.4.11), not text's 4.5:1, so the colour field and Site Check
+   * measure it as one (#670).
+   */
+  readonly graphic?: true;
+  /**
    * The theme's corner token its own corners come from while its Appearance leaves them to the
    * theme: `field` for a Button (daisyUI's buttons and fields), `box` for a section. None where no
    * one token decides them. The Edit panel names it (3.12, CT-3).

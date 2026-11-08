@@ -660,6 +660,8 @@ const icon = defineComponent({
     alignment: "left",
     hover: "none",
   },
+  // Its colour colours the drawing: held to graphics' 3:1, not text's (#670).
+  graphic: true,
   behaviours: entranceBehaviours,
   lookTarget: true,
   render: ({ values }) => {
@@ -711,6 +713,8 @@ const socialLinks = defineComponent({
     margin: MARGIN_FIELD,
   },
   defaults: { size: "medium", color: "default", alignment: "left" },
+  // Its colour colours the logos: held to graphics' 3:1, not text's (#670).
+  graphic: true,
   render: ({ values, context }) => {
     const profiles = context.socialProfiles ?? [];
     const className = `site-social flex flex-wrap gap-3 ${BUTTON_ALIGN_CLASS[values.alignment]}${marginClasses(values.margin)}`;

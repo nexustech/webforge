@@ -13,6 +13,8 @@ import {
   catalogueFileSchema,
   catalogueSchema,
   fieldValueSchema,
+  hiddenFieldsOf,
+  hideableFieldsOf,
 } from "./catalogue-data.js";
 import type { ComponentDef } from "./library.js";
 
@@ -58,6 +60,7 @@ function libraryAsData(): unknown {
       fields,
       defaults,
       variantHides,
+      graphic,
     } = def;
     const has = group.filter((name) => Object.hasOwn(fields, name));
     const appearance =
@@ -96,6 +99,7 @@ function libraryAsData(): unknown {
         fields: own,
         defaults,
         variantHides,
+        graphic,
         textStyle: textStyleAsData(def),
       },
     ];
@@ -160,6 +164,33 @@ describe("the catalogue as data (4.8)", () => {
     expect(
       field("buttonLink").safeParse({ kind: "url", href: "javascript:alert(1)" }).success,
     ).toBe(false);
+  });
+
+  it("knows each field that can be hidden, so Site Check works out only those (#670)", () => {
+    const image = { mediaId: "loaves" };
+    for (const [type, component] of Object.entries(CATALOGUE)) {
+      const hideable = hideableFieldsOf(component);
+      // Each layout, with nothing else set, and with what reveals the fields hidden by values.
+      const layouts = [undefined, ...Object.keys(component.variantHides ?? {})];
+      for (const variant of layouts) {
+        for (const extra of [{}, { lookBorder: "thin", backgroundImage: image }]) {
+          const values = { ...component.defaults, ...extra, variant };
+          for (const name of hiddenFieldsOf(component, values)) {
+            expect(hideable.has(name), `${type}.${name}`).toBe(true);
+          }
+        }
+      }
+    }
+    // A section's overlay is hideable; a Heading's colour never is.
+    expect(hideableFieldsOf(CATALOGUE.Section ?? { fields: {} }).has("overlay")).toBe(true);
+    expect(hideableFieldsOf(CATALOGUE.Heading ?? { fields: {} }).has("color")).toBe(false);
+  });
+
+  it("marks the components whose colour colours a drawing: graphics need 3:1 (#670)", () => {
+    const graphic = Object.entries(CATALOGUE)
+      .filter(([, component]) => component.graphic === true)
+      .map(([type]) => type);
+    expect(graphic.sort()).toEqual(["Icon", "SocialLinks"]);
   });
 
   it("never lets Custom Code be set", () => {

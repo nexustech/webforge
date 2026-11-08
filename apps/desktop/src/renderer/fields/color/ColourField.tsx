@@ -23,6 +23,7 @@ import {
   type TextStyle,
 } from "@webforge/model";
 import {
+  AA_LARGE,
   contrastNeeded,
   contrastRatio,
   oklchCss,
@@ -53,6 +54,11 @@ export type ColourFieldContext = {
    * background, rather than the page's; the page's while none is known.
    */
   readonly surface?: (() => Surface) | undefined;
+  /**
+   * Whether the element's colour colours a drawing, not text (an Icon, Social links): graphics
+   * need 3:1 (WCAG 1.4.11), whatever its text styles (#670).
+   */
+  readonly graphic?: (() => boolean) | undefined;
 };
 
 /**
@@ -134,8 +140,9 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
  * site shows them, by their glossary names; then a shade of the one chosen, and its opacity. In
  * Advanced mode, a colour of the field's own (hex), marked off the theme, which theme changes leave
  * as it is. Below them, a warning when the colour is hard to read on the page (below what WCAG AA
- * asks of text of its size, `contrastNeeded`), measured on what the text is drawn on: a Reversed
- * section's colours or an Appearance background (#670). Each choice is one change.
+ * asks of text of its size, `contrastNeeded`, or 3:1 of an icon or logo), measured on what the
+ * text is drawn on: a Reversed section's colours or an Appearance background (#670); none over a
+ * section's background picture, whose colours can't be known. Each choice is one change.
  */
 export function ColourField({
   id,
@@ -148,6 +155,7 @@ export function ColourField({
   advanced = false,
   textStyles,
   surface: surfaceOfField,
+  graphic: isGraphic,
 }: FieldRendererProps<"color"> & ColourFieldContext) {
   const theme = useDocument(session, (site) => site.theme);
   const shadeLabelId = useId();
@@ -191,8 +199,11 @@ export function ColourField({
   const shown =
     ref === undefined ? undefined : resolveColorRef(theme, formatColorRef(ref), surface.palette);
   const ratio =
-    shown === undefined ? undefined : contrastRatio(shown.color, surface.background, shown.opacity);
-  const needed = contrastNeeded(theme, textStyles?.() ?? []);
+    shown === undefined || surface.overPicture
+      ? undefined
+      : contrastRatio(shown.color, surface.background, shown.opacity);
+  const graphic = isGraphic?.() ?? false;
+  const needed = graphic ? AA_LARGE : contrastNeeded(theme, textStyles?.() ?? []);
 
   return (
     <div className="flex flex-col gap-2">
@@ -238,7 +249,10 @@ export function ColourField({
         warning={
           ratio === undefined || ratio >= needed
             ? undefined
-            : t("field.color.lowContrast", { ratio: shownRatio(ratio), needed })
+            : t(graphic ? "field.color.lowContrastGraphic" : "field.color.lowContrast", {
+                ratio: shownRatio(ratio),
+                needed,
+              })
         }
       />
       {hex !== undefined && advanced ? (

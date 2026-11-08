@@ -18,7 +18,7 @@ import data from "./catalogue-data.json" with { type: "json" };
 // What a field may hold (#667), the rule the editor uses too.
 export { fieldValueSchema } from "./field-values.js";
 // The fields a component's layout or values leave unused, as the Edit panel hides them (#670).
-export { hiddenFieldsOf } from "./hidden-fields.js";
+export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
 // Rich text from outside the editor is cleaned as the editor's is (4.8).
 export { sanitizeStoredRichText } from "./rich-text-html.js";
 
@@ -108,6 +108,8 @@ export const catalogueComponentSchema = z.strictObject({
     .optional(),
   fields: z.record(z.string(), catalogueFieldSchema),
   defaults: z.record(z.string(), z.unknown()),
+  /** Its colour colours a drawing, not text: graphics need 3:1, not 4.5:1 (WCAG 1.4.11, #670). */
+  graphic: z.literal(true).optional(),
   /** The fields each layout doesn't use (#311): its pictures aren't exported, nor checked (#670). */
   variantHides: z.record(z.string(), z.array(z.string())).optional(),
   /**

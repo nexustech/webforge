@@ -53,6 +53,32 @@ describe("what text is drawn on (#670)", () => {
     expect(surfaceAt(site, on, "gone").background).toEqual(colors["base-100"]);
   });
 
+  it("is over a picture under a section's background picture, unless nearer has a background", () => {
+    const picture = { mediaId: "loaves" };
+    const site = siteWith([
+      {
+        type: "Section",
+        props: {
+          id: "photo",
+          backgroundImage: picture,
+          lookBackground: "primary",
+          content: [text("onPhoto"), text("boxed", { lookBackground: "secondary" })],
+        },
+      },
+    ]);
+    const on = site.homePageId;
+
+    // Drawn over the section's own colour: the picture is what's behind.
+    expect(surfaceAt(site, on, "onPhoto").overPicture).toBe(true);
+    // An element's own background is drawn over the picture: measured on that.
+    expect(surfaceAt(site, on, "boxed")).toEqual({
+      palette: "colors",
+      background: site.theme.colors.secondary,
+    });
+    // Not a picture: no image there.
+    expect(surfaceOf(site.theme, [{ backgroundImage: "" }]).overPicture).toBeUndefined();
+  });
+
   it("reads a background a kind's look gives, unless the element sets its own", () => {
     const site = siteWith([text("looked"), text("own", { lookBackground: "theme" })]);
     site.theme.looks = { Text: { lookBackground: "secondary" } };

@@ -26,6 +26,13 @@ export const colourField = ({
         ? []
         : textStylesOf(target.node, session.library, site.theme.looks);
     },
+    // An Icon's or Social links' colour is a drawing's, measured as one (#670).
+    graphic: () => {
+      const { pageId, nodeId } = session.ui.getState();
+      const site = session.history.document.getState();
+      const target = fieldTarget(site, session.library, pageId, nodeId);
+      return target !== undefined && session.library.components[target.node.type]?.graphic === true;
+    },
     // Where the element is kept: the Header or Footer, a shared section, or the page (#670).
     surface: () => {
       const { pageId, nodeId } = session.ui.getState();

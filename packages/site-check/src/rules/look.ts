@@ -10,6 +10,7 @@ import {
 } from "@webforge/model";
 import { textStylesIn } from "@webforge/site-components/catalogue-data";
 import {
+  AA_LARGE,
   AA_TEXT,
   contrastIssues,
   contrastNeeded,
@@ -34,7 +35,10 @@ const MARK_COLORS = new Map(
   ),
 );
 
-/** The fields that colour an element's text, which the rule measures (#670). */
+/**
+ * The fields that colour an element's text, which the rule measures (#670): on a graphic component
+ * (an Icon, Social links), its drawing, measured as a graphic.
+ */
 const TEXT_COLOUR_FIELDS = new Set(["color", "lookColor", "lookTitleColor"]);
 
 /** What `placed`'s text is drawn on: its section's colours and the nearest background (#670). */
@@ -49,9 +53,11 @@ function surfaceUnder(site: SiteDoc, placed: Pick<PlacedValue, "ancestors" | "no
  * about; text coloured with a theme colour (2.25) that fails 4.5:1; and an element's text colour
  * (a Heading's colour, Appearance's text colour, a section's title colour) that fails what text of
  * its size needs, as the colour field measures it: 3:1 for a large heading, 4.5:1 for other text.
- * Each is measured on what the text is drawn on, a Reversed section's colours or an Appearance
- * background (#670). *Should fix* at most, never *Must fix* (F-CHK-1): contrast is a guideline
- * the owner may weigh.
+ * A graphic component's colour (an Icon's, Social links' logos) needs 3:1, as graphics do (WCAG
+ * 1.4.11), whatever its field is called. Each is measured on what the text is drawn on, a Reversed
+ * section's colours or an Appearance background (#670). Nothing is measured over a section's
+ * background picture, whose colours can't be known: the overlay's own check covers that (2.26).
+ * *Should fix* at most, never *Must fix* (F-CHK-1): contrast is a guideline the owner may weigh.
  */
 export const contrastRule: CheckRule = {
   id: "contrast",
@@ -77,6 +83,7 @@ export const contrastRule: CheckRule = {
         const role = MARK_COLORS.get(name);
         if (role === undefined) continue;
         surface ??= surfaceUnder(input.site, placed);
+        if (surface.overPicture) return;
         const shown = resolveColorRef(theme, role, surface.palette);
         if (shown === undefined) continue;
         const ratio = contrastRatio(shown.color, surface.background);
@@ -100,26 +107,34 @@ export const contrastRule: CheckRule = {
       const ref = resolveResponsive(placed.value as Responsive<unknown>, "desktop");
       if (typeof ref !== "string") return;
       const surface = surfaceUnder(input.site, placed);
+      if (surface.overPicture) return;
       const shown = resolveColorRef(theme, ref, surface.palette);
       if (shown === undefined) return;
       const ratio = contrastRatio(shown.color, surface.background, shown.opacity);
       const component = input.catalogue[placed.node.type];
+      // By the component's kind, not the field's name: an Icon's colour is a drawing's.
+      const graphic = component?.graphic === true && placed.field !== "lookTitleColor";
       // A section's title is set as one; an element's text as its kind sets it.
-      const styles =
-        placed.field === "lookTitleColor"
-          ? (["h2"] as const)
-          : component === undefined
-            ? []
-            : textStylesIn(component, {
-                ...component.defaults,
-                ...valuesWithLook(placed.node.props, theme.looks?.[placed.node.type]),
-              });
-      const required = contrastNeeded(theme, styles);
+      const required = graphic
+        ? AA_LARGE
+        : contrastNeeded(
+            theme,
+            placed.field === "lookTitleColor"
+              ? ["h2"]
+              : component === undefined
+                ? []
+                : textStylesIn(component, {
+                    ...component.defaults,
+                    ...valuesWithLook(placed.node.props, theme.looks?.[placed.node.type]),
+                  }),
+          );
       if (ratio < required) {
+        const values = { foreground: ref, ratio: Math.floor(ratio * 100) / 100, required };
         found.push({
           key: fieldKey(placed),
           place: elementPlace(placed),
-          values: { foreground: ref, ratio: Math.floor(ratio * 100) / 100, required },
+          // An icon's or a logo's: the panel says so, as it needs less than text.
+          values: graphic ? { ...values, drawn: "graphic" } : values,
         });
       }
     });

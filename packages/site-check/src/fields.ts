@@ -8,9 +8,9 @@ import {
   valuesWithLook,
 } from "@webforge/model";
 import {
-  type CatalogueComponent,
   type CatalogueField,
   hiddenFieldsOf,
+  hideableFieldsOf,
 } from "@webforge/site-components/catalogue-data";
 import type { CheckInput } from "./types.js";
 
@@ -62,16 +62,6 @@ type FieldPlan = readonly {
   readonly mayHide: boolean;
 }[];
 
-/** The fields of `component` a layout or other values can hide, as `hiddenFieldsOf` hides them. */
-function hideable(component: CatalogueComponent | undefined): ReadonlySet<string> {
-  if (component === undefined) return new Set();
-  const names = new Set(Object.values(component.variantHides ?? {}).flat());
-  for (const name of ["lookBorderColor", "overlay", "overlayColor"]) {
-    if (Object.hasOwn(component.fields, name)) names.add(name);
-  }
-  return names;
-}
-
 /**
  * Each catalogue's plans, by the kinds asked for and the component type: worked out once, so a
  * check walks only the fields it reads, as the panel's frame budget needs (ADR 0016, #628).
@@ -97,7 +87,8 @@ function planFor(
   }
   let plan = byType.get(type);
   if (plan === undefined) {
-    const mayHide = hideable(catalogue[type]);
+    const component = catalogue[type];
+    const mayHide = component === undefined ? new Set<string>() : hideableFieldsOf(component);
     plan = Object.entries(catalogue[type]?.fields ?? {}).flatMap(([name, field]) => {
       const visit = wanted.has(field.kind);
       const items =

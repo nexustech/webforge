@@ -2897,7 +2897,8 @@
         "color": "primary",
         "alignment": "left",
         "hover": "none"
-      }
+      },
+      "graphic": true
     },
     "SocialLinks": {
       "label": "Social links",
@@ -2980,7 +2981,8 @@
         "size": "medium",
         "color": "default",
         "alignment": "left"
-      }
+      },
+      "graphic": true
     },
     "Hero": {
       "label": "Hero",

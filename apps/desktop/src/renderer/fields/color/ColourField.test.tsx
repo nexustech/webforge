@@ -27,6 +27,7 @@ function setUp(
     readonly advanced?: boolean;
     readonly textStyles?: readonly TextStyle[];
     readonly surface?: Surface;
+    readonly graphic?: boolean;
   } = {},
 ) {
   const session = sessionWith();
@@ -46,6 +47,7 @@ function setUp(
         advanced={options.advanced}
         textStyles={options.textStyles === undefined ? undefined : () => options.textStyles ?? []}
         surface={options.surface === undefined ? undefined : () => options.surface as Surface}
+        graphic={options.graphic === undefined ? undefined : () => options.graphic === true}
       />
     </>,
   );
@@ -163,6 +165,21 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
       surface: { palette: "colors", background: DEFAULT_THEME.colors.primary },
     });
     expect(screen.getByText(/Hard to read/)).toBeTruthy();
+    cleanup();
+    // Over a section's background picture: its colours can't be known, so nothing is said.
+    setUp("primary", {
+      surface: { palette: "colors", background: DEFAULT_THEME.colors.primary, overPicture: true },
+    });
+    expect(screen.queryByText(/Hard to read/)).toBeNull();
+  });
+
+  it("holds an icon's or a logo's colour to graphics' 3:1, in words that say so (#670)", () => {
+    // A grey between 3:1 and 4.5:1: too faint for body text, enough for an icon.
+    setUp("[#808080]", { textStyles: ["body"], graphic: true });
+    expect(screen.queryByText(/Hard to/)).toBeNull();
+    cleanup();
+    setUp("[#c0c0c0]", { graphic: true });
+    expect(screen.getByText(/less than the 3:1 an icon or logo needs/)).toBeTruthy();
   });
 });
 

@@ -109,6 +109,9 @@ export const shared = {
   "colour.opacityStep": "{step}%",
   "field.color.lowContrast":
     "Hard to read on the page: contrast {ratio}:1, less than the {needed}:1 this text needs.",
+  // An Icon's or Social links' colour (#670): graphics need 3:1 (WCAG 1.4.11).
+  "field.color.lowContrastGraphic":
+    "Hard to see on the page: contrast {ratio}:1, less than the {needed}:1 an icon or logo needs.",
   // The Appearance group on every section and element (2.22, ST-1): theme tokens only, per device.
   // "Theme's" leaves the item as it draws itself.
   // The theme's three fonts (3.22, PF-5), by the Theme tab's names; one for every device.

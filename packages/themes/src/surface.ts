@@ -1,5 +1,6 @@
 import {
   type ElementPlace,
+  imageValueSchema,
   isNodeDoc,
   type NodeDoc,
   type Oklch,
@@ -46,11 +47,14 @@ export function contrastNeeded(theme: ThemeTokens, styles: readonly TextStyle[])
 
 /**
  * What text is drawn on (#670): the palette its colours come from, the page's or a Reversed
- * section's (2.4), and the background colour behind it.
+ * section's (2.4), and the background colour behind it; or a section's background picture (2.26),
+ * `overPicture`, whose colours can't be known, so no contrast is measured on it.
  */
 export type Surface = {
   readonly palette: "colors" | "inverse";
   readonly background: Oklch;
+  /** A background picture is behind it, not `background`: its contrast can't be measured. */
+  readonly overPicture?: true;
 };
 
 /** `value`, set once or per device, as the desktop has it: the device most visitors' pages use. */
@@ -60,7 +64,9 @@ const onDesktop = (value: unknown) => resolveResponsive(value as Responsive<unkn
  * The surface under an element whose `chain` of values runs from its section to itself, each with
  * its kind's look (#670): a Reversed section (`colors: "inverse"`) switches to the inverse palette,
  * and the nearest Appearance background (`lookBackground`) is what's behind, else the palette's
- * page colour. A background's own opacity is left out: it's taken as drawn in full.
+ * page colour. A background's own opacity is left out: it's taken as drawn in full. A section's
+ * background picture (2.26) is drawn over its colours, so what's on it is `overPicture`, unless an
+ * element nearer has a background of its own.
  */
 export function surfaceOf(
   theme: ThemeTokens,
@@ -68,19 +74,32 @@ export function surfaceOf(
 ): Surface {
   let palette: Surface["palette"] = "colors";
   let background: Oklch | undefined;
+  let overPicture = false;
   for (const values of chain) {
     if (onDesktop(values.colors) === "inverse") {
       palette = "inverse";
       background = undefined;
+      overPicture = false;
     }
     const fill = onDesktop(values.lookBackground);
     if (typeof fill === "string") {
       const resolved = resolveColorRef(theme, fill, palette);
-      if (resolved !== undefined) background = resolved.color;
+      if (resolved !== undefined) {
+        background = resolved.color;
+        overPicture = false;
+      }
+    }
+    // Drawn over the section's own colours: its picture is what's behind its content.
+    if (
+      values.backgroundImage !== undefined &&
+      imageValueSchema.safeParse(values.backgroundImage).success
+    ) {
+      overPicture = true;
     }
   }
   const colors = palette === "inverse" ? inverseColors(theme) : theme.colors;
-  return { palette, background: background ?? colors["base-100"] };
+  const surface = { palette, background: background ?? colors["base-100"] };
+  return overPicture ? { ...surface, overPicture: true } : surface;
 }
 
 /** The nodes kept at `on`: a page's content, the Header, the Footer, or a shared section. */

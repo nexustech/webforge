@@ -144,6 +144,67 @@ describe("contrast on what the text is drawn on (#670)", () => {
     );
   });
 
+  it("holds an Icon's or Social links' colour to graphics' 3:1, by its kind, not text's 4.5:1", () => {
+    const { passing } = themeWithLightAccent();
+    const accent = (l: number) => ({
+      ...passing,
+      colors: { ...passing.colors, secondary: { l, c: 0, h: 0 } },
+    });
+    const icons = [
+      element("Icon", "icon", { icon: "phone", color: "secondary" }),
+      element("SocialLinks", "social", { color: "secondary" }),
+    ];
+    // About 3.6:1 on the page: enough for a graphic, though not for text.
+    const enough = siteWith(icons, { theme: accent(0.62) });
+    expect(findIn(contrastRule, enough).filter(({ place }) => place.kind === "element")).toEqual(
+      [],
+    );
+
+    // About 2.5:1: too faint even for a graphic, and said to be one.
+    const faint = siteWith(icons, { theme: accent(0.72) });
+    const on = faint.homePageId;
+    expect(
+      findIn(contrastRule, faint)
+        .filter(({ place }) => place.kind === "element")
+        .map(({ key, values }) => ({ key, values })),
+    ).toEqual([
+      {
+        key: `${on}/icon/color`,
+        values: { foreground: "secondary", ratio: 2.48, required: 3, drawn: "graphic" },
+      },
+      {
+        key: `${on}/social/color`,
+        values: { foreground: "secondary", ratio: 2.48, required: 3, drawn: "graphic" },
+      },
+    ]);
+  });
+
+  it("measures nothing over a section's background picture, but what's boxed on it", () => {
+    const { light } = themeWithLightAccent();
+    const faint = (id: string, props: Record<string, unknown> = {}) =>
+      element("Text", id, {
+        text: '<p><span class="text-secondary">Fresh</span></p>',
+        lookColor: "secondary",
+        ...props,
+      });
+    const site = siteWith(
+      [
+        element("Section", "photo", {
+          backgroundImage: { mediaId: "loaves" },
+          content: [faint("onPhoto"), faint("boxed", { lookBackground: "base-100" })],
+        }),
+      ],
+      { theme: light },
+    );
+
+    // Its colours can't be known: white text on a dark photo is no warning, nor dark on light.
+    expect(
+      findIn(contrastRule, site)
+        .filter(({ place }) => place.kind === "element")
+        .map(({ key }) => key),
+    ).toEqual([`${site.homePageId}/boxed/lookColor`, `${site.homePageId}/boxed/text/secondary`]);
+  });
+
   it("measures an element's text on its own Appearance background", () => {
     const { passing } = themeWithLightAccent();
     const site = siteWith(
