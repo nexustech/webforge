@@ -30,8 +30,13 @@ const STAGING: NetlifySite = {
 function fakeNetlify(overrides: Partial<NetlifyDestinationApi> = {}) {
   return {
     canSignIn: false,
-    connect: vi.fn<NetlifyDestinationApi["connect"]>(async () => ({
-      status: "connected",
+    signIn: vi.fn<NetlifyDestinationApi["signIn"]>(async () => ({
+      status: "signed-in",
+      handle: HANDLE,
+    })),
+    cancelSignIn: vi.fn(),
+    signInWithToken: vi.fn<NetlifyDestinationApi["signInWithToken"]>(async () => ({
+      status: "signed-in",
       handle: HANDLE,
     })),
     sites: vi.fn<NetlifyDestinationApi["sites"]>(async () => ({
@@ -74,7 +79,7 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     expect(onSave).not.toHaveBeenCalled();
 
     await connect(" nfp_secret-token ");
-    expect(netlify.connect).toHaveBeenCalledWith({ via: "token", token: "nfp_secret-token" });
+    expect(netlify.signInWithToken).toHaveBeenCalledWith("nfp_secret-token");
     expect(await screen.findByText("Signed in to Netlify.")).toBeTruthy();
     expect(netlify.sites).toHaveBeenCalledWith({ handle: HANDLE });
     await user.selectOptions(await screen.findByLabelText("Netlify site"), SHOP.id);
@@ -83,8 +88,8 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     // Named for its site when left unnamed; its sign-in by the handle main holds it under.
     expect(onSave).toHaveBeenCalledWith({
       name: "rosas-bakery",
-      site: { id: SHOP.id, url: SHOP.url },
-      signIn: { netlifyHandle: HANDLE },
+      site: SHOP,
+      signIn: { handle: HANDLE },
     });
   });
 
@@ -96,8 +101,33 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     const { netlify, user } = setUp(fakeNetlify({ canSignIn: true }));
     await user.click(screen.getByRole("button", { name: "Sign In with Netlify" }));
 
-    expect(netlify.connect).toHaveBeenCalledWith({ via: "oauth" });
+    expect(netlify.signIn).toHaveBeenCalled();
     expect(await screen.findByText("Signed in to Netlify.")).toBeTruthy();
+  });
+
+  it("can stop waiting for the browser, saying nothing more when it's cancelled", async () => {
+    let answer: (result: { status: "failed"; reason: "cancelled" }) => void = () => undefined;
+    const netlify = fakeNetlify({
+      canSignIn: true,
+      signIn: vi.fn(() => new Promise((resolve) => (answer = resolve))),
+    });
+    netlify.cancelSignIn.mockImplementation(() =>
+      answer({ status: "failed", reason: "cancelled" }),
+    );
+    const { user } = setUp(netlify);
+    await user.click(screen.getByRole("button", { name: "Sign In with Netlify" }));
+    expect(
+      await screen.findByText(
+        "Approve Webforge in the browser page that opened, then come back here.",
+      ),
+    ).toBeTruthy();
+
+    await user.click(screen.getByRole("button", { name: "Cancel Sign-In" }));
+
+    expect(netlify.cancelSignIn).toHaveBeenCalled();
+    await screen.findByRole("button", { name: "Sign In with Netlify" });
+    expect(screen.queryByText("Signing in was cancelled.")).toBeNull();
+    expect(screen.queryByText(/Approve Webforge/)).toBeNull();
   });
 
   it("makes a new site, named or left for Netlify to name", async () => {
@@ -111,7 +141,7 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     expect(onSave).toHaveBeenCalledWith({
       name: "The shop",
       site: { create: "rosas-shop" },
-      signIn: { netlifyHandle: HANDLE },
+      signIn: { handle: HANDLE },
     });
   });
 
@@ -140,10 +170,10 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
 
     expect(onSave).toHaveBeenCalledWith({
       name: "Rosa's shop",
-      site: { id: SHOP.id, url: SHOP.url },
+      site: SHOP,
       signIn: { keep: true },
     });
-    expect(netlify.connect).not.toHaveBeenCalled();
+    expect(netlify.signInWithToken).not.toHaveBeenCalled();
   });
 
   it("warns that visitors must log in for a site with visitor access on (ADR 0006)", async () => {
@@ -162,18 +192,24 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
   it("says why it couldn't sign in or list the sites, in Test Connection's words", async () => {
     const refused = setUp(
       fakeNetlify({
-        connect: vi.fn(async () => ({ status: "failed", code: "unauthorized" }) as const),
+        signInWithToken: vi.fn(async () => ({ status: "failed", reason: "unauthorized" }) as const),
       }),
     );
     await refused.connect("nfp_wrong");
-    expect(await screen.findByText("The host refused the user name or password.")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Netlify didn't accept the sign-in. Check the token, or make a new one on Netlify.",
+      ),
+    ).toBeTruthy();
     expect(refused.netlify.sites).not.toHaveBeenCalled();
     cleanup();
 
     const offline = setUp(
-      fakeNetlify({ sites: vi.fn(async () => ({ status: "failed", code: "network" }) as const) }),
+      fakeNetlify({
+        sites: vi.fn(async () => ({ status: "failed", reason: "network" }) as const),
+      }),
     );
     await offline.connect("nfp_token");
-    expect((await screen.findByRole("alert")).textContent).toContain("couldn't be reached");
+    expect((await screen.findByRole("alert")).textContent).toContain("Netlify couldn't be reached");
   });
 });

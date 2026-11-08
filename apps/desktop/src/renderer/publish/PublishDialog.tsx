@@ -40,11 +40,13 @@ import {
   type FileTransferSaved,
 } from "./FileTransferDestinationDialog.js";
 import {
-  type NetlifyConnection,
+  type NetlifyAccount,
   type NetlifyDestinationApi,
   NetlifyDestinationDialog,
+  type NetlifyFailure,
   type NetlifySaved,
   type NetlifySite,
+  netlifyFailureMessage,
 } from "./NetlifyDestinationDialog.js";
 
 /** The person's words for why the destinations couldn't be read or changed. */
@@ -63,16 +65,19 @@ type SaveResult = Awaited<ReturnType<PublishApi["saveDestination"]>>;
  * sign-in it made, or the one saved for it.
  */
 export type NetlifyPublishApi = NetlifyDestinationApi & {
+  /** Makes a Netlify site in `account`, named `name` if it's free, else as Netlify names it. */
   readonly createSite: (
-    connection: NetlifyConnection,
-    name: string,
+    account: NetlifyAccount,
+    name: string | undefined,
   ) => Promise<
     | { readonly status: "created"; readonly site: NetlifySite }
-    | { readonly status: "failed"; readonly code: Extract<ConnectionResult, { ok: false }>["code"] }
+    | { readonly status: "failed"; readonly reason: NetlifyFailure }
   >;
+  /** Test connection for saved destination `id`: its sign-in still reaches its site. */
+  readonly testSaved: (id: string) => Promise<ConnectionResult>;
+  /** Saves a Netlify destination for `site`, with the sign-in just made or the one it has. */
   readonly save: (
-    id: string | undefined,
-    destination: { readonly name: string; readonly siteId: string; readonly url: string },
+    draft: { readonly id?: string; readonly name: string; readonly site: NetlifySite },
     signIn: NetlifySaved["signIn"],
   ) => Promise<SaveResult>;
 };
@@ -177,21 +182,15 @@ export function PublishDialog({
   };
 
   /** A Netlify destination's test: its sign-in still works, and its site is still there. */
-  const testNetlify = async (id: string, siteId: string | undefined): Promise<ConnectionResult> => {
-    if (netlify === undefined) return { ok: false, code: "failed" };
-    const result = await netlify.sites({ saved: id });
-    if (result.status === "failed") return { ok: false, code: result.code };
-    return result.sites.some((site) => site.id === siteId)
-      ? { ok: true }
-      : { ok: false, code: "not-found" };
-  };
+  const testNetlify = (id: string): Promise<ConnectionResult> =>
+    netlify === undefined ? Promise.resolve({ ok: false, code: "failed" }) : netlify.testSaved(id);
 
   const test = async ({ destination, trust }: ListedDestination) => {
     setTests((all) => ({ ...all, [destination.id]: "testing" }));
     const result =
       destination.kind === "file-transfer"
         ? await testSaved(destination.id, destination.settings, trust)
-        : await testNetlify(destination.id, destination.siteId);
+        : await testNetlify(destination.id);
     setTests((all) => ({ ...all, [destination.id]: result }));
   };
 
@@ -220,26 +219,28 @@ export function PublishDialog({
   const saveNetlify = async (saved: NetlifySaved) => {
     if (netlify === undefined) return;
     const id = editing?.listed?.destination.id;
-    const connection: NetlifyConnection =
-      "netlifyHandle" in saved.signIn
-        ? { handle: saved.signIn.netlifyHandle }
-        : { saved: id ?? "" };
-    let site: { readonly id: string; readonly url: string } =
-      "create" in saved.site ? { id: "", url: "" } : saved.site;
+    const account: NetlifyAccount =
+      "handle" in saved.signIn ? { handle: saved.signIn.handle } : { saved: id ?? "" };
+    let site: NetlifySite;
     let name = saved.name;
     if ("create" in saved.site) {
-      const created = await netlify.createSite(connection, saved.site.create);
+      const created = await netlify.createSite(account, saved.site.create);
       if (created.status === "failed") {
-        notify(connectionMessage({ ok: false, code: created.code }));
+        notify(netlifyFailureMessage(created.reason));
         return;
       }
       site = created.site;
       // Left unnamed, as the new site was: listed by the name Netlify gave it.
-      if (saved.site.create === "" && name === t("publish.netlify.defaultName")) {
+      if (saved.site.create === undefined && name === t("publish.netlify.defaultName")) {
         name = created.site.name;
       }
+    } else {
+      site = saved.site;
     }
-    const result = await netlify.save(id, { name, siteId: site.id, url: site.url }, saved.signIn);
+    const result = await netlify.save(
+      { ...(id === undefined ? {} : { id }), name, site },
+      saved.signIn,
+    );
     if (result.status === "saved") {
       setEditing(undefined);
       onSaved(result.destination);

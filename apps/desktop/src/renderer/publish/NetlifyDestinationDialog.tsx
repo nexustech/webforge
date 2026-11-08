@@ -8,62 +8,78 @@ import {
 import { t } from "@webforge/i18n";
 import { DESTINATION_NAME_MAX, SECRET_MAX } from "@webforge/model";
 import { useEffect, useState } from "react";
-import type { ConnectionResult } from "../../shared/ipc/publish.js";
-import { connectionMessage } from "./FileTransferDestinationDialog.js";
 import "../shell/form-messages.js";
 
-/** Why talking to Netlify failed: a publisher's code, worded as Test Connection words it. */
-type FailureCode = Extract<ConnectionResult, { ok: false }>["code"];
+/**
+ * Why a Netlify call did nothing, as 4.2's IPC says (`NetlifyFailure`): its message is
+ * `publish.netlify.failed.<reason>`.
+ */
+export type NetlifyFailure =
+  | "not-set-up"
+  | "unauthorized"
+  | "timeout"
+  | "cancelled"
+  | "network"
+  | "signed-out"
+  | "failed";
 
-/** A site of the Netlify account, as the site picker lists it. */
+/** The person's words for `reason`. */
+export const netlifyFailureMessage = (reason: NetlifyFailure): string =>
+  t(`publish.netlify.failed.${reason}`);
+
+/** A site of the Netlify account, as the site picker lists it (4.2's `NetlifySite`). */
 export type NetlifySite = {
   readonly id: string;
   readonly name: string;
-  /** Its address on Netlify (`https://shop.netlify.app`), or its own domain. */
-  readonly url: string;
+  /** Its address on Netlify (`https://shop.netlify.app`) or its own domain; none before a deploy. */
+  readonly url?: string | undefined;
   /**
    * Site protection, or visitor access, is on: Netlify reports a deploy live while visitors get
-   * its log-in page instead (0.2's live run, ADR 0006 decision 6).
+   * its log-in page instead (0.2's live run, ADR 0006 decision 6). Not known for every site.
    */
-  readonly protected: boolean;
+  readonly protected?: boolean | undefined;
 };
 
 /**
- * How the dialog reaches Netlify: through a sign-in the main process holds for it until the
- * destination is saved (`handle`), or the one saved for a destination being edited (`saved`, its
- * id). The token itself never reaches the renderer once it's been sent.
+ * Whose Netlify account the dialog reaches (4.2's `NetlifyAccount`): a sign-in the main process
+ * holds until the destination is saved (`handle`), or the one saved for the destination being
+ * edited (`saved`, its id). The token itself never reaches the renderer once it's been sent.
  */
-export type NetlifyConnection = { readonly handle: string } | { readonly saved: string };
+export type NetlifyAccount = { readonly handle: string } | { readonly saved: string };
 
-/** What the dialog asks the main process to do for it (4.2's Netlify IPC). */
+/** A sign-in's outcome: its handle, or why not. */
+type SignInResult =
+  | { readonly status: "signed-in"; readonly handle: string }
+  | { readonly status: "failed"; readonly reason: NetlifyFailure };
+
+/** What the dialog asks the main process to do for it (4.2's `window.webforge.netlify`). */
 export type NetlifyDestinationApi = {
-  /** Whether *Sign in with Netlify* can be offered: false until the app has its client ID. */
+  /** Whether *Sign In with Netlify* can be offered: false until the app has its client ID. */
   readonly canSignIn: boolean;
-  /** Signs in, in the person's browser (`oauth`) or with a pasted personal access token. */
-  readonly connect: (
-    how: { readonly via: "oauth" } | { readonly via: "token"; readonly token: string },
-  ) => Promise<
-    | { readonly status: "connected"; readonly handle: string }
-    | { readonly status: "failed"; readonly code: FailureCode }
-  >;
+  /** Signs in in the person's browser, through Netlify's page, until approved or cancelled. */
+  readonly signIn: () => Promise<SignInResult>;
+  /** Stops waiting for the browser: the sign-in answers `cancelled`. */
+  readonly cancelSignIn: () => void;
+  /** Checks a pasted personal access token, and holds it as a sign-in. */
+  readonly signInWithToken: (token: string) => Promise<SignInResult>;
   /** The account's sites. */
   readonly sites: (
-    connection: NetlifyConnection,
+    account: NetlifyAccount,
   ) => Promise<
     | { readonly status: "listed"; readonly sites: readonly NetlifySite[] }
-    | { readonly status: "failed"; readonly code: FailureCode }
+    | { readonly status: "failed"; readonly reason: NetlifyFailure }
   >;
 };
 
 /**
  * What the dialog saves: the destination's name, the Netlify site (one of the account's, or a new
- * one to create, named or not), and its sign-in: the one just made, by its handle, or the one
- * saved for it.
+ * one to create, named or for Netlify to name), and its sign-in: the one just made, by its handle,
+ * or the one saved for it.
  */
 export type NetlifySaved = {
   readonly name: string;
-  readonly site: { readonly id: string; readonly url: string } | { readonly create: string };
-  readonly signIn: { readonly netlifyHandle: string } | { readonly keep: true };
+  readonly site: NetlifySite | { readonly create: string | undefined };
+  readonly signIn: { readonly handle: string } | { readonly keep: true };
 };
 
 /** The form's values, as the person types them; the token too, which is sent once and forgotten. */
@@ -86,13 +102,13 @@ type Sites =
   | { readonly status: "none" }
   | { readonly status: "loading" }
   | { readonly status: "listed"; readonly sites: readonly NetlifySite[] }
-  | { readonly status: "failed"; readonly code: FailureCode };
+  | { readonly status: "failed"; readonly reason: NetlifyFailure };
 
 /** What signing in is doing. */
 type Signing =
   | { readonly status: "idle" }
-  | { readonly status: "waiting"; readonly via: "oauth" | "token" }
-  | { readonly status: "failed"; readonly code: FailureCode };
+  | { readonly status: "waiting"; readonly via: "browser" | "token" }
+  | { readonly status: "failed"; readonly reason: NetlifyFailure };
 
 export type NetlifyDestinationDialogProps = {
   readonly open: boolean;
@@ -123,7 +139,7 @@ export function NetlifyDestinationDialog({
   onSave,
   onCancel,
 }: NetlifyDestinationDialogProps) {
-  const [connection, setConnection] = useState<NetlifyConnection | undefined>(
+  const [account, setAccount] = useState<NetlifyAccount | undefined>(
     editing?.signedIn === true ? { saved: editing.id } : undefined,
   );
   const [sites, setSites] = useState<Sites>({ status: "none" });
@@ -131,32 +147,38 @@ export function NetlifyDestinationDialog({
 
   // The account's sites, once there's a sign-in to ask with.
   useEffect(() => {
-    if (connection === undefined) return undefined;
+    if (account === undefined) return undefined;
     let current = true;
     setSites({ status: "loading" });
-    netlify.sites(connection).then(
+    netlify.sites(account).then(
       (result) => {
         if (current) setSites(result);
       },
       () => {
-        if (current) setSites({ status: "failed", code: "failed" });
+        if (current) setSites({ status: "failed", reason: "failed" });
       },
     );
     return () => {
       current = false;
     };
-  }, [connection, netlify]);
+  }, [account, netlify]);
 
-  const connect = async (how: { via: "oauth" } | { via: "token"; token: string }) => {
-    setSigning({ status: "waiting", via: how.via });
-    const result = await netlify
-      .connect(how)
-      .catch(() => ({ status: "failed" as const, code: "failed" as const }));
-    if (result.status === "connected") {
+  const signIn = async (via: "browser" | "token", token = "") => {
+    setSigning({ status: "waiting", via });
+    const result = await (via === "browser"
+      ? netlify.signIn()
+      : netlify.signInWithToken(token)
+    ).catch(() => ({ status: "failed" as const, reason: "failed" as const }));
+    if (result.status === "signed-in") {
       setSigning({ status: "idle" });
-      setConnection({ handle: result.handle });
+      setAccount({ handle: result.handle });
     } else {
-      setSigning({ status: "failed", code: result.code });
+      // Cancelled is what the person asked for: nothing to say.
+      setSigning(
+        result.reason === "cancelled"
+          ? { status: "idle" }
+          : { status: "failed", reason: result.reason },
+      );
     }
   };
 
@@ -166,17 +188,18 @@ export function NetlifyDestinationDialog({
   const spec: FormSpec<NetlifyValues, NetlifySaved> = {
     fields: (values) => fieldsFor(values, sites, editing?.signedIn === true),
     schema: outputSchema,
-    toModel: (values) => toOutput(values, connection, siteOf(values.site)),
+    toModel: (values) => toOutput(values, account, siteOf(values.site)),
     after: (values) => ({
       token: (
         <>
           <SignIn
             canSignIn={netlify.canSignIn}
             signing={signing}
-            connected={connection !== undefined}
+            connected={account !== undefined}
             tokenTyped={values.token.trim() !== ""}
-            onSignIn={() => void connect({ via: "oauth" })}
-            onConnect={() => void connect({ via: "token", token: values.token.trim() })}
+            onSignIn={() => void signIn("browser")}
+            onCancel={netlify.cancelSignIn}
+            onConnect={() => void signIn("token", values.token.trim())}
           />
           {/* Until there's a picker to show it under: loading, or why it couldn't. */}
           {sites.status !== "listed" && <SiteStatus sites={sites} chosen={undefined} />}
@@ -221,7 +244,10 @@ function fieldsFor(values: NetlifyValues, sites: Sites, savedSignIn: boolean): F
               { value: "", label: t("publish.netlify.site.choose") },
               ...sites.sites.map((site) => ({
                 value: site.id,
-                label: t("publish.netlify.site.option", { name: site.name, url: site.url }),
+                label:
+                  site.url === undefined
+                    ? site.name
+                    : t("publish.netlify.site.option", { name: site.name, url: site.url }),
               })),
               { value: NEW_SITE, label: t("publish.netlify.site.new") },
             ],
@@ -264,24 +290,21 @@ function fieldsFor(values: NetlifyValues, sites: Sites, savedSignIn: boolean): F
 /** What the values make, before the schema checks it. */
 function toOutput(
   values: NetlifyValues,
-  connection: NetlifyConnection | undefined,
+  account: NetlifyAccount | undefined,
   chosen: NetlifySite | undefined,
 ) {
-  const site =
-    values.site === NEW_SITE
-      ? { create: values.newSite.trim() }
-      : chosen === undefined
-        ? undefined
-        : { id: chosen.id, url: chosen.url };
+  const newName = values.newSite.trim();
+  const site: NetlifySaved["site"] | undefined =
+    values.site === NEW_SITE ? { create: newName === "" ? undefined : newName } : chosen;
   const name =
     values.name.trim() !== ""
       ? values.name.trim()
-      : (chosen?.name ?? (values.newSite.trim() || t("publish.netlify.defaultName")));
+      : (chosen?.name ?? (newName || t("publish.netlify.defaultName")));
   const signIn =
-    connection === undefined
+    account === undefined
       ? undefined
-      : "handle" in connection
-        ? { netlifyHandle: connection.handle }
+      : "handle" in account
+        ? { handle: account.handle }
         : { keep: true as const };
   return { name, site, signIn };
 }
@@ -310,6 +333,7 @@ function SignIn({
   connected,
   tokenTyped,
   onSignIn,
+  onCancel,
   onConnect,
 }: {
   readonly canSignIn: boolean;
@@ -317,6 +341,8 @@ function SignIn({
   readonly connected: boolean;
   readonly tokenTyped: boolean;
   readonly onSignIn: () => void;
+  /** Stops waiting for the browser. */
+  readonly onCancel: () => void;
   readonly onConnect: () => void;
 }) {
   const waiting = signing.status === "waiting";
@@ -331,21 +357,24 @@ function SignIn({
             {t("publish.netlify.signIn")}
           </Button>
         )}
+        {waiting && signing.via === "browser" && (
+          <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+            {t("publish.netlify.cancelSignIn")}
+          </Button>
+        )}
       </div>
       <p role="status" aria-live="polite">
         {waiting && (
           <span>
             {t(
-              signing.via === "oauth"
+              signing.via === "browser"
                 ? "publish.netlify.waitingBrowser"
                 : "publish.netlify.connecting",
             )}
           </span>
         )}
         {signing.status === "failed" && (
-          <span className="text-destructive-text">
-            {connectionMessage({ ok: false, code: signing.code })}
-          </span>
+          <span className="text-destructive-text">{netlifyFailureMessage(signing.reason)}</span>
         )}
         {signing.status === "idle" && connected && (
           <span className="text-success">{t("publish.netlify.connected")}</span>
@@ -373,7 +402,7 @@ function SiteStatus({
   if (sites.status === "failed") {
     return (
       <p role="alert" className="text-sm text-destructive-text">
-        {connectionMessage({ ok: false, code: sites.code })}
+        {netlifyFailureMessage(sites.reason)}
       </p>
     );
   }

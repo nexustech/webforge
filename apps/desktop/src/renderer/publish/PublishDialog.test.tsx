@@ -256,10 +256,16 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
   function fakeNetlify() {
     return {
       canSignIn: false,
-      connect: vi.fn<NetlifyPublishApi["connect"]>(async () => ({
-        status: "connected",
+      signIn: vi.fn<NetlifyPublishApi["signIn"]>(async () => ({
+        status: "failed",
+        reason: "not-set-up",
+      })),
+      cancelSignIn: vi.fn(),
+      signInWithToken: vi.fn<NetlifyPublishApi["signInWithToken"]>(async () => ({
+        status: "signed-in",
         handle: "8d2c1f0e-1111-4222-8333-444455556666",
       })),
+      testSaved: vi.fn<NetlifyPublishApi["testSaved"]>(async () => ({ ok: true })),
       sites: vi.fn<NetlifyPublishApi["sites"]>(async () => ({ status: "listed", sites: [SITE] })),
       createSite: vi.fn<NetlifyPublishApi["createSite"]>(async () => ({
         status: "created",
@@ -270,12 +276,14 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
           protected: false,
         },
       })),
-      save: vi.fn<NetlifyPublishApi["save"]>(async (id, draft) => ({
+      save: vi.fn<NetlifyPublishApi["save"]>(async (draft) => ({
         status: "saved",
         destination: {
-          id: id ?? "4f9a2c1e-7b3d-4a5e-9c8f-1d2e3f4a5b6c",
+          id: draft.id ?? "4f9a2c1e-7b3d-4a5e-9c8f-1d2e3f4a5b6c",
+          name: draft.name,
           kind: "netlify",
-          ...draft,
+          siteId: draft.site.id,
+          ...(draft.site.url === undefined ? {} : { url: draft.site.url }),
         },
       })),
     };
@@ -313,17 +321,20 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     await waitFor(() => expect(onSaved).toHaveBeenCalled());
     expect(netlify.createSite).toHaveBeenCalledWith(
       { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
-      "",
+      undefined,
     );
     // Unnamed, as its site was: listed by the name Netlify gave the site.
     expect(netlify.save).toHaveBeenCalledWith(
-      undefined,
       {
         name: "brave-otter-1a2b",
-        siteId: "9e8d7c6b-1111-4222-8333-444455556666",
-        url: "https://brave-otter-1a2b.netlify.app",
+        site: {
+          id: "9e8d7c6b-1111-4222-8333-444455556666",
+          name: "brave-otter-1a2b",
+          url: "https://brave-otter-1a2b.netlify.app",
+          protected: false,
+        },
       },
-      { netlifyHandle: "8d2c1f0e-1111-4222-8333-444455556666" },
+      { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
     );
   });
 
@@ -346,7 +357,7 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     expect(first.getByText("Netlify: https://rosas-bakery.netlify.app")).toBeTruthy();
 
     await user.click(first.getByRole("button", { name: "Test the connection to On Netlify" }));
-    expect(netlify.sites).toHaveBeenCalledWith({ saved: netlifyDestination.id });
+    expect(netlify.testSaved).toHaveBeenCalledWith(netlifyDestination.id);
     expect(await first.findByText("Connected. Webforge can publish your site here.")).toBeTruthy();
     await user.click(first.getByRole("button", { name: "Publish to On Netlify" }));
     expect(onPublish).toHaveBeenCalledWith(netlifyDestination);

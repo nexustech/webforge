@@ -137,6 +137,17 @@ export const publish = {
   "publish.netlify.protected.title": "Visitors have to log in to see this site",
   "publish.netlify.protected.body":
     "Netlify's visitor access is on for it, so visitors get Netlify's log-in page instead of your site. Turn it off in the site's settings on Netlify if your site is for everyone.",
+  "publish.netlify.cancelSignIn": "Cancel Sign-In",
+  "publish.netlify.failed.not-set-up":
+    "This copy of {appName} can't sign in through Netlify's page yet. Paste a personal access token instead.",
+  "publish.netlify.failed.unauthorized":
+    "Netlify didn't accept the sign-in. Check the token, or make a new one on Netlify.",
+  "publish.netlify.failed.timeout": "Netlify didn't answer in time. Try again.",
+  "publish.netlify.failed.cancelled": "Signing in was cancelled.",
+  "publish.netlify.failed.network":
+    "Netlify couldn't be reached. Check your internet connection and try again.",
+  "publish.netlify.failed.signed-out": "The sign-in has run out. Sign in to Netlify again.",
+  "publish.netlify.failed.failed": "Netlify didn't answer as expected. Try again.",
   "publish.netlify.error.signIn": "Sign in to Netlify, or paste a token and choose Connect.",
   "publish.netlify.error.site": "Choose a Netlify site, or a new one.",
   // Test connection.
