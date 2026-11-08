@@ -2,6 +2,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { AI_TOOLS } from "@webforge/commands";
+import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiResponse } from "../shared/ipc/ai.js";
 import { APP_TOOLS } from "../shared/ipc/ai.js";
@@ -49,6 +50,53 @@ async function overHttp(): Promise<Client> {
   await client.connect(transport);
   return client;
 }
+
+describe("the MCP server's prompt (4.12b, AIB-8)", () => {
+  it("offers Build a site from a description, in the order that builds one", async () => {
+    const client = await inMemory();
+
+    expect((await client.listPrompts()).prompts).toEqual([
+      expect.objectContaining({
+        name: "build-site-from-description",
+        title: "Build a site from a description",
+        arguments: [expect.objectContaining({ name: "description", required: false })],
+      }),
+    ]);
+    const prompt = await client.getPrompt({
+      name: "build-site-from-description",
+      arguments: { description: "A site for my garage, Rapidfix Vehicle Repair, in red." },
+    });
+    const [message] = prompt.messages;
+    const text = message?.content.type === "text" ? message.content.text : "";
+    expect(message?.role).toBe("user");
+    expect(text).toContain(`Build a website in ${t("app.name")} from this description:`);
+    expect(text).toContain("Rapidfix Vehicle Repair, in red.");
+    // The tools in order: a brief (and its status), the catalogue, one plan, Site Check, the
+    // preview, then what stays with the person.
+    const order = [
+      "createSiteFromBrief",
+      "briefStatus",
+      "catalogue",
+      "one plan",
+      "runSiteCheck",
+      "requestMedia",
+      "openPreview",
+      "publishing",
+    ].map((word) => text.indexOf(word));
+    expect(order.every((at) => at >= 0)).toBe(true);
+    expect([...order].sort((a, b) => a - b)).toEqual(order);
+  });
+
+  it("asks for the description when none is given, and has no other prompt", async () => {
+    const client = await inMemory();
+    const prompt = await client.getPrompt({ name: "build-site-from-description" });
+    const [message] = prompt.messages;
+    expect(message?.content.type === "text" ? message.content.text : "").toMatch(
+      /^Build a website in .+ for my business\. Ask me /,
+    );
+    await expect(client.getPrompt({ name: "anything-else" })).rejects.toThrow();
+  });
+});
 
 describe("the MCP server (4.9)", () => {
   it("lists every AI tool, the same through either transport (AIA-4)", async () => {
