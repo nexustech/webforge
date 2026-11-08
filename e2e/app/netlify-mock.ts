@@ -11,7 +11,7 @@ import { FAKE_CLIENT_ID, FAKE_TOKEN, fakeNetlify } from "@webforge/test-utils/ne
 // test protects it. 4.4b's UI tests can use it too.
 
 /** A Netlify deploy as the mock lists it. */
-export type MockDeploy = {
+type MockDeploy = {
   readonly id: string;
   readonly site_id: string;
   readonly state: string;
@@ -19,7 +19,7 @@ export type MockDeploy = {
 };
 
 /** A form Netlify found in a site's live deploy. */
-export type MockForm = { readonly name: string; readonly paths: readonly string[] };
+type MockForm = { readonly name: string; readonly paths: readonly string[] };
 
 /** The mock, running: where it answers, and what was sent to it. */
 export type MockNetlify = {
