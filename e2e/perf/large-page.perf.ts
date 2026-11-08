@@ -16,14 +16,14 @@ const HISTORY_STEPS = 50;
 const FRAME_BUDGET_MS = 16;
 const INSTANT_MS = 100;
 /**
- * A drag's budget, set from CI's Windows and macOS runners in 5.1 (ADR 0007's addendum): no long
- * task over 350 ms while dragging, and the move recorded within 1 s of the drop. §10's "no dropped
- * frames" is missed by Puck's drag library on a page this large: each drag has a few long tasks
- * (its draggables re-rendering, finding the page's scrolling containers, the style recalculation
- * its hit-testing forces on each move). #786 takes up the Puck patch that could remove most of
- * them.
+ * A drag's budget, set from CI's Windows and macOS runners in 5.1 and tightened by #786 (ADR 0007's
+ * addenda): no long task over 250 ms while dragging, and the move recorded within 1 s of the drop.
+ * §10's "no dropped frames" is still missed on a page this large: since our Puck patch's items 8
+ * and 9, the draggables no longer draw again as a drag starts and ends, but the style and layout
+ * passes the drag library's hit-testing forces on each move remain. How many long tasks a drag
+ * has is reported, not asserted.
  */
-const DRAG_LONGEST_TASK_MS = 350;
+const DRAG_LONGEST_TASK_MS = 250;
 /** Typing on the large page: no long task over 120 ms (5.1, from CI's runners; ADR 0007). */
 const TYPING_LONGEST_TASK_MS = 120;
 const DROP_RECORDED_MS = 1_000;

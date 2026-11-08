@@ -64,7 +64,7 @@ index 104bfbbf3c454dec0a87dda064930fbc9f99114b..f38221850ff53af38bd81a9f9a8b0fff
        onChange(debouncedState.html, {
          field: __spreadProps(__spreadValues({}, ui.field), {
 diff --git a/dist/chunk-DQXMVPVM.mjs b/dist/chunk-DQXMVPVM.mjs
-index 5f8d0a72dbd8006fe25155b7668b9bd9b23daf29..cb46963bc7fd518a86f854caac2708e4e8e6e65d 100644
+index 5f8d0a72dbd8006fe25155b7668b9bd9b23daf29..b45808e52f839d9de56e908b3cca98b323cc1afd 100644
 --- a/dist/chunk-DQXMVPVM.mjs
 +++ b/dist/chunk-DQXMVPVM.mjs
 @@ -1,3 +1,4 @@
@@ -72,7 +72,77 @@ index 5f8d0a72dbd8006fe25155b7668b9bd9b23daf29..cb46963bc7fd518a86f854caac2708e4
  import {
    EditorInner,
    LoadedRichTextMenu
-@@ -6051,11 +6052,9 @@ import {
+@@ -3532,30 +3533,31 @@ var DraggableComponent = ({
+   const iframe = useAppStore((s) => s.iframe);
+   const lastMeasureRef = useRef5(0);
+   const ctx = useContext6(dropZoneContext);
+-  const [localZones, setLocalZones] = useState11({});
++  // Webforge: which of the zones inside it are active, kept in a ref rather than state: only the
++  // drag library reads it, as it checks collisions, and state made every element holding a zone
++  // draw again at the start and end of every drag (#786).
++  const localZones = useRef5({});
+   const registerLocalZone = useCallback12(
+     (zoneCompound2, active) => {
+       var _a;
+       (_a = ctx == null ? void 0 : ctx.registerLocalZone) == null ? void 0 : _a.call(ctx, zoneCompound2, active);
+-      setLocalZones((obj) => __spreadProps(__spreadValues({}, obj), {
++      localZones.current = __spreadProps(__spreadValues({}, localZones.current), {
+         [zoneCompound2]: active
+-      }));
++      });
+     },
+-    [setLocalZones]
++    []
+   );
+   const unregisterLocalZone = useCallback12(
+     (zoneCompound2) => {
+       var _a;
+       (_a = ctx == null ? void 0 : ctx.unregisterLocalZone) == null ? void 0 : _a.call(ctx, zoneCompound2);
+-      setLocalZones((obj) => {
+-        const newLocalZones = __spreadValues({}, obj);
+-        delete newLocalZones[zoneCompound2];
+-        return newLocalZones;
+-      });
++      const newLocalZones = __spreadValues({}, localZones.current);
++      delete newLocalZones[zoneCompound2];
++      localZones.current = newLocalZones;
+     },
+-    [setLocalZones]
++    []
+   );
+-  const containsActiveZone = Object.values(localZones).filter(Boolean).length > 0;
++  const containsActiveZone = () => Object.values(localZones.current).filter(Boolean).length > 0;
+   const path = useAppStore(useShallow4((s) => {
+     var _a;
+     return (_a = s.state.indexes.nodes[id]) == null ? void 0 : _a.path;
+@@ -3629,10 +3631,16 @@ var DraggableComponent = ({
+       zone: zoneCompound,
+       index,
+       componentType,
+-      containsActiveZone,
++      // Webforge: asked when the drag library checks collisions (#786).
++      get containsActiveZone() {
++        return containsActiveZone();
++      },
+       depth,
+       path: path || [],
+-      inDroppableZone
++      // Webforge: asked when the drag library checks collisions, as the zone answers then (#786).
++      get inDroppableZone() {
++        return typeof inDroppableZone === "function" ? inDroppableZone() : inDroppableZone;
++      }
+     },
+     collisionPriority: depth,
+     collisionDetector: dynamicCollisionDetector,
+@@ -3858,7 +3866,6 @@ var DraggableComponent = ({
+     componentRef.current,
+     // Remount attributes if the element changes
+     onClick,
+-    containsActiveZone,
+     zoneCompound,
+     id,
+     thisIsDragging,
+@@ -6051,11 +6058,9 @@ import {
    Suspense as Suspense2
  } from "react";
  import { jsx as jsx31 } from "react/jsx-runtime";
@@ -87,7 +157,43 @@ index 5f8d0a72dbd8006fe25155b7668b9bd9b23daf29..cb46963bc7fd518a86f854caac2708e4
  var RichTextRender = lazy2(
    () => import("./Render-H3USS5FU.mjs").then((m) => ({
      default: m.RichTextRender
-@@ -7162,7 +7161,16 @@ var generateUsePuck = (store, getState) => {
+@@ -6792,6 +6797,17 @@ var DropZoneEdit = forwardRef(
+       const draggedComponentType = (_a = s.draggedItem) == null ? void 0 : _a.data.componentType;
+       return acceptsTarget(draggedComponentType);
+     });
++    // Webforge: the zone's children ask whether it accepts what is dragged when the drag library
++    // asks them, instead of being given the answer as a prop: a prop that flips at the start and
++    // end of every drag drew every element of the page again twice per drag (#786).
++    const webforgeAcceptsRef = useRef13(acceptsTarget);
++    webforgeAcceptsRef.current = acceptsTarget;
++    const webforgeZoneStore = useContext11(ZoneStoreContext);
++    const webforgeInDroppableZone = useCallback19(() => {
++      var _a;
++      const dragged = webforgeZoneStore.getState().draggedItem;
++      return webforgeAcceptsRef.current((_a = dragged) == null ? void 0 : _a.data.componentType);
++    }, [webforgeZoneStore]);
+     const hoveringOverArea = inNextDeepestArea || isRootZone;
+     const isEnabled = useContextStore(ZoneStoreContext, (s) => {
+       var _a;
+@@ -6894,7 +6910,7 @@ var DropZoneEdit = forwardRef(
+                   dragAxis,
+                   index: props.index,
+                   collisionAxis,
+-                  inDroppableZone: targetAccepted,
++                  inDroppableZone: webforgeInDroppableZone,
+                   itemRef: props.measureRef
+                 },
+                 props.componentId
+@@ -6908,7 +6924,7 @@ var DropZoneEdit = forwardRef(
+               dragAxis,
+               index: i,
+               collisionAxis,
+-              inDroppableZone: targetAccepted
++              inDroppableZone: webforgeInDroppableZone
+             },
+             componentId
+           )),
+@@ -7162,7 +7178,16 @@ var generateUsePuck = (store, getState) => {
      dictionary: store.dictionary
    };
    storeData.__private = {
@@ -105,7 +211,7 @@ index 5f8d0a72dbd8006fe25155b7668b9bd9b23daf29..cb46963bc7fd518a86f854caac2708e4
    };
    return storeData;
  };
-@@ -13753,10 +13761,18 @@ var Canvas = () => {
+@@ -13753,10 +13778,18 @@ var Canvas = () => {
    }, [viewports.current.width, viewports]);
    useEffect30(() => {
      if (!frameRef.current) return;

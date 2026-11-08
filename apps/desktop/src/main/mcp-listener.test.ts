@@ -4,8 +4,9 @@ import { PassThrough } from "node:stream";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { PROOF_PATH, proofFor, runBridge } from "@webforge/mcp-bridge";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  MAX_CHALLENGES_IN_FLIGHT,
   MAX_SESSIONS_PER_APP,
   MCP_HOST,
   MCP_PATH,
@@ -313,5 +314,43 @@ describe("the listener's proof, which a bridge checks before it sends its key (A
     expect(answers.map(({ id }) => id)).toEqual([1, 2]);
     expect(answers[1].result.tools.length).toBeGreaterThan(0);
     expect(listener.connectedApps()).toEqual([CLAUDE.id]);
+  });
+});
+
+describe("the listener under a flood of keyless requests (S28, #794)", () => {
+  it("answers at most 16 challenges at once, and 503 beyond, while a paired app still connects", async () => {
+    const releases: (() => void)[] = [];
+    let holding = true;
+    listener = await startMcpListener({
+      port: 0,
+      now: () => time,
+      authenticate: async (key) => (Object.hasOwn(KEYS, key) ? KEYS[key] : undefined),
+      // Each challenge's proof is looked up slowly, until the test lets it go.
+      proofOf: (id) =>
+        holding
+          ? new Promise((resolve) => {
+              releases.push(() => resolve(PROOFS[id] ?? null));
+            })
+          : Promise.resolve(PROOFS[id] ?? null),
+      serverFor: (app) =>
+        createMcpServer({ name: "Webforge", version: "1" }, app, async () => ({
+          status: "done",
+          data: {},
+        })),
+    });
+    const challenge = () =>
+      send({ path: PROOF_PATH, body: JSON.stringify({ app: CLAUDE.id, nonce: "n".repeat(43) }) });
+
+    const waiting = Array.from({ length: MAX_CHALLENGES_IN_FLIGHT }, challenge);
+    await vi.waitFor(() => expect(releases).toHaveLength(MAX_CHALLENGES_IN_FLIGHT));
+    expect((await challenge()).status).toBe(503);
+    expect((await send({ headers: claude })).status).toBe(200);
+
+    holding = false;
+    for (const release of releases) release();
+    expect((await Promise.all(waiting)).map(({ status }) => status)).toEqual(
+      Array(MAX_CHALLENGES_IN_FLIGHT).fill(200),
+    );
+    expect((await challenge()).status).toBe(200);
   });
 });

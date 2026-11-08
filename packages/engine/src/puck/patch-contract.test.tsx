@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import { useDragDropManager } from "@dnd-kit/react";
 import { type Config, createUsePuck, Puck, useGetPuck } from "@puckeditor/core";
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -16,6 +17,8 @@ import { puckPrivateApi } from "./puck-dom.js";
 //   6. `__private.flushRichText`: below; sending in rich-text-flush.test.tsx (#146).
 //   7. The inline rich-text editor loaded with the canvas: rich-text-eager.test.tsx, a file of its
 //      own so that no other test has loaded the editor first.
+//   8. Whether a zone accepts what's dragged, read by the drag library as it asks: below.
+//   9. An element's active zones, read by the drag library as it asks: below.
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -113,6 +116,71 @@ async function mounted() {
   return { counts, replace, select, unmount, api: () => api };
 }
 
+/** What the drag library knows of an element: its collision data, as Puck gives it. */
+type DragData = { readonly inDroppableZone: boolean; readonly containsActiveZone: boolean };
+
+/**
+ * Puck on a page of a heading and a card whose slot takes only text, with one text in it: the
+ * drag library's manager, and each element's collision data as the library reads it.
+ */
+async function mountedWithSlot() {
+  // The drag library's feedback waits for the page's animations, which happy-dom doesn't list.
+  document.getAnimations ??= () => [];
+  let manager: ReturnType<typeof useDragDropManager> | undefined;
+  function Probe({ children }: { readonly children: ReactNode }) {
+    manager = useDragDropManager();
+    return <>{children}</>;
+  }
+  const text = { fields: { text: { type: "text" as const } } };
+  const config = {
+    components: {
+      Heading: {
+        ...text,
+        render: ({ text: words }: { readonly text: string }) => <h2>{words}</h2>,
+      },
+      Text: { ...text, render: ({ text: words }: { readonly text: string }) => <p>{words}</p> },
+      Card: {
+        fields: { items: { type: "slot", allow: ["Text"] } },
+        render: ({ items: Items }: { readonly items: () => ReactNode }) => (
+          <div>
+            <Items />
+          </div>
+        ),
+      },
+    },
+  } as unknown as Config;
+  const element = document.createElement("div");
+  document.body.append(element);
+  const root = createRoot(element);
+  await act(async () => {
+    root.render(
+      <Puck
+        config={config}
+        data={{
+          root: { props: {} },
+          content: [
+            { type: "Heading", props: { id: "h0", text: "Fresh bread" } },
+            {
+              type: "Card",
+              props: { id: "c0", items: [{ type: "Text", props: { id: "t0", text: "Daily" } }] },
+            },
+          ],
+        }}
+        overrides={{ puck: Probe }}
+        iframe={{ enabled: false }}
+      />,
+    );
+  });
+  await settle(CANVAS_TIMER_MS);
+  const data = (id: string) =>
+    manager?.registry.draggables.get(id)?.data as (DragData & Record<string, unknown>) | undefined;
+  const unmount = async () => {
+    await act(async () => root.unmount());
+    element.remove();
+  };
+  return { data, manager: () => manager, unmount };
+}
+
 describe("our Puck patch (ADR 0007, A9)", () => {
   it("1. walks no page for permissions when nothing resolves them", async () => {
     const puck = await mounted();
@@ -151,6 +219,39 @@ describe("our Puck patch (ADR 0007, A9)", () => {
     expect(typeof api?.getZoomConfig().zoom).toBe("number");
     expect(typeof api?.setZoomConfig).toBe("function");
     expect(api?.flushRichText()).toBe(false);
+    await puck.unmount();
+  });
+
+  it("8. answers whether a zone accepts what's dragged as the drag library asks (#786)", async () => {
+    const puck = await mountedWithSlot();
+    const inCard = () => puck.data("t0")?.inDroppableZone;
+    // Read when asked, not a prop: a prop flipped at each drag's start and end drew every element
+    // of the page again.
+    expect(Object.getOwnPropertyDescriptor(puck.data("t0"), "inDroppableZone")?.get).toBeTypeOf(
+      "function",
+    );
+    expect(inCard()).toBe(true);
+
+    // A heading picked up: the card's slot takes only text. The answer is there at once, before
+    // React has drawn anything again.
+    puck.manager()?.actions.start({ source: "h0", coordinates: { x: 0, y: 0 } });
+    expect(inCard()).toBe(false);
+    expect(puck.data("c0")?.inDroppableZone).toBe(true);
+    await puck.unmount();
+  });
+
+  it("9. answers whether an element holds an active zone as the drag library asks (#786)", async () => {
+    const puck = await mountedWithSlot();
+    // Kept out of React's state: setting it drew every element holding a zone again per drag.
+    expect(Object.getOwnPropertyDescriptor(puck.data("c0"), "containsActiveZone")?.get).toBeTypeOf(
+      "function",
+    );
+    expect(puck.data("c0")?.containsActiveZone).toBe(true);
+    expect(puck.data("h0")?.containsActiveZone).toBe(false);
+    // A heading picked up: the card's slot isn't a place for it, so the card holds no active zone.
+    puck.manager()?.actions.start({ source: "h0", coordinates: { x: 0, y: 0 } });
+    await settle();
+    expect(puck.data("c0")?.containsActiveZone).toBe(false);
     await puck.unmount();
   });
 });

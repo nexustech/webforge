@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
 import { t } from "@webforge/i18n";
 import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
-import type { AiApps, PairedApp, Pairing } from "./ai-apps.js";
+import type { AiApps, AppKind, PairedApp, Pairing } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
 import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
@@ -22,7 +22,8 @@ export type McpServiceStatus = {
   readonly port: number | null;
   /**
    * The remembered port was taken, and the server listens on a new one: every app has to be
-   * added again with the new address (ADR 0021).
+   * added again with the new address (ADR 0021), and those that connect directly were removed
+   * (S27). Kept until the person has seen it.
    */
   readonly moved: boolean;
   /** The ids of the apps with a connection now. */
@@ -35,8 +36,10 @@ export type McpService = {
   start(): Promise<void>;
   /** Turns *AI apps* on or off: listening, or not, at once. */
   setEnabled(enabled: boolean): Promise<void>;
-  /** Pairs an app (*Add AI app*). */
-  add(name: string): Promise<Pairing>;
+  /** Pairs an app (*Add AI app*): Claude Desktop through its extension, or another directly. */
+  add(name: string, kind: AppKind): Promise<Pairing>;
+  /** The person has seen that the port moved: AI apps stops saying so. */
+  seenMoved(): Promise<void>;
   /** Removes an app, ending its connections at once. */
   remove(id: string): Promise<void>;
   list(): Promise<readonly PairedApp[]>;
@@ -102,7 +105,6 @@ export function createMcpService(options: McpServiceOptions): McpService {
       }
     };
   let listener: McpListener | null = null;
-  let moved = false;
   /**
    * The version "Before ‹app›'s changes" saved, or being saved, for each app in each opening of
    * the site, by `<app id> <session id>`: one an app's reconnections can't add to (S26).
@@ -178,7 +180,11 @@ export function createMcpService(options: McpServiceOptions): McpService {
       try {
         listener = await listenOn(port);
         if (port !== remembered) await apps.setPort(port);
-        moved = remembered !== null && port !== remembered;
+        if (remembered !== null && port !== remembered) {
+          // Whatever took the old port may have been sent the keys of apps that connect directly:
+          // they're revoked, and the person is told (S27).
+          for (const id of await apps.movedFrom()) limits.forget(id);
+        }
         return;
       } catch (error) {
         if (!taken(error)) throw error;
@@ -202,7 +208,8 @@ export function createMcpService(options: McpServiceOptions): McpService {
       if (enabled) await open();
       else await shut();
     },
-    add: (name) => apps.add(name),
+    add: (name, kind) => apps.add(name, kind),
+    seenMoved: () => apps.seenMoved(),
     async remove(id) {
       await apps.remove(id);
       limits.forget(id);
@@ -214,7 +221,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
       return {
         enabled: await apps.enabled(),
         port: listener?.port ?? null,
-        moved,
+        moved: await apps.moved(),
         connected: listener?.connectedApps() ?? [],
       };
     },

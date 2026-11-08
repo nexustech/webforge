@@ -9,7 +9,13 @@ import {
 } from "@webforge/model";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { type ComponentDef, type ComponentLibrary, withAdvanced, withLook } from "./library.js";
+import {
+  type ComponentDef,
+  type ComponentLibrary,
+  fieldsHiddenBy,
+  withAdvanced,
+  withLook,
+} from "./library.js";
 import { RichText } from "./rich-text.js";
 import type { BehaviourName, RenderContext, SlotComponent } from "./schema.js";
 
@@ -88,7 +94,10 @@ export function walkNodes(
 export function mediaUsedBy(nodes: readonly NodeDoc[], library: ComponentLibrary): Set<string> {
   const ids = new Set<string>();
   walkNodes(nodes, library, (node, def) => {
+    // A field the layout doesn't use isn't drawn: its picture isn't exported (#670).
+    const hidden = fieldsHiddenBy(def, { ...def.defaults, ...node.props });
     for (const [name, field] of Object.entries(def.fields)) {
+      if (hidden.has(name)) continue;
       const placed = field.kind === "media" ? imageValueSchema.safeParse(node.props[name]) : null;
       if (placed?.success === true) {
         ids.add(placed.data.mediaId);
@@ -108,7 +117,9 @@ export function documentsLinkedBy(
 ): Set<string> {
   const ids = new Set<string>();
   walkNodes(nodes, library, (node, def) => {
+    const hidden = fieldsHiddenBy(def, { ...def.defaults, ...node.props });
     for (const [name, field] of Object.entries(def.fields)) {
+      if (hidden.has(name)) continue;
       const value = node.props[name];
       if (field.kind === "richtext" && typeof value === "string") {
         for (const link of richTextFileLinks(value)) ids.add(link.mediaId);

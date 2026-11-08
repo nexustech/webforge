@@ -135,6 +135,29 @@ describe("the MCP service (4.9, ADR 0021)", () => {
     expect(await service.status()).toMatchObject({ port: 50_002, moved: true });
   });
 
+  it("revokes the keys of apps that connect directly when the port moves, and says so until seen (S27)", async () => {
+    const { apps, service } = setUp([50_001], [50_002]);
+    await apps.setPort(50_001);
+    const cursor = await service.add("Cursor", "other");
+    const claude = await service.add("Claude Desktop", "claude");
+    if (cursor.status !== "paired" || claude.status !== "paired") throw new Error("not paired");
+
+    await service.setEnabled(true);
+
+    // Cursor sent its key to whatever took the old port: it's gone, key and all. Claude Desktop's
+    // bridge checks it's Webforge before sending its key, so it stays.
+    expect((await service.list()).map(({ name }) => name)).toEqual(["Claude Desktop"]);
+    expect(await apps.authenticate(cursor.key)).toBeUndefined();
+    expect(await apps.authenticate(claude.key)).toMatchObject({ name: "Claude Desktop" });
+
+    // Kept in the file, past a restart, until the person has seen it.
+    await service.setEnabled(false);
+    await service.setEnabled(true);
+    expect((await service.status()).moved).toBe(true);
+    await service.seenMoved();
+    expect((await service.status()).moved).toBe(false);
+  });
+
   it("starts listening as Webforge starts, if AI apps was left on", async () => {
     const { apps, service } = setUp();
     await apps.setEnabled(true);
@@ -147,7 +170,7 @@ describe("the MCP service (4.9, ADR 0021)", () => {
   it("cuts a removed app off at once", async () => {
     const { apps, service, disconnected } = setUp();
     await service.setEnabled(true);
-    const pairing = await service.add("Claude");
+    const pairing = await service.add("Claude", "other");
     if (pairing.status !== "paired") throw new Error("not paired");
     const { app, key } = pairing;
 
@@ -161,7 +184,7 @@ describe("the MCP service (4.9, ADR 0021)", () => {
   it("gives a paired app's proof to its bridge's challenge, and none for an app it doesn't list", async () => {
     const { apps, service, listened } = setUp();
     await service.setEnabled(true);
-    const pairing = await service.add("Claude Desktop");
+    const pairing = await service.add("Claude Desktop", "claude");
     if (pairing.status !== "paired") throw new Error("not paired");
     const [options] = listened;
     if (options === undefined) throw new Error("not listening");

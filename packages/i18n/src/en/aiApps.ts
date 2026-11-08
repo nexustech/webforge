@@ -8,7 +8,10 @@ export const aiApps = {
   "aiApps.enabledHint":
     "When off, nothing can connect. When on, {appName} listens on this computer only.",
   "aiApps.moved":
-    "{appName}'s address for AI apps has changed. Remove your AI apps and add them again.",
+    "{appName}'s address for AI apps has changed, as another program was using the old one. To keep your site safe, apps other than Claude Desktop were removed: add them again. Remove Claude Desktop and add it again too, then install its new extension.",
+  // At start, until AI apps has been opened (S27, #794).
+  "aiApps.movedToast":
+    "{appName}'s address for AI apps has changed. Open AI apps to connect your apps again.",
   "aiApps.none": "No AI apps yet.",
   "aiApps.list": "Your AI apps",
   "aiApps.status.connected": "Connected",

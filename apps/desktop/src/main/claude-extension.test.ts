@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, sep } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -9,13 +17,20 @@ import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { Ajv } from "ajv";
 import { unzipSync } from "fflate";
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
-import { createClaudeExtensions, extensionManifest, extensionVersion } from "./claude-extension.js";
+import {
+  createClaudeExtensions,
+  EXTENSION_KEPT_MS,
+  extensionManifest,
+  extensionVersion,
+} from "./claude-extension.js";
 import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 
 const CLAUDE: McpApp = { id: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e", name: "Claude Desktop" };
 const KEY = "k".repeat(43);
 const PROOF = "p".repeat(43);
+/** Another paired app's id. */
+const CURSOR_ID = "1c1d9f5f-3b7e-4d2f-8f21-4a7c2c3d5e6f";
 /** When the app was paired: 7 Nov 2026, 09:00 UTC. */
 const PAIRED_AT = Date.UTC(2026, 10, 7, 9);
 
@@ -173,6 +188,42 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
     expect(show).toHaveBeenCalledWith(file);
     await written.remove(CLAUDE.id);
     expect(() => readFileSync(file)).toThrow();
+  });
+
+  it("deletes the file, with its proof, a while after it's written, and any left as Webforge starts (S29)", async () => {
+    const timers: { readonly then: () => void; readonly ms: number }[] = [];
+    const written = createClaudeExtensions({
+      dir: join(dir, "ai-apps"),
+      bridgeFile,
+      version: "1.2.3",
+      open: async () => "",
+      show: () => undefined,
+      later: (then, ms) => {
+        timers.push({ then, ms });
+      },
+    });
+    const pairing = {
+      appId: CLAUDE.id,
+      address: "http://127.0.0.1:51234/mcp",
+      proof: PROOF,
+      pairedAt: PAIRED_AT,
+    };
+
+    const first = await written.install(pairing);
+    const second = await written.install({ ...pairing, pairedAt: PAIRED_AT + 1_000 });
+    expect(timers.map(({ ms }) => ms)).toEqual([EXTENSION_KEPT_MS, EXTENSION_KEPT_MS]);
+
+    // The first's timer leaves the newer file alone; the newer's deletes it.
+    timers[0]?.then();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(existsSync(second.file)).toBe(true);
+    timers[1]?.then();
+    await vi.waitFor(() => expect(existsSync(first.file)).toBe(false));
+
+    // Left from before: gone as Webforge starts.
+    await written.install({ ...pairing, appId: CURSOR_ID });
+    await written.sweep();
+    expect(existsSync(join(dir, "ai-apps"))).toBe(false);
   });
 
   it(

@@ -449,6 +449,16 @@ function toProjectFileError(error: unknown): unknown {
       cause: error,
     });
   }
+  // A damaged header's schema format number, which SQLite reports as a plain error (5.6's fuzzing).
+  if (
+    code === "SQLITE_ERROR" &&
+    error instanceof Error &&
+    /unsupported file format/i.test(error.message)
+  ) {
+    return new ProjectFileError("corrupt", "SQLite can't read the database's schema format", {
+      cause: error,
+    });
+  }
   return error;
 }
 
