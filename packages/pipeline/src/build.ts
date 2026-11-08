@@ -193,7 +193,15 @@ type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning
  */
 export type BuildCaches = {
   readonly styles: StyleCompiler;
-  readonly pages: Map<string, RenderedRegions>;
+  /**
+   * Each page's rendered regions, by a hash of what its render reads: a preview's and an export's
+   * apart, as their pages' keys never match and each build keeps only its own pages (#671). A
+   * publish builds what an export does, so it shares the export's.
+   */
+  readonly pages: {
+    readonly preview: Map<string, RenderedRegions>;
+    readonly export: Map<string, RenderedRegions>;
+  };
   /** Each font file checked against the catalogue's hash, by name: the same bytes aren't hashed again. */
   readonly fonts: Map<string, Uint8Array>;
 };
@@ -568,6 +576,7 @@ export async function* buildEvents(
   const rootPrefix = run.mode === "preview" ? "" : "/";
   const prefixOf = (page: SitePage) => pagePrefix(page, rootPrefix);
   const keptPages = new Map<string, RenderedRegions>();
+  const pageCache = caches?.pages[run.mode === "preview" ? "preview" : "export"];
   const rendered: (RenderedRegions & { readonly page: SitePage; readonly prefix: string })[] = [];
   for (const [done, page] of site.pages.entries()) {
     stopIfCancelled(signal);
@@ -575,8 +584,7 @@ export async function* buildEvents(
     const prefix = prefixOf(page);
     const key =
       caches === undefined ? undefined : sha256(`${sharedKey}\n${prefix}\n${JSON.stringify(page)}`);
-    const regions =
-      (key === undefined ? undefined : caches?.pages.get(key)) ?? render(page, prefix);
+    const regions = (key === undefined ? undefined : pageCache?.get(key)) ?? render(page, prefix);
     if (key !== undefined) keptPages.set(key, regions);
     warnings.push(...regions.warnings);
     rendered.push({ ...regions, page, prefix });
@@ -730,9 +738,9 @@ export async function* buildEvents(
   }
 
   // This build's pages replace the last one's, so the cache holds no page that's gone.
-  if (caches !== undefined) {
-    caches.pages.clear();
-    for (const [key, regions] of keptPages) caches.pages.set(key, regions);
+  if (pageCache !== undefined) {
+    pageCache.clear();
+    for (const [key, regions] of keptPages) pageCache.set(key, regions);
   }
   const sorted = new Map([...files].sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
   let bytes = 0;

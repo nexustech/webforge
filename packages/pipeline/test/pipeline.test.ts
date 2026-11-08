@@ -154,6 +154,37 @@ describe("createPipeline (3.1)", () => {
   );
 
   it(
+    "keeps an export's pages and stylesheet compiler through a preview, and a preview's through an export (#671)",
+    async () => {
+      const pipeline = createPipeline(components.siteLibrary);
+      // A site whose preview and export differ, as a real one's do: its own colours, which a
+      // preview's stylesheet compiles as custom properties, and analytics, which a preview leaves
+      // out of its pages.
+      const sample = sampleSite();
+      const base = {
+        ...sample,
+        theme: {
+          ...sample.theme,
+          colors: { ...sample.theme.colors, primary: { l: 0.4, c: 0.2, h: 20 } },
+        },
+        analytics: { measurementId: "G-ABC123DEF4", consentBanner: true },
+      };
+      await build(pipeline, base, "export");
+      await build(pipeline, base, "preview");
+
+      // With the preview server open, the two take turns: neither undoes what the other kept.
+      renderPage.mockClear();
+      compile.mockClear();
+      await build(pipeline, base, "export");
+      await build(pipeline, base, "preview");
+
+      expect(renderPage).not.toHaveBeenCalled();
+      expect(compile).not.toHaveBeenCalled();
+    },
+    scaledTestTimeout(120_000),
+  );
+
+  it(
     "takes the site's own CSS into a preview with no page rendered and no new compile (3.9)",
     async () => {
       const pipeline = createPipeline(components.siteLibrary);
