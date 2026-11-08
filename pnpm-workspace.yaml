@@ -27,8 +27,8 @@ catalog:
   daisyui: 5.7.50
   react: 19.3.1
   react-dom: 19.3.1
-  tailwindcss: 4.3.3
-  vitest: 5.0.5
+  tailwindcss: 4.3.5
+  vitest: 5.1.0
   zod: 4.6.7
 
 # pnpm blocks dependency build scripts by default; approve only what we need.

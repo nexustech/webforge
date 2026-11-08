@@ -522,7 +522,7 @@ jobs:
     if: needs.changes.outputs.all-browsers == 'true'
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
-    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    container: mcr.microsoft.com/playwright:v1.65.0-noble
     timeout-minutes: 15
     steps:
       - name: Check out
@@ -586,7 +586,7 @@ jobs:
         shards: [2]
     runs-on: ubuntu-latest
     # Keep in step with @playwright/test in e2e/package.json.
-    container: mcr.microsoft.com/playwright:v1.64.1-noble
+    container: mcr.microsoft.com/playwright:v1.65.0-noble
     timeout-minutes: ${{ github.event_name == 'pull_request' && 30 || 60 }}
     steps:
       - name: Check out

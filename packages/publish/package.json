@@ -15,7 +15,7 @@
   "dependencies": {
     "@webforge/errors": "workspace:*",
     "@webforge/model": "workspace:*",
-    "basic-ftp": "6.2.3",
+    "basic-ftp": "6.2.6",
     "ssh2": "1.17.0",
     "zod": "catalog:"
   }
