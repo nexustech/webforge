@@ -183,12 +183,23 @@ export function SiteWideConfirmDialog({ confirm }: { readonly confirm: SiteWideC
         if (!open) confirm.answer(false);
       }}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
+      {/* Never taller than the window: a long question scrolls, and the buttons stay (S30). */}
+      <AlertDialogContent className="flex max-h-[calc(100vh-2rem)] flex-col">
+        <AlertDialogHeader className="min-h-0">
           <AlertDialogTitle>{action?.action}</AlertDialogTitle>
-          {/* An AI app's question names whole web addresses, which wrap anywhere (S18). */}
-          <AlertDialogDescription className="[overflow-wrap:anywhere]">
-            {action?.description === undefined ? "" : `${action.description} `}
+          {/*
+           * An AI app's question names whole web addresses, which wrap anywhere (S18), and a plan's
+           * comes in paragraphs. It scrolls, reachable from the keyboard.
+           */}
+          <AlertDialogDescription
+            // A region that scrolls takes focus, so the keyboard can scroll it (axe).
+            tabIndex={0}
+            className="min-h-0 overflow-y-auto whitespace-pre-line [overflow-wrap:anywhere]"
+          >
+            {action?.description === undefined
+              ? ""
+              : // After a plan's paragraphs, the pages it changes are one of their own.
+                `${action.description}${action.description.includes("\n") ? "\n\n" : " "}`}
             {action === null
               ? ""
               : action.affectedPages === 1
