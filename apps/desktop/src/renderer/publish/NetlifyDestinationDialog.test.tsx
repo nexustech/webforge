@@ -17,13 +17,11 @@ const SHOP: NetlifySite = {
   id: "3d3f0a5e-1111-4222-8333-444455556666",
   name: "rosas-bakery",
   url: "https://rosas-bakery.netlify.app",
-  protected: false,
 };
 const STAGING: NetlifySite = {
   id: "7a1b2c3d-1111-4222-8333-444455556666",
   name: "rosas-staging",
   url: "https://rosas-staging.netlify.app",
-  protected: true,
 };
 
 /** A Netlify the test sets: each call a spy, with two sites. */
@@ -43,6 +41,13 @@ function fakeNetlify(overrides: Partial<NetlifyDestinationApi> = {}) {
       status: "listed",
       sites: [SHOP, STAGING],
     })),
+    // Staging's visitors must log in to Netlify.
+    checkAccess: vi.fn<NonNullable<NetlifyDestinationApi["checkAccess"]>>(
+      async (_account, siteId) => ({
+        status: "checked",
+        protected: siteId === STAGING.id,
+      }),
+    ),
     ...overrides,
   };
 }
@@ -106,14 +111,17 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
   });
 
   it("can stop waiting for the browser, saying nothing more when it's cancelled", async () => {
-    let answer: (result: { status: "failed"; reason: "cancelled" }) => void = () => undefined;
-    const netlify = fakeNetlify({
-      canSignIn: true,
-      signIn: vi.fn(() => new Promise((resolve) => (answer = resolve))),
-    });
-    netlify.cancelSignIn.mockImplementation(() =>
-      answer({ status: "failed", reason: "cancelled" }),
+    // The browser's sign-in waits until it's cancelled, which answers it.
+    let answer: (result: Awaited<ReturnType<NetlifyDestinationApi["signIn"]>>) => void = () =>
+      undefined;
+    const signIn = vi.fn<NetlifyDestinationApi["signIn"]>(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
     );
+    const cancelSignIn = vi.fn(() => answer({ status: "failed", reason: "cancelled" }));
+    const netlify = fakeNetlify({ canSignIn: true, signIn, cancelSignIn });
     const { user } = setUp(netlify);
     await user.click(screen.getByRole("button", { name: "Sign In with Netlify" }));
     expect(
@@ -124,7 +132,7 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
 
     await user.click(screen.getByRole("button", { name: "Cancel Sign-In" }));
 
-    expect(netlify.cancelSignIn).toHaveBeenCalled();
+    expect(cancelSignIn).toHaveBeenCalled();
     await screen.findByRole("button", { name: "Sign In with Netlify" });
     expect(screen.queryByText("Signing in was cancelled.")).toBeNull();
     expect(screen.queryByText(/Approve Webforge/)).toBeNull();
@@ -184,7 +192,7 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
 
     await user.selectOptions(screen.getByLabelText("Netlify site"), STAGING.id);
 
-    expect(screen.getByRole("alert").textContent).toContain(
+    expect((await screen.findByRole("alert")).textContent).toContain(
       "Visitors have to log in to see this site",
     );
   });

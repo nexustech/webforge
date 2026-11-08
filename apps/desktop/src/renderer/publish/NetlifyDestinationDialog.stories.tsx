@@ -13,6 +13,11 @@ const netlify: NetlifyDestinationApi = {
     status: "signed-in",
     handle: "8d2c1f0e-1111-4222-8333-444455556666",
   }),
+  // The second site's visitors must log in to Netlify.
+  checkAccess: async (_account, siteId) => ({
+    status: "checked",
+    protected: siteId === "7a1b2c3d-1111-4222-8333-444455556666",
+  }),
   sites: async () => ({
     status: "listed",
     sites: [
@@ -20,13 +25,11 @@ const netlify: NetlifyDestinationApi = {
         id: "3d3f0a5e-1111-4222-8333-444455556666",
         name: "rosas-bakery",
         url: "https://rosas-bakery.netlify.app",
-        protected: false,
       },
       {
         id: "7a1b2c3d-1111-4222-8333-444455556666",
         name: "rosas-staging",
         url: "https://rosas-staging.netlify.app",
-        protected: true,
       },
     ],
   }),

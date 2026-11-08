@@ -33,11 +33,6 @@ export type NetlifySite = {
   readonly name: string;
   /** Its address on Netlify (`https://shop.netlify.app`) or its own domain; none before a deploy. */
   readonly url?: string | undefined;
-  /**
-   * Site protection, or visitor access, is on: Netlify reports a deploy live while visitors get
-   * its log-in page instead (0.2's live run, ADR 0006 decision 6). Not known for every site.
-   */
-  readonly protected?: boolean | undefined;
 };
 
 /**
@@ -62,6 +57,18 @@ export type NetlifyDestinationApi = {
   readonly cancelSignIn: () => void;
   /** Checks a pasted personal access token, and holds it as a sign-in. */
   readonly signInWithToken: (token: string) => Promise<SignInResult>;
+  /**
+   * Whether site `siteId`'s visitors must log in to Netlify (site protection, or visitor access):
+   * Netlify then reports a deploy live while visitors get its log-in page (0.2's live run, ADR 0006
+   * decision 6). Asked for the site chosen only; left out until 4.2 part 3 adds it.
+   */
+  readonly checkAccess?: (
+    account: NetlifyAccount,
+    siteId: string,
+  ) => Promise<
+    | { readonly status: "checked"; readonly protected: boolean }
+    | { readonly status: "failed"; readonly reason: NetlifyFailure }
+  >;
   /** The account's sites. */
   readonly sites: (
     account: NetlifyAccount,
@@ -202,10 +209,17 @@ export function NetlifyDestinationDialog({
             onConnect={() => void signIn("token", values.token.trim())}
           />
           {/* Until there's a picker to show it under: loading, or why it couldn't. */}
-          {sites.status !== "listed" && <SiteStatus sites={sites} chosen={undefined} />}
+          {sites.status !== "listed" && <SiteStatus sites={sites} />}
         </>
       ),
-      site: <SiteStatus sites={sites} chosen={siteOf(values.site)} />,
+      site: (
+        <>
+          <SiteStatus sites={sites} />
+          {account !== undefined && netlify.checkAccess !== undefined && siteOf(values.site) && (
+            <VisitorAccess check={netlify.checkAccess} account={account} siteId={values.site} />
+          )}
+        </>
+      ),
     }),
   };
 
@@ -384,14 +398,8 @@ function SignIn({
   );
 }
 
-/** The site picker's state below it: loading, why it failed, or the chosen site's warning. */
-function SiteStatus({
-  sites,
-  chosen,
-}: {
-  readonly sites: Sites;
-  readonly chosen: NetlifySite | undefined;
-}) {
+/** The site picker's state: loading, or why it failed. */
+function SiteStatus({ sites }: { readonly sites: Sites }) {
   if (sites.status === "loading") {
     return (
       <p role="status" className="text-sm text-muted-foreground">
@@ -406,7 +414,41 @@ function SiteStatus({
       </p>
     );
   }
-  if (chosen?.protected !== true) return null;
+  return null;
+}
+
+/**
+ * The chosen site's visitor-access warning: checked when it's chosen, and shown only when its
+ * visitors must log in to Netlify. A check that fails says nothing: it's a warning, not a block.
+ */
+function VisitorAccess({
+  check,
+  account,
+  siteId,
+}: {
+  readonly check: NonNullable<NetlifyDestinationApi["checkAccess"]>;
+  readonly account: NetlifyAccount;
+  readonly siteId: string;
+}) {
+  const [checked, setChecked] = useState<{
+    readonly siteId: string;
+    readonly protected: boolean;
+  }>();
+  useEffect(() => {
+    let current = true;
+    check(account, siteId).then(
+      (result) => {
+        if (current && result.status === "checked") {
+          setChecked({ siteId, protected: result.protected });
+        }
+      },
+      () => undefined,
+    );
+    return () => {
+      current = false;
+    };
+  }, [check, account, siteId]);
+  if (checked?.siteId !== siteId || !checked.protected) return null;
   return (
     <div
       role="alert"

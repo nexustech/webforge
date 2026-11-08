@@ -242,7 +242,6 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
     id: "3d3f0a5e-1111-4222-8333-444455556666",
     name: "rosas-bakery",
     url: "https://rosas-bakery.netlify.app",
-    protected: false,
   };
   const netlifyDestination: PublishDestination = {
     id: "c0ffee00-1111-4222-8333-444455556666",
@@ -273,7 +272,6 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
           id: "9e8d7c6b-1111-4222-8333-444455556666",
           name: "brave-otter-1a2b",
           url: "https://brave-otter-1a2b.netlify.app",
-          protected: false,
         },
       })),
       save: vi.fn<NetlifyPublishApi["save"]>(async (draft) => ({
@@ -331,7 +329,6 @@ describe("the Publish dialog's Netlify destinations (4.4b)", () => {
           id: "9e8d7c6b-1111-4222-8333-444455556666",
           name: "brave-otter-1a2b",
           url: "https://brave-otter-1a2b.netlify.app",
-          protected: false,
         },
       },
       { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
