@@ -1,5 +1,6 @@
 import type { FieldRenderer } from "@webforge/editor-ui";
 import { textStylesOf } from "@webforge/site-components";
+import { surfaceAt, surfaceOf } from "@webforge/themes";
 import { fieldTarget } from "../../editor/field-target.js";
 import type { FieldRendererContext } from "../field-context.js";
 import { colourFieldRenderer } from "./ColourField.js";
@@ -24,5 +25,14 @@ export const colourField = ({
       return target === undefined
         ? []
         : textStylesOf(target.node, session.library, site.theme.looks);
+    },
+    // Where the element is kept: the Header or Footer, a shared section, or the page (#670).
+    surface: () => {
+      const { pageId, nodeId } = session.ui.getState();
+      const site = session.history.document.getState();
+      const target = fieldTarget(site, session.library, pageId, nodeId);
+      if (target === undefined) return surfaceOf(site.theme, []);
+      const on = target.region ?? target.inCopy?.shared.id ?? pageId;
+      return surfaceAt(site, on, target.node.props.id);
     },
   });

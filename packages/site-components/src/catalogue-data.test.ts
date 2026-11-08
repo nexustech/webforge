@@ -14,6 +14,7 @@ import {
   catalogueSchema,
   fieldValueSchema,
 } from "./catalogue-data.js";
+import type { ComponentDef } from "./library.js";
 
 /** The styling fields every section and element has: the Appearance group's and the dialog's. */
 const STYLING = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS };
@@ -23,6 +24,27 @@ const STYLING = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS };
  * behaviours) and without functions (a field's `unavailable`), as JSON keeps it; the styling
  * fields every component has once, each component marked as having them (2.22b, 3.13b).
  */
+/**
+ * `def`'s text style as data (#670): the one it has, or, when a select field changes it, its
+ * style for each of that field's values.
+ */
+function textStyleAsData(def: ComponentDef): unknown {
+  const styleOf = def.textStyle as ((values: Record<string, unknown>) => unknown) | undefined;
+  if (styleOf === undefined) return undefined;
+  const base = styleOf({ ...def.defaults });
+  for (const [name, field] of Object.entries(def.fields)) {
+    if (field.kind !== "select") continue;
+    const styles = Object.fromEntries(
+      field.options.map((option) => [
+        option.value,
+        styleOf({ ...def.defaults, [name]: option.value }),
+      ]),
+    );
+    if (Object.values(styles).some((style) => style !== base)) return { field: name, styles };
+  }
+  return base;
+}
+
 function libraryAsData(): unknown {
   const group = Object.keys(STYLING);
   const entries = Object.entries(siteLibrary.components).map(([type, def]) => {
@@ -74,6 +96,7 @@ function libraryAsData(): unknown {
         fields: own,
         defaults,
         variantHides,
+        textStyle: textStyleAsData(def),
       },
     ];
   });

@@ -1,4 +1,4 @@
-import { themePreset } from "@webforge/themes";
+import { inverseColors, themePreset } from "@webforge/themes";
 import { describe, expect, it } from "vitest";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
 import { contrastRule, underlinedTextRule } from "./look.js";
@@ -83,6 +83,82 @@ describe("underlined text (2.25)", () => {
       { key: `${on}/marked`, place: { kind: "element", on, nodeId: "marked" } },
       { key: `${on}/both`, place: { kind: "element", on, nodeId: "both" } },
       { key: `${on}/styled`, place: { kind: "element", on, nodeId: "styled" } },
+    ]);
+  });
+});
+
+describe("contrast on what the text is drawn on (#670)", () => {
+  it("measures a mark in a Reversed section against the inverse palette", () => {
+    const { passing } = themeWithLightAccent();
+    const inverse = inverseColors(passing);
+    // Brand on the reversed band is the band's own colour: unreadable there, fine on the page.
+    const theme = { ...passing, inverse: { ...inverse, primary: inverse["base-100"] } };
+    const marked = (id: string) =>
+      element("Text", id, { text: '<p><span class="text-primary">Fresh</span></p>' });
+    const site = siteWith(
+      [
+        element("Section", "band", { colors: "inverse", content: [marked("reversed")] }),
+        element("Section", "plain", { colors: "page", content: [marked("onPage")] }),
+      ],
+      { theme },
+    );
+
+    const onElements = findIn(contrastRule, site).filter(({ place }) => place.kind === "element");
+    expect(onElements).toEqual([
+      expect.objectContaining({
+        place: { kind: "element", on: site.homePageId, nodeId: "reversed" },
+      }),
+    ]);
+  });
+
+  it("lists text colours below what text of their size needs: 3:1 for a heading, 4.5:1 for text", () => {
+    const { passing } = themeWithLightAccent();
+    // Accent at about 4:1 on the page: enough for a large heading, not for body text.
+    const mid = { ...passing, colors: { ...passing.colors, secondary: { l: 0.6, c: 0, h: 0 } } };
+    const midSite = siteWith(
+      [
+        element("Heading", "heading", { text: "Hours", size: "large", color: "secondary" }),
+        element("Text", "text", { text: "<p>Open late</p>", lookColor: "secondary" }),
+      ],
+      { theme: mid },
+    );
+    expect(
+      findIn(contrastRule, midSite)
+        .filter(({ place }) => place.kind === "element")
+        .map(({ key, values }) => ({ key, required: values?.required })),
+    ).toEqual([{ key: `${midSite.homePageId}/text/lookColor`, required: 4.5 }]);
+
+    // Accent too light even for a heading: below 3:1.
+    const { light } = themeWithLightAccent();
+    const lightSite = siteWith(
+      [element("Heading", "heading", { text: "Hours", size: "large", color: "secondary" })],
+      { theme: light },
+    );
+    expect(findIn(contrastRule, lightSite).filter(({ place }) => place.kind === "element")).toEqual(
+      [
+        expect.objectContaining({
+          key: `${lightSite.homePageId}/heading/color`,
+          values: expect.objectContaining({ required: 3 }),
+        }),
+      ],
+    );
+  });
+
+  it("measures an element's text on its own Appearance background", () => {
+    const { passing } = themeWithLightAccent();
+    const site = siteWith(
+      [
+        element("Text", "same", {
+          text: "<p>Hi</p>",
+          lookColor: "primary",
+          lookBackground: "primary",
+        }),
+      ],
+      { theme: passing },
+    );
+
+    expect(findIn(contrastRule, site).filter(({ place }) => place.kind === "element")).toEqual([
+      expect.objectContaining({ key: `${site.homePageId}/same/lookColor` }),
     ]);
   });
 });

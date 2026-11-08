@@ -14,6 +14,8 @@ import type { CheckInput } from "./types.js";
 export type PlacedValue = {
   readonly on: ElementPlace;
   readonly node: NodeDoc;
+  /** The elements holding it, outermost first: what it's drawn on (#670). */
+  readonly ancestors: readonly NodeDoc[];
   /** The field's name; `items.2.text` for a list item's field. */
   readonly field: string;
   readonly value: unknown;
@@ -112,7 +114,7 @@ export function eachFieldValue(
   const { looks } = site.theme;
   eachElement(
     site,
-    (node, on) => {
+    (node, on, ancestors) => {
       if (!exported(on)) return;
       const plan = planFor(catalogue, wanted, kindsKey, node.type);
       const component = catalogue[node.type];
@@ -129,14 +131,20 @@ export function eachFieldValue(
         const value = values[name];
         if (value === undefined || hidden.has(name)) continue;
         const fromLook = node.props[name] === undefined ? ({ fromLook: true } as const) : {};
-        if (wantedField) visit({ on, node, field: name, value, ...fromLook });
+        if (wantedField) visit({ on, node, ancestors, field: name, value, ...fromLook });
         if (items.length === 0 || !Array.isArray(value)) continue;
         value.forEach((item: unknown, index) => {
           if (typeof item !== "object" || item === null) return;
           for (const itemName of items) {
             const itemValue = (item as Record<string, unknown>)[itemName];
             if (itemValue !== undefined) {
-              visit({ on, node, field: `${name}.${index}.${itemName}`, value: itemValue });
+              visit({
+                on,
+                node,
+                ancestors,
+                field: `${name}.${index}.${itemName}`,
+                value: itemValue,
+              });
             }
           }
         });

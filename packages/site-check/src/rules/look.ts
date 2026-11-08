@@ -1,6 +1,30 @@
-import { type ColorRole, findUnderlinedText, TEXT_COLOR_CLASSES } from "@webforge/model";
-import { AA_TEXT, contrastIssues, contrastRatio } from "@webforge/themes";
-import { eachFieldValue, elementPlace, exportedPlaces, fieldKey } from "../fields.js";
+import {
+  type ColorRole,
+  findUnderlinedText,
+  type NodeDoc,
+  type Responsive,
+  resolveResponsive,
+  type SiteDoc,
+  TEXT_COLOR_CLASSES,
+  valuesWithLook,
+} from "@webforge/model";
+import { textStylesIn } from "@webforge/site-components/catalogue-data";
+import {
+  AA_TEXT,
+  contrastIssues,
+  contrastNeeded,
+  contrastRatio,
+  resolveColorRef,
+  type Surface,
+  surfaceOf,
+} from "@webforge/themes";
+import {
+  eachFieldValue,
+  elementPlace,
+  exportedPlaces,
+  fieldKey,
+  type PlacedValue,
+} from "../fields.js";
 import type { CheckRule, Finding } from "../types.js";
 
 /** The theme colour each text colour mark's class shows (2.25): `text-secondary` → `secondary`. */
@@ -10,18 +34,31 @@ const MARK_COLORS = new Map(
   ),
 );
 
+/** The fields that colour an element's text, which the rule measures (#670). */
+const TEXT_COLOUR_FIELDS = new Set(["color", "lookColor", "lookTitleColor"]);
+
+/** What `placed`'s text is drawn on: its section's colours and the nearest background (#670). */
+function surfaceUnder(site: SiteDoc, placed: Pick<PlacedValue, "ancestors" | "node">): Surface {
+  const { looks } = site.theme;
+  const withLook = (node: NodeDoc) => valuesWithLook(node.props, looks?.[node.type]);
+  return surfaceOf(site.theme, [...placed.ancestors, placed.node].map(withLook));
+}
+
 /**
  * Colours that are hard to read together (WCAG AA, 2.1): the theme's pairs the Theme panel warns
- * about, and text coloured with a theme colour (2.25) that fails 4.5:1 on the page's background
- * (an Accent can pass as a heading's colour, 3:1, and fail as text). *Should fix* at most, never
- * *Must fix* (F-CHK-1): contrast is a guideline the owner may weigh.
+ * about; text coloured with a theme colour (2.25) that fails 4.5:1; and an element's text colour
+ * (a Heading's colour, Appearance's text colour, a section's title colour) that fails what text of
+ * its size needs, as the colour field measures it: 3:1 for a large heading, 4.5:1 for other text.
+ * Each is measured on what the text is drawn on, a Reversed section's colours or an Appearance
+ * background (#670). *Should fix* at most, never *Must fix* (F-CHK-1): contrast is a guideline
+ * the owner may weigh.
  */
 export const contrastRule: CheckRule = {
   id: "contrast",
   level: "should",
   check: (input) => {
-    const { colors } = input.site.theme;
-    const found: Finding[] = contrastIssues(input.site.theme).map((issue) => ({
+    const { theme } = input.site;
+    const found: Finding[] = contrastIssues(theme).map((issue) => ({
       key: `${issue.palette}/${issue.background}/${issue.foreground}`,
       place: { kind: "theme" },
       values: {
@@ -34,10 +71,14 @@ export const contrastRule: CheckRule = {
     }));
     eachFieldValue(input, ["richtext"], (placed) => {
       if (typeof placed.value !== "string") return;
+      let surface: Surface | undefined;
       for (const [, name = ""] of placed.value.matchAll(/<span class="(text-[a-z-]+)"/g)) {
         const role = MARK_COLORS.get(name);
         if (role === undefined) continue;
-        const ratio = contrastRatio(colors[role], colors["base-100"]);
+        surface ??= surfaceUnder(input.site, placed);
+        const shown = resolveColorRef(theme, role, surface.palette);
+        if (shown === undefined) continue;
+        const ratio = contrastRatio(shown.color, surface.background);
         if (ratio < AA_TEXT) {
           found.push({
             key: `${fieldKey(placed)}/${role}`,
@@ -46,6 +87,35 @@ export const contrastRule: CheckRule = {
           });
           break;
         }
+      }
+    });
+    eachFieldValue(input, ["color"], (placed) => {
+      if (!TEXT_COLOUR_FIELDS.has(placed.field)) return;
+      // As the desktop shows it, where most pages are read.
+      const ref = resolveResponsive(placed.value as Responsive<unknown>, "desktop");
+      if (typeof ref !== "string") return;
+      const surface = surfaceUnder(input.site, placed);
+      const shown = resolveColorRef(theme, ref, surface.palette);
+      if (shown === undefined) return;
+      const ratio = contrastRatio(shown.color, surface.background, shown.opacity);
+      const component = input.catalogue[placed.node.type];
+      // A section's title is set as one; an element's text as its kind sets it.
+      const styles =
+        placed.field === "lookTitleColor"
+          ? (["h2"] as const)
+          : component === undefined
+            ? []
+            : textStylesIn(component, {
+                ...component.defaults,
+                ...valuesWithLook(placed.node.props, theme.looks?.[placed.node.type]),
+              });
+      const required = contrastNeeded(theme, styles);
+      if (ratio < required) {
+        found.push({
+          key: fieldKey(placed),
+          place: elementPlace(placed),
+          values: { foreground: ref, ratio: Math.floor(ratio * 100) / 100, required },
+        });
       }
     });
     return found;

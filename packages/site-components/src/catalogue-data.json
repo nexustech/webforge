@@ -1617,6 +1617,14 @@
         "text": "Heading",
         "size": "medium",
         "color": "default"
+      },
+      "textStyle": {
+        "field": "size",
+        "styles": {
+          "large": "h1",
+          "medium": "h2",
+          "small": "h3"
+        }
       }
     },
     "Text": {
@@ -1699,7 +1707,8 @@
       },
       "defaults": {
         "text": "<p>Text</p>"
-      }
+      },
+      "textStyle": "body"
     },
     "Image": {
       "label": "Image",

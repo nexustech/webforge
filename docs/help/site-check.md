@@ -35,7 +35,7 @@ Each check shows a dot: green when all is well, amber or red when something need
 | **Forms** | A form has nowhere to send messages | **Fix** opens Site Settings › Forms. See [Forms](forms.md) |
 | **Missing images** | A picture was deleted from Media but is still placed on a page | Choose another picture, or remove it |
 | **Alt text** | A picture has no description for people who can't see it | Add **Alt text** in [Media](media.md) |
-| **Colour contrast** | Some text is hard to read on its background | Choose a darker or lighter colour |
+| **Colour contrast** | Some text is hard to read on its background: in your theme, in a text colour you chose, or in a heading's colour. It's measured on what the text sits on, such as a Reversed section or an element's own background. Large headings need less contrast than other text | Choose a darker or lighter colour |
 | **Large images** | A picture is over 4000 pixels wide or tall | Use a smaller copy: it loads faster |
 
 ## Tips
