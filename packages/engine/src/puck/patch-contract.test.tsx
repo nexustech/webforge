@@ -34,6 +34,12 @@ const ELEMENTS = 30;
  */
 const CANVAS_TIMER_MS = 600;
 
+/**
+ * Puck records each change in its history 250 ms after the last one (a debounce), and the record
+ * publishes to `usePuck`'s selectors once more. A test waits for it, at most this long.
+ */
+const HISTORY_WAIT_MS = 5000;
+
 /** Lets Puck's effects and deferred dispatches run. */
 async function settle(ms = 30): Promise<void> {
   await act(async () => {
@@ -49,9 +55,11 @@ const usePuck = createUsePuck();
  */
 async function mounted() {
   const counts = { permissionLookups: 0, selectorRuns: 0 };
+  let getPuck: ReturnType<typeof useGetPuck> | undefined;
   let api: ReturnType<ReturnType<typeof useGetPuck>> | undefined;
   function Probe({ children }: { readonly children: ReactNode }) {
-    api = useGetPuck()();
+    getPuck = useGetPuck();
+    api = getPuck();
     usePuck((state) => {
       counts.selectorRuns += 1;
       return state.appState.data;
@@ -88,8 +96,15 @@ async function mounted() {
     );
   });
   await settle(CANVAS_TIMER_MS);
-  /** Replaces element `index` with new text, as a keystroke in it does. */
+  /** The id of Puck's latest history record. */
+  const lastRecord = () => getPuck?.().history.histories.at(-1)?.id;
+  /**
+   * Replaces element `index` with new text, as a keystroke in it does, and waits for Puck to record
+   * it in its history: its debounced record then counts with this change, never with the next one,
+   * however slow a loaded machine makes the wait (#806).
+   */
   const replace = async (index: number, text: string) => {
+    const before = lastRecord();
     await act(async () => {
       api?.dispatch({
         type: "replace",
@@ -98,6 +113,9 @@ async function mounted() {
         data: { type: "Heading", props: { id: `h${index}`, text } },
       });
     });
+    const deadline = performance.now() + HISTORY_WAIT_MS;
+    while (lastRecord() === before && performance.now() < deadline) await settle();
+    expect(lastRecord()).not.toBe(before);
     await settle();
   };
   const select = async (index: number) => {
