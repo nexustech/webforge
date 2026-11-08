@@ -20,6 +20,7 @@ import {
 import { cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
 import { hiddenFieldsOf } from "./hidden-fields.js";
+import type { PictureBehind } from "./picture-behind.js";
 import type {
   BehaviourName,
   ComponentPlace,
@@ -103,6 +104,18 @@ export type ComponentDef = {
    */
   readonly textStyle?: (values: Readonly<Record<string, unknown>>) => TextStyle | undefined;
   /**
+   * Set on a component whose colour colours a drawing, not text (an Icon, Social links' logos):
+   * WCAG AA asks 3:1 of graphics (1.4.11), not text's 4.5:1, so the colour field and Site Check
+   * measure it as one (#670).
+   */
+  readonly graphic?: true;
+  /**
+   * The pictures it draws behind its content (#670): a section's background image (2.26), which
+   * {@link defineSection} adds, and a Hero's image in its background layout. Text on one isn't
+   * measured for contrast, as a picture's colours can't be known ({@link drawsPictureBehind}).
+   */
+  readonly pictureBehind?: readonly PictureBehind[];
+  /**
    * The theme's corner token its own corners come from while its Appearance leaves them to the
    * theme: `field` for a Button (daisyUI's buttons and fields), `box` for a section. None where no
    * one token decides them. The Edit panel names it (3.12, CT-3).
@@ -154,6 +167,8 @@ export function textStylesOf(
 
 // Set once or per device (F-ED-4): whether a value is one that `on` accepts on any device.
 export { onAnyDevice } from "./hidden-fields.js";
+// Whether a component draws a picture behind its content, with some values (#670).
+export { drawsPictureBehind } from "./picture-behind.js";
 
 /**
  * The fields `def`'s chosen layout doesn't use (#311), or its values don't (a field's `shownWhen`),

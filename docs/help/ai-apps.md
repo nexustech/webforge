@@ -104,12 +104,14 @@ Before an app's first change after you open your site, {appName} saves a version
 
 ### Many changes at once
 
-For a bigger job, such as building out your pages, an app can send its changes together, with a title such as "Build the Rapidfix site". {appName} checks every change first. If any of them can't be made, nothing changes and the app is told which one. Then it asks you once, with **Allow**, and says what the changes would do:
+For a bigger job, such as building out your pages, an app can send its changes together, with a title such as "Build the Rapidfix site". {appName} checks every change first. If any of them can't be made, nothing changes and the app is told which one. Then it asks you once, with **Allow**, and says what the changes would do. First, set apart, any change to where visitors' payments or details go, such as a Buy button's payment link, and any change to Site Settings, each from the old value to the new one. Then:
 - the pages added, deleted, renamed and moved, and those whose **Page Settings** change;
 - any page it hides from navigation or from search engines, or shows again, from before to after;
 - whether the theme changes;
 - how many sections and elements are added, changed, moved and removed;
-- each change that would have asked on its own, such as a new phone number, from the old one to the new one.
+- the other changes that would have asked on their own, such as a change to the Header.
+
+A long list names the first ten, and counts the rest. If the question is longer than the window, it scrolls, and **Allow** and **Cancel** stay in view.
 
 If you allow it, {appName} saves a version of your site first, *Before app's changes:* and the title, unless it saved one before a change to every page in the last five minutes. Then it makes every change as one step in Undo History, named after the title, such as **AI (Claude Desktop): Build the Rapidfix site**. One Undo takes it all back.
 

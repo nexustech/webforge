@@ -1241,3 +1241,30 @@ export class ProjectStore {
     return decodeDocument(this.readBlob(hash)?.data);
   }
 }
+
+/**
+ * Every method of an open store reports a damaged file as {@link ProjectFileError}, as `open` does
+ * (#807, 5.6's fuzzing). SQLite finds most damage only when a read reaches the damaged page, long
+ * after the file opened: a version's manifest, a blob, an asset. Each method is wrapped once, here,
+ * so one added later is covered too. Any other error is thrown as it was.
+ */
+for (const name of Object.getOwnPropertyNames(ProjectStore.prototype)) {
+  const descriptor = Object.getOwnPropertyDescriptor(ProjectStore.prototype, name);
+  const method: unknown = descriptor?.value;
+  if (name === "constructor" || typeof method !== "function") continue;
+  Object.defineProperty(ProjectStore.prototype, name, {
+    ...descriptor,
+    value: function (this: ProjectStore, ...args: unknown[]): unknown {
+      try {
+        const result: unknown = method.apply(this, args);
+        return result instanceof Promise
+          ? result.catch((error: unknown) => {
+              throw toProjectFileError(error);
+            })
+          : result;
+      } catch (error) {
+        throw toProjectFileError(error);
+      }
+    },
+  });
+}

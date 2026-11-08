@@ -387,6 +387,16 @@ function build<const F extends Fields, const Variant extends string = never>(
     };
     defaults = { [VARIANT_FIELD]: first.value, ...defaults };
   }
+  for (const { field: pictureField, variants: layouts } of def.pictureBehind ?? []) {
+    if (fields[pictureField]?.kind !== "media") {
+      fail(`draws "${pictureField}" behind its content, which isn't a picture field`);
+    }
+    for (const layout of layouts ?? []) {
+      if (!(variants ?? []).some((variant) => variant.value === layout)) {
+        fail(`draws "${pictureField}" behind its content in "${layout}", which isn't a layout`);
+      }
+    }
+  }
   for (const [fieldName, field] of Object.entries(fields)) {
     if (field.kind === "list") {
       // An item with one of these would read as an element, or lose its id (ListItem).

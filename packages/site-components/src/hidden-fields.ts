@@ -23,6 +23,26 @@ type Hiding = {
 };
 
 /**
+ * The fields {@link hiddenFieldsOf} hides by other values, whatever the layout: the Appearance
+ * group's Border colour (2.22b), and a section's overlay (2.26).
+ */
+const HIDDEN_BY_VALUES = ["lookBorderColor", "overlay", "overlayColor"] as const;
+
+/**
+ * The fields of `component` that {@link hiddenFieldsOf} can hide, with some values or other: its
+ * layouts' and {@link HIDDEN_BY_VALUES} it has. A field not among them is never hidden, so a
+ * reader can leave the work of hiding out for it (#670).
+ */
+export function hideableFieldsOf(component: Hiding): Set<string> {
+  const names = new Set(Object.values(component.variantHides ?? {}).flat());
+  const fields = component.fields ?? {};
+  for (const name of HIDDEN_BY_VALUES) {
+    if (Object.hasOwn(fields, name)) names.add(name);
+  }
+  return names;
+}
+
+/**
  * The fields `component`'s chosen layout doesn't use (#311), or that its values leave unused, from
  * its `values` (with its defaults): the Edit panel hides them, the export leaves their pictures
  * and files out, and Site Check doesn't read them (#670). React-free, so Site Check and the
