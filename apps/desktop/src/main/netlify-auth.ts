@@ -1,43 +1,75 @@
-import type { PublishDestination } from "@webforge/model";
+import { randomUUID } from "node:crypto";
 import { netlifyClient, PublishError, signInToNetlify } from "@webforge/publish";
-import type { PublishSecrets } from "./publish-secrets.js";
 
-// Netlify sign-in for publish destinations (spec/04 item 0.2, ADR 0006): OAuth in the user's own
-// browser, or a pasted personal access token as the fallback. Either way the token is saved only
-// through `PublishSecrets`, for the destination's site (S2, S32, S38), and never reaches the
-// renderer or the `.wforge` file. The publish UI (4.4b) calls this through IPC.
+// Netlify sign-in for publish destinations (ADR 0006 decision 4, 4.2): Netlify's OAuth ticket
+// flow in the person's own browser, or a pasted personal access token as the fallback. The token
+// stays in the main process, held here under a random handle while the person chooses or creates
+// the Netlify site, then saved through `PublishSecrets` for that site (S2, S32, S38) by
+// `netlify-ipc.ts`. It never reaches the renderer or the `.wforge` file, and is never logged.
 
-/** A Netlify destination of the site file's list. */
-type NetlifyDestination = Extract<PublishDestination, { kind: "netlify" }>;
+/** How long a sign-in waits for its site to be chosen before it's dropped. */
+const KEEP_MS = 30 * 60_000;
 
 /** What Netlify sign-in needs from the main process. */
-export type NetlifyAuthOptions = {
-  readonly secrets: PublishSecrets;
-  /** Opens a URL in the user's browser: `shell.openExternal`. */
+export type NetlifySignInsOptions = {
+  /** Opens a URL in the person's browser: `shell.openExternal`. */
   readonly openExternal: (url: string) => Promise<void>;
-  /** Webforge's Netlify OAuth client ID, or `undefined` until one is registered. */
+  /** Webforge's Netlify OAuth client ID, or `undefined` until one is registered (a build setting). */
   readonly clientId: string | undefined;
+  /** Netlify's API, another for the E2E tests' stand-in; Netlify's own by default. */
+  readonly apiBase?: string | undefined;
   /** Injectable for tests. */
   readonly fetch?: typeof fetch;
+  readonly now?: () => number;
 };
 
-/** Netlify sign-in for the open site's destinations, by its project id. */
-export function netlifyAuth(options: NetlifyAuthOptions) {
-  const { secrets, clientId } = options;
-  const network = options.fetch === undefined ? {} : { fetch: options.fetch };
-  const save = (projectId: string, destination: NetlifyDestination, token: string) =>
-    secrets.save(projectId, destination, { token }, {});
+/** The sign-ins made and not yet saved for a site, by handle. */
+export type NetlifySignIns = {
+  /** Whether "Sign in with Netlify" can be offered; otherwise only a pasted token works. */
+  canSignIn(): boolean;
+  /** Signs in in the person's browser; the sign-in's handle. Throws `PublishError`. */
+  signIn(signal?: AbortSignal): Promise<string>;
+  /** Checks a pasted personal access token with Netlify; its handle. Throws `PublishError`. */
+  signInWithToken(token: string, signal?: AbortSignal): Promise<string>;
+  /** Netlify's API as the sign-in `handle` reaches it, while it's held. */
+  client(handle: string): ReturnType<typeof netlifyClient> | undefined;
+  /** Netlify's API as a saved sign-in's `token` reaches it. */
+  clientWith(token: string): ReturnType<typeof netlifyClient>;
+  /** The token of sign-in `handle`, while it's held: to be saved for a site. */
+  token(handle: string): string | undefined;
+  /** Holds sign-in `handle` no longer: once it's saved for a site, or the person stops. */
+  forget(handle: string): void;
+};
+
+/** Netlify sign-ins, held in memory until saved for a site or forgotten. */
+export function createNetlifySignIns(options: NetlifySignInsOptions): NetlifySignIns {
+  const { clientId } = options;
+  const now = options.now ?? Date.now;
+  const network = {
+    ...(options.fetch === undefined ? {} : { fetch: options.fetch }),
+    ...(options.apiBase === undefined ? {} : { apiBase: options.apiBase }),
+  };
+  const held = new Map<string, { readonly token: string; readonly at: number }>();
+  // Each sign-in past its 30 minutes goes as another is held or read, so a dialog closed without
+  // saving (and without `forget`) leaves its token no longer than that.
+  const sweep = () => {
+    for (const [key, { at }] of held) if (now() - at > KEEP_MS) held.delete(key);
+  };
+  const tokenOf = (handle: string) => {
+    sweep();
+    return held.get(handle)?.token;
+  };
+  const hold = (token: string) => {
+    sweep();
+    const handle = randomUUID();
+    held.set(handle, { token, at: now() });
+    return handle;
+  };
 
   return {
-    /** Whether "Sign in with Netlify" can be offered; otherwise only a pasted token works. */
     canSignIn: () => clientId !== undefined && clientId !== "",
 
-    /** Signs in in the user's browser and saves the token for `destination`. */
-    async signIn(
-      projectId: string,
-      destination: NetlifyDestination,
-      signal?: AbortSignal,
-    ): Promise<void> {
+    async signIn(signal) {
       if (clientId === undefined || clientId === "") {
         throw new PublishError("failed", "Netlify sign-in is not set up in this build");
       }
@@ -47,20 +79,27 @@ export function netlifyAuth(options: NetlifyAuthOptions) {
         ...network,
         ...(signal === undefined ? {} : { signal }),
       });
-      await save(projectId, destination, token);
+      return hold(token);
     },
 
-    /** Checks a pasted personal access token with Netlify, then saves it for `destination`. */
-    async usePersonalToken(
-      projectId: string,
-      destination: NetlifyDestination,
-      token: string,
-      signal?: AbortSignal,
-    ): Promise<void> {
+    async signInWithToken(token, signal) {
       const trimmed = token.trim();
       if (trimmed === "") throw new PublishError("unauthorized", "No token was given");
       await netlifyClient({ token: trimmed, ...network }).currentUser(signal);
-      await save(projectId, destination, trimmed);
+      return hold(trimmed);
+    },
+
+    client(handle) {
+      const token = tokenOf(handle);
+      return token === undefined ? undefined : netlifyClient({ token, ...network });
+    },
+
+    clientWith: (token) => netlifyClient({ token, ...network }),
+
+    token: tokenOf,
+
+    forget(handle) {
+      held.delete(handle);
     },
   };
 }

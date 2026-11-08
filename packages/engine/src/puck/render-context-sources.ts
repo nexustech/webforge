@@ -32,6 +32,8 @@ export const RENDER_CONTEXT_SOURCES = {
   cookieSettings: "export",
   // A form's thank-you page: an absolute address on the site, which only the export knows.
   thanksPage: "export",
+  // Netlify Forms send only from a site Netlify serves, which only a publish to Netlify builds.
+  netlifyForms: "export",
   // The canvas loads every image as it comes into view; only the export knows the first section.
   firstSection: "export",
   setting: "setSettings",

@@ -234,7 +234,10 @@ export function registerPublishRun(
         const kept = withKeptCode(read.site, trusted);
         const allowed = kept.settings.allowedExternalUrls;
         const allowListConfirmed = allowed.length === 0 || trusted(allowListText(allowed));
-        const mustFix = publishGate(kept, { allowListConfirmed });
+        const mustFix = publishGate(kept, {
+          allowListConfirmed,
+          host: destination.kind === "netlify" ? "netlify" : undefined,
+        });
         if (mustFix > 0) return { status: "must-fix", count: mustFix };
 
         // 3. The sign-in, for this destination as the file names it now (S2).

@@ -75,10 +75,14 @@ type SettingsSection = {
   readonly fields: (values: SettingsForm) => readonly FormField[];
 };
 
-/** What the sections' image choices need: Media's images, and where each one's thumbnail is. */
+/**
+ * What the sections need besides the values: Media's images and where each one's thumbnail is, and
+ * whether the site has a Netlify destination, without which Netlify Forms can't send (4.2).
+ */
 type SettingsMedia = {
   readonly images: readonly ImageMeta[];
   readonly imageUrl: (image: ImageMeta) => string;
+  readonly onNetlify?: boolean | undefined;
 };
 
 /** A choice of one of Media's images, or none: its hint, or how to add some while there are none. */
@@ -353,7 +357,11 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           label: t("site.settings.formService"),
           help: t("site.settings.formServiceHint"),
           width: "md",
-          options: FORM_SERVICES.map((service) => ({
+          // Netlify Forms only for a site with a Netlify destination (4.2), or already chosen.
+          options: FORM_SERVICES.filter(
+            (service) =>
+              service !== "netlify" || media.onNetlify === true || formService === "netlify",
+          ).map((service) => ({
             label: t(`site.settings.formService.${service === "" ? "none" : service}`),
             value: service,
           })),

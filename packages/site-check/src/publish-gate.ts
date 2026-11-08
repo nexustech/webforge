@@ -8,15 +8,18 @@ import { blockingCount, checkSite } from "./check.js";
  * fixed too. The main process runs it on the site it is about to build, before saving anything or
  * starting the build, so neither a renderer that skipped its own check nor a stored version that
  * never passed one can be published (X5). `allowListConfirmed` as for {@link checkSite}: whether
- * the site's owner confirmed its allowed external addresses on this computer (#649).
+ * the site's owner confirmed its allowed external addresses on this computer (#649). `host`: the
+ * destination's, for a publish to Netlify, whose forms send only there (4.2).
  */
 export function publishGate(
   site: SiteDoc,
-  options: { readonly allowListConfirmed?: boolean } = {},
+  options: { readonly allowListConfirmed?: boolean; readonly host?: "netlify" | undefined } = {},
 ): number {
-  const input =
-    options.allowListConfirmed === true
-      ? { site, catalogue: CATALOGUE, allowListConfirmed: true }
-      : { site, catalogue: CATALOGUE };
+  const input = {
+    site,
+    catalogue: CATALOGUE,
+    ...(options.allowListConfirmed === true ? { allowListConfirmed: true } : {}),
+    ...(options.host === undefined ? {} : { host: options.host }),
+  };
   return blockingCount(checkSite(input, "publish"));
 }

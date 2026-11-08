@@ -1,6 +1,7 @@
 import type { FormService, SiteDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { levelIn } from "../check.js";
+import { publishGate } from "../publish-gate.js";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
 import { formsRule } from "./forms.js";
 
@@ -41,6 +42,11 @@ describe("forms (3.7)", () => {
       findIn(formsRule, withService(site, service)).map((found) => found.values?.reason);
 
     expect(reasons({ kind: "netlify" })).toEqual(["netlify"]);
+    // Netlify Forms send on a publish to Netlify (4.2).
+    const toNetlify = findIn(formsRule, withService(site, { kind: "netlify" }), {
+      host: "netlify",
+    });
+    expect(toNetlify).toEqual([]);
     expect(reasons({ kind: "custom", url: "http://forms.example.com/in" })).toEqual(["insecure"]);
     expect(reasons({ kind: "custom", url: "https://forms.example.com/in" })).toEqual([]);
   });
@@ -76,5 +82,11 @@ describe("forms (3.7)", () => {
   it("is Should fix for an export and Must fix for publishing (X5)", () => {
     expect(levelIn(formsRule, "export")).toBe("should");
     expect(levelIn(formsRule, "publish")).toBe("must");
+  });
+
+  it("stops a publish of Netlify Forms anywhere but Netlify (4.2)", () => {
+    const site = withService(siteWith([contact]), { kind: "netlify" });
+
+    expect(publishGate(site) - publishGate(site, { host: "netlify" })).toBe(1);
   });
 });

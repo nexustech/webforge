@@ -21,7 +21,11 @@ export const FAKE_TOKEN = "test-token";
 export const FAKE_CLIENT_ID = "webforge-test-client";
 
 export function fakeNetlify() {
-  const sites = new Map<string, { id: string; name: string; current: string | null }>();
+  /** Its sites, each with whether Netlify finds its forms (form detection, off for a new site). */
+  const sites = new Map<
+    string,
+    { id: string; name: string; current: string | null; forms: boolean }
+  >();
   const deploys = new Map<string, FakeDeploy>();
   const blobs = new Map<string, Uint8Array>();
   const requests: { method: string; path: string }[] = [];
@@ -46,11 +50,13 @@ export function fakeNetlify() {
     });
   const siteJson = ({
     current,
+    forms: _,
     ...site
   }: {
     id: string;
     name: string;
     current: string | null;
+    forms: boolean;
   }) => ({
     ...site,
     ssl_url: `https://${site.name}.netlify.app`,
@@ -70,15 +76,21 @@ export function fakeNetlify() {
     };
   };
 
-  /** Forms in the current deploy's HTML with `data-netlify="true"`, like Netlify's detection. */
+  /**
+   * Forms in the current deploy's HTML with `data-netlify="true"` and a name, whatever the order of
+   * their attributes, like Netlify's detection: none on a site with it off.
+   */
   function formsOf(siteId: string) {
-    const deploy = deploys.get(sites.get(siteId)?.current ?? "");
-    if (deploy === undefined) return [];
+    const site = sites.get(siteId);
+    const deploy = deploys.get(site?.current ?? "");
+    if (deploy === undefined || site?.forms !== true) return [];
     const forms: { id: string; name: string; paths: string[] }[] = [];
     for (const [path, digest] of Object.entries(deploy.files)) {
       const html = new TextDecoder().decode(blobs.get(digest));
-      for (const match of html.matchAll(/<form[^>]*name="([^"]+)"[^>]*data-netlify="true"/g)) {
-        forms.push({ id: `form-${match[1]}`, name: match[1] ?? "", paths: [path] });
+      for (const [tag] of html.matchAll(/<form\b[^>]*>/g)) {
+        const name = / name="([^"]+)"/.exec(tag)?.[1];
+        if (name === undefined || !tag.includes(' data-netlify="true"')) continue;
+        forms.push({ id: `form-${name}`, name, paths: [path] });
       }
     }
     return forms;
@@ -137,11 +149,14 @@ export function fakeNetlify() {
     if (route("GET", /^\/user$/)) return json(200, { id: "user-1" });
     if (route("GET", /^\/sites$/)) return json(200, [...sites.values()].map(siteJson));
     if (route("POST", /^\/sites$/)) {
-      const body = JSON.parse(String(init?.body ?? "{}")) as { name?: string };
-      // Netlify's site ids are UUIDs, which a destination's `siteId` must be.
-      const n = ++ids;
-      const id = `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
-      const site = { id, name: body.name ?? `random-${n}`, current: null };
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        name?: string;
+        processing_settings?: { ignore_html_forms?: boolean };
+      };
+      // A UUID, as Netlify's site ids are.
+      const id = `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`;
+      const forms = body.processing_settings?.ignore_html_forms === false;
+      const site = { id, name: body.name ?? `random-${ids}`, current: null, forms };
       sites.set(site.id, site);
       return json(201, siteJson(site));
     }

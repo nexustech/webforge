@@ -14,6 +14,8 @@ export type AppToolsDeps = {
   readonly site: () => SiteDoc;
   /** Whether its owner confirmed the addresses its Custom Code allows (#649), as Site Check reads. */
   readonly allowListConfirmed: () => boolean;
+  /** Whether the site has a Netlify destination, where its Netlify Forms send (4.2). */
+  readonly onNetlify?: (() => boolean) | undefined;
   /** What the person ignored in Site Check for this site. */
   readonly ignored: () => readonly string[];
   /** Runs the window's own Preview command: the local preview, never the phone's. */
@@ -46,6 +48,7 @@ export function createAppTools(deps: AppToolsDeps): (request: AiRequest) => AiRe
           catalogue: CATALOGUE,
           allowListConfirmed: deps.allowListConfirmed(),
           templateImages: TEMPLATE_IMAGE_HASHES,
+          ...(deps.onNetlify?.() === true ? { host: "netlify" as const } : {}),
         },
         "export",
         new Set(deps.ignored()),

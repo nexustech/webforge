@@ -79,6 +79,8 @@ export async function runPublish(
       mode: "publish",
       signal: channel.signal,
       runsCode: (code) => trusted.has(hashOf(code)),
+      // Netlify Forms send only from a site Netlify serves (4.2).
+      host: job.destination.kind === "netlify" ? "netlify" : undefined,
     });
     for await (const event of build) {
       if (event.stage === "done") files = event.site.files;

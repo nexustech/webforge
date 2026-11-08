@@ -3,7 +3,7 @@ id: forms
 title: Forms
 summary: Let visitors send you messages, and choose the service that delivers them to you.
 related: [sections, elements, site-settings, site-check]
-updated: 2026-11-06
+updated: 2026-11-08
 ---
 
 # Forms
@@ -28,13 +28,13 @@ Open **File › Site Settings…** and choose **Forms**. Then pick a **Form serv
 
 Sign up with the service on its own website first. Each service has its own terms and limits, and some charge for more messages.
 
-**Netlify Forms** is in the list, but it doesn't work yet: choose another service for now.
+**Netlify Forms** is in the list once your site has a Netlify destination in **Publish**. There's nothing to enter: Netlify receives the messages itself, and you read them in your Netlify account, under your site's **Forms**. They only work on the site Netlify serves. In an exported copy, or a copy published anywhere else, the form's button is turned off and [Site Check](site-check.md) lists it.
 
 Until a service is chosen, forms on your pages show their button turned off, and [Site Check](site-check.md) lists them.
 
 ## What visitors see
 
-When a visitor sends a form, they see a thank-you page. {appName} makes this page for you when the service can send visitors back to your site and your site has a web address.
+When a visitor sends a form, they see a thank-you page. {appName} makes this page for you when the service can send visitors back to your site and your site has a web address. With Netlify Forms, it's made without one.
 
 Forms include a hidden check that stops most spam robots. A form sent within a few seconds of the page opening waits a moment before it's sent.
 
