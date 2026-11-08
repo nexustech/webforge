@@ -14,6 +14,8 @@ export const netlifyApi = (call: Call): NetlifyApi => ({
       ? call("netlifyCreateSite", sessionId, account)
       : call("netlifyCreateSite", sessionId, account, name),
   testSaved: (sessionId, id) => call("netlifyTestSaved", sessionId, id),
+  checkAccess: (sessionId, account, siteId) =>
+    call("netlifyCheckAccess", sessionId, account, siteId),
   saveDestination: (sessionId, draft, signIn) =>
     call("netlifySaveDestination", sessionId, draft, signIn),
 });

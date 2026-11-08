@@ -116,6 +116,17 @@ export type NetlifyAccount = z.infer<typeof accountSchema>;
 /** A long-running sign-in in the browser, named so it can be cancelled (A14). */
 const operationIdSchema = z.uuid();
 
+/**
+ * Whether visitors reach the Netlify site, or Netlify's login (site protection, or a private
+ * project): what 4.4b's dialog warns of (#723). A check that couldn't be made says nothing.
+ */
+const accessResultSchema = z.discriminatedUnion("status", [
+  z.strictObject({ status: z.literal("checked"), protected: z.boolean() }),
+  failureSchema,
+]);
+
+type NetlifyAccessResult = z.infer<typeof accessResultSchema>;
+
 /** IPC channels of the `netlify` domain (`netlify:*`). Each one's arguments are checked. */
 export const netlifyChannels = {
   /** Whether Netlify's own sign-in can be offered, or only a pasted token. */
@@ -177,6 +188,16 @@ export const netlifyChannels = {
     response: connectionResultSchema,
   },
   /**
+   * Whether visitors to Netlify site `siteId` in `account` reach it or Netlify's login (#70, for
+   * 4.4b's warning, #723). Main asks the address Netlify's record of the site gives, never one
+   * from here, once, within 5 seconds.
+   */
+  netlifyCheckAccess: {
+    channel: "netlify:check-access",
+    request: z.tuple([sessionIdSchema, accountSchema, netlifySiteSchema.shape.id]),
+    response: accessResultSchema,
+  },
+  /**
    * Saves a Netlify destination in the open site's list, with its sign-in for its site in this
    * computer's keychain (S2, S32): a sign-in's handle, which is then held no longer, or `keep`.
    */
@@ -206,6 +227,12 @@ export interface NetlifyApi {
   ): Promise<NetlifyCreateSiteResult>;
   /** Test connection for a saved Netlify destination of the open site's. */
   testSaved(sessionId: string, id: string): Promise<ConnectionResult>;
+  /** Whether visitors reach Netlify site `siteId`, or Netlify's login (4.4b's warning). */
+  checkAccess(
+    sessionId: string,
+    account: NetlifyAccount,
+    siteId: string,
+  ): Promise<NetlifyAccessResult>;
   /** Saves a Netlify destination of the open site's, its sign-in for its site. */
   saveDestination(
     sessionId: string,
