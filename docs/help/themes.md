@@ -3,7 +3,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-06
+updated: 2026-11-08
 ---
 
 # Themes, colours and fonts
@@ -38,6 +38,7 @@ The Theme panel lists the theme's settings:
 - **Fonts:**
   - **Font pairing:** a tested pair for headings and text, such as *Classic*, *Modern* or *Friendly*.
   - Or choose **Headings**, **Body text** and **Accent** fonts yourself. The Accent font is for text whose Font is set to *Accent*.
+  - Until you choose an Accent font of its own, it's the same as your Headings font and changes with it, and with a font pairing. Once you've chosen one, it stays.
 - **Text sizes** for each heading level, body text and small text.
 - **Headings:** capitals or small capitals, and letter spacing.
 - **Buttons:** shape (*Square*, *Rounded* or *Pill*), size and style.

@@ -61,6 +61,8 @@ export function startCrashReports(primary: boolean) {
     },
     /** See `CrashReporting.watchWorker`: a worker's crash becomes a local report (R3). */
     watchWorker: handlers.watchWorker,
+    /** See `CrashReporting.reportThread`: a worker thread's crash becomes a local report (R3). */
+    reportThread: handlers.reportThread,
     /** Shows the next-launch notice if Webforge crashed since the user was last told. */
     noticeAfterLaunch(): Promise<void> {
       return noticeAfterCrash(

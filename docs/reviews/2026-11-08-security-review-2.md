@@ -34,6 +34,7 @@ The second review comes before the beta. Since the first one, nearly everything 
   - `pnpm audit`, for dependencies;
   - a new fuzzing test of damaged and crafted `.wforge` files, `packages/storage/test/damaged-file.test.ts`: 300 runs of 1–16 random bytes changed, and 100 truncations, each opened and read in full. Every run must either read or fail with storage's own error.
     - On CI it found one that didn't: a header whose schema format number was changed to 5 failed with SQLite's raw "unsupported file format". The person would have seen an unexpected error rather than "damaged". Fixed here: storage reports it as a damaged site, with a regression test. 4,000 runs and 1,000 truncations then passed locally.
+    - Later, on another PR's CI, it found a version read failing raw: a row whose rowid no longer matched its id's index entry, which opening's quick check doesn't compare. **Fixed since** (#807): every method of an open store reports SQLite's damage as storage's own error, not only `open`.
 
 Severity is as in the first review. **Medium:** reachable by an attacker who gets the user to open a file or paste content, with real harm. **Low:** defence in depth, or code not wired up yet. **Info:** a spec gap, robustness, or a decision.
 

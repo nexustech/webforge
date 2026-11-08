@@ -22,7 +22,7 @@ export class CredentialError extends WebforgeError<CredentialErrorCode> {
   override readonly name = "CredentialError";
 
   constructor(code: CredentialErrorCode, message: string, options?: ErrorOptions) {
-    super(code, "errors.credentials", message, options);
+    super(code, message, options);
   }
 }
 

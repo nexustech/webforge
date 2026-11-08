@@ -13,6 +13,8 @@ describe("fileTransferError", () => {
   it("names socket, DNS and certificate failures by their kind", () => {
     expect(fileTransferError(nodeError("ECONNREFUSED"), undefined, none).code).toBe("network");
     expect(fileTransferError(nodeError("ENOTFOUND"), undefined, none).code).toBe("network");
+    // A connection that timed out has its own message (A23).
+    expect(fileTransferError(nodeError("ETIMEDOUT"), undefined, none).code).toBe("timeout");
     expect(fileTransferError(nodeError("DEPTH_ZERO_SELF_SIGNED_CERT"), undefined, none).code).toBe(
       "untrusted-host",
     );
@@ -50,7 +52,7 @@ describe("ftpErrorCode", () => {
     expect(ftpErrorCode(ftpReply(553))).toBe("rejected");
     expect(ftpErrorCode(ftpReply(421))).toBe("network");
     expect(ftpErrorCode(ftpReply(425))).toBe("network");
-    expect(ftpErrorCode(new Error("Timeout (control socket)"))).toBe("network");
+    expect(ftpErrorCode(new Error("Timeout (control socket)"))).toBe("timeout");
     expect(ftpErrorCode(nodeError("ECONNREFUSED"))).toBeUndefined();
   });
 });
@@ -61,7 +63,7 @@ describe("sftpErrorCode", () => {
     const status = (code: number) => Object.assign(new Error("sftp"), { code });
 
     expect(sftpErrorCode(level("client-authentication"))).toBe("unauthorized");
-    expect(sftpErrorCode(level("client-timeout"))).toBe("network");
+    expect(sftpErrorCode(level("client-timeout"))).toBe("timeout");
     expect(sftpErrorCode(status(2))).toBe("not-found");
     expect(sftpErrorCode(status(3))).toBe("rejected");
     expect(sftpErrorCode(status(4))).toBeUndefined();

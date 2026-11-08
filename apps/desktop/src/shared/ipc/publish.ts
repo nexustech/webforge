@@ -15,12 +15,13 @@ import { sessionIdSchema } from "./project.js";
  * Why a connection test failed (`PublishErrorCode` of `@webforge/publish`), which the destination
  * form words for the person.
  */
-const CONNECTION_FAILURES = [
+export const CONNECTION_FAILURES = [
   "unauthorized",
   "not-found",
   "rate-limited",
   "rejected",
   "network",
+  "timeout",
   "untrusted-host",
   "no-encryption",
   "bad-key",

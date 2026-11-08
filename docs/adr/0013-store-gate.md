@@ -51,6 +51,7 @@ The architecture review of 30 Oct 2026 (A5) found that garbage collection, and t
     The VACUUM keeps the header's fingerprint and application id.
 - **Closing cleans up on the writer,** after the main connection has closed, still inside the close's exclusive turn, so nothing else opens the file meanwhile. Measured by the main thread's CPU time, as for an import, cleaning up 120 MB of garbage costs it under 50 ms (`storage-writer.test.ts`).
 - **A clean-up gets 5 s,** then the writer is stopped, so a writer that doesn't answer can't hold up opening the next site; SQLite rolls back what it had done the next time the file opens. Stopping can't cut a statement short: the stop waits for a garbage collection or VACUUM that has started, which is why the VACUUM is bounded by size. Quitting already exits after 10 s at most (`closeThenExit`).
+- **A thread that crashes** (an error nothing in it caught, out of memory too, or an exit it didn't ask for) fails what it was doing, like one that was stopped, and writes a local crash report, once (R3, #671). The next job starts another thread. A stop is not a crash.
 - **The thread answers a message it can't read** (one past the protocol's limits, such as more than 1000 files) as failed, whenever it has an id, so the turn that sent it lets the store gate go.
 - **The writer's turn refuses a read-only site** (`read-only`), whatever it writes: its own connection can't tell, as the store's can.
 - The main connection keeps its reads, its commits and the backups. `ProjectStore.collectGarbage` stays for tests and tools.

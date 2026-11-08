@@ -89,6 +89,11 @@ type FieldSpecs = {
     /** What choosing none means ("None", "The site's image"), already translated. */
     readonly noneLabel: string;
   };
+  /**
+   * A button that does something at once, holding no value (forms, #752: Settings › App's *AI
+   * apps…*). Its label names what it's about; `button` says what it does, already translated.
+   */
+  readonly action: { readonly button: string; readonly run: () => void };
   /** Drawn by the app: code (fields/code/). */
   readonly code: Nothing;
   /**

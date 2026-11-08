@@ -50,7 +50,7 @@ describe("signInToNetlify", () => {
     netlify.approveTickets(null);
 
     await expect(signInToNetlify({ ...options, timeoutMs: 10 })).rejects.toMatchObject({
-      code: "failed",
+      code: "timeout",
       message: "Netlify sign-in was not approved in time",
     });
   });

@@ -9,11 +9,12 @@ import { reportFailure } from "../log.js";
 import { offerTour } from "../onboarding/index.js";
 import { useCommandRegistry } from "../shell/command-context.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import { NewSiteDialog, templateName } from "./NewSiteDialog.js";
+import { NewSiteDialog } from "./NewSiteDialog.js";
 import { OpenRecent, type ShownRecentSites } from "./OpenRecent.js";
 import { openSiteWith } from "./open-site.js";
 import { QuickStartDialog } from "./QuickStartDialog.js";
 import { answersFromBrief, type QuickStartAnswers } from "./quick-start.js";
+import { templateName } from "./template-labels.js";
 
 /** Props of {@link SiteCommands}. */
 export type SiteCommandsProps = {

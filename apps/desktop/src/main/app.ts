@@ -252,8 +252,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   const projectSession = new ProjectSession(
     {},
     {
-      // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013).
-      writer: createStorageWriter(() => parts.startStorageWriter(storageWriterScript)),
+      // Imports are read, hashed and stored in a thread of their own (R13b, ADR 0013), whose
+      // crash becomes a local report (R3).
+      writer: createStorageWriter(
+        () => parts.startStorageWriter(storageWriterScript),
+        (crash) => crashReports.reportThread("storage-writer", crash),
+      ),
       // The site as it was before each day's first change, in Version History (F-SITE-4, 4.6).
       dailyVersion: { kept: versionsKept },
     },

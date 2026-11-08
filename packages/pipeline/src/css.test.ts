@@ -394,4 +394,13 @@ describe("createStyleCompiler (3.1)", () => {
     // An export after it is exact again.
     expect(await styles.css(options(some))).not.toContain(".skew-x-12");
   });
+
+  it("keeps a preview's compiler through an export, and an export's through a preview (#671)", async () => {
+    const styles = createStyleCompiler(resources);
+    await styles.css(options(more), true);
+    await styles.css(options(some));
+
+    // Still the preview's compiler, which has seen the class: a new one wouldn't have it.
+    expect(await styles.css(options(some), true)).toContain(".skew-x-12");
+  });
 });

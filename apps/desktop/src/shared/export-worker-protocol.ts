@@ -301,6 +301,7 @@ export const PUBLISH_FAILURES = [
   "rate-limited",
   "rejected",
   "network",
+  "timeout",
   "untrusted-host",
   "no-encryption",
   "bad-key",

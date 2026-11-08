@@ -103,7 +103,7 @@ class FontSourceError extends WebforgeError<Reason> {
   override readonly name = "FontSourceError";
 
   constructor(reason: Reason) {
-    super(reason, "errors.fontDownload", `Font download failed: ${reason}`);
+    super(reason, `Font download failed: ${reason}`);
   }
 }
 
