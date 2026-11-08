@@ -109,7 +109,7 @@ Three tests fail until a kind has all it needs, each saying what to add:
 `pnpm scaffold field-kind` writes a kind storing a string, drawn as a text box, in all seven places; then make it store and draw what it should.
 
 Some kinds belong to no component, so they skip places 1–3, 6 and `FIELD_KINDS`. They need only their `FieldSpecs` entry and a renderer:
-- **The forms' own** (`number`, `time`, `choice`, `multiChoice`, `imageChoice`), drawn by editor-ui.
+- **The forms' own** (`number`, `time`, `choice`, `multiChoice`, `imageChoice`, `action`), drawn by editor-ui. An `action` is a button that runs its `run` at once and holds no value, so Save keeps nothing for it: Settings › App's *Open AI apps…* (#752), for a dialog that acts as it's used rather than on Save.
 - **The Theme tab's** (`themeColor`, `font`), drawn by the app (`renderer/fields/theme-color/`, `fields/font/`, given to the tab by `themeFieldRenderers`).
 
 The form engine's *Every kind* story lists every kind, so a new one appears there too.
