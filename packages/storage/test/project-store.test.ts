@@ -547,6 +547,16 @@ describe("ProjectStore.open with untrusted files", () => {
     expect(openResult(other)).toBe("not-a-project");
   });
 
+  it("reports a project whose header's schema format number is damaged as damaged (5.6)", () => {
+    const path = createProject();
+    const bytes = readFileSync(path);
+    // Bytes 44-47: the schema format number, 1 to 4. The fuzzing test found 5 failing raw.
+    bytes.writeUInt32BE(5, 44);
+    writeFileSync(path, bytes);
+
+    expect(openResult(path)).toBe("corrupt");
+  });
+
   it("rejects a project with damaged pages", () => {
     const path = createProject();
     const store = ProjectStore.open(path);
