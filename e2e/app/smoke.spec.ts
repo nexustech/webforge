@@ -133,6 +133,7 @@ test.describe("desktop shell", () => {
         "versions",
         "mcp",
         "help",
+        "netlify",
       ],
     });
   });

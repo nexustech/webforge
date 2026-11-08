@@ -35,6 +35,8 @@ type SiteCheckPanelOptions = {
   readonly allowListConfirmed?: ReadonlyStore<boolean>;
   /** The year the site was last published in, if it has been (F-CM-8). */
   readonly publishedYear?: ReadonlyStore<number | undefined>;
+  /** Whether the site has a Netlify destination, where its Netlify Forms send (4.2). */
+  readonly onNetlify?: ReadonlyStore<boolean>;
   /** Called while the panel is on screen with a *Must fix* in it: its first-time tip (OB-4). */
   readonly onMustFixSeen?: () => void;
 };
@@ -56,6 +58,7 @@ export function registerSiteCheckPanel(
     bundle,
     allowListConfirmed,
     publishedYear,
+    onNetlify,
     onMustFixSeen,
   }: SiteCheckPanelOptions,
 ): () => void {
@@ -64,6 +67,7 @@ export function registerSiteCheckPanel(
     saveIgnored,
     ...(allowListConfirmed === undefined ? {} : { allowListConfirmed }),
     ...(publishedYear === undefined ? {} : { publishedYear }),
+    ...(onNetlify === undefined ? {} : { onNetlify }),
   });
   const actions = {
     session,

@@ -78,6 +78,11 @@ export type CheckInput = {
    * `@webforge/templates`: an image with one is still a template's placeholder. Left out, none is.
    */
   readonly templateImages?: ReadonlySet<string>;
+  /**
+   * Where the site is published to, for a publish to Netlify (4.2): Netlify Forms send only from a
+   * site Netlify serves. Left out for an export, and for any other host.
+   */
+  readonly host?: "netlify";
 };
 
 /** One Site Check rule (F-CHK-1): its level, and what it finds in a site. */

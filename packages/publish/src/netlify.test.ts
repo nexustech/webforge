@@ -240,7 +240,7 @@ describe("netlifyPublisher.publish", () => {
     );
 
     expect(String((error as Error).message)).not.toContain(FAKE_TOKEN);
-    expect((error as Error).message).toBe("Netlify answered 500 to POST /sites/site-1/deploys");
+    expect((error as Error).message).toBe(`Netlify answered 500 to POST /sites/${siteId}/deploys`);
   });
 });
 
@@ -336,6 +336,50 @@ describe("netlifyClient", () => {
     await expect(client.listForms(siteId)).resolves.toEqual([
       { id: "form-contact", name: "contact", paths: ["/contact.html"] },
     ]);
+  });
+
+  it("creates sites with form detection on, which Netlify Forms need (4.2, ADR 0006 decision 6)", async () => {
+    const netlify = fakeNetlify();
+    const options = { token: FAKE_TOKEN, fetch: netlify.fetch };
+    const sent: unknown[] = [];
+    const watching: typeof fetch = async (input, init) => {
+      if (init?.method === "POST" && String(input).endsWith("/sites")) {
+        sent.push(JSON.parse(String(init.body)));
+      }
+      return netlify.fetch(input, init);
+    };
+
+    await netlifyClient({ ...options, fetch: watching }).createSite("rosas-bakery");
+
+    expect(sent).toEqual([
+      { name: "rosas-bakery", processing_settings: { ignore_html_forms: false } },
+    ]);
+  });
+
+  it("still creates the site when Netlify refuses the form detection field (ADR 0006 decision 6)", async () => {
+    const netlify = fakeNetlify();
+    const sent: unknown[] = [];
+    const watching: typeof fetch = async (input, init) => {
+      if (init?.method === "POST" && String(input).endsWith("/sites")) {
+        sent.push(JSON.parse(String(init.body)));
+      }
+      return netlify.fetch(input, init);
+    };
+    netlify.failNext("POST", /^\/sites$/, 422);
+
+    const site = await netlifyClient({ token: FAKE_TOKEN, fetch: watching }).createSite("rosas");
+
+    expect(site.name).toBe("rosas");
+    expect(sent).toEqual([
+      { name: "rosas", processing_settings: { ignore_html_forms: false } },
+      { name: "rosas" },
+    ]);
+    // Any other failure isn't tried again without it.
+    netlify.failNext("POST", /^\/sites$/, 401);
+    await expect(
+      netlifyClient({ token: FAKE_TOKEN, fetch: watching }).createSite(),
+    ).rejects.toMatchObject({ code: "unauthorized" });
+    expect(sent).toHaveLength(3);
   });
 
   it("rejects a response it does not understand", async () => {

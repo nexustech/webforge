@@ -27,6 +27,11 @@ export type PipelineBuildOptions = {
   readonly year?: number | undefined;
   /** Which of the site's own code goes in (#649): none in a preview and all otherwise, when left out. */
   readonly runsCode?: RunsCode | undefined;
+  /**
+   * The host a publish is for (4.2): `netlify` draws Netlify Forms for Netlify to find (the render
+   * context's `onNetlify`). Any other build leaves them unable to send.
+   */
+  readonly host?: "netlify" | undefined;
 };
 
 /** Builds one open site, as often as asked, keeping between builds what it can (3.1). */
@@ -64,7 +69,7 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
   const images = createMemoryImageCache(options.imageCacheBytes ?? IMAGE_CACHE_BYTES);
   let caches: BuildCaches | undefined;
   return {
-    async *build(snapshot, resources, { mode, signal, output, year, runsCode }) {
+    async *build(snapshot, resources, { mode, signal, output, year, runsCode, host }) {
       caches ??= {
         styles: createStyleCompiler(resources),
         pages: { preview: new Map(), export: new Map() },
@@ -74,7 +79,7 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
         snapshot,
         library,
         { ...resources, imageCache: resources.imageCache ?? images },
-        { mode, signal, output, caches, year, runsCode },
+        { mode, signal, output, caches, year, runsCode, host },
       );
       yield { stage: "done", site };
     },

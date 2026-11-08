@@ -21,6 +21,8 @@ type GateOptions = {
    * they allow nothing, as the site's file may come from anyone.
    */
   readonly allowListConfirmed: boolean;
+  /** For a publish to Netlify, whose forms send only there (4.2). */
+  readonly host?: "netlify" | undefined;
 };
 
 /**
@@ -30,7 +32,15 @@ type GateOptions = {
  */
 export function gateOnSiteCheck(site: SiteDoc, mode: CheckMode, options: GateOptions): boolean {
   const blocking = blockingCount(
-    checkSite({ site, catalogue: CATALOGUE, allowListConfirmed: options.allowListConfirmed }, mode),
+    checkSite(
+      {
+        site,
+        catalogue: CATALOGUE,
+        allowListConfirmed: options.allowListConfirmed,
+        ...(options.host === undefined ? {} : { host: options.host }),
+      },
+      mode,
+    ),
   );
   if (blocking === 0) return true;
   toast.error(options.blocked(blocking));

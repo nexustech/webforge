@@ -110,6 +110,8 @@ export type PublishDialogProps = {
   readonly notify: (message: string) => void;
   /** A destination was saved: Site Settings may take its web address. */
   readonly onSaved: (destination: PublishDestination) => void;
+  /** The site's destinations, each time the dialog reads them: as it opens, and after a change. */
+  readonly onListed?: ((destinations: readonly PublishDestination[]) => void) | undefined;
   /** Publishes the site to `destination` (4.5); the dialog closes as it starts. */
   readonly onPublish: (destination: PublishDestination) => void;
   readonly onClose: () => void;
@@ -139,6 +141,7 @@ export function PublishDialog({
   sessionId,
   notify,
   onSaved,
+  onListed,
   onPublish,
   onClose,
 }: PublishDialogProps) {
@@ -159,6 +162,9 @@ export function PublishDialog({
       (result) => {
         if (!current) return;
         setListed(result.status === "listed" ? result.destinations : []);
+        if (result.status === "listed") {
+          onListed?.(result.destinations.map(({ destination }) => destination));
+        }
         if (result.status === "failed") notify(failureMessage(result.reason));
       },
       () => {
@@ -170,7 +176,7 @@ export function PublishDialog({
     return () => {
       current = false;
     };
-  }, [open, version, publish, sessionId, notify]);
+  }, [open, version, publish, sessionId, notify, onListed]);
 
   const testSaved = async (
     id: string,

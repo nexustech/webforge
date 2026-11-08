@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createSite, SiteFormatError } from "@webforge/model";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
+import Database from "better-sqlite3";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { ProjectFileError, ProjectStore } from "../src/index.js";
@@ -82,6 +83,44 @@ describe("a damaged or crafted .wforge (5.6)", () => {
     },
     FUZZ_TIMEOUT_MS,
   );
+
+  it("reports a version row in another shape as damage, as the fuzzing found (#827)", () => {
+    const original = sampleFile();
+    // The counterexample it found (seed -2084843418), replayed: two bytes zeroed, which left a
+    // version whose kind is neither manual nor auto.
+    const replayed = Buffer.from(original);
+    for (const { at, value } of [
+      { at: 679021449, value: 0 },
+      { at: 31862798, value: 0 },
+    ]) {
+      replayed[at % replayed.length] = value;
+    }
+    const replay = join(tempDir(), "replay.wforge");
+    writeFileSync(replay, replayed);
+    try {
+      readAll(replay);
+    } catch (error) {
+      expect(expected(error), String(error)).toBe(true);
+    }
+
+    // The same damage made on purpose, past the table's own check.
+    const crafted = join(tempDir(), "crafted.wforge");
+    writeFileSync(crafted, original);
+    const db = new Database(crafted);
+    db.pragma("ignore_check_constraints = ON");
+    db.prepare("UPDATE versions SET kind = 'neither'").run();
+    db.close();
+    const store = ProjectStore.open(crafted, { readOnly: true });
+    try {
+      expect(() => store.listVersions()).toThrow(
+        expect.objectContaining({ name: "ProjectFileError", code: "corrupt" }),
+      );
+      // Reads that don't reach the damaged row still work.
+      expect(store.readSite()).toBeDefined();
+    } finally {
+      store.close();
+    }
+  });
 
   it(
     "refuses a file cut short, at any length",

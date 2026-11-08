@@ -31,7 +31,7 @@ export const CONNECTION_FAILURES = [
 ] as const;
 
 /** What Test connection found: the folder can be published to, or why not. */
-const connectionResultSchema = z.discriminatedUnion("ok", [
+export const connectionResultSchema = z.discriminatedUnion("ok", [
   z.strictObject({ ok: z.literal(true) }),
   z.strictObject({ ok: z.literal(false), code: z.enum(CONNECTION_FAILURES) }),
 ]);
@@ -178,7 +178,7 @@ const savedSignInSchema = z.union([signInRefSchema, z.strictObject({ keep: z.lit
 /** See {@link savedSignInSchema}. */
 export type SavedSignInRef = z.infer<typeof savedSignInSchema>;
 
-const saveDestinationResultSchema = z.discriminatedUnion("status", [
+export const saveDestinationResultSchema = z.discriminatedUnion("status", [
   z.strictObject({ status: z.literal("saved"), destination: publishDestinationSchema }),
   /** `keep` for a destination whose sign-in isn't saved for it as it is now: type it again. */
   z.strictObject({ status: z.literal("sign-in-needed") }),

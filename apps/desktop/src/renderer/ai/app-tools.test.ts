@@ -71,6 +71,26 @@ describe("the window's own AI tools (4.9)", () => {
     expect(JSON.stringify(answer)).not.toContain(MARKER);
   });
 
+  it("counts Netlify Forms as able to send once the site has a Netlify destination (4.2)", () => {
+    const site = starterSite();
+    site.settings.forms.service = { kind: "netlify" };
+    site.pages[site.homePageId]?.doc.content.push({ type: "ContactForm", props: { id: "c" } });
+    const rules = (onNetlify: boolean) => {
+      const answer = createAppTools({
+        site: () => site,
+        allowListConfirmed: () => false,
+        ignored: () => [],
+        openPreview: () => {},
+        onNetlify: () => onNetlify,
+      })({ kind: "query", name: "runSiteCheck", input: {} });
+      const data = answer?.status === "done" && "data" in answer ? answer.data : undefined;
+      return (data as { found: { rule: string }[] }).found.map(({ rule }) => rule);
+    };
+
+    expect(rules(false)).toContain("forms");
+    expect(rules(true)).not.toContain("forms");
+  });
+
   it("leaves out what the person ignored, as their Site Check does", () => {
     const site = siteWithBareImage();
     const ignored = createAppTools({
