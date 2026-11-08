@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { extname, join, sep } from "node:path";
+import { isDeviceName } from "@webforge/model";
 
 /**
  * The scheme the packaged editor and Help pages load from (#652, security review S5, S33, ADR
@@ -50,7 +51,8 @@ const APP_FILE = new RegExp(
 
 /**
  * Answers {@link APP_SCHEME}'s requests with files of `rendererDir` (`out/renderer`) only: a name
- * that leaves it, starts with a dot, or isn't one of the build's types gets a 404, as does
+ * that leaves it, starts with a dot, is a Windows device name (`con.js`, `aux/x.js`, which Windows
+ * opens as a device wherever they are), or isn't one of the build's types gets a 404, as does
  * anything but GET. Nothing else of the computer's is ever served (S5).
  */
 export function createAppResponder(
@@ -62,8 +64,10 @@ export function createAppResponder(
   return async ({ url, method }) => {
     const name = APP_FILE.exec(url)?.[1];
     if (method !== "GET" || name === undefined) return notFound();
+    const segments = name.split("/");
+    if (segments.some(isDeviceName)) return notFound();
     const type = TYPES[extname(name).toLowerCase()];
-    const path = join(root, ...name.split("/"));
+    const path = join(root, ...segments);
     if (type === undefined || !path.startsWith(root)) return notFound();
     try {
       const data = await read(path);

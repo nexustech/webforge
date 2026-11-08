@@ -57,6 +57,10 @@ describe("the app's scheme (#652, S5)", () => {
     ["a file of another type", "webforge-app://editor/notes.md"],
     ["a folder", "webforge-app://editor/assets"],
     ["a file that isn't there", "webforge-app://editor/missing.js"],
+    // Windows opens these as devices, in any folder: never read (#652 review).
+    ["a Windows device name", "webforge-app://editor/con.js"],
+    ["a device name in capitals", "webforge-app://editor/NUL.css"],
+    ["a folder with a device name", "webforge-app://editor/aux/x.js"],
     ["another host", "webforge-app://other/index.html"],
     ["no host", "webforge-app:///index.html"],
     ["another scheme", "file:///index.html"],
