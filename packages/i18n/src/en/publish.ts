@@ -102,6 +102,40 @@ export const publish = {
   "publish.plainFtp.body":
     "Your password and your site's files travel unprotected, so someone on the same network could read them. Use FTPS or SFTP if your host offers either.",
   "publish.plainFtp.accept": "Use Plain FTP Anyway",
+  // A Netlify destination (4.4b): sign in, then choose a site.
+  "publish.netlify.title": "Add a Netlify Destination",
+  "publish.netlify.editTitle": "Edit Netlify Destination",
+  "publish.netlify.description":
+    "Sign in to Netlify, then choose the Netlify site to publish to, or a new one. {appName} keeps your sign-in on this computer only.",
+  "publish.netlify.confirm": "Save Destination",
+  "publish.netlify.name": "Name",
+  "publish.netlify.name.help": "How the list shows it. Left empty, it takes the site's name.",
+  "publish.netlify.defaultName": "Netlify",
+  "publish.netlify.token": "Personal access token",
+  "publish.netlify.token.help":
+    "Make one on Netlify, in User settings › Applications › Personal access tokens, and paste it here.",
+  "publish.netlify.token.saved":
+    "This computer has the sign-in saved for this destination. Paste a new token only to change it.",
+  "publish.netlify.connect": "Connect",
+  "publish.netlify.signIn": "Sign In with Netlify",
+  "publish.netlify.connecting": "Connecting to Netlify…",
+  "publish.netlify.waitingBrowser":
+    "Approve {appName} in the browser page that opened, then come back here.",
+  "publish.netlify.connected": "Signed in to Netlify.",
+  "publish.netlify.loadingSites": "Getting your Netlify sites…",
+  "publish.netlify.site": "Netlify site",
+  "publish.netlify.site.help": "One of your Netlify account's sites, or a new one.",
+  "publish.netlify.site.choose": "Choose a site…",
+  "publish.netlify.site.option": "{name} ({url})",
+  "publish.netlify.site.new": "A new site",
+  "publish.netlify.newSite": "New site's name",
+  "publish.netlify.newSite.help":
+    "Part of its address: name.netlify.app. Left empty, Netlify makes one up.",
+  "publish.netlify.protected.title": "Visitors have to log in to see this site",
+  "publish.netlify.protected.body":
+    "Netlify's visitor access is on for it, so visitors get Netlify's log-in page instead of your site. Turn it off in the site's settings on Netlify if your site is for everyone.",
+  "publish.netlify.error.signIn": "Sign in to Netlify, or paste a token and choose Connect.",
+  "publish.netlify.error.site": "Choose a Netlify site, or a new one.",
   // Test connection.
   "publish.test.button": "Test Connection",
   "publish.test.testing": "Connecting…",
