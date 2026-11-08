@@ -46,7 +46,7 @@
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@rolldown/plugin-babel": "catalog:",
-    "@swc/core": "1.16.22",
+    "@swc/core": "1.16.18",
     "@types/node": "catalog:",
     "@vitejs/plugin-react": "6.2.1",
     "@vitest/coverage-v8": "5.1.0",
