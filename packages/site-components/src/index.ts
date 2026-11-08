@@ -60,6 +60,7 @@ export {
   withAdvanced,
   withLook,
 } from "./library.js";
+export { ENLARGE_ATTRIBUTE, singleLightboxHtml } from "./lightbox.js";
 export { hrefFor } from "./links.js";
 export {
   ENTRANCE_FIELDS,

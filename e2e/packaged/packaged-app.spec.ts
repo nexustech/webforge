@@ -12,6 +12,8 @@ import {
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
+import electronFuses from "@electron/fuses";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
 import { FORMAT_VERSION, ProjectStore } from "@webforge/storage";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
@@ -147,6 +149,52 @@ test.afterAll(async () => {
   }
   // On Windows the app's helper processes can hold the folder for a moment after it exits.
   await rm(siteDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+});
+
+// CommonJS, whose exports Node's ESM loader can't name: taken from its default export.
+const { FuseV1Options, getCurrentFuseWire } = electronFuses;
+
+/** A fuse on the wire: the character "1" when on, "0" when off (its `FuseState`, not exported). */
+const FUSE_ON = 0x31;
+const FUSE_OFF = 0x30;
+
+/**
+ * Every fuse of Electron's wire, by its place on it (electronjs.org/docs/latest/tutorial/fuses),
+ * and whether the packaged app has it on: as architecture §3 and `electron-builder.yml` require,
+ * or Electron's default where the app leaves it. A fuse a newer Electron adds fails the test
+ * until it's decided here.
+ */
+const FUSES: readonly (readonly [index: number, name: string, on: boolean])[] = [
+  [0, "RunAsNode", false],
+  [1, "EnableCookieEncryption", true],
+  [2, "EnableNodeOptionsEnvironmentVariable", false],
+  [3, "EnableNodeCliInspectArguments", false],
+  [4, "EnableEmbeddedAsarIntegrityValidation", true],
+  [5, "OnlyLoadAppFromAsar", true],
+  // Electron's default, which the app leaves.
+  [6, "LoadBrowserProcessSpecificV8Snapshot", false],
+  // No page loads from file:// (#652, S5).
+  [7, "GrantFileProtocolExtraPrivileges", false],
+  // Electron's default, which the app leaves: WebAssembly's bounds checked by V8's trap handlers.
+  // Newer than @electron/fuses 1.8.0, which doesn't name it.
+  [8, "WasmTrapHandlers", true],
+];
+
+test("is fused as architecture §3 requires, read from the packaged executable (S15, #655)", async () => {
+  test.skip(executable === undefined, "Linux is not a release target");
+  if (executable === undefined) return;
+  const wire: Readonly<Record<string, unknown>> = await getCurrentFuseWire(executable);
+  // Each by name, so a failure says which fuse is wrong.
+  expect(Object.fromEntries(FUSES.map(([index, name]) => [name, wire[index]]))).toEqual(
+    Object.fromEntries(FUSES.map(([, name, on]) => [name, on ? FUSE_ON : FUSE_OFF])),
+  );
+  // No fuse beyond those: the wire's fuses are numbered.
+  expect(Object.keys(wire).filter((key) => /^\d+$/.test(key))).toHaveLength(FUSES.length);
+  // Where @electron/fuses names a fuse, at the same place.
+  for (const [index, name] of FUSES) {
+    const named = (FuseV1Options as unknown as Record<string, number | undefined>)[name];
+    if (named !== undefined) expect(named, name).toBe(index);
+  }
 });
 
 test("ships every catalogue font beside app.asar, byte for byte, within the font budget (2.2)", () => {
@@ -310,7 +358,8 @@ test("opens the Help window from app.asar, with its pages and its own preload (5
     ).webforge.help.open({ page: "export" }),
   );
   const help = await opened;
-  expect(help.url()).toMatch(/\/renderer\/help\.html\?page=export/);
+  // From the app's own scheme, as the editor is (#652, S33).
+  expect(help.url()).toMatch(/^webforge-app:\/\/editor\/help\.html\?page=export/);
   await expect(help.getByRole("heading", { level: 1, name: "Export" })).toBeVisible();
   // Its own small API, not the editor's.
   expect(
@@ -320,6 +369,24 @@ test("opens the Help window from app.asar, with its pages and its own preload (5
     ]),
   ).toEqual(["undefined", "object"]);
   await help.close();
+});
+
+test("loads the editor from webforge-app://, from which no file of the computer's is read (#652, S5)", async () => {
+  test.skip(child === undefined || browser === undefined, "Needs the running packaged app");
+  const dir = resourcesDir();
+  test.skip(dir === undefined, "Linux is not a release target");
+  if (dir === undefined) return;
+  expect(page.url()).toBe("webforge-app://editor/index.html");
+  // A file that is there: the notices beside app.asar.
+  const file = pathToFileURL(join(dir, "notices", "notices.json")).href;
+  const read = await page.evaluate(async (url) => {
+    try {
+      return `read: ${(await fetch(url)).status}`;
+    } catch {
+      return "refused";
+    }
+  }, file);
+  expect(read).toBe("refused");
 });
 
 test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.3, ADR 0006)", async () => {

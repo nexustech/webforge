@@ -132,6 +132,9 @@ function withShapedImages(site: SiteSnapshot): SiteSnapshot {
                 width: "small",
                 shape: "height",
                 height: "large",
+                caption: "The lane",
+                // A second Image that opens larger: the page's two share one lightbox (#646).
+                enlarge: true,
               }),
             ],
           },

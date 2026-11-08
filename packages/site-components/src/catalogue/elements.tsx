@@ -12,7 +12,7 @@ import {
   onAnyDevice,
   responsiveClasses,
 } from "../library.js";
-import { Lightbox } from "../lightbox.js";
+import { ENLARGE_ATTRIBUTE } from "../lightbox.js";
 import {
   ENTRANCE_FIELDS,
   entranceAttributes,
@@ -229,7 +229,7 @@ const image = defineComponent({
     enlarge: false,
     hover: "none",
   },
-  // Opened larger in the Gallery's lightbox (3.20).
+  // Opened larger in the page's single-picture lightbox (3.20, #646).
   behaviours: (values) =>
     values.enlarge ? [...entranceBehaviours(values), "lightbox"] : entranceBehaviours(values),
   render: ({ values, context }) => {
@@ -261,32 +261,29 @@ const image = defineComponent({
         rounded={values.rounded}
       />
     );
-    // Opened larger (3.20): a link to its largest JPEG or PNG, which any browser shows, and the
-    // Gallery's lightbox for one picture, which shows it whole whatever its shape. The lightbox's
-    // own caption is inside it, so the Image's stays the figure's last child.
+    // Opened larger (3.20): a link to its largest JPEG or PNG, which any browser shows. With the
+    // script, the page's one single-picture lightbox shows it whole whatever its shape, with the
+    // figure's caption: the export adds it once to a page with such an Image (#646).
     const name = alt.trim() !== "" ? alt : caption;
     return (
       <figure
         className={`${frame}${hoverClasses(values)}`}
         {...entrance}
-        {...(values.enlarge ? { "data-wf-gallery": "" } : {})}
+        {...(values.enlarge ? { [ENLARGE_ATTRIBUTE]: "" } : {})}
       >
         {values.enlarge ? (
-          <>
-            <a
-              href={resolved.src}
-              className="block"
-              aria-label={
-                name === ""
-                  ? t("siteText.openLargerPicture")
-                  : t("siteText.openLargerPictureOf", { name })
-              }
-              data-wf-lightbox-item=""
-            >
-              {picture}
-            </a>
-            <Lightbox single />
-          </>
+          <a
+            href={resolved.src}
+            className="block"
+            aria-label={
+              name === ""
+                ? t("siteText.openLargerPicture")
+                : t("siteText.openLargerPictureOf", { name })
+            }
+            data-wf-lightbox-item=""
+          >
+            {picture}
+          </a>
         ) : (
           picture
         )}

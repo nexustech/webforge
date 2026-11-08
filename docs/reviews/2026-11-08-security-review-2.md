@@ -55,11 +55,11 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 | S2 | #71, #72 | Fixed and checked. The keychain record holds the fingerprint of protocol, host, port, user and SFTP host key with the secret. Trust isn't in the `.wforge`. Netlify's site isn't bound: S32. |
 | S3, S25 | #650 | Fixed and checked. consent.js reads only the last `body > [data-wf-consent]`; `data-wf-*` and `data-measurement-id` are reserved and removed on open. Analytics storage stays denied with the banner off. |
 | S4, S12 | #651 | Fixed and checked. `sqlite_schema` is read first, and plain tables only, for every format. Every decode sniffs the header first. The new fuzzing test agrees. |
-| S5, S7, S8 | #652 | **Open.** The editor and now the Help window are `file://` pages, `GrantFileProtocolExtraPrivileges` is on, `isAppUrl` ignores a `file:` URL's host, and spec/01 still says the canvas is sandboxed. Widened to the Help window: S33. |
+| S5, S7, S8 | #652 | **Open.** The editor and now the Help window are `file://` pages, `GrantFileProtocolExtraPrivileges` is on, `isAppUrl` ignores a `file:` URL's host, and spec/01 still says the canvas is sandboxed. Widened to the Help window: S33. **Fixed since** (#652, ADR 0023). |
 | S9, S24 | #653 | Fixed and checked. Note: the phone listener's idle timer re-arms while a page stays open on a device, which is "no page open" as decided, not a hard cap. |
 | S10, S11 | #654 | Fixed and checked. |
 | S13, S14 | #657 | Fixed and checked (S13 by the help note, as the review allowed). |
-| S15, S17 | #655 | **Open.** No test reads the packaged fuse wire; `electron-log/main` still registers its IPC channel (unreachable: no `ipcRenderer` is exposed). |
+| S15, S17 | #655 | **Open.** No test reads the packaged fuse wire; `electron-log/main` still registers its IPC channel (unreachable: no `ipcRenderer` is exposed). **Fixed since** (#655): `e2e/packaged` reads the fuse wire, and the log file uses `electron-log/node`. |
 | S16 | #656 | Partly. The audit runs nightly and fails on moderate production advisories. Renovate isn't installed (deferred by the product owner), so updates are made by hand. |
 | S18, S19, S21 | #658 | Fixed and checked, in plans and briefs too. S18's list of sensitive fields had a gap: S31, fixed here. |
 | S20 | #171 | Fixed, but an app could push its safety version out: S26, fixed here. |
@@ -97,7 +97,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 ### The IPC surface and the new windows
 | S | Finding | Where | Severity | Scenario | Fix |
 |---|---|---|---|---|---|
-| S33 | **The Help window inherits S5 and S7:** it's a second `file://` page, and `isHelpPageUrl` relies on `isAppUrl`. | `main/help-window.ts:76-83,112-114`, `main/help-ipc.ts:21`, `main/app.ts:172` | low | As S7: a `file://host/…` navigation would pass the Help sender check. Unreachable today, since help pages are drawn without raw HTML. | #652 widened (comment). |
+| S33 | **The Help window inherits S5 and S7:** it's a second `file://` page, and `isHelpPageUrl` relies on `isAppUrl`. | `main/help-window.ts:76-83,112-114`, `main/help-ipc.ts:21`, `main/app.ts:172` | low | As S7: a `file://host/…` navigation would pass the Help sender check. Unreachable today, since help pages are drawn without raw HTML. | #652 widened (comment). **Fixed since** (#652): Help loads from `webforge-app://editor/help.html`, and `isHelpPageUrl` compares hosts through `isAppUrl`. Tests in `help-window.test.ts`. |
 | S34 | **Help opened plain `http://` links as well as `https://`.** | `shared/ipc/help.ts:49`, `renderer/help/help-navigation.ts:19` | info | A future page's `http://` link opens over plain text, and the channel accepted loopback addresses. | **Fixed here.** `https` only in the channel and the link routing, and `pnpm help-check` refuses `http://` links. Tests in `help-library.test.ts` and `pages.test.ts`. |
 | S35 | **The Help page gets the editor's whole CSP** (`webforge-media:`, `webforge-font:`, `connect-src 'self'`). | `renderer/help.html:7`, `shared/content-security-policy.ts` | info | A script in the Help page could read the open site's Media. Help's content is trusted. | #797. |
 
@@ -120,7 +120,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 | S | Finding | Where | Severity | Scenario | Fix |
 |---|---|---|---|---|---|
 | S32 | **A Netlify sign-in isn't tied to the Netlify site.** The fingerprint is just `netlify`, and the publisher has no other-site guard. | `main/publish-secrets.ts:43-45`, `publish/src/publisher-for.ts:105-111` | low (latent) | S2's attacker changes `siteId` in the shared file, and the next publish overwrites another of the owner's Netlify sites. Not reachable until 4.4b saves a Netlify sign-in. | #796, before 4.4b. **Fixed since** (#796): the fingerprint holds the Netlify site's id, so another site, or none, asks for the sign-in again. Its address isn't part of it: the live check asks for that with no sign-in. Tests in `publish-secrets.test.ts` and `netlify-auth.test.ts`. |
-| S38 | **Legacy `netlify-auth.ts` saves the raw token outside the S2 record.** Only its test imports it. | `main/netlify-auth.ts:40,48` | info | If 4.4b wired it up as it is, the fingerprint would be skipped (it fails closed). | #796. **Fixed since** (#796): it saves through `PublishSecrets.save`, for the destination, and a dependency-cruiser rule keeps the keychain's store to `app.ts`, `publish-secrets.ts` and `ai-apps.ts`. |
+| S38 | **Legacy `netlify-auth.ts` saves the raw token outside the S2 record.** Only its test imports it. | `main/netlify-auth.ts:40,48` | info | If 4.4b wired it up as it is, the fingerprint would be skipped (it fails closed). | #796. **Fixed since** (#796): it saves through `PublishSecrets.save`, for the destination, and a dependency-cruiser rule keeps the keychain's store to `app.ts`, `publish-secrets.ts`, `ai-apps.ts` and `publish-destinations-ipc.ts` (for its `CredentialError` only). |
 | S39 | **The first review's "refuses Linux's `basic_text` keyring" isn't in the code.** | `main/credential-store.ts:110` | info | None today: only Windows and macOS are built. | Correction recorded here. Add `getSelectedStorageBackend() !== "basic_text"` before any Linux build. |
 
 **What holds:**
