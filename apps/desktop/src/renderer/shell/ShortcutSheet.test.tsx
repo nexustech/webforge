@@ -4,7 +4,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { createCommandRegistry, installCommandShortcuts } from "./commands.js";
-import { ShortcutSheet, shortcutSheet } from "./ShortcutSheet.js";
+import { shortcutSheet } from "./SheetGroups.js";
+import { ShortcutSheet } from "./ShortcutSheet.js";
 
 afterEach(cleanup);
 

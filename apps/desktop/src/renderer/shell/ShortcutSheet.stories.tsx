@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { COMMAND_IDS } from "./command-ids.js";
 import { type Command, createCommandRegistry } from "./commands.js";
-import { SheetGroups } from "./ShortcutSheet.js";
+import { SheetGroups } from "./SheetGroups.js";
 
 const noop = () => undefined;
 
