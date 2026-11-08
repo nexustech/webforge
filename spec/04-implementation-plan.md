@@ -1289,6 +1289,7 @@ OAuth (loopback) + PAT fallback, create/pick site, digest deploy, deploy history
 - [ ] Incremental deploys upload only changes
 - [ ] E2E against a mocked Netlify API (msw)
 - [ ] Netlify Forms option only offered with a Netlify destination
+- [ ] Netlify's toolbar script (`/.netlify/scripts/hud`, added to served pages on 0.2's live run): find whether a site setting turns it off, and if one does, set it on the sites Webforge creates or document it (ADR 0006 decision 6)
 
 **4.3 FTP/FTPS/SFTP publisher**  
 FTPS first then plain FTP (one-time warning), SFTP with password or key, host presets, Test connection, hidden .webforge-publish.json manifest. 0.3 built the publishers (`ftpPublisher`, `sftpPublisher` and the shared manifest flow in `packages/publish`, ADR 0006 decision 7); 4.3 wires them to destinations, key sign-in and the UI.
@@ -1313,6 +1314,8 @@ Destinations list per site (several allowed), add/edit/test/remove; secrets via 
 - [ ] A Netlify destination can be added, tested, edited and removed; its token is never written to the `.wforge` (test)
 - [ ] E2E publish to a mocked Netlify API through 4.5's flow (moved from 4.5)
 - [ ] 'Netlify Forms' is offered once the site has a Netlify destination, end to end
+- [ ] A Netlify site with visitor access (site protection) on gets a warning: Netlify's API reports the deploy live while visitors get its login redirect (0.2's live run, ADR 0006 decision 6)
+- [ ] Sign-in through OAuth runs live once the product owner has registered Webforge's Netlify OAuth application (its client ID set in the app); until then the pasted token is the only sign-in
 - [ ] Help page added or updated in `docs/help/` (HP-4)
 
 **4.5 Publish flow UI**  
