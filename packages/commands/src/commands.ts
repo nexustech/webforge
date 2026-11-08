@@ -331,6 +331,7 @@ function confirmationFor(
     description: changed.map((change) => t("ai.confirm.destinationFromTo", change)).join(" "),
     confirm: t("ai.confirm.allow"),
     affectedPages: pages,
+    first: true,
   });
 }
 

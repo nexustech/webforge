@@ -164,6 +164,7 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
       description: "Phone number: from no address to 01234 567890.",
       confirm: "Allow",
       affectedPages: history.document.getState().pageOrder.length,
+      first: true,
     });
     const settings = history.document.getState().settings;
     expect(settings.general).toMatchObject({
