@@ -113,16 +113,26 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
   await expect.poll(brand, { timeout: OPEN_WAIT }).not.toBe(initial);
   const before = await brand();
 
-  // The page notes, by its own clock, the frame its colour changes in: no test round trip in it.
+  // The page notes, by its own clock, when it has the colour: no test round trip in it. It looks
+  // as its document changes (the values' style element), so it needs no frame to see it. A watcher
+  // on animation frames saw nothing on macOS' runner while the page took the colour (#810): a
+  // headless page needn't draw frames. `watching` goes if the page reloads, which tells the two
+  // apart.
   await site.evaluate((previous) => {
-    const watch = () => {
-      const now = getComputedStyle(document.documentElement)
-        .getPropertyValue("--color-primary")
-        .trim();
-      if (now !== previous) Object.assign(window, { colourAt: Date.now() });
-      else requestAnimationFrame(watch);
-    };
-    requestAnimationFrame(watch);
+    const colour = () =>
+      getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim();
+    const observer = new MutationObserver(() => {
+      if (colour() === previous) return;
+      Object.assign(window, { colourAt: Date.now() });
+      observer.disconnect();
+    });
+    observer.observe(document, {
+      subtree: true,
+      childList: true,
+      characterData: true,
+      attributes: true,
+    });
+    Object.assign(window, { watching: true });
   }, before);
   let started = 0;
   const swapped = await serverEvents(site.url(), "values");
@@ -131,17 +141,21 @@ test("a colour of the theme reaches the browser in under 100 ms", async () => {
     started = Date.now();
     await confirm.click();
   });
+  // Every 10 ms, not on animation frames, which a headless page needn't draw.
   await site.waitForFunction(
-    (previous) =>
-      getComputedStyle(document.documentElement).getPropertyValue("--color-primary").trim() !==
-      previous,
-    before,
-    { polling: "raf", timeout: OPEN_WAIT },
+    () => {
+      const marks = window as unknown as { colourAt?: number; watching?: boolean };
+      return marks.colourAt !== undefined || marks.watching !== true;
+    },
+    undefined,
+    { polling: 10, timeout: OPEN_WAIT },
   );
-  const shown = await site.evaluate(() => (window as unknown as { colourAt?: number }).colourAt);
-  // The watcher's mark is gone when the page reloaded instead of swapping its stylesheet in place,
-  // as a late reload of the earlier change can make it: say so, rather than time NaN.
-  if (shown === undefined)
+  const { shown, watching } = await site.evaluate(() => {
+    const marks = window as unknown as { colourAt?: number; watching?: boolean };
+    return { shown: marks.colourAt, watching: marks.watching === true };
+  });
+  // The watcher goes with the page, if it reloaded rather than taking the values in place.
+  if (!watching || shown === undefined)
     throw new Error("The page reloaded instead of swapping the colour in place");
   const edited = await lastChange();
   const took = shown - edited;
