@@ -1485,7 +1485,12 @@
         "gap": "medium",
         "contentWidth": "wide",
         "content": []
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Heading": {
       "label": "Heading",
@@ -1617,6 +1622,14 @@
         "text": "Heading",
         "size": "medium",
         "color": "default"
+      },
+      "textStyle": {
+        "field": "size",
+        "styles": {
+          "large": "h1",
+          "medium": "h2",
+          "small": "h3"
+        }
       }
     },
     "Text": {
@@ -1699,7 +1712,8 @@
       },
       "defaults": {
         "text": "<p>Text</p>"
-      }
+      },
+      "textStyle": "body"
     },
     "Image": {
       "label": "Image",
@@ -2888,7 +2902,8 @@
         "color": "primary",
         "alignment": "left",
         "hover": "none"
-      }
+      },
+      "graphic": true
     },
     "SocialLinks": {
       "label": "Social links",
@@ -2971,7 +2986,8 @@
         "size": "medium",
         "color": "default",
         "alignment": "left"
-      }
+      },
+      "graphic": true
     },
     "Hero": {
       "label": "Hero",
@@ -3167,7 +3183,15 @@
         "minimal": [
           "image"
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "image",
+          "variants": [
+            "background"
+          ]
+        }
+      ]
     },
     "TextSection": {
       "label": "Text",
@@ -3362,7 +3386,12 @@
         "title": "Our story",
         "text": "<p>Tell visitors who you are, what you do and why you do it.</p>",
         "contentWidth": "narrow"
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "TextImage": {
       "label": "Text + Image",
@@ -3577,7 +3606,12 @@
         "title": "What we do",
         "text": "<p>Describe what you offer, and add a photo that shows it.</p>",
         "contentWidth": "wide"
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "CallToAction": {
       "label": "Call to action",
@@ -3797,7 +3831,12 @@
         "text": "Tell visitors the one thing you would like them to do next.",
         "buttonLabel": "Contact us",
         "contentWidth": "narrow"
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Faq": {
       "label": "FAQ",
@@ -4014,7 +4053,12 @@
         "title": "Frequently asked questions",
         "contentWidth": "narrow",
         "items": []
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "FaqItem": {
       "label": "Question",
@@ -4251,7 +4295,12 @@
         "title": "Our work",
         "contentWidth": "wide",
         "images": []
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "GalleryImage": {
       "label": "Image",
@@ -4597,7 +4646,12 @@
         "text": "<p>Say what this video shows.</p>",
         "address": "",
         "contentWidth": "medium"
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Map": {
       "label": "Map",
@@ -4817,7 +4871,12 @@
         "text": "<p>Tell visitors how to get here, and where to park.</p>",
         "address": "",
         "contentWidth": "medium"
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "EmbedVideo": {
       "label": "Embed video",
@@ -5219,7 +5278,12 @@
         "text": "<p>We'd love to see you.</p>",
         "showHours": true,
         "showContact": true
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "ContactForm": {
       "label": "Contact form",
@@ -5445,7 +5509,12 @@
         "stacked": [
           "contentWidth"
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Newsletter": {
       "label": "Newsletter signup",
@@ -5684,7 +5753,12 @@
         "stacked": [
           "contentWidth"
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Form": {
       "label": "Form",
@@ -6217,7 +6291,12 @@
             }
           }
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Feature": {
       "label": "Feature",
@@ -6578,7 +6657,12 @@
             }
           }
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Testimonial": {
       "label": "Testimonial",
@@ -6951,7 +7035,12 @@
             }
           }
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "TeamMember": {
       "label": "Team member",
@@ -7332,7 +7421,12 @@
             }
           }
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "PricingPlan": {
       "label": "Plan",
@@ -7989,7 +8083,12 @@
             }
           }
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Logo": {
       "label": "Logo",
@@ -8258,7 +8357,12 @@
             }
           }
         ]
-      }
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
     },
     "Stat": {
       "label": "Stat",
