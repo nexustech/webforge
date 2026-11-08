@@ -14,6 +14,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -35,6 +39,13 @@ import {
   FileTransferDestinationDialog,
   type FileTransferSaved,
 } from "./FileTransferDestinationDialog.js";
+import {
+  type NetlifyConnection,
+  type NetlifyDestinationApi,
+  NetlifyDestinationDialog,
+  type NetlifySaved,
+  type NetlifySite,
+} from "./NetlifyDestinationDialog.js";
 
 /** The person's words for why the destinations couldn't be read or changed. */
 function failureMessage(reason: DestinationsFailure): string {
@@ -42,6 +53,29 @@ function failureMessage(reason: DestinationsFailure): string {
     ? t("publish.destinations.failed.full", { max: PUBLISH_DESTINATIONS_MAX })
     : t(`publish.destinations.failed.${reason}`);
 }
+
+/** What saving a destination gives: as {@link PublishApi}'s `saveDestination` does. */
+type SaveResult = Awaited<ReturnType<PublishApi["saveDestination"]>>;
+
+/**
+ * What the main process does for Netlify destinations (4.4b, 4.2's IPC): signing in and the
+ * account's sites, as the Netlify dialog asks; a new site made; and a destination saved with the
+ * sign-in it made, or the one saved for it.
+ */
+export type NetlifyPublishApi = NetlifyDestinationApi & {
+  readonly createSite: (
+    connection: NetlifyConnection,
+    name: string,
+  ) => Promise<
+    | { readonly status: "created"; readonly site: NetlifySite }
+    | { readonly status: "failed"; readonly code: Extract<ConnectionResult, { ok: false }>["code"] }
+  >;
+  readonly save: (
+    id: string | undefined,
+    destination: { readonly name: string; readonly siteId: string; readonly url: string },
+    signIn: NetlifySaved["signIn"],
+  ) => Promise<SaveResult>;
+};
 
 /** What the main process does for the dialog: the site's destinations, and their tests. */
 export type PublishDialogApi = Pick<
@@ -63,6 +97,8 @@ export type PublishDialogProps = {
    */
   readonly republishing?: string;
   readonly publish: PublishDialogApi;
+  /** Netlify destinations (4.4b): offered in Add Destination when given. */
+  readonly netlify?: NetlifyPublishApi;
   /** The opening of the site this window was loaded for (R6). */
   readonly sessionId: () => string;
   /** Says what went wrong, in the window's toasts. */
@@ -74,8 +110,11 @@ export type PublishDialogProps = {
   readonly onClose: () => void;
 };
 
-/** A destination being added (none yet) or edited. */
-type Editing = { readonly listed: ListedDestination | undefined };
+/** A destination being added (none yet) or edited, and of which kind. */
+type Editing = {
+  readonly kind: PublishDestination["kind"];
+  readonly listed: ListedDestination | undefined;
+};
 
 /** Each destination's last test, by its id: running, or what it found. */
 type Tests = Readonly<Record<string, ConnectionResult | "testing">>;
@@ -91,6 +130,7 @@ export function PublishDialog({
   open,
   republishing,
   publish,
+  netlify,
   sessionId,
   notify,
   onSaved,
@@ -136,10 +176,22 @@ export function PublishDialog({
     return "status" in result ? { ok: false, code: "failed" } : result;
   };
 
+  /** A Netlify destination's test: its sign-in still works, and its site is still there. */
+  const testNetlify = async (id: string, siteId: string | undefined): Promise<ConnectionResult> => {
+    if (netlify === undefined) return { ok: false, code: "failed" };
+    const result = await netlify.sites({ saved: id });
+    if (result.status === "failed") return { ok: false, code: result.code };
+    return result.sites.some((site) => site.id === siteId)
+      ? { ok: true }
+      : { ok: false, code: "not-found" };
+  };
+
   const test = async ({ destination, trust }: ListedDestination) => {
-    if (destination.kind !== "file-transfer") return;
     setTests((all) => ({ ...all, [destination.id]: "testing" }));
-    const result = await testSaved(destination.id, destination.settings, trust);
+    const result =
+      destination.kind === "file-transfer"
+        ? await testSaved(destination.id, destination.settings, trust)
+        : await testNetlify(destination.id, destination.siteId);
     setTests((all) => ({ ...all, [destination.id]: result }));
   };
 
@@ -164,6 +216,43 @@ export function PublishDialog({
     );
   };
 
+  /** Saves a Netlify destination, making its new site first when it asks for one. */
+  const saveNetlify = async (saved: NetlifySaved) => {
+    if (netlify === undefined) return;
+    const id = editing?.listed?.destination.id;
+    const connection: NetlifyConnection =
+      "netlifyHandle" in saved.signIn
+        ? { handle: saved.signIn.netlifyHandle }
+        : { saved: id ?? "" };
+    let site: { readonly id: string; readonly url: string } =
+      "create" in saved.site ? { id: "", url: "" } : saved.site;
+    let name = saved.name;
+    if ("create" in saved.site) {
+      const created = await netlify.createSite(connection, saved.site.create);
+      if (created.status === "failed") {
+        notify(connectionMessage({ ok: false, code: created.code }));
+        return;
+      }
+      site = created.site;
+      // Left unnamed, as the new site was: listed by the name Netlify gave it.
+      if (saved.site.create === "" && name === t("publish.netlify.defaultName")) {
+        name = created.site.name;
+      }
+    }
+    const result = await netlify.save(id, { name, siteId: site.id, url: site.url }, saved.signIn);
+    if (result.status === "saved") {
+      setEditing(undefined);
+      onSaved(result.destination);
+      reload();
+      return;
+    }
+    notify(
+      result.status === "sign-in-needed"
+        ? t("publish.destinations.signInNeeded")
+        : failureMessage(result.reason),
+    );
+  };
+
   const remove = async ({ destination }: ListedDestination) => {
     setRemoving(undefined);
     const result = await publish.removeDestination(sessionId(), destination.id);
@@ -174,6 +263,8 @@ export function PublishDialog({
   const edited = editing?.listed;
   const editedSettings =
     edited?.destination.kind === "file-transfer" ? edited.destination.settings : undefined;
+  const editedNetlify = edited?.destination.kind === "netlify" ? edited.destination : undefined;
+  const adding = listed === undefined || listed.length >= PUBLISH_DESTINATIONS_MAX;
 
   return (
     <>
@@ -216,20 +307,44 @@ export function PublishDialog({
                     );
                   }}
                   onPublish={() => onPublish(each.destination)}
-                  onEdit={() => setEditing({ listed: each })}
+                  canEdit={each.destination.kind !== "netlify" || netlify !== undefined}
+                  onEdit={() => setEditing({ kind: each.destination.kind, listed: each })}
                   onRemove={() => setRemoving(each)}
                 />
               ))}
             </ul>
           )}
           <DialogFooter>
-            <Button
-              variant="outline"
-              disabled={listed === undefined || listed.length >= PUBLISH_DESTINATIONS_MAX}
-              onClick={() => setEditing({ listed: undefined })}
-            >
-              {t("publish.destinations.add")}
-            </Button>
+            {netlify === undefined ? (
+              <Button
+                variant="outline"
+                disabled={adding}
+                onClick={() => setEditing({ kind: "file-transfer", listed: undefined })}
+              >
+                {t("publish.destinations.add")}
+              </Button>
+            ) : (
+              // Which kind of destination (4.4b): a web host over FTP, FTPS or SFTP, or Netlify.
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" disabled={adding}>
+                    {t("publish.destinations.add")}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onSelect={() => setEditing({ kind: "file-transfer", listed: undefined })}
+                  >
+                    {t("publish.destinations.add.fileTransfer")}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onSelect={() => setEditing({ kind: "netlify", listed: undefined })}
+                  >
+                    {t("publish.destinations.add.netlify")}
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
             <Button variant="secondary" onClick={onClose}>
               {t("publish.destinations.close")}
             </Button>
@@ -239,7 +354,27 @@ export function PublishDialog({
         </DialogContent>
       </Dialog>
       {/* Drawn only while open, so each opening starts afresh: no key or trust from the last. */}
-      {editing !== undefined && (
+      {editing?.kind === "netlify" && netlify !== undefined && (
+        <NetlifyDestinationDialog
+          open
+          {...(editedNetlify === undefined || edited === undefined
+            ? {}
+            : {
+                editing: {
+                  id: editedNetlify.id,
+                  name: editedNetlify.name,
+                  siteId: editedNetlify.siteId,
+                  signedIn: edited.signIn === "saved",
+                },
+              })}
+          netlify={netlify}
+          onSave={(saved) => {
+            saveNetlify(saved).catch(() => notify(failureMessage("unknown")));
+          }}
+          onCancel={() => setEditing(undefined)}
+        />
+      )}
+      {editing?.kind === "file-transfer" && (
         <FileTransferDestinationDialog
           open
           destination={editedSettings}
@@ -293,6 +428,7 @@ function DestinationRow({
   listed: { destination, signIn },
   test,
   republish,
+  canEdit,
   onPublish,
   onTest,
   onEdit,
@@ -302,13 +438,17 @@ function DestinationRow({
   readonly test: ConnectionResult | "testing" | undefined;
   /** Its first action republishes a saved version, rather than publishing the site (4.6b). */
   readonly republish: boolean;
+  /** Whether it can be published, tested and edited here: a Netlify one needs 4.2's IPC. */
+  readonly canEdit: boolean;
   readonly onPublish: () => void;
   readonly onTest: () => void;
   readonly onEdit: () => void;
   readonly onRemove: () => void;
 }) {
   const { name } = destination;
-  const fileTransfer = destination.kind === "file-transfer";
+  // A Netlify destination is published to once it has its site (4.4b).
+  const ready =
+    signIn === "saved" && (destination.kind !== "netlify" || destination.siteId !== undefined);
   return (
     <li className="flex flex-wrap items-start justify-between gap-3 rounded-md border border-border p-3">
       <div className="min-w-0 flex-1 basis-64 space-y-1 text-sm">
@@ -319,7 +459,9 @@ function DestinationRow({
                 host: destination.settings.host,
                 folder: destination.settings.folder,
               })
-            : t("publish.destinations.netlify")}
+            : destination.url === undefined
+              ? t("publish.destinations.netlify")
+              : t("publish.destinations.netlifySite", { url: destination.url })}
         </p>
         {signIn !== "saved" && (
           <p className="text-muted-foreground">
@@ -340,7 +482,7 @@ function DestinationRow({
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
-        {fileTransfer && (
+        {canEdit && (
           <>
             <Button
               size="sm"
@@ -349,7 +491,7 @@ function DestinationRow({
                   ? t("publish.republish.button.label", { name })
                   : t("publish.run.publish.label", { name })
               }
-              disabled={signIn !== "saved"}
+              disabled={!ready}
               onClick={onPublish}
             >
               {republish ? t("publish.republish.button") : t("publish.run.publish")}
@@ -358,7 +500,7 @@ function DestinationRow({
               size="sm"
               variant="outline"
               aria-label={t("publish.destinations.test.label", { name })}
-              disabled={signIn !== "saved" || test === "testing"}
+              disabled={!ready || test === "testing"}
               onClick={onTest}
             >
               {t("publish.destinations.test")}

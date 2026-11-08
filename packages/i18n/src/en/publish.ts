@@ -46,6 +46,9 @@ export const publish = {
   "publish.destinations.add": "Add Destination",
   "publish.destinations.close": "Close",
   "publish.destinations.where": "{host} · {folder}",
+  "publish.destinations.netlifySite": "Netlify: {url}",
+  "publish.destinations.add.fileTransfer": "FTP, FTPS or SFTP…",
+  "publish.destinations.add.netlify": "Netlify…",
   "publish.destinations.netlify": "Netlify",
   "publish.destinations.signIn.none":
     "No password saved on this computer. Edit the destination to add one.",

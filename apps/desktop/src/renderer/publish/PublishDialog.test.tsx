@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { PublishDestination } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { ListedDestination, PublishApi } from "../../shared/ipc/publish.js";
-import { PublishDialog, type PublishDialogApi } from "./PublishDialog.js";
+import { type NetlifyPublishApi, PublishDialog, type PublishDialogApi } from "./PublishDialog.js";
 
 afterEach(cleanup);
 
@@ -234,5 +234,125 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
       ),
     );
     expect(screen.getByRole("dialog", { name: "Publish to your web host" })).toBeTruthy();
+  });
+});
+
+describe("the Publish dialog's Netlify destinations (4.4b)", () => {
+  const SITE = {
+    id: "3d3f0a5e-1111-4222-8333-444455556666",
+    name: "rosas-bakery",
+    url: "https://rosas-bakery.netlify.app",
+    protected: false,
+  };
+  const netlifyDestination: PublishDestination = {
+    id: "c0ffee00-1111-4222-8333-444455556666",
+    name: "On Netlify",
+    kind: "netlify",
+    siteId: SITE.id,
+    url: SITE.url,
+  };
+
+  /** Netlify's side: one site, a new one made on request, and saving; each call a spy. */
+  function fakeNetlify() {
+    return {
+      canSignIn: false,
+      connect: vi.fn<NetlifyPublishApi["connect"]>(async () => ({
+        status: "connected",
+        handle: "8d2c1f0e-1111-4222-8333-444455556666",
+      })),
+      sites: vi.fn<NetlifyPublishApi["sites"]>(async () => ({ status: "listed", sites: [SITE] })),
+      createSite: vi.fn<NetlifyPublishApi["createSite"]>(async () => ({
+        status: "created",
+        site: {
+          id: "9e8d7c6b-1111-4222-8333-444455556666",
+          name: "brave-otter-1a2b",
+          url: "https://brave-otter-1a2b.netlify.app",
+          protected: false,
+        },
+      })),
+      save: vi.fn<NetlifyPublishApi["save"]>(async (id, draft) => ({
+        status: "saved",
+        destination: {
+          id: id ?? "4f9a2c1e-7b3d-4a5e-9c8f-1d2e3f4a5b6c",
+          kind: "netlify",
+          ...draft,
+        },
+      })),
+    };
+  }
+
+  function setUpNetlify(listed: ListedDestination[], netlify = fakeNetlify()) {
+    const onSaved = vi.fn();
+    const onPublish = vi.fn();
+    render(
+      <PublishDialog
+        open
+        publish={fakePublish(listed)}
+        netlify={netlify}
+        sessionId={() => SESSION}
+        notify={vi.fn()}
+        onSaved={onSaved}
+        onPublish={onPublish}
+        onClose={vi.fn()}
+      />,
+    );
+    return { netlify, onSaved, onPublish, user: userEvent.setup({ delay: null }) };
+  }
+
+  it("adds one through Add Destination › Netlify…, making a new site Netlify names", async () => {
+    const { netlify, onSaved, user } = setUpNetlify([]);
+    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("menuitem", { name: "Netlify…" }));
+
+    const dialog = await screen.findByRole("dialog", { name: "Add a Netlify Destination" });
+    await user.type(within(dialog).getByLabelText("Personal access token"), "nfp_token");
+    await user.click(within(dialog).getByRole("button", { name: "Connect" }));
+    await user.selectOptions(await within(dialog).findByLabelText("Netlify site"), "new");
+    await user.click(within(dialog).getByRole("button", { name: "Save Destination" }));
+
+    await waitFor(() => expect(onSaved).toHaveBeenCalled());
+    expect(netlify.createSite).toHaveBeenCalledWith(
+      { handle: "8d2c1f0e-1111-4222-8333-444455556666" },
+      "",
+    );
+    // Unnamed, as its site was: listed by the name Netlify gave the site.
+    expect(netlify.save).toHaveBeenCalledWith(
+      undefined,
+      {
+        name: "brave-otter-1a2b",
+        siteId: "9e8d7c6b-1111-4222-8333-444455556666",
+        url: "https://brave-otter-1a2b.netlify.app",
+      },
+      { netlifyHandle: "8d2c1f0e-1111-4222-8333-444455556666" },
+    );
+  });
+
+  it("lists one by its site, publishes and tests it, and can't before it has its site", async () => {
+    const { netlify, onPublish, user } = setUpNetlify([
+      { destination: netlifyDestination, signIn: "saved", trust: {} },
+      {
+        destination: {
+          id: "d00d0000-1111-4222-8333-444455556666",
+          name: "Siteless",
+          kind: "netlify",
+        },
+        signIn: "saved",
+        trust: {},
+      },
+    ]);
+    const rows = await screen.findAllByRole("listitem");
+    const first = within(rows[0] as HTMLElement);
+    const second = within(rows[1] as HTMLElement);
+    expect(first.getByText("Netlify: https://rosas-bakery.netlify.app")).toBeTruthy();
+
+    await user.click(first.getByRole("button", { name: "Test the connection to On Netlify" }));
+    expect(netlify.sites).toHaveBeenCalledWith({ saved: netlifyDestination.id });
+    expect(await first.findByText("Connected. Webforge can publish your site here.")).toBeTruthy();
+    await user.click(first.getByRole("button", { name: "Publish to On Netlify" }));
+    expect(onPublish).toHaveBeenCalledWith(netlifyDestination);
+
+    expect(
+      (second.getByRole("button", { name: "Publish to Siteless" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
   });
 });
