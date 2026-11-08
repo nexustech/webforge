@@ -505,6 +505,9 @@ export function QuickActionBar({
     bar.addEventListener("mousedown", keepFocus);
     return () => bar.removeEventListener("mousedown", keepFocus);
   });
+  // After every draw, with no dependencies on purpose (R2): where the bar sits and the hovered
+  // element's size are read from the canvas's layout, which changes without any of this component's
+  // values changing. It sets the size only when it differs, so it settles after one more draw.
   useLayoutEffect(() => {
     const bar = kept.current;
     // With *Show spacing on hover* on, a hovered element's chip says its size (SP-2).

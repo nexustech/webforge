@@ -118,8 +118,8 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 ### Electron, Fuses, CSP, publishing and logging
 | S | Finding | Where | Severity | Scenario | Fix |
 |---|---|---|---|---|---|
-| S32 | **A Netlify sign-in isn't tied to the Netlify site.** The fingerprint is just `netlify`, and the publisher has no other-site guard. | `main/publish-secrets.ts:43-45`, `publish/src/publisher-for.ts:105-111` | low (latent) | S2's attacker changes `siteId` in the shared file, and the next publish overwrites another of the owner's Netlify sites. Not reachable until 4.4b saves a Netlify sign-in. | #796, before 4.4b. |
-| S38 | **Legacy `netlify-auth.ts` saves the raw token outside the S2 record.** Only its test imports it. | `main/netlify-auth.ts:40,48` | info | If 4.4b wired it up as it is, the fingerprint would be skipped (it fails closed). | #796. |
+| S32 | **A Netlify sign-in isn't tied to the Netlify site.** The fingerprint is just `netlify`, and the publisher has no other-site guard. | `main/publish-secrets.ts:43-45`, `publish/src/publisher-for.ts:105-111` | low (latent) | S2's attacker changes `siteId` in the shared file, and the next publish overwrites another of the owner's Netlify sites. Not reachable until 4.4b saves a Netlify sign-in. | #796, before 4.4b. **Fixed since** (#796): the fingerprint holds the Netlify site's id, so another site, or none, asks for the sign-in again. Its address isn't part of it: the live check asks for that with no sign-in. Tests in `publish-secrets.test.ts` and `netlify-auth.test.ts`. |
+| S38 | **Legacy `netlify-auth.ts` saves the raw token outside the S2 record.** Only its test imports it. | `main/netlify-auth.ts:40,48` | info | If 4.4b wired it up as it is, the fingerprint would be skipped (it fails closed). | #796. **Fixed since** (#796): it saves through `PublishSecrets.save`, for the destination, and a dependency-cruiser rule keeps the keychain's store to `app.ts`, `publish-secrets.ts` and `ai-apps.ts`. |
 | S39 | **The first review's "refuses Linux's `basic_text` keyring" isn't in the code.** | `main/credential-store.ts:110` | info | None today: only Windows and macOS are built. | Correction recorded here. Add `getSelectedStorageBackend() !== "basic_text"` before any Linux build. |
 
 **What holds:**
@@ -150,6 +150,6 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 | Electron hardening: Fuses, CSP, navigation handlers, sandbox | Holds, except S5 and S7 (#652, now including the Help window) and S15 (#655). |
 | IPC schema validation | Holds: every channel, both directions, both preloads. |
 | Untrusted `.wforge` fuzzing | Holds: the new fuzzing test (its one finding fixed here), plus the crafted-file tests from S4. |
-| Secrets and logging | Holds. S32 and S38 are before 4.4b (#796). |
+| Secrets and logging | Holds. S32 and S38 are before 4.4b (#796), and fixed since. |
 | Dependency audit | Holds: S40 is build-time only. |
 | MCP server: pairing, `Origin` and `Host` checks, tool scope, no content in logs (F-AI-1) | Holds: S26 fixed here, S27–S30 filed (#794, #795). |

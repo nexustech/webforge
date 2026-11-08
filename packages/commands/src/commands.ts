@@ -4,12 +4,14 @@ import {
   deletePageFrom,
   insertPage,
   isNodeDoc,
+  isPageIn,
   linkValueSchema,
   type NodeDoc,
   newId,
   PAGE_DESCRIPTION_MAX,
   type PageEntry,
   type PageId,
+  pageEntryOf,
   pageNeighbour,
   pagesChangedByDeleting,
   pageTitle,
@@ -142,7 +144,7 @@ function missingReference(site: SiteDoc, value: unknown): string | undefined {
   if (
     named.kind === "page" &&
     typeof named.pageId === "string" &&
-    site.pages[named.pageId as PageId] === undefined
+    !isPageIn(site.pages, named.pageId)
   ) {
     return `There is no page "${named.pageId}".`;
   }
@@ -335,8 +337,10 @@ function confirmationFor(
 
 /** Page `pageId` of `site`, or why it isn't there. */
 function pageOf(site: SiteDoc, pageId: string): PageEntry | Failure {
-  const page = Object.hasOwn(site.pages, pageId) ? site.pages[pageId as PageId] : undefined;
-  return page ?? fail("not-found", `There is no page "${pageId}". The outline lists them.`);
+  return (
+    pageEntryOf(site.pages, pageId) ??
+    fail("not-found", `There is no page "${pageId}". The outline lists them.`)
+  );
 }
 
 /** "page 'About'", for the history's "Deleted {item}" labels, as the Pages panel's. */

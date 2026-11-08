@@ -33,7 +33,9 @@ type SavedSignIn = { readonly signIn: PublishSignIn; readonly trust: FileTransfe
 
 /**
  * Where a secret is given (S2): a file-transfer destination's protocol, host, port and user, and
- * the SFTP host key trusted; a Netlify destination always signs in at Netlify. A SHA-256, so the
+ * the SFTP host key trusted; a Netlify destination's site, which its token deploys to (S32), so a
+ * site file edited to name another of the person's Netlify sites asks for the sign-in again. Its
+ * address isn't part of it: the live check asks for that with no sign-in. A SHA-256, so the
  * keychain's record says nothing of the host by itself.
  */
 export function destinationFingerprint(
@@ -42,7 +44,7 @@ export function destinationFingerprint(
 ): string {
   const where =
     destination.kind === "netlify"
-      ? ["netlify"]
+      ? ["netlify", destination.siteId ?? null]
       : [
           "file-transfer",
           destination.settings.protocol,
@@ -70,7 +72,11 @@ export type PublishSecrets = {
     destination: PublishDestination,
     trust?: FileTransferTrust,
   ): Promise<SavedSignIn | undefined>;
-  /** Saves `destination`'s sign-in and trust, for it as it is now. Throws `CredentialError`. */
+  /**
+   * Saves `destination`'s sign-in and trust, for it as it is now. Throws `CredentialError`. The
+   * only way a publish secret is saved (S38). A Netlify sign-in made before its site was chosen
+   * is saved again for the site once the first publish chooses it (4.4b).
+   */
   save(
     projectId: string,
     destination: PublishDestination,

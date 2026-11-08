@@ -13,6 +13,12 @@ import { ProjectFileError, ProjectStore } from "../src/index.js";
 
 const tempDir = tempDirFactory();
 
+/**
+ * Each run writes, opens and reads a whole site file: a few seconds in all alone, but past
+ * Vitest's 30 s while the full suite ran with coverage on a busy machine (#796).
+ */
+const FUZZ_TIMEOUT_MS = 120_000;
+
 /** A site file with a site, a version and an image: something in every table a read touches. */
 function sampleFile(): Buffer {
   const path = join(tempDir(), "sample.wforge");
@@ -48,45 +54,52 @@ const expected = (error: unknown) =>
   error instanceof ProjectFileError || error instanceof SiteFormatError;
 
 describe("a damaged or crafted .wforge (5.6)", () => {
-  it("opens and reads, or fails with storage's own error, whatever bytes are changed", () => {
-    const original = sampleFile();
-    let run = 0;
-    fc.assert(
-      fc.property(
-        fc.array(fc.record({ at: fc.nat(), value: fc.integer({ min: 0, max: 255 }) }), {
-          minLength: 1,
-          maxLength: 16,
-        }),
-        (changes) => {
-          const bytes = Buffer.from(original);
-          for (const { at, value } of changes) bytes[at % bytes.length] = value;
-          run += 1;
-          const path = join(tempDir(), `damaged-${run}.wforge`);
-          writeFileSync(path, bytes);
+  it(
+    "opens and reads, or fails with storage's own error, whatever bytes are changed",
+    () => {
+      const original = sampleFile();
+      // One file, written again for each run, rather than a folder for each.
+      const path = join(tempDir(), "damaged.wforge");
+      fc.assert(
+        fc.property(
+          fc.array(fc.record({ at: fc.nat(), value: fc.integer({ min: 0, max: 255 }) }), {
+            minLength: 1,
+            maxLength: 16,
+          }),
+          (changes) => {
+            const bytes = Buffer.from(original);
+            for (const { at, value } of changes) bytes[at % bytes.length] = value;
+            writeFileSync(path, bytes);
+            try {
+              readAll(path);
+            } catch (error) {
+              if (!expected(error)) throw error;
+            }
+          },
+        ),
+        { numRuns: 300 },
+      );
+    },
+    FUZZ_TIMEOUT_MS,
+  );
+
+  it(
+    "refuses a file cut short, at any length",
+    () => {
+      const original = sampleFile();
+      const path = join(tempDir(), "short.wforge");
+      fc.assert(
+        fc.property(fc.nat({ max: original.length - 1 }), (length) => {
+          writeFileSync(path, original.subarray(0, length));
           try {
             readAll(path);
           } catch (error) {
-            if (!expected(error)) throw error;
+            expect(expected(error), String(error)).toBe(true);
           }
-        },
-      ),
-      { numRuns: 300 },
-    );
-  });
-
-  it("refuses a file cut short, at any length", () => {
-    const original = sampleFile();
-    fc.assert(
-      fc.property(fc.nat({ max: original.length - 1 }), (length) => {
-        const path = join(tempDir(), `short-${length}.wforge`);
-        writeFileSync(path, original.subarray(0, length));
-        try {
-          readAll(path);
-        } catch (error) {
-          expect(expected(error), String(error)).toBe(true);
-        }
-      }),
-      { numRuns: 100 },
-    );
-  });
+        }),
+        { numRuns: 100 },
+      );
+    },
+    FUZZ_TIMEOUT_MS,
+  );
 });

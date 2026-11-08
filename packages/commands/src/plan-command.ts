@@ -1,5 +1,5 @@
 import { plural, t } from "@webforge/i18n";
-import type { PageId, SiteDoc } from "@webforge/model";
+import { type PageId, pageEntryOf, type SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
 import { type Failure, fail, failed, type Plan } from "./plan.js";
@@ -36,7 +36,7 @@ type Summary = {
 /** What a step's planned change counts as in the summary. */
 function count(summary: Summary, name: string, site: SiteDoc, input: unknown): void {
   const pageId = (input as { pageId?: string }).pageId;
-  const page = pageId === undefined ? undefined : site.pages[pageId as PageId];
+  const page = pageId === undefined ? undefined : pageEntryOf(site.pages, pageId);
   const renamed = (to: string | undefined) => {
     if (page !== undefined && to !== undefined && to.trim() !== page.title) {
       summary.pagesRenamed.push({ from: page.title, to: to.trim() });
