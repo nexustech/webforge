@@ -33,6 +33,7 @@ function fakeNetlify(overrides: Partial<NetlifyDestinationApi> = {}) {
       handle: HANDLE,
     })),
     cancelSignIn: vi.fn(),
+    forgetSignIn: vi.fn(),
     signInWithToken: vi.fn<NetlifyDestinationApi["signInWithToken"]>(async () => ({
       status: "signed-in",
       handle: HANDLE,
@@ -151,6 +152,25 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
       site: { create: "rosas-shop" },
       signIn: { handle: HANDLE },
     });
+  });
+
+  it("lets go of a sign-in it made when it's cancelled, but not one saved for the destination", async () => {
+    const { netlify, user, connect } = setUp();
+    await connect("nfp_token");
+    await screen.findByText("Signed in to Netlify.");
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(netlify.forgetSignIn).toHaveBeenCalledWith(HANDLE);
+    cleanup();
+
+    const editing = setUp(fakeNetlify(), {
+      id: SAVED,
+      name: "Shop",
+      siteId: SHOP.id,
+      signedIn: true,
+    });
+    await screen.findByLabelText("Netlify site");
+    await editing.user.keyboard("{Escape}");
+    expect(editing.netlify.forgetSignIn).not.toHaveBeenCalled();
   });
 
   it("asks for a site once signed in", async () => {

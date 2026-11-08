@@ -58,6 +58,11 @@ export type NetlifyDestinationApi = {
   /** Checks a pasted personal access token, and holds it as a sign-in. */
   readonly signInWithToken: (token: string) => Promise<SignInResult>;
   /**
+   * Drops a sign-in the dialog made and won't save, as it's cancelled or closed: main holds it no
+   * longer than it needs to (4.2's `forgetSignIn`).
+   */
+  readonly forgetSignIn?: (handle: string) => void;
+  /**
    * Whether site `siteId`'s visitors must log in to Netlify (site protection, or visitor access):
    * Netlify then reports a deploy live while visitors get its log-in page (0.2's live run, ADR 0006
    * decision 6). Asked for the site chosen only; left out until 4.2 part 3 adds it.
@@ -238,7 +243,11 @@ export function NetlifyDestinationDialog({
       }}
       size="lg"
       onSave={(saved) => onSave(saved)}
-      onCancel={onCancel}
+      onCancel={() => {
+        // A sign-in made here and not saved: main lets it go now, not after its 30 minutes.
+        if (account !== undefined && "handle" in account) netlify.forgetSignIn?.(account.handle);
+        onCancel();
+      }}
     />
   );
 }
