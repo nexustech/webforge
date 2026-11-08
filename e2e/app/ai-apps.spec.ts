@@ -150,6 +150,8 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
   await expect(dialog().getByRole("textbox", { name: "Name" })).toHaveValue("Claude Desktop");
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Claude Desktop is added" });
+  // Shown once the key is in the keychain, which can take a moment.
+  await expect(shown.locator("dd").first()).toBeVisible();
   const [key] = await shown.locator("dd").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   await shown.getByRole("button", { name: "Install in Claude Desktop" }).click();
@@ -229,6 +231,8 @@ async function pairAnotherApp(name: string): Promise<{ address: string; key: str
   await dialog().getByRole("textbox", { name: "Name" }).fill(name);
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: `${name} is added` });
+  // Shown once the key is in the keychain, which can take a moment (macOS's especially).
+  await expect(shown.getByText(/You won't see it again/)).toBeVisible();
   const [address, key] = await shown.locator("dd").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   await shown.getByRole("button", { name: "Done" }).click();
