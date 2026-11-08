@@ -21,7 +21,6 @@ import {
   SHADED_ROLES,
   type ShadeStep,
   type TextStyle,
-  type ThemeTokens,
 } from "@webforge/model";
 import {
   contrastNeeded,
