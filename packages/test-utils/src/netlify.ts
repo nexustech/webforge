@@ -20,7 +20,18 @@ type FakeDeploy = {
 export const FAKE_TOKEN = "test-token";
 export const FAKE_CLIENT_ID = "webforge-test-client";
 
-export function fakeNetlify() {
+/** Options of {@link fakeNetlify}. */
+export type FakeNetlifyOptions = {
+  /**
+   * Where a site named `name` is served: `https://<name>.netlify.app`, as Netlify serves it, unless
+   * a test serves its sites itself (e2e's mock Netlify, #70).
+   */
+  readonly addressOf?: (name: string) => string;
+};
+
+export function fakeNetlify({
+  addressOf = (name) => `https://${name}.netlify.app`,
+}: FakeNetlifyOptions = {}) {
   /** Its sites, each with whether Netlify finds its forms (form detection, off for a new site). */
   const sites = new Map<
     string,
@@ -59,8 +70,8 @@ export function fakeNetlify() {
     forms: boolean;
   }) => ({
     ...site,
-    ssl_url: `https://${site.name}.netlify.app`,
-    url: `http://${site.name}.netlify.app`,
+    ssl_url: addressOf(site.name),
+    url: addressOf(site.name).replace(/^https:/, "http:"),
     published_deploy: current === null ? null : { id: current },
   });
   const deployJson = (d: FakeDeploy) => {
@@ -70,7 +81,7 @@ export function fakeNetlify() {
       site_id: d.site_id,
       state: d.state,
       required: d.required,
-      ssl_url: site === undefined ? null : `https://${site.name}.netlify.app`,
+      ssl_url: site === undefined ? null : addressOf(site.name),
       deploy_ssl_url: `https://${d.id}--site.netlify.app`,
       created_at: d.created_at,
     };
@@ -261,6 +272,8 @@ export function fakeNetlify() {
     approveTickets(polls: number | null) {
       approveAfter = polls;
     },
+    /** The id of the site named `name`, if there is one. */
+    siteNamed: (name: string) => [...sites.values()].find((site) => site.name === name)?.id,
     /** Forgets deploy `id`, as Netlify does once a deploy is older than the account keeps. */
     dropDeploy(id: string) {
       deploys.delete(id);

@@ -6,7 +6,9 @@ import { FAKE_CLIENT_ID, FAKE_TOKEN, fakeNetlify } from "@webforge/test-utils/ne
 // Netlify: the same in-memory service `@webforge/publish`'s tests use, answering HTTP. The app
 // reaches it when launched with `WEBFORGE_E2E_NETLIFY_API` set to its `apiBase`, which only an
 // unpackaged app honours. It answers sign-in tickets, sites, the digest deploy, file uploads,
-// deploy polling, deploys and their restore, and forms. 4.4b's UI tests can use it too.
+// deploy polling, deploys and their restore, and forms; and it serves each site at its own address
+// below `/served/`, as Netlify serves it to visitors, or sends them to Netlify's login when the
+// test protects it. 4.4b's UI tests can use it too.
 
 /** A Netlify deploy as the mock lists it. */
 export type MockDeploy = {
@@ -26,8 +28,12 @@ export type MockNetlify = {
   /** The only token it accepts, and the client ID its sign-in tickets need. */
   readonly token: string;
   readonly clientId: string;
-  /** A new Netlify site, as the person's account would have: its id. */
+  /** A new Netlify site, as the person's account would have, finding its forms: its id. */
   addSite(name: string): Promise<string>;
+  /** Sends the site's visitors to Netlify's login, as site protection does. */
+  protect(siteId: string): void;
+  /** The address the site is served at, as Netlify's record of it gives. */
+  addressOf(name: string): string;
   /** The site paths uploaded so far, in order: only what Netlify didn't have. */
   uploads(): readonly string[];
   /** The site's deploys, newest first, and the one it serves. */
@@ -53,9 +59,28 @@ async function bodyOf(request: IncomingMessage): Promise<Uint8Array<ArrayBuffer>
 
 /** Starts the mock on a free port of 127.0.0.1. */
 export async function startMockNetlify(): Promise<MockNetlify> {
-  const fake = fakeNetlify();
+  let origin = "";
+  const served = (name: string) => `${origin}/served/${encodeURIComponent(name)}/`;
+  const fake = fakeNetlify({ addressOf: served });
+  const protectedSites = new Set<string>();
   const server = createServer((request, response) => {
     void (async () => {
+      // A visitor to a site: its home page, or Netlify's login for a protected one.
+      const visit = /^\/served\/([^/]+)\//.exec(request.url ?? "");
+      if (visit !== null) {
+        const siteId = fake.siteNamed(decodeURIComponent(visit[1] ?? ""));
+        if (siteId !== undefined && protectedSites.has(siteId)) {
+          response.writeHead(302, {
+            Location: `https://app.netlify.com/edge-access/${visit[1]}?redirect=%2F`,
+          });
+          response.end();
+          return;
+        }
+        const page = siteId === undefined ? undefined : fake.live(siteId, "index.html");
+        response.writeHead(page === undefined ? 404 : 200, { "Content-Type": "text/html" });
+        response.end(page ?? "");
+        return;
+      }
       const bytes = await bodyOf(request);
       const headers = new Headers();
       for (const [name, value] of Object.entries(request.headers)) {
@@ -82,7 +107,8 @@ export async function startMockNetlify(): Promise<MockNetlify> {
   });
   await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
   const { port } = server.address() as AddressInfo;
-  const apiBase = `http://127.0.0.1:${port}/api/v1`;
+  origin = `http://127.0.0.1:${port}`;
+  const apiBase = `${origin}/api/v1`;
 
   /** A signed-in request to the fake itself, for what a test looks at. */
   const ask = async <T>(method: string, path: string, body?: unknown): Promise<T> => {
@@ -105,10 +131,18 @@ export async function startMockNetlify(): Promise<MockNetlify> {
     clientId: FAKE_CLIENT_ID,
     async addSite(name) {
       const from = sent();
-      const site = await ask<{ id: string }>("POST", "/sites", { name });
+      // Finding forms, as the sites Webforge creates do (part 2).
+      const site = await ask<{ id: string }>("POST", "/sites", {
+        name,
+        processing_settings: { ignore_html_forms: false },
+      });
       forget(from);
       return site.id;
     },
+    protect: (siteId) => {
+      protectedSites.add(siteId);
+    },
+    addressOf: served,
     uploads: () => fake.uploads(),
     async deploys(siteId) {
       const from = sent();
