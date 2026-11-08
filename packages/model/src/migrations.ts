@@ -21,12 +21,7 @@ export class SiteFormatError extends WebforgeError<SiteFormatErrorCode> {
     formatVersion?: number,
     options?: ErrorOptions,
   ) {
-    super(
-      code,
-      code === "invalid" ? "site.openFailed.damaged" : "site.openFailed.newer",
-      message,
-      options,
-    );
+    super(code, message, options);
     this.formatVersion = formatVersion;
   }
 }

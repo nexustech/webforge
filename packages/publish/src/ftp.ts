@@ -57,7 +57,7 @@ export function ftpErrorCode(error: unknown): PublishErrorCode | undefined {
     // 421 and 4xx data-connection failures: the host closed or couldn't open the connection.
     return error.code >= 400 && error.code < 500 ? "network" : "rejected";
   }
-  if (error instanceof Error && /^Timeout/.test(error.message)) return "network";
+  if (error instanceof Error && /^Timeout/.test(error.message)) return "timeout";
   return undefined;
 }
 

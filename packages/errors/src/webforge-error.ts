@@ -1,24 +1,16 @@
-import type { MessageKey } from "@webforge/i18n";
-
 /**
  * The base of every error Webforge throws on purpose (standards §4): a `code` that says what went
- * wrong, for code to act on and for logs, and the `messageKey` of the message the person sees
- * (`t(error.messageKey)`). The `message` is for developers only: it is never shown, and never
- * logged either, as it may hold a path or a value. Subclasses name their codes.
+ * wrong, for code to act on and for logs. The person never sees the error itself: a failure
+ * reaches the renderer as a reason code, which the UI turns into a `t()` key where it shows the
+ * message (A23). The `message` is for developers only: it is never shown, and never logged either,
+ * as it may hold a path or a value. Subclasses name their codes.
  */
 export abstract class WebforgeError<Code extends string = string> extends Error {
   readonly code: Code;
-  readonly messageKey: MessageKey;
 
-  protected constructor(
-    code: Code,
-    messageKey: MessageKey,
-    message: string,
-    options?: ErrorOptions,
-  ) {
+  protected constructor(code: Code, message: string, options?: ErrorOptions) {
     super(message, options);
     this.code = code;
-    this.messageKey = messageKey;
   }
 }
 
