@@ -14,7 +14,7 @@
     "@webforge/templates": "workspace:*",
     "@webforge/test-utils": "workspace:*",
     "fast-check": "4.10.2",
-    "lightningcss": "1.32.0",
+    "lightningcss": "1.33.0",
     "vitest": "catalog:"
   },
   "dependencies": {

@@ -1,6 +1,6 @@
 import { Button, type FieldRendererProps, Picker } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { ICON_NAMES, isIconName, LucideIcon } from "@webforge/site-components";
+import { ICON_NAMES, iconNameOf, LucideIcon } from "@webforge/site-components";
 // Search data only the picker needs, so it stays out of the site components and the export.
 import tags from "lucide-static/tags.json" with { type: "json" };
 import { useId, useState } from "react";
@@ -33,7 +33,8 @@ export function IconField({
 }: FieldRendererProps<"icon">) {
   const [picking, setPicking] = useState(false);
   const actionId = useId();
-  const current = isIconName(value) ? value : undefined;
+  // By its current name, so an icon Lucide renamed shows as chosen in the picker (#831).
+  const current = iconNameOf(value);
 
   /** One choice: the new icon, or none, then the end of the run, so it is one undo step. */
   const choose = (next: string | undefined) => {

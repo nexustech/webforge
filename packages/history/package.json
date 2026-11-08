@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@webforge/errors": "workspace:*",
-    "immer": "11.1.21",
-    "zustand": "5.0.15"
+    "immer": "11.2.9",
+    "zustand": "5.1.0"
   }
 }
