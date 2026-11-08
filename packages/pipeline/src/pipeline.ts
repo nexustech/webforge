@@ -54,8 +54,8 @@ const IMAGE_CACHE_BYTES = 256 * 1024 * 1024;
 /**
  * A pipeline for one open site (3.1). Between builds it keeps, in memory only (R15):
  * - each image it encoded, so a re-export reads and encodes only new or changed images;
- * - each page's HTML, under a hash of everything its render reads;
- * - its Tailwind compiler, and the classes it has seen.
+ * - each page's HTML, under a hash of everything its render reads, a preview's and an export's apart;
+ * - its Tailwind compilers, a preview's and an export's, and the classes each has seen.
  *
  * An export's files are always those `buildSite` would write; only a preview's stylesheet may keep
  * classes a page no longer uses. Drop the pipeline when the site closes, and its caches go with it.
@@ -65,7 +65,11 @@ export function createPipeline(library: ComponentLibrary, options: PipelineOptio
   let caches: BuildCaches | undefined;
   return {
     async *build(snapshot, resources, { mode, signal, output, year, runsCode }) {
-      caches ??= { styles: createStyleCompiler(resources), pages: new Map(), fonts: new Map() };
+      caches ??= {
+        styles: createStyleCompiler(resources),
+        pages: { preview: new Map(), export: new Map() },
+        fonts: new Map(),
+      };
       const site = yield* buildEvents(
         snapshot,
         library,

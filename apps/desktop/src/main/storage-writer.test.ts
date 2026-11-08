@@ -185,13 +185,35 @@ describe("createStorageWriter", () => {
 
   it("stops its thread, failing what it was doing", async () => {
     const fake = fakeThread();
-    const writer = createStorageWriter(() => fake.thread);
+    const onCrash = vi.fn();
+    const writer = createStorageWriter(() => fake.thread, onCrash);
     const preparing = writer.prepare("a.jpg", bytes(1));
 
     await writer.stop();
 
     expect(fake.thread.terminate).toHaveBeenCalled();
     expect(await preparing).toEqual({ status: "failed" });
+    // Ended on purpose, with code 1 as `terminate` gives: not a crash.
+    expect(onCrash).not.toHaveBeenCalled();
+  });
+
+  it("tells a thread's crash for its report once: an uncaught error, or an exit it didn't ask for (R3)", () => {
+    const threads = [fakeThread(), fakeThread(), fakeThread()];
+    const start = vi.fn(() => (threads[start.mock.calls.length - 1] ?? fakeThread()).thread);
+    const onCrash = vi.fn();
+    const writer = createStorageWriter(start, onCrash);
+    const error = new RangeError("out of memory");
+
+    writer.warm();
+    threads[0]?.emit("error", error);
+    // Node ends a thread with an exit after its error: the same crash.
+    threads[0]?.emit("exit", 1);
+    writer.warm();
+    threads[1]?.emit("exit", 7);
+    writer.warm();
+    threads[2]?.emit("exit", 0);
+
+    expect(onCrash.mock.calls).toEqual([[{ error }], [{ exitCode: 7 }]]);
   });
 });
 

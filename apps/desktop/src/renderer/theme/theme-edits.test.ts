@@ -192,6 +192,39 @@ describe("the Theme tab's edits (2.3a)", () => {
     expect(labels()).toEqual(["Changed fonts", "Changed fonts", "Changed fonts", "Changed fonts"]);
   });
 
+  it("moves an accent that is still the headings' font with them, and keeps one picked on its own (#644)", async () => {
+    const { session, labels, theme } = setUp();
+    const pairing = (id: string) => {
+      const found = FONT_PAIRINGS.find((each) => each.id === id);
+      if (found === undefined) throw new Error(`no ${id} pairing`);
+      return found;
+    };
+    // The starter site's accent is a copy of its heading font, as format 11 and the themes give it.
+    expect(theme().fonts.accent).toEqual(theme().fonts.heading);
+
+    // A pairing, then a heading font: the accent goes with the headings each time, in their step.
+    await setPairing(session, answering(true), pairing("classic"));
+    expect(theme().fonts.accent).toEqual(theme().fonts.heading);
+    await setFont(session, answering(true), "heading", { family: "Lora", fallback: "serif" });
+    expect(theme().fonts.accent).toEqual({ family: "Lora", fallback: "serif" });
+    expect(labels()).toEqual(["Changed fonts", "Changed fonts"]);
+    session.history.undo();
+    expect(theme().fonts.accent).toEqual(theme().fonts.heading);
+    expect(theme().fonts.heading.family).toBe("Playfair Display");
+
+    // Picked on its own, it stays through a heading font and a pairing.
+    await setFont(session, answering(true), "accent", {
+      family: "Pacifico",
+      fallback: "sans-serif",
+    });
+    await setFont(session, answering(true), "heading", { family: "Lora", fallback: "serif" });
+    await setPairing(session, answering(true), pairing("simple"));
+    expect(theme().fonts.accent).toEqual({ family: "Pacifico", fallback: "sans-serif" });
+    // The body text's font never moves it either.
+    await setFont(session, answering(true), "body", { family: "Lora", fallback: "serif" });
+    expect(theme().fonts.accent.family).toBe("Pacifico");
+  });
+
   it("sets a text style's size, weight and line height as one step naming it", async () => {
     const { session, labels, theme } = setUp();
 
