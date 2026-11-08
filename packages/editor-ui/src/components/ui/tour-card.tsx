@@ -22,6 +22,11 @@ export type TourCardProps = Omit<ComponentProps<"section">, "title"> & {
    * not from the editor, where the person may be typing.
    */
   readonly focusKey?: string | undefined;
+  /**
+   * Whether it takes the focus as it opens: the tour, which the person asked for or is offered, does;
+   * a tip, shown as the person works (they may be about to type), doesn't, and is announced instead.
+   */
+  readonly takeFocus?: boolean | undefined;
 };
 
 /** Where `anchor` is now and the card's size, as the place the card should be. */
@@ -46,6 +51,7 @@ export function TourCard({
   actions,
   onEscape,
   focusKey,
+  takeFocus = true,
   children,
   className,
   onKeyDown,
@@ -91,8 +97,8 @@ export function TourCard({
     shownKey.current = key;
     const active = card.ownerDocument.activeElement;
     const ours = active === null || active === card.ownerDocument.body || card.contains(active);
-    if (first || ours) card.focus({ preventScroll: true });
-  }, [focusKey, placed]);
+    if ((first && takeFocus) || (!first && ours)) card.focus({ preventScroll: true });
+  }, [focusKey, placed, takeFocus]);
 
   return (
     <section
@@ -100,6 +106,8 @@ export function TourCard({
       aria-labelledby={titleId}
       tabIndex={-1}
       data-slot="tour-card"
+      // Not taking the focus, it's read out as it appears.
+      aria-live={takeFocus ? undefined : "polite"}
       data-side={place?.side}
       className={cn(
         "fixed z-40 flex w-80 max-w-[calc(100vw-1.5rem)] flex-col gap-2 rounded-lg border",

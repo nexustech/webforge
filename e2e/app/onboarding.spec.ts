@@ -4,7 +4,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, type Locator, type Page, test } from "@playwright/test";
 import { OPEN_WAIT } from "./budget.js";
-import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
+import { clickOnCanvas } from "./canvas-click.js";
+import {
+  APP_START_TIMEOUT_MS,
+  launchDesktopApp,
+  type WebforgeApp,
+  waitForCanvas,
+} from "./launch.js";
+import { chooseFromMenu } from "./menus.js";
 import { type RendererWindow, stubFileDialogs } from "./sites.js";
 
 // The tour (5.4a, OB-1…OB-3): offered the first time the editor opens a site the quick start made,
@@ -108,4 +115,46 @@ test("offers the tour after the quick start, and shows the three steps beside th
     timeout: OPEN_WAIT,
   });
   await expect(tourCard(again, "Want a quick tour?")).toHaveCount(0);
+});
+
+test("shows each first-time tip once: the first selection, Content mode, and after Theme Studio", async () => {
+  app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), tips: true });
+  const page = await app.firstWindow();
+  await waitForCanvas(page);
+  // A site not made by the quick start: no tour offered.
+  await expect(tourCard(page, "Want a quick tour?")).toHaveCount(0);
+  const heading = page.frameLocator(".editor__canvas iframe").locator("h1").first();
+
+  // The first selection: beside what's selected, closed with Got it.
+  await clickOnCanvas(heading);
+  const selection = tourCard(page, "Change what you've selected");
+  await expect(selection).toContainText("Press Enter, or Edit on its bar");
+  await expect(selection).not.toHaveAttribute("data-side", "centre");
+  await selection.getByRole("button", { name: "Got it" }).click();
+  await expect(selection).toHaveCount(0);
+
+  // The first switch to Content mode.
+  await page.getByRole("radio", { name: "Content", exact: true }).click();
+  const content = tourCard(page, "Content mode");
+  await expect(content).toBeVisible();
+  // A tip never takes the focus from what the person is doing; it closes once they move on.
+  await expect(content).not.toBeFocused();
+  await page.getByRole("radio", { name: "Design", exact: true }).click();
+  await expect(content).toHaveCount(0);
+
+  // Theme Studio's, once it has closed.
+  await chooseFromMenu(app, page, "View", "Theme Studio…");
+  await expect(page.getByRole("dialog", { name: "Theme Studio" })).toBeVisible();
+  await expect(tourCard(page, "Themes change every page")).toHaveCount(0);
+  await page.keyboard.press("Escape");
+  await expect(tourCard(page, "Themes change every page")).toBeVisible();
+  await tourCard(page, "Themes change every page").getByRole("button", { name: "Got it" }).click();
+
+  // Each once: selecting again shows nothing.
+  await clickOnCanvas(heading);
+  await expect(page.locator("[data-slot='tour-card']")).toHaveCount(0);
+  const onboarding = await page.evaluate(
+    async () => (await (window as unknown as RendererWindow).webforge.prefs.get()).onboarding,
+  );
+  expect(onboarding.tipsSeen).toEqual(["selection", "contentMode", "themeStudio"]);
 });

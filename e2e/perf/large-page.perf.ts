@@ -7,7 +7,7 @@ import { launchDesktopApp, waitForCanvas } from "../app/launch.js";
 
 // Large-page performance check (spec/04 item 0.4, ADR 0007). Runs against a `--mode perf` build:
 // `pnpm e2e:perf` from the repository root. Budgets: architecture §10 (keystroke and drag to canvas
-// update < 16 ms) and U7 ("instant" undo, taken as < 100 ms). Misses are recorded, not hidden:
+// update < 16 ms), U7 ("instant" undo, taken as < 100 ms), and a drag's own, set in 5.1. Misses are recorded, not hidden:
 // expect.soft keeps measuring so the report is complete.
 
 const SECTIONS = 25;
@@ -15,6 +15,18 @@ const QUESTIONS = 4;
 const HISTORY_STEPS = 50;
 const FRAME_BUDGET_MS = 16;
 const INSTANT_MS = 100;
+/**
+ * A drag's budget, set from CI's Windows and macOS runners in 5.1 (ADR 0007's addendum): no long
+ * task over 350 ms while dragging, and the move recorded within 1 s of the drop. §10's "no dropped
+ * frames" is missed by Puck's drag library on a page this large: each drag has a few long tasks
+ * (its draggables re-rendering, finding the page's scrolling containers, the style recalculation
+ * its hit-testing forces on each move). #786 takes up the Puck patch that could remove most of
+ * them.
+ */
+const DRAG_LONGEST_TASK_MS = 350;
+/** Typing on the large page: no long task over 120 ms (5.1, from CI's runners; ADR 0007). */
+const TYPING_LONGEST_TASK_MS = 120;
+const DROP_RECORDED_MS = 1_000;
 
 type PerfWindow = Window & {
   __webforgePerf?: {
@@ -278,7 +290,12 @@ test("a page with 200+ elements against the editing budgets", async () => {
     );
     results.typing = typing;
     expect.soft(typing.overBudget, "keystrokes whose handlers took over a frame").toBe(0);
-    expect.soft(typing.longTasks, "long tasks while typing").toEqual([]);
+    // ADR 0007's target after 1.27 was no long task at all. On macOS' runner a run sometimes has
+    // one or two of 54–102 ms among 37 keystrokes while the handlers stay within the frame, so the
+    // budget set from the runners in 5.1 is none over 120 ms.
+    expect
+      .soft(Math.max(0, ...typing.longTasks), "the longest task while typing (ms)")
+      .toBeLessThan(TYPING_LONGEST_TASK_MS);
   });
 
   await test.step("dragging an element: one smooth step (§10)", async () => {
@@ -298,20 +315,32 @@ test("a page with 200+ elements against the editing budgets", async () => {
     await page.mouse.move(grab.x + 10, grab.y + 10, { steps: 5 });
     // Just inside the text's lower edge, which is a drop target whatever the Section's padding.
     await page.mouse.move(to.x + to.width / 2, to.y + to.height - 3, { steps: 25 });
+    const dropped = Date.now();
     await page.mouse.up();
     await expect(page.locator(".undo-history__step").first()).toHaveText("Moved Heading");
+    const recordedMs = Date.now() - dropped;
     const observed = await takeObserved();
 
-    results.drag = { totalMs: Date.now() - start, ...observed };
-    expect.soft(observed.longTasks, "long tasks while dragging").toEqual([]);
+    const longestMs = Math.round(Math.max(0, ...observed.longTasks));
+    results.drag = { totalMs: Date.now() - start, recordedMs, longestMs, ...observed };
+    expect
+      .soft(longestMs, "the longest task while dragging (ms)")
+      .toBeLessThan(DRAG_LONGEST_TASK_MS);
+    expect.soft(recordedMs, "the move recorded after the drop (ms)").toBeLessThan(DROP_RECORDED_MS);
   });
 
   await test.step("a theme look changed: the whole page drawn again (A25)", async () => {
     await takeObserved();
     const times = await timeLookChanges(10);
     const observed = await takeObserved();
-    // No budget yet: 5.1 sets it on CI's runners, from this result (ADR 0007).
-    results.redraw = { ...summary(times), longTasks: observed.longTasks };
+    // #727's targets, set as the budget in 5.1 from CI's runners (p50 33–34 ms, no long task):
+    // within U7's 100 ms at p50, and no long task over 200 ms (ADR 0007).
+    const redraw = summary(times);
+    results.redraw = { ...redraw, longTasks: observed.longTasks };
+    expect.soft(redraw.p50, "a theme look's redraw, p50 (ms)").toBeLessThan(INSTANT_MS);
+    expect
+      .soft(Math.max(0, ...observed.longTasks), "the longest task while redrawing (ms)")
+      .toBeLessThan(200);
   });
 
   await test.step("undo, redo and jumps: instant (U7)", async () => {
