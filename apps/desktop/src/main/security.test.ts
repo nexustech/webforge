@@ -37,12 +37,36 @@ describe("isAppUrl", () => {
     expect(isAppUrl("https://example.com/", appUrl)).toBe(false);
   });
 
-  it("accepts only the app's own file in production", () => {
+  it("accepts the app's own page on its own scheme and host in production, and nothing else (#652)", () => {
+    const appUrl = "webforge-app://editor/index.html";
+
+    expect(isAppUrl("webforge-app://editor/index.html#/pages", appUrl)).toBe(true);
+    expect(isAppUrl("webforge-app://editor/index.html?x=1", appUrl)).toBe(true);
+    // Another file the scheme serves: Help's page, which would run with the editor's preload,
+    // or a built asset as a document.
+    expect(isAppUrl("webforge-app://editor/help.html?page=export", appUrl)).toBe(false);
+    expect(isAppUrl("webforge-app://editor/assets/index-B4x_9z-Q.js", appUrl)).toBe(false);
+    expect(isAppUrl("webforge-app://editor/", appUrl)).toBe(false);
+    // Help's own page, to Help: the editor's isn't.
+    const helpUrl = "webforge-app://editor/help.html";
+    expect(isAppUrl("webforge-app://editor/help.html?page=export", helpUrl)).toBe(true);
+    expect(isAppUrl("webforge-app://editor/index.html", helpUrl)).toBe(false);
+    // Another host, or another custom scheme: each has the origin "null", as the app's does.
+    expect(isAppUrl("webforge-app://other/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("evil://editor/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("webforge-media://editor/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("file:///C:/Users/sam/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("https://example.com/", appUrl)).toBe(false);
+  });
+
+  it("accepts only the app's own file on this computer, for a file: page (S7)", () => {
     const appUrl = "file:///C:/Program%20Files/Webforge/resources/app.asar/out/renderer/index.html";
 
     expect(isAppUrl(`${appUrl}#/pages`, appUrl)).toBe(true);
     expect(isAppUrl("file:///C:/Users/sam/evil.html", appUrl)).toBe(false);
     expect(isAppUrl("https://example.com/", appUrl)).toBe(false);
+    // The same path on another computer: Windows would open it as a network share.
+    expect(isAppUrl(appUrl.replace("file:///", "file://attacker.example/"), appUrl)).toBe(false);
   });
 
   it("rejects malformed URLs", () => {
@@ -135,6 +159,15 @@ describe("mayNavigate", () => {
     expect(frame("about:blank")).toBe(true);
     expect(frame("about:srcdoc")).toBe(true);
     expect(frame("https://example.com/#top", { isSameDocument: true })).toBe(true);
+  });
+
+  it("lets no frame show another of the app scheme's files, the canvas's included (#652)", () => {
+    const editor = "webforge-app://editor/index.html";
+    const at = (url: string) =>
+      mayNavigate({ url, isMainFrame: false, isSameDocument: false }, editor);
+    expect(at(editor)).toBe(true);
+    expect(at("webforge-app://editor/help.html")).toBe(false);
+    expect(at("webforge-app://editor/assets/index-B4x_9z-Q.js")).toBe(false);
   });
 
   it("lets no frame show another site or another file, nor the window a blank page", () => {

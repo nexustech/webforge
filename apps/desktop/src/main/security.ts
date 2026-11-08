@@ -25,8 +25,13 @@ export function createSecureWebPreferences(
 }
 
 /**
- * Whether a renderer may navigate to `url`. Only the app's own page is allowed: the same
- * origin as the dev server in development, the same file in production.
+ * Whether a renderer may navigate to `url`: only to the app's own page. The same protocol and host
+ * (with its port) as `appUrl`, and in production the same page too: `webforge-app://editor/
+ * index.html` for the editor, `help.html` for Help, never another file the scheme serves (a built
+ * asset, or the other window's page, which would run with this window's preload), nor a `file:`
+ * page on another host (S7). On the dev server, any of its pages (development only). The protocol
+ * and host are compared, never `origin`: Node gives every custom scheme's URL the origin `"null"`,
+ * so any two would match.
  */
 export function isAppUrl(url: string, appUrl: string): boolean {
   let target: URL;
@@ -37,10 +42,9 @@ export function isAppUrl(url: string, appUrl: string): boolean {
   } catch {
     return false;
   }
-  if (app.protocol === "file:") {
-    return target.protocol === "file:" && target.pathname === app.pathname;
-  }
-  return target.origin === app.origin;
+  if (target.protocol !== app.protocol || target.host !== app.host) return false;
+  const devServer = app.protocol === "http:" || app.protocol === "https:";
+  return devServer || target.pathname === app.pathname;
 }
 
 /** A navigation of the window or of a frame in it, as Electron describes it. */

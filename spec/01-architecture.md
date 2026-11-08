@@ -50,7 +50,7 @@ flowchart TB
     DOC[Document store · History Manager · UI store]
     ENG[CanvasEngine adapter → Puck]
   end
-  subgraph Canvas["Canvas iframe (sandboxed, site styles only)"]
+  subgraph Canvas["Canvas iframe (same origin, site styles only, no scripts)"]
     SITE[User's page: site components + site Tailwind CSS]
   end
   UI <--> DOC
@@ -68,10 +68,10 @@ flowchart TB
 | **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publish destinations, Test connection and the Site Check publish gate, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
 | **Preload** | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`) | Expose `ipcRenderer`, Node or Electron objects directly |
 | **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine, Site Check ([ADR 0016](../docs/adr/0016-site-check-in-the-renderer.md)) | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
-| **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`) | Load editor styles; run custom scripts unless the user enables it (05) |
+| **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`). Puck's same-origin `srcdoc` frame, which the engine reaches into, so not sandboxed ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md)) | Load editor styles; run any script: custom code that must run while editing goes in a separate view with no preload (ADR 0023) |
 | **Build worker** (`utilityProcess`) | Export/preview builds, image conversion, publishing: it builds a version and uploads it, with the secret main passes for that one job ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md)) | Block the UI; touch the network except during publish; keep a secret past its job |
 
-**Electron hardening:** `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, no `@electron/remote`, strict CSP, `will-navigate`/`window.open` handlers, Electron Fuses (disable `RunAsNode`, enable ASAR integrity, cookie encryption).
+**Electron hardening:** `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, no `@electron/remote`, strict CSP, `will-navigate`/`window.open` handlers, Electron Fuses (disable `RunAsNode`, enable ASAR integrity, cookie encryption, turn off `file://`'s extra privileges). The packaged editor and Help load from the app's own scheme, `webforge-app://editor/`, never `file://`, so no page of the app's can read the computer's files ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md), #652).
 
 **File paths:** the renderer never names a file. The main process reads only paths it got itself: from native dialogs, the clipboard's file list, the command line, and dropped files' paths that the preload finds with `webUtils.getPathForFile` (`media:import-paths`, R13b).
 - **The preload is the trust boundary for dropped files' paths.** The main process takes any absolute path on that channel.
@@ -265,10 +265,10 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 
 ## 9. Security & privacy
 - **Secrets never in `.wforge`.** Publish credentials live in the OS keychain via `safeStorage` (08).
-  - Each destination's sign-in is encrypted as one record with what this computer trusts about it (the SFTP host key, plain FTP's warning seen) and the fingerprint of where it was typed for: protocol, host, port, user and host key (S2, 4.4a, `main/publish-secrets.ts`).
+  - Each destination's sign-in is encrypted as one record with what this computer trusts about it (the SFTP host key, plain FTP's warning seen) and the fingerprint of where it was typed for: protocol, host, port, user and host key; for Netlify, the site its token deploys to (S2, S32, 4.4a, `main/publish-secrets.ts`).
   - Main gives it only to the destination as the site file names it now. An edited host gets nothing, and the person types the password again.
 - **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default. Code from someone else's site file goes into an export, a preview or a publish only once its owner has confirmed it on this computer ([ADR 0019](../docs/adr/0019-code-trust.md), #649).
-- **Canvas iframe sandboxed;** no Node access anywhere in renderer contexts.
+- **No script runs in the canvas iframe,** a same-origin frame the engine reaches into ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md)); no Node access anywhere in renderer contexts.
 - **Network:** the editor makes no network calls except updates, publishing, Netlify OAuth, user-initiated "Download and bundle" (C8), and downloading a font the user picks from "Browse all fonts" (2.2; fonts are cached locally and self-hosted in exports).
 - **AI apps (MCP, F-AI-1):**
   - Off by default. When on, an MCP server over Streamable HTTP listens on the literal `127.0.0.1` only, on a port drawn once and remembered, whenever Webforge runs ([ADR 0021](../docs/adr/0021-mcp-transport.md)). Developer tools connect to it directly. Claude Desktop connects through a Webforge `.mcpb` desktop extension that relays its stdio, and that checks the server's proof before it sends the key. ChatGPT isn't supported until it can reach local servers.

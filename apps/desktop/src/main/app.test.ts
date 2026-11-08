@@ -1,7 +1,6 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { ipcContract } from "../shared/ipc-contract.js";
@@ -180,7 +179,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     recoveryDialogs: {} as RecoveryDialogs,
     startStorageWriter: vi.fn(),
   };
-  const appUrl = pathToFileURL(join(userData, "out", "renderer", "index.html")).href;
+  const appUrl = "webforge-app://editor/index.html";
 
   return {
     electron: electron as unknown as AppElectron,
@@ -268,8 +267,16 @@ describe("startApp", () => {
     expect(fake.windows).toHaveLength(1);
     const [window] = fake.windows;
     expect(window?.options).toMatchObject({ show: false, minWidth: expect.any(Number) });
-    expect(window?.loadFile).toHaveBeenCalledWith(
-      join(fake.parts.dir, "..", "renderer", "index.html"),
+    // From the app's own scheme, never `file://` (#652, S5).
+    expect(window?.loadURL).toHaveBeenCalledWith("webforge-app://editor/index.html");
+    expect(window?.loadFile).not.toHaveBeenCalled();
+    expect(fake.electron.protocol.registerSchemesAsPrivileged).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        {
+          scheme: "webforge-app",
+          privileges: { standard: true, secure: true, supportFetchAPI: true },
+        },
+      ]),
     );
     expect(window?.maximize).toHaveBeenCalled();
     window?.events.emit("ready-to-show");
@@ -384,16 +391,20 @@ describe("startApp", () => {
     const handle = vi.mocked(fake.session.defaultSession.protocol.handle);
     const respond = (scheme: string, url: string) => {
       const handler = handle.mock.calls.find(([name]) => name === scheme)?.[1] as
-        | ((request: { url: string }) => Promise<Response>)
+        | ((request: { url: string; method: string }) => Promise<Response>)
         | undefined;
       if (handler === undefined) throw new Error(`no handler for ${scheme}`);
-      return handler({ url });
+      return handler({ url, method: "GET" });
     };
 
     expect((await respond(MEDIA_SCHEME, `${MEDIA_SCHEME}://media/${"a".repeat(64)}`)).ok).toBe(
       false,
     );
     expect((await respond(FONT_SCHEME, `${FONT_SCHEME}://fonts/missing.woff2`)).ok).toBe(false);
+    // The app's pages: only files of its renderer folder.
+    expect((await respond("webforge-app", "webforge-app://editor/../main/index.js")).ok).toBe(
+      false,
+    );
     await expect(fake.invoke("app:set-native-menus", [])).resolves.toBeNull();
   });
 
