@@ -41,12 +41,13 @@ export const helpChannels = {
     response: z.boolean(),
   },
   /**
-   * Opens an `https://` or `http://` page a help page links to in the default browser. From the
-   * Help window only. False if it couldn't.
+   * Opens an `https://` page a help page links to in the default browser: never plain `http://`,
+   * which can be read or changed on the way, nor a page on this computer (5.6). From the Help
+   * window only. False if it couldn't.
    */
   helpOpenExternal: {
     channel: "help:open-external",
-    request: z.tuple([z.url({ protocol: /^https?$/ }).max(2048)]),
+    request: z.tuple([z.url({ protocol: /^https$/ }).max(2048)]),
     response: z.boolean(),
   },
 } as const;

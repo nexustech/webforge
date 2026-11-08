@@ -40,6 +40,31 @@ describe("commandHost (4.8)", () => {
     expect(session.ui.getState().pageId).toBe(other);
   });
 
+  it("saves the plan's one version when the person allows it, named after the plan, and none if not (S26)", async () => {
+    const { siteWide, api } = setup();
+    const before = vi.fn();
+    siteWide.setBeforeSiteWideAction(before);
+    const plan = {
+      title: "Build the site",
+      commands: [{ name: "addPage", input: { title: "Menu" } }],
+    };
+
+    const declined = api.run("plan", plan, { app: "Claude" });
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    siteWide.answer(false);
+    expect(await declined).toMatchObject({ status: "declined" });
+    expect(before).not.toHaveBeenCalled();
+
+    const allowed = api.run("plan", plan, { app: "Claude" });
+    await vi.waitFor(() => expect(siteWide.current()).not.toBeNull());
+    siteWide.answer(true);
+    expect(await allowed).toMatchObject({ status: "done" });
+    expect(before).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ version: "Before Claude's changes: Build the site" }),
+      { asked: true },
+    );
+  });
+
   it("runs a command as the session's own edit, of its kind", () => {
     const { session, host } = setup();
     const added = vi.fn();

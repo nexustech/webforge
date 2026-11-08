@@ -7364,7 +7364,8 @@
         },
         "link": {
           "kind": "link",
-          "label": "Button link"
+          "label": "Button link",
+          "sensitive": true
         },
         "featured": {
           "kind": "toggle",

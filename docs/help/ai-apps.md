@@ -100,7 +100,7 @@ Deleting a page asks as **Delete Page** does, and says how many pages change: li
 
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
-Before an app's first change each time it connects, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
+Before an app's first change after you open your site, {appName} saves a version of it, *Before app's changes*, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.
 
 ### Many changes at once
 
@@ -111,7 +111,7 @@ For a bigger job, such as building out your pages, an app can send its changes t
 - how many sections and elements are added, changed, moved and removed;
 - each change that would have asked on its own, such as a new phone number, from the old one to the new one.
 
-If you allow it, {appName} saves a version of your site first, then makes every change as one step in Undo History, named after the title, such as **AI (Claude Desktop): Build the Rapidfix site**. One Undo takes it all back.
+If you allow it, {appName} saves a version of your site first, *Before app's changes:* and the title, unless it saved one before a change to every page in the last five minutes. Then it makes every change as one step in Undo History, named after the title, such as **AI (Claude Desktop): Build the Rapidfix site**. One Undo takes it all back.
 
 In Content mode, a set of changes that holds even one change Content mode doesn't allow is refused whole.
 

@@ -40,6 +40,8 @@ describe("a plan (4.12a, AIB-6)", () => {
     expect(confirm).toHaveBeenCalledOnce();
     const asked = confirm.mock.calls[0]?.[0];
     expect(asked?.action).toBe("Allow Claude to make these changes: Build the Rapidfix site?");
+    // The Allow saves the plan's one version, named after it (S26).
+    expect(asked?.version).toBe("Before Claude's changes: Build the Rapidfix site");
     expect(asked?.description).toContain('It adds the pages "Services".');
     expect(asked?.description).toContain('It deletes the pages "About".');
     expect(asked?.description).toContain("It changes the theme.");

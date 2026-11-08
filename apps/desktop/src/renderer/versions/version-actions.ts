@@ -273,7 +273,7 @@ export function createVersionActions(deps: VersionActionsDeps): VersionActions {
       // The change goes ahead either way: it's one undo step, and the daily version holds the day.
       if (asked) {
         await saveFor(
-          t("versionHistory.beforeAction", { action: action.confirm }),
+          action.version ?? t("versionHistory.beforeAction", { action: action.confirm }),
           "before-site-wide",
         );
         return;

@@ -209,7 +209,7 @@ describe("checkHelpPages (HP-5)", () => {
         [
           "# Export",
           "[a](publish.md) [b](export.md#nowhere) [c](#export) [d](../../research/x.md)",
-          "[e](https://example.com) [f](mailto:rosa@example.com)",
+          "[e](https://example.com) [f](mailto:rosa@example.com) [g](http://example.com)",
         ].join("\n"),
         { related: "[themes]" },
       ),
@@ -218,6 +218,7 @@ describe("checkHelpPages (HP-5)", () => {
       "export.md: links to a page that isn't there: publish.md",
       "export.md: links to a heading that isn't there: export.md#nowhere",
       "export.md: links outside the help pages: ../../research/x.md",
+      "export.md: links to a plain http page: http://example.com; use https",
       "export.md: related page isn't there: themes",
     ]);
   });

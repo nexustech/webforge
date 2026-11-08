@@ -16,6 +16,11 @@ export type Confirmation = {
   readonly confirm: string;
   /** How many pages it changes, which the dialog states. */
   readonly affectedPages: number;
+  /**
+   * The name of the version saved once it's allowed, when "Before: Allow" wouldn't say what it was
+   * before: "Before Claude's changes: Build the site" (a plan, S26).
+   */
+  readonly version?: string;
 };
 
 /**

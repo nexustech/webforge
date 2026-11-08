@@ -22,6 +22,8 @@ export type SiteWideAction = {
   readonly confirm: string;
   /** How many pages it changes, which the dialog states ("This changes 6 pages."). */
   readonly affectedPages: number;
+  /** The version's name, saved once confirmed, if not "Before: {confirm}" (an AI app's plan). */
+  readonly version?: string;
 };
 
 /**

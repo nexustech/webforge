@@ -59,7 +59,15 @@ describe("helpLinkDestination", () => {
       kind: "web",
       url: "https://www.example.org/a?b",
     });
-    for (const href of ["", "#", "../../research/x.md", "mailto:rosa@example.org", "file:///c"]) {
+    for (const href of [
+      "",
+      "#",
+      "../../research/x.md",
+      "mailto:rosa@example.org",
+      "file:///c",
+      // Plain http can be read or changed on the way (5.6).
+      "http://www.example.org/",
+    ]) {
       expect(helpLinkDestination(href, "x")).toEqual({ kind: "none" });
     }
     expect(helpLinkDestination("#tips", undefined)).toEqual({ kind: "none" });
