@@ -58,7 +58,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 | S9, S24 | #653 | Fixed and checked. Note: the phone listener's idle timer re-arms while a page stays open on a device, which is "no page open" as decided, not a hard cap. |
 | S10, S11 | #654 | Fixed and checked. |
 | S13, S14 | #657 | Fixed and checked (S13 by the help note, as the review allowed). |
-| S15, S17 | #655 | **Open.** No test reads the packaged fuse wire; `electron-log/main` still registers its IPC channel (unreachable: no `ipcRenderer` is exposed). |
+| S15, S17 | #655 | **Open.** No test reads the packaged fuse wire; `electron-log/main` still registers its IPC channel (unreachable: no `ipcRenderer` is exposed). **Fixed since** (#655): `e2e/packaged` reads the fuse wire, and the log file uses `electron-log/node`. |
 | S16 | #656 | Partly. The audit runs nightly and fails on moderate production advisories. Renovate isn't installed (deferred by the product owner), so updates are made by hand. |
 | S18, S19, S21 | #658 | Fixed and checked, in plans and briefs too. S18's list of sensitive fields had a gap: S31, fixed here. |
 | S20 | #171 | Fixed, but an app could push its safety version out: S26, fixed here. |
@@ -119,7 +119,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 | S | Finding | Where | Severity | Scenario | Fix |
 |---|---|---|---|---|---|
 | S32 | **A Netlify sign-in isn't tied to the Netlify site.** The fingerprint is just `netlify`, and the publisher has no other-site guard. | `main/publish-secrets.ts:43-45`, `publish/src/publisher-for.ts:105-111` | low (latent) | S2's attacker changes `siteId` in the shared file, and the next publish overwrites another of the owner's Netlify sites. Not reachable until 4.4b saves a Netlify sign-in. | #796, before 4.4b. **Fixed since** (#796): the fingerprint holds the Netlify site's id, so another site, or none, asks for the sign-in again. Its address isn't part of it: the live check asks for that with no sign-in. Tests in `publish-secrets.test.ts` and `netlify-auth.test.ts`. |
-| S38 | **Legacy `netlify-auth.ts` saves the raw token outside the S2 record.** Only its test imports it. | `main/netlify-auth.ts:40,48` | info | If 4.4b wired it up as it is, the fingerprint would be skipped (it fails closed). | #796. **Fixed since** (#796): it saves through `PublishSecrets.save`, for the destination, and a dependency-cruiser rule keeps the keychain's store to `app.ts`, `publish-secrets.ts` and `ai-apps.ts`. |
+| S38 | **Legacy `netlify-auth.ts` saves the raw token outside the S2 record.** Only its test imports it. | `main/netlify-auth.ts:40,48` | info | If 4.4b wired it up as it is, the fingerprint would be skipped (it fails closed). | #796. **Fixed since** (#796): it saves through `PublishSecrets.save`, for the destination, and a dependency-cruiser rule keeps the keychain's store to `app.ts`, `publish-secrets.ts`, `ai-apps.ts` and `publish-destinations-ipc.ts` (for its `CredentialError` only). |
 | S39 | **The first review's "refuses Linux's `basic_text` keyring" isn't in the code.** | `main/credential-store.ts:110` | info | None today: only Windows and macOS are built. | Correction recorded here. Add `getSelectedStorageBackend() !== "basic_text"` before any Linux build. |
 
 **What holds:**

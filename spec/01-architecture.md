@@ -265,7 +265,7 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 
 ## 9. Security & privacy
 - **Secrets never in `.wforge`.** Publish credentials live in the OS keychain via `safeStorage` (08).
-  - Each destination's sign-in is encrypted as one record with what this computer trusts about it (the SFTP host key, plain FTP's warning seen) and the fingerprint of where it was typed for: protocol, host, port, user and host key (S2, 4.4a, `main/publish-secrets.ts`).
+  - Each destination's sign-in is encrypted as one record with what this computer trusts about it (the SFTP host key, plain FTP's warning seen) and the fingerprint of where it was typed for: protocol, host, port, user and host key; for Netlify, the site its token deploys to (S2, S32, 4.4a, `main/publish-secrets.ts`).
   - Main gives it only to the destination as the site file names it now. An edited host gets nothing, and the person types the password again.
 - **Untrusted projects:** validate the SQLite schema, use SQLite defensive mode, and custom scripts are off in the editor by default. Code from someone else's site file goes into an export, a preview or a publish only once its owner has confirmed it on this computer ([ADR 0019](../docs/adr/0019-code-trust.md), #649).
 - **No script runs in the canvas iframe,** a same-origin frame the engine reaches into ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md)); no Node access anywhere in renderer contexts.
