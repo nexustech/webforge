@@ -1,5 +1,6 @@
 import { sha1 } from "./manifest.js";
 import type { BuildOutput, Verification } from "./publisher.js";
+import { sleep } from "./sleep.js";
 
 export type { Verification } from "./publisher.js";
 
@@ -26,19 +27,6 @@ const MIN_READ_CAP = 1_048_576;
  * site's styles: a host that adds to its pages or rewrites their forms still serves it.
  */
 const STYLESHEET = /assets\/css\/site\.[0-9a-f]+\.css/;
-
-/** Waits `ms`, or less when `signal` aborts. */
-function pause(ms: number, signal: AbortSignal | undefined): Promise<void> {
-  return new Promise((resolve) => {
-    const timer = setTimeout(done, ms);
-    function done() {
-      clearTimeout(timer);
-      signal?.removeEventListener("abort", done);
-      resolve();
-    }
-    signal?.addEventListener("abort", done, { once: true });
-  });
-}
 
 /** `response`'s body, or `undefined` once it passes `cap` bytes, when reading stops. */
 async function readUpTo(response: Response, cap: number): Promise<Uint8Array | undefined> {
@@ -105,7 +93,8 @@ export async function verifyPublished(
 
   let found: Verification = { status: "unreachable" };
   for (let attempt = 0; attempt < Math.max(1, attempts); attempt++) {
-    if (attempt > 0) await pause(delayMs, signal);
+    // A cancel ends the wait early; the check below then gives up, as the check never throws.
+    if (attempt > 0) await sleep(delayMs, signal).catch(() => undefined);
     if (cancelled()) return { status: "unchecked" };
     const timeout = AbortSignal.timeout(timeoutMs);
     try {

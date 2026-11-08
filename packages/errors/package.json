@@ -8,8 +8,5 @@
   },
   "devDependencies": {
     "vitest": "catalog:"
-  },
-  "dependencies": {
-    "@webforge/i18n": "workspace:*"
   }
 }

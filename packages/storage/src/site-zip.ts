@@ -78,20 +78,12 @@ const ENTRY_DATE = new Date(2000, 0, 1);
  */
 export type SiteZipErrorCode = "not-a-site-zip" | "damaged" | "newer-format" | "too-large";
 
-/** What the person is told for each {@link SiteZipErrorCode}. */
-const SITE_ZIP_MESSAGES = {
-  "not-a-site-zip": "site.openFailed.notASite",
-  damaged: "site.openFailed.damaged",
-  "newer-format": "site.openFailed.newer",
-  "too-large": "site.zip.tooLarge",
-} as const satisfies Record<SiteZipErrorCode, string>;
-
 /** A ZIP that can't be read as a site, or a site that can't be written as one. */
 export class SiteZipError extends WebforgeError<SiteZipErrorCode> {
   override readonly name = "SiteZipError";
 
   constructor(code: SiteZipErrorCode, message: string, options?: ErrorOptions) {
-    super(code, SITE_ZIP_MESSAGES[code], message, options);
+    super(code, message, options);
   }
 }
 

@@ -90,16 +90,7 @@ export class BuildError extends WebforgeError<BuildErrorCode> {
     message: string,
     options?: ErrorOptions & { readonly page?: string; readonly image?: string },
   ) {
-    super(
-      code,
-      code === "reserved-name"
-        ? "export.failed.reservedName"
-        : code === "unreadable-image"
-          ? "export.failed.unreadableImage"
-          : "export.failed.buildFailed",
-      message,
-      options,
-    );
+    super(code, message, options);
     this.page = options?.page;
     this.image = options?.image;
   }

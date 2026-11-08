@@ -188,7 +188,13 @@ The interface is right. Where it runs (A2), where destinations live (A3) and wha
   - Add a `timeout` code and per-code `publish.failed.<code>` keys, with a ui-strings test.
   - Put credential states (no secret, S2 mismatch, encryption unavailable) in 4.4's IPC result.
   - Settle standards §4's `messageKey` in R17.
+  - **Done (8 Nov 2026, #671 part 3):**
+    - `PUBLISH_ERROR_CODES` is the type's source, with a `timeout` code. Netlify's deploy and sign-in deadlines, `ETIMEDOUT`, and FTP's and SFTP's own timeouts give it.
+    - The IPC contracts can't import `@webforge/publish`, so they keep their lists; a main-process test checks the lists match it, and that every code has its `publish.failed.` and `publish.test.` message.
+    - `WebforgeError.messageKey` is gone from the base class and its eleven subclasses, with the `errors.*` strings only it used.
+    - The credential states are 4.4's (#723).
 - **Three copies of an abortable sleep** (low): `netlify.ts:107` rejects on abort, while `netlify-sign-in.ts:29` and `verify.ts:31` resolve. Keep one `sleep(ms, signal)` when 4.4 or 4.5 next touch these files.
+  - **Done (8 Nov 2026, #671 part 3):** one `sleep(ms, signal)` in `packages/publish`, which ends as `cancelled` on abort. The sign-in loop threw `cancelled` straight after its pause anyway, and the live-site check, which never throws, catches it and gives up as before.
 
 **What holds**
 - **The interface matches architecture §6:** `test`, `publish` → `AsyncIterable<PublishEvent>` with an `AbortSignal`, and an optional `verify`. `publishSite` adds the live check with the cancel behaviour 4.5 needs.

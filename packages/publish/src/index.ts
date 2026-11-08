@@ -28,6 +28,7 @@ export {
 export { uploadOrder } from "./order.js";
 export {
   type BuildOutput,
+  PUBLISH_ERROR_CODES,
   PublishError,
   type PublishErrorCode,
   type PublishEvent,
