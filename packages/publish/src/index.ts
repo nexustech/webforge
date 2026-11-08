@@ -11,6 +11,7 @@ export {
 } from "./manifest.js";
 export {
   NETLIFY_API,
+  type NetlifyAccessOptions,
   type NetlifyClient,
   type NetlifyDeploy,
   type NetlifyDestination,
@@ -19,6 +20,7 @@ export {
   type NetlifySite,
   netlifyClient,
   netlifyPublisher,
+  netlifySiteAccess,
 } from "./netlify.js";
 export {
   NETLIFY_AUTHORIZE_URL,

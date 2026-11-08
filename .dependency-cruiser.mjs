@@ -148,6 +148,9 @@ export default {
           // timeouts, temporary folders), so Playwright's e2e, which imports the root entry, never
           // loads Vitest (#539).
           "^packages/test-utils/src/vitest\\.ts$",
+          // Declared subpath export: @webforge/test-utils/netlify (a stand-in for Netlify's API,
+          // which publish's tests call and e2e's mock Netlify answers HTTP with, #70).
+          "^packages/test-utils/src/netlify\\.ts$",
           // Declared subpath export: @webforge/site-components/catalogue-data (the catalogue as
           // plain data, without React, for the command layer, 4.8).
           "^packages/site-components/src/catalogue-data\\.(ts|json)$",

@@ -49,6 +49,8 @@ If something went wrong on your live site, you can put an earlier version back t
 
 Click **…** beside the version, then **Republish…**. Your [publish destinations](publish.md) open: click **Republish** beside the one to publish it to. {appName} checks the version as it [checks a publish](publish.md#publishing), then sends it. When it's done, **Your site is live**, and the version says where and when it was published.
 
+On Netlify, a version published there before goes back as it was: Netlify keeps your earlier publishes, so {appName} asks it to put that one back, and nothing needs sending. If Netlify no longer has it, {appName} sends the version as usual.
+
 A version with anything [Site Check](site-check.md) says to fix before publishing, such as a script from another website, can't be republished. {appName} says how many things to fix: restore the version, fix them in Site Check, then publish.
 
 ## Space used

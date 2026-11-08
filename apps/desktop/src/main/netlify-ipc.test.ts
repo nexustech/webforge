@@ -38,7 +38,13 @@ const netlifyApi: typeof fetch = async (input, init) => {
     const { name } = JSON.parse(String(init.body)) as { name?: string };
     return reply(201, { id: OTHER, name: name ?? "jolly-bun", ssl_url: "https://new.netlify.app" });
   }
-  if (pathname.endsWith(`/sites/${ROSAS}`)) return reply(200, { id: ROSAS, name: "rosas-bakery" });
+  if (pathname.endsWith(`/sites/${ROSAS}`)) {
+    return reply(200, {
+      id: ROSAS,
+      name: "rosas-bakery",
+      ssl_url: "https://rosas-bakery.netlify.app",
+    });
+  }
   if (pathname.endsWith("/sites")) {
     return reply(200, [
       { id: ROSAS, name: "rosas-bakery", ssl_url: "https://rosas-bakery.netlify.app" },
@@ -56,7 +62,16 @@ afterEach(() => {
 });
 
 /** The Netlify handlers over a new site file, Netlify's sign-in set up in the build or not. */
-function handlers({ setUp = true, readOnly = false } = {}) {
+function handlers({
+  setUp = true,
+  readOnly = false,
+  fetchSite,
+}: {
+  setUp?: boolean;
+  readOnly?: boolean;
+  fetchSite?: typeof fetch;
+} = {}) {
+  const asked: string[] = [];
   const dir = tempDir();
   const path = join(dir, "site.wforge");
   ProjectStore.create(path, { name: "Rosa's Bakery" }).close();
@@ -77,10 +92,23 @@ function handlers({ setUp = true, readOnly = false } = {}) {
   const ipc = {
     handle: (name: string, handler: Handler) => registered.set(name, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerNetlifyHandlers(ipc, () => true, { signIns, site: () => site, secrets });
+  registerNetlifyHandlers(ipc, () => true, {
+    signIns,
+    site: () => site,
+    secrets,
+    ...(fetchSite === undefined
+      ? {}
+      : {
+          fetchSite: (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+            asked.push(String(input));
+            return fetchSite(input, init);
+          },
+        }),
+    accessTimeoutMs: 50,
+  });
   const invoke = (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
-  return { store, credentials, secrets, invoke, opened };
+  return { store, credentials, secrets, invoke, opened, asked };
 }
 
 /** The handle of a sign-in result. */
@@ -203,6 +231,57 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
         { keep: true },
       ),
     ).toEqual({ status: "sign-in-needed" });
+  });
+
+  it("says whether visitors reach a site or Netlify's login, asking Netlify's address only (#70)", async () => {
+    const redirect = (location: string) =>
+      new Response(null, { status: 302, headers: { Location: location } });
+    const answers: Record<string, Response | "hangs"> = {
+      protected: redirect("https://app.netlify.com/edge-access/rosas?redirect=%2F"),
+      public: new Response("<h1>Rosa's</h1>", { status: 200 }),
+      elsewhere: redirect("https://www.rosasbakery.co.uk/"),
+      hangs: "hangs",
+    };
+    for (const [kind, answer] of Object.entries(answers)) {
+      const { invoke, asked } = handlers({
+        fetchSite: async (_input, init) =>
+          answer === "hangs"
+            ? new Promise((_resolve, reject) =>
+                init?.signal?.addEventListener("abort", () => reject(init.signal?.reason)),
+              )
+            : answer,
+      });
+      const handle = handleOf(await invoke("netlify:sign-in-with-token", TOKEN));
+
+      const result = await invoke("netlify:check-access", SESSION, { handle }, ROSAS);
+
+      expect(result, kind).toEqual(
+        kind === "hangs"
+          ? { status: "failed", reason: "timeout" }
+          : { status: "checked", protected: kind === "protected" },
+      );
+      // The address in Netlify's record of the site: nothing the renderer sent.
+      expect(asked).toEqual(["https://rosas-bakery.netlify.app"]);
+    }
+  });
+
+  it("checks no site for a sign-in it doesn't hold, nor an address of the renderer's", async () => {
+    const { invoke, asked } = handlers({ fetchSite: async () => new Response(null) });
+
+    expect(await invoke("netlify:check-access", SESSION, { handle: OPERATION }, ROSAS)).toEqual({
+      status: "failed",
+      reason: "signed-out",
+    });
+    // Only a site's id: an address isn't one.
+    await expect(
+      invoke(
+        "netlify:check-access",
+        SESSION,
+        { handle: OPERATION },
+        "https://evil.example/edge-access",
+      ),
+    ).rejects.toThrow();
+    expect(asked).toEqual([]);
   });
 
   it("creates a site, by the name asked for", async () => {

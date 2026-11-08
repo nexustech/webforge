@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./netlify": "./src/netlify.ts",
     "./renderer": "./src/renderer.ts",
     "./vitest": "./src/vitest.ts"
   },

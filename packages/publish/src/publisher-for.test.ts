@@ -85,6 +85,13 @@ describe("publisherFor (4.4a, ADR 0018 §2)", { timeout: 30_000 }, () => {
     }
   });
 
+  it("offers Netlify's restore of an earlier deploy, and no file-transfer host's (#70)", () => {
+    const chosen = { ...netlify, siteId: "00000000-0000-4000-8000-000000000001" };
+    expect(publisherFor(chosen, { token: "nfp_x" }, {}).restore).toBeTypeOf("function");
+    expect(publisherFor(ftps, password, {}).restore).toBeUndefined();
+    expect(publisherFor(sftp(), password, { hostKey: "SHA256:x" }).restore).toBeUndefined();
+  });
+
   it("connects an FTPS destination to its own host and port", async () => {
     // Nothing listens on port 1: the publisher reached for this destination's address.
     const result = await publisherFor(ftps, password, {}, { timeoutMs: 2_000 }).test();

@@ -99,11 +99,13 @@ export function PublishOutcomeDialogs({ state, openLive, copyLink }: PublishOutc
                 <p>{t(`publish.live.check.${live.check}`)}</p>
               )}
               <p className="text-muted-foreground">
-                {t("publish.live.summary", {
-                  uploaded: live.uploaded,
-                  unchanged: live.unchanged,
-                  removed: live.removed,
-                })}
+                {live.restored === true
+                  ? t("publish.live.restored")
+                  : t("publish.live.summary", {
+                      uploaded: live.uploaded,
+                      unchanged: live.unchanged,
+                      removed: live.removed,
+                    })}
               </p>
               {!live.versionSaved && (
                 <p className="text-muted-foreground">{t("publish.live.versionNotSaved")}</p>
