@@ -176,6 +176,7 @@ describe("publishArea (4.4a)", () => {
       registries.commands.run(COMMAND_IDS.publish);
     });
     await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    await user.click(await screen.findByRole("menuitem", { name: "FTP, FTPS or SFTP…" }));
     const form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
     await user.type(form.getByLabelText("Host", { exact: true }), "ftp.rosasbakery.co.uk");
     await user.type(form.getByLabelText("User name", { exact: true }), "rosa");

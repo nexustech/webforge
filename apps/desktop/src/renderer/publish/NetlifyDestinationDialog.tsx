@@ -157,12 +157,14 @@ export function NetlifyDestinationDialog({
   const [sites, setSites] = useState<Sites>({ status: "none" });
   const [signing, setSigning] = useState<Signing>({ status: "idle" });
 
-  // The account's sites, once there's a sign-in to ask with.
+  // The account's sites, once there's a sign-in to ask with. On `sites` alone, so a Netlify API
+  // object made again on a render asks no more.
+  const { sites: listSites } = netlify;
   useEffect(() => {
     if (account === undefined) return undefined;
     let current = true;
     setSites({ status: "loading" });
-    netlify.sites(account).then(
+    listSites(account).then(
       (result) => {
         if (current) setSites(result);
       },
@@ -173,7 +175,7 @@ export function NetlifyDestinationDialog({
     return () => {
       current = false;
     };
-  }, [account, netlify]);
+  }, [account, listSites]);
 
   const signIn = async (via: "browser" | "token", token = "") => {
     setSigning({ status: "waiting", via });
