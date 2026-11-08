@@ -36,6 +36,7 @@ import { createCredentialStore } from "./credential-store.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
+import { netlifyApiFor } from "./e2e-netlify.js";
 import { createExportFeature } from "./export-feature.js";
 import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
@@ -685,6 +686,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     registerNetlifyHandlers(ipcMain, isTrustedSender, {
       signIns: createNetlifySignIns({
         clientId: import.meta.env.MAIN_VITE_NETLIFY_CLIENT_ID,
+        // The E2E tests' stand-in for Netlify, in an app run from its build folder only.
+        apiBase: netlifyApiFor(app.isPackaged),
         // Looked up as it's called: the E2E tests replace `shell.openExternal`.
         openExternal: (url) => electron.shell.openExternal(url),
       }),

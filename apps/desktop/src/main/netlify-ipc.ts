@@ -1,7 +1,7 @@
 import { siteAddressSchema } from "@webforge/model";
 import { PublishError, type NetlifySite as Site } from "@webforge/publish";
 import type { IpcMain } from "electron";
-import type { NetlifyFailure, NetlifySite } from "../shared/ipc/netlify.js";
+import type { NetlifyAccount, NetlifyFailure, NetlifySite } from "../shared/ipc/netlify.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import type { NetlifySignIns } from "./netlify-auth.js";
@@ -91,8 +91,31 @@ export function registerNetlifyHandlers(
     }
   });
 
-  registerIpcHandler(ipc, "netlifySites", isTrustedSender, async (handle) => {
-    const client = signIns.client(handle);
+  /**
+   * The token saved for the open site's Netlify destination `id`, while the site file names the
+   * site it was saved for (S32); `undefined` without one, or once that opening has gone.
+   */
+  const savedToken = (sessionId: string, id: string) =>
+    deps.site(sessionId).withStore<string | undefined>(
+      "shared",
+      async (store) => {
+        const destination = store.readPublishDestinations().find((each) => each.id === id);
+        if (destination?.kind !== "netlify") return undefined;
+        const saved = await deps.secrets.signInFor(store.info.projectId, destination);
+        return saved !== undefined && "token" in saved.signIn ? saved.signIn.token : undefined;
+      },
+      () => undefined,
+    );
+
+  /** Netlify's API as `account` reaches it, or `undefined` for one signed out. */
+  const clientOf = async (sessionId: string, account: NetlifyAccount) => {
+    if ("handle" in account) return signIns.client(account.handle);
+    const token = await savedToken(sessionId, account.saved);
+    return token === undefined ? undefined : signIns.clientWith(token);
+  };
+
+  registerIpcHandler(ipc, "netlifySites", isTrustedSender, async (sessionId, account) => {
+    const client = await clientOf(sessionId, account);
     if (client === undefined) return signedOut;
     try {
       const sites = (await client.listSites()).map(listed).filter((site) => site !== undefined);
@@ -102,16 +125,51 @@ export function registerNetlifyHandlers(
     }
   });
 
-  registerIpcHandler(ipc, "netlifyCreateSite", isTrustedSender, async (handle, name) => {
-    const client = signIns.client(handle);
-    if (client === undefined) return signedOut;
+  registerIpcHandler(
+    ipc,
+    "netlifyCreateSite",
+    isTrustedSender,
+    async (sessionId, account, name) => {
+      const client = await clientOf(sessionId, account);
+      if (client === undefined) return signedOut;
+      try {
+        const site = listed(await client.createSite(name));
+        return site === undefined
+          ? ({ status: "failed", reason: "failed" } as const)
+          : ({ status: "created", site } as const);
+      } catch (error) {
+        return failed(error, "Webforge could not create a Netlify site");
+      }
+    },
+  );
+
+  registerIpcHandler(ipc, "netlifyTestSaved", isTrustedSender, async (sessionId, id) => {
+    // Read with the site, and tested once the gate is free, as file transfer's Test connection is.
+    const siteId = await deps.site(sessionId).withStore<string | undefined>(
+      "shared",
+      (store) => {
+        const destination = store.readPublishDestinations().find((each) => each.id === id);
+        return destination?.kind === "netlify" ? destination.siteId : undefined;
+      },
+      () => undefined,
+    );
+    const client = await clientOf(sessionId, { saved: id });
+    if (siteId === undefined || client === undefined) return { ok: false, code: "unauthorized" };
     try {
-      const site = listed(await client.createSite(name));
-      return site === undefined
-        ? ({ status: "failed", reason: "failed" } as const)
-        : ({ status: "created", site } as const);
+      await client.getSite(siteId);
+      return { ok: true };
     } catch (error) {
-      return failed(error, "Webforge could not create a Netlify site");
+      const code = error instanceof PublishError ? error.code : undefined;
+      return {
+        ok: false,
+        code:
+          code === "unauthorized" ||
+          code === "not-found" ||
+          code === "network" ||
+          code === "timeout"
+            ? code
+            : "rejected",
+      };
     }
   });
 
@@ -131,15 +189,22 @@ export function registerNetlifyHandlers(
             ...(draft.site.url === undefined ? {} : { url: draft.site.url }),
           }),
           async (destination, existing) => {
-            // Kept only while the destination's site is the one it was saved for (S32).
+            // `keep`: the token saved for the destination as the site file names it now (S32),
+            // then saved for the site the person chose. A file edited to another site has none.
+            const before = existing
+              ? store.readPublishDestinations().find((each) => each.id === destination.id)
+              : undefined;
+            const kept =
+              "keep" in ref && before?.kind === "netlify"
+                ? await deps.secrets.signInFor(store.info.projectId, before)
+                : undefined;
             const token =
               "keep" in ref
-                ? existing
-                  ? await deps.secrets.signInFor(store.info.projectId, destination)
+                ? kept !== undefined && "token" in kept.signIn
+                  ? kept.signIn.token
                   : undefined
                 : signIns.token(ref.handle);
-            if (token === undefined) return { status: "sign-in-needed" } as const;
-            return typeof token === "string" ? { token } : token.signIn;
+            return token === undefined ? ({ status: "sign-in-needed" } as const) : { token };
           },
           {},
         );

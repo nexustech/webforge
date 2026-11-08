@@ -31,7 +31,7 @@ export const CONNECTION_FAILURES = [
 ] as const;
 
 /** What Test connection found: the folder can be published to, or why not. */
-const connectionResultSchema = z.discriminatedUnion("ok", [
+export const connectionResultSchema = z.discriminatedUnion("ok", [
   z.strictObject({ ok: z.literal(true) }),
   z.strictObject({ ok: z.literal(false), code: z.enum(CONNECTION_FAILURES) }),
 ]);

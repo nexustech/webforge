@@ -33,6 +33,8 @@ export type NetlifySignIns = {
   signInWithToken(token: string, signal?: AbortSignal): Promise<string>;
   /** Netlify's API as the sign-in `handle` reaches it, while it's held. */
   client(handle: string): ReturnType<typeof netlifyClient> | undefined;
+  /** Netlify's API as a saved sign-in's `token` reaches it. */
+  clientWith(token: string): ReturnType<typeof netlifyClient>;
   /** The token of sign-in `handle`, while it's held: to be saved for a site. */
   token(handle: string): string | undefined;
   /** Holds sign-in `handle` no longer: once it's saved for a site. */
@@ -85,6 +87,8 @@ export function createNetlifySignIns(options: NetlifySignInsOptions): NetlifySig
       const token = tokenOf(handle);
       return token === undefined ? undefined : netlifyClient({ token, ...network });
     },
+
+    clientWith: (token) => netlifyClient({ token, ...network }),
 
     token: tokenOf,
 

@@ -7,11 +7,12 @@ export const netlifyApi = (call: Call): NetlifyApi => ({
   signIn: (operationId) => call("netlifySignIn", operationId),
   cancelSignIn: (operationId) => call("netlifyCancelSignIn", operationId),
   signInWithToken: (token) => call("netlifySignInWithToken", token),
-  sites: (handle) => call("netlifySites", handle),
-  createSite: (handle, name) =>
+  sites: (sessionId, account) => call("netlifySites", sessionId, account),
+  createSite: (sessionId, account, name) =>
     name === undefined
-      ? call("netlifyCreateSite", handle)
-      : call("netlifyCreateSite", handle, name),
+      ? call("netlifyCreateSite", sessionId, account)
+      : call("netlifyCreateSite", sessionId, account, name),
+  testSaved: (sessionId, id) => call("netlifyTestSaved", sessionId, id),
   saveDestination: (sessionId, draft, signIn) =>
     call("netlifySaveDestination", sessionId, draft, signIn),
 });

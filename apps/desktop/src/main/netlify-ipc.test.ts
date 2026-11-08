@@ -38,6 +38,7 @@ const netlifyApi: typeof fetch = async (input, init) => {
     const { name } = JSON.parse(String(init.body)) as { name?: string };
     return reply(201, { id: OTHER, name: name ?? "jolly-bun", ssl_url: "https://new.netlify.app" });
   }
+  if (pathname.endsWith(`/sites/${ROSAS}`)) return reply(200, { id: ROSAS, name: "rosas-bakery" });
   if (pathname.endsWith("/sites")) {
     return reply(200, [
       { id: ROSAS, name: "rosas-bakery", ssl_url: "https://rosas-bakery.netlify.app" },
@@ -99,7 +100,10 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
     const handle = handleOf(await invoke("netlify:sign-in", OPERATION));
     expect(opened).toHaveLength(1);
 
-    expect(await invoke("netlify:sites", handle)).toEqual({ status: "listed", sites: [rosas] });
+    expect(await invoke("netlify:sites", SESSION, { handle })).toEqual({
+      status: "listed",
+      sites: [rosas],
+    });
     const saved = (await invoke(
       "netlify:save-destination",
       SESSION,
@@ -120,14 +124,19 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
     expect(readFileSync(credentials, "utf8")).not.toContain(TOKEN);
     expect(JSON.stringify(saved)).not.toContain(TOKEN);
     // Saved, the sign-in is held no longer.
-    expect(await invoke("netlify:sites", handle)).toEqual({
+    expect(await invoke("netlify:sites", SESSION, { handle })).toEqual({
       status: "failed",
       reason: "signed-out",
     });
+    // Its saved sign-in reaches the account, and its site, as Test connection asks.
+    expect(await invoke("netlify:sites", SESSION, { saved: saved.destination.id })).toMatchObject({
+      status: "listed",
+    });
+    expect(await invoke("netlify:test-saved", SESSION, saved.destination.id)).toEqual({ ok: true });
   });
 
-  it("keeps a saved sign-in only for the site it was saved for (S32)", async () => {
-    const { invoke } = handlers();
+  it("keeps a saved sign-in for the site the person picks, never one an edited file names (S32)", async () => {
+    const { invoke, store } = handlers();
     const handle = handleOf(await invoke("netlify:sign-in-with-token", TOKEN));
     const first = (await invoke(
       "netlify:save-destination",
@@ -146,13 +155,42 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
         { keep: true },
       ),
     ).toMatchObject({ status: "saved", destination: { name: "Bakery" } });
-    // Another site: signed in again.
+    // Another site the person picks: the sign-in goes with it.
     const other = { id: OTHER, name: "other" };
     expect(
       await invoke(
         "netlify:save-destination",
         SESSION,
         { id, name: "Bakery", site: other },
+        { keep: true },
+      ),
+    ).toMatchObject({ status: "saved", destination: { siteId: OTHER } });
+    expect(await invoke("netlify:sites", SESSION, { saved: id })).toMatchObject({
+      status: "listed",
+    });
+    // A site Netlify no longer has: Test connection says so.
+    expect(await invoke("netlify:test-saved", SESSION, id)).toEqual({
+      ok: false,
+      code: "not-found",
+    });
+
+    // The site file edited to name another site: no sign-in for it, to keep or to use.
+    store.writePublishDestinations([
+      { id, name: "Bakery", kind: "netlify", siteId: ROSAS, url: rosas.url },
+    ]);
+    expect(await invoke("netlify:sites", SESSION, { saved: id })).toEqual({
+      status: "failed",
+      reason: "signed-out",
+    });
+    expect(await invoke("netlify:test-saved", SESSION, id)).toEqual({
+      ok: false,
+      code: "unauthorized",
+    });
+    expect(
+      await invoke(
+        "netlify:save-destination",
+        SESSION,
+        { id, name: "B", site: rosas },
         { keep: true },
       ),
     ).toEqual({ status: "sign-in-needed" });
@@ -171,11 +209,15 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
     const { invoke } = handlers();
     const handle = handleOf(await invoke("netlify:sign-in-with-token", TOKEN));
 
-    expect(await invoke("netlify:create-site", handle, "rosas-new")).toEqual({
+    expect(await invoke("netlify:create-site", SESSION, { handle }, "rosas-new")).toEqual({
       status: "created",
       site: { id: OTHER, name: "rosas-new", url: "https://new.netlify.app" },
     });
-    expect(await invoke("netlify:create-site", "1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b")).toEqual({
+    expect(
+      await invoke("netlify:create-site", SESSION, {
+        handle: "1b2c3d4e-5f60-4718-8a9b-0c1d2e3f4a5b",
+      }),
+    ).toEqual({
       status: "failed",
       reason: "signed-out",
     });
@@ -203,12 +245,14 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
         { handle },
       ),
     ).toMatchObject({ status: "failed" });
-    expect(await readOnly.invoke("netlify:sites", handle)).toMatchObject({ status: "listed" });
+    expect(await readOnly.invoke("netlify:sites", SESSION, { handle })).toMatchObject({
+      status: "listed",
+    });
   });
 
   it("refuses arguments that aren't what the call takes", async () => {
     const { invoke } = handlers();
-    await expect(invoke("netlify:sites", "not-a-handle")).rejects.toThrow();
+    await expect(invoke("netlify:sites", SESSION, { handle: "not-a-handle" })).rejects.toThrow();
     await expect(
       invoke(
         "netlify:save-destination",
