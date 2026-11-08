@@ -510,12 +510,30 @@ export function setFont(
   which: FontRole,
   font: FontRef,
 ): Promise<boolean> {
-  return setFonts(session, asks, { ...theme(session).fonts, [which]: font });
+  const fonts = theme(session).fonts;
+  return setFonts(
+    session,
+    asks,
+    which === "heading" ? withHeading(fonts, font) : { ...fonts, [which]: font },
+  );
 }
 
 /**
- * Sets the headings' and body text's fonts to a tested pairing's (F-DS-2), the accent's as it was:
- * see {@link setFonts}.
+ * `fonts` with `heading` for the headings. An accent that is still the headings' font, as the
+ * built-in themes and older sites have it until someone picks one, goes with them; one picked on
+ * its own stays (#644). Otherwise a change of headings would leave the accent a font nobody chose.
+ */
+function withHeading(
+  fonts: Readonly<Record<FontRole, FontRef>>,
+  heading: FontRef,
+): Record<FontRole, FontRef> {
+  const follows = fonts.accent.family === fonts.heading.family;
+  return { ...fonts, heading, accent: follows ? heading : fonts.accent };
+}
+
+/**
+ * Sets the headings' and body text's fonts to a tested pairing's (F-DS-2), the accent with the
+ * headings while it is their font: see {@link setFonts} and {@link withHeading}.
  */
 export function setPairing(
   session: ThemeSession,
@@ -526,8 +544,7 @@ export function setPairing(
   const body = catalogueFont(pairing.body);
   if (heading === undefined || body === undefined) return Promise.resolve(false);
   return setFonts(session, asks, {
-    ...theme(session).fonts,
-    heading: fontRefOf(heading),
+    ...withHeading(theme(session).fonts, fontRefOf(heading)),
     body: fontRefOf(body),
   });
 }
