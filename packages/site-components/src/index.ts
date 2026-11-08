@@ -44,6 +44,7 @@ export {
   boundText,
   boxTokenPixels,
   colorClass,
+  drawsPictureBehind,
   EDITOR_RENDER_CONTEXT,
   fieldsHiddenBy,
   holdsOverfullSlot,

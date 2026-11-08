@@ -98,6 +98,10 @@ describe("describeDetail", () => {
   it("gives a ratio, a size in pixels or in MB, or nothing", () => {
     const place = { kind: "theme" } as const;
     expect(describeDetail(at(place, { ratio: 2.1, required: 4.5 }))).toBe("2.1:1, needs 4.5:1");
+    // An icon's or a logo's, which needs less than text (#670).
+    expect(describeDetail(at(place, { ratio: 2.48, required: 3, drawn: "graphic" }))).toBe(
+      "2.48:1, needs 3:1 for an icon or logo",
+    );
     expect(describeDetail(at(place, { width: 6000, height: 4000 }))).toBe("6000 × 4000 pixels");
     expect(describeDetail(at(place, { bytes: 12_500_000 }))).toMatch(/12\.5/);
     expect(describeDetail(at(place))).toBeUndefined();
