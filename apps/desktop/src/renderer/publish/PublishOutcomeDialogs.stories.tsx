@@ -58,6 +58,21 @@ export const RestoredOnNetlify: Story = {
   },
 };
 
+/**
+ * Live on Netlify, but its visitors get Netlify's log-in page: a new project kept private, say
+ * (4.4b, ADR 0006 decision 6).
+ */
+export const LiveButProtected: Story = {
+  args: {
+    state: (() => {
+      const outcomes = createPublishOutcomes();
+      outcomes.showLive({ ...LIVE, url: "https://rosas-bakery.netlify.app" });
+      outcomes.markProtected(LIVE.operationId);
+      return outcomes.state;
+    })(),
+  },
+};
+
 /** Live on a host without a web address: nothing to open or copy yet. */
 export const LiveWithoutAddress: Story = {
   args: { state: liveState({ ...LIVE, url: "", check: "unchecked" }) },

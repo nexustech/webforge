@@ -66,8 +66,8 @@ export type PublishFlow = {
   readonly sessionId: () => string;
   /** Whether to replace the site another publish left in the destination's folder (A8). */
   readonly askReplace: (destination: string) => Promise<boolean>;
-  /** *Your site is live*. */
-  readonly showLive: (live: LivePublish) => void;
+  /** *Your site is live*, at `destination`. */
+  readonly showLive: (live: LivePublish, destination: PublishDestination) => void;
   /** The site's destinations again, for one whose password must be typed again. */
   readonly showDestinations: () => void;
 };
@@ -128,7 +128,7 @@ async function publishChecked(
       case "published": {
         toast.dismiss(progress);
         const { status: _published, ...live } = result;
-        flow.showLive({ ...live, operationId });
+        flow.showLive({ ...live, operationId }, destination);
         return;
       }
       case "cancelled":

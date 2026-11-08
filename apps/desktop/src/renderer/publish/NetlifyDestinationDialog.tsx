@@ -7,7 +7,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { DESTINATION_NAME_MAX, SECRET_MAX } from "@webforge/model";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "../shell/form-messages.js";
 
 /**
@@ -53,7 +53,7 @@ export type NetlifyDestinationApi = {
   readonly canSignIn: boolean;
   /** Signs in in the person's browser, through Netlify's page, until approved or cancelled. */
   readonly signIn: () => Promise<SignInResult>;
-  /** Stops waiting for the browser: the sign-in answers `cancelled`. */
+  /** Stops waiting for the browser: the sign-in answers `cancelled`. Nothing when none waits. */
   readonly cancelSignIn: () => void;
   /** Checks a pasted personal access token, and holds it as a sign-in. */
   readonly signInWithToken: (token: string) => Promise<SignInResult>;
@@ -94,7 +94,10 @@ export type NetlifySaved = {
   readonly signIn: { readonly handle: string } | { readonly keep: true };
 };
 
-/** The form's values, as the person types them; the token too, which is sent once and forgotten. */
+/**
+ * The form's values, as the person types them. The token too: it stays in this form, which
+ * FormDialog can't clear from outside, and what's saved carries the sign-in's handle, never it.
+ */
 type NetlifyValues = {
   readonly name: string;
   readonly token: string;
@@ -156,6 +159,8 @@ export function NetlifyDestinationDialog({
   );
   const [sites, setSites] = useState<Sites>({ status: "none" });
   const [signing, setSigning] = useState<Signing>({ status: "idle" });
+  // Cancelled: a sign-in that ends after it is let go, not held for a form that's gone.
+  const closed = useRef(false);
 
   // The account's sites, once there's a sign-in to ask with. On `sites` alone, so a Netlify API
   // object made again on a render asks no more.
@@ -183,6 +188,10 @@ export function NetlifyDestinationDialog({
       ? netlify.signIn()
       : netlify.signInWithToken(token)
     ).catch(() => ({ status: "failed" as const, reason: "failed" as const }));
+    if (closed.current) {
+      if (result.status === "signed-in") netlify.forgetSignIn(result.handle);
+      return;
+    }
     if (result.status === "signed-in") {
       // Signed in again: the sign-in before it, not saved, is let go.
       if (account !== undefined && "handle" in account && account.handle !== result.handle) {
@@ -223,6 +232,10 @@ export function NetlifyDestinationDialog({
           <SiteStatus sites={sites} />
         </>
       ),
+      // Netlify may keep a new project private: said before it's made, not as a warning.
+      newSite: (
+        <p className="text-sm text-muted-foreground">{t("publish.netlify.newSite.private")}</p>
+      ),
       site: account !== undefined && siteOf(values.site) && (
         <VisitorAccess check={netlify.checkAccess} account={account} siteId={values.site} />
       ),
@@ -245,7 +258,10 @@ export function NetlifyDestinationDialog({
       size="lg"
       onSave={(saved) => onSave(saved)}
       onCancel={() => {
-        // A sign-in made here and not saved: main lets it go now, not after its 30 minutes.
+        closed.current = true;
+        // A browser sign-in still waiting stops; one made here and not saved, main lets go now,
+        // not after its 30 minutes.
+        netlify.cancelSignIn();
         if (account !== undefined && "handle" in account) netlify.forgetSignIn(account.handle);
         onCancel();
       }}

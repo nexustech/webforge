@@ -143,6 +143,16 @@ test("adds a Netlify destination by token, offers Netlify Forms, and publishes t
   expect(netlify.uploads()).toContain("index.html");
   expect(netlify.file(siteId, "index.html")).toContain('data-netlify="true"');
   expect((await netlify.forms(siteId)).map(({ name }) => name)).toEqual(["Contact form"]);
+  await expect(live.getByText(/Make public/)).toHaveCount(0);
+  await live.getByRole("button", { name: "Done" }).click();
+
+  // Made private on Netlify since: published again, Your site is live says visitors can't see it.
+  netlify.protect(siteId);
+  await page.getByRole("button", { name: "Publish…", exact: true }).click();
+  await publish.getByRole("button", { name: "Publish to rosas-bakery" }).click();
+  await expect(live.getByRole("alert")).toContainText("Visitors have to log in to see this site", {
+    timeout: 60_000,
+  });
   await live.getByRole("button", { name: "Done" }).click();
   await app?.close();
   app = undefined;

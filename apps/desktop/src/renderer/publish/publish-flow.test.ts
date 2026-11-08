@@ -132,7 +132,7 @@ describe("publishTo (4.5, F-PB-2)", () => {
     );
     expect(toast.dismiss).toHaveBeenCalledWith("progress");
     const { status: _published, ...live } = LIVE;
-    expect(flow.showLive).toHaveBeenCalledWith({ ...live, operationId });
+    expect(flow.showLive).toHaveBeenCalledWith({ ...live, operationId }, destination);
     expect(api.onProgress.mock.results[0]?.value).toBeTypeOf("function");
   });
 

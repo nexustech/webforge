@@ -171,6 +171,37 @@ describe("a Netlify publish destination (4.4b, F-PB-1)", () => {
     expect(editing.netlify.forgetSignIn).not.toHaveBeenCalled();
   });
 
+  it("stops a browser sign-in when it's cancelled, and lets go of one that ends after (#826 review)", async () => {
+    // Approved in the browser just as the form is cancelled: the answer comes after.
+    let answer: (result: Awaited<ReturnType<NetlifyDestinationApi["signIn"]>>) => void = () =>
+      undefined;
+    const signIn = vi.fn<NetlifyDestinationApi["signIn"]>(
+      () =>
+        new Promise((resolve) => {
+          answer = resolve;
+        }),
+    );
+    const { netlify, user } = setUp(fakeNetlify({ canSignIn: true, signIn }));
+    await user.click(screen.getByRole("button", { name: "Sign In with Netlify" }));
+    await screen.findByRole("button", { name: "Cancel Sign-In" });
+
+    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(netlify.cancelSignIn).toHaveBeenCalled();
+    answer({ status: "signed-in", handle: HANDLE });
+
+    await waitFor(() => expect(netlify.forgetSignIn).toHaveBeenCalledWith(HANDLE));
+  });
+
+  it("says Netlify may keep a new site private until it's made public (#826 review)", async () => {
+    const { user, connect } = setUp();
+    await connect("nfp_token");
+    expect(screen.queryByText(/choose Make public/)).toBeNull();
+    await user.selectOptions(await screen.findByLabelText("Netlify site"), "new");
+    expect(screen.getByText(/Netlify may keep a new site private/)).toBeTruthy();
+    // A note, not the warning a protected site gets.
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("lets go of the sign-in before when it signs in again (#826 review)", async () => {
     const OTHER = "1a2b3c4d-1111-4222-8333-444455556666";
     const signInWithToken = vi

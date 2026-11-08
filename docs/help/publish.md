@@ -34,9 +34,13 @@ The first time you test or save an SFTP destination, {appName} shows the host's 
 2. **Choose the Netlify site** to publish to, or **A new site**. A new site's name becomes part of its address, such as `rosas-bakery.netlify.app`. Leave it empty and Netlify makes one up.
 3. **Name** it if you like, then click **Save Destination**. If Site Settings has no web address yet, {appName} fills in the Netlify site's.
 
-If the site you choose has Netlify's **visitor access** turned on, {appName} warns you: visitors are asked to log in to Netlify instead of seeing your site. Turn it off in the site's settings on Netlify if your site is for everyone.
-
 Once your site has a Netlify destination, [forms](forms.md) can send their messages with **Netlify Forms**.
+
+### When visitors have to log in
+
+Netlify can show visitors its log-in page instead of your site. {appName} warns you when it does: for the site you choose, and on **Your site is live** after publishing to Netlify. It's usually because the site is still **private**: Netlify may keep a new site private, and {appName} reminds you of this when you choose **A new site**. If your site is for everyone:
+- **A private site:** open it on Netlify and choose **Make public**. Netlify offers this once the site has been published.
+- **Visitor access or password protection:** turn it off in the site's settings on Netlify.
 
 ## Publishing
 

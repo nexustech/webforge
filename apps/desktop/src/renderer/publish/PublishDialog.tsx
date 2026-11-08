@@ -291,7 +291,7 @@ export function PublishDialog({
   const editedSettings =
     edited?.destination.kind === "file-transfer" ? edited.destination.settings : undefined;
   const editedNetlify = edited?.destination.kind === "netlify" ? edited.destination : undefined;
-  const adding = listed === undefined || listed.length >= PUBLISH_DESTINATIONS_MAX;
+  const cannotAdd = listed === undefined || listed.length >= PUBLISH_DESTINATIONS_MAX;
 
   return (
     <>
@@ -345,7 +345,7 @@ export function PublishDialog({
             {netlify === undefined ? (
               <Button
                 variant="outline"
-                disabled={adding}
+                disabled={cannotAdd}
                 onClick={() => setEditing({ kind: "file-transfer", listed: undefined })}
               >
                 {t("publish.destinations.add")}
@@ -354,7 +354,7 @@ export function PublishDialog({
               // Which kind of destination (4.4b): a web host over FTP, FTPS or SFTP, or Netlify.
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" disabled={adding}>
+                  <Button variant="outline" disabled={cannotAdd}>
                     {t("publish.destinations.add")}
                   </Button>
                 </DropdownMenuTrigger>

@@ -134,9 +134,11 @@ export const publish = {
   "publish.netlify.newSite": "New site's name",
   "publish.netlify.newSite.help":
     "Part of its address: name.netlify.app. Left empty, Netlify makes one up.",
+  "publish.netlify.newSite.private":
+    "Netlify may keep a new site private, so visitors get its log-in page, until you make it public. After your first publish, open the site on Netlify and choose Make public.",
   "publish.netlify.protected.title": "Visitors have to log in to see this site",
   "publish.netlify.protected.body":
-    "Netlify's visitor access is on for it, so visitors get Netlify's log-in page instead of your site. Turn it off in the site's settings on Netlify if your site is for everyone.",
+    "Visitors get Netlify's log-in page instead of your site. If your site is for everyone, open it on Netlify and choose Make public (once it's been published), or turn off its visitor access or password protection.",
   "publish.netlify.cancelSignIn": "Cancel Sign-In",
   "publish.netlify.failed.not-set-up":
     "This copy of {appName} can't sign in through Netlify's page yet. Paste a personal access token instead.",

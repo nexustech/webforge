@@ -64,10 +64,23 @@ export const publishArea: Area<WindowContext> = {
       askReplace: outcomes.askReplace,
       // Live now: the site shows this year where its text has `{year}` (F-CM-8), and Version
       // History lists where its versions went.
-      showLive: (live) => {
+      showLive: (live, destination) => {
         publishedYear.setState(new Date().getFullYear(), true);
         requests.published();
         outcomes.showLive(live);
+        // A Netlify site whose visitors get its log-in page, as a new project kept private does:
+        // said on Your site is live, since the API reports it live all the same (ADR 0006
+        // decision 6). A check that fails says nothing.
+        if (destination.kind === "netlify" && destination.siteId !== undefined) {
+          netlify
+            .checkAccess({ saved: destination.id }, destination.siteId)
+            .then((access) => {
+              if (access.status === "checked" && access.protected) {
+                outcomes.markProtected(live.operationId);
+              }
+            })
+            .catch(() => undefined);
+        }
       },
       // Still for the version being republished, if it's one: its password is typed again there.
       showDestinations: () =>

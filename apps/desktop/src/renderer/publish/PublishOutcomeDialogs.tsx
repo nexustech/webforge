@@ -22,7 +22,12 @@ import type { LivePublish } from "./publish-flow.js";
 
 /** The dialog a publish has open: *Your site is live*, or whether to replace another site. */
 type Shown =
-  | { readonly kind: "live"; readonly live: LivePublish }
+  | {
+      readonly kind: "live";
+      readonly live: LivePublish;
+      /** Its visitors get Netlify's log-in page, as checked once it went live (4.4b). */
+      readonly protected?: true;
+    }
   | {
       readonly kind: "replace";
       readonly destination: string;
@@ -35,6 +40,11 @@ export type PublishOutcomes = {
   /** Whether to replace the site in `destination`'s folder; false once closed unanswered. */
   askReplace(destination: string): Promise<boolean>;
   showLive(live: LivePublish): void;
+  /**
+   * Says on *Your site is live* that publish `operationId`'s Netlify site keeps visitors out, if
+   * it's still the one shown (4.4b, ADR 0006 decision 6).
+   */
+  markProtected(operationId: string): void;
 };
 
 /** Creates the publish's dialogs, none shown. */
@@ -60,6 +70,12 @@ export function createPublishOutcomes(): PublishOutcomes {
         });
       }),
     showLive: (live) => state.setState({ shown: { kind: "live", live } }),
+    markProtected: (operationId) => {
+      const { shown } = state.getState();
+      if (shown?.kind === "live" && shown.live.operationId === operationId) {
+        state.setState({ shown: { ...shown, protected: true } });
+      }
+    },
   };
 }
 
@@ -93,6 +109,15 @@ export function PublishOutcomeDialogs({ state, openLive, copyLink }: PublishOutc
                 : t("publish.live.at", { url: live.url })}
             </DialogDescription>
           </DialogHeader>
+          {shown?.kind === "live" && shown.protected === true && (
+            <div
+              role="alert"
+              className="space-y-1 rounded-md border border-warning bg-warning/10 p-3 text-sm"
+            >
+              <p className="font-medium">{t("publish.netlify.protected.title")}</p>
+              <p>{t("publish.netlify.protected.body")}</p>
+            </div>
+          )}
           {live !== undefined && (
             <div className="space-y-2 text-sm">
               {(live.check === "different" || live.check === "unreachable") && (
