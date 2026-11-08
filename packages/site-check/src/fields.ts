@@ -7,7 +7,11 @@ import {
   type SiteDoc,
   valuesWithLook,
 } from "@webforge/model";
-import { type CatalogueField, hiddenFieldsOf } from "@webforge/site-components/catalogue-data";
+import {
+  type CatalogueComponent,
+  type CatalogueField,
+  hiddenFieldsOf,
+} from "@webforge/site-components/catalogue-data";
 import type { CheckInput } from "./types.js";
 
 /** A field's value on an element the export writes, and where it is. */
@@ -52,7 +56,19 @@ type FieldPlan = readonly {
   readonly name: string;
   readonly visit: boolean;
   readonly items: readonly string[];
+  /** Whether a layout or other values can hide it (#670): only then is that worked out. */
+  readonly mayHide: boolean;
 }[];
+
+/** The fields of `component` a layout or other values can hide, as `hiddenFieldsOf` hides them. */
+function hideable(component: CatalogueComponent | undefined): ReadonlySet<string> {
+  if (component === undefined) return new Set();
+  const names = new Set(Object.values(component.variantHides ?? {}).flat());
+  for (const name of ["lookBorderColor", "overlay", "overlayColor"]) {
+    if (Object.hasOwn(component.fields, name)) names.add(name);
+  }
+  return names;
+}
 
 /**
  * Each catalogue's plans, by the kinds asked for and the component type: worked out once, so a
@@ -79,6 +95,7 @@ function planFor(
   }
   let plan = byType.get(type);
   if (plan === undefined) {
+    const mayHide = hideable(catalogue[type]);
     plan = Object.entries(catalogue[type]?.fields ?? {}).flatMap(([name, field]) => {
       const visit = wanted.has(field.kind);
       const items =
@@ -87,7 +104,7 @@ function planFor(
               .filter(([, item]) => wanted.has(item.kind))
               .map(([item]) => item)
           : [];
-      return visit || items.length > 0 ? [{ name, visit, items }] : [];
+      return visit || items.length > 0 ? [{ name, visit, items, mayHide: mayHide.has(name) }] : [];
     });
     byType.set(type, plan);
   }
@@ -98,8 +115,8 @@ function planFor(
  * Calls `visit` with each value of a field of one of `kinds` on the site's elements, as the
  * catalogue describes them, list items' fields included. A field the element doesn't set itself
  * reads its kind's look in the theme, as the export draws it (#670). Hidden elements, and shared
- * sections no page holds, are left out: the export leaves them out too. Only the fields of those kinds are
- * read, as each type's plan has them (#628).
+ * sections no page holds, are left out: the export leaves them out too. Only the fields of those
+ * kinds are read, as each type's plan has them (#628).
  */
 export function eachFieldValue(
   { site, catalogue }: CheckInput,
@@ -115,21 +132,29 @@ export function eachFieldValue(
     (node, on) => {
       if (!exported(on)) return;
       const plan = planFor(catalogue, wanted, kindsKey, node.type);
+      if (plan.length === 0) return;
       const component = catalogue[node.type];
       const look: Readonly<Record<string, unknown>> | undefined = looks?.[node.type];
       // The one rule the export draws by: its own value, else its kind's look.
       const values = valuesWithLook(node.props, look);
       // A field its layout or values leave unused isn't drawn, nor exported: nor checked (#670).
-      const hidden =
-        component === undefined
-          ? new Set<string>()
-          : hiddenFieldsOf(component, { ...component.defaults, ...values });
+      // Worked out only for a field that can be hidden and has a value, as few do.
+      let hidden: ReadonlySet<string> | undefined;
       // In the component's order, a list's items where the list is, as before the plans (#628).
-      for (const { name, visit: wantedField, items } of plan) {
+      for (const { name, visit: wantedField, items, mayHide } of plan) {
         const value = values[name];
-        if (value === undefined || hidden.has(name)) continue;
-        const fromLook = node.props[name] === undefined ? ({ fromLook: true } as const) : {};
-        if (wantedField) visit({ on, node, field: name, value, ...fromLook });
+        if (value === undefined) continue;
+        if (mayHide && component !== undefined) {
+          hidden ??= hiddenFieldsOf(component, { ...component.defaults, ...values });
+          if (hidden.has(name)) continue;
+        }
+        if (wantedField) {
+          visit(
+            node.props[name] === undefined
+              ? { on, node, field: name, value, fromLook: true }
+              : { on, node, field: name, value },
+          );
+        }
         if (items.length === 0 || !Array.isArray(value)) continue;
         value.forEach((item: unknown, index) => {
           if (typeof item !== "object" || item === null) return;
