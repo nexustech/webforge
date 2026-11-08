@@ -56,6 +56,15 @@ export type CrashReporting = {
    * whoever runs it takes that as a failed job; Webforge itself goes on. Returns `worker`.
    */
   readonly watchWorker: <W extends WatchedWorker>(worker: W) => W;
+  /**
+   * Writes a report when `thread`, a worker thread of the main process (the storage writer),
+   * crashed: an error nothing in it caught, or an exit it didn't ask for. Whoever runs it fails
+   * what it was doing and starts another; Webforge itself goes on.
+   */
+  readonly reportThread: (
+    thread: string,
+    crash: { readonly error: unknown } | { readonly exitCode: number },
+  ) => void;
 };
 
 /** A utility process, as far as {@link CrashReporting.watchWorker} listens to it. */
@@ -120,11 +129,16 @@ export function installCrashHandlers(
   });
 
   let recent: number[] = [];
-  const report = (reported: ReportedError) => {
+  /** Whether another report fits in this minute's {@link MAX_REPORTED_PER_MINUTE}; counts it. */
+  const fits = () => {
     const now = (context.now?.() ?? new Date()).getTime();
     recent = recent.filter((time) => now - time < 60_000);
-    if (recent.length >= MAX_REPORTED_PER_MINUTE) return;
+    if (recent.length >= MAX_REPORTED_PER_MINUTE) return false;
     recent.push(now);
+    return true;
+  };
+  const report = (reported: ReportedError) => {
+    if (!fits()) return;
     write({
       process: reported.process,
       kind: reported.kind,
@@ -147,6 +161,15 @@ export function installCrashHandlers(
         }
       });
       return worker;
+    },
+    reportThread(thread, crash) {
+      if (!fits()) return;
+      write({
+        process: "main",
+        kind: "error" in crash ? `${thread}-error` : `${thread}-exit`,
+        ...crash,
+        fatal: false,
+      });
     },
   };
 }

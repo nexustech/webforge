@@ -133,35 +133,42 @@ export type StyleCompiler = {
   css(options: SiteCssOptions, grow?: boolean): Promise<string>;
 };
 
-/** A {@link StyleCompiler} over `resources`, which must stay the same for its lifetime. */
+/** A Tailwind compiler kept between builds: its source, and the classes it has been given. */
+type KeptCompiler = {
+  readonly source: string;
+  readonly compiler: Awaited<ReturnType<typeof compile>>;
+  readonly seen: Set<string>;
+};
+
+/**
+ * A {@link StyleCompiler} over `resources`, which must stay the same for its lifetime. It keeps one
+ * compiler for previews (`grow`) and one for exports: their sources never match, so with one
+ * between them a preview and an export would each prepare a new compiler after the other (#671).
+ */
 export function createStyleCompiler(resources: StyleResources): StyleCompiler {
-  let kept:
-    | {
-        readonly source: string;
-        readonly compiler: Awaited<ReturnType<typeof compile>>;
-        readonly seen: Set<string>;
-      }
-    | undefined;
+  const kept: { grow?: KeptCompiler; exact?: KeptCompiler } = {};
   return {
     async css(options, grow = false) {
       const source = siteStylesheetSource(
         grow ? { ...options, theme: themeShape(options.theme) } : options,
       );
       const wanted = new Set(options.candidates);
+      const slot = grow ? "grow" : "exact";
+      const last = kept[slot];
       // Checked and built in one go, with no await between: another build can't change it meanwhile.
       const reusable =
-        kept !== undefined &&
-        kept.source === source &&
-        (grow || [...kept.seen].every((name) => wanted.has(name)));
+        last !== undefined &&
+        last.source === source &&
+        (grow || [...last.seen].every((name) => wanted.has(name)));
       const current =
-        reusable && kept !== undefined
-          ? kept
+        reusable && last !== undefined
+          ? last
           : {
               source,
               compiler: await compile(source, tailwindLoaders(resources)),
               seen: new Set<string>(),
             };
-      kept = current;
+      kept[slot] = current;
       for (const name of wanted) current.seen.add(name);
       const css = current.compiler.build([...options.candidates]);
       return grow
