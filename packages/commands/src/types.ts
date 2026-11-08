@@ -21,6 +21,11 @@ export type Confirmation = {
    * before: "Before Claude's changes: Build the site" (a plan, S26).
    */
   readonly version?: string;
+  /**
+   * It names where visitors' money or details go (S18), or changes Site Settings: a plan says it
+   * before anything else, set apart, however long the plan (S30, #795).
+   */
+  readonly first?: true;
 };
 
 /**

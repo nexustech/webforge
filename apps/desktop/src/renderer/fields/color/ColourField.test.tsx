@@ -3,10 +3,10 @@ import { act, cleanup, fireEvent, render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import type { FieldSpec } from "@webforge/editor-ui";
 import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
-import { contrastRatio, hexToOklch } from "@webforge/themes";
+import { contrastNeeded, contrastRatio, hexToOklch, type Surface } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sessionWith } from "../../testing/fixtures.js";
-import { ColourField, contrastNeeded, shownRatio } from "./ColourField.js";
+import { ColourField, shownRatio } from "./ColourField.js";
 
 afterEach(cleanup);
 
@@ -23,7 +23,12 @@ const FIELD: FieldSpec<"color"> = {
 
 function setUp(
   value: string,
-  options: { readonly advanced?: boolean; readonly textStyles?: readonly TextStyle[] } = {},
+  options: {
+    readonly advanced?: boolean;
+    readonly textStyles?: readonly TextStyle[];
+    readonly surface?: Surface;
+    readonly graphic?: boolean;
+  } = {},
 ) {
   const session = sessionWith();
   const onChange = vi.fn();
@@ -41,6 +46,8 @@ function setUp(
         session={session}
         advanced={options.advanced}
         textStyles={options.textStyles === undefined ? undefined : () => options.textStyles ?? []}
+        surface={options.surface === undefined ? undefined : () => options.surface as Surface}
+        graphic={options.graphic === undefined ? undefined : () => options.graphic === true}
       />
     </>,
   );
@@ -151,6 +158,28 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
     cleanup();
     setUp(middling, { textStyles: ["body"] });
     expect(screen.getByText(/less than the 4\.5:1 this text needs/)).toBeTruthy();
+  });
+
+  it("measures on what the text is drawn on: the brand colour on a brand background (#670)", () => {
+    setUp("primary", {
+      surface: { palette: "colors", background: DEFAULT_THEME.colors.primary },
+    });
+    expect(screen.getByText(/Hard to read/)).toBeTruthy();
+    cleanup();
+    // Over a section's background picture: its colours can't be known, so nothing is said.
+    setUp("primary", {
+      surface: { palette: "colors", background: DEFAULT_THEME.colors.primary, overPicture: true },
+    });
+    expect(screen.queryByText(/Hard to read/)).toBeNull();
+  });
+
+  it("holds an icon's or a logo's colour to graphics' 3:1, in words that say so (#670)", () => {
+    // A grey between 3:1 and 4.5:1: too faint for body text, enough for an icon.
+    setUp("[#808080]", { textStyles: ["body"], graphic: true });
+    expect(screen.queryByText(/Hard to/)).toBeNull();
+    cleanup();
+    setUp("[#c0c0c0]", { graphic: true });
+    expect(screen.getByText(/less than the 3:1 an icon or logo needs/)).toBeTruthy();
   });
 });
 

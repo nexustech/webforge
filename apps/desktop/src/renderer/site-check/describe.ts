@@ -137,7 +137,10 @@ export function describeDetail(finding: Finding): string | undefined {
   const { values } = finding;
   if (values === undefined) return undefined;
   if (values.ratio !== undefined && values.required !== undefined) {
-    return t("siteCheck.detail.contrast", { ratio: values.ratio, required: values.required });
+    return t(
+      values.drawn === "graphic" ? "siteCheck.detail.contrastGraphic" : "siteCheck.detail.contrast",
+      { ratio: values.ratio, required: values.required },
+    );
   }
   if (values.width !== undefined && values.height !== undefined) {
     return t("siteCheck.detail.size", { width: values.width, height: values.height });

@@ -4,14 +4,22 @@
 // `catalogue-data.json` is written from the library by `pnpm catalogue-data`; a test fails when it
 // is stale.
 
-import { BOX_SIDES } from "@webforge/model";
+import {
+  BOX_SIDES,
+  isResponsiveValue,
+  type Responsive,
+  resolveResponsive,
+  TEXT_STYLES,
+  type TextStyle,
+} from "@webforge/model";
 import { z } from "zod";
 import data from "./catalogue-data.json" with { type: "json" };
 
 // What a field may hold (#667), the rule the editor uses too.
 export { fieldValueSchema } from "./field-values.js";
 // The fields a component's layout or values leave unused, as the Edit panel hides them (#670).
-export { hiddenFieldsOf } from "./hidden-fields.js";
+export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
+export { drawsPictureBehind } from "./picture-behind.js";
 // Rich text from outside the editor is cleaned as the editor's is (4.8).
 export { sanitizeStoredRichText } from "./rich-text-html.js";
 
@@ -101,8 +109,24 @@ export const catalogueComponentSchema = z.strictObject({
     .optional(),
   fields: z.record(z.string(), catalogueFieldSchema),
   defaults: z.record(z.string(), z.unknown()),
+  /** Its colour colours a drawing, not text: graphics need 3:1, not 4.5:1 (WCAG 1.4.11, #670). */
+  graphic: z.literal(true).optional(),
+  /** The pictures it draws behind its content, and in which layouts: see `drawsPictureBehind`. */
+  pictureBehind: z
+    .array(z.strictObject({ field: z.string(), variants: z.array(z.string()).optional() }))
+    .optional(),
   /** The fields each layout doesn't use (#311): its pictures aren't exported, nor checked (#670). */
   variantHides: z.record(z.string(), z.array(z.string())).optional(),
+  /**
+   * The text style its text is set in (#670): one, or one for each value of a field (a Heading's
+   * size), so Site Check knows how much contrast it needs, as the colour field does.
+   */
+  textStyle: z
+    .union([
+      z.enum(TEXT_STYLES),
+      z.strictObject({ field: z.string(), styles: z.record(z.string(), z.enum(TEXT_STYLES)) }),
+    ])
+    .optional(),
 });
 
 /** See {@link catalogueComponentSchema}. */
@@ -176,3 +200,26 @@ export function expandCatalogue(file: CatalogueFile): Catalogue {
 
 /** Webforge's site components as data (`catalogue-data.json`), the Appearance group put back. */
 export const CATALOGUE: Catalogue = expandCatalogue(catalogueFileSchema.parse(data));
+
+/**
+ * The text styles `component`'s text is set in with `values` (#670): one, or one for each device
+ * its field's value differs on; none for a component that declares none.
+ */
+export function textStylesIn(
+  component: Pick<CatalogueComponent, "textStyle">,
+  values: Readonly<Record<string, unknown>>,
+): TextStyle[] {
+  const { textStyle } = component;
+  if (textStyle === undefined) return [];
+  if (typeof textStyle === "string") return [textStyle];
+  const value = values[textStyle.field];
+  const each = isResponsiveValue(value as Responsive<unknown>)
+    ? (["desktop", "tablet", "mobile"] as const).map((device) =>
+        resolveResponsive(value as Responsive<unknown>, device),
+      )
+    : [value];
+  const styles = each.flatMap((one) =>
+    typeof one === "string" && Object.hasOwn(textStyle.styles, one) ? [textStyle.styles[one]] : [],
+  );
+  return [...new Set(styles.filter((style) => style !== undefined))];
+}

@@ -9,9 +9,9 @@ import {
   valuesWithLook,
 } from "@webforge/model";
 import {
-  type CatalogueComponent,
   type CatalogueField,
   hiddenFieldsOf,
+  hideableFieldsOf,
 } from "@webforge/site-components/catalogue-data";
 import type { CheckInput } from "./types.js";
 
@@ -19,6 +19,8 @@ import type { CheckInput } from "./types.js";
 export type PlacedValue = {
   readonly on: ElementPlace;
   readonly node: NodeDoc;
+  /** The elements holding it, outermost first: what it's drawn on (#670). Only during the visit. */
+  readonly ancestors: readonly NodeDoc[];
   /** The field's name; `items.2.text` for a list item's field. */
   readonly field: string;
   readonly value: unknown;
@@ -61,16 +63,6 @@ type FieldPlan = readonly {
   readonly mayHide: boolean;
 }[];
 
-/** The fields of `component` a layout or other values can hide, as `hiddenFieldsOf` hides them. */
-function hideable(component: CatalogueComponent | undefined): ReadonlySet<string> {
-  if (component === undefined) return new Set();
-  const names = new Set(Object.values(component.variantHides ?? {}).flat());
-  for (const name of ["lookBorderColor", "overlay", "overlayColor"]) {
-    if (Object.hasOwn(component.fields, name)) names.add(name);
-  }
-  return names;
-}
-
 /**
  * Each catalogue's plans, by the kinds asked for and the component type: worked out once, so a
  * check walks only the fields it reads, as the panel's frame budget needs (ADR 0016, #628).
@@ -96,7 +88,8 @@ function planFor(
   }
   let plan = byType.get(type);
   if (plan === undefined) {
-    const mayHide = hideable(catalogue[type]);
+    const component = catalogue[type];
+    const mayHide = component === undefined ? new Set<string>() : hideableFieldsOf(component);
     plan = Object.entries(catalogue[type]?.fields ?? {}).flatMap(([name, field]) => {
       const visit = wanted.has(field.kind);
       const items =
@@ -130,7 +123,7 @@ export function eachFieldValue(
   const { looks } = site.theme;
   eachElement(
     site,
-    (node, on) => {
+    (node, on, ancestors) => {
       if (!exported(on)) return;
       const plan = planFor(catalogue, wanted, kindsKey, node.type);
       if (plan.length === 0) return;
@@ -152,8 +145,8 @@ export function eachFieldValue(
         if (wantedField) {
           visit(
             node.props[name] === undefined
-              ? { on, node, field: name, value, fromLook: true }
-              : { on, node, field: name, value },
+              ? { on, node, ancestors, field: name, value, fromLook: true }
+              : { on, node, ancestors, field: name, value },
           );
         }
         if (items.length === 0 || !Array.isArray(value)) continue;
@@ -162,7 +155,13 @@ export function eachFieldValue(
           for (const itemName of items) {
             const itemValue = (item as Record<string, unknown>)[itemName];
             if (itemValue !== undefined) {
-              visit({ on, node, field: `${name}.${index}.${itemName}`, value: itemValue });
+              visit({
+                on,
+                node,
+                ancestors,
+                field: `${name}.${index}.${itemName}`,
+                value: itemValue,
+              });
             }
           }
         });

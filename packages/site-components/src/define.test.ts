@@ -205,6 +205,28 @@ describe("defineComponent (2.5)", () => {
     ).toThrow(`'Card' has variants and a field named "variant"`);
   });
 
+  it("refuses a picture behind its content that isn't a picture field, or in no layout (#670)", () => {
+    const withPicture = {
+      ...base,
+      fields: { ...base.fields, photo: { kind: "media", label: "Photo" } },
+      variants: [
+        { label: "Beside", value: "beside" },
+        { label: "Behind", value: "behind" },
+      ],
+    } as const;
+    const def = defineComponent({
+      ...withPicture,
+      pictureBehind: [{ field: "photo", variants: ["behind"] }],
+    });
+    expect(def.pictureBehind).toEqual([{ field: "photo", variants: ["behind"] }]);
+    expect(() => defineComponent({ ...withPicture, pictureBehind: [{ field: "title" }] })).toThrow(
+      `'Card' draws "title" behind its content, which isn't a picture field`,
+    );
+    expect(() =>
+      defineComponent({ ...withPicture, pictureBehind: [{ field: "photo", variants: ["over"] }] }),
+    ).toThrow(`'Card' draws "photo" behind its content in "over", which isn't a layout`);
+  });
+
   it("hides the fields a layout doesn't use, and refuses one that isn't a field (#311)", () => {
     const def = defineComponent({
       ...base,
