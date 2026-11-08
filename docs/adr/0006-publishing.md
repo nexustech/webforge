@@ -77,7 +77,7 @@ The product owner ran `netlify.live.test.ts` against a throwaway site on a free 
 
 It also found two things about Netlify sites:
 - **Visitor access can be on.** The first attempt was served Netlify's "Login Redirect" page (`app.netlify.com/edge-access`) in place of every file, because the project had site protection on. The deploy itself succeeded, and decision 8's API check would still report it `live`. A Netlify destination should warn when the site is protected, so the owner doesn't believe visitors can see it (4.4b).
-- **Netlify adds a script to served pages:** `<script async src="/.netlify/scripts/hud?variant=public" …>` after the page, on a free account. It comes from the site's own address, not another server, but it isn't in the site Webforge built. Decision 8's check reads the API, not the page, so it isn't misled; the live check now compares only the start of each page. Whether a site setting turns it off is still to be found (4.2).
+- **Netlify adds a script to served pages:** `<script async src="/.netlify/scripts/hud?variant=public" …>` after the page, on a free account. It comes from the site's own address, not another server, but it isn't in the site Webforge built. Decision 8's check reads the API, not the page, so it isn't misled; `netlify.live.test.ts` now compares only the start of each page. Whether a site setting turns it off is still to be found (4.2).
 - **Not run live:** OAuth sign-in (decision 4). It waits on registering Webforge's OAuth application, before 4.4b; until then the pasted token is the only sign-in.
 
 ### 7. FTP, FTPS and SFTP: one publish flow over a remote folder (0.3)
