@@ -3159,6 +3159,14 @@
         "buttonLabel": "Get in touch",
         "alignment": "centre",
         "contentWidth": "wide"
+      },
+      "variantHides": {
+        "centred": [
+          "alignment"
+        ],
+        "minimal": [
+          "image"
+        ]
       }
     },
     "TextSection": {
@@ -5432,6 +5440,11 @@
         "askPhone": false,
         "buttonLabel": "Send message",
         "contentWidth": "wide"
+      },
+      "variantHides": {
+        "stacked": [
+          "contentWidth"
+        ]
       }
     },
     "Newsletter": {
@@ -5666,6 +5679,11 @@
         "action": "",
         "emailName": "email",
         "contentWidth": "wide"
+      },
+      "variantHides": {
+        "stacked": [
+          "contentWidth"
+        ]
       }
     },
     "Form": {

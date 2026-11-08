@@ -1,4 +1,4 @@
-import { isSharedCopy, type NodeDoc, type SiteDoc } from "@webforge/model";
+import { effectiveValues, isSharedCopy, type NodeDoc, type SiteDoc } from "@webforge/model";
 import { CATALOGUE, fieldValueSchema } from "@webforge/site-components/catalogue-data";
 import { z } from "zod";
 import {
@@ -95,8 +95,7 @@ export const QUERIES = {
   },
   /** An element's fields: their kinds, labels and value schemas, and what each holds now. */
   fields: {
-    description:
-      "One element's fields: each one's kind, label, help, JSON Schema for its value, and what it holds now. Read it before updateFields, which takes these names and values.",
+    description: `One element's fields: each one's kind, label, help, JSON Schema for its value, what it holds now, and where that comes from: "own" (set on the element), "look" (the theme's look for its kind, which every one of them takes unless it sets its own) or "default". Read it before updateFields, which takes these names and values.`,
     input: z.strictObject({ location: locationSchema, nodeId: z.string().min(1).max(200) }),
     read: (site: SiteDoc, { location, nodeId }: { location: Location; nodeId: string }) => {
       const nodes = nodesAt(site, location);
@@ -104,6 +103,13 @@ export const QUERIES = {
       if (placed === undefined) return undefined;
       const { node } = placed;
       const component = CATALOGUE[node.type];
+      // What the element draws with, as the export draws it (#670).
+      const drawn = effectiveValues(
+        node.type,
+        node.props,
+        component?.defaults ?? {},
+        site.theme.looks,
+      );
       const fields = Object.entries(component?.fields ?? {}).flatMap(([name, field]) =>
         // Slots are read through the page tree; Custom Code isn't for AI apps.
         field.kind === "slot" || field.kind === "code"
@@ -116,7 +122,8 @@ export const QUERIES = {
                   label: field.label,
                   ...(field.help === undefined ? {} : { help: field.help }),
                   schema: jsonSchema(fieldValueSchema(field)),
-                  value: node.props[name] ?? component?.defaults[name],
+                  value: drawn.values[name],
+                  ...(drawn.sources[name] === undefined ? {} : { source: drawn.sources[name] }),
                 },
               ] as const,
             ],

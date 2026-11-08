@@ -121,6 +121,20 @@ describe("missing images and alt text", () => {
     ]);
   });
 
+  it("asks no alt text of a picture its layout doesn't show: a Text only Hero's (#670)", () => {
+    const site = siteWith(
+      [
+        element("Hero", "textOnly", { variant: "minimal", image: { mediaId: "bare" } }),
+        element("Hero", "split", { variant: "split", image: { mediaId: "bare" } }),
+      ],
+      { media: media(image("bare", { alt: "" })) },
+    );
+
+    expect(findIn(altTextRule, site)).toEqual([
+      expect.objectContaining({ key: `${site.homePageId}/split/image` }),
+    ]);
+  });
+
   it("asks no alt text of a section's background image, which is decorative (2.26)", () => {
     const site = siteWith(
       [element("Section", "s", { backgroundImage: { mediaId: "bare" }, content: [] })],
