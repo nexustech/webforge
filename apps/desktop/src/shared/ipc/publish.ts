@@ -220,6 +220,8 @@ const publishResultSchema = z.discriminatedUnion("status", [
     uploaded: z.int().nonnegative(),
     unchanged: z.int().nonnegative(),
     removed: z.int().nonnegative(),
+    /** Netlify made the version's earlier deploy live again: nothing was sent (#70). */
+    restored: z.literal(true).optional(),
     versionSaved: z.boolean(),
   }),
   z.strictObject({ status: z.literal("must-fix"), count: z.int().positive() }),

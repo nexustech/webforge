@@ -137,6 +137,8 @@ type Read = {
   readonly manifest: VersionManifest;
   readonly destination: PublishDestination | undefined;
   readonly projectId: string;
+  /** Where the version republished last went live, if it did. */
+  readonly publishedTo: VersionPublish | undefined;
 };
 
 /** How many publishes' addresses Open remembers. */
@@ -204,6 +206,11 @@ export function registerPublishRun(
             if ("reason" in built) return built;
             return {
               ...built,
+              // Where the version republished last went live, if it did (4.6b).
+              publishedTo:
+                versionId === undefined
+                  ? undefined
+                  : store.listVersions().find(({ id }) => id === versionId)?.publishedTo,
               destination: store.readPublishDestinations().find(({ id }) => id === destinationId),
               projectId: store.info.projectId,
             };
@@ -213,6 +220,14 @@ export function registerPublishRun(
         if ("reason" in read) return { status: "failed", reason: read.reason };
         const { destination, projectId, manifest } = read;
         if (destination === undefined) return { status: "failed", reason: "no-destination" };
+        // A version that went live on this Netlify destination: its deploy, if Netlify still has
+        // it, goes live again as it was rather than being built and sent (#70).
+        const restore =
+          destination.kind === "netlify" &&
+          read.publishedTo?.destinationId === destinationId &&
+          read.publishedTo.deploy !== undefined
+            ? read.publishedTo.deploy
+            : undefined;
 
         // 2. Only the code its owner trusts goes in, and the gate checks what is left.
         const trusted = await deps.trusted(projectId);
@@ -242,6 +257,7 @@ export function registerPublishRun(
             ...(destination.kind === "netlify" && deps.netlifyApi !== undefined
               ? { netlifyApi: deps.netlifyApi }
               : {}),
+            ...(restore === undefined ? {} : { restore }),
           },
           {
             // A site replaced while it publishes cancels it, as Cancel would (#663).
@@ -295,6 +311,7 @@ export function registerPublishRun(
           uploaded: outcome.uploaded,
           unchanged: outcome.unchanged,
           removed: outcome.removed,
+          ...(outcome.restored === true ? { restored: true } : {}),
           versionSaved,
         };
       } catch (error) {

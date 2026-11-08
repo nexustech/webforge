@@ -6,7 +6,7 @@ import { ftpPublisher } from "./ftp.js";
 import { startFtpServer, TEST_TLS } from "./ftp-server.test-helper.js";
 import { netlifyClient, netlifyPublisher } from "./netlify.js";
 import type { BuildOutput, Publisher } from "./publisher.js";
-import { type PublishRunEvent, publishSite } from "./run.js";
+import { type PublishRunEvent, publishSite, restoreSite } from "./run.js";
 import { sftpPublisher } from "./sftp.js";
 import { startSftpServer } from "./sftp-server.test-helper.js";
 import { verifyPublished } from "./verify.js";
@@ -211,5 +211,54 @@ describe("publishSite's check", () => {
       url: "https://rosas.example",
       result: { status: "unchecked" },
     });
+  });
+});
+
+describe("restoreSite (#70)", () => {
+  /** Netlify with two deploys of the site: the first, then a newer one live. */
+  async function twoDeploys() {
+    const netlify = fakeNetlify();
+    const options = { token: FAKE_TOKEN, fetch: netlify.fetch, pollIntervalMs: 1, retryBaseMs: 1 };
+    const { id: siteId } = await netlifyClient(options).createSite("rosas-bakery");
+    const publisher = netlifyPublisher(options);
+    const deploy = async (home: string) => {
+      let id: string | undefined;
+      const build = { files: new Map([["index.html", new TextEncoder().encode(home)]]) };
+      for await (const event of publishSite(publisher, build, { siteId }, signal())) {
+        if (event.type === "published") id = event.version;
+      }
+      return id ?? "";
+    };
+    const first = await deploy("<h1>Bread</h1>");
+    await deploy("<h1>Cakes</h1>");
+    return { netlify, publisher, siteId, first };
+  }
+  const signal = () => new AbortController().signal;
+
+  it("puts the earlier deploy back, then checks it is the one Netlify serves", async () => {
+    const { netlify, publisher, siteId, first } = await twoDeploys();
+
+    const run = await restoreSite(publisher, first, { siteId }, signal());
+    const events: PublishRunEvent[] = [];
+    for await (const event of run ?? []) events.push(event);
+
+    expect(events.map(({ type }) => type)).toEqual(["published", "verifying", "verified"]);
+    expect(events.at(-1)).toMatchObject({ result: { status: "live" } });
+    expect(netlify.live(siteId, "index.html")).toBe("<h1>Bread</h1>");
+  });
+
+  it("gives no run for a deploy Netlify no longer keeps, or a publisher that keeps none", async () => {
+    const { netlify, publisher, siteId, first } = await twoDeploys();
+    netlify.dropDeploy(first);
+
+    expect(await restoreSite(publisher, first, { siteId }, signal())).toBeUndefined();
+    const keepsNone: Publisher<null> = {
+      test: async () => ({ ok: true }),
+      // biome-ignore lint/correctness/useYield: never published here.
+      async *publish() {
+        throw new Error("not here");
+      },
+    };
+    expect(await restoreSite(keepsNone, "deploy-1", null, signal())).toBeUndefined();
   });
 });

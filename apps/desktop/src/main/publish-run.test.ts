@@ -249,6 +249,48 @@ describe("Publish (4.5, ADR 0018)", () => {
     expect(jobOf(toNetlifyItself.runner).netlifyApi).toBeUndefined();
   });
 
+  it("republishes a version Netlify still keeps by its deploy, there only (#70)", async () => {
+    const netlify: PublishDestination = {
+      id: "0b6a2c1e-7b3d-4a5e-9c8f-1d2e3f4a5b6c",
+      name: "Netlify",
+      kind: "netlify",
+      siteId: "3c9b6a2e-1d4f-4e8a-9b7c-5a6d7e8f9a0b",
+    };
+    const restored = async (job: PublishJob): Promise<PublishOutcome> =>
+      job.restore === undefined ? LIVE : { ...LIVE, uploaded: 0, restored: true };
+    const went = (destinationId: string) => ({
+      destinationId,
+      publishedAt: "2026-10-30T09:00:00.000Z",
+      check: "live" as const,
+      deploy: "deploy-7",
+    });
+
+    // Last live on this Netlify destination: its deploy is named, and the result says it's back.
+    const here = handlers({ to: netlify, saved: publishable(), outcome: restored });
+    here.store.recordPublish(here.versionId, went(netlify.id));
+    expect(await here.republish()).toMatchObject({ status: "published", restored: true });
+    expect(jobOf(here.runner).restore).toBe("deploy-7");
+
+    // Live on another destination, or never: built as before.
+    const elsewhere = handlers({ to: netlify, saved: publishable(), outcome: restored });
+    elsewhere.store.recordPublish(elsewhere.versionId, went(destination.id));
+    expect(await elsewhere.republish()).not.toHaveProperty("restored");
+    expect(jobOf(elsewhere.runner).restore).toBeUndefined();
+    const never = handlers({ to: netlify, saved: publishable(), outcome: restored });
+    await never.republish();
+    expect(jobOf(never.runner).restore).toBeUndefined();
+
+    // A publish of the site as it is never restores, nor does a host that keeps no deploys.
+    const fresh = handlers({ to: netlify, saved: publishable(), outcome: restored });
+    fresh.store.recordPublish(fresh.versionId, went(netlify.id));
+    await fresh.publish();
+    expect(jobOf(fresh.runner).restore).toBeUndefined();
+    const host = handlers({ saved: publishable(), outcome: restored });
+    host.store.recordPublish(host.versionId, went(destination.id));
+    await host.republish();
+    expect(jobOf(host.runner).restore).toBeUndefined();
+  });
+
   it("has the window save what the person sees before it reads the site (A4)", async () => {
     const { order, publish } = handlers();
     await publish();

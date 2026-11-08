@@ -6,6 +6,7 @@ import {
   PublishError,
   type PublishErrorCode,
   type PublishEvent,
+  type PublishedEvent,
   type Publisher,
   type TestResult,
   throwIfCancelled,
@@ -302,6 +303,27 @@ export function netlifyPublisher(options: NetlifyOptions): Publisher<NetlifyDest
         // A Netlify deploy is a whole new version of the site: files it lacks are simply gone.
         removed: 0,
         version: deploy.id,
+      };
+    },
+
+    /**
+     * Restores `version`, an earlier deploy of the site, if Netlify still lists it as ready (it
+     * keeps deploys for a time that depends on the account): the site serves it again at once,
+     * with nothing sent. A deploy it no longer lists gives `undefined`, to rebuild instead.
+     */
+    async restore(version, dest, signal): Promise<PublishedEvent | undefined> {
+      const deploys = await client.listDeploys(dest.siteId, signal);
+      if (!deploys.some(({ id, state }) => id === version && state === "ready")) return undefined;
+      const restored = await client.restoreDeploy(dest.siteId, version, signal);
+      const site = await client.getSite(dest.siteId, signal);
+      return {
+        type: "published",
+        url: site.ssl_url ?? site.url ?? restored.ssl_url ?? restored.url ?? "",
+        uploaded: 0,
+        unchanged: 0,
+        removed: 0,
+        version,
+        restored: true,
       };
     },
 

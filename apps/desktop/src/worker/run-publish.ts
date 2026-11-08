@@ -5,7 +5,12 @@ import {
   type PipelineResources,
   type StoredMedia,
 } from "@webforge/pipeline";
-import { PublishError, type PublishedEvent, publisherFor } from "@webforge/publish";
+import {
+  PublishError,
+  type PublishedEvent,
+  type PublishRunEvent,
+  publisherFor,
+} from "@webforge/publish";
 import { type ComponentLibrary, siteSnapshotFor } from "@webforge/site-components";
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { PublishJob, PublishOutcome } from "../shared/export-worker-protocol.js";
@@ -33,8 +38,9 @@ const hashOf = (text: string) => createHash("sha256").update(text).digest("hex")
 /**
  * Publishes `job` (4.5, ADR 0018 §1): makes its site's snapshot (§3), builds it for publishing,
  * the code its owner doesn't trust left blank (#649), then sends what changed to the destination
- * and checks the live site (`publishSite`). Never throws, and never puts the sign-in in what it
- * answers or logs.
+ * and checks the live site (`publishSite`). A republish to Netlify of a deploy it still keeps
+ * (`job.restore`, #70) makes that deploy live again instead, nothing built or sent. Never throws,
+ * and never puts the sign-in in what it answers or logs.
  */
 export async function runPublish(
   job: PublishJob,
@@ -44,6 +50,21 @@ export async function runPublish(
   const started = performance.now();
   const progress = (stage: PublishProgress) => channel.onProgress?.(stage);
   try {
+    // Made only once there's something to send: a cancelled build signs in nowhere.
+    const publisherOf = () =>
+      (channel.publisherFor ?? publisherFor)(
+        job.destination,
+        job.signIn,
+        job.trust,
+        job.netlifyApi === undefined ? {} : { netlifyApi: job.netlifyApi },
+      );
+    // A deploy Netlify still keeps goes live again as it was: nothing to build (#70).
+    const restorer = job.restore === undefined ? undefined : publisherOf().restore;
+    if (job.restore !== undefined && restorer !== undefined) {
+      progress({ stage: "preparing" });
+      const restoring = await restorer(job.restore, channel.signal);
+      if (restoring !== undefined) return await outcomeOf(restoring, progress, started);
+    }
     // The site's fonts come with the job, the downloaded families it uses too (2.2).
     const fonts = new Map(job.fonts.map((font) => [font.file, font.data]));
     const resources = {
@@ -65,42 +86,47 @@ export async function runPublish(
     }
     if (files === undefined) return { type: "failed", code: "build-failed", detail: "unexpected" };
 
-    const publisher = (channel.publisherFor ?? publisherFor)(
-      job.destination,
-      job.signIn,
-      job.trust,
-      job.netlifyApi === undefined ? {} : { netlifyApi: job.netlifyApi },
-    );
-    let published: PublishedEvent | undefined;
-    let check: Extract<PublishOutcome, { type: "published" }>["check"] = "unchecked";
     const target = {
       site: job.target.site,
       ...(job.target.replaceOtherSite === true ? { replaceOtherSite: true } : {}),
     };
-    for await (const event of publisher.publish({ files }, target, channel.signal)) {
-      if (event.type === "preparing") progress({ stage: "preparing" });
-      else if (event.type === "uploading") {
-        progress({ stage: "uploading", done: event.done, total: event.total });
-      } else if (event.type === "published") published = event;
-      else if (event.type === "verifying") progress({ stage: "verifying" });
-      else check = event.result.status;
-    }
-    if (published === undefined) {
-      return { type: "failed", code: "failed", detail: "unexpected" };
-    }
-    return {
-      type: "published",
-      url: published.url,
-      uploaded: published.uploaded,
-      unchanged: published.unchanged,
-      removed: published.removed,
-      ...(published.version === undefined ? {} : { version: published.version }),
-      check,
-      durationMs: Math.round(performance.now() - started),
-    };
+    const run = publisherOf().publish({ files }, target, channel.signal);
+    return await outcomeOf(run, progress, started);
   } catch (error) {
     return failureOf(error);
   }
+}
+
+/** What a publish run went to, its stages told to `progress` as it goes. */
+async function outcomeOf(
+  run: AsyncIterable<PublishRunEvent>,
+  progress: (stage: PublishProgress) => void,
+  started: number,
+): Promise<PublishOutcome> {
+  let published: PublishedEvent | undefined;
+  let check: Extract<PublishOutcome, { type: "published" }>["check"] = "unchecked";
+  for await (const event of run) {
+    if (event.type === "preparing") progress({ stage: "preparing" });
+    else if (event.type === "uploading") {
+      progress({ stage: "uploading", done: event.done, total: event.total });
+    } else if (event.type === "published") published = event;
+    else if (event.type === "verifying") progress({ stage: "verifying" });
+    else check = event.result.status;
+  }
+  if (published === undefined) {
+    return { type: "failed", code: "failed", detail: "unexpected" };
+  }
+  return {
+    type: "published",
+    url: published.url,
+    uploaded: published.uploaded,
+    unchanged: published.unchanged,
+    removed: published.removed,
+    ...(published.version === undefined ? {} : { version: published.version }),
+    ...(published.restored === true ? { restored: true } : {}),
+    check,
+    durationMs: Math.round(performance.now() - started),
+  };
 }
 
 /** What became of a publish that threw: by its code only, never with a secret or a path. */

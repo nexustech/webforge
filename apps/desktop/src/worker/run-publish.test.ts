@@ -131,6 +131,74 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     });
   });
 
+  it("puts a deploy Netlify still keeps back live, building and sending nothing (#70)", async () => {
+    const { sent, make } = fakePublisher();
+    const restore = vi.fn<NonNullable<DestinationPublisher["restore"]>>(async () =>
+      (async function* () {
+        yield {
+          type: "published" as const,
+          url: "https://rosas.netlify.app",
+          uploaded: 0,
+          unchanged: 0,
+          removed: 0,
+          version: "deploy-1",
+          restored: true as const,
+        };
+        yield { type: "verifying" as const, url: "https://rosas.netlify.app" };
+        yield {
+          type: "verified" as const,
+          url: "https://rosas.netlify.app",
+          result: { status: "live" as const },
+        };
+      })(),
+    );
+    make.mockImplementation((...args) => ({
+      ...(fakePublisher().make(...args) as DestinationPublisher),
+      restore,
+    }));
+    const stages: string[] = [];
+
+    const outcome = await runPublish(
+      { ...(await job(site())), restore: "deploy-1" },
+      loadNodeResources,
+      { ...channel(make), onProgress: (progress) => stages.push(progress.stage) },
+    );
+
+    expect(outcome).toMatchObject({
+      type: "published",
+      url: "https://rosas.netlify.app",
+      uploaded: 0,
+      version: "deploy-1",
+      restored: true,
+      check: "live",
+    });
+    expect(restore).toHaveBeenCalledWith("deploy-1", expect.any(AbortSignal));
+    // Nothing was built: no page stage, and nothing went to publish.
+    expect(stages).not.toContain("pages");
+    expect(sent.files).toBeUndefined();
+  });
+
+  it("builds and publishes when Netlify no longer keeps the deploy (#70)", async () => {
+    const { sent, make } = fakePublisher();
+    const base = make;
+    const restore = vi.fn(async () => undefined);
+    const withRestore = vi.fn<typeof publisherFor>((...args) => ({
+      ...(base(...args) as DestinationPublisher),
+      restore,
+    }));
+
+    const outcome = await runPublish(
+      { ...(await job(site())), restore: "deploy-gone" },
+      loadNodeResources,
+      channel(withRestore),
+    );
+
+    expect(restore).toHaveBeenCalled();
+    expect(outcome).toMatchObject({ type: "published", uploaded: 2 });
+    expect(outcome).not.toHaveProperty("restored");
+    expect(sent.files?.has("index.html")).toBe(true);
+  });
+
   it("answers the publisher's failure by its code, and a cancel as cancelled", async () => {
     const otherSite = fakePublisher(new PublishError("other-site", "another project's folder"));
     expect(await runPublish(await job(site()), loadNodeResources, channel(otherSite.make))).toEqual(

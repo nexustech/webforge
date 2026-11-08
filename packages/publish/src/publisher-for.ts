@@ -14,7 +14,7 @@ import {
   type Publisher,
   type TestResult,
 } from "./publisher.js";
-import { type PublishRunEvent, type PublishRunOptions, publishSite } from "./run.js";
+import { type PublishRunEvent, type PublishRunOptions, publishSite, restoreSite } from "./run.js";
 import { sftpPublisher } from "./sftp.js";
 
 /**
@@ -41,6 +41,15 @@ export type DestinationPublisher = {
     signal: AbortSignal,
     options?: PublishRunOptions,
   ): AsyncIterable<PublishRunEvent>;
+  /**
+   * Makes `version`, an earlier publish of the site the host still keeps (a Netlify deploy's id),
+   * live again with nothing sent, then checks it (`restoreSite`, #70): `undefined` where the host
+   * keeps none, or no longer has it, to publish a build instead. Netlify only.
+   */
+  restore?(
+    version: string,
+    signal: AbortSignal,
+  ): Promise<AsyncIterable<PublishRunEvent> | undefined>;
 };
 
 /**
@@ -111,7 +120,12 @@ export function publisherFor(
     }
     const netlify = { siteId: destination.siteId };
     const apiBase = options.netlifyApi === undefined ? {} : { apiBase: options.netlifyApi };
-    return bound(netlifyPublisher({ token: signIn.token, ...apiBase }), netlify, () => netlify);
+    const publisher = netlifyPublisher({ token: signIn.token, ...apiBase });
+    return {
+      ...bound(publisher, netlify, () => netlify),
+      // Netlify keeps its deploys: an earlier one can go live again (#70).
+      restore: (version, signal) => restoreSite(publisher, version, netlify, signal),
+    };
   }
   const { settings } = destination;
   const at = {

@@ -244,6 +244,58 @@ describe("netlifyPublisher.publish", () => {
   });
 });
 
+describe("netlifyPublisher.restore (#70)", () => {
+  /** The deploy id a publish of `files` went live as. */
+  async function deployOf(
+    publisher: Awaited<ReturnType<typeof setUp>>["publisher"],
+    siteId: string,
+    files: Record<string, string>,
+  ) {
+    const events = await collect(publisher.publish(build(files), { siteId }, signal()));
+    const published = events.find((event) => event.type === "published");
+    if (published?.type !== "published" || published.version === undefined) {
+      throw new Error("not published");
+    }
+    return published.version;
+  }
+
+  it("puts an earlier deploy Netlify still keeps back live, sending nothing", async () => {
+    const { netlify, publisher, siteId } = await setUp();
+    const first = await deployOf(publisher, siteId, site);
+    await deployOf(publisher, siteId, { ...site, "index.html": "<h1>New menu</h1>" });
+    const sent = netlify.uploads().length;
+
+    const restored = await publisher.restore?.(first, { siteId }, signal());
+
+    expect(restored).toEqual({
+      type: "published",
+      url: "https://rosas-bakery.netlify.app",
+      uploaded: 0,
+      unchanged: 0,
+      removed: 0,
+      version: first,
+      restored: true,
+    });
+    expect(netlify.live(siteId, "index.html")).toBe("<h1>Rosa's Bakery</h1>");
+    expect(netlify.uploads()).toHaveLength(sent);
+    // Netlify itself says it's the deploy the site serves.
+    if (restored === undefined) throw new Error("not restored");
+    expect(await publisher.verify?.(restored, { siteId }, signal())).toEqual({ status: "live" });
+  });
+
+  it("gives nothing for a deploy Netlify no longer keeps, or never made, restoring nothing", async () => {
+    const { netlify, publisher, siteId } = await setUp();
+    const first = await deployOf(publisher, siteId, site);
+    await deployOf(publisher, siteId, { ...site, "index.html": "<h1>New menu</h1>" });
+    netlify.dropDeploy(first);
+
+    expect(await publisher.restore?.(first, { siteId }, signal())).toBeUndefined();
+    expect(await publisher.restore?.("no-such-deploy", { siteId }, signal())).toBeUndefined();
+    expect(netlify.live(siteId, "index.html")).toBe("<h1>New menu</h1>");
+    expect(netlify.requests.some(({ path }) => path.endsWith("/restore"))).toBe(false);
+  });
+});
+
 describe("netlifyPublisher.test", () => {
   it("passes for a site the token can reach", async () => {
     const { publisher, siteId } = await setUp();
