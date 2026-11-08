@@ -263,7 +263,7 @@ describe("the Image element's shapes (3.19)", () => {
 });
 
 describe("an Image that opens larger (3.20)", () => {
-  it("links to its largest file, named for its picture, with a lightbox for it alone", () => {
+  it("links to its largest file, named for its picture, for the page's one lightbox (#646)", () => {
     const html = render("Image", {
       image: { mediaId: "shop", alt: "The window" },
       enlarge: true,
@@ -271,16 +271,16 @@ describe("an Image that opens larger (3.20)", () => {
     });
 
     expect(html).toContain(
-      '<figure class="site-image w-full mx-auto max-w-none" data-wf-gallery="">',
+      '<figure class="site-image w-full mx-auto max-w-none" data-wf-enlarge="">',
     );
     expect(html).toContain(
       '<a href="assets/img/shop-640.jpg" class="block" aria-label="Open a larger picture: The window" data-wf-lightbox-item="">',
     );
-    expect(html).toContain("<dialog");
-    expect(html).not.toContain("data-wf-lightbox-next");
-    // Its caption stays the figure's last child, after the lightbox.
+    // No lightbox of its own: the export adds one a page's Images share.
+    expect(html).not.toContain("<dialog");
+    expect(html).not.toContain("data-wf-gallery");
     expect(html).toMatch(
-      /<\/dialog><figcaption class="mt-2 text-center text-sm">On Mill Street<\/figcaption><\/figure>$/,
+      /<\/a><figcaption class="mt-2 text-center text-sm">On Mill Street<\/figcaption><\/figure>$/,
     );
   });
 
@@ -301,7 +301,7 @@ describe("an Image that opens larger (3.20)", () => {
   it("draws as before with the toggle off", () => {
     const html = render("Image", { image: { mediaId: "shop" } });
     expect(html).not.toContain("<a ");
-    expect(html).not.toContain("data-wf-gallery");
+    expect(html).not.toContain("data-wf-enlarge");
   });
 });
 

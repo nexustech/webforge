@@ -760,6 +760,46 @@ test.describe("exported site from disk", () => {
       await expect(viewer).toBeHidden();
       await expect(link).toBeFocused();
     });
+
+    test("shares one lightbox on the page, each Image showing its own picture in it, with the arrow keys left alone (#646)", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 800 });
+      await open(page, "about.html");
+      // One for the page's two Images, none inside them; the Gallery keeps its own.
+      await expect(page.locator("dialog[data-wf-lightbox-single]")).toHaveCount(1);
+      await expect(page.locator("[data-wf-enlarge] dialog")).toHaveCount(0);
+      const viewer = page.getByRole("dialog", { name: "Image viewer" });
+      const caption = viewer.locator("[data-wf-lightbox-caption]");
+      // Counts the keys anything on the page took for itself: the window hears them last.
+      await page.evaluate(() => {
+        const counted = window as unknown as { taken: number };
+        counted.taken = 0;
+        window.addEventListener("keydown", (event) => {
+          if (event.defaultPrevented) counted.taken += 1;
+        });
+      });
+
+      const lane = page.getByRole("link", { name: "Open a larger picture: Hills at a set height" });
+      await lane.click();
+      await expect(viewer).toBeVisible();
+      await expect(viewer.getByRole("img")).toHaveAttribute("alt", "Hills at a set height");
+      await expect(caption).toHaveText("The lane");
+      for (const key of ["ArrowRight", "ArrowLeft", "Home", "End"]) await page.keyboard.press(key);
+      expect(await page.evaluate(() => (window as unknown as { taken: number }).taken)).toBe(0);
+      await expect(viewer.getByRole("img")).toHaveAttribute("alt", "Hills at a set height");
+      await page.keyboard.press("Escape");
+      await expect(viewer).toBeHidden();
+      await expect(lane).toBeFocused();
+
+      // The other Image opens its own picture and caption in the same lightbox.
+      await page
+        .getByRole("link", { name: "Open a larger picture: Hills in a portrait frame" })
+        .click();
+      await expect(viewer).toBeVisible();
+      await expect(viewer.getByRole("img")).toHaveAttribute("alt", "Hills in a portrait frame");
+      await expect(caption).toHaveText("Our fields");
+    });
   });
 
   test.describe("carousel (2.10)", () => {

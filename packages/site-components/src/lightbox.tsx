@@ -1,4 +1,5 @@
 import { t, template } from "@webforge/i18n";
+import { renderToStaticMarkup } from "react-dom/server";
 import { BUTTON_CLASSES } from "./typography.js";
 
 /** A small icon for the lightbox's buttons, drawn inline so the site needs no icon font (C8). */
@@ -29,8 +30,8 @@ function Icon({ path }: { readonly path: string }) {
  * a phone doesn't load the largest file. A swipe moves through the images, while scrolling up and
  * down and zooming with two fingers stay the browser's (`touch-pan-y`).
  *
- * `single`, for an Image that opens larger (3.20): one picture, without the previous and next
- * buttons or the count.
+ * `single`, the one a page shares for its Images that open larger (3.20, #646): one picture,
+ * without the previous and next buttons or the count. A Gallery has a lightbox of its own.
  */
 export function Lightbox({ single = false }: { readonly single?: boolean }) {
   return (
@@ -38,7 +39,9 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
       className="modal"
       aria-label={t("siteText.lightbox")}
       data-wf-lightbox=""
-      data-image-of={template("siteText.imageOf")}
+      {...(single
+        ? { "data-wf-lightbox-single": "" }
+        : { "data-image-of": template("siteText.imageOf") })}
     >
       <div className="modal-box flex max-w-5xl flex-col items-center gap-3 p-4">
         <form method="dialog" className="self-end">
@@ -87,3 +90,15 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
     </dialog>
   );
 }
+
+/**
+ * The attribute an Image that opens larger has on its figure (3.20): a page with one gets the
+ * {@link singleLightboxHtml} its Images share.
+ */
+export const ENLARGE_ATTRIBUTE = "data-wf-enlarge";
+
+/**
+ * The single-picture lightbox the export adds once to a page whose Images open larger (#646),
+ * rather than one in each Image: the `lightbox` behaviour shows each Image's picture in it.
+ */
+export const singleLightboxHtml = (): string => renderToStaticMarkup(<Lightbox single />);

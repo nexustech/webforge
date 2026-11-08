@@ -29,7 +29,12 @@ export type PageDocument = {
   readonly header: string;
   readonly main: string;
   readonly footer: string;
-  /** The back-to-top button (F-CM-9), after the Footer, or nothing when the page has none. */
+  /**
+   * The single-picture lightbox its Images that open larger share (#646), after the Footer, or
+   * nothing when it has none.
+   */
+  readonly lightbox?: string;
+  /** The back-to-top button (F-CM-9), after the lightbox, or nothing when the page has none. */
   readonly backToTop?: string;
   /** Google Analytics' consent banner (3.8), after the back-to-top button: whole, safe HTML. */
   readonly consent?: string;
@@ -105,7 +110,7 @@ ${sharedRegion("Header", page.header)}
 ${page.main}
 </main>
 ${sharedRegion("Footer", page.footer)}
-${page.backToTop ?? ""}${page.consent ?? ""}${page.customBodyEnd?.trim() ?? ""}
+${page.lightbox ?? ""}${page.backToTop ?? ""}${page.consent ?? ""}${page.customBodyEnd?.trim() ?? ""}
 </body>
 </html>`;
   return format ? formatHtml(html) : html;

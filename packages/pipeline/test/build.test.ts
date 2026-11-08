@@ -513,6 +513,43 @@ function siteWith(content: NodeDoc[], overrides: Partial<SiteSnapshot> = {}): Si
   };
 }
 
+describe("buildSite: Images that open larger (3.20, #646)", () => {
+  it("adds one single-picture lightbox to a page with several, and none to a page without", async () => {
+    const base = sampleSite();
+    const mediaId = base.media[0]?.id ?? "";
+    const enlarged = (id: string) => ({
+      type: "Image",
+      props: { id, image: { mediaId }, enlarge: true, caption: `Picture ${id}` },
+    });
+    const site: SiteSnapshot = {
+      ...base,
+      pages: base.pages.map((page, index) =>
+        index === 0
+          ? {
+              ...page,
+              doc: {
+                ...page.doc,
+                content: [...page.doc.content, enlarged("one"), enlarged("two"), enlarged("three")],
+              },
+            }
+          : page,
+      ),
+    };
+
+    const output = await buildSite(site, siteLibrary, resources);
+    const home = text(output, "index.html");
+    const about = text(output, "about.html");
+
+    expect(home.match(/data-wf-enlarge=""/g)).toHaveLength(3);
+    expect(home.match(/<dialog/g)).toHaveLength(1);
+    expect(home).toContain("data-wf-lightbox-single");
+    // At the end of the page with the other things it adds, not in a figure.
+    expect(home.indexOf("data-wf-lightbox-single")).toBeGreaterThan(home.indexOf("</footer>"));
+    // A page without one has no shared lightbox (a Gallery keeps its own).
+    expect(about).not.toContain("data-wf-lightbox-single");
+  });
+});
+
 describe("buildSite: Site Settings values (1.17)", () => {
   it("shows bound values from Site Settings and leaves empty ones out", async () => {
     const site = siteWith([], {
