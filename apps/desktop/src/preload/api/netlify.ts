@@ -6,6 +6,7 @@ export const netlifyApi = (call: Call): NetlifyApi => ({
   status: () => call("netlifyStatus"),
   signIn: (operationId) => call("netlifySignIn", operationId),
   cancelSignIn: (operationId) => call("netlifyCancelSignIn", operationId),
+  forgetSignIn: (handle) => call("netlifyForgetSignIn", handle),
   signInWithToken: (token) => call("netlifySignInWithToken", token),
   sites: (sessionId, account) => call("netlifySites", sessionId, account),
   createSite: (sessionId, account, name) =>

@@ -250,6 +250,17 @@ describe("registerNetlifyHandlers (4.2, ADR 0006 decision 4)", () => {
     });
   });
 
+  it("forgets a sign-in the person stopped, at once", async () => {
+    const { invoke } = handlers();
+    const handle = handleOf(await invoke("netlify:sign-in-with-token", TOKEN));
+
+    expect(await invoke("netlify:forget-sign-in", handle)).toBeNull();
+    expect(await invoke("netlify:sites", SESSION, { handle })).toEqual({
+      status: "failed",
+      reason: "signed-out",
+    });
+  });
+
   it("refuses arguments that aren't what the call takes", async () => {
     const { invoke } = handlers();
     await expect(invoke("netlify:sites", SESSION, { handle: "not-a-handle" })).rejects.toThrow();

@@ -209,17 +209,23 @@ export function netlifyClient(options: NetlifyOptions) {
       request("GET", site(siteId), siteSchema, { signal }),
     /**
      * Creates a site; Netlify picks a random name if `name` is not given or taken. With its form
-     * detection on (ADR 0006 decision 6), which new sites have off: Netlify Forms need it.
-     * `processing_settings` isn't in Netlify's published API reference, so a live run checks it.
+     * detection on if Netlify takes it (ADR 0006 decision 6): new sites have it off, and Netlify
+     * Forms need it. `processing_settings` isn't in Netlify's published API reference, so a request
+     * refused with it (`rejected`: 400 or 422) is made once more without it, and the site is
+     * created either way.
      */
-    createSite: (name?: string, signal?: AbortSignal) =>
-      request("POST", "/sites", siteSchema, {
-        body: {
-          ...(name === undefined ? {} : { name }),
-          processing_settings: { ignore_html_forms: false },
-        },
-        signal,
-      }),
+    createSite: async (name?: string, signal?: AbortSignal) => {
+      const named = name === undefined ? {} : { name };
+      try {
+        return await request("POST", "/sites", siteSchema, {
+          body: { ...named, processing_settings: { ignore_html_forms: false } },
+          signal,
+        });
+      } catch (error) {
+        if (!(error instanceof PublishError) || error.code !== "rejected") throw error;
+        return request("POST", "/sites", siteSchema, { body: named, signal });
+      }
+    },
     /** Starts a file-digest deploy; `files` maps `/path` to SHA-1. */
     createDeploy: (siteId: string, files: Record<string, string>, signal?: AbortSignal) =>
       request("POST", `${site(siteId)}/deploys`, deploySchema, { body: { files }, signal }),

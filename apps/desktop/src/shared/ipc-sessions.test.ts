@@ -106,6 +106,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "netlify:status": "whether this build can offer Netlify's sign-in",
   "netlify:sign-in": "a Netlify sign-in, held in main, nothing of the site",
   "netlify:cancel-sign-in": "cancels a Netlify sign-in by its operation",
+  "netlify:forget-sign-in": "drops a held Netlify sign-in, nothing of the site",
   "netlify:sign-in-with-token": "checks a pasted Netlify token, nothing of the site",
 };
 

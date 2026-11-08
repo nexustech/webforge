@@ -88,7 +88,7 @@ It also found two things about Netlify sites:
   - New projects start private on Netlify's credit-based plans, for teams created on or after 28 July 2026 ([project visibility](https://docs.netlify.com/manage/security/secure-access-to-sites/project-visibility/)).
   - Netlify has no API, CLI or MCP for a project's visibility, only its dashboard, so Webforge can't turn it off for the sites it creates.
   - The owner makes the project public in Netlify (**Make public**, after its first deploy). 4.4b's warning about a protected site tells them so, and its Help page says how.
-- **Form detection is off for new sites** (since 2023). Netlify Forms need it on. Webforge creates its sites with `processing_settings: { ignore_html_forms: false }` (4.2), a field Netlify uses but doesn't list in its published API reference. The next live run checks that a site Webforge creates finds its forms. For a site made in Netlify itself, the owner turns form detection on there.
+- **Form detection is off for new sites** (since 2023). Netlify Forms need it on. Webforge creates its sites with `processing_settings: { ignore_html_forms: false }` (4.2), a field Netlify uses but doesn't list in its published API reference. If Netlify refuses it (400 or 422), the site is created without it, so creating a site never fails on it: form detection is best-effort. The next live run checks that a site Webforge creates finds its forms. For a site made in Netlify itself, the owner turns form detection on there.
 - **Not run live:** OAuth sign-in (decision 4). It waits on registering Webforge's OAuth application, before 4.4b; until then the pasted token is the only sign-in.
 
 ### 7. FTP, FTPS and SFTP: one publish flow over a remote folder (0.3)

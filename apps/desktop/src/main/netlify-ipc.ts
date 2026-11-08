@@ -78,6 +78,11 @@ export function registerNetlifyHandlers(
     }
   });
 
+  registerIpcHandler(ipc, "netlifyForgetSignIn", isTrustedSender, (handle) => {
+    signIns.forget(handle);
+    return null;
+  });
+
   registerIpcHandler(ipc, "netlifyCancelSignIn", isTrustedSender, (operationId) => {
     signingIn.get(operationId)?.abort();
     return null;

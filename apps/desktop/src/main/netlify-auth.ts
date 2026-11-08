@@ -37,7 +37,7 @@ export type NetlifySignIns = {
   clientWith(token: string): ReturnType<typeof netlifyClient>;
   /** The token of sign-in `handle`, while it's held: to be saved for a site. */
   token(handle: string): string | undefined;
-  /** Holds sign-in `handle` no longer: once it's saved for a site. */
+  /** Holds sign-in `handle` no longer: once it's saved for a site, or the person stops. */
   forget(handle: string): void;
 };
 
@@ -50,11 +50,17 @@ export function createNetlifySignIns(options: NetlifySignInsOptions): NetlifySig
     ...(options.apiBase === undefined ? {} : { apiBase: options.apiBase }),
   };
   const held = new Map<string, { readonly token: string; readonly at: number }>();
-  const tokenOf = (handle: string) => {
+  // Each sign-in past its 30 minutes goes as another is held or read, so a dialog closed without
+  // saving (and without `forget`) leaves its token no longer than that.
+  const sweep = () => {
     for (const [key, { at }] of held) if (now() - at > KEEP_MS) held.delete(key);
+  };
+  const tokenOf = (handle: string) => {
+    sweep();
     return held.get(handle)?.token;
   };
   const hold = (token: string) => {
+    sweep();
     const handle = randomUUID();
     held.set(handle, { token, at: now() });
     return handle;

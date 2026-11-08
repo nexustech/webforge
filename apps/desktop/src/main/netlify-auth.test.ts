@@ -76,4 +76,18 @@ describe("createNetlifySignIns (ADR 0006 decision 4, 4.2)", () => {
     clock.now += 1;
     expect(signIns.token(handle)).toBeUndefined();
   });
+
+  it("drops the sign-ins past their 30 minutes as another is held, and one forgotten at once", async () => {
+    const { signIns, clock } = setup(undefined);
+    const old = await signIns.signInWithToken(TOKEN);
+    const kept = await signIns.signInWithToken(TOKEN);
+
+    signIns.forget(kept);
+    expect(signIns.client(kept)).toBeUndefined();
+
+    clock.now = 31 * 60_000;
+    const fresh = await signIns.signInWithToken(TOKEN);
+    expect(signIns.client(old)).toBeUndefined();
+    expect(signIns.client(fresh)).toBeDefined();
+  });
 });

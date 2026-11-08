@@ -139,6 +139,15 @@ export const netlifyChannels = {
     request: z.tuple([operationIdSchema]),
     response: z.null(),
   },
+  /**
+   * Holds sign-in `handle` no longer: the destination form calls it as the person cancels or closes
+   * it without saving, so its token doesn't wait out its 30 minutes in memory.
+   */
+  netlifyForgetSignIn: {
+    channel: "netlify:forget-sign-in",
+    request: z.tuple([handleSchema]),
+    response: z.null(),
+  },
   /** Checks a pasted personal access token with Netlify, and holds it as a sign-in. */
   netlifySignInWithToken: {
     channel: "netlify:sign-in-with-token",
@@ -185,6 +194,8 @@ export interface NetlifyApi {
   /** Signs in in the person's browser; `operationId` names it for {@link cancelSignIn}. */
   signIn(operationId: string): Promise<NetlifySignInResult>;
   cancelSignIn(operationId: string): Promise<null>;
+  /** Holds a sign-in no longer: on the destination form's Cancel, or its close without saving. */
+  forgetSignIn(handle: string): Promise<null>;
   /** Checks a pasted personal access token, and holds it as a sign-in. */
   signInWithToken(token: string): Promise<NetlifySignInResult>;
   sites(sessionId: string, account: NetlifyAccount): Promise<NetlifySitesResult>;
