@@ -244,28 +244,30 @@ export type NetlifyClient = ReturnType<typeof netlifyClient>;
 const ACCESS_TIMEOUT_MS = 5_000;
 
 /** Options of {@link netlifySiteAccess}. */
-export type NetlifyAccessOptions = NetlifyOptions & {
+export type NetlifyAccessOptions = {
   /** Asks the site's own address; the global `fetch` unless a test gives its own. */
   readonly fetchSite?: typeof fetch;
   readonly timeoutMs?: number;
+  readonly signal?: AbortSignal;
 };
 
 /**
  * Whether visitors to Netlify site `siteId` reach the site or Netlify's login (4.4b's warning,
  * #723, #70): site protection, or a private project, sends them to `app.netlify.com/edge-access`,
  * which Netlify's API has no field for (ADR 0006 decision 6). The address asked is the site's own,
- * from Netlify's record of it under the signed-in account, never one given from outside. It's
+ * from `client`'s record of it, under the account it signs in as, never one given from outside. It's
  * asked once, without following a redirect or reading what comes back, within
  * {@link ACCESS_TIMEOUT_MS}: `protected` only for a redirect to Netlify's login, `public` for
  * any other answer. Throws {@link PublishError}: `network` or `timeout` when the site can't be
  * asked, `not-found` for a site without an address yet. Never puts the address in a message.
  */
 export async function netlifySiteAccess(
+  client: Pick<NetlifyClient, "getSite">,
   siteId: string,
-  options: NetlifyAccessOptions,
-  signal?: AbortSignal,
+  options: NetlifyAccessOptions = {},
 ): Promise<"protected" | "public"> {
-  const site = await netlifyClient(options).getSite(siteId, signal);
+  const { signal } = options;
+  const site = await client.getSite(siteId, signal);
   const address = site.ssl_url ?? site.url;
   if (address === null || address === undefined) {
     throw new PublishError("not-found", "The Netlify site has no address yet");

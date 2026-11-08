@@ -300,8 +300,8 @@ describe("netlifySiteAccess (4.4b's warning, #70)", () => {
   /** A Netlify site, and its own address answering `answer` (or failing, or never answering). */
   async function siteAnswering(answer: Response | "fails" | "hangs") {
     const netlify = fakeNetlify();
-    const options = { token: FAKE_TOKEN, fetch: netlify.fetch, retryBaseMs: 1 };
-    const { id: siteId } = await netlifyClient(options).createSite("rosas-bakery");
+    const client = netlifyClient({ token: FAKE_TOKEN, fetch: netlify.fetch, retryBaseMs: 1 });
+    const { id: siteId } = await client.createSite("rosas-bakery");
     const asked: { url: string; redirect: RequestInit["redirect"] }[] = [];
     const fetchSite: typeof fetch = async (input, init) => {
       asked.push({ url: String(input), redirect: init?.redirect });
@@ -313,17 +313,17 @@ describe("netlifySiteAccess (4.4b's warning, #70)", () => {
       }
       return answer;
     };
-    return { siteId, asked, options: { ...options, fetchSite, timeoutMs: 50 } };
+    return { client, siteId, asked, options: { fetchSite, timeoutMs: 50 } };
   }
   const redirect = (location: string) =>
     new Response(null, { status: 302, headers: { Location: location } });
 
   it("is protected when visitors are sent to Netlify's login, asking the site's own address", async () => {
-    const { siteId, asked, options } = await siteAnswering(
+    const { client, siteId, asked, options } = await siteAnswering(
       redirect("https://app.netlify.com/edge-access/rosas?redirect=%2F"),
     );
 
-    expect(await netlifySiteAccess(siteId, options)).toBe("protected");
+    expect(await netlifySiteAccess(client, siteId, options)).toBe("protected");
     // Netlify's record of the site names the address; the redirect isn't followed.
     expect(asked).toEqual([{ url: "https://rosas-bakery.netlify.app", redirect: "manual" }]);
   });
@@ -337,24 +337,28 @@ describe("netlifySiteAccess (4.4b's warning, #70)", () => {
       redirect("https://evil.example/edge-access/x"),
       new Response(null, { status: 301 }),
     ]) {
-      const { siteId, options } = await siteAnswering(answer);
-      expect(await netlifySiteAccess(siteId, options)).toBe("public");
+      const { client, siteId, options } = await siteAnswering(answer);
+      expect(await netlifySiteAccess(client, siteId, options)).toBe("public");
     }
   });
 
   it("fails, naming no address, when the site can't be asked or doesn't answer in time", async () => {
     const failing = await siteAnswering("fails");
-    const error = await netlifySiteAccess(failing.siteId, failing.options).catch((e: unknown) => e);
+    const error = await netlifySiteAccess(failing.client, failing.siteId, failing.options).catch(
+      (e: unknown) => e,
+    );
     expect(error).toMatchObject({ code: "network" });
     expect(String((error as Error).message)).not.toContain("netlify.app");
 
     const hanging = await siteAnswering("hangs");
-    await expect(netlifySiteAccess(hanging.siteId, hanging.options)).rejects.toMatchObject({
+    await expect(
+      netlifySiteAccess(hanging.client, hanging.siteId, hanging.options),
+    ).rejects.toMatchObject({
       code: "timeout",
     });
     // A site Netlify doesn't know: as its API says.
     await expect(
-      netlifySiteAccess("00000000-0000-4000-8000-0000000000ff", failing.options),
+      netlifySiteAccess(failing.client, "00000000-0000-4000-8000-0000000000ff", failing.options),
     ).rejects.toMatchObject({ code: "not-found" });
   });
 });
