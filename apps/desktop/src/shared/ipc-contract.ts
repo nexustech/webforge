@@ -7,6 +7,7 @@ import { fontsChannels } from "./ipc/fonts.js";
 import { helpChannels } from "./ipc/help.js";
 import { mcpChannels } from "./ipc/mcp.js";
 import { mediaChannels } from "./ipc/media.js";
+import { netlifyChannels } from "./ipc/netlify.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { previewChannels } from "./ipc/preview.js";
 import { projectChannels } from "./ipc/project.js";
@@ -61,6 +62,7 @@ export const ipcContract = {
   ...versionsChannels,
   ...mcpChannels,
   ...helpChannels,
+  ...netlifyChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -82,6 +84,7 @@ export const ipcDomains = {
   versions: versionsChannels,
   mcp: mcpChannels,
   help: helpChannels,
+  netlify: netlifyChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

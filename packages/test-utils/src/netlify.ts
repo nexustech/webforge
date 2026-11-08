@@ -1,8 +1,12 @@
-import { sha1 } from "./manifest.js";
+import { createHash } from "node:crypto";
 
-// An in-memory stand-in for the Netlify endpoints netlifyClient uses, as an injectable `fetch`.
-// It keeps state like the real service: content Netlify already has is not required again, a
-// deploy goes live once every required file is uploaded, and old deploys can be restored.
+// An in-memory stand-in for the Netlify endpoints netlifyClient uses, as an injectable `fetch`:
+// the publish package's tests call it directly, and e2e's mock Netlify server answers HTTP with it
+// (#70). It keeps state like the real service: content Netlify already has is not required again,
+// a deploy goes live once every required file is uploaded, and old deploys can be restored.
+
+/** A file's SHA-1, as Netlify's digest deploy names it. */
+const sha1 = (data: Uint8Array): string => createHash("sha1").update(data).digest("hex");
 
 type FakeDeploy = {
   id: string;
@@ -16,8 +20,23 @@ type FakeDeploy = {
 export const FAKE_TOKEN = "test-token";
 export const FAKE_CLIENT_ID = "webforge-test-client";
 
-export function fakeNetlify() {
-  const sites = new Map<string, { id: string; name: string; current: string | null }>();
+/** Options of {@link fakeNetlify}. */
+export type FakeNetlifyOptions = {
+  /**
+   * Where a site named `name` is served: `https://<name>.netlify.app`, as Netlify serves it, unless
+   * a test serves its sites itself (e2e's mock Netlify, #70).
+   */
+  readonly addressOf?: (name: string) => string;
+};
+
+export function fakeNetlify({
+  addressOf = (name) => `https://${name}.netlify.app`,
+}: FakeNetlifyOptions = {}) {
+  /** Its sites, each with whether Netlify finds its forms (form detection, off for a new site). */
+  const sites = new Map<
+    string,
+    { id: string; name: string; current: string | null; forms: boolean }
+  >();
   const deploys = new Map<string, FakeDeploy>();
   const blobs = new Map<string, Uint8Array>();
   const requests: { method: string; path: string }[] = [];
@@ -42,15 +61,17 @@ export function fakeNetlify() {
     });
   const siteJson = ({
     current,
+    forms: _,
     ...site
   }: {
     id: string;
     name: string;
     current: string | null;
+    forms: boolean;
   }) => ({
     ...site,
-    ssl_url: `https://${site.name}.netlify.app`,
-    url: `http://${site.name}.netlify.app`,
+    ssl_url: addressOf(site.name),
+    url: addressOf(site.name).replace(/^https:/, "http:"),
     published_deploy: current === null ? null : { id: current },
   });
   const deployJson = (d: FakeDeploy) => {
@@ -60,21 +81,27 @@ export function fakeNetlify() {
       site_id: d.site_id,
       state: d.state,
       required: d.required,
-      ssl_url: site === undefined ? null : `https://${site.name}.netlify.app`,
+      ssl_url: site === undefined ? null : addressOf(site.name),
       deploy_ssl_url: `https://${d.id}--site.netlify.app`,
       created_at: d.created_at,
     };
   };
 
-  /** Forms in the current deploy's HTML with `data-netlify="true"`, like Netlify's detection. */
+  /**
+   * Forms in the current deploy's HTML with `data-netlify="true"` and a name, whatever the order of
+   * their attributes, like Netlify's detection: none on a site with it off.
+   */
   function formsOf(siteId: string) {
-    const deploy = deploys.get(sites.get(siteId)?.current ?? "");
-    if (deploy === undefined) return [];
+    const site = sites.get(siteId);
+    const deploy = deploys.get(site?.current ?? "");
+    if (deploy === undefined || site?.forms !== true) return [];
     const forms: { id: string; name: string; paths: string[] }[] = [];
     for (const [path, digest] of Object.entries(deploy.files)) {
       const html = new TextDecoder().decode(blobs.get(digest));
-      for (const match of html.matchAll(/<form[^>]*name="([^"]+)"[^>]*data-netlify="true"/g)) {
-        forms.push({ id: `form-${match[1]}`, name: match[1] ?? "", paths: [path] });
+      for (const [tag] of html.matchAll(/<form\b[^>]*>/g)) {
+        const name = / name="([^"]+)"/.exec(tag)?.[1];
+        if (name === undefined || !tag.includes(' data-netlify="true"')) continue;
+        forms.push({ id: `form-${name}`, name, paths: [path] });
       }
     }
     return forms;
@@ -133,8 +160,14 @@ export function fakeNetlify() {
     if (route("GET", /^\/user$/)) return json(200, { id: "user-1" });
     if (route("GET", /^\/sites$/)) return json(200, [...sites.values()].map(siteJson));
     if (route("POST", /^\/sites$/)) {
-      const body = JSON.parse(String(init?.body ?? "{}")) as { name?: string };
-      const site = { id: `site-${++ids}`, name: body.name ?? `random-${ids}`, current: null };
+      const body = JSON.parse(String(init?.body ?? "{}")) as {
+        name?: string;
+        processing_settings?: { ignore_html_forms?: boolean };
+      };
+      // A UUID, as Netlify's site ids are.
+      const id = `00000000-0000-4000-8000-${String(++ids).padStart(12, "0")}`;
+      const forms = body.processing_settings?.ignore_html_forms === false;
+      const site = { id, name: body.name ?? `random-${ids}`, current: null, forms };
       sites.set(site.id, site);
       return json(201, siteJson(site));
     }
@@ -238,6 +271,12 @@ export function fakeNetlify() {
     /** Sign-in tickets are approved on the `polls`-th check, or never (`null`). */
     approveTickets(polls: number | null) {
       approveAfter = polls;
+    },
+    /** The id of the site named `name`, if there is one. */
+    siteNamed: (name: string) => [...sites.values()].find((site) => site.name === name)?.id,
+    /** Forgets deploy `id`, as Netlify does once a deploy is older than the account keeps. */
+    dropDeploy(id: string) {
+      deploys.delete(id);
     },
     /** Deploys stay "processing" for `polls` polls, then end in `state`. */
     processing(polls: number, state = "ready") {

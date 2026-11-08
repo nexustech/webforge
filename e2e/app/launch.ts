@@ -104,6 +104,8 @@ export async function launchDesktopApp(
      * so a tip never covers what a test clicks next; onboarding.spec.ts turns them on.
      */
     readonly tips?: boolean;
+    /** More of the app's environment: `WEBFORGE_E2E_NETLIFY_API`, the mock Netlify's (#70). */
+    readonly env?: Readonly<Record<string, string>>;
   } = {},
 ): Promise<WebforgeApp> {
   const { executablePath, env } = electronCommand();
@@ -131,7 +133,7 @@ export async function launchDesktopApp(
     executablePath,
     args: [desktopDir, `--user-data-dir=${userData}`, ...args],
     cwd: desktopDir,
-    env,
+    env: { ...env, ...options.env },
   });
   const temporary = [
     ...(options.userDataDir === undefined ? [userData] : []),

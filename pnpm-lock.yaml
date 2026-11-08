@@ -1054,6 +1054,9 @@ importers:
       '@types/ssh2':
         specifier: 1.15.6
         version: 1.15.6
+      '@webforge/test-utils':
+        specifier: workspace:*
+        version: link:../test-utils
       fast-check:
         specifier: 4.10.2
         version: 4.10.2

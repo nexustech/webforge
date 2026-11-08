@@ -1,4 +1,10 @@
-import type { BuildOutput, PublishEvent, Publisher, Verification } from "./publisher.js";
+import type {
+  BuildOutput,
+  PublishEvent,
+  PublishedEvent,
+  Publisher,
+  Verification,
+} from "./publisher.js";
 import { verifyPublished } from "./verify.js";
 
 /** Progress of a publish run: the publisher's events, then the live site's check (08). */
@@ -47,4 +53,37 @@ export async function* publishSite<D>(
           : await verifyPublished(event.url, build, { signal });
     yield { type: "verified", url: event.url, result };
   }
+}
+
+/**
+ * Makes `version`, an earlier publish the host still keeps, live again with `publisher`'s
+ * `restore` (Netlify, #70), then checks it as {@link publishSite} does, by the host itself: the run,
+ * or `undefined` when the publisher can't restore or the host no longer has `version`, for the
+ * caller to build and publish instead. Nothing is sent.
+ */
+export async function restoreSite<D>(
+  publisher: Publisher<D>,
+  version: string,
+  dest: D,
+  signal: AbortSignal,
+): Promise<AsyncIterable<PublishRunEvent> | undefined> {
+  const restored = await publisher.restore?.(version, dest, signal);
+  if (restored === undefined) return undefined;
+  return checked(publisher, restored, dest, signal);
+}
+
+/** `published`, then the host's own check of it; unchecked where it can't say. */
+async function* checked<D>(
+  publisher: Publisher<D>,
+  published: PublishedEvent,
+  dest: D,
+  signal: AbortSignal,
+): AsyncIterable<PublishRunEvent> {
+  yield published;
+  yield { type: "verifying", url: published.url };
+  const result: Verification =
+    signal.aborted || publisher.verify === undefined
+      ? { status: "unchecked" }
+      : await publisher.verify(published, dest, signal);
+  yield { type: "verified", url: published.url, result };
 }

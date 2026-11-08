@@ -40,6 +40,11 @@ const SITE_CHANNELS = [
   "publish:removeDestination",
   "publish:testSavedDestination",
   "publish:publish",
+  "netlify:save-destination",
+  "netlify:sites",
+  "netlify:create-site",
+  "netlify:test-saved",
+  "netlify:check-access",
 ] as const;
 
 /** The others, and why none of them needs the opening. */
@@ -99,6 +104,11 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "publish:chooseKeyFile": "a key file the person chooses, nothing of the site",
   "publish:cancel": "cancels whichever publish is under way",
   "publish:open-live": "opens where a publish went live, by its operation, nothing of the site",
+  "netlify:status": "whether this build can offer Netlify's sign-in",
+  "netlify:sign-in": "a Netlify sign-in, held in main, nothing of the site",
+  "netlify:cancel-sign-in": "cancels a Netlify sign-in by its operation",
+  "netlify:forget-sign-in": "drops a held Netlify sign-in, nothing of the site",
+  "netlify:sign-in-with-token": "checks a pasted Netlify token, nothing of the site",
 };
 
 const channels = Object.values(ipcContract);

@@ -94,6 +94,8 @@ export type PublishEvent =
       readonly removed: number;
       /** The destination's own name for this version, where it has one: a Netlify deploy's id. */
       readonly version?: string;
+      /** An earlier version made live again by the host itself, nothing sent (Netlify, #70). */
+      readonly restored?: true;
     };
 
 /** The event a publish ends with. */
@@ -138,4 +140,11 @@ export interface Publisher<D> {
    * (`verifyPublished`). Never throws.
    */
   verify?(published: PublishedEvent, dest: D, signal: AbortSignal): Promise<Verification>;
+  /**
+   * Makes `version`, the destination's own name for an earlier publish (a Netlify deploy's id),
+   * live again without sending anything, where the host keeps its versions (Netlify, #70): what
+   * went live, `restored`, or `undefined` when the host no longer has it, to be built and
+   * published again instead. Throws {@link PublishError}.
+   */
+  restore?(version: string, dest: D, signal: AbortSignal): Promise<PublishedEvent | undefined>;
 }

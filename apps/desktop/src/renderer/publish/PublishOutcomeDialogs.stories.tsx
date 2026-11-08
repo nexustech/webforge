@@ -44,6 +44,20 @@ export const LiveWithNotes: Story = {
   args: { state: liveState({ ...LIVE, check: "different", versionSaved: false }) },
 };
 
+/** A version republished to Netlify, which put its earlier publish back: nothing sent (#70). */
+export const RestoredOnNetlify: Story = {
+  args: {
+    state: liveState({
+      ...LIVE,
+      url: "https://rosas-bakery.netlify.app",
+      uploaded: 0,
+      unchanged: 0,
+      removed: 0,
+      restored: true,
+    }),
+  },
+};
+
 /** Live on a host without a web address: nothing to open or copy yet. */
 export const LiveWithoutAddress: Story = {
   args: { state: liveState({ ...LIVE, url: "", check: "unchecked" }) },

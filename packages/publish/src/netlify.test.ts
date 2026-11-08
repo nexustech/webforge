@@ -1,6 +1,6 @@
+import { FAKE_TOKEN, fakeNetlify } from "@webforge/test-utils/netlify";
 import { describe, expect, it } from "vitest";
-import { FAKE_TOKEN, fakeNetlify } from "./fake-netlify.test-helper.js";
-import { netlifyClient, netlifyPublisher } from "./netlify.js";
+import { netlifyClient, netlifyPublisher, netlifySiteAccess } from "./netlify.js";
 import type { BuildOutput, PublishEvent } from "./publisher.js";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
@@ -240,7 +240,126 @@ describe("netlifyPublisher.publish", () => {
     );
 
     expect(String((error as Error).message)).not.toContain(FAKE_TOKEN);
-    expect((error as Error).message).toBe("Netlify answered 500 to POST /sites/site-1/deploys");
+    expect((error as Error).message).toBe(`Netlify answered 500 to POST /sites/${siteId}/deploys`);
+  });
+});
+
+describe("netlifyPublisher.restore (#70)", () => {
+  /** The deploy id a publish of `files` went live as. */
+  async function deployOf(
+    publisher: Awaited<ReturnType<typeof setUp>>["publisher"],
+    siteId: string,
+    files: Record<string, string>,
+  ) {
+    const events = await collect(publisher.publish(build(files), { siteId }, signal()));
+    const published = events.find((event) => event.type === "published");
+    if (published?.type !== "published" || published.version === undefined) {
+      throw new Error("not published");
+    }
+    return published.version;
+  }
+
+  it("puts an earlier deploy Netlify still keeps back live, sending nothing", async () => {
+    const { netlify, publisher, siteId } = await setUp();
+    const first = await deployOf(publisher, siteId, site);
+    await deployOf(publisher, siteId, { ...site, "index.html": "<h1>New menu</h1>" });
+    const sent = netlify.uploads().length;
+
+    const restored = await publisher.restore?.(first, { siteId }, signal());
+
+    expect(restored).toEqual({
+      type: "published",
+      url: "https://rosas-bakery.netlify.app",
+      uploaded: 0,
+      unchanged: 0,
+      removed: 0,
+      version: first,
+      restored: true,
+    });
+    expect(netlify.live(siteId, "index.html")).toBe("<h1>Rosa's Bakery</h1>");
+    expect(netlify.uploads()).toHaveLength(sent);
+    // Netlify itself says it's the deploy the site serves.
+    if (restored === undefined) throw new Error("not restored");
+    expect(await publisher.verify?.(restored, { siteId }, signal())).toEqual({ status: "live" });
+  });
+
+  it("gives nothing for a deploy Netlify no longer keeps, or never made, restoring nothing", async () => {
+    const { netlify, publisher, siteId } = await setUp();
+    const first = await deployOf(publisher, siteId, site);
+    await deployOf(publisher, siteId, { ...site, "index.html": "<h1>New menu</h1>" });
+    netlify.dropDeploy(first);
+
+    expect(await publisher.restore?.(first, { siteId }, signal())).toBeUndefined();
+    expect(await publisher.restore?.("no-such-deploy", { siteId }, signal())).toBeUndefined();
+    expect(netlify.live(siteId, "index.html")).toBe("<h1>New menu</h1>");
+    expect(netlify.requests.some(({ path }) => path.endsWith("/restore"))).toBe(false);
+  });
+});
+
+describe("netlifySiteAccess (4.4b's warning, #70)", () => {
+  /** A Netlify site, and its own address answering `answer` (or failing, or never answering). */
+  async function siteAnswering(answer: Response | "fails" | "hangs") {
+    const netlify = fakeNetlify();
+    const client = netlifyClient({ token: FAKE_TOKEN, fetch: netlify.fetch, retryBaseMs: 1 });
+    const { id: siteId } = await client.createSite("rosas-bakery");
+    const asked: { url: string; redirect: RequestInit["redirect"] }[] = [];
+    const fetchSite: typeof fetch = async (input, init) => {
+      asked.push({ url: String(input), redirect: init?.redirect });
+      if (answer === "fails") throw new TypeError("fetch failed");
+      if (answer === "hangs") {
+        return new Promise((_resolve, reject) =>
+          init?.signal?.addEventListener("abort", () => reject(init.signal?.reason)),
+        );
+      }
+      return answer;
+    };
+    return { client, siteId, asked, options: { fetchSite, timeoutMs: 50 } };
+  }
+  const redirect = (location: string) =>
+    new Response(null, { status: 302, headers: { Location: location } });
+
+  it("is protected when visitors are sent to Netlify's login, asking the site's own address", async () => {
+    const { client, siteId, asked, options } = await siteAnswering(
+      redirect("https://app.netlify.com/edge-access/rosas?redirect=%2F"),
+    );
+
+    expect(await netlifySiteAccess(client, siteId, options)).toBe("protected");
+    // Netlify's record of the site names the address; the redirect isn't followed.
+    expect(asked).toEqual([{ url: "https://rosas-bakery.netlify.app", redirect: "manual" }]);
+  });
+
+  it("is public for the site itself, or a redirect anywhere else", async () => {
+    for (const answer of [
+      new Response("<h1>Rosa's Bakery</h1>", { status: 200 }),
+      new Response(null, { status: 404 }),
+      redirect("https://www.rosasbakery.co.uk/"),
+      redirect("https://app.netlify.com/login"),
+      redirect("https://evil.example/edge-access/x"),
+      new Response(null, { status: 301 }),
+    ]) {
+      const { client, siteId, options } = await siteAnswering(answer);
+      expect(await netlifySiteAccess(client, siteId, options)).toBe("public");
+    }
+  });
+
+  it("fails, naming no address, when the site can't be asked or doesn't answer in time", async () => {
+    const failing = await siteAnswering("fails");
+    const error = await netlifySiteAccess(failing.client, failing.siteId, failing.options).catch(
+      (e: unknown) => e,
+    );
+    expect(error).toMatchObject({ code: "network" });
+    expect(String((error as Error).message)).not.toContain("netlify.app");
+
+    const hanging = await siteAnswering("hangs");
+    await expect(
+      netlifySiteAccess(hanging.client, hanging.siteId, hanging.options),
+    ).rejects.toMatchObject({
+      code: "timeout",
+    });
+    // A site Netlify doesn't know: as its API says.
+    await expect(
+      netlifySiteAccess(failing.client, "00000000-0000-4000-8000-0000000000ff", failing.options),
+    ).rejects.toMatchObject({ code: "not-found" });
   });
 });
 
@@ -336,6 +455,50 @@ describe("netlifyClient", () => {
     await expect(client.listForms(siteId)).resolves.toEqual([
       { id: "form-contact", name: "contact", paths: ["/contact.html"] },
     ]);
+  });
+
+  it("creates sites with form detection on, which Netlify Forms need (4.2, ADR 0006 decision 6)", async () => {
+    const netlify = fakeNetlify();
+    const options = { token: FAKE_TOKEN, fetch: netlify.fetch };
+    const sent: unknown[] = [];
+    const watching: typeof fetch = async (input, init) => {
+      if (init?.method === "POST" && String(input).endsWith("/sites")) {
+        sent.push(JSON.parse(String(init.body)));
+      }
+      return netlify.fetch(input, init);
+    };
+
+    await netlifyClient({ ...options, fetch: watching }).createSite("rosas-bakery");
+
+    expect(sent).toEqual([
+      { name: "rosas-bakery", processing_settings: { ignore_html_forms: false } },
+    ]);
+  });
+
+  it("still creates the site when Netlify refuses the form detection field (ADR 0006 decision 6)", async () => {
+    const netlify = fakeNetlify();
+    const sent: unknown[] = [];
+    const watching: typeof fetch = async (input, init) => {
+      if (init?.method === "POST" && String(input).endsWith("/sites")) {
+        sent.push(JSON.parse(String(init.body)));
+      }
+      return netlify.fetch(input, init);
+    };
+    netlify.failNext("POST", /^\/sites$/, 422);
+
+    const site = await netlifyClient({ token: FAKE_TOKEN, fetch: watching }).createSite("rosas");
+
+    expect(site.name).toBe("rosas");
+    expect(sent).toEqual([
+      { name: "rosas", processing_settings: { ignore_html_forms: false } },
+      { name: "rosas" },
+    ]);
+    // Any other failure isn't tried again without it.
+    netlify.failNext("POST", /^\/sites$/, 401);
+    await expect(
+      netlifyClient({ token: FAKE_TOKEN, fetch: watching }).createSite(),
+    ).rejects.toMatchObject({ code: "unauthorized" });
+    expect(sent).toHaveLength(3);
   });
 
   it("rejects a response it does not understand", async () => {
