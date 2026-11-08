@@ -103,6 +103,7 @@ describe("TourCard (OB-3)", () => {
           focusKey={step}
           anchor={() => anchors[step] ?? null}
           onEscape={vi.fn()}
+          actions={<Button>Next</Button>}
         >
           <p>Click any text on your page.</p>
         </TourCard>
