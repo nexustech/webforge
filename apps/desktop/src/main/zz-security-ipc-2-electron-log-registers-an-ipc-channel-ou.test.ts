@@ -37,7 +37,7 @@ describe("electron-log IPC channels (security audit)", () => {
 
     await import("./log-file.js");
 
-    const allowed = new Set(Object.values(ipcContract).map((entry) => entry.channel));
+    const allowed = new Set<string>(Object.values(ipcContract).map((entry) => entry.channel));
     const outside = registered.filter((r) => !allowed.has(r.slice(r.indexOf(":") + 1)));
     expect(outside).toEqual([]);
   });
