@@ -37,12 +37,27 @@ describe("isAppUrl", () => {
     expect(isAppUrl("https://example.com/", appUrl)).toBe(false);
   });
 
-  it("accepts only the app's own file in production", () => {
+  it("accepts the app's own scheme and host in production, and nothing else (#652)", () => {
+    const appUrl = "webforge-app://editor/index.html";
+
+    expect(isAppUrl("webforge-app://editor/index.html#/pages", appUrl)).toBe(true);
+    expect(isAppUrl("webforge-app://editor/help.html?page=export", appUrl)).toBe(true);
+    // Another host, or another custom scheme: each has the origin "null", as the app's does.
+    expect(isAppUrl("webforge-app://other/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("evil://editor/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("webforge-media://editor/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("file:///C:/Users/sam/index.html", appUrl)).toBe(false);
+    expect(isAppUrl("https://example.com/", appUrl)).toBe(false);
+  });
+
+  it("accepts only the app's own file on this computer, for a file: page (S7)", () => {
     const appUrl = "file:///C:/Program%20Files/Webforge/resources/app.asar/out/renderer/index.html";
 
     expect(isAppUrl(`${appUrl}#/pages`, appUrl)).toBe(true);
     expect(isAppUrl("file:///C:/Users/sam/evil.html", appUrl)).toBe(false);
     expect(isAppUrl("https://example.com/", appUrl)).toBe(false);
+    // The same path on another computer: Windows would open it as a network share.
+    expect(isAppUrl(appUrl.replace("file:///", "file://attacker.example/"), appUrl)).toBe(false);
   });
 
   it("rejects malformed URLs", () => {

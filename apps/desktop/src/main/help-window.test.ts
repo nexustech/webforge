@@ -7,7 +7,7 @@ import {
   isHelpPageUrl,
 } from "./help-window.js";
 
-const PAGE = "file:///app/out/renderer/help.html";
+const PAGE = "webforge-app://editor/help.html";
 
 /** A window as the Help window uses one, recording what's done to it. */
 function fakeWindow() {
@@ -178,16 +178,21 @@ describe("the Help window (5.4b, HP-10)", () => {
     const [window] = made;
     expect(window?.opensPopUp()).toBe(false);
     expect(window?.mayNavigate(`${PAGE}?page=export`)).toBe(true);
-    expect(window?.mayNavigate("file:///app/out/renderer/index.html")).toBe(false);
+    expect(window?.mayNavigate("webforge-app://editor/index.html")).toBe(false);
     expect(window?.mayNavigate("https://www.example.org/")).toBe(false);
   });
 });
 
 describe("isHelpPageUrl", () => {
-  it("tells the Help page from the editor's, on disk and on the dev server alike", () => {
+  it("tells the Help page from the editor's, in the app and on the dev server alike", () => {
     expect(isHelpPageUrl(`${PAGE}?page=export#x`, PAGE)).toBe(true);
-    expect(isHelpPageUrl("file:///app/out/renderer/index.html", PAGE)).toBe(false);
-    expect(isHelpPageUrl("file:///elsewhere/help.html", PAGE)).toBe(false);
+    expect(isHelpPageUrl("webforge-app://editor/index.html", PAGE)).toBe(false);
+    // Another host or scheme, whose origin Node calls "null" too, and a file (S33).
+    expect(isHelpPageUrl("webforge-app://attacker.example/help.html", PAGE)).toBe(false);
+    expect(isHelpPageUrl("evil://editor/help.html", PAGE)).toBe(false);
+    expect(isHelpPageUrl("file:///app/out/renderer/help.html", PAGE)).toBe(false);
+    const file = "file:///app/out/renderer/help.html";
+    expect(isHelpPageUrl("file://attacker.example/app/out/renderer/help.html", file)).toBe(false);
     const dev = "http://localhost:5173/help.html";
     expect(isHelpPageUrl("http://localhost:5173/help.html?page=x", dev)).toBe(true);
     expect(isHelpPageUrl("http://localhost:5173/", dev)).toBe(false);

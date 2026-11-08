@@ -12,6 +12,7 @@ import {
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { pathToFileURL } from "node:url";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
 import { FORMAT_VERSION, ProjectStore } from "@webforge/storage";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
@@ -310,7 +311,8 @@ test("opens the Help window from app.asar, with its pages and its own preload (5
     ).webforge.help.open({ page: "export" }),
   );
   const help = await opened;
-  expect(help.url()).toMatch(/\/renderer\/help\.html\?page=export/);
+  // From the app's own scheme, as the editor is (#652, S33).
+  expect(help.url()).toMatch(/^webforge-app:\/\/editor\/help\.html\?page=export/);
   await expect(help.getByRole("heading", { level: 1, name: "Export" })).toBeVisible();
   // Its own small API, not the editor's.
   expect(
@@ -320,6 +322,24 @@ test("opens the Help window from app.asar, with its pages and its own preload (5
     ]),
   ).toEqual(["undefined", "object"]);
   await help.close();
+});
+
+test("loads the editor from webforge-app://, from which no file of the computer's is read (#652, S5)", async () => {
+  test.skip(child === undefined || browser === undefined, "Needs the running packaged app");
+  const dir = resourcesDir();
+  test.skip(dir === undefined, "Linux is not a release target");
+  if (dir === undefined) return;
+  expect(page.url()).toBe("webforge-app://editor/index.html");
+  // A file that is there: the notices beside app.asar.
+  const file = pathToFileURL(join(dir, "notices", "notices.json")).href;
+  const read = await page.evaluate(async (url) => {
+    try {
+      return `read: ${(await fetch(url)).status}`;
+    } catch {
+      return "refused";
+    }
+  }, file);
+  expect(read).toBe("refused");
 });
 
 test("signs in over SFTP with ssh2's JavaScript, no native module to rebuild (4.3, ADR 0006)", async () => {

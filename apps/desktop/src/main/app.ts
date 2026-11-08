@@ -1,6 +1,5 @@
 import { networkInterfaces } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
 import {
@@ -20,6 +19,7 @@ import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu, runMenuCommand } from "./app-menu.js";
+import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
@@ -156,20 +156,21 @@ async function testDialogAnswer(
  */
 export function startApp(electron: AppElectron, parts: AppParts): Promise<void> {
   const { app, BrowserWindow, dialog, ipcMain, Menu, protocol, screen, session } = electron;
-  const rendererHtml = join(parts.dir, "../renderer/index.html");
+  const rendererDir = join(parts.dir, "../renderer");
   const preloadScript = join(parts.dir, "../preload/index.cjs");
   const exportWorkerScript = join(parts.dir, "export-worker.js");
   const storageWriterScript = join(parts.dir, "storage-writer.js");
 
   // electron-vite sets ELECTRON_RENDERER_URL to the Vite dev server in development only.
   const devServerUrl = app.isPackaged ? undefined : process.env.ELECTRON_RENDERER_URL;
-  const appUrl = devServerUrl ?? pathToFileURL(rendererHtml).href;
+  // The packaged app's pages come from its own scheme, never `file://` (#652, S5, ADR 0023).
+  const appUrl = devServerUrl ?? appPageUrl("index.html");
   // The Help window (5.4b, HP-10): its own page and preload, beside the editor's.
   const helpWindows = createHelpWindows({
     create: (options) => new BrowserWindow(options),
     pageUrl:
       devServerUrl === undefined
-        ? pathToFileURL(join(parts.dir, "../renderer/help.html")).href
+        ? appPageUrl("help.html")
         : new URL("help.html", devServerUrl).href,
     preload: join(parts.dir, "../preload/help.cjs"),
     title: t("help.window.title"),
@@ -209,7 +210,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // Media images (1.16) and the site's fonts (2.2) reach the editor through schemes of their own,
   // which must be known before "ready". Fonts load in CORS mode; so can images, whose pixels Theme
   // Studio reads for a palette from an image (2.3b, PG-2).
+  // The app's own pages have theirs too (#652).
   protocol.registerSchemesAsPrivileged([
+    APP_SCHEME_PRIVILEGES,
     { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
     { scheme: FONT_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
   ]);
@@ -491,8 +494,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     lifecycle.flushOnClose?.install(window);
     // Help goes with the editor, so the app quits with it (5.4b).
     window.on("closed", () => helpWindows.close());
-    const load =
-      devServerUrl === undefined ? window.loadFile(rendererHtml) : window.loadURL(devServerUrl);
+    const load = window.loadURL(appUrl);
     // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
     load.catch((error: unknown) => {
       logFailure("Webforge could not load the editor window", error);
@@ -505,6 +507,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     const menu = applicationMenu(process.platform, devServerUrl !== undefined);
     Menu.setApplicationMenu(menu === null ? null : Menu.buildFromTemplate(menu));
     hardenSession(session.defaultSession);
+    if (devServerUrl === undefined) {
+      session.defaultSession.protocol.handle(APP_SCHEME, createAppResponder(rendererDir));
+    }
     session.defaultSession.protocol.handle(MEDIA_SCHEME, (request) =>
       respondWithMedia(request.url),
     );

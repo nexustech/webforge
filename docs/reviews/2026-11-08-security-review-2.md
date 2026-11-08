@@ -54,7 +54,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 | S2 | #71, #72 | Fixed and checked. The keychain record holds the fingerprint of protocol, host, port, user and SFTP host key with the secret. Trust isn't in the `.wforge`. Netlify's site isn't bound: S32. |
 | S3, S25 | #650 | Fixed and checked. consent.js reads only the last `body > [data-wf-consent]`; `data-wf-*` and `data-measurement-id` are reserved and removed on open. Analytics storage stays denied with the banner off. |
 | S4, S12 | #651 | Fixed and checked. `sqlite_schema` is read first, and plain tables only, for every format. Every decode sniffs the header first. The new fuzzing test agrees. |
-| S5, S7, S8 | #652 | **Open.** The editor and now the Help window are `file://` pages, `GrantFileProtocolExtraPrivileges` is on, `isAppUrl` ignores a `file:` URL's host, and spec/01 still says the canvas is sandboxed. Widened to the Help window: S33. |
+| S5, S7, S8 | #652 | **Open.** The editor and now the Help window are `file://` pages, `GrantFileProtocolExtraPrivileges` is on, `isAppUrl` ignores a `file:` URL's host, and spec/01 still says the canvas is sandboxed. Widened to the Help window: S33. **Fixed since** (#652, ADR 0023). |
 | S9, S24 | #653 | Fixed and checked. Note: the phone listener's idle timer re-arms while a page stays open on a device, which is "no page open" as decided, not a hard cap. |
 | S10, S11 | #654 | Fixed and checked. |
 | S13, S14 | #657 | Fixed and checked (S13 by the help note, as the review allowed). |
@@ -96,7 +96,7 @@ Severity is as in the first review. **Medium:** reachable by an attacker who get
 ### The IPC surface and the new windows
 | S | Finding | Where | Severity | Scenario | Fix |
 |---|---|---|---|---|---|
-| S33 | **The Help window inherits S5 and S7:** it's a second `file://` page, and `isHelpPageUrl` relies on `isAppUrl`. | `main/help-window.ts:76-83,112-114`, `main/help-ipc.ts:21`, `main/app.ts:172` | low | As S7: a `file://host/…` navigation would pass the Help sender check. Unreachable today, since help pages are drawn without raw HTML. | #652 widened (comment). |
+| S33 | **The Help window inherits S5 and S7:** it's a second `file://` page, and `isHelpPageUrl` relies on `isAppUrl`. | `main/help-window.ts:76-83,112-114`, `main/help-ipc.ts:21`, `main/app.ts:172` | low | As S7: a `file://host/…` navigation would pass the Help sender check. Unreachable today, since help pages are drawn without raw HTML. | #652 widened (comment). **Fixed since** (#652): Help loads from `webforge-app://editor/help.html`, and `isHelpPageUrl` compares hosts through `isAppUrl`. Tests in `help-window.test.ts`. |
 | S34 | **Help opened plain `http://` links as well as `https://`.** | `shared/ipc/help.ts:49`, `renderer/help/help-navigation.ts:19` | info | A future page's `http://` link opens over plain text, and the channel accepted loopback addresses. | **Fixed here.** `https` only in the channel and the link routing, and `pnpm help-check` refuses `http://` links. Tests in `help-library.test.ts` and `pages.test.ts`. |
 | S35 | **The Help page gets the editor's whole CSP** (`webforge-media:`, `webforge-font:`, `connect-src 'self'`). | `renderer/help.html:7`, `shared/content-security-policy.ts` | info | A script in the Help page could read the open site's Media. Help's content is trusted. | #797. |
 
