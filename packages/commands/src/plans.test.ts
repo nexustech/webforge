@@ -300,4 +300,64 @@ describe("a long plan's question (S30, #795)", () => {
     expect(description).toContain(`"Services ${"x".repeat(50)}…"`);
     expect(description).not.toContain("Service 11");
   });
+
+  it("counts one more in the singular: a page, a question (B10)", async () => {
+    const { host, history, confirm } = setup();
+    const api = createCommandApi(host);
+    // Eleven more pages than the site had, to rename and hide in the plan.
+    for (let at = 0; at < 11; at += 1) {
+      await api.run("addPage", { title: `Service ${at}` }, app);
+    }
+    const added = Object.values(history.document.getState().pages).filter(({ title }) =>
+      title.startsWith("Service "),
+    );
+    expect(added).toHaveLength(11);
+    confirm.mockClear();
+
+    await api.run(
+      "plan",
+      {
+        title: "Tidy the services",
+        commands: [
+          ...added.map(({ id }, at) => ({
+            name: "updatePageSettings",
+            input: { pageId: id, title: `Repair ${at}`, hideFromNavigation: true },
+          })),
+          // Eleven changes to the Header, each of which would have asked on its own.
+          ...Array.from({ length: 11 }, (_, at) => ({
+            name: "editText",
+            input: {
+              location: { kind: "layout", part: "header" },
+              nodeId: "header",
+              field: "siteName",
+              text: `Rosa's ${at}`,
+            },
+          })),
+        ],
+      },
+      app,
+    );
+
+    const description = confirm.mock.calls[0]?.[0].description ?? "";
+    expect(description).toContain("It renames 1 more page.");
+    expect(description).toContain("It hides or shows 1 more page.");
+    expect(description).toContain("And 1 more question like these.");
+  });
+
+  it("never cuts a title inside an emoji", async () => {
+    const { host, confirm } = setup();
+    // The emoji's two UTF-16 halves straddle where a cut by code units would fall.
+    const title = `${"x".repeat(58)}\u{1F35E}${"y".repeat(20)}`;
+
+    await createCommandApi(host).run(
+      "plan",
+      { title: "Bread", commands: [{ name: "addPage", input: { title } }] },
+      app,
+    );
+
+    const description = confirm.mock.calls[0]?.[0].description ?? "";
+    expect(description).toContain(`"${"x".repeat(58)}\u{1F35E}…"`);
+    // No half of a character left anywhere.
+    expect(description.isWellFormed()).toBe(true);
+  });
 });

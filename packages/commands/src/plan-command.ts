@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import type { PageId, SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
@@ -125,9 +125,24 @@ const TITLE_SHOWN = 60;
 /** The most questions the summary repeats that aren't destinations or Site Settings. */
 const MOST_ASKS = 10;
 
-/** `title`, shortened to {@link TITLE_SHOWN} characters. */
-const shortened = (title: string) =>
-  title.length <= TITLE_SHOWN ? title : `${title.slice(0, TITLE_SHOWN - 1).trimEnd()}…`;
+/** Splits text into what a reader sees as characters: an emoji with its modifiers is one. */
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
+/**
+ * `title`, shortened to {@link TITLE_SHOWN} characters, as a reader counts them: never cut inside
+ * an emoji, which would leave half of it before the "…".
+ */
+const shortened = (title: string) => {
+  // Most titles are short: no need to split them.
+  if (title.length <= TITLE_SHOWN) return title;
+  const characters = Array.from(GRAPHEMES.segment(title), ({ segment }) => segment);
+  return characters.length <= TITLE_SHOWN
+    ? title
+    : `${characters
+        .slice(0, TITLE_SHOWN - 1)
+        .join("")
+        .trimEnd()}…`;
+};
 
 /**
  * The plan's one question's details (S30, #795), as paragraphs: first, set apart, every question
@@ -157,7 +172,7 @@ function described(summary: Summary, switches: readonly string[]): string {
     changes.push(t("ai.plan.pageRenamed", { from: shortened(from), to: shortened(to) }));
   }
   if (summary.pagesRenamed.length > MOST_LISTED) {
-    changes.push(t("ai.plan.moreRenamed", { count: summary.pagesRenamed.length - MOST_LISTED }));
+    changes.push(plural("ai.plan.moreRenamed", summary.pagesRenamed.length - MOST_LISTED));
   }
   if (summary.pagesMoved.size > 0) {
     changes.push(t("ai.plan.pagesMoved", { pages: list(summary.pagesMoved) }));
@@ -167,7 +182,7 @@ function described(summary: Summary, switches: readonly string[]): string {
   }
   changes.push(...switches.slice(0, MOST_LISTED));
   if (switches.length > MOST_LISTED) {
-    changes.push(t("ai.plan.moreHidden", { count: switches.length - MOST_LISTED }));
+    changes.push(plural("ai.plan.moreHidden", switches.length - MOST_LISTED));
   }
   if (summary.theme) changes.push(t("ai.plan.theme"));
   const { added, changed, moved, removed } = summary.elements;
@@ -180,7 +195,7 @@ function described(summary: Summary, switches: readonly string[]): string {
     groups.push([
       t("ai.plan.asks"),
       ...summary.asks.slice(0, MOST_ASKS),
-      ...(more > 0 ? [t("ai.plan.moreAsks", { count: more })] : []),
+      ...(more > 0 ? [plural("ai.plan.moreAsks", more)] : []),
     ]);
   }
   // A paragraph each, which the question shows apart.

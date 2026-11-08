@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import { useState } from "react";
 import {
   createSiteWideConfirm,
@@ -91,7 +91,7 @@ export const LongPlan: Story = {
           ...Array.from({ length: 10 }, (_, at) =>
             t("ai.confirm.layout", { app: "Claude Desktop", part: `part ${at + 1}` }),
           ),
-          t("ai.plan.moreAsks", { count: 40 }),
+          plural("ai.plan.moreAsks", 40),
         ].join(" "),
       ].join("\n\n"),
       confirm: t("ai.confirm.allow"),
