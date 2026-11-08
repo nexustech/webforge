@@ -1273,6 +1273,32 @@ Theme tokens gain `fonts.accent` beside Heading and Body, picked in Theme Studio
 | B: Data & site | [#643](https://github.com/nexustech/webforge/issues/643) (pulled forward, in progress) → 4.6a ([#74](https://github.com/nexustech/webforge/issues/74), Version History) → 4.6b ([#724](https://github.com/nexustech/webforge/issues/724), republish, once 4.5 has merged) → 5.3 ([#78](https://github.com/nexustech/webforge/issues/78), licences screen) → 5.1 ([#76](https://github.com/nexustech/webforge/issues/76), performance budgets), pulled forward from Phase 5, 7 Nov 2026, coordinator → 5.6 ([#81](https://github.com/nexustech/webforge/issues/81), security review), pulled forward. 4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) goes first as soon as 0.2 has run, ahead of what is left |
 | C: History & canvas | [#671](https://github.com/nexustech/webforge/issues/671)'s A25 (pulled forward, in progress) → 4.9 ([#171](https://github.com/nexustech/webforge/issues/171), MCP server, once 4.4a has merged) → ~~4.11 ([#768](https://github.com/nexustech/webforge/issues/768), AI apps: settings, pages and the catalogue; added 7 Nov 2026, AIB-10)~~ → ~~4.12a ([#769](https://github.com/nexustech/webforge/issues/769), pulled forward from Phase 5, 7 Nov 2026, coordinator)~~ → 4.12b ([#770](https://github.com/nexustech/webforge/issues/770), pulled forward from Phase 5, 7 Nov 2026, coordinator) |
 
+**Queues from 8 Nov 2026 (coordinator).** Everything in the 1 Nov table above has merged except 4.2 and 4.4b. 5.4a's code has merged; [#79](https://github.com/nexustech/webforge/issues/79) stays open for the product owner's usability test. These changes follow, as the issues' Planned lines say:
+- **Moved:**
+  - [#652](https://github.com/nexustech/webforge/issues/652) and [#655](https://github.com/nexustech/webforge/issues/655) from B to C, so B can take 4.2. Both merged in #822.
+  - [#752](https://github.com/nexustech/webforge/issues/752) to C (merged).
+  - [#644](https://github.com/nexustech/webforge/issues/644) and [#646](https://github.com/nexustech/webforge/issues/646) to A (merged).
+- **4.2 ([#70](https://github.com/nexustech/webforge/issues/70)) is three parts:**
+  - part 1, Netlify Forms, B (#821);
+  - part 2, the Netlify IPC (sign-in, sites, saving a destination), B;
+  - part 3, the mocked-Netlify server (`e2e/app/netlify-mock.ts`) with the publish E2E and the visitor-access check, C.
+- **4.4b ([#723](https://github.com/nexustech/webforge/issues/723)) started on 8 Nov without waiting for 4.2,** against part 2's contract: A's draft #826, which stays a draft until 4.2's last part merges. Its E2E uses part 3's mock.
+- **Out-of-plan work:**
+  - bugs [#806](https://github.com/nexustech/webforge/issues/806) (A), [#807](https://github.com/nexustech/webforge/issues/807) (B), [#808](https://github.com/nexustech/webforge/issues/808) (A) and [#810](https://github.com/nexustech/webforge/issues/810) (B), all merged;
+  - chore [#823](https://github.com/nexustech/webforge/issues/823) (C, merged in #825).
+- **Phase 5 items in Phase 4's window,** besides those in the 1 Nov table:
+  - [#786](https://github.com/nexustech/webforge/issues/786), [#797](https://github.com/nexustech/webforge/issues/797) and [#671](https://github.com/nexustech/webforge/issues/671)'s other parts (A);
+  - [#793](https://github.com/nexustech/webforge/issues/793) and [#796](https://github.com/nexustech/webforge/issues/796) (B);
+  - [#794](https://github.com/nexustech/webforge/issues/794) and [#795](https://github.com/nexustech/webforge/issues/795) (C);
+  - all merged.
+- **No estimate changes,** so §3 has no new line.
+
+| Stream | Items, in order |
+|---|---|
+| A: Shell & panels | [#786](https://github.com/nexustech/webforge/issues/786) (dragging on a large page) → [#797](https://github.com/nexustech/webforge/issues/797) (the Help window's CSP) → [#671](https://github.com/nexustech/webforge/issues/671) (four parts) → [#806](https://github.com/nexustech/webforge/issues/806) → [#808](https://github.com/nexustech/webforge/issues/808) → [#644](https://github.com/nexustech/webforge/issues/644) → [#646](https://github.com/nexustech/webforge/issues/646) → 4.4b ([#723](https://github.com/nexustech/webforge/issues/723), draft #826, ready once 4.2 has merged) |
+| B: Data & site | [#796](https://github.com/nexustech/webforge/issues/796) (Netlify sign-in tied to its site) → [#807](https://github.com/nexustech/webforge/issues/807) → [#810](https://github.com/nexustech/webforge/issues/810) → 4.2 part 1 (Netlify Forms, #821) → 4.2 part 2 (the Netlify IPC) |
+| C: History & canvas | [#794](https://github.com/nexustech/webforge/issues/794) → [#795](https://github.com/nexustech/webforge/issues/795) → [#752](https://github.com/nexustech/webforge/issues/752) → [#655](https://github.com/nexustech/webforge/issues/655) → [#652](https://github.com/nexustech/webforge/issues/652) (both in #822) → [#823](https://github.com/nexustech/webforge/issues/823) → 4.2 part 3 (the mocked-Netlify server, the publish E2E and the visitor-access check) |
+
 0.2 ([#12](https://github.com/nexustech/webforge/issues/12)) is the product owner's: its code merged in Phase 0, and its live check and OAuth app registration need their Netlify account. Since the 1 Nov re-plan it starts only 0.2 → 4.2 → 4.4b; the longest chain is 4.4a → 4.5 → 4.6b. The figures that follow are from 31 Oct. About 16, 17.5 and 17 estimated days, the paused items counted in full, with the three flaky-test issues from the CI review of 31 Oct 2026 ([#676](https://github.com/nexustech/webforge/issues/676)–[#678](https://github.com/nexustech/webforge/issues/678), 2 days out of plan) put early because every stream re-runs CI for them. At Phase 3's pace (0.68 for plan items, 1.10 for out-of-plan work), less what the paused items have done, that is about 12–14 actual days each; B's 4.6 and C's 4.9 end the phase.
 
 <details><summary>Scope and acceptance criteria</summary>
