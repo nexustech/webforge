@@ -52,6 +52,42 @@ describe("netlifyFormNames (4.2)", () => {
     expect(names.has("hidden")).toBe(false);
   });
 
+  it("gives every copy of a shared section's form the one name, on whichever page", () => {
+    const label = t("starter.formLabel");
+    const base = sampleSite();
+    // A shared section placed on the home page and the About page: its form, by each copy's id.
+    const copy = (copyId: string) => ({
+      type: "Section",
+      props: { id: copyId, content: [form(`${copyId}~shared-form`)] },
+    });
+    const site: SiteSnapshot = {
+      ...base,
+      pages: base.pages.map((page, index) =>
+        index < 2
+          ? {
+              ...page,
+              doc: { ...page.doc, content: [...page.doc.content, copy(`copy-${index}`)] },
+            }
+          : page,
+      ),
+    };
+    // And a form of its own after them.
+    const last = site.pages.at(-1);
+    if (last === undefined) throw new Error("no pages");
+    const withOwn = {
+      ...site,
+      pages: site.pages.map((page) =>
+        page === last ? { ...page, doc: { ...page.doc, content: [form("own")] } } : page,
+      ),
+    };
+
+    const names = netlifyFormNames(withOwn);
+
+    expect(names.get("copy-0~shared-form")).toBe(label);
+    expect(names.get("copy-1~shared-form")).toBe(label);
+    expect(names.get("own")).toBe(`${label} 2`);
+  });
+
   it("names the same forms the same way each time, so publishing again keeps their names", () => {
     const site = withForms([form("a"), form("b")]);
     expect([...netlifyFormNames(site)]).toEqual([...netlifyFormNames(site)]);
