@@ -4,6 +4,23 @@ import { syncMenuWithPages } from "./menu-sync.js";
 import { PAGE_TITLE_MAX, type PageEntry, type SiteDoc } from "./site-doc.js";
 import { slugify, uniqueSlug } from "./slugs.js";
 
+/**
+ * The ids of a site's `pages`. Object keys are plain strings to TypeScript; these are the record's
+ * own, so they are page ids (R10).
+ */
+export const pageIdsOf = (pages: SiteDoc["pages"]): PageId[] => Object.keys(pages) as PageId[];
+
+/**
+ * Whether `id` is one of `pages`, as a page id: never a property every object has, such as
+ * `constructor`, for an id read from a place, a link or an AI app's command.
+ */
+export const isPageIn = (pages: SiteDoc["pages"], id: string): id is PageId =>
+  Object.hasOwn(pages, id);
+
+/** Page `id` of `pages`, if it has one (see {@link isPageIn}). */
+export const pageEntryOf = (pages: SiteDoc["pages"], id: string): PageEntry | undefined =>
+  isPageIn(pages, id) ? pages[id] : undefined;
+
 /** A name as a page title: trimmed, and short enough to save. */
 export const pageTitle = (name: string): string => name.trim().slice(0, PAGE_TITLE_MAX).trim();
 

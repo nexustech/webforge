@@ -4,9 +4,10 @@
  * this file (`pnpm deps`, B2); everything else here is the area's own.
  */
 
+export { TEXT_PX } from "@webforge/themes";
 export { classesFieldRenderer } from "./classes/ClassesField.js";
 export { codeField } from "./code/field.js";
-export { ColourField, shownRatio, TEXT_PX } from "./color/ColourField.js";
+export { ColourField, shownRatio } from "./color/ColourField.js";
 export { colourField } from "./color/field.js";
 export { hexOf } from "./color/hex.js";
 export { fieldRenderers, themeFieldRenderers } from "./field-renderers.js";

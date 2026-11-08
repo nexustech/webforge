@@ -2,7 +2,6 @@ import {
   copyTheme,
   IMAGE_MIME_TYPES,
   type ImageMeta,
-  type MediaId,
   mediaIdSchema,
   mediaNameSchema,
   migrateSite,
@@ -154,7 +153,7 @@ export function siteFromTemplate(
   site.theme = copyTheme(options.theme);
   for (const image of images) {
     const meta: ImageMeta = {
-      id: image.mediaId as MediaId,
+      id: image.mediaId,
       hash: image.hash,
       name: image.name,
       fileName: image.file,

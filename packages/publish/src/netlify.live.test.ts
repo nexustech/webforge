@@ -31,15 +31,24 @@ async function publish(files: Record<string, string>) {
   return last;
 }
 
-/** Fetches `url` until it returns `expected`; the CDN can take a moment to switch deploys. */
+/**
+ * Fetches `url` until it returns the page Webforge published; the CDN can take a moment to switch
+ * deploys. Only the start is compared, because Netlify may append its own toolbar script
+ * (`/.netlify/scripts/hud`) to HTML it serves.
+ */
 async function waitForContent(url: string, expected: string): Promise<string> {
   let text = "";
   for (let attempt = 0; attempt < 15; attempt++) {
     text = await (await fetch(url, { cache: "no-store" })).text();
-    if (text === expected) break;
+    if (text.startsWith(expected)) break;
     await new Promise((resolve) => setTimeout(resolve, 2_000));
   }
   return text;
+}
+
+/** The served page cut to the published page's length, so a failure shows a readable diff. */
+async function servedPage(url: string, expected: string): Promise<string> {
+  return (await waitForContent(url, expected)).slice(0, expected.length);
 }
 
 describe.skipIf(token === "" || siteId === "")("Netlify live check", () => {
@@ -66,18 +75,14 @@ describe.skipIf(token === "" || siteId === "")("Netlify live check", () => {
     );
     expect(first.uploaded).toBe(4);
     expect(second.uploaded).toBe(1);
-    expect(await waitForContent(`${second.url}/about.html`, v2["about.html"])).toBe(
-      v2["about.html"],
-    );
+    expect(await servedPage(`${second.url}/about.html`, v2["about.html"])).toBe(v2["about.html"]);
 
     const client = netlifyClient({ token });
     const deploys = await client.listDeploys(siteId);
     const firstDeploy = deploys.find((d) => d.state === "ready" && d.id !== deploys[0]?.id);
     expect(firstDeploy).toBeDefined();
     await client.restoreDeploy(siteId, firstDeploy?.id ?? "");
-    expect(await waitForContent(`${second.url}/about.html`, v1["about.html"])).toBe(
-      v1["about.html"],
-    );
+    expect(await servedPage(`${second.url}/about.html`, v1["about.html"])).toBe(v1["about.html"]);
     console.log("Restore: the first deploy is live again.");
 
     const forms = await client.listForms(siteId);

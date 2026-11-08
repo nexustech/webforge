@@ -178,6 +178,8 @@ export const siteCheck = {
   "siteCheck.place.guide.businessProfile": "Open Google Business Profile",
   "siteCheck.place.guide.searchConsole": "Open Google Search Console",
   "siteCheck.detail.contrast": "{ratio}:1, needs {required}:1",
+  // An Icon's or Social links' colour (#670): graphics need 3:1, not text's 4.5:1 (WCAG 1.4.11).
+  "siteCheck.detail.contrastGraphic": "{ratio}:1, needs {required}:1 for an icon or logo",
   "siteCheck.detail.size": "{width} × {height} pixels",
   "siteCheck.detail.insecure": "{url}: change it to https://, or remove it",
   "siteCheck.detail.noHeading": "No main heading: add a large Heading or a Hero",
