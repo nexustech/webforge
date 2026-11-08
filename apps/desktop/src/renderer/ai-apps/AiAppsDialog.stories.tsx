@@ -28,6 +28,7 @@ const mcpWith = (status: McpStatus): McpApi => ({
   status: async () => status,
   setEnabled: async (enabled) => ({ ...status, enabled }),
   add: async () => ({ status: "name-taken" }),
+  seenMoved: async () => undefined,
   installClaude: async () => ({ status: "opened" }),
   remove: async () => status,
 });

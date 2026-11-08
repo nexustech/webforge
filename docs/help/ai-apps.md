@@ -51,7 +51,7 @@ The key is cleared from the clipboard a minute after you copy it, and Windows do
 
 To stop an app reaching your sites, click **Remove *name*** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
 
-If AI apps says **{appName}'s address for AI apps has changed**, another program took {appName}'s place while it was closed. Remove your AI apps and add them again. For Claude Desktop, install its new extension too.
+If {appName} says **{appName}'s address for AI apps has changed**, another program was using {appName}'s address while it was closed. Apps that connect directly, such as Cursor or Claude Code, might have sent it their keys, so {appName} removes them: add them again with the new address. Claude Desktop checks it's {appName} before it sends its key, so it stays, but its extension has the old address: remove it and add it again, then install its new extension. {appName} says this as it starts, until you open **AI apps**.
 
 ## Starting a new site from a description
 
@@ -60,6 +60,15 @@ You can ask an app to start a whole new site, such as "a site for my garage, Rap
 Nothing is made until you click **Create site**. The site you have open is saved first, and the new one opens in its place. Click **Cancel** and nothing is made: the app is told you said no.
 
 An app can't start a new site while you're in [Content mode](the-editor.md#design-and-content-mode), or while you have **Start a site** or **New Site** open yourself.
+
+### Build a site from a description
+
+{appName} offers apps a prompt, **Build a site from a description**, which Claude Desktop lists with its other prompts. Choose it, describe your business and the site you want, and the app works in this order:
+1. it starts the site with **Start a site**, for you to check and create;
+2. it makes the pages, sections, text and colours as one set of changes, which you allow once (see [Many changes at once](#many-changes-at-once));
+3. it runs Site Check, and asks you for your own pictures to replace the template's;
+4. it opens the [Preview](preview.md) in your browser;
+5. it tells you what's still yours to do: your photos, where the contact form sends messages, and publishing.
 
 ## Pictures
 

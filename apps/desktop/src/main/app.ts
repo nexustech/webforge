@@ -647,22 +647,20 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     mcp = service;
     void service.start().catch((error: unknown) => logFailure("mcp start", error));
-    registerMcpHandlers(
-      ipcMain,
-      isTrustedSender,
-      service,
-      // Claude Desktop's extensions, in the person's own profile, with the bundled bridge.
-      createClaudeExtensions({
-        dir: join(app.getPath("userData"), "ai-apps"),
-        bridgeFile: app.isPackaged
-          ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
-          : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
-        version: app.getVersion(),
-        // Looked up as they're called, so the E2E tests can stand in for Claude Desktop.
-        open: (path) => electron.shell.openPath(path),
-        show: (path) => electron.shell.showItemInFolder(path),
-      }),
-    );
+    // Claude Desktop's extensions, in the person's own profile, with the bundled bridge.
+    const extensions = createClaudeExtensions({
+      dir: join(app.getPath("userData"), "ai-apps"),
+      bridgeFile: app.isPackaged
+        ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
+        : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
+      version: app.getVersion(),
+      // Looked up as they're called, so the E2E tests can stand in for Claude Desktop.
+      open: (path) => electron.shell.openPath(path),
+      show: (path) => electron.shell.showItemInFolder(path),
+    });
+    // Any left when Webforge last quit, with their proofs: they've been opened, or never will be.
+    void extensions.sweep().catch((error: unknown) => logFailure("mcp claude extension", error));
+    registerMcpHandlers(ipcMain, isTrustedSender, service, extensions);
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,

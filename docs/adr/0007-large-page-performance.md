@@ -83,6 +83,8 @@ What item 1.27 changed:
   5. A rich-text editor sends its last change as soon as it loses focus. Puck sends rich text after a 50 ms debounce (200 ms at most), on timers a background window can throttle further. Clicking elsewhere and pressing Undo inside that window recorded the session without its last keystrokes (canvas-history E2E, about 1 run in 15).
   6. Puck's API object (`__private`) also gains `flushRichText`, which makes the focused rich-text editor send its pending change at once. The engine calls it when Undo or Redo is pressed while typing, and runs the command once that edit is recorded (#146).
   7. The inline rich-text editor is imported with the canvas instead of lazily. Puck drew each rich text as a fallback `contenteditable` until its Tiptap chunk loaded, in the first moments after the canvas showed, then replaced it, losing what was typed meanwhile (ADR 0004, 1.23). The chunk (about 0.6 MB) is now part of the renderer's main bundle.
+  8. Each drop zone answers whether it accepts the element being dragged when the drag library asks (a getter on the element's collision data, `inDroppableZone`), instead of passing the answer to every element in it as a prop. The prop flipped at the start and the drop of every drag, on every element in a zone that doesn't take the dragged kind, and each drew again (#786).
+  9. Each element keeps which of the zones inside it are active in a ref, read through a getter (`containsActiveZone`) when the drag library asks, instead of in React state. Setting it drew every element holding a zone again at the start and the drop of every drag (#786).
 
 ### Before and after
 Same page, harness and machine as above. Three runs of each state, interleaved; the ranges are across runs. One round overlapped with other work on the machine, so the upper ends are noisy.
@@ -248,6 +250,32 @@ Everything is within §10 except the drop hitch, mitigation 5 above, which 5.1's
 **Noise.** `pnpm e2e:perf` now retries once on CI, so a miss must repeat to fail, and keeps a failure's trace and screenshot. In these runs a commit (82 ms once) and the macOS jump each missed once and passed on their retry.
 
 **Taking the hitch further** is #786: memoise the draggables on drag-state changes, and cache the scrolling containers per drag, as a fourth item of the Puck patch. Then measure against the figures here. Drawing only the visible sections (`_experimentalVirtualization`, "What next" above) was set aside: it's a product call.
+
+## Addendum: dragging without drawing every element again (#786, 2026-11-08)
+
+The follow-up part 3 names above. On the i7 a drag had 6–7 long tasks, the longest about 250–300 ms.
+
+- **What drew the page again.** Counting `DraggableComponent`'s renders, and which of its inputs changed for each, found about 380 renders per drag. Almost all came from two values that change at the start and at the drop:
+  - `inDroppableZone`: each drop zone works out whether it accepts the dragged kind and passed that to every element in it as a prop. On this page many zones don't take a Heading, so the prop flipped for about 127 elements, twice per drag. That also broke `DropZoneChildMemo`, so each element's render function was made anew.
+  - `containsActiveZone`: an element holding zones kept which were active in React state, set as each zone's answer changed.
+  Only the drag library's collision check reads either. Patch items 8 and 9 above hand them over as getters it calls as it checks, so the answers stay current and nothing draws again for them.
+- **Not done: caching the scrolling containers per drag** (#786's second idea). `Scroller.getScrollableElements` doesn't appear in a profile of the drag with Puck 0.24 and `@dnd-kit/dom` 0.4, where part 3's profile found about 135 ms: `isOverflowVisible` takes 2–7 ms over a whole drag now.
+- **Out of reach:** each pointer move hit-tests the page (`elementFromPoint`, `getBoundingClientRect`), which forces a style and layout pass over it: about 300–500 ms over a drag. It grows with the page's elements and its CSS.
+- **Contract tests:** `patch-contract.test.tsx` starts a drag through the drag library's manager in happy-dom (`@dnd-kit/react`, a dev dependency of the engine at Puck's pin) and reads each element's collision data at once, before React draws again. Both items fail without the patch.
+
+**Before and after**, on the same i7: `large-page.perf.ts` three times on each, and a profile of three drags with the renders counted.
+
+| What (225 nodes) | `main` | With items 8 and 9 |
+|---|---|---|
+| `DraggableComponent` renders per drag | about 380 | about 21 |
+| React's work over a drag (`performWorkOnRoot`, profiled) | 600–730 ms | 230–330 ms |
+| Longest long task in a drag | 237–303 ms | 172–225 ms |
+| Long tasks per drag | 6–7 | 6 |
+| The others | 87–153 ms | 87–153 ms |
+| The whole drag, until "Moved Heading" | 2.5–3.3 s | 2.1–2.9 s |
+
+- **The drag's start and drop are about 30% shorter**, which was the longest task. The number of long tasks doesn't fall: the rest are the pointer moves' hit-testing.
+- **The budget:** the drag's longest task is now held under 250 ms (`DRAG_LONGEST_TASK_MS`), down from part 3's 350 ms, as agreed with stream B. CI's runners measured 94–170 ms before this change, so it leaves room. The number of long tasks per drag stays reported, not asserted: §10's "no dropped frames" needs the hit-testing cut, which Puck's `_experimentalVirtualization` would do by leaving off-screen sections out of the page ("What next" above).
 
 ## Upstream reports (drafts)
 

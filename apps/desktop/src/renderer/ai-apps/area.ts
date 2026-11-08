@@ -17,6 +17,16 @@ export const aiAppsArea: Area<WindowContext> = {
   register: ({ api, commands, windowDialogs }) => {
     const opened = createStore<{ readonly open: boolean }>(() => ({ open: false }));
     const close = () => opened.setState({ open: false });
+    // The address moved since AI apps was last open (S27): said as the window starts, until seen.
+    void api.mcp
+      .status()
+      .then((status) => {
+        if (!status.moved) return;
+        toast(t("aiApps.movedToast"), {
+          action: { label: t("aiApps.command"), onClick: () => opened.setState({ open: true }) },
+        });
+      })
+      .catch(() => undefined);
 
     function AiApps() {
       const { open } = useStore(opened);
