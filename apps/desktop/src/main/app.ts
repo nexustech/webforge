@@ -433,6 +433,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       holdManifest: (manifest) => projectSession.holdManifest(manifest),
       // Looked up as it's called, as the export's shell is.
       openExternal: (url) => electron.shell.openExternal(url),
+      // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
+      netlifyApi: netlifyApiFor(app.isPackaged),
     }),
   ];
   for (const feature of features) {

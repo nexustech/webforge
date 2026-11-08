@@ -4,5 +4,5 @@
     "types": ["node"]
   },
   "include": ["src"],
-  "references": [{ "path": "../model" }]
+  "references": [{ "path": "../model" }, { "path": "../test-utils" }]
 }

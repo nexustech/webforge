@@ -211,6 +211,9 @@ export const publish = {
   "publish.live.check.unreachable":
     "That address couldn't be reached to check it. A new site can take a few minutes to appear.",
   "publish.live.summary": "Sent: {uploaded} · Unchanged: {unchanged} · Removed: {removed}",
+  // A republish Netlify answered by putting the version's earlier publish back (#70).
+  "publish.live.restored":
+    "Netlify put back this version as it was published before, so nothing needed sending.",
   "publish.live.versionNotSaved": "This publish couldn't be kept in Version History.",
   "publish.live.open": "Open Site",
   "publish.live.copy": "Copy Link",

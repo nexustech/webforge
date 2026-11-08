@@ -1,5 +1,5 @@
 import { siteAddressSchema } from "@webforge/model";
-import { PublishError, type NetlifySite as Site } from "@webforge/publish";
+import { netlifySiteAccess, PublishError, type NetlifySite as Site } from "@webforge/publish";
 import type { IpcMain } from "electron";
 import type { NetlifyAccount, NetlifyFailure, NetlifySite } from "../shared/ipc/netlify.js";
 import { registerIpcHandler } from "./ipc.js";
@@ -16,6 +16,10 @@ export type NetlifyDeps = {
   /** The open site as opening `sessionId` reaches it (A13). */
   readonly site: (sessionId: string) => Pick<SiteStore, "withStore">;
   readonly secrets: PublishSecrets;
+  /** Asks a site's own address, for its access check; Node's `fetch` unless a test gives one. */
+  readonly fetchSite?: typeof fetch;
+  /** How long the access check waits for the site: 5 seconds unless a test says. */
+  readonly accessTimeoutMs?: number;
 };
 
 /** A Netlify site's id, as a destination keeps it (`publishDestinationSchema`). */
@@ -177,6 +181,27 @@ export function registerNetlifyHandlers(
       };
     }
   });
+
+  // 4.4b's warning (#723): the address is Netlify's record of the site, never the renderer's,
+  // asked without following a redirect or reading the page. Neither is logged.
+  registerIpcHandler(
+    ipc,
+    "netlifyCheckAccess",
+    isTrustedSender,
+    async (sessionId, account, siteId) => {
+      const client = await clientOf(sessionId, account);
+      if (client === undefined) return signedOut;
+      try {
+        const access = await netlifySiteAccess(client, siteId, {
+          ...(deps.fetchSite === undefined ? {} : { fetchSite: deps.fetchSite }),
+          ...(deps.accessTimeoutMs === undefined ? {} : { timeoutMs: deps.accessTimeoutMs }),
+        });
+        return { status: "checked", protected: access === "protected" } as const;
+      } catch (error) {
+        return failed(error, "Webforge could not check who can visit a Netlify site");
+      }
+    },
+  );
 
   registerIpcHandler(ipc, "netlifySaveDestination", isTrustedSender, (sessionId, draft, ref) =>
     deps.site(sessionId).withStore(

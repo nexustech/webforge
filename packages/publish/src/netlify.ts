@@ -6,6 +6,7 @@ import {
   PublishError,
   type PublishErrorCode,
   type PublishEvent,
+  type PublishedEvent,
   type Publisher,
   type TestResult,
   throwIfCancelled,
@@ -255,6 +256,67 @@ export function netlifyClient(options: NetlifyOptions) {
 /** The client returned by {@link netlifyClient}. */
 export type NetlifyClient = ReturnType<typeof netlifyClient>;
 
+/** How long the check of a site's visitor access may take: a warning, never worth a wait. */
+const ACCESS_TIMEOUT_MS = 5_000;
+
+/** Options of {@link netlifySiteAccess}. */
+export type NetlifyAccessOptions = {
+  /** Asks the site's own address; the global `fetch` unless a test gives its own. */
+  readonly fetchSite?: typeof fetch;
+  readonly timeoutMs?: number;
+  readonly signal?: AbortSignal;
+};
+
+/**
+ * Whether visitors to Netlify site `siteId` reach the site or Netlify's login (4.4b's warning,
+ * #723, #70): site protection, or a private project, sends them to `app.netlify.com/edge-access`,
+ * which Netlify's API has no field for (ADR 0006 decision 6). The address asked is the site's own,
+ * from `client`'s record of it, under the account it signs in as, never one given from outside. It's
+ * asked once, without following a redirect or reading what comes back, within
+ * {@link ACCESS_TIMEOUT_MS}: `protected` only for a redirect to Netlify's login, `public` for
+ * any other answer. Throws {@link PublishError}: `network` or `timeout` when the site can't be
+ * asked, `not-found` for a site without an address yet. Never puts the address in a message.
+ */
+export async function netlifySiteAccess(
+  client: Pick<NetlifyClient, "getSite">,
+  siteId: string,
+  options: NetlifyAccessOptions = {},
+): Promise<"protected" | "public"> {
+  const { signal } = options;
+  const site = await client.getSite(siteId, signal);
+  const address = site.ssl_url ?? site.url;
+  if (address === null || address === undefined) {
+    throw new PublishError("not-found", "The Netlify site has no address yet");
+  }
+  const timeout = AbortSignal.timeout(options.timeoutMs ?? ACCESS_TIMEOUT_MS);
+  const within = signal === undefined ? timeout : AbortSignal.any([signal, timeout]);
+  let answer: Response;
+  try {
+    answer = await (options.fetchSite ?? fetch)(address, {
+      method: "GET",
+      redirect: "manual",
+      signal: within,
+    });
+  } catch (error) {
+    throwIfCancelled(signal);
+    if (timeout.aborted) {
+      throw new PublishError("timeout", "The Netlify site didn't answer in time");
+    }
+    throw new PublishError("network", "The Netlify site couldn't be reached", { cause: error });
+  }
+  // What the page says is never needed: only where it sends visitors.
+  await answer.body?.cancel().catch(() => undefined);
+  if (answer.status < 300 || answer.status > 399) return "public";
+  try {
+    const to = new URL(answer.headers.get("location") ?? "", address);
+    return to.hostname === "app.netlify.com" && to.pathname.startsWith("/edge-access")
+      ? "protected"
+      : "public";
+  } catch {
+    return "public";
+  }
+}
+
 /**
  * Publishes to Netlify with a file-digest deploy: only files Netlify doesn't already have are
  * uploaded (assets first, `index.html` last), then the deploy goes live atomically. Netlify keeps
@@ -318,6 +380,27 @@ export function netlifyPublisher(options: NetlifyOptions): Publisher<NetlifyDest
         // A Netlify deploy is a whole new version of the site: files it lacks are simply gone.
         removed: 0,
         version: deploy.id,
+      };
+    },
+
+    /**
+     * Restores `version`, an earlier deploy of the site, if Netlify still lists it as ready (it
+     * keeps deploys for a time that depends on the account): the site serves it again at once,
+     * with nothing sent. A deploy it no longer lists gives `undefined`, to rebuild instead.
+     */
+    async restore(version, dest, signal): Promise<PublishedEvent | undefined> {
+      const deploys = await client.listDeploys(dest.siteId, signal);
+      if (!deploys.some(({ id, state }) => id === version && state === "ready")) return undefined;
+      const restored = await client.restoreDeploy(dest.siteId, version, signal);
+      const site = await client.getSite(dest.siteId, signal);
+      return {
+        type: "published",
+        url: site.ssl_url ?? site.url ?? restored.ssl_url ?? restored.url ?? "",
+        uploaded: 0,
+        unchanged: 0,
+        removed: 0,
+        version,
+        restored: true,
       };
     },
 

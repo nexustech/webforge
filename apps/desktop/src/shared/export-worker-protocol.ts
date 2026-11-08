@@ -91,6 +91,19 @@ const publishJobSchema = z.strictObject({
   trustedCode: z.array(sha256Schema).max(10_000),
   fonts: exportJobSchema.shape.fonts,
   families: downloadedFamiliesSchema,
+  /**
+   * Netlify's API, when not Netlify's own: the E2E tests' mock on this computer, which main sets
+   * only in an unpackaged app (`netlifyApiFor`, #70).
+   */
+  netlifyApi: z
+    .url({ protocol: /^http$/, hostname: /^(127\.0\.0\.1|localhost|\[::1\])$/ })
+    .max(200)
+    .optional(),
+  /**
+   * A republish's earlier deploy on Netlify, which the host may still keep (#70): made live again
+   * if so, with nothing built or sent; else the site is built and published.
+   */
+  restore: z.string().min(1).max(200).optional(),
 });
 
 /** Publishes a site to a destination. */
@@ -326,6 +339,8 @@ export const publishOutcomeSchema = z.discriminatedUnion("type", [
     unchanged: z.int().nonnegative(),
     removed: z.int().nonnegative(),
     version: z.string().min(1).max(200).optional(),
+    /** An earlier deploy made live again by the host, nothing sent (#70). */
+    restored: z.literal(true).optional(),
     check: z.enum(["live", "different", "unreachable", "unchecked"]),
     durationMs: z.number().nonnegative(),
   }),

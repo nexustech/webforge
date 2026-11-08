@@ -44,6 +44,7 @@ const SITE_CHANNELS = [
   "netlify:sites",
   "netlify:create-site",
   "netlify:test-saved",
+  "netlify:check-access",
 ] as const;
 
 /** The others, and why none of them needs the opening. */
