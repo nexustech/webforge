@@ -240,6 +240,65 @@ export function netlifyClient(options: NetlifyOptions) {
 /** The client returned by {@link netlifyClient}. */
 export type NetlifyClient = ReturnType<typeof netlifyClient>;
 
+/** How long the check of a site's visitor access may take: a warning, never worth a wait. */
+const ACCESS_TIMEOUT_MS = 5_000;
+
+/** Options of {@link netlifySiteAccess}. */
+export type NetlifyAccessOptions = NetlifyOptions & {
+  /** Asks the site's own address; the global `fetch` unless a test gives its own. */
+  readonly fetchSite?: typeof fetch;
+  readonly timeoutMs?: number;
+};
+
+/**
+ * Whether visitors to Netlify site `siteId` reach the site or Netlify's login (4.4b's warning,
+ * #723, #70): site protection, or a private project, sends them to `app.netlify.com/edge-access`,
+ * which Netlify's API has no field for (ADR 0006 decision 6). The address asked is the site's own,
+ * from Netlify's record of it under the signed-in account, never one given from outside. It's
+ * asked once, without following a redirect or reading what comes back, within
+ * {@link ACCESS_TIMEOUT_MS}: `protected` only for a redirect to Netlify's login, `public` for
+ * any other answer. Throws {@link PublishError}: `network` or `timeout` when the site can't be
+ * asked, `not-found` for a site without an address yet. Never puts the address in a message.
+ */
+export async function netlifySiteAccess(
+  siteId: string,
+  options: NetlifyAccessOptions,
+  signal?: AbortSignal,
+): Promise<"protected" | "public"> {
+  const site = await netlifyClient(options).getSite(siteId, signal);
+  const address = site.ssl_url ?? site.url;
+  if (address === null || address === undefined) {
+    throw new PublishError("not-found", "The Netlify site has no address yet");
+  }
+  const timeout = AbortSignal.timeout(options.timeoutMs ?? ACCESS_TIMEOUT_MS);
+  const within = signal === undefined ? timeout : AbortSignal.any([signal, timeout]);
+  let answer: Response;
+  try {
+    answer = await (options.fetchSite ?? fetch)(address, {
+      method: "GET",
+      redirect: "manual",
+      signal: within,
+    });
+  } catch (error) {
+    throwIfCancelled(signal);
+    if (timeout.aborted) {
+      throw new PublishError("timeout", "The Netlify site didn't answer in time");
+    }
+    throw new PublishError("network", "The Netlify site couldn't be reached", { cause: error });
+  }
+  // What the page says is never needed: only where it sends visitors.
+  await answer.body?.cancel().catch(() => undefined);
+  if (answer.status < 300 || answer.status > 399) return "public";
+  try {
+    const to = new URL(answer.headers.get("location") ?? "", address);
+    return to.hostname === "app.netlify.com" && to.pathname.startsWith("/edge-access")
+      ? "protected"
+      : "public";
+  } catch {
+    return "public";
+  }
+}
+
 /**
  * Publishes to Netlify with a file-digest deploy: only files Netlify doesn't already have are
  * uploaded (assets first, `index.html` last), then the deploy goes live atomically. Netlify keeps
