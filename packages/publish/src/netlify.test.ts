@@ -302,7 +302,7 @@ describe("netlifySiteAccess (4.4b's warning, #70)", () => {
     const netlify = fakeNetlify();
     const options = { token: FAKE_TOKEN, fetch: netlify.fetch, retryBaseMs: 1 };
     const { id: siteId } = await netlifyClient(options).createSite("rosas-bakery");
-    const asked: { url: string; redirect: RequestRedirect | undefined }[] = [];
+    const asked: { url: string; redirect: RequestInit["redirect"] }[] = [];
     const fetchSite: typeof fetch = async (input, init) => {
       asked.push({ url: String(input), redirect: init?.redirect });
       if (answer === "fails") throw new TypeError("fetch failed");
