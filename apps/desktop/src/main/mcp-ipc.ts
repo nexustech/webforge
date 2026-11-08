@@ -47,11 +47,15 @@ export function registerMcpHandlers(
     }
     return statusOf(service);
   });
-  registerIpcHandler(ipc, "mcpAdd", isTrustedSender, async (name): Promise<McpAddResult> => {
+  registerIpcHandler(ipc, "mcpSeenMoved", isTrustedSender, async () => {
+    await service.seenMoved();
+    return null;
+  });
+  registerIpcHandler(ipc, "mcpAdd", isTrustedSender, async (name, kind): Promise<McpAddResult> => {
     const status = await service.status();
     if (status.port === null) return { status: "off" };
     try {
-      const pairing = await service.add(name);
+      const pairing = await service.add(name, kind);
       if (pairing.status !== "paired") return { status: pairing.status };
       return {
         status: "paired",

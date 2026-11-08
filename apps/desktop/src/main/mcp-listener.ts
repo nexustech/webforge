@@ -35,6 +35,19 @@ export const SESSION_IDLE_MS = 10 * 60_000;
 /** How often idle connections are looked for, besides on each request and status. */
 const SWEEP_EVERY_MS = 60_000;
 
+/**
+ * The most keyless challenges in flight at once (S28, #794); beyond it, 503. Wrong keys are
+ * limited where they're checked (`ai-apps.ts`), so a flood of them never refuses a right key.
+ */
+export const MAX_CHALLENGES_IN_FLIGHT = 16;
+
+/** The most connections open at once: a few apps, each with a few, and room to spare. */
+const MAX_CONNECTIONS = 64;
+
+/** How long a request's headers, and the whole request, may take to arrive (S28). */
+const HEADERS_TIMEOUT_MS = 10_000;
+const REQUEST_TIMEOUT_MS = 30_000;
+
 /** A key as `Authorization: Bearer` carries it: 256 bits or more, base64url (ADR 0021). */
 const BEARER = /^Bearer ([A-Za-z0-9_-]{43,128})$/;
 
@@ -124,6 +137,10 @@ function bodyOf(
  * Webforge answering before it sends its key. An unknown app's is answered under a decoy, so the
  * answer doesn't tell which apps there are.
  *
+ * A caller without a key gets little of the listener's time (S28, #794): at most
+ * {@link MAX_CHALLENGES_IN_FLIGHT} challenges in flight (503 beyond), at most
+ * {@link MAX_CONNECTIONS} connections, and a request's headers and body must arrive in time.
+ *
  * Each app keeps at most {@link MAX_SESSIONS_PER_APP} connections, and one unused for
  * {@link SESSION_IDLE_MS} ends: a client that crashed never ends its own. Nothing of a request is
  * logged.
@@ -132,6 +149,8 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
   const sessions = new Map<string, Session>();
   const now = options.now ?? Date.now;
   let host = "";
+  /** Challenges in flight. */
+  let challenges = 0;
   /** The proof an unknown app's challenge is answered under: no use to anyone. */
   const decoy = randomBytes(32).toString("base64url");
 
@@ -175,7 +194,15 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
     sweep();
     if (req.headers.origin !== undefined || req.headers.host !== host) return refuse(res, 403);
     const path = new URL(req.url ?? "/", "http://placeholder").pathname;
-    if (path === PROOF_PATH) return answerChallenge(req, res);
+    if (path === PROOF_PATH) {
+      if (challenges >= MAX_CHALLENGES_IN_FLIGHT) return refuse(res, 503);
+      challenges += 1;
+      try {
+        return await answerChallenge(req, res);
+      } finally {
+        challenges -= 1;
+      }
+    }
     if (path !== MCP_PATH) return refuse(res, 404);
     const key = BEARER.exec(req.headers.authorization ?? "")?.[1];
     const app = key === undefined ? undefined : await options.authenticate(key);
@@ -213,12 +240,16 @@ export async function startMcpListener(options: McpListenerOptions): Promise<Mcp
     await transport.handleRequest(req, res, body);
   };
 
-  const http = createServer((req, res) => {
-    handle(req, res).catch(() => {
-      if (!res.headersSent) refuse(res, 500);
-      else res.end();
-    });
-  });
+  const http = createServer(
+    { headersTimeout: HEADERS_TIMEOUT_MS, requestTimeout: REQUEST_TIMEOUT_MS },
+    (req, res) => {
+      handle(req, res).catch(() => {
+        if (!res.headersSent) refuse(res, 500);
+        else res.end();
+      });
+    },
+  );
+  http.maxConnections = MAX_CONNECTIONS;
   await new Promise<void>((resolve, reject) => {
     http.once("error", reject);
     http.listen(options.port, MCP_HOST, () => {

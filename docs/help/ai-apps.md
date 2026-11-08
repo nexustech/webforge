@@ -3,7 +3,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-07
+updated: 2026-11-08
 ---
 
 # AI apps
@@ -51,7 +51,7 @@ The key is cleared from the clipboard a minute after you copy it, and Windows do
 
 To stop an app reaching your sites, click **Remove *name*** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
 
-If AI apps says **{appName}'s address for AI apps has changed**, another program took {appName}'s place while it was closed. Remove your AI apps and add them again. For Claude Desktop, install its new extension too.
+If {appName} says **{appName}'s address for AI apps has changed**, another program was using {appName}'s address while it was closed. Apps that connect directly, such as Cursor or Claude Code, might have sent it their keys, so {appName} removes them: add them again with the new address. Claude Desktop checks it's {appName} before it sends its key, so it stays, but its extension has the old address: remove it and add it again, then install its new extension. {appName} says this as it starts, until you open **AI apps**.
 
 ## Starting a new site from a description
 

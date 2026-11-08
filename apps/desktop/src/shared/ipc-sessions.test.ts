@@ -69,6 +69,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "mcp:add": "AI apps, which are the app's, whichever site is open",
   "mcp:install-claude": "an AI app's Claude Desktop extension, the app's, whichever site is open",
   "mcp:remove": "AI apps, which are the app's, whichever site is open",
+  "mcp:seen-moved": "AI apps, which are the app's, whichever site is open",
   "prefs:get": "the person's preferences",
   "prefs:set": "the person's preferences",
   "project:create": "opens another site: a hand-off of its own",
