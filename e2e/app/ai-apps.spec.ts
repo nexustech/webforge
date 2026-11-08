@@ -5,11 +5,12 @@ import { dirname, join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { chromium, type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { heroPhoto } from "@webforge/test-utils";
 import { unzipSync } from "fflate";
 import { launchDesktopApp, waitForCanvas } from "./launch.js";
 import { chooseFromMenu } from "./menus.js";
-import { stubFileDialogs } from "./sites.js";
+import { openPreview, stubFileDialogs } from "./sites.js";
 
 // AI apps (F-AI-1, 4.9): off until the person lets them connect; an app paired in AI apps…
 // reaches the open site through the MCP server on this computer, with the key it was given, and
@@ -149,6 +150,8 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
   await expect(dialog().getByRole("textbox", { name: "Name" })).toHaveValue("Claude Desktop");
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Claude Desktop is added" });
+  // Shown once the key is in the keychain, which can take a moment.
+  await expect(shown.locator("dd").first()).toBeVisible();
   const [key] = await shown.locator("dd").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   await shown.getByRole("button", { name: "Install in Claude Desktop" }).click();
@@ -228,6 +231,8 @@ async function pairAnotherApp(name: string): Promise<{ address: string; key: str
   await dialog().getByRole("textbox", { name: "Name" }).fill(name);
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: `${name} is added` });
+  // Shown once the key is in the keychain, which can take a moment (macOS's especially).
+  await expect(shown.getByText(/You won't see it again/)).toBeVisible();
   const [address, key] = await shown.locator("dd").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   await shown.getByRole("button", { name: "Done" }).click();
@@ -301,6 +306,305 @@ test("an AI app's brief opens the quick start filled in; Create makes the site, 
     expect(answer(await declined)).toMatchObject({ status: "declined" });
     await expect(quickStart).toHaveCount(0);
   } finally {
+    await client.close();
+  }
+});
+
+test("an AI app asks for pictures with its reason; the person chooses them in Add files (4.12b)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  const { address, key } = await pairAnotherApp("Test client");
+  const client = await connect(address, key);
+  const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-media-"));
+  folders.push(dir);
+  try {
+    const photo = join(dir, "Workshop.jpg");
+    writeFileSync(photo, heroPhoto());
+    await stubFileDialogs(app, photo);
+    const asked = page.getByRole("alertdialog", {
+      name: "Test client asks you to add pictures or files",
+    });
+
+    // Add Files…: the file the person chooses, by its id, and Media lists it.
+    const request = client.callTool({
+      name: "requestMedia",
+      arguments: { reason: "Photos of your workshop" },
+    });
+    await expect(asked.getByText('Its reason: "Photos of your workshop"')).toBeVisible();
+    await asked.getByRole("button", { name: "Add Files…" }).click();
+    const added = answer(await request) as unknown as {
+      status: string;
+      data: { added: { id: string; fileName: string; kind: string }[] };
+    };
+    expect(added).toMatchObject({
+      status: "done",
+      data: { added: [{ fileName: "Workshop.jpg", kind: "image" }] },
+    });
+    const media = answer(await client.callTool({ name: "media", arguments: {} })) as unknown as {
+      data: { id: string; fileName: string; width: number }[];
+    };
+    expect(media.data).toEqual([
+      expect.objectContaining({ id: added.data.added[0]?.id, fileName: "Workshop.jpg" }),
+    ]);
+    // The person's own step: it undoes as any other.
+    await expect(step("Added image 'Workshop.jpg'")).toBeVisible();
+
+    // Not now: nothing more is added, and the app is told; as after any decline, it waits.
+    const notNow = client.callTool({
+      name: "requestMedia",
+      arguments: { reason: "Photos of your team" },
+    });
+    await expect(asked.getByText('Its reason: "Photos of your team"')).toBeVisible();
+    await asked.getByRole("button", { name: "Not Now" }).click();
+    expect(answer(await notNow)).toMatchObject({ status: "declined" });
+    expect(
+      answer(await client.callTool({ name: "requestMedia", arguments: { reason: "Photos" } })),
+    ).toMatchObject({ status: "busy" });
+    expect(answer(await client.callTool({ name: "media", arguments: {} }))).toMatchObject({
+      data: [expect.objectContaining({ fileName: "Workshop.jpg" })],
+    });
+  } finally {
+    await client.close();
+  }
+});
+
+/** What the garage's owner asks for in product/16's prompt, as its brief. */
+const RAPIDFIX = {
+  businessType: "trades",
+  businessKind: "AutoRepair",
+  name: "Rapidfix Vehicle Repair",
+  whatYouDo: "MOTs, car repair and a bodyshop",
+  colours: { colour: "#c62828" },
+  phone: "0113 496 0123",
+  email: "hello@rapidfix.example",
+  address: "12 Station Road, Leeds LS11 5AB",
+};
+
+/** The colour `css` is drawn in, as red, green and blue from 0 to 255. */
+const drawn = (site: Page, css: string) =>
+  site.evaluate((colour) => {
+    const context = document.createElement("canvas").getContext("2d");
+    if (context === null) throw new Error("no canvas");
+    const probe = document.createElement("div");
+    probe.style.color = colour;
+    document.body.append(probe);
+    context.fillStyle = getComputedStyle(probe).color;
+    probe.remove();
+    context.fillRect(0, 0, 1, 1);
+    const [r = 0, g = 0, b = 0] = context.getImageData(0, 0, 1, 1).data;
+    return { r, g, b };
+  }, css);
+
+test("Rapidfix: an AI app builds a garage's site from a brief and one plan, with its refusals (4.12b, AIB-9)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  test.setTimeout(300_000);
+  const { address, key } = await pairAnotherApp("Test client");
+  const client = await connect(address, key);
+  const dir = mkdtempSync(join(tmpdir(), "webforge-e2e-rapidfix-"));
+  folders.push(dir);
+  // The preview opens in the test's browser, not the person's.
+  await app.evaluate(({ shell }) => {
+    const opened: string[] = [];
+    Object.assign(globalThis, { opened });
+    Object.assign(shell, {
+      openExternal: async (url: string) => {
+        opened.push(url);
+      },
+    });
+  });
+  const browser = await chromium.launch();
+  try {
+    await stubFileDialogs(app, join(dir, "Rapidfix.wforge"));
+
+    // The prompt the person starts from, with their description.
+    const prompt = await client.getPrompt({
+      name: "build-site-from-description",
+      arguments: {
+        description: "A site for my garage, Rapidfix Vehicle Repair, in red and white.",
+      },
+    });
+    expect(JSON.stringify(prompt.messages)).toContain("createSiteFromBrief");
+
+    // 1. The brief: the person checks it and clicks Create site.
+    const created = client.callTool(
+      { name: "createSiteFromBrief", arguments: RAPIDFIX },
+      undefined,
+      { timeout: 120_000 },
+    );
+    const quickStart = page.getByRole("dialog", { name: "Start a site" });
+    await quickStart.getByRole("button", { name: "Create site" }).click();
+    expect(answer(await created)).toMatchObject({ status: "done" });
+    await waitForCanvas(page);
+    await page
+      .getByRole("region", { name: "Left panels" })
+      .getByRole("tab", { name: "Undo History" })
+      .click();
+
+    // 2. What it has: the pages, by title.
+    const outline = answer(
+      await client.callTool({ name: "outline", arguments: {} }),
+    ) as unknown as {
+      data: { pages: { id: string; title: string }[] };
+    };
+    const pageId = (title: string) => {
+      const found = outline.data.pages.find((each) => each.title === title);
+      if (found === undefined) throw new Error(`no ${title} page`);
+      return found.id;
+    };
+    const services = { kind: "page", pageId: pageId("Services") };
+    const contact = { kind: "page", pageId: pageId("Contact") };
+
+    // A plan with one command that can't be done changes nothing, and asks nothing.
+    const bad = answer(
+      await client.callTool({
+        name: "plan",
+        arguments: {
+          title: "Build it",
+          commands: [
+            { name: "addPage", input: { title: "MOTs" } },
+            { name: "addNode", input: { location: contact, type: "Carousel3000" } },
+          ],
+        },
+      }),
+    ) as unknown as { status: string; message: string };
+    expect(bad.status).toBe("invalid");
+    expect(bad.message).toMatch(/^Command 2 \(addNode\): .* Nothing changed\.$/);
+
+    // 3. The build, as one plan: three services, and the map.
+    const title = (nodeId: string, text: string) => ({
+      name: "editText",
+      input: { location: services, nodeId, field: "title", text },
+    });
+    const build = client.callTool(
+      {
+        name: "plan",
+        arguments: {
+          title: "Build the Rapidfix site",
+          commands: [
+            title("service-0", "MOTs"),
+            title("service-1", "Car repair"),
+            title("service-2", "Bodyshop"),
+            ...["service-3", "service-4", "service-5"].map((nodeId) => ({
+              name: "removeNode",
+              input: { location: services, nodeId },
+            })),
+            {
+              name: "addNode",
+              input: {
+                location: contact,
+                type: "Map",
+                values: { title: "Find the garage", address: RAPIDFIX.address },
+                index: 1,
+              },
+            },
+          ],
+        },
+      },
+      undefined,
+      { timeout: 120_000 },
+    );
+    const allow = page.getByRole("alertdialog", {
+      name: "Allow Test client to make these changes: Build the Rapidfix site?",
+    });
+    await expect(allow).toContainText(
+      "Sections and elements: 1 added, 3 changed, 0 moved, 3 removed.",
+    );
+    await allow.getByRole("button", { name: "Allow" }).click();
+    expect(answer(await build)).toEqual({
+      status: "done",
+      label: "AI (Test client): Build the Rapidfix site",
+    });
+    await expect(step("AI (Test client): Build the Rapidfix site")).toHaveCount(1);
+
+    // 4. Site Check: the template's pictures are still there, for the app to ask about.
+    const check = answer(
+      await client.callTool({ name: "runSiteCheck", arguments: {} }),
+    ) as unknown as { data: { found: { rule: string }[] } };
+    expect(check.data.found.map(({ rule }) => rule)).toContain("templateImages");
+
+    // 5. The preview: the site as visitors will see it.
+    expect(answer(await client.callTool({ name: "openPreview", arguments: {} }))).toMatchObject({
+      data: { opened: true },
+    });
+    const opened = () =>
+      app.evaluate(() => (globalThis as unknown as { opened: string[] }).opened.slice());
+    await expect.poll(opened).toHaveLength(1);
+    const [home = ""] = await opened();
+    const site = await browser.newPage();
+    await openPreview(site, home);
+    // The name everywhere: the Header, and the page's title.
+    await expect(site.getByRole("banner")).toContainText(RAPIDFIX.name);
+    await expect(site).toHaveTitle(new RegExp(RAPIDFIX.name));
+    // Red buttons, from the brief's brand colour.
+    const brand = await drawn(site, "var(--color-primary)");
+    expect(brand.r).toBeGreaterThan(150);
+    expect(brand.g).toBeLessThan(90);
+    expect(brand.b).toBeLessThan(90);
+
+    await openPreview(site, home.replace(/index\.html$/, "services.html"));
+    // The page's first section, the services: the prices below it have headings of their own.
+    const offered = site.getByRole("main").locator("section").first();
+    await expect(offered.getByRole("heading", { level: 3 })).toHaveText([
+      "MOTs",
+      "Car repair",
+      "Bodyshop",
+    ]);
+
+    await openPreview(site, home.replace(/index\.html$/, "contact.html"));
+    const main = site.getByRole("main");
+    await expect(main).toContainText("Find the garage");
+    await expect(main).toContainText(RAPIDFIX.address);
+    await expect(main).toContainText(RAPIDFIX.phone);
+    await expect(main).toContainText(RAPIDFIX.email);
+
+    // One Undo takes the whole build back.
+    await page.getByRole("banner").getByRole("button", { name: "Undo", exact: true }).click();
+    const tree = answer(
+      await client.callTool({ name: "pageTree", arguments: { location: services } }),
+    ) as unknown as { data: { slots?: { items?: unknown[] } }[] };
+    expect(tree.data[0]?.slots?.items).toHaveLength(6);
+    const contactTree = answer(
+      await client.callTool({ name: "pageTree", arguments: { location: contact } }),
+    ) as unknown as { data: { type: string }[] };
+    expect(contactTree.data.map(({ type }) => type)).not.toContain("Map");
+
+    // Content mode: a plan holding a new section is refused whole.
+    await page.getByRole("radio", { name: "Content" }).click();
+    expect(
+      answer(
+        await client.callTool({
+          name: "plan",
+          arguments: {
+            title: "More",
+            commands: [
+              title("service-0", "MOT testing"),
+              { name: "addNode", input: { location: contact, type: "Map" } },
+            ],
+          },
+        }),
+      ),
+    ).toMatchObject({ status: "refused" });
+    await expect(step("AI (Test client): More")).toHaveCount(0);
+    await page.getByRole("radio", { name: "Design" }).click();
+
+    // A brief the person closes makes no site: the garage's stays open.
+    const declined = client.callTool(
+      { name: "createSiteFromBrief", arguments: { ...RAPIDFIX, name: "Rapidfix Two" } },
+      undefined,
+      { timeout: 120_000 },
+    );
+    await quickStart.getByRole("button", { name: "Cancel" }).click();
+    expect(answer(await declined)).toMatchObject({ status: "declined" });
+    expect(answer(await client.callTool({ name: "outline", arguments: {} }))).toMatchObject({
+      data: { name: RAPIDFIX.name },
+    });
+  } finally {
+    await browser.close();
     await client.close();
   }
 });

@@ -221,15 +221,45 @@ The follow-up above, done.
 
 Everything is within §10 except the drop hitch, mitigation 5 above, which 5.1's part 3 takes up.
 
+## Addendum: a drag's budget, set from CI's runners (5.1, part 3, 2026-11-07)
+
+§10's "no dropped frames" while dragging is the one budget the app still misses, and only on a page this large: the 225-element page is far above a typical small-business page. As this ADR left it to 5.1, the budget is set from what CI's reference runners measure (coordinator's decision, 7 Nov 2026).
+- **No long task over 350 ms** during a drag.
+- **The move recorded within 1 s** of the drop: from the mouse's release to the Undo History's "Moved Heading".
+
+**What each drag costs.** On the 2018 i7 laptop above, a drag has 6–7 long tasks of 100–330 ms. They fall at its start, on its moves and at the drop. A trace and a CPU profile, on an unminified perf build, put almost all of it in Puck's drag library:
+- **At the drag's start and at the drop,** the drag state's change re-renders every `DraggableComponent`. React's work is about 480 ms over a drag.
+- **At the start,** `Scroller.getScrollableElements` walks the page for its scrolling containers, about 135 ms.
+- **On each move,** hit-testing (`elementFromPoint`) and `getBoundingClientRect` force a style and layout pass over the whole page. Style recalculation is 620 ms over 220 passes, up to 63 ms each.
+- **The editor's own part** is about 18 ms (`syncDraft`, above).
+
+**On CI's runners** (Run workflow 42408964869 and 42411225219):
+
+| | Windows | macOS | Budget |
+|---|---|---|---|
+| Long tasks per drag | 1–6 | 1–3 | – |
+| The longest | 102–159 ms | 94–170 ms | < 350 ms |
+| The move recorded after the drop | 400–483 ms | 394–564 ms | < 1 s |
+
+**Typing on the large page** keeps §10's frame for the editor's own handlers per keystroke (CI: at most 9 ms). The target after 1.27, no long task at all, is relaxed to none over 120 ms. On macOS' runner a run sometimes has one or two of 54–102 ms among 37 keystrokes; Windows' runner and this laptop had none.
+
+**A theme look's redraw** (A25, #727) gets #727's targets as its budget: p50 within U7's 100 ms (CI: 31–33 ms), and no long task over 200 ms (CI: none).
+
+**The 50-step jump** keeps U7's 100 ms: CI measured 46–88 ms on Windows, and 50–134 ms on macOS.
+
+**Noise.** `pnpm e2e:perf` now retries once on CI, so a miss must repeat to fail, and keeps a failure's trace and screenshot. In these runs a commit (82 ms once) and the macOS jump each missed once and passed on their retry.
+
+**Taking the hitch further** is #786: memoise the draggables on drag-state changes, and cache the scrolling containers per drag, as a fourth item of the Puck patch. Then measure against the figures here. Drawing only the visible sections (`_experimentalVirtualization`, "What next" above) was set aside: it's a product call.
+
 ## Addendum: dragging without drawing every element again (#786, 2026-11-08)
 
-5.1 left the drag over budget: 6–7 long tasks per drag on the 225-element page, the longest about 250–300 ms on the i7, at the drag's start, on its moves and at the drop (mitigation 5).
+The follow-up part 3 names above. On the i7 a drag had 6–7 long tasks, the longest about 250–300 ms.
 
 - **What drew the page again.** Counting `DraggableComponent`'s renders, and which of its inputs changed for each, found about 380 renders per drag. Almost all came from two values that change at the start and at the drop:
   - `inDroppableZone`: each drop zone works out whether it accepts the dragged kind and passed that to every element in it as a prop. On this page many zones don't take a Heading, so the prop flipped for about 127 elements, twice per drag. That also broke `DropZoneChildMemo`, so each element's render function was made anew.
   - `containsActiveZone`: an element holding zones kept which were active in React state, set as each zone's answer changed.
   Only the drag library's collision check reads either. Patch items 8 and 9 above hand them over as getters it calls as it checks, so the answers stay current and nothing draws again for them.
-- **Not done: caching the scrolling containers per drag** (#786's second idea). `Scroller.getScrollableElements` doesn't appear in a profile of the drag with Puck 0.24 and `@dnd-kit/dom` 0.4.
+- **Not done: caching the scrolling containers per drag** (#786's second idea). `Scroller.getScrollableElements` doesn't appear in a profile of the drag with Puck 0.24 and `@dnd-kit/dom` 0.4, where part 3's profile found about 135 ms: `isOverflowVisible` takes 2–7 ms over a whole drag now.
 - **Out of reach:** each pointer move hit-tests the page (`elementFromPoint`, `getBoundingClientRect`), which forces a style and layout pass over it: about 300–500 ms over a drag. It grows with the page's elements and its CSS.
 - **Contract tests:** `patch-contract.test.tsx` starts a drag through the drag library's manager in happy-dom (`@dnd-kit/react`, a dev dependency of the engine at Puck's pin) and reads each element's collision data at once, before React draws again. Both items fail without the patch.
 
@@ -245,7 +275,7 @@ Everything is within §10 except the drop hitch, mitigation 5 above, which 5.1's
 | The whole drag, until "Moved Heading" | 2.5–3.3 s | 2.1–2.9 s |
 
 - **The drag's start and drop are about 30% shorter**, which was the longest task. The number of long tasks doesn't fall: the rest are the pointer moves' hit-testing.
-- **The budget:** with this, the drag's longest task is held to 250 ms rather than 350 ms. The number of long tasks per drag stays reported, not asserted: §10's "no dropped frames" needs the hit-testing cut, which Puck's `_experimentalVirtualization` would do by leaving off-screen sections out of the page ("What next" above).
+- **The budget:** the drag's longest task is now held under 250 ms (`DRAG_LONGEST_TASK_MS`), down from part 3's 350 ms, as agreed with stream B. CI's runners measured 94–170 ms before this change, so it leaves room. The number of long tasks per drag stays reported, not asserted: §10's "no dropped frames" needs the hit-testing cut, which Puck's `_experimentalVirtualization` would do by leaving off-screen sections out of the page ("What next" above).
 
 ## Upstream reports (drafts)
 

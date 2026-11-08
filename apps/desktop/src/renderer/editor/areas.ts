@@ -15,6 +15,7 @@ import type { CodeTrust } from "./code-trust.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
+import type { FirstTips } from "./first-tips.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
 import type { PublishRequests } from "./publish-requests.js";
@@ -100,6 +101,8 @@ export type WindowContext = AreaContext & {
   readonly publishedYear: StoreApi<number | undefined>;
   /** Version History's requests to republish a version, and Publish's word that one went live. */
   readonly publishing: PublishRequests;
+  /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). */
+  readonly tips: FirstTips;
   /**
    * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
    * with its look; none without a CSS compiler.

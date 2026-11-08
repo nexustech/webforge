@@ -35,6 +35,7 @@ import {
   templateImageSchema,
   templateSchema,
 } from "../src/template.js";
+import { TEMPLATE_IMAGE_HASHES } from "../src/template-images.js";
 
 const templates = readTemplates();
 
@@ -56,6 +57,14 @@ function dimensions(bytes: Uint8Array): { width: number; height: number } {
   }
   throw new Error("No frame header");
 }
+
+describe("the templates' pictures, by hash (4.12b, AIB-7)", () => {
+  it("are every shipped template's, as its images.json lists them", () => {
+    const hashes = templates.flatMap(({ images }) => images.map((image) => image.hash));
+    expect(new Set(hashes)).toEqual(TEMPLATE_IMAGE_HASHES);
+    expect(TEMPLATE_IMAGE_HASHES.size).toBeGreaterThan(0);
+  });
+});
 
 describe("the shipped templates (2.14a)", () => {
   it("are every listed template, each passing its schemas", () => {

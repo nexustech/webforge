@@ -61,6 +61,23 @@ Nothing is made until you click **Create site**. The site you have open is saved
 
 An app can't start a new site while you're in [Content mode](the-editor.md#design-and-content-mode), or while you have **Start a site** or **New Site** open yourself.
 
+### Build a site from a description
+
+{appName} offers apps a prompt, **Build a site from a description**, which Claude Desktop lists with its other prompts. Choose it, describe your business and the site you want, and the app works in this order:
+1. it starts the site with **Start a site**, for you to check and create;
+2. it makes the pages, sections, text and colours as one set of changes, which you allow once (see [Many changes at once](#many-changes-at-once));
+3. it runs Site Check, and asks you for your own pictures to replace the template's;
+4. it opens the [Preview](preview.md) in your browser;
+5. it tells you what's still yours to do: your photos, where the contact form sends messages, and publishing.
+
+## Pictures
+
+An app never adds a picture itself, and {appName} downloads nothing. To use your own photos, the app asks you: {appName} shows ***app* asks you to add pictures or files**, with the app's reason, such as "Photos of your workshop and team".
+- Click **Add Files…** to choose them on your computer, as **Add images or files…** in [Media](media.md#adding-files) does. They're added to Media as one step in Undo History, and the app is told which you added.
+- Click **Not Now**, or choose no files, and nothing is added.
+
+A site made from a template starts with the template's pictures. Site Check's tip **Pictures from the template** lists those your pages still show, so you and the app know which to replace.
+
 ## What an app can do
 
 An app works on the site you have open in {appName}, and only that one. It can:
@@ -69,9 +86,11 @@ An app works on the site you have open in {appName}, and only that one. It can:
 - add, rename, move and delete pages, and change a page's title, description, **Hide from navigation** and **Hide this page from search engines**, as [Page Settings](pages.md) does;
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
 - change the theme;
+- see what's in [Media](media.md), and place your pictures in elements;
+- ask you to add pictures or files (see [Pictures](#pictures));
 - run [Site Check](site-check.md) and open the [Preview](preview.md).
 
-It can't change publishing, forms, analytics, Custom Code, search engines' verification codes, your site's icon or its pictures: those stay yours.
+It can't change publishing, forms, analytics, Custom Code, search engines' verification codes or your site's icon: those stay yours. It never adds a picture or file itself.
 
 Some changes ask you first, with **Allow**:
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
@@ -79,7 +98,7 @@ Some changes ask you first, with **Allow**:
 
 Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or *Page not found*.
 
-In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings.
+In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
 Before an app's first change each time it connects, {appName} saves a version of your site, *Before app's changes*, in [Version History](version-history.md).
 

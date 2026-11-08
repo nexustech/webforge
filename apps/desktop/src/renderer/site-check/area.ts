@@ -23,6 +23,7 @@ export const siteCheckArea: Area<WindowContext> = {
     windowDialogs,
     codeTrust,
     publishedYear,
+    tips,
   }) => {
     // Download and bundle's question (3.9), drawn once in the window.
     const question = createBundleConfirm();
@@ -47,6 +48,8 @@ export const siteCheckArea: Area<WindowContext> = {
       saveIgnored: siteCheckIgnored.save,
       allowListConfirmed: codeTrust.allowListConfirmed,
       publishedYear,
+      // The first *Must fix* the person sees (OB-4).
+      onMustFixSeen: () => tips.reached("mustFix"),
       bundle: {
         confirm: question.confirm,
         download: (url) => api.site.bundleFile(siteSession(), url),
