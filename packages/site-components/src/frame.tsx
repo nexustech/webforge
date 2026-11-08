@@ -260,8 +260,14 @@ export function defineSection<const F extends Fields, const Variant extends stri
       throw new Error(`'${spec.label}' declares its own "${own}": defineSection adds it`);
     }
   }
+  // Its background image is drawn behind its content, as any picture its own layouts draw (#670).
+  const pictureBehind = [
+    ...(rest.pictureBehind ?? []),
+    ...(background === false ? [] : [{ field: "backgroundImage" }]),
+  ];
   return defineFramedSection<F & FrameFields, Variant>({
     ...rest,
+    ...(pictureBehind.length === 0 ? {} : { pictureBehind }),
     place: "section",
     // Its corners, left to the theme, are a box's (product/11, 3.12 note 7).
     themeCorners: "box",

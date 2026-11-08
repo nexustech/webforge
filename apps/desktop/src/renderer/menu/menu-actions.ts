@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   type LinkValue,
+  MENU_LABEL_MAX,
   type MenuDoc,
   type MenuItem,
   type MenuItemId,
@@ -21,11 +22,8 @@ import { applyAnchor, type LinkFieldChange } from "../editor/link-change.js";
 /** The parts of an editor session the menu editor uses. */
 export type MenuSession = Pick<EditorSession, "history" | "edit">;
 
-/** The longest label the model accepts. */
-const MAX_LABEL = 100;
-
-/** `label` as the model keeps it: trimmed and at most 100 characters. */
-const cleanLabel = (label: string) => label.trim().slice(0, MAX_LABEL).trim();
+/** `label` as the model keeps it: trimmed and at most {@link MENU_LABEL_MAX} characters. */
+const cleanLabel = (label: string) => label.trim().slice(0, MENU_LABEL_MAX).trim();
 
 /** What an item shows in the menu: its label, else its page's navigation label or title. */
 export function itemLabel(site: SiteDoc, item: MenuItem): string {

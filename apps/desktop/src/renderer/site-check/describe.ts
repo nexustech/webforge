@@ -2,12 +2,13 @@ import { t } from "@webforge/i18n";
 import {
   type ColorRole,
   type ElementPlace,
+  isPageIn,
   type MenuItem,
   type NodeDoc,
-  type PageId,
+  pageEntryOf,
   pagePath,
-  type SharedSectionId,
   type SiteDoc,
+  sharedSectionOf,
 } from "@webforge/model";
 import type { Finding } from "@webforge/site-check";
 import type { ComponentLibrary } from "@webforge/site-components";
@@ -21,11 +22,11 @@ const layoutRegion = (on: ElementPlace): "header" | "footer" | undefined =>
 /** The element `nodeId` kept `on`, at any depth, if it's there. */
 function findNode(site: SiteDoc, on: ElementPlace, nodeId: string): NodeDoc | undefined {
   const region = layoutRegion(on);
-  const shared = site.sharedSections[on as SharedSectionId]?.section;
+  const shared = sharedSectionOf(site.sharedSections, on)?.section;
   const roots: readonly NodeDoc[] =
     region !== undefined
       ? site.layout[region]
-      : (site.pages[on as PageId]?.doc.content ?? (shared === undefined ? [] : [shared]));
+      : (pageEntryOf(site.pages, on)?.doc.content ?? (shared === undefined ? [] : [shared]));
   const search = (nodes: readonly unknown[]): NodeDoc | undefined => {
     for (const node of nodes) {
       if (typeof node !== "object" || node === null) continue;
@@ -44,7 +45,7 @@ function findNode(site: SiteDoc, on: ElementPlace, nodeId: string): NodeDoc | un
 
 /** A page as Site Check names it: its title, or its file while it has none. */
 function pageName(site: SiteDoc, pageId: string): string {
-  const page = site.pages[pageId as keyof SiteDoc["pages"]];
+  const page = pageEntryOf(site.pages, pageId);
   if (page === undefined) return pageId;
   return page.title.trim() === ""
     ? t("siteCheck.place.untitled", { file: `${pagePath(page, site.homePageId)}.html` })
@@ -85,10 +86,10 @@ export function describePlace(
         node === undefined ? place.nodeId : elementName(node, library, site.sharedSections);
       const region = layoutRegion(place.on);
       if (region !== undefined) return t(`siteCheck.place.${region}`, { element });
-      if (Object.hasOwn(site.pages, place.on)) {
+      if (isPageIn(site.pages, place.on)) {
         return onPage(element, pageName(site, place.on));
       }
-      const shared = site.sharedSections[place.on as keyof SiteDoc["sharedSections"]];
+      const shared = sharedSectionOf(site.sharedSections, place.on);
       return t("siteCheck.place.shared", { element, name: shared?.name ?? place.on });
     }
     case "menu": {
@@ -136,7 +137,10 @@ export function describeDetail(finding: Finding): string | undefined {
   const { values } = finding;
   if (values === undefined) return undefined;
   if (values.ratio !== undefined && values.required !== undefined) {
-    return t("siteCheck.detail.contrast", { ratio: values.ratio, required: values.required });
+    return t(
+      values.drawn === "graphic" ? "siteCheck.detail.contrastGraphic" : "siteCheck.detail.contrast",
+      { ratio: values.ratio, required: values.required },
+    );
   }
   if (values.width !== undefined && values.height !== undefined) {
     return t("siteCheck.detail.size", { width: values.width, height: values.height });

@@ -192,6 +192,19 @@ export const sharedSectionsDocSchema: z.ZodType<Record<SharedSectionId, SharedSe
 /** The site's shared sections, by id. */
 export type SharedSectionsDoc = Readonly<Record<SharedSectionId, SharedSection>>;
 
+/**
+ * Whether `id` is one of `sections`, as a shared section's id: never a property every object has,
+ * such as `constructor`, for an id read from a place or an AI app's command (R10).
+ */
+export const isSharedSectionIn = (sections: SharedSectionsDoc, id: string): id is SharedSectionId =>
+  Object.hasOwn(sections, id);
+
+/** Shared section `id` of `sections`, if it has one (see {@link isSharedSectionIn}). */
+export const sharedSectionOf = (
+  sections: SharedSectionsDoc,
+  id: string,
+): SharedSection | undefined => (isSharedSectionIn(sections, id) ? sections[id] : undefined);
+
 /** The id an element of a shared section has in a copy: unique on the page, whatever copy it is in. */
 export function copiedNodeId(copyId: string, nodeId: string): string {
   return `${copyId}~${nodeId}`;
