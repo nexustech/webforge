@@ -4,7 +4,6 @@ import {
   type Breakpoint,
   bindingOf,
   formatColorRef,
-  imageValueSchema,
   isResponsiveValue,
   type LinkValue,
   linkValueSchema,
