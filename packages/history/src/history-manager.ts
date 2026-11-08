@@ -178,7 +178,7 @@ export class HistoryError extends WebforgeError<HistoryErrorCode> {
   override readonly name = "HistoryError";
 
   constructor(code: HistoryErrorCode, message: string) {
-    super(code, "errors.unexpected", message);
+    super(code, message);
   }
 }
 

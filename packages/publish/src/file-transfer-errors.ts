@@ -9,7 +9,6 @@ const NETWORK_CODES = new Set([
   "ENETUNREACH",
   "ENOTFOUND",
   "EAI_AGAIN",
-  "ETIMEDOUT",
   "EPIPE",
 ]);
 
@@ -30,6 +29,7 @@ const MESSAGES: Record<PublishErrorCode, string> = {
   "rate-limited": "The host asked to slow down",
   rejected: "The host refused a file or a request",
   network: "The host could not be reached",
+  timeout: "The host did not answer in time",
   "untrusted-host": "The host is not the one trusted for this destination",
   "no-encryption": "The host doesn't offer encrypted FTP",
   "bad-key": "The private key could not be read",
@@ -60,6 +60,7 @@ function systemCode(error: unknown): PublishErrorCode {
   const code =
     typeof error === "object" && error !== null && "code" in error ? String(error.code) : "";
   if (NETWORK_CODES.has(code)) return "network";
+  if (code === "ETIMEDOUT") return "timeout";
   if (CERTIFICATE_CODES.has(code)) return "untrusted-host";
   return "failed";
 }

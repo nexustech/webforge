@@ -126,7 +126,7 @@ describe("netlifyPublisher.publish", () => {
 
     await expect(
       collect(netlifyPublisher(options).publish(build(site), { siteId }, signal())),
-    ).rejects.toMatchObject({ code: "failed" });
+    ).rejects.toMatchObject({ code: "timeout" });
   });
 
   it("stops when cancelled, before index.html goes up", async () => {

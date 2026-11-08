@@ -5,21 +5,17 @@ class TestError extends WebforgeError<"broken" | "gone"> {
   override readonly name = "TestError";
 
   constructor(code: "broken" | "gone", options?: ErrorOptions) {
-    super(code, "errors.unexpected", `C:\\Users\\someone\\Site.wforge is ${code}`, options);
+    super(code, `C:\\Users\\someone\\Site.wforge is ${code}`, options);
   }
 }
 
 describe("WebforgeError (standards §4)", () => {
-  it("carries a code, the message the person sees and a cause", () => {
+  it("carries a code and a cause", () => {
     const cause = new Error("disk");
     const error = new TestError("broken", { cause });
 
     expect(error).toBeInstanceOf(Error);
-    expect(error).toMatchObject({
-      name: "TestError",
-      code: "broken",
-      messageKey: "errors.unexpected",
-    });
+    expect(error).toMatchObject({ name: "TestError", code: "broken" });
     expect(error.cause).toBe(cause);
   });
 });
