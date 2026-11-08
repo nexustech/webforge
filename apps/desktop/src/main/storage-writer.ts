@@ -105,11 +105,22 @@ function transferable(source: ImportSource): ArrayBuffer[] {
 type Outcome = PrepareOutcome | StoreOutcome | PutBlobsOutcome | CleanUpOutcome;
 
 /**
+ * How the writer's thread went away when nothing asked it to: an error nothing in it caught (out of
+ * memory too), or an exit with a code other than 0. A crash report says so (R3).
+ */
+export type WriterCrash = { readonly error: Error } | { readonly exitCode: number };
+
+/**
  * The storage writer, in the thread `start` makes, started when the first import comes (or
  * {@link StorageWriter.warm}) and again after a stop or a crash. Answers are parsed; a thread that
- * ends fails what it was doing, and an answer that doesn't parse fails its step.
+ * ends fails what it was doing, and an answer that doesn't parse fails its step. A thread that
+ * crashes is told to `onCrash`, once, for its report (R3); one that {@link StorageWriter.stop}
+ * ended isn't.
  */
-export function createStorageWriter(start: () => WriterThread): StorageWriter {
+export function createStorageWriter(
+  start: () => WriterThread,
+  onCrash: (crash: WriterCrash) => void = () => undefined,
+): StorageWriter {
   let thread: WriterThread | undefined;
   let nextId = 1;
   const pending = new Map<number, (outcome: Outcome) => void>();
@@ -136,8 +147,19 @@ export function createStorageWriter(start: () => WriterThread): StorageWriter {
       if (thread === started) thread = undefined;
       failAll();
     };
-    started.on("error", ended);
-    started.on("exit", ended);
+    // Still the running thread: not one `stop` ended, nor one whose error was told already (an
+    // error is followed by an exit).
+    const crashed = (crash: WriterCrash) => {
+      if (thread === started) onCrash(crash);
+    };
+    started.on("error", (error) => {
+      crashed({ error });
+      ended();
+    });
+    started.on("exit", (exitCode) => {
+      if (exitCode !== 0) crashed({ exitCode });
+      ended();
+    });
     thread = started;
     return started;
   };
