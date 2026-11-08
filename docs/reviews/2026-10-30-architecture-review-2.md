@@ -54,7 +54,7 @@ Severity is as the verifiers set it. **High** means a real bug. **Medium** means
 | --- | --- | --- | --- |
 | R1 | #234 | holds | – |
 | R2 | #235 | holds | Low drift from ADR 0010: three manual memo hooks are back. `StartScreen.tsx:88`'s `useCallback` is relied on for correctness, which ADR 0010 §5 rules out. `chrome.tsx:508` still has a `useLayoutEffect` with no dependencies |
-| R3 | #236 | holds | The storage writer thread (added after R3, ADR 0013) has no crash routing: its `error`/`exit` only fail the pending jobs (`main/storage-writer.ts:106-111`) |
+| R3 | #236 | holds | The storage writer thread (added after R3, ADR 0013) has no crash routing: its `error`/`exit` only fail the pending jobs (`main/storage-writer.ts:106-111`). **Done (8 Nov 2026, #671 part 4):** an uncaught error or an exit it didn't ask for writes a local report through `reportThread`, once; a stop doesn't |
 | R4 | #237 | holds | – |
 | R5 | #238 | holds | – |
 | R6 | #239 | holds where applied | Export, export choices, preview and AI carry no session id (A7) |
@@ -218,6 +218,7 @@ The interface is right. Where it runs (A2), where destinations live (A3) and wha
 - **Fields a layout hides are still exported and still checked** (low). `mediaUsedBy`, `documentsLinkedBy` and Site Check's `eachFieldValue` ignore `variantHides`. A Hero switched to *Text only* still has its old image encoded at every width and written to `assets/img/`, and Site Check reports alt text for a field the panel hides. Fix: skip `fieldsHiddenBy(def, values)` in the walkers, and put `variantHides` into `catalogue-data.json`.
 - **The commands package needs small additions for 4.9** (low). Tools have no `description` field; descriptions exist only as JSDoc, so the MCP server would keep a parallel list. The content/style split is written three times: `isContent`, `TOKEN_KINDS` and the renderer's `fieldGroupOf`. Fix: give each entry a `description`, export one `AI_TOOLS` list with JSON Schemas that main registers from, and write each field's resolved group (and #658's `sensitive`) into the catalogue data.
 - **With the preview server open, exports and previews take turns recompiling Tailwind** (low). `createStyleCompiler` keeps one compiler, and preview and export sources never match (`pipeline/src/css.ts:139-146`), so each switch pays about 100 ms. Fix: one compiler per `grow` flag, and separate page caches.
+  - **Done (8 Nov 2026, #671 part 4):** `createStyleCompiler` keeps a preview's compiler and an export's, and the pipeline keeps a preview's pages and an export's (publish shares the export's). A test builds a site with its own colours and analytics as an export, a preview, then both again: the second round renders no page and compiles nothing, where before it rendered every page again.
 
 Refuted and dropped: a claim that Site Check and the pipeline don't know where a site is published, so 4.2/4.5 would block Netlify publishes. The "netlify" form default is a deliberate placeholder whose wiring is 4.2's own scope (#70).
 

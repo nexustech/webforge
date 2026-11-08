@@ -161,6 +161,23 @@ describe("installCrashHandlers", () => {
     expect(JSON.stringify(written)).not.toMatch(/Rosa|Bakery|images/);
   });
 
+  it("reports a worker thread that crashed, as an error main survived, at most 5 a minute (R3)", () => {
+    const { handlers, written } = setUp();
+
+    handlers.reportThread("storage-writer", { error: new RangeError("out of memory") });
+    handlers.reportThread("storage-writer", { exitCode: 7 });
+    for (let more = 0; more < 5; more++) handlers.reportThread("storage-writer", { exitCode: 1 });
+
+    expect(written).toHaveLength(5);
+    expect(written[0]).toMatchObject({
+      process: "main",
+      kind: "storage-writer-error",
+      fatal: false,
+      error: { name: "RangeError" },
+    });
+    expect(written[1]).toMatchObject({ process: "main", kind: "storage-writer-exit", exitCode: 7 });
+  });
+
   it("ignores a worker's other messages", () => {
     const { handlers, written } = setUp();
     let send: (message: unknown) => void = () => undefined;
