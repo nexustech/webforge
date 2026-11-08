@@ -1,0 +1,44 @@
+// Security review S17 (docs/reviews/2026-10-30-security-review.md), restored by #655: importing
+// the log file registers no ipcMain channel outside the IPC contract.
+import Module from "node:module";
+import { afterEach, describe, expect, it } from "vitest";
+import { ipcContract } from "../shared/ipc-contract.js";
+
+type Loader = (request: string, parent: unknown, isMain: boolean) => unknown;
+const moduleWithLoad = Module as unknown as { _load: Loader };
+const originalLoad = moduleWithLoad._load;
+
+afterEach(() => {
+  moduleWithLoad._load = originalLoad;
+});
+
+describe("electron-log IPC channels (security audit)", () => {
+  it("registers no ipcMain channel outside the IPC contract when log-file.ts is imported", async () => {
+    const registered: string[] = [];
+    const fakeIpcMain = {
+      on: (channel: string) => registered.push(`on:${channel}`),
+      handle: (channel: string) => registered.push(`handle:${channel}`),
+    };
+    const fakeElectron = {
+      ipcMain: fakeIpcMain,
+      app: {
+        getName: () => "Webforge",
+        getVersion: () => "0.0.0",
+        getPath: () => "/tmp",
+        isPackaged: false,
+        on: () => undefined,
+        once: () => undefined,
+        whenReady: () => new Promise(() => undefined),
+      },
+    };
+    // electron-log is CommonJS and requires "electron" itself, so intercept the CJS loader.
+    moduleWithLoad._load = (request, parent, isMain) =>
+      request === "electron" ? fakeElectron : originalLoad(request, parent, isMain);
+
+    await import("./log-file.js");
+
+    const allowed = new Set(Object.values(ipcContract).map((entry) => entry.channel));
+    const outside = registered.filter((r) => !allowed.has(r.slice(r.indexOf(":") + 1)));
+    expect(outside).toEqual([]);
+  });
+});

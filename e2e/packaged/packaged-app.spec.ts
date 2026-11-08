@@ -13,6 +13,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { FuseState, FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
 import { FORMAT_VERSION, ProjectStore } from "@webforge/storage";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
@@ -148,6 +149,44 @@ test.afterAll(async () => {
   }
   // On Windows the app's helper processes can hold the folder for a moment after it exits.
   await rm(siteDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+});
+
+/**
+ * The fuses architecture §3 requires, each on or off: as `electron-builder.yml` sets them. Every fuse
+ * of Electron's wire is here, so one Electron adds is a failure until it's decided.
+ */
+const REQUIRED_FUSES: Readonly<Record<keyof typeof FuseV1Options, boolean>> = {
+  RunAsNode: false,
+  EnableCookieEncryption: true,
+  EnableNodeOptionsEnvironmentVariable: false,
+  EnableNodeCliInspectArguments: false,
+  EnableEmbeddedAsarIntegrityValidation: true,
+  OnlyLoadAppFromAsar: true,
+  // Electron's default, which the app leaves: off.
+  LoadBrowserProcessSpecificV8Snapshot: false,
+  // No page loads from file:// (#652, S5).
+  GrantFileProtocolExtraPrivileges: false,
+};
+
+test("is fused as architecture §3 requires, read from the packaged executable (S15, #655)", async () => {
+  test.skip(executable === undefined, "Linux is not a release target");
+  if (executable === undefined) return;
+  const wire = await getCurrentFuseWire(executable);
+  const state = (on: boolean) => (on ? FuseState.ENABLE : FuseState.DISABLE);
+  // Each by name, so a failure says which fuse is wrong.
+  const read = Object.fromEntries(
+    Object.keys(REQUIRED_FUSES).map((name) => [
+      name,
+      wire[FuseV1Options[name as keyof typeof FuseV1Options]],
+    ]),
+  );
+  const required = Object.fromEntries(
+    Object.entries(REQUIRED_FUSES).map(([name, on]) => [name, state(on)]),
+  );
+  expect(read).toEqual(required);
+  // And no fuse beyond those named here, from a newer Electron: the wire's fuses are numbered.
+  const fuses = Object.keys(wire).filter((key) => /^\d+$/.test(key));
+  expect(fuses).toHaveLength(Object.keys(REQUIRED_FUSES).length);
 });
 
 test("ships every catalogue font beside app.asar, byte for byte, within the font budget (2.2)", () => {
