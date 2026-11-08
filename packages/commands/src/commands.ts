@@ -237,7 +237,6 @@ function confirmationAt(site: SiteDoc, location: Location): Plan["confirm"] {
   });
 }
 
-/** A field's address as it is set, without the spaces around it. */
 /**
  * Where a sensitive field's value sends visitors, as text to compare and show: the text itself, or
  * a link's address (a web address, `mailto:`, `tel:`, a page or a Media file by its id), so a

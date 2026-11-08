@@ -242,7 +242,7 @@ describe("the version before an AI app's changes (S20)", () => {
     expect(saveVersionBefore).toHaveBeenCalledOnce();
   });
 
-  it("saves one with no site open each time, as there is no opening to remember it by", async () => {
+  it("saves none with no site open, and tries again after one that wasn't saved", async () => {
     const { service, listened, saveVersionBefore, open } = setUp();
     open(undefined);
     await service.setEnabled(true);
@@ -250,7 +250,14 @@ describe("the version before an AI app's changes (S20)", () => {
     if (options === undefined) throw new Error("not listening");
     const client = await connection(options, claude);
     await client.callTool({ name: "addPage", arguments: { title: "Team" } });
-    expect(saveVersionBefore).toHaveBeenCalledOnce();
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+
+    open("session-1");
+    saveVersionBefore.mockResolvedValueOnce("failed");
+    await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
+    await client.callTool({ name: "addPage", arguments: { title: "News" } });
+    await client.callTool({ name: "addPage", arguments: { title: "Shop" } });
+    expect(saveVersionBefore).toHaveBeenCalledTimes(2);
   });
 
   it("isn't saved for a brief, which is the app's by its id, not its name (4.12a)", async () => {

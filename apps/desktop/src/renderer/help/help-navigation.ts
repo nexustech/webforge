@@ -12,8 +12,8 @@ export type HelpLinkDestination =
 /**
  * Where `href`, a link on help page `page`, goes (5.4b, HP-6): `export.md#options` and `#tips`
  * stay in the Help window, an `https://` page opens in the browser, and anything else (a plain
- * `http://` page, a file, a `mailto:`, a page outside `docs/help/`) is shown as text (5.6). `pnpm help-check` keeps
- * the pages from linking anywhere else.
+ * `http://` page, a file, a `mailto:`, a page outside `docs/help/`) is shown as text (5.6).
+ * `pnpm help-check` keeps the pages from linking anywhere else.
  */
 export function helpLinkDestination(href: string, page: string | undefined): HelpLinkDestination {
   if (/^https:\/\//i.test(href)) return { kind: "web", url: href };

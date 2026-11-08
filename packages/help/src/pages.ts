@@ -343,9 +343,9 @@ const PAGE_LINK = /^(?:([a-z0-9-]+)\.md)?(?:#([^#\s]+))?$/;
 /**
  * What's wrong with the help pages (HP-5): front matter that doesn't parse, an `id` that's repeated
  * or isn't its file's name, a link or anchor between pages that doesn't resolve, a link outside the
- * help pages or to a plain `http://` page, a `related` page that isn't there, a component type on no page, on two or with no
- * heading there, a page that spells out the app's name, raw HTML or a picture, and a **?** link that
- * reaches no page or heading.
+ * help pages or to a plain `http://` page, a `related` page that isn't there, a component type on
+ * no page, on two or with no heading there, a page that spells out the app's name, raw HTML or a
+ * picture, and a **?** link that reaches no page or heading.
  * Each problem is one line, starting with the file it's in. None means all is well.
  */
 export function checkHelpPages(input: HelpCheckInput): readonly string[] {

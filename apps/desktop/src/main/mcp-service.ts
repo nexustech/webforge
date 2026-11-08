@@ -107,7 +107,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
    * The version "Before ‹app›'s changes" saved, or being saved, for each app in each opening of
    * the site, by `<app id> <session id>`: one an app's reconnections can't add to (S26).
    */
-  const firstVersions = new Map<string, Promise<unknown>>();
+  const firstVersions = new Map<string, Promise<boolean>>();
 
   /**
    * `app`'s requests in one connection: before its first command in this opening of the site, a
@@ -126,16 +126,21 @@ export function createMcpService(options: McpServiceOptions): McpService {
         .catch(() => "failed" as const)
         .then((result) => {
           if (result === "failed") logFailure("mcp safety version", new Error("failed"));
+          return result === "saved";
         });
     const versionFirst = async () => {
       const opening = options.opening();
-      // With no site open there is nothing to keep: the save says so itself.
-      if (opening === undefined) return saveVersion();
+      // With no site open there is nothing to keep, and the command changes nothing.
+      if (opening === undefined) return;
       const key = `${app.id} ${opening}`;
       let saved = firstVersions.get(key);
       if (saved === undefined) {
         saved = saveVersion();
         firstVersions.set(key, saved);
+        // One that wasn't saved added nothing: the app's next command tries again.
+        void saved.then((ok) => {
+          if (!ok) firstVersions.delete(key);
+        });
       }
       await saved;
     };
