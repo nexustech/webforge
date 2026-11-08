@@ -3,9 +3,11 @@ import {
   isNodeDoc,
   type NodeDoc,
   type Oklch,
+  pageEntryOf,
   type Responsive,
   resolveResponsive,
   type SiteDoc,
+  sharedSectionOf,
   type TextStyle,
   type ThemeTokens,
   valuesWithLook,
@@ -103,11 +105,9 @@ export function surfaceOf(
 function nodesAt(site: SiteDoc, on: ElementPlace): readonly NodeDoc[] {
   if (on === "header") return site.layout.header;
   if (on === "footer") return site.layout.footer;
-  const page = Object.hasOwn(site.pages, on) ? site.pages[on as keyof SiteDoc["pages"]] : undefined;
+  const page = pageEntryOf(site.pages, on);
   if (page !== undefined) return page.doc.content;
-  const shared = Object.hasOwn(site.sharedSections, on)
-    ? site.sharedSections[on as keyof SiteDoc["sharedSections"]]
-    : undefined;
+  const shared = sharedSectionOf(site.sharedSections, on);
   return shared === undefined ? [] : [shared.section];
 }
 
