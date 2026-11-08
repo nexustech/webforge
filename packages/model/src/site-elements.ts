@@ -14,18 +14,32 @@ type EachElementOptions = {
   readonly skipHidden?: boolean;
 };
 
-/** Calls `visit` for each of `nodes` and the elements in their slots, depth first. */
+/**
+ * What {@link eachElement} calls with each element: where it's kept, and what holds it, which is
+ * only so during the call (copy it to keep it).
+ */
+type Visit = (node: NodeDoc, on: ElementPlace, ancestors: readonly NodeDoc[]) => void;
+
+/**
+ * Calls `visit` for each of `nodes` and the elements in their slots, depth first, with the
+ * elements holding each, outermost first: one array, `ancestors`, kept as the walk goes, so no
+ * element costs an array of its own (#670). It holds what it says only during the call.
+ */
 function walk(
   nodes: readonly NodeDoc[],
   on: ElementPlace,
-  visit: (node: NodeDoc, on: ElementPlace) => void,
+  visit: Visit,
   skipHidden: boolean,
+  ancestors: NodeDoc[] = [],
 ): void {
   for (const node of nodes) {
     if (skipHidden && node.props.hidden === true) continue;
-    visit(node, on);
+    visit(node, on, ancestors);
     for (const value of Object.values(node.props)) {
-      if (Array.isArray(value)) walk(value.filter(isNodeDoc), on, visit, skipHidden);
+      if (!Array.isArray(value)) continue;
+      ancestors.push(node);
+      walk(value.filter(isNodeDoc), on, visit, skipHidden, ancestors);
+      ancestors.pop();
     }
   }
 }
@@ -33,11 +47,12 @@ function walk(
 /**
  * Calls `visit` for every element of `site`, with where it is kept: the Header, the Footer, each
  * page in the Pages panel's order, then each shared section once (not its copies). Elements in
- * slots are visited after the element holding them.
+ * slots are visited after the element holding them; each with the elements holding it, outermost
+ * first (what it's drawn on, #670).
  */
 export function eachElement(
   site: SiteDoc,
-  visit: (node: NodeDoc, on: ElementPlace) => void,
+  visit: Visit,
   { skipHidden = false }: EachElementOptions = {},
 ): void {
   walk(site.layout.header, "header", visit, skipHidden);

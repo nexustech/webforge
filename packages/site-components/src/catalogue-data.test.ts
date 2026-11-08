@@ -12,8 +12,12 @@ import {
   CATALOGUE,
   catalogueFileSchema,
   catalogueSchema,
+  drawsPictureBehind,
   fieldValueSchema,
+  hiddenFieldsOf,
+  hideableFieldsOf,
 } from "./catalogue-data.js";
+import type { ComponentDef } from "./library.js";
 
 /** The styling fields every section and element has: the Appearance group's and the dialog's. */
 const STYLING = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS };
@@ -23,6 +27,27 @@ const STYLING = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS };
  * behaviours) and without functions (a field's `unavailable`), as JSON keeps it; the styling
  * fields every component has once, each component marked as having them (2.22b, 3.13b).
  */
+/**
+ * `def`'s text style as data (#670): the one it has, or, when a select field changes it, its
+ * style for each of that field's values.
+ */
+function textStyleAsData(def: ComponentDef): unknown {
+  const styleOf = def.textStyle as ((values: Record<string, unknown>) => unknown) | undefined;
+  if (styleOf === undefined) return undefined;
+  const base = styleOf({ ...def.defaults });
+  for (const [name, field] of Object.entries(def.fields)) {
+    if (field.kind !== "select") continue;
+    const styles = Object.fromEntries(
+      field.options.map((option) => [
+        option.value,
+        styleOf({ ...def.defaults, [name]: option.value }),
+      ]),
+    );
+    if (Object.values(styles).some((style) => style !== base)) return { field: name, styles };
+  }
+  return base;
+}
+
 function libraryAsData(): unknown {
   const group = Object.keys(STYLING);
   const entries = Object.entries(siteLibrary.components).map(([type, def]) => {
@@ -36,6 +61,8 @@ function libraryAsData(): unknown {
       fields,
       defaults,
       variantHides,
+      graphic,
+      pictureBehind,
     } = def;
     const has = group.filter((name) => Object.hasOwn(fields, name));
     const appearance =
@@ -74,6 +101,9 @@ function libraryAsData(): unknown {
         fields: own,
         defaults,
         variantHides,
+        graphic,
+        pictureBehind,
+        textStyle: textStyleAsData(def),
       },
     ];
   });
@@ -137,6 +167,51 @@ describe("the catalogue as data (4.8)", () => {
     expect(
       field("buttonLink").safeParse({ kind: "url", href: "javascript:alert(1)" }).success,
     ).toBe(false);
+  });
+
+  it("knows each field that can be hidden, so Site Check works out only those (#670)", () => {
+    const image = { mediaId: "loaves" };
+    for (const [type, component] of Object.entries(CATALOGUE)) {
+      const hideable = hideableFieldsOf(component);
+      // Each layout, with nothing else set, and with what reveals the fields hidden by values.
+      const layouts = [undefined, ...Object.keys(component.variantHides ?? {})];
+      for (const variant of layouts) {
+        for (const extra of [{}, { lookBorder: "thin", backgroundImage: image }]) {
+          const values = { ...component.defaults, ...extra, variant };
+          for (const name of hiddenFieldsOf(component, values)) {
+            expect(hideable.has(name), `${type}.${name}`).toBe(true);
+          }
+        }
+      }
+    }
+    // A section's overlay is hideable; a Heading's colour never is.
+    expect(hideableFieldsOf(CATALOGUE.Section ?? { fields: {} }).has("overlay")).toBe(true);
+    expect(hideableFieldsOf(CATALOGUE.Heading ?? { fields: {} }).has("color")).toBe(false);
+  });
+
+  it("marks the components whose colour colours a drawing: graphics need 3:1 (#670)", () => {
+    const graphic = Object.entries(CATALOGUE)
+      .filter(([, component]) => component.graphic === true)
+      .map(([type]) => type);
+    expect(graphic.sort()).toEqual(["Icon", "SocialLinks"]);
+  });
+
+  it("knows which pictures are drawn behind the content: a background image, a Hero's (#670)", () => {
+    const image = { mediaId: "loaves" };
+    for (const [type, component] of Object.entries(CATALOGUE)) {
+      // Every section with a background image draws it behind its content, once one is placed.
+      if (!Object.hasOwn(component.fields, "backgroundImage")) continue;
+      expect(drawsPictureBehind(component, { backgroundImage: image }), type).toBe(true);
+      expect(drawsPictureBehind(component, {}), type).toBe(false);
+    }
+    const hero = CATALOGUE.Hero;
+    if (hero === undefined) throw new Error("No Hero");
+    expect(drawsPictureBehind(hero, { variant: "background", image })).toBe(true);
+    expect(drawsPictureBehind(hero, { variant: "split", image })).toBe(false);
+    // Its first layout, split, when none is stored; and no picture without an image.
+    expect(drawsPictureBehind(hero, { image })).toBe(false);
+    expect(drawsPictureBehind(hero, { variant: "background" })).toBe(false);
+    expect(drawsPictureBehind(CATALOGUE.Text ?? {}, { image })).toBe(false);
   });
 
   it("never lets Custom Code be set", () => {

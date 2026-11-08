@@ -33,6 +33,8 @@ const hero = defineSection({
   name: "hero",
   // Its image field draws its own background, behind the text, with its own overlay.
   background: false,
+  // There, the text is on the picture: its contrast can't be measured (#670).
+  pictureBehind: [{ field: "image", variants: ["background"] }],
   category: t("category.heroes"),
   variants: HERO_LAYOUTS.map((value) => ({
     label: t(`field.heroLayout.${value}`),
