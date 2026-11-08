@@ -1,6 +1,7 @@
 import {
   type ElementPlace,
   eachElement,
+  isPageIn,
   isSharedCopy,
   type NodeDoc,
   type SharedSectionId,
@@ -46,8 +47,8 @@ export function exportedPlaces(site: SiteDoc): (on: ElementPlace | "menu") => bo
     on === "menu" ||
     on === "header" ||
     on === "footer" ||
-    Object.hasOwn(site.pages, on) ||
-    placed.has(on as SharedSectionId);
+    isPageIn(site.pages, on) ||
+    placed.has(on);
 }
 
 /**

@@ -1,4 +1,5 @@
 import {
+  isPageIn,
   newId,
   type PageId,
   RICH_TEXT_PAGE_LINK,
@@ -28,7 +29,8 @@ export type PageChoices = z.infer<typeof pageChoicesSchema>;
 export function choosePages(site: SiteDoc, choices: PageChoices): void {
   const removed = new Set(
     choices.leaveOut.filter((id): id is PageId => {
-      const page = site.pages[id as PageId];
+      if (!isPageIn(site.pages, id)) return false;
+      const page = site.pages[id];
       return page !== undefined && page.kind === "page" && page.id !== site.homePageId;
     }),
   );
@@ -53,6 +55,8 @@ function retargetLinks(site: SiteDoc, removed: ReadonlySet<PageId>): void {
     `${RICH_TEXT_PAGE_LINK}(${[...removed].map((id) => id.replace(/[^\w-]/g, "")).join("|")})(?:#[^"]*)?"`,
     "g",
   );
+  // Read as strings: a link's page id is whatever the document holds.
+  const removedIds: ReadonlySet<string> = removed;
   const visit = (value: unknown): unknown => {
     if (typeof value === "string")
       return value.replace(inRichText, `${RICH_TEXT_PAGE_LINK}${home}"`);
@@ -62,7 +66,11 @@ function retargetLinks(site: SiteDoc, removed: ReadonlySet<PageId>): void {
     }
     if (typeof value === "object" && value !== null) {
       const record = value as Record<string, unknown>;
-      if (record.kind === "page" && removed.has(record.pageId as PageId)) {
+      if (
+        record.kind === "page" &&
+        typeof record.pageId === "string" &&
+        removedIds.has(record.pageId)
+      ) {
         record.pageId = home;
         delete record.anchor;
       }

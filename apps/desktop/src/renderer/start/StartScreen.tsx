@@ -9,7 +9,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { FilePlusIcon, FolderOpenIcon, SparklesIcon, WandSparklesIcon } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { AiApi } from "../../shared/ipc/ai.js";
 import type { AppApi } from "../../shared/ipc/app.js";
 import type { HelpApi } from "../../shared/ipc/help.js";
@@ -111,10 +111,10 @@ export function StartScreen({
     };
   }, [api]);
 
-  // Stable, so File › Open Recent's commands aren't registered again on every render.
-  const relist = useCallback(() => {
+  // File › Open Recent's commands call it from an effect event, so it may be new on every render.
+  const relist = () => {
     api.listRecent().then(setRecent, () => undefined);
-  }, [api]);
+  };
 
   const run = async (request: () => ReturnType<ProjectApi["open"]>) => {
     setMessage(await openSiteWith(request, restart));

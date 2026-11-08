@@ -10,7 +10,7 @@ import {
   toast,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import type { ProjectApi, RecentSite } from "../../shared/ipc/project.js";
 import { reportFailure } from "../log.js";
 import { useCommandRegistry } from "../shell/command-context.js";
@@ -103,14 +103,20 @@ export function OpenRecent({ project, restart, recent }: OpenRecentProps) {
   );
   const anyUnpinned = sites?.some((site) => !site.pinned) ?? false;
 
+  // The list read again after a site turned out to be missing: the start screen's, else this one's.
+  // An effect event, so the commands below aren't registered again when `changed` is a new function
+  // (ADR 0010: correctness never depends on memoization, R2).
+  const relist = useEffectEvent(() => {
+    if (changed !== undefined) {
+      changed();
+      return;
+    }
+    projectApi(project)
+      .listRecent()
+      .then(setListed, () => setListed([]));
+  });
+
   useEffect(() => {
-    const relist =
-      changed ??
-      (() => {
-        projectApi(project)
-          .listRecent()
-          .then(setListed, () => setListed([]));
-      });
     const submenu = COMMAND_IDS.openRecent;
     const removes =
       latest.length === 0
@@ -158,7 +164,7 @@ export function OpenRecent({ project, restart, recent }: OpenRecentProps) {
     return () => {
       for (const remove of removes) remove();
     };
-  }, [registry, project, restart, latest, anyUnpinned, changed]);
+  }, [registry, project, restart, latest, anyUnpinned]);
 
   const clear = async () => {
     setConfirming(false);
