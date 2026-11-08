@@ -51,6 +51,20 @@ describe("contrast", () => {
 });
 
 describe("underlined text (2.25)", () => {
+  it("finds elements underlined by their kind's look, unless one sets its own (#670)", () => {
+    const site = siteWith([
+      element("Text", "looked", { text: "<p>Open late</p>" }),
+      element("Text", "own", { text: "<p>Open late</p>", lookUnderline: false }),
+    ]);
+    const on = site.homePageId;
+    const looked = { ...site, theme: { ...site.theme, looks: { Text: { lookUnderline: true } } } };
+
+    expect(findIn(underlinedTextRule, looked)).toEqual([
+      { key: `${on}/looked`, place: { kind: "element", on, nodeId: "looked" } },
+    ]);
+    expect(findIn(underlinedTextRule, site)).toEqual([]);
+  });
+
   it("finds underlined rich text and elements underlined in their Appearance, but not links", () => {
     const site = siteWith([
       element("Text", "marked", { text: "<p><u>Open late</u></p>" }),

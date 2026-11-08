@@ -111,8 +111,14 @@ export {
 } from "./image-size.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
-export type { ComponentLook, LookField, Looks } from "./look.js";
-export { componentLookSchema, LOOK_FIELDS, looksSchema } from "./look.js";
+export type { ComponentLook, LookField, Looks, ValueSource } from "./look.js";
+export {
+  componentLookSchema,
+  effectiveValues,
+  LOOK_FIELDS,
+  looksSchema,
+  valuesWithLook,
+} from "./look.js";
 export type {
   FileMeta,
   FileMimeType,

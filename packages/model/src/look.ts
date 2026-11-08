@@ -124,3 +124,56 @@ export const looksSchema = z.record(
 
 /** The theme's looks; see {@link looksSchema}. */
 export type Looks = z.infer<typeof looksSchema>;
+
+/** Where an item's value for a field comes from: its own, its kind's look, or its default. */
+export type ValueSource = "own" | "look" | "default";
+
+/**
+ * `values`, an item's own, over its kind's `look` (3.12, CT-1): each field it doesn't set itself
+ * takes the look's value; one it sets, even to the theme's (`default`), keeps it. The one rule the
+ * canvas, the export, Site Check and AI apps' `fields` all read an item by (#670).
+ */
+export function valuesWithLook<Values extends Readonly<Record<string, unknown>>>(
+  values: Values,
+  look: Readonly<Record<string, unknown>> | undefined,
+): Values {
+  if (look === undefined) return values;
+  const own = Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined));
+  return { ...look, ...own } as Values;
+}
+
+/**
+ * The value of each field `type`'s item draws with (#670): its own, else its kind's look in
+ * `looks`, else its component's default; with where each came from.
+ */
+export function effectiveValues(
+  type: string,
+  values: Readonly<Record<string, unknown>>,
+  defaults: Readonly<Record<string, unknown>>,
+  looks: Looks | undefined,
+): {
+  readonly values: Readonly<Record<string, unknown>>;
+  readonly sources: Readonly<Record<string, ValueSource>>;
+} {
+  const look: Readonly<Record<string, unknown>> = looks?.[type] ?? {};
+  const merged: Record<string, unknown> = {};
+  const sources: Record<string, ValueSource> = {};
+  for (const name of new Set([
+    ...Object.keys(defaults),
+    ...Object.keys(look),
+    ...Object.keys(values),
+  ])) {
+    const [own, looked, fallback] = [values[name], look[name], defaults[name]];
+    if (own !== undefined) {
+      merged[name] = own;
+      sources[name] = "own";
+    } else if (looked !== undefined) {
+      merged[name] = looked;
+      sources[name] = "look";
+    } else if (fallback !== undefined) {
+      merged[name] = fallback;
+      sources[name] = "default";
+    }
+  }
+  return { values: merged, sources };
+}
