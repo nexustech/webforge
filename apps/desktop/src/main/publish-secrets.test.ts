@@ -108,6 +108,38 @@ describe("createPublishSecrets (4.4a, security review S2)", () => {
     expect((await secrets.signInFor(PROJECT, other))?.signIn).toEqual({ password: "two" });
   });
 
+  it("ties a Netlify sign-in to its site, and asks again for another or none (S32)", async () => {
+    const { secrets } = secretsIn();
+    const netlify: PublishDestination = {
+      id: "2c4e6a8b-1d3f-4a5b-8c7d-9e0f1a2b3c4d",
+      name: "Live",
+      kind: "netlify",
+      siteId: "3f8e2a1c-5b6d-4e7f-8a9b-0c1d2e3f4a5b",
+      url: "https://rosa.netlify.app",
+    };
+    await secrets.save(PROJECT, netlify, { token: "nfp_secret" }, {});
+
+    expect(await secrets.state(PROJECT, netlify)).toEqual({ signIn: "saved", trust: {} });
+    // Its address isn't where the token goes: the live check asks for it with no sign-in.
+    const moved = { ...netlify, url: "https://rosas-cafe.netlify.app" };
+    expect((await secrets.signInFor(PROJECT, moved))?.signIn).toEqual({ token: "nfp_secret" });
+
+    const { siteId: _, ...unchosen } = netlify;
+    for (const destination of [
+      { ...netlify, siteId: "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d" },
+      unchosen,
+    ]) {
+      expect(await secrets.signInFor(PROJECT, destination)).toBeUndefined();
+      expect(await secrets.state(PROJECT, destination)).toEqual({ signIn: "changed", trust: {} });
+    }
+
+    // Signed in before its first publish chose the site: saved again for the site, it is kept.
+    await secrets.save(PROJECT, unchosen, { token: "nfp_secret" }, {});
+    expect(await secrets.signInFor(PROJECT, netlify)).toBeUndefined();
+    await secrets.save(PROJECT, netlify, { token: "nfp_secret" }, {});
+    expect(await secrets.state(PROJECT, netlify)).toEqual({ signIn: "saved", trust: {} });
+  });
+
   it("reads a record it can't use as none saved", async () => {
     const { store, secrets } = secretsIn();
     const key = publishCredentialKey(PROJECT, sftp.id);
