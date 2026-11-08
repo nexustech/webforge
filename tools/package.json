@@ -14,7 +14,7 @@
   },
   "devDependencies": {
     "@babel/core": "catalog:",
-    "@swc/core": "1.16.18",
+    "@swc/core": "1.16.22",
     "@types/babel__core": "7.20.5",
     "@types/node": "catalog:",
     "babel-plugin-react-compiler": "catalog:",
