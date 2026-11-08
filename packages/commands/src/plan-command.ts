@@ -1,4 +1,4 @@
-import { t } from "@webforge/i18n";
+import { plural, t } from "@webforge/i18n";
 import { type PageId, pageEntryOf, type SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
@@ -29,6 +29,8 @@ type Summary = {
   elements: { added: number; changed: number; moved: number; removed: number };
   /** The questions its commands would each have asked: the question, and what it names. */
   readonly asks: string[];
+  /** Those that name where visitors' money or details go, or change Site Settings (S30). */
+  readonly asksFirst: string[];
 };
 
 /** What a step's planned change counts as in the summary. */
@@ -114,33 +116,90 @@ function switchesChanged(before: SiteDoc, after: SiteDoc): string[] {
   return lines;
 }
 
-/** The plan's one question's details: what it adds, deletes and changes, and what would have asked. */
+/** The most names a list in the summary gives, before "and 140 more" (S30). */
+const MOST_LISTED = 10;
+
+/** The most of a page title the summary gives (titles can be 200 characters). */
+const TITLE_SHOWN = 60;
+
+/** The most questions the summary repeats that aren't destinations or Site Settings. */
+const MOST_ASKS = 10;
+
+/** Splits text into what a reader sees as characters: an emoji with its modifiers is one. */
+const GRAPHEMES = new Intl.Segmenter(undefined, { granularity: "grapheme" });
+
+/**
+ * `title`, shortened to {@link TITLE_SHOWN} characters, as a reader counts them: never cut inside
+ * an emoji, which would leave half of it before the "…".
+ */
+const shortened = (title: string) => {
+  // Most titles are short: no need to split them.
+  if (title.length <= TITLE_SHOWN) return title;
+  const characters = Array.from(GRAPHEMES.segment(title), ({ segment }) => segment);
+  return characters.length <= TITLE_SHOWN
+    ? title
+    : `${characters
+        .slice(0, TITLE_SHOWN - 1)
+        .join("")
+        .trimEnd()}…`;
+};
+
+/**
+ * The plan's one question's details (S30, #795), as paragraphs: first, set apart, every question
+ * that names where visitors' money or details go or changes Site Settings, however long the plan;
+ * then what it adds, deletes and changes, each list and title shortened; then the other questions
+ * its commands would have asked, the first {@link MOST_ASKS}.
+ */
 function described(summary: Summary, switches: readonly string[]): string {
-  const lines: string[] = [];
-  const list = (names: Iterable<string>) => [...names].map((name) => `"${name}"`).join(", ");
+  const groups: string[][] = [];
+  if (summary.asksFirst.length > 0) groups.push([t("ai.plan.first"), ...summary.asksFirst]);
+  const list = (names: Iterable<string>) => {
+    const all = [...names];
+    const shown = all.slice(0, MOST_LISTED).map((name) => `"${shortened(name)}"`);
+    const more = all.length - shown.length;
+    return more > 0
+      ? `${shown.join(", ")} ${t("ai.plan.more", { count: more })}`
+      : shown.join(", ");
+  };
+  const changes: string[] = [];
   if (summary.pagesAdded.length > 0) {
-    lines.push(t("ai.plan.pagesAdded", { pages: list(summary.pagesAdded) }));
+    changes.push(t("ai.plan.pagesAdded", { pages: list(summary.pagesAdded) }));
   }
   if (summary.pagesRemoved.length > 0) {
-    lines.push(t("ai.plan.pagesRemoved", { pages: list(summary.pagesRemoved) }));
+    changes.push(t("ai.plan.pagesRemoved", { pages: list(summary.pagesRemoved) }));
   }
-  for (const { from, to } of summary.pagesRenamed) {
-    lines.push(t("ai.plan.pageRenamed", { from, to }));
+  for (const { from, to } of summary.pagesRenamed.slice(0, MOST_LISTED)) {
+    changes.push(t("ai.plan.pageRenamed", { from: shortened(from), to: shortened(to) }));
+  }
+  if (summary.pagesRenamed.length > MOST_LISTED) {
+    changes.push(plural("ai.plan.moreRenamed", summary.pagesRenamed.length - MOST_LISTED));
   }
   if (summary.pagesMoved.size > 0) {
-    lines.push(t("ai.plan.pagesMoved", { pages: list(summary.pagesMoved) }));
+    changes.push(t("ai.plan.pagesMoved", { pages: list(summary.pagesMoved) }));
   }
   if (summary.pagesSet.size > 0) {
-    lines.push(t("ai.plan.pageSettings", { pages: list(summary.pagesSet) }));
+    changes.push(t("ai.plan.pageSettings", { pages: list(summary.pagesSet) }));
   }
-  lines.push(...switches);
-  if (summary.theme) lines.push(t("ai.plan.theme"));
+  changes.push(...switches.slice(0, MOST_LISTED));
+  if (switches.length > MOST_LISTED) {
+    changes.push(plural("ai.plan.moreHidden", switches.length - MOST_LISTED));
+  }
+  if (summary.theme) changes.push(t("ai.plan.theme"));
   const { added, changed, moved, removed } = summary.elements;
   if (added + changed + moved + removed > 0) {
-    lines.push(t("ai.plan.elements", { added, changed, moved, removed }));
+    changes.push(t("ai.plan.elements", { added, changed, moved, removed }));
   }
-  if (summary.asks.length > 0) lines.push(t("ai.plan.asks"), ...summary.asks);
-  return lines.join(" ");
+  if (changes.length > 0) groups.push(changes);
+  if (summary.asks.length > 0) {
+    const more = summary.asks.length - MOST_ASKS;
+    groups.push([
+      t("ai.plan.asks"),
+      ...summary.asks.slice(0, MOST_ASKS),
+      ...(more > 0 ? [plural("ai.plan.moreAsks", more)] : []),
+    ]);
+  }
+  // A paragraph each, which the question shows apart.
+  return groups.map((group) => group.join(" ")).join("\n\n");
 }
 
 /**
@@ -181,6 +240,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         theme: false,
         elements: { added: 0, changed: 0, moved: 0, removed: 0 },
         asks: [],
+        asksFirst: [],
       };
       let structural = false;
       for (const [at, step] of input.commands.entries()) {
@@ -198,7 +258,8 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         count(summary, step.name, working, parsed.data);
         const asked = planned.confirm?.("{app}");
         if (asked !== undefined) {
-          summary.asks.push([asked.action, asked.description].filter(Boolean).join(" "));
+          const ask = [asked.action, asked.description].filter(Boolean).join(" ");
+          (asked.first === true ? summary.asksFirst : summary.asks).push(ask);
         }
         structural ||= planned.structural;
         if (planned.removesPages !== undefined) removesPages.push(...planned.removesPages);
@@ -217,7 +278,11 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         confirm: (app) => ({
           action: t("ai.confirm.plan", { app, title: input.title }),
           description: described(
-            { ...summary, asks: summary.asks.map((ask) => ask.replaceAll("{app}", app)) },
+            {
+              ...summary,
+              asks: summary.asks.map((ask) => ask.replaceAll("{app}", app)),
+              asksFirst: summary.asksFirst.map((ask) => ask.replaceAll("{app}", app)),
+            },
             switches,
           ),
           confirm: t("ai.confirm.allow"),
