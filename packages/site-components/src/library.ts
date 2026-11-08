@@ -20,6 +20,7 @@ import {
 } from "@webforge/model";
 import { cloneElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
+import { hiddenFieldsOf } from "./hidden-fields.js";
 import type {
   BehaviourName,
   ComponentPlace,
@@ -152,16 +153,8 @@ export function textStylesOf(
   return [...new Set(styles.filter((style) => style !== undefined))];
 }
 
-/**
- * Whether `value`, set once or per device (F-ED-4), is one that `on` accepts on any device, each
- * device's as it takes effect there: a device without its own value has the next larger one's.
- */
-export function onAnyDevice(value: unknown, on: (one: unknown) => boolean): boolean {
-  if (!isResponsiveValue(value as Responsive<unknown>)) return on(value);
-  return (["mobile", "tablet", "desktop"] as const).some((device) =>
-    on(resolveResponsive(value as Responsive<unknown>, device)),
-  );
-}
+// Set once or per device (F-ED-4): whether a value is one that `on` accepts on any device.
+export { onAnyDevice } from "./hidden-fields.js";
 
 /**
  * The fields `def`'s chosen layout doesn't use (#311), or its values don't (a field's `shownWhen`),
@@ -172,23 +165,8 @@ export function fieldsHiddenBy(
   def: Pick<ComponentDef, "variantHides"> & { readonly fields?: ComponentDef["fields"] },
   values: Readonly<Record<string, unknown>>,
 ): ReadonlySet<string> {
-  const variant = values.variant;
-  const hidden = new Set(typeof variant === "string" ? (def.variantHides?.[variant] ?? []) : []);
-  // The Appearance group's Border colour, only while it draws a border on some device (2.22b).
-  if (
-    Object.hasOwn(def.fields ?? {}, "lookBorderColor") &&
-    !onAnyDevice(values.lookBorder, (one) => one === "thin" || one === "thick")
-  ) {
-    hidden.add("lookBorderColor");
-  }
-  // A section's overlay, only once it has a background image to lie over (2.26).
-  if (
-    Object.hasOwn(def.fields ?? {}, "overlay") &&
-    !imageValueSchema.safeParse(values.backgroundImage).success
-  ) {
-    hidden.add("overlay");
-    hidden.add("overlayColor");
-  }
+  // The rule Site Check and the catalogue as data read too (#670).
+  const hidden = hiddenFieldsOf(def, values);
   // A field shown only with some values (3.19): an Image's Height.
   for (const [name, field] of Object.entries(def.fields ?? {})) {
     if (field.shownWhen?.(values) === false) hidden.add(name);

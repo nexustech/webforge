@@ -26,7 +26,17 @@ const STYLING = { ...APPEARANCE_FIELDS, ...DIALOG_FIELDS };
 function libraryAsData(): unknown {
   const group = Object.keys(STYLING);
   const entries = Object.entries(siteLibrary.components).map(([type, def]) => {
-    const { label, place, category, advancedOnly, framed, presets, fields, defaults } = def;
+    const {
+      label,
+      place,
+      category,
+      advancedOnly,
+      framed,
+      presets,
+      fields,
+      defaults,
+      variantHides,
+    } = def;
     const has = group.filter((name) => Object.hasOwn(fields, name));
     const appearance =
       has.length === 0
@@ -63,6 +73,7 @@ function libraryAsData(): unknown {
         deeper,
         fields: own,
         defaults,
+        variantHides,
       },
     ];
   });

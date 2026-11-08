@@ -7,7 +7,7 @@ import {
   type SiteDoc,
   valuesWithLook,
 } from "@webforge/model";
-import type { CatalogueField } from "@webforge/site-components/catalogue-data";
+import { type CatalogueField, hiddenFieldsOf } from "@webforge/site-components/catalogue-data";
 import type { CheckInput } from "./types.js";
 
 /** A field's value on an element the export writes, and where it is. */
@@ -115,13 +115,19 @@ export function eachFieldValue(
     (node, on) => {
       if (!exported(on)) return;
       const plan = planFor(catalogue, wanted, kindsKey, node.type);
+      const component = catalogue[node.type];
       const look: Readonly<Record<string, unknown>> | undefined = looks?.[node.type];
       // The one rule the export draws by: its own value, else its kind's look.
       const values = valuesWithLook(node.props, look);
+      // A field its layout or values leave unused isn't drawn, nor exported: nor checked (#670).
+      const hidden =
+        component === undefined
+          ? new Set<string>()
+          : hiddenFieldsOf(component, { ...component.defaults, ...values });
       // In the component's order, a list's items where the list is, as before the plans (#628).
       for (const { name, visit: wantedField, items } of plan) {
         const value = values[name];
-        if (value === undefined) continue;
+        if (value === undefined || hidden.has(name)) continue;
         const fromLook = node.props[name] === undefined ? ({ fromLook: true } as const) : {};
         if (wantedField) visit({ on, node, field: name, value, ...fromLook });
         if (items.length === 0 || !Array.isArray(value)) continue;

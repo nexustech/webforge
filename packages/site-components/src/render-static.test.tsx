@@ -1074,6 +1074,15 @@ describe("tree helpers", () => {
     expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual(["hero"]);
   });
 
+  it("leaves out the pictures and files of fields a layout doesn't use: a Text only Hero's (#670)", () => {
+    const nodes: NodeDoc[] = [
+      { type: "Hero", props: { id: "a", variant: "minimal", image: { mediaId: "unused" } } },
+      { type: "Hero", props: { id: "b", variant: "split", image: { mediaId: "shown" } } },
+    ];
+
+    expect([...mediaUsedBy(nodes, siteLibrary)]).toEqual(["shown"]);
+  });
+
   it("leaves a copy of a shared section hidden in Layers out of the export (F-ED-12, F-ED-23)", () => {
     const id = "shared-hours" as SharedSectionId;
     const section: NodeDoc = {
