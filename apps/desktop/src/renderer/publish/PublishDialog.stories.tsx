@@ -74,3 +74,35 @@ export const Destinations: Story = {};
 
 /** A site with none yet: Add Destination is the way on. */
 export const None: Story = { args: { publish: publishWith([]) } };
+
+/** With Netlify offered (4.4b): a Netlify destination listed by its site's address. */
+export const WithNetlify: Story = {
+  args: {
+    publish: publishWith([
+      ...SOME.slice(0, 1),
+      {
+        destination: {
+          id: "c0ffee00-1111-4222-8333-444455556666",
+          name: "Rosa's Bakery on Netlify",
+          kind: "netlify",
+          siteId: "3d3f0a5e-1111-4222-8333-444455556666",
+          url: "https://rosas-bakery.netlify.app",
+        },
+        signIn: "saved",
+        trust: {},
+      },
+    ]),
+    netlify: {
+      canSignIn: false,
+      signIn: async () => ({ status: "failed", reason: "not-set-up" }),
+      cancelSignIn: () => undefined,
+      forgetSignIn: () => undefined,
+      signInWithToken: async () => ({ status: "failed", reason: "unauthorized" }),
+      sites: async () => ({ status: "listed", sites: [] }),
+      checkAccess: async () => ({ status: "checked", protected: false }),
+      createSite: async () => ({ status: "failed", reason: "failed" }),
+      testSaved: async () => ({ ok: true }),
+      save: async () => ({ status: "failed", reason: "unknown" }),
+    },
+  },
+};

@@ -43,9 +43,6 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Custom Code](custom-code.md): Advanced mode
 - [AI apps](ai-apps.md): let an AI app on this computer work on your site
 
-**Still to come**, written with the features as they merge:
-- *Publish*: Netlify (4.4b)
-
 ## Writing a help page
 
 These rules keep the pages readable for people who've never made a website, and ready for the app to show.

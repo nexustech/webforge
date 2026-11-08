@@ -37,6 +37,8 @@ test.afterEach(async () => {
 async function addTestHost(page: Page, sftp: Awaited<ReturnType<typeof startSftpServer>>) {
   const publish = page.getByRole("dialog", { name: "Publish" });
   await publish.getByRole("button", { name: "Add Destination" }).click();
+  // Which kind (4.4b): a web host, rather than Netlify.
+  await page.getByRole("menuitem", { name: "FTP, FTPS or SFTP…" }).click();
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
   await form.getByLabel("Name", { exact: true }).fill("Test host");
   await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
@@ -75,6 +77,8 @@ test("adds an SFTP destination and keeps its password in the keychain, never the
   const publish = page.getByRole("dialog", { name: "Publish" });
   await expect(publish.getByText(/No destinations yet/)).toBeVisible();
   await publish.getByRole("button", { name: "Add Destination" }).click();
+  // Which kind (4.4b): a web host, rather than Netlify.
+  await page.getByRole("menuitem", { name: "FTP, FTPS or SFTP…" }).click();
 
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
   await form.getByLabel("Name", { exact: true }).fill("Test host");

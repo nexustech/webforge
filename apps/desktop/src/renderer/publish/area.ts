@@ -10,6 +10,7 @@ import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
 import { siteSession } from "../storage/index.js";
+import { netlifyThrough } from "./netlify-api.js";
 import { PublishDialog } from "./PublishDialog.js";
 import { createPublishOutcomes, PublishOutcomeDialogs } from "./PublishOutcomeDialogs.js";
 import { type PublishFlow, publishTo, republishTo } from "./publish-flow.js";
@@ -39,6 +40,15 @@ export const publishArea: Area<WindowContext> = {
     publishing: requests,
   }) => {
     const opened = createStore<Opened>(() => ({ open: false }));
+    // Netlify destinations (4.4b): its calls for the open site, and whether this build can sign in
+    // through Netlify's page, which its OAuth client ID decides (4.2).
+    const netlify = netlifyThrough(api.netlify, siteSession);
+    const canSignIn = createStore<boolean>(() => false);
+    api.netlify
+      .status()
+      .then((status) => canSignIn.setState(status.canSignIn, true))
+      // Without it, only a pasted token: nothing else is held up.
+      .catch((error: unknown) => reportFailure("publish.netlify", error));
     // The version stays while the dialog fades out, so its title doesn't change; each way of
     // opening it says afresh whether it republishes one.
     const close = () => opened.setState({ open: false });
@@ -54,10 +64,23 @@ export const publishArea: Area<WindowContext> = {
       askReplace: outcomes.askReplace,
       // Live now: the site shows this year where its text has `{year}` (F-CM-8), and Version
       // History lists where its versions went.
-      showLive: (live) => {
+      showLive: (live, destination) => {
         publishedYear.setState(new Date().getFullYear(), true);
         requests.published();
         outcomes.showLive(live);
+        // A Netlify site whose visitors get its log-in page, as a new project kept private does:
+        // said on Your site is live, since the API reports it live all the same (ADR 0006
+        // decision 6). A check that fails says nothing.
+        if (destination.kind === "netlify" && destination.siteId !== undefined) {
+          netlify
+            .checkAccess({ saved: destination.id }, destination.siteId)
+            .then((access) => {
+              if (access.status === "checked" && access.protected) {
+                outcomes.markProtected(live.operationId);
+              }
+            })
+            .catch(() => undefined);
+        }
       },
       // Still for the version being republished, if it's one: its password is typed again there.
       showDestinations: () =>
@@ -88,10 +111,12 @@ export const publishArea: Area<WindowContext> = {
 
     function Publish() {
       const { open, version } = useStore(opened);
+      const signInOffered = useStore(canSignIn);
       return createElement(PublishDialog, {
         open,
         ...(version === undefined ? {} : { republishing: version.name }),
         publish: api.publish,
+        netlify: { ...netlify, canSignIn: signInOffered },
         sessionId: siteSession,
         notify: (message) => toast.error(message),
         onSaved: (destination) => {

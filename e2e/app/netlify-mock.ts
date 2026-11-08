@@ -30,6 +30,8 @@ export type MockNetlify = {
   readonly clientId: string;
   /** A new Netlify site, as the person's account would have, finding its forms: its id. */
   addSite(name: string): Promise<string>;
+  /** The id of the account's site named `name`, if it has one: one the app made, say (4.4b). */
+  siteNamed(name: string): string | undefined;
   /** Sends the site's visitors to Netlify's login, as site protection does. */
   protect(siteId: string): void;
   /** The address the site is served at, as Netlify's record of it gives. */
@@ -139,6 +141,7 @@ export async function startMockNetlify(): Promise<MockNetlify> {
       forget(from);
       return site.id;
     },
+    siteNamed: (name) => fake.siteNamed(name),
     protect: (siteId) => {
       protectedSites.add(siteId);
     },

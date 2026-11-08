@@ -10,10 +10,10 @@ import { type MockNetlify, startMockNetlify } from "./netlify-mock.js";
 
 // Publishing to Netlify (4.2, #70) through 4.5's flow, against a mock of Netlify's API on this
 // computer (`netlify-mock.ts`), which only an unpackaged app is pointed at. The destination is
-// saved through 4.2's own calls, as 4.4b's form will save it: a pasted token, and the site. Until
-// 4.4b gives a Netlify destination its buttons in the Publish dialog, each publish is the call the
-// dialog and Version History make (`publish.publish`): main reads, gates and records it, and the
-// export worker builds and sends it, as for any destination.
+// saved through 4.2's own calls, as 4.4b's form saves it: a pasted token, and the site. Each publish
+// is the call the dialog and Version History make (`publish.publish`): main reads, gates and records
+// it, and the export worker builds and sends it, as for any destination. The same done through the
+// Publish dialog itself is `netlify-destination.spec.ts` (4.4b).
 
 /** What these tests call of `window.webforge`. */
 type Webforge = {
