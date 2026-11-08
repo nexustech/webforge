@@ -1,4 +1,4 @@
-import { isNodeDoc, isSharedCopy, type NodeDoc, type PageId, type SiteDoc } from "@webforge/model";
+import { isNodeDoc, isSharedCopy, type NodeDoc, pageEntryOf, type SiteDoc } from "@webforge/model";
 import { z } from "zod";
 
 /**
@@ -21,7 +21,7 @@ export type Location = z.infer<typeof locationSchema>;
 export function nodesAt(site: SiteDoc, location: Location): NodeDoc[] | undefined {
   switch (location.kind) {
     case "page":
-      return site.pages[location.pageId as PageId]?.doc.content;
+      return pageEntryOf(site.pages, location.pageId)?.doc.content;
     case "layout":
       return site.layout[location.part];
     case "shared": {

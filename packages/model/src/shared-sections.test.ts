@@ -7,12 +7,14 @@ import {
   copyHolding,
   expandSharedCopies,
   isSharedCopy,
+  isSharedSectionIn,
   newSharedCopy,
   pageAnchors,
   SHARED_COPY_TYPE,
   type SharedSectionsDoc,
   sameSharedName,
   sharedSectionNamed,
+  sharedSectionOf,
   sharedSectionsDocSchema,
 } from "./shared-sections.js";
 
@@ -206,5 +208,18 @@ describe("shared sections (F-ED-23)", () => {
     ]);
     expect(copyHolding(page, copiedNodeId("c2", "faq"))?.props.id).toBe("c2");
     expect(copyHolding(page, "faq")).toBeUndefined();
+  });
+});
+
+describe("looking up a shared section by an id from elsewhere (R10)", () => {
+  it("finds one by a plain string, and never a property every object has", () => {
+    const id: string = HOURS;
+
+    expect(isSharedSectionIn(shared, id)).toBe(true);
+    expect(sharedSectionOf(shared, id)?.name).toBe("Opening hours");
+    for (const other of ["missing", "constructor", "hasOwnProperty", "__proto__"]) {
+      expect(isSharedSectionIn(shared, other)).toBe(false);
+      expect(sharedSectionOf(shared, other)).toBeUndefined();
+    }
   });
 });
