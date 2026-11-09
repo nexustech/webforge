@@ -1,6 +1,6 @@
 # Branding: the app's name and icons
 
-"Webforge" is a working title (#450). Renaming the app touches two places and the icons. The identifiers listed below stay as they are, whatever the app is called.
+"Webforge" is a working title (#450). Renaming the app touches two places, the icons and the beta's pages. The identifiers listed below stay as they are, whatever the app is called.
 
 ## What changes with a rename
 
@@ -9,6 +9,7 @@
 | The app's name   | `app.name` in `packages/i18n/src/en/app.ts`                        | Every UI string that names the app. Each message writes `{appName}`, and `t()` and `template()` fill it in from `app.name`. That covers the window title, the title bar, About, the macOS application menu and `getAppInfo`. In development, main's `app.setName`, which names the About panel and the menus.             |
 | The product name | `productName` in `apps/desktop/electron-builder.yml`               | The installers and the app bundle (`Webforge.app`, `Webforge-Setup-….exe`), and so the installed app's user data folder. In development, the macOS menu, Dock and About panel: `pnpm dev` gives Electron's own `Electron.app` this name and signs it again ad hoc (`tools/src/ensure-electron.ts`, not yet run on a Mac). |
 | The icons        | `apps/desktop/build/`, referenced from `electron-builder.yml` only | Nothing yet: the repository has no logo or icon.                                                                                                                                                                                                                                                                          |
+| The beta's pages | `.github/ISSUE_TEMPLATE/beta-*.yml` and `docs/beta/`               | The beta's issue forms and testers' guide, which testers read on GitHub. Nothing fills in `{appName}` there, so they spell out the name.                                                                                                                                                                                  |
 
 `pnpm ui-strings` fails on a catalogue message that spells out the name rather than taking `{appName}`, so the name can't creep back in.
 

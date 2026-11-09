@@ -10,14 +10,8 @@
     "apps/*": {},
     "apps/desktop": {
       // The export worker is a second main-process input in electron.vite.config.ts, and the Help
-      // window (5.4b) a second preload and renderer page. electron-builder loads the afterExtract
-      // hook (electron-builder.yml, 5.3).
-      "entry": [
-        "src/worker/export-worker.ts",
-        "src/preload/help.ts",
-        "src/renderer/help/main.tsx",
-        "scripts/chromium-licences.cjs"
-      ],
+      // window (5.4b) a second preload and renderer page.
+      "entry": ["src/worker/export-worker.ts", "src/preload/help.ts", "src/renderer/help/main.tsx"],
       // Imported by @webforge/storage and @webforge/publish, which are bundled from source. Listed
       // as dependencies so electron-vite keeps them external and electron-builder packages them
       // (ADR 0003; ssh2, ADR 0006).
