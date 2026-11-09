@@ -108,20 +108,41 @@ function serve(sftp: SFTPWrapper, root: string): void {
     .on("EXTENDED", (reqId) => sftp.status(reqId, STATUS_CODE.OP_UNSUPPORTED));
 }
 
+/** An ed25519 key pair as ssh2 writes it: OpenSSH's private key, and the public one's line. */
+type KeyPair = { readonly private: string; readonly public: string };
+
 /**
- * A host key for the test server that ssh2 can read back: now and then its generator makes an
- * ed25519 key whose public half its own parser refuses ("Malformed OpenSSH public key", #588), so
- * one is made again until it reads, a few times at most.
+ * A new ed25519 key pair, locked with `passphrase` when given, as a host's control panel would have
+ * the person lock it, with one round of key derivation, which keeps reading it in the tests quick
+ * (real keys use 16).
  */
-export function hostKeys(generate = () => utils.generateKeyPairSync("ed25519")) {
+const ed25519 = (passphrase?: string): KeyPair =>
+  passphrase === undefined
+    ? utils.generateKeyPairSync("ed25519")
+    : utils.generateKeyPairSync("ed25519", { passphrase, cipher: "aes256-ctr", rounds: 1 });
+
+/**
+ * A key pair for the tests, locked with `passphrase` when given, that ssh2 can read back. Now and
+ * then its generator makes an ed25519 key whose halves its own parser refuses ("Malformed OpenSSH
+ * private key", "… public key"), locked or not: about 1 in 250 (#588, #901). So one is made again
+ * until both halves read, a few times at most.
+ */
+export function readableKeyPair({
+  passphrase,
+  generate = () => ed25519(passphrase),
+}: {
+  readonly passphrase?: string;
+  readonly generate?: () => KeyPair;
+} = {}) {
   let failure: Error | undefined;
   for (let attempt = 0; attempt < 10; attempt++) {
     const keys = generate();
+    const privateHalf = utils.parseKey(keys.private, passphrase);
     const parsed = utils.parseKey(keys.public);
-    if (!(parsed instanceof Error)) return { ...keys, parsed };
-    failure = parsed;
+    if (!(privateHalf instanceof Error) && !(parsed instanceof Error)) return { ...keys, parsed };
+    failure = privateHalf instanceof Error ? privateHalf : (parsed as Error);
   }
-  throw failure ?? new Error("No host key");
+  throw failure ?? new Error("No key pair");
 }
 
 /**
@@ -138,7 +159,7 @@ export async function startSftpServer(options: {
   const trusted = allowed === undefined || allowed instanceof Error ? undefined : allowed;
   const root = mkdtempSync(join(tmpdir(), "webforge-sftp-"));
   mkdirSync(join(root, "site"));
-  const keys = hostKeys();
+  const keys = readableKeyPair();
   const server = new Server({ hostKeys: [keys.private] }, (client) => {
     client
       .on("authentication", (context) => {
