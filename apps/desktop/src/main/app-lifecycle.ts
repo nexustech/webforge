@@ -59,13 +59,17 @@ const QUIT_CLOSE_WAIT_MS = 10_000;
  * Closes the site, then lets each feature finish its last work (`quit`, A12), then exits, whatever
  * closing does: at most {@link QUIT_CLOSE_WAIT_MS} in all, and a failure is logged, so Webforge never
  * lingers without a window. A site that fails to close still has the features finish, and a feature
- * that fails stops none of the others. `releaseLock` runs first, once all that is done: a launch
- * from then on opens Webforge itself (#413).
+ * that fails stops none of the others. `install` comes next, once every feature has finished and
+ * only if the site closed in time: it starts a downloaded update's installer (0.5a), which ends a
+ * Webforge still running, so nothing may still be writing. `releaseLock` runs then: a launch from
+ * then on opens Webforge itself (#413).
  */
 export async function closeThenExit(
   steps: {
     close(): Promise<void>;
     readonly features?: readonly Pick<AppFeature, "quit">[];
+    /** Last, once the site has closed and every feature has finished; never after the timeout. */
+    install?(): void;
     releaseLock(): void;
     exit(code: number): void;
   },
@@ -78,21 +82,32 @@ export async function closeThenExit(
       logFailure("Webforge could not finish a feature's work before quitting", error);
     }
   };
-  const closing = async () => {
+  /** Whether the site closed: false if closing it failed. */
+  const closing = async (): Promise<boolean> => {
+    let closed = true;
     try {
       await steps.close();
     } catch (error) {
+      closed = false;
       logFailure("Webforge could not close the site", error);
     }
     await Promise.all((steps.features ?? []).map(finish));
+    return closed;
   };
   let timer: unknown;
   try {
     const timedOut = new Promise<"timed-out">((resolve) => {
       timer = timers.setTimeout(() => resolve("timed-out"), QUIT_CLOSE_WAIT_MS);
     });
-    if ((await Promise.race([closing(), timedOut])) === "timed-out") {
+    const outcome = await Promise.race([closing(), timedOut]);
+    if (outcome === "timed-out") {
       log.error("Webforge quit before the site had closed");
+    } else if (outcome) {
+      try {
+        steps.install?.();
+      } catch (error) {
+        logFailure("Webforge could not install an update", error);
+      }
     }
   } finally {
     timers.clearTimeout(timer);

@@ -146,6 +146,87 @@ describe("closeThenExit", () => {
     );
   });
 
+  it("installs an update only once every feature has finished, then exits (0.5a)", async () => {
+    const order: string[] = [];
+    let finishThemes: () => void = () => undefined;
+
+    const exiting = closeThenExit({
+      close: async () => {
+        order.push("close");
+      },
+      features: [
+        {
+          quit: () =>
+            new Promise<void>((resolve) => {
+              order.push("themes");
+              finishThemes = resolve;
+            }),
+        },
+      ],
+      install: () => order.push("install"),
+      releaseLock: () => order.push("release"),
+      exit: (code) => order.push(`exit ${code}`),
+    });
+    await vi.waitFor(() => expect(order).toEqual(["close", "themes"]));
+    await Promise.resolve();
+    expect(order).not.toContain("install");
+
+    finishThemes();
+    await exiting;
+    expect(order).toEqual(["close", "themes", "install", "release", "exit 0"]);
+  });
+
+  it("installs no update when the site fails to close, and exits when installing fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const install = vi.fn();
+    const exit = vi.fn();
+
+    await closeThenExit({
+      close: async () => {
+        throw Object.assign(new Error("EBUSY"), { code: "EBUSY" });
+      },
+      install,
+      releaseLock: () => undefined,
+      exit,
+    });
+    expect(install).not.toHaveBeenCalled();
+
+    await closeThenExit({
+      close: async () => undefined,
+      install: () => {
+        throw new Error("UpdateInstallFailed");
+      },
+      releaseLock: () => undefined,
+      exit,
+    });
+    expect(exit).toHaveBeenCalledTimes(2);
+  });
+
+  it("installs no update when it exits after 10 s, the site not yet closed", async () => {
+    vi.useFakeTimers();
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const install = vi.fn();
+    const exit = vi.fn();
+    let finishClose: () => void = () => undefined;
+
+    const exiting = closeThenExit({
+      close: () =>
+        new Promise<void>((resolve) => {
+          finishClose = resolve;
+        }),
+      install,
+      releaseLock: () => undefined,
+      exit,
+    });
+    await vi.advanceTimersByTimeAsync(10_000);
+    await exiting;
+    finishClose();
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(exit).toHaveBeenCalledWith(0);
+    expect(install).not.toHaveBeenCalled();
+  });
+
   it("exits after 10 s when closing never finishes", async () => {
     vi.useFakeTimers();
     vi.spyOn(console, "error").mockImplementation(() => undefined);

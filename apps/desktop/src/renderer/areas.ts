@@ -32,6 +32,7 @@ import { saveSiteZipArea } from "./start/save-site-zip.js";
 import { crashReportsArea } from "./storage/area.js";
 import { themePanelArea } from "./theme/area.js";
 import { undoHistoryArea } from "./undo-history/area.js";
+import { updatesArea } from "./updates/area.js";
 import { versionHistoryArea } from "./versions/area.js";
 
 /*
@@ -90,4 +91,5 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   aiAppsArea,
   helpForElementArea,
   onboardingArea,
+  updatesArea,
 ];

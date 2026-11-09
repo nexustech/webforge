@@ -178,6 +178,9 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     startCrashReports: startCrashReports as unknown as AppParts["startCrashReports"],
     recoveryDialogs: {} as RecoveryDialogs,
     startStorageWriter: vi.fn(),
+    updater: vi.fn(async () => {
+      throw new Error("Only a packaged Windows app loads electron-updater");
+    }),
   };
   const appUrl = "webforge-app://editor/index.html";
 
@@ -282,6 +285,14 @@ describe("startApp", () => {
     window?.events.emit("ready-to-show");
     expect(window?.show).toHaveBeenCalled();
     expect(fake.crashReports.noticeAfterLaunch).toHaveBeenCalled();
+  });
+
+  it("doesn't update itself when run from its build folder: its update is always idle (0.5a)", async () => {
+    const fake = fakeElectron();
+    await fake.start();
+
+    expect(fake.parts.updater).not.toHaveBeenCalled();
+    expect(await fake.invoke("updates:status")).toEqual({ state: "idle" });
   });
 
   it("answers the editor's calls: its name and version, and its theme in the window's colours", async () => {
