@@ -134,6 +134,7 @@ test.describe("desktop shell", () => {
         "mcp",
         "help",
         "netlify",
+        "updates",
       ],
     });
   });

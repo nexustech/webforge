@@ -15,6 +15,7 @@ import type { SiteApi } from "./ipc/site.js";
 import type { TemplatesApi } from "./ipc/templates.js";
 import type { ThemesApi } from "./ipc/themes.js";
 import type { TrustApi } from "./ipc/trust.js";
+import type { UpdatesApi } from "./ipc/updates.js";
 import type { VersionsApi } from "./ipc/versions.js";
 
 /**
@@ -41,4 +42,5 @@ export interface WebforgeApi {
   readonly mcp: McpApi;
   readonly help: HelpApi;
   readonly netlify: NetlifyApi;
+  readonly updates: UpdatesApi;
 }

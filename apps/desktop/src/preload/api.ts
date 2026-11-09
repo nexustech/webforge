@@ -17,6 +17,7 @@ import { siteApi } from "./api/site.js";
 import { templatesApi } from "./api/templates.js";
 import { themesApi } from "./api/themes.js";
 import { trustApi } from "./api/trust.js";
+import { updatesApi } from "./api/updates.js";
 import { versionsApi } from "./api/versions.js";
 
 export type { Invoke, Subscribe } from "./api/call.js";
@@ -51,5 +52,6 @@ export function createWebforgeApi(
     mcp: mcpApi(call),
     help: helpApi(call),
     netlify: netlifyApi(call),
+    updates: updatesApi(call, subscribe),
   };
 }

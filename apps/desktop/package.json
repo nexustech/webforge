@@ -10,16 +10,17 @@
     "build": "electron-vite build",
     "preview": "pnpm run ensure-electron && electron-vite preview",
     "ensure-electron": "node ../../tools/src/ensure-electron.ts",
-    "package:win": "electron-vite build && electron-builder --win",
-    "package:mac": "electron-vite build && electron-builder --mac",
-    "package:dir": "electron-vite build && electron-builder --dir",
-    "package:e2e": "electron-vite build --mode e2e && electron-builder --dir",
+    "package:win": "electron-vite build && electron-builder --win --publish never",
+    "package:mac": "electron-vite build && electron-builder --mac --publish never",
+    "package:dir": "electron-vite build && electron-builder --dir --publish never",
+    "package:e2e": "electron-vite build --mode e2e && electron-builder --dir --publish never",
     "build:perf": "electron-vite build --mode perf"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.2",
     "better-sqlite3": "catalog:",
     "electron-log": "5.4.4",
+    "electron-updater": "6.8.12",
     "ssh2": "1.17.0",
     "uqr": "0.1.3"
   },

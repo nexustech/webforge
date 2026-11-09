@@ -17,6 +17,7 @@ import { siteCheck } from "./en/siteCheck.js";
 import { storage } from "./en/storage.js";
 import { templates } from "./en/templates.js";
 import { theme } from "./en/theme.js";
+import { updates } from "./en/updates.js";
 import { versions } from "./en/versions.js";
 
 /**
@@ -45,6 +46,7 @@ export const areas = {
   versions,
   help,
   onboarding,
+  updates,
 } as const;
 
 /**
@@ -72,4 +74,5 @@ export const en = {
   ...versions,
   ...help,
   ...onboarding,
+  ...updates,
 } as const;

@@ -76,6 +76,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "mcp:remove": "AI apps, which are the app's, whichever site is open",
   "mcp:seen-moved": "AI apps, which are the app's, whichever site is open",
   "prefs:get": "the person's preferences",
+  "updates:status": "the app's own update, whichever site is open",
   "prefs:set": "the person's preferences",
   "project:create": "opens another site: a hand-off of its own",
   "project:open": "opens another site: a hand-off of its own",
