@@ -23,6 +23,8 @@ function parts() {
     }),
     // AI apps opens in the window, not in a story.
     () => undefined,
+    // A beta version: Updates follows Beta until the person chooses (5.2).
+    "0.9.0",
   );
   const site = starterSite();
   site.settings.general = { name: "Rosa's Bakery", description: "", language: "en-GB" };
@@ -70,6 +72,9 @@ export const Interface: Story = { args: { initialGroup: "interface:" } };
 
 /** App › Devices: the person's own devices for the canvas. */
 export const Devices: Story = { args: { initialGroup: "devices:" } };
+
+/** App › Updates (5.2): Stable or Beta, Beta before 1.0 until the person chooses. */
+export const Updates: Story = { args: { initialGroup: "updates:" } };
 
 /** App › AI apps (#752): a line whose button opens AI apps, over Settings. */
 export const AiApps: Story = { args: { initialGroup: "aiApps:" } };

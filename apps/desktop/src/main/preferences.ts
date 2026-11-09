@@ -58,6 +58,8 @@ export function parsePreferences(raw: unknown): Preferences {
     const parsed = preferencesSchema.shape[key].safeParse(record[key]);
     return parsed.success ? (parsed.data as Preferences[K]) : DEFAULT_PREFERENCES[key];
   };
+  // Only a choice the person made: none, or an invalid one, leaves the default to the version.
+  const updateChannel = field("updateChannel");
   return {
     theme: field("theme"),
     editorLevel: field("editorLevel"),
@@ -68,6 +70,7 @@ export function parsePreferences(raw: unknown): Preferences {
     editPanel: field("editPanel"),
     versionsKept: field("versionsKept"),
     onboarding: field("onboarding"),
+    ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }
 

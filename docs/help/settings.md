@@ -2,9 +2,9 @@
 
 id: settings
 title: Settings
-summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, and your devices.
+summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, your devices and where updates come from.
 related: [site-settings, the-editor, ai-apps]
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 # Settings
@@ -30,6 +30,15 @@ Click **Save** to keep your changes.
 ## Version History
 
 **Versions kept:** how many of the versions {appName} saves by itself to keep for each site, from 5 to 100 (20 at first). Versions you save yourself are always kept. See [Version History](version-history.md).
+
+## Updates
+
+**Get updates from:** _Stable_ or _Beta_. Beta gets each new version of {appName} first, to try it out; Stable gets it once it has gone well on Beta.
+
+- Until {appName} 1.0, every new version is a Beta version, so {appName} gets its updates from Beta unless you choose Stable. From 1.0 it's Stable, unless you choose Beta.
+- Going back from Beta to Stable never puts an older version on: {appName} waits for a Stable version newer than the one you have.
+
+How updates arrive is in [Getting started](getting-started.md#updates). On a Mac, {appName} doesn't update itself yet, so this changes nothing there.
 
 ## AI apps
 

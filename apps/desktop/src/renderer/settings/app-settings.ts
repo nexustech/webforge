@@ -9,6 +9,11 @@ import {
   MAX_DEVICES,
   type Preferences,
 } from "../../shared/ipc/prefs.js";
+import {
+  type UpdateChannel,
+  updateChannelFor,
+  updateChannelSchema,
+} from "../../shared/update-channel.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import "../shell/form-messages.js";
 import { type SettingsRegistry, settingsPart } from "../editor/settings-registry.js";
@@ -123,6 +128,29 @@ const DEVICES: FormSpec<DeviceValues, z.infer<typeof devicesSchema>> = {
   }),
 };
 
+type UpdatesValues = { readonly channel: UpdateChannel };
+
+const updatesSchema = z.strictObject({ channel: updateChannelSchema });
+
+/** Updates (5.2): the channel {appName}'s updates come from, Stable or Beta. */
+const UPDATES: FormSpec<UpdatesValues, z.infer<typeof updatesSchema>> = {
+  fields: () => [
+    {
+      kind: "select",
+      name: "channel",
+      label: t("settings.updates.channel"),
+      help: t("settings.updates.channelHelp"),
+      options: [
+        { label: t("settings.updates.stable"), value: "stable" },
+        { label: t("settings.updates.beta"), value: "beta" },
+      ],
+      width: "md",
+    },
+  ],
+  schema: updatesSchema,
+  toModel: (values) => values,
+};
+
 /**
  * AI apps (F-AI-1, #752): a line that opens *AI apps…*. Its own dialog acts at once, so it isn't a
  * part of Settings, which saves on Save; Settings stays open under it.
@@ -164,16 +192,19 @@ const itemOf = (device: CustomDevice): DeviceItem => ({
 });
 
 /**
- * The app's parts of Settings (LF-12): Interface and Devices, which save the person's preferences,
- * never an undo step; and AI apps, a line that opens its own dialog with `openAiApps` (#752).
- * Backups and Updates join when they have settings of their own.
+ * The app's parts of Settings (LF-12): Interface, Devices and Updates, which save the person's
+ * preferences, never an undo step; and AI apps, a line that opens its own dialog with `openAiApps`
+ * (#752). Updates shows the channel `appVersion` follows until the person chooses one (5.2).
+ * Backups joins when it has settings of its own.
  */
 export function registerAppSettings(
   registry: SettingsRegistry,
   preferences: PreferencesStore,
   openAiApps: () => void,
+  appVersion: string,
 ): () => void {
   const now = () => preferences.getState().preferences;
+  const channel = () => updateChannelFor(now().updateChannel, appVersion);
   const stops = [
     registry.register({
       id: "interface",
@@ -226,10 +257,28 @@ export function registerAppSettings(
         }),
     }),
     registry.register({
+      id: "updates",
+      heading: "app",
+      // After Version History (2).
+      order: 3,
+      open: () =>
+        settingsPart({
+          id: "updates",
+          heading: "app",
+          label: t("settings.updates"),
+          spec: UPDATES,
+          initial: { channel: channel() },
+          save: (change) => {
+            // Only a choice is kept: Save alone leaves the default to follow the version.
+            if (change.channel !== channel()) preferences.change({ updateChannel: change.channel });
+          },
+        }),
+    }),
+    registry.register({
       id: "aiApps",
       heading: "app",
-      // After Version History (2): the last of App's parts.
-      order: 3,
+      // The last of App's parts.
+      order: 4,
       open: () =>
         settingsPart({
           id: "aiApps",
