@@ -1,6 +1,6 @@
 # Start-up performance review (9 Nov 2026)
 
-What happens between launching Webforge and an editor you can use, what blocks it, and what could make it faster. It came with the start-up screen (#887), which covers the wait; the changes recommended here are **not** made, and each would be its own issue. Architecture §10's target is a cold start to an editable canvas of a 5-page site in under 3 s on a mid-range laptop. Nothing measures that today: `e2e/perf/open-site.perf.ts` times opening a site from the start screen, which reloads the window but doesn't start the app.
+What happens between launching Webforge and an editor you can use, what blocks it, and what could make it faster. It came with the start-up screen (#887), which covers the wait; the changes recommended here are **not** made. Each is a Phase 5 chore ([#892](https://github.com/nexustech/webforge/issues/892)–[#896](https://github.com/nexustech/webforge/issues/896)), measured with the cold-start check [#891](https://github.com/nexustech/webforge/issues/891). Architecture §10's target is a cold start to an editable canvas of a 5-page site in under 3 s on a mid-range laptop. Nothing measures that today: `e2e/perf/open-site.perf.ts` times opening a site from the start screen, which reloads the window but doesn't start the app; [#891](https://github.com/nexustech/webforge/issues/891) adds that check.
 
 ## How it was measured
 
@@ -32,7 +32,7 @@ Since #887 the window draws the start-up screen at its first paint (first conten
 
 Most benefit first. **Measured** means the cost is measured; **hypothesis** means the cause or the gain still has to be shown.
 
-### 1. Stop the main process loading the export's tooling at start-up
+### 1. Stop the main process loading the export's tooling at start-up ([#892](https://github.com/nexustech/webforge/issues/892))
 
 - **Evidence (measured):** main's code starts running 1.3–2.3 s after the process, against 0.2 s for a bare Electron app, and no window can exist before it does. `out/main/index.js` imports a 5.1 MB chunk shared with the export worker: react-dom (1.1 MB, server rendering), terser (0.8 MB), lucide-static (0.5 MB), tailwindcss (0.36 MB), clean-css (0.34 MB), js-beautify, postcss, `@jsquash/jpeg` and basic-ftp, plus ssh2 and the MCP SDK from `node_modules`. Main uses a handful of names from that chunk (schemas, `publisherFor`, `PREVIEW_STYLESHEET`, the font catalogue); the tools themselves run in the workers.
 - **Hypothesis:** most of the 1.1–2 s is loading and compiling that graph.
@@ -41,7 +41,7 @@ Most benefit first. **Measured** means the cost is measured; **hypothesis** mean
 - **Risk:** chunking is easy to undo with one import; a check that fails when `out/main/index.js`'s static graph grows past a budget would keep it. Lazy loading moves a delay to the first publish or the first AI app's request.
 - **Measure:** `performance.mark` at the top of main's entry, at `ready` and when the window is created, logged by code in perf builds; a new `e2e/perf/cold-start.perf.ts` from launch to an editable canvas (architecture §10), on CI's nightly Performance job.
 
-### 2. A V8 code cache for the editor's scripts and for main
+### 2. A V8 code cache for the editor's scripts and for main ([#893](https://github.com/nexustech/webforge/issues/893))
 
 - **Evidence:** `APP_SCHEME_PRIVILEGES` (`main/app-scheme.ts`) has no `codeCache: true`. Chromium keeps a code cache for http(s) by default, but for a custom scheme only with that privilege, so the editor's 7 MB of JavaScript is probably compiled again on every launch. `DOMContentLoaded` comes 0.9–1.4 s after `domInteractive` (measured). Main doesn't call `module.enableCompileCache()` either.
 - **Hypothesis:** a code cache saves most of the compile time on every launch after the first; the saving isn't measured.
@@ -50,7 +50,7 @@ Most benefit first. **Measured** means the cost is measured; **hypothesis** mean
 - **Risk:** the cache lives in the user's profile, and a new version's scripts have new names, so stale entries are ignored. The security review should confirm the privilege adds nothing else (S5).
 - **Measure:** the renderer's `DOMContentLoaded` minus `domInteractive`, and main's first mark, on a second launch, with and without the cache.
 
-### 3. Start the canvas's CSS worker while the editor loads
+### 3. Start the canvas's CSS worker while the editor loads ([#894](https://github.com/nexustech/webforge/issues/894))
 
 - **Evidence (measured):** a site's page appears in the canvas 1.3–1.5 s after the rest of the editor. The CSS that styles it comes from a utility process (`createCanvasStyles`, `main/canvas-css.ts`) that is forked only when the first compile is asked for, then loads `export-worker.js` (1.7 MB) and Tailwind.
 - **Hypothesis:** much of that 1.3–1.5 s is the worker's start, which could overlap the renderer's 2–3 s of loading.
@@ -59,14 +59,14 @@ Most benefit first. **Measured** means the cost is measured; **hypothesis** mean
 - **Risk:** one more process starts during the busiest second of start-up, and runs for nothing if the person stays on the start screen; start it only when a site is open.
 - **Measure:** time from the editor's first render to `style[data-webforge-site-css]` in the canvas (what `waitForCanvas` waits for), in the cold-start perf check.
 
-### 4. Collecting the site's classes before the first compile
+### 4. Collecting the site's classes before the first compile ([#895](https://github.com/nexustech/webforge/issues/895))
 
 - **Evidence:** `connectSiteCss` (`renderer/editor/site-css.ts`) renders every page, the Header and the Footer to HTML twice, synchronously on the renderer's main thread, before it asks for the canvas's CSS. react-dom appears twice in the renderer's chunks (446 KB and 518 KB), probably its server renderer for this. Not timed.
 - **Hypothesis:** this grows with the site and holds up the first paint of the canvas on large sites.
 - **Change:** collect classes from the shown page first and the rest after, or in a worker, or keep the last set with the site (`uiState`).
 - **Measure:** a perf mark around `siteClasses()` on the 20-page fixture site (`bench/`).
 
-### 5. A smaller first bundle for the start screen
+### 5. A smaller first bundle for the start screen ([#896](https://github.com/nexustech/webforge/issues/896))
 
 - **Evidence (measured):** the start screen shares the editor's 7 MB of scripts (`main.tsx` imports `App` and `StartScreen` statically), and shows 2.4–2.6 s after navigation.
 - **Change:** `import()` the editor only when a site is open, so the start screen loads a fraction of the code.
