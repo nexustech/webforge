@@ -1,0 +1,255 @@
+name: Release
+
+# Releases (5.2, spec/03 §10; how to make one: docs/releasing.md).
+# - release-please (Apache-2.0) keeps a release pull request open on `main` with the next version
+#   and its CHANGELOG, worked out from the Conventional Commits merged since the last release
+#   (release-please-config.json). Merging that pull request makes the release: a tag `vX.Y.Z` and a
+#   draft GitHub Release with the changelog.
+# - The same run then builds the installers from the tag on Windows (NSIS) and macOS (DMG and zip),
+#   and uploads them to the draft with electron-updater's feed files (`latest.yml`,
+#   `latest-mac.yml`). Nobody gets the release until someone publishes the draft.
+# - "Run workflow" (`gh workflow run release.yml`) is a dry run: it builds the branch as
+#   `<version>-dry-run.<run number>` into a draft release of its own, which is never published:
+#   delete it once checked.
+# - Signing: each OS's build is signed only when its signing secrets exist (0.5b, #850, sets them
+#   up and electron-builder's signing options). Without them it's built unsigned, with a warning.
+# - The release pull request: GitHub runs no workflows for pull requests opened with the workflow's
+#   own token, so its CI doesn't start by itself. With a `RELEASE_PLEASE_TOKEN` secret (a
+#   fine-grained token with contents and pull-request write access to this repository) it does;
+#   without one, close and reopen the release pull request to start its CI.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release-please:
+    name: Release pull request
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # One at a time. A run waiting here that a newer one replaces loses nothing: release-please
+    # still makes the release for a merged release pull request in the next run.
+    concurrency:
+      group: release-please
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: write
+      # The release pull request's labels.
+      issues: write
+    outputs:
+      created: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
+    steps:
+      - name: Update the release pull request, or make the release
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || github.token }}
+
+  prepare:
+    # The release this run builds into: the draft release-please has just made, or a dry run's own.
+    name: Release to build
+    needs: release-please
+    if: ${{ !cancelled() && (needs.release-please.outputs.created == 'true' || github.event_name == 'workflow_dispatch') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    outputs:
+      ref: ${{ steps.release.outputs.ref }}
+      tag: ${{ steps.release.outputs.tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.release-please.outputs.tag || github.sha }}
+
+      - name: Find or make the draft release
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.release-please.outputs.tag }}
+          RUN: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          if [ -n "$TAG" ]; then
+            # release-please bumps the app's version with the root's (extra-files): the installers
+            # and the update feed carry the tag's version.
+            if [ "$TAG" != "v$version" ]; then
+              echo "::error::The tag is $TAG, but apps/desktop/package.json says $version."
+              exit 1
+            fi
+            ref="$TAG"
+          else
+            version="$version-dry-run.$RUN"
+            ref="$GITHUB_SHA"
+            # A draft makes no tag, so deleting it leaves nothing behind.
+            gh release create "v$version" --draft --target "$GITHUB_SHA" \
+              --title "Dry run $RUN ($version)" \
+              --notes "A dry run of the release workflow, built from $GITHUB_SHA. Never publish it: delete it once checked."
+          fi
+          { echo "ref=$ref"; echo "tag=v$version"; echo "version=$version"; } | tee -a "$GITHUB_OUTPUT"
+
+  build:
+    name: Build (${{ matrix.os }})
+    needs: prepare
+    if: ${{ !cancelled() && needs.prepare.result == 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: --win
+            # The installer and electron-updater's feed file for it.
+            expect: "*.exe *.yml"
+          - os: macos-latest
+            target: --mac
+            # electron-updater updates a Mac from the zip; people install from the DMG.
+            expect: "*.dmg *.zip *-mac.yml"
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Dependency licences (C1)
+        # This OS's own binary packages, which the installer ships.
+        run: pnpm licence-check
+
+      - name: Signing
+        # electron-builder reads its signing settings from these variables, and takes an empty one
+        # as set, so only the secrets that exist are passed on.
+        shell: bash
+        env:
+          # macOS: the Developer ID certificate (base64 .p12) and notarisation.
+          CSC_LINK: ${{ runner.os == 'macOS' && secrets.CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.CSC_KEY_PASSWORD || '' }}
+          APPLE_ID: ${{ runner.os == 'macOS' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ runner.os == 'macOS' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ runner.os == 'macOS' && secrets.APPLE_TEAM_ID || '' }}
+          # Windows: Azure Artifact Signing, or a certificate (Q3 chooses, in 0.5b).
+          AZURE_TENANT_ID: ${{ runner.os == 'Windows' && secrets.AZURE_TENANT_ID || '' }}
+          AZURE_CLIENT_ID: ${{ runner.os == 'Windows' && secrets.AZURE_CLIENT_ID || '' }}
+          AZURE_CLIENT_SECRET: ${{ runner.os == 'Windows' && secrets.AZURE_CLIENT_SECRET || '' }}
+          WIN_CSC_LINK: ${{ runner.os == 'Windows' && secrets.WIN_CSC_LINK || '' }}
+          WIN_CSC_KEY_PASSWORD: ${{ runner.os == 'Windows' && secrets.WIN_CSC_KEY_PASSWORD || '' }}
+        run: |
+          set -euo pipefail
+          names=(CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
+            AZURE_TENANT_ID AZURE_CLIENT_ID AZURE_CLIENT_SECRET WIN_CSC_LINK WIN_CSC_KEY_PASSWORD)
+          set=0
+          for name in "${names[@]}"; do
+            value="${!name:-}"
+            [ -n "$value" ] || continue
+            delimiter="EOF_$(openssl rand -hex 16)"
+            { echo "$name<<$delimiter"; echo "$value"; echo "$delimiter"; } >> "$GITHUB_ENV"
+            set=$((set + 1))
+          done
+          if [ "$set" -eq 0 ]; then
+            echo "::warning::No signing secrets for $RUNNER_OS: this build is unsigned."
+            # Nothing on the runner to sign with either.
+            echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> "$GITHUB_ENV"
+          else
+            echo "$set signing settings for $RUNNER_OS."
+          fi
+
+      - name: Build the installers
+        shell: bash
+        env:
+          VERSION: ${{ needs.prepare.outputs.version }}
+        run: |
+          set -euo pipefail
+          pnpm --filter @webforge/desktop build
+          cd apps/desktop
+          # The version from prepare: the tag's, or a dry run's own.
+          pnpm exec electron-builder ${{ matrix.target }} --publish never -c.extraMetadata.version="$VERSION"
+
+      - name: Upload to the draft release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          EXPECT: ${{ matrix.expect }}
+        run: |
+          set -euo pipefail
+          dir="apps/desktop/release/$VERSION"
+          # The installers, their blockmaps (electron-updater's partial downloads) and the feed
+          # files: every file electron-builder wrote there but its own logs (builder-*).
+          files=()
+          for file in "$dir"/*; do
+            [ -f "$file" ] || continue
+            case "$(basename "$file")" in builder-*) continue ;; esac
+            files+=("$file")
+          done
+          set -f
+          for pattern in $EXPECT; do
+            found=false
+            for file in "${files[@]}"; do
+              # shellcheck disable=SC2053 # A pattern on purpose.
+              if [[ "$(basename "$file")" == $pattern ]]; then found=true; break; fi
+            done
+            if [ "$found" != true ]; then
+              echo "::error::electron-builder wrote no $pattern into $dir."
+              exit 1
+            fi
+          done
+          set +f
+          gh release upload "$TAG" "${files[@]}" --clobber
+          {
+            echo "### $RUNNER_OS: uploaded to $TAG"
+            for file in "${files[@]}"; do echo "- \`$(basename "$file")\`"; done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  ready:
+    # Says where the draft is, once every OS has uploaded to it.
+    name: Draft ready
+    needs: [prepare, build]
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # Only a token that can write sees draft releases.
+      contents: write
+    steps:
+      - name: Link to the draft
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          set -euo pipefail
+          url=$(gh release view "$TAG" --json url --jq .url)
+          {
+            echo "### The draft release $TAG is ready"
+            echo "$url"
+            echo
+            echo "Check it, then publish it (docs/releasing.md). A dry run's draft is deleted, never published."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
