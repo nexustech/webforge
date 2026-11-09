@@ -3,6 +3,7 @@
 The site's documents and their zod schemas: what the editor edits, `.wforge` stores and the export pipeline builds.
 
 ## Public API
+
 `src/index.ts` is the only entry point; import the package as `@webforge/model`, never its internal files.
 
 - **`SiteDoc`** and `siteDocSchema` (architecture §5): settings, theme, the shared layout, pages keyed by `PageId` with `pageOrder` and `homePageId`, media metadata, custom code and the navigation menu. The schema rejects broken structure: pages stored under another id, a page order that misses a page, no home or "Page not found" page, reserved slugs (`index`, `404`, `assets`), two pages with one path, duplicate media names or menu item ids. `createSite(options)` makes a new valid site.
@@ -27,5 +28,6 @@ const snapshot = siteToSnapshot(site, blobsByHash);
 ```
 
 ## Boundaries
+
 - Framework-free: no React, no Electron, no Node or DOM APIs (`newId` uses Web Crypto through `globalThis`).
 - Core package: coverage ≥ 90% lines / ≥ 85% branches.

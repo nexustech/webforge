@@ -1,4 +1,5 @@
 ---
+
 id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
@@ -41,6 +42,7 @@ This isn't your website: to make that, see [Export](export.md).
 Backups are for when your site's file is damaged; to go back to an earlier state of your site, use [Version History](version-history.md). While you work, {appName} keeps backups of your site's file on this computer: one when you open the site, then one every half hour while you edit. It keeps the last five.
 
 If your site's file is ever damaged (for example by a sync service such as OneDrive or Dropbox), {appName} says so when you open it, and offers:
+
 - **Restore latest backup**;
 - **Choose a backup…**.
 

@@ -1,4 +1,5 @@
 ---
+
 id: site-settings
 title: Site Settings
 summary: Your site's name, web address, business details, social profiles, search engine and analytics settings, and form service.
@@ -19,7 +20,7 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 - **Language:** the language your site is written in, as a code such as `en`, `en-GB` or `de`. Spelling checks use it too.
 - **Site icon:** the small picture in browser tabs and bookmarks. Choose a square picture from Media.
 - **Show a back-to-top button:** a button that appears once visitors scroll down. It isn't shown in the editor.
-- **Business type** and **More precisely:** what kind of business this is, such as *Restaurant*, *Plumber* or *Vehicle repair*. Search engines use it.
+- **Business type** and **More precisely:** what kind of business this is, such as _Restaurant_, _Plumber_ or _Vehicle repair_. Search engines use it.
 - **Help AI tools read your site:** adds a plain-text copy of each page to your website, for AI tools that read them. Search engines don't read them. Off unless you turn it on.
 
 ## Web address
@@ -35,6 +36,7 @@ They're in the same **Settings** window as {appName}'s own preferences, under **
 ## Contact details and opening hours
 
 Shown under **Contact & hours**.
+
 - **Business name**, **Email address**, **Phone number** and **Address**.
 - **Opening hours:** add a row for each set of days, with the time you open and close.
 - **Note on opening hours:** such as "Closed on bank holidays".
@@ -54,7 +56,7 @@ The **Opening hours and contact** section and the **Map** show these details, an
 ## Analytics
 
 - **Google Analytics measurement ID:** such as `G-ABC123DEF4`, to count your visitors. Leave it empty for no analytics.
-- **Ask visitors before counting them (cookie banner):** shows a banner with *Accept all* and *Decline*. Google Analytics only starts if a visitor accepts. With the banner off, visits are still counted, but without cookies and in less detail.
+- **Ask visitors before counting them (cookie banner):** shows a banner with _Accept all_ and _Decline_. Google Analytics only starts if a visitor accepts. With the banner off, visits are still counted, but without cookies and in less detail.
 - **Banner text:** your own wording for the banner. Accepting also loads videos and maps.
 
 ## Forms

@@ -3,6 +3,7 @@
 `.wforge` SQLite project store: JSON documents, content-addressed blobs and versions, on better-sqlite3. Decisions and measurements: [ADR 0003](../../docs/adr/0003-wforge-sqlite-storage.md).
 
 ## Public API
+
 Import from `@webforge/storage` only.
 
 - `ProjectStore.create(path, { name })` builds a new project under a temporary name and renames it into place; `ProjectStore.open(path, { readOnly? })` validates an untrusted file first (application id, quick check, the exact schema of its format, metadata, and that its content is whole: the commit fingerprint in `user_version`, every blob referred to present, document blobs matching their hashes; #295) and throws `ProjectFileError` with a `code`. Every write that changes documents, assets or versions stamps the fingerprint in the same transaction (`src/content-check.ts`).
@@ -18,13 +19,16 @@ Import from `@webforge/storage` only.
 - The API is synchronous; it runs in the Electron main process.
 
 ## File format (version 2)
+
 Each format's fixture is `packages/test-utils/fixtures/wforge/v<n>.wforge`, made once by `test/support/make-v<n>-fixture.ts` and never regenerated; every release must open every one. Format 2 adds a version's reason, site format, picture and publish record ([ADR 0020](../../docs/adr/0020-storage-format-2.md)).
 
 Tables `meta`, `blobs`, `documents`, `assets`, `versions` (`src/schema.ts`); `PRAGMA application_id` "WFRG"; rollback journal (`journal_mode=DELETE`, `synchronous=FULL`) so no side files exist between commits.
 
 ## Tests
+
 `test/` holds integration tests against real temporary files, including a child writer process that is killed mid-write (`test/support/writer.ts`) and a sync-client-style copier.
 
 ## Boundaries
+
 - Framework-free: no React, no Electron renderer APIs.
 - Core package: coverage ≥ 90% lines / ≥ 85% branches.

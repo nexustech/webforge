@@ -1,4 +1,5 @@
 ---
+
 id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
@@ -33,6 +34,7 @@ When a site is open, the editor fills the window.
 ## Using the keyboard
 
 You can do everything in the editor without a mouse.
+
 - **F6** moves to the next part of the window: the title bar, the left panels, the page, the bottom panel and the right panels, in that order. **Shift+F6** goes back. Each part remembers where you were in it.
 - **Tab** moves between the buttons and options in a part. In a row of tabs, use the arrow keys.
 - On the page, the arrow keys select the next or previous item, **Enter** edits its text and **Esc** stops. See [Editing on the page](editing-on-the-page.md).
@@ -44,6 +46,7 @@ Every key is listed in [Keyboard shortcuts](keyboard-shortcuts.md).
 ## Design and Content mode
 
 The **Design | Content** switch in the title bar sets what you can change.
+
 - **Design** (the usual): change everything.
 - **Content:** change the words and pictures only. You can't add, move, delete or restyle anything, so nothing can be knocked out of place by accident. Handy when someone else updates prices or opening hours.
 
@@ -52,10 +55,11 @@ The **Design | Content** switch in the title bar sets what you can change.
 ## Simple and Advanced mode
 
 {appName} starts in **Simple** mode. **Advanced** mode adds a few things for people who know some web code:
+
 - the Edit panel's **Advanced** tab (CSS classes, anchor IDs and attributes, and the item's CSS);
 - **Custom Code**, in the Add panel and in Settings;
 - your own colours outside the theme in colour pickers;
-- a **CSS** tab in *Style this…*;
+- a **CSS** tab in _Style this…_;
 - **Include developer files** when you export.
 
 Switch with **View › Use Advanced Mode**, or in [Settings](settings.md#interface). The mode is yours, not the site's: it doesn't change your site.
@@ -65,7 +69,8 @@ Switch with **View › Use Advanced Mode**, or in [Settings](settings.md#interfa
 Your site adapts to the visitor's screen. Use **Desktop**, **Tablet** and **Mobile**, at the top right of the canvas, to see and edit each size (Ctrl+1, Ctrl+2 and Ctrl+3; Cmd on a Mac).
 
 On the left of the canvas toolbar:
-- **Zoom:** zoom in or out, or choose a zoom level. *Fit* fits the page to the window.
+
+- **Zoom:** zoom in or out, or choose a zoom level. _Fit_ fits the page to the window.
 - **Rotate:** swaps a device's width and height.
 - **View:** turn on outlines, spacing, element names, or extra space at the bottom of the page. These only change the editor.
 - **The size box:** type any width, or choose a device. **Add device…** adds a screen size of your own, such as your own phone's. Manage those in [Settings › Devices](settings.md#devices).
@@ -83,6 +88,7 @@ Changes you make while viewing Tablet or Mobile can apply to that device only. S
 **Help › {appName} Help**, or F1, opens these help pages in a window of their own, beside the editor, so you can read and work at once. Choose a page from the contents on the left, or search them all. Links between pages stay in the Help window, and **Back** returns to the page before; a link to a website opens in your web browser. The pages come with {appName}, so they work without an internet connection.
 
 Help is also where you need it:
+
 - a small **?** beside the Edit panel's heading, at the top of each section of [Settings](settings.md) and [Site Settings](site-settings.md), in the Export, Publish, Page Settings and Preview on Phone dialogs, when {appName} asks about code from somewhere else, and on each check in [Site Check](site-check.md) opens the help for it;
 - **Help for This Element**, in the [right-click menu](editing-on-the-page.md#the-right-click-menu) on the page and in Layers, opens the help for the selected section or element;
 - the start screen's **Help** tab lists the pages to start with.

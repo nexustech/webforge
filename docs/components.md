@@ -11,6 +11,7 @@ pnpm new-component PriceList --place section
 ```
 
 It writes a new family for the component, from the primitives below, and registers it:
+
 - `src/catalogue/price-list.tsx`: the component, with `defineSection` (or `defineComponent` for `--place element` or `child`);
 - `src/catalogue/price-list.stories.tsx` and `price-list.test.tsx`: a story and a test that render it with its defaults;
 - `packages/i18n/src/en/components/priceList.ts`: its strings;
@@ -29,6 +30,7 @@ What it writes passes `pnpm check` and renders in Storybook as it is; then make 
 ## Defining it
 
 Wrap an element's definition in `defineComponent`, and a section's in `defineSection` (2.19), which is `defineComponent` with the section's frame added (see [The section frame](#the-section-frame)).
+
 - **Typed by its fields (R7):** `fields` type the rest. A default for a field the component doesn't have, or a choice a field doesn't offer, is a type error. `render` gets `values` and `slots` typed by them, so it reads `values.variant` as `"two" | "three"`, with no narrowing of its own.
 - **Read from whatever the document holds:** a site file can hold anything. `defineComponent` gives `render` each value in its field's form:
   - a choice not offered becomes the default, else the first choice;
@@ -78,7 +80,11 @@ const cards = defineSection({
       <div className={`mx-auto ${contentWidthClass(values.contentWidth)} space-y-8`}>
         <SectionTitle>{values.title}</SectionTitle>
         {/* The slot's class goes on the element that holds its elements: see Slots below. */}
-        <Items className={values.variant === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"} />
+        <Items
+          className={
+            values.variant === "two" ? "grid gap-6 md:grid-cols-2" : "grid gap-6 md:grid-cols-3"
+          }
+        />
       </div>
     );
   },
@@ -88,8 +94,9 @@ const cards = defineSection({
 ### The section frame
 
 Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComponent` refuses `place: "section"`, so every section has the same frame and the same frame fields:
-- **Its colours:** `COLORS_FIELD` (2.4, F-DS-3), *Page colours* or *Reversed*. A reversed section gets `data-theme="wf_inverse"` (`INVERSE_THEME` from `@webforge/model`), daisyUI's nested theme of the theme's inverse colours, so its background, text and every colour class inside it take those. A section declaring a `colors` field is refused.
-- **Its content width:** `CONTENT_WIDTH_FIELD` (3.21, PF-4), *Narrow* (768 px), *Medium* (896 px), *Wide* (1152 px) or *Full* (the page less the padding), in the Style tab. It caps the section's content, never its background, which spans the page. Each section gives its default in `defaults.contentWidth` (a type error without one): the width its first layout drew before 3.21. `render` caps its outermost column with `mx-auto ${contentWidthClass(values.contentWidth)}`; a narrower reading measure inside it (an intro over a grid) keeps its own class, and `narrowerWidth` gives a measure that is never wider than the section's. A section declaring a `contentWidth` field is refused.
+
+- **Its colours:** `COLORS_FIELD` (2.4, F-DS-3), _Page colours_ or _Reversed_. A reversed section gets `data-theme="wf_inverse"` (`INVERSE_THEME` from `@webforge/model`), daisyUI's nested theme of the theme's inverse colours, so its background, text and every colour class inside it take those. A section declaring a `colors` field is refused.
+- **Its content width:** `CONTENT_WIDTH_FIELD` (3.21, PF-4), _Narrow_ (768 px), _Medium_ (896 px), _Wide_ (1152 px) or _Full_ (the page less the padding), in the Style tab. It caps the section's content, never its background, which spans the page. Each section gives its default in `defaults.contentWidth` (a type error without one): the width its first layout drew before 3.21. `render` caps its outermost column with `mx-auto ${contentWidthClass(values.contentWidth)}`; a narrower reading measure inside it (an intro over a grid) keeps its own class, and `narrowerWidth` gives a measure that is never wider than the section's. A section declaring a `contentWidth` field is refused.
   - **Layouts keep the width:** switching a section's layout keeps its content width. Format 10 wrote, for each layout that drew wider or narrower than its kind's default before (a centred or text-only Hero, a Call to action or a Video or Map beside its text, an FAQ in columns), that width, so nothing saved changed. A stacked form keeps its own measure and hides the setting (`hides`).
   - **A Section at Medium on the page's colours** keeps its content where every Section's was before 3.21, so one saved then doesn't move: its column is 896 px with the padding inside it. It is still a band across the page, so its background spans the page as at every other width (#643). The padding is the column's (`paddedColumn` on `defineSection`, the column drawn with `sectionPadding` and `PADDED_COLUMN_CLASS`), and the canvas's padding grips and spacing overlay measure that column. Reversed (2.4), or at another width, its column sits inside the band's padding, as every other section's does.
   - **An Image** reads its Section's width from `SectionWidthContext`, for its `sizes`.
@@ -100,23 +107,24 @@ Every section is defined with `defineSection` (`src/frame.tsx`), and `defineComp
 
 ### The Appearance group
 
-Every section and element has the same *Appearance* group (2.22, ST-1), first in the Style tab, so a person can style one item without classes. `defineSection` and `defineComponent` add it (`src/appearance.ts`); a component adds nothing to get it, and declaring a field of its names (`lookSize`, `lookColor`…) is refused.
-- **Its controls:** Text (size from the type scale, weight, italic, underline, letter case, alignment), Colour (text and background, from the theme's colours with shades), Corners (the theme's radius scale), Border (none, thin or thick, in a theme colour), Shadow (the theme's shadow scale) and Opacity. Each is a design token, set per device, with *Theme's* as its default: the item as it draws itself.
+Every section and element has the same _Appearance_ group (2.22, ST-1), first in the Style tab, so a person can style one item without classes. `defineSection` and `defineComponent` add it (`src/appearance.ts`); a component adds nothing to get it, and declaring a field of its names (`lookSize`, `lookColor`…) is refused.
+
+- **Its controls:** Text (size from the type scale, weight, italic, underline, letter case, alignment), Colour (text and background, from the theme's colours with shades), Corners (the theme's radius scale), Border (none, thin or thick, in a theme colour), Shadow (the theme's shadow scale) and Opacity. Each is a design token, set per device, with _Theme's_ as its default: the item as it draws itself.
 - **Where it lands:** an element's classes go on its root element, through a fragment or a context's provider around it (a test renders every element and checks). A section's go on its `<section>`, except Text, which styles its title: `SectionTitle` (the page's or the section's size, never `small`) reads them from `SectionTitleAppearance`. Every element resets that context for what it holds, so a section's title styling reaches no other title.
-- **A section without a title** of its own (the plain Section) says `titled: false` to `defineSection`, which leaves out the Text controls; a test checks every section that draws no title does. *Border colour* shows only while *Border* draws one on some device (`fieldsHiddenBy`).
+- **A section without a title** of its own (the plain Section) says `titled: false` to `defineSection`, which leaves out the Text controls; a test checks every section that draws no title does. _Border colour_ shows only while _Border_ draws one on some device (`fieldsHiddenBy`).
 - **A part other than the root:** an element whose root only aligns it sets `lookTarget: true` and marks the part its Appearance belongs on with `LOOK_TARGET` (`data-wf-look`), as the Button's link and the Icon's drawing do. Only those components are searched for the mark: at any depth, the root itself and lists mapped from data included. The mark never reaches a page (a test renders every element and checks).
 - **A drawing's colour:** an element whose colour colours a drawing rather than text (the Icon, Social links' logos) sets `graphic: true`. The colour field and Site Check then ask 3:1 of it, as WCAG asks of graphics, not text's 4.5:1, whatever its field is called (#670). `pnpm catalogue-data` carries the flag into the catalogue as data.
 - **A picture behind the content:** a component that draws a picture behind its text names it in `pictureBehind`: its media field, and the layouts it's behind the text in (`[{ field: "image", variants: ["background"] }]` on the Hero). `defineSection` adds the background image itself. The colour field and Site Check measure no contrast on such a picture, as its colours can't be known (`drawsPictureBehind`, #670); `defineComponent` refuses a field that isn't a picture, or a layout it doesn't have.
 - **Why `!`:** the group's classes are marked to win (`underline!`, `shadow-lg!`), since a person's choice for this one item outranks how the component looks by default.
 - **A Button with a colour of its own** darkens when hovered, unless its hover row says otherwise: the group's colours outrank daisyUI's own hover colours. An Outline button also keeps its look when hovered, unfilled, or daisyUI's fill would hide its label. Both only on the devices the colour is set for (`whereOwnColour`), as the colour's own classes are.
-- **Its hover row (ST-2, ST-7):** *When hovered* sits in the same group, on the Button, the Image, the Icon and the card sections only. A component spreads its fields: `HOVER_FIELDS`, `CARD_HOVER_FIELDS` for a card section's cards, and `PICTURE_HOVER_FIELDS` for the Image and the Icon, which have no text of their own to underline.
+- **Its hover row (ST-2, ST-7):** _When hovered_ sits in the same group, on the Button, the Image, the Icon and the card sections only. A component spreads its fields: `HOVER_FIELDS`, `CARD_HOVER_FIELDS` for a card section's cards, and `PICTURE_HOVER_FIELDS` for the Image and the Icon, which have no text of their own to underline.
   - **The effect** (`hover`): none, lift, grow, tilt, lift and shadow, shadow, darken or underline.
-  - **Its timing** (2.28): *Speed* (`hoverSpeed`: fast, medium, slow) and *Movement* (`hoverEasing`: smooth, gentle stop, springy). Theme tokens: Tailwind's durations and easings, and the theme's `--ease-spring`. The first of each adds no class, so a hover set before 2.28 draws as it did. They're unavailable while the effect is instant (none or underline) on every device.
+  - **Its timing** (2.28): _Speed_ (`hoverSpeed`: fast, medium, slow) and _Movement_ (`hoverEasing`: smooth, gentle stop, springy). Theme tokens: Tailwind's durations and easings, and the theme's `--ease-spring`. The first of each adds no class, so a hover set before 2.28 draws as it did. They're unavailable while the effect is instant (none or underline) on every device.
   - **One transition:** `hoverClasses(values)` gives the effect's classes with a single `transition-all` timed by the row. An entrance's own transition (2.12) applies only while it moves in (`wf-entering:`), so after that the hover's is the element's only one.
   - **Per device**, like the rest of the group: each device's classes across its own widths.
   - **CSS only**, with no script. The transition and everything that moves wait for `motion-safe`; for visitors who prefer less motion, a shadow, darkening or underline shows at once.
   - Its classes are marked to win too, so a hover state (which Tailwind writes after the base rule) beats the group's own shadow or decoration.
-- **What a component may still do:** keep its own style fields (a Heading's size and colour), which come after the group in the *Options* group. It can't hide the group or a control of it.
+- **What a component may still do:** keep its own style fields (a Heading's size and colour), which come after the group in the _Options_ group. It can't hide the group or a control of it.
 - **As data (4.8):** `catalogue-data.json` lists the group's fields once, and marks each component that has them (`appearance: "all"`, or `"noText"` for a section without a title); `CATALOGUE` puts them back, so the commands check them as any field.
 - **The token rule (ST-6):** no free value in Simple mode; Advanced mode keeps ADR 0009's off-theme hex on the colour controls.
 - **Apply Look to Every… (2.27, ST-4):** the editor copies the group's values, every field whose `optionGroup` is `appearance`, from one item to every other of its type, on the page or the site (`apps/desktop/src/renderer/clipboard/apply-look.ts`). A field added to the group is copied with no change there.
@@ -124,6 +132,7 @@ Every section and element has the same *Appearance* group (2.22, ST-1), first in
 ### Titles, text and buttons
 
 `src/typography.tsx` is the one source of the catalogue's title, body-text and button classes, where the theme's type scale (2.3) lands. A test renders every component in each layout and fails on any other title, running-text or button classes.
+
 - **Titles:** `<SectionTitle>` (a section's h2), `size="page"` (the Hero's h1) or `size="small"` (h3), from `TITLE_CLASSES`. The Heading element uses the same classes.
 - **Running text:** `<BodyText>` for paragraphs (`BODY_TEXT_CLASSES`), with a placing class if needed (`className="mt-4"`).
 - **Buttons:** `<ButtonLink label link context kind>` for a link drawn as a button (nothing when its label is empty), or `BUTTON_CLASSES` for other buttons: `primary`, `primarySmall`, `primaryLarge`, and the icon buttons `icon`, `iconSmall` and `menu`. Placing classes come after them (`` `${BUTTON_CLASSES.primary} hidden md:inline-flex` ``).
@@ -131,10 +140,12 @@ Every section and element has the same *Appearance* group (2.22, ST-1), first in
 ### What `defineComponent` refuses
 
 As it types (R7), and again as the module loads for specs typed loosely:
+
 - **A default for nothing:** every default is for a field.
 - **A default that isn't a choice:** a `select`, `spacing` or `slider` default must be one of its choices.
 
 As the module loads:
+
 - **No display name (D2):** every component has a label, already translated.
 - **A free value as a style (C4):** a field in the Style group, given or by its kind, must be a design token. That means `select`, `toggle`, `slider`, `color`, `spacing` or `box`; never a typed value.
 - **A free value per device (F-ED-4):** only design tokens may be `responsive`.
@@ -152,8 +163,8 @@ As the module loads:
 - **Repeating content:** `list`, for repeating plain values.
 - **Containers:** `slot`, for elements inside. Give a slot `accepts: "element"` to take every element, or `allow` for a fixed set (an FAQ's questions).
   - **Laying out a slot's elements:** pass a class to the slot (`<Items className="grid md:grid-cols-3" />`). It goes on the element that holds them, Puck's drop zone on the canvas and a `<div>` in the export, so a grid lays them out alike in both. A class on an element around `<Items />` would reach only the drop zone on the canvas.
-- **Shown or usable only with some values:** `shownWhen` hides a field in the Edit panel while it would change nothing, keeping its value for when it shows again (an Image's *Height*, only while its *Shape* is *Set height* on some device; read through `fieldsHiddenBy`). `unavailable` shows it disabled instead, with a sentence saying why (a List's style while an icon takes the markers' place).
-- **Where visitors' money or details go:** mark a field that holds such an address `sensitive: true` (a Buy button's *Payment link*, a Newsletter's *Form address*). An AI app's change to it then always asks the person first, naming where it sends visitors now and would (S18, #658). Run `pnpm catalogue-data` after marking one.
+- **Shown or usable only with some values:** `shownWhen` hides a field in the Edit panel while it would change nothing, keeping its value for when it shows again (an Image's _Height_, only while its _Shape_ is _Set height_ on some device; read through `fieldsHiddenBy`). `unavailable` shows it disabled instead, with a sentence saying why (a List's style while an icon takes the markers' place).
+- **Where visitors' money or details go:** mark a field that holds such an address `sensitive: true` (a Buy button's _Payment link_, a Newsletter's _Form address_). An AI app's change to it then always asks the person first, naming where it sends visitors now and would (S18, #658). Run `pnpm catalogue-data` after marking one.
 - **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `basic.tsx`, rendered by `boxClasses` and `marginClasses`.
   - Every section takes both.
   - Every element takes `margin: MARGIN_FIELD`, since its sides are its section's.
@@ -185,11 +196,12 @@ As the module loads:
   - **Forms** (F-CM-1, F-CM-6) are plain HTML that posts without a script: `<SiteForm>` around `<FormField>`s (`src/form.tsx`), which adds the honeypot (B6) and the submit button. `formAction(context.formService)` turns Site Settings' form service into where it posts, or why there's nowhere to send (no service, Netlify Forms until 3.7, an address that isn't `https://`; `httpsAddress` is the one https check). A form with nowhere to send has no `action` (it would post to the page itself), its button is disabled, it's marked `data-wf-form-unset` with the reason for Site Check (3.7), and `context.formHint` says on the canvas what to do. Give each field an id unique on the page: the component's `id`, then the field's name.
   - **Embeds** (a video or map from another site, F-CM-4) draw `<EmbedFrame>` (`src/embed-frame.tsx`) with an address from `videoEmbed` or `mapEmbed` (`src/embed.ts`), and name the `embed` behaviour. The page shows a placeholder and asks nothing of the other site until the visitor clicks; the behaviour then loads the player or map, from the addresses `EMBED_SOURCES` starts only. Without JavaScript the placeholder's link opens it on its own site.
 - **Context:** `props.context` resolves links, images and settings. On the canvas they go nowhere; in the export they're the site's.
-- **Edit-only previews (UX-26):** what the canvas can show that a site never shows by itself, such as the Header's small-screen menu open (*Show mobile menu*). A component reads `context.previews` and marks what it draws for one with `PREVIEW_ATTRIBUTE` (`data-webforge-preview="mobile-menu"`). `renderNodesToHtml` renders without previews, so none reaches a site; a test renders every component with every preview on and checks the export doesn't change. A new preview adds its flag to `EditPreviews` (`previews.ts`), which fails to compile until `samePreviews` and that test cover it.
+- **Edit-only previews (UX-26):** what the canvas can show that a site never shows by itself, such as the Header's small-screen menu open (_Show mobile menu_). A component reads `context.previews` and marks what it draws for one with `PREVIEW_ATTRIBUTE` (`data-webforge-preview="mobile-menu"`). `renderNodesToHtml` renders without previews, so none reaches a site; a test renders every component with every preview on and checks the export doesn't change. A new preview adds its flag to `EditPreviews` (`previews.ts`), which fails to compile until `samePreviews` and that test cover it.
 
 ### A new field kind
 
 The field kinds are a closed vocabulary. A component almost always fits the kinds there are, or slot plus child for repeating items with fields of their own. A new kind costs a change in each of:
+
 - **The schema:** `FieldDef` and the value types in `src/schema.ts`, and how `defineComponent` reads its value (`define.ts`); `render-static.tsx` if it renders specially. What it may hold goes in `src/field-values.ts` (`fieldValueSchema`): AI apps' values are checked with it, and the Edit panel, its paste, list edits and canvas drags check theirs through `acceptsFieldValue`.
 - **The engine:** its Puck field in `packages/engine/src/puck/config.tsx` (`toPuckField`), and the action bar if it acts on the canvas.
 - **The editor UI:** a field renderer in `packages/editor-ui/src/components/edit/`, registered by kind, with its story.
@@ -213,14 +225,18 @@ Every component has stories for its main variants, next to it in `src/catalogue/
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { SiteNodes } from "../stories/site-nodes.js";
 
-const meta = { title: "Site components/Basic", component: SiteNodes } satisfies Meta<typeof SiteNodes>;
+const meta = { title: "Site components/Basic", component: SiteNodes } satisfies Meta<
+  typeof SiteNodes
+>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** Cards in three columns. */
 export const Cards: Story = {
   args: {
-    nodes: [{ type: "Cards", props: { id: "cards", title: "Our cakes", variant: "three", items: [] } }],
+    nodes: [
+      { type: "Cards", props: { id: "cards", title: "Our cakes", variant: "three", items: [] } },
+    ],
   },
 };
 ```

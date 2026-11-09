@@ -1,4 +1,5 @@
 ---
+
 id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
@@ -13,16 +14,17 @@ Most of your site's look comes from its [theme](themes.md): change a colour or a
 ## Appearance
 
 The **Appearance** group, at the top of the Style tab, is on every section and element except the Header and Footer. The blank Section has no text options.
+
 - **Text:**
-  - **Font:** *Default*, or the theme's *Headings*, *Body text* or *Accent* font.
+  - **Font:** _Default_, or the theme's _Headings_, _Body text_ or _Accent_ font.
   - **Text size**, **Weight**, **Italic**, **Underline**.
-  - **Letter case:** *As typed*, *CAPITALS*, *lower case* or *Each Word*.
+  - **Letter case:** _As typed_, _CAPITALS_, _lower case_ or _Each Word_.
   - **Text alignment**.
 - **Colour:** **Text colour** and **Background**.
 - **Box:** **Corners**, **Border**, **Border colour** and **Shadow**, and **Padding** on elements.
 - **Opacity**.
 
-*Theme's* means the item follows the theme. Every option except Font can be [different on each device](edit-panel.md#different-on-each-device).
+_Theme's_ means the item follows the theme. Every option except Font can be [different on each device](edit-panel.md#different-on-each-device).
 
 ## Colours
 
@@ -30,24 +32,26 @@ Colour pickers show your theme's colours by their role: Brand, Accent, Second ac
 
 In Advanced mode you can also choose a **Custom** colour. It stays the same when you change the theme.
 
-A section's **Colours** option is *Page colours* or *Reversed*. Reversed swaps the theme's light and dark colours, to make a dark band on a light page.
+A section's **Colours** option is _Page colours_ or _Reversed_. Reversed swaps the theme's light and dark colours, to make a dark band on a light page.
 
 ## Hover effects
 
 **When hovered**, on buttons, Buy buttons, images and icons, sets what they do when a visitor points at them:
-- *Lift*, *Grow*, *Tilt*, *Lift and shadow*, *Shadow* or *Darken*, and *Underline* on buttons.
-- **Speed:** *Fast*, *Medium* or *Slow*.
-- **Movement:** *Smooth*, *Gentle stop* or *Springy*.
+
+- _Lift_, _Grow_, _Tilt_, _Lift and shadow_, _Shadow_ or _Darken_, and _Underline_ on buttons.
+- **Speed:** _Fast_, _Medium_ or _Slow_.
+- **Movement:** _Smooth_, _Gentle stop_ or _Springy_.
 
 Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when hovered**. Nothing moves for visitors whose device asks for less motion.
 
 ## Entrance animation
 
-**Entrance animation** sets how an item appears as visitors scroll to it: *Fade in*, *Slide up*, *Slide in from the left*, *Slide in from the right* or *Zoom in*. Add a **Delay** to make items appear one after another. It plays once, and never for visitors whose device asks for less motion.
+**Entrance animation** sets how an item appears as visitors scroll to it: _Fade in_, _Slide up_, _Slide in from the left_, _Slide in from the right_ or _Zoom in_. Add a **Delay** to make items appear one after another. It plays once, and never for visitors whose device asks for less motion.
 
 ## Style this
 
 **Style This…** opens the selected item's look in a larger window. Open it from:
+
 - the button at the top of the Style tab;
 - **Style** on the item's bar;
 - the right-click menu or the Edit menu.
@@ -55,6 +59,7 @@ Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when h
 It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title. Previews show Desktop and Mobile as you go.
 
 **Where it applies** sets which items get the look:
+
 - **This ‹item› only**
 - **Every ‹item› on this page**
 - **Every ‹item› on the site**

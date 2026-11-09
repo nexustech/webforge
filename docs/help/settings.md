@@ -1,4 +1,5 @@
 ---
+
 id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, and your devices.
@@ -9,6 +10,7 @@ updated: 2026-11-08
 # Settings
 
 **Settings** (**File › Settings…**, or Ctrl+, on Windows; on a Mac, **{appName} › Settings…** or Cmd+,) has two parts:
+
 - **App:** how {appName} works for you, on this computer, for every site. Described below.
 - **This site:** the open site's [Site Settings](site-settings.md).
 
@@ -16,8 +18,8 @@ Click **Save** to keep your changes.
 
 ## Interface
 
-- **Appearance:** *Dark* or *Light*. This is how {appName} itself looks; it never changes your website. **View › Use Light Appearance** switches it too.
-- **Editing:** *Simple mode* or *Advanced mode*. Advanced mode adds the Edit panel's Advanced tab and Custom Code. See [The editor](the-editor.md#simple-and-advanced-mode).
+- **Appearance:** _Dark_ or _Light_. This is how {appName} itself looks; it never changes your website. **View › Use Light Appearance** switches it too.
+- **Editing:** _Simple mode_ or _Advanced mode_. Advanced mode adds the Edit panel's Advanced tab and Custom Code. See [The editor](the-editor.md#simple-and-advanced-mode).
 - **Show tips:** a short tip the first time you reach some parts of {appName}, such as the first time you select something or switch to Content mode. Each tip shows once. Turn it off to see no more tips.
 - **Show the tour and tips again:** tick it and choose **Save** to start over. The tour is offered the next time a site opens, and each tip shows once more. See [Getting started](getting-started.md#the-tour).
 

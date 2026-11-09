@@ -3,6 +3,7 @@
 Builds a self-contained static site from a `SiteSnapshot` and writes it to a folder ([research 07](../../research/stack/07-export-pipeline.md), [ADR 0005](../../docs/adr/0005-export-pipeline-spike.md)). Preview mode and progress events come in Phase 3. Site Check's rules are in `packages/site-check`, run in the renderer ([ADR 0016](../../docs/adr/0016-site-check-in-the-renderer.md)).
 
 ## Public API
+
 - `@webforge/pipeline` (`src/index.ts`):
   - `buildSite(snapshot, library, resources)` → `{ files, report }`. It produces:
     - flat `page.html` files with relative links (X1), which work from disk and in any folder of a host. The one exception is `404.html`, the "Page not found" page (F-ED-20, 3.5). Hosts serve it at any missing address, however many folders deep, so its links, stylesheet, script and images start at the site's root, `/`. The trade-offs:
@@ -15,7 +16,7 @@ Builds a self-contained static site from a `SiteSnapshot` and writes it to a fol
       - `site.webmanifest`, with the icon set;
       - share and search tags in each page's head;
       - `{year}` filled in;
-      - `llms.txt` and a Markdown copy of each page, when *Help AI tools read your site* is on (F-EX-5);
+      - `llms.txt` and a Markdown copy of each page, when _Help AI tools read your site_ is on (F-EX-5);
     - readable CSS compiled with Tailwind v4 and daisyUI from the classes the pages use (X4);
     - `assets/js/webforge.<hash>.js`, only when a component needs it;
     - the fonts the theme uses, and only those (2.2);
@@ -32,10 +33,12 @@ await writeSiteFolder(built.files, "C:/Users/sam/Desktop/my-site");
 ```
 
 ## Tests
+
 - Unit tests next to the code; integration and golden tests in `test/`.
 - `test/golden/` holds the reviewed `index.html`, `about.html`, `webforge.js`, `llms.txt`, `index.md` and `about.md` of the fixture site (`@webforge/test-utils`). A change to the output shows up as a diff in review. Update them with `vitest -u` only when the change is intended. Biome leaves these files alone.
 
 ## Boundaries
+
 - No React of its own; renders only through `site-components`.
 - Runs in Node (the export utility process), never in the renderer.
 - Core package: coverage ≥ 90% lines / ≥ 85% branches.
