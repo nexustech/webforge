@@ -135,7 +135,7 @@ export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
  * The classes of what the canvas shows now (#895): the Header, the Footer and the page `pageId`,
  * with the spacing classes, as {@link siteClasses} has them.
  */
-export function shownClasses(site: SiteDoc, session: EditorSession, pageId: PageId): string[] {
+function shownClasses(site: SiteDoc, session: EditorSession, pageId: PageId): string[] {
   const page = site.pages[pageId];
   return classesOfLists(
     [site.layout.header, site.layout.footer, ...(page === undefined ? [] : [page.doc.content])],
