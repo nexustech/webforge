@@ -11,19 +11,99 @@ import {
 } from "./credential-store.js";
 
 // A stand-in for safeStorage: reversible, and visibly not plain text.
+// `old:` is the same under a key the OS has since replaced, which safeStorage asks to encrypt again.
 const cipher = (available = true): SecretCipher => ({
-  isEncryptionAvailable: () => available,
-  encryptString: (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
-  decryptString: (data) => {
+  isEncryptionAvailable: async () => available,
+  encryptString: async (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
+  decryptString: async (data) => {
     const text = data.toString();
-    if (!text.startsWith("enc:")) throw new Error("Error while decrypting the ciphertext");
-    return [...text.slice(4)].reverse().join("");
+    if (!text.startsWith("enc:") && !text.startsWith("old:")) {
+      throw new Error("Error while decrypting the ciphertext");
+    }
+    return {
+      result: [...text.slice(4)].reverse().join(""),
+      shouldReEncrypt: text.startsWith("old:"),
+    };
   },
 });
 
 describe("createCredentialStore", () => {
   const tempDir = tempDirFactory();
   const fileIn = (dir: string) => join(dir, "nested", "credentials.json");
+
+  it("encrypts a secret again once the OS's key has changed (Electron 45's safeStorage, #832)", async () => {
+    const dir = tempDir();
+    const file = fileIn(dir);
+    mkdirSync(join(dir, "nested"));
+    const old = Buffer.from("old:terces_pfn").toString("base64");
+    writeFileSync(file, JSON.stringify({ version: 1, secrets: { k: old } }));
+
+    expect(await createCredentialStore(file, cipher()).get("k")).toBe("nfp_secret");
+    const saved = JSON.parse(readFileSync(file, "utf8")) as { secrets: { k: string } };
+    expect(Buffer.from(saved.secrets.k, "base64").toString()).toBe("enc:terces_pfn");
+  });
+
+  it("keeps the secret as it was when encrypting it again fails, still readable (#843)", async () => {
+    const dir = tempDir();
+    const file = fileIn(dir);
+    mkdirSync(join(dir, "nested"));
+    const old = Buffer.from("old:terces_pfn").toString("base64");
+    const before = JSON.stringify({ version: 1, secrets: { k: old } });
+    writeFileSync(file, before);
+    const failing: SecretCipher = {
+      ...cipher(),
+      encryptString: async () => {
+        throw new Error("The OS refused to encrypt");
+      },
+    };
+    const store = createCredentialStore(file, failing);
+
+    expect(await store.get("k")).toBe("nfp_secret");
+    expect(readFileSync(file, "utf8")).toBe(before);
+    // And again: it's still there to read, and to encrypt again another time.
+    expect(await store.get("k")).toBe("nfp_secret");
+  });
+
+  it("leaves a secret changed or deleted while it was encrypted again as it then is (#843 review)", async () => {
+    const dir = tempDir();
+    const file = fileIn(dir);
+    mkdirSync(join(dir, "nested"));
+    const old = Buffer.from("old:terces_pfn").toString("base64");
+    writeFileSync(file, JSON.stringify({ version: 1, secrets: { changed: old, deleted: old } }));
+    // Encrypting again waits until the test has changed the file, and says when both are waiting.
+    let go: () => void = () => undefined;
+    const waiting = new Promise<void>((resolve) => {
+      go = resolve;
+    });
+    let calls = 0;
+    let bothWaiting: () => void = () => undefined;
+    const bothRead = new Promise<void>((resolve) => {
+      bothWaiting = resolve;
+    });
+    const plain = cipher();
+    const slow: SecretCipher = {
+      ...plain,
+      encryptString: async (text) => {
+        calls += 1;
+        if (calls === 2) bothWaiting();
+        await waiting;
+        return plain.encryptString(text);
+      },
+    };
+    const store = createCredentialStore(file, slow);
+    const writer = createCredentialStore(file, cipher());
+
+    const reading = Promise.all([store.get("changed"), store.get("deleted")]);
+    // Both read and decrypted, and waiting to be encrypted again: not a guess at how long that takes.
+    await bothRead;
+    await writer.set("changed", "nfp_newer");
+    await writer.delete("deleted");
+    go();
+
+    expect(await reading).toEqual(["nfp_secret", "nfp_secret"]);
+    expect(await writer.get("changed")).toBe("nfp_newer");
+    expect(await writer.get("deleted")).toBeNull();
+  });
 
   it("saves, reads and deletes secrets by key", async () => {
     const store = createCredentialStore(fileIn(tempDir()), cipher());

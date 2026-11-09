@@ -9,9 +9,12 @@ import { createCredentialStore, type SecretCipher } from "./credential-store.js"
 import { createPublishSecrets } from "./publish-secrets.js";
 
 const cipher: SecretCipher = {
-  isEncryptionAvailable: () => true,
-  encryptString: (text) => Buffer.from(`enc:${text}`),
-  decryptString: (data) => data.toString().slice(4),
+  isEncryptionAvailable: async () => true,
+  encryptString: async (text) => Buffer.from(`enc:${text}`),
+  decryptString: async (data) => ({
+    result: data.toString().slice(4),
+    shouldReEncrypt: false,
+  }),
 };
 
 describe("security: stored publish secret is bound to its destination", () => {

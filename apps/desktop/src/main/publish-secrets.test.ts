@@ -12,9 +12,12 @@ import { createPublishSecrets, destinationFingerprint } from "./publish-secrets.
 
 // A stand-in for safeStorage: reversible, and visibly not plain text.
 const cipher: SecretCipher = {
-  isEncryptionAvailable: () => true,
-  encryptString: (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
-  decryptString: (data) => [...data.toString().slice(4)].reverse().join(""),
+  isEncryptionAvailable: async () => true,
+  encryptString: async (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
+  decryptString: async (data) => ({
+    result: [...data.toString().slice(4)].reverse().join(""),
+    shouldReEncrypt: false,
+  }),
 };
 
 const PROJECT = "7d2b0c1e-1111-4222-8333-444455556666";
