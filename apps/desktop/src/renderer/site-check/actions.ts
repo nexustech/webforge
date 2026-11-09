@@ -20,6 +20,7 @@ import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import { addPrivacyPage } from "../site/index.js";
 import { THEME_PANEL_ID } from "../theme/index.js";
 import { type BundleActions, canBundle, downloadAndBundle } from "./bundle.js";
 
@@ -108,6 +109,7 @@ export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
       panels.show(SITE_PANEL_ID);
       return;
     case "menu":
+    case "pages":
       panels.show(SITE_PANEL_ID);
       return;
     case "media":
@@ -239,6 +241,14 @@ export function fixFor(
     return () => {
       actions.session.showPage(place.pageId);
       actions.commands.run(COMMAND_IDS.pageSettings);
+    };
+  }
+  // A site that collects visitors' details with no privacy page: add one, written from Site
+  // Settings, and show it (#855).
+  if (rule === "privacyPage") {
+    return () => {
+      addPrivacyPage(actions.session);
+      actions.panels.show(SITE_PANEL_ID);
     };
   }
   if (rule === "businessDetails") {

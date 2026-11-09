@@ -22,9 +22,14 @@ function setUp(session = sessionWith()) {
   const preferences = createPreferencesStore();
   const settings = createSettingsRegistry();
   // As the window's settings area does: the line runs AI apps' command (#752).
-  registerAppSettings(settings, preferences, () => {
-    commands.run(COMMAND_IDS.aiApps);
-  });
+  registerAppSettings(
+    settings,
+    preferences,
+    () => {
+      commands.run(COMMAND_IDS.aiApps);
+    },
+    "1.0.0",
+  );
   registerSiteSettings(settings, session);
   render(
     <CommandRegistryProvider registry={commands}>
@@ -101,7 +106,7 @@ describe("SettingsHost (LF-12)", () => {
   it("keeps Site Settings… off while no site's part is there (#432 review)", () => {
     const commands = createCommandRegistry();
     const settings = createSettingsRegistry();
-    registerAppSettings(settings, createPreferencesStore(), () => undefined);
+    registerAppSettings(settings, createPreferencesStore(), () => undefined, "1.0.0");
     render(
       <CommandRegistryProvider registry={commands}>
         <SettingsHost registry={settings} />

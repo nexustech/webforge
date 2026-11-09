@@ -4,7 +4,7 @@ id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
 related: [header-and-footer, links, site-settings, site-check]
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 
 # Pages and the menu
@@ -26,6 +26,7 @@ To jump to a page from anywhere, press Ctrl+P (Cmd+P on a Mac) and type its name
 Click **+** (**Add Page**):
 
 - **Blank Page…** asks for the page's name, and shows the file name it will have.
+- **Privacy Page** adds a page that tells visitors what your site collects and what you do with it. See [A privacy page](#a-privacy-page).
 - **Suggested Pages** offers ready-made pages for each kind of business, such as _Reviews_, _Gift vouchers_ or _Areas we cover_.
 
 ### The page's … menu
@@ -57,6 +58,21 @@ Each item's menu can rename it, change its link, hide it, move it up or down, or
 
 Once you change the menu yourself, it stops following the pages. **Follow Page Order** makes it follow them again.
 
+### A privacy page
+
+If your site has a form, a newsletter signup or Google Analytics, it collects details from your visitors, and it should say what you do with them. **Add Page › Privacy Page** writes a page for you to start from:
+
+- who runs the site, using the business name from Site Settings › Contact & hours (or your site's name);
+- what the site collects: messages from a form, newsletter sign-ups, and visit counts from Google Analytics, only those your site has;
+- why, how long you keep it, and what visitors can ask you to do with their details;
+- how to ask, using your email address from Site Settings.
+
+Its first paragraph reminds you that it's a starting point, not legal advice. Read the page, change anything that doesn't match how your business works, then delete that paragraph: [Site Check](site-check.md) lists it as placeholder text until you do, and won't publish the site with it.
+
+The page goes in your menu like any other. To keep it off the menu, turn on **Hide from navigation** in its Page Settings, and link to it from the Footer instead.
+
+If you wrote your own privacy page, open its Page Settings and turn on **This is the site's privacy page**, so Site Check knows it's there.
+
 ## Page Settings
 
 Open a page's **…** menu and choose **Page Settings…**. These settings decide how the page shows in search results, browser tabs and when someone shares it.
@@ -69,5 +85,6 @@ Open a page's **…** menu and choose **Page Settings…**. These settings decid
 - **Hide from navigation:** takes the page off the menu.
 - **Hide this page from search engines:** search engines won't list the page. It stays on your site, and anyone with its address can still open it. This is different from hiding it from navigation, which is about your menu.
 - **Hide the back-to-top button on this page:** shown when the site has that button (Site Settings › General).
+- **This is the site's privacy page:** tells Site Check this page says what your site collects. **Add Page › Privacy Page** turns it on for the page it adds. See [A privacy page](#a-privacy-page).
 
 While you type, **In search results** shows roughly how the page could look on Google on a phone. **When shared** shows the card people see when the page is shared. Click **Save** to keep your changes, as one step you can undo.
