@@ -1,4 +1,4 @@
-import type { SiteDoc } from "@webforge/model";
+import type { PageId, SiteDoc } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,23 +7,31 @@ import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { classesOfHtml, connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
 
+/**
+ * The canvas styled for `site`: the compiles it asks for, answered one by one with `reply`. Unless
+ * `collect` is false, every page's classes are collected first, as they are soon after it starts
+ * (#895); the starter site's other page has no classes its home page lacks, so that asks for no
+ * more.
+ */
 function setup(
   answer: (n: number) => CanvasCssResult = (n) => ({
     status: "compiled",
     css: `.css${n}{}`,
     bodyClass: "bg-base-100",
   }),
+  { site = starterSite(), collect = true }: { site?: SiteDoc; collect?: boolean } = {},
 ) {
-  const session = sessionWith();
+  const session = sessionWith(site);
   const engine = createFakeEngine();
   const answers: ((result: CanvasCssResult) => void)[] = [];
   const compile = vi.fn(
-    () =>
+    (_request: CanvasCssRequest) =>
       new Promise<CanvasCssResult>((resolve) => {
         answers.push(resolve);
       }),
   );
   const stop = connectSiteCss(engine, session, compile);
+  if (collect) vi.advanceTimersByTime(0);
   /** Answers request `n` (0-based) and lets the promise settle. */
   const reply = async (n: number) => {
     answers[n]?.(answer(n));
@@ -37,9 +45,9 @@ function setup(
   return { session, engine, compile, stop, reply, edit };
 }
 
-const firstHeading = (draft: SiteDoc) => {
-  const home = draft.pages[draft.homePageId];
-  const section = home?.doc.content[0];
+/** The props of the first Heading of the page `pageId`, the home page by default. */
+const firstHeading = (draft: SiteDoc, pageId: PageId = draft.homePageId) => {
+  const section = draft.pages[pageId]?.doc.content[0];
   return (section?.props.content as { props: Record<string, unknown> }[] | undefined)?.[0]?.props;
 };
 
@@ -226,16 +234,108 @@ describe("connectSiteCss", () => {
     expect(compile).toHaveBeenCalledTimes(1);
   });
 
-  it("drops an answer a newer request has overtaken", async () => {
+  it("shows an answer a newer request has overtaken until that one's comes", async () => {
     const { engine, edit, reply } = setup();
     edit("Changed theme", (draft) => {
       draft.theme = { ...DEFAULT_THEME, preset: "dark" };
     });
 
     await reply(0);
-    expect(engine.setSiteCss).not.toHaveBeenCalled();
+    expect(engine.setSiteCss).toHaveBeenLastCalledWith(".css0{}", "bg-base-100");
     await reply(1);
+    expect(engine.setSiteCss).toHaveBeenLastCalledWith(".css1{}", "bg-base-100");
+  });
+
+  it("drops an answer older than the styles shown", async () => {
+    const { engine, edit, reply } = setup();
+    edit("Changed theme", (draft) => {
+      draft.theme = { ...DEFAULT_THEME, preset: "dark" };
+    });
+
+    await reply(1);
+    await reply(0);
+
+    expect(engine.setSiteCss).toHaveBeenCalledOnce();
     expect(engine.setSiteCss).toHaveBeenCalledWith(".css1{}", "bg-base-100");
+  });
+
+  describe("on a site with a class only another page uses (#895)", () => {
+    const ONLY_ELSEWHERE = "bg-[#123456]";
+    const ON_THIRD_PAGE = "text-[#654321]";
+
+    /** The starter site with two more pages, each using a class no other page does. */
+    function siteWithOtherPages(): SiteDoc {
+      const site = starterSite();
+      const home = site.pages[site.homePageId];
+      if (home === undefined) throw new Error("no home page");
+      for (const [id, className] of [
+        ["other", ONLY_ELSEWHERE],
+        ["third", ON_THIRD_PAGE],
+      ] as const) {
+        const pageId = id as PageId;
+        site.pages[pageId] = { ...structuredClone(home), id: pageId, kind: "page", slug: id };
+        site.pageOrder.push(pageId);
+        const heading = firstHeading(site, pageId);
+        if (heading === undefined) throw new Error("no heading");
+        heading.advanced = { className };
+      }
+      return site;
+    }
+
+    it("compiles the shown page first, then every page's classes", async () => {
+      const { engine, compile, reply } = setup(undefined, {
+        site: siteWithOtherPages(),
+        collect: false,
+      });
+
+      expect(compile).toHaveBeenCalledOnce();
+      expect(compile.mock.calls[0]?.[0].candidates).not.toContain(ONLY_ELSEWHERE);
+      expect(compile.mock.calls[0]?.[0].candidates).toContain("navbar");
+
+      // One page at a time, between the editor's other work.
+      vi.advanceTimersByTime(0);
+
+      expect(compile).toHaveBeenCalledTimes(2);
+      expect(compile.mock.calls[1]?.[0].candidates).toEqual(
+        expect.arrayContaining([ONLY_ELSEWHERE, ON_THIRD_PAGE, "navbar", "pt-32"]),
+      );
+      // The first styles show at once, though the whole site's are asked for meanwhile.
+      await reply(0);
+      expect(engine.setSiteCss).toHaveBeenLastCalledWith(".css0{}", "bg-base-100");
+      await reply(1);
+      expect(engine.setSiteCss).toHaveBeenLastCalledWith(".css1{}", "bg-base-100");
+    });
+
+    it("compiles a page shown before every page is collected at once", () => {
+      const { session, compile } = setup(undefined, {
+        site: siteWithOtherPages(),
+        collect: false,
+      });
+
+      session.showPage("other" as PageId);
+
+      expect(compile).toHaveBeenCalledTimes(2);
+      expect(compile.mock.calls[1]?.[0].candidates).toContain(ONLY_ELSEWHERE);
+      expect(compile.mock.calls[1]?.[0].candidates).not.toContain(ON_THIRD_PAGE);
+    });
+
+    it("compiles nothing more for a page shown once every page is collected", () => {
+      const { session, compile } = setup(undefined, { site: siteWithOtherPages() });
+      expect(compile).toHaveBeenCalledTimes(2);
+
+      session.showPage("other" as PageId);
+
+      expect(compile).toHaveBeenCalledTimes(2);
+    });
+
+    it("collects no more once stopped", () => {
+      const { compile, stop } = setup(undefined, { site: siteWithOtherPages(), collect: false });
+
+      stop();
+      vi.advanceTimersByTime(SITE_CSS_DEBOUNCE_MS);
+
+      expect(compile).toHaveBeenCalledOnce();
+    });
   });
 
   it("keeps the last styles when a compile fails, and tries again after the next change", async () => {
