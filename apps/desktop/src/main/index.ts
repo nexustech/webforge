@@ -23,8 +23,10 @@ void startApp(electron, {
   updater: async () => {
     const { NsisUpdater } = await import("electron-updater");
     const nsis = new NsisUpdater();
-    // The packaged update test's local feed, in an e2e build only (ADR 0024).
-    const feed = e2eUpdateFeed(import.meta.env.MODE, process.env);
+    // The packaged update test's local feed, in an e2e build only (ADR 0024). The comparison is
+    // with the build's mode, which the bundler fills in, so any other build drops the call.
+    const feed =
+      import.meta.env.MODE === "e2e" ? e2eUpdateFeed(import.meta.env.MODE, process.env) : undefined;
     if (feed !== undefined) nsis.setFeedURL({ provider: "generic", url: feed });
     return electronUpdater(nsis);
   },
