@@ -46,6 +46,7 @@ function setUp({ backToTop = false } = {}) {
     show: vi.fn(),
     add: vi.fn(),
     addSuggested: vi.fn(),
+    addPrivacy: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),
@@ -103,6 +104,16 @@ describe("PagesPanel (F-ED-13)", () => {
 
     expect(actions.add).toHaveBeenCalledWith("Opening Times");
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("adds the privacy page from Add Page's menu (#855)", async () => {
+    const { actions } = setUp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Privacy Page" }));
+
+    expect(actions.addPrivacy).toHaveBeenCalledOnce();
+    expect(actions.add).not.toHaveBeenCalled();
   });
 
   it("adds a suggested page for a business type, from Add Page's menu (QS-3)", async () => {
@@ -214,6 +225,7 @@ describe("PagesPanel (F-ED-13)", () => {
       hideFromNavigation: false,
       hideBackToTop: false,
       hideFromSearch: false,
+      privacy: false,
     });
     // The site has no back-to-top button to leave off.
     expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();

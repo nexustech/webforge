@@ -4,5 +4,5 @@
  */
 
 export { recipeName } from "./PagesPanel.js";
-export { addPage, renamePage, setHiddenFromNavigation } from "./page-actions.js";
+export { addPage, addPrivacyPage, renamePage, setHiddenFromNavigation } from "./page-actions.js";
 export { registerSitePanel } from "./SitePanel.js";

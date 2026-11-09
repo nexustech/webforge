@@ -70,6 +70,12 @@ const pageSettingsSchema = z.strictObject({
    * (ADR 0012).
    */
   hideFromSearch: z.boolean().optional(),
+  /**
+   * The site's privacy page (#855, PH5-1): *Add Page › Privacy Page* marks the page it adds, and
+   * Page Settings can mark another. Site Check asks for one when the site collects visitors'
+   * details. Not one when absent, as before (ADR 0012).
+   */
+  privacy: z.boolean().optional(),
 });
 
 /** See {@link pageSettingsSchema}. */
