@@ -44,6 +44,11 @@ type JobOptions<O> = {
 export type WorkerChannel = {
   /** Sends `job`, and resolves with its outcome or why it has none. Never rejects. */
   run<O>(job: WorkerJob, options: JobOptions<O>): Promise<JobResult<O>>;
+  /**
+   * Starts the worker now, without a job, so the first job doesn't wait for it (#894). One that
+   * can't start, or exits meanwhile, is started again by the next job, as after any exit.
+   */
+  start(): void;
   /** Stops the worker; the jobs under way end as `closed`. The next job starts a new one. */
   close(): void;
 };
@@ -182,6 +187,13 @@ export function createWorkerChannel(startWorker: () => WorkerProcess): WorkerCha
         if (options.signal?.aborted === true) cancel();
         else options.signal?.addEventListener("abort", cancel, { once: true });
       });
+    },
+    start() {
+      try {
+        ready();
+      } catch {
+        // The first job tries again, and fails as `worker-start-failed` if it can't either.
+      }
     },
     close() {
       if (worker !== undefined) discard(worker, "closed");
