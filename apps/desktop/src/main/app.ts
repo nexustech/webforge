@@ -472,7 +472,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   });
 
   // The canvas compiles its site CSS, and lists the classes the site supports (#276), in one
-  // long-lived worker, started when first needed (1.12).
+  // long-lived worker (1.12), started when first needed, or as the window opens with a site (#894).
   const canvasStyles = createCanvasStyles(
     () => forkWorker("Webforge canvas styles"),
     undefined,
@@ -752,6 +752,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       await openSite(projectToOpen);
     }
     createMainWindow(preferences);
+    // With a site open, the canvas will want its CSS: its worker starts while the editor loads
+    // (#894). Never for the start screen, which may never open a site.
+    if (projectSession.current() !== null) canvasStyles.start();
     void crashReports.noticeAfterLaunch();
     startUpdates();
 
