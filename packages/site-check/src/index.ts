@@ -7,6 +7,7 @@ export {
   SITE_CHECK_RULES,
 } from "./check.js";
 export { publishGate } from "./publish-gate.js";
+export { hasPrivacyPage, type SiteCollects, siteCollects } from "./rules/privacy.js";
 export type {
   CheckInput,
   CheckLevel,

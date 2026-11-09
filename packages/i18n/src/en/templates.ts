@@ -1,5 +1,42 @@
 /** New Site (2.14a, F-SITE-1): the templates, their business types, and the themes to start in. */
 export const templates = {
+  // The privacy page *Add Page › Privacy Page* adds (#855): a start for the owner to check, in
+  // their voice to visitors. `privacyPage.note` is an instruction Site Check finds if it's left in.
+  "privacyPage.title": "Privacy",
+  "privacyPage.description": "How this site uses the details you give it, and your rights.",
+  "privacyPage.note":
+    "This page is a starting point, not legal advice. Check that each part matches how your business works, change what doesn't, then delete this paragraph.",
+  "privacyPage.whoTitle": "Who we are",
+  "privacyPage.who": "This website is run by {business}.",
+  "privacyPage.collectsTitle": "What we collect",
+  "privacyPage.collectsMessages":
+    "When you send us a message through this site, we receive what you write, with the name, email address and phone number you give us.",
+  "privacyPage.collectsSignups":
+    "When you sign up for our newsletter, we keep the email address and name you give us, to send it to you.",
+  "privacyPage.collectsVisitsConsent":
+    "If you agree when this site asks, Google Analytics counts your visit, so we can see which pages people read. It doesn't tell us who you are.",
+  "privacyPage.collectsVisitsCookieless":
+    "Google Analytics counts visits to this site, without cookies, so we can see which pages people read. It doesn't tell us who you are.",
+  "privacyPage.collectsNothing": "This site doesn't ask for your details or count your visits.",
+  "privacyPage.whyTitle": "Why we collect it",
+  "privacyPage.whyDetails":
+    "We use the details you give us only to reply to you and to send you what you asked for.",
+  "privacyPage.whyVisits":
+    "We use visit counts only to make this site better. Google handles them for us.",
+  "privacyPage.whyNotSold": "We don't sell your details or use them for advertising.",
+  "privacyPage.keepTitle": "How long we keep it",
+  "privacyPage.keepMessages":
+    "We keep your messages for as long as we need them to help you, then delete them.",
+  "privacyPage.keepSignups": "We keep your newsletter sign-up until you unsubscribe.",
+  "privacyPage.keepVisits":
+    "Google Analytics keeps visit counts for as long as our account is set to keep them.",
+  "privacyPage.rightsTitle": "Your rights",
+  "privacyPage.rights":
+    "You can ask us what details we hold about you, and ask us to correct them or delete them.",
+  "privacyPage.contactTitle": "Contact us",
+  "privacyPage.contactEmail": "To ask about your details, email us at {email}.",
+  "privacyPage.contactNoEmail":
+    "To ask about your details, contact us using the details on this site.",
   // The New Site dialog (LF-11).
   "newSite.title": "New Site",
   "newSite.description":

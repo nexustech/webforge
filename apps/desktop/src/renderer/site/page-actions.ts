@@ -24,6 +24,7 @@ import {
 } from "@webforge/model";
 import { insertRecipePage, PAGE_RECIPES } from "@webforge/templates";
 import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-session.js";
+import { insertPrivacyPage } from "./privacy-page.js";
 
 /**
  * The Pages panel's actions (F-ED-13). Each is one labelled undo step ("Added page 'About'"), and
@@ -122,6 +123,22 @@ export function addSuggestedPage(session: PagesSession, recipeId: string): PageI
     t("history.added", { item: pageItem(recipe.title) }),
     id,
     (draft) => insertRecipePage(draft, id, recipe),
+  );
+  return id;
+}
+
+/**
+ * Adds the site's privacy page (#855): its sections written from Site Settings and what the site
+ * collects, marked as the privacy page Site Check looks for. Shows it. One undo step. Returns its id.
+ */
+export function addPrivacyPage(session: PagesSession): PageId {
+  const id = newId("page");
+  editShowing(
+    session,
+    "insert",
+    t("history.added", { item: pageItem(t("privacyPage.title")) }),
+    id,
+    (draft) => insertPrivacyPage(draft, id),
   );
   return id;
 }
@@ -328,6 +345,8 @@ export type PageSettingsChange = {
   readonly hideBackToTop: boolean;
   /** Keeps search engines from showing this page (3.15, SEO-2); absent from older callers. */
   readonly hideFromSearch?: boolean;
+  /** Marks the site's privacy page (#855); absent from older callers, which keep the page's own. */
+  readonly privacy?: boolean;
 };
 
 /**
@@ -359,6 +378,8 @@ export function changePageSettings(
   // "Page not found" is kept out of search engines whatever this says.
   const hideFromSearch =
     page.kind === "page" && (change.hideFromSearch ?? page.settings.hideFromSearch === true);
+  // "Page not found" is never the privacy page.
+  const privacy = page.kind === "page" && (change.privacy ?? page.settings.privacy === true);
   const { settings } = page;
   if (
     title === page.title &&
@@ -369,7 +390,8 @@ export function changePageSettings(
     change.hideFooter === settings.hideFooter &&
     hideFromNavigation === settings.hideFromNavigation &&
     change.hideBackToTop === (settings.hideBackToTop === true) &&
-    hideFromSearch === (settings.hideFromSearch === true)
+    hideFromSearch === (settings.hideFromSearch === true) &&
+    privacy === (settings.privacy === true)
   ) {
     return;
   }
@@ -389,6 +411,7 @@ export function changePageSettings(
       // Absent when shown, as in files from before them.
       ...(change.hideBackToTop ? { hideBackToTop: true } : {}),
       ...(hideFromSearch ? { hideFromSearch: true } : {}),
+      ...(privacy ? { privacy: true } : {}),
     };
   });
 }
