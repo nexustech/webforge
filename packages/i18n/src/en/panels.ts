@@ -1,6 +1,9 @@
 /** Editor panels: Undo History, Pages, Layers… (stream A). */
 export const panels = {
   "editor.undoHistory": "Undo History",
+  // Its tab's tooltip, under the name: the left column's tabs show only their icons.
+  "editor.undoHistory.description":
+    "Your recent steps since you opened the site. Click one to go back, or forward, to it.",
   "editor.historyStart": "Opened page",
 
   // The window layout (UI1).
@@ -60,6 +63,9 @@ export const panels = {
   "pages.deleteDialog.confirm": "Delete Page",
   // Add panel (F-ED-1): sections and elements to add to the page.
   "add.title": "Add",
+  // Its tab's tooltip, under the name: the left column's tabs show only their icons.
+  "add.description":
+    "Sections and elements to put on the page. Click one to add it, or drag it where you want it.",
   "add.kinds": "Sections or elements",
   "add.sections": "Sections",
   "add.elements": "Elements",
@@ -236,7 +242,7 @@ export const panels = {
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
   "pageSettings.privacy": "This is the site's privacy page",
   "pageSettings.privacyHint":
-    "Site Check asks for a privacy page when the site has a form or Google Analytics.",
+    "Site Check asks for a privacy page when the site has a form, a newsletter signup or Google Analytics.",
   // The page as a search result and when shared, as the export writes it (3.16, SEO-6, G22).
   "pageSettings.preview.search": "In search results",
   "pageSettings.preview.hint":

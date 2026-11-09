@@ -4,12 +4,12 @@ id: add-panel
 title: The Add panel
 summary: Find sections and elements and add them to your page.
 related: [sections, elements, header-and-footer, editing-on-the-page]
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 
 # The Add panel
 
-The **Add** panel, the first tab of the left column, lists everything you can put on a page. It has two tabs:
+The **Add** panel, the first tab of the left column (the square with a plus), lists everything you can put on a page. It has two tabs:
 
 - **Sections:** full-width bands such as a Hero or a Gallery. See [Sections](sections.md).
 - **Elements:** what goes inside a section, such as a Heading, an Image or a Button. See [Elements](elements.md).

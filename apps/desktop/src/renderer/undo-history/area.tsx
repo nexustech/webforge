@@ -58,6 +58,7 @@ export const undoHistoryArea: Area<EditorContext> = {
       id: "undoHistory",
       slot: "left.bottom",
       title: t("editor.undoHistory"),
+      description: t("editor.undoHistory.description"),
       icon: HistoryIcon,
       component: undoHistoryPanel(history, (entryId) => {
         engine.flush();

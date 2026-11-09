@@ -5,7 +5,7 @@ title: Elements
 summary: Every element you can put inside a section, what it's for and what you can change.
 components: [Heading, Text, List, ListItem, Image, Carousel, CarouselSlide, EmbedVideo, Button, Spacer, Divider, Icon, SocialLinks, Columns, Column, Tabs, Tab, EmbedMap, Form, FormField, BuyButton]
 related: [sections, add-panel, edit-panel, media, links, forms, custom-code]
-updated: 2026-11-06
+updated: 2026-11-09
 ---
 
 # Elements
@@ -128,7 +128,7 @@ Sells one thing: a picture, a price and a button to a payment page you've set up
 
 - **Price:** type it as visitors should read it, with its currency: "£12" or "From €40".
 - **Payment link:** the `https://` link from Stripe Payment Links, PayPal or your online shop. The payment happens there; {appName} never handles money.
-- Without a payment link, the button is turned off in the editor and left out of your site.
+- Without a payment link, or with one that doesn't start with `https://`, the button is turned off in the editor and left out of your site. [Site Check](site-check.md) lists each one, and won't publish a Buy button with no link.
 
 ## Advanced
 

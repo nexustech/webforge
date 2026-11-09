@@ -1,6 +1,8 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { TooltipProvider } from "@webforge/editor-ui";
+import { ArchiveRestoreIcon, HistoryIcon, SquarePlusIcon } from "lucide-react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { CommandRegistryProvider } from "./command-context.js";
@@ -34,17 +36,20 @@ function renderLayout({
   if (filled) {
     fillColumns(panels);
   }
+  // As App has it: tooltips show at once here, so a test needn't wait for them.
   const result = render(
-    <CommandRegistryProvider registry={commands}>
-      <PanelRegistryProvider registry={panels}>
-        <ShellLayout
-          center={<p>Canvas</p>}
-          layout={layout}
-          onLayoutChange={onLayoutChange}
-          editorLevel={editorLevel}
-        />
-      </PanelRegistryProvider>
-    </CommandRegistryProvider>,
+    <TooltipProvider delayDuration={0}>
+      <CommandRegistryProvider registry={commands}>
+        <PanelRegistryProvider registry={panels}>
+          <ShellLayout
+            center={<p>Canvas</p>}
+            layout={layout}
+            onLayoutChange={onLayoutChange}
+            editorLevel={editorLevel}
+          />
+        </PanelRegistryProvider>
+      </CommandRegistryProvider>
+    </TooltipProvider>,
   );
   return { commands, panels, ...result };
 }
@@ -458,5 +463,123 @@ describe("ShellLayout", () => {
     const canvas = document.querySelector('[data-panel][id="canvas"]');
     expect(canvas?.getAttribute("style") ?? "").toContain("70");
     expect(onLayoutChange).not.toHaveBeenCalledWith(PANEL_GROUPS.center, expect.anything());
+  });
+
+  describe("the left column's tabs: icons, with tooltips (#898)", () => {
+    /** Add, Undo History and Version History as their areas register them: icons and purposes. */
+    function leftPanels() {
+      const rendered = renderLayout({ filled: false });
+      act(() => {
+        rendered.panels.register({
+          id: "add",
+          slot: "left.top",
+          title: "Add",
+          description: "Sections and elements to put on the page.",
+          icon: SquarePlusIcon,
+          component: () => <h2>Add</h2>,
+        });
+        rendered.panels.register({
+          id: "undoHistory",
+          slot: "left.bottom",
+          title: "Undo History",
+          description: "Your recent steps since you opened the site.",
+          icon: HistoryIcon,
+          component: () => <h2>Undo History</h2>,
+        });
+        rendered.panels.register({
+          id: "versionHistory",
+          slot: "left.bottom",
+          title: "Version History",
+          description: "Saved copies of your whole site.",
+          icon: ArchiveRestoreIcon,
+          component: () => <h2>Version History</h2>,
+        });
+        rendered.panels.register({
+          id: "edit",
+          slot: "right.top",
+          title: "Edit",
+          icon: SquarePlusIcon,
+          component: () => <p>Edit</p>,
+        });
+      });
+      const left = within(screen.getByRole("region", { name: "Left panels" }));
+      return { ...rendered, left };
+    }
+
+    it("shows each tab's icon only, named by its panel's title", () => {
+      const { left } = leftPanels();
+
+      const tabs = left.getAllByRole("tab");
+      expect(tabs.map((tab) => tab.getAttribute("aria-label"))).toEqual([
+        "Add",
+        "Undo History",
+        "Version History",
+      ]);
+      for (const tab of tabs) {
+        expect(tab.textContent).toBe("");
+        expect(tab.querySelector("svg")).not.toBeNull();
+      }
+      // The panel's own heading is unchanged.
+      expect(left.getByRole("heading", { name: "Add" })).toBeTruthy();
+    });
+
+    it("says what each panel is for in a tooltip on the keyboard's focus, which describes the tab", async () => {
+      const { left } = leftPanels();
+      const tab = left.getByRole("tab", { name: "Version History" });
+
+      await act(async () => {
+        tab.focus();
+      });
+
+      // It shows the name over the purpose, and describes the tab by the purpose alone: the
+      // name is the tab's already, and would be read twice.
+      await screen.findByRole("tooltip");
+      const shown = document.querySelector('[data-slot="tooltip-content"]');
+      expect(shown?.textContent).toContain("Version HistorySaved copies of your whole site.");
+      const described = tab.getAttribute("aria-describedby");
+      expect(described === null ? null : document.getElementById(described)?.textContent).toBe(
+        "Saved copies of your whole site.",
+      );
+    });
+
+    it("shows the tooltip on hover too", async () => {
+      const { left } = leftPanels();
+
+      await userEvent.setup().hover(left.getByRole("tab", { name: "Undo History" }));
+
+      expect((await screen.findByRole("tooltip")).textContent).toContain(
+        "Your recent steps since you opened the site.",
+      );
+    });
+
+    it("still chooses a panel with a click or the arrow keys", async () => {
+      const { left } = leftPanels();
+      const user = userEvent.setup();
+
+      await user.click(left.getByRole("tab", { name: "Undo History" }));
+      const chosen = left.getByRole("tab", { name: "Undo History", selected: true });
+      // Drawn as the chosen tab: its look follows `data-state`, which the tooltip mustn't take.
+      expect(chosen.getAttribute("data-state")).toBe("active");
+      expect(left.getByRole("tab", { name: "Add" }).getAttribute("data-state")).toBe("inactive");
+      expect(left.getByRole("heading", { name: "Undo History" })).toBeTruthy();
+
+      await user.keyboard("{ArrowRight}");
+      expect(document.activeElement).toBe(left.getByRole("tab", { name: "Version History" }));
+      expect(left.getByRole("heading", { name: "Version History" })).toBeTruthy();
+    });
+
+    it("leaves the other columns' tabs as titles", () => {
+      leftPanels();
+      const right = within(screen.getByRole("region", { name: "Right panels" }));
+
+      expect(right.getByRole("tab", { name: "Edit" }).textContent).toBe("Edit");
+    });
+
+    it("keeps the title of a left panel with no icon", () => {
+      renderLayout();
+
+      const leftColumn = within(screen.getByRole("region", { name: "Left panels" }));
+      expect(leftColumn.getByRole("tab", { name: "Add" }).textContent).toBe("Add");
+    });
   });
 });

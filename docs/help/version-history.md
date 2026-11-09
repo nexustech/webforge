@@ -4,7 +4,7 @@ id: version-history
 title: Version History
 summary: Save a version of your whole site, and go back to it, preview it, publish it again or open it as a new site.
 related: [undo-and-history, saving-and-backups, publish, settings]
-updated: 2026-11-08
+updated: 2026-11-09
 ---
 
 # Version History
@@ -15,7 +15,7 @@ A **version** is a copy of your whole site as it was at one moment: every page, 
 
 ## Opening Version History
 
-**Version History** is a tab in the left column, beside **Add** and **Undo History**. It lists the site's versions, newest first, each with its name, when it was saved and a small picture of the page. A version that has been [published](publish.md) also says where and when it last was, such as "Published to My host, 7 Nov 2026, 09:15".
+**Version History** is a tab in the left column, beside **Add** and **Undo History**: the box with an arrow. It lists the site's versions, newest first, each with its name, when it was saved and a small picture of the page. A version that has been [published](publish.md) also says where and when it last was, such as "Published to My host, 7 Nov 2026, 09:15".
 
 ## Saving a version
 
