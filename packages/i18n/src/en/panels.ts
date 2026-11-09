@@ -242,7 +242,7 @@ export const panels = {
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
   "pageSettings.privacy": "This is the site's privacy page",
   "pageSettings.privacyHint":
-    "Site Check asks for a privacy page when the site has a form or Google Analytics.",
+    "Site Check asks for a privacy page when the site has a form, a newsletter signup or Google Analytics.",
   // The page as a search result and when shared, as the export writes it (3.16, SEO-6, G22).
   "pageSettings.preview.search": "In search results",
   "pageSettings.preview.hint":

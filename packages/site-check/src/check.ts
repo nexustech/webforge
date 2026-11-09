@@ -1,3 +1,4 @@
+import { buyButtonHttpsRule, buyButtonLinksRule } from "./rules/commerce.js";
 import {
   altTextRule,
   brokenLinksRule,
@@ -44,6 +45,8 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   externalResourcesRule,
   formsRule,
   privacyPageRule,
+  buyButtonLinksRule,
+  buyButtonHttpsRule,
   missingImagesRule,
   altTextRule,
   contrastRule,
