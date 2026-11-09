@@ -37,6 +37,9 @@ export const COMMAND_IDS = {
   zoomOut: "view.zoomOut",
   zoomActual: "view.zoomActual",
   zoomFit: "view.zoomFit",
+  /** The canvas's View options with a key (#857): its outlines and its element names. */
+  showOutlines: "view.showOutlines",
+  elementNames: "view.elementNames",
   desktopView: "view.desktop",
   tabletView: "view.tablet",
   mobileView: "view.mobile",
