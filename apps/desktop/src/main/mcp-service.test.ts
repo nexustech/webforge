@@ -12,9 +12,12 @@ import { createMcpService } from "./mcp-service.js";
 import { siteChoices } from "./site-brief.js";
 
 const cipher: SecretCipher = {
-  isEncryptionAvailable: () => true,
-  encryptString: (text) => Buffer.from(`enc:${text}`),
-  decryptString: (data) => data.toString().slice(4),
+  isEncryptionAvailable: async () => true,
+  encryptString: async (text) => Buffer.from(`enc:${text}`),
+  decryptString: async (data) => ({
+    result: data.toString().slice(4),
+    shouldReEncrypt: false,
+  }),
 };
 
 const tempDir = tempDirFactory("webforge-mcp-service-");

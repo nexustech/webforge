@@ -15,9 +15,12 @@ import { createCredentialStore, mcpCredentialKey, type SecretCipher } from "./cr
 import { createJsonStore } from "./json-store.js";
 
 const cipher: SecretCipher = {
-  isEncryptionAvailable: () => true,
-  encryptString: (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
-  decryptString: (data) => [...data.toString().slice(4)].reverse().join(""),
+  isEncryptionAvailable: async () => true,
+  encryptString: async (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
+  decryptString: async (data) => ({
+    result: [...data.toString().slice(4)].reverse().join(""),
+    shouldReEncrypt: false,
+  }),
 };
 
 const tempDir = tempDirFactory("webforge-ai-apps-");

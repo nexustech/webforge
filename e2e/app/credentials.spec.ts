@@ -49,9 +49,9 @@ test("a secret encrypted by one run decrypts in the next (safeStorage, 0.3)", as
   const secret = "test-only-ftp-password-ü";
 
   app = await launchDesktopApp({ userDataDir: userData, site: false });
-  const sealed = await app.evaluate(({ safeStorage }, value) => {
-    if (!safeStorage.isEncryptionAvailable()) return null;
-    return safeStorage.encryptString(value).toString("base64");
+  const sealed = await app.evaluate(async ({ safeStorage }, value) => {
+    if (!(await safeStorage.isAsyncEncryptionAvailable())) return null;
+    return (await safeStorage.encryptStringAsync(value)).toString("base64");
   }, secret);
   // The key on disk first, as it is long before a person saves a password (#678); macOS keeps its
   // key in the Keychain instead.
@@ -70,7 +70,8 @@ test("a secret encrypted by one run decrypts in the next (safeStorage, 0.3)", as
 
   app = await launchDesktopApp({ userDataDir: userData, site: false });
   const opened = await app.evaluate(
-    ({ safeStorage }, base64) => safeStorage.decryptString(Buffer.from(base64, "base64")),
+    async ({ safeStorage }, base64) =>
+      (await safeStorage.decryptStringAsync(Buffer.from(base64, "base64"))).result,
     sealed ?? "",
   );
 

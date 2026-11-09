@@ -246,9 +246,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   /** The MCP server for AI apps (4.9), once Electron is ready. */
   let mcp: McpService | undefined;
   const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
-    isEncryptionAvailable: () => electron.safeStorage.isEncryptionAvailable(),
-    encryptString: (text) => electron.safeStorage.encryptString(text),
-    decryptString: (encrypted) => electron.safeStorage.decryptString(encrypted),
+    isEncryptionAvailable: () => electron.safeStorage.isAsyncEncryptionAvailable(),
+    encryptString: (text) => electron.safeStorage.encryptStringAsync(text),
+    decryptString: (encrypted) => electron.safeStorage.decryptStringAsync(encrypted),
   });
   // The key files the person chose (4.3), by handle: Test connection and saving read them.
   const keyFiles = createKeyFiles();

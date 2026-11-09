@@ -21,9 +21,12 @@ const OTHER = "9a8b7c6d-5e4f-4a3b-8c2d-1e0f9a8b7c6d";
 
 // A stand-in for safeStorage: reversible, and visibly not plain text.
 const cipher: SecretCipher = {
-  isEncryptionAvailable: () => true,
-  encryptString: (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
-  decryptString: (data) => [...data.toString().slice(4)].reverse().join(""),
+  isEncryptionAvailable: async () => true,
+  encryptString: async (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
+  decryptString: async (data) => ({
+    result: [...data.toString().slice(4)].reverse().join(""),
+    shouldReEncrypt: false,
+  }),
 };
 
 /** Netlify's API as the calls reach it: tickets approved at once, two sites, and a new one. */

@@ -11,19 +11,37 @@ import {
 } from "./credential-store.js";
 
 // A stand-in for safeStorage: reversible, and visibly not plain text.
+// `old:` is the same under a key the OS has since replaced, which safeStorage asks to encrypt again.
 const cipher = (available = true): SecretCipher => ({
-  isEncryptionAvailable: () => available,
-  encryptString: (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
-  decryptString: (data) => {
+  isEncryptionAvailable: async () => available,
+  encryptString: async (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
+  decryptString: async (data) => {
     const text = data.toString();
-    if (!text.startsWith("enc:")) throw new Error("Error while decrypting the ciphertext");
-    return [...text.slice(4)].reverse().join("");
+    if (!text.startsWith("enc:") && !text.startsWith("old:")) {
+      throw new Error("Error while decrypting the ciphertext");
+    }
+    return {
+      result: [...text.slice(4)].reverse().join(""),
+      shouldReEncrypt: text.startsWith("old:"),
+    };
   },
 });
 
 describe("createCredentialStore", () => {
   const tempDir = tempDirFactory();
   const fileIn = (dir: string) => join(dir, "nested", "credentials.json");
+
+  it("encrypts a secret again once the OS's key has changed (Electron 45's safeStorage, #832)", async () => {
+    const dir = tempDir();
+    const file = fileIn(dir);
+    mkdirSync(join(dir, "nested"));
+    const old = Buffer.from("old:terces_pfn").toString("base64");
+    writeFileSync(file, JSON.stringify({ version: 1, secrets: { k: old } }));
+
+    expect(await createCredentialStore(file, cipher()).get("k")).toBe("nfp_secret");
+    const saved = JSON.parse(readFileSync(file, "utf8")) as { secrets: { k: string } };
+    expect(Buffer.from(saved.secrets.k, "base64").toString()).toBe("enc:terces_pfn");
+  });
 
   it("saves, reads and deletes secrets by key", async () => {
     const store = createCredentialStore(fileIn(tempDir()), cipher());

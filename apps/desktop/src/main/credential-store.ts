@@ -7,11 +7,17 @@ import { createJsonStore } from "./json-store.js";
 // whose key the OS keeps (Windows DPAPI, macOS Keychain), and the encrypted bytes are kept in
 // one file in the app's user-data folder, keyed by what the secret is for (`publish/…`, `mcp/…`).
 
-/** The part of Electron's `safeStorage` the store uses; injectable for tests. */
+/**
+ * The part of Electron's `safeStorage` the store uses, its asynchronous calls (Electron 45
+ * deprecates the others, and 46 removes them); injectable for tests.
+ */
 export type SecretCipher = {
-  isEncryptionAvailable(): boolean;
-  encryptString(plainText: string): Buffer;
-  decryptString(encrypted: Buffer): string;
+  isEncryptionAvailable(): Promise<boolean>;
+  encryptString(plainText: string): Promise<Buffer>;
+  /** The text, and whether to encrypt it again: the OS's key has changed since it was. */
+  decryptString(
+    encrypted: Buffer,
+  ): Promise<{ readonly result: string; readonly shouldReEncrypt: boolean }>;
 };
 
 /** Why a secret could not be saved. */
@@ -92,6 +98,20 @@ export function createCredentialStore(file: string, cipher: SecretCipher): Crede
     }
   }
 
+  async function set(key: string, secret: string): Promise<void> {
+    if (!(await cipher.isEncryptionAvailable())) {
+      throw new CredentialError(
+        "encryption-unavailable",
+        "The operating system can't encrypt the secret, so it was not saved",
+      );
+    }
+    const encrypted = (await cipher.encryptString(secret)).toString("base64");
+    await update((secrets) => {
+      secrets[key] = encrypted;
+      return true;
+    });
+  }
+
   return {
     async get(key) {
       const secrets = await store.read().then(
@@ -99,26 +119,18 @@ export function createCredentialStore(file: string, cipher: SecretCipher): Crede
         () => ({}) as Record<string, string>,
       );
       if (!Object.hasOwn(secrets, key)) return null;
+      let decrypted: Awaited<ReturnType<SecretCipher["decryptString"]>>;
       try {
-        return cipher.decryptString(Buffer.from(secrets[key] ?? "", "base64"));
+        decrypted = await cipher.decryptString(Buffer.from(secrets[key] ?? "", "base64"));
       } catch {
         // Encrypted by another OS user or machine, or the OS key changed.
         return null;
       }
+      // Encrypted with a key the OS has since replaced: kept again with the new one, if it can be.
+      if (decrypted.shouldReEncrypt) await set(key, decrypted.result).catch(() => undefined);
+      return decrypted.result;
     },
-    async set(key, secret) {
-      if (!cipher.isEncryptionAvailable()) {
-        throw new CredentialError(
-          "encryption-unavailable",
-          "The operating system can't encrypt the secret, so it was not saved",
-        );
-      }
-      const encrypted = cipher.encryptString(secret).toString("base64");
-      await update((secrets) => {
-        secrets[key] = encrypted;
-        return true;
-      });
-    },
+    set,
     delete: (key) =>
       update((secrets) => {
         if (!Object.hasOwn(secrets, key)) return false;
