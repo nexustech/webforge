@@ -342,16 +342,16 @@ function toAssetInfo(row: unknown): AssetInfo {
   };
 }
 
-/** The `sqlite_schema` rows of a database, in a stable order, for comparison. */
 /**
- * The file's `sqlite_schema`: its tables, indexes, views and triggers, each as one JSON line.
- * Reading it runs nothing stored in the file, so it is safe on any file (S4).
+ * The file's `sqlite_schema`: its tables, indexes, views and triggers, each as one JSON line, in a
+ * stable order for comparison. Reading it runs nothing stored in the file, so it is safe on any
+ * file (S4). A row in another shape, its SQL stored as bytes say, is damage (#840).
  */
 function readSchema(db: Database.Database): string[] {
   return db
     .prepare("SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name")
     .all()
-    .map((row) => JSON.stringify(schemaRowSchema.parse(row)));
+    .map((row) => JSON.stringify(readRow(schemaRowSchema, row)));
 }
 
 /** The tables every format has, whose rows the store reads: never a view, whatever the format. */
@@ -385,23 +385,24 @@ function checkTablesBeforeReading(db: Database.Database, schema: readonly string
     if (row === undefined || row.type !== "table" || !/^CREATE TABLE /.test(row.sql ?? "")) {
       refuse(`The project's ${name} is not a plain table`);
     }
-    // These read only what SQLite parsed from `sqlite_schema`: none of the file's SQL runs.
-    const generated = z
-      .array(z.object({ hidden: z.number() }))
-      .parse(db.pragma(`table_xinfo(${name})`))
-      .some((column) => column.hidden >= 2);
-    const computedIndex = z
-      .array(z.object({ name: z.string(), partial: z.number() }))
-      .parse(db.pragma(`index_list(${name})`))
-      .some(
-        (index) =>
-          index.partial !== 0 ||
-          // The index's name is the file's: bound, never written into the SQL.
-          z
-            .array(z.object({ cid: z.number() }))
-            .parse(db.prepare("SELECT cid FROM pragma_index_xinfo(?)").all(index.name))
-            .some((column) => column.cid === -2),
-      );
+    // These read only what SQLite parsed from `sqlite_schema`: none of the file's SQL runs. What
+    // they report comes from the file too, so a row in another shape is damage (#840).
+    const generated = readRow(
+      z.array(z.object({ hidden: z.number() })),
+      db.pragma(`table_xinfo(${name})`),
+    ).some((column) => column.hidden >= 2);
+    const computedIndex = readRow(
+      z.array(z.object({ name: z.string(), partial: z.number() })),
+      db.pragma(`index_list(${name})`),
+    ).some(
+      (index) =>
+        index.partial !== 0 ||
+        // The index's name is the file's: bound, never written into the SQL.
+        readRow(
+          z.array(z.object({ cid: z.number() })),
+          db.prepare("SELECT cid FROM pragma_index_xinfo(?)").all(index.name),
+        ).some((column) => column.cid === -2),
+    );
     if (generated || computedIndex) {
       refuse(`The project's ${name} has columns or indexes of its own SQL`);
     }

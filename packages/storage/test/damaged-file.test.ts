@@ -122,6 +122,42 @@ describe("a damaged or crafted .wforge (5.6)", () => {
     }
   });
 
+  it("reports a sqlite_schema row in another shape as damage, as the fuzzing found (#840)", () => {
+    const original = sampleFile();
+    // The counterexample it found (seed -1332227283), replayed: two bytes changed, which left a
+    // table's SQL in sqlite_schema stored as bytes, not text.
+    const replayed = Buffer.from(original);
+    for (const { at, value } of [
+      { at: 34942221, value: 70 },
+      { at: 4096, value: 0 },
+    ]) {
+      replayed[at % replayed.length] = value;
+    }
+    const replay = join(tempDir(), "replay.wforge");
+    writeFileSync(replay, replayed);
+    try {
+      readAll(replay);
+    } catch (error) {
+      expect(expected(error), String(error)).toBe(true);
+    }
+
+    // The same damage made on purpose: a table's SQL stored as bytes.
+    const crafted = join(tempDir(), "crafted.wforge");
+    writeFileSync(crafted, original);
+    const db = new Database(crafted);
+    try {
+      // Past SQLite's defensive mode, which keeps sqlite_schema from being written.
+      db.unsafeMode(true);
+      db.pragma("writable_schema = ON");
+      db.prepare("UPDATE sqlite_schema SET sql = CAST(sql AS BLOB) WHERE name = 'assets'").run();
+    } finally {
+      db.close();
+    }
+    expect(() => ProjectStore.open(crafted, { readOnly: true })).toThrow(
+      expect.objectContaining({ name: "ProjectFileError", code: "corrupt" }),
+    );
+  });
+
   it(
     "refuses a file cut short, at any length",
     () => {
