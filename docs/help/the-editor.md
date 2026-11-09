@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 # The editor
@@ -72,7 +72,7 @@ On the left of the canvas toolbar:
 
 - **Zoom:** zoom in or out, or choose a zoom level. _Fit_ fits the page to the window.
 - **Rotate:** swaps a device's width and height.
-- **View:** turn on outlines, spacing, element names, or extra space at the bottom of the page. These only change the editor.
+- **View:** turn on outlines, spacing, element names, or extra space at the bottom of the page. These only change the editor. Ctrl+Shift+O (Cmd+Shift+O on a Mac) shows or hides the outlines, and Ctrl+Shift+N the element names, as **View › Show Outlines** and **Show Element Names** do.
 - **The size box:** type any width, or choose a device. **Add device…** adds a screen size of your own, such as your own phone's. Manage those in [Settings › Devices](settings.md#devices).
 
 You can also drag the canvas's left or right edge to change the width. It snaps to each device's width; hold Alt to place it freely.
