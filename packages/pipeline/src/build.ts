@@ -34,12 +34,13 @@ import { processImage, UndecodableImageError } from "./images.js";
 import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import { netlifyFormNames } from "./netlify-forms.js";
+import { PREVIEW_STYLESHEET } from "./preview-stylesheet.js";
 import type { PipelineResources } from "./resources.js";
+import { scriptMistake } from "./script-mistake.js";
 import {
   RUNS_ALL_CODE,
   RUNS_NO_CODE,
   type RunsCode,
-  scriptMistake,
   siteCodeCandidates,
   toBundled,
   withRunnableCode,
@@ -182,9 +183,6 @@ export type BuildOptions = {
  * (3.2) lets its stylesheet keep classes between builds, so an edit's CSS is ready at once.
  */
 export type BuildMode = "preview" | "export" | "publish";
-
-/** A preview's stylesheet, by one name whatever it holds (3.2). */
-export const PREVIEW_STYLESHEET = "assets/css/site.css";
 
 /** A page's rendered regions, with the problems found rendering them. */
 type RenderedRegions = RenderedPage & { readonly warnings: readonly BuildWarning[] };

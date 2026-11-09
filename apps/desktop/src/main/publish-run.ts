@@ -7,7 +7,6 @@ import {
   siteCodePieces,
   withKeptCode,
 } from "@webforge/model";
-import { publishGate } from "@webforge/site-check";
 import type { ProjectStore, VersionManifest, VersionPublish } from "@webforge/storage";
 import type { IpcMain } from "electron";
 import type { PublishOutcome } from "../shared/export-worker-protocol.js";
@@ -234,6 +233,9 @@ export function registerPublishRun(
         const kept = withKeptCode(read.site, trusted);
         const allowed = kept.settings.allowedExternalUrls;
         const allowListConfirmed = allowed.length === 0 || trusted(allowListText(allowed));
+        // Site Check's rules (and the site components they read) load with the first publish, not
+        // with main at start-up (#892).
+        const { publishGate } = await import("@webforge/site-check");
         const mustFix = publishGate(kept, {
           allowListConfirmed,
           host: destination.kind === "netlify" ? "netlify" : undefined,

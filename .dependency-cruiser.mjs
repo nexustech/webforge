@@ -137,6 +137,10 @@ export default {
           "^packages/[^/]+/src/index\\.tsx?$",
           // Declared subpath export: @webforge/pipeline/node (the Node-only resource loader).
           "^packages/pipeline/src/node-resources\\.ts$",
+          // Declared subpath exports: @webforge/pipeline/light and @webforge/publish/light (what
+          // the main process needs at start-up, without the export's or FTP's and SFTP's tools,
+          // #892).
+          "^packages/(pipeline|publish)/src/light\\.ts$",
           // Declared subpath export: @webforge/themes/font-plan (zod only: no font catalogue, so
           // the preload and the catalogue build under plain Node can take it).
           "^packages/themes/src/fonts/plan\\.ts$",

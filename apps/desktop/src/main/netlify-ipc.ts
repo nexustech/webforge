@@ -1,5 +1,5 @@
 import { siteAddressSchema } from "@webforge/model";
-import { netlifySiteAccess, PublishError, type NetlifySite as Site } from "@webforge/publish";
+import { netlifySiteAccess, PublishError, type NetlifySite as Site } from "@webforge/publish/light";
 import type { IpcMain } from "electron";
 import type { NetlifyAccount, NetlifyFailure, NetlifySite } from "../shared/ipc/netlify.js";
 import { registerIpcHandler } from "./ipc.js";

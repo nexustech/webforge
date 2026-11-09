@@ -1,11 +1,11 @@
 import type { NodeDoc, SiteSnapshot } from "@webforge/model";
 import { sampleSite } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
+import { scriptMistake } from "./script-mistake.js";
 import {
   codeCandidates,
   customHtml,
   RUNS_ALL_CODE,
-  scriptMistake,
   scriptStrings,
   siteCodeCandidates,
   withRunnableCode,
