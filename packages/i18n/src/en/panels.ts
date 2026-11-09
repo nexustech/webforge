@@ -1,6 +1,9 @@
 /** Editor panels: Undo History, Pages, Layers… (stream A). */
 export const panels = {
   "editor.undoHistory": "Undo History",
+  // Its tab's tooltip, under the name: the left column's tabs show only their icons.
+  "editor.undoHistory.description":
+    "Your recent steps since you opened the site. Click one to go back, or forward, to it.",
   "editor.historyStart": "Opened page",
 
   // The window layout (UI1).
@@ -60,6 +63,9 @@ export const panels = {
   "pages.deleteDialog.confirm": "Delete Page",
   // Add panel (F-ED-1): sections and elements to add to the page.
   "add.title": "Add",
+  // Its tab's tooltip, under the name: the left column's tabs show only their icons.
+  "add.description":
+    "Sections and elements to put on the page. Click one to add it, or drag it where you want it.",
   "add.kinds": "Sections or elements",
   "add.sections": "Sections",
   "add.elements": "Elements",

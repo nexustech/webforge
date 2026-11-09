@@ -32,6 +32,7 @@ export function registerVersionHistoryPanel(
     id: "versionHistory",
     slot: "left.bottom",
     title: t("versionHistory.panelTitle"),
+    description: t("versionHistory.panelDescription"),
     icon: ArchiveRestoreIcon,
     component: VersionHistory,
   });

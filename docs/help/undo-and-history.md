@@ -4,7 +4,7 @@ id: undo-and-history
 title: Undo and Undo History
 summary: Take back any change, or jump back several steps at once.
 related: [version-history, saving-and-backups, editing-on-the-page]
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 # Undo and Undo History
@@ -19,7 +19,7 @@ After you delete something, an **Undo** button also appears for a few seconds.
 
 ## The Undo History panel
 
-**Undo History**, beside the Add panel, lists your recent steps since you opened the site, up to the last 200, newest at the top. The step you're at is ticked; steps you've undone are greyed out. Click any step to go back, or forward, to that moment. {appName} also shows the page you were on and selects what you were working on.
+**Undo History**, the tab beside the Add panel (a clock with an arrow), lists your recent steps since you opened the site, up to the last 200, newest at the top. The step you're at is ticked; steps you've undone are greyed out. Click any step to go back, or forward, to that moment. {appName} also shows the page you were on and selects what you were working on.
 
 Undo History lasts until you close the site. To go back further, use [Version History](version-history.md).
 

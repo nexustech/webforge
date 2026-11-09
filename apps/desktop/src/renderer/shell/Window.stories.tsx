@@ -1,5 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { CheckIcon, PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
+import {
+  ArchiveRestoreIcon,
+  CheckIcon,
+  HistoryIcon,
+  PanelBottomIcon,
+  PanelLeftIcon,
+  PanelRightIcon,
+  SquarePlusIcon,
+} from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { CommandButton } from "./CommandButton.js";
 import { CommandRegistryProvider } from "./command-context.js";
@@ -50,13 +58,26 @@ const PANELS: readonly Panel[] = [
     id: "add",
     slot: "left.top",
     title: "Add",
+    // The left column's tabs show only their icons, with these in their tooltips (#898).
+    description: "Sections and elements to put on the page.",
+    icon: SquarePlusIcon,
     component: () => <List items={["Headers", "Heroes", "Features", "Pricing", "Contact"]} />,
   },
   {
     id: "history",
     slot: "left.bottom",
     title: "Undo History",
+    description: "Your recent steps since you opened the site.",
+    icon: HistoryIcon,
     component: () => <List items={["Edited Heading text", "Added Hero", "Opened page"]} />,
+  },
+  {
+    id: "versions",
+    slot: "left.bottom",
+    title: "Version History",
+    description: "Saved copies of your whole site.",
+    icon: ArchiveRestoreIcon,
+    component: () => <List items={["Before the new menu", "Today, 09:15", "Yesterday, 17:40"]} />,
   },
   {
     // Always shown under Add and Undo History (ADR 0011).
