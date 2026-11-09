@@ -160,7 +160,7 @@ export function dropIndex(from: number, over: number, after: boolean): number {
 const DRAG_TYPE = "application/x-webforge-layer";
 
 /**
- * Layers (F-ED-12, UI1; Advanced mode): the page's sections and elements as a tree, selected in
+ * Layers (F-ED-12, UI1; ADR 0011): the page's sections and elements as a tree, selected in
  * step with the canvas. Drag a layer, or press Mod+Alt+↑/↓, to move it among its siblings; while
  * dragging, the rows it can't go to are marked (1.35). F2 or double-click renames it; the eye
  * hides it (dimmed on the canvas, left out of the export). ←/→ and the arrows beside the names

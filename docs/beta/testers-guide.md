@@ -30,6 +30,12 @@ This is a test version, so keep a copy of anything you'd be sorry to lose:
 
 Each site is one file ending `.wforge`, wherever you saved it. A new beta version opens your sites, and you carry on with them as before. Once it has saved a site, an older version can only open that site read-only, so keep to the newest version.
 
+## Getting new versions
+
+On Windows, Webforge updates itself: it downloads each new beta version while you work, and installs it when you close Webforge. As a tester you get the beta versions without setting anything, as Webforge does until version 1.0. Keep **Settings › App › Updates** on _Beta_.
+
+On a Mac, Webforge doesn't update itself yet: install each new version yourself.
+
 ## Finding your version
 
 Choose **Help › About Webforge**. It shows the version, for example _Version 0.9.0_. Every report asks for it, since things change from week to week.

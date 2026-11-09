@@ -213,6 +213,12 @@ jobs:
         run: |
           set -euo pipefail
           dir="apps/desktop/release/$VERSION"
+          # Beta's feed files (`beta.yml`, `beta-mac.yml`): copies of Stable's, which
+          # tools/src/stage-rollout.ts offers to some of Stable at first. Beta always gets the
+          # whole release.
+          for feed in "$dir"/latest*.yml; do
+            if [ -f "$feed" ]; then cp "$feed" "$dir/beta${feed##*/latest}"; fi
+          done
           # The installers, their blockmaps (electron-updater's partial downloads) and the feed
           # files: every file electron-builder wrote there but its own logs (builder-*).
           files=()

@@ -92,4 +92,6 @@ On Windows, {appName} keeps itself up to date. A few seconds after it starts, an
 
 {appName} looks for new versions on GitHub, where they're published. It sends nothing about you or your sites. Without an internet connection it tries again later.
 
+Each new version reaches **Beta** first, then **Stable**. Until {appName} 1.0, {appName} gets its updates from Beta. To choose, see [Settings](settings.md#updates).
+
 On a Mac, {appName} doesn't update itself yet: install each new version yourself.

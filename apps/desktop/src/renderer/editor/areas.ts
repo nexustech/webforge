@@ -85,6 +85,8 @@ export type WindowContext = AreaContext & {
   readonly canvasPointer: CanvasPointer;
   /** The parts of the window's Settings dialog (LF-12). */
   readonly settings: SettingsRegistry;
+  /** The running app's version (About's), which the update channel's default follows (5.2). */
+  readonly appVersion: string;
   /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
   readonly windowDialogs: WindowDialogRegistry;
   /** The code trust step (#649): asks before the site's code runs, and keeps what's trusted. */

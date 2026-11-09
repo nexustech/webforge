@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { UpdateStatus } from "../shared/ipc/updates.js";
+import type { UpdateChannel } from "../shared/update-channel.js";
 import { setLogSink } from "./log.js";
 import {
   CHECK_EVERY_MS,
@@ -25,6 +26,7 @@ function fakeUpdater() {
     onDownloaded: (listener: (version: string) => void) => listeners.downloaded.push(listener),
     onError: (listener: (error: unknown) => void) => listeners.error.push(listener),
     install: vi.fn(),
+    setChannel: vi.fn((_channel: UpdateChannel) => undefined),
   } satisfies Updater;
   return {
     updater,
@@ -40,10 +42,11 @@ function fakeUpdater() {
   };
 }
 
-function serviceWith(fake = fakeUpdater()) {
+function serviceWith(fake = fakeUpdater(), channel: UpdateChannel = "stable") {
   const statuses: UpdateStatus[] = [];
   const service = createUpdateService({
     updater: fake.updater,
+    channel,
     onStatus: (status) => statuses.push(status),
     timers: {
       setTimeout: (callback, ms) => setTimeout(callback, ms),
@@ -206,6 +209,9 @@ function fakeAutoUpdater() {
   const auto = {
     autoDownload: false,
     autoInstallOnAppQuit: true,
+    channel: null as string | null,
+    allowPrerelease: false,
+    allowDowngrade: false,
     logger: console as unknown,
     checkForUpdates: vi.fn(async (): Promise<unknown> => null),
     on: (event: string, listener: (arg: never) => void) => listeners.set(event, listener),
@@ -259,6 +265,57 @@ describe("electronUpdater", () => {
     expect(auto.install).toHaveBeenCalledWith(true, false);
     auto.install.mockReturnValueOnce(false);
     expect(() => updater.install()).toThrow("UpdateInstallFailed");
+  });
+});
+
+describe("the update channel (5.2)", () => {
+  it("follows the channel it starts with, and another chosen later, from a waiting check", async () => {
+    const { service, updater } = serviceWith(fakeUpdater(), "beta");
+    expect(updater.setChannel.mock.calls).toEqual([["beta"]]);
+    service.start();
+    await vi.advanceTimersByTimeAsync(FIRST_CHECK_MS);
+    expect(updater.check).toHaveBeenCalledTimes(1);
+
+    // The next check was 6 hours away: it runs soon after the choice instead.
+    service.setChannel("stable");
+    expect(updater.setChannel.mock.calls).toEqual([["beta"], ["stable"]]);
+    expect(lines).toContain("info Webforge follows another update channel (channel=stable)");
+    await vi.advanceTimersByTimeAsync(FIRST_CHECK_MS);
+    expect(updater.check).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(CHECK_EVERY_MS - 1);
+    expect(updater.check).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(updater.check).toHaveBeenCalledTimes(3);
+  });
+
+  it("changes nothing for the channel it already follows, and checks no sooner once stopped", async () => {
+    const { service, updater } = serviceWith(fakeUpdater(), "stable");
+    service.start();
+    service.setChannel("stable");
+    expect(updater.setChannel).toHaveBeenCalledTimes(1);
+
+    service.stop();
+    service.setChannel("beta");
+    expect(updater.setChannel).toHaveBeenLastCalledWith("beta");
+    await vi.advanceTimersByTimeAsync(CHECK_EVERY_MS);
+    expect(updater.check).not.toHaveBeenCalled();
+  });
+
+  it("reads Beta's prereleases or Stable's latest release, and never goes back a version", () => {
+    const { auto } = fakeAutoUpdater();
+    const updater = electronUpdater(auto as ElectronAutoUpdater);
+
+    // As electron-updater's own setter does, setting the channel allows an older version.
+    auto.allowDowngrade = true;
+    updater.setChannel("beta");
+    expect(auto).toMatchObject({ channel: "beta", allowPrerelease: true, allowDowngrade: false });
+    auto.allowDowngrade = true;
+    updater.setChannel("stable");
+    expect(auto).toMatchObject({
+      channel: "latest",
+      allowPrerelease: false,
+      allowDowngrade: false,
+    });
   });
 });
 

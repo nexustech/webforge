@@ -1,4 +1,5 @@
 import type { UpdateStatus } from "../shared/ipc/updates.js";
+import type { UpdateChannel } from "../shared/update-channel.js";
 import { log, logFailure } from "./log.js";
 import { defaultTimers, type Timers } from "./timers.js";
 
@@ -25,6 +26,8 @@ export type Updater = {
   onError(listener: (error: unknown) => void): void;
   /** Starts the downloaded update's installer, silently, to run once Webforge has exited. */
   install(): void;
+  /** Looks for updates on `channel` from the next check (5.2). */
+  setChannel(channel: UpdateChannel): void;
 };
 
 /** The update service: checks, downloads in the background and installs as Webforge exits. */
@@ -37,6 +40,11 @@ export type UpdateService = {
   installOnQuit(): void;
   /** No more checks. */
   stop(): void;
+  /**
+   * Follows `channel` from now (5.2): the person chose another in Settings. A check that was
+   * waiting runs {@link FIRST_CHECK_MS} from now instead, so the choice takes effect soon.
+   */
+  setChannel(channel: UpdateChannel): void;
 };
 
 /**
@@ -49,15 +57,20 @@ export type UpdateService = {
  */
 export function createUpdateService({
   updater,
+  channel,
   onStatus,
   timers = defaultTimers,
 }: {
   readonly updater: Updater;
+  /** The channel to follow from the first check (`updateChannelFor`). */
+  readonly channel: UpdateChannel;
   /** The update's state changed. */
   readonly onStatus: (status: UpdateStatus) => void;
   readonly timers?: Timers;
 }): UpdateService {
   let current: UpdateStatus = { state: "idle" };
+  let following = channel;
+  updater.setChannel(channel);
   let timer: unknown;
   let stopped = false;
 
@@ -123,12 +136,25 @@ export function createUpdateService({
       stopped = true;
       stop();
     },
+    setChannel: (next) => {
+      if (next === following) return;
+      following = next;
+      updater.setChannel(next);
+      log.info("Webforge follows another update channel", { channel: next });
+      // Only a check that was waiting: one running now schedules the next itself.
+      if (timer === undefined) return;
+      stop();
+      schedule(FIRST_CHECK_MS);
+    },
   };
 }
 
 /** The part of electron-updater's `autoUpdater` that {@link electronUpdater} uses. */
 export type ElectronAutoUpdater = {
   autoDownload: boolean;
+  channel: string | null;
+  allowPrerelease: boolean;
+  allowDowngrade: boolean;
   autoInstallOnAppQuit: boolean;
   logger: unknown;
   checkForUpdates(): Promise<unknown>;
@@ -164,6 +190,14 @@ export function electronUpdater(autoUpdater: ElectronAutoUpdater): Updater {
     install: () => {
       // Silent, and not started again: the person closed Webforge.
       if (!autoUpdater.install(true, false)) throw new Error("UpdateInstallFailed");
+    },
+    setChannel: (channel) => {
+      // Stable reads the repository's latest release, with `latest.yml`; Beta the newest published
+      // one, prereleases included, with its `beta.yml` (docs/releasing.md).
+      autoUpdater.channel = channel === "beta" ? "beta" : "latest";
+      autoUpdater.allowPrerelease = channel === "beta";
+      // Setting the channel allows an older version; leaving Beta waits for a newer Stable one.
+      autoUpdater.allowDowngrade = false;
     },
   };
 }
