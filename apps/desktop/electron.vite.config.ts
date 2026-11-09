@@ -119,6 +119,30 @@ function inlineBase64(): Plugin {
   };
 }
 
+/**
+ * fflate's Node build declares a `require` of its own at its top level (`createRequire('/')`), and
+ * electron-vite's CommonJS shim declares `const require` in every chunk that calls one: in the same
+ * chunk, the main process fails to load ("Identifier 'require' has already been declared"), unless
+ * the bundler happens to rename fflate's. Since main's start-up chunks are small (#892), it doesn't:
+ * fflate's is renamed here. Fails the build if fflate's code no longer reads as expected.
+ */
+function fflateRequire(): Plugin {
+  const declared = "var require = createRequire('/');";
+  const called = "_a = require('worker_threads')";
+  return {
+    name: "webforge:fflate-require",
+    transform(code, id) {
+      if (!/[\\/]fflate[\\/]esm[\\/]index\.mjs$/.test(id)) return null;
+      if (!code.includes(declared) || !code.includes(called)) {
+        throw new Error("fflate's own require has changed: update webforge:fflate-require");
+      }
+      return code
+        .replace(declared, "var fflateRequire = createRequire('/');")
+        .replace(called, "_a = fflateRequire('worker_threads')");
+    },
+  };
+}
+
 /** The catalogue `@webforge/themes` bundles (2.2), the parts the copy below needs. */
 type FontCatalogue = {
   readonly families: readonly {
@@ -265,6 +289,7 @@ export default defineConfig(({ command }) => {
     main: {
       plugins: [
         inlineBase64(),
+        fflateRequire(),
         bundleFonts(),
         bundleTemplates(),
         bundleBridge(bundled),

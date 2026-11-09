@@ -5,11 +5,10 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { PROOF_PATH, proofFor, runBridge } from "@webforge/mcp-bridge";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import {
   MAX_CHALLENGES_IN_FLIGHT,
   MAX_SESSIONS_PER_APP,
-  MCP_HOST,
-  MCP_PATH,
   type McpListener,
   SESSION_IDLE_MS,
   startMcpListener,

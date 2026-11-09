@@ -5,8 +5,8 @@ import type { AiApps, AppKind, PairedApp, Pairing } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
 import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
-import { type McpListener, type McpListenerOptions, startMcpListener } from "./mcp-listener.js";
-import { createMcpServer, type McpApp, type McpServerInfo } from "./mcp-server.js";
+import type { McpListener, McpListenerOptions } from "./mcp-listener.js";
+import type { McpApp, McpServerInfo } from "./mcp-server.js";
 import { isMainTool, type SiteBriefs } from "./site-brief.js";
 
 /** The ephemeral range a port is drawn from (ADR 0021). */
@@ -87,7 +87,6 @@ const taken = (error: unknown) => {
  */
 export function createMcpService(options: McpServiceOptions): McpService {
   const { apps } = options;
-  const listen = options.listen ?? startMcpListener;
   const drawPort = options.drawPort ?? (() => randomInt(EPHEMERAL.from, EPHEMERAL.to + 1));
   const limits = createAppLimits(options.ask);
 
@@ -163,13 +162,20 @@ export function createMcpService(options: McpServiceOptions): McpService {
   const proofOf = async (id: string) =>
     (await apps.list()).some((app) => app.id === id) ? apps.proofOf(id) : null;
 
-  const listenOn = (port: number) =>
-    listen({
+  const listenOn = async (port: number) => {
+    // The server and its listener, with the MCP SDK and the commands' catalogue, load once AI apps
+    // are on, not with main at start-up (#892).
+    const [{ startMcpListener }, { createMcpServer }] = await Promise.all([
+      import("./mcp-listener.js"),
+      import("./mcp-server.js"),
+    ]);
+    return (options.listen ?? startMcpListener)({
       port,
       authenticate: (key) => apps.authenticate(key),
       proofOf,
       serverFor: (app) => createMcpServer(options.info, app, askFor(app)),
     });
+  };
 
   const open = async () => {
     if (listener !== null) return;

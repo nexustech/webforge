@@ -4,8 +4,9 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AiResponse } from "../shared/ipc/ai.js";
 import { setLogSink } from "./log.js";
+import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import { createAppLimits } from "./mcp-limits.js";
-import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
+import { type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 
 /** What an AI app sends and gets back here: it must reach no log, console or crash report. */
