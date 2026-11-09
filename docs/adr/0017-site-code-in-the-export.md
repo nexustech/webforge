@@ -5,11 +5,13 @@
 - Related: #67 (3.9), F-ED-15, C7, X1, X4, [ADR 0005](0005-export-pipeline-spike.md), [research/stack/07](../../research/stack/07-export-pipeline.md)
 
 ## Context
+
 A site has code of its own (C7, Advanced): `custom.css`, `custom.js`, HTML for every page's `<head>` and for the end of its `<body>` (the model's `SiteCode`), and Custom Code elements on its pages. 3.9 puts all of it in the export.
 
 The plan said "esbuild bundling to classic scripts" and "a real Tailwind class scanner for Custom HTML" (ADR 0005, Finding 1). Both arrive as native binaries. The pipeline runs in a utility process that Vite bundles, inside an asar archive whose Fuses switch off running as Node, so each would have to be unpacked and shipped beside it.
 
 ## Decision
+
 - **`custom.css`** is a file of its own, `assets/css/custom.<hash>.css`, linked after the site's stylesheet, so it wins over the theme and the utilities.
   - It isn't compiled by Tailwind, so a mistake in it can't stop the site's styles being built.
 - **`custom.js`** is a file of its own too, `assets/js/custom.<hash>.js`: a classic `<script defer>` after `webforge.js`.
@@ -20,7 +22,7 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
     - not a library, as Webforge offers none.
     - esbuild comes with vetted offline libraries, if they do.
 - **The head HTML goes last in every page's `<head>`**, after Webforge's scripts. **The body HTML goes last in its `<body>`**, after the consent banner. Both go in as the person wrote them.
-- **The site's own CSS and JS go out as written, *Minify output* or not**, as Custom Code's scripts and styles already do (3.3).
+- **The site's own CSS and JS go out as written, _Minify output_ or not**, as Custom Code's scripts and styles already do (3.3).
 - **Classes:**
   - The words of the site's own code that can be classes go to Tailwind, beside the classes of the pages' markup: every word of each Custom Code element's HTML and of the page HTML, and of `custom.js` only the words in its strings and template literals, where `classList` and `className` take theirs. Its keywords and names (`static`, `table`, `visible`) would make rules for nothing.
   - A word is a run of characters between whitespace, quotes, `<`, `>`, `=` and `;`, as Tailwind's own scanner reads a file. So a class in `class='…'`, an unquoted one, or one that `custom.js` adds compiles too.
@@ -28,7 +30,7 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
 - **The snapshot carries the code** (`SiteSnapshot.code`), left out while all four parts are empty, so a site without code builds as before.
 - **The page cache leaves the code out of its key**, since it goes into each page's document after rendering. A change to the site's own CSS renders no page and compiles nothing, as 3.2 asks of the theme's values.
 
-- **Download and bundle** (C8, 3.9) is Site Check's *Fix* for such a file. It keeps a copy with the site, so the export loads its own.
+- **Download and bundle** (C8, 3.9) is Site Check's _Fix_ for such a file. It keeps a copy with the site, so the export loads its own.
   - **Only on the person's click, after a yes.** The confirmation says the file's licence is theirs to check. It is the editor's one download besides fonts (architecture §9).
   - **Main downloads it** (`bundle-download.ts`). The address comes from a site file, which may come from anyone, so:
     - **`https://` at every hop.** Main follows redirects itself, at most five, so a redirect to `http://` is refused.
@@ -54,9 +56,10 @@ The plan said "esbuild bundling to classic scripts" and "a real Tailwind class s
   - **The E2E tests stand in for the network** (`WEBFORGE_E2E_BUNDLE=1`, unpackaged only), so no test reaches another website.
 
 ## Consequences
+
 - **Site Check's external-resource rule runs in the renderer with the others** (ADR 0016), though ADR 0016 thought it might need the rendered site. The export writes the site's own code and Custom Code's HTML as written, so the rule reads the same text.
   - It finds each file they load from another website (`packages/site-check/src/external.ts`): scripts, stylesheets, fonts, images, sounds and videos, and frames.
-  - Each is *Must fix* unless Settings' Custom Code allows its address, either the address itself or a folder ending in `/`.
+  - Each is _Must fix_ unless Settings' Custom Code allows its address, either the address itself or a folder ending in `/`.
   - Links aren't loaded files, so they pass.
   - **Changed by #649 (security review S1):**
     - A script counts every address in its strings, including one it only sends to or goes to (`fetch`, `sendBeacon`, `location`). A site that sends its visitors' data to another website depends on it as much as one that loads a file from there.

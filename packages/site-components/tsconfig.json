@@ -3,7 +3,7 @@
   "compilerOptions": {
     "jsx": "react-jsx"
   },
-  "include": ["src", "src/catalogue-data.json"],
+  "include": ["src", "src/catalogue-data.json", "src/icon-names-offered.json"],
   // The behaviours and their tests: tsconfig.behaviours.json, with the DOM.
   "exclude": ["src/behaviours/*.test.ts"],
   "references": [

@@ -100,6 +100,7 @@ function commandOf(
 ) {
   const fill = (value: string) =>
     value
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: the manifest's placeholder, filled in as Claude Desktop does.
       .replaceAll("${__dirname}", target)
       .replace(/\$\{user_config\.([a-z_]+)\}/g, (_, name: string) => userConfig[name] ?? "");
   const { command, args, env } = manifest.server.mcp_config;
@@ -164,6 +165,7 @@ describe("Claude Desktop's extension (ADR 0021)", () => {
       [BRIDGE_ENV.address]: pairing.address,
       [BRIDGE_ENV.app]: CLAUDE.id,
       [BRIDGE_ENV.proof]: PROOF,
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: the manifest's placeholder, which Claude Desktop fills in.
       [BRIDGE_ENV.key]: "${user_config.key}",
     });
     expect(manifest.user_config).toEqual({

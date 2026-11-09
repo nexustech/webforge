@@ -5,15 +5,18 @@
 - Related: #247 (R14), F2 in [project file format](../../research/stack/06-project-file-format.md), [architecture §5](../../spec/01-architecture.md), [engineering standards §5](../../spec/03-engineering-standards.md), [ADR 0003](0003-wforge-sqlite-storage.md)
 
 ## Context
+
 A site's documents carry a `formatVersion`. `migrateSite` (`packages/model/src/migrations.ts`) runs the migration chain from the stored version up to `SITE_FORMAT_VERSION`, then validates the result with `siteDocSchema`.
 
 1.32 changed a Section's padding from one size (`"small"`, `"medium"`, `"large"`) to a box, a spacing token per side, without bumping the format. Instead, `box.ts` read the old sizes whenever it drew a Section (`LEGACY_PADDING`). That made two migration mechanisms:
+
 - **The chain** runs once, when a site opens, and is tested by a fixture per format.
 - **Read-time tolerance** is spread over every reader of the field: the canvas, the Edit panel, the export. It stays forever, isn't tied to a format, and an old shape survives in the file until someone edits that field.
 
 The architecture review of 23 Oct 2026 asked for one mechanism.
 
 ## Decision
+
 1. **Any change to what a stored document may hold bumps `SITE_FORMAT_VERSION`,** with a migration step and fixtures. This includes:
    - a new required field, or a field removed or renamed;
    - a value that changes shape, e.g. a size becoming a box;
@@ -26,10 +29,11 @@ The architecture review of 23 Oct 2026 asked for one mechanism.
 5. **Migrating never writes.** `ProjectStore.readSite` keeps the migrated site in memory; the first commit writes it with its changes, in one transaction (ADR 0003, decision 7).
 
 ## Consequences
+
 - A shape change costs a step, fixtures and an inverse for the property, so it's visible in review. In exchange, readers stay simple and every old site is tested.
 - The format number rises more often. That's free: it is only compared, never shown.
 - An older build opens a site of a newer format read-only (`newer-format`), so a bump also stops older builds from writing shapes they don't know.
-- **Copied elements go through the chain too** (#671, 1 Nov 2026). The clipboard's JSON names the site format it was copied in (`clipboardPayload`). A paste (`readClipboardPayload`) brings older elements up through the chain, refuses newer ones (*copied in a newer version of {appName}*), and takes a payload without a version as format 12, the format of every build before it, none of them released.
+- **Copied elements go through the chain too** (#671, 1 Nov 2026). The clipboard's JSON names the site format it was copied in (`clipboardPayload`). A paste (`readClipboardPayload`) brings older elements up through the chain, refuses newer ones (_copied in a newer version of {appName}_), and takes a payload without a version as format 12, the format of every build before it, none of them released.
   - **The carrier:** the elements ride through the chain in a site holding nothing else. Their nodes are a page's content, their Media items the site's Media, and it has no theme, settings or shared sections.
   - **What that asks of every step:** it must take such a site, as every step up to format 12 does. A step that reads a part the carrier lacks must leave it absent, or build it from nothing as format 5's theme step does.
   - **The test:** `clipboard.test.ts` carries format 1 elements through the whole chain, so a new step that fails on the carrier fails it.

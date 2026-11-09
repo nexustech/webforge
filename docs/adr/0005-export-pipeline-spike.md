@@ -5,7 +5,9 @@
 - Related: [MVP spec §6, Phase 0](../../spec/02-mvp-spec.md#6-milestones), [export pipeline research](../../research/stack/07-export-pipeline.md) (X1–X6), [site components research](../../research/stack/05-site-components.md), [architecture §4–8](../../spec/01-architecture.md), [ADR 0004](0004-puck-with-webforge-history.md) (follow-ups)
 
 ## Context
+
 Phase 0 had to show that Webforge can turn a site into a self-contained static site (X1–X5):
+
 - flat `.html` pages with relative links that work when opened from disk;
 - readable CSS from Tailwind v4 and daisyUI 5, compiled from code inside the app;
 - classic `<script defer>` only, and no external requests (C8);
@@ -14,9 +16,11 @@ Phase 0 had to show that Webforge can turn a site into a self-contained static s
 The build has to run off the UI thread, in an Electron `utilityProcess`, and work in the packaged app.
 
 ## Decision
+
 **Go.** The pipeline works end to end, from a site snapshot to a folder that opens from disk in Chromium and WebKit with zero external requests. The design below is the baseline for Phase 3.
 
 ### What was built
+
 - **`@webforge/model`** owns the documents: `PageDoc`, `NodeDoc`, `LayoutDoc`, `Theme` and a new `SiteSnapshot` (pages, layout, theme, media), each with a zod schema. The snapshot schema rejects a missing home page, duplicate page paths, unsafe page paths or media names, and non-binary media. (ADR 0004 follow-up.)
 - **`@webforge/site-components`** owns the component library contract (`ComponentDef`, `FieldDef`, moved from `engine`, so `engine` now depends on it and not the other way round). It also holds the catalogue, all with daisyUI markup and `site-*` hook classes:
   - Header with a mobile menu, and Footer;
@@ -37,23 +41,24 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
   - errors are logged as codes only.
 
 ### Findings
+
 1. **Tailwind v4 and daisyUI compile in-process with no native modules.** The pipeline uses `tailwindcss`'s own `compile()` and supplies `loadStylesheet` (theme, preflight and utilities CSS) and `loadModule` (the daisyUI plugin) itself. Class candidates come from the `class` attributes of our own HTML, which we fully control. So the spike needs neither `@tailwindcss/oxide` (a native scanner) nor `@tailwindcss/node`. Custom HTML (C7) will need a real scanner later.
 2. **The "@plugin resolution from inside app.asar" risk disappears.** The worker resolves nothing at run time:
    - Tailwind's CSS is bundled as text (`?raw`);
    - the WASM codecs and fonts are bundled as base64 by a small `?base64` Vite plugin, because Vite has no `?inline` for `.wasm` (it fails on Windows with os error 123);
    - the daisyUI plugin is bundled as code.
-   The worker bundle is **4.1 MB**.
+     The worker bundle is **4.1 MB**.
 3. **jSquash runs in Node and in the utility process,** given precompiled `WebAssembly.Module`s (`compileCodecs`) and a minimal `ImageData` stand-in. Neither Node nor a utility process has `ImageData`. Its output is deterministic: two builds are byte-identical, which the golden tests check.
 4. **Measured on this Windows machine** (2-page fixture with one 1600×1000 photo):
 
-   | | Time / size |
-   |---|---|
-   | Build in Node (Vitest), cold, 6 image encodes | ≈ 2.3 s |
-   | Export from the app, page without images (utility process) | ≈ 1.0–1.4 s |
-   | Export from the **packaged** app, page with the photo | ≈ 3.0 s |
-   | CSS for the fixture site (readable, theme + used classes only) | 50 KB |
-   | `webforge.js` (menu) | 1.2 KB |
-   | Photo at 640 / 1280 / 1600 px: WebP vs JPEG | 3.3 / 8.4 / 12.1 KB vs 6.5 / 16.0 / 16.8 KB |
+   |                                                                | Time / size                                 |
+   | -------------------------------------------------------------- | ------------------------------------------- |
+   | Build in Node (Vitest), cold, 6 image encodes                  | ≈ 2.3 s                                     |
+   | Export from the app, page without images (utility process)     | ≈ 1.0–1.4 s                                 |
+   | Export from the **packaged** app, page with the photo          | ≈ 3.0 s                                     |
+   | CSS for the fixture site (readable, theme + used classes only) | 50 KB                                       |
+   | `webforge.js` (menu)                                           | 1.2 KB                                      |
+   | Photo at 640 / 1280 / 1600 px: WebP vs JPEG                    | 3.3 / 8.4 / 12.1 KB vs 6.5 / 16.0 / 16.8 KB |
 
    Image encoding dominates. The research's plan to cache derivatives by image hash (07) is needed before real projects with 20+ photos.
 5. **`file://` works.** Playwright opens the exported fixture from disk with all non-file requests blocked, in Chromium and WebKit, and checks that:
@@ -77,6 +82,7 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
 9. **Licences:** `@fontsource/inter` is OFL-1.1. OFL-1.1 is added to the licence allow-list (ADR 0002), because exported sites bundle Fontsource fonts by design (architecture §8). Everything else is MIT or Apache-2.0, plus MPL-2.0 for `@axe-core/playwright`.
 
 ## Consequences
+
 - `CanvasEngine.renderStatic` should delegate to `renderNodesToHtml` instead of Puck's `<Render>`, so the canvas and the export share one renderer. Done in 2.5 (#47): both used `renderPage` from `@webforge/site-components`.
 - **Since R8 (#306):** `renderStatic` is gone; it only wrapped `renderPage`, and only engine tests called it.
   - **What is still claimed:** the canvas and the export draw each component with the same `render` function. The canvas calls it through Puck (`toPuckConfig`, tested in `config.test.tsx`); the export calls it through `renderPage`. Both use the same values, slots and render context shape.
@@ -102,7 +108,9 @@ The build has to run off the UI thread, in an Electron `utilityProcess`, and wor
   - `tempDirFactory` moved to `@webforge/test-utils` and is shared by the storage and pipeline tests.
 
 ## Amendment, 26 Oct 2026 (R15, #248)
+
 The architecture review asked for a build that can be cancelled and followed, that doesn't encode the same image twice, and that doesn't carry every image through the main process.
+
 - **Cancel and progress.** `buildSite(snapshot, library, resources, { signal, onProgress })`:
   - it checks `signal` before each image, document and page, and before the stylesheet and the fonts, then throws a `cancelled` `BuildError`;
   - `onProgress` gets `BuildEvent`s (each image and page as it starts, then `styles` and `fonts`);
@@ -120,7 +128,9 @@ The architecture review asked for a build that can be cancelled and followed, th
 - **Codecs.** A failed codec preparation, or a failed load of the worker's bundled resources, is forgotten (`onceUntilFailure`), so the long-lived workers try again with their next job. The `ImageData` stand-in is defined only where the runtime has none.
 
 ## Amendment, 26 Oct 2026 (3.1, #59)
+
 The §6 `Pipeline` interface, as `createPipeline(library)`: one per open site, in the export worker.
+
 - **`build(snapshot, resources, { mode, signal })`** is an `AsyncIterable` of the R15 `BuildEvent`s, ending with `{ stage: "done", site }`. `buildSite` is the same build without the caches below. `check()` is 3.6's.
 - **Modes.** `export` and `publish` build the same files. `preview` (3.2) lets the stylesheet keep classes a page no longer uses, so an edit's CSS is ready at once.
 - **Kept between builds, in memory only:**
@@ -130,17 +140,19 @@ The §6 `Pipeline` interface, as `createPipeline(library)`: one per open site, i
 - **Progress and cancel in the app.** The worker reports each stage (`progress`), then `writing`. Main passes them to the window (`site:export-progress`), and `site:cancel-export` aborts the exports under way. The export toast shows the stage, with a Cancel button.
 
 ## Amendment, 27 Oct 2026 (3.3, #61)
+
 What an export writes, and the app's side of it.
+
 - **Options** (`OutputOptions`, off unless the person asks):
-  - *Minify output* (X4): HTML through html-minifier-terser, collapsed conservatively and never removing whitespace, with scripts, styles and `pre` left as written; JS through terser. CSS goes through a whitespace-only minifier, because Tailwind v4's output nests rules and rule-rewriting optimisers don't all read nesting. It keeps custom property values, `var()` fallbacks and `/*!` licence notices as written, and a test checks the result against lightningcss.
-  - *Include developer files* (X6, Advanced mode only, T2): `developer/input.css`, the stylesheet's Tailwind source loading `tailwindcss` as its CLI does, plus `design-tokens.json`, `site.json` and a README.
+  - _Minify output_ (X4): HTML through html-minifier-terser, collapsed conservatively and never removing whitespace, with scripts, styles and `pre` left as written; JS through terser. CSS goes through a whitespace-only minifier, because Tailwind v4's output nests rules and rule-rewriting optimisers don't all read nesting. It keeps custom property values, `var()` fallbacks and `/*!` licence notices as written, and a test checks the result against lightningcss.
+  - _Include developer files_ (X6, Advanced mode only, T2): `developer/input.css`, the stylesheet's Tailwind source loading `tailwindcss` as its CLI does, plus `design-tokens.json`, `site.json` and a README.
 - **ZIP** (`writeSiteZip`, fflate): written one file at a time beside the destination and then moved into place, so the worker never holds a second copy of the site. Fixed entry dates make it byte-stable, and it holds the export marker too.
 - **The app's flow:**
-  1. While the site has no web address, ask first (X3). *Add address* opens Settings on Site Settings' Web address section (`SettingsRegistry.show`) and goes on once it's saved. *Don't ask again for this site* is remembered.
+  1. While the site has no web address, ask first (X3). _Add address_ opens Settings on Site Settings' Web address section (`SettingsRegistry.show`) and goes on once it's saved. _Don't ask again for this site_ is remembered.
   2. The export dialog: a folder or a ZIP, and the options.
   3. Main's folder or save dialog.
   4. The build, with its progress toast (3.1).
   5. The export report, or a toast saying what went wrong.
 - **Remembered per site:** the choices go in the site file's `meta` table (`export_choices`), as UI state like the editor mode: never versioned, and read through a schema with defaults, so a bad value never stops the file opening. Main writes them once an export goes ahead.
-- **The report:** the result carries the build's warnings (at most 500, with the count), so the report names each problem's page. They're never logged. *Open Site* (Preview from disk) asks main to open what it last exported: the folder's `index.html` in the default browser, or the ZIP shown in the file manager. The renderer never sends a path.
+- **The report:** the result carries the build's warnings (at most 500, with the count), so the report names each problem's page. They're never logged. _Open Site_ (Preview from disk) asks main to open what it last exported: the folder's `index.html` in the default browser, or the ZIP shown in the file manager. The renderer never sends a path.
 - **Golden files:** every template's pages (`test/golden/templates/`). Their image plans are answered from the files' headers, so the test encodes nothing.

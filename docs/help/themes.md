@@ -1,4 +1,5 @@
 ---
+
 id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
@@ -15,6 +16,7 @@ You'll find the **Theme** panel in the right column, beside Site and Media, or u
 ## Choosing a theme
 
 The **Theme** list at the top of the Theme panel shows your own themes first, then the built-in ones:
+
 - **Light**, **Dark** and **High contrast**.
 - Twelve themes made for particular businesses:
   - **Bistro:** cafés, restaurants and bakeries.
@@ -34,16 +36,17 @@ Switching theme changes the colours, fonts and styles on every page. Anything yo
 ## Changing the theme
 
 The Theme panel lists the theme's settings:
+
 - **Colours:** **Brand**, **Accent**, **Second accent**, **Surface** (backgrounds) and **Text**. {appName} warns when two colours that sit together would be hard to read, and says how far off they are.
 - **Fonts:**
-  - **Font pairing:** a tested pair for headings and text, such as *Classic*, *Modern* or *Friendly*.
-  - Or choose **Headings**, **Body text** and **Accent** fonts yourself. The Accent font is for text whose Font is set to *Accent*.
+  - **Font pairing:** a tested pair for headings and text, such as _Classic_, _Modern_ or _Friendly_.
+  - Or choose **Headings**, **Body text** and **Accent** fonts yourself. The Accent font is for text whose Font is set to _Accent_.
   - Until you choose an Accent font of its own, it's the same as your Headings font and changes with it, and with a font pairing. Once you've chosen one, it stays.
 - **Text sizes** for each heading level, body text and small text.
 - **Headings:** capitals or small capitals, and letter spacing.
-- **Buttons:** shape (*Square*, *Rounded* or *Pill*), size and style.
+- **Buttons:** shape (_Square_, _Rounded_ or _Pill_), size and style.
 - **Links:** underlined always, or only when pointed at.
-- **Corners** of boxes, buttons and fields, from *Square* to *Round*.
+- **Corners** of boxes, buttons and fields, from _Square_ to _Round_.
 - **Photo corners**, **Card style**, **Section backgrounds** (all the same, or alternating), **Room around things**, **Shadows**, **Border width** and **Effects**.
 
 ## Built-in themes and your own
@@ -53,6 +56,7 @@ Built-in themes never change. The first time you change one, {appName} asks you 
 ## Theme Studio
 
 **Open Theme Studio**, at the top of the Theme panel (or **View › Theme Studio…**), shows the whole theme in a larger window:
+
 - **Themes:** every theme drawn in its own colours and fonts, to compare. Create a **New theme…** from any theme, and rename or delete your own.
 - **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an image…** suggests brand colours from your logo or a photo in Media.
 - **Text:** size, weight and line spacing for each kind of text.

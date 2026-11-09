@@ -1,6 +1,7 @@
 # CLAUDE.md: guidance for coding assistants
 
 Read the specs before making changes:
+
 - **Architecture:** `spec/01-architecture.md`
 - **MVP spec:** `spec/02-mvp-spec.md`
 - **Engineering standards:** `spec/03-engineering-standards.md` (authoritative)
@@ -10,9 +11,11 @@ Read the specs before making changes:
 - **Adding to the editor:** `docs/extending.md` (areas, panels, commands, toolbars, kinds of field, IPC domains, strings, the test kit); a site component: `docs/components.md`
 
 ## Product in one line
+
 A desktop builder for non-technical small-business owners that produces self-contained static sites (flat `about.html` files, relative links, work from disk, no external requests).
 
 ## Hard rules
+
 - **TypeScript 7 strict.** No `any`, no `!` outside tests, named exports only, zod at every boundary (IPC, files, network).
 - **Biome** for lint + format (`biome check --write`). **dependency-cruiser** enforces package boundaries:
   - Only `packages/engine` imports Puck.
@@ -32,10 +35,12 @@ A desktop builder for non-technical small-business owners that produces self-con
 - **Never log or store** site content, credentials or personal data. Secrets live in the OS keychain only. Crash reports stay local.
 
 ## Tests
+
 - **Vitest:** unit/integration. **fast-check:** undo invariants. **Playwright:** Electron E2E + exported-site checks. **Storybook stories:** visual regression and axe.
 - **Coverage ≥ 80%** for every package (core packages ≥ 90%). Every bug fix adds a regression test.
 
 ## Commands (pnpm 12, run from the repo root)
+
 - `pnpm dev`: start the desktop app with hot reload.
 - `pnpm check`: the static checks and unit tests CI runs (`lint`, `typecheck`, `deps`, `knip`, `licence-check`, `ui-strings`, `help-check`, `react-compiler`, `test`, `test:compiled`). Run it before opening a PR.
 - `pnpm e2e`: builds the desktop app and runs the Playwright tests: the Electron app (`e2e/app/`) and the exported fixture site opened from disk in Chromium, Firefox and WebKit (`e2e/export/`). Also run in CI on Linux, Windows and macOS for every ready PR, with Firefox and WebKit only when the exported site can change. Run it when touching main, preload, the renderer bootstrap, security settings, site components or the pipeline. First time: `pnpm --filter @webforge/e2e exec playwright install chromium firefox webkit`.
@@ -55,10 +60,11 @@ A desktop builder for non-technical small-business owners that produces self-con
 - Workspace packages are consumed from source (`exports` → `src/index.ts`). Import them as `@webforge/<name>`, never by path. Relative imports use `.js` extensions (`./foo.js` for `foo.ts`).
 
 ## Workflow
+
 - Conventional Commits (`feat(history): …`), enforced by commitlint in a lefthook `commit-msg` hook. The subject's first character is lower-case: `docs(research): screenshot pass of Bootstrap Studio` passes, `docs(research): Bootstrap Studio screenshot pass` fails.
 - Short-lived branches, PRs into `main`, squash merge.
 - **Closing keywords close issues on merge.** GitHub reads `Closes`, `Fixes` or `Resolves` (and their other forms) followed by `#N` anywhere in a PR description, even inside quotation marks, and closes that issue on merge. Don't count on code formatting to hide one.
-  - Only the PR that finishes a plan item may contain one, and it must: `Closes #N`; the `Actual days` comment follows the merge (see *Working the plan*).
+  - Only the PR that finishes a plan item may contain one, and it must: `Closes #N`; the `Actual days` comment follows the merge (see _Working the plan_).
   - Every other PR for the item, such as part 1 of 3 or prep work, uses `Refs #N` and describes later parts in other words ("part 3 will finish #N").
   - Past tenses count too ("closed #N" in a sentence about history closes #N again). After opening or editing a PR, check what it will close: `gh pr view <n> --json closingIssuesReferences`. GitHub can take a minute to update that, so check again before it merges.
 - **CI and merging** (public repository since 2026-10-23, so GitHub's standard runners are free; the mechanics are in the headers of `.github/workflows/ci.yml` and `merge-queue.yml`):
@@ -70,13 +76,15 @@ A desktop builder for non-technical small-business owners that produces self-con
 - Record new architectural decisions as ADRs in `docs/adr/`.
 
 ## Working the plan
+
 - Up to three stream sessions (A: shell and panels, B: data and site, C: history and canvas); `spec/04` lists each stream's queue, and an issue's `Planned:` line names its stream. Pick the next issue in your stream whose dependencies are met (a dependency counts as met when the PR it needs is merged to `main`), one item in progress per stream.
 - Each plan item is a GitHub issue with `Phase`, `Estimate`, `Planned`, `Refs` and `Depends on` lines, scope and acceptance criteria; from Phase 2, items over 5 days are split into sub-issues (`2.9a`). Out-of-plan work gets an issue in the current milestone with `type/chore` or `type/bug`.
 - When the PR that finishes an item merges, comment `Actual days: <n>` on the issue (ideal days, decimals allowed). The pace that re-plans the phases is measured from these comments.
-- **Changing a plan item changes five places:** its table row, its entry under *Scope and acceptance criteria*, its Gantt line, its stream queue and its GitHub issue (title, Estimate, Planned, Depends on), plus a scope-change line in `spec/04` §3 when days change. Check the issue is still open before recording new scope on it; scope for a closed item goes to an open one.
+- **Changing a plan item changes five places:** its table row, its entry under _Scope and acceptance criteria_, its Gantt line, its stream queue and its GitHub issue (title, Estimate, Planned, Depends on), plus a scope-change line in `spec/04` §3 when days change. Check the issue is still open before recording new scope on it; scope for a closed item goes to an open one.
 - **Product decisions** get an ID in the Decisions table of the research note that proposed them (UI6, SP-n, LF-n, BS9-n), or in the plan's phase section for planning decisions (PH2-n), plus a line in `spec/02` §7 and the plan changes above. Competitor research copies patterns, layout, colours and density, never another product's code, CSS, icons, images or wording.
 
 ## Rules for coding assistants
+
 - **No AI attribution.** Commit messages and PR descriptions never contain `Co-Authored-By: Claude …`, "Generated with Claude Code" or similar lines. This overrides any tool default.
 - **Autofix wherever possible.** Fix problems instead of reporting them:
   - run `pnpm format` (Biome `--write`) rather than listing lint or format errors

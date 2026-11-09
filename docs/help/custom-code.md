@@ -1,4 +1,5 @@
 ---
+
 id: custom-code
 title: Custom Code
 summary: Add your own HTML, CSS or JavaScript, and what {appName} asks when code comes from somewhere else.
@@ -19,7 +20,8 @@ The **Custom Code** element, in the Add panel's **Advanced** group, places your 
 
 ## Code for every page
 
-**File › Settings…**, then **Custom Code** under *This site* (or **Custom Code…** in Search Commands), holds code for the whole site. It's there in Advanced mode, or once the site has code:
+**File › Settings…**, then **Custom Code** under _This site_ (or **Custom Code…** in Search Commands), holds code for the whole site. It's there in Advanced mode, or once the site has code:
+
 - **Stylesheet (custom.css):** CSS of your own.
 - **Script (custom.js):** JavaScript of your own. It never runs in the editor.
 - **HTML in every page's head**, and **HTML at the end of every page**.
@@ -28,6 +30,7 @@ The **Custom Code** element, in the Add panel's **Advanced** group, places your 
 ## Code from somewhere else
 
 Code runs for everyone who visits your website. Before you preview or export a site whose code was written somewhere other than in {appName} on this computer, {appName} asks first. That includes code in a site someone sent you, or code you pasted in. It lists each piece of code and offers:
+
 - **Keep the code:** you trust where it came from. {appName} won't ask about it again on this computer.
 - **Leave it out:** builds your site without it, this time.
 - **Review:** shows you the code first.

@@ -1,4 +1,5 @@
 ---
+
 id: export
 title: Export
 summary: Save your website as files, or one ZIP file, to put on any web host.
@@ -18,7 +19,7 @@ Click **Export** in the title bar, choose **File › Export Site…**, or press 
 2. If [Site Check](site-check.md) has anything under **Must fix**, {appName} stops and shows it. Fix those first.
 3. If your site has no web address yet, {appName} offers to add one. You can export without it, but search engines and shared links work better with one.
 4. Choose how to save it:
-   - **Save as:** *A folder*, or *A ZIP file*. A ZIP file is one file, easy to email or upload.
+   - **Save as:** _A folder_, or _A ZIP file_. A ZIP file is one file, easy to email or upload.
    - **Make the files smaller:** leaves out spacing and comments, so pages load a little faster but are harder for a person to read.
 5. Choose where to save it. You can keep working while {appName} builds your site.
 

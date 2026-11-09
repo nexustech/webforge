@@ -5,6 +5,7 @@
 - Related: #246 (R13), #408 (R13b), [architecture §3, §10](../../spec/01-architecture.md), [ADR 0003](0003-wforge-sqlite-storage.md)
 
 ## Context
+
 The main process holds the open site's `.wforge` through one better-sqlite3 connection, whose calls are synchronous. Importing a 50 MB image there blocked the main thread for 1.4–2.0 s (measured 25 Oct 2026): about 350 ms of SHA-256, and the rest inserting the blob with the two fsyncs of a rollback-journal commit (`synchronous = FULL`, ADR 0003). Every IPC call and `webforge-media:` request waited meanwhile.
 
 Hashing in slices on the main thread can't fix that: the insert is one statement. better-sqlite3 has no incremental blob writes, and splitting blobs into chunk rows would change the file format.
@@ -12,6 +13,7 @@ Hashing in slices on the main thread can't fix that: the insert is one statement
 A second connection can do the write on another thread. But under the rollback journal (kept for cloud sync, ADR 0003) a connection that commits locks out the others, and a main-thread connection that met that lock would wait on the main thread, which is the block we are removing.
 
 ## Decision
+
 1. **A storage writer** (`apps/desktop/src/worker/storage-writer.ts`, a `worker_threads` worker in the main process) imports one file at a time, through a connection of its own to the open file (`AssetWriter`, opened per import and closed after it):
    - It opens through the same `connect()` as every connection to a project (`packages/storage/src/connection.ts`), with the same hardening and write settings.
    - It takes an import in two steps. **Preparing** reads the file in 1 MB chunks (or takes transferred bytes), checks it is one Media takes, and hashes it, outside the gate: the site's file isn't touched, so saves go on however slow the file is to read (a network share). Only **storing** takes the gate's exclusive side.
@@ -32,6 +34,7 @@ A second connection can do the write on another thread. But under the rollback j
    - Files without a path (dragged from a web page) still go as bytes over `media:import`.
 
 ## Consequences
+
 - The main thread never waits on SQLite's locks. Saves during an import wait their turn as promises, not on the thread.
 - Every caller of `ProjectSession` awaits it, and `will-quit` defers quitting until the site is closed.
 - A long backup holds the shared side. A writer, or a close, waits for it, at most 5 s for a close; saves meanwhile go on.
@@ -40,7 +43,9 @@ A second connection can do the write on another thread. But under the rollback j
 - Pasted images and downloaded files once went through the main connection (`storeCopiedMedia`, `storeBlobs`). The addendum below moves them to the writer.
 
 ## Addendum (2026-11-01, #664): the writer cleans up, and stores pasted and downloaded files
+
 The architecture review of 30 Oct 2026 (A5) found that garbage collection, and the VACUUM Version History's Clean up needs (4.6), would run on the main connection. A VACUUM of a 300 MB file rewrites all of it, and would hold IPC and autosave up for seconds.
+
 - **Two more jobs for the writer**, each taken on the gate's exclusive side, through `SiteFileWriter` (formerly `AssetWriter`):
   - **`put-blobs`** stores files' bytes, all or none, hashing them on the thread: a pasted Media item's, with its asset when the site has no copy yet (`storeCopiedMedia`), and the files the site's code downloads (`storeBlobs`, 3.9). The bytes are copied to the thread, never moved, since the caller may still use them. A pasted item's file carries the hash it must have, and bytes that hash otherwise fail inside the writer's transaction, so its asset never names a file the site doesn't have.
   - **`clean-up`** runs garbage collection, then a VACUUM when all of these hold:
@@ -55,4 +60,3 @@ The architecture review of 30 Oct 2026 (A5) found that garbage collection, and t
 - **The thread answers a message it can't read** (one past the protocol's limits, such as more than 1000 files) as failed, whenever it has an id, so the turn that sent it lets the store gate go.
 - **The writer's turn refuses a read-only site** (`read-only`), whatever it writes: its own connection can't tell, as the store's can.
 - The main connection keeps its reads, its commits and the backups. `ProjectStore.collectGarbage` stays for tests and tools.
-

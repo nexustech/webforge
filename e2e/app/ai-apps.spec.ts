@@ -203,6 +203,7 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
       }
     ).server;
     const fill = (value: string) =>
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: the manifest's placeholders, filled in as Claude Desktop does.
       value.replaceAll("${__dirname}", installed).replaceAll("${user_config.key}", key);
     const client = new Client({ name: "claude-ai", version: "1" });
     await client.connect(

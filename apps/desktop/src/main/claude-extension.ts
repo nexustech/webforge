@@ -78,6 +78,7 @@ export function extensionManifest(pairing: ExtensionPairing, appVersion: string)
           [BRIDGE_ENV.address]: pairing.address,
           [BRIDGE_ENV.app]: pairing.appId,
           [BRIDGE_ENV.proof]: pairing.proof,
+          // biome-ignore lint/suspicious/noTemplateCurlyInString: Claude Desktop fills in the manifest's own placeholder.
           [BRIDGE_ENV.key]: "${user_config.key}",
           [BRIDGE_ENV.messages]: JSON.stringify(bridgeMessages()),
         },

@@ -5,7 +5,9 @@
 - Related: [research 08](../../research/stack/08-publishing.md) (B1, B5, B6), [architecture §6, §7, §9](../../spec/01-architecture.md#6-key-interfaces), `packages/publish`, `apps/desktop/src/main/credential-store.ts`, `apps/desktop/src/main/netlify-auth.ts`
 
 ## Context
+
 Research 08 chose three MVP publish targets: Folder/ZIP, FTP/FTPS/SFTP and Netlify (B1). Every target follows one flow:
+
 1. build;
 2. diff against what was published;
 3. upload assets → pages → `index.html` last;
@@ -18,17 +20,20 @@ Credentials never go in the `.wforge` file. Item 0.2 checks the Netlify half: di
 ## Decision
 
 ### 1. One publisher interface, credentials outside the destination
+
 - `Publisher<D>` (architecture §6) has `test(dest)` and `publish(build, dest, signal)`, which yields `PublishEvent`s (`preparing`, `uploading`, `published`).
 - `D` holds what the `.wforge` file stores, e.g. `{ siteId }`. The token or password is given to the publisher when it is created, so it can't leak into project data.
 - Failures are `PublishError`s with a code the app translates: `unauthorized`, `not-found`, `rate-limited`, `rejected`, `network`, `cancelled`, `failed`. Messages name the request, never a credential or site content.
 
 ### 2. Manifests and order
+
 - A manifest maps each site path to its SHA-1 digest (Netlify's digest; good enough to detect changes, not used for security).
 - `diffManifest` returns the uploads (new or changed), the unchanged files, and the removals. It only removes files the previous manifest lists, so files someone else put on a host stay (08).
 - `manifestSchema` validates manifests read back from a server. A path with `..`, a leading `/`, `\`, `:` or control characters is rejected, so a tampered manifest can't make clean-up delete outside the site folder.
 - `uploadOrder`: assets → pages → `index.html`. Removals run in reverse, pages before assets.
 
 ### 3. Netlify: our own small REST client, not `@netlify/api`
+
 - Webforge uses about ten endpoints. A typed client over `fetch` validates every response with zod (standards: zod at every network boundary), lets us control retries and error codes, and keeps the token out of messages. The generated SDK would give us none of that for free.
 - **Digest deploy:**
   1. `POST /sites/:id/deploys` with `{ files: { "/path": sha1 } }`;
@@ -44,14 +49,17 @@ Credentials never go in the `.wforge` file. Item 0.2 checks the Netlify half: di
 - **Limit:** the deploy is created synchronously, and Netlify ends requests after 30 s. A digest list for a few thousand files is far below that. If very large sites ever hit it, switch to `async: true` and poll for `required`.
 
 ### 4. Netlify sign-in: OAuth ticket, not a loopback redirect
+
 **Approved by the product owner on 2026-10-20**, in place of the loopback redirect in the approved Phase 0 plan. Accepted trade-offs: after approving, the user sees Netlify's generic "authorized" page rather than a Webforge page, and the flow uses a documented API that mainly netlify-cli uses.
 
 Research 08 and the plan proposed OAuth with a loopback redirect on a random port. We use **Netlify's OAuth ticket flow** instead, the one netlify-cli uses:
+
 1. `POST /oauth/tickets?client_id=…`;
 2. the user approves at `app.netlify.com/authorize?response_type=ticket&ticket=…` in their own browser;
 3. Webforge polls `GET /oauth/tickets/:id` and exchanges the approved ticket (`POST …/exchange`) for an access token.
 
 Why:
+
 - **No redirect URI to register.** OAuth providers usually require an exact redirect URI, which conflicts with a random loopback port. A fixed port can be taken by another program.
 - **Nothing listening.** No local HTTP server waits for a callback, so there is no port to attack or squat.
 - **Same safety otherwise.** No client secret ships in the app; sign-in happens in the user's own browser, not a webview; tokens are scoped to the user.
@@ -59,12 +67,14 @@ Why:
 **Fallback:** a pasted personal access token, checked with `GET /user` before it is saved. `canSignIn()` is false until Webforge's OAuth client ID is set up. The product owner registers the OAuth application at app.netlify.com/applications; the ticket flow uses no redirect URI.
 
 **Wired up (4.2):**
+
 - **The client ID is a build setting:** `MAIN_VITE_NETLIFY_CLIENT_ID` in the environment of a release build. It's public, as an OAuth client ID is, and empty until the application is registered, so only a pasted token works until then.
 - **The `netlify:*` IPC calls** sign in and list or create the person's sites (`main/netlify-ipc.ts`).
   - A sign-in's token stays in the main process, under a random handle the renderer holds, for up to 30 minutes, while the person picks the site (`main/netlify-auth.ts`).
   - Saving the destination saves the token through `PublishSecrets`, tied to that site (S32), and drops the handle.
 
 ### 5. Credentials: `safeStorage`-encrypted, in user data
+
 - Each secret is encrypted with Electron `safeStorage`, whose key the OS keeps (Windows DPAPI, macOS Keychain). The encrypted bytes (base64) go in one file, `<userData>/credentials.json`, under a namespaced key (#666): `publish/<projectId>/<destinationId>` for a destination (`publishCredentialKey`), `mcp/<appId>` for an AI app (`mcpCredentialKey`).
 - The file is written through `createJsonStore` (#666), as the app's other files in userData are: atomically (temp file + rename, tried again while the file is briefly locked; owner-only permissions where supported), and one save at a time.
 - **Never in plain text:** if `isEncryptionAvailable()` is false, saving fails (`encryption-unavailable`) instead of falling back. On Linux, Electron may use a weak `basic_text` backend. Linux isn't a release target; if it becomes one, also refuse that backend.
@@ -73,15 +83,19 @@ Why:
 - Tokens stay in the main process. The renderer only learns whether a profile is signed in (Phase 4 IPC).
 
 ### 6. Netlify Forms on API deploys
+
 Research 08 flagged this as unverified. `listForms` (`GET /sites/:id/forms`) and the live check (`packages/publish/src/netlify.live.test.ts`) deploy a page with a `data-netlify="true"` form and report whether Netlify registered it. **Result (live run, 2026-11-08): detected.** Netlify registered the form from an API deploy, with the site's form detection turned on. So "Netlify Forms" stays a form destination for sites with a Netlify destination (4.2), and it needs form detection on. Without it, Netlify profiles fall back to the Formspree, Web3Forms and FormSubmit presets (B6).
 
 #### The live run (0.2, 2026-11-08)
+
 The product owner ran `netlify.live.test.ts` against a throwaway site on a free Netlify account, with a personal access token:
+
 - **Digest deploy:** the first deploy uploaded all 4 files; the re-deploy, with one page changed, uploaded 1.
 - **Restore:** `restoreDeploy` put the first deploy back live.
 - **Forms:** detected (above).
 
 It also found two things about Netlify sites:
+
 - **Visitor access can be on.** The first attempt was served Netlify's "Login Redirect" page (`app.netlify.com/edge-access`) in place of every file, because the project had site protection on. The deploy itself succeeded, and decision 8's API check would still report it `live`. A Netlify destination should warn when the site is protected, so the owner doesn't believe visitors can see it (4.4b).
 - **Netlify adds a script to served pages:** `<script async src="/.netlify/scripts/hud?variant=public" …>` after the page, on a free account. It comes from the site's own address, not another server, but it isn't in the site Webforge built. Decision 8's check reads the API, not the page, so it isn't misled; `netlify.live.test.ts` now compares only the start of each page.
   - **Found (4.2, 8 Nov 2026):** it's Netlify's **pre-launch toolbar**. It shows only while the project is private, and goes once the project is public ([Netlify's docs](https://docs.netlify.com/deploy/review-deploys/heads-up-display/)). The same private project explains the login page above.
@@ -92,6 +106,7 @@ It also found two things about Netlify sites:
 - **Not run live:** OAuth sign-in (decision 4). It waits on registering Webforge's OAuth application, before 4.4b; until then the pasted token is the only sign-in.
 
 ### 7. FTP, FTPS and SFTP: one publish flow over a remote folder (0.3)
+
 - **One flow, two adapters.** `publishToFolder` does what every file-transfer host needs:
   - read `.webforge-publish.json`, diff it against the build, upload assets → pages → `index.html`, then remove what the site dropped, pages first;
   - write the new manifest;
@@ -110,7 +125,7 @@ It also found two things about Netlify sites:
   - Version 2 records the project and the destination that published (`site: {projectId, destinationId}`) and when (`publishedAt`).
   - Version 1, which listed only the files, is still read. It names no site, so it could be any site's, and it gets the same question as another project's (below). Only the 0.3 spike wrote it; once the person agrees, the folder's manifest becomes this site's version 2.
   - A folder whose manifest names another project, or none, stops the publish with `other-site` before anything is written: a draft copy or another site pointed at `/public_html` would otherwise replace the live site, which FTP can't roll back. The publish goes ahead only once the person agrees to replace it (`replaceOtherSite`, which 4.5 asks for). Another destination of the same project is the same site.
-  - **Its limit:** sites are told apart by `projectId` only. A copied `.wforge` keeps its project's id, so a copy published to the original's folder reads as the same site and replaces it without the question. 4.6's *open as new site* and 4.7's import give the copy a new id; a file copied by hand doesn't.
+  - **Its limit:** sites are told apart by `projectId` only. A copied `.wforge` keeps its project's id, so a copy published to the original's folder reads as the same site and replaces it without the question. 4.6's _open as new site_ and 4.7's import give the copy a new id; a file copied by hand doesn't.
   - Netlify keeps no manifest of its own (its deploys say which site they belong to), so it needs nothing.
   - Test connection takes no site: it publishes nothing.
 - **FTPS first (B5).** `ftps` is explicit TLS (`AUTH TLS`) against the computer's trusted certificates. A certificate it doesn't trust fails as `untrusted-host` before signing in. Plain `ftp` is allowed; the app warns first (B5).
@@ -142,11 +157,13 @@ It also found two things about Netlify sites:
   - `ssh2`'s `Server` over a temporary folder for SFTP.
 
   They cover a second publish sending only the changed file, removals that leave other people's files alone, cancel mid-publish, a wrong password, a missing folder, an unreachable host, and an untrusted certificate or host key.
-- **Against real servers (4.3).** CI's *File transfer servers* job (Linux) starts pure-ftpd over FTPS and OpenSSH's SFTP (`atmoz/sftp`) in containers, pinned by digest, and runs `servers.live.test.ts` against them. It publishes twice, the second time only the changed file, with the server's own certificate trusted, and over SFTP with a password and with a private key and its passphrase. It also checks that an untrusted certificate, a wrong password or passphrase and a changed host key are refused. Without the servers the tests skip. Real cPanel or Plesk hosts are still checked by hand.
+- **Against real servers (4.3).** CI's _File transfer servers_ job (Linux) starts pure-ftpd over FTPS and OpenSSH's SFTP (`atmoz/sftp`) in containers, pinned by digest, and runs `servers.live.test.ts` against them. It publishes twice, the second time only the changed file, with the server's own certificate trusted, and over SFTP with a password and with a private key and its passphrase. It also checks that an untrusted certificate, a wrong password or passphrase and a changed host key are refused. Without the servers the tests skip. Real cPanel or Plesk hosts are still checked by hand.
 - **`safeStorage` round trip:** `e2e/app/credentials.spec.ts` encrypts a test secret in one run and decrypts it in the next, on Windows (DPAPI) and macOS (Keychain), in CI.
 
 ### 8. The publish run and the live check (4.1)
+
 `publishSite` (`packages/publish/src/run.ts`) runs any publisher and then checks the new version is the one served, research 08's step 5. The publisher's events pass through unchanged, and after `published` the run adds `verifying` and `verified`.
+
 - **Netlify: through its API** (`Publisher.verify`). The deploy just made, named in `published.version`, is `live` once it is `ready` and the site's `published_deploy`.
   - Nothing is fetched from the site, so Netlify's own rewriting of pages can't mislead the check. It drops `data-netlify` from forms and adds a hidden `form-name` input.
   - A CDN still on the old deploy can't mislead it either.
@@ -171,11 +188,14 @@ It also found two things about Netlify sites:
 - **Not here:** building with the publish-strict checks, the progress and result UI, and recording a version are 4.5 and 4.6. Destinations and their credentials are 4.4.
 
 ### 9 and 10. Where publishing runs, and where destinations live
+
 Recorded in [ADR 0018](0018-publishing-from-a-version.md), with what a publish builds and where its gate runs:
+
 - **Where publishing runs:** `publishSite` runs in the export worker, as a `publish` job, with the secret main passes for that one job (§1).
 - **Where destinations live:** in the site file's `meta` table, outside the undoable, versioned site document, in one shape with `url` and a mapper to each publisher (§2).
 
 ## Consequences
+
 - `packages/publish` is the shared core for 0.3 (FTP/FTPS/SFTP use `diffManifest`, `uploadOrder` and `manifestSchema` for `.webforge-publish.json`) and for the Phase 4 publish UI.
 - **To finish this ADR:**
   1. run the live Netlify check with a throwaway site and token, and record the re-deploy, restore and forms results above;

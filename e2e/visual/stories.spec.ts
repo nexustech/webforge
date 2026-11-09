@@ -150,7 +150,7 @@ for (const build of BUILDS) {
             .analyze();
           // axe checked the story: a story that drew nothing passes no rule (PH2-16).
           expect(results.passes.length, "axe checked the story").toBeGreaterThan(0);
-          const describe = (violation: (typeof results.violations)[number]) =>
+          const summarise = (violation: (typeof results.violations)[number]) =>
             `${violation.id}: ${violation.nodes.map((node) => node.target).join(", ")}`;
           const serious = results.violations.filter(
             (violation) => violation.impact === "serious" || violation.impact === "critical",
@@ -159,11 +159,11 @@ for (const build of BUILDS) {
             ? serious.filter((violation) => violation.id === "color-contrast")
             : [];
           for (const violation of reported) {
-            test.info().annotations.push({ type: "contrast", description: describe(violation) });
-            console.warn(`Contrast in ${story.id} (${theme}): ${describe(violation)}`);
+            test.info().annotations.push({ type: "contrast", description: summarise(violation) });
+            console.warn(`Contrast in ${story.id} (${theme}): ${summarise(violation)}`);
           }
           expect(
-            serious.filter((violation) => !reported.includes(violation)).map(describe),
+            serious.filter((violation) => !reported.includes(violation)).map(summarise),
           ).toEqual([]);
           expect(errors).toEqual([]);
 

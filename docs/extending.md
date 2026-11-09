@@ -10,13 +10,13 @@ A site component (a Hero, a Heading) is a different thing: it's what people plac
 pnpm scaffold area Bookings
 ```
 
-| What | Command | Writes and registers |
-|---|---|---|
-| An area | `pnpm scaffold area <Name> [--window]` | `renderer/<name>/area.ts` and its test, listed in the composition root; its strings file |
-| A panel | `pnpm scaffold panel <Name> [--area <folder>] [--window]` | the panel, its `register…Panel`, a `panelStory()` story and a test; an area for it, listed; its strings |
-| Commands | `pnpm scaffold commands <Name> [--area <folder>] [--window]` | `register…Commands` with one command, and a test; an area for it, listed; its strings |
-| A kind of field | `pnpm scaffold field-kind <Name>` | `fields/<kind>/` (renderer, registration, story, test), and the kind in all seven places it touches, storing a string |
-| An IPC domain | `pnpm scaffold ipc-domain <Name>` | the contract with one call, the preload's API, main's handler and its test, each registered |
+| What            | Command                                                      | Writes and registers                                                                                                  |
+| --------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------- |
+| An area         | `pnpm scaffold area <Name> [--window]`                       | `renderer/<name>/area.ts` and its test, listed in the composition root; its strings file                              |
+| A panel         | `pnpm scaffold panel <Name> [--area <folder>] [--window]`    | the panel, its `register…Panel`, a `panelStory()` story and a test; an area for it, listed; its strings               |
+| Commands        | `pnpm scaffold commands <Name> [--area <folder>] [--window]` | `register…Commands` with one command, and a test; an area for it, listed; its strings                                 |
+| A kind of field | `pnpm scaffold field-kind <Name>`                            | `fields/<kind>/` (renderer, registration, story, test), and the kind in all seven places it touches, storing a string |
+| An IPC domain   | `pnpm scaffold ipc-domain <Name>`                            | the contract with one call, the preload's API, main's handler and its test, each registered                           |
 
 What it writes passes `pnpm check` as it is; then make it what it should be. A panel or commands go in the folder `--area` names, or without it the name's own (`pnpm scaffold panel Notes` makes `renderer/notes/`). `--window` registers the area with the window rather than the editor (see [Two lists](#two-lists-the-editors-and-the-windows)). It refuses a name, folder, file or string key that's taken, and writes nothing when it refuses. 2.19's `pnpm new-component` does the same for site components.
 
@@ -47,7 +47,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **Main only through `ctx.api`** (#668): an area never reads `window.webforge`. It passes `ctx.api.<domain>` (or a call of it) to what it registers, as the Media panel gets `ctx.api.media`. `App` takes the API as one prop, `api`, which is `window.webforge` in the app, and gives the same object to both lists; it is fixed for the window's life. A new call needs no new prop or context field: add it to its IPC domain, and the area calls it.
 - **The canvas engine** is there only while the editor has one mounted. Use `ctx.engine.whileMounted(({ engine, connection }) => connect…)`: it connects to each engine as it mounts and undoes that as the engine goes. Flush the canvas's pending edit with `ctx.engine.flush()` before a command changes the document.
 - **Design or Content mode:** follow it with `followLayoutLock(ctx.preferences, (locked) => …)` (`shell/preferences-store.ts`). Never hold a ref for someone else to call.
-- **A build of the site** (Export, and Publish and Republish from 4.5) composes `editor/build-flow.ts` (#668): `gateOnSiteCheck(site, mode, …)` stops it on a *Must fix* in that mode and shows Site Check; `runWithProgress(…)` runs it with its progress in a toast whose Cancel button stops it.
+- **A build of the site** (Export, and Publish and Republish from 4.5) composes `editor/build-flow.ts` (#668): `gateOnSiteCheck(site, mode, …)` stops it on a _Must fix_ in that mode and shows Site Check; `runWithProgress(…)` runs it with its progress in a toast whose Cancel button stops it.
 
 ### Two lists: the editor's and the window's
 
@@ -56,6 +56,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 ### Boundaries
 
 `pnpm deps` checks them:
+
 - **Another area only through its `index.ts`** (`renderer-areas-through-index`, B2): the index says what an area offers the others; everything else in its folder is its own.
 - **No cycles between areas** (`tools/src/check-area-cycles.ts`): two areas needing each other move what both need into `editor/` or `shell/`.
 - **`shell/`, `editor/` and `testing/` are what every area builds on,** not areas.
@@ -67,6 +68,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 ## Panels
 
 A panel is a tab in one of the window's slots: `left.top`, `left.bottom`, `left.lower`, `right.top`, `right.bottom` or `drawer` (`shell/panels.ts`).
+
 - **Register it** with `panels.register({ id, slot, title: t(…), component, icon?, order?, advancedOnly? })`, from a `register…Panel(panels, session)` function in its area. `order` sorts a slot's tabs, lowest first; ties keep registration order.
 - **It has a story,** made with `panelStory()` from `renderer/testing/stories.tsx`, which registers it as the area does and draws it. `tools/src/panel-stories.test.ts` fails for a `register…Panel` without one, and says how to add it.
 - **A dialog's story** uses `dialogStory()`.
@@ -79,6 +81,7 @@ A dialog an area opens from anywhere (Theme Studio), not from inside one of its 
 ## Commands
 
 A command is in the command box, and in a menu if it names one (`shell/commands.ts`).
+
 - **Register it** with `registry.register({ id, label: t(…), run, menu?, shortcut?, enabled?, palette?, keywords? })`, from a `register…Commands(registry, …)` function; it returns how to remove it. `registry.update(id, { enabled })` changes it later. A command with `submenu: <id of another command>` is listed in that command's submenu instead of a menu of its own (File › Open Recent), after a separator with `separated: true`; the title bar and macOS's menu bar both draw it. The command box leaves out the item that opens the submenu and lists the submenu's commands, by `paletteLabel` where their menu label needs the submenu's name ("Open Recent: Rosa's Bakery").
 - **Ids are dotted** (`edit.cut`, `site.export`); shared ones are in `shell/command-ids.ts`.
 - **A change to the site goes through `session.history`** as one undo step with a meaningful label ("Changed Hero button link"), never around it.
@@ -93,6 +96,7 @@ The selected element's own controls, in the row under the canvas toolbar (SP-4, 
 ## Kinds of field
 
 What a component's field is (`text`, `select`, `media`, `link`…) decides how the Edit panel draws it (2.20, B5). `FIELD_KINDS` (`renderer/fields/field-kinds.ts`) lists every kind with the renderer that draws it and that renderer's story, and its comment lists the seven places a new kind touches:
+
 1. `FieldDef`, `StoredOne` and `ValueOne` in site-components' `schema.ts`, and the values it may hold in `field-values.ts` (`FieldValueShape`, `fieldValueSchema`);
 2. `valueReader` in `define.ts`;
 3. `toPuckField` in the engine, and its every-kind test;
@@ -102,6 +106,7 @@ What a component's field is (`text`, `select`, `media`, `link`…) decides how t
 7. its story, and its line in `FIELD_KINDS`.
 
 Three tests fail until a kind has all it needs, each saying what to add:
+
 - **Renderer and story:** the renderer's field-kind test (`renderer/fields/field-kinds.test.ts`) checks the kind's renderer and that its story's title exists.
 - **Puck:** the engine's every-kind test checks it maps to a Puck field.
 - **Type check:** a kind missing from `FIELD_KINDS` doesn't type-check.
@@ -109,15 +114,17 @@ Three tests fail until a kind has all it needs, each saying what to add:
 `pnpm scaffold field-kind` writes a kind storing a string, drawn as a text box, in all seven places; then make it store and draw what it should.
 
 Some kinds belong to no component, so they skip places 1–3, 6 and `FIELD_KINDS`. They need only their `FieldSpecs` entry and a renderer:
-- **The forms' own** (`number`, `time`, `choice`, `multiChoice`, `imageChoice`, `action`), drawn by editor-ui. An `action` is a button that runs its `run` at once and holds no value, so Save keeps nothing for it: Settings › App's *Open AI apps…* (#752), for a dialog that acts as it's used rather than on Save.
+
+- **The forms' own** (`number`, `time`, `choice`, `multiChoice`, `imageChoice`, `action`), drawn by editor-ui. An `action` is a button that runs its `run` at once and holds no value, so Save keeps nothing for it: Settings › App's _Open AI apps…_ (#752), for a dialog that acts as it's used rather than on Save.
 - **The Theme tab's** (`themeColor`, `font`), drawn by the app (`renderer/fields/theme-color/`, `fields/font/`, given to the tab by `themeFieldRenderers`).
 
-The form engine's *Every kind* story lists every kind, so a new one appears there too.
+The form engine's _Every kind_ story lists every kind, so a new one appears there too.
 
 ## Site Check rules
 
 A rule (`packages/site-check`, [ADR 0016](adr/0016-site-check-in-the-renderer.md)) is:
-- **a `CheckRule`:** an `id`, a level (`must`, `should` or `tip`), `strictOnPublish` if publishing makes it *Must fix* (X5), and `check({ site, catalogue })`. It returns findings, each with a key that stays the same while the problem lasts (what *Ignore* remembers) and a place the panel can jump to;
+
+- **a `CheckRule`:** an `id`, a level (`must`, `should` or `tip`), `strictOnPublish` if publishing makes it _Must fix_ (X5), and `check({ site, catalogue })`. It returns findings, each with a key that stays the same while the problem lasts (what _Ignore_ remembers) and a place the panel can jump to;
 - **listed** in `SITE_CHECK_RULES` (`src/check.ts`), in the panel's order;
 - **worded** in `packages/i18n/src/en/siteCheck.ts`: `siteCheck.rule.<id>` for its name, `.pass` for its verdict when nothing is found, and `.fail.one` and `.fail.other` for its verdicts that count;
 - **tested** with a site built for it (`src/test-site.test-helper.ts`).
@@ -127,6 +134,7 @@ A rule (`packages/site-check`, [ADR 0016](adr/0016-site-check-in-the-renderer.md
 ## IPC domains
 
 The renderer reaches the main process only through `window.webforge`, the preload's typed API (`shared/webforge-api.ts`), which areas get as `ctx.api`. A domain is:
+
 - **its contract,** in `shared/ipc/<domain>.ts`: each call's channel (`<domain>:<call>`) and its request and response as zod schemas, which main checks on every call;
 - **listed** in `shared/ipc-contract.ts` (`ipcContract` and `ipcDomains`) and in `WebforgeApi`;
 - **the preload's builder,** `preload/api/<domain>.ts`, listed in `preload/api.ts`;
@@ -134,7 +142,7 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 
 Two windows call main: the editor's, and the Help window (5.4b, HP-10), whose page has its own preload (`preload/help.ts`, `window.webforgeHelp`). `startApp`'s `isTrustedSender` is the editor's page only. A call for the Help window is registered with `helpWindows.isHelpPage` instead, as `help:open-external` is (`main/help-ipc.ts`), so neither window can make the other's calls.
 
-A **?** that opens Help at a page and heading (5.4b) is a topic in `renderer/help/help-links.json` and a `<HelpButton topic="…" />` where it's drawn; `pnpm help-check` fails on a topic whose page or heading isn't there. A new site component needs a heading on its help page for *Help for This Element*, which `help-check` checks too.
+A **?** that opens Help at a page and heading (5.4b) is a topic in `renderer/help/help-links.json` and a `<HelpButton topic="…" />` where it's drawn; `pnpm help-check` fails on a topic whose page or heading isn't there. A new site component needs a heading on its help page for _Help for This Element_, which `help-check` checks too.
 
 A domain with work that must stop when its site closes, or finish before Webforge exits, is a feature (`AppFeature` in `main/app-feature.ts`, A12): its `register`, its `site` events (opened, committed, closed, a site a hand-off replaced included) and its `quit`, made beside its handlers, as `createExportFeature` is, and listed in `startApp`'s `features`. `startApp` registers each, has the project session tell each as sites open and close, and has quitting wait for each `quit` once the site has closed.
 
@@ -151,6 +159,7 @@ A job for a utility process (a build, a thumbnail, the canvas's CSS) is a schema
 ## Strings
 
 No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `t()` from `@webforge/i18n`, worded from the glossary (`research/product/01-terminology.md`).
+
 - **Each area's strings** are in one file under `packages/i18n/src/en/`, listed in `en.ts`; a test fails on a key in two files. A new area gets its own (`<area>.ts`). The areas from before then share files, which `pnpm scaffold` knows (`STRINGS_FILES` in `tools/src/scaffold.ts`):
   - `panels.ts`: add, element-menu, layers, links, menu, site;
   - `site.ts`: clipboard, media, site-settings, start;

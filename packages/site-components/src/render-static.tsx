@@ -171,7 +171,7 @@ function renderNode(node: NodeDoc, rendering: Rendering): ReactNode {
       // As Puck's drop zone holds them on the canvas: in an element of their own, if it is styled.
       slots[name] = ({ className }) =>
         className === undefined ? (
-          <>{renderNodes(children, rendering)}</>
+          renderNodes(children, rendering)
         ) : (
           <div className={className}>{renderNodes(children, rendering)}</div>
         );
@@ -240,5 +240,5 @@ export function renderNodesToHtml(
   // Edit-only previews are the canvas's: a site never shows one (UX-26).
   const { previews: _previews, ...exported } = context;
   const rendering: Rendering = { library, context: exported, keep: keeps(options, library) };
-  return renderToStaticMarkup(<>{renderNodes(nodes, rendering)}</>);
+  return renderToStaticMarkup(renderNodes(nodes, rendering));
 }

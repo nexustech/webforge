@@ -5,9 +5,11 @@
 - Related: R2 (#235) of the [architecture review of 23 Oct 2026](../reviews/2026-10-23-architecture-review.md), [standards §2a and §4](../../spec/03-engineering-standards.md), [research/stack/02](../../research/stack/02-react-vs-svelte.md), [ADR 0007](0007-large-page-performance.md)
 
 ## Context
+
 The standards said "React Compiler enabled, so no manual `useMemo`/`useCallback`", and treated its warnings as CI errors, but no build used it. Code that the compiler would get wrong had crept in: a ref written while rendering (Layers), state set while rendering (the box field), and components that read the engine's mutable state while drawing. The product owner chose to switch it on (option A of R2) rather than relax the standard.
 
 ## Decision
+
 1. **The compiler compiles the editor:** the desktop renderer's own code, the editor UI and the engine, in the app and in the editor UI's Storybook. It runs through Babel: `@vitejs/plugin-react`'s `reactCompilerPreset` with `@rolldown/plugin-babel`, `@babel/core` 7 and `babel-plugin-react-compiler` 1.0, all MIT and pinned in the workspace catalog. Babel 7, not 8: the compiler is built against Babel 7's types. `@vitejs/plugin-react`'s own `compiler` option (oxc) is marked experimental, so it isn't used.
 2. **Not the site components.** Compiled, they made the large page slower in `pnpm e2e:perf`: loading 225 elements took 2.1–2.3 s instead of 1.1–1.2 s, and the drag 3.5–4.2 s instead of 1.3–1.5 s. Left out, the rest of the editor compiled made both faster than with no compiler (0.7 s and 1.2 s). The export renders them uncompiled too, so the canvas and the export run the same code, and their Storybook stays uncompiled.
 3. **It compiles every component and hook (`infer` mode) from the start.** R2 suggested starting in `annotation` mode; once the problems below were fixed the whole codebase compiled, so there was nothing to stage.
@@ -21,6 +23,7 @@ The standards said "React Compiler enabled, so no manual `useMemo`/`useCallback`
 7. **No manual `useMemo` or `useCallback`** unless a measurement says the compiler's memoization isn't enough; the eight there were are gone.
 
 ## Consequences
+
 - Components re-render less: the compiler skips a child whose props didn't change, which a hand-written `memo` would have needed. The flip side is that a component may no longer re-render just because its parent did. Anything that relied on that (a dependency-less effect re-reading the DOM, a render that read a mutable variable) now needs a real input. The canvas chrome's action bars were changed for this reason.
 - Builds and hot reloads take longer, because every editor file goes through Babel and the compiler. On a 2018 laptop (i7-8750H), `electron-vite build` went from 20–30 s to 80–88 s. Saving a large component (`Editor.tsx`, `LayersPanel.tsx`) costs up to about 0.9 s of extra transform before hot reload, and a small one about 0.1 s. The renderer's JavaScript grew by 4.3 % (206 KB; 52 KB gzipped). `@vitejs/plugin-react`'s oxc compiler would cut the transform time once it is stable.
 - A violation is caught by `pnpm check` with the file, the line and the compiler's reason, rather than as a subtle stale value at run time.
