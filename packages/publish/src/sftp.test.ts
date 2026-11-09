@@ -12,7 +12,7 @@ import {
   type SftpDestination,
   sftpPublisher,
 } from "./sftp.js";
-import { hostKeys, startSftpServer } from "./sftp-server.test-helper.js";
+import { readableKeyPair, startSftpServer } from "./sftp-server.test-helper.js";
 
 const bytes = (text: string) => new TextEncoder().encode(text);
 const build = (files: Record<string, string>): BuildOutput => ({
@@ -185,13 +185,8 @@ describe("sftpPublisher (0.3)", { timeout: 30_000 }, () => {
 
 describe("signing in to SFTP with a private key (4.3)", { timeout: 30_000 }, () => {
   // A key the tests make, with a passphrase, as a host's control panel would have the person make.
-  const key = utils.generateKeyPairSync("ed25519", {
-    passphrase: "test-only-passphrase",
-    cipher: "aes256-ctr",
-    // Real keys use 16 rounds; one keeps reading it in the tests quick.
-    rounds: 1,
-  });
-  const other = utils.generateKeyPairSync("ed25519");
+  const key = readableKeyPair({ passphrase: "test-only-passphrase" });
+  const other = readableKeyPair();
   let keyed: Awaited<ReturnType<typeof startSftpServer>>;
   beforeAll(async () => {
     keyed = await startSftpServer({
@@ -313,17 +308,47 @@ describe("what a key file holds, by its format's own marker (4.3, review)", () =
   });
 });
 
-describe("the test server's host key (#588)", () => {
-  it("makes another when ssh2 can't read the one it made", () => {
-    const good = hostKeys();
-    let calls = 0;
-    const keys = hostKeys(() => {
-      calls += 1;
-      // The first unreadable, as ssh2's generator now and then makes one.
-      return calls === 1 ? { ...good, public: "ssh-ed25519 AAAA" } : good;
-    });
+describe("the tests' key pairs (#588, #901)", () => {
+  const passphrase = "test-only-passphrase";
+  const good = readableKeyPair({ passphrase });
 
+  /** The pair `readableKeyPair` gives when the first one made is `first`, and how many it made. */
+  const made = (first: { private: string; public: string }) => {
+    let calls = 0;
+    const keys = readableKeyPair({
+      passphrase,
+      generate: () => {
+        calls += 1;
+        return calls === 1 ? first : good;
+      },
+    });
+    return { keys, calls };
+  };
+
+  it("makes another when ssh2 can't read the public half it made", () => {
+    const { keys, calls } = made({ ...good, public: "ssh-ed25519 AAAA" });
     expect(keys.private).toBe(good.private);
     expect(calls).toBe(2);
+  });
+
+  it("makes another when ssh2 can't read the private half with its passphrase", () => {
+    const { keys, calls } = made({
+      ...good,
+      private: readableKeyPair({ passphrase: "other" }).private,
+    });
+    expect(keys.private).toBe(good.private);
+    expect(calls).toBe(2);
+  });
+
+  it("makes a pair ssh2 reads, locked with the passphrase or not locked", () => {
+    expect(readPrivateKey(good.private, passphrase)).toEqual({ ok: true });
+    expect(readPrivateKey(good.private)).toEqual({ ok: false, code: "bad-key" });
+    expect(readPrivateKey(readableKeyPair().private)).toEqual({ ok: true });
+  });
+
+  it("gives up after a few tries, with ssh2's reason", () => {
+    const unlocked = readableKeyPair();
+    const unreadable = () => ({ ...unlocked, public: "ssh-ed25519 AAAA" });
+    expect(() => readableKeyPair({ generate: unreadable })).toThrow(/Malformed OpenSSH public key/);
   });
 });
