@@ -119,6 +119,13 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.desktopView]: { group: "view", keys: ["Mod+1"] },
   [COMMAND_IDS.tabletView]: { group: "view", keys: ["Mod+2"] },
   [COMMAND_IDS.mobileView]: { group: "view", keys: ["Mod+3"] },
+  // The canvas's outlines and element names (#857). Product/06's map gives them Mod+Shift+' and
+  // Mod+Alt+', as RapidWeaver Elements has them, but keys match by `KeyboardEvent.key`: Shift+'
+  // types `"` on a US keyboard and `@` on a UK one, and Option+' types `æ` on a Mac, so neither
+  // would ever match. O and N name what they show, and Mod+Shift leaves Ctrl+Alt to AltGr's
+  // letters on Windows (ó, ń on a Polish keyboard).
+  [COMMAND_IDS.showOutlines]: { group: "view", keys: ["Mod+Shift+O"] },
+  [COMMAND_IDS.elementNames]: { group: "view", keys: ["Mod+Shift+N"] },
   [COMMAND_IDS.toggleLeftPanels]: { group: "view", keys: ["Mod+Alt+B"] },
   [COMMAND_IDS.toggleDrawer]: { group: "view", keys: ["Mod+J"] },
   [COMMAND_IDS.shortcuts]: { group: "view", keys: ["?"] },
