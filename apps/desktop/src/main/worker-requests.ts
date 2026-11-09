@@ -1,6 +1,6 @@
 import type { z } from "zod";
 import type { WorkerJob } from "../shared/export-worker-protocol.js";
-import { createWorkerChannel } from "./worker-channel.js";
+import { createWorkerChannel, type WorkerChannel } from "./worker-channel.js";
 import type { WorkerProcess } from "./worker-process.js";
 
 /**
@@ -9,16 +9,18 @@ import type { WorkerProcess } from "./worker-process.js";
  * validated with `outcomeSchema`. A job resolves `null` on a timeout (the stuck worker is stopped
  * and replaced on the next job), when its worker exits, or when no valid answer comes: nothing
  * unexpected is trusted. Jobs are typed from the worker's own schema (`J`, some of
- * `workerJobSchema`), so one the worker doesn't take fails to compile.
+ * `workerJobSchema`), so one the worker doesn't take fails to compile. `start` starts the worker
+ * before the first job (see {@link WorkerChannel.start}).
  */
 export function createWorkerRequests<O, J extends WorkerJob>(
   startWorker: () => WorkerProcess,
   outcomeSchema: z.ZodType<O>,
   timeoutMs: number,
-): (job: J) => Promise<O | null> {
+): ((job: J) => Promise<O | null>) & Pick<WorkerChannel, "start"> {
   const channel = createWorkerChannel(startWorker);
-  return async (job) => {
+  const request = async (job: J) => {
     const result = await channel.run(job, { outcome: outcomeSchema, timeoutMs });
     return result.ok ? result.outcome : null;
   };
+  return Object.assign(request, { start: () => channel.start() });
 }

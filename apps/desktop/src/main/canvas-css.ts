@@ -33,6 +33,12 @@ export type CanvasStyles = {
   readonly classCss: (theme: Theme, classes: readonly string[]) => Promise<ClassCssResult>;
   /** An item of a page as the export writes it, for the CSS tab (3.14). */
   readonly itemHtml: (request: ItemHtmlRequest) => Promise<ItemHtmlResult>;
+  /**
+   * Starts the worker before the first request, while the editor loads (#894), so the canvas's
+   * first CSS doesn't wait for it to start. A worker that fails or exits meanwhile is started again
+   * by the first request, as after any exit.
+   */
+  readonly start: () => void;
 };
 
 /** How long one job may take before it counts as failed (a cold start loads the pipeline). */
@@ -55,6 +61,7 @@ export function createCanvasStyles(
     CompileCssJob | ClassCatalogueJob | ClassCssJob | ItemHtmlJob
   >(startWorker, canvasStylesOutcomeSchema, timeoutMs);
   return {
+    start: request.start,
     compileCss: async (css) => {
       const outcome = await request({
         type: "compile-css",

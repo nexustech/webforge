@@ -3,8 +3,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
+import type { ProjectSummary } from "../shared/ipc/project.js";
 import { ipcContract } from "../shared/ipc-contract.js";
 import { type AppElectron, type AppParts, startApp } from "./app.js";
+import { fakeWorker } from "./fake-worker.test-helper.js";
 import { FONT_SCHEME } from "./fonts.js";
 import { registerIpcHandler } from "./ipc.js";
 import { ProjectSession } from "./project-session.js";
@@ -443,6 +445,37 @@ describe("startApp", () => {
     expect(open).toHaveBeenCalledWith(path);
     expect(fake.dialog.showMessageBox).not.toHaveBeenCalled();
     expect(fake.windows).toHaveLength(1);
+  });
+
+  it("starts the canvas's styles worker as the window opens with a site, while the editor loads (#894)", async () => {
+    const fake = fakeElectron();
+    const worker = fakeWorker();
+    vi.mocked(fake.electron.utilityProcess.fork).mockReturnValue(
+      worker.worker as unknown as ReturnType<AppElectron["utilityProcess"]["fork"]>,
+    );
+    vi.spyOn(ProjectSession.prototype, "open").mockResolvedValue({ status: "opened" } as never);
+    vi.spyOn(ProjectSession.prototype, "current").mockReturnValue({} as ProjectSummary);
+    const started = fake.start();
+    fake.appEvents.emit("open-file", { preventDefault: vi.fn() }, join(fake.parts.dir, "A.wforge"));
+
+    await started;
+
+    expect(fake.windows).toHaveLength(1);
+    expect(fake.electron.utilityProcess.fork).toHaveBeenCalledOnce();
+    expect(fake.electron.utilityProcess.fork).toHaveBeenCalledWith(expect.any(String), [], {
+      serviceName: "Webforge canvas styles",
+    });
+    // Started without a job: the canvas's first CSS is its first.
+    expect(worker.jobs).toEqual([]);
+  });
+
+  it("starts no worker for the start screen, which may never open a site (#894)", async () => {
+    const fake = fakeElectron();
+
+    await fake.start();
+
+    expect(fake.windows).toHaveLength(1);
+    expect(fake.electron.utilityProcess.fork).not.toHaveBeenCalled();
   });
 
   it("serves no Media or font that isn't there, and leaves the menu bar to macOS", async () => {
