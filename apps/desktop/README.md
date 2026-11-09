@@ -42,3 +42,5 @@ Run from the repository root (`pnpm dev`) or here:
 | `pnpm package:dir` | Packages the app for the current OS into `release/<version>/` without an installer (used by `pnpm e2e:packaged`) |
 | `pnpm package:win` | Builds the Windows NSIS installer (per-user, x64, unsigned) into `release/`                                      |
 | `pnpm package:mac` | Builds the macOS arm64 DMG (unsigned) into `release/`; run on macOS                                              |
+
+Releases are built in CI from a tag, not on a developer machine: [docs/releasing.md](../../docs/releasing.md).
