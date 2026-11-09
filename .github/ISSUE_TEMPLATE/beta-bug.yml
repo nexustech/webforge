@@ -1,0 +1,59 @@
+name: Beta – something went wrong
+description: Webforge did something it shouldn't, stopped working, or closed unexpectedly.
+title: "[Beta] "
+labels: ["beta", "type/bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Webforge. Everything you write here can be read by anyone, so please leave out passwords, your customers' details and anything else private. The [testers' guide](https://github.com/nexustech/webforge/blob/main/docs/beta/testers-guide.md) has more help.
+  - type: input
+    id: version
+    attributes:
+      label: Webforge version
+      description: "Choose **Help › About Webforge**: it shows the version, for example `Version 0.9.0`."
+      placeholder: Version 0.9.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Computer
+      options:
+        - Windows 11
+        - Windows 10
+        - Mac with Apple silicon (M1 or later), macOS 13 or later
+    validations:
+      required: true
+  - type: textarea
+    id: happened
+    attributes:
+      label: What happened?
+      description: What you saw, in your own words. A screenshot helps; check it shows nothing private first.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How can we make it happen again?
+      description: The steps that led to it, as far as you remember them. "I don't know" is fine.
+      placeholder: |
+        1. Opened my site
+        2. Added a Gallery section to the Home page
+        3. Chose Publish…
+    validations:
+      required: false
+  - type: textarea
+    id: crash-report
+    attributes:
+      label: Crash report (optional)
+      description: |
+        If Webforge closed unexpectedly, it saved a crash report on your computer. Choose **Help › Open Crash Reports Folder** and drag the newest file here. A crash report holds no site content or personal details. See [Sharing a crash report](https://github.com/nexustech/webforge/blob/main/docs/help/saving-and-backups.md#sharing-a-crash-report).
+    validations:
+      required: false
