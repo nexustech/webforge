@@ -34,20 +34,16 @@ test.describe.configure({ mode: "serial" });
 test.skip(!runs, "Installs Webforge: Windows with WEBFORGE_E2E_INSTALL=1 only");
 
 /**
- * Builds the NSIS installer of `version` from the e2e build in `out/`, making no shortcuts on the
- * desktop or in the Start menu.
+ * Builds the NSIS installer of `version` from the e2e build in `out/` (the desktop app's
+ * `package:installer`), making no shortcuts on the desktop or in the Start menu.
  */
 function buildInstaller(version: string): string {
   const output = join(workDir, version);
   execFileSync(
     "pnpm",
     [
-      "exec",
-      "electron-builder",
-      "--win",
-      "nsis",
-      "--publish",
-      "never",
+      "run",
+      "package:installer",
       `-c.extraMetadata.version=${version}`,
       `-c.directories.output=${output}`,
       "-c.nsis.createDesktopShortcut=false",
@@ -139,6 +135,21 @@ const installState = () =>
     { encoding: "utf8" },
   ).trim();
 
+/** What Windows runs for a double-clicked `.wforge`, as the installer registered it. */
+const wforgeCommand = () =>
+  execFileSync(
+    "powershell.exe",
+    [
+      "-NoProfile",
+      "-Command",
+      [
+        String.raw`$type = (Get-ItemProperty 'HKCU:\Software\Classes\.wforge').'(default)';`,
+        String.raw`(Get-ItemProperty "HKCU:\Software\Classes\$type\shell\open\command").'(default)'`,
+      ].join(" "),
+    ],
+    { encoding: "utf8" },
+  ).trim();
+
 test.beforeAll(async () => {
   // Two installers (a few minutes each), and installing.
   test.setTimeout(15 * 60_000);
@@ -181,6 +192,8 @@ test.afterAll(async () => {
 
 test("an installed 0.0.1 downloads 0.0.2 from its feed, says so, and installs it when closed", async () => {
   test.setTimeout(5 * 60_000);
+  // A double-clicked site opens in Webforge (P1): the packaged app's own test opens one so.
+  expect(wforgeCommand()).toBe(`${join(installDir, "Webforge.exe")} "%1"`);
   const page = await launch({ WEBFORGE_E2E_UPDATE_FEED: await serve(join(workDir, "0.0.2")) });
   expect(await version(page)).toBe("0.0.1");
 

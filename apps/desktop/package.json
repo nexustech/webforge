@@ -14,6 +14,7 @@
     "package:mac": "electron-vite build && electron-builder --mac --publish never",
     "package:dir": "electron-vite build && electron-builder --dir --publish never",
     "package:e2e": "electron-vite build --mode e2e && electron-builder --dir --publish never",
+    "package:installer": "electron-builder --win nsis --publish never",
     "build:perf": "electron-vite build --mode perf"
   },
   "dependencies": {
