@@ -16,7 +16,9 @@ workflow is `.github/workflows/release.yml`; its header has the details.
      `Release-As: 1.0.0` line: the description is its squash commit's message.
 2. **Its CI.** GitHub doesn't run CI for a pull request a workflow opened with its own token. Close
    and reopen the release pull request to start it, unless the repository has a
-   `RELEASE_PLEASE_TOKEN` secret (below).
+   `RELEASE_PLEASE_TOKEN` secret (below). Without that secret, the workflow's own token can open
+   the pull request only once the repository allows it: Settings › Actions › General › "Allow
+   GitHub Actions to create and approve pull requests".
 3. **Merge it** when the release should go out. release-please tags the merge `v<version>` and
    makes a **draft** GitHub Release with the CHANGELOG entries.
 4. **The builds.** The same workflow run builds the Windows installer and the macOS DMG and zip
@@ -27,7 +29,8 @@ workflow is `.github/workflows/release.yml`; its header has the details.
    the app's updater doesn't see drafts.
 
 The version is in the root `package.json` and `apps/desktop/package.json`, and release-please
-changes both; About shows the app's. release-please writes `CHANGELOG.md` in its own style, so
+changes both; About shows the app's. The first release is 0.1.0 (`initial-version`); without it,
+release-please would start at 1.0.0. release-please writes `CHANGELOG.md` in its own style, so
 Biome leaves that file alone (`biome.json`): don't format it by hand.
 
 ## A dry run
@@ -44,7 +47,8 @@ Each is optional. Without the signing secrets the installers are built unsigned,
 the run.
 
 - `RELEASE_PLEASE_TOKEN`: a fine-grained token with contents and pull-request write access to
-  this repository, so the release pull request's CI starts by itself.
+  this repository, so release-please can open its pull request and the pull request's CI starts by
+  itself.
 - **macOS:**
   - `CSC_LINK` and `CSC_KEY_PASSWORD`: the Developer ID certificate (a base64 `.p12`) and its
     password;
