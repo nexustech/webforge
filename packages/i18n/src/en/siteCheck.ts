@@ -58,6 +58,13 @@ export const siteCheck = {
   "siteCheck.rule.forms.pass": "Every form has somewhere to send its messages",
   "siteCheck.rule.forms.fail.one": "1 form has nowhere to send its messages",
   "siteCheck.rule.forms.fail.other": "{count} forms have nowhere to send their messages",
+  "siteCheck.rule.privacyPage": "Privacy page",
+  "siteCheck.rule.privacyPage.pass":
+    "The site has a privacy page, or doesn't collect visitors' details",
+  "siteCheck.rule.privacyPage.fail.one":
+    "The site collects visitors' details, through a form, a newsletter signup or Google Analytics, but has no privacy page to say what you do with them",
+  "siteCheck.rule.privacyPage.fail.other":
+    "The site collects visitors' details, through a form, a newsletter signup or Google Analytics, but has no privacy page to say what you do with them",
   "siteCheck.rule.buyButtonLinks": "Buy buttons",
   "siteCheck.rule.buyButtonLinks.pass": "Every Buy button has a payment link",
   "siteCheck.rule.buyButtonLinks.fail.one":
@@ -187,6 +194,7 @@ export const siteCheck = {
   "siteCheck.place.contact.phone": "Site Settings › Phone number",
   "siteCheck.place.contact.openingHours": "Site Settings › Opening hours",
   "siteCheck.place.search": "Site Settings › Search engines",
+  "siteCheck.place.pages": "Pages",
   "siteCheck.place.guide.businessProfile": "Open Google Business Profile",
   "siteCheck.place.guide.searchConsole": "Open Google Search Console",
   "siteCheck.detail.contrast": "{ratio}:1, needs {required}:1",

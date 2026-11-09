@@ -85,6 +85,20 @@ describe("the shortcut standard (F-ED-27)", () => {
     for (const { group } of OTHER_SHORTCUTS) expect(SHORTCUT_GROUPS).toContain(group);
   });
 
+  it("gives the canvas's outlines and element names keys nothing else has (#857)", () => {
+    const own = new Set<string>([COMMAND_IDS.showOutlines, COMMAND_IDS.elementNames]);
+    expect(COMMAND_SHORTCUTS[COMMAND_IDS.showOutlines]?.keys).toEqual(["Mod+Shift+O"]);
+    expect(COMMAND_SHORTCUTS[COMMAND_IDS.elementNames]?.keys).toEqual(["Mod+Shift+N"]);
+    for (const mac of [true, false]) {
+      const others = EVERY_SHORTCUT.filter(([name]) => !own.has(name)).flatMap(([, entry]) =>
+        platformKeys(entry, mac).map(normal),
+      );
+      for (const key of ["Mod+Shift+O", "Mod+Shift+N"]) {
+        expect(others, `${key}, ${mac ? "Mac" : "Windows"}`).not.toContain(normal(key));
+      }
+    }
+  });
+
   it("leaves a command's keys that text has too to the text: Mod+K, Mod+I, Mod+U", () => {
     expect(COMMAND_SHORTCUTS[COMMAND_IDS.commandBox]?.text).toEqual(["Mod+K"]);
     expect(COMMAND_SHORTCUTS[COMMAND_IDS.preview]?.text).toBe(true);

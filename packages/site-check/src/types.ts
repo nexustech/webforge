@@ -18,6 +18,8 @@ export type FindingPlace =
   | { readonly kind: "menu"; readonly itemId: string }
   /** A page itself: its name, title or folder (Page Settings). */
   | { readonly kind: "page"; readonly pageId: PageId }
+  /** The site's pages as a whole: the Pages panel (a privacy page missing, #855). */
+  | { readonly kind: "pages" }
   /** An item in Media. */
   | { readonly kind: "media"; readonly mediaId: MediaId }
   /** The theme's colours. */

@@ -118,6 +118,8 @@ const STARTER_PROMPTS = [
   "starter.testimonialQuote",
   "starter.testimonialName",
   "starter.testimonialRole",
+  // The privacy page's note to the owner (#855): left in, visitors read that it isn't legal advice.
+  "privacyPage.note",
 ] as const;
 
 /**

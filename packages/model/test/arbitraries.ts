@@ -111,6 +111,7 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         hideFooter: fc.boolean(),
         hideFromNavigation: fc.boolean(),
         hideFromSearch: fc.boolean(),
+        privacy: fc.boolean(),
         updated: fc
           .date({ min: new Date("2026-01-01"), max: new Date("2030-12-31"), noInvalidDate: true })
           .map((day) => day.toISOString().slice(0, 10)),
