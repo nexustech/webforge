@@ -44,6 +44,7 @@ type PageValues = {
   readonly hideFromNavigation: boolean;
   readonly hideBackToTop: boolean;
   readonly hideFromSearch: boolean;
+  readonly privacy: boolean;
 };
 
 const settings = pageEntrySchema.shape.settings.shape;
@@ -62,6 +63,7 @@ const pageSettingsFormSchema = z.object({
   hideFromNavigation: settings.hideFromNavigation,
   hideBackToTop: z.boolean(),
   hideFromSearch: z.boolean(),
+  privacy: z.boolean(),
 });
 
 /**
@@ -140,6 +142,13 @@ export function pageSettingsSpec(
               label: t("pageSettings.hideFromSearch"),
               help: t("pageSettings.hideFromSearchHint"),
             },
+            // What Site Check looks for when the site collects visitors' details (#855).
+            {
+              kind: "toggle" as const,
+              name: "privacy",
+              label: t("pageSettings.privacy"),
+              help: t("pageSettings.privacyHint"),
+            },
           ]
         : []),
       // Only while the site shows one (Site Settings → General).
@@ -207,6 +216,7 @@ export function PageSettingsDialog({
         hideFromNavigation: page.settings.hideFromNavigation,
         hideBackToTop: page.settings.hideBackToTop === true,
         hideFromSearch: page.settings.hideFromSearch === true,
+        privacy: page.settings.privacy === true,
       }}
       onSave={(change) => onSave({ ...change, shareImage: change.shareImage })}
       onCancel={onCancel}

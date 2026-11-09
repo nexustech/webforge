@@ -60,6 +60,8 @@ export type PagesPanelActions = {
   add(name: string): void;
   /** Adds a page made from page recipe `recipeId` (QS-3, 3.11a). */
   addSuggested(recipeId: string): void;
+  /** Adds the site's privacy page, filled in from Site Settings (#855). */
+  addPrivacy(): void;
   rename(pageId: PageId, name: string): void;
   duplicate(pageId: PageId): void;
   move(pageId: PageId, direction: -1 | 1): void;
@@ -193,6 +195,9 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
           <DropdownMenuContent align="end" onCloseAutoFocus={menuDialog.onCloseAutoFocus}>
             <DropdownMenuItem onSelect={() => menuDialog.choose({ kind: "add" })}>
               {t("pages.addBlank")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => actions.addPrivacy()}>
+              {t("pages.addPrivacy")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuSub>
