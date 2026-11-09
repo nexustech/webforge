@@ -4,7 +4,7 @@ id: saving-and-backups
 title: Saving, copies and backups
 summary: How {appName} saves your work, how to copy a site to another computer, and what happens if something goes wrong.
 related: [version-history, undo-and-history, export, getting-started]
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 # Saving, copies and backups
@@ -50,4 +50,16 @@ The damaged file is kept beside the restored one, so nothing is lost.
 
 ## If {appName} closes unexpectedly
 
-Your work is saved as you go, so it's still there when you open {appName} again. {appName} also saves a crash report on your computer. It contains none of your site's content or personal details, and it's never sent anywhere. **Help › Open Crash Reports Folder** shows these reports, if you're asked to share one.
+Your work is saved as you go, so it's still there when you open {appName} again. {appName} also saves a crash report on your computer. It contains none of your site's content or personal details, and it's never sent anywhere.
+
+## Sharing a crash report
+
+Crash reports stay on your computer: {appName} never sends one. You choose whether to share one, for example when someone helping you asks for it.
+
+1. Choose **Help › Open Crash Reports Folder**. The folder opens on your computer.
+2. Find the newest report. Each one's name starts with `crash-` and then the date and time, such as `crash-20261109-153000-main.json`.
+3. Attach that file to your message or report, or drag it in.
+
+A report says which version of {appName} you have, what kind of computer it runs on, and where in {appName} the problem happened. It has no words or pictures from your sites, no file names from your computer, and nothing about you. It's a text file, so you can open it to see for yourself.
+
+{appName} keeps the last 20 reports for up to 30 days, and deletes older ones by itself.
