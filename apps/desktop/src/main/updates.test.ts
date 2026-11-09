@@ -6,6 +6,7 @@ import {
   CHECK_EVERY_MS,
   createUpdateService,
   type ElectronAutoUpdater,
+  e2eUpdateFeed,
   electronUpdater,
   FIRST_CHECK_MS,
   type Updater,
@@ -324,5 +325,25 @@ describe("updatesSupported", () => {
     expect(updatesSupported(false, "win32")).toBe(false);
     expect(updatesSupported(true, "darwin")).toBe(false);
     expect(updatesSupported(true, "linux")).toBe(false);
+  });
+});
+
+describe("e2eUpdateFeed", () => {
+  const env = (feed: string) => ({ WEBFORGE_E2E_UPDATE_FEED: feed });
+
+  it("gives the packaged update test's local feed, in an e2e build only", () => {
+    expect(e2eUpdateFeed("e2e", env("http://127.0.0.1:4100/feed/"))).toBe(
+      "http://127.0.0.1:4100/feed/",
+    );
+    expect(e2eUpdateFeed("e2e", env("http://localhost:4100"))).toBe("http://localhost:4100/");
+    expect(e2eUpdateFeed("production", env("http://127.0.0.1:4100/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", {})).toBeUndefined();
+  });
+
+  it("refuses a feed anywhere but on this computer, or that isn't an address", () => {
+    expect(e2eUpdateFeed("e2e", env("https://example.com/feed/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", env("http://127.0.0.1.example.com/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", env("file:///C:/feed/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", env("not an address"))).toBeUndefined();
   });
 });

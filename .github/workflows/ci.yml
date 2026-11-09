@@ -664,7 +664,8 @@ jobs:
       matrix:
         os: [windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 20
+    # Windows also builds two installers for the update test (0.5a).
+    timeout-minutes: 35
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -692,6 +693,10 @@ jobs:
         run: pnpm licence-check
 
       - name: Package (electron-builder --dir) and test the packaged app
+        # On Windows the update test installs Webforge and lets it update itself (0.5a, ADR 0024):
+        # the runner is thrown away afterwards, so installing for its user is safe.
+        env:
+          WEBFORGE_E2E_INSTALL: ${{ runner.os == 'Windows' && '1' || '' }}
         run: pnpm e2e:packaged
 
       - name: Upload Playwright report

@@ -209,3 +209,17 @@ export function electronUpdater(autoUpdater: ElectronAutoUpdater): Updater {
 export function updatesSupported(packaged: boolean, platform: NodeJS.Platform): boolean {
   return packaged && platform === "win32";
 }
+
+/**
+ * The local update feed of the packaged update test (0.5a): `WEBFORGE_E2E_UPDATE_FEED`, in an e2e
+ * build only (`--mode e2e`), and only an address on this computer. Any other build ignores it, so
+ * a release always reads its own feed (ADR 0024).
+ */
+export function e2eUpdateFeed(mode: string, env: NodeJS.ProcessEnv): string | undefined {
+  const given = env.WEBFORGE_E2E_UPDATE_FEED;
+  if (mode !== "e2e" || given === undefined || !URL.canParse(given)) return undefined;
+  const url = new URL(given);
+  return url.protocol === "http:" && ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname)
+    ? url.href
+    : undefined;
+}
