@@ -43,6 +43,61 @@ describe("createCredentialStore", () => {
     expect(Buffer.from(saved.secrets.k, "base64").toString()).toBe("enc:terces_pfn");
   });
 
+  it("keeps the secret as it was when encrypting it again fails, still readable (#843)", async () => {
+    const dir = tempDir();
+    const file = fileIn(dir);
+    mkdirSync(join(dir, "nested"));
+    const old = Buffer.from("old:terces_pfn").toString("base64");
+    const before = JSON.stringify({ version: 1, secrets: { k: old } });
+    writeFileSync(file, before);
+    const failing: SecretCipher = {
+      ...cipher(),
+      encryptString: async () => {
+        throw new Error("The OS refused to encrypt");
+      },
+    };
+    const store = createCredentialStore(file, failing);
+
+    expect(await store.get("k")).toBe("nfp_secret");
+    expect(readFileSync(file, "utf8")).toBe(before);
+    // And again: it's still there to read, and to encrypt again another time.
+    expect(await store.get("k")).toBe("nfp_secret");
+  });
+
+  it("leaves a secret changed or deleted while it was encrypted again as it then is (#843 review)", async () => {
+    const dir = tempDir();
+    const file = fileIn(dir);
+    mkdirSync(join(dir, "nested"));
+    const old = Buffer.from("old:terces_pfn").toString("base64");
+    writeFileSync(file, JSON.stringify({ version: 1, secrets: { changed: old, deleted: old } }));
+    // Encrypting again waits until the test has changed the file.
+    let go: () => void = () => undefined;
+    const waiting = new Promise<void>((resolve) => {
+      go = resolve;
+    });
+    const plain = cipher();
+    const slow: SecretCipher = {
+      ...plain,
+      encryptString: async (text) => {
+        await waiting;
+        return plain.encryptString(text);
+      },
+    };
+    const store = createCredentialStore(file, slow);
+    const writer = createCredentialStore(file, cipher());
+
+    const reading = Promise.all([store.get("changed"), store.get("deleted")]);
+    // Both read and decrypted, and waiting to be encrypted again.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    await writer.set("changed", "nfp_newer");
+    await writer.delete("deleted");
+    go();
+
+    expect(await reading).toEqual(["nfp_secret", "nfp_secret"]);
+    expect(await writer.get("changed")).toBe("nfp_newer");
+    expect(await writer.get("deleted")).toBeNull();
+  });
+
   it("saves, reads and deletes secrets by key", async () => {
     const store = createCredentialStore(fileIn(tempDir()), cipher());
     const key = publishCredentialKey("project-1", "live");

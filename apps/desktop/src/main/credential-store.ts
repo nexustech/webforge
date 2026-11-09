@@ -112,6 +112,19 @@ export function createCredentialStore(file: string, cipher: SecretCipher): Crede
     });
   }
 
+  /**
+   * Encrypts `secret` again with the OS's current key, in place of `was`, the encrypted secret it
+   * was read from: unless the secret was changed or deleted since, which then stands.
+   */
+  async function reEncrypt(key: string, was: string, secret: string): Promise<void> {
+    const encrypted = (await cipher.encryptString(secret)).toString("base64");
+    await update((secrets) => {
+      if (secrets[key] !== was) return false;
+      secrets[key] = encrypted;
+      return true;
+    });
+  }
+
   return {
     async get(key) {
       const secrets = await store.read().then(
@@ -119,15 +132,19 @@ export function createCredentialStore(file: string, cipher: SecretCipher): Crede
         () => ({}) as Record<string, string>,
       );
       if (!Object.hasOwn(secrets, key)) return null;
+      const stored = secrets[key] ?? "";
       let decrypted: Awaited<ReturnType<SecretCipher["decryptString"]>>;
       try {
-        decrypted = await cipher.decryptString(Buffer.from(secrets[key] ?? "", "base64"));
+        decrypted = await cipher.decryptString(Buffer.from(stored, "base64"));
       } catch {
         // Encrypted by another OS user or machine, or the OS key changed.
         return null;
       }
       // Encrypted with a key the OS has since replaced: kept again with the new one, if it can be.
-      if (decrypted.shouldReEncrypt) await set(key, decrypted.result).catch(() => undefined);
+      // A failure leaves it as it was, still readable.
+      if (decrypted.shouldReEncrypt) {
+        await reEncrypt(key, stored, decrypted.result).catch(() => undefined);
+      }
       return decrypted.result;
     },
     set,
