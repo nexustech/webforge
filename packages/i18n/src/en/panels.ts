@@ -91,7 +91,7 @@ export const panels = {
   "add.point.start": "Choose a section to add at the top of the page.",
   "add.point.after": "Choose a section to add after {item}.",
   "add.point.cancel": "Cancel",
-  // Layers (F-ED-12, Advanced).
+  // Layers (F-ED-12), in Simple and Advanced mode (ADR 0011).
   "layers.title": "Layers",
   "layers.empty": "This page has no sections yet. Add one from the canvas.",
   "layers.toolbar": "Layer actions",

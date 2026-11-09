@@ -133,7 +133,10 @@ export const VERSIONS_KEPT_MAX = 100;
 export const preferencesSchema = z.strictObject({
   /** The editor's look (UI1). */
   theme: z.enum(["dark", "light"]),
-  /** Simple hides Layers, the Advanced tab and Custom Code (T2, 1.10). */
+  /**
+   * Simple hides the Edit panel's Advanced tab, Custom Code and the other Advanced-only parts (T2,
+   * 1.10). Layers shows in both (ADR 0011).
+   */
   editorLevel: z.enum(["simple", "advanced"]),
   /** Remembered panel sizes, by panel group id. Empty means the default layout. */
   panelLayout: z.record(z.string().min(1).max(64), panelGroupLayoutSchema).refine(fewEntries),

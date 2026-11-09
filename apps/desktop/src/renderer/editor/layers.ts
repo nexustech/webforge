@@ -32,7 +32,7 @@ import {
 } from "../editor/shared-layout.js";
 
 /**
- * Layers (F-ED-12, Advanced): the shown page's sections and elements as a tree, and the changes the
+ * Layers (F-ED-12, ADR 0011): the shown page's sections and elements as a tree, and the changes the
  * Layers panel makes to them, each one labelled undo step that keeps the element selected. A linked
  * copy of a shared section is one layer, under the id the canvas shows its section by, so selecting
  * either selects the other; its name and hidden state are the copy's own (F-ED-23).
