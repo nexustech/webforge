@@ -2,6 +2,11 @@
 
 Thank you for helping us test Webforge before it's released. Webforge makes a website for your business on your own computer, without needing to know how websites work. In the beta, a small group of business owners, on Windows and on Mac, use it for real and tell us what gets in their way.
 
+## What you need
+
+- **On Windows:** Windows 10 or 11.
+- **On a Mac:** a Mac with Apple silicon (M1 or later), with macOS 13 or later. The beta doesn't run on Macs with an Intel processor.
+
 ## What we'd like you to do
 
 Make a real site for your business, or a copy of the one you have, and use Webforge as you would if it were finished. Along the way, try to:
@@ -23,7 +28,7 @@ This is a test version, so keep a copy of anything you'd be sorry to lose:
 - **File › Save a Copy as ZIP…** saves your whole site as one file. Keep it somewhere else, such as a USB stick or your cloud folder.
 - **File › Save Version…** keeps the site as it is now, to go back to later.
 
-Each site is one file ending `.wforge`, wherever you saved it. A new beta version doesn't change your sites' files, and you can carry on with them after installing it.
+Each site is one file ending `.wforge`, wherever you saved it. A new beta version opens your sites, and you carry on with them as before. Once it has saved a site, an older version can only open that site read-only, so keep to the newest version.
 
 ## Finding your version
 

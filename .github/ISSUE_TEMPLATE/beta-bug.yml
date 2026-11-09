@@ -22,8 +22,7 @@ body:
       options:
         - Windows 11
         - Windows 10
-        - Mac with Apple silicon (M1 or later)
-        - Mac with an Intel processor
+        - Mac with Apple silicon (M1 or later), macOS 13 or later
     validations:
       required: true
   - type: textarea
