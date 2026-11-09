@@ -66,6 +66,9 @@ export function folderProblem(folder: string): string | undefined {
   }
   if (BASE.has(folder))
     return `renderer/${folder} is what every area builds on, not an area: pick an area's folder`;
+  // Vite's public folder: files the page loads as they are, such as startup-theme.js (#887).
+  if (folder === "public")
+    return "renderer/public holds files served as they are, not an area: pick an area's folder";
   return undefined;
 }
 

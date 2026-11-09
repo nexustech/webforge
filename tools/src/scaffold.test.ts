@@ -109,6 +109,7 @@ describe("scaffold's names and folders", () => {
   it("takes an area's folder, but not one every area builds on or a badly named one", () => {
     expect(folderProblem("opening-times")).toBeUndefined();
     expect(folderProblem("editor")).toMatch(/what every area builds on/);
+    expect(folderProblem("public")).toMatch(/files served as they are/);
     expect(folderProblem("Opening")).toMatch(/isn't a renderer folder/);
     expect(folderProblem("opening--times")).toMatch(/isn't a renderer folder/);
   });

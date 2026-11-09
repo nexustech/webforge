@@ -49,6 +49,14 @@ describe("parsePreferences", () => {
     expect(parsePreferences({ panelLayout: tooMany }).panelLayout).toEqual({});
   });
 
+  it("keeps the update channel the person chose, and leaves it out if none or invalid (5.2)", () => {
+    expect(parsePreferences({ updateChannel: "beta" }).updateChannel).toBe("beta");
+    expect(parsePreferences({ updateChannel: "stable" }).updateChannel).toBe("stable");
+    for (const raw of [{}, { updateChannel: "nightly" }, { updateChannel: null }]) {
+      expect(parsePreferences(raw)).not.toHaveProperty("updateChannel");
+    }
+  });
+
   it("keeps the Add panel's favourites and recently used, or none if the list is invalid", () => {
     const add = { favourites: ["Faq", "shared-hours"], recent: ["Hero"] };
     expect(parsePreferences({ add }).add).toEqual(add);

@@ -3,11 +3,26 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { TITLE_BAR_HEIGHT } from "../shared/title-bar.js";
 import {
+  editorPageAddress,
   mainWindowPlacement,
   titleBarOptions,
   titleBarOverlay,
   windowBackground,
 } from "./window-options.js";
+
+describe("editorPageAddress", () => {
+  it("gives the packaged page the theme as its query", () => {
+    expect(editorPageAddress("webforge-app://editor/index.html", "light")).toBe(
+      "webforge-app://editor/index.html?theme=light",
+    );
+  });
+
+  it("gives the dev server's page the theme too", () => {
+    expect(editorPageAddress("http://localhost:5173/", "dark")).toBe(
+      "http://localhost:5173/?theme=dark",
+    );
+  });
+});
 
 describe("titleBarOptions", () => {
   it.each(["win32", "linux"] as const)(

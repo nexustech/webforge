@@ -13,6 +13,10 @@ With {appName} you make a website on your own computer and then export it for yo
 
 A site is made of **pages**. Each page is a stack of **sections**, such as a Hero, a Gallery or a Contact form. Each section holds **elements**, such as headings, text, pictures and buttons.
 
+## Starting {appName}
+
+While {appName} starts, its window says **Starting {appName}…**. Then you see the site you opened, such as one you double-clicked, or the start screen. If something goes wrong while it starts, the window says so: choose **Try again**. Your work is saved.
+
 ## The start screen
 
 When no site is open, you see the start screen.
@@ -91,5 +95,7 @@ See [Templates](templates.md) for the list.
 On Windows, {appName} keeps itself up to date. A few seconds after it starts, and every six hours while it's open, it looks for a new version. If there is one, it downloads it in the background while you work, and says so when it's ready: "{appName} 1.2.0 is ready: it installs when you close {appName}." The next time you close {appName}, the new version installs, and it's there when you open {appName} again. Nothing interrupts you, and your sites aren't changed.
 
 {appName} looks for new versions on GitHub, where they're published. It sends nothing about you or your sites. Without an internet connection it tries again later.
+
+Each new version reaches **Beta** first, then **Stable**. Until {appName} 1.0, {appName} gets its updates from Beta. To choose, see [Settings](settings.md#updates).
 
 On a Mac, {appName} doesn't update itself yet: install each new version yourself.

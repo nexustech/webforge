@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { updateChannelSchema } from "../update-channel.js";
 
 /** At most this many panel groups, and panels per group, are remembered. */
 const MAX_LAYOUT_ENTRIES = 32;
@@ -133,7 +134,10 @@ export const VERSIONS_KEPT_MAX = 100;
 export const preferencesSchema = z.strictObject({
   /** The editor's look (UI1). */
   theme: z.enum(["dark", "light"]),
-  /** Simple hides Layers, the Advanced tab and Custom Code (T2, 1.10). */
+  /**
+   * Simple hides the Edit panel's Advanced tab, Custom Code and the other Advanced-only parts (T2,
+   * 1.10). Layers shows in both (ADR 0011).
+   */
   editorLevel: z.enum(["simple", "advanced"]),
   /** Remembered panel sizes, by panel group id. Empty means the default layout. */
   panelLayout: z.record(z.string().min(1).max(64), panelGroupLayoutSchema).refine(fewEntries),
@@ -148,6 +152,11 @@ export const preferencesSchema = z.strictObject({
    */
   versionsKept: z.int().min(VERSIONS_KEPT_MIN).max(VERSIONS_KEPT_MAX),
   onboarding: onboardingPreferencesSchema,
+  /**
+   * The update channel the person chose in Settings › App › Updates (5.2). Unset until they
+   * choose: the default then follows the app's version (`updateChannelFor`).
+   */
+  updateChannel: updateChannelSchema.optional(),
 });
 
 /** One person's editor preferences. */
@@ -183,6 +192,7 @@ export function applyPreferencesChange(
   preferences: Preferences,
   change: PreferencesChange,
 ): Preferences {
+  const updateChannel = change.updateChannel ?? preferences.updateChannel;
   return {
     theme: change.theme ?? preferences.theme,
     editorLevel: change.editorLevel ?? preferences.editorLevel,
@@ -193,6 +203,7 @@ export function applyPreferencesChange(
     editPanel: change.editPanel ?? preferences.editPanel,
     versionsKept: change.versionsKept ?? preferences.versionsKept,
     onboarding: change.onboarding ?? preferences.onboarding,
+    ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }
 

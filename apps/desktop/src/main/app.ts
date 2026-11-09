@@ -15,6 +15,7 @@ import { publishEvents } from "../shared/ipc/publish.js";
 import { siteEvents } from "../shared/ipc/site.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
+import { updateChannelFor } from "../shared/update-channel.js";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import type { AppFeature } from "./app-feature.js";
@@ -103,6 +104,7 @@ import {
 import { updatesFeature } from "./updates-ipc.js";
 import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
+  editorPageAddress,
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
   titleBarOptions,
@@ -489,6 +491,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         if (lifecycle.quitting) return;
         updates = createUpdateService({
           updater,
+          channel: updateChannelFor(lifecycle.preferences?.get().updateChannel, app.getVersion()),
           onStatus: (status) =>
             lifecycle.mainWindow()?.webContents.send(updatesEvents.status.channel, status),
         });
@@ -537,7 +540,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     lifecycle.flushOnClose?.install(window);
     // Help goes with the editor, so the app quits with it (5.4b).
     window.on("closed", () => helpWindows.close());
-    const load = window.loadURL(appUrl);
+    // In the person's theme from the first paint: the page's start-up screen reads it (#887).
+    const load = window.loadURL(editorPageAddress(appUrl, theme));
     // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
     load.catch((error: unknown) => {
       logFailure("Webforge could not load the editor window", error);
@@ -564,22 +568,29 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     );
     lifecycle.preferences = preferences;
     let windowTheme = preferences.get().theme;
-    registerPreferencesHandlers(ipcMain, isTrustedSender, preferences, ({ theme }) => {
-      if (theme === windowTheme) {
-        return;
-      }
-      windowTheme = theme;
-      // The native window controls follow the theme (macOS's traffic lights need nothing). The
-      // Help window has the system's own title bar, and follows the theme in its page.
-      for (const window of BrowserWindow.getAllWindows()) {
-        if (helpWindows.is(window)) continue;
-        window.setBackgroundColor(windowBackground(theme));
-        if (process.platform !== "darwin") {
-          window.setTitleBarOverlay(titleBarOverlay(theme));
+    registerPreferencesHandlers(
+      ipcMain,
+      isTrustedSender,
+      preferences,
+      ({ theme, updateChannel }) => {
+        // The person chose an update channel in Settings (5.2).
+        updates?.setChannel(updateChannelFor(updateChannel, app.getVersion()));
+        if (theme === windowTheme) {
+          return;
         }
-      }
-      helpWindows.setTheme(theme);
-    });
+        windowTheme = theme;
+        // The native window controls follow the theme (macOS's traffic lights need nothing). The
+        // Help window has the system's own title bar, and follows the theme in its page.
+        for (const window of BrowserWindow.getAllWindows()) {
+          if (helpWindows.is(window)) continue;
+          window.setBackgroundColor(windowBackground(theme));
+          if (process.platform !== "darwin") {
+            window.setTitleBarOverlay(titleBarOverlay(theme));
+          }
+        }
+        helpWindows.setTheme(theme);
+      },
+    );
     registerIpcHandler(ipcMain, "getAppInfo", isTrustedSender, () => ({
       name: t("app.name"),
       version: app.getVersion(),

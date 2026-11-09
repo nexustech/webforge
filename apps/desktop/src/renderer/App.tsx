@@ -48,6 +48,7 @@ import { UndoStepsMenu } from "./shell/UndoStepsMenu.js";
 import { createWindowDialogs, WindowDialogs } from "./shell/window-dialogs.js";
 import { jumpTo } from "./site-check/index.js";
 import { SiteCommands } from "./start/SiteCommands.js";
+import { applyTheme } from "./startup.js";
 import { AutosaveStatus } from "./storage/AutosaveStatus.js";
 import type { LoadedSite } from "./storage/load-site.js";
 import { siteSession } from "./storage/site-session.js";
@@ -124,7 +125,7 @@ export function App({
   }, [api, siteLanguage]);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
+    applyTheme(theme, window);
   }, [theme]);
 
   useEffect(() => installCommandShortcuts(window, registry), [registry]);
@@ -151,6 +152,7 @@ export function App({
       canvasView,
       canvasPointer,
       settings,
+      appVersion: info.version,
       windowDialogs,
       // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
       kindPreviews: createKindPreviews(previewSource),

@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { UpdateStatus } from "../shared/ipc/updates.js";
+import type { UpdateChannel } from "../shared/update-channel.js";
 import { setLogSink } from "./log.js";
 import {
   CHECK_EVERY_MS,
   createUpdateService,
   type ElectronAutoUpdater,
+  e2eUpdateFeed,
   electronUpdater,
   FIRST_CHECK_MS,
   type Updater,
@@ -24,6 +26,7 @@ function fakeUpdater() {
     onDownloaded: (listener: (version: string) => void) => listeners.downloaded.push(listener),
     onError: (listener: (error: unknown) => void) => listeners.error.push(listener),
     install: vi.fn(),
+    setChannel: vi.fn((_channel: UpdateChannel) => undefined),
   } satisfies Updater;
   return {
     updater,
@@ -39,10 +42,11 @@ function fakeUpdater() {
   };
 }
 
-function serviceWith(fake = fakeUpdater()) {
+function serviceWith(fake = fakeUpdater(), channel: UpdateChannel = "stable") {
   const statuses: UpdateStatus[] = [];
   const service = createUpdateService({
     updater: fake.updater,
+    channel,
     onStatus: (status) => statuses.push(status),
     timers: {
       setTimeout: (callback, ms) => setTimeout(callback, ms),
@@ -205,6 +209,9 @@ function fakeAutoUpdater() {
   const auto = {
     autoDownload: false,
     autoInstallOnAppQuit: true,
+    channel: null as string | null,
+    allowPrerelease: false,
+    allowDowngrade: false,
     logger: console as unknown,
     checkForUpdates: vi.fn(async (): Promise<unknown> => null),
     on: (event: string, listener: (arg: never) => void) => listeners.set(event, listener),
@@ -261,11 +268,82 @@ describe("electronUpdater", () => {
   });
 });
 
+describe("the update channel (5.2)", () => {
+  it("follows the channel it starts with, and another chosen later, from a waiting check", async () => {
+    const { service, updater } = serviceWith(fakeUpdater(), "beta");
+    expect(updater.setChannel.mock.calls).toEqual([["beta"]]);
+    service.start();
+    await vi.advanceTimersByTimeAsync(FIRST_CHECK_MS);
+    expect(updater.check).toHaveBeenCalledTimes(1);
+
+    // The next check was 6 hours away: it runs soon after the choice instead.
+    service.setChannel("stable");
+    expect(updater.setChannel.mock.calls).toEqual([["beta"], ["stable"]]);
+    expect(lines).toContain("info Webforge follows another update channel (channel=stable)");
+    await vi.advanceTimersByTimeAsync(FIRST_CHECK_MS);
+    expect(updater.check).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(CHECK_EVERY_MS - 1);
+    expect(updater.check).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(updater.check).toHaveBeenCalledTimes(3);
+  });
+
+  it("changes nothing for the channel it already follows, and checks no sooner once stopped", async () => {
+    const { service, updater } = serviceWith(fakeUpdater(), "stable");
+    service.start();
+    service.setChannel("stable");
+    expect(updater.setChannel).toHaveBeenCalledTimes(1);
+
+    service.stop();
+    service.setChannel("beta");
+    expect(updater.setChannel).toHaveBeenLastCalledWith("beta");
+    await vi.advanceTimersByTimeAsync(CHECK_EVERY_MS);
+    expect(updater.check).not.toHaveBeenCalled();
+  });
+
+  it("reads Beta's prereleases or Stable's latest release, and never goes back a version", () => {
+    const { auto } = fakeAutoUpdater();
+    const updater = electronUpdater(auto as ElectronAutoUpdater);
+
+    // As electron-updater's own setter does, setting the channel allows an older version.
+    auto.allowDowngrade = true;
+    updater.setChannel("beta");
+    expect(auto).toMatchObject({ channel: "beta", allowPrerelease: true, allowDowngrade: false });
+    auto.allowDowngrade = true;
+    updater.setChannel("stable");
+    expect(auto).toMatchObject({
+      channel: "latest",
+      allowPrerelease: false,
+      allowDowngrade: false,
+    });
+  });
+});
+
 describe("updatesSupported", () => {
   it("is a packaged Windows app only, until macOS updates are signed (0.5b)", () => {
     expect(updatesSupported(true, "win32")).toBe(true);
     expect(updatesSupported(false, "win32")).toBe(false);
     expect(updatesSupported(true, "darwin")).toBe(false);
     expect(updatesSupported(true, "linux")).toBe(false);
+  });
+});
+
+describe("e2eUpdateFeed", () => {
+  const env = (feed: string) => ({ WEBFORGE_E2E_UPDATE_FEED: feed });
+
+  it("gives the packaged update test's local feed, in an e2e build only", () => {
+    expect(e2eUpdateFeed("e2e", env("http://127.0.0.1:4100/feed/"))).toBe(
+      "http://127.0.0.1:4100/feed/",
+    );
+    expect(e2eUpdateFeed("e2e", env("http://localhost:4100"))).toBe("http://localhost:4100/");
+    expect(e2eUpdateFeed("production", env("http://127.0.0.1:4100/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", {})).toBeUndefined();
+  });
+
+  it("refuses a feed anywhere but on this computer, or that isn't an address", () => {
+    expect(e2eUpdateFeed("e2e", env("https://example.com/feed/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", env("http://127.0.0.1.example.com/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", env("file:///C:/feed/"))).toBeUndefined();
+    expect(e2eUpdateFeed("e2e", env("not an address"))).toBeUndefined();
   });
 });

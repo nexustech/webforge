@@ -59,7 +59,8 @@ function listIndex(layers: readonly Layer[], id: string, index: number): number 
 }
 
 /**
- * Adds Layers to the left column's bottom, before Undo History (UI1), in Advanced mode only (T2).
+ * Adds Layers to the left column's bottom, under its Add and Undo History tabs, in Simple and
+ * Advanced mode alike (ADR 0011).
  * The tree follows the shown page and the selection, the shared Header first and the Footer last
  * (#673); it is rebuilt only when the page's structure or names change, not on every keystroke. A linked copy's layer is selected while the copy is,
  * not an element inside it: Layers' actions act on what is selected (F-ED-23). In Content mode
