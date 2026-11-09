@@ -70,15 +70,22 @@ describe("createCredentialStore", () => {
     mkdirSync(join(dir, "nested"));
     const old = Buffer.from("old:terces_pfn").toString("base64");
     writeFileSync(file, JSON.stringify({ version: 1, secrets: { changed: old, deleted: old } }));
-    // Encrypting again waits until the test has changed the file.
+    // Encrypting again waits until the test has changed the file, and says when both are waiting.
     let go: () => void = () => undefined;
     const waiting = new Promise<void>((resolve) => {
       go = resolve;
+    });
+    let calls = 0;
+    let bothWaiting: () => void = () => undefined;
+    const bothRead = new Promise<void>((resolve) => {
+      bothWaiting = resolve;
     });
     const plain = cipher();
     const slow: SecretCipher = {
       ...plain,
       encryptString: async (text) => {
+        calls += 1;
+        if (calls === 2) bothWaiting();
         await waiting;
         return plain.encryptString(text);
       },
@@ -87,8 +94,8 @@ describe("createCredentialStore", () => {
     const writer = createCredentialStore(file, cipher());
 
     const reading = Promise.all([store.get("changed"), store.get("deleted")]);
-    // Both read and decrypted, and waiting to be encrypted again.
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    // Both read and decrypted, and waiting to be encrypted again: not a guess at how long that takes.
+    await bothRead;
     await writer.set("changed", "nfp_newer");
     await writer.delete("deleted");
     go();
