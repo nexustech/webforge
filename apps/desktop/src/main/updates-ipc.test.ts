@@ -37,16 +37,13 @@ describe("updatesFeature (0.5a)", () => {
     });
   });
 
-  it("says idle in a build without updates, and installs nothing as it quits", async () => {
-    const { feature, status } = featureWith(undefined);
-    expect(await status()).toEqual({ state: "idle" });
-    await expect(feature.quit?.()).resolves.toBeUndefined();
+  it("says idle in a build without updates", async () => {
+    expect(await featureWith(undefined).status()).toEqual({ state: "idle" });
   });
 
-  it("installs a downloaded update as Webforge quits", async () => {
-    const service = fakeService();
-    await featureWith(service).feature.quit?.();
-    expect(service.installOnQuit).toHaveBeenCalled();
+  it("leaves installing to quitting's last step, after every feature's quit", () => {
+    const { feature } = featureWith(fakeService());
+    expect(feature.quit).toBeUndefined();
   });
 
   it("refuses a renderer it does not trust", async () => {
