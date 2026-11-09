@@ -20,7 +20,7 @@ import { join } from "node:path";
 import { z } from "zod";
 
 /** Stable's feed files, by electron-updater's names for the default channel on each OS. */
-export const STABLE_FEED_FILES = ["latest.yml", "latest-mac.yml"] as const;
+const STABLE_FEED_FILES = ["latest.yml", "latest-mac.yml"] as const;
 
 const STAGING_LINE = /^stagingPercentage:.*(?:\r?\n|$)/gm;
 
