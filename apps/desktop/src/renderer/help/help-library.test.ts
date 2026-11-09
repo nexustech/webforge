@@ -1,3 +1,4 @@
+import { searchHelp } from "@webforge/help";
 import { describe, expect, it } from "vitest";
 import { bundledHelpLibrary, helpLibraryOf } from "./help-library.js";
 import { helpLinkDestination } from "./help-navigation.js";
@@ -38,6 +39,30 @@ describe("bundledHelpLibrary (HP-6)", () => {
     expect([...library.pages.keys()].sort()).toEqual(files);
     expect(library.contents.flatMap((group) => group.pages).sort()).toEqual(files);
     expect(bundledHelpLibrary()).toBe(library);
+  });
+
+  it("finds the glossary by each word it explains (#856, UX-29)", () => {
+    const [markdown = ""] = Object.values(
+      import.meta.glob<string>("../../../../../docs/help/glossary.md", {
+        query: "?raw",
+        import: "default",
+        eager: true,
+      }),
+    );
+    // Each item's words in bold before its colon: "**Header and Footer:**", "**Form** and
+    // **Contact form:**".
+    const terms = [...markdown.matchAll(/^- (.+?):\*\*/gm)].flatMap(([, item = ""]) =>
+      [...`${item}**`.matchAll(/\*\*([^*]+?)\*\*/g)].map(([, term = ""]) => term.replace(/…$/, "")),
+    );
+    expect(terms.length).toBeGreaterThan(40);
+    const pages = [...bundledHelpLibrary().pages.values()];
+
+    for (const term of terms) {
+      expect(
+        searchHelp(pages, term).map((found) => found.id),
+        term,
+      ).toContain("glossary");
+    }
   });
 });
 

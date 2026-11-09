@@ -13,7 +13,8 @@
       "!**/dist",
       "!**/coverage",
       "!**/test/golden",
-      "!packages/site-components/src/catalogue-data.json"
+      "!packages/site-components/src/catalogue-data.json",
+      "!CHANGELOG.md"
     ]
   },
   "formatter": {
