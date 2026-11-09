@@ -4,7 +4,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, publish, export]
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 # Getting started
@@ -85,3 +85,11 @@ See [Templates](templates.md) for the list.
 5. Fix anything [Site Check](site-check.md) finds, then [export](export.md) your site for your web host.
 
 {appName} saves as you work. See [Saving, copies and backups](saving-and-backups.md).
+
+## Updates
+
+On Windows, {appName} keeps itself up to date. A few seconds after it starts, and every six hours while it's open, it looks for a new version. If there is one, it downloads it in the background while you work, and says so when it's ready: "{appName} 1.2.0 is ready: it installs when you close {appName}." The next time you close {appName}, the new version installs, and it's there when you open {appName} again. Nothing interrupts you, and your sites aren't changed.
+
+{appName} looks for new versions on GitHub, where they're published. It sends nothing about you or your sites. Without an internet connection it tries again later.
+
+On a Mac, {appName} doesn't update itself yet: install each new version yourself.
