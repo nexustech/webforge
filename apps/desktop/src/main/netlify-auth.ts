@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { netlifyClient, PublishError, signInToNetlify } from "@webforge/publish";
+import { netlifyClient, PublishError, signInToNetlify } from "@webforge/publish/light";
 
 // Netlify sign-in for publish destinations (ADR 0006 decision 4, 4.2): Netlify's OAuth ticket
 // flow in the person's own browser, or a pasted personal access token as the fallback. The token

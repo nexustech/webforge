@@ -1,6 +1,6 @@
 import { request } from "node:http";
 import { connect } from "node:net";
-import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import { PREVIEW_STYLESHEET } from "@webforge/pipeline/light";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
