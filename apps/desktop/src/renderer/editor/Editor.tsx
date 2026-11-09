@@ -244,7 +244,7 @@ export function Editor({
       (command) => {
         // Nothing changes while a question about the whole site waits for its answer (D7), or
         // the answered change for its version (4.6); Esc goes to the dialog.
-        if (siteWide !== undefined && siteWide.busy()) return false;
+        if (siteWide?.busy()) return false;
         connection.flush();
         return runHistoryCommand(session, command);
       },

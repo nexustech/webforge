@@ -68,7 +68,7 @@ function pathPattern(path: string, whole: boolean): RegExp {
     .filter((part) => part !== "")
     .map(escapeRegExp);
   const rest = whole ? String.raw`[^\s)'"]*` : "";
-  return new RegExp(String.raw`(?:file:/{2,3})?/?` + parts.join(String.raw`[\\/]+`) + rest, "gi");
+  return new RegExp(`(?:file:/{2,3})?/?${parts.join(String.raw`[\\/]+`)}${rest}`, "gi");
 }
 
 /**

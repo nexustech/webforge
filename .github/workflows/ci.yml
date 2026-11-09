@@ -964,7 +964,21 @@ jobs:
     # job failed or was cancelled. A draft PR runs nothing, so it fails here: a draft can't merge,
     # and an earlier draft run never stands in for the run that starts when it's marked ready.
     name: CI passed
-    needs: [changes, audit, help, check, bench, e2e-linux, e2e, export-browsers, visual, package, file-transfer, perf]
+    needs:
+      [
+        changes,
+        audit,
+        help,
+        check,
+        bench,
+        e2e-linux,
+        e2e,
+        export-browsers,
+        visual,
+        package,
+        file-transfer,
+        perf,
+      ]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5

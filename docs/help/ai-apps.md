@@ -1,4 +1,5 @@
 ---
+
 id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
@@ -37,6 +38,7 @@ If {appName} says the key wasn't used within 5 minutes, Claude Desktop was remov
 Claude can reach your site only while {appName} is open and **Let AI apps connect** is ticked. If Claude says {appName} isn't answering, open {appName} and check that box.
 
 Before it sends the key, the extension checks that it really is {appName} answering. If the check fails, Claude says {appName} didn't answer as it should, and the key isn't sent. That happens when:
+
 - you removed Claude Desktop from your AI apps: add it again, and install its new extension;
 - {appName}'s address for AI apps has changed: add Claude Desktop again, and install its new extension;
 - another program is answering at {appName}'s address while {appName} is closed: open {appName}, then ask Claude again.
@@ -47,9 +49,9 @@ The key is cleared from the clipboard a minute after you copy it, and Windows do
 
 ## Your AI apps
 
-**Your AI apps** lists each app as *Connected*, *Not connected* or *Waiting for its key*. While one is connected, an icon in the title bar says so; click it to open AI apps.
+**Your AI apps** lists each app as _Connected_, _Not connected_ or _Waiting for its key_. While one is connected, an icon in the title bar says so; click it to open AI apps.
 
-To stop an app reaching your sites, click **Remove *name*** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
+To stop an app reaching your sites, click **Remove _name_** beside it, then **Remove**. To use it again, add it again with a new key. For Claude Desktop, remove {appName}'s extension in Claude Desktop's settings too, unless you'll add it again.
 
 If {appName} says **{appName}'s address for AI apps has changed**, another program was using {appName}'s address while it was closed. Apps that connect directly, such as Cursor or Claude Code, might have sent it their keys, so {appName} removes them: add them again with the new address. Claude Desktop checks it's {appName} before it sends its key, so it stays, but its extension has the old address: remove it and add it again, then install its new extension. {appName} says this as it starts, until you open **AI apps**.
 
@@ -64,6 +66,7 @@ An app can't start a new site while you're in [Content mode](the-editor.md#desig
 ### Build a site from a description
 
 {appName} offers apps a prompt, **Build a site from a description**, which Claude Desktop lists with its other prompts. Choose it, describe your business and the site you want, and the app works in this order:
+
 1. it starts the site with **Start a site**, for you to check and create;
 2. it makes the pages, sections, text and colours as one set of changes, which you allow once (see [Many changes at once](#many-changes-at-once));
 3. it runs Site Check, and asks you for your own pictures to replace the template's;
@@ -72,7 +75,8 @@ An app can't start a new site while you're in [Content mode](the-editor.md#desig
 
 ## Pictures
 
-An app never adds a picture itself, and {appName} downloads nothing. To use your own photos, the app asks you: {appName} shows ***app* asks you to add pictures or files**, with the app's reason, such as "Photos of your workshop and team".
+An app never adds a picture itself, and {appName} downloads nothing. To use your own photos, the app asks you: {appName} shows **_app_ asks you to add pictures or files**, with the app's reason, such as "Photos of your workshop and team".
+
 - Click **Add Files…** to choose them on your computer, as **Add images or files…** in [Media](media.md#adding-files) does. They're added to Media as one step in Undo History, and the app is told which you added.
 - Click **Not Now**, or choose no files, and nothing is added.
 
@@ -81,6 +85,7 @@ A site made from a template starts with the template's pictures. Site Check's ti
 ## What an app can do
 
 An app works on the site you have open in {appName}, and only that one. It can:
+
 - read your site's pages, settings and theme, and the sections and elements it can add, with their options;
 - add, change, move and delete sections and elements, and change text;
 - add, rename, move and delete pages, and change a page's title, description, **Hide from navigation** and **Hide this page from search engines**, as [Page Settings](pages.md) does;
@@ -93,18 +98,20 @@ An app works on the site you have open in {appName}, and only that one. It can:
 It can't change publishing, forms, analytics, Custom Code, search engines' verification codes or your site's icon: those stay yours. It never adds a picture or file itself.
 
 Some changes ask you first, with **Allow**:
+
 - changes that reach every page: the theme, a new page with a menu entry, deleting a page, Site Settings, the Header or Footer, or a shared section;
 - changing where visitors' money or details go, such as a Buy button's payment link, even on one page. Changing your web address, phone number, email address or a social profile, or whether search engines may show your site, names the old one and the new one too.
 
-Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or *Page not found*.
+Deleting a page asks as **Delete Page** does, and says how many pages change: links to it on other pages stop working. An app can't delete the Home page or _Page not found_.
 
 In [Content mode](the-editor.md#design-and-content-mode), an app can change text and content only, and can't start a new site. It can change your business's name, description, contact details, opening hours and social profiles, and a page's title and description. It can't add, move, rename or delete pages, hide them, or change other settings. It can still see Media and ask you for pictures.
 
-Before an app's first change after you open your site, {appName} saves a version of it, *Before app's changes*, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.
+Before an app's first change after you open your site, {appName} saves a version of it, _Before app's changes_, in [Version History](version-history.md). It saves one for each app, however often the app reconnects, until you open the site again.
 
 ### Many changes at once
 
 For a bigger job, such as building out your pages, an app can send its changes together, with a title such as "Build the Rapidfix site". {appName} checks every change first. If any of them can't be made, nothing changes and the app is told which one. Then it asks you once, with **Allow**, and says what the changes would do. First, set apart, any change to where visitors' payments or details go, such as a Buy button's payment link, and any change to Site Settings, each from the old value to the new one. Then:
+
 - the pages added, deleted, renamed and moved, and those whose **Page Settings** change;
 - any page it hides from navigation or from search engines, or shows again, from before to after;
 - whether the theme changes;
@@ -113,7 +120,7 @@ For a bigger job, such as building out your pages, an app can send its changes t
 
 A long list names the first ten, and counts the rest. If the question is longer than the window, it scrolls, and **Allow** and **Cancel** stay in view.
 
-If you allow it, {appName} saves a version of your site first, *Before app's changes:* and the title, unless it saved one before a change to every page in the last five minutes. Then it makes every change as one step in Undo History, named after the title, such as **AI (Claude Desktop): Build the Rapidfix site**. One Undo takes it all back.
+If you allow it, {appName} saves a version of your site first, _Before app's changes:_ and the title, unless it saved one before a change to every page in the last five minutes. Then it makes every change as one step in Undo History, named after the title, such as **AI (Claude Desktop): Build the Rapidfix site**. One Undo takes it all back.
 
 In Content mode, a set of changes that holds even one change Content mode doesn't allow is refused whole.
 
@@ -142,6 +149,7 @@ An app that connects to an MCP server at an address, such as Claude Code, Cursor
 Unlike Claude Desktop's extension, these apps can't check who answers at the address. While {appName} is closed, another program on this computer could answer there and get the key, so turn {appName}'s server off in the app while {appName} is closed.
 
 Some things to know:
+
 - The port is chosen once and kept, so the address stays the same each time {appName} starts.
 - Requests from web pages are refused, as is any request without an added app's key.
 - The key goes only in the `Authorization` header, never in the address.

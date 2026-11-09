@@ -5,39 +5,41 @@
 
 ## Requirements (from discussion)
 
-| # | Requirement | Notes |
-|---|---|---|
-| F1 | **One file per project** that users can copy, email and back up | Like `.bsdesign`, `.sketch`, `.docx` |
-| F2 | **Our own controlled format**, versioned | Format version + migrations (Bootstrap Studio is on v87 with converters) |
-| F3 | **Assets included** (images, fonts, custom code) | No base64-in-JSON bloat (Bootstrap Studio's weakness) |
-| F4 | **Versions / snapshots the user can roll back to**, e.g. try a redesign, then go back | Must be cheap enough to take often |
-| F5 | Crash-safe saves; never a half-written project | Atomic writes |
-| F6 | Fast open and save even with many images | Don't rewrite 200 MB to change one word |
-| — | Git-friendly | **Not required** |
+| #   | Requirement                                                                           | Notes                                                                    |
+| --- | ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| F1  | **One file per project** that users can copy, email and back up                       | Like `.bsdesign`, `.sketch`, `.docx`                                     |
+| F2  | **Our own controlled format**, versioned                                              | Format version + migrations (Bootstrap Studio is on v87 with converters) |
+| F3  | **Assets included** (images, fonts, custom code)                                      | No base64-in-JSON bloat (Bootstrap Studio's weakness)                    |
+| F4  | **Versions / snapshots the user can roll back to**, e.g. try a redesign, then go back | Must be cheap enough to take often                                       |
+| F5  | Crash-safe saves; never a half-written project                                        | Atomic writes                                                            |
+| F6  | Fast open and save even with many images                                              | Don't rewrite 200 MB to change one word                                  |
+| —   | Git-friendly                                                                          | **Not required**                                                         |
 
 ## Options compared
 
-| Option | Example | F3 Assets | F4 Versions | F5 Crash-safe | F6 Fast save with big assets | Readable / inspectable | Verdict |
-|---|---|---|---|---|---|---|---|
-| **Gzipped JSON** | Bootstrap Studio `.bsdesign` | ⚠️ base64 inside JSON (+33% size, all in memory) | ⚠️ Each version = full copy incl. assets | ✅ with temp + rename | ❌ Whole file rewritten | ⚠️ After gunzip | ❌ Doesn't scale with assets/versions |
-| **ZIP container** (JSON + asset files) | Sketch `.sketch`, `.docx`, EPUB | ✅ Real files | ✅ Versions folder; assets can be shared by hash | ✅ with temp + rename | ❌ **Whole archive rewritten on every save** | ✅ Unzip and read | ✅ Good fallback |
-| **SQLite database** | Recommended by SQLite as an "application file format"; used by many desktop apps | ✅ BLOBs, deduplicated by hash | ✅ **Snapshots share unchanged content: near-free** | ✅ **Transactional by design** | ✅ **Only changed pages written; continuous autosave** | ⚠️ Needs a SQLite viewer (mitigated by Export as .zip) | ⭐ **Recommended** |
-| Folder of files | — | ✅ | ⚠️ | ⚠️ | ✅ | ✅ | ❌ Not one file (F1) |
+| Option                                 | Example                                                                          | F3 Assets                                        | F4 Versions                                         | F5 Crash-safe                  | F6 Fast save with big assets                           | Readable / inspectable                                 | Verdict                               |
+| -------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------ | --------------------------------------------------- | ------------------------------ | ------------------------------------------------------ | ------------------------------------------------------ | ------------------------------------- |
+| **Gzipped JSON**                       | Bootstrap Studio `.bsdesign`                                                     | ⚠️ base64 inside JSON (+33% size, all in memory) | ⚠️ Each version = full copy incl. assets            | ✅ with temp + rename          | ❌ Whole file rewritten                                | ⚠️ After gunzip                                        | ❌ Doesn't scale with assets/versions |
+| **ZIP container** (JSON + asset files) | Sketch `.sketch`, `.docx`, EPUB                                                  | ✅ Real files                                    | ✅ Versions folder; assets can be shared by hash    | ✅ with temp + rename          | ❌ **Whole archive rewritten on every save**           | ✅ Unzip and read                                      | ✅ Good fallback                      |
+| **SQLite database**                    | Recommended by SQLite as an "application file format"; used by many desktop apps | ✅ BLOBs, deduplicated by hash                   | ✅ **Snapshots share unchanged content: near-free** | ✅ **Transactional by design** | ✅ **Only changed pages written; continuous autosave** | ⚠️ Needs a SQLite viewer (mitigated by Export as .zip) | ⭐ **Recommended**                    |
+| Folder of files                        | —                                                                                | ✅                                               | ⚠️                                                  | ⚠️                             | ✅                                                     | ✅                                                     | ❌ Not one file (F1)                  |
 
 ### Why SQLite over ZIP
+
 - **Incremental, atomic writes:** changing a heading rewrites a few KB, not the whole project. A crash or power cut mid-save can't corrupt the file. A ZIP must be rewritten in full each save, which gets slow and risky as images and versions accumulate.
-- **Versions are cheap:** with content-addressed storage, a snapshot just records *which* blobs make up the project. Unchanged pages and images are shared, so 50 versions of a site with 100 MB of images might add only a few MB.
+- **Versions are cheap:** with content-addressed storage, a snapshot just records _which_ blobs make up the project. Unchanged pages and images are shared, so 50 versions of a site with 100 MB of images might add only a few MB.
 - **Autosave becomes trivial** (write each history commit in a transaction), and **persisting undo history across restarts** (decision D6, optional) becomes "one more table".
 - **Fast open:** load only the current page and the asset list, not the whole project.
 - SQLite's file format has been stable and backward compatible since 2004.
 
 ### Risks and mitigations
-| Risk | Mitigation |
-|---|---|
+
+| Risk                                                                                 | Mitigation                                                                                                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Native module (`better-sqlite3`, MIT, v13) must be rebuilt for each Electron upgrade | Prebuilt binaries + `@electron/rebuild` in CI; unpack from asar. **Alternative:** Node's built-in `node:sqlite` (no native module; unflagged since Node 22.13; release candidate as of Node 25.7). Electron 44 ships Node 24, so **verify availability and stability in the spike** |
-| Cloud-sync folders (OneDrive, Dropbox) copying a database while open | Use `journal_mode=DELETE` (no `-wal`/`-shm` side files), hold the file only while open, and checkpoint on close. Detect sync folders and show a gentle warning |
-| Not human-readable | **File > Export as .zip** (JSON + assets), documented format; also a debug "inspect" command |
-| Opening untrusted project files | Enable SQLite's defensive settings, validate schema on open; custom scripts already off by default in the editor |
+| Cloud-sync folders (OneDrive, Dropbox) copying a database while open                 | Use `journal_mode=DELETE` (no `-wal`/`-shm` side files), hold the file only while open, and checkpoint on close. Detect sync folders and show a gentle warning                                                                                                                      |
+| Not human-readable                                                                   | **File > Export as .zip** (JSON + assets), documented format; also a debug "inspect" command                                                                                                                                                                                        |
+| Opening untrusted project files                                                      | Enable SQLite's defensive settings, validate schema on open; custom scripts already off by default in the editor                                                                                                                                                                    |
 
 ## Proposed structure
 
@@ -80,22 +82,24 @@ history(seq INTEGER PRIMARY KEY, entry TEXT)   -- labelled patch entries
 
 ## Versions: user experience
 
-| Feature | Behaviour |
-|---|---|
-| **Save version…** | Named snapshot at any time, e.g. *"Before redesign"*, with an optional note and an automatic thumbnail |
-| **Automatic versions** | On first open each day, before restoring a version, and before site-wide actions that need confirmation (D7: theme switch, page delete…). Last **20** kept by default, configurable (P3) |
-| **Versions panel** | List with thumbnails, name, date, kind. **Preview** opens a read-only canvas of that version |
-| **Restore** | Takes an automatic *"Before restore"* version of the current state first, then replaces the working copy. Recorded as **one undo step**: *"Restored version 'Before redesign'"* |
-| **Prototype alternatives** | **"Open version as new project"** (or *Duplicate project from version*) to explore a different design without touching the main one |
-| **Relationship to undo** | Undo/redo = fine-grained, in-session steps. Versions = coarse, named, permanent checkpoints that survive restarts |
+| Feature                    | Behaviour                                                                                                                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Save version…**          | Named snapshot at any time, e.g. _"Before redesign"_, with an optional note and an automatic thumbnail                                                                                   |
+| **Automatic versions**     | On first open each day, before restoring a version, and before site-wide actions that need confirmation (D7: theme switch, page delete…). Last **20** kept by default, configurable (P3) |
+| **Versions panel**         | List with thumbnails, name, date, kind. **Preview** opens a read-only canvas of that version                                                                                             |
+| **Restore**                | Takes an automatic _"Before restore"_ version of the current state first, then replaces the working copy. Recorded as **one undo step**: _"Restored version 'Before redesign'"_          |
+| **Prototype alternatives** | **"Open version as new project"** (or _Duplicate project from version_) to explore a different design without touching the main one                                                      |
+| **Relationship to undo**   | Undo/redo = fine-grained, in-session steps. Versions = coarse, named, permanent checkpoints that survive restarts                                                                        |
 
 ## Format versioning (F2)
+
 - `meta.format_version` (integer) is bumped on any model change, with a **migration chain** (`migrate_3_to_4`…) run on open, like Bootstrap Studio's converters.
 - Each version records the `format_version` it was saved with. Older snapshots are **migrated lazily** when previewed or restored, so old versions never become unreadable.
-- Opening a file from a *newer* Webforge: refuse with a clear "Please update Webforge" message (never open it read-write).
+- Opening a file from a _newer_ Webforge: refuse with a clear "Please update Webforge" message (never open it read-write).
 - **Backups:** periodic copies via SQLite's online backup API to a backups folder (keep the last N), like Bootstrap Studio's auto backups.
 
 ## Spike (1–2 days)
+
 1. ✅ **Driver decided 2026-10-19: `better-sqlite3`.** Spike verifies it inside Electron 44: load, transaction write, backup; packaging (asar unpack) and `@electron/rebuild` on Windows + macOS.
 2. Save/open a 5-page project with 50 images (≈100 MB). Measure open time, single-edit save time, and file size after 20 versions.
 3. Kill the app mid-save and confirm the file still opens.
@@ -104,20 +108,22 @@ history(seq INTEGER PRIMARY KEY, entry TEXT)   -- labelled patch entries
 
 ## Decisions (2026-10-19)
 
-| # | Topic | Decision | Details |
-|---|---|---|---|
-| P1 | **File extension** | **`.wforge`** | Registered as a file association by the installer (Windows + macOS), with its own document icon. Double-clicking opens it in Webforge (single-instance handoff) |
-| P2 | **Saving model** | **Periodic autosave** | Save ~2 s after editing pauses, at most every 30 s while editing continues, plus immediately on window blur, page switch, export and close. Each save is one SQLite transaction. Title bar shows *"Saved"* / *"Saving…"* instead of an "unsaved" dot. **Ctrl/Cmd+S** = "Save now" (reassurance for users with the habit). **Save version…** is a separate command (menu + Ctrl/Cmd+Alt+S). Interval configurable in Settings |
-| P3 | **Automatic version retention** | Keep the **last 20 automatic versions** by default; **configurable** (e.g. 5–100, or "keep for N days") | Applies only to *automatic* versions (daily, before-restore, before site-wide actions). **Manual (named) versions are never auto-deleted**; the user deletes them. The Versions panel shows the space used, with a "Clean up" action. Pruning runs garbage collection of unreferenced blobs |
-| P4 | **Large videos** | **Deferred to implementation** | — |
-| P5 | **Trying alternative designs** | **Start simple: "Open version as new project"** (and "Duplicate project from version"). No in-project page variants for now | Revisit in-project variants (e.g. "Home A / Home B") only if user feedback asks for it |
+| #   | Topic                           | Decision                                                                                                                    | Details                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| --- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1  | **File extension**              | **`.wforge`**                                                                                                               | Registered as a file association by the installer (Windows + macOS), with its own document icon. Double-clicking opens it in Webforge (single-instance handoff)                                                                                                                                                                                                                                                              |
+| P2  | **Saving model**                | **Periodic autosave**                                                                                                       | Save ~2 s after editing pauses, at most every 30 s while editing continues, plus immediately on window blur, page switch, export and close. Each save is one SQLite transaction. Title bar shows _"Saved"_ / _"Saving…"_ instead of an "unsaved" dot. **Ctrl/Cmd+S** = "Save now" (reassurance for users with the habit). **Save version…** is a separate command (menu + Ctrl/Cmd+Alt+S). Interval configurable in Settings |
+| P3  | **Automatic version retention** | Keep the **last 20 automatic versions** by default; **configurable** (e.g. 5–100, or "keep for N days")                     | Applies only to _automatic_ versions (daily, before-restore, before site-wide actions). **Manual (named) versions are never auto-deleted**; the user deletes them. The Versions panel shows the space used, with a "Clean up" action. Pruning runs garbage collection of unreferenced blobs                                                                                                                                  |
+| P4  | **Large videos**                | **Deferred to implementation**                                                                                              | —                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| P5  | **Trying alternative designs**  | **Start simple: "Open version as new project"** (and "Duplicate project from version"). No in-project page variants for now | Revisit in-project variants (e.g. "Home A / Home B") only if user feedback asks for it                                                                                                                                                                                                                                                                                                                                       |
 
 **Effect on earlier decisions:** with autosave, undo/redo requirement **U9** ("modified" marker clears when undoing back to the saved point) no longer applies. The project is always saved within seconds. Undo history continues across autosaves.
 
 ## Remaining open questions
+
 1. **Large videos:** stored in the project or linked from a folder next to it (deferred, P4).
 
 ## Sources
+
 - [SQLite as an application file format](https://www.sqlite.org/appfileformat.html)
 - [Node.js `node:sqlite` docs](https://nodejs.org/api/sqlite.html) (release candidate as of v25.7; unflagged since v22.13)
 - [Sketch file format (ZIP of JSON + images)](https://developer.sketch.com/file-format) · [spec](https://developer.sketch.com/file-format/spec)

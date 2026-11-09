@@ -1,4 +1,5 @@
 ---
+
 id: forms
 title: Forms
 summary: Let visitors send you messages, and choose the service that delivers them to you.
@@ -19,11 +20,11 @@ Your website is a set of plain files, with no server of its own to receive messa
 
 Open **File › Site Settings…** and choose **Forms**. Then pick a **Form service**:
 
-| Form service | What to enter |
-|---|---|
-| **Formspree** | Your Formspree form ID |
-| **Web3Forms** | Your Web3Forms access key |
-| **FormSubmit** | The email address messages should go to |
+| Form service      | What to enter                                          |
+| ----------------- | ------------------------------------------------------ |
+| **Formspree**     | Your Formspree form ID                                 |
+| **Web3Forms**     | Your Web3Forms access key                              |
+| **FormSubmit**    | The email address messages should go to                |
 | **Other address** | The address your service gave you, starting `https://` |
 
 Sign up with the service on its own website first. Each service has its own terms and limits, and some charge for more messages.

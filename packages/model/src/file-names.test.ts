@@ -7,7 +7,7 @@ describe("safeFileName (2.14a, 4.7)", () => {
     expect(safeFileName('Fish & Chips: "Best" in town?', "My site")).toBe(
       "Fish & Chips- -Best- in town-",
     );
-    expect(safeFileName(String.raw`A/B\C|D*E<F>G` + "\u0007", "My site")).toBe("A-B-C-D-E-F-G-");
+    expect(safeFileName("A/B\\C|D*E<F>G\u0007", "My site")).toBe("A-B-C-D-E-F-G-");
     // Windows drops trailing dots and spaces.
     expect(safeFileName("  Café Rosa...  ", "My site")).toBe("Café Rosa");
     expect(safeFileName("Shop: front?.jpg", "file")).toBe("Shop- front-.jpg");

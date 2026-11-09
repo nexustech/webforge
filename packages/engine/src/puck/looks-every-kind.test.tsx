@@ -71,7 +71,7 @@ function onCanvas(node: NodeDoc, context: RenderContext): string {
     | ((props: Record<string, unknown>) => ReactNode)
     | undefined;
   if (render === undefined) throw new Error(`no Puck component for ${node.type}`);
-  return renderToStaticMarkup(<>{render({ ...node.props, puck: {} })}</>);
+  return renderToStaticMarkup(render({ ...node.props, puck: {} }));
 }
 
 describe("a kind's look, for every kind that holds one (3.12, #622)", () => {

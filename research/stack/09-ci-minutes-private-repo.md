@@ -19,41 +19,44 @@
 The figures come from every job of the last 1,000 workflow runs, the most the runs API returns for a date filter. That covers about three days. Collected with `gh api`; the scripts are listed in §7.
 
 **Activity in that window**
+
 - 113 PRs merged, from three stream sessions.
 - 333 CI runs on PRs, 242 of them on all three operating systems, plus 4 scheduled or manual runs.
 - 663 merge-queue runs.
 
 **Minutes used, each job rounded up**
 
-| | Minutes | Counted against the free minutes |
-|---|---|---|
-| Linux | 8,084 | 8,084 |
-| Windows | 6,281 | 12,562 |
-| macOS | 6,295 | **62,950 (75%)** |
-| **Total** | | **83,596** |
+|           | Minutes | Counted against the free minutes |
+| --------- | ------- | -------------------------------- |
+| Linux     | 8,084   | 8,084                            |
+| Windows   | 6,281   | 12,562                           |
+| macOS     | 6,295   | **62,950 (75%)**                 |
+| **Total** |         | **83,596**                       |
 
 **Per day:** about 26,000 counted minutes on a full working day (26 and 27 Oct), against 2,000 for a whole month. At this pace a private repository would use the month's allowance in under two hours.
 
 **One full run on all three operating systems**
+
 - About 29 Linux, 25.5 Windows and 25.5 macOS minutes.
 - That counts **336 minutes**, of which 255 are macOS. The free allowance covers about **six full runs a month**.
 
 **Where the time goes, by job**
 
-| Job | Minutes | Runs | Average |
-|---|---|---|---|
-| E2E, macOS (2 shards) | 4,267 | 510 | 8.4 |
-| E2E, Windows (2 shards) | 3,763 | 510 | 7.4 |
-| Storybook, Linux | 2,711 | 219 | 12.4 |
-| E2E, Linux | 2,331 | 255 | 9.1 |
-| Check, Windows | 1,932 | 261 | 7.4 |
-| Check, macOS | 1,483 | 261 | 5.7 |
-| Check, Linux | 1,356 | 261 | 5.2 |
-| Merge queue | 663 | 663 | 1.0 |
-| Packaged app, Windows / macOS | 586 / 545 | 261 each | 2.2 / 2.1 |
-| CI passed, Changes, Exported site, Audit | about 1,000 together | | about 1 each |
+| Job                                      | Minutes              | Runs     | Average      |
+| ---------------------------------------- | -------------------- | -------- | ------------ |
+| E2E, macOS (2 shards)                    | 4,267                | 510      | 8.4          |
+| E2E, Windows (2 shards)                  | 3,763                | 510      | 7.4          |
+| Storybook, Linux                         | 2,711                | 219      | 12.4         |
+| E2E, Linux                               | 2,331                | 255      | 9.1          |
+| Check, Windows                           | 1,932                | 261      | 7.4          |
+| Check, macOS                             | 1,483                | 261      | 5.7          |
+| Check, Linux                             | 1,356                | 261      | 5.2          |
+| Merge queue                              | 663                  | 663      | 1.0          |
+| Packaged app, Windows / macOS            | 586 / 545            | 261 each | 2.2 / 2.1    |
+| CI passed, Changes, Exported site, Audit | about 1,000 together |          | about 1 each |
 
 **Waste**
+
 - **Cancelled jobs:** 2,237 minutes, about 11%. Superseded pushes, and queue updates that arrive while a run is in flight.
 - **Failed jobs:** 934 minutes, about 5%.
 - **Re-runs:** 99 run attempts.
@@ -85,6 +88,7 @@ The figures come from every job of the last 1,000 workflow runs, the most the ru
 ### When the repository goes private: three set-ups
 
 **A. A self-hosted runner on the developer's PC, plus macOS once a week (CI-5)**
+
 - **Linux jobs** run in Docker on the Windows PC (Docker Desktop is already used for `pnpm visual:docker`). **Windows jobs** run natively on the same PC.
 - **macOS** runs once a week, either on GitHub's macOS runner or on one AWS Mac held for its 24-hour minimum (see below).
 - **Cost:**
@@ -96,6 +100,7 @@ The figures come from every job of the last 1,000 workflow runs, the most the ru
   - Security is acceptable for a private repository with collaborators only. A self-hosted runner must never serve a public repository's fork PRs.
 
 **B. Scheduled CI only (CI-6)**
+
 - Each PR is checked by the local `pnpm check` and `pnpm e2e` (and `pnpm visual:docker` when stories change), which streams already run before marking a PR ready.
 - CI on a PR is one small Linux job (`changes` plus static checks, about 5–7 minutes), or nothing, with "CI passed" not required.
 - **Schedule:**
@@ -107,26 +112,26 @@ The figures come from every job of the last 1,000 workflow runs, the most the ru
 
 **C. AWS-hosted self-hosted runners for all three operating systems**
 
-| | How it's billed | Rate (us-east-1, on demand) |
-|---|---|---|
-| Linux | A machine per job (c7i.xlarge, 4 vCPU, 8 GB), by the second | ~$0.18/h; ~$0.06/h on spot |
-| Windows | The same machine with AWS's Windows licence ($0.046 per vCPU-hour) | ~$0.36/h |
-| macOS | A dedicated Mac mini (mac2-m2.metal), held for at least 24 hours | ~$0.88/h (~$21/day each) |
+|         | How it's billed                                                    | Rate (us-east-1, on demand) |
+| ------- | ------------------------------------------------------------------ | --------------------------- |
+| Linux   | A machine per job (c7i.xlarge, 4 vCPU, 8 GB), by the second        | ~$0.18/h; ~$0.06/h on spot  |
+| Windows | The same machine with AWS's Windows licence ($0.046 per vCPU-hour) | ~$0.36/h                    |
+| macOS   | A dedicated Mac mini (mac2-m2.metal), held for at least 24 hours   | ~$0.88/h (~$21/day each)    |
 
 - **Measured job time:** about 36 Linux, 32 Windows and 32 macOS job-hours a day. Add 15–20% for start-up on Linux and Windows.
 - **Macs:** one gives at most 24 job-hours a day, and each run starts four macOS jobs at once. So it needs at least two Macs, and three or four to avoid queueing.
 
 **Estimated cost at today's pace**
 
-| | Per day | Per month |
-|---|---|---|
-| Linux, on demand (spot) | ~$7.50 (~$2.50) | ~$220 (~$75) |
-| Windows, on demand | ~$14 | ~$425 |
-| macOS, 2 Macs | ~$42 | ~$1,280 |
-| macOS, 4 Macs | ~$84 | ~$2,560 |
-| Storage and data transfer | ~$1–2 | ~$30–60 |
-| **Total with 2 Macs** | **~$65** | **~$1,950** |
-| **Total with 4 Macs** | **~$107** | **~$3,250** |
+|                           | Per day         | Per month    |
+| ------------------------- | --------------- | ------------ |
+| Linux, on demand (spot)   | ~$7.50 (~$2.50) | ~$220 (~$75) |
+| Windows, on demand        | ~$14            | ~$425        |
+| macOS, 2 Macs             | ~$42            | ~$1,280      |
+| macOS, 4 Macs             | ~$84            | ~$2,560      |
+| Storage and data transfer | ~$1–2           | ~$30–60      |
+| **Total with 2 Macs**     | **~$65**        | **~$1,950**  |
+| **Total with 4 Macs**     | **~$107**       | **~$3,250**  |
 
 - **Discounts:** a 1-year Compute Savings Plan takes about 30% off Linux and Windows.
 - **Cheaper variant:** Linux and Windows on demand, with macOS weekly on one Mac, comes to about $350–750 a month.
@@ -137,13 +142,13 @@ The figures come from every job of the last 1,000 workflow runs, the most the ru
 
 ## 5. Comparison
 
-| Set-up | GitHub minutes a month | Cash a month (today's pace) | macOS found | Maintenance |
-|---|---|---|---|---|
-| Stay public (today) | 0 | $0 | Before merge | None |
-| Private, as today, billed | ~800,000 counted | ~$5,000 | Before merge | None |
-| A. PC runner + macOS weekly | ~1,100 (GitHub Mac) or 0 | $0, or ~$90 for an AWS Mac | Within a week | PC on; one runner per OS |
-| B. Scheduled only | ~2,200 | $0–4 (Pro) | Within a week | Low; later feedback |
-| C. AWS for all three | 0 | ~$1,950–3,250 | Before merge | Scaler, images, AWS account |
+| Set-up                      | GitHub minutes a month   | Cash a month (today's pace) | macOS found   | Maintenance                 |
+| --------------------------- | ------------------------ | --------------------------- | ------------- | --------------------------- |
+| Stay public (today)         | 0                        | $0                          | Before merge  | None                        |
+| Private, as today, billed   | ~800,000 counted         | ~$5,000                     | Before merge  | None                        |
+| A. PC runner + macOS weekly | ~1,100 (GitHub Mac) or 0 | $0, or ~$90 for an AWS Mac  | Within a week | PC on; one runner per OS    |
+| B. Scheduled only           | ~2,200                   | $0–4 (Pro)                  | Within a week | Low; later feedback         |
+| C. AWS for all three        | 0                        | ~$1,950–3,250               | Before merge  | Scaler, images, AWS account |
 
 The cuts in §4 (CI-1…CI-4) lower every row: by an estimated 30–50% in A and C, and they're what makes B possible.
 
@@ -182,6 +187,7 @@ Current settings to remember: `FULL_CI_ENABLED` turns Windows and macOS off when
 ## 8. Update, 31 Oct 2026: CI-1 and CI-2 made, and the longest jobs sharded
 
 **Measured again, 28 Oct 10:53 → 31 Oct 07:25 UTC** (the same scripts): 126 CI runs, 440 merge-queue runs and 45 merged PRs, quieter after 28 Oct with Phase 3's end and the Phase 4 pause.
+
 - **Minutes:** 3,988 Linux, 3,239 Windows and 3,272 macOS, so 43,186 counted if billed, 76% of it macOS.
 - **Runs per PR:** 2.0 full runs per merged PR, about as before.
 - **Waste:**
@@ -190,6 +196,7 @@ Current settings to remember: `FULL_CI_ENABLED` turns Windows and macOS off when
 - **Merge queue:** the 15-minute schedule made 256 of the 440 runs.
 
 **Failures.** 20 runs failed. The flaky tests behind most of the re-runs are tracked as issues:
+
 - `theme-not-changed.spec.ts` (macOS, Linux and the nightly run on `main`);
 - `image.spec.ts` (macOS);
 - timing limits that slow runners miss: `check-cost.test.ts` on Windows, and opening budgets on macOS;
@@ -199,19 +206,20 @@ The real failures, caused by the PR itself, were sometimes run again unchanged, 
 
 **Job times:**
 
-| Job | Average (min) |
-|---|---|
-| Storybook | 17.4 |
-| E2E, Linux, one shard | 11.5 |
-| E2E, macOS, per shard | 10.7 |
-| E2E, Windows, per shard | 9.5 |
-| Check, Windows | 9.2 |
-| Check, macOS | 7.4 |
-| Check, Linux | 6.6 |
+| Job                     | Average (min) |
+| ----------------------- | ------------- |
+| Storybook               | 17.4          |
+| E2E, Linux, one shard   | 11.5          |
+| E2E, macOS, per shard   | 10.7          |
+| E2E, Windows, per shard | 9.5           |
+| Check, Windows          | 9.2           |
+| Check, macOS            | 7.4           |
+| Check, Linux            | 6.6           |
 
 On Windows and macOS, `Check` was the unit tests twice (`pnpm test`, then `pnpm test:compiled`) plus a 3-second licence check.
 
 **Done (PR "ci: unit tests on Linux for PRs, an hourly queue safety net, and two shards for Storybook and Linux E2E"):**
+
 - **CI-2:** Windows' and macOS' unit tests run nightly and in "Run workflow" runs, not on PRs. Their licence check moved into the packaged-app job. That's about 17 fewer minutes per full run, about 92 of the ~410 it would count if billed.
 - **CI-1, softened:** the merge queue's schedule runs hourly rather than every 15 minutes. It stays as a safety net because the `auto_merge_enabled` trigger has been missed before.
 - **Sharding, for run length rather than minutes:** Storybook and Linux's E2E run in two shards each, so neither of the two longest jobs holds up a PR as long. Shorter runs also mean fewer PRs are in flight when another merges.

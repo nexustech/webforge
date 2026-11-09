@@ -157,7 +157,7 @@ describe("spacing for the canvas's handles (1.32)", () => {
 
 describe("withAdvanced", () => {
   const html = (advanced: unknown) =>
-    renderToStaticMarkup(<>{withAdvanced(<h2 className="site-heading">Hi</h2>, advanced)}</>);
+    renderToStaticMarkup(withAdvanced(<h2 className="site-heading">Hi</h2>, advanced));
 
   it("adds the classes after the component's own, the attributes and the anchor as id", () => {
     expect(
@@ -174,11 +174,9 @@ describe("withAdvanced", () => {
   it("leaves the component's own attributes as it wrote them (#650)", () => {
     expect(
       renderToStaticMarkup(
-        <>
-          {withAdvanced(<div data-interval="5000" tabIndex={-1} />, {
-            attributes: { "data-interval": "1", tabindex: "0", "data-track": "hero" },
-          })}
-        </>,
+        withAdvanced(<div data-interval="5000" tabIndex={-1} />, {
+          attributes: { "data-interval": "1", tabindex: "0", "data-track": "hero" },
+        }),
       ),
     ).toBe('<div data-interval="5000" tabindex="-1" data-track="hero"></div>');
   });
@@ -188,7 +186,7 @@ describe("withAdvanced", () => {
     // Checked again here: an event handler never reaches a page, whatever the document holds.
     expect(html({ attributes: { onclick: "alert(1)" } })).toBe('<h2 class="site-heading">Hi</h2>');
     expect(html({ anchorId: "Not valid" })).toBe('<h2 class="site-heading">Hi</h2>');
-    expect(renderToStaticMarkup(<>{withAdvanced("text", { className: "x" })}</>)).toBe("text");
+    expect(renderToStaticMarkup(withAdvanced("text", { className: "x" }))).toBe("text");
   });
 });
 
@@ -265,14 +263,12 @@ describe("colorClass (1.37, ADR 0009)", () => {
     if (heading === undefined) throw new Error("no Heading");
     const html = (color: string) =>
       renderToStaticMarkup(
-        <>
-          {heading.render({
-            values: { ...heading.defaults, text: "Hi", color },
-            slots: {},
-            context: EDITOR_RENDER_CONTEXT,
-            id: "h",
-          })}
-        </>,
+        heading.render({
+          values: { ...heading.defaults, text: "Hi", color },
+          slots: {},
+          context: EDITOR_RENDER_CONTEXT,
+          id: "h",
+        }),
       );
 
     expect(html("primary-300/80")).toContain("text-primary-300/80");

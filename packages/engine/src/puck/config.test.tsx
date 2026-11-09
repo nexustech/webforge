@@ -179,9 +179,7 @@ describe("toPuckConfig", () => {
       children: ReactNode;
     }) => ReactNode;
 
-    renderToStaticMarkup(
-      <>{render({ puck: { isEditing: true, renderDropZone }, children: null })}</>,
-    );
+    renderToStaticMarkup(render({ puck: { isEditing: true, renderDropZone }, children: null }));
     // Marked, so a theme's sections can alternate on the canvas as on the page (2.13d).
     expect(renderDropZone).toHaveBeenCalledWith({
       zone: ROOT_ZONE,
@@ -191,7 +189,7 @@ describe("toPuckConfig", () => {
 
     // Static HTML has Puck's own top level.
     const html = renderToStaticMarkup(
-      <>{render({ puck: { isEditing: false, renderDropZone }, children: <p>page</p> })}</>,
+      render({ puck: { isEditing: false, renderDropZone }, children: <p>page</p> }),
     );
     expect(html).toBe("<p>page</p>");
     expect(renderDropZone).toHaveBeenCalledTimes(1);

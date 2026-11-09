@@ -5,12 +5,15 @@
 - Related: #652, security review S5, S7, S8 ([2026-10-30](../reviews/2026-10-30-security-review.md)) and S33 ([2026-11-08](../reviews/2026-11-08-security-review-2.md)), [architecture §3 and §9](../../spec/01-architecture.md), Electron's security checklist (item 18), [ADR 0004](0004-puck-with-webforge-history.md), [ADR 0019](0019-code-trust.md)
 
 ## Context
+
 The packaged editor and the Help window loaded their pages from `file://` (`loadFile`). Electron's `GrantFileProtocolExtraPrivileges` fuse was on, as it is by default. That left three gaps of defence in depth:
+
 - **S5:** a `file://` page may `fetch` other `file://` URLs, and its CSP's `'self'` very likely matches them. A script that got into the renderer could read any of the person's files and send them out, which defeats §3's "the renderer never names a file".
 - **S7, S33:** `isAppUrl` and `isHelpPageUrl` compared a `file:` URL's path, never its host. `file://attacker.example/<install path>/index.html` passed every sender check and navigation guard. On Windows it opens as a network share.
 - **S8:** §3 and §9 said the canvas iframe is sandboxed. It isn't. Puck's `AutoFrame` is a same-origin `<iframe srcDoc>`, and the engine reaches into it: selection, inline text editing, the canvas's styles and the history keys (ADR 0004). A script running in the canvas would have the editor's origin, so it could call `parent.webforge`, the whole preload API.
 
 ## Decision
+
 1. **The packaged app's pages come from a scheme of its own:** `webforge-app://editor/index.html` and `help.html`, never `file://`.
    - The scheme is registered before "ready" as standard and secure, with `fetch`. Its pages get an origin of their own, which `'self'` in the CSP names.
    - `webforge-app` is named like the app's other schemes, `webforge-media` and `webforge-font`, rather than the review's `app://`.
@@ -24,6 +27,7 @@ The packaged editor and the Help window loaded their pages from `file://` (`load
    - `zz-security-customcode-2-…test.tsx` records the frame as it is. A sandbox there would mean revisiting this decision.
 
 ## Consequences
+
 - A script in the renderer can no longer read the computer's files, and a foreign host's page is never the app's. E2E checks both: `smoke.spec.ts` in the built app, and `packaged-app.spec.ts` in the packaged one, with the fuse.
 - The canvas's frame inherits the editor's origin, as before. Fonts and Media keep their own schemes, which allow any origin.
 - Anything that loads a page of the app's uses `appPageUrl`, and a new kind of file in the renderer's build needs its type in `app-scheme.ts`.

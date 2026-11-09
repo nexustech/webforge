@@ -1210,14 +1210,12 @@ describe("edit-only previews (UX-26)", () => {
     if (header === undefined) throw new Error("No Header");
     const draw = (previews: EditPreviews) =>
       renderToStaticMarkup(
-        <>
-          {header.render({
-            id: "header",
-            values: header.defaults,
-            slots: {},
-            context: { ...context, previews },
-          })}
-        </>,
+        header.render({
+          id: "header",
+          values: header.defaults,
+          slots: {},
+          context: { ...context, previews },
+        }),
       );
 
     expect(draw({ mobileMenu: true })).toContain(
@@ -1231,14 +1229,12 @@ describe("edit-only previews (UX-26)", () => {
     if (column === undefined) throw new Error("No Column");
     const draw = (previews: EditPreviews) =>
       renderToStaticMarkup(
-        <>
-          {column.render({
-            id: "column",
-            values: column.defaults,
-            slots: { content: () => null },
-            context: { ...context, previews },
-          })}
-        </>,
+        column.render({
+          id: "column",
+          values: column.defaults,
+          slots: { content: () => null },
+          context: { ...context, previews },
+        }),
       );
 
     expect(draw({ columnOutlines: true })).toContain(

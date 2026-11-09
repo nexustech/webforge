@@ -1,4 +1,5 @@
 ---
+
 id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide and rename it.
@@ -31,14 +32,14 @@ The toolbar at the bottom has **Move up**, **Move down**, **Duplicate**, **Hide*
 
 ## Keys in Layers
 
-| Keys | What they do |
-|---|---|
-| ↑ ↓ | Previous or next row |
-| → ← | Open or close a row |
-| Ctrl+↑ · Ctrl+↓ | What contains it · the first thing inside it |
-| Ctrl+← · Ctrl+→ | The previous or next item beside it |
-| Ctrl+Alt+↑ · Ctrl+Alt+↓, or Alt+↑ · Alt+↓ | Move it up or down |
-| F2 | Rename |
-| Delete or Backspace | Delete |
+| Keys                                      | What they do                                 |
+| ----------------------------------------- | -------------------------------------------- |
+| ↑ ↓                                       | Previous or next row                         |
+| → ←                                       | Open or close a row                          |
+| Ctrl+↑ · Ctrl+↓                           | What contains it · the first thing inside it |
+| Ctrl+← · Ctrl+→                           | The previous or next item beside it          |
+| Ctrl+Alt+↑ · Ctrl+Alt+↓, or Alt+↑ · Alt+↓ | Move it up or down                           |
+| F2                                        | Rename                                       |
+| Delete or Backspace                       | Delete                                       |
 
 On a Mac, use Cmd instead of Ctrl.

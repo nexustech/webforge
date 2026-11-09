@@ -80,7 +80,7 @@ describe("useGesture", () => {
   it("cancels a drag still in progress when the control goes away", async () => {
     controls.update(setName("A"));
 
-    await act(async () => root.render(<></>));
+    await act(async () => root.render(null));
 
     expect(name()).toBe("My site");
     expect(session.cancelGesture()).toBe(false);
