@@ -13,7 +13,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import electronFuses from "@electron/fuses";
+import { FuseState, FuseV1Options, getCurrentFuseWire } from "@electron/fuses";
 import { type Browser, chromium, expect, type Page, test } from "@playwright/test";
 import { FORMAT_VERSION, ProjectStore } from "@webforge/storage";
 import { BLANK_TEMPLATE_ID, TEMPLATE_IDS } from "@webforge/templates";
@@ -151,34 +151,27 @@ test.afterAll(async () => {
   await rm(siteDir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 });
 
-// CommonJS, whose exports Node's ESM loader can't name: taken from its default export.
-const { FuseV1Options, getCurrentFuseWire } = electronFuses;
-
-/** A fuse on the wire: the character "1" when on, "0" when off (its `FuseState`, not exported). */
-const FUSE_ON = 0x31;
-const FUSE_OFF = 0x30;
-
 /**
  * Every fuse of Electron's wire, by its place on it (electronjs.org/docs/latest/tutorial/fuses),
  * and whether the packaged app has it on: as architecture §3 and `electron-builder.yml` require,
  * or Electron's default where the app leaves it. A fuse a newer Electron adds fails the test
  * until it's decided here.
  */
-const FUSES: readonly (readonly [index: number, name: string, on: boolean])[] = [
-  [0, "RunAsNode", false],
-  [1, "EnableCookieEncryption", true],
-  [2, "EnableNodeOptionsEnvironmentVariable", false],
-  [3, "EnableNodeCliInspectArguments", false],
-  [4, "EnableEmbeddedAsarIntegrityValidation", true],
-  [5, "OnlyLoadAppFromAsar", true],
-  // Electron's default, which the app leaves.
-  [6, "LoadBrowserProcessSpecificV8Snapshot", false],
-  // No page loads from file:// (#652, S5).
-  [7, "GrantFileProtocolExtraPrivileges", false],
-  // Electron's default, which the app leaves: WebAssembly's bounds checked by V8's trap handlers.
-  // Newer than @electron/fuses 1.8.0, which doesn't name it.
-  [8, "WasmTrapHandlers", true],
-];
+const FUSES: readonly (readonly [index: number, name: keyof typeof FuseV1Options, on: boolean])[] =
+  [
+    [0, "RunAsNode", false],
+    [1, "EnableCookieEncryption", true],
+    [2, "EnableNodeOptionsEnvironmentVariable", false],
+    [3, "EnableNodeCliInspectArguments", false],
+    [4, "EnableEmbeddedAsarIntegrityValidation", true],
+    [5, "OnlyLoadAppFromAsar", true],
+    // Electron's default, which the app leaves.
+    [6, "LoadBrowserProcessSpecificV8Snapshot", false],
+    // No page loads from file:// (#652, S5).
+    [7, "GrantFileProtocolExtraPrivileges", false],
+    // Electron's default, which the app leaves: WebAssembly's bounds checked by V8's trap handlers.
+    [8, "WasmTrapHandlers", true],
+  ];
 
 test("is fused as architecture §3 requires, read from the packaged executable (S15, #655)", async () => {
   test.skip(executable === undefined, "Linux is not a release target");
@@ -186,14 +179,15 @@ test("is fused as architecture §3 requires, read from the packaged executable (
   const wire: Readonly<Record<string, unknown>> = await getCurrentFuseWire(executable);
   // Each by name, so a failure says which fuse is wrong.
   expect(Object.fromEntries(FUSES.map(([index, name]) => [name, wire[index]]))).toEqual(
-    Object.fromEntries(FUSES.map(([, name, on]) => [name, on ? FUSE_ON : FUSE_OFF])),
+    Object.fromEntries(
+      FUSES.map(([, name, on]) => [name, on ? FuseState.ENABLE : FuseState.DISABLE]),
+    ),
   );
   // No fuse beyond those: the wire's fuses are numbered.
   expect(Object.keys(wire).filter((key) => /^\d+$/.test(key))).toHaveLength(FUSES.length);
-  // Where @electron/fuses names a fuse, at the same place.
+  // Each named as @electron/fuses names it, at the same place.
   for (const [index, name] of FUSES) {
-    const named = (FuseV1Options as unknown as Record<string, number | undefined>)[name];
-    if (named !== undefined) expect(named, name).toBe(index);
+    expect(FuseV1Options[name], name).toBe(index);
   }
 });
 
