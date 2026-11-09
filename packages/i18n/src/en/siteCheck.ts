@@ -62,9 +62,21 @@ export const siteCheck = {
   "siteCheck.rule.privacyPage.pass":
     "The site has a privacy page, or doesn't collect visitors' details",
   "siteCheck.rule.privacyPage.fail.one":
-    "The site collects visitors' details, through a form or Google Analytics, but has no privacy page to say what you do with them",
+    "The site collects visitors' details, through a form, a newsletter signup or Google Analytics, but has no privacy page to say what you do with them",
   "siteCheck.rule.privacyPage.fail.other":
-    "The site collects visitors' details, through a form or Google Analytics, but has no privacy page to say what you do with them",
+    "The site collects visitors' details, through a form, a newsletter signup or Google Analytics, but has no privacy page to say what you do with them",
+  "siteCheck.rule.buyButtonLinks": "Buy buttons",
+  "siteCheck.rule.buyButtonLinks.pass": "Every Buy button has a payment link",
+  "siteCheck.rule.buyButtonLinks.fail.one":
+    "1 Buy button has no payment link, so your site leaves it out",
+  "siteCheck.rule.buyButtonLinks.fail.other":
+    "{count} Buy buttons have no payment link, so your site leaves them out",
+  "siteCheck.rule.buyButtonHttps": "Secure payment links",
+  "siteCheck.rule.buyButtonHttps.pass": "Every payment link starts with https://",
+  "siteCheck.rule.buyButtonHttps.fail.one":
+    "1 Buy button's payment link doesn't start with https://, so your site leaves the button out",
+  "siteCheck.rule.buyButtonHttps.fail.other":
+    "{count} Buy buttons' payment links don't start with https://, so your site leaves the buttons out",
   "siteCheck.rule.missingImages": "Missing images",
   "siteCheck.rule.missingImages.pass": "Every image is in Media",
   "siteCheck.rule.missingImages.fail.one": "1 image was deleted from Media",
