@@ -3,7 +3,7 @@ import type { McpAddResult, McpInstallResult, McpStatus } from "../shared/ipc/mc
 import type { ClaudeExtensions } from "./claude-extension.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
-import { MCP_HOST, MCP_PATH } from "./mcp-listener.js";
+import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import type { McpService } from "./mcp-service.js";
 
 /** The address AI apps reach Webforge at on `port`. */

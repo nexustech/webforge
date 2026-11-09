@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
-import { withRunnableCode } from "@webforge/pipeline";
+import { withRunnableCode } from "@webforge/pipeline/light";
 import { z } from "zod";
 import { createJsonStore, type JsonStoreFiles } from "./json-store.js";
 import { logFailure } from "./log.js";

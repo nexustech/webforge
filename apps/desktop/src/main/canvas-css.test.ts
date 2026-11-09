@@ -101,6 +101,62 @@ describe("createCanvasStyles' compileCss", () => {
   });
 });
 
+describe("createCanvasStyles' start, while the editor loads (#894)", () => {
+  it("starts the worker without a job, and the first request uses it", async () => {
+    const fake = fakeWorker();
+    const start = vi.fn(() => fake.worker);
+    const styles = createCanvasStyles(start);
+
+    styles.start();
+    expect(start).toHaveBeenCalledOnce();
+    expect(fake.sent).toEqual([]);
+    // Started once, however often asked.
+    styles.start();
+    const result = styles.compileCss(request(["btn"]));
+    await vi.waitFor(() => expect(fake.jobs).toHaveLength(1));
+    fake.answer({ type: "css", id: fake.jobs[0]?.id, css: ".btn{}", bodyClass: "x" });
+
+    expect(await result).toEqual({ status: "compiled", css: ".btn{}", bodyClass: "x" });
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it("starts a new worker for the first request when the early one exits before it", async () => {
+    const early = fakeWorker();
+    const next = fakeWorker();
+    const start = vi.fn().mockReturnValueOnce(early.worker).mockReturnValueOnce(next.worker);
+    const styles = createCanvasStyles(start);
+
+    styles.start();
+    early.exit();
+    const result = styles.compileCss(request(["btn"]));
+    await vi.waitFor(() => expect(next.jobs).toHaveLength(1));
+    next.answer({ type: "css", id: next.jobs[0]?.id, css: ".btn{}", bodyClass: "x" });
+
+    expect(await result).toMatchObject({ status: "compiled" });
+    expect(early.jobs).toEqual([]);
+    expect(start).toHaveBeenCalledTimes(2);
+  });
+
+  it("tries again with the first request when the early worker can't start", async () => {
+    const fake = fakeWorker();
+    const start = vi
+      .fn()
+      .mockImplementationOnce(() => {
+        throw new Error("no process");
+      })
+      .mockReturnValueOnce(fake.worker);
+    const styles = createCanvasStyles(start);
+
+    expect(() => styles.start()).not.toThrow();
+    const result = styles.compileCss(request(["btn"]));
+    await vi.waitFor(() => expect(fake.jobs).toHaveLength(1));
+    fake.answer({ type: "css", id: fake.jobs[0]?.id, css: ".btn{}", bodyClass: "x" });
+
+    expect(await result).toMatchObject({ status: "compiled" });
+    expect(start).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("createCanvasStyles' compileCss after a timeout", () => {
   it("doesn't let the stopped worker's exit fail the new worker's requests", async () => {
     vi.useFakeTimers();
@@ -202,6 +258,7 @@ describe("registerCanvasHandlers", () => {
       classCatalogue: vi.fn(),
       classCss: vi.fn(),
       itemHtml: vi.fn(),
+      start: vi.fn(),
     });
     const handler = handlers.get("canvas:compile-css");
     const from = (url: string) => ({ senderFrame: { url } }) as unknown as IpcMainInvokeEvent;

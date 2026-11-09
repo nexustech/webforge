@@ -7,7 +7,7 @@ export type {
   BuiltSite,
   OutputOptions,
 } from "./build.js";
-export { BuildError, buildSite, PREVIEW_STYLESHEET } from "./build.js";
+export { BuildError, buildSite } from "./build.js";
 export { type ClassCatalogue, loadClassCatalogue } from "./class-catalogue.js";
 export type { SiteCssOptions, StyleResources } from "./css.js";
 export { buildSiteCss, classCandidates } from "./css.js";
@@ -23,6 +23,7 @@ export type {
   PipelineOptions,
 } from "./pipeline.js";
 export { createPipeline } from "./pipeline.js";
+export { PREVIEW_STYLESHEET } from "./preview-stylesheet.js";
 export type {
   CodecBytes,
   CodecModules,

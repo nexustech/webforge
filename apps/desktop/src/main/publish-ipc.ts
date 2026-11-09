@@ -8,7 +8,7 @@ import {
   type FileTransferTrust,
   PRIVATE_KEY_MAX,
 } from "@webforge/model";
-import { describePrivateKey, PublishError, publisherFor, readSftpHostKey } from "@webforge/publish";
+import { PublishError } from "@webforge/publish/light";
 import type { IpcMain } from "electron";
 import type {
   ConnectionResult,
@@ -98,15 +98,22 @@ export async function testConnection(
 }
 
 /**
+ * The FTP and SFTP publishers, with ssh2 and basic-ftp, loaded the first time they're needed rather
+ * than with main at start-up (#892): publishing itself runs in the export worker.
+ */
+const fileTransfer = () => import("@webforge/publish");
+
+/**
  * Test connection with a sign-in main holds: typed for this test, or saved for the destination
  * (4.4a). Through the publisher the destination publishes with (`publisherFor`).
  */
-export function testSignIn(
+export async function testSignIn(
   destination: FileTransferDestination,
   signIn: FileTransferSignIn,
   trust: FileTransferTrust,
   timeoutMs = TIMEOUT_MS,
 ): Promise<ConnectionResult> {
+  const { publisherFor } = await fileTransfer();
   return publisherFor({ kind: "file-transfer", settings: destination }, signIn, trust, {
     timeoutMs,
   }).test();
@@ -119,6 +126,7 @@ export async function readHostKey(
   timeoutMs = TIMEOUT_MS,
 ): Promise<HostKeyResult> {
   try {
+    const { readSftpHostKey } = await fileTransfer();
     return { status: "read", hostKey: await readSftpHostKey(host, port, timeoutMs) };
   } catch (error) {
     return { status: "failed", code: error instanceof PublishError ? error.code : "failed" };
@@ -133,6 +141,7 @@ export async function readKeyFile(path: string, keys: KeyFiles): Promise<KeyFile
   try {
     if ((await stat(path)).size > PRIVATE_KEY_MAX) return { status: "failed", reason: "too-large" };
     const privateKey = await readFile(path, "utf8");
+    const { describePrivateKey } = await fileTransfer();
     const kind = describePrivateKey(privateKey);
     if (kind === "not-a-key" || kind === "unsupported") return { status: "failed", reason: kind };
     return {

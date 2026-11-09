@@ -4,10 +4,11 @@ import { sampleSite } from "@webforge/test-utils";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import * as tailwind from "tailwindcss";
 import { beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
-import { type BuiltSite, buildSite, PREVIEW_STYLESHEET } from "../src/build.js";
+import { type BuiltSite, buildSite } from "../src/build.js";
 import { createMemoryImageCache } from "../src/memory-image-cache.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import { createPipeline, type Pipeline, type PipelineEvent } from "../src/pipeline.js";
+import { PREVIEW_STYLESHEET } from "../src/preview-stylesheet.js";
 import type { PipelineResources } from "../src/resources.js";
 
 // Counts the pages rendered, to tell a cached page from a rendered one.
