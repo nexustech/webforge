@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -20,6 +27,15 @@ test.beforeEach(() => {
 });
 
 test.afterEach(async () => {
+  const testInfo = test.info();
+  // A start that failed when it shouldn't have: the app's local crash reports, which give the
+  // error's name and frames, never its message, show what failed (a read, or the editor's code).
+  if (testInfo.status !== testInfo.expectedStatus) {
+    const reports = join(dir, "user-data", "crash-reports");
+    for (const name of existsSync(reports) ? readdirSync(reports) : []) {
+      console.log(`Crash report ${name}:\n${readFileSync(join(reports, name), "utf8")}`);
+    }
+  }
   await app?.close();
   app = undefined;
   await rm(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
