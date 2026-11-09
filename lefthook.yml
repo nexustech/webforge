@@ -4,7 +4,9 @@
 pre-commit:
   jobs:
     - name: biome
-      glob: "*.{js,mjs,cjs,ts,tsx,json,jsonc,css}"
+      # Every kind of file `pnpm lint` (`biome ci .`) checks, Markdown and YAML included: CI skips
+      # its Check job on docs-only PRs, so a badly formatted .md would otherwise reach main.
+      glob: "*.{js,mjs,cjs,ts,tsx,json,jsonc,css,md,yml,yaml}"
       run: pnpm exec biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
       stage_fixed: true
 
