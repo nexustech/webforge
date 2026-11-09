@@ -531,10 +531,13 @@ describe("ShellLayout", () => {
         tab.focus();
       });
 
-      const tooltip = await screen.findByRole("tooltip");
-      expect(tooltip.textContent).toBe("Version HistorySaved copies of your whole site.");
+      // It shows the name over the purpose, and describes the tab by the purpose alone: the
+      // name is the tab's already, and would be read twice.
+      await screen.findByRole("tooltip");
+      const shown = document.querySelector('[data-slot="tooltip-content"]');
+      expect(shown?.textContent).toContain("Version HistorySaved copies of your whole site.");
       const described = tab.getAttribute("aria-describedby");
-      expect(described === null ? null : document.getElementById(described)?.textContent).toContain(
+      expect(described === null ? null : document.getElementById(described)?.textContent).toBe(
         "Saved copies of your whole site.",
       );
     });

@@ -114,7 +114,8 @@ function IconTab({
           <Icon />
         </TooltipTrigger>
       </TabsTrigger>
-      <TooltipContent side="bottom" className="max-w-56">
+      {/* The tab is named by its title already: what the panel is for alone describes it. */}
+      <TooltipContent side="bottom" className="max-w-56" aria-label={panel.description}>
         <p className="font-semibold">{panel.title}</p>
         {panel.description === undefined ? null : (
           <p className="text-muted-foreground">{panel.description}</p>
