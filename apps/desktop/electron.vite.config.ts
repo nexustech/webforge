@@ -7,6 +7,7 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { buildBridge } from "@webforge/mcp-bridge/build";
+import { moduleSideEffects } from "@webforge/tools/bundle-side-effects";
 import {
   collectNotices,
   dependencyDirs,
@@ -340,6 +341,9 @@ export default defineConfig(({ command }) => {
       ...(devNonce === undefined ? {} : { html: { cspNonce: devNonce } }),
       build: {
         rolldownOptions: {
+          // Webforge's own modules are left out when nothing they export is used, so the start
+          // screen's first bundle holds none of the editor's code (#896).
+          treeshake: { moduleSideEffects },
           // The editor's page, and the Help window's (5.4b), each with the same policy.
           input: {
             index: fileURLToPath(new URL("src/renderer/index.html", import.meta.url)),

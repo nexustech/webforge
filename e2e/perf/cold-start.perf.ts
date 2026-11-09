@@ -26,6 +26,9 @@ import { createFromTemplate, TEMPLATES } from "../app/templates.js";
 // attached through the inspector, and slows the main process: here Webforge runs as it does for a
 // person, with only Chromium's DevTools port open (on this computer only) to read the editor.
 //
+// Launches without a site are timed too, to the start screen's first render (#896): what someone
+// opening Webforge from its icon waits for.
+//
 // The first launch, on a new profile, is kept apart from the later ones: it has no code cache and
 // no GPU cache yet. The operating system's file cache can't be emptied from here, so even the first
 // launch reads a build that was just read; a launch after a reboot is slower still.
@@ -60,7 +63,7 @@ const STAGES = [
   ["firstContentfulPaint", "first contentful paint", "navigationStart"],
   ["domInteractive", "domInteractive", "navigationStart"],
   ["domContentLoaded", "DOMContentLoaded", "domInteractive"],
-  ["firstRender", "editor's first render", "navigationStart"],
+  ["firstRender", "first render", "navigationStart"],
   ["canvasStyled", "styled canvas", "navigationStart"],
 ] as const;
 
@@ -184,15 +187,21 @@ async function rendererStages(page: Page, launchedAt: number): Promise<Stages> {
 }
 
 /**
- * Launches Webforge with the site, as a double-click does, on `userData`'s profile; times it to a
- * styled canvas, then closes it as the person does.
+ * Launches Webforge on `userData`'s profile, with the site as a double-click does, or without one
+ * as its icon does (`site: false`); times it to a styled canvas, or to the start screen's first
+ * render, then closes it as the person does.
  */
-async function timeLaunch(userData: string): Promise<Stages> {
+async function timeLaunch(userData: string, { site = true } = {}): Promise<Stages> {
   const { executablePath, env } = electronCommand();
   const launchedAt = Date.now();
   const child = spawn(
     executablePath,
-    [desktopDir, `--user-data-dir=${userData}`, "--remote-debugging-port=0", sitePath],
+    [
+      desktopDir,
+      `--user-data-dir=${userData}`,
+      "--remote-debugging-port=0",
+      ...(site ? [sitePath] : []),
+    ],
     { cwd: desktopDir, env, stdio: ["ignore", "pipe", "pipe"] },
   );
   const output = watchOutput(child);
@@ -223,10 +232,13 @@ async function timeLaunch(userData: string): Promise<Stages> {
     page = connected.contexts().flatMap((context) => context.pages())[0];
     if (page === undefined) throw new Error("Webforge has no window");
     await page.waitForFunction(
-      () => performance.getEntriesByName("webforge:canvas-styled").length > 0,
-      undefined,
+      (mark) => performance.getEntriesByName(mark).length > 0,
+      site ? "webforge:canvas-styled" : "webforge:first-render",
       { timeout: LAUNCH_WAIT_MS, polling: 100 },
     );
+    if (!site) {
+      await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible();
+    }
     const [, line = ""] = await output.find(/Webforge start-up \(([^)]*)\)/);
     return { ...mainStages(line, launchedAt), ...(await rendererStages(page, launchedAt)) };
   } finally {
@@ -309,12 +321,27 @@ test(`a cold start reaches an editable canvas of a 5-page site (§10, ${BUDGET_M
   }
   const later = summarise(launches);
 
+  // Without a site, to the start screen (#896), on a profile of its own.
+  const startData = join(dir, "start-screen");
+  writeTestPreferences(startData);
+  const startFirst = await timeLaunch(startData, { site: false });
+  const startLaunches: Stages[] = [];
+  for (let launch = 0; launch < LATER_LAUNCHES; launch++) {
+    startLaunches.push(await timeLaunch(startData, { site: false }));
+  }
+  const startScreen = {
+    first: startFirst,
+    later: summarise(startLaunches),
+    launches: startLaunches,
+  };
+
   mkdirSync(join(RESULTS, ".."), { recursive: true });
   writeFileSync(
     RESULTS,
-    `${JSON.stringify({ site: TEMPLATE.title, budgetMs: BUDGET_MS, first, later, launches }, null, 2)}\n`,
+    `${JSON.stringify({ site: TEMPLATE.title, budgetMs: BUDGET_MS, first, later, launches, startScreen }, null, 2)}\n`,
   );
   console.log(`Cold start, ${TEMPLATE.title}'s site:\n${table(first, launches)}`);
+  console.log(`Cold start, no site, to the start screen:\n${table(startFirst, startLaunches)}`);
 
   for (const [name, stages] of [
     ["first", first],
@@ -324,6 +351,14 @@ test(`a cold start reaches an editable canvas of a 5-page site (§10, ${BUDGET_M
       // Every stage happens with a site: none may be missing.
       expect(stages[stage], `${name} launch: ${stage}`).toBeGreaterThan(0);
     }
+  }
+  for (const [name, stages] of [
+    ["first", startFirst],
+    ...startLaunches.map((stages, index) => [`later ${index + 1}`, stages] as const),
+  ] as const) {
+    // Without a site: the start screen's first render, and no canvas.
+    expect(stages.firstRender, `${name} launch without a site`).toBeGreaterThan(0);
+    expect(stages.canvasStyled, `${name} launch without a site`).toBeUndefined();
   }
 
   // Recorded, not failed yet: the review measured 5–8 s from launch to a styled canvas, so failing
