@@ -13,10 +13,16 @@ export const APP_SCHEME = "webforge-app";
 /** The one host of {@link APP_SCHEME}: the folder of the built renderer. */
 const APP_HOST = "editor";
 
-/** How the scheme is registered before "ready": a standard, secure origin that may `fetch`. */
+/**
+ * How the scheme is registered before "ready": a standard, secure origin that may `fetch`, and
+ * whose scripts V8 keeps compiled in the profile's code cache (#893, ADR 0023): without it, the
+ * editor's 7 MB of JavaScript is compiled again at every start. Blink checks each entry against a
+ * SHA-256 of the script's text and drops one that doesn't match, so an update's scripts never run
+ * an old entry. The privilege grants a page nothing else.
+ */
 export const APP_SCHEME_PRIVILEGES = {
   scheme: APP_SCHEME,
-  privileges: { standard: true, secure: true, supportFetchAPI: true },
+  privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true },
 } as const;
 
 /** The address of the renderer's page `file` (`index.html`, `help.html`). */

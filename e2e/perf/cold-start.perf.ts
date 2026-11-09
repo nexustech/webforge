@@ -45,7 +45,8 @@ const RESULTS = join(import.meta.dirname, "../perf-results/cold-start.json");
 /**
  * Each stage of a start-up, in order, how the table names it, and the stage its step is timed
  * from, as the review's table has them: the main process's from the stage before, the editor's
- * from its page's navigation.
+ * from its page's navigation, but `DOMContentLoaded` from `domInteractive`: the editor's scripts
+ * loading and running, which a code cache shortens (#893).
  */
 const STAGES = [
   ["processStart", "process started", undefined],
@@ -57,7 +58,8 @@ const STAGES = [
   ["navigationStart", "page navigation", "windowCreated"],
   ["firstPaint", "first paint", "navigationStart"],
   ["firstContentfulPaint", "first contentful paint", "navigationStart"],
-  ["domContentLoaded", "DOMContentLoaded", "navigationStart"],
+  ["domInteractive", "domInteractive", "navigationStart"],
+  ["domContentLoaded", "DOMContentLoaded", "domInteractive"],
   ["firstRender", "editor's first render", "navigationStart"],
   ["canvasStyled", "styled canvas", "navigationStart"],
 ] as const;
@@ -163,6 +165,8 @@ async function rendererStages(page: Page, launchedAt: number): Promise<Stages> {
       origin: performance.timeOrigin,
       firstPaint: first("first-paint"),
       firstContentfulPaint: first("first-contentful-paint"),
+      domInteractive:
+        navigation instanceof PerformanceNavigationTiming ? navigation.domInteractive : undefined,
       domContentLoaded:
         navigation instanceof PerformanceNavigationTiming
           ? navigation.domContentLoadedEventStart
