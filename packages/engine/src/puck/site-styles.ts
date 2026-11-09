@@ -10,6 +10,12 @@ export type SiteStyles = { readonly css: string; readonly bodyClass: string };
 const appliedBodyClasses = new WeakMap<Document, readonly string[]>();
 
 /**
+ * Whether this window's timeline has `webforge:canvas-styled`: when the canvas first showed the
+ * site with its CSS, ready to edit, the last stage of a start-up's timing (#891).
+ */
+let canvasStyledMarked = false;
+
+/**
  * Shows the site's own CSS in the canvas document (1.12): one `<style>` element, updated in place,
  * and the exported `<body>` classes. Puck's styles in the same document are left alone, and nothing
  * from the editor window is copied in (`syncHostStyles` stays off).
@@ -21,4 +27,8 @@ export function applySiteStyles(document: Document, styles: SiteStyles): void {
   document.body.classList.remove(...(appliedBodyClasses.get(document) ?? []));
   document.body.classList.add(...classes);
   appliedBodyClasses.set(document, classes);
+  if (!canvasStyledMarked) {
+    canvasStyledMarked = true;
+    performance.mark("webforge:canvas-styled");
+  }
 }
