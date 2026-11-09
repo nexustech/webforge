@@ -104,6 +104,7 @@ import {
 import { updatesFeature } from "./updates-ipc.js";
 import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
+  editorPageAddress,
   MIN_WINDOW_SIZE,
   mainWindowPlacement,
   titleBarOptions,
@@ -539,7 +540,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     lifecycle.flushOnClose?.install(window);
     // Help goes with the editor, so the app quits with it (5.4b).
     window.on("closed", () => helpWindows.close());
-    const load = window.loadURL(appUrl);
+    // In the person's theme from the first paint: the page's start-up screen reads it (#887).
+    const load = window.loadURL(editorPageAddress(appUrl, theme));
     // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
     load.catch((error: unknown) => {
       logFailure("Webforge could not load the editor window", error);
