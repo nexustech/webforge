@@ -86,7 +86,7 @@ describe("the shortcut standard (F-ED-27)", () => {
   });
 
   it("gives the canvas's outlines and element names keys nothing else has (#857)", () => {
-    const own = new Set([COMMAND_IDS.showOutlines, COMMAND_IDS.elementNames]);
+    const own = new Set<string>([COMMAND_IDS.showOutlines, COMMAND_IDS.elementNames]);
     expect(COMMAND_SHORTCUTS[COMMAND_IDS.showOutlines]?.keys).toEqual(["Mod+Shift+O"]);
     expect(COMMAND_SHORTCUTS[COMMAND_IDS.elementNames]?.keys).toEqual(["Mod+Shift+N"]);
     for (const mac of [true, false]) {
