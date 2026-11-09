@@ -295,6 +295,44 @@ describe("startApp", () => {
     expect(await fake.invoke("updates:status")).toEqual({ state: "idle" });
   });
 
+  it("follows Beta below 1.0.0 and Stable from it, until the person chooses in Settings (5.2)", async () => {
+    const followed = async (version: string) => {
+      const fake = fakeElectron();
+      fake.app.isPackaged = true;
+      fake.app.getVersion = () => version;
+      const channels: string[] = [];
+      vi.mocked(fake.parts.updater).mockResolvedValue({
+        check: async () => undefined,
+        onAvailable: () => undefined,
+        onDownloaded: () => undefined,
+        onError: () => undefined,
+        install: () => undefined,
+        setChannel: (channel: string) => {
+          channels.push(channel);
+        },
+      });
+      // A packaged Windows app, the one that updates itself (0.5a).
+      Object.defineProperty(process, "resourcesPath", { value: fake.userData, configurable: true });
+      const platform = Object.getOwnPropertyDescriptor(process, "platform");
+      Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+      try {
+        await fake.start();
+        await vi.waitFor(() => expect(channels).not.toEqual([]));
+        await fake.invoke("prefs:set", { theme: "light" });
+        await fake.invoke("prefs:set", { updateChannel: "stable" });
+        await fake.invoke("prefs:set", { updateChannel: "beta" });
+      } finally {
+        Reflect.deleteProperty(process, "resourcesPath");
+        if (platform !== undefined) Object.defineProperty(process, "platform", platform);
+      }
+      return channels;
+    };
+
+    // Nothing chosen: Beta before 1.0, as every build then is a prerelease; a choice after.
+    expect(await followed("0.9.0")).toEqual(["beta", "stable", "beta"]);
+    expect(await followed("1.0.0")).toEqual(["stable", "beta"]);
+  });
+
   it("answers the editor's calls: its name and version, and its theme in the window's colours", async () => {
     const fake = fakeElectron();
     await fake.start();

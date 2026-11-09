@@ -284,6 +284,20 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
     expect(showSettings).toHaveBeenCalledWith("site", "forms");
   });
 
+  it("asks for a privacy page when a form collects details, and its Fix adds one (#855)", async () => {
+    const site = siteWith({ content: [{ type: "ContactForm", props: { id: "write" } }] });
+    const { rule, session, showPanel } = setUp(site);
+    expect(rule("privacyPage").textContent).toContain("but has no privacy page");
+    expect(rule("privacyPage").textContent).toContain("Pages");
+
+    await userEvent.click(within(rule("privacyPage")).getByRole("button", { name: "Fix" }));
+
+    const shown = session.history.document.getState().pages[session.ui.getState().pageId];
+    expect(shown).toMatchObject({ title: "Privacy", settings: { privacy: true } });
+    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Added page 'Privacy'"]);
+    expect(showPanel).toHaveBeenCalledWith("site");
+  });
+
   it("stops the export for a file from another website, shown in Settings' Custom Code (3.9)", async () => {
     const site = siteWith({ content: [] });
     const { rule, showSettings } = setUp({

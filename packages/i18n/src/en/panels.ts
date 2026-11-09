@@ -27,6 +27,7 @@ export const panels = {
   "pages.add": "Add Page",
   "pages.addBlank": "Blank Page…",
   "pages.addSuggested": "Suggested Pages",
+  "pages.addPrivacy": "Privacy Page",
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
   "pages.hiddenFromNavigation": "Hidden from navigation",
@@ -91,7 +92,7 @@ export const panels = {
   "add.point.start": "Choose a section to add at the top of the page.",
   "add.point.after": "Choose a section to add after {item}.",
   "add.point.cancel": "Cancel",
-  // Layers (F-ED-12, Advanced).
+  // Layers (F-ED-12), in Simple and Advanced mode (ADR 0011).
   "layers.title": "Layers",
   "layers.empty": "This page has no sections yet. Add one from the canvas.",
   "layers.toolbar": "Layer actions",
@@ -233,6 +234,9 @@ export const panels = {
   "pageSettings.hideFromSearchHint":
     "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide from navigation is for your menu; this is for search.",
   "pageSettings.hideBackToTop": "Hide the back-to-top button on this page",
+  "pageSettings.privacy": "This is the site's privacy page",
+  "pageSettings.privacyHint":
+    "Site Check asks for a privacy page when the site has a form or Google Analytics.",
   // The page as a search result and when shared, as the export writes it (3.16, SEO-6, G22).
   "pageSettings.preview.search": "In search results",
   "pageSettings.preview.hint":

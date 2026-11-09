@@ -104,6 +104,8 @@ export function describePlace(
     }
     case "page":
       return pageName(site, place.pageId);
+    case "pages":
+      return t("siteCheck.place.pages");
     case "media":
       return String(values.name ?? site.media[place.mediaId]?.fileName ?? place.mediaId);
     case "theme":

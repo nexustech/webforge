@@ -41,6 +41,7 @@ const actions: PagesPanelActions = {
   show: noop,
   add: noop,
   addSuggested: noop,
+  addPrivacy: noop,
   rename: noop,
   duplicate: noop,
   move: noop,

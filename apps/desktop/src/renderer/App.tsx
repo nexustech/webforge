@@ -152,6 +152,7 @@ export function App({
       canvasView,
       canvasPointer,
       settings,
+      appVersion: info.version,
       windowDialogs,
       // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
       kindPreviews: createKindPreviews(previewSource),

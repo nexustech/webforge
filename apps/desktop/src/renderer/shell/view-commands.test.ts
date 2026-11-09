@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 import { createStore } from "zustand/vanilla";
 import { createCanvasView, zoomStep } from "./canvas-view.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { createCommandRegistry } from "./commands.js";
-import { registerViewCommands } from "./view-commands.js";
+import { createCommandRegistry, matchesShortcut } from "./commands.js";
+import { createPreferencesStore } from "./preferences-store.js";
+import { registerViewCommands, registerViewOptionCommands } from "./view-commands.js";
 
 describe("zoomStep", () => {
   it("goes one of the toolbar's levels in or out, staying at either end", () => {
@@ -70,5 +71,67 @@ describe("registerViewCommands (F-ED-27)", () => {
 
     remove();
     expect(registry.list()).toEqual([]);
+  });
+});
+
+describe("registerViewOptionCommands (#857)", () => {
+  const setUp = (mac = false) => {
+    const registry = createCommandRegistry({ mac });
+    const preferences = createPreferencesStore();
+    const remove = registerViewOptionCommands(registry, preferences);
+    const canvas = () => preferences.getState().preferences.canvas;
+    const shown = () => registry.list().map(({ label, menu, shortcut }) => [label, menu, shortcut]);
+    return { registry, preferences, remove, canvas, shown };
+  };
+
+  it("turns the canvas's outlines and element names on and off, each named for what it does", () => {
+    const { registry, remove, canvas, shown } = setUp();
+    // Outlines are on and names off, as a new install has them.
+    expect(canvas()).toMatchObject({ showOutlines: true, elementNames: false });
+    expect(shown()).toEqual([
+      ["Hide Outlines", "view", "Mod+Shift+O"],
+      ["Show Element Names", "view", "Mod+Shift+N"],
+    ]);
+
+    registry.run(COMMAND_IDS.showOutlines);
+    registry.run(COMMAND_IDS.elementNames);
+
+    expect(canvas()).toMatchObject({ showOutlines: false, elementNames: true });
+    expect(shown()).toEqual(
+      expect.arrayContaining([
+        ["Show Outlines", "view", "Mod+Shift+O"],
+        ["Hide Element Names", "view", "Mod+Shift+N"],
+      ]),
+    );
+    registry.run(COMMAND_IDS.showOutlines);
+    expect(canvas().showOutlines).toBe(true);
+
+    remove();
+    expect(registry.list()).toEqual([]);
+  });
+
+  it("keeps the canvas's other options as they are", () => {
+    const { registry, preferences, canvas } = setUp();
+    preferences.change({ canvas: { ...canvas(), spacingOnHover: true, extraBottomSpace: true } });
+    const before = canvas();
+
+    registry.run(COMMAND_IDS.elementNames);
+
+    expect(canvas()).toEqual({ ...before, elementNames: true });
+  });
+
+  it("runs from its keys on Windows and a Mac, Shift giving a capital letter", () => {
+    for (const mac of [false, true]) {
+      const press = { key: "O", code: "KeyO", shiftKey: true, altKey: false };
+      const mod = mac ? { metaKey: true, ctrlKey: false } : { metaKey: false, ctrlKey: true };
+      expect(matchesShortcut({ ...press, ...mod }, "Mod+Shift+O", mac)).toBe(true);
+      expect(
+        matchesShortcut({ ...press, ...mod, key: "N", code: "KeyN" }, "Mod+Shift+N", mac),
+      ).toBe(true);
+      // Without Shift it's not theirs.
+      expect(
+        matchesShortcut({ ...press, ...mod, key: "o", shiftKey: false }, "Mod+Shift+O", mac),
+      ).toBe(false);
+    }
   });
 });

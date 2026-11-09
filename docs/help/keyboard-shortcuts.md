@@ -4,7 +4,7 @@ id: keyboard-shortcuts
 title: Keyboard shortcuts
 summary: Every keyboard shortcut in {appName}, by what it does.
 related: [the-editor, editing-on-the-page, layers, edit-panel]
-updated: 2026-11-07
+updated: 2026-11-09
 ---
 
 # Keyboard shortcuts
@@ -62,6 +62,8 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+= · Ctrl+−          | Zoom in · zoom out                                                                                               |
 | Ctrl+0                   | Actual size                                                                                                      |
 | Ctrl+9                   | Zoom to fit                                                                                                      |
+| Ctrl+Shift+O             | Show or hide outlines on the page                                                                                |
+| Ctrl+Shift+N             | Show or hide element names on the page                                                                           |
 | Ctrl+Alt+B               | Show or hide the left panels                                                                                     |
 | Ctrl+J                   | Show or hide the bottom panel (Site Check)                                                                       |
 | F6 · Shift+F6            | Next · previous part of the window: the title bar, the left panels, the page, the bottom panel, the right panels |
