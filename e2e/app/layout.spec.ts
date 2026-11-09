@@ -54,12 +54,14 @@ const savedPreferences = (): { panelLayout?: Record<string, unknown>; theme?: st
 test.describe("window layout", () => {
   test("puts Add, then Undo History and Version History, in the left column", async () => {
     const left = page.getByRole("region", { name: "Left panels" });
-    // The column's own tabs, not the Add panel's Sections and Elements.
-    await expect(left.getByRole("tablist").first().getByRole("tab")).toHaveText([
-      "Add",
-      "Undo History",
-      "Version History",
-    ]);
+    // The column's own tabs, not the Add panel's Sections and Elements: icons, named by their
+    // panels' titles (#898).
+    const tabs = left.getByRole("tablist").first().getByRole("tab");
+    await expect(tabs).toHaveCount(3);
+    for (const [at, name] of ["Add", "Undo History", "Version History"].entries()) {
+      await expect(tabs.nth(at)).toHaveAccessibleName(name);
+      await expect(tabs.nth(at)).toHaveText("");
+    }
     await expect(left.getByRole("tab", { name: "Add" })).toHaveAttribute("aria-selected", "true");
     await left.getByRole("tab", { name: "Undo History" }).click();
     await expect(left.getByText("Opened page")).toBeVisible();
