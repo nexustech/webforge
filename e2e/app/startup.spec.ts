@@ -70,6 +70,10 @@ const homePage = (page: Page) =>
  * How main answers the editor's state (`project:get-ui-state`, one of the reads the editor starts
  * with) from now on: never (start-up takes as long as the test likes), with an error (as for a file
  * that went away), or with none (the site's editor state starts afresh).
+ *
+ * A call never answered is kept waiting in main (`e2eUnanswered`): Electron rejects a call whose
+ * pending answer main has garbage-collected ("reply was never sent"), which drew Try again at
+ * whatever moment main collected it (#907).
  */
 async function answerEditorState(
   electronApp: ElectronApplication,
@@ -79,7 +83,12 @@ async function answerEditorState(
     ({ ipcMain }, { channel, answer }) => {
       ipcMain.removeHandler(channel);
       ipcMain.handle(channel, () => {
-        if (answer === "never") return new Promise(() => undefined);
+        if (answer === "never") {
+          return new Promise((resolve) => {
+            const global = globalThis as { e2eUnanswered?: unknown[] };
+            global.e2eUnanswered = [...(global.e2eUnanswered ?? []), resolve];
+          });
+        }
         if (answer === "error") throw new Error("E2E: the editor's state can't be read");
         return null;
       });
