@@ -139,8 +139,9 @@ export function readableKeyPair({
     const keys = generate();
     const privateHalf = utils.parseKey(keys.private, passphrase);
     const parsed = utils.parseKey(keys.public);
-    if (!(privateHalf instanceof Error) && !(parsed instanceof Error)) return { ...keys, parsed };
-    failure = privateHalf instanceof Error ? privateHalf : (parsed as Error);
+    if (privateHalf instanceof Error) failure = privateHalf;
+    else if (parsed instanceof Error) failure = parsed;
+    else return { ...keys, parsed };
   }
   throw failure ?? new Error("No key pair");
 }
