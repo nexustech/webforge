@@ -21,7 +21,8 @@ workflow is `.github/workflows/release.yml`; its header has the details.
    makes a **draft** GitHub Release with the CHANGELOG entries.
 4. **The builds.** The same workflow run builds the Windows installer and the macOS DMG and zip
    from the tag, and uploads them to the draft, with electron-updater's feed files (`latest.yml`,
-   `latest-mac.yml`). The run's summary links to the draft.
+   `latest-mac.yml`). The run's summary links to the draft. If a build fails, "Re-run failed
+   jobs" builds it again and replaces what it had uploaded.
 5. **Publish the draft** once its installers have been checked. Until then nobody gets the release:
    the app's updater doesn't see drafts.
 
