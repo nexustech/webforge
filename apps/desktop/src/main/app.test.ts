@@ -270,8 +270,8 @@ describe("startApp", () => {
     expect(fake.windows).toHaveLength(1);
     const [window] = fake.windows;
     expect(window?.options).toMatchObject({ show: false, minWidth: expect.any(Number) });
-    // From the app's own scheme, never `file://` (#652, S5).
-    expect(window?.loadURL).toHaveBeenCalledWith("webforge-app://editor/index.html");
+    // From the app's own scheme, never `file://` (#652, S5), in the person's theme (#887).
+    expect(window?.loadURL).toHaveBeenCalledWith("webforge-app://editor/index.html?theme=dark");
     expect(window?.loadFile).not.toHaveBeenCalled();
     expect(fake.electron.protocol.registerSchemesAsPrivileged).toHaveBeenCalledWith(
       expect.arrayContaining([
@@ -308,6 +308,17 @@ describe("startApp", () => {
     await fake.invoke("prefs:set", { theme: "light" });
 
     expect(window?.setBackgroundColor).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the editor's page in the theme the person chose, for its start-up screen", async () => {
+    const fake = fakeElectron();
+    writeFileSync(join(fake.userData, "preferences.json"), JSON.stringify({ theme: "light" }));
+
+    await fake.start();
+
+    expect(fake.windows[0]?.loadURL).toHaveBeenCalledWith(
+      "webforge-app://editor/index.html?theme=light",
+    );
   });
 
   it("only quits as a second launch, having handed its site over", async () => {

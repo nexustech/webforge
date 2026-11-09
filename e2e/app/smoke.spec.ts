@@ -75,7 +75,8 @@ test.describe("desktop shell", () => {
   });
 
   test("loads the production renderer from the app's own scheme, never file:// (#652, S5)", async () => {
-    expect(page.url()).toBe("webforge-app://editor/index.html");
+    // With the person's theme, for the start-up screen (#887).
+    expect(page.url()).toBe("webforge-app://editor/index.html?theme=dark");
     // A file that is there, which a file:// page could have read.
     const file = pathToFileURL(join(desktopDir, "package.json")).href;
     const read = await page.evaluate(async (url) => {
