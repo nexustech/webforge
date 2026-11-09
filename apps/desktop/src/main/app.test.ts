@@ -279,7 +279,7 @@ describe("startApp", () => {
       expect.arrayContaining([
         {
           scheme: "webforge-app",
-          privileges: { standard: true, secure: true, supportFetchAPI: true },
+          privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true },
         },
       ]),
     );
