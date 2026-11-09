@@ -19,6 +19,19 @@ export function applyTheme(
 }
 
 /**
+ * Marks `webforge:first-render` in the window's performance timeline when React's first render
+ * replaces the start-up screen in `container`: a stage of a start-up's timing (#891), which
+ * `e2e/perf/cold-start.perf.ts` reads with the page's own paint and navigation timings.
+ */
+export function markFirstRender(container: Node): void {
+  const observer = new MutationObserver(() => {
+    observer.disconnect();
+    performance.mark("webforge:first-render");
+  });
+  observer.observe(container, { childList: true });
+}
+
+/**
  * What replaces the start-up screen when the editor couldn't start (#887), such as the site not
  * being read: the error is reported as a crash report, and *Try again* reloads the window.
  */
