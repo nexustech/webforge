@@ -27,14 +27,16 @@ workflow is `.github/workflows/release.yml`; its header has the details.
    the app's updater doesn't see drafts.
 
 The version is in the root `package.json` and `apps/desktop/package.json`, and release-please
-changes both; About shows the app's.
+changes both; About shows the app's. release-please writes `CHANGELOG.md` in its own style, so
+Biome leaves that file alone (`biome.json`): don't format it by hand.
 
 ## A dry run
 
 "Run workflow" on the Release workflow (`gh workflow run release.yml --ref <branch>`) builds the
 branch on Windows and macOS as `<version>-dry-run.<run number>`, into a draft release of its own.
 It's for checking the workflow and the installers: download them from the draft, then delete the
-draft. A draft makes no tag, so nothing else is left behind.
+draft. A draft makes no tag, so nothing else is left behind. Only a dry run of `main` is signed:
+another branch's code hasn't been reviewed, so its installers are always unsigned.
 
 ## Secrets
 
@@ -53,3 +55,9 @@ the run.
 
 Signing also needs electron-builder's signing options in `apps/desktop/electron-builder.yml`, which
 0.5b (#850) adds with the secrets.
+
+The workflow signs only a release or a dry run of `main`, but that check is in the workflow, which
+a branch can change: anyone who can push could have a branch's dry run sign its own code. So 0.5b
+keeps the signing secrets in a protected `release` environment, open only to `main` and the `v*`
+tags and with a required reviewer, not in the repository's secrets, and the build job names that
+environment.
