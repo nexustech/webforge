@@ -74,6 +74,7 @@ const meta = {
     locale: "en-GB",
     project: project([]),
     help: { open: async () => true },
+    updates: { status: async () => ({ state: "idle" }), onStatus: () => () => undefined },
   },
 } satisfies Meta<typeof StartScreen>;
 export default meta;

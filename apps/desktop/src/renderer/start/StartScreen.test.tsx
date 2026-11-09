@@ -1,4 +1,5 @@
 // @vitest-environment happy-dom
+import { toast } from "@webforge/editor-ui";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -6,6 +7,7 @@ import type { BriefOutcome, SiteBrief } from "../../shared/ipc/ai.js";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
+import type { UpdateStatus } from "../../shared/ipc/updates.js";
 import type { ProjectResult, RecentSite } from "../../shared/ipc-contract.js";
 import { StartScreen } from "./StartScreen.js";
 
@@ -82,6 +84,13 @@ const prefs = {
 /** The Help window, as the start screen opens it (5.4b). */
 const helpWindow = { open: vi.fn(async () => true) };
 
+/** Webforge's own update (0.5a): none, unless a test says otherwise. */
+let updateStatus: UpdateStatus = { state: "idle" };
+const updates = {
+  status: vi.fn(async () => updateStatus),
+  onStatus: vi.fn((_listener: (status: UpdateStatus) => void) => () => undefined),
+};
+
 async function render(
   project: ReturnType<typeof api>,
   restart = vi.fn(),
@@ -99,6 +108,7 @@ async function render(
         locale="en-GB"
         help={helpWindow}
         prefs={prefs}
+        updates={updates}
         {...(ai === undefined ? {} : { ai })}
       />,
     ),
@@ -110,6 +120,23 @@ const button = (name: string) =>
   [...container.querySelectorAll("button")].find((element) => element.textContent?.includes(name));
 
 describe("StartScreen", () => {
+  it("says an update is ready to install, as the editor does (0.5a)", async () => {
+    updateStatus = { state: "downloaded", version: "1.2.0" };
+    try {
+      await render(api([]));
+      await vi.waitFor(() =>
+        expect(document.body.textContent).toContain(
+          "Webforge 1.2.0 is ready: it installs when you close Webforge.",
+        ),
+      );
+      expect(updates.onStatus).toHaveBeenCalled();
+    } finally {
+      updateStatus = { state: "idle" };
+      // Toasts are the page's, not the screen's: none may stay for the next test.
+      act(() => toast.dismiss());
+    }
+  });
+
   it("answers save requests at once, having nothing to save", async () => {
     await render(api([]));
 

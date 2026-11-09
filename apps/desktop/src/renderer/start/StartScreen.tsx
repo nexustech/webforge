@@ -16,6 +16,7 @@ import type { HelpApi } from "../../shared/ipc/help.js";
 import type { PrefsApi } from "../../shared/ipc/prefs.js";
 import type { ProjectApi } from "../../shared/ipc/project.js";
 import type { TemplatesApi } from "../../shared/ipc/templates.js";
+import type { UpdatesApi } from "../../shared/ipc/updates.js";
 import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
@@ -29,6 +30,7 @@ import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/commands.js";
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
+import { watchUpdates } from "../updates/index.js";
 import { AppMark } from "./AppMark.js";
 import { openSiteWith } from "./open-site.js";
 import { RecentSites } from "./RecentSites.js";
@@ -64,6 +66,8 @@ export type StartScreenProps = {
   readonly ai?: Pick<AiApi, "onBrief">;
   /** The person's preferences, where the quick start asks for the tour (OB-1); injectable for tests. */
   readonly prefs?: Pick<PrefsApi, "get" | "set">;
+  /** Webforge's own update (0.5a), whose notice shows here too; injectable for tests. */
+  readonly updates?: Pick<UpdatesApi, "status" | "onStatus">;
 };
 
 /**
@@ -81,6 +85,7 @@ export function StartScreen({
   help,
   ai,
   prefs,
+  updates,
 }: StartScreenProps) {
   const [registry] = useState(createCommandRegistry);
   // Unknown until main first answers: neither the welcome nor the list shows before then, so a
@@ -94,6 +99,9 @@ export function StartScreen({
 
   // Nothing to save here: answer at once, so closing the window never waits for a timeout.
   useEffect(() => (app ?? window.webforge.app).onFlushRequest(async () => undefined), [app]);
+
+  // An update ready to install says so here as in the editor (0.5a).
+  useEffect(() => watchUpdates(updates ?? window.webforge.updates), [updates]);
 
   useEffect(() => {
     let current = true;

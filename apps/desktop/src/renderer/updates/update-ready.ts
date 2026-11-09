@@ -1,6 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
-import type { UpdateStatus } from "../../shared/ipc/updates.js";
+import type { UpdateStatus, UpdatesApi } from "../../shared/ipc/updates.js";
 
 /** One notice at a time, however often it's said. */
 const TOAST_ID = "update-ready";
@@ -29,4 +29,22 @@ export function updateReadyNotices(
     told = status.version;
     show(status.version);
   };
+}
+
+/**
+ * Shows the notice once Webforge's update has downloaded (0.5a): at once, if main already has one,
+ * and whenever main says one has. The editor's window and the start screen each watch, as either
+ * may be what's open. Returns how to stop.
+ */
+export function watchUpdates(
+  updates: Pick<UpdatesApi, "status" | "onStatus">,
+  show: (version: string) => void = showUpdateReady,
+): () => void {
+  const notice = updateReadyNotices(show);
+  const stop = updates.onStatus(notice);
+  void updates
+    .status()
+    .then(notice)
+    .catch(() => undefined);
+  return stop;
 }
