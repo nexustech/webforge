@@ -91,6 +91,7 @@ import {
   registerSpellCheckHandlers,
   spellCheckAvailable,
 } from "./spellcheck.js";
+import { logStartupTimes, markStartup } from "./startup-timing.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
@@ -520,6 +521,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         spellCheckAvailable(process.platform),
       ),
     });
+    // Before its page starts loading (#891); only the first window's is logged.
+    markStartup("window-created");
     // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
     installContextMenu(window, (template) => Menu.buildFromTemplate(template));
     // Maximised the first time, so the canvas gets the room (ADR 0008). Maximising shows the
@@ -550,6 +553,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
 
   async function start(): Promise<void> {
     await app.whenReady();
+    markStartup("ready");
     // No default menu: its zoom and reload keys are the editor's (F-ED-27).
     const menu = applicationMenu(process.platform, devServerUrl !== undefined);
     Menu.setApplicationMenu(menu === null ? null : Menu.buildFromTemplate(menu));
@@ -746,12 +750,16 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       site: (sessionId) => projectSession.site(sessionId),
       secrets: publishSecrets,
     });
+    markStartup("ipc-registered");
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
       await openSite(projectToOpen);
+      markStartup("site-opened");
     }
     createMainWindow(preferences);
+    // The start-up's stages, in a perf build (#891).
+    logStartupTimes(import.meta.env.MODE);
     void crashReports.noticeAfterLaunch();
     startUpdates();
 

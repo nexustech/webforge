@@ -27,8 +27,11 @@ export function newUserDataDir(): string {
   return mkdtempSync(join(tmpdir(), "webforge-e2e-user-"));
 }
 
-/** The Electron binary the app depends on, and an environment that runs its production build. */
-function electronCommand(): { executablePath: string; env: Record<string, string> } {
+/**
+ * The Electron binary the app depends on, and an environment that runs its production build: for
+ * a test that starts the app itself, as cold-start.perf.ts does without Playwright's launcher.
+ */
+export function electronCommand(): { executablePath: string; env: Record<string, string> } {
   if (!existsSync(join(desktopDir, "out/main/index.js"))) {
     throw new Error("apps/desktop is not built: run `pnpm e2e` from the repository root");
   }
@@ -58,6 +61,20 @@ function electronCommand(): { executablePath: string; env: Record<string, string
       WEBFORGE_E2E_PHONE: "1",
     },
   };
+}
+
+/**
+ * Gives `userData` the preferences a test starts with: the first-time tips (5.4a) shown only with
+ * `tips`. Only where there are no preferences yet: a test that restarts the app keeps its own.
+ */
+export function writeTestPreferences(userData: string, tips = false): void {
+  const preferences = join(userData, "preferences.json");
+  if (existsSync(preferences)) return;
+  mkdirSync(userData, { recursive: true });
+  writeFileSync(
+    preferences,
+    JSON.stringify({ onboarding: { tour: "new", tipsSeen: [], showTips: tips } }),
+  );
 }
 
 /**
@@ -110,17 +127,7 @@ export async function launchDesktopApp(
 ): Promise<WebforgeApp> {
   const { executablePath, env } = electronCommand();
   const userData = options.userDataDir ?? newUserDataDir();
-  // Only where there are no preferences yet: a test that restarts the app keeps its own.
-  const preferences = join(userData, "preferences.json");
-  if (!existsSync(preferences)) {
-    mkdirSync(userData, { recursive: true });
-    writeFileSync(
-      preferences,
-      JSON.stringify({
-        onboarding: { tour: "new", tipsSeen: [], showTips: options.tips === true },
-      }),
-    );
-  }
+  writeTestPreferences(userData, options.tips === true);
   const args = [...(options.args ?? [])];
   let siteDir: string | undefined;
   if (options.site !== false && !args.some((arg) => arg.toLowerCase().endsWith(".wforge"))) {

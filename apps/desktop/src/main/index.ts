@@ -5,10 +5,15 @@ import { startCrashReports } from "./crash-wiring.js";
 import { setLogSink } from "./log.js";
 import { fileLogSink } from "./log-file.js";
 import { recoveryDialogs } from "./recovery-dialogs.js";
+import { markStartup } from "./startup-timing.js";
 import { e2eUpdateFeed, electronUpdater } from "./updates.js";
 
 // The entry point only (R13c): the app's wiring is app.ts, tested against a fake Electron. Here
 // are the real one and the modules that use it directly, which E2E tests cover.
+
+// The first line to run once main's whole import graph has loaded (#891): the time before it is
+// that graph's.
+markStartup("main-entry");
 
 // From the first moment, logs go to the app's log file (standards §4): codes only, never content.
 setLogSink(fileLogSink(electron.app.isPackaged, electron.app.getPath("logs")));
