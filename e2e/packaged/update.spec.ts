@@ -1,6 +1,6 @@
 import { type ChildProcess, execFileSync, spawn } from "node:child_process";
 import { once } from "node:events";
-import { createReadStream, existsSync, mkdtempSync, statSync } from "node:fs";
+import { copyFileSync, createReadStream, existsSync, mkdtempSync, statSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
@@ -156,7 +156,10 @@ test.beforeAll(async () => {
   workDir = mkdtempSync(join(tmpdir(), "webforge-update-"));
   installDir = join(workDir, "installed");
   const first = buildInstaller("0.0.1");
-  buildInstaller("0.0.2");
+  const second = buildInstaller("0.0.2");
+  // Beta's feed file, as the release workflow uploads it beside Stable's (5.2, ADR 0024): a
+  // version below 1.0.0 follows Beta.
+  copyFileSync(join(second, "latest.yml"), join(second, "beta.yml"));
   // Silent, into a folder of the test's own, as electron-builder's per-user installer allows.
   execFileSync(join(first, "Webforge-Setup-0.0.1.exe"), ["/S", `/D=${installDir}`]);
 });
