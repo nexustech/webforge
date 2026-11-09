@@ -1,5 +1,5 @@
 # electron-builder configuration: https://www.electron.build/configuration
-# Builds are unsigned for now; code signing and notarisation come with the release pipeline.
+# Builds are unsigned for now; code signing and notarisation come with 0.5b.
 appId: app.webforge.desktop
 productName: Webforge
 directories:
@@ -84,6 +84,9 @@ mac:
   target:
     - target: dmg
       arch: [arm64]
+    # What electron-updater downloads on macOS (0.5a); the DMG is for a first install.
+    - target: zip
+      arch: [arm64]
   category: public.app-category.productivity
   minimumSystemVersion: "13.0"
   # Unsigned until a Developer ID certificate is set up in CI.
@@ -92,4 +95,13 @@ mac:
 dmg:
   artifactName: ${productName}-${version}-arm64.${ext}
 
-publish: null
+# Webforge's own updates (0.5a, ADR 0024): GitHub Releases on the public repository (Q1). The
+# build writes app-update.yml beside app.asar, which electron-updater reads, and latest.yml (and
+# latest-mac.yml) beside the installers, which the release lists. electron-builder itself never
+# publishes (`--publish never` everywhere): the release workflow (5.2) uploads the installers and
+# those files to a draft release, which goes out once it is made public.
+publish:
+  provider: github
+  owner: nexustech
+  repo: webforge
+  releaseType: draft

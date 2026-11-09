@@ -5,6 +5,7 @@ import { startCrashReports } from "./crash-wiring.js";
 import { setLogSink } from "./log.js";
 import { fileLogSink } from "./log-file.js";
 import { recoveryDialogs } from "./recovery-dialogs.js";
+import { electronUpdater } from "./updates.js";
 
 // The entry point only (R13c): the app's wiring is app.ts, tested against a fake Electron. Here
 // are the real one and the modules that use it directly, which E2E tests cover.
@@ -18,4 +19,9 @@ void startApp(electron, {
   startCrashReports,
   recoveryDialogs,
   startStorageWriter: (script) => new Worker(script),
+  // Windows only for now (`updatesSupported`), where electron-updater's own is NSIS's.
+  updater: async () => {
+    const { NsisUpdater } = await import("electron-updater");
+    return electronUpdater(new NsisUpdater());
+  },
 });

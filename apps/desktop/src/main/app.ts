@@ -13,6 +13,7 @@ import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
 import { publishEvents } from "../shared/ipc/publish.js";
 import { siteEvents } from "../shared/ipc/site.js";
+import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
@@ -93,6 +94,13 @@ import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
+import {
+  createUpdateService,
+  type Updater,
+  type UpdateService,
+  updatesSupported,
+} from "./updates.js";
+import { updatesFeature } from "./updates-ipc.js";
 import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
   MIN_WINDOW_SIZE,
@@ -136,6 +144,8 @@ export type AppParts = {
   readonly recoveryDialogs: RecoveryDialogs;
   /** Starts the storage writer's thread from its script (R13b, ADR 0013). */
   readonly startStorageWriter: (script: string) => WriterThread;
+  /** Loads electron-updater (0.5a), only in a build that updates itself (`updatesSupported`). */
+  readonly updater: () => Promise<Updater>;
 };
 
 /**
@@ -245,6 +255,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
   /** The MCP server for AI apps (4.9), once Electron is ready. */
   let mcp: McpService | undefined;
+  // Webforge's own updates (0.5a), once started after the window opens, in a build that has them.
+  let updates: UpdateService | undefined;
   const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
     isEncryptionAvailable: () => electron.safeStorage.isAsyncEncryptionAvailable(),
     encryptString: (text) => electron.safeStorage.encryptStringAsync(text),
@@ -436,6 +448,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
       netlifyApi: netlifyApiFor(app.isPackaged),
     }),
+    // Webforge's own updates (0.5a): their state for the window. Quitting installs one, last.
+    updatesFeature(() => updates),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);
@@ -462,6 +476,26 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     undefined,
     fonts.downloadedFamiliesOf,
   );
+
+  /**
+   * Starts Webforge's own updates (0.5a) in a build that has them, once the window is open:
+   * electron-updater is loaded only then, so it never slows the start.
+   */
+  function startUpdates(): void {
+    if (!updatesSupported(app.isPackaged, process.platform)) return;
+    parts
+      .updater()
+      .then((updater) => {
+        if (lifecycle.quitting) return;
+        updates = createUpdateService({
+          updater,
+          onStatus: (status) =>
+            lifecycle.mainWindow()?.webContents.send(updatesEvents.status.channel, status),
+        });
+        updates.start();
+      })
+      .catch((error: unknown) => logFailure("Webforge could not start its updates", error));
+  }
 
   function createMainWindow(preferences: PreferencesStore): void {
     const { theme, window: saved } = preferences.get();
@@ -708,6 +742,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     }
     createMainWindow(preferences);
     void crashReports.noticeAfterLaunch();
+    startUpdates();
 
     // macOS: a click on the Dock icon while no window is open. Webforge quits when its window
     // closes (spec/02 §1), so that is only between the last window closing and the app quitting.
@@ -768,6 +803,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Then each feature's last work, such as My themes' and the Recent list's last writes, and
       // the preferences' last writes: a panel resized just before quitting keeps its size (#740).
       features: [...features, { quit: async () => await lifecycle.preferences?.idle() }],
+      // Last, once all of that has finished: a downloaded update's installer (0.5a), which ends a
+      // Webforge still running.
+      install: () => updates?.installOnQuit(),
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).

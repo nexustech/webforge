@@ -16,6 +16,7 @@ import { siteChannels } from "./ipc/site.js";
 import { templatesChannels } from "./ipc/templates.js";
 import { themesChannels } from "./ipc/themes.js";
 import { trustChannels } from "./ipc/trust.js";
+import { updatesChannels } from "./ipc/updates.js";
 import { versionsChannels } from "./ipc/versions.js";
 
 export type { AppInfo } from "./ipc/app.js";
@@ -63,6 +64,7 @@ export const ipcContract = {
   ...mcpChannels,
   ...helpChannels,
   ...netlifyChannels,
+  ...updatesChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -85,6 +87,7 @@ export const ipcDomains = {
   mcp: mcpChannels,
   help: helpChannels,
   netlify: netlifyChannels,
+  updates: updatesChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */
