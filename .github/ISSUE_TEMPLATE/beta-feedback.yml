@@ -1,0 +1,51 @@
+name: Beta – feedback or an idea
+description: Something was confusing, slow or missing, or you have an idea that would help your business.
+title: "[Beta feedback] "
+labels: ["beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing Webforge. Everything you write here can be read by anyone, so please leave out passwords, your customers' details and anything else private. If Webforge did something wrong, the **Beta – something went wrong** form is the one to use.
+  - type: input
+    id: version
+    attributes:
+      label: Webforge version
+      description: "Choose **Help › About Webforge**: it shows the version, for example `Version 0.9.0`."
+      placeholder: Version 0.9.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Computer
+      options:
+        - Windows 11
+        - Windows 10
+        - Mac with Apple silicon (M1 or later), macOS 13 or later
+    validations:
+      required: true
+  - type: textarea
+    id: trying
+    attributes:
+      label: What were you trying to do?
+      description: For example "add our opening hours to the Contact page" or "publish the site to our web host".
+    validations:
+      required: true
+  - type: textarea
+    id: feedback
+    attributes:
+      label: What would make it better?
+      description: What was hard, slow, confusing or missing, or what you'd like Webforge to do. A screenshot helps; check it shows nothing private first.
+    validations:
+      required: true
+  - type: dropdown
+    id: importance
+    attributes:
+      label: How much does this matter to you?
+      options:
+        - It stops me making or publishing my site
+        - It slows me down or I had to find a way round it
+        - It would be nice to have
+    validations:
+      required: true
