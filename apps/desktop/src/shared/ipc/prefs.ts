@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { updateChannelSchema } from "../update-channel.js";
 
 /** At most this many panel groups, and panels per group, are remembered. */
 const MAX_LAYOUT_ENTRIES = 32;
@@ -148,6 +149,11 @@ export const preferencesSchema = z.strictObject({
    */
   versionsKept: z.int().min(VERSIONS_KEPT_MIN).max(VERSIONS_KEPT_MAX),
   onboarding: onboardingPreferencesSchema,
+  /**
+   * The update channel the person chose in Settings › App › Updates (5.2). Unset until they
+   * choose: the default then follows the app's version (`updateChannelFor`).
+   */
+  updateChannel: updateChannelSchema.optional(),
 });
 
 /** One person's editor preferences. */
@@ -183,6 +189,7 @@ export function applyPreferencesChange(
   preferences: Preferences,
   change: PreferencesChange,
 ): Preferences {
+  const updateChannel = change.updateChannel ?? preferences.updateChannel;
   return {
     theme: change.theme ?? preferences.theme,
     editorLevel: change.editorLevel ?? preferences.editorLevel,
@@ -193,6 +200,7 @@ export function applyPreferencesChange(
     editPanel: change.editPanel ?? preferences.editPanel,
     versionsKept: change.versionsKept ?? preferences.versionsKept,
     onboarding: change.onboarding ?? preferences.onboarding,
+    ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }
 

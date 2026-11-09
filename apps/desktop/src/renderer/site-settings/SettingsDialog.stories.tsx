@@ -23,6 +23,7 @@ function parts() {
     }),
     // AI apps opens in the window, not in a story.
     () => undefined,
+    "1.0.0",
   );
   const site = starterSite();
   site.settings.general = { name: "Rosa's Bakery", description: "", language: "en-GB" };

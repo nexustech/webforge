@@ -40,7 +40,9 @@ workflow is `.github/workflows/release.yml`; its header has the details.
 
 ## Channels
 
-People choose theirs in Settings › App › Updates; Stable is the default.
+People choose theirs in Settings › App › Updates. Until they do, an installation follows Beta while
+its version is below 1.0.0 (every release before 1.0 is a prerelease, so Stable has none) and
+Stable from 1.0.0. Only a choice is stored, so the default moves with the version.
 
 - **Stable** gets the repository's latest release: one published as a prerelease isn't one yet.
 - **Beta** gets the newest published release, prereleases included, so each release reaches it

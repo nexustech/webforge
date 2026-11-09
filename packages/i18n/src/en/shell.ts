@@ -101,6 +101,13 @@ export const shell = {
   "settings.devices.item": "Device",
   "settings.devices.add": "Add a device",
   "settings.devices.remove": "Remove this device",
+  // Where updates come from (5.2): Stable, or Beta, which gets each new version first.
+  "settings.updates": "Updates",
+  "settings.updates.channel": "Get updates from",
+  "settings.updates.stable": "Stable",
+  "settings.updates.beta": "Beta",
+  "settings.updates.channelHelp":
+    "Beta gets each new version of {appName} first, before Stable, to try it out.",
   // A line that opens AI apps (#752), which act at once, so has its own dialog (F-AI-1).
   "settings.aiApps": "AI apps",
   "settings.aiApps.label": "AI apps on this computer",

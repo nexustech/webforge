@@ -12,6 +12,7 @@
   "settings.interface:": { "page": "settings", "anchor": "interface" },
   "settings.devices:": { "page": "settings", "anchor": "devices" },
   "settings.versions:": { "page": "settings", "anchor": "version-history" },
+  "settings.updates:": { "page": "settings", "anchor": "updates" },
   "settings.aiApps:": { "page": "ai-apps", "anchor": "turning-it-on" },
   "settings.site:general": { "page": "site-settings", "anchor": "general" },
   "settings.site:address": { "page": "site-settings", "anchor": "web-address" },

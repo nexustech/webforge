@@ -26,6 +26,7 @@ function fakeService(): UpdateService {
     status: () => ({ state: "downloaded", version: "1.2.0" }),
     installOnQuit: vi.fn(),
     stop: vi.fn(),
+    setChannel: vi.fn(),
   };
 }
 
