@@ -449,7 +449,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
       netlifyApi: netlifyApiFor(app.isPackaged),
     }),
-    // Webforge's own updates (0.5a): their state for the window, and installing one as it quits.
+    // Webforge's own updates (0.5a): their state for the window. Quitting installs one, last.
     updatesFeature(() => updates),
   ];
   for (const feature of features) {
@@ -812,6 +812,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Then each feature's last work, such as My themes' and the Recent list's last writes, and
       // the preferences' last writes: a panel resized just before quitting keeps its size (#740).
       features: [...features, { quit: async () => await lifecycle.preferences?.idle() }],
+      // Last, once all of that has finished: a downloaded update's installer (0.5a), which ends a
+      // Webforge still running.
+      install: () => updates?.installOnQuit(),
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).
