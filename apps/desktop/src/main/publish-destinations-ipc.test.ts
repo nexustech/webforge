@@ -22,9 +22,12 @@ const PASSWORD = "test-only-hunter2";
 
 // A stand-in for safeStorage: reversible, and visibly not plain text.
 const cipher = (available = true): SecretCipher => ({
-  isEncryptionAvailable: () => available,
-  encryptString: (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
-  decryptString: (data) => [...data.toString().slice(4)].reverse().join(""),
+  isEncryptionAvailable: async () => available,
+  encryptString: async (text) => Buffer.from(`enc:${[...text].reverse().join("")}`),
+  decryptString: async (data) => ({
+    result: [...data.toString().slice(4)].reverse().join(""),
+    shouldReEncrypt: false,
+  }),
 });
 
 const sftp: FileTransferDestination = {
