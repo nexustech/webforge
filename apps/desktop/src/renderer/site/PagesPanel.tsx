@@ -13,7 +13,7 @@ import {
   ScrollArea,
   useMenuDialog,
 } from "@webforge/editor-ui";
-import { isMessageKey, t } from "@webforge/i18n";
+import { t } from "@webforge/i18n";
 import {
   PAGE_FOLDER_MAX,
   PAGE_TITLE_MAX,
@@ -47,12 +47,7 @@ import {
   type PageSettingsChange,
   renamedFileName,
 } from "./page-actions.js";
-
-/** A page recipe's name in the editor (QS-3), or its page's own title should it have none. */
-export function recipeName(id: string, title: string): string {
-  const key = `recipe.${id}`;
-  return isMessageKey(key) ? t(key) : title;
-}
+import { recipeName } from "./recipe-name.js";
 
 /** What the Pages panel can do; {@link SitePanel} binds them to the editor session. */
 export type PagesPanelActions = {

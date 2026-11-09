@@ -2,14 +2,11 @@ import { installMenuKeys } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { starterSite } from "../shared/starter-site.js";
-import { App } from "./App.js";
 import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./error-reporting.js";
 import { StartScreen } from "./start/StartScreen.js";
 // Schemas word their problems in the editor's words (2.21).
 import "./shell/form-messages.js";
 import { applyTheme, StartFailed } from "./startup.js";
-import { loadSite } from "./storage/load-site.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";
 
@@ -37,25 +34,30 @@ const root = createRoot(
   rootErrorOptions(reportError, import.meta.env.DEV ? showInDevConsole : undefined),
 );
 try {
-  const [info, preferences, loaded, uiState] = await Promise.all([
+  // The editor's code loads only with a site open (#896): the start screen needs none of it. Once
+  // main says a site is open, the code loads while the site and its editor state are read.
+  const project = window.webforge.project;
+  const editor = project
+    .getCurrent()
+    .then((current) =>
+      current === null
+        ? undefined
+        : Promise.all([import("./editor-start.js"), project.readSite(), project.getUiState()]).then(
+            ([code, site, uiState]) => code.editorFor(current, site, uiState),
+          ),
+    );
+  const [info, preferences, showEditor] = await Promise.all([
     window.webforge.app.getInfo(),
     window.webforge.prefs.get(),
-    loadSite(window.webforge.project, () => starterSite()),
-    window.webforge.project.getUiState(),
+    editor,
   ]);
   // The theme before the first paint, so the window never flashes the other one.
   applyTheme(preferences.theme, window);
 
-  // With a site open, the editor; otherwise the start screen (1.8), which reloads the window once
-  // it has created or opened one.
+  // With a site open, the editor; otherwise, or when its site couldn't be read, the start screen
+  // (1.8), which reloads the window once it has created or opened one.
   root.render(
-    <StrictMode>
-      {loaded.kind === "file" ? (
-        <App info={info} preferences={preferences} loaded={loaded} uiState={uiState} />
-      ) : (
-        <StartScreen info={info} />
-      )}
-    </StrictMode>,
+    <StrictMode>{showEditor?.(info, preferences) ?? <StartScreen info={info} />}</StrictMode>,
   );
 } catch (error) {
   // Nothing to show without these: say so, with a way to try again, never leave the start-up
