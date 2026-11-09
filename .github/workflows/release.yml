@@ -108,11 +108,12 @@ jobs:
       matrix:
         include:
           - os: windows-latest
-            target: --win
+            # The desktop app's script: electron-vite, then electron-builder with `--publish never`.
+            script: package:win
             # The installer and electron-updater's feed file for it.
             expect: "*.exe *.yml"
           - os: macos-latest
-            target: --mac
+            script: package:mac
             # electron-updater updates a Mac from the zip; people install from the DMG.
             expect: "*.dmg *.zip *-mac.yml"
     runs-on: ${{ matrix.os }}
@@ -184,10 +185,8 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          pnpm --filter @webforge/desktop build
-          cd apps/desktop
-          # The version from prepare: the tag's, or a dry run's own.
-          pnpm exec electron-builder ${{ matrix.target }} --publish never -c.extraMetadata.version="$VERSION"
+          # The version from prepare, the tag's or a dry run's own, passed on to electron-builder.
+          pnpm --filter @webforge/desktop run ${{ matrix.script }} -c.extraMetadata.version="$VERSION"
 
       - name: Upload to the draft release
         shell: bash
