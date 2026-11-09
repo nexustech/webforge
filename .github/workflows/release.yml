@@ -12,7 +12,11 @@ name: Release
 #   `<version>-dry-run.<run number>` into a draft release of its own, which is never published:
 #   delete it once checked.
 # - Signing: each OS's build is signed only when its signing secrets exist (0.5b, #850, sets them
-#   up and electron-builder's signing options). Without them it's built unsigned, with a warning.
+#   up and electron-builder's signing options), and only for a release or a dry run of `main`: a
+#   dry run of another branch is unreviewed code, so it's built unsigned. Without them, or for
+#   such a dry run, the build is unsigned, with a warning. This guards against signing a branch by
+#   mistake, not against someone who can push: a branch can change this file too. Keeping the
+#   signing secrets in a protected environment is 0.5b's (docs/releasing.md).
 # - The release pull request: GitHub runs no workflows for pull requests opened with the workflow's
 #   own token, so its CI doesn't start by itself. With a `RELEASE_PLEASE_TOKEN` secret (a
 #   fine-grained token with contents and pull-request write access to this repository) it does;
@@ -64,6 +68,8 @@ jobs:
       ref: ${{ steps.release.outputs.ref }}
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
+      # Whether the builds may be signed: a release, or a dry run of `main`.
+      sign: ${{ steps.release.outputs.sign }}
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -89,6 +95,7 @@ jobs:
               exit 1
             fi
             ref="$TAG"
+            sign=true
           else
             version="$version-dry-run.$RUN"
             ref="$GITHUB_SHA"
@@ -96,8 +103,10 @@ jobs:
             gh release create "v$version" --draft --target "$GITHUB_SHA" \
               --title "Dry run $RUN ($version)" \
               --notes "A dry run of the release workflow, built from $GITHUB_SHA. Never publish it: delete it once checked."
+            # Another branch's code hasn't been reviewed: it's never signed as Webforge.
+            if [ "$GITHUB_REF" = refs/heads/main ]; then sign=true; else sign=false; fi
           fi
-          { echo "ref=$ref"; echo "tag=v$version"; echo "version=$version"; } | tee -a "$GITHUB_OUTPUT"
+          { echo "ref=$ref"; echo "tag=v$version"; echo "version=$version"; echo "sign=$sign"; } | tee -a "$GITHUB_OUTPUT"
 
   build:
     name: Build (${{ matrix.os }})
@@ -144,21 +153,23 @@ jobs:
 
       - name: Signing
         # electron-builder reads its signing settings from these variables, and takes an empty one
-        # as set, so only the secrets that exist are passed on.
+        # as set, so only the secrets that exist are passed on; none for a dry run of another branch
+        # than `main` (prepare's `sign`).
         shell: bash
         env:
+          SIGN: ${{ needs.prepare.outputs.sign }}
           # macOS: the Developer ID certificate (base64 .p12) and notarisation.
-          CSC_LINK: ${{ runner.os == 'macOS' && secrets.CSC_LINK || '' }}
-          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.CSC_KEY_PASSWORD || '' }}
-          APPLE_ID: ${{ runner.os == 'macOS' && secrets.APPLE_ID || '' }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ runner.os == 'macOS' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
-          APPLE_TEAM_ID: ${{ runner.os == 'macOS' && secrets.APPLE_TEAM_ID || '' }}
+          CSC_LINK: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'macOS' && secrets.CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'macOS' && secrets.CSC_KEY_PASSWORD || '' }}
+          APPLE_ID: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'macOS' && secrets.APPLE_ID || '' }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'macOS' && secrets.APPLE_APP_SPECIFIC_PASSWORD || '' }}
+          APPLE_TEAM_ID: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'macOS' && secrets.APPLE_TEAM_ID || '' }}
           # Windows: Azure Artifact Signing, or a certificate (Q3 chooses, in 0.5b).
-          AZURE_TENANT_ID: ${{ runner.os == 'Windows' && secrets.AZURE_TENANT_ID || '' }}
-          AZURE_CLIENT_ID: ${{ runner.os == 'Windows' && secrets.AZURE_CLIENT_ID || '' }}
-          AZURE_CLIENT_SECRET: ${{ runner.os == 'Windows' && secrets.AZURE_CLIENT_SECRET || '' }}
-          WIN_CSC_LINK: ${{ runner.os == 'Windows' && secrets.WIN_CSC_LINK || '' }}
-          WIN_CSC_KEY_PASSWORD: ${{ runner.os == 'Windows' && secrets.WIN_CSC_KEY_PASSWORD || '' }}
+          AZURE_TENANT_ID: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'Windows' && secrets.AZURE_TENANT_ID || '' }}
+          AZURE_CLIENT_ID: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'Windows' && secrets.AZURE_CLIENT_ID || '' }}
+          AZURE_CLIENT_SECRET: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'Windows' && secrets.AZURE_CLIENT_SECRET || '' }}
+          WIN_CSC_LINK: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'Windows' && secrets.WIN_CSC_LINK || '' }}
+          WIN_CSC_KEY_PASSWORD: ${{ needs.prepare.outputs.sign == 'true' && runner.os == 'Windows' && secrets.WIN_CSC_KEY_PASSWORD || '' }}
         run: |
           set -euo pipefail
           names=(CSC_LINK CSC_KEY_PASSWORD APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_TEAM_ID
@@ -171,7 +182,10 @@ jobs:
             { echo "$name<<$delimiter"; echo "$value"; echo "$delimiter"; } >> "$GITHUB_ENV"
             set=$((set + 1))
           done
-          if [ "$set" -eq 0 ]; then
+          if [ "$SIGN" != true ]; then
+            echo "::warning::A dry run of $GITHUB_REF, not main: this build is unsigned."
+            echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> "$GITHUB_ENV"
+          elif [ "$set" -eq 0 ]; then
             echo "::warning::No signing secrets for $RUNNER_OS: this build is unsigned."
             # Nothing on the runner to sign with either.
             echo "CSC_IDENTITY_AUTO_DISCOVERY=false" >> "$GITHUB_ENV"
