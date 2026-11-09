@@ -11,6 +11,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Getting started](getting-started.md): the start screen, the quick start and your first site
 - [Templates and example sites](templates.md)
 - [The editor](the-editor.md): where everything is, Design and Content mode, Simple and Advanced mode, devices and zoom
+- [Glossary](glossary.md): the words {appName} uses, and what each one means
 
 **Building pages**
 
