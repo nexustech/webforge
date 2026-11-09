@@ -7,9 +7,25 @@
     <meta http-equiv="Content-Security-Policy" content="%WEBFORGE_CSP%" />
     <!-- The title is set from i18n in main.tsx. -->
     <title></title>
+    <!-- The theme in the page's address, before the first paint (public/startup-theme.js). -->
+    <script src="/startup-theme.js"></script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- The start-up screen (#887), drawn at the window's first paint while the editor's scripts
+           load and it reads the open site; React replaces it with the editor or the start screen
+           at its first render, or main.tsx with what went wrong. Its words are filled in at build
+           time from i18n (electron.vite.config.ts). -->
+      <div class="startup">
+        <div class="startup__title-bar"></div>
+        <div class="startup__body">
+          <p class="startup__name">%WEBFORGE_APP_NAME%</p>
+          <!-- Indeterminate: no percentage, as nothing measures how far start-up has got. -->
+          <div class="startup__progress" role="progressbar" aria-labelledby="startup-label"></div>
+          <p class="startup__label" id="startup-label">%WEBFORGE_STARTING%</p>
+        </div>
+      </div>
+    </div>
     <script type="module" src="./main.tsx"></script>
   </body>
 </html>

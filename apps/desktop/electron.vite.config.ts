@@ -15,7 +15,7 @@ import {
   writeNotices,
 } from "@webforge/tools/third-party-notices";
 import { defineConfig } from "electron-vite";
-import type { Plugin } from "vite";
+import { type Plugin, runnerImport } from "vite";
 import {
   buildContentSecurityPolicy,
   type ContentSecurityPolicyPage,
@@ -49,6 +49,41 @@ function contentSecurityPolicy(devNonce: string | undefined): Plugin {
         devNonce === undefined ? { page } : { page, devNonce },
       );
       return html.replace(CSP_PLACEHOLDER, `content="${csp}"`);
+    },
+  };
+}
+
+/**
+ * Fills in the words of index.html's start-up screen (#887), drawn before the editor's scripts and
+ * its i18n have loaded, from i18n, escaped for HTML; fails the build on a placeholder it doesn't
+ * know. i18n is TypeScript importing `./x.js`, which Node can't load as it loads this file: Vite's
+ * module runner can, once per build.
+ */
+function startupScreen(): Plugin {
+  let words: Promise<Readonly<Record<string, string>>> | undefined;
+  const loadWords = async () => {
+    const { module } = await runnerImport<typeof import("@webforge/i18n")>("@webforge/i18n", {
+      configFile: false,
+      logLevel: "warn",
+    });
+    return {
+      "%WEBFORGE_APP_NAME%": module.t("app.name"),
+      "%WEBFORGE_STARTING%": module.t("app.starting"),
+    };
+  };
+  const escapeHtml = (text: string) =>
+    text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll('"', "&quot;");
+  return {
+    name: "webforge:startup-screen",
+    transformIndexHtml: async (html) => {
+      words ??= loadWords();
+      const filled = Object.entries(await words).reduce(
+        (page, [placeholder, text]) => page.replaceAll(placeholder, escapeHtml(text)),
+        html,
+      );
+      const unknown = /%WEBFORGE_(?!CSP%)[A-Z_]+%/.exec(filled);
+      if (unknown !== null) throw new Error(`No words for ${unknown[0]} in the start-up screen`);
+      return filled;
     },
   };
 }
@@ -274,6 +309,7 @@ export default defineConfig(({ command }) => {
         }),
         tailwindcss(),
         contentSecurityPolicy(devNonce),
+        startupScreen(),
         thirdPartyNotices(bundled),
       ],
       ...(devNonce === undefined ? {} : { html: { cspNonce: devNonce } }),

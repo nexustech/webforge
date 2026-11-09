@@ -4,6 +4,17 @@ import { TITLE_BAR_HEIGHT } from "../shared/title-bar.js";
 /** The editor themes (UI1); the renderer sets the same name as `data-theme`. */
 export type EditorTheme = "dark" | "light";
 
+/**
+ * The editor page's address with the person's theme as its query (`?theme=light`), as the Help
+ * window's page has it: the page's start-up screen (index.html, public/startup-theme.js) is drawn
+ * in that theme from the first paint, before the editor's scripts have loaded.
+ */
+export function editorPageAddress(pageUrl: string, theme: EditorTheme): string {
+  const url = new URL(pageUrl);
+  url.searchParams.set("theme", theme);
+  return url.href;
+}
+
 /** The window's colour before the page paints: each theme's `--background` token. */
 export function windowBackground(theme: EditorTheme): string {
   return theme === "dark" ? "#2c3134" : "#edf0f4";

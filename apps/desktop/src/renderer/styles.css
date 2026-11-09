@@ -11,6 +11,83 @@ body,
   margin: 0;
 }
 
+/* The start-up screen in index.html (#887): drawn before any script has run, so plain CSS on the
+   theme's tokens, in the theme the page's address names (public/startup-theme.js). Its title bar
+   is the editor's colour and height, and moves the window, as the editor's does once it is drawn. */
+.startup {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.startup__title-bar {
+  flex: none;
+  /* TITLE_BAR_HEIGHT (src/shared/title-bar.ts). */
+  height: 40px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--border-strong);
+  background: var(--titlebar);
+  -webkit-app-region: drag;
+}
+
+.startup__body {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  user-select: none;
+}
+
+.startup__name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.startup__label {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+/* Indeterminate: a stripe that crosses the track for as long as start-up takes. */
+.startup__progress {
+  position: relative;
+  width: 160px;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--muted);
+}
+
+.startup__progress::after {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--primary);
+  content: "";
+  animation: startup-progress 1.2s ease-in-out infinite;
+}
+
+@keyframes startup-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* Without motion, the stripe stays: the label says the app is starting. */
+@media (prefers-reduced-motion: reduce) {
+  .startup__progress::after {
+    animation: none;
+    transform: translateX(75%);
+  }
+}
+
 /* The canvas, under the shared-region banner while a Header or Footer element is selected. */
 .editor {
   display: flex;

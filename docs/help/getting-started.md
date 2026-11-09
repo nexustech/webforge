@@ -13,6 +13,10 @@ With {appName} you make a website on your own computer and then export it for yo
 
 A site is made of **pages**. Each page is a stack of **sections**, such as a Hero, a Gallery or a Contact form. Each section holds **elements**, such as headings, text, pictures and buttons.
 
+## Starting {appName}
+
+While {appName} starts, its window says **Starting {appName}…**. Then you see the site you opened, such as one you double-clicked, or the start screen. If something goes wrong while it starts, the window says so: choose **Try again**. Your work is saved.
+
 ## The start screen
 
 When no site is open, you see the start screen.
