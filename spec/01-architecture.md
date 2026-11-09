@@ -1,7 +1,7 @@
 # Webforge Architecture
 
 **Version:** 1.0 (consolidated from research, 2026-10-19)
-**Status:** Baseline. Items marked 🔬 must be confirmed by the prototype spikes ([02-mvp-spec.md](02-mvp-spec.md#6-milestones))
+**Status:** Baseline, with the prototype spikes' results folded in (ADRs 0003–0007; 0.6, 9 Nov 2026). §6's interfaces are the code's.
 **Sources of truth:** decisions are referenced by ID (e.g. **C5**, **X1**) and link back to the research notes in [`../research/`](../research/README.md). The full register is at the end of this document.
 
 ## 1. What Webforge is
@@ -186,15 +186,29 @@ type CommandApi = {
 };
 
 // packages/storage: project-store.ts. Synchronous (better-sqlite3), used only in the main process.
+// (abridged: also readDocuments, readDocument, isEmpty, hasBlob, readManifest, readVersionManifest,
+// blobsReachedBy, readAsset, and the site's own settings outside its document: editor mode, export
+// choices, Site Check's ignored findings, publish destinations, when it was last published)
 class ProjectStore {
   static create(path: string, options: CreateProjectOptions): ProjectStore;
   static open(path: string, options?: OpenProjectOptions): ProjectStore; // checks the file; migrates an older format; a newer one opens read-only
   readSite(): SiteDoc; // migrated in memory; the next commit writes it
   saveSite(site: SiteDoc): void;
   commit(changes: readonly DocumentChange[]): void; // autosave transaction (P2)
-  saveVersion(name: string, kind: VersionKind): VersionInfo; // 'manual' | 'auto'
+  saveVersion(name: string, reason: VersionReason, options?: SaveVersionOptions): VersionInfo;
+  // reason: 'manual' | 'daily' | 'before-restore' | 'before-site-wide' | 'on-publish' (ADR 0020);
+  // options: { documents, thumbnailHash, publishedTo }
+  addVersion(
+    version: NewVersion,
+    documents: readonly { id: string; kind: string; content: unknown }[],
+  ): void; // a version from a site's ZIP (4.7)
+  recordPublish(id: string, publishedTo: VersionPublish): boolean; // where a version went live (ADR 0018)
+  deleteVersion(id: string): boolean;
+  pruneAutoVersions(keep: number): number; // automatic ones only, never the live site's (P3)
+  versionSpace(): VersionSpace;
   listVersions(): VersionInfo[];
-  readVersion(id: string): StoredDocument[] | undefined; // as stored, not migrated; 4.6 adds readVersionSite (A4)
+  readVersion(id: string): StoredDocument[] | undefined; // as stored, not migrated
+  readVersionSite(id: string): SiteDoc | undefined; // migrated in memory (A4)
   putBlob(data: Uint8Array, mime: string): string;
   readBlob(hash: string): StoredBlob | undefined;
   putAsset(asset: NewAsset): AssetInfo;
@@ -214,10 +228,12 @@ type SiteStore = {
     none: (reason: StaleReason) => T,
   ): Promise<T>; // 'shared' | 'exclusive'; 'no-site' | 'stale-session'
   writerTurn<T>(
-    work: (path: string, store: StorageWriter["store"]) => Promise<T>,
-    none: (reason: StaleReason) => T,
-  ): Promise<T>; // the storage writer's exclusive turn (R13b)
-  // … staleReason(), openPath(), writer
+    work: (path: string, writer: Pick<StorageWriter, "store" | "putBlobs">) => Promise<T>,
+    none: (reason: StaleReason | "read-only") => T,
+  ): Promise<T>; // the storage writer's exclusive turn (R13b); 'read-only': a file it can't write
+  staleReason(): StaleReason | undefined;
+  openPath(): string | undefined;
+  readonly writer: Pick<StorageWriter, "prepare" | "discard">;
 };
 
 // packages/pipeline: pipeline.ts and build.ts
@@ -227,7 +243,9 @@ type Pipeline = {
     snapshot: SiteSnapshot,
     resources: PipelineResources,
     options: PipelineBuildOptions,
-  ): AsyncIterable<PipelineEvent>; // mode: 'preview' | 'export' | 'publish'; signal, output
+  ): AsyncIterable<PipelineEvent>;
+  // options: { mode: 'preview' | 'export' | 'publish', signal, output, year ({year}, F-CM-8),
+  // runsCode (which of the site's own code goes in, ADR 0019), host: 'netlify' (Netlify Forms) }
 };
 function buildSite(
   snapshot: SiteSnapshot,
@@ -242,6 +260,9 @@ interface Publisher<D> {
   test(dest: Omit<D, "site" | "replaceOtherSite">, signal?: AbortSignal): Promise<TestResult>;
   publish(build: BuildOutput, dest: D, signal: AbortSignal): AsyncIterable<PublishEvent>;
   verify?(published: PublishedEvent, dest: D, signal: AbortSignal): Promise<Verification>;
+  restore?(version: string, dest: D, signal: AbortSignal): Promise<PublishedEvent | undefined>;
+  // restore: puts a deploy the host still keeps back live, nothing sent (Netlify only, 4.2);
+  // undefined when it no longer keeps it, and the version is built and published instead
 }
 ```
 
@@ -359,3 +380,24 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 | UI2–UI4      | Editor UI/UX parity: Bootstrap Studio interactions and Elements' Inspector/Theme Studio ideas in the MVP; Bootstrap Studio's shortcuts as the standard; v1.1 notes, workspaces, display modes, AI panel | [product/06](../research/product/06-editor-ui-ux-parity.md)                                                    |
 | BS9-1–10     | Bootstrap Studio 9.0 review: sticky header and back-to-top in the MVP; v1.1 Blog on a general collections engine; v1.1 extras and AI assistant details                                                  | [bootstrap-studio/06](../research/bootstrap-studio/06-bootstrap-studio-9.md)                                   |
 | GA5–GA9      | Elements 3.0 review: connect AI apps (MCP), shared sections, files in Media and `llms.txt` in the MVP; built-in AI assistant and draft pages in v1.1                                                    | [product/05 §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22) |
+| ADR 0003     | `.wforge` on better-sqlite3: prebuilt binaries with no rebuild, its journal mode, and opening a file that may not be trustworthy                                                                        | [ADR 0003](../docs/adr/0003-wforge-sqlite-storage.md)                                                          |
+| ADR 0004     | Puck stays (pinned) behind the `CanvasEngine` adapter, under Webforge's own history: Puck's undo never acts                                                                                             | [ADR 0004](../docs/adr/0004-puck-with-webforge-history.md)                                                     |
+| ADR 0005     | The export pipeline: site components rendered statically into flat files that open from disk with no external requests                                                                                  | [ADR 0005](../docs/adr/0005-export-pipeline-spike.md)                                                          |
+| ADR 0006     | Publishing: one `Publisher` interface with credentials outside the destination, Netlify, and the OS keychain for sign-ins                                                                               | [ADR 0006](../docs/adr/0006-publishing.md)                                                                     |
+| ADR 0007     | Editing a large page: Puck stays, with performance work before the beta                                                                                                                                 | [ADR 0007](../docs/adr/0007-large-page-performance.md)                                                         |
+| ADR 0008     | A roomier canvas: the window starts maximised, narrower side columns, one panel per column                                                                                                              | [ADR 0008](../docs/adr/0008-roomier-canvas-layout.md)                                                          |
+| ADR 0009     | Colour references: a theme role and shade, or a field's own colour (`colorRefSchema`)                                                                                                                   | [ADR 0009](../docs/adr/0009-colour-refs.md)                                                                    |
+| ADR 0010     | The React Compiler memoizes the editor through Babel, and `pnpm react-compiler` keeps it compilable                                                                                                     | [ADR 0010](../docs/adr/0010-react-compiler.md)                                                                 |
+| ADR 0011     | Layers is always visible, under the left column's tabs, and read-only in Content mode                                                                                                                   | [ADR 0011](../docs/adr/0011-layers-always-visible.md)                                                          |
+| ADR 0012     | Every change to a stored shape bumps the site format, with a migration and fixtures                                                                                                                     | [ADR 0012](../docs/adr/0012-site-format-migrations.md)                                                         |
+| ADR 0013     | A second connection, in a worker, writes large blobs, behind a store gate in main                                                                                                                       | [ADR 0013](../docs/adr/0013-store-gate.md)                                                                     |
+| ADR 0014     | Time in tests on a busy machine: measure the work where a clock isn't the point                                                                                                                         | [ADR 0014](../docs/adr/0014-time-budgets-under-load.md)                                                        |
+| ADR 0015     | The preview server: opens in the default browser, listens on `127.0.0.1` under one secret path, builds in its own worker                                                                                | [ADR 0015](../docs/adr/0015-preview-server.md)                                                                 |
+| ADR 0016     | Site Check's rules run in the renderer, from `packages/site-check`                                                                                                                                      | [ADR 0016](../docs/adr/0016-site-check-in-the-renderer.md)                                                     |
+| ADR 0017     | The site's own code in the export: `custom.css` and `custom.js` as files of their own, head and body HTML last                                                                                          | [ADR 0017](../docs/adr/0017-site-code-in-the-export.md)                                                        |
+| ADR 0018     | Publishing runs as a job in the export worker, publishes a version, and keeps destinations beside the site                                                                                              | [ADR 0018](../docs/adr/0018-publishing-from-a-version.md)                                                      |
+| ADR 0019     | Code trust: the owner confirms code from someone else's site file, per site and per piece, on this computer                                                                                             | [ADR 0019](../docs/adr/0019-code-trust.md)                                                                     |
+| ADR 0020     | Storage format 2: what a version records (reason, site format, picture, where it was published), and the first schema migration                                                                         | [ADR 0020](../docs/adr/0020-storage-format-2.md)                                                               |
+| ADR 0021     | AI apps reach Webforge over MCP on loopback HTTP, and Claude Desktop through a bundled extension                                                                                                        | [ADR 0021](../docs/adr/0021-mcp-transport.md)                                                                  |
+| ADR 0022     | Benchmarks in `bench/`, compared with `main` in one CI job                                                                                                                                              | [ADR 0022](../docs/adr/0022-benchmarks.md)                                                                     |
+| ADR 0023     | The editor's own `webforge-app://` scheme, and what may run in the canvas                                                                                                                               | [ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md)                                                 |
