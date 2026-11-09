@@ -10,6 +10,9 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
@@ -20,7 +23,7 @@ import { useCommandRegistry } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { PanelErrorBoundary } from "./PanelErrorBoundary.js";
 import { usePanelRegistry, usePanels } from "./panel-context.js";
-import { type PanelSlot, panelsInSlot } from "./panels.js";
+import { type Panel, type PanelSlot, panelsInSlot } from "./panels.js";
 import { REGION_ATTRIBUTE } from "./regions.js";
 
 /** The panel groups whose sizes are remembered, by id. */
@@ -92,15 +95,47 @@ export type ShellLayoutProps = {
 };
 
 /**
+ * A panel's tab that shows only its icon (#898): named by its title, which its tooltip shows too,
+ * over what the panel is for. The tooltip opens on hover and on the keyboard's focus.
+ */
+function IconTab({
+  panel,
+  icon: Icon,
+}: {
+  readonly panel: Panel;
+  readonly icon: NonNullable<Panel["icon"]>;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <TabsTrigger value={panel.id} aria-label={panel.title} className="px-2 [&_svg]:size-4">
+          <Icon />
+        </TabsTrigger>
+      </TooltipTrigger>
+      <TooltipContent side="bottom" className="max-w-56">
+        <p className="font-semibold">{panel.title}</p>
+        {panel.description === undefined ? null : (
+          <p className="text-muted-foreground">{panel.description}</p>
+        )}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
  * The panels of some slots as tabs, one shown at a time, or an empty state when no area has put a
- * panel there yet. A side column shows its top slot's panels first, then its bottom slot's.
+ * panel there yet. A side column shows its top slot's panels first, then its bottom slot's. With
+ * `iconTabs`, a tab whose panel has an icon shows only that, with a tooltip (#898): the left
+ * column's three titles didn't fit its width.
  */
 function PanelTabs({
   slots,
   editorLevel,
+  iconTabs = false,
 }: {
   readonly slots: readonly PanelSlot[];
   readonly editorLevel: Preferences["editorLevel"];
+  readonly iconTabs?: boolean;
 }) {
   const registry = usePanelRegistry();
   const registered = usePanels();
@@ -170,11 +205,15 @@ function PanelTabs({
     <Tabs ref={setTabs} value={active.id} onValueChange={setChosen} className="h-full">
       <div className="flex shrink-0 items-center bg-tabs">
         <TabsList className="min-w-0 flex-1">
-          {panels.map((panel) => (
-            <TabsTrigger key={panel.id} value={panel.id}>
-              {panel.title}
-            </TabsTrigger>
-          ))}
+          {panels.map((panel) =>
+            iconTabs && panel.icon !== undefined ? (
+              <IconTab key={panel.id} panel={panel} icon={panel.icon} />
+            ) : (
+              <TabsTrigger key={panel.id} value={panel.id}>
+                {panel.title}
+              </TabsTrigger>
+            ),
+          )}
         </TabsList>
         {search !== null ? (
           // The panel's search, from the strip's right end (LF-5).
@@ -454,7 +493,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
                   onLayoutChanged={remember(PANEL_GROUPS.left)}
                 >
                   <ResizablePanel id="tabs" minSize={DEFAULTS.lowerMin}>
-                    <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
+                    <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} iconTabs />
                   </ResizablePanel>
                   <ResizableHandle aria-label={t("panels.resizeLower")} />
                   <ResizablePanel
@@ -466,7 +505,7 @@ export function ShellLayout({ center, layout, onLayoutChange, editorLevel }: She
                   </ResizablePanel>
                 </ResizablePanelGroup>
               ) : (
-                <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} />
+                <PanelTabs slots={SLOTS.left} editorLevel={editorLevel} iconTabs />
               )}
             </section>
             {collapsed.left ? (

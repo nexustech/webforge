@@ -1,6 +1,9 @@
 /** Version History (F-SITE-4, 4.6; `apps/desktop/src/renderer/versions/`). */
 export const versions = {
   "versionHistory.panelTitle": "Version History",
+  // Its tab's tooltip, under the name: the left column's tabs show only their icons.
+  "versionHistory.panelDescription":
+    "Saved copies of your whole site. Save one before a big change, or go back to an earlier one.",
   "versionHistory.save": "Save Version…",
   "versionHistory.loading": "Finding this site's versions…",
   "versionHistory.loadFailed": "{appName} couldn't list this site's versions.",

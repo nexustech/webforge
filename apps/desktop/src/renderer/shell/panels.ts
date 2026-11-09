@@ -24,8 +24,16 @@ export type Panel = {
   readonly id: string;
   readonly slot: PanelSlot;
   readonly title: string;
-  /** Its icon, in the strip a collapsed column leaves (UX-13); its title's first letter if none. */
+  /**
+   * Its icon: in the strip a collapsed column leaves (UX-13), its title's first letter if none, and
+   * as its tab in the left column, whose tabs show only their icons (#898).
+   */
   readonly icon?: ComponentType<{ readonly className?: string }>;
+  /**
+   * What the panel is for, already translated: under its title in its tab's tooltip where the tab
+   * shows only its icon (the left column's).
+   */
+  readonly description?: string;
   /** Shown only in Advanced mode (T2): Custom Code. */
   readonly advancedOnly?: boolean;
   /** Tab order within the slot, lowest first; ties keep registration order. */

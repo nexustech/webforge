@@ -286,6 +286,7 @@ export function registerAddPanel(
     id: ADD_PANEL_ID,
     slot: "left.top",
     title: t("add.title"),
+    description: t("add.description"),
     icon: SquarePlusIcon,
     order: -1,
     component: Add,
