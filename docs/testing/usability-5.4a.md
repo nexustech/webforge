@@ -12,9 +12,9 @@ Plan item 5.4a's acceptance criterion: "A new user can publish a template-based 
 2. **Set up a test web host** the person can publish to:
    - an SFTP account on a test server, or a folder on a test FTP server, that nobody else uses;
    - its address, user name and password written on a card for the person to type in when asked, as their web host would have given them.
-   It must not be a real site anyone visits.
+     It must not be a real site anyone visits.
 3. **Have ready:**
-   - a business the person can pretend to run, if they don't have one (*Rosa's Bakery, a bakery in Leeds, open 8 till 4 Tuesday to Saturday*);
+   - a business the person can pretend to run, if they don't have one (_Rosa's Bakery, a bakery in Leeds, open 8 till 4 Tuesday to Saturday_);
    - a phone with a browser, on the same Wi-Fi as the computer, for Preview on Phone;
    - something to write notes on, and a clock.
 4. **Close everything else** on the computer.
@@ -37,10 +37,10 @@ Start the clock when Webforge opens.
 
 - **Don't help,** unless they've been stuck on the same thing for five minutes, or ask to stop. When you do, give the smallest hint that gets them moving ("Is there a menu that might help?"), and note that you did.
 - **Note, with the time:**
-  - whether they take the tour, skip it or choose *Not now*, and at which step they leave it;
+  - whether they take the tour, skip it or choose _Not now_, and at which step they leave it;
   - each time they hesitate, go the wrong way, or say they're confused, and what they were looking for;
   - each first-time tip they see, and whether they read it;
-  - when they open Help (F1, a **?** button, *Learn more*), and whether it answered their question;
+  - when they open Help (F1, a **?** button, _Learn more_), and whether it answered their question;
   - each error message, and what they did next;
   - when they first preview the site, and when they first publish.
 - **Stop at 60 minutes** whether or not they've published.
@@ -48,6 +48,7 @@ Start the clock when Webforge opens.
 ## Afterwards
 
 Ask, and note the answers:
+
 1. "What was the hardest part?"
 2. "Was there a point where you didn't know what to do next?"
 3. "Did the tour help? Was there anything it should have shown you?"
@@ -60,13 +61,13 @@ Then check the test host: is the site there, with their changes, and does it ope
 
 For each person, record:
 
-| | Person 1 | Person 2 | Person 3 |
-|---|---|---|---|
-| Published, with the site live on the host | | | |
-| Time to publish (minutes) | | | |
-| Hints given | | | |
-| Tour: taken, skipped, or left at step… | | | |
-| Where they got stuck (each) | | | |
+|                                           | Person 1 | Person 2 | Person 3 |
+| ----------------------------------------- | -------- | -------- | -------- |
+| Published, with the site live on the host |          |          |          |
+| Time to publish (minutes)                 |          |          |          |
+| Hints given                               |          |          |          |
+| Tour: taken, skipped, or left at step…    |          |          |          |
+| Where they got stuck (each)               |          |          |          |
 
 **The criterion is met** if at least two of the three publish a site with their own name, heading and picture within the hour, with no more than one hint each.
 

@@ -5,13 +5,16 @@
 - Related: #60 (3.2), F-PV-1, [stack/07 §Live preview](../../research/stack/07-export-pipeline.md#live-preview-same-pipeline-in-memory), [Bootstrap Studio's preview](../../research/bootstrap-studio/02-architecture.md#live-preview-how-it-works-), architecture §7 (Edit, step 4), [ADR 0014](0014-time-budgets-under-load.md), R15
 
 ## Context
+
 F-PV-1 opens the site in the default browser through a preview server in the main process. Edits reach the browser live: a CSS hot-swap, or a page reload. A QR code lets a phone on the same Wi-Fi open it.
 
 Bootstrap Studio, the precedent:
+
 - binds its server to every network (`0.0.0.0`) from the start;
 - asks the renderer for every URL.
 
 Both are a poor fit here:
+
 - **The network.** A preview reachable by anyone on the Wi-Fi, a café's included, from the moment it opens, shows the owner's unpublished site to strangers.
 - **The renderer.** A request per URL would need the renderer to render, and images to cross IPC for each request.
 - **Our worker already builds.** The 3.1 pipeline keeps its pages, images and stylesheet in memory between builds.
@@ -19,6 +22,7 @@ Both are a poor fit here:
 The site's own scripts run in the preview. They must never run with the editor's privileges: the `webforge-media:` and `webforge-font:` protocols, IPC, or an Electron session.
 
 ## Decision
+
 1. **Where it opens:** in the default browser, never in an Electron window. The site's scripts run where any visitor's would. No Electron session or partition serves them, so the editor's protocols aren't reachable from a preview page.
 2. **One secret path.** Every URL is under `/<128-bit random hex>/`, made when the server starts.
    - Anything else is a 404: another base, a step up (`..`), a file not in the build.
@@ -27,9 +31,9 @@ The site's own scripts run in the preview. They must never run with the editor's
    - Every answer is `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
    - The built files are `Cache-Control: private, no-cache` with their version as an ETag: kept by the visitor's browser only, never a proxy's, and checked each time, so a reload fetches only what changed (a 304 for the rest). Everything else (the live reload script, the event stream, a 404) is `no-store`.
 3. **This computer first.** The server listens on `127.0.0.1` on a random port.
-   - Only *Preview on Phone…* starts a second listener, on its own random port, bound to the one private address (RFC 1918) the computer has on its local network: the address in the QR code, never `0.0.0.0`, so a VPN's or another adapter's network can't reach it. A new address (another Wi-Fi) moves it there.
+   - Only _Preview on Phone…_ starts a second listener, on its own random port, bound to the one private address (RFC 1918) the computer has on its local network: the address in the QR code, never `0.0.0.0`, so a VPN's or another adapter's network can't reach it. A new address (another Wi-Fi) moves it there.
    - With no private address (no network, or only a public or VPN one), the phone is told the preview needs a home or office network, and nothing listens.
-   - While that listener is on, the title bar says *Phone preview on*, with Stop; *Stop Phone Preview* (File menu too) closes that listener alone, and the desktop preview goes on.
+   - While that listener is on, the title bar says _Phone preview on_, with Stop; _Stop Phone Preview_ (File menu too) closes that listener alone, and the desktop preview goes on.
    - The dialog says that anyone on the Wi-Fi with the address can see the preview while Webforge is open.
    - Both stop when the site closes.
 4. **Built in its own worker, only what changed sent.**
@@ -60,6 +64,7 @@ The site's own scripts run in the preview. They must never run with the editor's
    - **In every other run,** tests check what load doesn't move: a colour change sends the stylesheet alone, compiles nothing and renders no page, and a text edit sends its page alone.
 
 ## Consequences
-- **Phone preview needs the network listener.** On Windows, the first *Preview on Phone…* may show the system firewall's question for Webforge; until it's allowed, the phone can't connect. The desktop preview never asks: it stays on `127.0.0.1`.
+
+- **Phone preview needs the network listener.** On Windows, the first _Preview on Phone…_ may show the system firewall's question for Webforge; until it's allowed, the phone can't connect. The desktop preview never asks: it stays on `127.0.0.1`.
 - **A second worker while a preview is open.** It has its own image cache, so an image encoded for the preview is encoded again for the export, once.
 - **GA stays off in preview.** When Google Analytics lands (Phase 3), the build leaves it out in `preview` mode, as its plan item says.

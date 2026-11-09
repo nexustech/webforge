@@ -1,4 +1,5 @@
 ---
+
 id: preview
 title: Preview
 summary: See your site in your web browser and on your phone, as visitors will, while you edit.
@@ -15,6 +16,7 @@ updated: 2026-11-06
 Click **Preview** in the title bar, choose **File › Preview**, or press Ctrl+I (Cmd+I on a Mac) when you're not typing text. Your browser opens at the page you're editing.
 
 The preview follows you as you work:
+
 - change the theme or a style and it updates straight away;
 - change a page and it reloads;
 - go to another page in {appName} and the browser goes there too.

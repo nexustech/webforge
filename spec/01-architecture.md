@@ -5,26 +5,28 @@
 **Sources of truth:** decisions are referenced by ID (e.g. **C5**, **X1**) and link back to the research notes in [`../research/`](../research/README.md). The full register is at the end of this document.
 
 ## 1. What Webforge is
+
 A **paid, closed-source desktop app** (Windows 10/11 x64 + macOS 13+ on Apple Silicon) that lets **DIY small-business owners** build responsive websites visually:
+
 - **Building:** drag-and-drop sections and elements, click-to-edit text, themes.
 - **Output:** a **self-contained static site** (flat HTML/CSS/JS, no server, no CDN) that can be uploaded anywhere or opened from disk.
 - **Publishing:** to a folder/ZIP, FTP/FTPS/SFTP or Netlify.
 
 ## 2. Technology stack
 
-| Layer | Choice | Decision |
-|---|---|---|
-| Desktop shell | **Electron 44** (Chromium 152, Node 24), secure-by-default configuration | [01](../research/stack/01-electron-vs-tauri.md) |
-| Language | **TypeScript 7** (strict), ESM | [03-engineering-standards](03-engineering-standards.md) |
-| Editor UI | **React 19** (+ React Compiler) + **shadcn/ui** on **Tailwind v4**; Bootstrap Studio-like layout and dark theme (UI1) | [02](../research/stack/02-react-vs-svelte.md), [product/04](../research/product/04-editor-look-and-feel.md) |
-| Editor state | **Zustand** stores + **Immer** patches; custom History Manager | [03 undo](../research/stack/03-undo-redo.md) |
-| Canvas / editor engine | **Puck** (MIT) behind a `CanvasEngine` adapter (C6) ✅ go, runs under our history ([ADR 0004](../docs/adr/0004-puck-with-webforge-history.md)); fallback: own canvas on dnd-kit + Tiptap | [04](../research/stack/04-canvas-engine.md) |
-| Rich text | **Tiptap** (MIT packages only) via Puck `richtext` fields | 04, C1 |
-| Site components | React components rendering static HTML + Tailwind + **daisyUI 5**; small vanilla `webforge.js` for behaviour | [05](../research/stack/05-site-components.md) |
-| Project file | Single **`.wforge`** = **SQLite** DB via **better-sqlite3** ✅, content-addressed blobs, versions | [06](../research/stack/06-project-file-format.md) |
-| Build / preview pipeline | In-app: Puck render → Tailwind v4 (programmatic) + daisyUI → esbuild → jSquash images; runs in an Electron `utilityProcess` | [07](../research/stack/07-export-pipeline.md) |
-| Publishing | Folder/ZIP · `basic-ftp` · `ssh2` ([ADR 0006](../docs/adr/0006-publishing.md) §7) · Netlify REST API | [08](../research/stack/08-publishing.md) |
-| Packaging & updates | **electron-vite** (dev/build) + **electron-builder** (NSIS / DMG) + **electron-updater** ✅ (decided 2026-10-19, no Forge comparison needed) | 01 |
+| Layer                    | Choice                                                                                                                                                                                   | Decision                                                                                                    |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Desktop shell            | **Electron 44** (Chromium 152, Node 24), secure-by-default configuration                                                                                                                 | [01](../research/stack/01-electron-vs-tauri.md)                                                             |
+| Language                 | **TypeScript 7** (strict), ESM                                                                                                                                                           | [03-engineering-standards](03-engineering-standards.md)                                                     |
+| Editor UI                | **React 19** (+ React Compiler) + **shadcn/ui** on **Tailwind v4**; Bootstrap Studio-like layout and dark theme (UI1)                                                                    | [02](../research/stack/02-react-vs-svelte.md), [product/04](../research/product/04-editor-look-and-feel.md) |
+| Editor state             | **Zustand** stores + **Immer** patches; custom History Manager                                                                                                                           | [03 undo](../research/stack/03-undo-redo.md)                                                                |
+| Canvas / editor engine   | **Puck** (MIT) behind a `CanvasEngine` adapter (C6) ✅ go, runs under our history ([ADR 0004](../docs/adr/0004-puck-with-webforge-history.md)); fallback: own canvas on dnd-kit + Tiptap | [04](../research/stack/04-canvas-engine.md)                                                                 |
+| Rich text                | **Tiptap** (MIT packages only) via Puck `richtext` fields                                                                                                                                | 04, C1                                                                                                      |
+| Site components          | React components rendering static HTML + Tailwind + **daisyUI 5**; small vanilla `webforge.js` for behaviour                                                                             | [05](../research/stack/05-site-components.md)                                                               |
+| Project file             | Single **`.wforge`** = **SQLite** DB via **better-sqlite3** ✅, content-addressed blobs, versions                                                                                        | [06](../research/stack/06-project-file-format.md)                                                           |
+| Build / preview pipeline | In-app: Puck render → Tailwind v4 (programmatic) + daisyUI → esbuild → jSquash images; runs in an Electron `utilityProcess`                                                              | [07](../research/stack/07-export-pipeline.md)                                                               |
+| Publishing               | Folder/ZIP · `basic-ftp` · `ssh2` ([ADR 0006](../docs/adr/0006-publishing.md) §7) · Netlify REST API                                                                                     | [08](../research/stack/08-publishing.md)                                                                    |
+| Packaging & updates      | **electron-vite** (dev/build) + **electron-builder** (NSIS / DMG) + **electron-updater** ✅ (decided 2026-10-19, no Forge comparison needed)                                             | 01                                                                                                          |
 
 Licensing rule for every dependency: **permissive only** (MIT, BSD, Apache-2.0, ISC); MPL-2.0 OK unmodified; **no GPL/AGPL**, no paid add-ons, and never GSAP or libraries built on it, whose terms exclude competing builders (C1, PG-6). Enforced in CI.
 
@@ -63,17 +65,18 @@ flowchart TB
   MCP -- "commands via typed IPC" --> DOC
 ```
 
-| Process | Responsibilities | Must never |
-|---|---|---|
-| **Main** | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publish destinations, Test connection and the Site Check publish gate, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth |
-| **Preload** | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`) | Expose `ipcRenderer`, Node or Electron objects directly |
-| **Renderer (editor)** | UI, the in-memory document, history, selection, canvas engine, Site Check ([ADR 0016](../docs/adr/0016-site-check-in-the-renderer.md)) | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`) |
-| **Canvas iframe** | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`). Puck's same-origin `srcdoc` frame, which the engine reaches into, so not sandboxed ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md)) | Load editor styles; run any script: custom code that must run while editing goes in a separate view with no preload (ADR 0023) |
-| **Build worker** (`utilityProcess`) | Export/preview builds, image conversion, publishing: it builds a version and uploads it, with the secret main passes for that one job ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md)) | Block the UI; touch the network except during publish; keep a secret past its job |
+| Process                             | Responsibilities                                                                                                                                                                                                                                                             | Must never                                                                                                                     |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Main**                            | Window/menus, open/save `.wforge`, autosave transactions, versions, preview HTTP/SSE server, publish destinations, Test connection and the Site Check publish gate, credentials, updates, the local MCP server for AI apps (F-AI-1), which forwards commands to the renderer | Render UI; hold editor state of truth                                                                                          |
+| **Preload**                         | Exposes a **typed, minimal API** via `contextBridge` (`window.webforge.*`)                                                                                                                                                                                                   | Expose `ipcRenderer`, Node or Electron objects directly                                                                        |
+| **Renderer (editor)**               | UI, the in-memory document, history, selection, canvas engine, Site Check ([ADR 0016](../docs/adr/0016-site-check-in-the-renderer.md))                                                                                                                                       | Access Node/fs directly (`nodeIntegration: false`, `sandbox: true`)                                                            |
+| **Canvas iframe**                   | Shows the page being edited with the **site's** CSS only (C8, `syncHostStyles: false`). Puck's same-origin `srcdoc` frame, which the engine reaches into, so not sandboxed ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md))                                  | Load editor styles; run any script: custom code that must run while editing goes in a separate view with no preload (ADR 0023) |
+| **Build worker** (`utilityProcess`) | Export/preview builds, image conversion, publishing: it builds a version and uploads it, with the secret main passes for that one job ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md))                                                                            | Block the UI; touch the network except during publish; keep a secret past its job                                              |
 
 **Electron hardening:** `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false`, no `@electron/remote`, strict CSP, `will-navigate`/`window.open` handlers, Electron Fuses (disable `RunAsNode`, enable ASAR integrity, cookie encryption, turn off `file://`'s extra privileges). The packaged editor and Help load from the app's own scheme, `webforge-app://editor/`, never `file://`, so no page of the app's can read the computer's files ([ADR 0023](../docs/adr/0023-app-scheme-and-canvas-boundary.md), #652).
 
 **File paths:** the renderer never names a file. The main process reads only paths it got itself: from native dialogs, the clipboard's file list, the command line, and dropped files' paths that the preload finds with `webUtils.getPathForFile` (`media:import-paths`, R13b).
+
 - **The preload is the trust boundary for dropped files' paths.** The main process takes any absolute path on that channel.
 - So the preload sends nothing but `getPathForFile`'s output for the `File` objects it was given. A `File` a page made has no path, so a page can't name a file.
 - A preload test keeps it that way ([ADR 0013](../docs/adr/0013-store-gate.md)).
@@ -104,6 +107,7 @@ wforge/
 ```
 
 **Dependency rules** (enforced with dependency-cruiser):
+
 - `model`, `history`, `storage`, `pipeline`, `publish` are **framework-free** (no React), except `pipeline` rendering through `site-components`.
 - **Only `engine` imports Puck.** Only `editor-ui` and `apps/desktop/renderer` import shadcn/ui.
 - Renderer code never imports Node built-ins; main-process code never imports React.
@@ -141,102 +145,123 @@ The contracts other areas build on, as each package exports them. Each block nam
 // setPreviews, setLooks, perform, onElementRequest, onTextSplit, onContextMenu, onAddRequest,
 // addDragSource, onFrameWindow)
 interface CanvasEngine {
-  mount(el: HTMLElement, opts: MountOptions): void   // { library, theme, … }
-  loadPage(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): void   // shared: F-ED-23
-  applyChange(change: DocChange): void
-  onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe
-  select(nodeId: string | null): void
-  onSelectionChange(cb: (nodeId: string | null, adding: boolean) => void): Unsubscribe   // adding: Ctrl/Shift-click (1.31)
-  onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe   // canvas handles: one step from start to commit, Esc cancels (1.32)
-  onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe   // 'undo' | 'redo' | 'cancel' pressed inside the canvas iframe (ADR 0004)
-  setViewport(v: Viewport): void                       // 'desktop' | 'tablet' | 'mobile' | number
-  onViewportChange(cb: (viewport: Viewport) => void): Unsubscribe
-  setMode(mode: EditorMode): void                      // 'design' | 'content' (M3)
-  destroy(): void
+  mount(el: HTMLElement, opts: MountOptions): void; // { library, theme, … }
+  loadPage(page: PageDoc, layout: LayoutDoc, shared?: SharedSectionsDoc): void; // shared: F-ED-23
+  applyChange(change: DocChange): void;
+  onUserEdit(cb: (edit: EngineEdit) => void): Unsubscribe;
+  select(nodeId: string | null): void;
+  onSelectionChange(cb: (nodeId: string | null, adding: boolean) => void): Unsubscribe; // adding: Ctrl/Shift-click (1.31)
+  onFieldDrag(cb: (drag: FieldDrag) => void): Unsubscribe; // canvas handles: one step from start to commit, Esc cancels (1.32)
+  onHistoryCommand(cb: HistoryCommandHandler): Unsubscribe; // 'undo' | 'redo' | 'cancel' pressed inside the canvas iframe (ADR 0004)
+  setViewport(v: Viewport): void; // 'desktop' | 'tablet' | 'mobile' | number
+  onViewportChange(cb: (viewport: Viewport) => void): Unsubscribe;
+  setMode(mode: EditorMode): void; // 'design' | 'content' (M3)
+  destroy(): void;
 }
 
 // packages/history: history-manager.ts. D is the document (SiteDoc), S the selection.
 interface HistoryManager<D, S> {
-  readonly document: ReadonlyStore<D>                  // read-only; changes go through run/begin
-  readonly state: ReadonlyStore<HistoryState<S>>       // can undo/redo, the open transaction
-  run(label: string, recipe: Recipe<D>, options?: RunOptions<S>): void   // { coalesceKey, coalesceWindowMs, selectionAfter }
-  begin(label: string): Transaction<D, S>              // gestures: drag, slider (commit / cancel)
-  undo(): boolean; redo(): boolean; jumpTo(entryId: string | null): boolean   // null = before the first step
-  entries(): readonly HistoryEntry<S>[]                // Undo History panel (D3)
-  breakCoalescing(): void
-  endSession(coalesceKey: string): void                // text session ends: merge its chunks into one step (D1)
-  mergeSince(entryId: string | null, label: string): boolean
-  clear(): void; isChanging(): boolean
+  readonly document: ReadonlyStore<D>; // read-only; changes go through run/begin
+  readonly state: ReadonlyStore<HistoryState<S>>; // can undo/redo, the open transaction
+  run(label: string, recipe: Recipe<D>, options?: RunOptions<S>): void; // { coalesceKey, coalesceWindowMs, selectionAfter }
+  begin(label: string): Transaction<D, S>; // gestures: drag, slider (commit / cancel)
+  undo(): boolean;
+  redo(): boolean;
+  jumpTo(entryId: string | null): boolean; // null = before the first step
+  entries(): readonly HistoryEntry<S>[]; // Undo History panel (D3)
+  breakCoalescing(): void;
+  endSession(coalesceKey: string): void; // text session ends: merge its chunks into one step (D1)
+  mergeSince(entryId: string | null, label: string): boolean;
+  clear(): void;
+  isChanging(): boolean;
 }
 
 // packages/commands (F-AI-1): api.ts. Main forwards tool calls over typed IPC; the renderer runs them.
 type CommandApi = {
-  query(name: string, input: unknown): QueryResult     // outline, page tree, fields, settings, theme
-  run(name: string, input: unknown, actor: Actor): Promise<CommandResult>   // Actor = { app: string }
+  query(name: string, input: unknown): QueryResult; // outline, page tree, fields, settings, theme
+  run(name: string, input: unknown, actor: Actor): Promise<CommandResult>; // Actor = { app: string }
   // zod-validated against COMMANDS; one HistoryManager step labelled "AI (‹app›): …"; refused with
   // 'busy' while a transaction or text session is open; site-wide commands await the D7
   // confirmation ('declined' after 60 s)
-}
+};
 
 // packages/storage: project-store.ts. Synchronous (better-sqlite3), used only in the main process.
 class ProjectStore {
-  static create(path: string, options: CreateProjectOptions): ProjectStore
-  static open(path: string, options?: OpenProjectOptions): ProjectStore   // checks the file; migrates an older format; a newer one opens read-only
-  readSite(): SiteDoc                                  // migrated in memory; the next commit writes it
-  saveSite(site: SiteDoc): void
-  commit(changes: readonly DocumentChange[]): void     // autosave transaction (P2)
-  saveVersion(name: string, kind: VersionKind): VersionInfo   // 'manual' | 'auto'
-  listVersions(): VersionInfo[]
-  readVersion(id: string): StoredDocument[] | undefined   // as stored, not migrated; 4.6 adds readVersionSite (A4)
-  putBlob(data: Uint8Array, mime: string): string; readBlob(hash: string): StoredBlob | undefined
-  putAsset(asset: NewAsset): AssetInfo; listAssets(): AssetInfo[]
-  collectGarbage(): GarbageReport
-  backupTo(path: string): Promise<void>
-  close(): void
+  static create(path: string, options: CreateProjectOptions): ProjectStore;
+  static open(path: string, options?: OpenProjectOptions): ProjectStore; // checks the file; migrates an older format; a newer one opens read-only
+  readSite(): SiteDoc; // migrated in memory; the next commit writes it
+  saveSite(site: SiteDoc): void;
+  commit(changes: readonly DocumentChange[]): void; // autosave transaction (P2)
+  saveVersion(name: string, kind: VersionKind): VersionInfo; // 'manual' | 'auto'
+  listVersions(): VersionInfo[];
+  readVersion(id: string): StoredDocument[] | undefined; // as stored, not migrated; 4.6 adds readVersionSite (A4)
+  putBlob(data: Uint8Array, mime: string): string;
+  readBlob(hash: string): StoredBlob | undefined;
+  putAsset(asset: NewAsset): AssetInfo;
+  listAssets(): AssetInfo[];
+  collectGarbage(): GarbageReport;
+  backupTo(path: string): Promise<void>;
+  close(): void;
 }
 // Site zips are separate functions (site-zip.ts: writeSiteZip, readSiteZip, fillFromSiteZip).
 
 // apps/desktop/src/main: site-store.ts. Main reaches the open site's store only through the store
 // gate (ADR 0013), on its shared or exclusive side, checked against the opening it was given for.
 type SiteStore = {
-  withStore<T>(kind: GateKind, work: (store: ProjectStore) => T | Promise<T>,
-               none: (reason: StaleReason) => T): Promise<T>   // 'shared' | 'exclusive'; 'no-site' | 'stale-session'
-  writerTurn<T>(work: (path: string, store: StorageWriter['store']) => Promise<T>,
-                none: (reason: StaleReason) => T): Promise<T>   // the storage writer's exclusive turn (R13b)
+  withStore<T>(
+    kind: GateKind,
+    work: (store: ProjectStore) => T | Promise<T>,
+    none: (reason: StaleReason) => T,
+  ): Promise<T>; // 'shared' | 'exclusive'; 'no-site' | 'stale-session'
+  writerTurn<T>(
+    work: (path: string, store: StorageWriter["store"]) => Promise<T>,
+    none: (reason: StaleReason) => T,
+  ): Promise<T>; // the storage writer's exclusive turn (R13b)
   // … staleReason(), openPath(), writer
-}
+};
 
 // packages/pipeline: pipeline.ts and build.ts
-type Pipeline = {   // createPipeline(library, options?): keeps caches between builds (3.1, R15)
-  build(snapshot: SiteSnapshot, resources: PipelineResources,
-        options: PipelineBuildOptions): AsyncIterable<PipelineEvent>   // mode: 'preview' | 'export' | 'publish'; signal, output
-}
-function buildSite(snapshot: SiteSnapshot, library: ComponentLibrary, resources: PipelineResources,
-                   options?: BuildOptions): Promise<BuiltSite>   // one export build, no caches kept
+type Pipeline = {
+  // createPipeline(library, options?): keeps caches between builds (3.1, R15)
+  build(
+    snapshot: SiteSnapshot,
+    resources: PipelineResources,
+    options: PipelineBuildOptions,
+  ): AsyncIterable<PipelineEvent>; // mode: 'preview' | 'export' | 'publish'; signal, output
+};
+function buildSite(
+  snapshot: SiteSnapshot,
+  library: ComponentLibrary,
+  resources: PipelineResources,
+  options?: BuildOptions,
+): Promise<BuiltSite>; // one export build, no caches kept
 
 // packages/publish: publisher.ts. D holds a destination's settings; credentials are given when
 // the publisher is created, never through D.
 interface Publisher<D> {
-  test(dest: Omit<D, 'site' | 'replaceOtherSite'>, signal?: AbortSignal): Promise<TestResult>
-  publish(build: BuildOutput, dest: D, signal: AbortSignal): AsyncIterable<PublishEvent>
-  verify?(published: PublishedEvent, dest: D, signal: AbortSignal): Promise<Verification>
+  test(dest: Omit<D, "site" | "replaceOtherSite">, signal?: AbortSignal): Promise<TestResult>;
+  publish(build: BuildOutput, dest: D, signal: AbortSignal): AsyncIterable<PublishEvent>;
+  verify?(published: PublishedEvent, dest: D, signal: AbortSignal): Promise<Verification>;
 }
 ```
 
 ## 7. Key flows
 
 **Edit:**
+
 1. A user action produces `history.run(label, recipe)`, which applies an Immer patch to the document store.
 2. The engine updates the canvas.
 3. The autosave debounce (~2 s, max 30 s) commits the patches to SQLite (P2).
 4. The preview cache is invalidated, and the worker rebuilds the affected page and CSS. SSE pushes a CSS hot-swap or a page reload.
 
 **Undo:**
+
 1. Apply inverse patches.
 2. Restore selection, page and viewport (D1–D7).
 3. Autosave.
 
 **Export:**
+
 1. Snapshot.
 2. Site Check (export rules, X5), in the renderer before the build starts ([ADR 0016](../docs/adr/0016-site-check-in-the-renderer.md)).
 3. Render.
@@ -249,8 +274,9 @@ interface Publisher<D> {
 10. Write to a temp folder, then atomically swap it in.
 
 **Publish** ([ADR 0018](../docs/adr/0018-publishing-from-a-version.md)):
+
 1. The renderer runs Site Check with the stricter publish rules (X5, ADR 0016), ends the text session and flushes autosave, then asks main to publish.
-2. Main reads the site from the store and runs the publish gate on it; a *Must fix* stops here, with nothing saved. It holds the manifest of the documents it read.
+2. Main reads the site from the store and runs the publish gate on it; a _Must fix_ stops here, with nothing saved. It holds the manifest of the documents it read.
 3. Main reads the destination's secret after checking its fingerprint (S2), and sends the site, the destination and the secret to the build worker as one job.
 4. The worker builds, diffs against the destination's manifest, and uploads assets → pages → `index.html`, streaming progress; cancel stops it.
 5. Verify. Once the publish has finished, main saves the automatic version "Published …" (08) from the held manifest, with where it went and what the check found. A publish that failed or was cancelled saves no version.
@@ -258,12 +284,14 @@ interface Publisher<D> {
 Republishing a version (4.6) is the same flow from step 2, starting from that version: nothing new is saved, and a publish that finishes is recorded on it.
 
 ## 8. Exported site contract
+
 - Flat pages (`index.html`, `about.html`, `services/web-design.html`), relative URLs, opens from disk (X1).
 - `assets/css/site.<hash>.css` (readable), `assets/js/webforge.<hash>.js` (classic `defer`, only if needed), `assets/fonts/*.woff2` (Fontsource, OFL), `assets/img/*` (WebP + fallback), favicons, `site.webmanifest`, `sitemap.xml` + canonical links if the URL is set, `robots.txt`, `404.html`, `files/*` (linked files, F-ED-24), `llms.txt` + `*.md` page copies when enabled (F-EX-5).
 - **No external requests** except explicitly allowed ones: GA4 `gtag.js` (B4: behind the consent banner B7, or with analytics cookies always denied when the owner turns the banner off) and per-URL user allow-list entries.
 - Forms POST to the configured form service (B3/B6); Buy buttons are plain links (M1).
 
 ## 9. Security & privacy
+
 - **Secrets never in `.wforge`.** Publish credentials live in the OS keychain via `safeStorage` (08).
   - Each destination's sign-in is encrypted as one record with what this computer trusts about it (the SFTP host key, plain FTP's warning seen) and the fingerprint of where it was typed for: protocol, host, port, user and host key; for Netlify, the site its token deploys to (S2, S32, 4.4a, `main/publish-secrets.ts`).
   - Main gives it only to the destination as the site file names it now. An edited host gets nothing, and the person types the password again.
@@ -302,31 +330,32 @@ Republishing a version (4.6) is the same flow from step 2, starting from that ve
 - **Exported sites:** privacy-first by default (self-hosted fonts, consent banner for GA, click-to-load embeds).
 
 ## 10. Performance targets
-| Metric | Target |
-|---|---|
-| Cold start to editable canvas (5-page site) | < 3 s on a mid-range laptop |
-| Keystroke / drag to canvas update | < 16 ms (no dropped frames) |
-| CSS-only change → preview browser | < 100 ms |
-| Page re-render in preview | < 200 ms |
-| Autosave commit | < 50 ms, off the UI thread |
-| Full export, 20 pages, images cached | < 5 s |
-| Installer size | ≤ 150 MB (templates/fonts beyond the core set downloadable) |
+
+| Metric                                      | Target                                                      |
+| ------------------------------------------- | ----------------------------------------------------------- |
+| Cold start to editable canvas (5-page site) | < 3 s on a mid-range laptop                                 |
+| Keystroke / drag to canvas update           | < 16 ms (no dropped frames)                                 |
+| CSS-only change → preview browser           | < 100 ms                                                    |
+| Page re-render in preview                   | < 200 ms                                                    |
+| Autosave commit                             | < 50 ms, off the UI thread                                  |
+| Full export, 20 pages, images cached        | < 5 s                                                       |
+| Installer size                              | ≤ 150 MB (templates/fonts beyond the core set downloadable) |
 
 ## 11. Decision register
 
-| ID | Decision | Note |
-|---|---|---|
-| — | Electron over Tauri; React over Svelte | [01](../research/stack/01-electron-vs-tauri.md), [02](../research/stack/02-react-vs-svelte.md) |
-| U1–U9, D1–D7 | Undo/redo requirements and decisions (session-grouped text, labels, history panel, delete/confirm rules, banner for shared sections) | [03](../research/stack/03-undo-redo.md) |
-| C1–C8 | Paid product licence rules, custom HTML/JS, no import, daisyUI components, shared Header/Footer, Puck adapter, self-contained sites | [04](../research/stack/04-canvas-engine.md) |
-| — | daisyUI (not Basecoat); no shadcn look in sites | [05](../research/stack/05-site-components.md) |
-| P1–P5 | `.wforge`, periodic autosave, 20 automatic versions, videos deferred, "open version as new site" | [06](../research/stack/06-project-file-format.md) |
-| X1–X6 | Flat .html, WebP + JPEG fallback, Site Settings, readable output, tiered checks (stricter publish), developer files (no Astro) | [07](../research/stack/07-export-pipeline.md) |
-| B1–B7 | Targets, hosting deferred, form presets, GA4, FTP rules, consent scope | [08](../research/stack/08-publishing.md) |
-| T1–T4 | DIY users, Simple/Advanced mode, structured layout, "Element" | [product/01](../research/product/01-terminology.md) |
-| M1–M5 | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later | [product/02](../research/product/02-cms.md) |
-| UI1 | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density | [product/04](../research/product/04-editor-look-and-feel.md) |
-| GA1–GA4 | Competitor gaps: 15 small MVP additions; AI with the user's own account in v1.1; provider presets deferred; plugin API long-term | [product/05](../research/product/05-feature-gap-analysis.md) |
-| UI2–UI4 | Editor UI/UX parity: Bootstrap Studio interactions and Elements' Inspector/Theme Studio ideas in the MVP; Bootstrap Studio's shortcuts as the standard; v1.1 notes, workspaces, display modes, AI panel | [product/06](../research/product/06-editor-ui-ux-parity.md) |
-| BS9-1–10 | Bootstrap Studio 9.0 review: sticky header and back-to-top in the MVP; v1.1 Blog on a general collections engine; v1.1 extras and AI assistant details | [bootstrap-studio/06](../research/bootstrap-studio/06-bootstrap-studio-9.md) |
-| GA5–GA9 | Elements 3.0 review: connect AI apps (MCP), shared sections, files in Media and `llms.txt` in the MVP; built-in AI assistant and draft pages in v1.1 | [product/05 §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22) |
+| ID           | Decision                                                                                                                                                                                                | Note                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| —            | Electron over Tauri; React over Svelte                                                                                                                                                                  | [01](../research/stack/01-electron-vs-tauri.md), [02](../research/stack/02-react-vs-svelte.md)                 |
+| U1–U9, D1–D7 | Undo/redo requirements and decisions (session-grouped text, labels, history panel, delete/confirm rules, banner for shared sections)                                                                    | [03](../research/stack/03-undo-redo.md)                                                                        |
+| C1–C8        | Paid product licence rules, custom HTML/JS, no import, daisyUI components, shared Header/Footer, Puck adapter, self-contained sites                                                                     | [04](../research/stack/04-canvas-engine.md)                                                                    |
+| —            | daisyUI (not Basecoat); no shadcn look in sites                                                                                                                                                         | [05](../research/stack/05-site-components.md)                                                                  |
+| P1–P5        | `.wforge`, periodic autosave, 20 automatic versions, videos deferred, "open version as new site"                                                                                                        | [06](../research/stack/06-project-file-format.md)                                                              |
+| X1–X6        | Flat .html, WebP + JPEG fallback, Site Settings, readable output, tiered checks (stricter publish), developer files (no Astro)                                                                          | [07](../research/stack/07-export-pipeline.md)                                                                  |
+| B1–B7        | Targets, hosting deferred, form presets, GA4, FTP rules, consent scope                                                                                                                                  | [08](../research/stack/08-publishing.md)                                                                       |
+| T1–T4        | DIY users, Simple/Advanced mode, structured layout, "Element"                                                                                                                                           | [product/01](../research/product/01-terminology.md)                                                            |
+| M1–M5        | MVP CMS scope, Blog v1.1, Content mode toggle, search/i18n later                                                                                                                                        | [product/02](../research/product/02-cms.md)                                                                    |
+| UI1          | Editor look and feel: Bootstrap Studio-like layout, dark/light tokens, compact density                                                                                                                  | [product/04](../research/product/04-editor-look-and-feel.md)                                                   |
+| GA1–GA4      | Competitor gaps: 15 small MVP additions; AI with the user's own account in v1.1; provider presets deferred; plugin API long-term                                                                        | [product/05](../research/product/05-feature-gap-analysis.md)                                                   |
+| UI2–UI4      | Editor UI/UX parity: Bootstrap Studio interactions and Elements' Inspector/Theme Studio ideas in the MVP; Bootstrap Studio's shortcuts as the standard; v1.1 notes, workspaces, display modes, AI panel | [product/06](../research/product/06-editor-ui-ux-parity.md)                                                    |
+| BS9-1–10     | Bootstrap Studio 9.0 review: sticky header and back-to-top in the MVP; v1.1 Blog on a general collections engine; v1.1 extras and AI assistant details                                                  | [bootstrap-studio/06](../research/bootstrap-studio/06-bootstrap-studio-9.md)                                   |
+| GA5–GA9      | Elements 3.0 review: connect AI apps (MCP), shared sections, files in Media and `llms.txt` in the MVP; built-in AI assistant and draft pages in v1.1                                                    | [product/05 §3.7](../research/product/05-feature-gap-analysis.md#37-rapidweaver-elements-30-update-2026-10-22) |

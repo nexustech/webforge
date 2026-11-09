@@ -5,7 +5,9 @@
 - Related: #664, second architecture review A5 ([2026-10-30](../reviews/2026-10-30-architecture-review-2.md)), [ADR 0003](0003-wforge-sqlite-storage.md), [ADR 0012](0012-site-format-migrations.md), [ADR 0013](0013-store-gate.md), [ADR 0018](0018-publishing-from-a-version.md)
 
 ## Context
+
 Version History (4.6) and publishing (4.5) need a version to say more than its name and who saved it:
+
 - why it was saved, so pruning keeps the person's own versions and the last 20 automatic ones (P3);
 - which site format its documents are in;
 - its picture;
@@ -14,6 +16,7 @@ Version History (4.6) and publishing (4.5) need a version to say more than its n
 Format 1's `versions` table holds none of this. Its `format_version` always holds storage format 1. `SCHEMA_MIGRATIONS` was empty, so no file had ever been migrated, and opening checks a file's schema exactly, as text.
 
 ## Decision
+
 1. **Format 2 adds four columns to `versions`, after format 1's, which all stay:**
    - `reason`: `manual`, `daily`, `before-restore`, `before-site-wide` or `on-publish`. A `CHECK` ties it to `kind`: only `manual` versions are the person's.
    - `site_format`: the site format the version's documents were saved in, as its `site` document records it. `readVersionSite` migrates from it, as `readSite` does.
@@ -32,6 +35,7 @@ Format 1's `versions` table holds none of this. Its `format_version` always hold
 7. **A site's ZIP carries each version's reason** (ZIP version 2, 4.7). A version 1 ZIP's versions get theirs as the migration gives them. A copy carries no picture and no publish record: it is published anew (ADR 0018 §2).
 
 ## Consequences
+
 - 4.6 can record, list, prune and restore versions without a format change. `restoreSite` in the model makes the site a version's, document by document, as one undo step.
 - An older Webforge never cleans up a format 2 file, which it can only open read-only, so it can't drop a version's picture it doesn't know of.
 - Every format bump from now on follows this one: the schema in `SCHEMAS`, its step, a fixture (`v2.wforge`, made once by `test/support/make-v2-fixture.ts`) and a test that migrates the one before.

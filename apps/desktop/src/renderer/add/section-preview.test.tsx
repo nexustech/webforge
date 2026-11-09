@@ -47,7 +47,7 @@ function setUp(status: "compiled" | "failed" = "compiled") {
 
 /** Shows `node` and waits for its drawing; the preview's shadow root, if it drew one. */
 async function shown(node: ReturnType<ReturnType<typeof createSectionPreviews>>) {
-  const { container } = render(<>{node}</>);
+  const { container } = render(node);
   await act(async () => undefined);
   // Theme Studio's are in a box of their size (#626): the drawing's host is inside it.
   return [...container.querySelectorAll("div")].find((each) => each.shadowRoot)?.shadowRoot ?? null;
@@ -159,7 +159,7 @@ describe("createKindPreviews (3.12, CT-1)", () => {
         }),
     );
     const previews = createKindPreviews({ library: siteLibrary, theme: () => theme, compileCss });
-    const { container } = render(<>{previews("Features")}</>);
+    const { container } = render(previews("Features"));
     const box = () => container.querySelector<HTMLElement>("[data-kind-preview]");
 
     // Not drawn yet: its place is the preview's whole size already.
@@ -221,7 +221,7 @@ describe("createItemPreviews (3.13a)", () => {
     const previews = createItemPreviews({ library: siteLibrary, theme: () => theme, compileCss });
     const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
 
-    const { container, rerender } = render(<>{previews(button, "mobile")}</>);
+    const { container, rerender } = render(previews(button, "mobile"));
     await wait(0);
     const frame = () => container.querySelector("iframe");
 
@@ -235,9 +235,7 @@ describe("createItemPreviews (3.13a)", () => {
     expect(page).toContain(`data-theme="${theme.preset}"`);
 
     // Drawn again once the change has settled, as the site CSS is.
-    rerender(
-      <>{previews({ ...button, props: { ...button.props, label: "Call us" } }, "mobile")}</>,
-    );
+    rerender(previews({ ...button, props: { ...button.props, label: "Call us" } }, "mobile"));
     await wait(0);
     expect(frame()?.getAttribute("srcdoc")).toContain("Book now");
     await wait(SITE_CSS_DEBOUNCE_MS + 20);

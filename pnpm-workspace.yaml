@@ -52,7 +52,7 @@ allowBuilds:
 # loaded. pnpm fails the install if the patch no longer applies, e.g. after a Puck upgrade: check
 # whether it is still needed then, and patch-contract.test.tsx says which item went.
 patchedDependencies:
-  '@puckeditor/core@0.24.0': patches/@puckeditor__core@0.24.0.patch
+  "@puckeditor/core@0.24.0": patches/@puckeditor__core@0.24.0.patch
 
 # happy-dom, the DOM for Vitest, is pinned to 21.0.4 in each workspace that tests React
 # (CVE-2026-33943, Dependabot alerts 2–5), not in the catalog: the dependency graph reads a

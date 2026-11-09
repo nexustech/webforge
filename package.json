@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@babel/core": "catalog:",
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.6",
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
     "@rolldown/plugin-babel": "catalog:",

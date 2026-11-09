@@ -1,4 +1,5 @@
 ---
+
 id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
@@ -22,11 +23,12 @@ When no site is open, you see the start screen.
 - **Try an example** opens the finished Café / Restaurant site to look around and change. {appName} asks where to save your copy.
 
 On the right, **Recent sites** lists the sites you've opened, newest first.
+
 - **Search sites** finds one by its name, file name or folder.
 - The pin keeps a site at the top of the list.
 - The **×** takes a site off the list. It doesn't delete the site's file.
 
-The **Help** tab lists the help pages to start with (this one, *The editor* and *Keyboard shortcuts*), then the keyboard shortcuts and the example site.
+The **Help** tab lists the help pages to start with (this one, _The editor_ and _Keyboard shortcuts_), then the keyboard shortcuts and the example site.
 
 ## Start a site (the quick start)
 
@@ -34,7 +36,7 @@ Four short steps. Every question is optional, you can go back to any step, and *
 
 1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. Search engines show that line under your site's name.
 2. **A look:** a theme, and a template suited to your kind of business. For Food and drink or Trades, you can open a finished example site instead.
-3. **Pages:** untick a template page to leave it out. **More pages for** your business type suggests extra pages, such as *Reviews* or *Areas we cover*.
+3. **Pages:** untick a template page to leave it out. **More pages for** your business type suggests extra pages, such as _Reviews_ or _Areas we cover_.
 4. **Colours and details:** keep the theme's colours, pick your own brand colour, or choose **From my logo…** to take colours from your logo. {appName} reads the logo on this computer and doesn't add it to your site. Then add your email, phone number, address, opening hours and web address, if you have them.
 
 {appName} asks where to save the site's file, then opens it. Your answers replace the template's sample business wherever it appeared: in the text, the Header, the Footer and [Site Settings](site-settings.md). Anything you skipped keeps the template's sample text. [Site Check](site-check.md) points that text out before you export.
@@ -44,6 +46,7 @@ Four short steps. Every question is optional, you can go back to any step, and *
 The first time a site you made with **Start a site…** opens, {appName} offers a short tour. Choose **Show me around**, or **Not now** to start working straight away. It isn't offered again either way, and **Help › Take the Tour** starts it at any time.
 
 The tour has three steps, each in a small card beside the button or text it's about:
+
 1. **Change your words:** click any text on your page and type. The tour moves on once you've changed something.
 2. **See it as visitors will:** [Preview](preview.md).
 3. **Put it online:** [Publish](publish.md).
@@ -53,6 +56,7 @@ A last card says where help is. Each card has **Back**, **Next**, **Skip tour** 
 ## First-time tips
 
 The first time you reach some parts of {appName}, a short tip says what's there. Each tip shows once. **Got it** closes it, and it closes by itself as you carry on. A tip never takes you away from what you're doing; F6 reaches it from the keyboard:
+
 - the first time you **select** something on the page: how to change it;
 - the first time you switch to **Content mode**: what it locks;
 - the first **Must fix** in [Site Check](site-check.md): that it stops Export and Publish until it's fixed;
@@ -64,8 +68,9 @@ To see no more tips, turn off **Show tips** in [Settings](settings.md#interface)
 ## Choose a template yourself
 
 **New Site** (Ctrl+N on Windows, Cmd+N on a Mac) shows every template.
+
 - Give the site a **Site name** and choose a **Theme**.
-- **Start from scratch** gives you a *Blank site* with Home, About and Contact pages.
+- **Start from scratch** gives you a _Blank site_ with Home, About and Contact pages.
 - Under **Templates**, filter by **Business type**, sort, and click **Details** for a larger look.
 - Choosing a template also chooses its theme. You can change the theme straight after, or at any time.
 

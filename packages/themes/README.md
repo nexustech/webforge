@@ -3,6 +3,7 @@
 A site's theme (2.1) as CSS, its colours and contrast checks, and the starter presets. The tokens themselves (`ThemeTokens`) and colour refs live in `@webforge/model`.
 
 ## Public API
+
 - **`themeCss(tokens)`:** the theme as Tailwind and daisyUI source. The pipeline puts it after Tailwind's imports in the site's stylesheet. It contains:
   - daisyUI with none of its built-in themes, plus the site's own theme (every colour role, corners, border, depth and noise), named after the preset and the page's default;
   - a second theme, `inverseThemeName(tokens)` (`<preset>-inverse`), for sections that invert the page: the theme's `inverse` colours, or `inverseColors`' fallback (`neutral` as the surface, `neutral-content` as the text);
@@ -30,4 +31,5 @@ A site's theme (2.1) as CSS, its colours and contrast checks, and the starter pr
 Every value written into CSS comes from a token the model's schema checked, so nothing a site contains reaches the stylesheet as written.
 
 ## Boundaries
+
 - Framework-free; depends on `@webforge/model` and zod only (its tests also read `@webforge/i18n`, to check every pairing and category has a name).

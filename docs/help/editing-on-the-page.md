@@ -1,4 +1,5 @@
 ---
+
 id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
@@ -12,7 +13,7 @@ updated: 2026-11-07
 
 - **Click** a section or element to select it. A blue outline and a small bar of buttons appear on it, and the [Edit panel](edit-panel.md) shows its options.
 - **Ctrl+click** (Cmd+click on a Mac) or **Shift+click** adds an item to the selection, or takes it out. With several items selected you can delete, duplicate, move or hide them together.
-- The line above the page shows where the selection sits, such as *Page › Hero › Button*. Click any step to select it.
+- The line above the page shows where the selection sits, such as _Page › Hero › Button_. Click any step to select it.
 - From the keyboard:
   - **↑** and **↓** select the previous or next item.
   - **Ctrl+↑** selects what contains the item, and **Ctrl+↓** selects the first thing inside it.
@@ -20,22 +21,23 @@ updated: 2026-11-07
 
 ## The bar on the selected item
 
-| Button | What it does |
-|---|---|
-| Select the surrounding element | Selects what contains this item |
-| Drag to reorder | Drag it somewhere else on the page |
-| Move up · Move down | Moves it before or after its neighbour |
-| Edit | Starts typing in its text, or chooses a new picture for an image |
-| Style | Opens [Style this…](styling.md#style-this) |
-| Hide · Show | Hides it from your site without deleting it |
-| Duplicate | Places a copy just after it |
-| Delete | Removes it. *Undo* appears for a few seconds. On a Mac the key is Cmd+Delete; the delete key on its own clears the text |
+| Button                         | What it does                                                                                                            |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| Select the surrounding element | Selects what contains this item                                                                                         |
+| Drag to reorder                | Drag it somewhere else on the page                                                                                      |
+| Move up · Move down            | Moves it before or after its neighbour                                                                                  |
+| Edit                           | Starts typing in its text, or chooses a new picture for an image                                                        |
+| Style                          | Opens [Style this…](styling.md#style-this)                                                                              |
+| Hide · Show                    | Hides it from your site without deleting it                                                                             |
+| Duplicate                      | Places a copy just after it                                                                                             |
+| Delete                         | Removes it. _Undo_ appears for a few seconds. On a Mac the key is Cmd+Delete; the delete key on its own clears the text |
 
 ## Changing text
 
 Select a text item and press **Enter** (or click **Edit** on its bar), then type. **Backspace** on a selected item empties its text and starts typing; on an item with no text of its own, such as an image, Backspace deletes it.
 
 While you type, a small toolbar offers:
+
 - **Bold**, **Italic** and **Underline**;
 - **Highlight** and **Text colour**, from your theme's colours;
 - **Link…** and **Remove link** (see [Links](links.md));
@@ -43,6 +45,7 @@ While you type, a small toolbar offers:
 - alignment.
 
 Keys while typing:
+
 - **Shift+Enter** starts a new line.
 - **Alt+Enter** splits the text into two elements.
 - **Shift+Space** types a space that never breaks across lines, for "10 am" or "£ 5".
@@ -68,6 +71,7 @@ When a section or element is selected, drag the handles on its edges to change t
 ## The right-click menu
 
 Right-click a section or element, on the page or in [Layers](layers.md), for:
+
 - **Rename** and **Duplicate**;
 - **Save as shared section…**, or **Detach from shared section** (see [Header, Footer and shared sections](header-and-footer.md));
 - **Select similar** (every item like this one on the page) and **Select parent**;
@@ -81,7 +85,8 @@ On the keyboard, Shift+F10 or the menu key opens the same menu.
 ## Toolbars for some elements
 
 A row under the canvas toolbar offers extra buttons for the selected item:
-- **Heading:** its level, *Title*, *Heading* or *Subheading*.
+
+- **Heading:** its level, _Title_, _Heading_ or _Subheading_.
 - **List:** **Add item** before or after the selected item, or at the end.
 - **Columns:** **Add column**, **Remove last column**, the **Column widths** on the device you're viewing, and **Show column outlines**.
 - **Header:** in the Mobile view, **Show mobile menu**, to see and edit the menu as it opens on a phone.

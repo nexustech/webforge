@@ -1,4 +1,5 @@
 ---
+
 id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
@@ -15,11 +16,12 @@ Click **Publish** in the title bar, choose **File › Publish…**, or press Ctr
 ## Adding your web host
 
 Click **Add Destination**, choose **FTP, FTPS or SFTP…**, then fill in the details from your web host's control panel:
+
 - **Name:** anything that helps you recognise it. Leave it empty to use the host's name.
-- **Control panel:** *cPanel* or *Plesk* fills in the usual settings for you. If you're not sure, choose *Another, or I don't know*.
+- **Control panel:** _cPanel_ or _Plesk_ fills in the usual settings for you. If you're not sure, choose _Another, or I don't know_.
 - **Connection:**
-  - *FTPS (encrypted)* or *SFTP (encrypted)*: use one of these if your host offers it.
-  - *FTP (not encrypted)*: sends your password unprotected, so {appName} asks you to confirm.
+  - _FTPS (encrypted)_ or _SFTP (encrypted)_: use one of these if your host offers it.
+  - _FTP (not encrypted)_: sends your password unprotected, so {appName} asks you to confirm.
 - **Host**, such as `ftp.example.com`, and the **Port**. Leave the port empty for the usual one.
 - **User name**, and sign in with **A password** or, for SFTP, **A private key file**.
 - **Folder:** the folder your host serves your website from, such as `/public_html`.
@@ -30,7 +32,8 @@ The first time you test or save an SFTP destination, {appName} shows the host's 
 ## Adding Netlify
 
 [Netlify](https://www.netlify.com) hosts websites for you, and has a free plan. Click **Add Destination**, choose **Netlify…**, then:
-1. **Sign in to Netlify.** Make a *personal access token* on Netlify (in **User settings › Applications › Personal access tokens**), paste it into **Personal access token**, and click **Connect**. Where it's offered, **Sign In with Netlify** opens Netlify in your browser instead: approve {appName} there, then come back.
+
+1. **Sign in to Netlify.** Make a _personal access token_ on Netlify (in **User settings › Applications › Personal access tokens**), paste it into **Personal access token**, and click **Connect**. Where it's offered, **Sign In with Netlify** opens Netlify in your browser instead: approve {appName} there, then come back.
 2. **Choose the Netlify site** to publish to, or **A new site**. A new site's name becomes part of its address, such as `rosas-bakery.netlify.app`. Leave it empty and Netlify makes one up.
 3. **Name** it if you like, then click **Save Destination**. If Site Settings has no web address yet, {appName} fills in the Netlify site's.
 
@@ -39,13 +42,15 @@ Once your site has a Netlify destination, [forms](forms.md) can send their messa
 ### When visitors have to log in
 
 Netlify can show visitors its log-in page instead of your site. {appName} warns you when it does: for the site you choose, and on **Your site is live** after publishing to Netlify. It's usually because the site is still **private**: Netlify may keep a new site private, and {appName} reminds you of this when you choose **A new site**. If your site is for everyone:
+
 - **A private site:** open it on Netlify and choose **Make public**. Netlify offers this once the site has been published.
 - **Visitor access or password protection:** turn it off in the site's settings on Netlify.
 
 ## Publishing
 
 Click **Publish** beside a destination. {appName}:
-1. Runs [Site Check](site-check.md). If anything is *Must fix*, nothing is sent: Site Check opens to show what to fix first.
+
+1. Runs [Site Check](site-check.md). If anything is _Must fix_, nothing is sent: Site Check opens to show what to fix first.
 2. Builds your site, compares it with what's on your host, and sends only new and changed files. A notice shows how far it's got; **Cancel** stops it before the next file, and your live site keeps working.
 3. Removes files your site no longer has. It only ever removes files it published itself, so anything else on your host is left alone.
 
@@ -53,7 +58,7 @@ If the folder already has another site that {appName} published, it asks before 
 
 When it's done, **Your site is live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open Site** opens it in your browser and **Copy Link** copies its address. A new site can take a few minutes to appear.
 
-Each publish is kept in [Version History](version-history.md) as *Published*. To put an earlier version back on your host, use its **Republish…** there: see [Publishing an earlier version](version-history.md#publishing-an-earlier-version).
+Each publish is kept in [Version History](version-history.md) as _Published_. To put an earlier version back on your host, use its **Republish…** there: see [Publishing an earlier version](version-history.md#publishing-an-earlier-version).
 
 Where your text uses `{year}`, your published site shows the year you published it in. In a new year, [Site Check](site-check.md#tips) reminds you to publish again.
 
@@ -64,6 +69,7 @@ Where your text uses `{year}`, your published site shows the year you published 
 ## Testing, changing and removing
 
 Each destination has:
+
 - **Publish**.
 - **Test Connection:** says whether {appName} can sign in and reach the folder, or what's wrong.
 - **Edit**.

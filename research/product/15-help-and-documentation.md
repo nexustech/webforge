@@ -9,6 +9,7 @@
 ## 1. Method
 
 Read against `main` at `a43ea53b` (6 Nov 2026), and again at `713b0300` (7 Nov 2026) once Version History, publishing and AI apps had merged:
+
 - **Strings:** every English UI string in `packages/i18n/src/en/`.
 - **Code:** each renderer area in `apps/desktop/src/renderer/`, the menus and the shortcut table (`shell/shortcut-standard.ts`), and the catalogue (`packages/site-components/src/catalogue-data.json`).
 - **Main and pipeline:** `apps/desktop/src/main/` and `packages/pipeline` for what export, preview, backups and publishing really do.
@@ -19,23 +20,23 @@ A feature counts as **available** only when a person can reach it in the app. Ma
 ## 2. What exists today
 
 - **Inline help text:** short hints under fields, empty-state lines, warnings and confirmations. There are a lot of them: every field kind takes a hint, and the strings are careful and use the glossary.
-  - Examples: the hint under *Hide this page from search engines* (it explains how it differs from *Hide from navigation*); the Buy button's *Payment link*; the contrast warnings; Site Check's one-line verdicts.
+  - Examples: the hint under _Hide this page from search engines_ (it explains how it differs from _Hide from navigation_); the Buy button's _Payment link_; the contrast warnings; Site Check's one-line verdicts.
   - This is the help people see most, and it's in good shape.
-- **Help menu:** *About*, *Keyboard Shortcuts* (also the `?` key, a live sheet built from the shortcut registry) and *Open Crash Reports Folder*. On the start screen it also has *Try an Example*.
-- **Start screen *Help* tab:** two entries, *Keyboard Shortcuts* and *Try an Example*. `start/help-items.ts` notes that a bundled guide arrives with 5.4.
-- **No help pages or Help topics command.** Also no *Help for this element*: it moved to 5.4 on 23 Oct 2026, and the Layers and canvas right-click menu doesn't have it.
+- **Help menu:** _About_, _Keyboard Shortcuts_ (also the `?` key, a live sheet built from the shortcut registry) and _Open Crash Reports Folder_. On the start screen it also has _Try an Example_.
+- **Start screen _Help_ tab:** two entries, _Keyboard Shortcuts_ and _Try an Example_. `start/help-items.ts` notes that a bundled guide arrives with 5.4.
+- **No help pages or Help topics command.** Also no _Help for this element_: it moved to 5.4 on 23 Oct 2026, and the Layers and canvas right-click menu doesn't have it.
 - **The plan:**
-  - **5.4** (#79, 4 days, Phase 5) covers the first-run welcome and tour, "contextual help links", the shortcuts sheet (done already), "help content in glossary language" and *Help for this element*.
+  - **5.4** (#79, 4 days, Phase 5) covers the first-run welcome and tour, "contextual help links", the shortcuts sheet (done already), "help content in glossary language" and _Help for this element_.
   - **4.9** asks for a help page on connecting AI apps.
   - **Engineering standards §9** says user help is "written in glossary language, stored with the app".
 
 ## 3. Three kinds of help
 
-| Kind | What it is | Where it lives | State |
-|---|---|---|---|
-| **Inline help text** | Hints under fields, tooltips, empty states, warnings, confirmation text | `t()` strings in `packages/i18n` | Mature; gaps listed in §4 |
-| **Help pages** | One page per feature: what it does, where it is, how to use it, what to watch for | `docs/help/*.md` | 28 pages written with this note (§5) |
-| **Guided first run** | Welcome, a short tour (edit text → preview → publish, QS-8), first-time tips | Renderer, 5.4 | The welcome exists (2.14b); the tour is 5.4 |
+| Kind                 | What it is                                                                        | Where it lives                   | State                                       |
+| -------------------- | --------------------------------------------------------------------------------- | -------------------------------- | ------------------------------------------- |
+| **Inline help text** | Hints under fields, tooltips, empty states, warnings, confirmation text           | `t()` strings in `packages/i18n` | Mature; gaps listed in §4                   |
+| **Help pages**       | One page per feature: what it does, where it is, how to use it, what to watch for | `docs/help/*.md`                 | 28 pages written with this note (§5)        |
+| **Guided first run** | Welcome, a short tour (edit text → preview → publish, QS-8), first-time tips      | Renderer, 5.4                    | The welcome exists (2.14b); the tour is 5.4 |
 
 The three link together. A hint answers "what is this field?". A page answers "how do I…?" and "why did that happen?". The tour shows the way through once. An inline hint can end with a link to its page (§7) instead of growing longer.
 
@@ -43,35 +44,36 @@ The three link together. A hint answers "what is this field?". A page answers "h
 
 **Every feature in the app gets a help page.** Inline help is where the gaps matter. The features below are ranked by how likely people are to get stuck; 15 and 16 merged after the first ranking and are added at the end. They're mostly where two things look alike, or where something happens outside the editor.
 
-| # | Feature | Why people get stuck | Inline help today | Help page | Contextual link (§7) |
-|---|---|---|---|---|---|
-| 1 | **Forms and the form service** | A static site can't receive messages itself; people need a third-party account | Canvas hint, Site Check finding | [forms](../../docs/help/forms.md) | Form and Contact form's Content tab; Site Settings › Forms |
-| 2 | **Export vs Save a Copy as ZIP** | Both make a ZIP; one is the website, one is the site | Toast after saving a copy | [export](../../docs/help/export.md), [saving-and-backups](../../docs/help/saving-and-backups.md) | Export dialog; File menu |
-| 3 | **Publish destinations and publishing** | FTP, SFTP, folders and keys are new to most people; a publish can stop at Site Check, or fail on the host's side | Good field hints; test results; an error per failure that says what to do | [publish](../../docs/help/publish.md) | Publish dialog and destination dialog; *Your site is live* |
-| 4 | **Different on each device** | Changes made on Mobile apply to Mobile only, and the dots mean nothing until explained | Dot tooltips | [edit-panel#different-on-each-device](../../docs/help/edit-panel.md#different-on-each-device) | Edit panel, device buttons |
-| 5 | **Theme vs Template, and *your own version*** | Switching theme looks like it might lose content; a built-in theme forks on first change | Confirmation text | [themes](../../docs/help/themes.md), [templates](../../docs/help/templates.md) | Theme panel, Theme Studio, New Site |
-| 6 | **Header, Footer and shared sections** | One edit changes many pages | Banner over the canvas | [header-and-footer](../../docs/help/header-and-footer.md) | The banner; *Save as shared section* dialog |
-| 7 | **Design vs Content mode; Simple vs Advanced mode** | Two switches with similar effects (things disappear) | Tooltip on the switch; Settings hint | [the-editor](../../docs/help/the-editor.md) | The switch; Settings › Interface |
-| 8 | **Site Check findings** | Each rule needs a "why it matters" and a "what to do" longer than one line | One-line verdicts, Fix buttons | [site-check](../../docs/help/site-check.md), one anchor per rule | Each rule's row |
-| 9 | **Search engines** | Web address, sitemap, descriptions, *Hide from search engines*, verification codes, business type | Good hints and previews | [site-settings](../../docs/help/site-settings.md), [pages](../../docs/help/pages.md#page-settings) | Site Settings › Search engines; Page Settings |
-| 10 | **Code trust** | A security question that interrupts Export and Preview | The dialog's own text | [custom-code#code-from-somewhere-else](../../docs/help/custom-code.md#code-from-somewhere-else) | The dialog |
-| 11 | **Media: alt text, focal point, crop** | Alt text and focal points are unfamiliar words | Field hints | [media](../../docs/help/media.md) | Media details; image fields |
-| 12 | **Preview on Phone** | Needs the same home or office network, and may fail on public Wi-Fi | Dialog text, error text | [preview](../../docs/help/preview.md) | The dialog |
-| 13 | **Colours: Reversed, shades, contrast** | "Reversed" is a new idea | Field hint | [styling#colours](../../docs/help/styling.md#colours) | Colours field |
-| 14 | **Backups and damaged files** | Only seen in a bad moment | Native dialog text | [saving-and-backups](../../docs/help/saving-and-backups.md) | Recovery dialog |
-| 15 | **Undo vs Version History vs backups** | Three ways back that look alike, and versions {appName} saves by itself appear unasked | Restore's confirmation; the empty list's line | [version-history](../../docs/help/version-history.md) | Version History panel; Save Version dialog |
-| 16 | **AI apps** | An address, a key shown once and an MCP setting in another app; what the app may change | The dialog's own text | [ai-apps](../../docs/help/ai-apps.md) | AI apps dialog |
+| #   | Feature                                             | Why people get stuck                                                                                             | Inline help today                                                         | Help page                                                                                          | Contextual link (§7)                                       |
+| --- | --------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| 1   | **Forms and the form service**                      | A static site can't receive messages itself; people need a third-party account                                   | Canvas hint, Site Check finding                                           | [forms](../../docs/help/forms.md)                                                                  | Form and Contact form's Content tab; Site Settings › Forms |
+| 2   | **Export vs Save a Copy as ZIP**                    | Both make a ZIP; one is the website, one is the site                                                             | Toast after saving a copy                                                 | [export](../../docs/help/export.md), [saving-and-backups](../../docs/help/saving-and-backups.md)   | Export dialog; File menu                                   |
+| 3   | **Publish destinations and publishing**             | FTP, SFTP, folders and keys are new to most people; a publish can stop at Site Check, or fail on the host's side | Good field hints; test results; an error per failure that says what to do | [publish](../../docs/help/publish.md)                                                              | Publish dialog and destination dialog; _Your site is live_ |
+| 4   | **Different on each device**                        | Changes made on Mobile apply to Mobile only, and the dots mean nothing until explained                           | Dot tooltips                                                              | [edit-panel#different-on-each-device](../../docs/help/edit-panel.md#different-on-each-device)      | Edit panel, device buttons                                 |
+| 5   | **Theme vs Template, and _your own version_**       | Switching theme looks like it might lose content; a built-in theme forks on first change                         | Confirmation text                                                         | [themes](../../docs/help/themes.md), [templates](../../docs/help/templates.md)                     | Theme panel, Theme Studio, New Site                        |
+| 6   | **Header, Footer and shared sections**              | One edit changes many pages                                                                                      | Banner over the canvas                                                    | [header-and-footer](../../docs/help/header-and-footer.md)                                          | The banner; _Save as shared section_ dialog                |
+| 7   | **Design vs Content mode; Simple vs Advanced mode** | Two switches with similar effects (things disappear)                                                             | Tooltip on the switch; Settings hint                                      | [the-editor](../../docs/help/the-editor.md)                                                        | The switch; Settings › Interface                           |
+| 8   | **Site Check findings**                             | Each rule needs a "why it matters" and a "what to do" longer than one line                                       | One-line verdicts, Fix buttons                                            | [site-check](../../docs/help/site-check.md), one anchor per rule                                   | Each rule's row                                            |
+| 9   | **Search engines**                                  | Web address, sitemap, descriptions, _Hide from search engines_, verification codes, business type                | Good hints and previews                                                   | [site-settings](../../docs/help/site-settings.md), [pages](../../docs/help/pages.md#page-settings) | Site Settings › Search engines; Page Settings              |
+| 10  | **Code trust**                                      | A security question that interrupts Export and Preview                                                           | The dialog's own text                                                     | [custom-code#code-from-somewhere-else](../../docs/help/custom-code.md#code-from-somewhere-else)    | The dialog                                                 |
+| 11  | **Media: alt text, focal point, crop**              | Alt text and focal points are unfamiliar words                                                                   | Field hints                                                               | [media](../../docs/help/media.md)                                                                  | Media details; image fields                                |
+| 12  | **Preview on Phone**                                | Needs the same home or office network, and may fail on public Wi-Fi                                              | Dialog text, error text                                                   | [preview](../../docs/help/preview.md)                                                              | The dialog                                                 |
+| 13  | **Colours: Reversed, shades, contrast**             | "Reversed" is a new idea                                                                                         | Field hint                                                                | [styling#colours](../../docs/help/styling.md#colours)                                              | Colours field                                              |
+| 14  | **Backups and damaged files**                       | Only seen in a bad moment                                                                                        | Native dialog text                                                        | [saving-and-backups](../../docs/help/saving-and-backups.md)                                        | Recovery dialog                                            |
+| 15  | **Undo vs Version History vs backups**              | Three ways back that look alike, and versions {appName} saves by itself appear unasked                           | Restore's confirmation; the empty list's line                             | [version-history](../../docs/help/version-history.md)                                              | Version History panel; Save Version dialog                 |
+| 16  | **AI apps**                                         | An address, a key shown once and an MCP setting in another app; what the app may change                          | The dialog's own text                                                     | [ai-apps](../../docs/help/ai-apps.md)                                                              | AI apps dialog                                             |
 
 **Gaps found on the way.** Each should be fixed in the app; the help page then only needs to reflect the fix.
+
 - **Netlify Forms** can be chosen in Site Settings › Forms, but forms then show "Netlify Forms isn't ready yet". It should be offered only once the site has a Netlify destination, rather than explained in help: 4.4b ([#723](https://github.com/nexustech/webforge/issues/723)) already has that as an acceptance criterion.
 - **The Layers lock icon** is drawn for locked items, but nothing locks an item yet (`editor/layers.ts`). Leave it out of the help until something does.
-- **Two messages speak of publishing as if it works.** Page Settings' *Hide this page from search engines* hint mentions what happens "when you publish by FTP or SFTP", and the quick start's contact-details text says Site Check points out samples "before you publish". Both became true when 4.5's publish flow merged (7 Nov 2026), so this gap is closed.
+- **Two messages speak of publishing as if it works.** Page Settings' _Hide this page from search engines_ hint mentions what happens "when you publish by FTP or SFTP", and the quick start's contact-details text says Site Check points out samples "before you publish". Both became true when 4.5's publish flow merged (7 Nov 2026), so this gap is closed.
 - **A stale comment** in `layers/register-layers-panel.tsx` calls Layers "Advanced mode only", though it's registered in both modes (ADR 0011). It misled this note's fact-check; the comment should be corrected.
 - **No Help topics entry** in the Help menu or the command box, so the pages can't be found from the app until 5.4 (§7).
 
 ## 5. The help pages
 
-There are 28 pages in [`docs/help/`](../../docs/help/README.md), one for each feature or panel rather than one per screen. Each has a stable `id`, a `summary`, `related` pages, an `updated` date, and `components` listing the site component types it explains. *Help for this element* uses `components` to find a page.
+There are 28 pages in [`docs/help/`](../../docs/help/README.md), one for each feature or panel rather than one per screen. Each has a stable `id`, a `summary`, `related` pages, an `updated` date, and `components` listing the site component types it explains. _Help for this element_ uses `components` to find a page.
 
 - **Start here:** Getting started · Templates and example sites · The editor.
 - **Building pages:**
@@ -85,6 +87,7 @@ There are 28 pages in [`docs/help/`](../../docs/help/README.md), one for each fe
 Every Add-panel component type, child items included, appears in exactly one page's `components`, with a heading of its own: [sections](../../docs/help/sections.md), [elements](../../docs/help/elements.md), [header-and-footer](../../docs/help/header-and-footer.md) and [custom-code](../../docs/help/custom-code.md).
 
 The README sets the writing rules:
+
 - the glossary's words;
 - `{appName}` for the app's name;
 - labels quoted from the strings;
@@ -95,6 +98,7 @@ The README sets the writing rules:
 ## 6. Keeping them current
 
 Pages go stale quietly, so the checks have to be mechanical where they can be:
+
 1. **The same PR.** A change people can see updates its help page in the same PR, and the page's `updated` date. This becomes:
    - a line in engineering standards §8 (Definition of Done), beside "User-facing text uses i18n keys";
    - a hard rule in CLAUDE.md.
@@ -116,6 +120,7 @@ Pages go stale quietly, so the checks have to be mechanical where they can be:
 ## 7. Into the app (5.4)
 
 The pages are written so the app can show them as they are:
+
 - **Bundled, offline.** The renderer imports `docs/help/*.md` at build time and validates the front matter with zod, so a bad page fails the build. The pages ship inside the app, and nothing is fetched (standards §9, C8's spirit).
 - **A Help window:**
   - a contents list from the README's groups, and a search over titles, summaries and text (a small local index, MIT-licensed such as MiniSearch, or a plain substring search over 28 pages);
@@ -124,7 +129,7 @@ The pages are written so the app can show them as they are:
   - `{appName}` filled in by `template()`.
 - **Ways in:**
   - **Help › {appName} Help** (F1) and **Search Commands…**, which lists help topics as a group.
-  - The start screen's **Help** tab, which lists *Getting started*, *The editor* and *Keyboard shortcuts* above the existing entries.
+  - The start screen's **Help** tab, which lists _Getting started_, _The editor_ and _Keyboard shortcuts_ above the existing entries.
   - **Help for this element** in the canvas and Layers right-click menu (UX-24), which opens the page whose `components` holds the selected type, at its heading.
   - A small **?** on:
     - the Edit panel's header;
@@ -143,7 +148,7 @@ The pages are written so the app can show them as they are:
   - **5.4a, Onboarding and tour** (4 days, unchanged): the first-run tour, first-time tips, and the usability test.
   - **5.4b, Help in the app** (2.5 days, new; 3.5 days with HP-10):
     - the bundled pages and the Help window with search (1.5 days; 2.5 days as a window of its own, HP-10);
-    - the ways in, including *Help for this element* (0.5 day);
+    - the ways in, including _Help for this element_ (0.5 day);
     - `pnpm help-check` (0.5 day).
 
   Phase 5: +2.5 days.
@@ -152,20 +157,21 @@ The pages are written so the app can show them as they are:
 
 Decided by the product owner on 7 Nov 2026, each as proposed.
 
-| ID | Decision |
-|---|---|
-| HP-1 | **Three kinds of help:** inline help text (`t()` strings), help pages (Markdown) and a guided first run. Each has its own job (§3) |
-| HP-2 | **Help pages live in `docs/help/`** as Markdown with the front matter in §5, one page per feature or panel, written for the small-business owner in the glossary's words, with `{appName}` for the app's name. The README holds the writing rules |
-| HP-3 | **The pages describe only what `main` does.** Partly built features say what works today in a line. The pages are merged now (this PR) and kept current from here on |
-| HP-4 | **Same-PR rule:** a change people can see updates its help page in the same PR (standards §8, CLAUDE.md); plan items that change features list it in their acceptance criteria |
-| HP-5 | **`pnpm help-check`** in `pnpm check` (§6, 2), built in 5.4b |
-| HP-6 | **Help in the app, offline:** bundled at build, a Help window with search, and the ways in listed in §7, *Help for this element* among them. No online help in the MVP |
-| HP-7 | **5.4 splits** into 5.4a *Onboarding and tour* (4 days) and 5.4b *Help in the app* (2.5 days, new): Phase 5 +2.5 days |
-| HP-8 | **Fix the gaps in the app, not in help:** Netlify Forms is offered only once the site has a Netlify destination, which 4.4b's acceptance criteria already require (#723). The Layers lock icon stays out of help until something locks |
-| HP-9 | **A help review at each phase exit,** and beta testers' questions feed the pages (§6, 4–5) |
-| HP-10 | **The Help window is a separate window beside the editor** (product owner, 7 Nov 2026), so the owner can read and work at once: +1 day for 5.4b, which becomes 3.5 days |
+| ID    | Decision                                                                                                                                                                                                                                          |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HP-1  | **Three kinds of help:** inline help text (`t()` strings), help pages (Markdown) and a guided first run. Each has its own job (§3)                                                                                                                |
+| HP-2  | **Help pages live in `docs/help/`** as Markdown with the front matter in §5, one page per feature or panel, written for the small-business owner in the glossary's words, with `{appName}` for the app's name. The README holds the writing rules |
+| HP-3  | **The pages describe only what `main` does.** Partly built features say what works today in a line. The pages are merged now (this PR) and kept current from here on                                                                              |
+| HP-4  | **Same-PR rule:** a change people can see updates its help page in the same PR (standards §8, CLAUDE.md); plan items that change features list it in their acceptance criteria                                                                    |
+| HP-5  | **`pnpm help-check`** in `pnpm check` (§6, 2), built in 5.4b                                                                                                                                                                                      |
+| HP-6  | **Help in the app, offline:** bundled at build, a Help window with search, and the ways in listed in §7, _Help for this element_ among them. No online help in the MVP                                                                            |
+| HP-7  | **5.4 splits** into 5.4a _Onboarding and tour_ (4 days) and 5.4b _Help in the app_ (2.5 days, new): Phase 5 +2.5 days                                                                                                                             |
+| HP-8  | **Fix the gaps in the app, not in help:** Netlify Forms is offered only once the site has a Netlify destination, which 4.4b's acceptance criteria already require (#723). The Layers lock icon stays out of help until something locks            |
+| HP-9  | **A help review at each phase exit,** and beta testers' questions feed the pages (§6, 4–5)                                                                                                                                                        |
+| HP-10 | **The Help window is a separate window beside the editor** (product owner, 7 Nov 2026), so the owner can read and work at once: +1 day for 5.4b, which becomes 3.5 days                                                                           |
 
-The changes, following CLAUDE.md's *Working the plan*:
+The changes, following CLAUDE.md's _Working the plan_:
+
 - a line in `spec/02` §7 and in standards §8 and §9;
 - 5.4's five places, and a new 5.4b in all five;
 - acceptance-criteria lines on #723, #73, #74, #724 and #171;

@@ -177,11 +177,28 @@
       "includes": ["e2e/**"],
       "linter": {
         "rules": {
-          "nursery": {
-            "noPlaywrightMissingAwait": "error",
+          "correctness": {
+            "noPlaywrightMissingAwait": "error"
+          },
+          "suspicious": {
             "noPlaywrightWaitForTimeout": "error",
-            "noPlaywrightPagePause": "error",
+            "noPlaywrightPagePause": "error"
+          },
+          "complexity": {
             "noPlaywrightUselessAwait": "error"
+          },
+          "performance": {
+            "useDomNodeTextContent": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/site-components/src/behaviours/index.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
           }
         }
       }

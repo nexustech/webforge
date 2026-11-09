@@ -1,6 +1,6 @@
 # A site's ZIP
 
-*File › Save a Copy as ZIP…* saves the open site as one ZIP file (4.7, F-SITE-5): the site and its versions as plain JSON, with the original files, for a backup or for moving the site to another computer. *File › Open Site from ZIP…* opens it again as a new site, saved where the person chooses, with nothing lost: the same pages, Media, versions and choices. It isn't the website: *Export Site…* makes that, as a folder or a ZIP of HTML files.
+_File › Save a Copy as ZIP…_ saves the open site as one ZIP file (4.7, F-SITE-5): the site and its versions as plain JSON, with the original files, for a backup or for moving the site to another computer. _File › Open Site from ZIP…_ opens it again as a new site, saved where the person chooses, with nothing lost: the same pages, Media, versions and choices. It isn't the website: _Export Site…_ makes that, as a folder or a ZIP of HTML files.
 
 The code is `packages/storage/src/site-zip.ts`; `packages/storage/test/site-zip.test.ts` checks the round trip on generated sites (fast-check) and on the format 1 fixture. Keep this page in step with them.
 
@@ -19,18 +19,18 @@ What a site reaches is what `reachableBlobs()` finds in its documents, the hashe
 
 A `.wforge` file keeps a few things beside the site. The package decides which of them a lossless round trip keeps:
 
-| Kept | Why |
-|---|---|
-| `editorMode` | Design or Content mode, as the person left it |
-| `exportChoices` | The last export's choices, so the next export asks the same |
-| `siteCheckIgnored` | The Site Check findings the person chose to ignore |
+| Kept               | Why                                                         |
+| ------------------ | ----------------------------------------------------------- |
+| `editorMode`       | Design or Content mode, as the person left it               |
+| `exportChoices`    | The last export's choices, so the next export asks the same |
+| `siteCheckIgnored` | The Site Check findings the person chose to ignore          |
 
-| Not kept | Why |
-|---|---|
-| The project id and creation time | The new site's file has its own. Publishing refuses a folder another project published to (A8), so a copy that kept the original's id could publish over the original's pages without asking |
-| The storage format | The new file is in this app's format |
-| Backups | They copy the file the site came from, and stay beside it |
-| Saved publish passwords and the trust given to a site's code | The app keeps them in its own data under the project id, never in the site (security review S1 and S2), so a copy starts with none |
+| Not kept                                                     | Why                                                                                                                                                                                          |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The project id and creation time                             | The new site's file has its own. Publishing refuses a folder another project published to (A8), so a copy that kept the original's id could publish over the original's pages without asking |
+| The storage format                                           | The new file is in this app's format                                                                                                                                                         |
+| Backups                                                      | They copy the file the site came from, and stay beside it                                                                                                                                    |
+| Saved publish passwords and the trust given to a site's code | The app keeps them in its own data under the project id, never in the site (security review S1 and S2), so a copy starts with none                                                           |
 
 ## Layout
 
@@ -49,15 +49,15 @@ files/<sha-256>          other files the site names, such as bundled code (3.9)
 
 ## `manifest.json`
 
-| Field | What it holds |
-|---|---|
-| `format` | `"webforge-site-zip"`: a ZIP without it isn't a site's |
-| `version` | The layout's version, now `1`. A ZIP of a later one comes from a newer app, which the person is asked to update to |
-| `name` | The site's name, which the new site's file takes |
-| `media` | `{ mediaId, path, mime, width?, height?, originalName, sha256 }` for each Media item's original |
-| `files` | `{ path, mime, sha256 }` for each other file the site names by its SHA-256 |
-| `versions` | Newest first: `{ id, name, kind, createdAt, path }`, `kind` being `manual` or `auto` |
-| `project` | The project block: `{ editorMode, exportChoices, siteCheckIgnored }` |
+| Field      | What it holds                                                                                                      |
+| ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `format`   | `"webforge-site-zip"`: a ZIP without it isn't a site's                                                             |
+| `version`  | The layout's version, now `1`. A ZIP of a later one comes from a newer app, which the person is asked to update to |
+| `name`     | The site's name, which the new site's file takes                                                                   |
+| `media`    | `{ mediaId, path, mime, width?, height?, originalName, sha256 }` for each Media item's original                    |
+| `files`    | `{ path, mime, sha256 }` for each other file the site names by its SHA-256                                         |
+| `versions` | Newest first: `{ id, name, kind, createdAt, path }`, `kind` being `manual` or `auto`                               |
+| `project`  | The project block: `{ editorMode, exportChoices, siteCheckIgnored }`                                               |
 
 ## Opening one
 

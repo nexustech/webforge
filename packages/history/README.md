@@ -3,6 +3,7 @@
 History Manager: transactions, coalescing, undo labels and selection restore. Every document change goes through `HistoryManager.run/begin`. Design: [research/stack/03-undo-redo.md](../../research/stack/03-undo-redo.md); spike results: [ADR 0004](../../docs/adr/0004-puck-with-webforge-history.md).
 
 ## Public API
+
 `src/index.ts` is the only entry point; import the package as `@webforge/history`, never its internal files.
 
 - `createHistoryManager({ initial, selection?, limit?, coalesceWindowMs?, now? })` → `HistoryManager`
@@ -18,7 +19,10 @@ History Manager: transactions, coalescing, undo labels and selection restore. Ev
 ```ts
 const history = createHistoryManager({
   initial: { page },
-  selection: { get: () => ui.getState().selection, restore: (selection) => ui.setState({ selection }) },
+  selection: {
+    get: () => ui.getState().selection,
+    restore: (selection) => ui.setState({ selection }),
+  },
 });
 history.run(t("history.moved", { item: "Heading" }), (draft) => {
   moveNode(draft.page, id, to);
@@ -27,5 +31,6 @@ history.undo(); // restores the document and the selection
 ```
 
 ## Boundaries
+
 - Framework-free: no React, no Electron.
 - Core package: coverage ≥ 90% lines / ≥ 85% branches. The undo invariant is property-tested with fast-check (`undo-invariant.test.ts`).

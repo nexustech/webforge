@@ -1,4 +1,5 @@
 ---
+
 id: header-and-footer
 title: Header, Footer and shared sections
 summary: The parts that are the same on every page, and sections you share between pages.
@@ -14,18 +15,19 @@ updated: 2026-11-07
 The **Header**, at the top, and the **Footer**, at the bottom, are the same on every page. Change them on any page and every page changes. While you edit one, a line above the page says how many pages the change applies to.
 
 **Header** options:
+
 - **Site name:** comes from [Site Settings](site-settings.md#general).
-- **Layout:** *Name left, menu right*, *Centred* or *With a button*.
+- **Layout:** _Name left, menu right_, _Centred_ or _With a button_.
 - **Stay at the top when scrolling:** keeps the Header in view as visitors scroll.
-- **Change style when scrolling** (with *Stay at the top* on): *Shadow*, *Shrink*, *Solid background* or *None*.
+- **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_ or _None_.
 
 The Header's menu lists your pages. Change it in the [Site panel's Menu](pages.md#the-menu).
 
 On phones the menu folds into a button. To see and edit it open, view Mobile, select the Header and turn on **Show mobile menu**.
 
-The **Footer** has a **Text** and a layout, *Centred* or *Columns*. Type `{year}` in its text, or in any text, and your website shows the year it was exported or published in, such as "© {year} Rosie's Café". Export or publish again in the new year to update it: once your site is published, [Site Check](site-check.md#tips) reminds you.
+The **Footer** has a **Text** and a layout, _Centred_ or _Columns_. Type `{year}` in its text, or in any text, and your website shows the year it was exported or published in, such as "© {year} Rosie's Café". Export or publish again in the new year to update it: once your site is published, [Site Check](site-check.md#tips) reminds you.
 
-You can't move, duplicate or delete the Header or Footer. To leave one off a page, use the page's [Page Settings](pages.md#page-settings) (*Hide the Header on this page*), or click its eye in [Layers](layers.md).
+You can't move, duplicate or delete the Header or Footer. To leave one off a page, use the page's [Page Settings](pages.md#page-settings) (_Hide the Header on this page_), or click its eye in [Layers](layers.md).
 
 ## Shared sections
 
