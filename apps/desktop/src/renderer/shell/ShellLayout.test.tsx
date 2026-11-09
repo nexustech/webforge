@@ -554,7 +554,10 @@ describe("ShellLayout", () => {
       const user = userEvent.setup();
 
       await user.click(left.getByRole("tab", { name: "Undo History" }));
-      expect(left.getByRole("tab", { name: "Undo History", selected: true })).toBeTruthy();
+      const chosen = left.getByRole("tab", { name: "Undo History", selected: true });
+      // Drawn as the chosen tab: its look follows `data-state`, which the tooltip mustn't take.
+      expect(chosen.getAttribute("data-state")).toBe("active");
+      expect(left.getByRole("tab", { name: "Add" }).getAttribute("data-state")).toBe("inactive");
       expect(left.getByRole("heading", { name: "Undo History" })).toBeTruthy();
 
       await user.keyboard("{ArrowRight}");

@@ -107,11 +107,13 @@ function IconTab({
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <TabsTrigger value={panel.id} aria-label={panel.title} className="px-2 [&_svg]:size-4">
+      {/* The tab outside, the tooltip's trigger inside: each sets `data-state`, and the tab's
+          ("active") must win, as the tab's look follows it. */}
+      <TabsTrigger value={panel.id} asChild className="px-2 [&_svg]:size-4">
+        <TooltipTrigger aria-label={panel.title}>
           <Icon />
-        </TabsTrigger>
-      </TooltipTrigger>
+        </TooltipTrigger>
+      </TabsTrigger>
       <TooltipContent side="bottom" className="max-w-56">
         <p className="font-semibold">{panel.title}</p>
         {panel.description === undefined ? null : (
