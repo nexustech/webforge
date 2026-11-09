@@ -8,7 +8,7 @@ import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./
 import { StartScreen } from "./start/StartScreen.js";
 // Schemas word their problems in the editor's words (2.21).
 import "./shell/form-messages.js";
-import { applyTheme, StartFailed } from "./startup.js";
+import { applyTheme, markFirstRender, StartFailed } from "./startup.js";
 import { loadSite } from "./storage/load-site.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";
@@ -36,6 +36,7 @@ const root = createRoot(
   container,
   rootErrorOptions(reportError, import.meta.env.DEV ? showInDevConsole : undefined),
 );
+markFirstRender(container);
 try {
   const [info, preferences, loaded, uiState] = await Promise.all([
     window.webforge.app.getInfo(),
