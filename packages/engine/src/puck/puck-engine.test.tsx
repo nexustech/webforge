@@ -296,7 +296,7 @@ describe("createPuckEngine", () => {
 
     await act(async () => {
       if (field === null) return;
-      field.innerText = "Changed";
+      field.textContent = "Changed";
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await settle();
@@ -317,7 +317,7 @@ describe("createPuckEngine", () => {
 
     await act(async () => {
       if (field === null) return;
-      field.innerText = "Typed";
+      field.textContent = "Typed";
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await settle();
@@ -338,7 +338,7 @@ describe("createPuckEngine", () => {
       const field = element.querySelector<HTMLElement>(".t-heading [data-puck-overlay-portal]");
       await act(async () => {
         if (field === null) return;
-        field.innerText = text;
+        field.textContent = text;
         field.dispatchEvent(new Event("input", { bubbles: true }));
       });
       await settle();
@@ -951,7 +951,7 @@ describe("createPuckEngine with a shared Header and Footer (F-ED-7)", () => {
     ];
     await act(async () => {
       if (field === undefined) return;
-      field.innerText = text;
+      field.textContent = text;
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await settle();
@@ -1100,7 +1100,7 @@ describe("createPuckEngine with linked copies of a shared section (F-ED-23)", ()
     ];
     await act(async () => {
       if (field === undefined) return;
-      field.innerText = text;
+      field.textContent = text;
       field.dispatchEvent(new Event("input", { bubbles: true }));
     });
     await settle();
@@ -1221,7 +1221,7 @@ describe("createPuckEngine before mount", () => {
 describe("createPuckEngine's error boundary (R3)", () => {
   it("shows the boundary's fallback when an element throws, tells onError, and recovers", async () => {
     let broken = true;
-    let tryAgain = () => undefined as void;
+    let tryAgain: () => void = () => {};
     class Boundary extends Component<{ readonly children: ReactNode }, { failed: boolean }> {
       override state = { failed: false };
       static getDerivedStateFromError() {

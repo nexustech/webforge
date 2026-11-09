@@ -186,6 +186,19 @@
           },
           "complexity": {
             "noPlaywrightUselessAwait": "error"
+          },
+          "performance": {
+            "useDomNodeTextContent": "off"
+          }
+        }
+      }
+    },
+    {
+      "includes": ["packages/site-components/src/behaviours/index.ts"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noTemplateCurlyInString": "off"
           }
         }
       }

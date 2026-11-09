@@ -243,14 +243,12 @@ describe("the Appearance group (2.22, ST-1)", () => {
       ),
     });
     const html = renderToStaticMarkup(
-      <>
-        {card.render({
-          id: "c",
-          values: { lookShadow: "small" },
-          slots: {},
-          context: EDITOR_RENDER_CONTEXT,
-        })}
-      </>,
+      card.render({
+        id: "c",
+        values: { lookShadow: "small" },
+        slots: {},
+        context: EDITOR_RENDER_CONTEXT,
+      }),
     );
     expect(html).toBe(
       '<div><h3>One</h3><p><span>Two</span><b class="shadow-sm!">Three</b></p></div>',
@@ -260,20 +258,18 @@ describe("the Appearance group (2.22, ST-1)", () => {
   it("finds the mark on the root itself, and in a list mapped from data (2.22b)", () => {
     const draw = (render: () => ReactNode) =>
       renderToStaticMarkup(
-        <>
-          {defineComponent({
-            label: "Card",
-            fields: {},
-            defaults: {},
-            lookTarget: true,
-            render,
-          }).render({
-            id: "c",
-            values: { lookShadow: "small" },
-            slots: {},
-            context: EDITOR_RENDER_CONTEXT,
-          })}
-        </>,
+        defineComponent({
+          label: "Card",
+          fields: {},
+          defaults: {},
+          lookTarget: true,
+          render,
+        }).render({
+          id: "c",
+          values: { lookShadow: "small" },
+          slots: {},
+          context: EDITOR_RENDER_CONTEXT,
+        }),
       );
     expect(draw(() => <div {...{ [LOOK_TARGET]: "" }}>One</div>)).toBe(
       '<div class="shadow-sm!">One</div>',
@@ -293,23 +289,21 @@ describe("the Appearance group (2.22, ST-1)", () => {
 
   it("looks for a mark only in an element that says it has one", () => {
     const html = renderToStaticMarkup(
-      <>
-        {defineComponent({
-          label: "Card",
-          fields: {},
-          defaults: {},
-          render: () => (
-            <div>
-              <b>One</b>
-            </div>
-          ),
-        }).render({
-          id: "c",
-          values: { lookShadow: "small" },
-          slots: {},
-          context: EDITOR_RENDER_CONTEXT,
-        })}
-      </>,
+      defineComponent({
+        label: "Card",
+        fields: {},
+        defaults: {},
+        render: () => (
+          <div>
+            <b>One</b>
+          </div>
+        ),
+      }).render({
+        id: "c",
+        values: { lookShadow: "small" },
+        slots: {},
+        context: EDITOR_RENDER_CONTEXT,
+      }),
     );
     expect(html).toBe('<div class="shadow-sm!"><b>One</b></div>');
   });
@@ -333,14 +327,12 @@ describe("the Appearance group (2.22, ST-1)", () => {
         ),
       });
       const html = renderToStaticMarkup(
-        <>
-          {card.render({
-            id: "c",
-            values: { lookShadow: "small" },
-            slots: {},
-            context: EDITOR_RENDER_CONTEXT,
-          })}
-        </>,
+        card.render({
+          id: "c",
+          values: { lookShadow: "small" },
+          slots: {},
+          context: EDITOR_RENDER_CONTEXT,
+        }),
       );
       expect(html).toBe('<div class="shadow-sm!"><h3>One</h3><p>Two</p><p>Three</p></div>');
     } finally {
