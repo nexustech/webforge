@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "./index.html?raw";
 import themeScript from "./public/startup-theme.js?raw";
-import { applyTheme, StartFailed } from "./startup.js";
+import { applyTheme, markFirstRender, StartFailed } from "./startup.js";
 
 // The start-up screen (#887): index.html's markup, the classic script that sets its theme before
 // the first paint, and what main.tsx shows instead of it when starting fails.
@@ -90,5 +90,22 @@ describe("StartFailed", () => {
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
 
     expect(onRetry).toHaveBeenCalledOnce();
+  });
+});
+
+describe("markFirstRender (#891)", () => {
+  it("marks the first change to the root only: React's first render", async () => {
+    performance.clearMarks();
+    const root = document.createElement("div");
+    root.innerHTML = '<div class="startup"></div>';
+    markFirstRender(root);
+    expect(performance.getEntriesByName("webforge:first-render")).toHaveLength(0);
+
+    root.replaceChildren(document.createElement("main"));
+    await Promise.resolve();
+    root.append(document.createElement("aside"));
+    await Promise.resolve();
+
+    expect(performance.getEntriesByName("webforge:first-render")).toHaveLength(1);
   });
 });

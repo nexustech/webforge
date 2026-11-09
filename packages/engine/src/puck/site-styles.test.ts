@@ -28,4 +28,14 @@ describe("applySiteStyles", () => {
 
     expect([...doc.body.classList]).toEqual(["puck-body", "bg-base-200"]);
   });
+
+  it("marks the window's timeline the first time a canvas gets the site's CSS (#891)", () => {
+    const doc = document.implementation.createHTMLDocument();
+
+    applySiteStyles(doc, { css: ".a{}", bodyClass: "" });
+    applySiteStyles(document.implementation.createHTMLDocument(), { css: ".b{}", bodyClass: "" });
+
+    // Once only, whichever test applied styles first.
+    expect(performance.getEntriesByName("webforge:canvas-styled")).toHaveLength(1);
+  });
 });

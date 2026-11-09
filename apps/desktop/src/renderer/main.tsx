@@ -6,7 +6,7 @@ import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./
 import { StartScreen } from "./start/StartScreen.js";
 // Schemas word their problems in the editor's words (2.21).
 import "./shell/form-messages.js";
-import { applyTheme, StartFailed } from "./startup.js";
+import { applyTheme, markFirstRender, StartFailed } from "./startup.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";
 
@@ -33,6 +33,7 @@ const root = createRoot(
   container,
   rootErrorOptions(reportError, import.meta.env.DEV ? showInDevConsole : undefined),
 );
+markFirstRender(container);
 try {
   // The editor's code loads only with a site open (#896): the start screen needs none of it. Once
   // main says a site is open, the code loads while the site and its editor state are read.
