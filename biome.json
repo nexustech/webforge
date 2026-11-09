@@ -177,10 +177,14 @@
       "includes": ["e2e/**"],
       "linter": {
         "rules": {
-          "nursery": {
-            "noPlaywrightMissingAwait": "error",
+          "correctness": {
+            "noPlaywrightMissingAwait": "error"
+          },
+          "suspicious": {
             "noPlaywrightWaitForTimeout": "error",
-            "noPlaywrightPagePause": "error",
+            "noPlaywrightPagePause": "error"
+          },
+          "complexity": {
             "noPlaywrightUselessAwait": "error"
           }
         }
