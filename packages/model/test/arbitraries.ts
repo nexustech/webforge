@@ -112,6 +112,8 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         hideFromNavigation: fc.boolean(),
         hideFromSearch: fc.boolean(),
         privacy: fc.boolean(),
+        // A note on its text (UX-17, #868).
+        note: anyText(60).filter((note) => note.length > 0),
         updated: fc
           .date({ min: new Date("2026-01-01"), max: new Date("2030-12-31"), noInvalidDate: true })
           .map((day) => day.toISOString().slice(0, 10)),
@@ -119,7 +121,7 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
       },
       { requiredKeys: ["title", "hideHeader", "hideFooter", "hideFromNavigation", "text"] },
     )
-    .map(({ title, navLabel, description, text, updated, ...flags }): PageEntry => {
+    .map(({ title, navLabel, description, text, updated, note, ...flags }): PageEntry => {
       const entry: PageEntry = {
         id: pageId as PageId,
         kind,
@@ -128,7 +130,12 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         settings: { ...flags, ...(description === undefined ? {} : { description }) },
         doc: {
           root: { props: {} },
-          content: [{ type: "Text", props: { id: `${pageId}-text`, text } }],
+          content: [
+            {
+              type: "Text",
+              props: { id: `${pageId}-text`, text, ...(note === undefined ? {} : { note }) },
+            },
+          ],
         },
       };
       if (navLabel !== undefined) entry.navLabel = navLabel;

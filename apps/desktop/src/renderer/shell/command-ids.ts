@@ -32,6 +32,9 @@ export const COMMAND_IDS = {
   findReplace: "edit.findReplace",
   // Style this ‹kind›… (3.13a): the Style tab's button, the quick actions and the element menu.
   styleThis: "edit.styleThis",
+  // Notes on elements (UX-17, #868): the Edit menu's, the command box's and the element menu's.
+  note: "edit.note",
+  resolveNote: "edit.resolveNote",
   commandBox: "view.commandBox",
   nextRegion: "view.nextRegion",
   previousRegion: "view.previousRegion",

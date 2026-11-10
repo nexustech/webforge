@@ -5,6 +5,7 @@ import {
   isNodeDoc,
   isSharedCopy,
   LAYER_NAME_MAX,
+  NOTE_MAX,
   type NodeDoc,
   newSharedCopy,
   type PageDoc,
@@ -46,6 +47,8 @@ export type Layer = {
   /** The name the person gave it in Layers, if any. */
   readonly name: string | undefined;
   readonly hidden: boolean;
+  /** Its note (UX-17, #868), if it has one: Layers marks it. */
+  readonly note?: string;
   readonly children: readonly Layer[];
   /** Set for a linked copy: the name of the shared section it shows (F-ED-23). */
   readonly sharedSection?: string;
@@ -102,6 +105,7 @@ export function layersOf(
           kind,
           name,
           hidden: node.props.hidden === true,
+          ...(typeof node.props.note === "string" ? { note: node.props.note } : {}),
           children: [],
           sharedSection: entry.name,
           // A copy shows its shared section, entrance and all.
@@ -115,6 +119,7 @@ export function layersOf(
         kind,
         name,
         hidden: node.props.hidden === true,
+        ...(typeof node.props.note === "string" ? { note: node.props.note } : {}),
         children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared)),
         ...(hasEntrance(node.props) ? { animated: true } : {}),
       },
@@ -255,6 +260,32 @@ function editNode(
     },
     { selectionAfter, apply: true },
   );
+}
+
+/** Layer `id` on the shown page, the shared Header's and Footer's included, if it is one. */
+export function layerOf(session: LayersSession, id: string): Layer | undefined {
+  return target(session, id)?.layer;
+}
+
+/**
+ * Gives layer `id` the note `note` (UX-17, #868), changes it, or resolves it when `note` is empty:
+ * one undo step each, none when it stays the same. Trimmed and cut to {@link NOTE_MAX}.
+ */
+export function setLayerNote(session: LayersSession, id: string, note: string): void {
+  const found = target(session, id);
+  const next = note.trim().slice(0, NOTE_MAX).trim();
+  if (found === undefined || next === (found.layer.note ?? "")) return;
+  const key =
+    next === ""
+      ? "notes.history.resolved"
+      : found.layer.note === undefined
+        ? "notes.history.added"
+        : "notes.history.changed";
+  const at = { id, own: found.own, region: found.region };
+  editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
+    if (next === "") delete node.props.note;
+    else node.props.note = next;
+  });
 }
 
 /**

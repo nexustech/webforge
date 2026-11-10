@@ -5,6 +5,9 @@ import { type ThemeTokens, themeTokensSchema } from "./theme.js";
 /** The longest name an element can be given in Layers (F-ED-26). */
 export const LAYER_NAME_MAX = 100;
 
+/** The longest note on an element may be (UX-17, #868). */
+export const NOTE_MAX = 500;
+
 /**
  * Advanced-mode options of a node (F-ED-11): extra CSS classes, HTML attributes and the anchor that
  * section links point at.
@@ -18,8 +21,8 @@ export type NodeAdvanced = {
 
 /**
  * An element or section on a page: its component type and its props (always with an `id`).
- * Slots (e.g. a Section's content) are arrays of nodes inside `props`. `id`, `layerName`, `hidden`
- * and `advanced` are reserved for Webforge; components never use them as field names.
+ * Slots (e.g. a Section's content) are arrays of nodes inside `props`. `id`, `layerName`, `hidden`,
+ * `note` and `advanced` are reserved for Webforge; components never use them as field names.
  */
 export type NodeDoc = {
   type: string;
@@ -32,6 +35,11 @@ export type NodeDoc = {
     layerName?: string | undefined;
     /** Hidden in Layers: shown dimmed on the canvas and left out of the export (F-ED-12). */
     hidden?: boolean | undefined;
+    /**
+     * A note for the person (UX-17, #868): "Swap this photo before launch". Shown on the canvas, in
+     * Layers and as a Site Check tip until it's resolved; never exported. None when absent.
+     */
+    note?: string | undefined;
     advanced?: NodeAdvanced | undefined;
   } & Record<string, unknown>;
 };
@@ -126,6 +134,7 @@ export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
       id: z.string().min(1),
       layerName: z.string().max(LAYER_NAME_MAX).optional(),
       hidden: z.boolean().optional(),
+      note: z.string().min(1).max(NOTE_MAX).optional(),
       advanced: storedAdvancedSchema.optional(),
     })
     .transform((props, context) => {

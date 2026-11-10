@@ -46,6 +46,7 @@ export {
   isReservedAttributeName,
   LAYER_NAME_MAX,
   layoutDocSchema,
+  NOTE_MAX,
   nodeAdvancedSchema,
   nodeDocSchema,
   pageDocSchema,
