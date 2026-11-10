@@ -102,9 +102,9 @@ describe("LayersPanel (F-ED-12)", () => {
     );
 
     const [noted, plain] = screen.getAllByRole("treeitem");
-    expect(noted?.textContent).toContain("Has a note: Swap this photo");
+    expect(noted?.textContent).toBe("Heading, has a note: Swap this photo");
     expect(noted?.querySelector('[title="Swap this photo"]')).not.toBeNull();
-    expect(plain?.textContent).not.toContain("Has a note");
+    expect(plain?.textContent).toBe("Heading");
   });
 
   it("shows the tree with levels, names, the selection and hidden layers", () => {

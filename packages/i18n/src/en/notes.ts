@@ -17,5 +17,5 @@ export const notes = {
   "notes.history.changed": "Changed the note on {item}",
   "notes.history.resolved": "Resolved the note on {item}",
   // Layers' marker on a row with a note.
-  "notes.marker": "Has a note: {note}",
+  "notes.marker": "has a note: {note}",
 } as const;
