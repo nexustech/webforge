@@ -4,7 +4,7 @@ id: site-check
 title: Site Check
 summary: What Site Check looks for, what each finding means, and how to fix it.
 related: [export, publish, pages, media, forms, site-settings]
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 # Site Check
@@ -51,6 +51,7 @@ Each check shows a dot: green when all is well, amber or red when something need
 | **Large downloads**            | A linked document is over 10 MB, which is slow to download on a phone                                                                                         | Use a smaller copy of the document                                                                        |
 | **Underlined text**            | Underlined text that isn't a link, which visitors may try to click, including text underlined by the style for all elements of its kind                       | Remove the underline, or make it a link. For a style, change it in [Style this…](styling.md#style-this)   |
 | **Year on your site**          | Your text uses `{year}`, which your published site shows as the year you last published it in, and that year has passed. The finding says which year it shows | **Fix** opens [Publish](publish.md): publish again to show this year                                      |
+| **Notes**                      | A section or element has a [note](editing-on-the-page.md#notes) you haven't resolved yet. The finding shows the note                                          | Do what it says, then **Resolve Note** from the item's right-click menu                                   |
 
 ## Being found
 

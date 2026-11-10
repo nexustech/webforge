@@ -4,7 +4,7 @@ id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide and rename it.
 related: [editing-on-the-page, header-and-footer, keyboard-shortcuts]
-updated: 2026-11-06
+updated: 2026-11-10
 ---
 
 # Layers
@@ -17,6 +17,7 @@ It's the easiest way to reach something small or hidden, or to see how a page is
 
 - **Link:** a linked copy of a [shared section](header-and-footer.md#shared-sections). On the Header and Footer, it means they're on every page.
 - **Sparkles:** the item has an entrance animation.
+- **Note:** the item has a [note](editing-on-the-page.md#notes). Point at the icon to read it.
 - **Crossed-out name:** the item is hidden.
 
 ## What you can do

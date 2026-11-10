@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-07
+updated: 2026-11-10
 ---
 
 # Editing on the page
@@ -77,10 +77,21 @@ Right-click a section or element, on the page or in [Layers](layers.md), for:
 - **Select similar** (every item like this one on the page) and **Select parent**;
 - **Cut**, **Copy**, **Paste** and **Paste as Linked Copy**;
 - **Style This…**, **Copy Style**, **Paste Style**, and **Apply Look to Every…** on this page or the whole site (see [Styling](styling.md));
+- **Add Note…** or **Edit Note…**, and **Resolve Note** (see [Notes](#notes));
 - **Help for This Element**, which opens its help page at what it says about that kind of section or element (see [The editor](the-editor.md#help));
 - **Delete**.
 
 On the keyboard, Shift+F10 or the menu key opens the same menu.
+
+## Notes
+
+A note is a reminder for you on a section or element, such as _Swap this photo before launch_. It's never on your website.
+
+- **Add one:** right-click the item and choose **Add Note…**, or use Edit › Add Note…. Type the note and click **Save Note**.
+- **Where it shows:** the item has a dashed amber outline on the page, and a note icon in [Layers](layers.md); point at the icon to read it. [Site Check](site-check.md) lists every open note under _Tips_.
+- **Change or resolve it:** **Edit Note…** opens it again. **Resolve Note**, or emptying it and saving, removes it.
+
+Adding, changing and resolving a note are each one step you can undo.
 
 ## Toolbars for some elements
 
