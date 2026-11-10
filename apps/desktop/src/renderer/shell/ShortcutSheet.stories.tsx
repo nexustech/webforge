@@ -21,7 +21,7 @@ function commands(mac: boolean): readonly Command[] {
     ["edit.delete", "Delete"],
     ["edit.moveUp", "Move up"],
     ["edit.moveDown", "Move down"],
-    ["edit.toggleHidden", "Hide or show"],
+    ["edit.toggleHidden", "Don't publish, or show"],
     ["edit.rename", "Rename…"],
     ["edit.selectParent", "Select parent"],
     ["edit.selectChild", "Select first child"],

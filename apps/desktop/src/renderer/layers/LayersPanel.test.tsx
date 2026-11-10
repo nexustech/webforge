@@ -41,7 +41,7 @@ const setUpActions = (): LayersPanelActions => ({
   toggle: vi.fn(),
   selectMany: vi.fn(),
   rename: vi.fn(),
-  setHidden: vi.fn(),
+  setShown: vi.fn(),
   move: vi.fn(),
   moveUp: undefined,
   moveDown: undefined,
@@ -61,7 +61,7 @@ function setUp(
     toggle: vi.fn(),
     selectMany: vi.fn(),
     rename: vi.fn(),
-    setHidden: vi.fn(),
+    setShown: vi.fn(),
     move: vi.fn(),
     copy: vi.fn(),
     moveUp: command(),
@@ -105,7 +105,9 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(items[1]?.getAttribute("aria-selected")).toBe("true");
     expect(items[1]?.tabIndex).toBe(0);
     expect(items[0]?.tabIndex).toBe(-1);
-    expect(screen.getByRole("button", { name: "Show Heading" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Show or hide Heading (now: Don't publish)" }),
+    ).toBeTruthy();
   });
 
   it("locks dragging, moving and hiding in Content mode, keeping selection and names (M3)", async () => {
@@ -114,13 +116,13 @@ describe("LayersPanel (F-ED-12)", () => {
 
     expect(rows.every((row) => row.getAttribute("data-row-draggable") === "false")).toBe(true);
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown", altKey: true, ...MOD });
-    for (const hide of screen.getAllByRole("button", { name: /^Hide/, hidden: true })) {
-      fireEvent.click(hide);
+    for (const eye of screen.getAllByRole("button", { name: /^Show or hide/, hidden: true })) {
+      expect(eye.hasAttribute("disabled")).toBe(true);
     }
     fireEvent.keyDown(rows[1] as HTMLElement, { key: "ArrowDown" });
 
     expect(actions.move).not.toHaveBeenCalled();
-    expect(actions.setHidden).not.toHaveBeenCalled();
+    expect(actions.setShown).not.toHaveBeenCalled();
     expect(actions.select).toHaveBeenCalled();
   });
 
@@ -226,16 +228,52 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
-  it("hides and shows layers with the eye, without selecting them", async () => {
+  it("shows, hides while editing or keeps off the website with the eye's menu, selecting nothing (UX-23)", async () => {
     const { actions } = setUp();
 
-    await userEvent.click(screen.getByRole("button", { name: "Hide 'Hours'" }));
-    await userEvent.click(screen.getByRole("button", { name: "Show Heading" }));
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't publish" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Show or hide Heading (now: Don't publish)" }),
+    );
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Hide while editing" }));
 
-    expect(actions.setHidden.mock.calls).toEqual([
-      ["b", true],
-      ["c", false],
+    expect(actions.setShown.mock.calls).toEqual([
+      ["b", "hidden"],
+      ["c", "editorHidden"],
     ]);
+    expect(actions.select).not.toHaveBeenCalled();
+  });
+
+  it("offers Hide while editing on any layer but the shared Header or Footer itself (UX-23)", async () => {
+    render(
+      <LayersPanel
+        layers={[layer("header", { kind: "Header", region: "header" }), layer("a")]}
+        selectedId={null}
+        alsoSelected={[]}
+        actions={setUpActions()}
+        layoutLocked={false}
+      />,
+    );
+    const disabled = () =>
+      screen
+        .getByRole("menuitemradio", { name: "Hide while editing" })
+        .getAttribute("aria-disabled");
+
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide Header (now: Show)" }));
+    expect(disabled()).toBe("true");
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide Heading (now: Show)" }));
+    expect(disabled()).toBeNull();
+  });
+
+  it("puts the focus back on the row when the eye's menu closes, selecting nothing", async () => {
+    const { actions } = setUp(null);
+
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
+    await userEvent.keyboard("{Escape}");
+
+    await vi.waitFor(() => expect(document.activeElement?.getAttribute("data-layer")).toBe("b"));
     expect(actions.select).not.toHaveBeenCalled();
   });
 
@@ -361,13 +399,13 @@ describe("LayersPanel (F-ED-12)", () => {
     await userEvent.click(
       screen
         .getByRole("toolbar", { name: "Layer actions" })
-        .querySelector("[title=\"Hide 'Hours'\"]") as HTMLElement,
+        .querySelector("[title=\"Don't publish 'Hours'\"]") as HTMLElement,
     );
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
     expect(actions.moveUp).toHaveBeenCalledOnce();
     expect(actions.remove).toHaveBeenCalledOnce();
-    expect(actions.setHidden).toHaveBeenCalledWith("b", true);
+    expect(actions.setShown).toHaveBeenCalledWith("b", "hidden");
     expect(screen.getByRole("textbox")).toBeTruthy();
   });
 
@@ -389,7 +427,7 @@ describe("LayersPanel (F-ED-12)", () => {
           toggle: vi.fn(),
           selectMany: vi.fn(),
           rename: vi.fn(),
-          setHidden: vi.fn(),
+          setShown: vi.fn(),
           move: vi.fn(),
           moveUp: undefined,
           moveDown: undefined,
@@ -442,7 +480,7 @@ describe("LayersPanel (F-ED-12)", () => {
           toggle: vi.fn(),
           selectMany: vi.fn(),
           rename: vi.fn(),
-          setHidden: vi.fn(),
+          setShown: vi.fn(),
           move: vi.fn(),
           moveUp: undefined,
           moveDown: undefined,
@@ -557,7 +595,7 @@ describe("LayersPanel (F-ED-12)", () => {
             toggle: vi.fn(),
             selectMany: vi.fn(),
             rename: vi.fn(),
-            setHidden: vi.fn(),
+            setShown: vi.fn(),
             move: vi.fn(),
             moveUp: undefined,
             moveDown: undefined,

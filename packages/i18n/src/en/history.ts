@@ -9,7 +9,7 @@ export const history = {
   "history.deletedMany": "Deleted {count} elements",
   "history.duplicatedMany": "Duplicated {count} elements",
   "history.movedMany": "Moved {count} elements",
-  "history.hidMany": "Hid {count} elements",
+  "history.hidMany": "Kept {count} elements off your website",
   "history.showedMany": "Showed {count} elements",
   "history.editedText": "Edited {item} text",
   // For components with several text fields: "Edited Hero button text".

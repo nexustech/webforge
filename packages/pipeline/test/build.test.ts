@@ -10,7 +10,7 @@ import type {
   SiteSnapshot,
 } from "@webforge/model";
 import { createSite, DEFAULT_THEME, newSharedCopy, siteToSnapshot } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { siteLibrary, siteSnapshotFor, starterLayout } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { transform } from "lightningcss";
@@ -1710,4 +1710,84 @@ describe("buildSite: site files (3.5)", () => {
       scaledTestTimeout(60_000),
     );
   });
+});
+
+describe("buildSite: draft pages and elements that aren't published (G37, UX-23, #864)", () => {
+  it(
+    "leaves out a draft page, its menu item, the links to it and a Don't publish element",
+    async () => {
+      const site = createSite({
+        name: "Bakery",
+        language: "en",
+        homeTitle: "Home",
+        notFoundTitle: "Page not found",
+        layout: starterLayout("Bakery"),
+        homeDoc: {
+          root: { props: {} },
+          content: [
+            { type: "Heading", props: { id: "welcome", text: "Welcome in" } },
+            { type: "Heading", props: { id: "secret", text: "Not yet announced", hidden: true } },
+            {
+              type: "Heading",
+              props: { id: "banner", text: "Out of the way", editorHidden: true },
+            },
+            {
+              type: "Button",
+              props: {
+                id: "to-winter",
+                label: "Winter menu",
+                link: { kind: "page", pageId: "winter" },
+              },
+            },
+          ],
+        },
+      });
+      const home = site.pages[site.homePageId];
+      if (home === undefined) throw new Error("No home page");
+      for (const [id, title, draft] of [
+        ["about", "About us", false],
+        ["winter", "Winter menu", true],
+      ] as const) {
+        site.pages[id as PageId] = {
+          ...home,
+          id: id as PageId,
+          slug: id,
+          title,
+          settings: { ...home.settings, ...(draft ? { draft } : {}) },
+          doc: {
+            root: { props: {} },
+            content: [{ type: "Heading", props: { id: `${id}-title`, text: title } }],
+          },
+        };
+        site.pageOrder.push(id as PageId);
+        site.menu.items.push({
+          id: id as MenuItemId,
+          kind: "page",
+          pageId: id as PageId,
+          hidden: false,
+        });
+      }
+      const address = "https://rosas.example";
+      site.settings.address.url = address;
+
+      const exported = await buildSite(siteSnapshotFor(site, siteLibrary), siteLibrary, resources);
+      const index = text(exported, "index.html");
+
+      expect([...exported.files.keys()].filter((path) => path.endsWith(".html")).sort()).toEqual([
+        "404.html",
+        "about.html",
+        "index.html",
+      ]);
+      expect(text(exported, "sitemap.xml")).toContain(`<loc>${address}/about.html</loc>`);
+      expect(text(exported, "sitemap.xml")).not.toContain("winter");
+      // Its menu item and the Button's link go, as a link to a page that isn't there does.
+      expect(index).toContain('<a href="about.html">About us</a>');
+      expect(index).not.toContain("winter");
+      // Not published: left out. Hidden while editing: on the canvas only, so exported.
+      expect(index).toContain("Welcome in");
+      expect(index).not.toContain("Not yet announced");
+      expect(index).toContain("Out of the way");
+    },
+    scaledTestTimeout(60_000),
+  );
 });

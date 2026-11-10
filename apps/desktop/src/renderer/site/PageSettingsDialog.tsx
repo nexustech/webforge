@@ -45,6 +45,7 @@ type PageValues = {
   readonly hideBackToTop: boolean;
   readonly hideFromSearch: boolean;
   readonly privacy: boolean;
+  readonly draft: boolean;
 };
 
 const settings = pageEntrySchema.shape.settings.shape;
@@ -64,6 +65,7 @@ const pageSettingsFormSchema = z.object({
   hideBackToTop: z.boolean(),
   hideFromSearch: z.boolean(),
   privacy: z.boolean(),
+  draft: z.boolean(),
 });
 
 /**
@@ -125,6 +127,18 @@ export function pageSettingsSpec(
         })),
         ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
       },
+      // A draft (G37, #864): any page but the Home page and "Page not found", first among what
+      // the page leaves out, as it leaves out the whole page.
+      ...(page.kind === "page" && page.id !== site.homePageId
+        ? [
+            {
+              kind: "toggle" as const,
+              name: "draft",
+              label: t("pageSettings.draft"),
+              help: t("pageSettings.draftHint"),
+            },
+          ]
+        : []),
       { kind: "toggle", name: "hideHeader", label: t("pageSettings.hideHeader") },
       { kind: "toggle", name: "hideFooter", label: t("pageSettings.hideFooter") },
       // "Page not found" is never in navigation, nor shown by search engines.
@@ -217,6 +231,7 @@ export function PageSettingsDialog({
         hideBackToTop: page.settings.hideBackToTop === true,
         hideFromSearch: page.settings.hideFromSearch === true,
         privacy: page.settings.privacy === true,
+        draft: page.settings.draft === true,
       }}
       onSave={(change) => onSave({ ...change, shareImage: change.shareImage })}
       onCancel={onCancel}
