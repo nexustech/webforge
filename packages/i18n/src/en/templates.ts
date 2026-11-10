@@ -1,11 +1,13 @@
 /** New Site (2.14a, F-SITE-1): the templates, their business types, and the themes to start in. */
 export const templates = {
+  // The note that opens the Privacy, Terms and Cookies pages Add Page writes (#855, #866): an
+  // instruction to the owner, which Site Check finds if it's left in.
+  "legalPage.note":
+    "This page is a starting point, not legal advice. Check that each part matches how your business works, change what doesn't, then delete this paragraph.",
   // The privacy page *Add Page › Privacy Page* adds (#855): a start for the owner to check, in
-  // their voice to visitors. `privacyPage.note` is an instruction Site Check finds if it's left in.
+  // their voice to visitors.
   "privacyPage.title": "Privacy",
   "privacyPage.description": "How this site uses the details you give it, and your rights.",
-  "privacyPage.note":
-    "This page is a starting point, not legal advice. Check that each part matches how your business works, change what doesn't, then delete this paragraph.",
   "privacyPage.whoTitle": "Who we are",
   "privacyPage.who": "This website is run by {business}.",
   "privacyPage.collectsTitle": "What we collect",
@@ -37,6 +39,57 @@ export const templates = {
   "privacyPage.contactEmail": "To ask about your details, email us at {email}.",
   "privacyPage.contactNoEmail":
     "To ask about your details, contact us using the details on this site.",
+  // The terms page *Add Page › Terms Page* adds (#866): a start for the owner to check.
+  "termsPage.title": "Terms",
+  "termsPage.description": "The terms for using this site and for booking or buying from us.",
+  "termsPage.whoTitle": "Who we are",
+  "termsPage.who": "This website is run by {business}.",
+  "termsPage.address": "Our address is {address}.",
+  "termsPage.useTitle": "Using this site",
+  "termsPage.use":
+    "The information on this site is for general guidance. We keep it as accurate and up to date as we can, but it can change without notice.",
+  "termsPage.useCopy":
+    "The words and photos on this site are ours or used with permission. Please don't copy them without asking us first.",
+  "termsPage.pricesTitle": "Prices and bookings",
+  "termsPage.prices":
+    "Prices on this site are a guide and can change. We confirm the price, and any terms that apply, before you book or buy.",
+  "termsPage.linksTitle": "Links to other sites",
+  "termsPage.links":
+    "Where this site links to other websites, we don't control them and aren't responsible for what they say.",
+  "termsPage.changesTitle": "Changes to these terms",
+  "termsPage.changes":
+    "We may update these terms from time to time. The version on this page is the one that applies.",
+  "termsPage.contactTitle": "Contact us",
+  "termsPage.contactEmail": "If you have a question about these terms, email us at {email}.",
+  "termsPage.contactPhone": "If you have a question about these terms, call us on {phone}.",
+  "termsPage.contactOther":
+    "If you have a question about these terms, contact us using the details on this site.",
+  // The cookie policy *Add Page › Cookie Policy Page* adds while Google Analytics is on (#866).
+  "cookiePage.title": "Cookies",
+  "cookiePage.description": "The cookies this site uses, and how to change your choice.",
+  "cookiePage.whatTitle": "What cookies are",
+  "cookiePage.what":
+    "Cookies are small files a website keeps in your browser, so it can recognise your browser when you come back.",
+  "cookiePage.oursTitle": "The cookies this site uses",
+  "cookiePage.analyticsConsent":
+    "If you agree when this site asks, Google Analytics sets cookies named _ga and _ga_ followed by a code, so we can count visits and see which pages people read. They last up to two years. If you don't agree, it sets none.",
+  "cookiePage.analyticsCookieless":
+    "Google Analytics counts visits to this site without cookies. This site doesn't set any cookies of its own.",
+  "cookiePage.none": "This site doesn't set any cookies.",
+  "cookiePage.choiceKept":
+    "Your browser remembers your choice, so this site doesn't ask on every page. It isn't sent to us.",
+  "cookiePage.embedsTitle": "Videos and maps",
+  "cookiePage.embedsConsent":
+    "Videos and maps from other sites, such as YouTube, Vimeo and Google Maps, load only when you click them, or when you choose {acceptAll} when this site asks. Those sites may then set their own cookies.",
+  "cookiePage.embedsClick":
+    "Videos and maps from other sites, such as YouTube, Vimeo and Google Maps, load only when you click them. Those sites may then set their own cookies.",
+  "cookiePage.changeTitle": "Changing your choice",
+  "cookiePage.changeSettings": "To change your choice, click {settings} at the bottom of any page.",
+  "cookiePage.changeBrowser": "You can also see and delete cookies in your browser's settings.",
+  "cookiePage.contactTitle": "Contact us",
+  "cookiePage.contactEmail": "If you have a question about cookies, email us at {email}.",
+  "cookiePage.contactOther":
+    "If you have a question about cookies, contact us using the details on this site.",
   // The New Site dialog (LF-11).
   "newSite.title": "New Site",
   "newSite.description":

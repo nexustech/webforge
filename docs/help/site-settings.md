@@ -4,7 +4,7 @@ id: site-settings
 title: Site Settings
 summary: Your site's name, web address, business details, social profiles, search engine and analytics settings, and form service.
 related: [settings, forms, pages, site-check, custom-code]
-updated: 2026-11-07
+updated: 2026-11-10
 ---
 
 # Site Settings
@@ -58,6 +58,8 @@ The **Opening hours and contact** section and the **Map** show these details, an
 - **Google Analytics measurement ID:** such as `G-ABC123DEF4`, to count your visitors. Leave it empty for no analytics.
 - **Ask visitors before counting them (cookie banner):** shows a banner with _Accept all_ and _Decline_. Google Analytics only starts if a visitor accepts. With the banner off, visits are still counted, but without cookies and in less detail.
 - **Banner text:** your own wording for the banner. Accepting also loads videos and maps.
+
+With Google Analytics on, **Add Page › Cookie Policy Page** writes a page about your site's cookies for you to check. See [Terms and cookie pages](pages.md#terms-and-cookie-pages).
 
 ## Forms
 

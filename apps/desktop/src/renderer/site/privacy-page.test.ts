@@ -5,7 +5,7 @@ import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { addPrivacyPage, changePageSettings } from "./page-actions.js";
+import { addPolicyPage, changePageSettings } from "./page-actions.js";
 import { privacyPageContent } from "./privacy-page.js";
 
 /** The starter site with `content` on its home page, and Site Settings' `settings` changes. */
@@ -53,7 +53,7 @@ const opening = {
     variant: "minimal",
     colors: "page",
     title: t("privacyPage.title"),
-    text: t("privacyPage.note"),
+    text: t("legalPage.note"),
     buttonLabel: "",
   },
 };
@@ -74,7 +74,7 @@ describe("the privacy page (#855, PH5-1)", () => {
     const content = privacyPageContent(site);
     expect(content[0]).toEqual(opening);
     expect(sectionsOf(content)).toEqual([
-      { title: t("privacyPage.title"), text: [t("privacyPage.note")] },
+      { title: t("privacyPage.title"), text: [t("legalPage.note")] },
       {
         title: t("privacyPage.whoTitle"),
         text: [t("privacyPage.who", { business: "Rosa's Bakery" })],
@@ -143,7 +143,7 @@ describe("the privacy page (#855, PH5-1)", () => {
     const before = failing(site());
     expect(before).toContain("privacyPage");
 
-    const id = addPrivacyPage(session);
+    const id = addPolicyPage(session, "privacy");
     // Nothing else on the new page needs fixing: a main heading, a title, a description.
     const added = failing(site()).filter((rule) => !before.includes(rule));
     expect(added.filter((rule) => rule !== "placeholders")).toEqual([]);
@@ -168,7 +168,7 @@ describe("the privacy page (#855, PH5-1)", () => {
   it("marks or unmarks a page as the privacy page in Page Settings, and keeps it otherwise", () => {
     const session = sessionWith(siteWith([contactForm]));
     const site = () => session.history.document.getState();
-    const id = addPrivacyPage(session);
+    const id = addPolicyPage(session, "privacy");
     const page = () => site().pages[id as PageId];
     const settings = {
       title: "Privacy",

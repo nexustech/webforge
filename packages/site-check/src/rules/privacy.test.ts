@@ -2,7 +2,7 @@ import type { PageId, SiteDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { levelIn } from "../check.js";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
-import { hasPrivacyPage, privacyPageRule, siteCollects } from "./privacy.js";
+import { hasPrivacyPage, privacyPageRule, siteCollects, siteEmbeds } from "./privacy.js";
 
 /** `site` with Google Analytics' Measurement ID. */
 const withAnalytics = (site: SiteDoc): SiteDoc => ({
@@ -82,5 +82,13 @@ describe("privacy page (#855, PH5-1)", () => {
       signups: true,
       visits: true,
     });
+  });
+
+  it("says whether the site has a video or a map, for its cookie policy to say (#866)", () => {
+    for (const embed of ["Video", "Map", "EmbedVideo", "EmbedMap"]) {
+      expect(siteEmbeds(siteWith([element(embed, "watch")])), embed).toBe(true);
+    }
+    expect(siteEmbeds(siteWith([element("Video", "watch", { hidden: true })]))).toBe(false);
+    expect(siteEmbeds(siteWith([element("ContactForm", "write")]))).toBe(false);
   });
 });
