@@ -4,6 +4,8 @@ import {
   type NodeDoc,
   type PageId,
   RICH_TEXT_PAGE_LINK,
+  SHARED_COPY_TYPE,
+  type SharedSectionId,
   type SiteDoc,
   siteDocSchema,
 } from "@webforge/model";
@@ -11,6 +13,7 @@ import { checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
 import { readTemplate, readTemplates } from "../src/node.js";
+import { mergeIntoHome } from "../src/one-page.js";
 import { recipesFor } from "../src/recipes.js";
 import { retargetLinks } from "../src/retarget-links.js";
 import { siteFromTemplate } from "../src/template.js";
@@ -124,6 +127,40 @@ describe("mergeIntoHome on the Trades template", () => {
     expect(site.menu.items.map((item) => item.label)).not.toContain("Contact");
     expect(JSON.stringify(site.pages)).not.toContain("trades-contact");
     expect(brokenLinks(site)).toEqual([]);
+  });
+
+  it("names a page's first section of its own, not a shared section's copy before it", () => {
+    const site = siteFromTemplate(trades.template, trades.images, {
+      name: "Rosa's",
+      theme: DEFAULT_THEME,
+      pages: { leaveOut: [], recipes: [] },
+    });
+    const HOURS = "shared-hours" as SharedSectionId;
+    site.sharedSections = {
+      [HOURS]: {
+        id: HOURS,
+        name: "Opening hours",
+        section: { type: "Section", props: { id: "hours", content: [] } },
+      },
+    };
+    const about = site.pages[site.pageOrder[1] as PageId];
+    if (about === undefined) throw new Error("No second page");
+    about.doc.content.unshift({
+      type: SHARED_COPY_TYPE,
+      props: { id: "copy", sharedSectionId: HOURS },
+    });
+
+    mergeIntoHome(site);
+
+    const home = site.pages[site.homePageId]?.doc.content ?? [];
+    const copy = home.findIndex((node) => node.type === SHARED_COPY_TYPE);
+    expect(home[copy]?.props.advanced).toBeUndefined();
+    const named = home[copy + 1];
+    expect(named?.type).toBe(about.doc.content[1]?.type);
+    const section = site.menu.items[1];
+    expect(section?.kind === "section" && section.link.anchor).toBe(
+      named?.props.advanced?.anchorId,
+    );
   });
 
   it("changes nothing without One page", () => {

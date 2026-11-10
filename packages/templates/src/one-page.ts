@@ -1,6 +1,7 @@
 import {
   anchorFrom,
   anchorsIn,
+  isSharedCopy,
   type MenuItem,
   newId,
   type PageId,
@@ -50,14 +51,16 @@ export function mergeIntoHome(site: SiteDoc): void {
     const anchors = anchorsIn(copies);
     for (const anchor of anchors) taken.add(anchor);
     moved.set(id, anchors);
-    const [first] = copies;
+    home.doc.content.push(...copies);
+    // A linked copy of a shared section shows its section's anchor, not its own: name the first
+    // section of the page's own instead.
+    const first = copies.find((node) => !isSharedCopy(node));
     let anchor: string | undefined;
     if (first !== undefined) {
       const name = page.navLabel ?? page.title;
       anchor = first.props.advanced?.anchorId ?? anchorFrom(name, (each) => taken.has(each));
       first.props.advanced = { ...first.props.advanced, anchorId: anchor };
       taken.add(anchor);
-      home.doc.content.push(...copies);
       sections.push({
         id: newId("menuItem"),
         kind: "section",
