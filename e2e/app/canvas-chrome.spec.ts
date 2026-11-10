@@ -259,19 +259,19 @@ test.describe("keyboard and floating add", () => {
     await expect(steps()).not.toContainText(["Deleted Text"]);
   });
 
-  test("Mod+/ and the chip hide and show the selected element; Edit edits its text (1.30)", async () => {
+  test("Mod+/ and the chip keep the selected element off the website and show it; Edit edits its text (1.30)", async () => {
     await selectHeading();
 
     await page.keyboard.press("ControlOrMeta+/");
-    await expect(steps().first()).toHaveText("Hid Heading");
+    await expect(steps().first()).toHaveText("Kept Heading off your website");
     await expect(canvas().locator("h1[data-webforge-hidden]")).toHaveCount(1);
     await quickAction("Show").click();
     await expect(steps().first()).toHaveText("Showed Heading");
-    await quickAction("Hide").click();
+    await quickAction("Don't publish").click();
     await expect(steps()).toHaveText([
-      "Hid Heading",
+      "Kept Heading off your website",
       "Showed Heading",
-      "Hid Heading",
+      "Kept Heading off your website",
       "Opened page",
     ]);
 

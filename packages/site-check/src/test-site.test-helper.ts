@@ -6,6 +6,7 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
+import { runRule } from "./check.js";
 import type { CheckInput, CheckRule } from "./types.js";
 
 /** A site whose home page holds `home`; `changes` replace parts of it. */
@@ -59,6 +60,9 @@ export function file(id: string, size: number): MediaMeta {
   };
 }
 
-/** What `rule` finds in `site`, built from Webforge's catalogue, with `more` of its input. */
+/**
+ * What `rule` finds in `site`, built from Webforge's catalogue, with `more` of its input: the site
+ * as it is published unless the rule is for draft pages, as a check runs it (`runRule`).
+ */
 export const findIn = (rule: CheckRule, site: SiteDoc, more: Partial<CheckInput> = {}) =>
-  rule.check({ site, catalogue: CATALOGUE, ...more });
+  runRule(rule, { site, catalogue: CATALOGUE, ...more });

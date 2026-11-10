@@ -7,6 +7,7 @@ import {
   type Finding,
   ignoreKey,
   reportOf,
+  runRule,
   SITE_CHECK_RULES,
 } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
@@ -112,7 +113,7 @@ export function createSiteCheck(
     };
   };
   const runAll = (site: SiteDoc) =>
-    new Map(SITE_CHECK_RULES.map((rule) => [rule, rule.check(inputOf(site))]));
+    new Map(SITE_CHECK_RULES.map((rule) => [rule, runRule(rule, inputOf(site))]));
   /** What each rule found in the latest check, before anything ignored is left out. */
   let found: ReadonlyMap<CheckRule, readonly Finding[]> = runAll(document.getState());
   const report = (ignored: ReadonlySet<string>) =>
@@ -143,7 +144,7 @@ export function createSiteCheck(
       do {
         const rule = rules.shift();
         if (rule === undefined) break;
-        next.set(rule, rule.check(inputOf(site)));
+        next.set(rule, runRule(rule, inputOf(site)));
       } while (rules.length > 0 && (deadline?.timeRemaining() ?? 0) > IDLE_MARGIN_MS);
       if (rules.length > 0) {
         whenIdle(step);

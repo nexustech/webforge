@@ -62,15 +62,17 @@ function fromCopy(node: NodeDoc, copy: Copy, anchors: ReadonlyMap<string, string
 
 /**
  * `root`, a copy's section as `fromCopy` gives it back, with what the copy itself gives its section
- * (its Layers name, hidden, F-ED-12) as the shared section has them: those are the copy's own.
+ * (its Layers name, hidden, F-ED-12, UX-23) as the shared section has them: those are the copy's
+ * own.
  */
 function withoutCopyProps(root: NodeDoc, section: NodeDoc, copy: Copy): NodeDoc {
   const props: Record<string, unknown> = { ...root.props };
   const own = {
     layerName: copy.props.layerName !== undefined,
     hidden: copy.props.hidden === true,
+    editorHidden: copy.props.editorHidden === true,
   };
-  for (const key of ["layerName", "hidden"] as const) {
+  for (const key of ["layerName", "hidden", "editorHidden"] as const) {
     if (!own[key]) continue;
     if (section.props[key] === undefined) delete props[key];
     else props[key] = section.props[key];

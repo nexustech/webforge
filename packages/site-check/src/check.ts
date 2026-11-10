@@ -1,7 +1,9 @@
+import { publishedSite, type SiteDoc } from "@webforge/model";
 import { buyButtonHttpsRule, buyButtonLinksRule } from "./rules/commerce.js";
 import {
   altTextRule,
   brokenLinksRule,
+  draftLinksRule,
   missingImagesRule,
   outdatedYearRule,
   pastAnnouncementRule,
@@ -41,6 +43,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   deviceNamesRule,
   homePageRule,
   brokenLinksRule,
+  draftLinksRule,
   placeholdersRule,
   pageTitlesRule,
   externalResourcesRule,
@@ -79,6 +82,24 @@ export function levelIn(rule: CheckRule, mode: CheckMode): CheckLevel {
  */
 export const ignoreKey = (rule: string, key: string): string => `${rule}:${key}`;
 
+/** Each site as it is published, kept while the site is, so every rule of a check gets the same. */
+const PUBLISHED = new WeakMap<SiteDoc, SiteDoc>();
+
+/**
+ * What `rule` finds in `input`'s site: the site as it is published, without its draft pages (G37,
+ * #864), unless the rule is for links to them ({@link CheckRule.drafts}). Every check runs its
+ * rules through this.
+ */
+export function runRule(rule: CheckRule, input: CheckInput): readonly Finding[] {
+  if (rule.drafts === true) return rule.check(input);
+  let site = PUBLISHED.get(input.site);
+  if (site === undefined) {
+    site = publishedSite(input.site);
+    PUBLISHED.set(input.site, site);
+  }
+  return rule.check(site === input.site ? input : { ...input, site });
+}
+
 /**
  * Checks `input`'s site for `mode` with `rules` (F-CHK-1), leaving out what the person ignored
  * (`ignored`, {@link ignoreKey}s). Ignoring works for *Should fix* and *Tips* only: what is
@@ -90,7 +111,7 @@ export function checkSite(
   ignored: ReadonlySet<string> = new Set(),
   rules: readonly CheckRule[] = SITE_CHECK_RULES,
 ): CheckReport {
-  return reportOf((rule) => rule.check(input), mode, ignored, rules);
+  return reportOf((rule) => runRule(rule, input), mode, ignored, rules);
 }
 
 /**

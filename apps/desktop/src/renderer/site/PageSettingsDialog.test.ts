@@ -32,6 +32,7 @@ describe("Page Settings checked by the model (2.21, decision 5)", () => {
               hideBackToTop: hidden,
               hideFromSearch: false,
               privacy: hidden,
+              draft: hidden,
             }),
           );
           expect(result).not.toBeInstanceOf(Promise);
@@ -58,6 +59,7 @@ describe("Page Settings checked by the model (2.21, decision 5)", () => {
         hideBackToTop: false,
         hideFromSearch: false,
         privacy: false,
+        draft: false,
       }),
     );
     expect("issues" in result ? result.issues : []).toEqual([

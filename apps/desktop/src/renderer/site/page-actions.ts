@@ -339,6 +339,9 @@ function setHomeIn(draft: SiteDoc, pageId: PageId): void {
     home.slug = uniqueSlug(home.slug, slugsInFolder(draft, undefined, pageId));
     delete home.folder;
   }
+  // The Home page is always published (G37, #864): a draft made Home is a draft no longer, so it
+  // doesn't become one again when another page is made Home.
+  delete home.settings.draft;
   // The old Home page becomes an ordinary page: its slug may be reserved (`index`) or, from an
   // older site, used by another top-level page.
   const previous = draft.pages[draft.homePageId];
@@ -371,6 +374,30 @@ export function setHiddenFromNavigation(
     if (target !== undefined) {
       target.settings.hideFromNavigation = hidden;
     }
+  });
+}
+
+/** Whether `page` can be a draft (G37, #864): never the Home page or "Page not found". */
+export const canBeDraft = (site: SiteDoc, page: PageEntry) =>
+  page.kind === "page" && page.id !== site.homePageId;
+
+/**
+ * Makes a page a draft (G37, #864), kept in the site and left out of the export, a publish and the
+ * preview, or takes it out of drafts. One undo step.
+ */
+export function setDraftPage(session: PagesSession, pageId: PageId, isDraft: boolean): void {
+  const site = session.history.document.getState();
+  const page = site.pages[pageId];
+  if (page === undefined || !canBeDraft(site, page) || (page.settings.draft === true) === isDraft) {
+    return;
+  }
+  const key = isDraft ? "pages.history.drafted" : "pages.history.undrafted";
+  session.edit("props", t(key, { name: page.title }), (draft) => {
+    const target = draft.pages[pageId];
+    if (target === undefined) return;
+    // Absent when published, as in files from before drafts (ADR 0012).
+    if (isDraft) target.settings.draft = true;
+    else delete target.settings.draft;
   });
 }
 
@@ -414,6 +441,8 @@ export type PageSettingsChange = {
   readonly hideFromSearch?: boolean;
   /** Marks the site's privacy page (#855); absent from older callers, which keep the page's own. */
   readonly privacy?: boolean;
+  /** A draft page (G37, #864); absent from older callers, which keep the page's own. */
+  readonly draft?: boolean;
 };
 
 /**
@@ -449,6 +478,8 @@ export function changePageSettings(
     page.kind === "page" && (change.hideFromSearch ?? page.settings.hideFromSearch === true);
   // "Page not found" is never the privacy page.
   const privacy = page.kind === "page" && (change.privacy ?? page.settings.privacy === true);
+  // The Home page and "Page not found" are always published.
+  const isDraft = canBeDraft(site, page) && (change.draft ?? page.settings.draft === true);
   const { settings } = page;
   if (
     title === page.title &&
@@ -460,7 +491,8 @@ export function changePageSettings(
     hideFromNavigation === settings.hideFromNavigation &&
     change.hideBackToTop === (settings.hideBackToTop === true) &&
     hideFromSearch === (settings.hideFromSearch === true) &&
-    privacy === (settings.privacy === true)
+    privacy === (settings.privacy === true) &&
+    isDraft === (settings.draft === true)
   ) {
     return;
   }
@@ -484,6 +516,7 @@ export function changePageSettings(
       ...(change.hideBackToTop ? { hideBackToTop: true } : {}),
       ...(hideFromSearch ? { hideFromSearch: true } : {}),
       ...(privacy ? { privacy: true } : {}),
+      ...(isDraft ? { draft: true } : {}),
     };
   });
 }

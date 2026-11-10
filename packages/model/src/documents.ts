@@ -18,8 +18,8 @@ export type NodeAdvanced = {
 
 /**
  * An element or section on a page: its component type and its props (always with an `id`).
- * Slots (e.g. a Section's content) are arrays of nodes inside `props`. `id`, `layerName`, `hidden`
- * and `advanced` are reserved for Webforge; components never use them as field names.
+ * Slots (e.g. a Section's content) are arrays of nodes inside `props`. `id`, `layerName`, `hidden`,
+ * `editorHidden` and `advanced` are reserved for Webforge; components never use them as field names.
  */
 export type NodeDoc = {
   type: string;
@@ -30,8 +30,16 @@ export type NodeDoc = {
      * Not `label`, which components use for their own fields (a Button's label).
      */
     layerName?: string | undefined;
-    /** Hidden in Layers: shown dimmed on the canvas and left out of the export (F-ED-12). */
+    /**
+     * *Don't publish* in Layers (F-ED-12, UX-23): kept in the site, shown dimmed on the canvas and
+     * left out of the export.
+     */
     hidden?: boolean | undefined;
+    /**
+     * *Hide while editing* in Layers (UX-23, #864): the canvas doesn't draw it, and the export does.
+     * Drawn when absent, as before (ADR 0012).
+     */
+    editorHidden?: boolean | undefined;
     advanced?: NodeAdvanced | undefined;
   } & Record<string, unknown>;
 };
@@ -126,6 +134,7 @@ export const nodeDocSchema: z.ZodType<NodeDoc> = z.object({
       id: z.string().min(1),
       layerName: z.string().max(LAYER_NAME_MAX).optional(),
       hidden: z.boolean().optional(),
+      editorHidden: z.boolean().optional(),
       advanced: storedAdvancedSchema.optional(),
     })
     .transform((props, context) => {

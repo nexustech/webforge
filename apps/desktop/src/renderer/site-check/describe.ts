@@ -163,6 +163,10 @@ export function describeDetail(finding: Finding): string | undefined {
   }
   if (typeof values.sameAs === "string")
     return t("siteCheck.detail.sameAs", { file: values.sameAs });
+  // The draft page a link goes to (G37, #864), by its title.
+  if (typeof values.draftPage === "string") {
+    return t("siteCheck.detail.draftPage", { page: values.draftPage });
+  }
   // The year a published site shows (F-CM-8), as it was published.
   if (typeof values.publishedYear === "number") {
     return t("siteCheck.detail.publishedYear", { year: String(values.publishedYear) });
