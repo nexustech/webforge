@@ -47,6 +47,8 @@ export type QuickStartAnswers = {
   /** *Pages*: the template's pages left out, and the recipes ticked, by id. */
   readonly leaveOut: readonly string[];
   readonly recipes: readonly string[];
+  /** *One page* rather than separate pages (GA10, 5.9): the pages kept become its sections. */
+  readonly onePage: boolean;
   /** *Colours and details*: the colours, then the optional contact details (QS-6). */
   readonly colours: QuickStartColours;
   readonly phone: string;
@@ -67,6 +69,7 @@ export function emptyAnswers(untitled: string): QuickStartAnswers {
     theme: DEFAULT_THEME.preset,
     leaveOut: [],
     recipes: [],
+    onePage: false,
     colours: { kind: "theme" },
     phone: "",
     email: "",
@@ -194,7 +197,11 @@ export function quickStartRequest(answers: QuickStartAnswers, untitled: string):
         ? {}
         : { businessKind: answers.businessKind }),
     },
-    pages: { leaveOut: [...answers.leaveOut], recipes: [...answers.recipes] },
+    pages: {
+      leaveOut: [...answers.leaveOut],
+      recipes: [...answers.recipes],
+      ...(answers.onePage ? { onePage: true } : {}),
+    },
     ...(answers.colours.kind === "theme" ? {} : { themeTokens: themeOf(answers) }),
   };
 }

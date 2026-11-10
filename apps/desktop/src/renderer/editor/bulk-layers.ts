@@ -167,8 +167,8 @@ export function duplicateSelected(session: LayersSession): BulkResult {
 }
 
 /**
- * Hides every selected element as one step ("Hid 3 elements"), or shows them all again if they are
- * all hidden already. The selection stays.
+ * Keeps every selected element off the website as one step ("Kept 3 elements off your website"),
+ * or shows them all again if none is published already. The selection stays.
  */
 export function toggleSelectedHidden(session: LayersSession): BulkResult {
   const layers = selectedLayers(session);
@@ -198,6 +198,8 @@ export function toggleSelectedHidden(session: LayersSession): BulkResult {
         if (node === undefined) continue;
         if (hide) node.props.hidden = true;
         else delete node.props.hidden;
+        // Either way not hidden while editing as well (UX-23), as one element's switch does.
+        delete node.props.editorHidden;
       }
     },
     { selectionAfter: current },

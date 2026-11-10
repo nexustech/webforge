@@ -97,3 +97,19 @@ export function navigationFor(
         ];
   });
 }
+
+/**
+ * Whether `menu` shows an item linking to a section of a page (5.10, GA10): a section item, or a
+ * link or button to a page's anchor, not hidden, in a dropdown or not. The export then includes the
+ * "section-spy" behaviour, which shows the section in view on the page it links into.
+ */
+export function menuLinksToSections(menu: MenuDoc | undefined): boolean {
+  const linksIn = (item: MenuLeaf) =>
+    !item.hidden &&
+    item.kind !== "page" &&
+    item.link.kind === "page" &&
+    item.link.anchor !== undefined;
+  return (menu?.items ?? []).some((item) =>
+    item.kind === "group" ? !item.hidden && item.children.some(linksIn) : linksIn(item),
+  );
+}

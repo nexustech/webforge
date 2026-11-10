@@ -185,6 +185,7 @@ export {
   publishDestinationsFrom,
   publishDestinationsSchema,
 } from "./publish-destinations.js";
+export { isDraftPage, previewedSite, publishedSite } from "./published-site.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
@@ -313,7 +314,7 @@ export type {
   SiteSnapshot,
 } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
-export { slugify, uniqueSlug } from "./slugs.js";
+export { anchorFrom, slugify, uniqueSlug } from "./slugs.js";
 export type { TextMarkRole, UnderlinedText } from "./text-marks.js";
 export {
   findUnderlinedText,

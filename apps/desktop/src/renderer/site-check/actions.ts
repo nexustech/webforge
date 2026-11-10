@@ -214,7 +214,7 @@ function giveTitle({ session }: SiteCheckActions, pageId: PageId, title: string)
  * The *Fix* for `finding` of `rule`, if it has one (F-CHK-1): a page's Windows device name renamed
  * (R16), a missing title taken from the page's first heading, the web address asked for in Site
  * Settings, a file from another website kept with the site, Page Settings opened on a page
- * without a description, Site Settings opened where a search engine's setting or a business
+ * without a description or on a draft page a link goes to, Site Settings opened where a search engine's setting or a business
  * detail goes. `undefined` when Site Check can only show where it is.
  */
 export function fixFor(
@@ -238,6 +238,14 @@ export function fixFor(
   // which selecting it shows.
   if (rule === "forms" && finding.values?.form === "service") {
     return () => showSiteSettings(actions.settings, "forms");
+  }
+  // A link to a draft page (G37, #864): its Page Settings, where the page is published.
+  const draftPage = finding.values?.pageId as PageId | undefined;
+  if (rule === "draftLinks" && draftPage !== undefined && site.pages[draftPage] !== undefined) {
+    return () => {
+      actions.session.showPage(draftPage);
+      actions.commands.run(COMMAND_IDS.pageSettings);
+    };
   }
   if (rule === "pageDescriptions" && place.kind === "page") {
     return () => {

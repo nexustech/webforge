@@ -1,3 +1,4 @@
+import { anchorIdSchema } from "./link.js";
 import { RESERVED_SLUGS } from "./site-doc.js";
 import { isDeviceName } from "./site-path.js";
 
@@ -43,4 +44,23 @@ export function uniqueSlug(slug: string, taken: ReadonlySet<string>): string {
       return candidate;
     }
   }
+}
+
+/** The longest anchor {@link anchorFrom} makes before a number, leaving room for `-99`. */
+const ANCHOR_STEM_MAX = 56;
+
+/**
+ * An anchor for a section, made from its name (F-ED-18): "Opening times" → `opening-times`,
+ * starting with a letter (`section-2024` for "2024"), and `-2`, `-3`… while `taken` says the page
+ * has it already.
+ */
+export function anchorFrom(name: string, taken: (anchor: string) => boolean): string {
+  const base = slugify(name);
+  const start = /^[a-z]/.test(base) ? base : `section-${base}`;
+  const stem = start.slice(0, ANCHOR_STEM_MAX).replace(/-+$/, "");
+  let anchor = stem;
+  for (let number = 2; taken(anchor) || !anchorIdSchema.safeParse(anchor).success; number++) {
+    anchor = `${stem}-${number}`;
+  }
+  return anchor;
 }

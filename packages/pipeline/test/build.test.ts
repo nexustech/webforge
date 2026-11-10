@@ -10,7 +10,7 @@ import type {
   SiteSnapshot,
 } from "@webforge/model";
 import { createSite, DEFAULT_THEME, newSharedCopy, siteToSnapshot } from "@webforge/model";
-import { siteLibrary } from "@webforge/site-components";
+import { siteLibrary, siteSnapshotFor, starterLayout } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
 import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { transform } from "lightningcss";
@@ -107,6 +107,43 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(css).toContain(".data-scrolled\\:shadow-md");
     expect(text(built, fileNamed(built, /^assets\/js\//))).toContain("Sticky header (F-DS-6)");
   });
+
+  it(
+    "shows the section in view for a menu linking to a section, a dropdown holding it too (5.10)",
+    async () => {
+      const css = text(built, fileNamed(built, /^assets\/css\//));
+
+      // The sample's menu links to the home page's Questions, in its Visit us dropdown.
+      expect(text(built, fileNamed(built, /^assets\/js\//))).toContain("Section in view (5.10");
+      expect(css).toMatch(
+        /details:has\(\[aria-current\]\) > \S+ \{\n\s*background-color: var\(--menu-active-bg\);/,
+      );
+      expect(css).toMatch(
+        /details:has\(\[aria-current\]\) > \S+ \{\n\s*color: var\(--menu-active-fg\);/,
+      );
+
+      // Without one, the site's script has none of it.
+      const base = sampleSite();
+      const withoutSections = await buildSite(
+        {
+          ...base,
+          menu: {
+            follows: "custom",
+            items: (base.menu?.items ?? []).filter((item) => item.kind !== "group"),
+          },
+        },
+        siteLibrary,
+        resources,
+      );
+      const script = [...withoutSections.files.keys()].find((path) =>
+        path.startsWith("assets/js/"),
+      );
+      expect(script === undefined ? "" : text(withoutSections, script)).not.toContain(
+        "Section in view",
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
 
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
     const css = text(built, fileNamed(built, /^assets\/css\//));
@@ -1710,4 +1747,84 @@ describe("buildSite: site files (3.5)", () => {
       scaledTestTimeout(60_000),
     );
   });
+});
+
+describe("buildSite: draft pages and elements that aren't published (G37, UX-23, #864)", () => {
+  it(
+    "leaves out a draft page, its menu item, the links to it and a Don't publish element",
+    async () => {
+      const site = createSite({
+        name: "Bakery",
+        language: "en",
+        homeTitle: "Home",
+        notFoundTitle: "Page not found",
+        layout: starterLayout("Bakery"),
+        homeDoc: {
+          root: { props: {} },
+          content: [
+            { type: "Heading", props: { id: "welcome", text: "Welcome in" } },
+            { type: "Heading", props: { id: "secret", text: "Not yet announced", hidden: true } },
+            {
+              type: "Heading",
+              props: { id: "banner", text: "Out of the way", editorHidden: true },
+            },
+            {
+              type: "Button",
+              props: {
+                id: "to-winter",
+                label: "Winter menu",
+                link: { kind: "page", pageId: "winter" },
+              },
+            },
+          ],
+        },
+      });
+      const home = site.pages[site.homePageId];
+      if (home === undefined) throw new Error("No home page");
+      for (const [id, title, draft] of [
+        ["about", "About us", false],
+        ["winter", "Winter menu", true],
+      ] as const) {
+        site.pages[id as PageId] = {
+          ...home,
+          id: id as PageId,
+          slug: id,
+          title,
+          settings: { ...home.settings, ...(draft ? { draft } : {}) },
+          doc: {
+            root: { props: {} },
+            content: [{ type: "Heading", props: { id: `${id}-title`, text: title } }],
+          },
+        };
+        site.pageOrder.push(id as PageId);
+        site.menu.items.push({
+          id: id as MenuItemId,
+          kind: "page",
+          pageId: id as PageId,
+          hidden: false,
+        });
+      }
+      const address = "https://rosas.example";
+      site.settings.address.url = address;
+
+      const exported = await buildSite(siteSnapshotFor(site, siteLibrary), siteLibrary, resources);
+      const index = text(exported, "index.html");
+
+      expect([...exported.files.keys()].filter((path) => path.endsWith(".html")).sort()).toEqual([
+        "404.html",
+        "about.html",
+        "index.html",
+      ]);
+      expect(text(exported, "sitemap.xml")).toContain(`<loc>${address}/about.html</loc>`);
+      expect(text(exported, "sitemap.xml")).not.toContain("winter");
+      // Its menu item and the Button's link go, as a link to a page that isn't there does.
+      expect(index).toContain('<a href="about.html">About us</a>');
+      expect(index).not.toContain("winter");
+      // Not published: left out. Hidden while editing: on the canvas only, so exported.
+      expect(index).toContain("Welcome in");
+      expect(index).not.toContain("Not yet announced");
+      expect(index).toContain("Out of the way");
+    },
+    scaledTestTimeout(60_000),
+  );
 });

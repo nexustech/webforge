@@ -18,7 +18,7 @@ const actions: LayersPanelActions = {
   toggle: noop,
   selectMany: noop,
   rename: noop,
-  setHidden: noop,
+  setShown: noop,
   move: noop,
   moveUp: noop,
   moveDown: noop,
@@ -36,6 +36,7 @@ const meta = {
           layer("h1", "Heading"),
           layer("t1", "Text", { name: "Opening times" }),
           layer("old", "Text", { hidden: true }),
+          layer("banner", "Image", { editorHidden: true }),
         ],
       }),
       layer("faq", "FAQ", { children: [layer("q1", "Question"), layer("q2", "Question")] }),
@@ -54,7 +55,10 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Sections and their elements: a named layer selected, a hidden one struck through. */
+/**
+ * Sections and their elements: a named layer selected, one not published struck through, one
+ * hidden while editing in italics (UX-23).
+ */
 export const Default: Story = {};
 
 /** Renaming a layer in place (F2 or a double-click). */

@@ -40,6 +40,9 @@ export const panels = {
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
   "pages.hiddenFromNavigation": "Hidden from navigation",
+  // A draft page (G37, #864): its badge in the Pages panel, and the switch in its menu.
+  "pages.draftBadge": "Draft",
+  "pages.draft": "Draft",
   "pages.actions": "Actions for {name}",
   "pages.rename": "Rename…",
   "pages.duplicate": "Duplicate",
@@ -108,15 +111,21 @@ export const panels = {
   "layers.title": "Layers",
   "layers.empty": "This page has no sections yet. Add one from the canvas.",
   "layers.toolbar": "Layer actions",
-  "layers.hide": "Hide {item}",
+  "layers.hide": "Don't publish {item}",
   "layers.show": "Show {item}",
+  // A row's eye (UX-23): how the layer shows now, and a menu of the three ways.
+  "layers.shownMenu": "Show or hide {item} (now: {shown})",
+  "layers.shown.shown": "Show",
+  "layers.shown.editorHidden": "Hide while editing",
+  "layers.shown.hidden": "Don't publish",
   "layers.rename": "Rename",
   "layers.nameField": "Name for this {item}",
   // A linked copy of a shared section, marked in Layers (1.29, F-ED-23).
   "layers.linkedCopy": "Linked copy of {name}",
   "layers.history.renamed": "Renamed {item} to '{name}'",
   "layers.history.unnamed": "Removed the name of {item}",
-  "layers.history.hid": "Hid {item}",
+  "layers.history.hid": "Kept {item} off your website",
+  "layers.history.hidWhileEditing": "Hid {item} while editing",
   "layers.history.showed": "Showed {item}",
   // The shared Header and Footer (#673): their eye is the page's own setting.
   "layers.history.hidRegion": "Hid the {item} on this page",
@@ -242,6 +251,9 @@ export const panels = {
   "pageSettings.hideHeader": "Hide the Header on this page",
   "pageSettings.hideFooter": "Hide the Footer on this page",
   "pageSettings.hideFromNavigation": "Hide from navigation",
+  "pageSettings.draft": "Draft: don't publish this page yet",
+  "pageSettings.draftHint":
+    "A draft stays in your site to work on, but isn't on your website: it's left out when you export or publish, with its menu item and pictures only it uses. Preview shows it, out of the menu. Site Check lists links to it.",
   "pageSettings.hideFromSearch": "Hide this page from search engines",
   "pageSettings.hideFromSearchHint":
     "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide from navigation is for your menu; this is for search.",
@@ -273,4 +285,6 @@ export const panels = {
   "pages.history.setHome": "Set '{name}' as Home page",
   "pages.history.hidden": "Hid '{name}' from navigation",
   "pages.history.shown": "Showed '{name}' in navigation",
+  "pages.history.drafted": "Made '{name}' a draft",
+  "pages.history.undrafted": "Took '{name}' out of drafts",
 } as const;

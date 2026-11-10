@@ -20,6 +20,7 @@ import {
   pagesChangedByDeleting,
   renamedFileName,
   renamePage,
+  setDraftPage,
   setHiddenFromNavigation,
   setHomePage,
 } from "./page-actions.js";
@@ -270,6 +271,36 @@ describe("page actions (F-ED-13)", () => {
       "Showed 'About' in navigation",
     ]);
     expect(site().pages[notFound]?.settings.hideFromNavigation).toBe(true);
+  });
+
+  it("makes a page a draft and takes it out of drafts, one step each, never Home or 'Page not found' (G37)", () => {
+    const { session, site, home, add, notFound, labels } = setUp();
+    const about = add("About");
+
+    setDraftPage(session, about, true);
+    setDraftPage(session, about, true);
+    expect(site().pages[about]?.settings.draft).toBe(true);
+    setDraftPage(session, about, false);
+    setDraftPage(session, home, true);
+    setDraftPage(session, notFound, true);
+
+    expect(site().pages[about]?.settings).not.toHaveProperty("draft");
+    expect(site().pages[home]?.settings).not.toHaveProperty("draft");
+    expect(site().pages[notFound]?.settings).not.toHaveProperty("draft");
+    expect(labels().slice(1)).toEqual(["Made 'About' a draft", "Took 'About' out of drafts"]);
+    session.history.undo();
+    expect(site().pages[about]?.settings.draft).toBe(true);
+  });
+
+  it("publishes a draft made the Home page, so it isn't a draft again later (G37)", () => {
+    const { session, site, home, add } = setUp();
+    const about = add("About");
+    setDraftPage(session, about, true);
+
+    setHomePage(session, about);
+    setHomePage(session, home);
+
+    expect(site().pages[about]?.settings).not.toHaveProperty("draft");
   });
 
   it("deletes a page, showing the Home page instead, and undo brings it back shown", () => {
