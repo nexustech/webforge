@@ -30,6 +30,7 @@ import {
 import {
   type ComponentType,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
   useEffect,
   useLayoutEffect,
@@ -693,27 +694,45 @@ function ShownMenu({
   readonly canHideWhileEditing: boolean;
   readonly onShown: (shown: LayerShown) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const shown = layerShown(layer);
   const current = SHOWN_CHOICES.find((choice) => choice.shown === shown) ?? SHOWN_CHOICES[0];
   const label = t("layers.shownMenu", {
     item: layerItem(layer),
     shown: t(current.label),
   });
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        tabIndex={-1}
-        disabled={disabled}
-        aria-label={label}
-        title={label}
-        className={cn(
-          "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
-          shown === "shown" && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-        )}
-        // The row selects on a click: the eye only opens its menu.
-        onClick={(event) => event.stopPropagation()}
-        onDoubleClick={(event) => event.stopPropagation()}
+  const eye = {
+    type: "button" as const,
+    tabIndex: -1,
+    disabled,
+    "aria-label": label,
+    "aria-haspopup": "menu" as const,
+    title: label,
+    className: cn(
+      "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
+      shown === "shown" && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+    ),
+    // The row selects on a click: the eye only opens its menu.
+    onDoubleClick: (event: MouseEvent) => event.stopPropagation(),
+  };
+  // A plain button until it's opened: a long page's every row holding a menu costs its opening
+  // (the start screen's CPU budget for a new site, #923's CI).
+  if (!open) {
+    return (
+      <button
+        {...eye}
+        onClick={(event) => {
+          event.stopPropagation();
+          setOpen(true);
+        }}
       >
+        <current.Icon />
+      </button>
+    );
+  }
+  return (
+    <DropdownMenu open onOpenChange={setOpen}>
+      <DropdownMenuTrigger {...eye} onClick={(event) => event.stopPropagation()}>
         <current.Icon />
       </DropdownMenuTrigger>
       {/* Its events reach the row through the portal: the row neither selects nor moves on them. */}
