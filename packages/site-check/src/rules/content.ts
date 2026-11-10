@@ -55,7 +55,10 @@ export const draftLinksRule: CheckRule = {
   strictOnPublish: true,
   drafts: true,
   check: ({ site }) => {
-    const exported = exportedPlaces(publishedSite(site));
+    const published = publishedSite(site);
+    // A site without drafts, as most are, has no link to one: no walk of its links for it.
+    if (published === site) return [];
+    const exported = exportedPlaces(published);
     const found: Finding[] = [];
     eachLink(
       site,
