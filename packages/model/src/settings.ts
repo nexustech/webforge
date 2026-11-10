@@ -1,6 +1,7 @@
 import { z } from "zod";
-import { mediaIdSchema } from "./ids.js";
+import { mediaIdSchema, pageIdSchema } from "./ids.js";
 import { phoneNumberSchema, webUrlSchema } from "./link.js";
+import { isDeviceName } from "./site-path.js";
 
 /** A BCP 47 language tag for `<html lang>`, e.g. `en` or `en-GB`. */
 export const languageTagSchema = z.string().regex(/^[a-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$/);
@@ -178,6 +179,33 @@ export type BusinessKind = (typeof BUSINESS_KINDS)[BusinessType][number];
 /** The longest price range a business may give (Google's `priceRange`): "££", "£10–£30". */
 export const PRICE_RANGE_MAX = 30;
 
+/** The most old addresses a site keeps working (#862): a site's renames, not a host's rules. */
+export const KEPT_ADDRESSES_MAX = 200;
+
+/**
+ * An old address of a page, as its file (`about-us.html`, `services/plumbing.html`): up to three
+ * levels, each a letter or digit then letters, digits, `-` or `_`, ending in `.html`, and none a
+ * Windows device name. Typed by hand too, for an address from an older website.
+ */
+export const keptAddressFileSchema = z
+  .string()
+  .max(200)
+  .regex(/^(?:[A-Za-z0-9][A-Za-z0-9_-]*\/){0,2}[A-Za-z0-9][A-Za-z0-9_-]*\.html$/)
+  // Windows can't write a file or folder named for a device (`con.html`), as for pages (R16).
+  .refine((file) => !file.split("/").some(isDeviceName));
+
+/**
+ * An old address kept working (#862, SEO-5, G7): the export writes a page there that sends
+ * visitors and search engines on to `page`, wherever it is now.
+ */
+export const keptAddressSchema = z.strictObject({
+  from: keptAddressFileSchema,
+  page: pageIdSchema,
+});
+
+/** See {@link keptAddressSchema}. */
+export type KeptAddress = z.infer<typeof keptAddressSchema>;
+
 export const siteSettingsSchema = z.strictObject({
   general: z.strictObject({
     name: z.string().min(1).max(SITE_NAME_MAX),
@@ -251,6 +279,12 @@ export const siteSettingsSchema = z.strictObject({
         bing: verificationCodeSchema.optional(),
       })
       .optional(),
+    /**
+     * Old addresses of the site's pages that keep working (#862, SEO-5): kept when a published
+     * page's address changes, or added by hand, listed in Site Settings. None when absent (ADR
+     * 0012).
+     */
+    keptAddresses: z.array(keptAddressSchema).max(KEPT_ADDRESSES_MAX).optional(),
   }),
   analytics: z.strictObject({
     /** GA4 Measurement ID (B4). */

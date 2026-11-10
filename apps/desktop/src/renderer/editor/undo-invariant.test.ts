@@ -31,6 +31,7 @@ import {
   renameMenuItem,
   setMenuItemHidden,
 } from "../menu/index.js";
+import { setDraftPage } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   deleteSelected,
@@ -46,7 +47,7 @@ import {
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
-import { copyLayer, setLayerNote } from "./layers.js";
+import { copyLayer, setLayerNote, setLayerShown } from "./layers.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
 import {
@@ -768,6 +769,23 @@ const commands: fc.Arbitrary<Command>[] = [
       ctx.connection.flush();
       const { nodeId } = ctx.session.ui.getState();
       if (nodeId !== null) copyLayer(ctx.session, nodeId, at, linked);
+    },
+  })),
+  // Layers' eye (UX-23, #864): the selected element shown, hidden while editing or not published.
+  fc.constantFrom("shown" as const, "editorHidden" as const, "hidden" as const).map((shown) => ({
+    name: `show the selected layer as ${shown}`,
+    run: (ctx) => {
+      ctx.connection.flush();
+      const { nodeId } = ctx.session.ui.getState();
+      if (nodeId !== null) setLayerShown(ctx.session, nodeId, shown);
+    },
+  })),
+  // A draft page (G37, #864), or out of drafts: the Home page and Page not found never are.
+  fc.record({ at: fc.nat({ max: 6 }), draft: fc.boolean() }).map(({ at, draft }) => ({
+    name: `${draft ? "make" : "unmake"} page ${at} a draft`,
+    run: (ctx) => {
+      ctx.connection.flush();
+      setDraftPage(ctx.session, ctx.pages[at % ctx.pages.length] as PageId, draft);
     },
   })),
   // A note on the selected element (UX-17, #868): added, changed or resolved (empty).

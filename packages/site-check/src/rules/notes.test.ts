@@ -1,3 +1,4 @@
+import type { PageId } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
 import { notesRule } from "./notes.js";
@@ -25,6 +26,25 @@ describe("notes (UX-17, #868)", () => {
         place: { kind: "element", on: site.homePageId, nodeId: "photo" },
         values: { note: "Swap this photo before launch" },
       },
+    ]);
+  });
+
+  it("lists a note on a draft page too, which the rest of Site Check leaves out (G37)", () => {
+    const site = siteWith([element("Heading", "h")]);
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const winter = "winter" as PageId;
+    site.pages[winter] = {
+      ...home,
+      id: winter,
+      slug: "winter",
+      settings: { ...home.settings, draft: true },
+      doc: { root: { props: {} }, content: [element("Heading", "w", { note: "Prices?" })] },
+    };
+    site.pageOrder.push(winter);
+
+    expect(findIn(notesRule, site).map((finding) => finding.place)).toEqual([
+      { kind: "element", on: "winter", nodeId: "w" },
     ]);
   });
 

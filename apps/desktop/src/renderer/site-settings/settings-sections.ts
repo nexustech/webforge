@@ -1,4 +1,4 @@
-import type { FormField, FormSpec } from "@webforge/editor-ui";
+import type { FormField, FormIssue, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   BUSINESS_KINDS,
@@ -6,6 +6,7 @@ import {
   BUSINESS_TYPES,
   type BusinessKind,
   CONSENT_MESSAGE_MAX,
+  fileKey,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
   MEASUREMENT_ID_MAX,
@@ -23,6 +24,7 @@ import {
   DAYS,
   FORM_SERVICES,
   fromSettingsForm,
+  keptAddressFile,
   SECTIONS,
   type Section,
   type SettingsForm,
@@ -83,6 +85,18 @@ type SettingsMedia = {
   readonly images: readonly ImageMeta[];
   readonly imageUrl: (image: ImageMeta) => string;
   readonly onNetlify?: boolean | undefined;
+  /** The site's pages an old address can go to, and every page's file (#862). */
+  readonly pages?: readonly SettingsPage[] | undefined;
+};
+
+/** A page of the site, as Site Settings' old addresses offer it (#862). */
+export type SettingsPage = {
+  readonly id: string;
+  readonly title: string;
+  /** Its file: `about.html`. */
+  readonly file: string;
+  /** Whether an old address can go to it: not "Page not found". */
+  readonly target: boolean;
 };
 
 /** A choice of one of Media's images, or none: its hint, or how to add some while there are none. */
@@ -127,6 +141,65 @@ function businessKindField(typed: string): FormField[] {
       })),
     },
   ];
+}
+
+/**
+ * Old addresses kept working (#862, SEO-5): those kept when a published page's address changed,
+ * and any typed from an older website, each going to one of the site's pages. Removing one stops
+ * the export writing it.
+ */
+function keptAddressesField(pages: readonly SettingsPage[]): FormField {
+  const targets = pages.filter((page) => page.target);
+  return {
+    kind: "list",
+    name: "keptAddresses",
+    path: "search.keptAddresses",
+    label: t("site.settings.keptAddresses"),
+    help: t("site.settings.keptAddressesHint"),
+    itemLabel: t("site.settings.keptAddress"),
+    addLabel: t("site.settings.addKeptAddress"),
+    removeLabel: t("site.settings.removeKeptAddress"),
+    orderless: true,
+    itemFields: [
+      {
+        kind: "text",
+        name: "from",
+        label: t("site.settings.keptAddressFrom"),
+        placeholder: "old-page.html",
+      },
+      {
+        kind: "select",
+        name: "page",
+        label: t("site.settings.keptAddressPage"),
+        options: targets.map((page) => ({
+          label: t("site.settings.keptAddressPageOption", { name: page.title, file: page.file }),
+          value: page.id,
+        })),
+      },
+    ],
+    newItem: () => ({ from: "", page: targets[0]?.id ?? "" }),
+  };
+}
+
+/**
+ * The old addresses a page has now (#862), in any case: the page there takes the address, so
+ * keeping it would do nothing.
+ */
+export function keptAddressClashes(
+  values: SettingsForm,
+  pages: readonly SettingsPage[],
+): FormIssue[] {
+  const files = new Set(pages.map((page) => fileKey(page.file)));
+  return values.keptAddresses.flatMap((kept, index) =>
+    files.has(fileKey(keptAddressFile(kept.from)))
+      ? [
+          {
+            path: ["search", "keptAddresses", index, "from"],
+            message: t("site.settings.error.keptAddressTaken"),
+          },
+        ]
+      : [],
+  );
 }
 
 /** Site Settings' sections, in the dialog's order, each a group of the form's fields. */
@@ -318,6 +391,7 @@ function sections(media: SettingsMedia): readonly SettingsSection[] {
           help: t("site.settings.bingVerificationHint"),
           maxLength: VERIFICATION_PASTE_MAX,
         },
+        keptAddressesField(media.pages ?? []),
       ],
     },
     {
@@ -414,6 +488,7 @@ export function siteSettingsSpec(
       ),
     schema: settingsSchema,
     toModel: (values) => fromSettingsForm(values, previous),
+    check: (values) => keptAddressClashes(values, media.pages ?? []),
     // A new service's value is another kind of value: it starts empty.
     adjust: (next, before) =>
       next.formService === before.formService ? next : { ...next, formValue: "" },

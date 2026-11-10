@@ -1,4 +1,10 @@
-import { createSite, type MediaId, type MediaMeta, siteToSnapshot } from "@webforge/model";
+import {
+  createSite,
+  type MediaId,
+  type MediaMeta,
+  type PageId,
+  siteToSnapshot,
+} from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { siteLibrary } from "./catalogue/index.js";
 import { siteContentFor, siteSnapshotFor } from "./site-content.js";
@@ -43,6 +49,31 @@ describe("siteContentFor (ADR 0018 §3)", () => {
       },
     ]);
     expect(content.documents).toEqual([]);
+  });
+});
+
+describe("siteContentFor's draft pages (G37, #864)", () => {
+  it("leaves them out, or for Preview keeps them out of the navigation only", () => {
+    const doc = site();
+    const home = doc.pages[doc.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    const winter = "winter" as PageId;
+    doc.pages[winter] = {
+      ...home,
+      id: winter,
+      slug: "winter",
+      settings: { ...home.settings, draft: true },
+    };
+    doc.pageOrder.push(winter);
+
+    const paths = (drafts: boolean) =>
+      siteContentFor(doc, siteLibrary, { drafts }).snapshot.pages.map((page) => [
+        page.path,
+        page.hideFromNavigation,
+      ]);
+
+    expect(paths(false).map(([path]) => path)).not.toContain("winter");
+    expect(paths(true)).toContainEqual(["winter", true]);
   });
 });
 

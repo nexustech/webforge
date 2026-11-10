@@ -13,7 +13,7 @@ afterEach(cleanup);
 // longer than the default 5 s.
 vi.setConfig({ testTimeout: scaledTestTimeout(20_000) });
 
-/** The starter site plus About (hidden from navigation) and Team in a folder. */
+/** The starter site plus About (hidden from navigation) and Team in a folder, a draft. */
 function siteWithPages(): SiteDoc {
   const site = starterSite();
   const home = site.pages[site.homePageId];
@@ -32,17 +32,24 @@ function siteWithPages(): SiteDoc {
         title: "About",
         settings: { ...page.settings, hideFromNavigation: true },
       },
-      [team]: { ...page, id: team, slug: "team", folder: "company", title: "Team" },
+      [team]: {
+        ...page,
+        id: team,
+        slug: "team",
+        folder: "company",
+        title: "Team",
+        settings: { ...page.settings, draft: true },
+      },
     },
     pageOrder: [site.homePageId, about, team, ...site.pageOrder.slice(1)],
   };
 }
 
 /**
- * The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`, and Google
- * Analytics on if `analytics`.
+ * The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`, Google
+ * Analytics on if `analytics`, and as for a site that has been published if `published`.
  */
-function setUp({ backToTop = false, analytics = false } = {}) {
+function setUp({ backToTop = false, analytics = false, published = false } = {}) {
   const site = siteWithPages();
   if (backToTop) site.settings.general.backToTop = true;
   if (analytics) site.settings.analytics.measurementId = "G-ABC123DEF4";
@@ -57,10 +64,18 @@ function setUp({ backToTop = false, analytics = false } = {}) {
     moveToFolder: vi.fn(),
     setHome: vi.fn(),
     setHidden: vi.fn(),
+    setDraft: vi.fn(),
     remove: vi.fn(),
     changeSettings: vi.fn(),
   };
-  render(<PagesPanel site={site} shownPageId={site.homePageId} actions={actions} />);
+  render(
+    <PagesPanel
+      site={site}
+      shownPageId={site.homePageId}
+      published={published}
+      actions={actions}
+    />,
+  );
   const notFound = site.pageOrder.at(-1) as PageId;
   return { site, actions, notFound };
 }
@@ -69,7 +84,7 @@ const openMenu = (name: string) =>
   userEvent.click(screen.getByRole("button", { name: `Actions for ${name}` }));
 
 describe("PagesPanel (F-ED-13)", () => {
-  it("lists the pages in order, with the Home page, hidden pages and folders marked", async () => {
+  it("lists the pages in order, with the Home page, hidden pages, drafts and folders marked", async () => {
     const { actions } = setUp();
 
     const list = screen.getByRole("list", { name: "Pages" });
@@ -79,7 +94,7 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(names).toEqual([
       "My site(Home page)",
       "About(Hidden from navigation)",
-      "Team",
+      "TeamDraft",
       "Page not found(Shown when a page doesn't exist)",
     ]);
     expect(screen.getByRole("button", { name: /^My site/ }).getAttribute("aria-current")).toBe(
@@ -168,9 +183,38 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(document.activeElement).toBe(field);
     await userEvent.keyboard("Our team");
     expect(screen.getByText("File name: company/our-team.html")).toBeTruthy();
+    // Not published yet: the old address isn't kept unless asked.
+    expect(screen.getByRole("checkbox", { name: "Keep the old address working" })).toHaveProperty(
+      "checked",
+      false,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
-    expect(actions.rename).toHaveBeenCalledWith("page-team", "Our team");
+    expect(actions.rename).toHaveBeenCalledWith("page-team", "Our team", false);
+  });
+
+  it("keeps a published page's old address on rename unless told not to (#862)", async () => {
+    const { actions } = setUp({ published: true });
+
+    await openMenu("Team");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    await screen.findByRole("textbox", { name: "Page name" });
+    // The same file name: nothing to keep.
+    expect(screen.queryByRole("checkbox", { name: "Keep the old address working" })).toBeNull();
+    await userEvent.keyboard("Our team");
+    const keep = screen.getByRole("checkbox", { name: "Keep the old address working" });
+    expect(keep).toHaveProperty("checked", true);
+    expect(screen.getByText(/that use company\/team\.html go on/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(actions.rename).toHaveBeenLastCalledWith("page-team", "Our team", true);
+
+    await openMenu("Team");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    await screen.findByRole("textbox", { name: "Page name" });
+    await userEvent.keyboard("Crew");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Keep the old address working" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(actions.rename).toHaveBeenLastCalledWith("page-team", "Crew", false);
   });
 
   it("asks to delete a page from its menu, the action confirming it (D5, D7)", async () => {
@@ -194,8 +238,11 @@ describe("PagesPanel (F-ED-13)", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Set as Home Page" }));
     await openMenu("About");
     await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Hide from Navigation" }));
+    await openMenu("About");
+    await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Draft" }));
 
     expect(actions.duplicate).toHaveBeenCalledWith("page-about");
+    expect(actions.setDraft).toHaveBeenCalledWith("page-about", true);
     expect(actions.move).toHaveBeenCalledWith("page-about", -1);
     expect(actions.setHome).toHaveBeenCalledWith("page-about");
     expect(actions.setHidden).toHaveBeenCalledWith("page-about", false);
@@ -249,7 +296,10 @@ describe("PagesPanel (F-ED-13)", () => {
       hideBackToTop: false,
       hideFromSearch: false,
       privacy: false,
+      // A draft, as it was (G37): its switch was on.
+      draft: true,
     });
+    expect(within(dialog).getByRole("checkbox", { name: /^Draft/ })).toBeTruthy();
     // The site has no back-to-top button to leave off.
     expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();
   });

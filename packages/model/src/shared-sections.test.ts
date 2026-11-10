@@ -150,6 +150,19 @@ describe("shared sections (F-ED-23)", () => {
     expect(shared[HOURS]?.section.props.hidden).toBeUndefined();
   });
 
+  it("shows a copy hidden while editing as hidden while editing, that copy only (UX-23)", () => {
+    const whileEditing: NodeDoc = {
+      type: SHARED_COPY_TYPE,
+      props: { id: "c1", sharedSectionId: HOURS, editorHidden: true },
+    };
+
+    const [shown, other] = expandSharedCopies([whileEditing, copy("c2", "2")], shared);
+
+    expect(shown?.props.editorHidden).toBe(true);
+    expect(shown?.props.hidden).toBeUndefined();
+    expect(other?.props.editorHidden).toBeUndefined();
+  });
+
   it("shows nothing for a copy of a shared section that isn't there", () => {
     const gone: NodeDoc = { type: SHARED_COPY_TYPE, props: { id: "c", sharedSectionId: "gone" } };
 

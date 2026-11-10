@@ -4,7 +4,7 @@ id: export
 title: Export
 summary: Save your website as files, or one ZIP file, to put on any web host.
 related: [publish, site-check, preview, site-settings, saving-and-backups]
-updated: 2026-11-06
+updated: 2026-11-10
 ---
 
 # Export
@@ -37,7 +37,7 @@ Export into the same folder to update it. {appName} only writes into an empty fo
 - The files search engines and browsers look for: `robots.txt`; a sitemap (when the site has a web address and lets search engines show it); your site icon in every size.
 - With **Help AI tools read your site** on, `llms.txt` and a plain-text copy of each page.
 
-Hidden sections and elements are left out, and so are pictures and documents that no page uses. Your site's file, its versions and your passwords never go into an export.
+[Draft pages](pages.md#draft-pages) and sections or elements set to **Don't publish** are left out, and so are pictures and documents that no published page uses. Items hidden only while editing are exported. Your site's file, its versions and your passwords never go into an export.
 
 In Advanced mode, **Include developer files** adds a `developer` folder with the source of your site's styles, its theme and a README, for a web developer.
 

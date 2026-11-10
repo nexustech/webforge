@@ -100,6 +100,9 @@ function toPuckComponent(
     fields.bindings = { type: "object", objectFields: {} };
   }
   const draw = (props: Record<string, unknown>, context: RenderContext) => {
+    // *Hide while editing* (UX-23, #864): not drawn on the canvas, and still exported. Layers
+    // lists it, to select it or show it again.
+    if (props.editorHidden === true) return null;
     const { puck: _puck, id: rawId, ...own } = props;
     // The theme's look for its kind under what it sets itself (3.12, CT-1), as the export does.
     const values = withLook(own, type, context.looks);

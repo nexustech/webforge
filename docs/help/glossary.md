@@ -27,6 +27,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 
 - **Add panel:** where you choose sections and elements to add, on its **Sections** and **Elements** tabs. **Favourites** are the ones you pin at its top. See [The Add panel](add-panel.md).
 - **Layers:** the list of what's on the page, section by section, to select, move or hide things. See [Layers](layers.md).
+- **Hide while editing** and **Don't publish:** two ways to put something out of sight without deleting it. Hidden while editing, it's off the page in the editor but on your website; not published, it's dimmed in the editor and off your website. See [Layers](layers.md#what-you-can-do).
 - **Edit panel:** the options of what you've selected, on its **Content**, **Style** and **Advanced** tabs. See [The Edit panel](edit-panel.md).
 - **Note:** a reminder for you on a section or element, never on your website. Site Check lists it until you resolve it. See [Notes](editing-on-the-page.md#notes).
 - **Select parent:** selects the section or element around the one you've selected. See [Editing on the page](editing-on-the-page.md).
@@ -58,6 +59,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 
 ## Checking and going live
 
+- **Draft:** a page kept in your site to work on, but not on your website until you turn Draft off. See [Draft pages](pages.md#draft-pages).
 - **Preview:** opens your site in your web browser, and on your phone, before anyone else sees it. See [Preview](preview.md).
 - **Site Check:** looks over your site for things to fix, as **Must fix**, **Should fix** and **Tips**. See [Site Check](site-check.md).
 - **Export:** saves your website as files, to put on a web host yourself. See [Export](export.md).

@@ -4,6 +4,7 @@ export {
   ignoreKey,
   levelIn,
   reportOf,
+  runRule,
   SITE_CHECK_RULES,
 } from "./check.js";
 export { publishGate } from "./publish-gate.js";

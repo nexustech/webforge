@@ -17,7 +17,8 @@ Pages are listed in order. Click one to show it. Icons mark:
 
 - the **Home page**, the first page visitors see;
 - the **Page not found** page, shown when someone follows a broken link;
-- pages **hidden from navigation**.
+- pages **hidden from navigation**;
+- **Draft** pages, which aren't on your website yet. See [Draft pages](#draft-pages).
 
 To jump to a page from anywhere, press Ctrl+P (Cmd+P on a Mac) and type its name.
 
@@ -36,15 +37,27 @@ Click **+** (**Add Page**):
 Point at a page and click **…** for:
 
 - **Page Settings…:** see [below](#page-settings).
-- **Rename…:** the file name follows the new name, unless you've set the file name yourself.
+- **Rename…:** the file name follows the new name, unless you've set the file name yourself. When it changes, **Keep the old address working** sends anyone who uses the old address on to the page. See [Keeping old addresses working](#keeping-old-addresses-working).
 - **Duplicate:** a copy, just after this page.
 - **Move Up · Move Down:** reorder the pages.
 - **Move to Folder:** group pages under a folder, such as _services_. The page's address then becomes `services/plumbing.html`.
 - **Set as Home Page**.
 - **Hide from Navigation:** takes the page off the menu, but keeps it on your site for links.
+- **Draft:** keeps the page in your site but off your website. See [Draft pages](#draft-pages).
 - **Delete…:** asks first, and says how many pages change, such as pages with links to it. You can undo it.
 
 The Home page and the Page not found page can't be deleted.
+
+### Draft pages
+
+A **draft** is a page you're still working on, or one for later, such as a seasonal menu. It stays in your site, and you edit it like any other page, but it isn't on your website:
+
+- **Export and Publish leave it out,** with its menu item and the pictures and documents only it uses. Search engines and AI tools never see it.
+- **Preview shows it,** so you can check it in your browser before it goes live. Open it from the page itself; your menu in Preview leaves it out, as your website's will.
+- **Links to it are left out too.** Site Check lists every link to a draft page, under _Links to draft pages_. Its **Fix** opens the draft's Page Settings. Publishing waits until you fix them, so visitors never meet a button that goes nowhere.
+- **Site Check doesn't check a draft's own content** until it's published.
+
+To make a page a draft, turn on **Draft** in its **…** menu, or in Page Settings. Turn it off to publish the page with the rest of your site. The Home page and the Page not found page are always published.
 
 ## The menu
 
@@ -95,6 +108,16 @@ Each page is written from your settings at the moment you add it. If you change 
 
 Like the privacy page, each starts with a reminder that it's a starting point, not legal advice. Check every part, change what doesn't fit your business, then delete that paragraph: Site Check lists it as placeholder text until you do. To keep the pages off the menu, turn on **Hide from navigation** in their Page Settings, and link to them from the Footer.
 
+### Keeping old addresses working
+
+Once your site is published, people and search engines know your pages by their addresses. If a page's address changes, links to the old address would stop working, and the page could lose its place in search results.
+
+So when you rename a page and its file name changes, **Keep the old address working** is ticked once you've published the site. Untick it if nobody uses the old address yet. Moving a page to a folder, making it the Home page or changing its file name in Page Settings keeps the old address too, once the site has been published.
+
+At each old address, your site gets a small page that sends visitors and search engines straight on to the page's new address. On Netlify, the old address redirects for good. Renaming and keeping the old address is one step, so **Undo** takes back both.
+
+A page with two old addresses sends both straight to where it is now. If you later give a page an address that was kept, the page takes it. If you delete a page, its old addresses go with it. You'll find them all in **Site Settings › Search engines**, where you can remove them.
+
 ## Page Settings
 
 Open a page's **…** menu and choose **Page Settings…**. These settings decide how the page shows in search results, browser tabs and when someone shares it.
@@ -103,6 +126,7 @@ Open a page's **…** menu and choose **Page Settings…**. These settings decid
 - **File name:** the end of the page's web address, such as `about.html`. The Home page is always `index.html`, and the Page not found page `404.html`.
 - **Description:** a sentence or two shown under the title in search results. Leave it empty to use the site's description.
 - **Share image:** the picture shown when someone shares the page. _The site's image_ uses the one from Site Settings.
+- **Draft: don't publish this page yet:** keeps the page in your site but off your website. See [Draft pages](#draft-pages).
 - **Hide the Header on this page** and **Hide the Footer on this page**.
 - **Hide from navigation:** takes the page off the menu.
 - **Hide this page from search engines:** search engines won't list the page. It stays on your site, and anyone with its address can still open it. This is different from hiding it from navigation, which is about your menu.

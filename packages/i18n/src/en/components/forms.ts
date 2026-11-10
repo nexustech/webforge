@@ -56,6 +56,8 @@ export const forms = {
   "siteText.thanks.title": "Thank you",
   "siteText.thanks.text": "Your message is on its way. We'll reply as soon as we can.",
   "siteText.thanks.home": "Back to the home page",
+  // The page the export writes at a page's old address (#862), for a browser that doesn't move on.
+  "siteText.redirect.moved": "This page has moved to",
   "siteText.form.leaveEmpty": "Leave this empty",
   // A form sent within a few seconds of the page opening is held for a moment, then sent (3.7).
   "siteText.form.sending": "Sending…",

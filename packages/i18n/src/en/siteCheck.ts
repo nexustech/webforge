@@ -34,6 +34,10 @@ export const siteCheck = {
   "siteCheck.rule.brokenLinks.pass": "Every link goes somewhere",
   "siteCheck.rule.brokenLinks.fail.one": "1 link goes to a page or file that's gone",
   "siteCheck.rule.brokenLinks.fail.other": "{count} links go to a page or file that's gone",
+  "siteCheck.rule.draftLinks": "Links to draft pages",
+  "siteCheck.rule.draftLinks.pass": "No link goes to a draft page",
+  "siteCheck.rule.draftLinks.fail.one": "1 link goes to a draft page, which isn't published",
+  "siteCheck.rule.draftLinks.fail.other": "{count} links go to a draft page, which isn't published",
   "siteCheck.rule.placeholders": "Placeholder text",
   "siteCheck.rule.placeholders.pass": "No placeholder text left",
   "siteCheck.rule.placeholders.fail.one": "1 text is still a placeholder",
@@ -210,6 +214,7 @@ export const siteCheck = {
   "siteCheck.detail.headings": "{count} main headings: keep one large Heading or Hero",
   "siteCheck.detail.sameAs": "The same as {file}",
   "siteCheck.detail.publishedYear": "Shows {year}",
+  "siteCheck.detail.draftPage": "Goes to {page}, a draft",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",

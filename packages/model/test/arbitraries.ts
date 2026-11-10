@@ -112,6 +112,10 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         hideFromNavigation: fc.boolean(),
         hideFromSearch: fc.boolean(),
         privacy: fc.boolean(),
+        // A draft page (G37, #864); the home page and Page not found are published whatever it says.
+        draft: fc.boolean(),
+        // Its text hidden while editing, or not published (UX-23, #864).
+        textShown: fc.constantFrom("hidden", "editorHidden"),
         // A note on its text (UX-17, #868).
         note: anyText(60).filter((note) => note.length > 0),
         updated: fc
@@ -121,29 +125,36 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
       },
       { requiredKeys: ["title", "hideHeader", "hideFooter", "hideFromNavigation", "text"] },
     )
-    .map(({ title, navLabel, description, text, updated, note, ...flags }): PageEntry => {
-      const entry: PageEntry = {
-        id: pageId as PageId,
-        kind,
-        slug: pageSlug,
-        title,
-        settings: { ...flags, ...(description === undefined ? {} : { description }) },
-        doc: {
-          root: { props: {} },
-          content: [
-            {
-              type: "Text",
-              props: { id: `${pageId}-text`, text, ...(note === undefined ? {} : { note }) },
-            },
-          ],
-        },
-      };
-      if (navLabel !== undefined) entry.navLabel = navLabel;
-      // The day it last changed (3.15), as an edit dates a page.
-      if (updated !== undefined) entry.updated = updated;
-      if (inFolder !== undefined) entry.folder = inFolder;
-      return entry;
-    });
+    .map(
+      ({ title, navLabel, description, text, updated, textShown, note, ...flags }): PageEntry => {
+        const entry: PageEntry = {
+          id: pageId as PageId,
+          kind,
+          slug: pageSlug,
+          title,
+          settings: { ...flags, ...(description === undefined ? {} : { description }) },
+          doc: {
+            root: { props: {} },
+            content: [
+              {
+                type: "Text",
+                props: {
+                  id: `${pageId}-text`,
+                  text,
+                  ...(textShown === undefined ? {} : { [textShown]: true }),
+                  ...(note === undefined ? {} : { note }),
+                },
+              },
+            ],
+          },
+        };
+        if (navLabel !== undefined) entry.navLabel = navLabel;
+        // The day it last changed (3.15), as an edit dates a page.
+        if (updated !== undefined) entry.updated = updated;
+        if (inFolder !== undefined) entry.folder = inFolder;
+        return entry;
+      },
+    );
 
 const imageMeta = (mediaId: string, name: string): fc.Arbitrary<MediaMeta> =>
   fc
@@ -221,6 +232,14 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
         media,
         menu,
         settings,
+        // Old addresses kept working (#862), aimed at the site's pages.
+        kept: fc.array(
+          fc.record({
+            from: fc.constantFrom("old-page.html", "services/Old_Page.html"),
+            page: fc.constantFrom(...pageIds).map((id) => id as PageId),
+          }),
+          { maxLength: 2 },
+        ),
         looks,
         order: fc.shuffledSubarray(pageIds, {
           minLength: pageIds.length,
@@ -232,11 +251,15 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           media: items,
           menu: menuDoc,
           settings: siteSettings,
+          kept,
           looks: themeLooks,
           order,
         }): SiteDoc => ({
           formatVersion: SITE_FORMAT_VERSION,
-          settings: siteSettings,
+          settings:
+            kept.length === 0
+              ? siteSettings
+              : { ...siteSettings, search: { ...siteSettings.search, keptAddresses: kept } },
           theme: {
             ...DEFAULT_THEME,
             preset: "cupcake",
