@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type FieldRenderers, FieldRenderersProvider } from "@webforge/editor-ui";
-import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
+import { copiedNodeId, type MediaId, type MenuItemId, type PageDoc } from "@webforge/model";
 import {
   BACKGROUND_FIELDS,
   type ComponentLibrary,
@@ -1183,6 +1183,48 @@ describe("EditPanelHost with a layout that leaves fields out (#311)", () => {
     expect(imageField()).not.toBeNull();
     const hero = currentPage(session)?.doc.content.find((node) => node.props.id === "hero");
     expect(hero?.props.image).toEqual(image);
+  });
+});
+
+describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
+  it("is offered once the menu links to a section, on by default, and turned off as one step", async () => {
+    const { session, labels, user } = setup("header");
+    const header = () => session.history.document.getState().layout.header[0]?.props;
+    const option = () => screen.queryByRole("switch", { name: "Highlight the section in view" });
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    expect(option()).toBeNull();
+
+    act(() =>
+      session.edit("menu", "Added menu item 'Questions'", (draft) => {
+        draft.menu = {
+          follows: "custom",
+          items: [
+            {
+              id: "questions" as MenuItemId,
+              kind: "section",
+              label: "Questions",
+              link: { kind: "page", pageId: draft.homePageId, anchor: "questions" },
+              hidden: false,
+            },
+          ],
+        };
+      }),
+    );
+    const on = option();
+    expect(on?.getAttribute("aria-checked")).toBe("true");
+    expect(on?.getAttribute("aria-describedby")).not.toBeNull();
+    expect(
+      screen.getByText("As visitors scroll, the menu lights up the section they're looking at."),
+    ).toBeDefined();
+
+    await user.click(on as HTMLElement);
+
+    expect(header()?.sectionHighlight).toBe(false);
+    expect(labels().at(-1)).toBe("Changed shared Header highlight the section in view");
+    act(() => {
+      session.history.undo();
+    });
+    expect(header()?.sectionHighlight).toBeUndefined();
   });
 });
 

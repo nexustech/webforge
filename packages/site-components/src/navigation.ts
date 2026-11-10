@@ -1,4 +1,4 @@
-import type { MenuDoc, MenuLeaf, SitePage } from "@webforge/model";
+import type { MenuDoc, MenuLeaf, NodeDoc, SitePage } from "@webforge/model";
 import { hrefFor } from "./links.js";
 import type { NavItem, NavLink } from "./schema.js";
 
@@ -111,5 +111,20 @@ export function menuLinksToSections(menu: MenuDoc | undefined): boolean {
     item.link.anchor !== undefined;
   return (menu?.items ?? []).some((item) =>
     item.kind === "group" ? !item.hidden && item.children.some(linksIn) : linksIn(item),
+  );
+}
+
+/**
+ * Whether the export includes the "section-spy" behaviour (5.10, GA10): `menu` links to a section
+ * ({@link menuLinksToSections}), and the Header, among the site's `header` nodes, hasn't turned
+ * *Highlight the section in view* off (5.10b, GA10-1). A site from before the option has it on.
+ */
+export function highlightsSectionInView(
+  menu: MenuDoc | undefined,
+  header: readonly NodeDoc[],
+): boolean {
+  return (
+    menuLinksToSections(menu) &&
+    !header.some((node) => node.type === "Header" && node.props.sectionHighlight === false)
   );
 }
