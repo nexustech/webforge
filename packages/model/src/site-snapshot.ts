@@ -27,6 +27,8 @@ import {
   CONSENT_MESSAGE_MAX,
   type FormService,
   formServiceSchema,
+  KEPT_ADDRESSES_MAX,
+  keptAddressFileSchema,
   languageTagSchema,
   measurementIdSchema,
   type OpeningHours,
@@ -176,6 +178,20 @@ export type SiteSnapshot = {
    * `<head>` and the end of its `<body>`. Left out when all four are empty.
    */
   readonly code?: SiteCode | undefined;
+  /**
+   * Old addresses kept working (#862, SEO-5): each old file, and the path of the page it goes to
+   * now. Only those that still work: no page is at the old address, and the page is there. None
+   * when left out.
+   */
+  readonly redirects?: readonly SiteRedirect[] | undefined;
+};
+
+/** One of {@link SiteSnapshot}'s old addresses: `about-us.html` goes on to page `about`. */
+export type SiteRedirect = {
+  /** The old file, `about-us.html` or `services/old.html`. */
+  readonly from: string;
+  /** The page's path now, as {@link SitePage}'s: `about`, `index`. */
+  readonly to: string;
 };
 
 /** {@link SiteSnapshot}'s business details beyond its contact details (3.15, SEO-1). */
@@ -324,9 +340,28 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
         })
         .optional(),
       code: siteCodeSchema.optional(),
+      redirects: z
+        .array(z.strictObject({ from: keptAddressFileSchema, to: z.string() }))
+        .max(KEPT_ADDRESSES_MAX)
+        .optional(),
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);
+      // An old address goes to a page, and isn't one, in any case: the page there would be written
+      // over in a folder that doesn't tell files apart by case (Windows', macOS's).
+      const files = new Set(paths.map((path) => `${path}.html`.toLowerCase()));
+      const olds = new Set<string>();
+      for (const redirect of site.redirects ?? []) {
+        const old = redirect.from.toLowerCase();
+        if (!paths.includes(redirect.to) || files.has(old) || olds.has(old)) {
+          ctx.addIssue({
+            code: "custom",
+            message: `The old address ${redirect.from} can't go to ${redirect.to}`,
+            path: ["redirects"],
+          });
+        }
+        olds.add(old);
+      }
       if (!paths.includes("index")) {
         ctx.addIssue({ code: "custom", message: "The site has no home page", path: ["pages"] });
       }

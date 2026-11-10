@@ -77,6 +77,12 @@ export type SettingsForm = {
   /** Google's and Bing's verification codes, or the tags they come in (3.15, SEO-8). */
   readonly googleVerification: string;
   readonly bingVerification: string;
+  /** Old addresses kept working (#862): each as typed, and the page it goes to. */
+  readonly keptAddresses: readonly {
+    readonly id: string;
+    readonly from: string;
+    readonly page: string;
+  }[];
   readonly measurementId: string;
   readonly consentBanner: boolean;
   readonly consentMessage: string;
@@ -119,6 +125,11 @@ export function toSettingsForm(settings: SiteSettings): SettingsForm {
     readableByAi: search.readableByAi === true,
     googleVerification: search.verification?.google ?? "",
     bingVerification: search.verification?.bing ?? "",
+    keptAddresses: (search.keptAddresses ?? []).map((kept, index) => ({
+      id: `kept-${index}`,
+      from: kept.from,
+      page: kept.page,
+    })),
     measurementId: analytics.measurementId ?? "",
     consentBanner: analytics.consentBanner,
     consentMessage: analytics.consentMessage ?? "",
@@ -154,6 +165,26 @@ function verificationOf(form: SettingsForm): { verification?: Record<string, str
     ...optional("bing", verificationCodeOf(form.bingVerification, "bing")),
   };
   return Object.keys(verification).length === 0 ? {} : { verification };
+}
+
+/**
+ * An old address as the site's file, from what was typed (#862): an address copied from a
+ * browser (`https://rosas.example/about-us.html`), a path (`/about-us`) or a file name, ending in
+ * `.html`. Empty stays empty, for the schema to say it's missing.
+ */
+export function keptAddressFile(typed: string): string {
+  const path = typed
+    .trim()
+    .replace(/^https?:\/\/[^/]*/i, "")
+    .replace(/[?#].*$/, "")
+    .replace(/^\/+|\/+$/g, "");
+  return path === "" || path.endsWith(".html") ? path : `${path}.html`;
+}
+
+/** The old addresses kept working (#862); absent when there are none, as before them. */
+function keptAddressesOf(form: SettingsForm): { keptAddresses?: { from: string; page: string }[] } {
+  const kept = form.keptAddresses.map(({ from, page }) => ({ from: keptAddressFile(from), page }));
+  return kept.length === 0 ? {} : { keptAddresses: kept };
 }
 
 /**
@@ -246,6 +277,7 @@ export function fromSettingsForm(form: SettingsForm, previous: SiteSettings): un
         ? { readableByAi: form.readableByAi }
         : {}),
       ...verificationOf(form),
+      ...keptAddressesOf(form),
     },
     analytics: {
       ...optional("measurementId", form.measurementId.toUpperCase()),
@@ -277,6 +309,8 @@ const MESSAGES: Readonly<Record<string, Parameters<typeof t>[0]>> = {
   "contact.geo.longitude": "site.settings.error.longitude",
   "search.verification.google": "site.settings.error.googleVerification",
   "search.verification.bing": "site.settings.error.bingVerification",
+  "search.keptAddresses.*.from": "site.settings.error.keptAddress",
+  "search.keptAddresses.*.page": "site.settings.error.keptAddressPage",
   "forms.service.formId": "site.settings.error.formspree",
   "forms.service.accessKey": "site.settings.error.web3forms",
   "forms.service.email": "site.settings.error.email",

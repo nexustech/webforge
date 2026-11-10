@@ -1,5 +1,11 @@
 import { t } from "@webforge/i18n";
-import { type ImageMeta, isImageMeta, type SiteDoc, type SiteSettings } from "@webforge/model";
+import {
+  type ImageMeta,
+  isImageMeta,
+  pageFile,
+  type SiteDoc,
+  type SiteSettings,
+} from "@webforge/model";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import {
@@ -25,11 +31,19 @@ export function siteSettingsPart(
   onNetlify = false,
 ): OpenSettings {
   const images = Object.values(site.media).filter(isImageMeta);
+  // The pages an old address can go to, in the Pages panel's order (#862).
+  const pages = site.pageOrder.flatMap((id) => {
+    const page = site.pages[id];
+    const file = pageFile(site, id);
+    return page === undefined || file === undefined
+      ? []
+      : [{ id, title: page.title, file, target: page.kind === "page" }];
+  });
   return settingsPart({
     id: "site",
     heading: "site",
     label: t("site.settings.title"),
-    spec: siteSettingsSpec(site.settings, { images, imageUrl, onNetlify }),
+    spec: siteSettingsSpec(site.settings, { images, imageUrl, onNetlify, pages }),
     initial: toSettingsForm(site.settings),
     save,
   });

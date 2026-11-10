@@ -36,7 +36,7 @@ Click **+** (**Add Page**):
 Point at a page and click **…** for:
 
 - **Page Settings…:** see [below](#page-settings).
-- **Rename…:** the file name follows the new name, unless you've set the file name yourself.
+- **Rename…:** the file name follows the new name, unless you've set the file name yourself. When it changes, **Keep the old address working** sends anyone who uses the old address on to the page. See [Keeping old addresses working](#keeping-old-addresses-working).
 - **Duplicate:** a copy, just after this page.
 - **Move Up · Move Down:** reorder the pages.
 - **Move to Folder:** group pages under a folder, such as _services_. The page's address then becomes `services/plumbing.html`.
@@ -94,6 +94,16 @@ If you wrote your own privacy page, open its Page Settings and turn on **This is
 Each page is written from your settings at the moment you add it. If you change them later, for example by turning the consent banner off, update the page too.
 
 Like the privacy page, each starts with a reminder that it's a starting point, not legal advice. Check every part, change what doesn't fit your business, then delete that paragraph: Site Check lists it as placeholder text until you do. To keep the pages off the menu, turn on **Hide from navigation** in their Page Settings, and link to them from the Footer.
+
+### Keeping old addresses working
+
+Once your site is published, people and search engines know your pages by their addresses. If a page's address changes, links to the old address would stop working, and the page could lose its place in search results.
+
+So when you rename a page and its file name changes, **Keep the old address working** is ticked once you've published the site. Untick it if nobody uses the old address yet. Moving a page to a folder, making it the Home page or changing its file name in Page Settings keeps the old address too, once the site has been published.
+
+At each old address, your site gets a small page that sends visitors and search engines straight on to the page's new address. On Netlify, the old address redirects for good. Renaming and keeping the old address is one step, so **Undo** takes back both.
+
+A page with two old addresses sends both straight to where it is now. If you later give a page an address that was kept, the page takes it. If you delete a page, its old addresses go with it. You'll find them all in **Site Settings › Search engines**, where you can remove them.
 
 ## Page Settings
 

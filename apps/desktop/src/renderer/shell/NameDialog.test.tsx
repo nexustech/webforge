@@ -37,7 +37,7 @@ describe("NameDialog (2.21)", () => {
     expect(screen.getByText("File name: about.html")).toBeTruthy();
     await user.click(confirm());
 
-    expect(onSubmit).toHaveBeenCalledWith("About");
+    expect(onSubmit).toHaveBeenCalledWith("About", false);
   });
 
   it("says why a name can't be used, with the confirm button off", async () => {
