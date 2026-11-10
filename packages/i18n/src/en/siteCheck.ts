@@ -110,6 +110,10 @@ export const siteCheck = {
     "1 underlined text isn't a link, which visitors may click",
   "siteCheck.rule.underlinedText.fail.other":
     "{count} underlined texts aren't links, which visitors may click",
+  "siteCheck.rule.notes": "Notes",
+  "siteCheck.rule.notes.pass": "No open notes",
+  "siteCheck.rule.notes.fail.one": "1 note to resolve",
+  "siteCheck.rule.notes.fail.other": "{count} notes to resolve",
   "siteCheck.rule.outdatedYear": "Year on your site",
   "siteCheck.rule.outdatedYear.pass": "Your published site shows this year",
   "siteCheck.rule.outdatedYear.fail.one":

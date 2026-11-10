@@ -562,6 +562,28 @@ describe("createPuckEngine", () => {
     expect(element.querySelectorAll('.wf-outline[data-state="selected"]')).toHaveLength(1);
   });
 
+  it("outlines an element with a note, and draws it as it is otherwise (UX-17)", async () => {
+    const [first, second] = page.content;
+    if (first === undefined || second === undefined) throw new Error("unexpected page");
+    const before = headings();
+    await act(async () =>
+      engine.applyChange({
+        page: {
+          ...page,
+          content: [{ ...first, props: { ...first.props, note: "Check the date" } }, second],
+        },
+      }),
+    );
+    await settle();
+
+    const marked = [...element.querySelectorAll(".t-heading")].map((heading) =>
+      heading.hasAttribute("data-webforge-note"),
+    );
+    expect(marked).toEqual([true, false]);
+    expect(headings()).toEqual(before);
+    expect(element.textContent).not.toContain("Check the date");
+  });
+
   it("shows a bound element's Site Settings value, or the hint, as they change (1.17)", async () => {
     const bound = (bindings?: Record<string, string>): PageDoc => ({
       ...page,

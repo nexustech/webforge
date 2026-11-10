@@ -255,6 +255,42 @@ describe("ElementMenu (1.35)", () => {
     await waitFor(() => expect(style).toHaveBeenCalledOnce());
   });
 
+  it("offers Add Note… opened once it has closed, and Resolve Note only for a note (UX-17)", async () => {
+    const { commands } = registry({ save: true, detach: false });
+    const note = vi.fn();
+    const resolve = vi.fn();
+    commands.register({ id: ELEMENT_MENU_COMMANDS.note, label: "Edit Note…", run: note });
+    commands.register({
+      id: ELEMENT_MENU_COMMANDS.resolveNote,
+      label: "Resolve Note",
+      enabled: false,
+      run: resolve,
+    });
+    function Host() {
+      const [open, setOpen] = useState(true);
+      return (
+        <ElementMenu
+          at={open ? { x: 0, y: 0 } : null}
+          onClose={() => setOpen(false)}
+          onRename={vi.fn()}
+        />
+      );
+    }
+    render(
+      <CommandRegistryProvider registry={commands}>
+        <Host />
+      </CommandRegistryProvider>,
+    );
+
+    expect(items().map(([label]) => label)).toContain("Edit Note…");
+    expect(menu().queryByRole("menuitem", { name: "Resolve Note" })).toBeNull();
+    act(() => commands.update(ELEMENT_MENU_COMMANDS.resolveNote, { enabled: true }));
+    expect(menu().getByRole("menuitem", { name: "Resolve Note" })).toBeTruthy();
+    await userEvent.click(menu().getByRole("menuitem", { name: "Edit Note…" }));
+    await waitFor(() => expect(note).toHaveBeenCalledOnce());
+    expect(resolve).not.toHaveBeenCalled();
+  });
+
   it("offers Apply Look to Every… after them, on this page and on the site (2.27)", async () => {
     const { commands } = registry({ save: true, detach: false });
     const onSite = vi.fn();

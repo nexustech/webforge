@@ -14,6 +14,7 @@ import {
   LockIcon,
   PencilIcon,
   SparklesIcon,
+  StickyNoteIcon,
   Trash2Icon,
 } from "lucide-react";
 import {
@@ -528,6 +529,16 @@ export function LayersPanel({
                       <span title={t("layers.locked")}>
                         <LockIcon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
                         <span className="sr-only">{t("layers.locked")} </span>
+                      </span>
+                    )}
+                    {layer.note !== undefined && (
+                      // A note for the person (UX-17, #868), its text on pointing at it.
+                      <span title={layer.note}>
+                        <StickyNoteIcon
+                          aria-hidden
+                          className="mr-1 inline size-3.5 align-[-2px] text-warning"
+                        />
+                        <span className="sr-only">{t("notes.marker", { note: layer.note })} </span>
                       </span>
                     )}
                     {layer.animated === true && (

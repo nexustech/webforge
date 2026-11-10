@@ -163,6 +163,8 @@ export function describeDetail(finding: Finding): string | undefined {
   }
   if (typeof values.sameAs === "string")
     return t("siteCheck.detail.sameAs", { file: values.sameAs });
+  // A note on an element (UX-17), as the person wrote it.
+  if (typeof values.note === "string") return values.note;
   // The year a published site shows (F-CM-8), as it was published.
   if (typeof values.publishedYear === "number") {
     return t("siteCheck.detail.publishedYear", { year: String(values.publishedYear) });
