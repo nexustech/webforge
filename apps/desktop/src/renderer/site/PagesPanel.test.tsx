@@ -38,15 +38,19 @@ function siteWithPages(): SiteDoc {
   };
 }
 
-/** The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`. */
-function setUp({ backToTop = false } = {}) {
+/**
+ * The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`, and Google
+ * Analytics on if `analytics`.
+ */
+function setUp({ backToTop = false, analytics = false } = {}) {
   const site = siteWithPages();
   if (backToTop) site.settings.general.backToTop = true;
+  if (analytics) site.settings.analytics.measurementId = "G-ABC123DEF4";
   const actions: PagesPanelActions = {
     show: vi.fn(),
     add: vi.fn(),
     addSuggested: vi.fn(),
-    addPrivacy: vi.fn(),
+    addPolicy: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),
@@ -112,8 +116,27 @@ describe("PagesPanel (F-ED-13)", () => {
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
     await userEvent.click(screen.getByRole("menuitem", { name: "Privacy Page" }));
 
-    expect(actions.addPrivacy).toHaveBeenCalledOnce();
+    expect(actions.addPolicy).toHaveBeenCalledExactlyOnceWith("privacy");
     expect(actions.add).not.toHaveBeenCalled();
+  });
+
+  it("adds the terms page from Add Page's menu, and the cookie policy only with Google Analytics (#866)", async () => {
+    const { actions } = setUp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    expect(screen.queryByRole("menuitem", { name: "Cookie Policy Page" })).toBeNull();
+    await userEvent.click(screen.getByRole("menuitem", { name: "Terms Page" }));
+
+    expect(actions.addPolicy).toHaveBeenCalledExactlyOnceWith("terms");
+  });
+
+  it("offers the cookie policy while Google Analytics is on (#866)", async () => {
+    const { actions } = setUp({ analytics: true });
+
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Cookie Policy Page" }));
+
+    expect(actions.addPolicy).toHaveBeenCalledExactlyOnceWith("cookies");
   });
 
   it("adds a suggested page for a business type, from Add Page's menu (QS-3)", async () => {

@@ -20,7 +20,7 @@ import type { PanelRegistry } from "../shell/panels.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
   addPage,
-  addPrivacyPage,
+  addPolicyPage,
   addSuggestedPage,
   changePageSettings,
   deletePage,
@@ -49,8 +49,8 @@ export function pagesPanelActions(
     addSuggested: (recipeId) => {
       addSuggestedPage(session, recipeId);
     },
-    addPrivacy: () => {
-      addPrivacyPage(session);
+    addPolicy: (kind) => {
+      addPolicyPage(session, kind);
     },
     rename: (pageId, name) => renamePage(session, pageId, name),
     duplicate: (pageId) => {
