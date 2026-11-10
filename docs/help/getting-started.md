@@ -4,7 +4,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, publish, export]
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 # Getting started
@@ -15,11 +15,13 @@ A site is made of **pages**. Each page is a stack of **sections**, such as a Her
 
 ## Starting {appName}
 
+Open {appName} from its icon, the letters **WF** in front of a flame on an anvil: in the Start menu on Windows, or in Applications on a Mac. Double-clicking a site's `.wforge` file opens {appName} too.
+
 While {appName} starts, its window says **Starting {appName}…**. Then you see the site you opened, such as one you double-clicked, or the start screen. If something goes wrong while it starts, the window says so: choose **Try again**. Your work is saved.
 
 ## The start screen
 
-When no site is open, you see the start screen.
+When no site is open, you see the start screen. On the left are {appName}'s icon and name, and the version you have.
 
 - **Start a site…** asks a few questions about your business and makes a site that's already yours. This is the quickest way to begin.
 - **Choose a template yourself…** lets you pick a starting design from the full list.

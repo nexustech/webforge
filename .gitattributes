@@ -4,3 +4,5 @@
 *.webp binary
 *.woff2 binary
 *.wforge binary
+*.ico binary
+*.icns binary

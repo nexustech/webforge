@@ -29,6 +29,7 @@
     "new-component": "node tools/src/new-component.ts",
     "scaffold": "node tools/src/scaffold.ts",
     "catalogue-data": "pnpm --filter @webforge/site-components exec vitest run src/catalogue-data.test.ts -u -t \"is the library\"",
+    "app-icons": "node tools/src/build-app-icons.ts",
     "font-catalogue": "node tools/src/build-font-catalogue.ts && biome format --write packages/themes/src/fonts/catalogue.json",
     "ui-strings": "node tools/src/check-ui-strings.ts --catalogue packages/i18n/src/en apps/desktop/src/renderer packages/editor-ui/src packages/engine/src packages/site-components/src",
     "help-check": "node tools/src/check-help.ts",

@@ -4,6 +4,9 @@ appId: app.webforge.desktop
 productName: Webforge
 directories:
   output: release/${version}
+  # The app's icons (#454), which electron-builder finds here by name: icon.ico (Windows, the
+  # executable and the installer), icon.icns (macOS, the bundle and the DMG) and icons/ (Linux).
+  # `pnpm app-icons` draws them from the logo's masters in branding/.
   buildResources: build
 files:
   - out/**

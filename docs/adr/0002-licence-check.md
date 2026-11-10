@@ -34,3 +34,4 @@ Webforge is a paid, closed-source product, so every dependency must have a permi
   - Electron, with Chromium's own LICENSES.chromium.html.
 
   So build-time exceptions such as argparse never appear in them. They go beside app.asar as `notices/notices.json` and `THIRD_PARTY_NOTICES.txt`.
+- **Addendum (#454, 10 Nov 2026):** the app's logo (`apps/desktop/branding/`) has its letters traced from Sora, which is OFL-1.1. The files hold the letters' outlines, never the font: the OFL covers the font software, not artwork made with it, so the logo needs no entry in this check or in the notices, and nothing ships Sora. `tools` uses `@resvg/resvg-js` (MPL-2.0, unmodified, a development dependency) to draw the app's icons from the logo.
