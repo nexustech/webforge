@@ -1,6 +1,8 @@
 import { t } from "@webforge/i18n";
 import type { SiteDoc } from "@webforge/model";
 import { FilesIcon } from "lucide-react";
+import { useStore } from "zustand";
+import { createStore, type StoreApi } from "zustand/vanilla";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument, useUi } from "../editor/use-document.js";
 import { linkTargets } from "../links/index.js";
@@ -36,11 +38,14 @@ import {
 
 /**
  * The Pages panel's actions on `session`: each change is one undo step (F-ED-13). Deleting a page
- * asks first through `siteWide`, saying how many pages it changes (D7).
+ * asks first through `siteWide`, saying how many pages it changes (D7). Once the site has been
+ * `published`, a page moved to a folder, made the Home page or given a new file name keeps its old
+ * address working (#862); a rename asks.
  */
 export function pagesPanelActions(
   session: EditorSession,
   siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
+  published: () => boolean = () => false,
 ): PagesPanelActions {
   return {
     show: (pageId) => session.showPage(pageId),
@@ -53,13 +58,13 @@ export function pagesPanelActions(
     addPolicy: (kind) => {
       addPolicyPage(session, kind);
     },
-    rename: (pageId, name) => renamePage(session, pageId, name),
+    rename: (pageId, name, keepOldAddress) => renamePage(session, pageId, name, keepOldAddress),
     duplicate: (pageId) => {
       duplicatePage(session, pageId);
     },
     move: (pageId, direction) => movePage(session, pageId, direction),
-    moveToFolder: (pageId, folder) => moveToFolder(session, pageId, folder),
-    setHome: (pageId) => setHomePage(session, pageId),
+    moveToFolder: (pageId, folder) => moveToFolder(session, pageId, folder, published()),
+    setHome: (pageId) => setHomePage(session, pageId, published()),
     setHidden: (pageId, hidden) => setHiddenFromNavigation(session, pageId, hidden),
     setDraft: (pageId, draft) => setDraftPage(session, pageId, draft),
     remove: (pageId) => {
@@ -80,7 +85,7 @@ export function pagesPanelActions(
           if (confirmed) deletePage(session, pageId);
         });
     },
-    changeSettings: (pageId, change) => changePageSettings(session, pageId, change),
+    changeSettings: (pageId, change) => changePageSettings(session, pageId, change, published()),
   };
 }
 
@@ -107,6 +112,8 @@ function samePageList(a: SiteDoc, b: SiteDoc): boolean {
   if (a.pageOrder !== b.pageOrder || a.homePageId !== b.homePageId || a.menu !== b.menu) {
     return false;
   }
+  // Add Page offers the cookie policy while Google Analytics is on (#866).
+  if (a.settings.analytics.measurementId !== b.settings.analytics.measurementId) return false;
   return a.pageOrder.every((id) => {
     const before = a.pages[id];
     const after = b.pages[id];
@@ -131,8 +138,11 @@ export function registerSitePanel(
   panels: PanelRegistry,
   session: EditorSession,
   siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
+  /** The year the site was last published in, none when it hasn't been (F-CM-8, #862). */
+  publishedYear: StoreApi<number | undefined> = createStore<number | undefined>(() => undefined),
 ): () => void {
-  const actions = pagesPanelActions(session, siteWide);
+  const published = () => publishedYear.getState() !== undefined;
+  const actions = pagesPanelActions(session, siteWide, published);
   const menuActions = menuPanelActions(session);
   const linkContext = () => {
     const site = session.history.document.getState();
@@ -143,10 +153,16 @@ export function registerSitePanel(
     // the canvas doesn't re-render the panel.
     const site = useDocument(session, (current) => current, samePageList);
     const shownPageId = useUi(session, (ui) => ui.pageId);
+    const isPublished = useStore(publishedYear, (year) => year !== undefined);
     return (
       <div className="flex h-full flex-col">
         <div className="min-h-0 flex-1">
-          <PagesPanel site={site} shownPageId={shownPageId} actions={actions} />
+          <PagesPanel
+            site={site}
+            shownPageId={shownPageId}
+            published={isPublished}
+            actions={actions}
+          />
         </div>
         <div className="max-h-[50%] shrink-0 overflow-y-auto border-t border-border">
           <MenuPanel site={site} linkContext={linkContext} actions={menuActions} />

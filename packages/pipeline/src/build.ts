@@ -35,6 +35,7 @@ import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import { netlifyFormNames } from "./netlify-forms.js";
 import { PREVIEW_STYLESHEET } from "./preview-stylesheet.js";
+import { redirectFiles } from "./redirects.js";
 import type { PipelineResources } from "./resources.js";
 import { scriptMistake } from "./script-mistake.js";
 import {
@@ -700,6 +701,13 @@ export async function* buildEvents(
     files.set(`${entry.page.path}.html`, text.encode(withYear(html, year)));
   }
   for (const [path, content] of siteFiles(site, icons)) files.set(path, text.encode(content));
+  // Old addresses kept working (#862), never in a preview, which no one else reads. A file the
+  // export made already (the thank-you page it adds, 3.7) keeps its place, in any case.
+  if (run.mode !== "preview") {
+    for (const [path, content] of redirectFiles(site, files.keys())) {
+      files.set(path, text.encode(content));
+    }
+  }
   // AI tools' copies (F-EX-5), when Site Settings ask for them; never in a preview, which no one
   // else reads.
   if (searchOf(site).readableByAi && run.mode !== "preview") {

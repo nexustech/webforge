@@ -33,6 +33,10 @@ export const panels = {
   "pages.addPrivacy": "Privacy Page",
   "pages.addTerms": "Terms Page",
   "pages.addCookies": "Cookie Policy Page",
+  // Renaming a page that has a new file name (#862).
+  "pages.keepOldAddress": "Keep the old address working",
+  "pages.keepOldAddressHint":
+    "Links and search results that use {path} go on to the page's new address. You can remove it in Site Settings › Search engines.",
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
   "pages.hiddenFromNavigation": "Hidden from navigation",

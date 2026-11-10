@@ -109,6 +109,8 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   "edit.pasteStyle": { group: "edit", keys: ["Mod+Alt+V"] },
   "edit.toggleHidden": { group: "edit", keys: ["Mod+/"], text: true },
   "edit.rename": { group: "edit", keys: ["F2"] },
+  // As in every app that finds text (6.2). Replace has no key of its own: Cmd+H hides a Mac app.
+  [COMMAND_IDS.findReplace]: { group: "edit", keys: ["Mod+F"] },
   ...CANVAS,
   // Mod+K was the command box's first key: kept, but in text it makes a link.
   [COMMAND_IDS.commandBox]: { group: "view", keys: ["Mod+P", "Mod+K"], text: ["Mod+K"] },

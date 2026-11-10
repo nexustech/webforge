@@ -46,10 +46,10 @@ function siteWithPages(): SiteDoc {
 }
 
 /**
- * The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`, and Google
- * Analytics on if `analytics`.
+ * The panel on {@link siteWithPages}, with the site's back-to-top button if `backToTop`, Google
+ * Analytics on if `analytics`, and as for a site that has been published if `published`.
  */
-function setUp({ backToTop = false, analytics = false } = {}) {
+function setUp({ backToTop = false, analytics = false, published = false } = {}) {
   const site = siteWithPages();
   if (backToTop) site.settings.general.backToTop = true;
   if (analytics) site.settings.analytics.measurementId = "G-ABC123DEF4";
@@ -68,7 +68,14 @@ function setUp({ backToTop = false, analytics = false } = {}) {
     remove: vi.fn(),
     changeSettings: vi.fn(),
   };
-  render(<PagesPanel site={site} shownPageId={site.homePageId} actions={actions} />);
+  render(
+    <PagesPanel
+      site={site}
+      shownPageId={site.homePageId}
+      published={published}
+      actions={actions}
+    />,
+  );
   const notFound = site.pageOrder.at(-1) as PageId;
   return { site, actions, notFound };
 }
@@ -176,9 +183,38 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(document.activeElement).toBe(field);
     await userEvent.keyboard("Our team");
     expect(screen.getByText("File name: company/our-team.html")).toBeTruthy();
+    // Not published yet: the old address isn't kept unless asked.
+    expect(screen.getByRole("checkbox", { name: "Keep the old address working" })).toHaveProperty(
+      "checked",
+      false,
+    );
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
-    expect(actions.rename).toHaveBeenCalledWith("page-team", "Our team");
+    expect(actions.rename).toHaveBeenCalledWith("page-team", "Our team", false);
+  });
+
+  it("keeps a published page's old address on rename unless told not to (#862)", async () => {
+    const { actions } = setUp({ published: true });
+
+    await openMenu("Team");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    await screen.findByRole("textbox", { name: "Page name" });
+    // The same file name: nothing to keep.
+    expect(screen.queryByRole("checkbox", { name: "Keep the old address working" })).toBeNull();
+    await userEvent.keyboard("Our team");
+    const keep = screen.getByRole("checkbox", { name: "Keep the old address working" });
+    expect(keep).toHaveProperty("checked", true);
+    expect(screen.getByText(/that use company\/team\.html go on/)).toBeTruthy();
+    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(actions.rename).toHaveBeenLastCalledWith("page-team", "Our team", true);
+
+    await openMenu("Team");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    await screen.findByRole("textbox", { name: "Page name" });
+    await userEvent.keyboard("Crew");
+    await userEvent.click(screen.getByRole("checkbox", { name: "Keep the old address working" }));
+    await userEvent.click(screen.getByRole("button", { name: "Rename" }));
+    expect(actions.rename).toHaveBeenLastCalledWith("page-team", "Crew", false);
   });
 
   it("asks to delete a page from its menu, the action confirming it (D5, D7)", async () => {

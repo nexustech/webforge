@@ -4,11 +4,13 @@ import {
   canDeletePage,
   deletePageFrom,
   insertPage,
+  keepingOldAddresses,
   type MediaId,
   newId,
   PAGE_DESCRIPTION_MAX,
   type PageEntry,
   type PageId,
+  pageFile,
   pageNeighbour,
   pageSlugFor,
   pagesChangedByDeleting,
@@ -20,6 +22,7 @@ import {
   slugsInFolder,
   swapPages,
   syncMenuWithPages,
+  tidyKeptAddresses,
   uniqueSlug,
 } from "@webforge/model";
 import { insertRecipePage, PAGE_RECIPES } from "@webforge/templates";
@@ -93,7 +96,12 @@ function editShowing(
   const current = session.ui.getState();
   const selectionAfter: EditorSelection =
     pageId === current.pageId ? current : { ...current, pageId, nodeId: null };
-  session.edit(kind, label, recipe, { selectionAfter, apply: true });
+  // A page added where an old address was kept takes it: the list loses it in the same step (#862).
+  const tidied: Recipe<SiteDoc> = (draft) => {
+    recipe(draft);
+    tidyKeptAddresses(draft);
+  };
+  session.edit(kind, label, tidied, { selectionAfter, apply: true });
 }
 
 /** Adds an empty page called `name` and shows it. Returns its id, or null for an empty name. */
@@ -157,6 +165,31 @@ export function addPolicyPage(session: PagesSession, kind: PolicyPageKind): Page
   return id;
 }
 
+/**
+ * Makes `change` to `draft`, which may change pages' addresses, keeping each old one working when
+ * `keep` (#862): listed in Site Settings, written by the export. Either way, the list loses the
+ * addresses a page has again.
+ */
+function changingAddresses(draft: SiteDoc, keep: boolean, change: () => void): void {
+  if (keep) {
+    keepingOldAddresses(draft, change);
+    return;
+  }
+  change();
+  tidyKeptAddresses(draft);
+}
+
+/**
+ * Whether renaming page `pageId` to `name` changes its address: an ordinary page, not the Home
+ * page, whose file name follows its name.
+ */
+export function renameMovesPage(site: SiteDoc, pageId: PageId, name: string): boolean {
+  const page = site.pages[pageId];
+  if (page === undefined || page.kind !== "page" || pageId === site.homePageId) return false;
+  const title = pageTitle(name);
+  return title !== "" && renamedFileName(site, pageId, title) !== pageFile(site, pageId);
+}
+
 /** The file a page would get if renamed to `name`, as the rename dialog shows it. */
 export function renamedFileName(site: SiteDoc, pageId: PageId, name: string): string {
   const page = site.pages[pageId];
@@ -167,8 +200,16 @@ export function renamedFileName(site: SiteDoc, pageId: PageId, name: string): st
   return page.folder === undefined ? `${slug}.html` : `${page.folder}/${slug}.html`;
 }
 
-/** Renames a page; its file name follows unless it was set by hand (see `slugAfterRename`). */
-export function renamePage(session: PagesSession, pageId: PageId, name: string): void {
+/**
+ * Renames a page; its file name follows unless it was set by hand (see `slugAfterRename`). With
+ * `keepOldAddress`, its old address keeps working, in the same undo step (#862).
+ */
+export function renamePage(
+  session: PagesSession,
+  pageId: PageId,
+  name: string,
+  keepOldAddress = false,
+): void {
   const site = session.history.document.getState();
   const page = site.pages[pageId];
   const title = pageTitle(name);
@@ -176,7 +217,7 @@ export function renamePage(session: PagesSession, pageId: PageId, name: string):
     return;
   }
   session.edit("props", t("pages.history.renamed", { name: title }), (draft) =>
-    renamePageIn(draft, pageId, title),
+    changingAddresses(draft, keepOldAddress, () => renamePageIn(draft, pageId, title)),
   );
 }
 
@@ -238,12 +279,14 @@ export function foldersOf(site: SiteDoc): string[] {
 
 /**
  * Moves a page into `folder` (a name, made file-friendly: "Our Services" → `our-services`), or to
- * the top level for undefined. Its slug changes only if the folder already has one like it.
+ * the top level for undefined. Its slug changes only if the folder already has one like it. With
+ * `keepOldAddress`, its old address keeps working (#862).
  */
 export function moveToFolder(
   session: PagesSession,
   pageId: PageId,
   folder: string | undefined,
+  keepOldAddress = false,
 ): void {
   const site = session.history.document.getState();
   const page = site.pages[pageId];
@@ -251,51 +294,61 @@ export function moveToFolder(
   if (page === undefined || !canMoveToFolder(site, page) || target === page.folder) {
     return;
   }
-  session.edit("move", t("history.moved", { item: pageItem(page.title) }), (draft) => {
-    const moved = draft.pages[pageId];
-    if (moved === undefined) {
-      return;
-    }
-    moved.slug = uniqueSlug(moved.slug, slugsInFolder(draft, target, pageId));
-    if (target === undefined) {
-      delete moved.folder;
-    } else {
-      moved.folder = target;
-    }
-  });
+  session.edit("move", t("history.moved", { item: pageItem(page.title) }), (draft) =>
+    changingAddresses(draft, keepOldAddress, () => {
+      const moved = draft.pages[pageId];
+      if (moved === undefined) {
+        return;
+      }
+      moved.slug = uniqueSlug(moved.slug, slugsInFolder(draft, target, pageId));
+      if (target === undefined) {
+        delete moved.folder;
+      } else {
+        moved.folder = target;
+      }
+    }),
+  );
 }
 
 /** Whether `page` can be the Home page: an ordinary page that isn't already. */
 export const canBeHome = (site: SiteDoc, page: PageEntry) =>
   page.kind === "page" && page.id !== site.homePageId;
 
-/** Makes a page the Home page (`index.html`), taking it out of its folder. */
-export function setHomePage(session: PagesSession, pageId: PageId): void {
+/**
+ * Makes a page the Home page (`index.html`), taking it out of its folder. With `keepOldAddress`,
+ * the page's old address keeps working, and the old Home page's new one is its own (#862).
+ */
+export function setHomePage(session: PagesSession, pageId: PageId, keepOldAddress = false): void {
   const site = session.history.document.getState();
   const page = site.pages[pageId];
   if (page === undefined || !canBeHome(site, page)) {
     return;
   }
-  session.edit("props", t("pages.history.setHome", { name: page.title }), (draft) => {
-    const home = draft.pages[pageId];
-    if (home === undefined) {
-      return;
-    }
-    if (home.folder !== undefined) {
-      home.slug = uniqueSlug(home.slug, slugsInFolder(draft, undefined, pageId));
-      delete home.folder;
-    }
-    // The Home page is always published (G37, #864): a draft made Home is a draft no longer, so it
-    // doesn't become one again when another page is made Home.
-    delete home.settings.draft;
-    // The old Home page becomes an ordinary page: its slug may be reserved (`index`) or, from an
-    // older site, used by another top-level page.
-    const previous = draft.pages[draft.homePageId];
-    if (previous !== undefined) {
-      previous.slug = uniqueSlug(previous.slug, slugsInFolder(draft, undefined, previous.id));
-    }
-    draft.homePageId = pageId;
-  });
+  session.edit("props", t("pages.history.setHome", { name: page.title }), (draft) =>
+    changingAddresses(draft, keepOldAddress, () => setHomeIn(draft, pageId)),
+  );
+}
+
+/** Makes page `pageId` the Home page in `draft`: {@link setHomePage}'s change. */
+function setHomeIn(draft: SiteDoc, pageId: PageId): void {
+  const home = draft.pages[pageId];
+  if (home === undefined) {
+    return;
+  }
+  if (home.folder !== undefined) {
+    home.slug = uniqueSlug(home.slug, slugsInFolder(draft, undefined, pageId));
+    delete home.folder;
+  }
+  // The Home page is always published (G37, #864): a draft made Home is a draft no longer, so it
+  // doesn't become one again when another page is made Home.
+  delete home.settings.draft;
+  // The old Home page becomes an ordinary page: its slug may be reserved (`index`) or, from an
+  // older site, used by another top-level page.
+  const previous = draft.pages[draft.homePageId];
+  if (previous !== undefined) {
+    previous.slug = uniqueSlug(previous.slug, slugsInFolder(draft, undefined, previous.id));
+  }
+  draft.homePageId = pageId;
 }
 
 /** Whether `page` can be shown in or hidden from navigation: never "Page not found". */
@@ -394,12 +447,14 @@ export type PageSettingsChange = {
 
 /**
  * Applies Page Settings as one undo step, "Changed page settings", or nothing when nothing
- * changed. An empty title keeps the old one; "Page not found" stays out of navigation.
+ * changed. An empty title keeps the old one; "Page not found" stays out of navigation. With
+ * `keepOldAddress`, a new file name keeps the old address working (#862).
  */
 export function changePageSettings(
   session: PagesSession,
   pageId: PageId,
   change: PageSettingsChange,
+  keepOldAddress = false,
 ): void {
   const site = session.history.document.getState();
   const page = site.pages[pageId];
@@ -447,7 +502,10 @@ export function changePageSettings(
       return;
     }
     target.title = title;
-    target.slug = slug;
+    // A new file name keeps the old address working when asked (#862).
+    changingAddresses(draft, keepOldAddress, () => {
+      target.slug = slug;
+    });
     target.settings = {
       ...(description === "" ? {} : { description }),
       ...(shareImage === undefined ? {} : { shareImage }),
