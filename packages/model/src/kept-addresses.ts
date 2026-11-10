@@ -13,7 +13,7 @@ export const pageFile = (site: SiteDoc, id: PageId): string | undefined => {
 };
 
 /** Every page's file in `site`. */
-const pageFiles = (site: SiteDoc): Set<string> =>
+export const pageFiles = (site: SiteDoc): Set<string> =>
   new Set(
     site.pageOrder.flatMap((id) => {
       const file = pageFile(site, id);

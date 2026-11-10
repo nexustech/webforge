@@ -44,13 +44,17 @@ export const Contact: Story = { args: { initialSection: "contact" } };
 /** Social profiles and the share image. */
 export const Social: Story = { args: { initialSection: "social" } };
 
-/** Search engines: the switches and the verification codes (3.15). */
+/**
+ * Search engines: the switches, the verification codes (3.15), and an old address kept working
+ * (#862).
+ */
 export const SearchEngines: Story = {
   args: {
     initialSection: "search",
     site: (() => {
       const site = bakery();
       site.settings.search.verification = { google: "abcDEF123_-xyzVerification" };
+      site.settings.search.keptAddresses = [{ from: "welcome.html", page: site.homePageId }];
       return site;
     })(),
   },

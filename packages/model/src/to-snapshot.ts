@@ -1,5 +1,5 @@
 import { settingValues } from "./bindings.js";
-import { keptAddressesOf, keptAddressWorks } from "./kept-addresses.js";
+import { keptAddressesOf, keptAddressWorks, pageFiles } from "./kept-addresses.js";
 import { isImageMeta } from "./media.js";
 import type { SiteSettings } from "./settings.js";
 import { expandSharedCopies } from "./shared-sections.js";
@@ -122,9 +122,10 @@ function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "
  * to its page's path now. None when there are none.
  */
 function redirectsOf(site: SiteDoc): { redirects?: SiteRedirect[] } {
+  const files = pageFiles(site);
   const redirects = keptAddressesOf(site).flatMap((kept): SiteRedirect[] => {
     const page = site.pages[kept.page];
-    return page === undefined || !keptAddressWorks(site, kept)
+    return page === undefined || !keptAddressWorks(site, kept, files)
       ? []
       : [{ from: kept.from, to: pagePath(page, site.homePageId) }];
   });

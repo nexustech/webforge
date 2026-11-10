@@ -326,6 +326,21 @@ export const site = {
     "That isn't Google's verification code. Paste the code, or the whole google-site-verification tag from Google Search Console.",
   "site.settings.error.bingVerification":
     "That isn't Bing's verification code. Paste the code, or the whole msvalidate.01 tag from Bing Webmaster Tools.",
+  // Old addresses kept working (#862, SEO-5).
+  "site.settings.keptAddresses": "Old addresses kept working",
+  "site.settings.keptAddressesHint":
+    "Each old address sends visitors and search engines on to its page. They're added when you rename or move a page after publishing, and you can add an address from an older website.",
+  "site.settings.keptAddress": "Old address",
+  "site.settings.addKeptAddress": "Add an old address",
+  "site.settings.removeKeptAddress": "Remove this old address",
+  "site.settings.keptAddressFrom": "Old address",
+  "site.settings.keptAddressPage": "Goes to",
+  "site.settings.keptAddressPageOption": "{name} ({file})",
+  "site.settings.error.keptAddress":
+    "Type the old page's address, such as old-page.html or services/old-page.html.",
+  "site.settings.error.keptAddressPage": "Choose the page it goes to.",
+  "site.settings.error.keptAddressTaken":
+    "A page has this address now, so visitors already reach that page. Remove this one.",
   "site.settings.readableByAiHint":
     "For AI tools: adds llms.txt and a plain-text copy of each page when you export. Some AI tools read these; search engines don't.",
   "site.settings.measurementId": "Google Analytics measurement ID",
