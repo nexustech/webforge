@@ -3,7 +3,6 @@ import type { SiteDoc } from "@webforge/model";
 import { FilesIcon } from "lucide-react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
-import { addBlog, addPost } from "../blog/blog-actions.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument, useUi } from "../editor/use-document.js";
 import { linkTargets } from "../links/index.js";
@@ -20,6 +19,7 @@ import {
 } from "../menu/index.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import { addBlog, addPost } from "./blog-actions.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
   addPage,

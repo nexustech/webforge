@@ -38,6 +38,7 @@ export {
   type CollectionFieldKind,
   type CollectionPreset,
   type CollectionsDoc,
+  collectionById,
   collectionFolderSchema,
   collectionItems,
   collectionOf,

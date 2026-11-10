@@ -1,9 +1,14 @@
 import { z } from "zod";
 import { validBindings } from "./bindings.js";
 import { type NodeDoc, nodeDocSchema } from "./documents.js";
-import { type CollectionId, collectionIdSchema, type MediaId, mediaIdSchema } from "./ids.js";
+import {
+  type CollectionId,
+  collectionIdSchema,
+  type MediaId,
+  mediaIdSchema,
+  type PageId,
+} from "./ids.js";
 import { findNode } from "./node-tree.js";
-import type { PageEntry, SiteDoc } from "./site-doc.js";
 
 /**
  * Collections (6.10a, ADR 0025, M2-1): a Blog, later a Portfolio or Events. An item is a page that
@@ -95,6 +100,19 @@ export const collectionSchema = z.strictObject({
 /** See {@link collectionSchema}. */
 export type Collection = z.infer<typeof collectionSchema>;
 
+/**
+ * What this module reads of a page: an item's collection, title and field values. Its own shape
+ * rather than the site's page type, which is defined with the collections' schemas.
+ */
+type ItemPage = {
+  readonly title: string;
+  readonly collection?: CollectionId | undefined;
+  readonly entry?: Readonly<Record<string, string>> | undefined;
+};
+
+/** What this module reads of a site: its collections. */
+type WithCollections = { readonly collections: Readonly<Record<CollectionId, Collection>> };
+
 /** The `collections` document: every collection of the site, by id. */
 export const collectionsDocSchema = z.record(collectionIdSchema, collectionSchema);
 
@@ -143,7 +161,7 @@ function readValue(kind: CollectionFieldKind, raw: string | undefined): ItemValu
  */
 export function itemValue(
   collection: Collection,
-  page: Pick<PageEntry, "title" | "entry">,
+  page: Pick<ItemPage, "title" | "entry">,
   field: string,
 ): ItemValue | undefined {
   if (field === ITEM_TITLE_FIELD) return readValue("text", page.title);
@@ -157,7 +175,7 @@ export function itemValue(
 /** Every field of `page`, an item of `collection`, that has a value: its title first. */
 export function itemValues(
   collection: Collection,
-  page: Pick<PageEntry, "title" | "entry">,
+  page: Pick<ItemPage, "title" | "entry">,
 ): Record<string, ItemValue> {
   const values: Record<string, ItemValue> = {};
   for (const name of [ITEM_TITLE_FIELD, ...collection.fields.map((field) => field.name)]) {
@@ -167,13 +185,24 @@ export function itemValues(
   return values;
 }
 
+/**
+ * Collection `id` of `site`, if it has one: its own entry only, so an id from a file such as
+ * `constructor` never finds what every object has.
+ */
+export function collectionById(site: WithCollections, id: CollectionId): Collection | undefined {
+  return Object.hasOwn(site.collections, id) ? site.collections[id] : undefined;
+}
+
 /** The collection `page` belongs to, if it is an item of one the site has. */
-export function collectionOf(site: Pick<SiteDoc, "collections">, page: PageEntry) {
-  return page.collection === undefined ? undefined : site.collections[page.collection];
+export function collectionOf(
+  site: WithCollections,
+  page: Pick<ItemPage, "collection">,
+): Collection | undefined {
+  return page.collection === undefined ? undefined : collectionById(site, page.collection);
 }
 
 /** An item's date, for ordering: its collection's first date field, or `""` without one. */
-function itemDate(collection: Collection, page: PageEntry): string {
+function itemDate(collection: Collection, page: ItemPage): string {
   const field = collection.fields.find((each) => each.kind === "date");
   const value = field === undefined ? undefined : itemValue(collection, page, field.name);
   return value?.kind === "date" ? value.date : "";
@@ -183,11 +212,14 @@ function itemDate(collection: Collection, page: PageEntry): string {
  * The items of collection `id`, newest first by date, those without one last, otherwise in Pages
  * panel order. The one way to list a collection's items (ADR 0025, decision 8).
  */
-export function collectionItems(
-  site: Pick<SiteDoc, "collections" | "pages" | "pageOrder">,
+export function collectionItems<Page extends ItemPage>(
+  site: WithCollections & {
+    readonly pages: Readonly<Record<PageId, Page>>;
+    readonly pageOrder: readonly PageId[];
+  },
   id: CollectionId,
-): PageEntry[] {
-  const collection = site.collections[id];
+): Page[] {
+  const collection = collectionById(site, id);
   if (collection === undefined) return [];
   const items = site.pageOrder.flatMap((pageId) => {
     const page = site.pages[pageId];
@@ -201,7 +233,7 @@ export function collectionItems(
 }
 
 /** A folder for a new collection's items, from `wanted`, that no collection has yet: `blog-2`. */
-export function freeCollectionFolder(site: Pick<SiteDoc, "collections">, wanted: string): string {
+export function freeCollectionFolder(site: WithCollections, wanted: string): string {
   const taken = new Set(Object.values(site.collections).map((each) => each.folder));
   if (!taken.has(wanted)) return wanted;
   let n = 2;

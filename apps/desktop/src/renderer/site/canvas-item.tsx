@@ -8,7 +8,7 @@ import {
   sameJson,
 } from "@webforge/model";
 import type { EditorSession } from "../editor/editor-session.js";
-import { hint } from "../site-settings/canvas-settings.js";
+import { hint } from "../site-settings/index.js";
 
 type Unsubscribe = () => void;
 

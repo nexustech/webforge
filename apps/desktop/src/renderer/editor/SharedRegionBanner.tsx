@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import { collectionItems, type PageId, type SiteDoc } from "@webforge/model";
+import { collectionById, collectionItems, type PageId, type SiteDoc } from "@webforge/model";
 import type { EditorSession } from "./editor-session.js";
 import { pagesShowing, sharedHomeOf, sharedRegionOf, shownLayout } from "./shared-layout.js";
 import { copySelection, reachOf } from "./shared-sections.js";
@@ -29,7 +29,9 @@ function copyBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): strin
 function designBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): string | undefined {
   const home = nodeId === null ? undefined : sharedHomeOf(site, pageId, nodeId);
   if (home === undefined || typeof home === "string") return undefined;
-  const name = t("history.namedItem", { name: site.collections[home.collection]?.name ?? "" });
+  const name = t("history.namedItem", {
+    name: collectionById(site, home.collection)?.name ?? "",
+  });
   const count = collectionItems(site, home.collection).length;
   return t(count === 1 ? "blog.banner.one" : "blog.banner.many", { name, count });
 }

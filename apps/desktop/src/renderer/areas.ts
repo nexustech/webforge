@@ -1,7 +1,6 @@
 import { addPanelArea } from "./add/area.js";
 import { aiRequestsArea } from "./ai/area.js";
 import { aiAppsArea } from "./ai-apps/area.js";
-import { canvasItemArea } from "./blog/area.js";
 import { clipboardCommandsArea, styleCommandsArea } from "./clipboard/area.js";
 import { codeTrustArea } from "./code-trust/index.js";
 import { editPanelArea } from "./edit-panel/area.js";
@@ -28,7 +27,7 @@ import { publishArea } from "./publish/area.js";
 import { settingsArea } from "./settings/area.js";
 import { sharedSectionCommandsArea } from "./shared-sections/area.js";
 import { viewCommandsArea } from "./shell/area.js";
-import { pageCommandsArea, sitePanelArea } from "./site/area.js";
+import { canvasItemArea, pageCommandsArea, sitePanelArea } from "./site/area.js";
 import { siteCheckArea } from "./site-check/area.js";
 import { canvasSettingsArea, siteCodeArea, siteSettingsArea } from "./site-settings/area.js";
 import { saveSiteZipArea } from "./start/save-site-zip.js";

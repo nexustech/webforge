@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { collectionsDocSchema, itemEntrySchema } from "./collections.js";
+import { collectionOf, collectionsDocSchema, itemEntrySchema } from "./collections.js";
 import {
   type LayoutDoc,
   layoutDocSchema,
@@ -228,7 +228,7 @@ export function siteIssues(site: SiteDoc, scope: SiteIssueScope = WHOLE_SITE): S
       }
       continue;
     }
-    const collection = site.collections[page.collection];
+    const collection = collectionOf(site, page);
     if (collection === undefined) {
       issue(`The collection "${page.collection}" is missing`, ["pages", key, "collection"]);
     } else if (page.folder !== collection.folder) {

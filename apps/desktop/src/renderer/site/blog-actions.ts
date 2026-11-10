@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import {
   type CollectionDesign,
   type CollectionId,
+  collectionById,
   freeCollectionFolder,
   newCollection,
   newId,
@@ -11,7 +12,7 @@ import {
   type SiteDoc,
 } from "@webforge/model";
 import { localDay } from "../editor/page-updated.js";
-import { editShowing, type PagesSession } from "../site/page-actions.js";
+import { editShowing, type PagesSession } from "./page-actions.js";
 
 /**
  * The Blog (6.10a, ADR 0025, M2-1): a post is a page that belongs to the Blog, written on the
@@ -96,7 +97,7 @@ export function insertPost(
   entry: Readonly<Record<string, string>> = {},
   today: string = localDay(),
 ): void {
-  const collection = draft.collections[collectionId];
+  const collection = collectionById(draft, collectionId);
   if (collection === undefined) return;
   draft.pages[id] = {
     id,
@@ -184,7 +185,10 @@ export function addPost(
   name: string = t("blog.newPostTitle"),
 ): PageId | null {
   const title = pageTitle(name);
-  if (title === "" || session.history.document.getState().collections[collectionId] === undefined) {
+  if (
+    title === "" ||
+    collectionById(session.history.document.getState(), collectionId) === undefined
+  ) {
     return null;
   }
   const id = newId("page");

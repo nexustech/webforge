@@ -8,7 +8,7 @@ import type {
   PageId,
   SiteDoc,
 } from "@webforge/model";
-import { collectionOf, findNode } from "@webforge/model";
+import { collectionById, collectionOf, findNode } from "@webforge/model";
 import { updateField } from "./apply-patch.js";
 
 /** The shared Header or Footer (F-ED-7, C5). */
@@ -122,7 +122,7 @@ export function sharedHomeOf(
 /** The nodes kept at `home` in `site`, or in an Immer draft of it: what to change there. */
 export function nodesAtHome(site: SiteDoc, home: SharedHome): NodeDoc[] {
   if (typeof home === "string") return site.layout[home];
-  return site.collections[home.collection]?.design[home.part] ?? [];
+  return collectionById(site, home.collection)?.design[home.part] ?? [];
 }
 
 /**
@@ -171,7 +171,7 @@ export function designLabel(
 ): string | undefined {
   const home = nodeId === null ? undefined : sharedHomeOf(site, pageId, nodeId);
   if (home === undefined || typeof home === "string") return undefined;
-  const name = site.collections[home.collection]?.name ?? "";
+  const name = collectionById(site, home.collection)?.name ?? "";
   return t("blog.history.editedDesign", { name: t("history.namedItem", { name }) });
 }
 

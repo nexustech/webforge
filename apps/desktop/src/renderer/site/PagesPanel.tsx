@@ -18,6 +18,7 @@ import {
   type Collection,
   type CollectionId,
   collectionItems,
+  collectionOf,
   isDraftPage,
   PAGE_FOLDER_MAX,
   PAGE_TITLE_MAX,
@@ -126,7 +127,7 @@ function rowsOf(site: SiteDoc): Row[] {
   });
   for (const page of pages) {
     if (page.collection !== undefined) {
-      const collection = site.collections[page.collection];
+      const collection = collectionOf(site, page);
       if (collection !== undefined && !shown.has(collection.id)) {
         shown.add(collection.id);
         rows.push(collectionRow(collection));

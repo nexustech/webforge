@@ -3,6 +3,7 @@ import { t } from "@webforge/i18n";
 import {
   type Breakpoint,
   type CollectionField,
+  collectionById,
   findNode,
   type NodeDoc,
   type PageDoc,
@@ -152,7 +153,7 @@ export function fieldTarget(
     id,
     region,
     design,
-    itemFields: design === undefined ? undefined : site.collections[design.collection]?.fields,
+    itemFields: design === undefined ? undefined : collectionById(site, design.collection)?.fields,
     inCopy,
     copyLabel,
     storedOr,

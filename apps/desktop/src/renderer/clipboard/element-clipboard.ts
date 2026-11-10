@@ -31,7 +31,12 @@ import { type AddTarget, addTarget, insertAt } from "../add/index.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor, quotedElementName } from "../editor/labels.js";
 import type { SharedPlace } from "../editor/shared-confirmations.js";
-import { type SharedRegion, sharedRegionOf, shownLayout } from "../editor/shared-layout.js";
+import {
+  type SharedRegion,
+  sharedHomeOf,
+  sharedRegionOf,
+  shownLayout,
+} from "../editor/shared-layout.js";
 import {
   type CopySelection,
   copySelection,
@@ -225,7 +230,8 @@ export function pasteTarget(
 function pasteSelection(session: ClipboardSession): string | null {
   const ui = session.ui.getState();
   const site = session.history.document.getState();
-  if (ui.nodeId === null || sharedRegionOf(shownLayout(site, ui.pageId), ui.nodeId) !== undefined) {
+  // Nor into a post's Blog design, which the canvas draws around the page as it does them (6.10a).
+  if (ui.nodeId === null || sharedHomeOf(site, ui.pageId, ui.nodeId) !== undefined) {
     return null;
   }
   return copySelection(site, ui.pageId, ui.nodeId)?.copy.props.id ?? ui.nodeId;

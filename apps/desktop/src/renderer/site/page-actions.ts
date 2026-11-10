@@ -2,6 +2,7 @@ import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
   canDeletePage,
+  collectionOf,
   deletePageFrom,
   insertPage,
   keepingOldAddresses,
@@ -464,7 +465,7 @@ function entryAfter(
   page: PageEntry,
   change: PageSettingsChange,
 ): Record<string, string> | undefined {
-  const collection = page.collection === undefined ? undefined : site.collections[page.collection];
+  const collection = collectionOf(site, page);
   if (collection === undefined || change.entry === undefined) return page.entry;
   const entry: Record<string, string> = {};
   for (const { name } of collection.fields) {

@@ -3,6 +3,7 @@ import { itemBindingOf, validBindings } from "./bindings.js";
 import {
   type Collection,
   collectionItems,
+  collectionOf,
   collectionSchema,
   freeCollectionFolder,
   itemValue,
@@ -275,5 +276,20 @@ describe("syncMenuWithPages with a Blog (6.10a)", () => {
       "p1" as PageId,
     );
     expect(edited.items).toHaveLength(1);
+  });
+});
+
+describe("collections read by own key (6.10a)", () => {
+  it("never takes what every object has for a collection", () => {
+    const site = siteWith();
+    const page = { ...post("p1", "spring"), collection: "constructor" as CollectionId };
+    delete page.folder;
+    site.pages[page.id] = page;
+    site.pageOrder.splice(1, 0, page.id);
+
+    expect(collectionOf(site, page)).toBeUndefined();
+    expect(collectionItems(site, "constructor" as CollectionId)).toEqual([]);
+    expect(issuesOf(site)).toEqual([`The collection "constructor" is missing`]);
+    expect(() => siteToSnapshot(site, new Map())).not.toThrow();
   });
 });

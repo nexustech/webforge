@@ -8,7 +8,7 @@ import {
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { insertBlog } from "../blog/blog-actions.js";
+import { insertBlog } from "./blog-actions.js";
 import { pageSettingsSpec } from "./PageSettingsDialog.js";
 
 describe("Page Settings checked by the model (2.21, decision 5)", () => {

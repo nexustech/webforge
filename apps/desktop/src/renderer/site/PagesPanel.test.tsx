@@ -6,7 +6,7 @@ import type { CollectionId, PageId, SiteDoc } from "@webforge/model";
 import { scaledTestTimeout } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { insertBlog, insertPost } from "../blog/blog-actions.js";
+import { insertBlog, insertPost } from "./blog-actions.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
 afterEach(cleanup);
