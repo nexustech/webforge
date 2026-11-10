@@ -38,7 +38,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+D                    | Duplicate                                                                |
 | Delete, or Ctrl+Backspace | Delete (on a Mac, Cmd+Delete: the delete key on its own clears the text) |
 | Ctrl+Alt+↑ · Ctrl+Alt+↓   | Move up · Move down (on Windows, Alt+↑ and Alt+↓ too)                    |
-| Ctrl+/                    | Hide or show                                                             |
+| Ctrl+/                    | Don't publish, or show                                                   |
 | F2                        | Rename…                                                                  |
 | Enter                     | Edit text                                                                |
 | Backspace                 | Clear the text and edit it (deletes an item with no text of its own)     |
