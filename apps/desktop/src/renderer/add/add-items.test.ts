@@ -192,6 +192,48 @@ function sessionWithContent(content: NodeDoc[]) {
 }
 
 describe("addComponent", () => {
+  it("puts the Announcement bar above the Header on every page, once (6.4)", () => {
+    const session = sessionWith();
+    const header = () => session.history.document.getState().layout.header;
+    const before = header().map((node) => node.type);
+    const page = () => currentPage(session)?.doc.content ?? [];
+    const content = page().length;
+
+    expect(addComponent(session, "AnnouncementBar")).toBe(true);
+    const [bar] = header();
+    expect(bar).toMatchObject({
+      type: "AnnouncementBar",
+      props: siteLibrary.components.AnnouncementBar?.defaults,
+    });
+    expect(header().map((node) => node.type)).toEqual(["AnnouncementBar", ...before]);
+    expect(page()).toHaveLength(content);
+    expect(session.ui.getState().nodeId).toBe(bar?.props.id);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Added Announcement bar",
+    ]);
+
+    // A second click shows the one there.
+    session.select(null);
+    expect(addComponent(session, "AnnouncementBar")).toBe(true);
+    expect(header().filter((node) => node.type === "AnnouncementBar")).toHaveLength(1);
+    expect(session.ui.getState().nodeId).toBe(bar?.props.id);
+    expect(session.history.entries()).toHaveLength(1);
+
+    session.history.undo();
+    expect(header().map((node) => node.type)).toEqual(before);
+  });
+
+  it("puts an Announcement bar dropped on a page on that page", () => {
+    const session = sessionWith();
+    expect(addComponent(session, "AnnouncementBar", { index: 0 })).toBe(true);
+    expect(currentPage(session)?.doc.content[0]?.type).toBe("AnnouncementBar");
+    expect(
+      session.history.document
+        .getState()
+        .layout.header.some((node) => node.type === "AnnouncementBar"),
+    ).toBe(false);
+  });
+
   it("adds with its defaults as one 'Added …' step that selects it, undone in one go", () => {
     const session = sessionWith();
     const content = () => currentPage(session)?.doc.content ?? [];

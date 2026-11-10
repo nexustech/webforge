@@ -18,6 +18,7 @@ import { sampleSite } from "@webforge/test-utils";
 import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
 import {
+  ANNOUNCEMENT_SITE_DIR,
   CHECK_TEMPLATES,
   EXPORTED_SITE_DIR,
   NO_BANNER_SITE_DIR,
@@ -389,6 +390,33 @@ setup("export a site whose owner turned the consent banner off (#650)", async ()
     NO_BANNER_SITE_DIR,
   );
   expect(pages).toContain("index.html");
+});
+
+setup("export a site with an Announcement bar above the Header (6.4)", async () => {
+  const sample = sampleSite();
+  rmSync(ANNOUNCEMENT_SITE_DIR, { recursive: true, force: true });
+  // Its pages without their files, through the pipeline alone: only the bar matters here. Its last
+  // day is far off, so it shows until a test sets the clock past it.
+  const bar: NodeDoc = {
+    type: "AnnouncementBar",
+    props: {
+      id: "news",
+      text: "Closed 24–26 December",
+      lastDay: "2099-12-31",
+      padding: { top: "none", bottom: "none" },
+      contentWidth: "full",
+    },
+  };
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      media: [],
+      documents: [],
+      layout: { ...sample.layout, header: [bar, ...sample.layout.header] },
+    },
+    ANNOUNCEMENT_SITE_DIR,
+  );
+  expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
 });
 
 setup("export every template, as a site made from it starts (3.10)", async () => {

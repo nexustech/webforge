@@ -1,14 +1,14 @@
 ---
 
 id: header-and-footer
-title: Header, Footer and shared sections
-summary: The parts that are the same on every page, and sections you share between pages.
-components: [Header, Footer]
+title: Header, Footer, announcements and shared sections
+summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
+components: [Header, Footer, AnnouncementBar]
 related: [pages, layers, add-panel]
-updated: 2026-11-07
+updated: 2026-11-10
 ---
 
-# Header, Footer and shared sections
+# Header, Footer, announcements and shared sections
 
 ## Header and Footer
 
@@ -28,6 +28,20 @@ On phones the menu folds into a button. To see and edit it open, view Mobile, se
 The **Footer** has a **Text** and a layout, _Centred_ or _Columns_. Type `{year}` in its text, or in any text, and your website shows the year it was exported or published in, such as "© {year} Rosie's Café". Export or publish again in the new year to update it: once your site is published, [Site Check](site-check.md#tips) reminds you.
 
 You can't move, duplicate or delete the Header or Footer. To leave one off a page, use the page's [Page Settings](pages.md#page-settings) (_Hide the Header on this page_), or click its eye in [Layers](layers.md).
+
+## Announcement bar
+
+An **Announcement bar** is a thin strip of news above the Header, such as "Closed 24–26 December". Click **Announcement bar** in the Add panel (under **Basic**) and it goes above the Header on every page. Click it again to select the one that's there: a site has one.
+
+- **Text:** click the bar's text on the canvas to change it.
+- **Link:** makes the text a link, to a page or anywhere else.
+- **Show until:** the bar's last day. After it, visitors no longer see the bar. Leave it empty to show the bar until you delete it.
+
+The bar is in your theme's dark colour, and has a close button for visitors. Closing it hides it for the rest of their visit, on every page, until you change its text. Its colours, padding and look are in the **Style** tab, as for any section.
+
+To remove the bar, select it and press Delete. A page whose Header is hidden (in its Page Settings) hides the bar too. If you drag the Announcement bar onto a page instead, it shows on that page only.
+
+Visitors whose browser runs no scripts see the bar without its close button, even after its last day. Delete the bar once it's out of date.
 
 ## Shared sections
 

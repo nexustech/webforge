@@ -2,6 +2,7 @@ import stylesheets from "virtual:webforge-theme-css";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type NodeDoc, pastedCopies, type ThemeTokens } from "@webforge/model";
 import { CURATED_THEMES_A, CURATED_THEMES_B, CURATED_THEMES_C } from "@webforge/themes";
+import { ABOVE_THE_HEADER } from "./catalogue/announcement-bar.js";
 import { siteLibrary, starterLayout } from "./catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "./library.js";
 import { renderNodesToHtml } from "./render-static.js";
@@ -12,19 +13,28 @@ const BODY_CLASS = "flex min-h-screen flex-col bg-base-100 font-sans text-base-c
 
 /**
  * A page with every section the Add panel offers, each as it's added, between the starter Header
- * and Footer: the last section on the theme's inverse colours (2.4), as a dark band.
+ * and Footer: the last section on the theme's inverse colours (2.4), as a dark band. What the Add
+ * panel puts above the Header (the Announcement bar, 6.4) is above it here too.
  */
 function samplePage(): string {
   const { header, footer } = starterLayout("Rosa's Bakery");
-  const types = Object.entries(siteLibrary.components)
+  const sectionTypes = Object.entries(siteLibrary.components)
     .filter(([, def]) => def.place === "section")
     .map(([type]) => type);
-  const sections = types.map((type, at): NodeDoc => {
-    const defaults = siteLibrary.components[type]?.defaults ?? {};
-    const inverse = at === types.length - 1 ? { colors: "inverse" } : {};
-    return { type, props: { ...structuredClone(defaults), ...inverse, id: `section-${at}` } };
+  const node = (type: string, id: string, props: Record<string, unknown> = {}): NodeDoc => ({
+    type,
+    props: { ...structuredClone(siteLibrary.components[type]?.defaults ?? {}), ...props, id },
   });
-  return laidOut(header, sections, footer);
+  const above = sectionTypes.filter((type) => ABOVE_THE_HEADER.has(type));
+  const types = sectionTypes.filter((type) => !ABOVE_THE_HEADER.has(type));
+  const sections = types.map((type, at) =>
+    node(type, `section-${at}`, at === types.length - 1 ? { colors: "inverse" } : {}),
+  );
+  return laidOut(
+    [...above.map((type) => node(type, type.toLowerCase())), ...header],
+    sections,
+    footer,
+  );
 }
 
 /**
