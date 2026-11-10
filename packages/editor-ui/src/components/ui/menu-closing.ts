@@ -77,7 +77,7 @@ export function useMenuClosing<
  */
 export function focusMovedAway(event: Event): boolean {
   const target = event.currentTarget;
-  const document = target instanceof Node ? target.ownerDocument : globalThis.document;
+  const document = (target instanceof Node ? target.ownerDocument : null) ?? globalThis.document;
   const active = document.activeElement;
   return (
     active !== null &&
