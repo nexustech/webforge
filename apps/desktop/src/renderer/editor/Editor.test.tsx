@@ -657,6 +657,18 @@ describe("Editor", () => {
     expect(engine.setSiteCss).toHaveBeenCalledWith(".btn{}", "bg-base-100");
   });
 
+  it("shows the site's own custom.css on the canvas as it changes (6.8)", async () => {
+    expect(engine.setCustomCss).toHaveBeenLastCalledWith("");
+    await act(async () =>
+      session.edit("props", "Edited site CSS", (draft) => {
+        draft.code.css = ".mine { color: red; }";
+      }),
+    );
+    expect(engine.setCustomCss).toHaveBeenLastCalledWith(".mine { color: red; }");
+    await act(async () => session.history.undo());
+    expect(engine.setCustomCss).toHaveBeenLastCalledWith("");
+  });
+
   it("offers Undo and Redo as commands, enabled as the history allows", async () => {
     expect(registry.get("edit.undo")).toMatchObject({ label: "Undo", menu: "edit" });
     expect(enabled("edit.undo")).toBe(false);

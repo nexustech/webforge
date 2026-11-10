@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { WebforgeError } from "@webforge/errors";
 import {
   type BundledFile,
+  cssVariablesUsed,
   DOCUMENT_EXTENSIONS,
   isDeviceName,
   type MediaItem,
@@ -634,6 +635,8 @@ export async function* buildEvents(
     ].sort(),
     fontsUrl: "../fonts/",
     ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
+    // What the site's own custom.css reads of the theme (6.8): a look moved to CSS needs it.
+    keptVariables: cssVariablesUsed(site.code?.css ?? ""),
   };
   const readableCss =
     caches === undefined

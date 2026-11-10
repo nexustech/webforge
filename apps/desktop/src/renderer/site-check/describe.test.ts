@@ -114,6 +114,10 @@ describe("describeDetail", () => {
     expect(describeDetail(at(place, { url: "http://cdn.example.com/a.js", kind: "script" }))).toBe(
       "http://cdn.example.com/a.js: change it to https://, or remove it",
     );
+    // A stylesheet rule that matches nothing, by its selector (6.8).
+    expect(describeDetail(at(place, { selector: ".heor" }))).toBe(
+      ".heor: nothing on your site matches it",
+    );
   });
 
   it("gives a page's main headings, and the page it shares a title or description with (3.17)", () => {

@@ -9,6 +9,7 @@ import {
   reportOf,
   runRule,
   SITE_CHECK_RULES,
+  type UsedSelectors,
 } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
@@ -77,6 +78,11 @@ type SiteCheckOptions = {
   readonly onNetlify?: ReadonlyStore<boolean>;
   /** This year; the clock's by default. */
   readonly thisYear?: () => number;
+  /**
+   * The classes and ids `site`'s pages have (6.8), asked for only while it has a stylesheet of its
+   * own. Left out, its rules aren't checked for matching nothing.
+   */
+  readonly usedSelectors?: (site: SiteDoc) => UsedSelectors;
   /** Today, `YYYY-MM-DD`, in this computer's time zone; the clock's by default. */
   readonly today?: () => string;
 };
@@ -97,11 +103,20 @@ export function createSiteCheck(
     publishedYear,
     onNetlify,
     thisYear = () => new Date().getFullYear(),
+    usedSelectors,
     today = () => localDay(),
   }: SiteCheckOptions,
 ): SiteCheck {
+  /** The classes and ids of the site last asked about, which each rule's input shares. */
+  let selectorsOf: { readonly site: SiteDoc; readonly used: UsedSelectors } | null = null;
+  const selectors = (site: SiteDoc): UsedSelectors | undefined => {
+    if (usedSelectors === undefined || site.code.css.trim() === "") return undefined;
+    if (selectorsOf?.site !== site) selectorsOf = { site, used: usedSelectors(site) };
+    return selectorsOf.used;
+  };
   const inputOf = (site: SiteDoc): CheckInput => {
     const year = publishedYear?.getState();
+    const used = selectors(site);
     return {
       site,
       catalogue: CATALOGUE,
@@ -110,6 +125,7 @@ export function createSiteCheck(
       today: today(),
       ...(year === undefined ? {} : { published: { year, thisYear: thisYear() } }),
       ...(onNetlify?.getState() === true ? { host: "netlify" as const } : {}),
+      ...(used === undefined ? {} : { usedSelectors: used }),
     };
   };
   const runAll = (site: SiteDoc) =>

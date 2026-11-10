@@ -163,6 +163,10 @@ export function describeDetail(finding: Finding): string | undefined {
   }
   if (typeof values.sameAs === "string")
     return t("siteCheck.detail.sameAs", { file: values.sameAs });
+  // A rule of the site's own stylesheet that matches nothing (6.8), by its selector.
+  if (typeof values.selector === "string") {
+    return t("siteCheck.detail.selector", { selector: values.selector });
+  }
   // The draft page a link goes to (G37, #864), by its title.
   if (typeof values.draftPage === "string") {
     return t("siteCheck.detail.draftPage", { page: values.draftPage });

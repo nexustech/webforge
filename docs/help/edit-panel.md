@@ -4,7 +4,7 @@ id: edit-panel
 title: The Edit panel
 summary: Change the selected section or element's content and options, on every device or just one.
 related: [styling, sections, elements, editing-on-the-page]
-updated: 2026-11-06
+updated: 2026-11-10
 ---
 
 # The Edit panel
@@ -65,4 +65,4 @@ In Advanced mode, the **Advanced** tab adds:
 - **CSS classes**, with suggestions as you type and **Browse classes…** to look through them all by kind. {appName} warns about a class it doesn't know and suggests the nearest one.
 - **Anchor ID:** a name for linking straight to this item, such as `opening-times`. Links to a section make one for you.
 - **Attributes:** extra HTML attributes such as `data-…`, `aria-…`, `role` or `title`.
-- **The item's CSS:** the HTML and CSS {appName} writes for this item, to read and copy. For CSS of your own, use [Custom Code](custom-code.md).
+- **The item's CSS:** the HTML and CSS {appName} writes for this item, to read and copy. For CSS of your own, **Open Stylesheet** opens [the Stylesheet panel](stylesheet.md).

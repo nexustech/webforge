@@ -20,7 +20,12 @@ const KNOWN: Readonly<Record<string, string>> = {
 function fakeCanvas(): CanvasApi {
   return {
     classCatalogue: vi.fn(() =>
-      Promise.resolve({ status: "loaded" as const, classes: Object.keys(KNOWN), variants: ["md"] }),
+      Promise.resolve({
+        status: "loaded" as const,
+        classes: Object.keys(KNOWN),
+        variants: ["md"],
+        variables: [],
+      }),
     ),
     classCss: vi.fn((_theme, classes: readonly string[]) =>
       Promise.resolve({ status: "css" as const, css: classes.map((name) => KNOWN[name] ?? null) }),

@@ -1,0 +1,197 @@
+// @vitest-environment happy-dom
+import type { NodeDoc, SiteDoc } from "@webforge/model";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { starterSite } from "../../shared/starter-site.js";
+import type { ItemCssApi } from "../editor/item-css.js";
+import { sessionWith } from "../testing/fixtures.js";
+import {
+  editStylesheet,
+  moveLookToCss,
+  stylesheetOf,
+  targetSelected,
+} from "./stylesheet-actions.js";
+
+const heading = (id: string, props: Record<string, unknown> = {}): NodeDoc => ({
+  type: "Heading",
+  props: { id, text: "Opening times", ...props },
+});
+
+/** A session on a site whose home page has `nodes`, with `css` as its stylesheet. */
+function setUp(nodes: NodeDoc[], css = "") {
+  const site: SiteDoc = structuredClone(starterSite());
+  const home = site.pages[site.homePageId];
+  if (home === undefined) throw new Error("No home page");
+  home.doc.content = nodes;
+  site.code.css = css;
+  const session = sessionWith(site);
+  const labels = () => session.history.entries().map((entry) => entry.label);
+  const node = (id: string) =>
+    session.history.document
+      .getState()
+      .pages[site.homePageId]?.doc.content.find((each) => each.props.id === id);
+  return { session, labels, node, css: () => stylesheetOf(session.history.document.getState()) };
+}
+
+/**
+ * The styles worker: the item with `rootClass` on its element, and a rule for each class the
+ * site's styles have, which are `known`: a Tailwind utility, a daisyUI component, a look's class.
+ */
+const worker = (rootClass: string, known: readonly string[]): ItemCssApi => ({
+  itemHtml: vi.fn(async () => ({
+    status: "html" as const,
+    html: `<!-- item --><h2 class="${rootClass}"><span>Opening times</span></h2>`,
+  })),
+  classCss: vi.fn(async (_theme, classes: readonly string[]) => ({
+    status: "css" as const,
+    css: classes.map((name) =>
+      known.includes(name) ? `.${CSS.escape(name)} {\n  --set: 1;\n}` : null,
+    ),
+  })),
+});
+
+afterEach(() => {
+  vi.useRealTimers();
+});
+
+describe("editStylesheet (CT-8, 6.8)", () => {
+  it("makes each stretch of typing one undo step, which a pause ends", () => {
+    vi.useFakeTimers();
+    const { session, labels, css } = setUp([]);
+
+    editStylesheet(session, ".a");
+    vi.advanceTimersByTime(200);
+    editStylesheet(session, ".a {");
+    vi.advanceTimersByTime(200);
+    editStylesheet(session, ".a {}");
+    expect(labels()).toEqual(["Edited site CSS"]);
+
+    vi.advanceTimersByTime(5000);
+    editStylesheet(session, ".a {}\n.b {}");
+    expect(labels()).toEqual(["Edited site CSS", "Edited site CSS"]);
+    expect(css()).toBe(".a {}\n.b {}");
+
+    session.history.undo();
+    expect(css()).toBe(".a {}");
+    session.history.undo();
+    expect(css()).toBe("");
+  });
+
+  it("makes no step when nothing changed", () => {
+    const { session, labels } = setUp([], ".a {}");
+
+    editStylesheet(session, ".a {}");
+    expect(labels()).toEqual([]);
+  });
+});
+
+describe("targetSelected (CT-8)", () => {
+  it("adds a rule for the element's anchor, the caret inside it", async () => {
+    const { session, labels, css } = setUp(
+      [heading("hours", { advanced: { anchorId: "hours" } })],
+      ".a {}",
+    );
+    session.select("hours");
+
+    const done = await targetSelected(session, worker("", []));
+
+    expect(css()).toBe(".a {}\n\n#hours {\n  \n}\n");
+    expect(done).toEqual({ caret: ".a {}\n\n#hours {\n  ".length });
+    expect(labels()).toEqual(["Targeted Heading in the stylesheet"]);
+  });
+
+  it("gives an element without an anchor a class of its own, in the same step", async () => {
+    const { session, labels, css, node } = setUp([
+      heading("hours", { advanced: { className: "big" } }),
+    ]);
+    session.select("hours");
+
+    await targetSelected(session, worker("", []));
+
+    expect(node("hours")?.props.advanced).toEqual({ className: "big heading" });
+    expect(css()).toBe(".heading {\n  \n}\n");
+    expect(labels()).toHaveLength(1);
+    session.history.undo();
+    expect(node("hours")?.props.advanced).toEqual({ className: "big" });
+    expect(css()).toBe("");
+  });
+
+  it("never writes a class the site's styles have, or one the site or stylesheet uses", async () => {
+    // `heading` and `heading-2` make rules (as `hero` or `shadow-lg` would), `heading-3` is used on
+    // the site, and the stylesheet names `heading-4`.
+    const { session, css, node } = setUp(
+      [heading("hours"), heading("other", { advanced: { className: "heading-3" } })],
+      ".heading-4 { color: red; }",
+    );
+    session.select("hours");
+    const styles = worker("", ["heading", "heading-2"]);
+
+    await targetSelected(session, styles);
+
+    expect(node("hours")?.props.advanced).toEqual({ className: "heading-5" });
+    expect(css()).toContain(".heading-5 {");
+    expect(styles.classCss).not.toHaveBeenCalledWith(expect.anything(), ["heading-3"]);
+  });
+
+  it("makes no class when the styles can't be asked, nor when nothing is selected", async () => {
+    const { session, labels } = setUp([heading("hours")]);
+    const failing: ItemCssApi = {
+      ...worker("", []),
+      classCss: vi.fn(async () => ({ status: "failed" as const })),
+    };
+
+    expect(await targetSelected(session, failing)).toEqual({
+      refused: "Select an element on the canvas first.",
+    });
+    session.select("hours");
+    expect(await targetSelected(session, failing)).toEqual({
+      refused: "A class for this element couldn't be made. Try again.",
+    });
+    expect(labels()).toEqual([]);
+  });
+});
+
+describe("moveLookToCss (CT-8)", () => {
+  const LOOK = ["text-3xl", "rounded-box!", "opacity-50!"];
+  const api = (rootClass: string) => worker(rootClass, LOOK);
+
+  it("turns the element's own look into a rule under a class of its own, in one step", async () => {
+    const { session, labels, css, node } = setUp(
+      [heading("hours", { lookOpacity: "50", lookCorners: "large" })],
+      ".a {}",
+    );
+    session.select("hours");
+
+    const done = await moveLookToCss(session, api("text-3xl rounded-box! opacity-50!"));
+
+    expect(done).toEqual({ caret: ".a {}\n\n".length, moved: 2, kept: 0 });
+    expect(css()).toBe(".a {}\n\n.heading {\n  --set: 1;\n}\n.heading {\n  --set: 1;\n}\n");
+    expect(node("hours")?.props.lookOpacity).toBeUndefined();
+    expect(node("hours")?.props.lookCorners).toBeUndefined();
+    expect(node("hours")?.props.advanced).toEqual({ className: "heading" });
+    expect(labels()).toEqual(["Moved Heading's look to CSS"]);
+    session.history.undo();
+    expect(node("hours")?.props.lookOpacity).toBe("50");
+    expect(css()).toBe(".a {}");
+  });
+
+  it("leaves a setting that styles a part inside the element", async () => {
+    const { session, node } = setUp([
+      heading("hours", { lookOpacity: "50", lookCorners: "large" }),
+    ]);
+    session.select("hours");
+
+    const done = await moveLookToCss(session, api("opacity-50!"));
+
+    expect(done).toMatchObject({ moved: 1, kept: 1 });
+    expect(node("hours")?.props.lookCorners).toBe("large");
+    expect(node("hours")?.props.lookOpacity).toBeUndefined();
+  });
+
+  it("says when there's no look of its own to move", async () => {
+    const { session, labels } = setUp([heading("hours")]);
+    session.select("hours");
+
+    expect(await moveLookToCss(session, api(""))).toMatchObject({ refused: expect.any(String) });
+    expect(labels()).toEqual([]);
+  });
+});

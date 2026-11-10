@@ -37,6 +37,12 @@ describe("loadClassCatalogue (#276)", () => {
     expect(catalogue.variants).not.toContain("wf-waiting");
   });
 
+  it("lists Tailwind's theme variables, for the Stylesheet's lint (6.8)", () => {
+    expect(catalogue.variables).toContain("--text-xl");
+    expect(catalogue.variables).toContain("--radius-lg");
+    expect(catalogue.variables.every((name) => name.startsWith("--"))).toBe(true);
+  });
+
   it("gives each class's CSS, and none for a class that produces none", () => {
     const [padding, typo, responsive] = catalogue.cssFor(["p-4", "pading-4", "md:flex"]);
     expect(padding).toContain("padding");

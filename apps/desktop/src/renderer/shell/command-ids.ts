@@ -23,6 +23,8 @@ export const COMMAND_IDS = {
   siteSettings: "site.settings",
   pageSettings: "page.settings",
   customCode: "site.customCode",
+  // The Stylesheet panel (6.8): the site's custom.css, in Advanced mode.
+  stylesheet: "site.stylesheet",
   settings: "app.settings",
   aiApps: "app.aiApps",
   publish: "site.publish",

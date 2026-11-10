@@ -58,6 +58,12 @@ export const siteCheck = {
     "1 file comes from another website, so your site won't work offline. Remove it, or allow its address in Settings › Custom Code",
   "siteCheck.rule.externalResources.fail.other":
     "{count} files come from other websites, so your site won't work offline. Remove them, or allow their addresses in Settings › Custom Code",
+  "siteCheck.rule.unusedCssRules": "Stylesheet rules",
+  "siteCheck.rule.unusedCssRules.pass": "Every rule in your stylesheet styles something",
+  "siteCheck.rule.unusedCssRules.fail.one":
+    "1 rule in your stylesheet styles nothing on your site. Check its classes for a typing slip, or delete it",
+  "siteCheck.rule.unusedCssRules.fail.other":
+    "{count} rules in your stylesheet style nothing on your site. Check their classes for a typing slip, or delete them",
   "siteCheck.rule.forms": "Forms",
   "siteCheck.rule.forms.pass": "Every form has somewhere to send its messages",
   "siteCheck.rule.forms.fail.one": "1 form has nowhere to send its messages",
@@ -220,6 +226,7 @@ export const siteCheck = {
   "siteCheck.detail.headings": "{count} main headings: keep one large Heading or Hero",
   "siteCheck.detail.sameAs": "The same as {file}",
   "siteCheck.detail.publishedYear": "Shows {year}",
+  "siteCheck.detail.selector": "{selector}: nothing on your site matches it",
   "siteCheck.detail.draftPage": "Goes to {page}, a draft",
 
   // Fixes, each one undo step.

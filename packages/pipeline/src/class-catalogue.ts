@@ -11,6 +11,11 @@ export type ClassCatalogue = {
   readonly classes: readonly string[];
   /** Variant names that take no value, written before a class with a colon (`md`, `hover`). */
   readonly variants: readonly string[];
+  /**
+   * The CSS variables Tailwind's theme defines (`--text-xl`, `--radius-lg`), which the site's own
+   * stylesheet may read (6.8). The site's CSS has those its classes or `custom.css` use.
+   */
+  readonly variables: readonly string[];
   /** The CSS each class produces, or `null` for one that produces none (a typo, or a custom class). */
   readonly cssFor: (classes: readonly string[]) => (string | null)[];
 };
@@ -44,6 +49,9 @@ export async function loadClassCatalogue(
           !variant.name.startsWith("wf-"),
       )
       .map((variant) => variant.name),
+    variables: [...design.theme.entries()]
+      .map(([name]) => name)
+      .filter((name) => name.startsWith("--")),
     cssFor: (classes) => design.candidatesToCss([...classes]),
   };
 }

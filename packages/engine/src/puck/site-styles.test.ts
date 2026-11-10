@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from "vitest";
-import { applySiteStyles } from "./site-styles.js";
+import { applyCustomCss, applySiteStyles } from "./site-styles.js";
 
 describe("applySiteStyles", () => {
   it("keeps one site <style> first in the head and updates it in place", () => {
@@ -37,5 +37,33 @@ describe("applySiteStyles", () => {
 
     // Once only, whichever test applied styles first.
     expect(performance.getEntriesByName("webforge:canvas-styled")).toHaveLength(1);
+  });
+});
+
+describe("applyCustomCss (6.8)", () => {
+  const order = (doc: Document) =>
+    [...doc.head.children].map((element) =>
+      element.hasAttribute("data-webforge-site-css")
+        ? "site"
+        : element.hasAttribute("data-webforge-custom-css")
+          ? "custom"
+          : "puck",
+    );
+
+  it("keeps the site's own CSS right after its compiled CSS, whichever comes first", () => {
+    const doc = document.implementation.createHTMLDocument();
+    const puck = doc.createElement("style");
+    doc.head.append(puck);
+
+    applyCustomCss(doc, ".mine{}");
+    expect(order(doc)).toEqual(["custom", "puck"]);
+    applySiteStyles(doc, { css: ".a{}", bodyClass: "" });
+    expect(order(doc)).toEqual(["site", "custom", "puck"]);
+    applyCustomCss(doc, ".mine{color:red}");
+
+    expect(order(doc)).toEqual(["site", "custom", "puck"]);
+    expect(doc.head.querySelector("style[data-webforge-custom-css]")?.textContent).toBe(
+      ".mine{color:red}",
+    );
   });
 });

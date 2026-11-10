@@ -2,6 +2,7 @@ import { type Theme, themeSchema } from "@webforge/model";
 import { z } from "zod";
 import {
   classNameSchema,
+  cssVariableNamesSchema,
   type ItemHtmlRequest,
   itemHtmlRequestSchema,
   MAX_CLASS_CSS,
@@ -12,6 +13,8 @@ const canvasCssRequestSchema = z.strictObject({
   theme: themeSchema,
   /** Class names found in the site's rendered pages, Header and Footer. */
   candidates: z.array(z.string().min(1).max(200)).max(20_000),
+  /** The custom properties the site's own custom.css reads, which the build keeps (6.8). */
+  variables: cssVariableNamesSchema.optional(),
 });
 
 /** What the canvas styles are compiled from. */
@@ -42,6 +45,8 @@ const classCatalogueResultSchema = z.discriminatedUnion("status", [
     status: z.literal("loaded"),
     classes: z.array(classNameSchema).max(100_000),
     variants: z.array(classNameSchema).max(1_000),
+    /** Tailwind's theme variables (`--text-xl`), for the stylesheet's lint (6.8). */
+    variables: cssVariableNamesSchema.max(10_000),
   }),
   z.strictObject({ status: z.literal("failed") }),
 ]);
