@@ -139,6 +139,14 @@ describe("pagePreview (3.16, SEO-6)", () => {
     expect(pagePreview(site, page, valuesOf(page), url).image).toBe("thumb:a");
     expect(
       pagePreview(site, page, { ...valuesOf(page), shareImage: "b" as MediaId }, url).image,
-    ).toBe("thumb:b");
+    ).toBe("thumb:b"); // A post is shared with its picture, unless it chooses a share image (6.10a).
+    expect(pagePreview(site, page, { ...valuesOf(page), picture: "b" }, url).image).toBe("thumb:b");
+    expect(
+      pagePreview(site, page, { ...valuesOf(page), picture: "b", shareImage: "a" as MediaId }, url)
+        .image,
+    ).toBe("thumb:a");
+    expect(pagePreview(site, page, { ...valuesOf(page), picture: "gone" }, url).image).toBe(
+      "thumb:a",
+    );
   });
 });

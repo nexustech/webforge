@@ -245,7 +245,14 @@ export function pageSettingsSpec(
     // The page as a search result under its description, and as a shared link under its share
     // image, as the export will write them, updating as the person types (3.16).
     after: (values) => {
-      const preview = pagePreview(site, page, values, imageUrl);
+      // A post is shared with its picture unless it chooses a share image (6.10a).
+      const picture = postFields.find((field) => field.kind === "image");
+      const preview = pagePreview(
+        site,
+        page,
+        picture === undefined ? values : { ...values, picture: values[itemKey(picture.name)] },
+        imageUrl,
+      );
       return {
         description: <SearchResultCard preview={preview} />,
         shareImage: <ShareCard preview={preview} />,
@@ -315,7 +322,10 @@ export function PageSettingsDialog({
         // A post's fields as stored; a picture that isn't one shows as none (6.10a).
         ...Object.fromEntries(
           (collectionOf(site, page)?.fields ?? []).map((field) => {
-            const stored = page.entry?.[field.name];
+            const stored =
+              page.entry !== undefined && Object.hasOwn(page.entry, field.name)
+                ? page.entry[field.name]
+                : undefined;
             const value =
               field.kind === "image"
                 ? stored !== undefined && mediaItem(site.media, stored)?.kind === "image"
