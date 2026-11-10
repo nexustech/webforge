@@ -83,8 +83,10 @@ describe("binding fields in a Blog's design (6.10a)", () => {
     if (heading === undefined || text === undefined || image === undefined) {
       throw new Error("missing fields");
     }
-    const values = (fields: ReturnType<typeof withBindingChoice>) =>
-      (fields[0] as { options: { value: string }[] }).options.map((option) => option.value);
+    const values = (fields: ReturnType<typeof withBindingChoice>) => {
+      const [choice] = fields;
+      return choice?.kind === "select" ? choice.options.map((option) => option.value) : [];
+    };
 
     expect(values(withBindingChoice("text", heading, undefined, own, itemFields))).toEqual(
       expect.arrayContaining(["", "contact.phone", "item.title", "item.date", "item.summary"]),
