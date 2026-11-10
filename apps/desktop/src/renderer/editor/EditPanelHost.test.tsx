@@ -2,7 +2,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { type FieldRenderers, FieldRenderersProvider } from "@webforge/editor-ui";
-import { copiedNodeId, type MediaId, type MenuItemId, type PageDoc } from "@webforge/model";
+import { copiedNodeId, type MediaId, type PageDoc } from "@webforge/model";
 import {
   BACKGROUND_FIELDS,
   type ComponentLibrary,
@@ -17,6 +17,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { classesFieldRenderer, codeField } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
+import { addMenuItem } from "../menu/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -1194,22 +1195,14 @@ describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
     await user.click(screen.getByRole("tab", { name: "Style" }));
     expect(option()).toBeNull();
 
-    act(() =>
-      session.edit("menu", "Added menu item 'Questions'", (draft) => {
-        draft.menu = {
-          follows: "custom",
-          items: [
-            {
-              id: "questions" as MenuItemId,
-              kind: "section",
-              label: "Questions",
-              link: { kind: "page", pageId: draft.homePageId, anchor: "questions" },
-              hidden: false,
-            },
-          ],
-        };
-      }),
-    );
+    const home = session.history.document.getState().homePageId;
+    act(() => {
+      addMenuItem(session, {
+        kind: "link",
+        label: "Questions",
+        change: { link: { kind: "page", pageId: home, anchor: "questions" } },
+      });
+    });
     const on = option();
     expect(on?.getAttribute("aria-checked")).toBe("true");
     expect(on?.getAttribute("aria-describedby")).not.toBeNull();
