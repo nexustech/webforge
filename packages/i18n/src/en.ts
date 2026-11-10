@@ -4,6 +4,7 @@ import { app } from "./en/app.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components/index.js";
 import { exportSite } from "./en/export.js";
+import { find } from "./en/find.js";
 import { fonts } from "./en/fonts.js";
 import { help } from "./en/help.js";
 import { history } from "./en/history.js";
@@ -47,6 +48,7 @@ export const areas = {
   help,
   onboarding,
   updates,
+  find,
 } as const;
 
 /**
@@ -75,4 +77,5 @@ export const en = {
   ...help,
   ...onboarding,
   ...updates,
+  ...find,
 } as const;
