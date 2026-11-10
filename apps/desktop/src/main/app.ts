@@ -47,6 +47,7 @@ import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
 import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
+import { applyInterfaceZoom } from "./interface-zoom.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
 import { licenceFiles, registerLicenceHandlers } from "./licences.js";
@@ -105,11 +106,11 @@ import { updatesFeature } from "./updates-ipc.js";
 import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
   editorPageAddress,
-  MIN_WINDOW_SIZE,
   mainWindowPlacement,
   titleBarOptions,
   titleBarOverlay,
   windowBackground,
+  zoomedMinimumSize,
 } from "./window-options.js";
 import { rememberWindowState } from "./window-state.js";
 import { createWorkerRequests } from "./worker-requests.js";
@@ -191,6 +192,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     title: t("help.window.title"),
     theme: () => lifecycle.preferences?.get().theme ?? DEFAULT_PREFERENCES.theme,
     background: windowBackground,
+    zoom: () => lifecycle.preferences?.get().interfaceZoom ?? DEFAULT_PREFERENCES.interfaceZoom,
     onLoadFailed: (error) => logFailure("Webforge could not load the Help window", error),
   });
   // The editor's page only: on the dev server the Help page has the same origin, and it may make
@@ -501,24 +503,24 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   }
 
   function createMainWindow(preferences: PreferencesStore): void {
-    const { theme, window: saved } = preferences.get();
-    const placement = mainWindowPlacement(
-      saved,
-      screen.getAllDisplays().map((display) => display.workArea),
-    );
+    const { theme, window: saved, interfaceZoom } = preferences.get();
+    const workAreas = screen.getAllDisplays().map((display) => display.workArea);
+    const placement = mainWindowPlacement(saved, workAreas);
+    const minimum = zoomedMinimumSize(interfaceZoom, largestArea(workAreas));
     const window = new BrowserWindow({
       title: t("app.name"),
       ...placement.bounds,
-      minWidth: MIN_WINDOW_SIZE.width,
-      minHeight: MIN_WINDOW_SIZE.height,
-      // The renderer draws the title bar (1.2), in the person's theme.
-      ...titleBarOptions(process.platform, theme),
+      minWidth: minimum.width,
+      minHeight: minimum.height,
+      // The renderer draws the title bar (1.2), in the person's theme, at the interface zoom.
+      ...titleBarOptions(process.platform, theme, interfaceZoom),
       backgroundColor: windowBackground(theme),
       show: false,
-      webPreferences: createSecureWebPreferences(
-        preloadScript,
-        spellCheckAvailable(process.platform),
-      ),
+      webPreferences: {
+        ...createSecureWebPreferences(preloadScript, spellCheckAvailable(process.platform)),
+        // The interface zoom (View › Zoom In Interface) from the first paint.
+        zoomFactor: interfaceZoom,
+      },
     });
     // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
     installContextMenu(window, (template) => Menu.buildFromTemplate(template));
@@ -568,13 +570,30 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     );
     lifecycle.preferences = preferences;
     let windowTheme = preferences.get().theme;
+    let windowZoom = preferences.get().interfaceZoom;
     registerPreferencesHandlers(
       ipcMain,
       isTrustedSender,
       preferences,
-      ({ theme, updateChannel }) => {
+      ({ theme, updateChannel, interfaceZoom }) => {
         // The person chose an update channel in Settings (5.2).
         updates?.setChannel(updateChannelFor(updateChannel, app.getVersion()));
+        if (interfaceZoom !== windowZoom) {
+          windowZoom = interfaceZoom;
+          // Every window of the app zooms (View › Zoom In Interface): Help's page only, as it has
+          // the system's own title bar.
+          const workArea = largestArea(screen.getAllDisplays().map((display) => display.workArea));
+          for (const window of BrowserWindow.getAllWindows()) {
+            if (helpWindows.is(window)) window.webContents.setZoomFactor(interfaceZoom);
+            else {
+              applyInterfaceZoom(window, interfaceZoom, {
+                platform: process.platform,
+                theme,
+                workArea,
+              });
+            }
+          }
+        }
         if (theme === windowTheme) {
           return;
         }
@@ -585,7 +604,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           if (helpWindows.is(window)) continue;
           window.setBackgroundColor(windowBackground(theme));
           if (process.platform !== "darwin") {
-            window.setTitleBarOverlay(titleBarOverlay(theme));
+            window.setTitleBarOverlay(titleBarOverlay(theme, interfaceZoom));
           }
         }
         helpWindows.setTheme(theme);
@@ -838,4 +857,15 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   });
 
   return started;
+}
+
+/** The largest of `areas` (the screens' work areas), so a window may be as big as any screen. */
+function largestArea(areas: readonly { readonly width: number; readonly height: number }[]): {
+  readonly width: number;
+  readonly height: number;
+} {
+  return {
+    width: Math.max(0, ...areas.map((area) => area.width)),
+    height: Math.max(0, ...areas.map((area) => area.height)),
+  };
 }

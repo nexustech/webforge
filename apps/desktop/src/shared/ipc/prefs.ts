@@ -128,6 +128,24 @@ export const VERSIONS_KEPT_MIN = 5;
 export const VERSIONS_KEPT_MAX = 100;
 
 /**
+ * The interface zoom's levels (Ctrl/Cmd + Alt + =, − and 0): the whole window's scale, the editor's
+ * and Help's, never the site's own. Small steps near 100%, as browsers and VS Code zoom. Even at
+ * 150% the smallest window is 960 × 600 of the editor's own pixels: main grows it to fit
+ * (`zoomedMinimumSize`).
+ */
+export const INTERFACE_ZOOM_LEVELS: readonly number[] = [0.8, 0.9, 1, 1.1, 1.25, 1.5];
+
+/** The interface zoom's level after `current`, one step `direction`; `current` at a limit stays. */
+export function interfaceZoomStep(current: number, direction: "in" | "out"): number {
+  const levels = INTERFACE_ZOOM_LEVELS;
+  const next =
+    direction === "in"
+      ? levels.find((level) => level > current + 1e-6)
+      : levels.findLast((level) => level < current - 1e-6);
+  return next ?? current;
+}
+
+/**
  * One person's editor preferences (per user, not per site; T2). Stored by main in
  * `<userData>/preferences.json`.
  */
@@ -152,6 +170,13 @@ export const preferencesSchema = z.strictObject({
    */
   versionsKept: z.int().min(VERSIONS_KEPT_MIN).max(VERSIONS_KEPT_MAX),
   onboarding: onboardingPreferencesSchema,
+  /**
+   * The whole interface's zoom (View › Zoom In Interface): a scale for Electron's zoom factor, one
+   * of {@link INTERFACE_ZOOM_LEVELS}. View state, never an undo step (U6).
+   */
+  interfaceZoom: z
+    .number()
+    .refine((zoom) => INTERFACE_ZOOM_LEVELS.includes(zoom), "Not an interface zoom level"),
   /**
    * The update channel the person chose in Settings › App › Updates (5.2). Unset until they
    * choose: the default then follows the app's version (`updateChannelFor`).
@@ -179,6 +204,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   editPanel: { closedGroups: {} },
   versionsKept: 20,
   onboarding: { tour: "new", tipsSeen: [], showTips: true },
+  interfaceZoom: 1,
 };
 
 /** A change to some preferences; the rest stay as they are. */
@@ -203,6 +229,7 @@ export function applyPreferencesChange(
     editPanel: change.editPanel ?? preferences.editPanel,
     versionsKept: change.versionsKept ?? preferences.versionsKept,
     onboarding: change.onboarding ?? preferences.onboarding,
+    interfaceZoom: change.interfaceZoom ?? preferences.interfaceZoom,
     ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }

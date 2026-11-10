@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { ipcContract } from "../shared/ipc-contract.js";
 import { type AppElectron, type AppParts, startApp } from "./app.js";
@@ -50,6 +50,7 @@ function fakeElectron(options: { primary?: boolean } = {}) {
       reload: vi.fn(),
       send: vi.fn(),
       isCrashed: () => false,
+      setZoomFactor: vi.fn(),
     });
     readonly options: unknown;
     destroyed = false;
@@ -59,6 +60,8 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     readonly restore = vi.fn();
     readonly setBackgroundColor = vi.fn();
     readonly setTitleBarOverlay = vi.fn();
+    readonly setMinimumSize = vi.fn();
+    readonly setWindowButtonPosition = vi.fn();
     readonly loadFile = vi.fn(async () => undefined);
     readonly loadURL = vi.fn(async () => undefined);
 
@@ -346,6 +349,35 @@ describe("startApp", () => {
     await fake.invoke("prefs:set", { theme: "light" });
 
     expect(window?.setBackgroundColor).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens the editor at the interface zoom the person left, and zooms every window as it changes", async () => {
+    const fake = fakeElectron();
+    writeFileSync(join(fake.userData, "preferences.json"), JSON.stringify({ interfaceZoom: 1.25 }));
+    // Windows' title bar controls; a Mac's traffic lights are interface-zoom.test.ts's.
+    const platform = Object.getOwnPropertyDescriptor(process, "platform");
+    Object.defineProperty(process, "platform", { value: "win32", configurable: true });
+    onTestFinished(() => {
+      if (platform !== undefined) Object.defineProperty(process, "platform", platform);
+    });
+    await fake.start();
+    const [window] = fake.windows;
+
+    expect(window?.options).toMatchObject({
+      minWidth: 1200,
+      minHeight: 750,
+      webPreferences: { zoomFactor: 1.25, sandbox: true, contextIsolation: true },
+    });
+    await fake.invoke("prefs:set", { interfaceZoom: 1.5 });
+    await fake.invoke("prefs:set", { theme: "light" });
+
+    expect(window?.webContents.setZoomFactor).toHaveBeenCalledTimes(1);
+    expect(window?.webContents.setZoomFactor).toHaveBeenCalledWith(1.5);
+    expect(window?.setMinimumSize).toHaveBeenCalledWith(1440, 900);
+    // The theme's colours keep the zoomed title bar's height.
+    expect(window?.setTitleBarOverlay).toHaveBeenLastCalledWith(
+      expect.objectContaining({ height: 60 }),
+    );
   });
 
   it("opens the editor's page in the theme the person chose, for its start-up screen", async () => {

@@ -1,5 +1,6 @@
 import type { Viewport } from "@webforge/engine";
 import { type MessageKey, t } from "@webforge/i18n";
+import { INTERFACE_ZOOM_LEVELS, interfaceZoomStep } from "../../shared/ipc/prefs.js";
 import { type CanvasView, zoomStep } from "./canvas-view.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import type { CommandRegistry } from "./commands.js";
@@ -130,5 +131,57 @@ export function registerViewOptionCommands(
   return () => {
     unsubscribe();
     for (const remove of removers.values()) remove();
+  };
+}
+
+/**
+ * View → Zoom In Interface, Zoom Out Interface and Reset Interface Zoom (Mod + Alt + =, − and 0):
+ * the whole window's scale, as VS Code zooms, unlike the canvas's Zoom In and Zoom Out. A
+ * preference, so it's kept after a restart, never an undo step (U6); main zooms the windows when it
+ * changes. Each is turned off where it would do nothing: at the largest or smallest level, or at
+ * 100%. Returns a function that removes them.
+ */
+export function registerInterfaceZoomCommands(
+  registry: CommandRegistry,
+  preferences: Pick<PreferencesStore, "getState" | "subscribe" | "change">,
+): () => void {
+  const zoom = () => preferences.getState().preferences.interfaceZoom;
+  const zoomTo = (interfaceZoom: number) => {
+    if (interfaceZoom !== zoom()) preferences.change({ interfaceZoom });
+  };
+  const commands = [
+    {
+      id: COMMAND_IDS.interfaceZoomIn,
+      label: "command.interfaceZoomIn",
+      enabled: (now: number) => now < Math.max(...INTERFACE_ZOOM_LEVELS),
+      run: () => zoomTo(interfaceZoomStep(zoom(), "in")),
+    },
+    {
+      id: COMMAND_IDS.interfaceZoomOut,
+      label: "command.interfaceZoomOut",
+      enabled: (now: number) => now > Math.min(...INTERFACE_ZOOM_LEVELS),
+      run: () => zoomTo(interfaceZoomStep(zoom(), "out")),
+    },
+    {
+      id: COMMAND_IDS.interfaceZoomReset,
+      label: "command.interfaceZoomReset",
+      enabled: (now: number) => now !== 1,
+      run: () => zoomTo(1),
+    },
+  ] as const satisfies readonly {
+    readonly id: string;
+    readonly label: MessageKey;
+    readonly enabled: (zoom: number) => boolean;
+    readonly run: () => void;
+  }[];
+  const removers = commands.map(({ id, label, enabled, run }) =>
+    registry.register({ id, label: t(label), menu: "view", enabled: enabled(zoom()), run }),
+  );
+  const unsubscribe = preferences.subscribe(() => {
+    for (const { id, enabled } of commands) registry.update(id, { enabled: enabled(zoom()) });
+  });
+  return () => {
+    unsubscribe();
+    for (const remove of removers) remove();
   };
 }

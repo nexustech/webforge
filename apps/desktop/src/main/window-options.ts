@@ -24,10 +24,25 @@ export function windowBackground(theme: EditorTheme): string {
  * The native window controls' colours: the title bar's `--titlebar` and `--foreground` tokens
  * (packages/editor-ui/src/theme.css), so Windows and Linux draw them on the same background.
  */
-export function titleBarOverlay(theme: EditorTheme): TitleBarOverlayOptions {
+export function titleBarOverlay(theme: EditorTheme, zoom = 1): TitleBarOverlayOptions {
+  const height = titleBarHeight(zoom);
   return theme === "dark"
-    ? { color: "#3b4248", symbolColor: "#ffffff", height: TITLE_BAR_HEIGHT }
-    : { color: "#d4d8de", symbolColor: "#26292b", height: TITLE_BAR_HEIGHT };
+    ? { color: "#3b4248", symbolColor: "#ffffff", height }
+    : { color: "#d4d8de", symbolColor: "#26292b", height };
+}
+
+/**
+ * The title bar's height on screen at the interface zoom `zoom`: the page draws it 40 px high in
+ * its own pixels, which the zoom scales, so the native controls beside it are scaled to match.
+ */
+const titleBarHeight = (zoom: number) => Math.round(TITLE_BAR_HEIGHT * zoom);
+
+/** The traffic lights' height on macOS, in screen pixels: 12 px from the top centres them at 100%. */
+const TRAFFIC_LIGHTS_HEIGHT = 16;
+
+/** Where macOS's traffic lights sit, centred in the title bar at the interface zoom `zoom`. */
+export function trafficLightPosition(zoom = 1): { readonly x: number; readonly y: number } {
+  return { x: 12, y: Math.round((titleBarHeight(zoom) - TRAFFIC_LIGHTS_HEIGHT) / 2) };
 }
 
 /**
@@ -39,6 +54,7 @@ export function titleBarOverlay(theme: EditorTheme): TitleBarOverlayOptions {
 export function titleBarOptions(
   platform: NodeJS.Platform,
   theme: EditorTheme,
+  zoom = 1,
 ): Pick<
   BrowserWindowConstructorOptions,
   "titleBarStyle" | "titleBarOverlay" | "trafficLightPosition"
@@ -47,17 +63,35 @@ export function titleBarOptions(
     return {
       titleBarStyle: "hidden",
       titleBarOverlay: true,
-      trafficLightPosition: { x: 12, y: 12 },
+      trafficLightPosition: trafficLightPosition(zoom),
     };
   }
-  return { titleBarStyle: "hidden", titleBarOverlay: titleBarOverlay(theme) };
+  return { titleBarStyle: "hidden", titleBarOverlay: titleBarOverlay(theme, zoom) };
 }
 
 /** The main window's size the first time, and whenever it isn't maximised and nothing is saved. */
 const DEFAULT_WINDOW_SIZE = { width: 1280, height: 800 } as const;
 
 /** The smallest the main window may be. */
-export const MIN_WINDOW_SIZE = { width: 960, height: 600 } as const;
+const MIN_WINDOW_SIZE = { width: 960, height: 600 } as const;
+
+/**
+ * The main window's smallest size at the interface zoom `zoom`: {@link MIN_WINDOW_SIZE} of the
+ * page's own pixels, so the editor keeps the room it is laid out for when zoomed in, but never
+ * bigger than the screen it is on (`workArea`). Zoomed out, it stays {@link MIN_WINDOW_SIZE}.
+ */
+export function zoomedMinimumSize(
+  zoom: number,
+  workArea: { readonly width: number; readonly height: number },
+): { readonly width: number; readonly height: number } {
+  const scale = Math.max(1, zoom);
+  const size = (min: number, screen: number) =>
+    Math.max(min, Math.min(Math.round(min * scale), screen));
+  return {
+    width: size(MIN_WINDOW_SIZE.width, workArea.width),
+    height: size(MIN_WINDOW_SIZE.height, workArea.height),
+  };
+}
 
 /** A rectangle in screen pixels: a window's bounds or a display's work area. */
 type Box = {

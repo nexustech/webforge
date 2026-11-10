@@ -288,16 +288,21 @@ function parseShortcut(shortcut: string): ParsedShortcut {
 type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> &
   Partial<Pick<KeyboardEvent, "code">>;
 
+/** The keys besides letters whose place a shortcut with Alt matches: digits, `=` and `-`. */
+const OTHER_PLACES: Readonly<Record<string, string>> = { Equal: "=", Minus: "-" };
+
 /**
- * The letter a key press with Alt is for. On a Mac, Option changes the character (⌥B types `∫`),
- * so a letter shortcut with Alt matches the key's place (`KeyB`) when the character isn't a letter.
+ * The letter (or digit, `=` or `-`) a key press with Alt is for. On a Mac, Option changes the
+ * character (⌥B types `∫`, ⌥0 `º`, ⌥= `≠`), so a shortcut with Alt matches the key's place (`KeyB`,
+ * `Digit0`, `Equal`) when the character isn't the one it names.
  */
 function letterOf(event: KeyInfo): string {
   const key = event.key.toLowerCase();
-  if (event.altKey && !/^[a-z]$/.test(key) && /^Key[A-Z]$/.test(event.code ?? "")) {
-    return (event.code ?? "").slice(3).toLowerCase();
-  }
-  return key;
+  const code = event.code ?? "";
+  if (!event.altKey || /^[a-z0-9=-]$/.test(key)) return key;
+  const place = /^(?:Key([A-Z])|Digit([0-9]))$/.exec(code);
+  if (place !== null) return (place[1] ?? place[2] ?? key).toLowerCase();
+  return OTHER_PLACES[code] ?? key;
 }
 
 /**
