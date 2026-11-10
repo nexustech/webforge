@@ -4,7 +4,7 @@ id: keyboard-shortcuts
 title: Keyboard shortcuts
 summary: Every keyboard shortcut in {appName}, by what it does.
 related: [the-editor, editing-on-the-page, layers, edit-panel]
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 # Keyboard shortcuts
@@ -59,9 +59,11 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | Ctrl+P, or Ctrl+K        | Search Commands…                                                                                                 |
 | Ctrl+1 · Ctrl+2 · Ctrl+3 | Desktop · Tablet · Mobile                                                                                        |
-| Ctrl+= · Ctrl+−          | Zoom in · zoom out                                                                                               |
+| Ctrl+= · Ctrl+−          | Zoom the page in · out                                                                                           |
 | Ctrl+0                   | Actual size                                                                                                      |
 | Ctrl+9                   | Zoom to fit                                                                                                      |
+| Ctrl+Alt+= · Ctrl+Alt+−  | Make all of {appName} bigger · smaller (Zoom In Interface · Zoom Out Interface)                                  |
+| Ctrl+Alt+0               | Back to 100% (Reset Interface Zoom)                                                                              |
 | Ctrl+Shift+O             | Show or hide outlines on the page                                                                                |
 | Ctrl+Shift+N             | Show or hide element names on the page                                                                           |
 | Ctrl+Alt+B               | Show or hide the left panels                                                                                     |

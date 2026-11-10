@@ -289,15 +289,14 @@ type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "s
   Partial<Pick<KeyboardEvent, "code">>;
 
 /**
- * The letter a key press with Alt is for. On a Mac, Option changes the character (⌥B types `∫`),
- * so a letter shortcut with Alt matches the key's place (`KeyB`) when the character isn't a letter.
+ * The letter (or digit, `=` or `-`) a key press with Alt is for. On a Mac, Option changes the
+ * character (⌥B types `∫`, ⌥0 `º`, ⌥= `≠`), so a shortcut with Alt matches the key's place (`KeyB`,
+ * `Digit0`, `Equal`) when the character isn't the one it names.
  */
 function letterOf(event: KeyInfo): string {
   const key = event.key.toLowerCase();
-  if (event.altKey && !/^[a-z]$/.test(key) && /^Key[A-Z]$/.test(event.code ?? "")) {
-    return (event.code ?? "").slice(3).toLowerCase();
-  }
-  return key;
+  if (!event.altKey || /^[a-z0-9=-]$/.test(key)) return key;
+  return ownCharacter(event.code ?? "") ?? key;
 }
 
 /**
@@ -493,10 +492,16 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
   return selection !== null && !selection.isCollapsed && selection.toString() !== "";
 }
 
-/** The character a key types without modifiers: `KeyS` is "s", `Digit2` is "2"; else undefined. */
+/** The symbol keys whose own character a shortcut names: the interface zoom's `=` and `-`. */
+const SYMBOL_KEYS: Readonly<Record<string, string>> = { Equal: "=", Minus: "-" };
+
+/**
+ * The character a key types without modifiers on a US layout: `KeyS` is "s", `Digit2` is "2",
+ * `Equal` is "="; else undefined.
+ */
 function ownCharacter(code: string): string | undefined {
   const match = /^(?:Key([A-Z])|Digit([0-9]))$/.exec(code);
-  return (match?.[1] ?? match?.[2])?.toLowerCase();
+  return (match?.[1] ?? match?.[2])?.toLowerCase() ?? SYMBOL_KEYS[code];
 }
 
 /**

@@ -116,6 +116,11 @@ export const COMMAND_SHORTCUTS: Readonly<Record<string, StandardShortcut>> = {
   [COMMAND_IDS.zoomOut]: { group: "view", keys: ["Mod+-"] },
   [COMMAND_IDS.zoomActual]: { group: "view", keys: ["Mod+0"] },
   [COMMAND_IDS.zoomFit]: { group: "view", keys: ["Mod+9"] },
+  // The whole interface's zoom, as VS Code's Ctrl/Cmd + =, − and 0, which are the canvas's here:
+  // with Alt (Option), matched by the key's place on a Mac, where Option changes the character.
+  [COMMAND_IDS.interfaceZoomIn]: { group: "view", keys: ["Mod+Alt+=", "Mod+Alt+Plus"] },
+  [COMMAND_IDS.interfaceZoomOut]: { group: "view", keys: ["Mod+Alt+-"] },
+  [COMMAND_IDS.interfaceZoomReset]: { group: "view", keys: ["Mod+Alt+0"] },
   [COMMAND_IDS.desktopView]: { group: "view", keys: ["Mod+1"] },
   [COMMAND_IDS.tabletView]: { group: "view", keys: ["Mod+2"] },
   [COMMAND_IDS.mobileView]: { group: "view", keys: ["Mod+3"] },

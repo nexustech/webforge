@@ -16,6 +16,14 @@ describe("parsePreferences", () => {
     expect(parsePreferences(null)).toEqual(DEFAULT_PREFERENCES);
   });
 
+  it("keeps an interface zoom that is one of its levels, and 100% for any other", () => {
+    expect(parsePreferences({ interfaceZoom: 1.25 }).interfaceZoom).toBe(1.25);
+    expect(parsePreferences({ interfaceZoom: 0.8 }).interfaceZoom).toBe(0.8);
+    for (const interfaceZoom of [1.3, 0.5, 3, "1.1", null]) {
+      expect(parsePreferences({ interfaceZoom }).interfaceZoom).toBe(1);
+    }
+  });
+
   it("keeps valid fields and replaces invalid ones with defaults", () => {
     expect(
       parsePreferences({
@@ -34,6 +42,7 @@ describe("parsePreferences", () => {
       editPanel: DEFAULT_PREFERENCES.editPanel,
       versionsKept: 20,
       onboarding: { tour: "new", tipsSeen: [], showTips: true },
+      interfaceZoom: 1,
     });
     expect(parsePreferences({ panelLayout: { group: { panel: 250 } } }).panelLayout).toEqual({});
     // Versions kept (P3): 5 to 100, else the default 20.

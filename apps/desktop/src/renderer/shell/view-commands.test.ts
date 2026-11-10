@@ -5,7 +5,11 @@ import { createCanvasView, zoomStep } from "./canvas-view.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import { createCommandRegistry, matchesShortcut } from "./commands.js";
 import { createPreferencesStore } from "./preferences-store.js";
-import { registerViewCommands, registerViewOptionCommands } from "./view-commands.js";
+import {
+  registerInterfaceZoomCommands,
+  registerViewCommands,
+  registerViewOptionCommands,
+} from "./view-commands.js";
 
 describe("zoomStep", () => {
   it("goes one of the toolbar's levels in or out, staying at either end", () => {
@@ -133,5 +137,118 @@ describe("registerViewOptionCommands (#857)", () => {
         matchesShortcut({ ...press, ...mod, key: "o", shiftKey: false }, "Mod+Shift+O", mac),
       ).toBe(false);
     }
+  });
+});
+
+describe("registerInterfaceZoomCommands", () => {
+  const setUp = (mac = false) => {
+    const registry = createCommandRegistry({ mac });
+    const saved: unknown[] = [];
+    const preferences = createPreferencesStore(
+      {},
+      { preferences: async (change) => saved.push(change) },
+    );
+    const remove = registerInterfaceZoomCommands(registry, preferences);
+    const zoom = () => preferences.getState().preferences.interfaceZoom;
+    const enabled = () => registry.list().map(({ label, enabled }) => [label, enabled]);
+    return { registry, preferences, remove, zoom, enabled, saved };
+  };
+
+  it("lists Zoom In, Zoom Out and Reset in the View menu, with the standard's keys", () => {
+    const { registry, remove } = setUp();
+
+    expect(registry.list().map(({ label, menu, shortcut }) => [label, menu, shortcut])).toEqual([
+      ["Zoom In Interface", "view", "Mod+Alt+="],
+      ["Zoom Out Interface", "view", "Mod+Alt+-"],
+      ["Reset Interface Zoom", "view", "Mod+Alt+0"],
+    ]);
+    remove();
+    expect(registry.list()).toEqual([]);
+  });
+
+  it("zooms in and out a level at a time, and saves each level as a preference", () => {
+    const { registry, zoom, saved } = setUp();
+
+    registry.run(COMMAND_IDS.interfaceZoomIn);
+    expect(zoom()).toBe(1.1);
+    registry.run(COMMAND_IDS.interfaceZoomIn);
+    expect(zoom()).toBe(1.25);
+    registry.run(COMMAND_IDS.interfaceZoomOut);
+    registry.run(COMMAND_IDS.interfaceZoomOut);
+    registry.run(COMMAND_IDS.interfaceZoomOut);
+    expect(zoom()).toBe(0.9);
+    expect(saved).toEqual([
+      { interfaceZoom: 1.1 },
+      { interfaceZoom: 1.25 },
+      { interfaceZoom: 1.1 },
+      { interfaceZoom: 1 },
+      { interfaceZoom: 0.9 },
+    ]);
+  });
+
+  it("resets to 100%, and is turned off at 100%", () => {
+    const { registry, zoom, enabled } = setUp();
+    expect(enabled()).toEqual([
+      ["Zoom In Interface", true],
+      ["Zoom Out Interface", true],
+      ["Reset Interface Zoom", false],
+    ]);
+
+    registry.run(COMMAND_IDS.interfaceZoomOut);
+    expect(enabled()).toContainEqual(["Reset Interface Zoom", true]);
+    registry.run(COMMAND_IDS.interfaceZoomReset);
+
+    expect(zoom()).toBe(1);
+    expect(enabled()).toContainEqual(["Reset Interface Zoom", false]);
+  });
+
+  it("stops at 150% and 80%, each turned off at its limit", () => {
+    const { registry, zoom, enabled, saved } = setUp();
+
+    for (let step = 0; step < 10; step++) registry.run(COMMAND_IDS.interfaceZoomIn);
+    expect(zoom()).toBe(1.5);
+    expect(enabled()).toEqual([
+      ["Zoom In Interface", false],
+      ["Zoom Out Interface", true],
+      ["Reset Interface Zoom", true],
+    ]);
+    for (let step = 0; step < 10; step++) registry.run(COMMAND_IDS.interfaceZoomOut);
+    expect(zoom()).toBe(0.8);
+    expect(enabled()).toEqual([
+      ["Zoom In Interface", true],
+      ["Zoom Out Interface", false],
+      ["Reset Interface Zoom", true],
+    ]);
+    // Each level once on the way up (1.1 to 1.5) and down (1.25 to 0.8); none past a limit.
+    expect(saved).toHaveLength(8);
+  });
+
+  it("runs from Ctrl+Alt on Windows and from Cmd+Option on a Mac, which types other characters", () => {
+    const windows = { ctrlKey: true, metaKey: false, altKey: true, shiftKey: false };
+    expect(matchesShortcut({ ...windows, key: "=", code: "Equal" }, "Mod+Alt+=", false)).toBe(true);
+    expect(matchesShortcut({ ...windows, key: "-", code: "Minus" }, "Mod+Alt+-", false)).toBe(true);
+    expect(matchesShortcut({ ...windows, key: "0", code: "Digit0" }, "Mod+Alt+0", false)).toBe(
+      true,
+    );
+    // The numeric keypad's +.
+    expect(
+      matchesShortcut({ ...windows, key: "+", code: "NumpadAdd" }, "Mod+Alt+Plus", false),
+    ).toBe(true);
+
+    const mac = { ctrlKey: false, metaKey: true, altKey: true, shiftKey: false };
+    expect(matchesShortcut({ ...mac, key: "≠", code: "Equal" }, "Mod+Alt+=", true)).toBe(true);
+    expect(matchesShortcut({ ...mac, key: "–", code: "Minus" }, "Mod+Alt+-", true)).toBe(true);
+    expect(matchesShortcut({ ...mac, key: "º", code: "Digit0" }, "Mod+Alt+0", true)).toBe(true);
+    // ⌥⇧= types ± on a Mac: still the key of Zoom In.
+    expect(
+      matchesShortcut({ ...mac, shiftKey: true, key: "±", code: "Equal" }, "Mod+Alt+=", true),
+    ).toBe(true);
+
+    // The canvas's keys stay the canvas's: without Alt they aren't the interface's, and with it
+    // they aren't the canvas's.
+    const canvas = { ...windows, altKey: false, key: "=", code: "Equal" };
+    expect(matchesShortcut(canvas, "Mod+Alt+=", false)).toBe(false);
+    expect(matchesShortcut({ ...windows, key: "=", code: "Equal" }, "Mod+=", false)).toBe(false);
+    expect(matchesShortcut({ ...mac, key: "º", code: "Digit0" }, "Mod+0", true)).toBe(false);
   });
 });
