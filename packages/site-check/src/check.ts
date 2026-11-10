@@ -6,6 +6,7 @@ import {
   outdatedYearRule,
   placeholdersRule,
 } from "./rules/content.js";
+import { unusedCssRulesRule } from "./rules/css.js";
 import { externalResourcesRule } from "./rules/external.js";
 import { formsRule } from "./rules/forms.js";
 import {
@@ -43,6 +44,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   placeholdersRule,
   pageTitlesRule,
   externalResourcesRule,
+  unusedCssRulesRule,
   formsRule,
   privacyPageRule,
   buyButtonLinksRule,

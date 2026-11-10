@@ -8,6 +8,7 @@ import type { Area, EditorContext, WindowContext } from "./editor/areas.js";
 import {
   canvasCommandsArea,
   columnsToolbarArea,
+  customCssArea,
   elementCommandsArea,
   fieldDragsArea,
   headerToolbarArea,
@@ -54,6 +55,7 @@ export const EDITOR_AREAS: readonly Area<EditorContext>[] = [
   undoHistoryArea,
   editPanelArea,
   siteCssArea,
+  customCssArea,
   canvasImagesArea,
   canvasSettingsArea,
   canvasNavigationArea,

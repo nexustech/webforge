@@ -1,5 +1,6 @@
 import type { CanvasEngine, Unsubscribe } from "@webforge/engine";
 import type { NodeDoc, PageId, SiteDoc } from "@webforge/model";
+import type { UsedSelectors } from "@webforge/site-check";
 import {
   BOX_CLASS_SAFELIST,
   EDITOR_RENDER_CONTEXT,
@@ -22,7 +23,11 @@ export const SITE_CSS_DEBOUNCE_MS = 300;
  */
 const classesOfList = new WeakMap<
   readonly NodeDoc[],
-  { readonly looks: RenderContext["looks"]; readonly classes: readonly string[] }
+  {
+    readonly looks: RenderContext["looks"];
+    readonly classes: readonly string[];
+    readonly ids: readonly string[];
+  }
 >();
 
 /** The image every placed image renders as while classes are collected: which one never matters. */
@@ -72,28 +77,42 @@ export function classesOfHtml(html: string): string[] {
   return found.filter((name) => name !== "");
 }
 
-function listClasses(
+/** The ids in static `html`, in order. */
+const idsOfHtml = (html: string): string[] =>
+  [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => (match[1] ?? "").replaceAll("&amp;", "&"));
+
+/** The classes and ids of `nodes` as they render, collected once for each list (see above). */
+function listCollect(
   nodes: readonly NodeDoc[],
   session: EditorSession,
   looks: RenderContext["looks"],
-): readonly string[] {
+): { readonly classes: readonly string[]; readonly ids: readonly string[] } {
   const kept = classesOfList.get(nodes);
   // Drawn with the theme's looks (3.12): a change to them collects the list's classes again.
-  if (kept !== undefined && kept.looks === looks) return kept.classes;
+  if (kept !== undefined && kept.looks === looks) return kept;
   // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
-  const classes = CLASS_CONTEXTS.flatMap((context) =>
-    classesOfHtml(
-      renderNodesToHtml(
-        nodes,
-        session.library,
-        looks === undefined ? context : { ...context, looks },
-        { includeHidden: true },
-      ),
+  const html = CLASS_CONTEXTS.map((context) =>
+    renderNodesToHtml(
+      nodes,
+      session.library,
+      looks === undefined ? context : { ...context, looks },
+      { includeHidden: true },
     ),
   );
-  classesOfList.set(nodes, { looks, classes });
-  return classes;
+  const collected = {
+    looks,
+    classes: html.flatMap(classesOfHtml),
+    ids: html.flatMap(idsOfHtml),
+  };
+  classesOfList.set(nodes, collected);
+  return collected;
 }
+
+const listClasses = (
+  nodes: readonly NodeDoc[],
+  session: EditorSession,
+  looks: RenderContext["looks"],
+): readonly string[] => listCollect(nodes, session, looks).classes;
 
 /** Whether `nodes`' classes are collected already, with the theme's `looks`. */
 function listCollected(nodes: readonly NodeDoc[], looks: RenderContext["looks"]): boolean {
@@ -129,6 +148,39 @@ function classesOfLists(
  */
 export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
   return classesOfLists(siteLists(site), site, session);
+}
+
+/**
+ * What every exported page has around its content (the export's page template): the classes of its
+ * `<body>` and `<main>`, and `<main>`'s id, which the skip link goes to.
+ */
+const PAGE_SHELL = {
+  classes: [
+    "flex",
+    "min-h-screen",
+    "flex-col",
+    "bg-base-100",
+    "font-sans",
+    "text-base-content",
+    "flex-1",
+  ],
+  ids: ["main"],
+} as const;
+
+/**
+ * The classes and ids the site's pages, Header and Footer have (6.8), and the page template's, for
+ * Site Check's rules of `custom.css` that match nothing. Renders what isn't collected yet, as
+ * {@link siteClasses} does.
+ */
+export function siteSelectors(site: SiteDoc, session: EditorSession): UsedSelectors {
+  const classes = new Set<string>(PAGE_SHELL.classes);
+  const ids = new Set<string>(PAGE_SHELL.ids);
+  for (const nodes of siteLists(site)) {
+    const collected = listCollect(nodes, session, site.theme.looks);
+    for (const name of collected.classes) classes.add(name);
+    for (const id of collected.ids) ids.add(id);
+  }
+  return { classes, ids };
 }
 
 /**

@@ -1,5 +1,6 @@
 import type { ElementPlace, MediaId, PageId, SiteDoc } from "@webforge/model";
 import type { Catalogue } from "@webforge/site-components/catalogue-data";
+import type { UsedSelectors } from "./css-rules.js";
 
 /**
  * How much a finding matters (X5), as Site Check groups them: *Must fix* stops an export (or a
@@ -85,6 +86,11 @@ export type CheckInput = {
    * site Netlify serves. Left out for an export, and for any other host.
    */
   readonly host?: "netlify";
+  /**
+   * The classes and ids the site's pages, Header and Footer have as the export writes them (6.8),
+   * for the rules of `custom.css` that match nothing. Left out, they aren't checked.
+   */
+  readonly usedSelectors?: UsedSelectors;
 };
 
 /** One Site Check rule (F-CHK-1): its level, and what it finds in a site. */

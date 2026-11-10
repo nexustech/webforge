@@ -315,6 +315,11 @@ export interface CanvasEngine {
    */
   setSiteCss(css: string, bodyClass: string): void;
   /**
+   * Styles the canvas with the site's own `custom.css` too (F-ED-15, 6.8), after its compiled CSS,
+   * as the export links it. Replaces the previous one; an empty string shows none.
+   */
+  setCustomCss(css: string): void;
+  /**
    * Shows the site's Media images on the canvas (1.16): `image` turns a placed image's media id
    * into an image to show, or `null`; `emptyImage` is what an Image element without its image shows
    * instead (2.9, a hint). Called again when Media changes; the elements whose image changed draw

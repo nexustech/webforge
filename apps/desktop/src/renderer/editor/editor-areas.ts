@@ -20,6 +20,23 @@ export const siteCssArea: Area<EditorContext> = {
     engine.whileMounted(({ engine: canvas }) => connectSiteCss(canvas, session, compileCss)),
 };
 
+/** The site's own `custom.css` in the canvas, after its CSS, as it changes (F-ED-15, 6.8). */
+export const customCssArea: Area<EditorContext> = {
+  id: "customCss",
+  register: ({ engine, session }) =>
+    engine.whileMounted(({ engine: canvas }) => {
+      const cssOf = () => session.history.document.getState().code?.css ?? "";
+      let shown = cssOf();
+      canvas.setCustomCss(shown);
+      return session.history.document.subscribe(() => {
+        const css = cssOf();
+        if (css === shown) return;
+        shown = css;
+        canvas.setCustomCss(css);
+      });
+    }),
+};
+
 /**
  * Keyboard actions on the selected element (1.12), in the Edit menu and the command box; their
  * shortcuts also work while the canvas iframe has focus.

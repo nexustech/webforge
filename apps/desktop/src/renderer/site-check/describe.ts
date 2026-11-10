@@ -163,6 +163,10 @@ export function describeDetail(finding: Finding): string | undefined {
   }
   if (typeof values.sameAs === "string")
     return t("siteCheck.detail.sameAs", { file: values.sameAs });
+  // A rule of the site's own stylesheet that matches nothing (6.8), by its selector.
+  if (typeof values.selector === "string") {
+    return t("siteCheck.detail.selector", { selector: values.selector });
+  }
   // The year a published site shows (F-CM-8), as it was published.
   if (typeof values.publishedYear === "number") {
     return t("siteCheck.detail.publishedYear", { year: String(values.publishedYear) });
