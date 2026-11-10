@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-07
+updated: 2026-11-10
 ---
 
 # Editing on the page
@@ -12,7 +12,7 @@ updated: 2026-11-07
 ## Selecting
 
 - **Click** a section or element to select it. A blue outline and a small bar of buttons appear on it, and the [Edit panel](edit-panel.md) shows its options.
-- **Ctrl+click** (Cmd+click on a Mac) or **Shift+click** adds an item to the selection, or takes it out. With several items selected you can delete, duplicate, move or hide them together.
+- **Ctrl+click** (Cmd+click on a Mac) or **Shift+click** adds an item to the selection, or takes it out. With several items selected you can delete, duplicate, move them, or keep them off your website, together.
 - The line above the page shows where the selection sits, such as _Page › Hero › Button_. Click any step to select it.
 - From the keyboard:
   - **↑** and **↓** select the previous or next item.
@@ -28,7 +28,7 @@ updated: 2026-11-07
 | Move up · Move down            | Moves it before or after its neighbour                                                                                  |
 | Edit                           | Starts typing in its text, or chooses a new picture for an image                                                        |
 | Style                          | Opens [Style this…](styling.md#style-this)                                                                              |
-| Hide · Show                    | Hides it from your site without deleting it                                                                             |
+| Don't publish · Show           | Keeps it off your website without deleting it, dimmed here. To hide it only while you edit, use [Layers](layers.md)     |
 | Duplicate                      | Places a copy just after it                                                                                             |
 | Delete                         | Removes it. _Undo_ appears for a few seconds. On a Mac the key is Cmd+Delete; the delete key on its own clears the text |
 

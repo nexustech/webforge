@@ -3,8 +3,10 @@ import {
   type MediaId,
   type MediaMeta,
   type NodeDoc,
+  type PageId,
   SHARED_COPY_TYPE,
   type SharedSectionId,
+  type SiteDoc,
 } from "@webforge/model";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
@@ -12,6 +14,7 @@ import { element, findIn, image, siteWith } from "../test-site.test-helper.js";
 import {
   altTextRule,
   brokenLinksRule,
+  draftLinksRule,
   missingImagesRule,
   outdatedYearRule,
   placeholdersRule,
@@ -78,6 +81,88 @@ describe("broken links", () => {
     expect(findIn(brokenLinksRule, site).map((finding) => finding.key)).toEqual([
       `${site.homePageId}/doc/media-gone`,
     ]);
+  });
+});
+
+/**
+ * `site` with a page `id` holding `content`, a draft unless `draft` is false (G37, #864), and a
+ * menu item for it.
+ */
+function withPage(site: SiteDoc, id: string, content: NodeDoc[], draft = true): SiteDoc {
+  const home = site.pages[site.homePageId];
+  if (home === undefined) throw new Error("no home page");
+  const pageId = id as PageId;
+  return {
+    ...site,
+    pages: {
+      ...site.pages,
+      [pageId]: {
+        ...home,
+        id: pageId,
+        slug: id,
+        title: "Winter menu",
+        settings: { ...home.settings, ...(draft ? { draft } : {}) },
+        doc: { root: { props: {} }, content },
+      },
+    },
+    pageOrder: [...site.pageOrder, pageId],
+    menu: {
+      follows: "custom",
+      items: [{ id: "item" as never, hidden: false, kind: "page", pageId }],
+    },
+  };
+}
+
+describe("links to draft pages (G37, #864)", () => {
+  const toWinter = { kind: "page", pageId: "winter" };
+
+  it("lists each published link to a draft page, with its name, but not the menu's item", () => {
+    const site = withPage(
+      siteWith([
+        element("Button", "shown", { label: "Winter", link: toWinter }),
+        element("Button", "unpublished", { label: "Old", link: toWinter, hidden: true }),
+        element("Button", "while", { label: "Soon", link: { ...toWinter, anchor: "soups" } }),
+      ]),
+      "winter",
+      [],
+    );
+
+    expect(findIn(draftLinksRule, site)).toEqual([
+      {
+        key: `${site.homePageId}/shown/winter#`,
+        place: { kind: "element", on: site.homePageId, nodeId: "shown" },
+        values: { pageId: "winter", draftPage: "Winter menu" },
+      },
+      {
+        key: `${site.homePageId}/while/winter#soups`,
+        place: { kind: "element", on: site.homePageId, nodeId: "while" },
+        values: { pageId: "winter", draftPage: "Winter menu" },
+      },
+    ]);
+    // A link to a draft page isn't broken: the page is there. One to a section it lacks still is.
+    expect(findIn(brokenLinksRule, site).map((finding) => finding.key)).toEqual([
+      `${site.homePageId}/while/winter#soups`,
+    ]);
+  });
+
+  it("finds none once the page is published, and none on the draft page itself", () => {
+    const linking = [element("Button", "shown", { label: "Winter", link: toWinter })];
+
+    expect(findIn(draftLinksRule, withPage(siteWith(linking), "winter", [], false))).toEqual([]);
+    // A draft linking to itself, or to another draft, isn't published either.
+    expect(findIn(draftLinksRule, withPage(siteWith(), "winter", linking))).toEqual([]);
+  });
+
+  it("checks nothing on a draft page: its broken links and placeholders wait for it", () => {
+    const gone = { kind: "page", pageId: "page-gone" };
+    const content = [element("Button", "dead", { label: "Gone", link: gone })];
+
+    expect(findIn(brokenLinksRule, withPage(siteWith(), "winter", content))).toEqual([]);
+    expect(
+      findIn(brokenLinksRule, withPage(siteWith(), "winter", content, false)).map(
+        (finding) => finding.key,
+      ),
+    ).toEqual(["winter/dead/page-gone#"]);
   });
 });
 

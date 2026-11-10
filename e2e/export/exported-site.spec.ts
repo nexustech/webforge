@@ -280,6 +280,19 @@ test.describe("exported site from disk", () => {
     }
   });
 
+  test("sends a renamed page's old address on to the page, from disk too (#862)", async ({
+    page,
+  }) => {
+    await open(page, "our-story.html");
+
+    await expect(page).toHaveURL(/\/about\.html$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("About Rosa's Bakery");
+    // On Netlify, a real redirect: forced past the page at the old address.
+    const rules = readFileSync(join(EXPORTED_SITE_DIR, "_redirects"), "utf8");
+    expect(rules).toContain("/our-story.html /about.html 301!");
+    expect(rules).toContain("/our-story /about.html 301!");
+  });
+
   test("opens and closes the mobile menu with its button and Escape", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, "index.html");
@@ -394,6 +407,43 @@ test.describe("exported site from disk", () => {
       await expect
         .poll(async () => (await target.boundingBox())?.y ?? 0)
         .toBeGreaterThanOrEqual(height - 1);
+    });
+  });
+
+  test.describe("the section in view (5.10)", () => {
+    test("marks the menu's link to the section in view, as the current page's, and unmarks it above", async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 600 });
+      await open(page, "index.html");
+      // The fixture's menu: Home (this page), and Questions on it, in the Visit us dropdown.
+      const questions = mainNavigation(page).locator('a[href="index.html#questions"]');
+      const visit = disclosure(page, "header.site-header .menu-horizontal details", "Visit us");
+      const background = (locator: ReturnType<Page["locator"]>) =>
+        locator.evaluate((element) => getComputedStyle(element).backgroundColor);
+
+      await expect(questions).toHaveCount(2);
+      const plain = await background(visit.summary);
+      for (const link of await questions.all())
+        await expect(link).not.toHaveAttribute("aria-current");
+
+      await page.goto(`${exportedPageUrl("index.html")}#questions`);
+      for (const link of await questions.all()) {
+        await expect(link).toHaveAttribute("aria-current", "location");
+      }
+      // The dropdown holding it is drawn in the menu's active colours, as the current page's link
+      // is: not as it was. Browsers write the same colour differently (oklch, or oklab mixed with
+      // the link's own), so it's compared with how it looked before.
+      await expect.poll(() => background(visit.summary)).not.toBe(plain);
+      expect(await background(visit.summary)).not.toBe("rgba(0, 0, 0, 0)");
+      // Accessible as it is: aria-current="location" is the place on this page.
+      const results = await new AxeBuilder({ page }).include("header.site-header").analyze();
+      expect(results.violations).toEqual([]);
+
+      await page.evaluate(() => window.scrollTo(0, 0));
+      for (const link of await questions.all()) {
+        await expect(link).not.toHaveAttribute("aria-current");
+      }
     });
   });
 

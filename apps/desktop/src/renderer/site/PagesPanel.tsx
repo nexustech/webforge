@@ -15,10 +15,12 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  isDraftPage,
   PAGE_FOLDER_MAX,
   PAGE_TITLE_MAX,
   type PageEntry,
   type PageId,
+  pageFile,
   type SiteDoc,
 } from "@webforge/model";
 import { recipesFor, TEMPLATE_CATEGORIES } from "@webforge/templates";
@@ -36,6 +38,7 @@ import { NameDialog } from "../shell/NameDialog.js";
 import { offersCookiePolicy } from "./cookie-page.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
+  canBeDraft,
   canBeHome,
   canChangeNavigation,
   canDelete,
@@ -47,6 +50,7 @@ import {
   neighbour,
   type PageSettingsChange,
   renamedFileName,
+  renameMovesPage,
 } from "./page-actions.js";
 import type { PolicyPageKind } from "./policy-sections.js";
 import { recipeName } from "./recipe-name.js";
@@ -59,12 +63,15 @@ export type PagesPanelActions = {
   addSuggested(recipeId: string): void;
   /** Adds the privacy page, the terms or the cookie policy, from Site Settings (#855, #866). */
   addPolicy(kind: PolicyPageKind): void;
-  rename(pageId: PageId, name: string): void;
+  /** Renames a page, keeping its old address working if `keepOldAddress` (#862). */
+  rename(pageId: PageId, name: string, keepOldAddress: boolean): void;
   duplicate(pageId: PageId): void;
   move(pageId: PageId, direction: -1 | 1): void;
   moveToFolder(pageId: PageId, folder: string | undefined): void;
   setHome(pageId: PageId): void;
   setHidden(pageId: PageId, hidden: boolean): void;
+  /** Makes a page a draft, or takes it out of drafts (G37, #864). */
+  setDraft(pageId: PageId, draft: boolean): void;
   remove(pageId: PageId): void;
   changeSettings(pageId: PageId, change: PageSettingsChange): void;
 };
@@ -74,6 +81,8 @@ export type PagesPanelProps = {
   readonly site: SiteDoc;
   /** The page the canvas shows. */
   readonly shownPageId: PageId;
+  /** Whether the site has been published: renaming a page then keeps its old address by default. */
+  readonly published?: boolean;
   readonly actions: PagesPanelActions;
 };
 
@@ -114,7 +123,7 @@ function rowsOf(site: SiteDoc): Row[] {
  * the Home page, hides it from navigation or deletes it (after a confirmation, D5). The "Page not
  * found" page (F-ED-20) is listed like any page but can only be renamed and designed.
  */
-export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
+export function PagesPanel({ site, shownPageId, published = false, actions }: PagesPanelProps) {
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   // Closing keeps `dialog`, so a dialog keeps its text while it fades out.
   const [open, setOpen] = useState(false);
@@ -134,6 +143,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
   const pageRow = (page: PageEntry, indented: boolean) => {
     const home = page.id === site.homePageId;
     const notFound = page.kind === "not-found";
+    const isDraft = isDraftPage(site, page);
     const Icon = home ? HouseIcon : notFound ? FileQuestionIcon : FileIcon;
     const shown = page.id === shownPageId;
     return (
@@ -153,9 +163,18 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
           <span className="truncate">{page.title}</span>
           {home && <span className="sr-only">({t("pages.home")})</span>}
           {notFound && <span className="sr-only">({t("pages.notFound")})</span>}
+          {isDraft && (
+            // A draft (G37, #864): kept in the site, not on the website.
+            <span className="ml-auto shrink-0 rounded-sm border border-border px-1 text-[10px] leading-4 text-muted-foreground">
+              {t("pages.draftBadge")}
+            </span>
+          )}
           {page.settings.hideFromNavigation && !notFound && (
             <>
-              <EyeOffIcon aria-hidden className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+              <EyeOffIcon
+                aria-hidden
+                className={cn("size-3.5 shrink-0 text-muted-foreground", !isDraft && "ml-auto")}
+              />
               <span className="sr-only">({t("pages.hiddenFromNavigation")})</span>
             </>
           )}
@@ -276,9 +295,18 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
             path: dialogPage === undefined ? "" : renamedFileName(site, dialogPage.id, name),
           })
         }
-        onSubmit={(name) => {
+        option={{
+          label: t("pages.keepOldAddress"),
+          help: () =>
+            t("pages.keepOldAddressHint", {
+              path: dialogPage === undefined ? "" : (pageFile(site, dialogPage.id) ?? ""),
+            }),
+          initial: published,
+          shown: (name) => dialogPage !== undefined && renameMovesPage(site, dialogPage.id, name),
+        }}
+        onSubmit={(name, keepOldAddress) => {
           if (dialogPage !== undefined) {
-            actions.rename(dialogPage.id, name);
+            actions.rename(dialogPage.id, name, keepOldAddress);
           }
           close();
         }}
@@ -422,6 +450,14 @@ function PageMenuItems({
           onCheckedChange={(checked) => actions.setHidden(page.id, checked)}
         >
           {t("pages.hideFromNavigation")}
+        </DropdownMenuCheckboxItem>
+      )}
+      {canBeDraft(site, page) && (
+        <DropdownMenuCheckboxItem
+          checked={page.settings.draft === true}
+          onCheckedChange={(checked) => actions.setDraft(page.id, checked)}
+        >
+          {t("pages.draft")}
         </DropdownMenuCheckboxItem>
       )}
       {canDelete(site, page) && (

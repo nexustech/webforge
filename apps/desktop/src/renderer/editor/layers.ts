@@ -45,7 +45,10 @@ export type Layer = {
   readonly kind: string;
   /** The name the person gave it in Layers, if any. */
   readonly name: string | undefined;
+  /** *Don't publish* (F-ED-12, UX-23): dimmed on the canvas, left out of the export. */
   readonly hidden: boolean;
+  /** *Hide while editing* (UX-23, #864): not drawn on the canvas, exported. */
+  readonly editorHidden?: boolean;
   readonly children: readonly Layer[];
   /** Set for a linked copy: the name of the shared section it shows (F-ED-23). */
   readonly sharedSection?: string;
@@ -102,6 +105,7 @@ export function layersOf(
           kind,
           name,
           hidden: node.props.hidden === true,
+          ...(node.props.editorHidden === true ? { editorHidden: true } : {}),
           children: [],
           sharedSection: entry.name,
           // A copy shows its shared section, entrance and all.
@@ -115,6 +119,7 @@ export function layersOf(
         kind,
         name,
         hidden: node.props.hidden === true,
+        ...(node.props.editorHidden === true ? { editorHidden: true } : {}),
         children: slotsOf(node, library).flatMap((list) => layersOf(list, library, shared)),
         ...(hasEntrance(node.props) ? { animated: true } : {}),
       },
@@ -286,6 +291,50 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
   });
 }
 
+/** How a layer shows (UX-23): drawn and published, hidden while editing, or not published. */
+export type LayerShown = "shown" | "editorHidden" | "hidden";
+
+/** How `layer` shows. Not published wins, as the export leaves it out whatever else it says. */
+export function layerShown(layer: Layer): LayerShown {
+  return layer.hidden ? "hidden" : layer.editorHidden === true ? "editorHidden" : "shown";
+}
+
+/**
+ * Whether layer `id` can be hidden while editing (UX-23): any but the shared Header or Footer
+ * itself, which isn't published on a page by that page's settings.
+ */
+function canHideWhileEditing(session: LayersSession, id: string): boolean {
+  const found = target(session, id);
+  return found !== undefined && !(found.region !== undefined && found.top === true);
+}
+
+/**
+ * Shows a layer as `shown` says (UX-23, #864): *Hide while editing* or *Don't publish*, each of
+ * which ends the other, or *Show*, which ends both. One undo step, none when nothing changes or
+ * when the shared Header or Footer itself would be hidden while editing.
+ */
+export function setLayerShown(session: LayersSession, id: string, shown: LayerShown): void {
+  const found = target(session, id);
+  if (found === undefined || layerShown(found.layer) === shown) return;
+  // Not published, or published again: each ends *Hide while editing* too.
+  if (shown === "hidden" || (shown === "shown" && found.layer.hidden)) {
+    setLayerHidden(session, id, shown === "hidden");
+    return;
+  }
+  if (shown === "editorHidden" && !canHideWhileEditing(session, id)) return;
+  const at = { id, own: found.own, region: found.region };
+  const editing = shown === "editorHidden";
+  const key = editing ? "layers.history.hidWhileEditing" : "layers.history.showed";
+  editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
+    if (editing) {
+      node.props.editorHidden = true;
+      delete node.props.hidden;
+    } else {
+      delete node.props.editorHidden;
+    }
+  });
+}
+
 /**
  * Hides a layer (dimmed on the canvas, left out of the export), or shows it again. The shared
  * Header or Footer itself is hidden on the shown page only, by its *Hide the Header on this page*
@@ -310,7 +359,10 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
         if (page !== undefined) page.settings[hiddenSetting(region)] = hidden;
         if (!hidden) {
           const node = draft.layout[region].find((each) => each.props.id === found.own);
-          if (node !== undefined) delete node.props.hidden;
+          if (node !== undefined) {
+            delete node.props.hidden;
+            delete node.props.editorHidden;
+          }
         }
       },
       { selectionAfter: session.ui.getState(), apply: true },
@@ -325,6 +377,8 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
     } else {
       delete node.props.hidden;
     }
+    // Neither is hidden while editing as well (UX-23): not published is drawn dimmed, shown is drawn.
+    delete node.props.editorHidden;
   });
 }
 
@@ -350,7 +404,10 @@ export function shownLayer(session: LayersSession, id: string): Layer | undefine
     : findLayer(layersOf(content, session.library, site.sharedSections), id);
 }
 
-/** Hides a layer, or shows it again if it is hidden (F-ED-27: Mod + /, and the chip's *Hide*). */
+/**
+ * *Don't publish* a layer, or shows it again if it isn't published (F-ED-27: Mod + /, and the
+ * chip's *Don't publish*).
+ */
 export function toggleLayerHidden(session: LayersSession, id: string): void {
   const found = target(session, id);
   if (found !== undefined) setLayerHidden(session, id, !found.layer.hidden);

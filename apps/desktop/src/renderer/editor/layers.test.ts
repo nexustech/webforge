@@ -12,10 +12,12 @@ import { currentPage } from "../editor/editor-session.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   layerItem,
+  layerShown,
   layersOf,
   moveLayer,
   renameLayer,
   setLayerHidden,
+  setLayerShown,
   toggleLayerHidden,
 } from "./layers.js";
 
@@ -162,7 +164,7 @@ describe("Layers changes, one undo step each", () => {
     setLayerHidden(session, "s2", false);
 
     expect(first()?.[1]?.props).not.toHaveProperty("hidden");
-    expect(labels()).toEqual(["Hid 'Hours'", "Showed 'Hours'", "Showed Section"]);
+    expect(labels()).toEqual(["Kept 'Hours' off your website", "Showed 'Hours'", "Showed Section"]);
     expect(session.ui.getState().nodeId).toBe("a");
     session.history.undo();
     expect(session.ui.getState().nodeId).toBe("a");
@@ -178,7 +180,54 @@ describe("Layers changes, one undo step each", () => {
     toggleLayerHidden(session, "gone");
 
     expect(first()?.[0]?.props).not.toHaveProperty("hidden");
-    expect(labels()).toEqual(["Hid Heading", "Showed Heading", "Showed Section"]);
+    expect(labels()).toEqual(["Kept Heading off your website", "Showed Heading", "Showed Section"]);
+  });
+
+  it("shows a layer, hides it while editing or keeps it off the website, each one step (UX-23)", () => {
+    const { session, first, labels } = setUp();
+    const props = () => first()?.[0]?.props;
+    const shown = () => {
+      const layer = layersOf(first() ?? [], siteLibrary)[0];
+      return layer === undefined ? undefined : layerShown(layer);
+    };
+
+    setLayerShown(session, "a", "editorHidden");
+    expect(props()).toMatchObject({ editorHidden: true });
+    expect(shown()).toBe("editorHidden");
+    setLayerShown(session, "a", "editorHidden");
+    setLayerShown(session, "a", "hidden");
+    expect(props()).toMatchObject({ hidden: true });
+    expect(props()).not.toHaveProperty("editorHidden");
+    setLayerShown(session, "a", "editorHidden");
+    expect(props()).toMatchObject({ editorHidden: true });
+    expect(props()).not.toHaveProperty("hidden");
+    setLayerShown(session, "a", "shown");
+    expect(props()).not.toHaveProperty("editorHidden");
+    expect(shown()).toBe("shown");
+
+    expect(labels()).toEqual([
+      "Hid Heading while editing",
+      "Kept Heading off your website",
+      "Hid Heading while editing",
+      "Showed Heading",
+    ]);
+    session.history.undo();
+    expect(props()).toMatchObject({ editorHidden: true });
+  });
+
+  it("shows again a layer kept off the website that was also hidden while editing, in one step", () => {
+    const { session, first, labels } = setUp();
+    session.history.run("Both", (draft) => {
+      const node = draft.pages[draft.homePageId]?.doc.content[0];
+      const inner = Array.isArray(node?.props.content) ? node.props.content[0] : undefined;
+      if (inner !== undefined) Object.assign(inner.props, { hidden: true, editorHidden: true });
+    });
+
+    setLayerShown(session, "a", "shown");
+
+    expect(first()?.[0]?.props).not.toHaveProperty("hidden");
+    expect(first()?.[0]?.props).not.toHaveProperty("editorHidden");
+    expect(labels()).toEqual(["Both", "Showed Heading"]);
   });
 });
 
@@ -257,7 +306,7 @@ describe("linked copies in Layers (F-ED-23)", () => {
     expect(session.ui.getState().nodeId).toBe(layer);
     expect(session.history.entries().map((entry) => entry.label)).toEqual([
       "Renamed Section to 'Weekdays'",
-      "Hid 'Weekdays'",
+      "Kept 'Weekdays' off your website",
       "Moved 'Weekdays'",
     ]);
     // The shared section itself is untouched.

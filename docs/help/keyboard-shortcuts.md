@@ -38,8 +38,9 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+D                    | Duplicate                                                                |
 | Delete, or Ctrl+Backspace | Delete (on a Mac, Cmd+Delete: the delete key on its own clears the text) |
 | Ctrl+Alt+↑ · Ctrl+Alt+↓   | Move up · Move down (on Windows, Alt+↑ and Alt+↓ too)                    |
-| Ctrl+/                    | Hide or show                                                             |
+| Ctrl+/                    | Don't publish, or show                                                   |
 | F2                        | Rename…                                                                  |
+| Ctrl+F                    | Find and Replace…                                                        |
 | Enter                     | Edit text                                                                |
 | Backspace                 | Clear the text and edit it (deletes an item with no text of its own)     |
 | Esc                       | Cancel a drag                                                            |
@@ -67,7 +68,7 @@ On a Mac, use **Cmd** wherever this page says **Ctrl**, and **Option** for **Alt
 | Ctrl+Shift+O             | Show or hide outlines on the page                                                                                |
 | Ctrl+Shift+N             | Show or hide element names on the page                                                                           |
 | Ctrl+Alt+B               | Show or hide the left panels                                                                                     |
-| Ctrl+J                   | Show or hide the bottom panel (Site Check)                                                                       |
+| Ctrl+J                   | Show or hide the bottom panel (Site Check, Find and Replace)                                                     |
 | F6 · Shift+F6            | Next · previous part of the window: the title bar, the left panels, the page, the bottom panel, the right panels |
 | ?                        | Keyboard shortcuts                                                                                               |
 | F1                       | {appName} Help                                                                                                   |
