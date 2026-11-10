@@ -102,7 +102,10 @@ describe("LayersPanel (F-ED-12)", () => {
     );
 
     const [noted, plain] = screen.getAllByRole("treeitem");
-    expect(noted?.textContent).toBe("Heading, has a note: Swap this photo");
+    // A short name, and the note's text as its description, read once the name has been.
+    expect(noted?.textContent).toBe("Heading, has a note");
+    expect(noted?.getAttribute("aria-description")).toBe("Swap this photo");
+    expect(plain?.hasAttribute("aria-description")).toBe(false);
     expect(noted?.querySelector('[title="Swap this photo"]')).not.toBeNull();
     expect(plain?.textContent).toBe("Heading");
   });

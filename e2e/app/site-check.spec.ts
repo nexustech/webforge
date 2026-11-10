@@ -85,7 +85,8 @@ test("lists a note added from the element menu as a tip, outlined on the page, u
   await expect(rule("notes")).toHaveAttribute("data-status", "warn");
   await expect(rule("notes")).toContainText("Swap this photo before launch");
   await expect(canvas.locator("h1[data-webforge-note]")).toHaveCount(1);
-  await expect(heading).toContainText("has a note: Swap this photo before launch");
+  await expect(heading).toContainText("has a note");
+  await expect(heading).toHaveAttribute("aria-description", "Swap this photo before launch");
 
   await heading.click({ button: "right" });
   await page.getByRole("menu").getByRole("menuitem", { name: "Resolve Note" }).click();

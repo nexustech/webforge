@@ -443,6 +443,8 @@ export function LayersPanel({
                 aria-setsize={row.siblings}
                 aria-posinset={row.index + 1}
                 aria-expanded={hasChildren ? row.expanded : undefined}
+                // A note's text (UX-17), read after the name: the name only says it has one.
+                aria-description={layer.note}
                 tabIndex={focusable ? 0 : -1}
                 {...rowDrag.rowProps(row, draggable)}
                 className={cn(
@@ -580,7 +582,7 @@ export function LayersPanel({
                           aria-hidden
                           className="ml-1 inline size-3.5 align-[-2px] text-warning"
                         />
-                        <span className="sr-only">{`, ${t("notes.marker", { note: layer.note })}`}</span>
+                        <span className="sr-only">{`, ${t("notes.marker")}`}</span>
                       </span>
                     )}
                   </span>
