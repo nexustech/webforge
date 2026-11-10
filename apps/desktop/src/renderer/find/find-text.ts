@@ -6,6 +6,8 @@ import {
   findNode,
   isPageIn,
   MENU_LABEL_MAX,
+  type MenuItem,
+  type MenuLeaf,
   type NodeDoc,
   OPENING_HOURS_NOTE_MAX,
   PAGE_DESCRIPTION_MAX,
@@ -57,6 +59,8 @@ export type TextSpot =
       readonly item?: { readonly id: string; readonly field: string };
     }
   | { readonly kind: "page"; readonly pageId: PageId; readonly field: PageField }
+  /** A menu item's label (F-ED-17): a page item's own, a link's, a section link's, a button's. */
+  | { readonly kind: "menu"; readonly itemId: string }
   | { readonly kind: "settings"; readonly field: SettingsField };
 
 /** One place the text was found, with what's on either side of it in its piece of text. */
@@ -174,12 +178,23 @@ export function replaceInValue(
   return { value: pieces.join(""), replaced };
 }
 
-/** The value of a page or Site Settings field, and the most it may hold. */
+/** The menu's items, those in dropdowns included, in the order the menu shows them. */
+function menuItems(site: SiteDoc): (MenuItem | MenuLeaf)[] {
+  return site.menu.items.flatMap((item) =>
+    item.kind === "group" ? [item, ...item.children] : [item],
+  );
+}
+
+/** The value of a page, menu or Site Settings field, and the most it may hold. */
 function fieldOf(
   site: SiteDoc,
   spot: TextSpot,
 ): { value: unknown; max: number; required: boolean } {
   switch (spot.kind) {
+    case "menu": {
+      const item = menuItems(site).find((each) => each.id === spot.itemId);
+      return { value: item?.label, max: MENU_LABEL_MAX, required: true };
+    }
     case "page": {
       const page = site.pages[spot.pageId];
       switch (spot.field) {
@@ -216,7 +231,10 @@ function fieldOf(
 
 /** Sets a page or Site Settings field of `draft`. */
 function setField(draft: SiteDoc, spot: TextSpot, value: string): void {
-  if (spot.kind === "page") {
+  if (spot.kind === "menu") {
+    const item = menuItems(draft).find((each) => each.id === spot.itemId);
+    if (item !== undefined) item.label = value;
+  } else if (spot.kind === "page") {
     const page = draft.pages[spot.pageId];
     if (page === undefined) return;
     if (spot.field === "title") page.title = value;
@@ -286,7 +304,7 @@ function* textFieldsOf(
 }
 
 /** Where a spot is listed: its page, the Header, the Footer, a shared section or Site Settings. */
-export type SpotGroup = PageId | "header" | "footer" | "settings" | string;
+export type SpotGroup = PageId | "header" | "footer" | "menu" | "settings" | string;
 
 export function groupOf(spot: TextSpot): SpotGroup {
   switch (spot.kind) {
@@ -294,6 +312,8 @@ export function groupOf(spot: TextSpot): SpotGroup {
       return spot.on;
     case "page":
       return spot.pageId;
+    case "menu":
+      return "menu";
     case "settings":
       return "settings";
   }
@@ -301,8 +321,8 @@ export function groupOf(spot: TextSpot): SpotGroup {
 
 /**
  * Everything `options` finds in the site, in the list's order: each page in the Pages panel's
- * order (its own fields, then its elements), the Header, the Footer, each shared section once
- * (never its copies, so it's replaced once) and Site Settings. Hidden elements are searched: their
+ * order (its own fields, then its elements), the Header, the Footer, the menu's labels, each
+ * shared section once (never its copies, so it's replaced once) and Site Settings. Hidden elements are searched: their
  * text is still the owner's.
  */
 export function findInSite(
@@ -339,6 +359,10 @@ export function findInSite(
       add(spot, value, rich);
     }
   });
+  // A page item without a label of its own shows its page's: found there.
+  for (const item of menuItems(site)) {
+    if (item.label !== undefined) add({ kind: "menu", itemId: item.id }, item.label, false);
+  }
   for (const field of SETTINGS_FIELDS) {
     const spot: TextSpot = { kind: "settings", field };
     add(spot, fieldOf(site, spot).value, false);
@@ -347,6 +371,7 @@ export function findInSite(
     ...site.pageOrder,
     "header",
     "footer",
+    "menu",
     ...Object.keys(site.sharedSections),
     "settings",
   ];

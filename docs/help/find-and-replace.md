@@ -18,6 +18,7 @@ Open it with **Edit › Find and Replace…**, or Ctrl+F (Cmd+F on a Mac). It op
 - the text on every page: headings, paragraphs, buttons, captions, questions and answers, and the rest;
 - each page's **Title**, its **Name in the menu** and its **Description** (from Page Settings);
 - the Header and the Footer;
+- the menu's own labels: a page's when you've renamed it in the menu, and each link, section link, button and dropdown;
 - shared sections, once each, however many pages show them;
 - the business details in Site Settings: **Site name**, **Description**, **Business name**, **Address** and **Note on opening hours**.
 
@@ -27,12 +28,12 @@ It leaves alone what a change could break: web addresses (such as a video's link
 
 ## Finding
 
-Type what you're looking for in **Find**. The list shows every match, grouped by page, then the Header, the Footer, each shared section and Site Settings, with the words around it. At the top, it says how many it found and in how many places.
+Type what you're looking for in **Find**. The list shows every match, grouped by page, then the Header, the Footer, the menu, each shared section and Site Settings, with the words around it. At the top, it says how many it found and in how many places.
 
 - **Match case** finds only text with the same capital letters: "Smith" but not "smith".
 - **Whole words** finds only whole words: "Smith" but not "Smithson".
 
-Click a match to go to it: {appName} shows its page and selects the element. For a page's title or description, it opens that page's **Page Settings**; for a name in the menu, the Pages panel; for a business detail, **Site Settings**.
+Click a match to go to it: {appName} shows its page and selects the element. For a page's title or description, it opens that page's **Page Settings**; for a name in the menu or a menu item, the Pages panel; for a business detail, **Site Settings**.
 
 The list follows your changes as you work.
 

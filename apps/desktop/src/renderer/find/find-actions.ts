@@ -42,6 +42,7 @@ const SITE_PANEL_ID = "site";
 export function groupName(site: SiteDoc, group: SpotGroup): string {
   if (group === "header") return t("findReplace.group.header");
   if (group === "footer") return t("findReplace.group.footer");
+  if (group === "menu") return t("findReplace.group.menu");
   if (group === "settings") return t("findReplace.group.settings");
   const page = pageEntryOf(site.pages, group);
   if (page !== undefined) return page.title.trim() === "" ? page.slug : page.title;
@@ -62,6 +63,12 @@ export function spotName(site: SiteDoc, library: ComponentLibrary, spot: TextSpo
           return t("pageSettings.metaDescription");
       }
       break;
+    case "menu": {
+      const item = site.menu.items
+        .flatMap((each) => (each.kind === "group" ? [each, ...each.children] : [each]))
+        .find((each) => each.id === spot.itemId);
+      return t("findReplace.menuItem", { kind: t(`menu.kind.${item?.kind ?? "link"}`) });
+    }
     case "settings":
       switch (spot.field) {
         case "general.name":
@@ -115,7 +122,8 @@ function pageWithCopy(
 /**
  * Shows where `spot` is: an element selected on its page (the Header's and Footer's on the page
  * shown, a shared section's in a copy of it), a page's title or description in its Page Settings,
- * its name in the menu in the Pages panel, a business detail in Site Settings.
+ * its name in the menu and the menu's own labels in the Pages panel, a business detail in Site
+ * Settings.
  */
 export function showSpot(spot: TextSpot, { session, panels, settings, commands }: FindActions) {
   const site = session.history.document.getState();
@@ -140,6 +148,9 @@ export function showSpot(spot: TextSpot, { session, panels, settings, commands }
       session.showPage(spot.pageId);
       if (spot.field === "navLabel") panels.show(SITE_PANEL_ID);
       else commands.run(COMMAND_IDS.pageSettings);
+      return;
+    case "menu":
+      panels.show(SITE_PANEL_ID);
       return;
     case "settings": {
       const section = spot.field.startsWith("general.") ? "general" : "contact";
@@ -177,7 +188,7 @@ export function replaceOne(
 
 /** The pages a change to `groups` shows on: each one's, a shared section's copies', or all. */
 function pagesChanged(site: SiteDoc, groups: ReadonlySet<SpotGroup>): number {
-  if (groups.has("header") || groups.has("footer") || groups.has("settings")) {
+  if (["header", "footer", "menu", "settings"].some((shown) => groups.has(shown))) {
     return site.pageOrder.length;
   }
   const pages = new Set<PageId>();

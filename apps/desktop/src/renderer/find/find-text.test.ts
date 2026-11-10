@@ -182,6 +182,80 @@ describe("findInSite", () => {
   });
 });
 
+describe("the menu's labels (F-ED-17)", () => {
+  /** A custom menu: Home without a label of its own, Home with one, a button, a dropdown. */
+  function menuSite() {
+    const ids = {
+      plain: newId("menuItem"),
+      named: newId("menuItem"),
+      button: newId("menuItem"),
+      group: newId("menuItem"),
+      child: newId("menuItem"),
+    };
+    const site = produce(starterSite(), (draft) => {
+      const pageId = draft.homePageId;
+      draft.menu = {
+        follows: "custom",
+        items: [
+          { id: ids.plain, kind: "page", pageId, hidden: false },
+          { id: ids.named, kind: "page", pageId, label: "Smith's", hidden: false },
+          {
+            id: ids.button,
+            kind: "button",
+            link: { kind: "page", pageId },
+            label: "Smith",
+            hidden: false,
+          },
+          {
+            id: ids.group,
+            kind: "group",
+            label: "More",
+            hidden: false,
+            children: [
+              {
+                id: ids.child,
+                kind: "link",
+                link: { kind: "page", pageId },
+                label: "Book Smith",
+                hidden: false,
+              },
+            ],
+          },
+        ],
+      };
+    });
+    return { site, ids };
+  }
+
+  it("finds a page item's own label, a button's and a dropdown's links, never a page's name", () => {
+    const { site, ids } = menuSite();
+
+    expect(findInSite(site, siteLibrary, SMITH).map(({ spot }) => spot)).toEqual([
+      { kind: "menu", itemId: ids.named },
+      { kind: "menu", itemId: ids.button },
+      { kind: "menu", itemId: ids.child },
+    ]);
+  });
+
+  it("replaces them, but never leaves a label empty", () => {
+    const { site, ids } = menuSite();
+    const replace = (replacement: string) =>
+      produce(site, (draft) => {
+        const spots = findInSite(site, siteLibrary, SMITH).map(({ spot }) => spot);
+        replaceInSite(draft, siteLibrary, SMITH, replacement, spots);
+      });
+
+    const smyth = replace("Smyth").menu.items;
+    expect(smyth.map((item) => item.label)).toEqual([undefined, "Smyth's", "Smyth", "More"]);
+    expect(smyth[3]?.kind === "group" ? smyth[3].children[0]?.label : undefined).toBe("Book Smyth");
+
+    // The button would be left without a label: it keeps it.
+    const emptied = replace("").menu.items;
+    expect(emptied.find((item) => item.id === ids.button)?.label).toBe("Smith");
+    expect(emptied.find((item) => item.id === ids.named)?.label).toBe("'s");
+  });
+});
+
 describe("replaceInSite", () => {
   const replaceAll = (site: SiteDoc, options: FindOptions, replacement: string) =>
     produce(site, (draft) => {

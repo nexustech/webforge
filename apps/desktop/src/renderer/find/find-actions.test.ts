@@ -137,6 +137,28 @@ describe("replaceAll", () => {
     expect(labels()).toEqual(["Replaced 'Sons' with '' in 1 place"]);
   });
 
+  it("counts every page for a change to the menu, which every page shows", async () => {
+    const { actions, asked, doc } = setUp((site) => {
+      site.menu = {
+        follows: "custom",
+        items: [
+          {
+            id: newId("menuItem"),
+            kind: "button",
+            link: { kind: "page", pageId: site.homePageId },
+            label: "Book with Smith",
+            hidden: false,
+          },
+        ],
+      };
+    });
+
+    await replaceAll(actions, { ...SMITH, query: "Book" }, "Call");
+
+    expect(asked[0]?.affectedPages).toBe(3);
+    expect(doc().menu.items[0]?.label).toBe("Call with Smith");
+  });
+
   it("counts every page for a change to the Header, which every page shows", async () => {
     const { actions, asked } = setUp((site) => {
       site.layout.header = [{ type: "Header", props: { id: "header", siteName: "Sons Ltd" } }];
@@ -220,6 +242,14 @@ describe("showSpot", () => {
     expect(actions.panels.show).toHaveBeenCalledWith("site");
   });
 
+  it("shows the menu's labels in the Pages panel", () => {
+    const { actions } = setUp();
+
+    showSpot({ kind: "menu", itemId: "item" }, actions);
+
+    expect(actions.panels.show).toHaveBeenCalledWith("site");
+  });
+
   it("opens Site Settings at the business details' section", () => {
     const { actions } = setUp();
 
@@ -241,6 +271,7 @@ describe("naming what was found", () => {
     expect(groupName(doc(), "header")).toBe("Header");
     expect(groupName(doc(), "footer")).toBe("Footer");
     expect(groupName(doc(), "settings")).toBe("Site Settings");
+    expect(groupName(doc(), "menu")).toBe("Menu");
     expect(groupName(doc(), shared)).toBe("Shared section 'Opening times'");
   });
 
@@ -271,6 +302,7 @@ describe("naming what was found", () => {
     expect(spotName(doc(), siteLibrary, { kind: "page", pageId: home, field: "title" })).toBe(
       "Title",
     );
+    expect(spotName(doc(), siteLibrary, { kind: "menu", itemId: "gone" })).toBe("Menu link");
     expect(spotName(doc(), siteLibrary, { kind: "settings", field: "contact.businessName" })).toBe(
       "Business name",
     );

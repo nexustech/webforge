@@ -10,8 +10,9 @@ export const find = {
   "findReplace.replaceOne": "Replace",
   "findReplace.replaceOneLabel": "Replace in '{text}' on {page}",
   "findReplace.inField": "{element} · {field}",
+  "findReplace.menuItem": "Menu {kind}",
   "findReplace.status.empty":
-    "Type the text to find on every page, in the Header and Footer, in shared sections and in Site Settings.",
+    "Type the text to find on every page, in the Header, Footer and menu, in shared sections and in Site Settings.",
   "findReplace.status.none": "Nothing found.",
   "findReplace.status.found": "{matches} in {places}",
   "findReplace.matches.one": "1 match",
@@ -20,6 +21,7 @@ export const find = {
   "findReplace.places.other": "{count} places",
   "findReplace.group.header": "Header",
   "findReplace.group.footer": "Footer",
+  "findReplace.group.menu": "Menu",
   "findReplace.group.settings": "Site Settings",
   "findReplace.group.shared": "Shared section '{name}'",
   "findReplace.confirm.action": "Replace '{find}' with '{replace}' everywhere?",
