@@ -59,7 +59,7 @@ Most benefit first. **Measured** means the cost is measured; **hypothesis** mean
   | A styled canvas, after the launch           | 3211 (3380) | 3036 (3477)      |
   - **The renderer's cache helps, later than expected:** V8 compiles most functions only when they first run, so the saving shows in React's first render (−0.26 s), not before `DOMContentLoaded`. The first launch, which builds the cache, is about 0.1 s slower. Kept in #893.
   - **Main's compile cache saves too little to measure:** since #892, main loads 1.4 MB at start-up, and Node's log showed every cached module accepted. Dropped. Both caches let someone who can write to the profile give the app code to run, and main's is checked against less: [ADR 0023](../adr/0023-app-scheme-and-canvas-boundary.md#amendment-9-nov-2026-893-the-code-cache).
-- **Removed (10 Nov):** the product owner declined that risk for the renderer's cache too, so the scheme no longer has `codeCache` and neither cache is used. The editor's first render is about 0.26 s later again from the second launch on, and the first launch 0.1 s sooner. Entries the cached build wrote are never read again (ADR 0023).
+- **Removed (10 Nov):** the product owner declined that risk for the renderer's cache too, so the scheme no longer has `codeCache` and neither cache is used: start-up is back to the table's "Without" column. Entries the cached build wrote are never read again (ADR 0023).
 
 ### 3. Start the canvas's CSS worker while the editor loads ([#894](https://github.com/nexustech/webforge/issues/894))
 

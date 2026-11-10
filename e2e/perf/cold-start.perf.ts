@@ -30,8 +30,9 @@ import { createFromTemplate, TEMPLATES } from "../app/templates.js";
 // opening Webforge from its icon waits for.
 //
 // The first launch, on a new profile, is kept apart from the later ones: it has no GPU cache yet.
-// The editor's scripts have no code cache on any launch (ADR 0023). The operating system's file cache can't be emptied from here, so even the first
-// launch reads a build that was just read; a launch after a reboot is slower still.
+// The editor's scripts have no code cache on any launch (ADR 0023). The operating system's file
+// cache can't be emptied from here, so even the first launch reads a build that was just read; a
+// launch after a reboot is slower still.
 
 /** §10: a cold start to an editable canvas of a 5-page site, on a mid-range laptop. */
 const BUDGET_MS = 3_000;
