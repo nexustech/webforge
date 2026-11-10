@@ -47,7 +47,13 @@ export function specOf(field: FieldDef): FieldSpec | undefined {
   switch (field.kind) {
     // The input stops at the longest text the field takes, as a change past it isn't recorded.
     case "text":
-      return { kind: "text", label, maxLength: MAX_TEXT_LENGTH };
+      return {
+        kind: "text",
+        label,
+        maxLength: MAX_TEXT_LENGTH,
+        // A date (#865): the browser's date picker, its value `YYYY-MM-DD`.
+        ...(field.inputType === undefined ? {} : { inputType: field.inputType }),
+      };
     case "toggle":
       return { kind: "toggle", label };
     case "select":

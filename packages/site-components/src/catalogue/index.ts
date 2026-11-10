@@ -2,6 +2,7 @@ import { t } from "@webforge/i18n";
 import type { LayoutDoc, PageDoc } from "@webforge/model";
 import { createLibrary } from "../define.js";
 import type { ComponentLibrary } from "../library.js";
+import { announcementBarComponents } from "./announcement-bar.js";
 import { basicComponents } from "./basic.js";
 import { carouselComponents } from "./carousel.js";
 import { commerceComponents } from "./commerce.js";
@@ -46,6 +47,7 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   logosComponents,
   statsComponents,
   customCodeComponents,
+  announcementBarComponents,
 );
 
 /** The page a new site starts with. */

@@ -1,3 +1,4 @@
+import { announcementBar } from "./announcementBar.js";
 import { basic } from "./basic.js";
 import { carousel } from "./carousel.js";
 import { commerce } from "./commerce.js";
@@ -43,6 +44,7 @@ export const componentFamilies = {
   logos,
   stats,
   customCode,
+  announcementBar,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -66,4 +68,5 @@ export const components = {
   ...logos,
   ...stats,
   ...customCode,
+  ...announcementBar,
 } as const;

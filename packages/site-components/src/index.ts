@@ -17,6 +17,7 @@ export {
   sectionOverlay,
 } from "./background.js";
 export { BEHAVIOUR_SCRIPTS } from "./behaviours.js";
+export { ABOVE_THE_HEADER } from "./catalogue/announcement-bar.js";
 export type { ColumnLayout } from "./catalogue/column-layouts.js";
 export {
   COLUMN_LAYOUTS,

@@ -33,6 +33,12 @@ export function themedPageUrl(page: string): string {
 export const NO_BANNER_SITE_DIR = join(EXPORTED_SITE_DIR, "no-banner");
 
 /**
+ * Where the setup exports the fixture's home and About pages with an Announcement bar above the
+ * Header (6.4), inside the fixture's folder so CI uploads it with it.
+ */
+export const ANNOUNCEMENT_SITE_DIR = join(EXPORTED_SITE_DIR, "announcement");
+
+/**
  * Where the setup exports every template, one folder each by its id (3.10), inside the fixture's
  * folder so CI uploads them with it.
  */

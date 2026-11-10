@@ -436,11 +436,16 @@ test.describe("exported site from disk", () => {
       // the link's own), so it's compared with how it looked before.
       await expect.poll(() => background(visit.summary)).not.toBe(plain);
       expect(await background(visit.summary)).not.toBe("rgba(0, 0, 0, 0)");
-      // Accessible as it is: aria-current="location" is the place on this page. Its colours fade
-      // in, so axe waits for them, or it measures two greys from halfway (WebKit, #930's CI).
-      await visit.summary.evaluate((element) =>
-        Promise.all(element.getAnimations().map((animation) => animation.finished)),
+      // Once its colours have finished changing: midway, axe measures two greys (a slow runner).
+      await visit.summary.evaluate((summary) =>
+        Promise.all(
+          summary
+            .getAnimations()
+            .filter((each) => each instanceof CSSTransition)
+            .map((each) => each.finished),
+        ),
       );
+      // Accessible as it is: aria-current="location" is the place on this page.
       const results = await new AxeBuilder({ page }).include("header.site-header").analyze();
       expect(results.violations).toEqual([]);
 

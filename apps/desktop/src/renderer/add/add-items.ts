@@ -12,10 +12,11 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
-import type { ComponentLibrary } from "@webforge/site-components";
+import { ABOVE_THE_HEADER, type ComponentLibrary } from "@webforge/site-components";
 import type { AddItem } from "../editor/add-item.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
 import { labelFor } from "../editor/labels.js";
+import { regionHidden } from "../editor/shared-layout.js";
 
 /**
  * The Add panel's catalogue (F-ED-1) and where a click adds to the page: sections between
@@ -309,7 +310,7 @@ export function insertAt(content: NodeDoc[], target: AddTarget, nodes: readonly 
 }
 
 /** The parts of an editor session adding uses. */
-export type AddSession = Pick<EditorSession, "history" | "ui" | "edit" | "library">;
+export type AddSession = Pick<EditorSession, "history" | "ui" | "edit" | "library" | "select">;
 
 /**
  * Where a click on `type` (a component's, or a preset's, {@link presetKey}) would add it on the
@@ -346,6 +347,18 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
     return false;
   }
   const { pageId, viewport } = session.ui.getState();
+  const site = session.history.document.getState();
+  // A click puts it above the Header, once, on every page; a second click shows the one there
+  // (6.4). A page that hides the Header shows none of it: there it goes on the page, as a drop does.
+  const toHeader =
+    ABOVE_THE_HEADER.has(type) && point === undefined && !regionHidden(site, pageId, "header");
+  if (toHeader) {
+    const there = site.layout.header.find((node) => node.type === type);
+    if (there !== undefined) {
+      session.select(there.props.id);
+      return true;
+    }
+  }
   const id = newId("node");
   const label = labelFor(
     { kind: "insert", nodeId: id, componentType: type, field: null, page, selection: id },
@@ -355,7 +368,7 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
     "insert",
     label,
     (draft) => {
-      const content = draft.pages[pageId]?.doc.content;
+      const content = toHeader ? draft.layout.header : draft.pages[pageId]?.doc.content;
       if (content === undefined) return;
       // Every element in its defaults (a Columns' columns) gets an id of its own too.
       const ids = [id];
@@ -364,7 +377,9 @@ export function addComponent(session: AddSession, key: string, point?: InsertPoi
         new Set(),
         () => ids.shift() ?? newId("node"),
       );
-      if (node !== undefined) insertAt(content, target, [node]);
+      if (node === undefined) return;
+      if (toHeader) content.unshift(node);
+      else insertAt(content, target, [node]);
     },
     { selectionAfter: { pageId, viewport, nodeId: id }, apply: true },
   );
