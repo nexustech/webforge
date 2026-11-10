@@ -100,7 +100,7 @@ export type CssEditor = {
   readonly view: EditorView;
   /** Shows `css` if it differs: the document changed it (undo, *Target this element*). */
   setCss(css: string): void;
-  /** Puts the caret at `pos`, scrolled into view, with the focus. */
+  /** Puts the caret at `pos`, or the end if the stylesheet is shorter, scrolled into view, with the focus. */
   focusAt(pos: number): void;
   destroy(): void;
 };
@@ -180,7 +180,8 @@ export function createCssEditor(parent: HTMLElement, options: CssEditorOptions):
       });
     },
     focusAt(pos) {
-      view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
+      const anchor = Math.min(Math.max(pos, 0), view.state.doc.length);
+      view.dispatch({ selection: { anchor }, scrollIntoView: true });
       view.focus();
     },
     destroy: () => view.destroy(),

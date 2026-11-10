@@ -50,7 +50,10 @@ const STYLESHEET_COMMANDS = {
  */
 export function registerStylesheetPanel(options: StylesheetPanelOptions): () => void {
   const { session, panels, commands, preferences } = options;
-  /** Where the caret goes next: a new object each time, so the same position moves it again. */
+  /**
+   * Where the caret goes next, once: a new object each time, so the same position moves it again,
+   * and cleared once the panel has put it there, so reopening the panel leaves the caret alone.
+   */
   const caret = createStore<{ readonly at: number } | undefined>(() => undefined);
 
   const show = () => {
@@ -124,6 +127,7 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
         onTarget={target}
         onMoveLook={moveLook}
         caret={at}
+        onCaretShown={() => caret.setState(undefined, true)}
       />
     );
   }

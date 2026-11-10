@@ -31,6 +31,8 @@ export type StylesheetPanelProps = {
    * time, once the stylesheet it is a position in is shown.
    */
   readonly caret?: { readonly at: number } | undefined;
+  /** The caret went there: it's used up, so reopening the panel doesn't put it there again. */
+  readonly onCaretShown?: (() => void) | undefined;
 };
 
 /**
@@ -48,6 +50,7 @@ export function StylesheetPanel({
   onTarget,
   onMoveLook,
   caret,
+  onCaretShown,
 }: StylesheetPanelProps) {
   const host = useRef<HTMLDivElement>(null);
   const editor = useRef<CssEditor | null>(null);
@@ -58,6 +61,7 @@ export function StylesheetPanel({
   const firstCss = useEffectEvent(() => css);
   const follow = useEffectEvent((show: (next: string) => void) => followCss?.(show));
   const pendingCaret = useEffectEvent(() => caret);
+  const caretShown = useEffectEvent(() => onCaretShown?.());
 
   useEffect(() => {
     const parent = host.current;
@@ -79,7 +83,10 @@ export function StylesheetPanel({
       stop = follow((next) => shown.setCss(next));
       // A caret asked for while CodeMirror loaded (*Target this element* opening the panel).
       const pending = pendingCaret();
-      if (pending !== undefined) shown.focusAt(pending.at);
+      if (pending !== undefined) {
+        shown.focusAt(pending.at);
+        caretShown();
+      }
     });
     return () => {
       gone = true;
@@ -90,7 +97,10 @@ export function StylesheetPanel({
   }, []);
 
   useEffect(() => {
-    if (caret !== undefined) editor.current?.focusAt(caret.at);
+    const shown = editor.current;
+    if (caret === undefined || shown === null) return;
+    shown.focusAt(caret.at);
+    caretShown();
   }, [caret]);
 
   return (

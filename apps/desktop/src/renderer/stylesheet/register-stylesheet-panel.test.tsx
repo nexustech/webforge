@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
@@ -77,5 +77,45 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
       "disabled",
       true,
     );
+  });
+
+  it("puts the caret in a targeted rule once, not again when the panel reopens after Undo", async () => {
+    const { panels, session, commands } = setUp("advanced");
+    const home = session.history.document.getState().homePageId;
+    const [first] = session.history.document.getState().pages[home]?.doc.content ?? [];
+    if (first === undefined) throw new Error("Nothing on the home page");
+    act(() => {
+      session.edit("props", "Set anchor", (draft) => {
+        const node = draft.pages[home]?.doc.content[0];
+        if (node !== undefined) node.props.advanced = { anchorId: "welcome" };
+      });
+      session.select(first.props.id);
+    });
+    const [panel] = panels.list();
+    if (panel === undefined) throw new Error("No panel");
+    const Panel = panel.component;
+    const editorBox = () => screen.findByRole("textbox", { name: "Stylesheet (custom.css)" });
+
+    // Target This Element: the rule, and the caret in it.
+    const shown = render(<Panel />);
+    await act(async () => {
+      commands.run("stylesheet.target");
+    });
+    await waitFor(async () => expect((await editorBox()).textContent).toContain("#welcome {"));
+    await waitFor(async () =>
+      expect((await editorBox()).contains(document.activeElement)).toBe(true),
+    );
+
+    // Closed, the rule undone, then opened again: the old caret is gone, nothing throws.
+    shown.unmount();
+    act(() => session.history.undo());
+    (document.activeElement as HTMLElement | null)?.blur();
+    render(<Panel />);
+    const reopened = await editorBox();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(reopened.textContent).toBe("");
+    expect(reopened.contains(document.activeElement)).toBe(false);
   });
 });
