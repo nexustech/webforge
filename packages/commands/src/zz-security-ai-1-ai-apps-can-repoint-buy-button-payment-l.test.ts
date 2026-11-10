@@ -59,6 +59,7 @@ describe("security: AI apps repointing money and data destinations", () => {
         run: vi.fn<CommandHost["run"]>((label, recipe) => history.run(label, recipe)),
         editing: () => false,
         mode: () => "content" as const,
+        published: () => false,
         confirm,
       };
       const api = createCommandApi(host);

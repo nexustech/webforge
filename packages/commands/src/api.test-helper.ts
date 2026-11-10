@@ -59,6 +59,8 @@ export function setup(answer: boolean | "never" = true, edit?: (doc: SiteDoc) =>
     run: vi.fn<CommandHost["run"]>((label, recipe) => history.run(label, recipe)),
     editing: () => false,
     mode: () => "design" as const,
+    // Never published unless a test says so (#925).
+    published: vi.fn<CommandHost["published"]>(() => false),
     confirm,
   };
   return { history, host, confirm };

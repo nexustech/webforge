@@ -114,7 +114,7 @@ Like the privacy page, each starts with a reminder that it's a starting point, n
 
 Once your site is published, people and search engines know your pages by their addresses. If a page's address changes, links to the old address would stop working, and the page could lose its place in search results.
 
-So when you rename a page and its file name changes, **Keep the old address working** is ticked once you've published the site. Untick it if nobody uses the old address yet. Moving a page to a folder, making it the Home page or changing its file name in Page Settings keeps the old address too, once the site has been published.
+So when you rename a page and its file name changes, **Keep the old address working** is ticked once you've published the site. Untick it if nobody uses the old address yet. Moving a page to a folder, making it the Home page or changing its file name in Page Settings keeps the old address too, once the site has been published, and so does an [AI app](ai-apps.md) that renames a page.
 
 At each old address, your site gets a small page that sends visitors and search engines straight on to the page's new address. On Netlify, the old address redirects for good. Renaming and keeping the old address is one step, so **Undo** takes back both.
 

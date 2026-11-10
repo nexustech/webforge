@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
 import { z } from "zod";
 import { COMMANDS, type CommandName } from "./commands.js";
-import type { Failure, Plan } from "./plan.js";
+import type { Failure, Plan, PlanContext } from "./plan.js";
 import { QUERIES, type QueryName, QueryRefusal } from "./queries.js";
 import type { Actor, CommandHost, CommandResult } from "./types.js";
 
@@ -42,10 +42,9 @@ export function createCommandApi(host: CommandHost): CommandApi {
     const parsed = command.input.safeParse(input);
     if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
     // Each command's input type is its own schema's output.
-    return (command.plan as (site: unknown, input: unknown) => Plan | Failure)(
-      host.history.document.getState(),
-      parsed.data,
-    );
+    return (
+      command.plan as (site: unknown, input: unknown, context: PlanContext) => Plan | Failure
+    )(host.history.document.getState(), parsed.data, { published: host.published() });
   };
 
   /** Asks the person to allow a change; declined when they don't, or after a minute. */

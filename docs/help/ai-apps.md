@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-08
+updated: 2026-11-10
 ---
 
 # AI apps
@@ -88,7 +88,7 @@ An app works on the site you have open in {appName}, and only that one. It can:
 
 - read your site's pages, settings and theme, and the sections and elements it can add, with their options;
 - add, change, move and delete sections and elements, and change text;
-- add, rename, move and delete pages, and change a page's title, description, **Hide from navigation** and **Hide this page from search engines**, as [Page Settings](pages.md) does;
+- add, rename, move and delete pages, and change a page's title, description, **Hide from navigation** and **Hide this page from search engines**, as [Page Settings](pages.md) does. When an app renames a page of a site you've published, the page's old address keeps working, as **Rename…** does, in the same step: see [Keeping old addresses working](pages.md#keeping-old-addresses-working);
 - change your business's details in [Site Settings](site-settings.md): its name, description, language and type, web address, contact details, opening hours, social profiles and search engine settings;
 - change the theme;
 - see what's in [Media](media.md), and place your pictures in elements;

@@ -2,7 +2,7 @@ import { plural, t } from "@webforge/i18n";
 import { type PageId, pageEntryOf, type SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
-import { type Failure, fail, failed, type Plan } from "./plan.js";
+import { type Failure, fail, failed, type Plan, type PlanContext, UNPUBLISHED } from "./plan.js";
 
 /** The longest plan: a whole site's build, with room to spare. */
 const MOST_COMMANDS = 200;
@@ -13,7 +13,7 @@ type Step = { readonly name: string; readonly input: unknown };
 /** A command a plan can hold: what `COMMANDS` has for each, but `plan`. */
 type Command = {
   readonly input: z.ZodType;
-  readonly plan: (site: SiteDoc, input: never) => Plan | Failure;
+  readonly plan: (site: SiteDoc, input: never, context?: PlanContext) => Plan | Failure;
 };
 
 /** What a plan does, for its one question (D7): counted and named. */
@@ -225,7 +225,11 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         .min(1)
         .max(MOST_COMMANDS),
     }),
-    plan(site: SiteDoc, input: { title: string; commands: readonly Step[] }): Plan | Failure {
+    plan(
+      site: SiteDoc,
+      input: { title: string; commands: readonly Step[] },
+      context: PlanContext = UNPUBLISHED,
+    ): Plan | Failure {
       // Each command against the site as the ones before it leave it: immer's copies share what a
       // step leaves alone, as the history's do, so a long build isn't the whole site copied per step.
       let working: SiteDoc = site;
@@ -251,7 +255,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         if (!parsed.success) {
           return fail("invalid", `${where}: ${z.prettifyError(parsed.error)} Nothing changed.`);
         }
-        const planned = command.plan(working, parsed.data as never);
+        const planned = command.plan(working, parsed.data as never, context);
         if (failed(planned)) {
           return fail(planned.status, `${where}: ${planned.message} Nothing changed.`);
         }
