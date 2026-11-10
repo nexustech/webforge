@@ -401,8 +401,9 @@ function LookStep({
 }
 
 /**
- * *Pages*: the template's pages, ticked, the home page always kept; then the business type's page
- * recipes (QS-3), unticked.
+ * *Pages*: separate pages or one page (GA10, 5.9); the template's pages, ticked, the home page
+ * always kept; then the business type's page recipes (QS-3), unticked. On one page, the pages kept
+ * become its sections, in this order.
  */
 function PagesStep({
   answers,
@@ -429,7 +430,26 @@ function PagesStep({
   return (
     <ScrollArea className="min-h-0 flex-1">
       <div className="flex max-w-2xl flex-col gap-5 p-px">
-        <p className="m-0 text-sm text-muted-foreground">{t("quickStart.pagesText")}</p>
+        <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+          <legend className="mb-2 p-0 text-sm font-semibold">{t("quickStart.layout")}</legend>
+          <div className="grid grid-cols-2 gap-2">
+            <LayoutOption
+              label={t("quickStart.layout.pages")}
+              hint={t("quickStart.layout.pagesHint")}
+              checked={!answers.onePage}
+              onChoose={() => onChange({ onePage: false })}
+            />
+            <LayoutOption
+              label={t("quickStart.layout.onePage")}
+              hint={t("quickStart.layout.onePageHint")}
+              checked={answers.onePage}
+              onChoose={() => onChange({ onePage: true })}
+            />
+          </div>
+        </fieldset>
+        <p className="m-0 text-sm text-muted-foreground">
+          {t(answers.onePage ? "quickStart.onePageText" : "quickStart.pagesText")}
+        </p>
         <section className="flex flex-col gap-2">
           <h3 className="m-0 text-sm font-semibold">
             {t("quickStart.templatePages", {
@@ -616,6 +636,39 @@ function DetailsStep({
         </div>
       </ScrollArea>
     </div>
+  );
+}
+
+/** Separate pages or one page: a radio, with a line saying what it makes. */
+function LayoutOption({
+  label,
+  hint,
+  checked,
+  onChoose,
+}: {
+  readonly label: string;
+  readonly hint: string;
+  readonly checked: boolean;
+  readonly onChoose: () => void;
+}) {
+  return (
+    <label
+      className={cn(
+        "flex cursor-pointer flex-col gap-0.5 rounded-sm border border-border px-3 py-2 text-sm",
+        "hover:bg-hover has-[:checked]:border-primary has-[:checked]:bg-accent has-[:checked]:text-accent-foreground",
+        "has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring",
+      )}
+    >
+      <input
+        type="radio"
+        name="quick-start-layout"
+        checked={checked}
+        onChange={onChoose}
+        className="sr-only"
+      />
+      <span className="font-medium">{label}</span>
+      <span className="text-xs text-muted-foreground">{hint}</span>
+    </label>
   );
 }
 

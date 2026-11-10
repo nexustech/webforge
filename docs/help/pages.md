@@ -73,6 +73,8 @@ Each item's menu can rename it, change its link, hide it, move it up or down, or
 
 Once you change the menu yourself, it stops following the pages. **Follow Page Order** makes it follow them again.
 
+A [one-page site](one-page-sites.md) starts with a menu of links to the sections of its home page.
+
 ### A privacy page
 
 If your site has a form, a newsletter signup or Google Analytics, it collects details from your visitors, and it should say what you do with them. **Add Page › Privacy Page** writes a page for you to start from:
