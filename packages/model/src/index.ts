@@ -177,7 +177,7 @@ export {
   publishDestinationsFrom,
   publishDestinationsSchema,
 } from "./publish-destinations.js";
-export { isDraftPage, publishedSite } from "./published-site.js";
+export { isDraftPage, previewedSite, publishedSite } from "./published-site.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,

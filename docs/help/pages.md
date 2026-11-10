@@ -52,7 +52,8 @@ The Home page and the Page not found page can't be deleted.
 
 A **draft** is a page you're still working on, or one for later, such as a seasonal menu. It stays in your site, and you edit it like any other page, but it isn't on your website:
 
-- **Export, Publish and Preview leave it out,** with its menu item and the pictures and documents only it uses. Search engines and AI tools never see it.
+- **Export and Publish leave it out,** with its menu item and the pictures and documents only it uses. Search engines and AI tools never see it.
+- **Preview shows it,** so you can check it in your browser before it goes live. Open it from the page itself; your menu in Preview leaves it out, as your website's will.
 - **Links to it are left out too.** Site Check lists every link to a draft page, under _Links to draft pages_. Its **Fix** opens the draft's Page Settings. Publishing waits until you fix them, so visitors never meet a button that goes nowhere.
 - **Site Check doesn't check a draft's own content** until it's published.
 

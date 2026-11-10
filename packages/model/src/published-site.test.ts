@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PageId } from "./ids.js";
-import { isDraftPage, publishedSite } from "./published-site.js";
+import { isDraftPage, previewedSite, publishedSite } from "./published-site.js";
 import { createSite, type SiteDoc } from "./site-doc.js";
 
 /** A site with a home page, *Page not found* and the pages `ids`, `drafts` of them drafts. */
@@ -61,5 +61,24 @@ describe("publishedSite", () => {
     const home = doc.pages[doc.homePageId];
     if (home === undefined) throw new Error("no home page");
     expect(isDraftPage(doc, home)).toBe(false);
+  });
+});
+
+describe("previewedSite", () => {
+  it("keeps the draft pages, out of the navigation, and the rest as they are (G37)", () => {
+    const doc = site(["about", "winter"], ["winter"]);
+    const winter = "winter" as PageId;
+
+    const previewed = previewedSite(doc);
+
+    expect(previewed.pageOrder).toEqual(doc.pageOrder);
+    expect(previewed.pages[winter]?.settings).toMatchObject({
+      draft: true,
+      hideFromNavigation: true,
+    });
+    expect(previewed.pages[about]).toBe(doc.pages[about]);
+    expect(doc.pages[winter]?.settings.hideFromNavigation).toBe(false);
+    const plain = site(["about"]);
+    expect(previewedSite(plain)).toBe(plain);
   });
 });

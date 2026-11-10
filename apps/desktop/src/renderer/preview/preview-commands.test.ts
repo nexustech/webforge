@@ -212,6 +212,24 @@ describe("registerPreviewCommands (3.2)", () => {
     expect(content?.snapshot.name).toBe(session.history.document.getState().settings.general.name);
   });
 
+  it("opens a draft page too, at its address, out of the menu as it will be published (G37)", async () => {
+    const { session, registry, api, about } = setUp();
+    session.edit("props", "Made 'About' a draft", (draft) => {
+      const page = draft.pages[about];
+      if (page !== undefined) page.settings.draft = true;
+    });
+    session.showPage(about);
+
+    await runSettled(registry, COMMAND_IDS.preview);
+
+    const [, content, page] = api.open.mock.calls[0] ?? [];
+    expect(page).toBe("services/about.html");
+    expect(content?.snapshot.pages.find((each) => each.id === about)).toMatchObject({
+      path: "services/about",
+      hideFromNavigation: true,
+    });
+  });
+
   it("says so when the preview couldn't open", async () => {
     const { registry, api, notify } = setUp();
     api.open.mockResolvedValueOnce("failed");

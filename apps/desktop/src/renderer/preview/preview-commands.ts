@@ -64,7 +64,9 @@ export function registerPreviewCommands(
       .catch((error: unknown) => reportFailure("preview.code", error));
   };
   const site = () => session.history.document.getState();
-  const content = () => siteContentFor(site(), library);
+  // Draft pages too (G37, #864), out of the menu: a draft is checked in a browser before it's
+  // published, and the menu is as it will be.
+  const content = () => siteContentFor(site(), library, { drafts: true });
   const page = () => previewPageOf(site(), session.ui.getState().pageId);
 
   let following: (() => void) | undefined;

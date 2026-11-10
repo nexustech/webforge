@@ -4,6 +4,7 @@ import {
   type ImageMeta,
   isImageMeta,
   menuFileLinks,
+  previewedSite,
   publishedSite,
   type SiteDoc,
   type SiteSnapshot,
@@ -28,10 +29,15 @@ export type SiteContent = {
  * images and documents it uses, by hash. The renderer sends it for the open site; the export
  * worker makes it for a site main read from the file, to publish (ADR 0018 §3). No React, DOM or
  * Node: `library`'s field kinds say where images and links are. Draft pages are left out (G37,
- * #864), with the pictures and documents only they use.
+ * #864), with the pictures and documents only they use, unless `drafts` asks for them, as Preview
+ * does: then each is at its address and out of the navigation, as the menu is published.
  */
-export function siteContentFor(site: SiteDoc, library: ComponentLibrary): SiteContent {
-  return contentOf(publishedSite(site), library);
+export function siteContentFor(
+  site: SiteDoc,
+  library: ComponentLibrary,
+  { drafts = false }: { readonly drafts?: boolean } = {},
+): SiteContent {
+  return contentOf(drafts ? previewedSite(site) : publishedSite(site), library);
 }
 
 /** {@link siteContentFor} of a site as it is published. */

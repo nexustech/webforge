@@ -249,7 +249,7 @@ export const panels = {
   "pageSettings.hideFromNavigation": "Hide from navigation",
   "pageSettings.draft": "Draft: don't publish this page yet",
   "pageSettings.draftHint":
-    "A draft stays in your site to work on, but isn't on your website: it's left out when you export, publish or preview, with its menu item and pictures only it uses. Site Check lists links to it.",
+    "A draft stays in your site to work on, but isn't on your website: it's left out when you export or publish, with its menu item and pictures only it uses. Preview shows it, out of the menu. Site Check lists links to it.",
   "pageSettings.hideFromSearch": "Hide this page from search engines",
   "pageSettings.hideFromSearchHint":
     "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide from navigation is for your menu; this is for search.",
