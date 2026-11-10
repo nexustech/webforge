@@ -1,4 +1,14 @@
-import { Button, cn, fieldControlClass, ScrollArea } from "@webforge/editor-ui";
+import {
+  Button,
+  cn,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+  fieldControlClass,
+  ScrollArea,
+} from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { LAYER_NAME_MAX } from "@webforge/model";
 import {
@@ -8,6 +18,7 @@ import {
   ChevronsDownUpIcon,
   ChevronsUpDownIcon,
   CopyIcon,
+  EyeClosedIcon,
   EyeIcon,
   EyeOffIcon,
   Link2Icon,
@@ -26,7 +37,7 @@ import {
   useState,
 } from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
-import { type Layer, layerItem } from "../editor/layers.js";
+import { type Layer, type LayerShown, layerItem, layerShown } from "../editor/layers.js";
 import type { MenuPoint } from "../element-menu/index.js";
 import { isMac } from "../shell/commands.js";
 import { DRAGGABLE_ROW_CLASS, type RowDragKeys, useRowDrag } from "../shell/use-row-drag.js";
@@ -39,7 +50,10 @@ export type LayersPanelActions = {
   /** Shift-click (1.31): selects these layers, the first the one shown. */
   selectMany(ids: readonly string[]): void;
   rename(id: string, name: string): void;
-  setHidden(id: string, hidden: boolean): void;
+  /** Shows a layer, hides it while editing, or keeps it off the website (UX-23): one undo step. */
+  setShown(id: string, shown: LayerShown): void;
+  /** Whether a layer can be hidden while editing: not the shared Header or Footer itself. */
+  canHideWhileEditing(id: string): boolean;
   /** Moves a layer to `index` among its siblings. */
   move(id: string, index: number): void;
   /**
@@ -508,7 +522,15 @@ export function LayersPanel({
                     }}
                   />
                 ) : (
-                  <span className={cn("min-w-0 flex-1 truncate", layer.hidden && "line-through")}>
+                  <span
+                    className={cn(
+                      "min-w-0 flex-1 truncate",
+                      layer.hidden && "line-through",
+                      layer.editorHidden === true &&
+                        !layer.hidden &&
+                        "italic text-muted-foreground",
+                    )}
+                  >
                     {linked !== undefined && (
                       // A linked copy of a shared section (F-ED-23): its section changes everywhere.
                       <span title={linked}>
@@ -546,28 +568,12 @@ export function LayersPanel({
                     )}
                   </span>
                 )}
-                <button
-                  type="button"
-                  tabIndex={-1}
+                <ShownMenu
+                  layer={layer}
                   disabled={layoutLocked}
-                  aria-label={t(layer.hidden ? "layers.show" : "layers.hide", {
-                    item: layerItem(layer),
-                  })}
-                  title={t(layer.hidden ? "layers.show" : "layers.hide", {
-                    item: layerItem(layer),
-                  })}
-                  className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
-                    !layer.hidden &&
-                      "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
-                  )}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    actions.setHidden(layer.id, !layer.hidden);
-                  }}
-                >
-                  {layer.hidden ? <EyeOffIcon /> : <EyeIcon />}
-                </button>
+                  canHideWhileEditing={actions.canHideWhileEditing(layer.id)}
+                  onShown={(shown) => actions.setShown(layer.id, shown)}
+                />
               </div>
             );
           })}
@@ -624,7 +630,7 @@ export function LayersPanel({
           onClick={
             selected === undefined || layoutLocked
               ? undefined
-              : () => actions.setHidden(selected.id, !selected.hidden)
+              : () => actions.setShown(selected.id, selected.hidden ? "shown" : "hidden")
           }
         >
           {selected?.hidden === true ? <EyeOffIcon /> : <EyeIcon />}
@@ -661,6 +667,81 @@ export function LayersPanel({
         />
       )}
     </div>
+  );
+}
+
+/** Each way a layer can show (UX-23), in the menu's order, with its icon. */
+const SHOWN_CHOICES = [
+  { shown: "shown", label: "layers.shown.shown", Icon: EyeIcon },
+  { shown: "editorHidden", label: "layers.shown.editorHidden", Icon: EyeClosedIcon },
+  { shown: "hidden", label: "layers.shown.hidden", Icon: EyeOffIcon },
+] as const;
+
+/**
+ * A row's eye (UX-23, #864): how the layer shows, and a menu to change it. *Show*, *Hide while
+ * editing* (not on the canvas, still on the website) or *Don't publish* (dimmed on the canvas, not
+ * on the website). Out of the row's tab order, as the row's keys and the toolbar reach the same.
+ */
+function ShownMenu({
+  layer,
+  disabled,
+  canHideWhileEditing,
+  onShown,
+}: {
+  readonly layer: Layer;
+  readonly disabled: boolean;
+  readonly canHideWhileEditing: boolean;
+  readonly onShown: (shown: LayerShown) => void;
+}) {
+  const shown = layerShown(layer);
+  const current = SHOWN_CHOICES.find((choice) => choice.shown === shown) ?? SHOWN_CHOICES[0];
+  const label = t("layers.shownMenu", {
+    item: layerItem(layer),
+    shown: t(current.label),
+  });
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        tabIndex={-1}
+        disabled={disabled}
+        aria-label={label}
+        title={label}
+        className={cn(
+          "flex size-5 shrink-0 items-center justify-center rounded-sm hover:bg-hover [&_svg]:size-3.5",
+          shown === "shown" && "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
+        )}
+        // The row selects on a click: the eye only opens its menu.
+        onClick={(event) => event.stopPropagation()}
+        onDoubleClick={(event) => event.stopPropagation()}
+      >
+        <current.Icon />
+      </DropdownMenuTrigger>
+      {/* Its events reach the row through the portal: the row neither selects nor moves on them. */}
+      <DropdownMenuContent
+        align="end"
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => event.stopPropagation()}
+      >
+        <DropdownMenuRadioGroup
+          value={shown}
+          onValueChange={(value) => {
+            const choice = SHOWN_CHOICES.find((each) => each.shown === value);
+            if (choice !== undefined) onShown(choice.shown);
+          }}
+        >
+          {SHOWN_CHOICES.map((choice) => (
+            <DropdownMenuRadioItem
+              key={choice.shown}
+              value={choice.shown}
+              disabled={choice.shown === "editorHidden" && !canHideWhileEditing}
+            >
+              <choice.Icon aria-hidden className="size-3.5" />
+              {t(choice.label)}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 

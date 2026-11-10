@@ -91,14 +91,14 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
       menu: "edit",
       textKeys: ["Mod+/"],
       enabled: true,
-      label: "Hide or show",
+      label: "Don't publish, or show",
     });
     registry.run("edit.toggleHidden");
     expect(hidden()).toBe(true);
     registry.run("edit.toggleHidden");
 
     expect(hidden()).toBeUndefined();
-    expect(labels()).toEqual(["Hid Heading", "Showed Heading"]);
+    expect(labels()).toEqual(["Kept Heading off your website", "Showed Heading"]);
     expect(beforeAction).toHaveBeenCalledTimes(2);
   });
 
@@ -109,7 +109,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     engine.requestFromElement({ kind: "pickImage", nodeId: "a" });
 
     expect(hidden()).toBe(true);
-    expect(labels()).toEqual(["Hid Heading"]);
+    expect(labels()).toEqual(["Kept Heading off your website"]);
     expect(pickImage).toHaveBeenCalledExactlyOnceWith("a");
   });
 
@@ -173,7 +173,7 @@ describe("registerElementCommands (1.30, F-ED-25, F-ED-27)", () => {
     expect(notify).toHaveBeenCalledExactlyOnceWith(
       "Elements of the shared Header or Footer, or of a shared section, are changed one at a time.",
     );
-    expect(labels()).toEqual(["Hid 2 elements"]);
+    expect(labels()).toEqual(["Kept 2 elements off your website"]);
   });
 
   it("asks for a layer's name with F2, in Content mode too; nothing else has one (1.30)", () => {

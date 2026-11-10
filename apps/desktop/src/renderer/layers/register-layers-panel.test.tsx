@@ -38,6 +38,16 @@ function setUp(site: SiteDoc = starterSite()) {
   return { session, panels, commands, remove };
 }
 
+/** A row's eye (UX-23): its menu's button for `item`, which shows as `now`. */
+const eye = (item: string, now: string) =>
+  screen.getByRole("button", { name: `Show or hide ${item} (now: ${now})` });
+
+/** Shows `item`, which shows as `now`, as `choice` says, from its row's eye. */
+async function setShown(item: string, now: string, choice: string): Promise<void> {
+  await userEvent.click(eye(item, now));
+  await userEvent.click(screen.getByRole("menuitemradio", { name: choice }));
+}
+
 describe("registerLayersPanel", () => {
   it("adds Layers under the left column's tabs, in Simple and Advanced mode (ADR 0011)", () => {
     const { panels, remove } = setUp();
@@ -130,9 +140,11 @@ describe("registerLayersPanel", () => {
 
     act(() => session.select("heading-1"));
     const toolbar = () => within(screen.getByRole("toolbar", { name: "Layer actions" }));
-    await userEvent.click(toolbar().getByRole("button", { name: "Hide Heading" }));
+    await userEvent.click(toolbar().getByRole("button", { name: "Don't publish Heading" }));
     expect(toolbar().getByRole("button", { name: "Show Heading" })).toBeTruthy();
-    expect(session.history.entries().map((entry) => entry.label)).toEqual(["Hid Heading"]);
+    expect(session.history.entries().map((entry) => entry.label)).toEqual([
+      "Kept Heading off your website",
+    ]);
 
     await userEvent.click(screen.getByRole("button", { name: "Duplicate" }));
     expect(run).toHaveBeenCalledOnce();
@@ -144,7 +156,7 @@ describe("registerLayersPanel", () => {
     );
 
     act(() => session.history.undo());
-    expect(toolbar().getByRole("button", { name: "Hide Heading" })).toBeTruthy();
+    expect(toolbar().getByRole("button", { name: "Don't publish Heading" })).toBeTruthy();
   });
 
   it("marks a linked copy, selected while the copy is, not an element inside it (F-ED-23)", () => {
@@ -229,19 +241,19 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const { pageId } = session.ui.getState();
     const others = Object.keys(site().pages).filter((id) => id !== pageId);
 
-    await userEvent.click(screen.getByRole("button", { name: "Hide Header" }));
+    await setShown("Header", "Show", "Don't publish");
 
     expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(true);
     for (const id of others) {
       expect(site().pages[id as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
     }
     expect(labels(session)).toEqual(["Hid the Header on this page"]);
-    // Dimmed, as other hidden layers are, and shown again from the same button.
-    expect(screen.getByRole("button", { name: "Show Header" })).toBeTruthy();
+    // Dimmed, as other hidden layers are, and shown again from the same menu.
+    expect(eye("Header", "Don't publish")).toBeTruthy();
 
     act(() => session.history.undo());
     expect(site().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
-    expect(screen.getByRole("button", { name: "Hide Header" })).toBeTruthy();
+    expect(eye("Header", "Show")).toBeTruthy();
   });
 
   it("shows a Header hidden on every page again from its eye, not hiding it twice (#684 review)", async () => {
@@ -254,12 +266,12 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const doc = () => session.history.document.getState();
     const { pageId } = session.ui.getState();
 
-    await userEvent.click(screen.getByRole("button", { name: "Show Header" }));
+    await setShown("Header", "Don't publish", "Show");
 
     expect(doc().layout.header[0]?.props.hidden).toBeUndefined();
     expect(doc().pages[pageId as keyof SiteDoc["pages"]]?.settings.hideHeader).toBe(false);
     expect(labels(session)).toEqual(["Showed the Header on this page"]);
-    expect(screen.getByRole("button", { name: "Hide Header" })).toBeTruthy();
+    expect(eye("Header", "Show")).toBeTruthy();
   });
 
   it("names the step for the Header, whatever its first section is (#684 review)", async () => {
@@ -268,7 +280,8 @@ describe("Layers' shared Header and Footer (#673)", () => {
     const { session } = setUp(site);
     const row = document.querySelector('[data-layer="banner"]') as HTMLElement;
 
-    await userEvent.click(within(row).getByRole("button", { name: /^Hide / }));
+    await userEvent.click(within(row).getByRole("button", { name: /^Show or hide / }));
+    await userEvent.click(screen.getByRole("menuitemradio", { name: "Don't publish" }));
 
     expect(labels(session)).toEqual(["Hid the Header on this page"]);
   });

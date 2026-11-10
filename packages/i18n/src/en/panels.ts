@@ -102,15 +102,21 @@ export const panels = {
   "layers.title": "Layers",
   "layers.empty": "This page has no sections yet. Add one from the canvas.",
   "layers.toolbar": "Layer actions",
-  "layers.hide": "Hide {item}",
+  "layers.hide": "Don't publish {item}",
   "layers.show": "Show {item}",
+  // A row's eye (UX-23): how the layer shows now, and a menu of the three ways.
+  "layers.shownMenu": "Show or hide {item} (now: {shown})",
+  "layers.shown.shown": "Show",
+  "layers.shown.editorHidden": "Hide while editing",
+  "layers.shown.hidden": "Don't publish",
   "layers.rename": "Rename",
   "layers.nameField": "Name for this {item}",
   // A linked copy of a shared section, marked in Layers (1.29, F-ED-23).
   "layers.linkedCopy": "Linked copy of {name}",
   "layers.history.renamed": "Renamed {item} to '{name}'",
   "layers.history.unnamed": "Removed the name of {item}",
-  "layers.history.hid": "Hid {item}",
+  "layers.history.hid": "Kept {item} off your website",
+  "layers.history.hidWhileEditing": "Hid {item} while editing",
   "layers.history.showed": "Showed {item}",
   // The shared Header and Footer (#673): their eye is the page's own setting.
   "layers.history.hidRegion": "Hid the {item} on this page",
