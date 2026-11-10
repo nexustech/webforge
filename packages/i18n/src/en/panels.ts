@@ -34,6 +34,9 @@ export const panels = {
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
   "pages.hiddenFromNavigation": "Hidden from navigation",
+  // A draft page (G37, #864): its badge in the Pages panel, and the switch in its menu.
+  "pages.draftBadge": "Draft",
+  "pages.draft": "Draft",
   "pages.actions": "Actions for {name}",
   "pages.rename": "Rename…",
   "pages.duplicate": "Duplicate",
@@ -242,6 +245,9 @@ export const panels = {
   "pageSettings.hideHeader": "Hide the Header on this page",
   "pageSettings.hideFooter": "Hide the Footer on this page",
   "pageSettings.hideFromNavigation": "Hide from navigation",
+  "pageSettings.draft": "Draft: don't publish this page yet",
+  "pageSettings.draftHint":
+    "A draft stays in your site to work on, but isn't on your website: it's left out when you export, publish or preview, with its menu item and pictures only it uses. Site Check lists links to it.",
   "pageSettings.hideFromSearch": "Hide this page from search engines",
   "pageSettings.hideFromSearchHint":
     "Search engines won't show it, but it stays on your site: anyone with its address can open it, and its links still work. When you publish by FTP or SFTP, {appName} also lists it in a file it keeps with your site, so it sends only what changed. Hide from navigation is for your menu; this is for search.",
@@ -273,4 +279,6 @@ export const panels = {
   "pages.history.setHome": "Set '{name}' as Home page",
   "pages.history.hidden": "Hid '{name}' from navigation",
   "pages.history.shown": "Showed '{name}' in navigation",
+  "pages.history.drafted": "Made '{name}' a draft",
+  "pages.history.undrafted": "Took '{name}' out of drafts",
 } as const;

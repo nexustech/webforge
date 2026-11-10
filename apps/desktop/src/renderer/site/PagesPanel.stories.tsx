@@ -48,6 +48,7 @@ const actions: PagesPanelActions = {
   moveToFolder: noop,
   setHome: noop,
   setHidden: noop,
+  setDraft: noop,
   remove: noop,
   changeSettings: noop,
 };

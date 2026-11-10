@@ -13,7 +13,7 @@ afterEach(cleanup);
 // longer than the default 5 s.
 vi.setConfig({ testTimeout: scaledTestTimeout(20_000) });
 
-/** The starter site plus About (hidden from navigation) and Team in a folder. */
+/** The starter site plus About (hidden from navigation) and Team in a folder, a draft. */
 function siteWithPages(): SiteDoc {
   const site = starterSite();
   const home = site.pages[site.homePageId];
@@ -32,7 +32,14 @@ function siteWithPages(): SiteDoc {
         title: "About",
         settings: { ...page.settings, hideFromNavigation: true },
       },
-      [team]: { ...page, id: team, slug: "team", folder: "company", title: "Team" },
+      [team]: {
+        ...page,
+        id: team,
+        slug: "team",
+        folder: "company",
+        title: "Team",
+        settings: { ...page.settings, draft: true },
+      },
     },
     pageOrder: [site.homePageId, about, team, ...site.pageOrder.slice(1)],
   };
@@ -53,6 +60,7 @@ function setUp({ backToTop = false } = {}) {
     moveToFolder: vi.fn(),
     setHome: vi.fn(),
     setHidden: vi.fn(),
+    setDraft: vi.fn(),
     remove: vi.fn(),
     changeSettings: vi.fn(),
   };
@@ -65,7 +73,7 @@ const openMenu = (name: string) =>
   userEvent.click(screen.getByRole("button", { name: `Actions for ${name}` }));
 
 describe("PagesPanel (F-ED-13)", () => {
-  it("lists the pages in order, with the Home page, hidden pages and folders marked", async () => {
+  it("lists the pages in order, with the Home page, hidden pages, drafts and folders marked", async () => {
     const { actions } = setUp();
 
     const list = screen.getByRole("list", { name: "Pages" });
@@ -75,7 +83,7 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(names).toEqual([
       "My site(Home page)",
       "About(Hidden from navigation)",
-      "Team",
+      "TeamDraft",
       "Page not found(Shown when a page doesn't exist)",
     ]);
     expect(screen.getByRole("button", { name: /^My site/ }).getAttribute("aria-current")).toBe(
@@ -171,8 +179,11 @@ describe("PagesPanel (F-ED-13)", () => {
     await userEvent.click(screen.getByRole("menuitem", { name: "Set as Home Page" }));
     await openMenu("About");
     await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Hide from Navigation" }));
+    await openMenu("About");
+    await userEvent.click(screen.getByRole("menuitemcheckbox", { name: "Draft" }));
 
     expect(actions.duplicate).toHaveBeenCalledWith("page-about");
+    expect(actions.setDraft).toHaveBeenCalledWith("page-about", true);
     expect(actions.move).toHaveBeenCalledWith("page-about", -1);
     expect(actions.setHome).toHaveBeenCalledWith("page-about");
     expect(actions.setHidden).toHaveBeenCalledWith("page-about", false);
@@ -226,7 +237,10 @@ describe("PagesPanel (F-ED-13)", () => {
       hideBackToTop: false,
       hideFromSearch: false,
       privacy: false,
+      // A draft, as it was (G37): its switch was on.
+      draft: true,
     });
+    expect(within(dialog).getByRole("checkbox", { name: /^Draft/ })).toBeTruthy();
     // The site has no back-to-top button to leave off.
     expect(within(dialog).queryByRole("checkbox", { name: /back-to-top/ })).toBeNull();
   });

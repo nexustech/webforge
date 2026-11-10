@@ -29,6 +29,7 @@ import {
   moveToFolder,
   pagesChangedByDeleting,
   renamePage,
+  setDraftPage,
   setHiddenFromNavigation,
   setHomePage,
 } from "./page-actions.js";
@@ -60,6 +61,7 @@ export function pagesPanelActions(
     moveToFolder: (pageId, folder) => moveToFolder(session, pageId, folder),
     setHome: (pageId) => setHomePage(session, pageId),
     setHidden: (pageId, hidden) => setHiddenFromNavigation(session, pageId, hidden),
+    setDraft: (pageId, draft) => setDraftPage(session, pageId, draft),
     remove: (pageId) => {
       const site = session.history.document.getState();
       const page = site.pages[pageId];

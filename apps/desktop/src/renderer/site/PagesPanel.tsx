@@ -15,6 +15,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  isDraftPage,
   PAGE_FOLDER_MAX,
   PAGE_TITLE_MAX,
   type PageEntry,
@@ -35,6 +36,7 @@ import { useState } from "react";
 import { NameDialog } from "../shell/NameDialog.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
+  canBeDraft,
   canBeHome,
   canChangeNavigation,
   canDelete,
@@ -63,6 +65,8 @@ export type PagesPanelActions = {
   moveToFolder(pageId: PageId, folder: string | undefined): void;
   setHome(pageId: PageId): void;
   setHidden(pageId: PageId, hidden: boolean): void;
+  /** Makes a page a draft, or takes it out of drafts (G37, #864). */
+  setDraft(pageId: PageId, draft: boolean): void;
   remove(pageId: PageId): void;
   changeSettings(pageId: PageId, change: PageSettingsChange): void;
 };
@@ -132,6 +136,7 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
   const pageRow = (page: PageEntry, indented: boolean) => {
     const home = page.id === site.homePageId;
     const notFound = page.kind === "not-found";
+    const isDraft = isDraftPage(site, page);
     const Icon = home ? HouseIcon : notFound ? FileQuestionIcon : FileIcon;
     const shown = page.id === shownPageId;
     return (
@@ -151,9 +156,18 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
           <span className="truncate">{page.title}</span>
           {home && <span className="sr-only">({t("pages.home")})</span>}
           {notFound && <span className="sr-only">({t("pages.notFound")})</span>}
+          {isDraft && (
+            // A draft (G37, #864): kept in the site, not on the website.
+            <span className="ml-auto shrink-0 rounded-sm border border-border px-1 text-[10px] leading-4 text-muted-foreground">
+              {t("pages.draftBadge")}
+            </span>
+          )}
           {page.settings.hideFromNavigation && !notFound && (
             <>
-              <EyeOffIcon aria-hidden className="ml-auto size-3.5 shrink-0 text-muted-foreground" />
+              <EyeOffIcon
+                aria-hidden
+                className={cn("size-3.5 shrink-0 text-muted-foreground", !isDraft && "ml-auto")}
+              />
               <span className="sr-only">({t("pages.hiddenFromNavigation")})</span>
             </>
           )}
@@ -411,6 +425,14 @@ function PageMenuItems({
           onCheckedChange={(checked) => actions.setHidden(page.id, checked)}
         >
           {t("pages.hideFromNavigation")}
+        </DropdownMenuCheckboxItem>
+      )}
+      {canBeDraft(site, page) && (
+        <DropdownMenuCheckboxItem
+          checked={page.settings.draft === true}
+          onCheckedChange={(checked) => actions.setDraft(page.id, checked)}
+        >
+          {t("pages.draft")}
         </DropdownMenuCheckboxItem>
       )}
       {canDelete(site, page) && (
