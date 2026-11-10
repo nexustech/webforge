@@ -23,7 +23,6 @@ import {
   groupOf,
   replaceInSite,
   type SpotGroup,
-  type SpotMatches,
   type TextSpot,
 } from "./find-text.js";
 
@@ -192,9 +191,12 @@ function pagesChanged(site: SiteDoc, groups: ReadonlySet<SpotGroup>): number {
   return pages.size;
 }
 
-/** The places `matches` are in: each page, the Header, the Footer, a shared section, Settings. */
-export const placesOf = (matches: readonly SpotMatches[]): Set<SpotGroup> =>
-  new Set(matches.map(({ spot }) => groupOf(spot)));
+/** The places `spots` are in: each page, the Header, the Footer, a shared section, Settings. */
+const placesOf = (spots: readonly TextSpot[]): Set<SpotGroup> => new Set(spots.map(groupOf));
+
+/** The spots of every match `options` finds in `site`. */
+const spotsOf = (site: SiteDoc, library: ComponentLibrary, options: FindOptions) =>
+  findInSite(site, library, options).map(({ spot }) => spot);
 
 /**
  * Replaces every match of `options` with `replacement`, as one undo step named after it
@@ -208,32 +210,34 @@ export async function replaceAll(
   replacement: string,
 ): Promise<number> {
   session.flush();
+  const { library } = session;
   const before = session.history.document.getState();
-  const found = findInSite(before, session.library, options);
+  const found = spotsOf(before, library, options);
   if (found.length === 0) return 0;
-  const places = placesOf(found);
-  const pages = pagesChanged(before, places);
-  const label = plural("findReplace.history.replacedAll", places.size, {
-    find: quoted(options.query),
-    replace: quoted(replacement),
-  });
+  const pages = pagesChanged(before, placesOf(found));
+  const quotes = { find: quoted(options.query), replace: quoted(replacement) };
   if (pages > 1) {
     const confirmed = await siteWide.confirmSiteWide({
-      action: t("findReplace.confirm.action", {
-        find: quoted(options.query),
-        replace: quoted(replacement),
-      }),
+      action: t("findReplace.confirm.action", quotes),
       confirm: t("findReplace.replaceAll"),
       affectedPages: pages,
     });
     if (!confirmed) return 0;
   }
-  // Found again: the site may have changed while the question was open.
+  // Found again, as the site is now: it may have changed while the question was open. Tried on a
+  // copy first, so the label counts the places that change, not those a replacement skips.
   const site = session.history.document.getState();
-  const spots = findInSite(site, session.library, options).map(({ spot }) => spot);
-  let changed: TextSpot[] = [];
-  session.edit("props", label, (draft) => {
-    changed = replaceInSite(draft, session.library, options, replacement, spots);
-  });
-  return placesOf(changed.map((spot) => ({ spot, matches: [] }))).size;
+  const spots = spotsOf(site, library, options);
+  const changed = placesOf(
+    replaceInSite(structuredClone(site), library, options, replacement, spots),
+  );
+  if (changed.size === 0) return 0;
+  session.edit(
+    "props",
+    plural("findReplace.history.replacedAll", changed.size, quotes),
+    (draft) => {
+      replaceInSite(draft, library, options, replacement, spots);
+    },
+  );
+  return changed.size;
 }

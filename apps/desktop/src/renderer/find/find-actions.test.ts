@@ -119,6 +119,24 @@ describe("replaceAll", () => {
     expect(labels()).toEqual(["Replaced 'Sons' with 'Daughters' in 1 place"]);
   });
 
+  it("counts only the places that change, not those a replacement skips", async () => {
+    const { actions, labels, doc, home, about } = setUp((site, page) => {
+      const homePage = site.pages[site.homePageId];
+      if (homePage !== undefined) homePage.title = "Sons";
+      const hello = homePage?.doc.content[0];
+      if (hello !== undefined) hello.props.text = "Smith";
+      const story = site.pages[page]?.doc.content[0];
+      if (story !== undefined) story.props.text = "Ask the Sons";
+    });
+
+    // Found in two places, but Home's title would be emptied, so it stays: one place changes.
+    expect(await replaceAll(actions, { ...SMITH, query: "Sons" }, "")).toBe(1);
+
+    expect(doc().pages[home]?.title).toBe("Sons");
+    expect(doc().pages[about]?.doc.content[0]?.props.text).toBe("Ask the ");
+    expect(labels()).toEqual(["Replaced 'Sons' with '' in 1 place"]);
+  });
+
   it("counts every page for a change to the Header, which every page shows", async () => {
     const { actions, asked } = setUp((site) => {
       site.layout.header = [{ type: "Header", props: { id: "header", siteName: "Sons Ltd" } }];
