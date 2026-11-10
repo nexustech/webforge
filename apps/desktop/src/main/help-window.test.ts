@@ -72,7 +72,7 @@ function fakeWindow() {
   };
 }
 
-function setUp(theme: "dark" | "light" = "dark") {
+function setUp(theme: "dark" | "light" = "dark", zoom?: number) {
   const made: ReturnType<typeof fakeWindow>[] = [];
   const options: BrowserWindowConstructorOptions[] = [];
   const help = createHelpWindows({
@@ -87,6 +87,7 @@ function setUp(theme: "dark" | "light" = "dark") {
     title: "Webforge Help",
     theme: () => theme,
     background: (look) => (look === "dark" ? "#111111" : "#ffffff"),
+    ...(zoom === undefined ? {} : { zoom: () => zoom }),
     onLoadFailed: vi.fn(),
   });
   return { help, made, options };
@@ -120,6 +121,15 @@ describe("the Help window (5.4b, HP-10)", () => {
     expect(window?.raw.focus).toHaveBeenCalled();
     expect(help.is(window?.window)).toBe(true);
     expect(help.is({})).toBe(false);
+  });
+
+  it("opens at the interface zoom the editor has, 100% if none is given", () => {
+    const zoomed = setUp("dark", 1.25);
+    zoomed.help.open({ page: "the-editor" });
+    expect(zoomed.options[0]?.webPreferences?.zoomFactor).toBe(1.25);
+    const plain = setUp();
+    plain.help.open({ page: "the-editor" });
+    expect(plain.options[0]?.webPreferences?.zoomFactor).toBe(1);
   });
 
   it("moves the open window to another page and brings it to the front, rather than opening another", () => {
