@@ -1,11 +1,17 @@
-import type { PageId, SiteDoc } from "@webforge/model";
+import type { PageId, SharedSectionId, SiteDoc } from "@webforge/model";
 import { DEFAULT_THEME } from "@webforge/model";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CanvasCssRequest, CanvasCssResult } from "../../shared/ipc/canvas.js";
 import { starterSite } from "../../shared/starter-site.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { classesOfHtml, connectSiteCss, SITE_CSS_DEBOUNCE_MS, siteClasses } from "./site-css.js";
+import {
+  classesOfHtml,
+  connectSiteCss,
+  SITE_CSS_DEBOUNCE_MS,
+  siteClasses,
+  siteSelectors,
+} from "./site-css.js";
 
 /**
  * The canvas styled for `site`: the compiles it asks for, answered one by one with `reply`. Unless
@@ -392,5 +398,33 @@ describe("connectSiteCss", () => {
 
     expect(compile).toHaveBeenCalledOnce();
     expect(compile.mock.calls[0]?.[0].candidates).toContain("site-section");
+  });
+});
+
+describe("siteSelectors (6.8)", () => {
+  it("has the pages', shared sections' and page template's classes and ids", () => {
+    const HOURS = "shared-hours" as SharedSectionId;
+    const site = structuredClone(starterSite());
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("No home page");
+    site.sharedSections[HOURS] = {
+      id: HOURS,
+      name: "Hours",
+      section: {
+        type: "Section",
+        props: { id: "s", advanced: { anchorId: "hours", className: "hours-box" }, content: [] },
+      },
+    };
+    home.doc.content.push(
+      { type: "SharedSectionCopy", props: { id: "c1", sharedSectionId: HOURS } },
+      { type: "SharedSectionCopy", props: { id: "c2", sharedSectionId: HOURS, anchorSuffix: "2" } },
+    );
+
+    const used = siteSelectors(site, sessionWith(site));
+
+    expect(used.classes).toContain("hours-box");
+    expect(used.classes).toContain("site-section");
+    expect(used.classes).toContain("min-h-screen");
+    expect([...used.ids]).toEqual(expect.arrayContaining(["main", "hours", "hours-2"]));
   });
 });

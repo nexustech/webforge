@@ -1,5 +1,11 @@
 import type { CanvasEngine, Unsubscribe } from "@webforge/engine";
-import type { NodeDoc, PageId, SiteDoc } from "@webforge/model";
+import {
+  anchorsIn,
+  expandSharedCopies,
+  type NodeDoc,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import type { UsedSelectors } from "@webforge/site-check";
 import {
   BOX_CLASS_SAFELIST,
@@ -168,7 +174,8 @@ const PAGE_SHELL = {
 } as const;
 
 /**
- * The classes and ids the site's pages, Header and Footer have (6.8), and the page template's, for
+ * The classes and ids the site's pages, Header, Footer and shared sections have (6.8), and the page
+ * template's, for
  * Site Check's rules of `custom.css` that match nothing. Renders what isn't collected yet, as
  * {@link siteClasses} does.
  */
@@ -178,10 +185,16 @@ export function siteSelectors(
 ): UsedSelectors {
   const classes = new Set<string>(PAGE_SHELL.classes);
   const ids = new Set<string>(PAGE_SHELL.ids);
-  for (const nodes of siteLists(site)) {
+  // Each shared section once, as its copies on the pages show it.
+  const shared = Object.values(site.sharedSections).map((entry) => [entry.section]);
+  for (const nodes of [...siteLists(site), ...shared]) {
     const collected = listCollect(nodes, session, site.theme.looks);
     for (const name of collected.classes) classes.add(name);
     for (const id of collected.ids) ids.add(id);
+  }
+  // A copy's anchors are its own (`hours-2`) where the page has the section twice.
+  for (const page of Object.values(site.pages)) {
+    anchorsIn(expandSharedCopies(page.doc.content, site.sharedSections), ids);
   }
   return { classes, ids };
 }
