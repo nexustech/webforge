@@ -23,6 +23,7 @@ import {
   componentSelector,
   elementOf,
   HOVERED_COMPONENT,
+  NOTE_ATTRIBUTE,
   OVERLAY,
   SELECTED_COMPONENT,
 } from "./puck-dom.js";
@@ -88,6 +89,11 @@ const CHROME_CSS = `
 /* A hidden element (Layers' Hide): dimmed, still there to select and show again. */
 [${HIDDEN_ATTRIBUTE}] {
   opacity: 0.35;
+}
+/* An element with a note (UX-17): a dashed amber outline, inside it, so nothing moves. */
+[${NOTE_ATTRIBUTE}] {
+  outline: calc(2px / var(--wf-zoom, 1)) dashed #f59e0b;
+  outline-offset: calc(-2px / var(--wf-zoom, 1));
 }
 .wf-add:focus-visible {
   outline: 2px solid #fff;

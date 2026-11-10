@@ -50,6 +50,14 @@ describe("shared layout (F-ED-7)", () => {
     expect(isShared(layout, "a")).toBe(false);
     expect(isSharedRegion(layout, "footer")).toBe(true);
     expect(isSharedRegion(layout, "link")).toBe(false);
+    // An Announcement bar above the Header is deleted like any section (6.4).
+    const announced: LayoutDoc = {
+      ...layout,
+      header: [{ type: "AnnouncementBar", props: { id: "news" } }, ...layout.header],
+    };
+    expect(isShared(announced, "news")).toBe(true);
+    expect(isSharedRegion(announced, "news")).toBe(false);
+    expect(isSharedRegion(announced, "header")).toBe(true);
   });
 
   it("compares the order of top-level nodes", () => {

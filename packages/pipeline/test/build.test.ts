@@ -1828,3 +1828,29 @@ describe("buildSite: draft pages and elements that aren't published (G37, UX-23,
     scaledTestTimeout(60_000),
   );
 });
+
+describe("buildSite: notes on elements (UX-17, #868)", () => {
+  it(
+    "never writes a note, in any file it builds",
+    async () => {
+      const base = sampleSite();
+      const [home, ...rest] = base.pages;
+      if (home === undefined) throw new Error("no home page");
+      const NOTE = "Swap this photo before launch, the client hates it";
+      const noted = (nodes: readonly NodeDoc[]): NodeDoc[] =>
+        nodes.map((node) => ({ ...node, props: { ...node.props, note: NOTE } }));
+      const site: SiteSnapshot = {
+        ...base,
+        layout: { header: noted(base.layout.header), footer: noted(base.layout.footer) },
+        pages: [{ ...home, doc: { ...home.doc, content: noted(home.doc.content) } }, ...rest],
+      };
+
+      const exported = await buildSite(site, siteLibrary, resources);
+
+      for (const [path, bytes] of exported.files) {
+        expect(new TextDecoder().decode(bytes), path).not.toContain("client hates it");
+      }
+    },
+    scaledTestTimeout(60_000),
+  );
+});

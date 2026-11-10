@@ -90,6 +90,26 @@ function setUp(
 const shown = () => screen.queryAllByRole("treeitem").map((row) => row.textContent);
 
 describe("LayersPanel (F-ED-12)", () => {
+  it("marks a layer with a note, its text on pointing at it and for screen readers (UX-17)", () => {
+    render(
+      <LayersPanel
+        layers={[layer("a", { note: "Swap this photo" }), layer("b")]}
+        selectedId={null}
+        alsoSelected={[]}
+        actions={setUpActions()}
+        layoutLocked={false}
+      />,
+    );
+
+    const [noted, plain] = screen.getAllByRole("treeitem");
+    // A short name, and the note's text as its description, read once the name has been.
+    expect(noted?.textContent).toBe("Heading, has a note");
+    expect(noted?.getAttribute("aria-description")).toBe("Swap this photo");
+    expect(plain?.hasAttribute("aria-description")).toBe(false);
+    expect(noted?.querySelector('[title="Swap this photo"]')).not.toBeNull();
+    expect(plain?.textContent).toBe("Heading");
+  });
+
   it("shows the tree with levels, names, the selection and hidden layers", () => {
     const { item } = setUp();
 

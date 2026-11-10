@@ -29,6 +29,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Layers:** the list of what's on the page, section by section, to select, move or hide things. See [Layers](layers.md).
 - **Hide while editing** and **Don't publish:** two ways to put something out of sight without deleting it. Hidden while editing, it's off the page in the editor but on your website; not published, it's dimmed in the editor and off your website. See [Layers](layers.md#what-you-can-do).
 - **Edit panel:** the options of what you've selected, on its **Content**, **Style** and **Advanced** tabs. See [The Edit panel](edit-panel.md).
+- **Note:** a reminder for you on a section or element, never on your website. Site Check lists it until you resolve it. See [Notes](editing-on-the-page.md#notes).
 - **Select parent:** selects the section or element around the one you've selected. See [Editing on the page](editing-on-the-page.md).
 - **Columns:** an element that puts things side by side. See [Elements](elements.md).
 - **Form** and **Contact form:** let visitors send you messages, through the form service you choose in Site Settings. See [Forms](forms.md).

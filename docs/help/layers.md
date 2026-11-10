@@ -19,6 +19,7 @@ It's the easiest way to reach something small or hidden, or to see how a page is
 - **Sparkles:** the item has an entrance animation.
 - **Crossed-out name:** the item isn't published. It's dimmed on the page.
 - **Name in italics:** the item is hidden while you edit. It isn't on the page in the editor, but it's on your website.
+- **Note:** the item has a [note](editing-on-the-page.md#notes). Point at the icon to read it.
 
 ## What you can do
 
