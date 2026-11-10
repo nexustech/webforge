@@ -28,6 +28,8 @@ export const COMMAND_IDS = {
   publish: "site.publish",
   saveVersion: "site.saveVersion",
   pasteLinked: "edit.pasteLinked",
+  // Find and Replace (6.2): its panel in the drawer, with the cursor in Find.
+  findReplace: "edit.findReplace",
   // Style this ‹kind›… (3.13a): the Style tab's button, the quick actions and the element menu.
   styleThis: "edit.styleThis",
   commandBox: "view.commandBox",
