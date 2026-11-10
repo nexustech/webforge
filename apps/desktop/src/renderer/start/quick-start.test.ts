@@ -61,6 +61,17 @@ describe("the quick start's request (QS-1, 3.11b)", () => {
     });
   });
 
+  it("asks for one page only when it was chosen (GA10, 5.9)", () => {
+    const answers = emptyAnswers("My site");
+
+    expect(quickStartRequest(answers, "My site").pages).toEqual({ leaveOut: [], recipes: [] });
+    expect(quickStartRequest({ ...answers, onePage: true }, "My site").pages).toEqual({
+      leaveOut: [],
+      recipes: [],
+      onePage: true,
+    });
+  });
+
   it("offers the business type's page recipes, and none before a type is chosen", () => {
     expect(recipesOffered(null)).toEqual([]);
     expect(recipesOffered("trades").map((recipe) => recipe.id)).toContain("trades-areas");

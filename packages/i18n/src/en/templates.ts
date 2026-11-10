@@ -142,8 +142,16 @@ export const templates = {
   "quickStart.tryExample": "Try an example",
   "quickStart.theme": "Theme",
   // Pages.
+  "quickStart.layout": "How your site is laid out",
+  "quickStart.layout.pages": "Separate pages",
+  "quickStart.layout.pagesHint": "Each page has its own address, and a link in the menu.",
+  "quickStart.layout.onePage": "One page",
+  "quickStart.layout.onePageHint":
+    "Everything on your home page, one section after another. The menu scrolls to each.",
   "quickStart.pagesText":
     "Untick a page to leave it out. You can add pages later in the Pages panel.",
+  "quickStart.onePageText":
+    "Untick a page to leave it out. Each page you keep becomes a section of your home page, in this order, with a link to it in the menu.",
   "quickStart.templatePages": "Pages in {name}",
   "quickStart.blankPages": "A Blank site has Home, About and Contact pages.",
   "quickStart.homePage": "{title} (home page)",
