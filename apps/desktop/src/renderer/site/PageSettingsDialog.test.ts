@@ -1,7 +1,14 @@
-import { PAGE_DESCRIPTION_MAX, PAGE_SLUG_MAX, PAGE_TITLE_MAX } from "@webforge/model";
+import {
+  type CollectionId,
+  PAGE_DESCRIPTION_MAX,
+  PAGE_SLUG_MAX,
+  PAGE_TITLE_MAX,
+  type PageId,
+} from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { insertBlog } from "../blog/blog-actions.js";
 import { pageSettingsSpec } from "./PageSettingsDialog.js";
 
 describe("Page Settings checked by the model (2.21, decision 5)", () => {
@@ -65,5 +72,47 @@ describe("Page Settings checked by the model (2.21, decision 5)", () => {
     expect("issues" in result ? result.issues : []).toEqual([
       expect.objectContaining({ path: ["title"], message: "Fill this in." }),
     ]);
+  });
+});
+
+describe("Page Settings for a post (6.10a)", () => {
+  it("shows the post's Date, Summary and Picture after its title, and saves them as its entry", () => {
+    const site = starterSite();
+    insertBlog(site, "blog" as CollectionId, "post" as PageId, "2026-11-10");
+    const post = site.pages["post" as PageId];
+    if (post === undefined) throw new Error("no post");
+    const spec = pageSettingsSpec(site, post);
+    const values = {
+      title: "Spring",
+      slug: "",
+      description: "",
+      shareImage: undefined,
+      hideHeader: false,
+      hideFooter: false,
+      hideFromNavigation: false,
+      hideBackToTop: false,
+      hideFromSearch: false,
+      privacy: false,
+      draft: false,
+      "item.date": "2026-12-01",
+      "item.summary": "  Open  ",
+      "item.picture": undefined,
+    };
+    const fields = typeof spec.fields === "function" ? spec.fields(values) : spec.fields;
+
+    expect(fields.slice(0, 4).map((field) => [field.name, field.label])).toEqual([
+      ["title", "Title"],
+      ["item.date", "Date"],
+      ["item.summary", "Summary"],
+      ["item.picture", "Picture"],
+    ]);
+    // A post's Blog lists it: it has no navigation toggle of its own.
+    expect(fields.some((field) => field.name === "hideFromNavigation")).toBe(false);
+    const result = spec.schema["~standard"].validate(spec.toModel(values));
+    expect("value" in result ? result.value.entry : undefined).toEqual({
+      date: "2026-12-01",
+      summary: "Open",
+      picture: "",
+    });
   });
 });

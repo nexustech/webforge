@@ -1,5 +1,5 @@
 import type { CanvasEngine, Unsubscribe } from "@webforge/engine";
-import type { NodeDoc, PageId, SiteDoc } from "@webforge/model";
+import { collectionOf, type NodeDoc, type PageId, type SiteDoc } from "@webforge/model";
 import {
   BOX_CLASS_SAFELIST,
   EDITOR_RENDER_CONTEXT,
@@ -100,11 +100,15 @@ function listCollected(nodes: readonly NodeDoc[], looks: RenderContext["looks"])
   return classesOfList.get(nodes)?.looks === looks;
 }
 
-/** The site's lists of nodes whose classes are collected: the Header, the Footer and each page. */
+/**
+ * The site's lists of nodes whose classes are collected: the Header, the Footer, each Blog's design
+ * (6.10a) and each page.
+ */
 function siteLists(site: SiteDoc): readonly (readonly NodeDoc[])[] {
   return [
     site.layout.header,
     site.layout.footer,
+    ...Object.values(site.collections).flatMap((each) => [each.design.before, each.design.after]),
     ...Object.values(site.pages).map((page) => page.doc.content),
   ];
 }
@@ -132,13 +136,19 @@ export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
 }
 
 /**
- * The classes of what the canvas shows now (#895): the Header, the Footer and the page `pageId`,
- * with the spacing classes, as {@link siteClasses} has them.
+ * The classes of what the canvas shows now (#895): the Header, the Footer, a post's Blog design
+ * (6.10a) and the page `pageId`, with the spacing classes, as {@link siteClasses} has them.
  */
 function shownClasses(site: SiteDoc, session: EditorSession, pageId: PageId): string[] {
   const page = site.pages[pageId];
+  const design = page === undefined ? undefined : collectionOf(site, page)?.design;
   return classesOfLists(
-    [site.layout.header, site.layout.footer, ...(page === undefined ? [] : [page.doc.content])],
+    [
+      site.layout.header,
+      site.layout.footer,
+      ...(design === undefined ? [] : [design.before, design.after]),
+      ...(page === undefined ? [] : [page.doc.content]),
+    ],
     site,
     session,
   );

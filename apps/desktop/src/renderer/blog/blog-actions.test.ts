@@ -12,6 +12,7 @@ import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { describe, expect, it } from "vitest";
 import { connectEngine } from "../editor/editor-session.js";
 import { canvasLayout } from "../editor/shared-layout.js";
+import { mediaUsage } from "../media/media-usage.js";
 import {
   canBeHome,
   canChangeNavigation,
@@ -241,5 +242,25 @@ describe("editing a post's design on the canvas (6.10a)", () => {
     expect(labels().at(-1)).toBe("Edited the design of 'Blog'");
     // The other post draws the same design.
     expect(canvasLayout(site(), other ?? postId).header.at(-1)).toBe(section);
+  });
+});
+
+describe("mediaUsage with a Blog (6.10a)", () => {
+  it("counts a post's picture, and a picture in its design, on each post", () => {
+    const { session, site, blogId } = setUp();
+    const postId = addBlog(session);
+    addPost(session, blogId());
+    session.edit("props", "Edited", (draft) => {
+      const post = draft.pages[postId];
+      if (post?.entry !== undefined) post.entry.picture = "photo";
+      draft.collections[blogId()]?.design.after.push({
+        type: "Image",
+        props: { id: "logo", image: { mediaId: "logo" } },
+      });
+    });
+
+    const usage = mediaUsage(site(), siteLibrary);
+    expect(usage.get("photo")).toBe(1);
+    expect(usage.get("logo")).toBe(2);
   });
 });

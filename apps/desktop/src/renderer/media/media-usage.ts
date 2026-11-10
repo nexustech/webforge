@@ -1,8 +1,10 @@
 import {
+  collectionOf,
   expandSharedCopies,
   imageValueSchema,
   isNodeDoc,
   isSharedCopy,
+  itemValues,
   linkValueSchema,
   menuFileLinks,
   type NodeDoc,
@@ -54,7 +56,8 @@ function usedSiteWide(site: SiteDoc): Set<string> {
 
 /**
  * How many pages use each Media item (1.16): in their content (placed, or linked to as a document),
- * copies of shared sections included, in the Header or Footer they show,
+ * copies of shared sections included, in the Header or Footer they show, in a post's Blog design
+ * or as its picture (6.10a),
  * as the image shown when they are shared, or site-wide (the site icon, the site's share image, a
  * file the menu links to). Deleting an item that is used warns with this count.
  */
@@ -71,6 +74,14 @@ export function mediaUsage(site: SiteDoc, library: ComponentLibrary): ReadonlyMa
     const used = new Set(siteWide);
     // A shared section's images and documents are used on each page with a copy of it (F-ED-23).
     placedIn(expandSharedCopies(page.doc.content, site.sharedSections), library, used);
+    // A post's Blog design, and its own picture (6.10a).
+    const collection = collectionOf(site, page);
+    if (collection !== undefined) {
+      placedIn([...collection.design.before, ...collection.design.after], library, used);
+      for (const value of Object.values(itemValues(collection, page))) {
+        if (value.kind === "image") used.add(value.mediaId);
+      }
+    }
     if (!page.settings.hideHeader) for (const mediaId of header) used.add(mediaId);
     if (!page.settings.hideFooter) for (const mediaId of footer) used.add(mediaId);
     if (page.settings.shareImage !== undefined) used.add(page.settings.shareImage);
