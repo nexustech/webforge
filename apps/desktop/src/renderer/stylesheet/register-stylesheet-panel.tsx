@@ -104,7 +104,11 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
     return (
       <StylesheetPanel
         css={stylesheetOf(session.history.document.getState())}
-        followCss={(show) => session.history.document.subscribe((site) => show(stylesheetOf(site)))}
+        followCss={(show) => {
+          // As it is now first: it may have changed while the editor loaded.
+          show(stylesheetOf(session.history.document.getState()));
+          return session.history.document.subscribe((site) => show(stylesheetOf(site)));
+        }}
         onChange={(next) => editStylesheet(session, next)}
         siteData={() => factsFor(catalogue).data}
         lintData={() => {

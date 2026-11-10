@@ -58,7 +58,7 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
     expect(show).toHaveBeenCalledWith(STYLESHEET_PANEL_ID);
   });
 
-  it("draws the site's stylesheet in a code editor, with the buttons off until something is selected", () => {
+  it("draws the site's stylesheet in a code editor, with the buttons off until something is selected", async () => {
     const { panels, session } = setUp("advanced");
     act(() =>
       session.edit("props", "Edited site CSS", (draft) => {
@@ -70,9 +70,9 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
     const Panel = panel.component;
     render(<Panel />);
 
-    expect(screen.getByRole("textbox", { name: "Stylesheet (custom.css)" }).textContent).toBe(
-      ".hero { color: red; }",
-    );
+    // CodeMirror loads with the panel, never with the window.
+    const editor = await screen.findByRole("textbox", { name: "Stylesheet (custom.css)" });
+    expect(editor.textContent).toBe(".hero { color: red; }");
     expect(screen.getByRole("button", { name: "Target This Element" })).toHaveProperty(
       "disabled",
       true,

@@ -2,7 +2,7 @@ import { Button } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { CrosshairIcon, PaintbrushIcon } from "lucide-react";
 import { useEffect, useEffectEvent, useRef } from "react";
-import { type CssEditor, createCssEditor } from "./css-editor.js";
+import type { CssEditor } from "./css-editor.js";
 import type { CssLintData, CssSiteData } from "./css-language.js";
 
 /** Props of {@link StylesheetPanel}. */
@@ -10,9 +10,9 @@ export type StylesheetPanelProps = {
   /** The site's `custom.css`, as the document has it when the panel opens. */
   readonly css: string;
   /**
-   * Calls `show` with the stylesheet each time the document changes it (undo, *Target this
-   * element*), at once, not on the next render: a render can come after more typing, and would
-   * put older text back. Returns how to stop.
+   * Calls `show` with the stylesheet as it is now, then each time the document changes it (undo,
+   * *Target this element*), at once, not on the next render: a render can come after more typing,
+   * and would put older text back. Returns how to stop.
    */
   readonly followCss?: ((show: (css: string) => void) => () => void) | undefined;
   /** The person typed: the whole stylesheet as it is now. */
@@ -54,21 +54,34 @@ export function StylesheetPanel({
   const readLint = useEffectEvent(() => lintData());
   const firstCss = useEffectEvent(() => css);
   const follow = useEffectEvent((show: (next: string) => void) => followCss?.(show));
+  const pendingCaret = useEffectEvent(() => caret);
 
   useEffect(() => {
     const parent = host.current;
     if (parent === null) return;
-    const made = createCssEditor(parent, {
-      css: firstCss(),
-      onChange: changed,
-      siteData: readSite,
-      lintData: readLint,
+    // CodeMirror loads with the panel, the first time it's shown: never when the window opens.
+    let made: CssEditor | null = null;
+    let stop: (() => void) | undefined;
+    let gone = false;
+    void import("./css-editor.js").then(({ createCssEditor }) => {
+      if (gone) return;
+      const shown = createCssEditor(parent, {
+        css: firstCss(),
+        onChange: changed,
+        siteData: readSite,
+        lintData: readLint,
+      });
+      made = shown;
+      editor.current = shown;
+      stop = follow((next) => shown.setCss(next));
+      // A caret asked for while CodeMirror loaded (*Target this element* opening the panel).
+      const pending = pendingCaret();
+      if (pending !== undefined) shown.focusAt(pending.at);
     });
-    editor.current = made;
-    const stop = follow((next) => made.setCss(next));
     return () => {
+      gone = true;
       stop?.();
-      made.destroy();
+      made?.destroy();
       editor.current = null;
     };
   }, []);
