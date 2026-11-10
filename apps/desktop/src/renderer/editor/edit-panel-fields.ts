@@ -14,6 +14,7 @@ import {
   APPEARANCE_FIELDS,
   type ComponentLibrary,
   type FieldDef,
+  type FieldSite,
   fieldsHiddenBy,
   MAX_TEXT_LENGTH,
   textStylesOf,
@@ -222,6 +223,11 @@ export type FieldsOptions = {
   readonly theme: SiteDoc["theme"];
   /** The device the canvas shows, whose value a field set per device shows (F-ED-4). */
   readonly breakpoint: Breakpoint;
+  /**
+   * What a field shown only on some sites asks of the site (5.10b): as a menu without sections when
+   * left out.
+   */
+  readonly site?: FieldSite | undefined;
   /** Advanced mode's fields: classes, attributes and the anchor, with the anchors taken. */
   readonly advanced: boolean;
   readonly anchors: readonly string[];
@@ -243,12 +249,12 @@ export type FieldsOptions = {
  */
 export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPanelField[] {
   const { node, component, storedOr } = target;
-  const { library, theme, breakpoint, dialogGroups, revealSource } = options;
+  const { library, theme, breakpoint, dialogGroups, revealSource, site } = options;
   // What a field's `unavailable` is asked about: the element's values, over its kind's look from
   // the theme (3.12) and its defaults.
   const values = { ...component.defaults, ...withLook(node.props, node.type, theme.looks) };
   // A layout that doesn't use a field hides it; its value stays for the layouts that do (#311).
-  const hidden = fieldsHiddenBy(component, values);
+  const hidden = fieldsHiddenBy(component, values, site);
   // What the Appearance group's words say its values come from (3.12, CT-3).
   const look: Readonly<Record<string, unknown>> = theme.looks?.[node.type] ?? {};
   const textStyles = textStylesOf(node, library, theme.looks);
