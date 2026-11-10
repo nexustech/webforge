@@ -303,7 +303,7 @@ export function layerShown(layer: Layer): LayerShown {
  * Whether layer `id` can be hidden while editing (UX-23): any but the shared Header or Footer
  * itself, which isn't published on a page by that page's settings.
  */
-export function canHideWhileEditing(session: LayersSession, id: string): boolean {
+function canHideWhileEditing(session: LayersSession, id: string): boolean {
   const found = target(session, id);
   return found !== undefined && !(found.region !== undefined && found.top === true);
 }

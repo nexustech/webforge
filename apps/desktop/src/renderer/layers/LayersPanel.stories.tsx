@@ -19,7 +19,6 @@ const actions: LayersPanelActions = {
   selectMany: noop,
   rename: noop,
   setShown: noop,
-  canHideWhileEditing: () => true,
   move: noop,
   moveUp: noop,
   moveDown: noop,

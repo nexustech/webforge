@@ -7,7 +7,6 @@ import { useSyncExternalStore } from "react";
 import type { CanvasPointer } from "../editor/canvas-pointer.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import {
-  canHideWhileEditing,
   copyLayer,
   type Layer,
   moveLayer,
@@ -135,7 +134,6 @@ export function registerLayersPanel(
           selectMany: (ids) => session.selectElements(ids),
           rename: (id, name) => renameLayer(session, id, name),
           setShown: (id, shown) => setLayerShown(session, id, shown),
-          canHideWhileEditing: (id) => canHideWhileEditing(session, id),
           // A dragged layer moves or is copied alone, and is selected alone after: the panel
           // never drags a row of several selected (those move with the Edit menu's moves, 1.31).
           // A page's own section counts among the page's sections, not the Header (#673).

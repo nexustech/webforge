@@ -42,7 +42,6 @@ const setUpActions = (): LayersPanelActions => ({
   selectMany: vi.fn(),
   rename: vi.fn(),
   setShown: vi.fn(),
-  canHideWhileEditing: vi.fn(() => true),
   move: vi.fn(),
   moveUp: undefined,
   moveDown: undefined,
@@ -63,7 +62,6 @@ function setUp(
     selectMany: vi.fn(),
     rename: vi.fn(),
     setShown: vi.fn(),
-    canHideWhileEditing: vi.fn(() => true),
     move: vi.fn(),
     copy: vi.fn(),
     moveUp: command(),
@@ -247,17 +245,36 @@ describe("LayersPanel (F-ED-12)", () => {
     expect(actions.select).not.toHaveBeenCalled();
   });
 
-  it("marks a layer hidden while editing, and offers it only where it can be (UX-23)", async () => {
-    const { actions } = setUp();
-    actions.canHideWhileEditing.mockReturnValue(false);
-
-    await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
-
-    expect(
+  it("offers Hide while editing on any layer but the shared Header or Footer itself (UX-23)", async () => {
+    render(
+      <LayersPanel
+        layers={[layer("header", { kind: "Header", region: "header" }), layer("a")]}
+        selectedId={null}
+        alsoSelected={[]}
+        actions={setUpActions()}
+        layoutLocked={false}
+      />,
+    );
+    const disabled = () =>
       screen
         .getByRole("menuitemradio", { name: "Hide while editing" })
-        .getAttribute("aria-disabled"),
-    ).toBe("true");
+        .getAttribute("aria-disabled");
+
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide Header (now: Show)" }));
+    expect(disabled()).toBe("true");
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide Heading (now: Show)" }));
+    expect(disabled()).toBeNull();
+  });
+
+  it("puts the focus back on the row when the eye's menu closes, selecting nothing", async () => {
+    const { actions } = setUp(null);
+
+    await userEvent.click(screen.getByRole("button", { name: "Show or hide 'Hours' (now: Show)" }));
+    await userEvent.keyboard("{Escape}");
+
+    await vi.waitFor(() => expect(document.activeElement?.getAttribute("data-layer")).toBe("b"));
+    expect(actions.select).not.toHaveBeenCalled();
   });
 
   it("moves a dragged layer among its siblings only", () => {
@@ -411,7 +428,6 @@ describe("LayersPanel (F-ED-12)", () => {
           selectMany: vi.fn(),
           rename: vi.fn(),
           setShown: vi.fn(),
-          canHideWhileEditing: vi.fn(() => true),
           move: vi.fn(),
           moveUp: undefined,
           moveDown: undefined,
@@ -465,7 +481,6 @@ describe("LayersPanel (F-ED-12)", () => {
           selectMany: vi.fn(),
           rename: vi.fn(),
           setShown: vi.fn(),
-          canHideWhileEditing: vi.fn(() => true),
           move: vi.fn(),
           moveUp: undefined,
           moveDown: undefined,
@@ -581,7 +596,6 @@ describe("LayersPanel (F-ED-12)", () => {
             selectMany: vi.fn(),
             rename: vi.fn(),
             setShown: vi.fn(),
-            canHideWhileEditing: vi.fn(() => true),
             move: vi.fn(),
             moveUp: undefined,
             moveDown: undefined,

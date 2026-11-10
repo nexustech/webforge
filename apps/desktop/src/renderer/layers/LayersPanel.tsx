@@ -53,8 +53,6 @@ export type LayersPanelActions = {
   rename(id: string, name: string): void;
   /** Shows a layer, hides it while editing, or keeps it off the website (UX-23): one undo step. */
   setShown(id: string, shown: LayerShown): void;
-  /** Whether a layer can be hidden while editing: not the shared Header or Footer itself. */
-  canHideWhileEditing(id: string): boolean;
   /** Moves a layer to `index` among its siblings. */
   move(id: string, index: number): void;
   /**
@@ -222,6 +220,13 @@ export function LayersPanel({
   const focusRow = (id: string) => {
     actions.select(id);
     // After React has rendered the new selection, which moves the focusable row.
+    requestAnimationFrame(() => {
+      treeRef.current?.querySelector<HTMLElement>(`[data-layer="${CSS.escape(id)}"]`)?.focus();
+    });
+  };
+
+  /** Puts the focus back on row `id`, selecting nothing: where a closed menu leaves it. */
+  const focusRowOnly = (id: string) => {
     requestAnimationFrame(() => {
       treeRef.current?.querySelector<HTMLElement>(`[data-layer="${CSS.escape(id)}"]`)?.focus();
     });
@@ -572,7 +577,10 @@ export function LayersPanel({
                 <ShownMenu
                   layer={layer}
                   disabled={layoutLocked}
-                  canHideWhileEditing={actions.canHideWhileEditing(layer.id)}
+                  // Not the shared Header or Footer itself (its row has the region), which the
+                  // page's settings leave out.
+                  canHideWhileEditing={layer.region === undefined}
+                  onClosed={() => focusRowOnly(layer.id)}
                   onShown={(shown) => actions.setShown(layer.id, shown)}
                 />
               </div>
@@ -688,11 +696,14 @@ function ShownMenu({
   disabled,
   canHideWhileEditing,
   onShown,
+  onClosed,
 }: {
   readonly layer: Layer;
   readonly disabled: boolean;
   readonly canHideWhileEditing: boolean;
   readonly onShown: (shown: LayerShown) => void;
+  /** Once the menu has closed: it's gone with its button, so the row takes the focus back. */
+  readonly onClosed: () => void;
 }) {
   const [open, setOpen] = useState(false);
   const shown = layerShown(layer);
@@ -731,13 +742,21 @@ function ShownMenu({
     );
   }
   return (
-    <DropdownMenu open onOpenChange={setOpen}>
+    <DropdownMenu
+      open
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (!next) onClosed();
+      }}
+    >
       <DropdownMenuTrigger {...eye} onClick={(event) => event.stopPropagation()}>
         <current.Icon />
       </DropdownMenuTrigger>
       {/* Its events reach the row through the portal: the row neither selects nor moves on them. */}
       <DropdownMenuContent
         align="end"
+        // Its button is gone once it closes: onClosed puts the focus on the row instead.
+        onCloseAutoFocus={(event) => event.preventDefault()}
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => event.stopPropagation()}
       >
