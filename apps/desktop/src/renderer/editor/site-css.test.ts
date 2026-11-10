@@ -229,6 +229,22 @@ describe("connectSiteCss", () => {
     );
   });
 
+  it("keeps the theme's variables custom.css reads, recompiling only when they change (6.8)", () => {
+    const { compile, edit } = setup();
+
+    edit("Edited site CSS", (draft) => {
+      draft.code.css = ".heading { font-size: var(--text-xl); }";
+    });
+    expect(compile).toHaveBeenCalledTimes(2);
+    expect(compile).toHaveBeenLastCalledWith(expect.objectContaining({ variables: ["--text-xl"] }));
+
+    // Typing that reads nothing new of the theme compiles nothing.
+    edit("Edited site CSS", (draft) => {
+      draft.code.css = ".heading { font-size: var(--text-xl); color: red; }";
+    });
+    expect(compile).toHaveBeenCalledTimes(2);
+  });
+
   it("waits for the document to be still before collecting classes", () => {
     const { session, compile } = setup();
 

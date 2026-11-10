@@ -1,6 +1,7 @@
 import type { CanvasEngine, Unsubscribe } from "@webforge/engine";
 import {
   anchorsIn,
+  cssVariablesUsed,
   expandSharedCopies,
   type NodeDoc,
   type PageId,
@@ -230,8 +231,15 @@ export function connectSiteCss(
   session: EditorSession,
   compile: CompileCanvasCss,
 ): Unsubscribe {
-  /** What was last sent to compile: the theme (any token change makes a new one) and the classes. */
-  let requested: { readonly theme: unknown; readonly classes: string } | null = null;
+  /**
+   * What was last sent to compile: the theme (any token change makes a new one), the classes and
+   * the variables the site's own custom.css reads (6.8).
+   */
+  let requested: {
+    readonly theme: unknown;
+    readonly classes: string;
+    readonly variables: string;
+  } | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   /** The next page's collection while every page's classes aren't collected yet. */
   let collecting: ReturnType<typeof setTimeout> | null = null;
@@ -282,12 +290,19 @@ export function connectSiteCss(
         collecting = setTimeout(collectNext, 0);
       }
     }
-    // Any change to the theme's tokens compiles again (2.1), as a change to the classes does.
+    // Any change to the theme's tokens compiles again (2.1), as a change to the classes does, or
+    // to what custom.css reads of the theme: a look moved to CSS needs its variables (6.8).
     const classes = candidates.join(" ");
-    if (requested?.theme === site.theme && requested.classes === classes) {
+    const used = cssVariablesUsed(site.code.css);
+    const variables = used.join(" ");
+    if (
+      requested?.theme === site.theme &&
+      requested.classes === classes &&
+      requested.variables === variables
+    ) {
       return;
     }
-    const key = { theme: site.theme, classes };
+    const key = { theme: site.theme, classes, variables };
     requested = key;
     const failed = () => {
       // Try again after the next change, even if the classes stay the same.
@@ -295,7 +310,11 @@ export function connectSiteCss(
     };
     sent += 1;
     const order = sent;
-    compile({ theme: site.theme, candidates }).then((result) => {
+    compile({
+      theme: site.theme,
+      candidates,
+      ...(used.length === 0 ? {} : { variables: used }),
+    }).then((result) => {
       if (result.status === "failed") {
         failed();
       } else if (!stopped && order > shown) {
