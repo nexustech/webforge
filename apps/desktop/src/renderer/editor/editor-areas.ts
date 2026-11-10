@@ -25,7 +25,7 @@ export const customCssArea: Area<EditorContext> = {
   id: "customCss",
   register: ({ engine, session }) =>
     engine.whileMounted(({ engine: canvas }) => {
-      const cssOf = () => session.history.document.getState().code?.css ?? "";
+      const cssOf = () => session.history.document.getState().code.css;
       let shown = cssOf();
       canvas.setCustomCss(shown);
       return session.history.document.subscribe(() => {

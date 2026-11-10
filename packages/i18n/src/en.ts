@@ -16,6 +16,7 @@ import { shell } from "./en/shell.js";
 import { site } from "./en/site.js";
 import { siteCheck } from "./en/siteCheck.js";
 import { storage } from "./en/storage.js";
+import { stylesheet } from "./en/stylesheet.js";
 import { templates } from "./en/templates.js";
 import { theme } from "./en/theme.js";
 import { updates } from "./en/updates.js";
@@ -49,6 +50,7 @@ export const areas = {
   onboarding,
   updates,
   find,
+  stylesheet,
 } as const;
 
 /**
@@ -78,4 +80,5 @@ export const en = {
   ...onboarding,
   ...updates,
   ...find,
+  ...stylesheet,
 } as const;

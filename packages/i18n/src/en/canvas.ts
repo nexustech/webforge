@@ -186,8 +186,8 @@ export const canvas = {
   "itemCss.tab": "CSS",
   "itemCss.title": "This item's CSS",
   "itemCss.note":
-    "Read only: {appName} writes this from your choices each time the site changes, so changes here wouldn't last. For CSS of your own, use Custom Code's stylesheet.",
-  "itemCss.openCustomCode": "Open Custom Code",
+    "Read only: {appName} writes this from your choices each time the site changes, so changes here wouldn't last. For CSS of your own, use the Stylesheet panel.",
+  "itemCss.openStylesheet": "Open Stylesheet",
   "itemCss.markup": "Markup",
   "itemCss.markup.hint":
     "As the export writes this item. One difference: a PNG image is shown with a .png fallback, which the export writes as a .jpg when the image has no transparency.",

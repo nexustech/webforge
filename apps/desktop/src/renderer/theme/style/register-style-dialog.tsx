@@ -17,7 +17,7 @@ type StyleDialogOptions = {
   readonly asks?: StyleAsks | undefined;
   readonly itemPreviews?: ((node: NodeDoc, device: "desktop" | "mobile") => ReactNode) | undefined;
   /** The worker and clipboard for the *CSS* tab in Advanced mode (3.14); no tab without them. */
-  readonly itemCss?: Omit<ItemCssServices, "onOpenCustomCode"> | undefined;
+  readonly itemCss?: Omit<ItemCssServices, "onOpenStylesheet"> | undefined;
 };
 
 /**
@@ -35,11 +35,11 @@ export function registerStyleDialog(
   state: StoreApi<StyleDialogState>,
   { asks, itemPreviews, itemCss }: StyleDialogOptions = {},
 ): () => void {
-  // The CSS tab points at Custom Code (3.14), through its command.
+  // The CSS tab points at the Stylesheet panel (3.14, 6.8), through its command.
   const css: ItemCssServices | undefined =
     itemCss === undefined
       ? undefined
-      : { ...itemCss, onOpenCustomCode: () => void registry.run(COMMAND_IDS.customCode) };
+      : { ...itemCss, onOpenStylesheet: () => void registry.run(COMMAND_IDS.stylesheet) };
   function Style() {
     return (
       <StyleDialog

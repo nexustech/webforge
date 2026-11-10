@@ -38,6 +38,7 @@
     "@jsquash/png": "catalog:",
     "@jsquash/resize": "catalog:",
     "@jsquash/webp": "catalog:",
+    "@lezer/common": "1.5.5",
     "@lezer/highlight": "1.2.5",
     "@rolldown/plugin-babel": "catalog:",
     "@storybook/react-vite": "10.6.6",

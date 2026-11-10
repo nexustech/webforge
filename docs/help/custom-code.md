@@ -4,8 +4,8 @@ id: custom-code
 title: Custom Code
 summary: Add your own HTML, CSS or JavaScript, and what {appName} asks when code comes from somewhere else.
 components: [CustomCode]
-related: [elements, site-settings, edit-panel, export]
-updated: 2026-11-06
+related: [elements, site-settings, edit-panel, export, stylesheet]
+updated: 2026-11-10
 ---
 
 # Custom Code
@@ -22,7 +22,7 @@ The **Custom Code** element, in the Add panel's **Advanced** group, places your 
 
 **File › Settings…**, then **Custom Code** under _This site_ (or **Custom Code…** in Search Commands), holds code for the whole site. It's there in Advanced mode, or once the site has code:
 
-- **Stylesheet (custom.css):** CSS of your own.
+- **Stylesheet (custom.css):** CSS of your own. The [Stylesheet panel](stylesheet.md) edits it with suggestions, and shows it on the page as you type.
 - **Script (custom.js):** JavaScript of your own. It never runs in the editor.
 - **HTML in every page's head**, and **HTML at the end of every page**.
 - **Allowed outside addresses:** your website loads nothing from other websites, so it works from any folder or host. If your code must load a file from another website, add that website's `https://` address here. Otherwise [Site Check](site-check.md) lists the file as a Must fix, and can keep a copy of it with your site instead.

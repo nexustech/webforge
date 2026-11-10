@@ -23,14 +23,14 @@ export type ItemCssServices = {
   readonly api: ItemCssApi;
   /** Puts text on the system clipboard (through main: the renderer has no web permissions). */
   readonly copyText: (text: string) => Promise<unknown>;
-  /** Opens Settings at Custom Code, where CSS of the person's own goes (F-ED-15). */
-  readonly onOpenCustomCode?: (() => void) | undefined;
+  /** Opens the Stylesheet panel, where CSS of the person's own goes (F-ED-15, 6.8). */
+  readonly onOpenStylesheet?: (() => void) | undefined;
 };
 
 /** The CSS tab's worker and clipboard through `api`, the preload API (#668). */
 export const itemCssThrough = (
   api: Pick<WebforgeApi, "canvas" | "clipboard">,
-): Omit<ItemCssServices, "onOpenCustomCode"> => ({
+): Omit<ItemCssServices, "onOpenStylesheet"> => ({
   api: {
     itemHtml: (request) => api.canvas.itemHtml(request),
     classCss: (theme, classes) => api.canvas.classCss(theme, classes),
@@ -141,7 +141,7 @@ export function ItemCssView({
   copyText,
   groups,
   labelOf,
-  onOpenCustomCode,
+  onOpenStylesheet,
 }: ItemCssViewProps) {
   const site = useDocument(session, (doc) => doc);
   const pageId = useUi(session, (ui) => ui.pageId);
@@ -177,14 +177,14 @@ export function ItemCssView({
     <div className="flex flex-col gap-3 p-3 text-sm">
       <p className="text-xs text-muted-foreground">
         {t("itemCss.note")}{" "}
-        {onOpenCustomCode === undefined ? null : (
+        {onOpenStylesheet === undefined ? null : (
           <Button
             size="sm"
             variant="link"
             className="h-auto p-0 text-xs"
-            onClick={onOpenCustomCode}
+            onClick={onOpenStylesheet}
           >
-            {t("itemCss.openCustomCode")}
+            {t("itemCss.openStylesheet")}
           </Button>
         )}
       </p>

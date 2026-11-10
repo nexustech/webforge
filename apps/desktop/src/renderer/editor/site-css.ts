@@ -84,7 +84,7 @@ const idsOfHtml = (html: string): string[] =>
 /** The classes and ids of `nodes` as they render, collected once for each list (see above). */
 function listCollect(
   nodes: readonly NodeDoc[],
-  session: EditorSession,
+  session: Pick<EditorSession, "library">,
   looks: RenderContext["looks"],
 ): { readonly classes: readonly string[]; readonly ids: readonly string[] } {
   const kept = classesOfList.get(nodes);
@@ -172,7 +172,10 @@ const PAGE_SHELL = {
  * Site Check's rules of `custom.css` that match nothing. Renders what isn't collected yet, as
  * {@link siteClasses} does.
  */
-export function siteSelectors(site: SiteDoc, session: EditorSession): UsedSelectors {
+export function siteSelectors(
+  site: SiteDoc,
+  session: Pick<EditorSession, "library">,
+): UsedSelectors {
   const classes = new Set<string>(PAGE_SHELL.classes);
   const ids = new Set<string>(PAGE_SHELL.ids);
   for (const nodes of siteLists(site)) {
