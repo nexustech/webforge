@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
@@ -10,7 +10,7 @@ import { exportFromEditor, stubFileDialogs } from "./sites.js";
 
 // Layers (1.24, F-ED-12): always shown under Add and Undo History, in Simple and Advanced mode
 // (ADR 0011), read-only in Content mode; selection in step with the canvas both ways; a move or a
-// hide is one undo step.
+// hide is one undo step. A row's eye shows, hides while editing or doesn't publish (UX-23, #864).
 
 const STARTER_HEADING = "Welcome to our business";
 const STARTER_TEXT = "Tell visitors what you do and why they will love it.";
@@ -37,6 +37,15 @@ const row = (name: string) => tree().getByRole("treeitem", { name: new RegExp(`^
 // The selected element's name, in its bar: a hovered element's chip is a label too (SP-1).
 const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABEL}`);
 const steps = () => page.locator(".undo-history__step");
+
+/** Shows `item`, which shows as `now`, as `choice` says, from its row's eye (UX-23). */
+async function setShown(item: string, now: string, choice: string): Promise<void> {
+  await row(item).hover();
+  await tree()
+    .getByRole("button", { name: `Show or hide ${item} (now: ${now})` })
+    .click();
+  await page.getByRole("menuitemradio", { name: choice }).click();
+}
 
 /** Runs a View menu command, once a menu an earlier one closed has gone. */
 async function viewMenu(name: string): Promise<void> {
@@ -75,16 +84,17 @@ test("moves a layer with Ctrl/Cmd+Alt+↓ and hides one, each as one undo step",
     `${STARTER_TEXT}${STARTER_HEADING}`,
   );
 
-  await row("Text").hover();
-  await tree().getByRole("button", { name: "Hide Text" }).click();
-  await expect(tree().getByRole("button", { name: "Show Text" })).toBeVisible();
+  await setShown("Text", "Show", "Don't publish");
+  await expect(
+    tree().getByRole("button", { name: "Show or hide Text (now: Don't publish)" }),
+  ).toBeVisible();
   // Still on the canvas, dimmed (#141), but left out of the export.
   const text = canvas().locator(".site-text");
   await expect(text).toHaveAttribute("data-webforge-hidden", "");
   await expect(text).toHaveCSS("opacity", "0.35");
 
   await left().getByRole("tab", { name: "Undo History" }).click();
-  await expect(steps()).toHaveText(["Hid Text", "Moved Heading", "Opened page"]);
+  await expect(steps()).toHaveText(["Kept Text off your website", "Moved Heading", "Opened page"]);
 });
 
 test("lists the shared Header first and Footer last; the Header's eye hides it on this page (#673)", async () => {
@@ -100,22 +110,41 @@ test("lists the shared Header first and Footer last; the Header's eye hides it o
   await expect(rows.first()).toHaveAttribute("aria-selected", "true");
 
   // Its eye is the page's Hide the Header on this page: gone from the canvas, one step.
-  await rows.first().hover();
-  await tree().getByRole("button", { name: "Hide Header" }).click();
+  await setShown("Header", "Show", "Don't publish");
   await expect(canvas().locator(".site-header")).toHaveCount(0);
-  await expect(tree().getByRole("button", { name: "Show Header" })).toBeVisible();
+  await expect(
+    tree().getByRole("button", { name: "Show or hide Header (now: Don't publish)" }),
+  ).toBeVisible();
   await left().getByRole("tab", { name: "Undo History" }).click();
   await expect(steps().first()).toHaveText("Hid the Header on this page");
   await page.keyboard.press("ControlOrMeta+z");
   await expect(canvas().locator(".site-header")).toHaveCount(1);
 });
 
-test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
+test("leaves out of the export a layer not published, and a draft page, but not one hidden while editing (UX-23, G37)", async () => {
   const parent = mkdtempSync(join(tmpdir(), "webforge-e2e-layers-"));
   try {
     await expect(row("Section")).toBeVisible();
-    await row("Heading").hover();
-    await tree().getByRole("button", { name: "Hide Heading" }).click();
+    await setShown("Heading", "Show", "Don't publish");
+    // Hidden while editing: gone from the canvas, still exported.
+    await setShown("Text", "Show", "Hide while editing");
+    await expect(canvas().locator(".site-text")).toHaveCount(0);
+    await expect(canvas().locator("h1")).toHaveText(STARTER_HEADING);
+
+    // A draft page (G37): added, then made a draft from its menu in the Pages panel.
+    await page
+      .getByRole("region", { name: "Right panels" })
+      .getByRole("tab", { name: "Site" })
+      .click();
+    await page.getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("menuitem", { name: "Blank Page…" }).click();
+    await page.getByRole("textbox", { name: "Page name" }).fill("Winter menu");
+    await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("button", { name: "Actions for Winter menu" }).click();
+    await page.getByRole("menuitemcheckbox", { name: "Draft" }).click();
+    await expect(page.getByRole("button", { name: /^Winter menuDraft/ })).toBeVisible();
+    await left().getByRole("tab", { name: "Undo History" }).click();
+    await expect(steps().first()).toHaveText("Made 'Winter menu' a draft");
 
     const folder = join(parent, "site");
     await stubFileDialogs(app, folder);
@@ -124,6 +153,8 @@ test("leaves a hidden layer out of the exported site (F-ED-12)", async () => {
     const index = readFileSync(join(folder, "index.html"), "utf8");
     expect(index).not.toContain(STARTER_HEADING);
     expect(index).toContain(STARTER_TEXT);
+    expect(readdirSync(folder)).not.toContain("winter-menu.html");
+    expect(index).not.toContain("Winter menu");
   } finally {
     rmSync(parent, { recursive: true, force: true });
   }
@@ -134,7 +165,9 @@ test("shows Layers in Content mode too, where nothing can be moved or hidden", a
 
   await expect(row("Heading")).toBeVisible();
   await row("Heading").hover();
-  await expect(tree().getByRole("button", { name: "Hide Heading" })).toBeDisabled();
+  await expect(
+    tree().getByRole("button", { name: "Show or hide Heading (now: Show)" }),
+  ).toBeDisabled();
   const order = await tree().getByRole("treeitem").allInnerTexts();
   await row("Heading").click();
   await page.keyboard.press("Alt+ArrowDown");
