@@ -6,6 +6,7 @@ import {
   draftLinksRule,
   missingImagesRule,
   outdatedYearRule,
+  pastAnnouncementRule,
   placeholdersRule,
 } from "./rules/content.js";
 import { externalResourcesRule } from "./rules/external.js";
@@ -58,6 +59,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   templateImagesRule,
   underlinedTextRule,
   outdatedYearRule,
+  pastAnnouncementRule,
   searchHiddenRule,
   webAddressRule,
   pageDescriptionsRule,

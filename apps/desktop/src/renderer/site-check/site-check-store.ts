@@ -13,6 +13,7 @@ import {
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
 import { createStore } from "zustand/vanilla";
+import { localDay } from "../editor/page-updated.js";
 
 /** How long the site has to stay unchanged before it's checked again: typing doesn't recheck it. */
 const RECHECK_DELAY_MS = 400;
@@ -76,6 +77,8 @@ type SiteCheckOptions = {
   readonly onNetlify?: ReadonlyStore<boolean>;
   /** This year; the clock's by default. */
   readonly thisYear?: () => number;
+  /** Today, `YYYY-MM-DD`, in this computer's time zone; the clock's by default. */
+  readonly today?: () => string;
 };
 
 /**
@@ -94,6 +97,7 @@ export function createSiteCheck(
     publishedYear,
     onNetlify,
     thisYear = () => new Date().getFullYear(),
+    today = () => localDay(),
   }: SiteCheckOptions,
 ): SiteCheck {
   const inputOf = (site: SiteDoc): CheckInput => {
@@ -103,6 +107,7 @@ export function createSiteCheck(
       catalogue: CATALOGUE,
       allowListConfirmed: allowListConfirmed?.getState() ?? false,
       templateImages: TEMPLATE_IMAGE_HASHES,
+      today: today(),
       ...(year === undefined ? {} : { published: { year, thisYear: thisYear() } }),
       ...(onNetlify?.getState() === true ? { host: "netlify" as const } : {}),
     };

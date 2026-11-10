@@ -15,7 +15,11 @@ type OptionValue = { readonly value: string };
  * What {@link fieldValueSchema} reads of a field: its kind, and the options, steps or item fields
  * the kind has. A component's field (`FieldDef`) and the catalogue's (`CatalogueField`) both are.
  */
-export type FieldValueShape = { readonly responsive?: boolean | undefined } & (
+export type FieldValueShape = {
+  readonly responsive?: boolean | undefined;
+  /** A text field's input: a date (#865) is `YYYY-MM-DD` or empty. */
+  readonly inputType?: "date" | undefined;
+} & (
   | {
       readonly kind:
         | "text"
@@ -60,6 +64,9 @@ export function fieldValueSchema(field: FieldValueShape): z.ZodType {
   const value = ((): z.ZodType => {
     switch (field.kind) {
       case "text":
+        return field.inputType === "date"
+          ? z.string().regex(/^(?:\d{4}-\d{2}-\d{2})?$/)
+          : z.string().max(MAX_TEXT_LENGTH);
       case "richtext":
       case "icon":
         return z.string().max(MAX_TEXT_LENGTH);

@@ -10,6 +10,7 @@ import {
 } from "@webforge/model";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
+import { runRule } from "../check.js";
 import { element, findIn, image, siteWith } from "../test-site.test-helper.js";
 import {
   altTextRule,
@@ -17,6 +18,7 @@ import {
   draftLinksRule,
   missingImagesRule,
   outdatedYearRule,
+  pastAnnouncementRule,
   placeholdersRule,
 } from "./content.js";
 
@@ -393,5 +395,65 @@ describe("outdated year (F-CM-8)", () => {
         published: { year: 2026, thisYear: 2027 },
       }),
     ).toEqual([]);
+  });
+});
+
+describe("an Announcement bar past its last day (6.4)", () => {
+  const bar = (id: string, lastDay: string, props: Record<string, unknown> = {}) =>
+    element("AnnouncementBar", id, { text: "Closed 24–26 December", lastDay, ...props });
+  const site = siteWith([
+    bar("on-the-page", "2026-12-20"),
+    bar("hidden", "2026-12-01", { hidden: true }),
+  ]);
+  const withBars = {
+    ...site,
+    layout: { ...site.layout, header: [bar("every-page", "2026-12-26"), ...site.layout.header] },
+  };
+  const past = (today?: string) =>
+    pastAnnouncementRule.check({
+      site: withBars,
+      catalogue: CATALOGUE,
+      ...(today === undefined ? {} : { today }),
+    });
+
+  it("tips at each shown bar whose last day was before today, keyed by its last day", () => {
+    expect(past("2026-12-27")).toEqual([
+      {
+        key: "header/every-page/2026-12-26",
+        place: { kind: "element", on: "header", nodeId: "every-page" },
+      },
+      {
+        key: `${site.homePageId}/on-the-page/2026-12-20`,
+        place: { kind: "element", on: site.homePageId, nodeId: "on-the-page" },
+      },
+    ]);
+  });
+
+  it("says nothing on its last day, for a bar with none, or without today", () => {
+    expect(past("2026-12-20")).toEqual([]);
+    expect(past()).toEqual([]);
+    expect(
+      pastAnnouncementRule.check({
+        site: siteWith([bar("no-day", "")]),
+        catalogue: CATALOGUE,
+        today: "2027-01-01",
+      }),
+    ).toEqual([]);
+  });
+
+  it("tips at a bar hidden only while editing, which is published, but not on a draft page", () => {
+    const editing = siteWith([bar("editing", "2026-12-20", { editorHidden: true })]);
+    const drafted = withPage(siteWith(), "winter", [bar("draft", "2026-12-20")]);
+    const tips = (on: SiteDoc) =>
+      runRule(pastAnnouncementRule, { site: on, catalogue: CATALOGUE, today: "2027-01-01" });
+
+    expect(tips(editing)).toEqual([
+      expect.objectContaining({ key: expect.stringContaining("/editing/") }),
+    ]);
+    expect(tips(drafted)).toEqual([]);
+  });
+
+  it("has its texts", () => {
+    expect(t("siteCheck.rule.pastAnnouncement.fail.one")).toContain("Delete it");
   });
 });
