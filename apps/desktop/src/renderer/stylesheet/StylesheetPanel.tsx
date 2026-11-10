@@ -5,6 +5,9 @@ import { useEffect, useEffectEvent, useRef } from "react";
 import type { CssEditor } from "./css-editor.js";
 import type { CssLintData, CssSiteData } from "./css-language.js";
 
+/** CodeMirror and the editor made with it, in a file of their own that loads with the panel. */
+const loadEditor = () => import("./css-editor.js");
+
 /** Props of {@link StylesheetPanel}. */
 export type StylesheetPanelProps = {
   /** The site's `custom.css`, as the document has it when the panel opens. */
@@ -63,7 +66,7 @@ export function StylesheetPanel({
     let made: CssEditor | null = null;
     let stop: (() => void) | undefined;
     let gone = false;
-    void import("./css-editor.js").then(({ createCssEditor }) => {
+    void loadEditor().then(({ createCssEditor }) => {
       if (gone) return;
       const shown = createCssEditor(parent, {
         css: firstCss(),
