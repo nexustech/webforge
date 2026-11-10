@@ -4,7 +4,7 @@ id: links
 title: Links
 summary: Link to a page, a section, an email address, a phone number, a website or a file.
 related: [editing-on-the-page, elements, media, pages]
-updated: 2026-11-06
+updated: 2026-11-10
 ---
 
 # Links
@@ -27,5 +27,7 @@ Buttons, menu items and text can link somewhere. To add a link:
 **Open in a new tab** keeps your site open behind the link. It's offered for a page, a web address or a file, and a file opens in a new tab unless you turn it off. Click **Save Link** to add the link.
 
 Links don't open while you edit. Use [Preview](preview.md) to try them.
+
+On a [one-page site](one-page-sites.md), the menu and buttons link to sections of the home page this way.
 
 When you rename a page or change its file name, {appName} updates the links to it. If a page or file a link points to is deleted, [Site Check](site-check.md) lists the broken link.

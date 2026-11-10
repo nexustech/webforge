@@ -42,7 +42,7 @@ Four short steps. Every question is optional, you can go back to any step, and *
 
 1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. Search engines show that line under your site's name.
 2. **A look:** a theme, and a template suited to your kind of business. For Food and drink or Trades, you can open a finished example site instead.
-3. **Pages:** untick a template page to leave it out. **More pages for** your business type suggests extra pages, such as _Reviews_ or _Areas we cover_.
+3. **Pages:** choose **Separate pages** or **One page**, which puts everything on your home page with a menu that scrolls to each section (see [One-page sites](one-page-sites.md)). Untick a template page to leave it out. **More pages for** your business type suggests extra pages, such as _Reviews_ or _Areas we cover_.
 4. **Colours and details:** keep the theme's colours, pick your own brand colour, or choose **From my logo…** to take colours from your logo. {appName} reads the logo on this computer and doesn't add it to your site. Then add your email, phone number, address, opening hours and web address, if you have them.
 
 {appName} asks where to save the site's file, then opens it. Your answers replace the template's sample business wherever it appeared: in the text, the Header, the Footer and [Site Settings](site-settings.md). Anything you skipped keeps the template's sample text. [Site Check](site-check.md) points that text out before you export.
