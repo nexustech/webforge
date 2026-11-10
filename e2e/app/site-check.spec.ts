@@ -67,3 +67,29 @@ test("opens Page Settings on a page without a description, in Being found (3.17)
 
   await expect(page.getByRole("dialog", { name: /^Settings for '/ })).toBeVisible();
 });
+
+test("lists a note added from the element menu as a tip, outlined on the page, until it's resolved (UX-17)", async () => {
+  const tree = page
+    .getByRole("region", { name: "Left panels" })
+    .getByRole("tree", { name: "Layers" });
+  const heading = tree.getByRole("treeitem", { name: /^Heading/ });
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await expect(rule("notes")).toHaveAttribute("data-status", "pass");
+
+  await heading.click({ button: "right" });
+  await page.getByRole("menu").getByRole("menuitem", { name: "Add Note…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Note on Heading" });
+  await dialog.getByRole("textbox", { name: "Note" }).fill("Swap this photo before launch");
+  await dialog.getByRole("button", { name: "Save Note" }).click();
+
+  await expect(rule("notes")).toHaveAttribute("data-status", "warn");
+  await expect(rule("notes")).toContainText("Swap this photo before launch");
+  await expect(canvas.locator("h1[data-webforge-note]")).toHaveCount(1);
+  await expect(heading).toContainText("has a note");
+  await expect(heading).toHaveAttribute("aria-description", "Swap this photo before launch");
+
+  await heading.click({ button: "right" });
+  await page.getByRole("menu").getByRole("menuitem", { name: "Resolve Note" }).click();
+  await expect(rule("notes")).toHaveAttribute("data-status", "pass");
+  await expect(canvas.locator("h1[data-webforge-note]")).toHaveCount(0);
+});

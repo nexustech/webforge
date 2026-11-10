@@ -120,12 +120,22 @@ export const siteCheck = {
     "1 underlined text isn't a link, which visitors may click",
   "siteCheck.rule.underlinedText.fail.other":
     "{count} underlined texts aren't links, which visitors may click",
+  "siteCheck.rule.notes": "Notes",
+  "siteCheck.rule.notes.pass": "No open notes",
+  "siteCheck.rule.notes.fail.one": "1 note to resolve",
+  "siteCheck.rule.notes.fail.other": "{count} notes to resolve",
   "siteCheck.rule.outdatedYear": "Year on your site",
   "siteCheck.rule.outdatedYear.pass": "Your published site shows this year",
   "siteCheck.rule.outdatedYear.fail.one":
     "Your published site still shows the year you last published it in. Publish again to show this year",
   "siteCheck.rule.outdatedYear.fail.other":
     "Your published site still shows the year you last published it in. Publish again to show this year",
+  "siteCheck.rule.pastAnnouncement": "Announcement bar",
+  "siteCheck.rule.pastAnnouncement.pass": "No announcement is past its last day",
+  "siteCheck.rule.pastAnnouncement.fail.one":
+    "The Announcement bar's last day has passed. Delete it, as visitors still see it for a moment on every page",
+  "siteCheck.rule.pastAnnouncement.fail.other":
+    "{count} Announcement bars are past their last day. Delete them, as visitors still see them for a moment on every page",
 
   // Being found (3.17): what stops people finding the site. Nothing on keywords or lengths (SEO-11).
   "siteCheck.group.found": "Being found",

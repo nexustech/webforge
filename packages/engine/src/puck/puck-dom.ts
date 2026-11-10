@@ -14,6 +14,12 @@ import { HIDDEN_ATTRIBUTE } from "@webforge/model";
 /** The attribute on each component's wrapper on the canvas, which holds the element's id. */
 export const COMPONENT_ATTRIBUTE = "data-puck-component";
 
+/**
+ * Marks an element with a note (UX-17, #868) on the canvas, which outlines it; the export never
+ * draws a note, so never this either.
+ */
+export const NOTE_ATTRIBUTE = "data-webforge-note";
+
 /** The class the canvas gives the page's drop zone, its list of sections (config.tsx). */
 export const SECTIONS_ZONE_CLASS = "wf-sections";
 

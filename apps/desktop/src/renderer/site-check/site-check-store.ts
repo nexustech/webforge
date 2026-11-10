@@ -14,6 +14,7 @@ import {
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
 import { createStore } from "zustand/vanilla";
+import { localDay } from "../editor/page-updated.js";
 
 /** How long the site has to stay unchanged before it's checked again: typing doesn't recheck it. */
 const RECHECK_DELAY_MS = 400;
@@ -82,6 +83,8 @@ type SiteCheckOptions = {
    * own. Left out, its rules aren't checked for matching nothing.
    */
   readonly usedSelectors?: (site: SiteDoc) => UsedSelectors;
+  /** Today, `YYYY-MM-DD`, in this computer's time zone; the clock's by default. */
+  readonly today?: () => string;
 };
 
 /**
@@ -101,6 +104,7 @@ export function createSiteCheck(
     onNetlify,
     thisYear = () => new Date().getFullYear(),
     usedSelectors,
+    today = () => localDay(),
   }: SiteCheckOptions,
 ): SiteCheck {
   /** The classes and ids of the site last asked about, which each rule's input shares. */
@@ -118,6 +122,7 @@ export function createSiteCheck(
       catalogue: CATALOGUE,
       allowListConfirmed: allowListConfirmed?.getState() ?? false,
       templateImages: TEMPLATE_IMAGE_HASHES,
+      today: today(),
       ...(year === undefined ? {} : { published: { year, thisYear: thisYear() } }),
       ...(onNetlify?.getState() === true ? { host: "netlify" as const } : {}),
       ...(used === undefined ? {} : { usedSelectors: used }),

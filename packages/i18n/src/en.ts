@@ -8,6 +8,7 @@ import { find } from "./en/find.js";
 import { fonts } from "./en/fonts.js";
 import { help } from "./en/help.js";
 import { history } from "./en/history.js";
+import { notes } from "./en/notes.js";
 import { onboarding } from "./en/onboarding.js";
 import { panels } from "./en/panels.js";
 import { publish } from "./en/publish.js";
@@ -51,6 +52,7 @@ export const areas = {
   updates,
   find,
   stylesheet,
+  notes,
 } as const;
 
 /**
@@ -81,4 +83,5 @@ export const en = {
   ...updates,
   ...find,
   ...stylesheet,
+  ...notes,
 } as const;

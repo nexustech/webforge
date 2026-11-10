@@ -19,7 +19,7 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { SECTIONS_ZONE_CLASS } from "./puck-dom.js";
+import { NOTE_ATTRIBUTE, SECTIONS_ZONE_CLASS } from "./puck-dom.js";
 import {
   type ContextTracker,
   createContextTracker,
@@ -118,7 +118,8 @@ function toPuckComponent(
         ),
     );
     const output = withAdvanced(def.render({ id, values, slots, context }), values.advanced);
-    return values.hidden === true ? markedHidden(output) : output;
+    const marked = values.hidden === true ? markedHidden(output) : output;
+    return typeof values.note === "string" ? markedWith(marked, NOTE_ATTRIBUTE) : marked;
   };
   return {
     label: def.label,
@@ -167,8 +168,13 @@ function drawWith(
  * Output whose root isn't an HTML element is left as it is.
  */
 function markedHidden(output: ReactNode): ReactNode {
+  return markedWith(output, HIDDEN_ATTRIBUTE);
+}
+
+/** `output` with the empty attribute `attribute`, if its root is an HTML element. */
+function markedWith(output: ReactNode, attribute: string): ReactNode {
   return isValidElement(output) && typeof output.type === "string"
-    ? cloneElement(output, { [HIDDEN_ATTRIBUTE]: "" } as Record<string, unknown>)
+    ? cloneElement(output, { [attribute]: "" } as Record<string, unknown>)
     : output;
 }
 

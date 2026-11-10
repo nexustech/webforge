@@ -34,6 +34,8 @@ export const ELEMENT_MENU_COMMANDS = {
   detachShared: "edit.detachSharedSection",
   selectSimilar: "edit.selectSimilar",
   selectParent: "edit.selectParent",
+  note: COMMAND_IDS.note,
+  resolveNote: COMMAND_IDS.resolveNote,
   help: COMMAND_IDS.helpForElement,
   remove: "edit.delete",
 } as const;
@@ -61,8 +63,8 @@ export type ElementMenuProps = {
  * Rename, Duplicate, Save as shared section (or Detach, for a linked copy), Select similar, Select
  * parent (SP-9); Cut,
  * Copy, Paste and Paste as Linked Copy (F-ED-23); Style this ‹kind›… (3.13a), Copy Style and Paste
- * Style (1.37), and Apply Look to Every… on this page or the site (2.27); Help for This Element
- * (5.4b); and Delete.
+ * Style (1.37), and Apply Look to Every… on this page or the site (2.27); Add or Edit Note… and
+ * Resolve Note (UX-17); Help for This Element (5.4b); and Delete.
  * The element is selected before it opens, so each item acts on it.
  */
 export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenuProps) {
@@ -87,6 +89,8 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
   const applyLookOnSite = useCommand(ELEMENT_MENU_COMMANDS.applyLookOnSite);
   const styleThis = useCommand(ELEMENT_MENU_COMMANDS.styleThis);
   const help = useCommand(ELEMENT_MENU_COMMANDS.help);
+  const note = useCommand(ELEMENT_MENU_COMMANDS.note);
+  const resolveNote = useCommand(ELEMENT_MENU_COMMANDS.resolveNote);
   const style = [styleThis, copyStyle, pasteStyle, applyLookOnPage, applyLookOnSite];
   // A linked copy can be detached; anything else can be saved, if it is a section.
   const shared = detach !== undefined && detach.enabled !== false ? detach : save;
@@ -162,6 +166,17 @@ export function ElementMenu({ at, onClose, onRename, onCloseFocus }: ElementMenu
         {item(pasteStyle)}
         {item(applyLookOnPage)}
         {item(applyLookOnSite)}
+        {note === undefined ? null : <DropdownMenuSeparator />}
+        {note === undefined ? null : (
+          // A note (UX-17): its dialog opens once the menu has closed, as Style this… does.
+          <DropdownMenuItem
+            disabled={note.enabled === false}
+            onSelect={() => menuDialog.choose(() => void registry.run(note.id))}
+          >
+            {note.label}
+          </DropdownMenuItem>
+        )}
+        {resolveNote?.enabled === true ? item(resolveNote) : null}
         {help === undefined ? null : <DropdownMenuSeparator />}
         {item(help)}
         <DropdownMenuSeparator />

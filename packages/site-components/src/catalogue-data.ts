@@ -59,6 +59,8 @@ export const catalogueFieldSchema = z.discriminatedUnion("kind", [
     kind: z.literal("text"),
     inline: z.boolean().optional(),
     bindable: z.array(z.string()).optional(),
+    /** A date, `YYYY-MM-DD` or empty (#865). */
+    inputType: z.literal("date").optional(),
   }),
   z.strictObject({ ...common, kind: z.literal("richtext"), inline: z.boolean().optional() }),
   ...listItemFieldSchema.options.slice(1),

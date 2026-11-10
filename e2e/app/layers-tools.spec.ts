@@ -79,6 +79,7 @@ test("opens the same menu on the canvas and in Layers, acting on what was right-
     "Paste Style",
     "Apply Look to Every Heading on This Page",
     "Apply Look to Every Heading on the Site",
+    "Add Note…",
     "Help for This Element",
     "Delete",
   ]);
@@ -245,7 +246,8 @@ test("in Content mode, leaves the canvas's right-clicks alone and Layers' menu t
     ["Paste Style", false],
     ["Apply Look to Every Heading on This Page", false],
     ["Apply Look to Every Heading on the Site", false],
-    // Reading help changes nothing, in Content mode too.
+    // A note changes nothing on the page (UX-17), nor does reading help: in Content mode too.
+    ["Add Note…", true],
     ["Help for This Element", true],
     ["Delete", false],
   ]);

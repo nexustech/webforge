@@ -21,6 +21,7 @@ import { helpForElementArea } from "./help/index.js";
 import { layersPanelArea } from "./layers/area.js";
 import { canvasImagesArea, mediaPanelArea } from "./media/area.js";
 import { canvasNavigationArea } from "./menu/area.js";
+import { notesArea } from "./notes/area.js";
 import { onboardingArea } from "./onboarding/area.js";
 import { previewArea } from "./preview/area.js";
 import { publishArea } from "./publish/area.js";
@@ -90,6 +91,7 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   siteSettingsArea,
   siteCodeArea,
   themePanelArea,
+  notesArea,
   siteCheckArea,
   aiRequestsArea,
   aiAppsArea,

@@ -71,8 +71,9 @@ function withoutCopyProps(root: NodeDoc, section: NodeDoc, copy: Copy): NodeDoc 
     layerName: copy.props.layerName !== undefined,
     hidden: copy.props.hidden === true,
     editorHidden: copy.props.editorHidden === true,
+    note: copy.props.note !== undefined,
   };
-  for (const key of ["layerName", "hidden", "editorHidden"] as const) {
+  for (const key of ["layerName", "hidden", "editorHidden", "note"] as const) {
     if (!own[key]) continue;
     if (section.props[key] === undefined) delete props[key];
     else props[key] = section.props[key];

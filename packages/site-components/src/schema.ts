@@ -78,6 +78,11 @@ export type FieldDef = {
       /** Editable by clicking the text on the canvas. */
       readonly inline?: boolean;
       /**
+       * A date, typed in the browser's date picker and stored as `YYYY-MM-DD`, or empty for none:
+       * an Announcement bar's last day (#865).
+       */
+      readonly inputType?: "date";
+      /**
        * Site Settings values the field can show instead of its own text (1.17), typed once in
        * Site Settings and updated on every page. The choice is stored in the element's
        * `props.bindings`; render the field with {@link boundText}.
