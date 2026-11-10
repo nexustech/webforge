@@ -188,6 +188,27 @@ describe("siteToSnapshot", () => {
     expect(snapshot.pages[2]?.hideFromNavigation).toBe(true);
   });
 
+  it("passes on the old addresses that still work, each to its page's path now (#862)", () => {
+    const kept = bakery();
+    const notFound = kept.pageOrder.find((id) => kept.pages[id]?.kind === "not-found");
+    kept.settings.search.keptAddresses = [
+      { from: "cakes.html", page: "cakes" as PageId },
+      { from: "old-home.html", page: kept.homePageId },
+      // A page is there now, the page is gone, or it's "Page not found": left out.
+      { from: "menu/cakes.html", page: kept.homePageId },
+      { from: "gone.html", page: "gone" as PageId },
+      { from: "lost.html", page: notFound as PageId },
+    ];
+
+    const redirected = siteToSnapshot(kept, new Map());
+    expect(redirected.redirects).toEqual([
+      { from: "cakes.html", to: "menu/cakes" },
+      { from: "old-home.html", to: "index" },
+    ]);
+    expect(siteSnapshotSchema.parse(redirected)).toEqual(redirected);
+    expect(snapshot).not.toHaveProperty("redirects");
+  });
+
   it("includes images whose bytes are available, and no files", () => {
     expect(snapshot.media).toEqual([
       { id: "hero", name: "hero", mimeType: "image/jpeg", data: bytes, alt: expect.any(String) },

@@ -1582,6 +1582,35 @@ describe("buildSite: site files (3.5)", () => {
   );
 
   it(
+    "keeps a page's old addresses working, out of the sitemap and never in a preview (#862)",
+    async () => {
+      const site: SiteSnapshot = {
+        ...withNotFound({ "address.url": ADDRESS }),
+        // A service that sends visitors to a thank-you page, which the export makes (3.7).
+        formService: { kind: "formsubmit", email: "rosa@rosas.example" },
+        redirects: [
+          { from: "about-us.html", to: "about" },
+          // The thank-you page the export adds (3.7) keeps its place.
+          { from: "thank-you.html", to: "index" },
+        ],
+      };
+
+      const result = await buildSite(site, siteLibrary, resources);
+
+      expect(text(result, "about-us.html")).toContain('content="0; url=about.html"');
+      expect(text(result, "_redirects")).toContain("/about-us.html /about.html 301!");
+      expect(text(result, "sitemap.xml")).not.toContain("about-us");
+      expect(text(result, "thank-you.html")).toContain("Thank you");
+      expect(text(result, "thank-you.html")).not.toContain("http-equiv");
+
+      const previewed = await preview(site);
+      expect(previewed.files.has("about-us.html")).toBe(false);
+      expect(previewed.files.has("_redirects")).toBe(false);
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
     "writes no sitemap and no canonical address without a web address",
     async () => {
       const result = await buildSite(sampleSite(), siteLibrary, resources);

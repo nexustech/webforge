@@ -214,6 +214,14 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
         media,
         menu,
         settings,
+        // Old addresses kept working (#862), aimed at the site's pages.
+        kept: fc.array(
+          fc.record({
+            from: fc.constantFrom("old-page.html", "services/Old_Page.html"),
+            page: fc.constantFrom(...pageIds).map((id) => id as PageId),
+          }),
+          { maxLength: 2 },
+        ),
         looks,
         order: fc.shuffledSubarray(pageIds, {
           minLength: pageIds.length,
@@ -225,11 +233,15 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           media: items,
           menu: menuDoc,
           settings: siteSettings,
+          kept,
           looks: themeLooks,
           order,
         }): SiteDoc => ({
           formatVersion: SITE_FORMAT_VERSION,
-          settings: siteSettings,
+          settings:
+            kept.length === 0
+              ? siteSettings
+              : { ...siteSettings, search: { ...siteSettings.search, keptAddresses: kept } },
           theme: {
             ...DEFAULT_THEME,
             preset: "cupcake",

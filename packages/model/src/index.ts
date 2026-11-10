@@ -109,6 +109,13 @@ export {
   type SniffedImage,
   sniffImage,
 } from "./image-size.js";
+export {
+  keepingOldAddresses,
+  keptAddressesOf,
+  keptAddressWorks,
+  pageFile,
+  tidyKeptAddresses,
+} from "./kept-addresses.js";
 export type { LinkValue } from "./link.js";
 export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
 export type { ComponentLook, LookField, Looks, ValueSource } from "./look.js";
@@ -201,6 +208,7 @@ export type {
   BusinessType,
   Day,
   FormService,
+  KeptAddress,
   OpeningHours,
   SiteSettings,
   SocialProfile,
@@ -213,6 +221,9 @@ export {
   DAYS,
   defaultSiteSettings,
   formServiceSchema,
+  KEPT_ADDRESSES_MAX,
+  keptAddressFileSchema,
+  keptAddressSchema,
   LANGUAGE_TAG_MAX,
   languageTagSchema,
   MEASUREMENT_ID_MAX,
@@ -296,6 +307,7 @@ export type {
   MediaItem,
   SiteAnalytics,
   SitePage,
+  SiteRedirect,
   SiteSearch,
   SiteSnapshot,
 } from "./site-snapshot.js";
