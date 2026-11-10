@@ -131,7 +131,7 @@ describe("bulk actions on several selected elements (1.31, UX-3)", () => {
     toggleSelectedHidden(session);
 
     expect(hidden()).toEqual([false, false, false, false]);
-    expect(labels()).toEqual(["Hid 2 elements", "Showed 2 elements"]);
+    expect(labels()).toEqual(["Kept 2 elements off your website", "Showed 2 elements"]);
   });
 
   it("refuses a selection with an element of the Header or of a linked copy, saying why", () => {

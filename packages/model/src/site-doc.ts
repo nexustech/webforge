@@ -76,6 +76,12 @@ const pageSettingsSchema = z.strictObject({
    * details. Not one when absent, as before (ADR 0012).
    */
   privacy: z.boolean().optional(),
+  /**
+   * A draft page (G37, #864): kept in the site and edited as any page, and left out of the export,
+   * a publish and the preview, with its menu items and the links to it. Published when absent, as
+   * before (ADR 0012). Never the home page or *Page not found*, which are always published.
+   */
+  draft: z.boolean().optional(),
 });
 
 /** See {@link pageSettingsSchema}. */

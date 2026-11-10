@@ -43,8 +43,10 @@ export type SharedCopyNode = {
     readonly anchorSuffix?: string;
     /** Its name in Layers, shown for its section there (F-ED-12). */
     readonly layerName?: string | undefined;
-    /** Hidden in Layers: this copy dimmed on the canvas and left out of the export (F-ED-12). */
+    /** *Don't publish* in Layers: this copy dimmed on the canvas and left out of the export. */
     readonly hidden?: boolean | undefined;
+    /** *Hide while editing* in Layers (UX-23): this copy not drawn on the canvas, and exported. */
+    readonly editorHidden?: boolean | undefined;
     /** Kept as any node may have it; the copy shows its shared section's own. */
     readonly advanced?: NodeAdvanced | undefined;
   };
@@ -82,6 +84,7 @@ const sharedCopyNodeSchema = z.strictObject({
     // What Layers sets on any node: renaming or hiding a copy (F-ED-12).
     layerName: z.string().max(LAYER_NAME_MAX).optional(),
     hidden: z.boolean().optional(),
+    editorHidden: z.boolean().optional(),
     advanced: storedAdvancedSchema.optional(),
   }),
 });
@@ -241,14 +244,15 @@ function inCopy(node: NodeDoc, copy: SharedCopyNode): NodeDoc {
 
 /**
  * The section copy `copy` shows: its shared section's `section`, ids and anchors its own, under
- * the copy's Layers name and hidden when the copy is (F-ED-12), so the canvas dims it and the
- * export leaves it out.
+ * the copy's Layers name, and hidden as the copy is (F-ED-12, UX-23): dimmed on the canvas and
+ * left out of the export when it isn't published, not drawn on the canvas while editing.
  */
 function shownBy(section: NodeDoc, copy: SharedCopyNode): NodeDoc {
   const shown = inCopy(section, copy);
-  const { layerName, hidden } = copy.props;
+  const { layerName, hidden, editorHidden } = copy.props;
   if (layerName !== undefined) shown.props.layerName = layerName;
   if (hidden === true) shown.props.hidden = true;
+  if (editorHidden === true) shown.props.editorHidden = true;
   return shown;
 }
 

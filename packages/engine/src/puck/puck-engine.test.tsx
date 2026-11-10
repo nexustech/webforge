@@ -562,6 +562,24 @@ describe("createPuckEngine", () => {
     expect(element.querySelectorAll('.wf-outline[data-state="selected"]')).toHaveLength(1);
   });
 
+  it("leaves out an element hidden while editing, and draws it again when shown (UX-23)", async () => {
+    const [first, second] = page.content;
+    if (first === undefined || second === undefined) throw new Error("unexpected page");
+    const before = headings();
+    const withFirst = (props: Record<string, unknown>) =>
+      engine.applyChange({
+        page: { ...page, content: [{ ...first, props: { ...first.props, ...props } }, second] },
+      });
+
+    await act(async () => withFirst({ editorHidden: true }));
+    await settle();
+    expect(headings()).toEqual(before.slice(1));
+
+    await act(async () => withFirst({}));
+    await settle();
+    expect(headings()).toEqual(before);
+  });
+
   it("shows a bound element's Site Settings value, or the hint, as they change (1.17)", async () => {
     const bound = (bindings?: Record<string, string>): PageDoc => ({
       ...page,

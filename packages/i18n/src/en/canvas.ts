@@ -25,9 +25,9 @@ export const canvas = {
   "canvas.chipSize": "{name} · {size}",
   // Opens Style this ‹kind›… for the selected element (3.13a).
   "canvas.style": "Style",
-  "canvas.hide": "Hide",
+  "canvas.hide": "Don't publish",
   "canvas.show": "Show",
-  "canvas.toggleHidden": "Hide or show",
+  "canvas.toggleHidden": "Don't publish, or show",
   // The floating + between sections (1.12).
   "canvas.addSection": "Add a section here",
   "canvas.spacing.handle": "Drag to change the {field} ({side})",
