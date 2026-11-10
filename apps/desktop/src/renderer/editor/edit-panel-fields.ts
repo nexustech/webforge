@@ -203,6 +203,7 @@ export function sameSlice(a: PanelSlice, b: PanelSlice, library: ComponentLibrar
     x.id === y.id &&
     x.component === y.component &&
     x.region === y.region &&
+    x.design?.collection === y.design?.collection &&
     x.copyLabel === y.copyLabel &&
     samePanelValues(x.node, y.node, x.component, library) &&
     sameJson(a.anchors, b.anchors)

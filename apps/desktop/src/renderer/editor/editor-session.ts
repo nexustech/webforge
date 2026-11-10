@@ -27,7 +27,7 @@ import {
   withSelected,
   withToggled,
 } from "./selection.js";
-import { shownLayout } from "./shared-layout.js";
+import { canvasLayout, syncCanvasLayout } from "./shared-layout.js";
 import { undoEntry } from "./undo-entry.js";
 
 export type { EditorSelection } from "./selection.js";
@@ -410,12 +410,9 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
             return;
           }
           if (edit.shared === true && edit.layout !== undefined) {
-            // The shared Header or Footer (F-ED-7): the site's layout, which every page shows. Not a
-            // region this page hides: the canvas showed none, so the edit can't be to it.
-            const shown = shownLayout(history.document.getState(), pageId);
-            for (const region of ["header", "footer"] as const) {
-              if (shown[region].length > 0) syncDraft(draft.layout[region], edit.layout[region]);
-            }
+            // The shared Header or Footer (F-ED-7): the site's layout, which every page shows; on a
+            // post, the Blog's design too, which every post shows (6.10a).
+            syncCanvasLayout(draft, history.document.getState(), pageId, edit.layout, syncDraft);
             return;
           }
           const target = draft.pages[pageId];
@@ -461,7 +458,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         // With the shared Header and Footer: undoing an edit of one shows on every page (F-ED-7).
         engine.applyChange({
           page,
-          layout: shownLayout(site, ui.getState().pageId),
+          layout: canvasLayout(site, ui.getState().pageId),
           shared: site.sharedSections,
         });
       }
@@ -483,7 +480,7 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
         if (page !== undefined) {
           loading = true;
           try {
-            engine.loadPage(page, shownLayout(site, state.pageId), site.sharedSections);
+            engine.loadPage(page, canvasLayout(site, state.pageId), site.sharedSections);
           } finally {
             loading = false;
           }

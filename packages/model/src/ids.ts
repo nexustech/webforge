@@ -16,6 +16,8 @@ export type MenuItemId = Brand<string, "MenuItemId">;
 export type SharedSectionId = Brand<string, "SharedSectionId">;
 /** Identifies one of the person's own themes (2.23): in a site, and in My themes on a computer. */
 export type ThemeId = Brand<string, "ThemeId">;
+/** Identifies a collection (6.10a, ADR 0025): its items' pages point at it. */
+export type CollectionId = Brand<string, "CollectionId">;
 
 type IdTypes = {
   page: PageId;
@@ -26,6 +28,7 @@ type IdTypes = {
   menuItem: MenuItemId;
   sharedSection: SharedSectionId;
   theme: ThemeId;
+  collection: CollectionId;
 };
 
 /** The kinds of id {@link newId} creates. */
@@ -78,3 +81,5 @@ export const menuItemIdSchema = idString().brand<"MenuItemId">();
 export const sharedSectionIdSchema = idString().brand<"SharedSectionId">();
 /** Validates a {@link ThemeId}. */
 export const themeIdSchema = idString().brand<"ThemeId">();
+/** Validates a {@link CollectionId}. */
+export const collectionIdSchema = idString().brand<"CollectionId">();

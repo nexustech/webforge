@@ -358,6 +358,12 @@ export interface CanvasEngine {
    */
   setLooks(looks: RenderContext["looks"]): void;
   /**
+   * Shows the fields of the post shown (6.10a, ADR 0025) in its Blog's design's bound elements,
+   * and what an empty one shows instead (a hint). Called with none on a page that isn't an item,
+   * and again when the page shown or its fields change; what reads them draws again (#727).
+   */
+  setItem(item: Pick<RenderContext, "item" | "emptyItem">): void;
+  /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:
    * no selection, the end of the list, or an action Content mode doesn't allow.

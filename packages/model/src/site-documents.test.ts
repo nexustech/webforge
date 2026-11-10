@@ -40,6 +40,7 @@ describe("siteDocuments and siteFromDocuments", () => {
       "code",
       "menu",
       "sharedSections",
+      "collections",
       ...site.pageOrder.map(pageDocumentId),
     ]);
     expect(documents[0]?.content).toEqual({

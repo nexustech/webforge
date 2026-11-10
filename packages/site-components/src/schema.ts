@@ -10,6 +10,7 @@ import type {
   FormService,
   FormUnset,
   ImageValue,
+  ItemValue,
   LinkValue,
   Looks,
   NodeDoc,
@@ -85,7 +86,8 @@ export type FieldDef = {
       /**
        * Site Settings values the field can show instead of its own text (1.17), typed once in
        * Site Settings and updated on every page. The choice is stored in the element's
-       * `props.bindings`; render the field with {@link boundText}.
+       * `props.bindings`; render the field with {@link boundText}. In a collection's design, such
+       * a field can show the item's title, or a text or date field of it, too (6.10a).
        */
       readonly bindable?: readonly BindableSetting[];
     }
@@ -141,7 +143,15 @@ export type FieldDef = {
    * An image from the site's Media, stored as an `ImageValue`: `{ mediaId, alt? }`, where `alt`
    * overrides the image's own alt text for this placement (G15).
    */
-  | { readonly kind: "media"; readonly label: string }
+  | {
+      readonly kind: "media";
+      readonly label: string;
+      /**
+       * Can show the picture of the item it is drawn for instead (6.10a, ADR 0025): offered in a
+       * collection's design, as `props.bindings` `item.picture`; render it with `boundImage`.
+       */
+      readonly itemBindable?: true;
+    }
   /**
    * Where a link goes (F-ED-18), stored as a `LinkValue`: a page of the site (optionally a section
    * on it), an e-mail address, a phone number or a web address, optionally in a new tab.
@@ -288,6 +298,14 @@ export type { FormUnset };
 
 /** What a component may need from outside its own props while rendering. */
 export type RenderContext = SiteBindings & {
+  /**
+   * The fields of the item the page is (6.10a, ADR 0025), a Blog's post, by name (`title`,
+   * `date`): what its design's bound elements show. Left out on a page that isn't an item, where
+   * a bound element shows its own text.
+   */
+  readonly item?: (field: string) => ItemValue | undefined;
+  /** What an element bound to an item's empty field shows: a hint on the canvas; nothing in the export. */
+  readonly emptyItem?: (field: string) => ReactNode;
   /** The site's pages, for navigation. Empty on the canvas. */
   readonly navigation: readonly NavItem[];
   /** The relative URL of a page path (`about`) or the link itself if it is external. */

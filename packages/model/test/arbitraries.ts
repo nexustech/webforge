@@ -1,5 +1,5 @@
 import fc from "fast-check";
-import type { MediaId, MenuItemId, PageId, SharedSectionId } from "../src/ids.js";
+import type { CollectionId, MediaId, MenuItemId, PageId, SharedSectionId } from "../src/ids.js";
 import type { LinkValue } from "../src/link.js";
 import type { Looks } from "../src/look.js";
 import type { MediaMeta } from "../src/media.js";
@@ -177,7 +177,10 @@ const imageMeta = (mediaId: string, name: string): fc.Arbitrary<MediaMeta> =>
       mimeType: "image/jpeg" as const,
     }));
 
-/** Valid sites with up to 6 pages (some in folders), media and a custom menu. */
+/** The blog of {@link siteDocArbitrary}'s sites. */
+const BLOG_ID = "blog-collection" as CollectionId;
+
+/** Valid sites with up to 6 pages (some in folders, some the blog's posts), media and a custom menu. */
 export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
   .record({
     pageIds: fc.uniqueArray(id, { minLength: 2, maxLength: 6 }),
@@ -244,6 +247,8 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
         order: fc.shuffledSubarray(pageIds, {
           minLength: pageIds.length,
         }),
+        // Which pages other than the home and "Page not found" pages are the blog's posts (6.10a).
+        posts: fc.array(fc.boolean(), { minLength: 6, maxLength: 6 }),
       })
       .map(
         ({
@@ -254,6 +259,7 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
           kept,
           looks: themeLooks,
           order,
+          posts,
         }): SiteDoc => ({
           formatVersion: SITE_FORMAT_VERSION,
           settings:
@@ -266,7 +272,20 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
             ...(themeLooks === undefined ? {} : { looks: themeLooks }),
           },
           layout: { header: [], footer: [{ type: "Footer", props: { id: "footer", text: "©" } }] },
-          pages: Object.fromEntries(entries.map((entry) => [entry.id, entry])),
+          // A post is in the blog's folder; distinct slugs keep every path unique.
+          pages: Object.fromEntries(
+            entries.map((entry, index) => [
+              entry.id,
+              index >= 2 && posts[index] === true
+                ? {
+                    ...entry,
+                    folder: "blog",
+                    collection: BLOG_ID,
+                    entry: { date: `2026-11-0${index}`, summary: "News" },
+                  }
+                : entry,
+            ]),
+          ),
           pageOrder: order as PageId[],
           homePageId: homeId as PageId,
           media: Object.fromEntries(items.map((item) => [item.id, item])),
@@ -279,6 +298,28 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
               section: {
                 type: "Section",
                 props: { id: "hours", contentWidth: "medium", content: [] },
+              },
+            },
+          },
+          collections: {
+            [BLOG_ID]: {
+              id: BLOG_ID,
+              preset: "blog",
+              name: "Blog",
+              folder: "blog",
+              fields: [
+                { name: "date", label: "Date", kind: "date" },
+                { name: "summary", label: "Summary", kind: "text" },
+                { name: "picture", label: "Picture", kind: "image" },
+              ],
+              design: {
+                before: [
+                  {
+                    type: "Heading",
+                    props: { id: "post-title", text: "Title", bindings: { text: "item.title" } },
+                  },
+                ],
+                after: [],
               },
             },
           },

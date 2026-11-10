@@ -43,9 +43,11 @@ export type {
 } from "./library.js";
 export {
   BOX_CLASS_SAFELIST,
+  boundImage,
   boundText,
   boxTokenPixels,
   colorClass,
+  dateText,
   drawsPictureBehind,
   EDITOR_RENDER_CONTEXT,
   fieldsHiddenBy,

@@ -47,7 +47,7 @@ import { createImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
 import { SharedRegionBanner } from "./SharedRegionBanner.js";
 import { confirmSharedRemovals } from "./shared-confirmations.js";
-import { shownLayout } from "./shared-layout.js";
+import { canvasLayout } from "./shared-layout.js";
 import { type SharedSectionNaming, sharedSection } from "./shared-sections.js";
 import type { CompileCanvasCss } from "./site-css.js";
 import { installUndoToasts } from "./undo-toasts.js";
@@ -231,7 +231,7 @@ export function Editor({
     }
     const page = currentPage(session);
     if (page !== undefined) {
-      engine.loadPage(page.doc, shownLayout(site, page.id), site.sharedSections);
+      engine.loadPage(page.doc, canvasLayout(site, page.id), site.sharedSections);
     }
     const connection = connectEngine(
       siteWide === undefined ? engine : confirmSharedRemovals(engine, session, siteWide),

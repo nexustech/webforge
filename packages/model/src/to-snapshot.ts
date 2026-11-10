@@ -1,4 +1,5 @@
 import { settingValues } from "./bindings.js";
+import { collectionOf, itemValues } from "./collections.js";
 import { fileKey, keptAddressesOf, keptAddressWorks, pageFiles } from "./kept-addresses.js";
 import { isImageMeta } from "./media.js";
 import type { SiteSettings } from "./settings.js";
@@ -30,6 +31,11 @@ export function siteToSnapshot(
       hideFromSearch,
     } = page.settings;
     const shareImage = page.settings.shareImage ?? site.settings.social.shareImage;
+    // Copies of shared sections are exported inline, as their shared section (F-ED-23).
+    const content = expandSharedCopies(page.doc.content, site.sharedSections);
+    // An item is drawn inside its collection's design, its elements showing the item's fields
+    // (6.10a, ADR 0025, decision 5).
+    const collection = collectionOf(site, page);
     return [
       {
         id: page.id,
@@ -37,15 +43,23 @@ export function siteToSnapshot(
         title: page.title,
         navLabel: page.navLabel,
         description: description ?? site.settings.general.description,
-        hideFromNavigation: hideFromNavigation || page.kind === "not-found",
+        // A collection's items are listed by the collection, never one by one in the menu.
+        hideFromNavigation:
+          hideFromNavigation || page.kind === "not-found" || collection !== undefined,
         hideHeader,
         hideFooter,
         hideBackToTop,
         ...(hideFromSearch === true ? { hideFromSearch } : {}),
         ...(page.updated === undefined ? {} : { updated: page.updated }),
         ...(shareImage === undefined ? {} : { shareImage }),
-        // Copies of shared sections are exported inline, as their shared section (F-ED-23).
-        doc: { ...page.doc, content: expandSharedCopies(page.doc.content, site.sharedSections) },
+        ...(collection === undefined ? {} : { item: { values: itemValues(collection, page) } }),
+        doc: {
+          ...page.doc,
+          content:
+            collection === undefined
+              ? content
+              : [...collection.design.before, ...content, ...collection.design.after],
+        },
       },
     ];
   });
