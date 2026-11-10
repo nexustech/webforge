@@ -24,7 +24,10 @@ import {
 } from "@webforge/model";
 import { insertRecipePage, PAGE_RECIPES } from "@webforge/templates";
 import type { EditKind, EditorSelection, EditorSession } from "../editor/editor-session.js";
+import { insertCookiePage } from "./cookie-page.js";
+import type { PolicyPageKind } from "./policy-sections.js";
 import { insertPrivacyPage } from "./privacy-page.js";
+import { insertTermsPage } from "./terms-page.js";
 
 /**
  * The Pages panel's actions (F-ED-13). Each is one labelled undo step ("Added page 'About'"), and
@@ -127,18 +130,29 @@ export function addSuggestedPage(session: PagesSession, recipeId: string): PageI
   return id;
 }
 
+/** Each page *Add Page* writes for the owner to start from: its name, and how it's written. */
+const POLICY_PAGES: Readonly<
+  Record<PolicyPageKind, { title(): string; insert(draft: SiteDoc, id: PageId): void }>
+> = {
+  privacy: { title: () => t("privacyPage.title"), insert: insertPrivacyPage },
+  terms: { title: () => t("termsPage.title"), insert: insertTermsPage },
+  cookies: { title: () => t("cookiePage.title"), insert: insertCookiePage },
+};
+
 /**
- * Adds the site's privacy page (#855): its sections written from Site Settings and what the site
- * collects, marked as the privacy page Site Check looks for. Shows it. One undo step. Returns its id.
+ * Adds a page written from Site Settings for the owner to start from (#855, #866): the privacy
+ * page, marked as the one Site Check looks for; the terms; or the cookie policy. Shows it. One
+ * undo step ("Added page 'Terms'"). Returns its id.
  */
-export function addPrivacyPage(session: PagesSession): PageId {
+export function addPolicyPage(session: PagesSession, kind: PolicyPageKind): PageId {
   const id = newId("page");
+  const page = POLICY_PAGES[kind];
   editShowing(
     session,
     "insert",
-    t("history.added", { item: pageItem(t("privacyPage.title")) }),
+    t("history.added", { item: pageItem(page.title()) }),
     id,
-    (draft) => insertPrivacyPage(draft, id),
+    (draft) => page.insert(draft, id),
   );
   return id;
 }

@@ -3,6 +3,6 @@
  * here is the area's own.
  */
 
-export { addPage, addPrivacyPage, renamePage, setHiddenFromNavigation } from "./page-actions.js";
+export { addPage, addPolicyPage, renamePage, setHiddenFromNavigation } from "./page-actions.js";
 export { recipeName } from "./recipe-name.js";
 export { registerSitePanel } from "./SitePanel.js";
