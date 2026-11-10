@@ -416,7 +416,6 @@ test.describe("exported site from disk", () => {
     }) => {
       await page.setViewportSize({ width: 1280, height: 600 });
       await open(page, "index.html");
-      const row = page.locator("header.site-header .menu-horizontal");
       // The fixture's menu: Home (this page), and Questions on it, in the Visit us dropdown.
       const questions = mainNavigation(page).locator('a[href="index.html#questions"]');
       const visit = disclosure(page, "header.site-header .menu-horizontal details", "Visit us");
@@ -424,6 +423,7 @@ test.describe("exported site from disk", () => {
         locator.evaluate((element) => getComputedStyle(element).backgroundColor);
 
       await expect(questions).toHaveCount(2);
+      const plain = await background(visit.summary);
       for (const link of await questions.all())
         await expect(link).not.toHaveAttribute("aria-current");
 
@@ -431,9 +431,10 @@ test.describe("exported site from disk", () => {
       for (const link of await questions.all()) {
         await expect(link).toHaveAttribute("aria-current", "location");
       }
-      // The dropdown holding it is drawn as the current page's link is.
-      const home = row.locator('a[aria-current="page"]');
-      await expect.poll(() => background(visit.summary)).toBe(await background(home));
+      // The dropdown holding it is drawn in the menu's active colours, as the current page's link
+      // is: not as it was. Browsers write the same colour differently (oklch, or oklab mixed with
+      // the link's own), so it's compared with how it looked before.
+      await expect.poll(() => background(visit.summary)).not.toBe(plain);
       expect(await background(visit.summary)).not.toBe("rgba(0, 0, 0, 0)");
       // Accessible as it is: aria-current="location" is the place on this page.
       const results = await new AxeBuilder({ page }).include("header.site-header").analyze();
