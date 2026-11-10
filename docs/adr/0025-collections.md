@@ -1,8 +1,8 @@
 # 0025. Collections: an item is a page, wrapped in its collection's shared design
 
-- Status: Proposed
+- Status: Accepted (M2-1, product owner, 2026-11-10)
 - Date: 2026-11-10
-- Related: 6.10a (#874), 6.10b (#875), M2 and its sketch in [product/02](../../research/product/02-cms.md), BS9-3 and its design note (§5) in [bootstrap-studio/06](../../research/bootstrap-studio/06-bootstrap-studio-9.md), [ADR 0012](0012-site-format-migrations.md), [ADR 0003](0003-wforge-sqlite-storage.md), 1.17 (Site Settings bindings), 6.1 (kept addresses), 6.3 (draft pages)
+- Related: M2-1 in [product/02](../../research/product/02-cms.md#decisions-2026-10-19), 6.10a (#874), 6.10b (#875), M2 and its sketch in [product/02](../../research/product/02-cms.md), BS9-3 and its design note (§5) in [bootstrap-studio/06](../../research/bootstrap-studio/06-bootstrap-studio-9.md), [ADR 0012](0012-site-format-migrations.md), [ADR 0003](0003-wforge-sqlite-storage.md), 1.17 (Site Settings bindings), 6.1 (kept addresses), 6.3 (draft pages)
 
 ## Context
 
@@ -27,8 +27,6 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
 ## Decision
 
 **An item is a page that belongs to a collection. Its own content is its body, which the owner writes on the canvas. The collection's design is shared: it is drawn above and below every item's body, with elements bound to the item's fields.** It works the way the shared Header and Footer already do.
-
-**Status:** this ADR waits on a product decision. The alternative is product/02's sketch, with items as data edited in a form. If the product owner picks that, this ADR is replaced before any code is written.
 
 1. **A collection** is a new part of the site, `collections: Record<CollectionId, Collection>`, stored as one document, `collections`, like `sharedSections`. A collection has:
    - `id` and `preset` (`"blog"`; later `"portfolio"`, `"team"`, `"events"` or `"menu"`);
@@ -106,5 +104,5 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
 - **The design is shared.** Changing the blog's design changes every post, as BS9-3 wants. A post's own layout can still differ in its body: a gallery in one post, a video in another.
 - **Writing on the canvas.** Writing a post is writing a page, on the canvas, in the way the person already knows. There is no spreadsheet view; the Pages panel's group is the list, and 6.10b's import fills it in bulk.
 - **Page count.** A site with many posts has many pages. Opening a site, the history and the commit already scale by page (one document each; ADR 0022's benchmarks). A blog of a few hundred posts is within what the benchmarks measure.
-- **Two kinds of collection, one list.** Collections whose items are pages (Blog, Portfolio, Events) come first, in 6.10a. Collections whose items are only data (Menus, Team; spec/02 names both as presets) are a separate, later kind, with its own small form (decision 9). Both feed the same list section, so 6.10b's sections and tag pages don't depend on which kind they show. Until the second kind lands, Menus and Team stay as sections with repeating lists. spec/02's row should say which presets come with 6.10a and which wait for the item-only kind.
+- **Two kinds of collection, one list.** The kind whose items are pages comes first: 6.10a builds it with the Blog, and Portfolio and Events are later presets of it. Collections whose items are only data (Menus, Team; spec/02 names both as presets) are a separate, later kind, with its own small form (decision 9). Both feed the same list section, so 6.10b's sections and tag pages don't depend on which kind they show. Until the second kind lands, Menus and Team stay as sections with repeating lists. spec/02 §5 says which presets come with 6.10a (the Blog) and which wait for the item-only kind (Team, Menus).
 - **Format 13.** An older build opens a format 13 site read-only (ADR 0012), so it never writes a site whose collections it doesn't know.
