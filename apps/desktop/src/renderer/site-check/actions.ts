@@ -128,6 +128,8 @@ export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
       showSiteSettings(settings, "search");
       return;
     case "code":
+      // The stylesheet in its own panel (6.8), where Advanced mode has it; Settings otherwise.
+      if (place.part === "css" && actions.commands.run(COMMAND_IDS.stylesheet)) return;
       showCode(settings);
       return;
     case "guide":

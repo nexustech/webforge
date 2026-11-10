@@ -1,3 +1,4 @@
+// @vitest-environment happy-dom
 import type { NodeDoc, SiteDoc } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";

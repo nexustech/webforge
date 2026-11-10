@@ -8,7 +8,7 @@ import { createStore } from "zustand/vanilla";
 import type { CanvasApi } from "../../shared/ipc/canvas.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { siteSelectors } from "../editor/site-css.js";
-import { useClassCatalogue } from "../fields/classes/class-catalogue.js";
+import { useClassCatalogue } from "../fields/index.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -38,6 +38,12 @@ export type StylesheetPanelOptions = {
   /** Whether the owner has confirmed the addresses Settings allow (#649). */
   readonly allowListConfirmed: ReadonlyStore<boolean>;
 };
+
+/** The panel's two commands on the selected element, in the command box. */
+const STYLESHEET_COMMANDS = {
+  target: "stylesheet.target",
+  moveLook: "stylesheet.moveLook",
+} as const;
 
 /**
  * Puts the Stylesheet panel (CT-8, 6.8) in the bottom drawer, in Advanced mode only, with *Site ›
@@ -162,9 +168,3 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
     removePanel();
   };
 }
-
-/** The panel's two commands on the selected element, in the command box. */
-export const STYLESHEET_COMMANDS = {
-  target: "stylesheet.target",
-  moveLook: "stylesheet.moveLook",
-} as const;

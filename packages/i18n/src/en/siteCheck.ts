@@ -212,7 +212,7 @@ export const siteCheck = {
   "siteCheck.detail.headings": "{count} main headings: keep one large Heading or Hero",
   "siteCheck.detail.sameAs": "The same as {file}",
   "siteCheck.detail.publishedYear": "Shows {year}",
-  "siteCheck.detail.selector": "{selector}: no class or id like it on your site",
+  "siteCheck.detail.selector": "{selector}: nothing on your site matches it",
 
   // Fixes, each one undo step.
   "siteCheck.history.renamed": "Renamed the file of {item}",

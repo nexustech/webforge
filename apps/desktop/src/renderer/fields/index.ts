@@ -6,6 +6,7 @@
 
 export { TEXT_PX } from "@webforge/themes";
 export { classesFieldRenderer } from "./classes/ClassesField.js";
+export { useClassCatalogue } from "./classes/class-catalogue.js";
 export { codeField } from "./code/field.js";
 export { ColourField, shownRatio } from "./color/ColourField.js";
 export { colourField } from "./color/field.js";
