@@ -24,6 +24,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Header, Footer and shared sections](header-and-footer.md)
 - [Links](links.md)
 - [Pages and the menu](pages.md), with Page Settings
+- [Your blog](blog.md): posts written on the page, inside a design every post shares
 - [One-page sites](one-page-sites.md): a whole site on one page, with a menu that scrolls to each section
 
 **Your site's look and content**

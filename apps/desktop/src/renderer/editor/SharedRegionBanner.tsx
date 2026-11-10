@@ -1,7 +1,7 @@
 import { t } from "@webforge/i18n";
-import type { PageId, SiteDoc } from "@webforge/model";
+import { collectionItems, type PageId, type SiteDoc } from "@webforge/model";
 import type { EditorSession } from "./editor-session.js";
-import { pagesShowing, sharedRegionOf, shownLayout } from "./shared-layout.js";
+import { pagesShowing, sharedHomeOf, sharedRegionOf, shownLayout } from "./shared-layout.js";
 import { copySelection, reachOf } from "./shared-sections.js";
 import { useDocument, useUi } from "./use-document.js";
 
@@ -22,8 +22,22 @@ function copyBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): strin
  * pages". Editing a shared region doesn't ask for confirmation on every change; this says, for as
  * long as it lasts, how far a change reaches.
  */
+/**
+ * The banner's text while an element of a Blog's design is selected (6.10a): "Editing the design
+ * of 'Blog': changes show on all 4 posts".
+ */
+function designBanner(site: SiteDoc, pageId: PageId, nodeId: string | null): string | undefined {
+  const home = nodeId === null ? undefined : sharedHomeOf(site, pageId, nodeId);
+  if (home === undefined || typeof home === "string") return undefined;
+  const name = t("history.namedItem", { name: site.collections[home.collection]?.name ?? "" });
+  const count = collectionItems(site, home.collection).length;
+  return t(count === 1 ? "blog.banner.one" : "blog.banner.many", { name, count });
+}
+
 /** What the banner says for the element `nodeId` of page `pageId`, if it's in a shared place. */
 function bannerText(site: SiteDoc, pageId: PageId, nodeId: string | null): string | undefined {
+  const design = designBanner(site, pageId, nodeId);
+  if (design !== undefined) return design;
   const region = nodeId === null ? undefined : sharedRegionOf(shownLayout(site, pageId), nodeId);
   if (region === undefined) return copyBanner(site, pageId, nodeId);
   const count = pagesShowing(site, region);

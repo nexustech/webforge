@@ -1,6 +1,7 @@
 import { addPanelArea } from "./add/area.js";
 import { aiRequestsArea } from "./ai/area.js";
 import { aiAppsArea } from "./ai-apps/area.js";
+import { canvasItemArea } from "./blog/area.js";
 import { clipboardCommandsArea, styleCommandsArea } from "./clipboard/area.js";
 import { codeTrustArea } from "./code-trust/index.js";
 import { editPanelArea } from "./edit-panel/area.js";
@@ -57,6 +58,7 @@ export const EDITOR_AREAS: readonly Area<EditorContext>[] = [
   siteCssArea,
   canvasImagesArea,
   canvasSettingsArea,
+  canvasItemArea,
   canvasNavigationArea,
   clipboardCommandsArea,
   styleCommandsArea,

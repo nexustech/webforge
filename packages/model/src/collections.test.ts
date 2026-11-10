@@ -11,6 +11,7 @@ import {
 } from "./collections.js";
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, MediaId, PageId } from "./ids.js";
+import { syncMenuWithPages } from "./menu-sync.js";
 import { createSite, type PageEntry, type SiteDoc, siteDocSchema } from "./site-doc.js";
 import { siteSnapshotSchema } from "./site-snapshot.js";
 import { siteToSnapshot } from "./to-snapshot.js";
@@ -258,5 +259,21 @@ describe("siteToSnapshot with a Blog (6.10a)", () => {
     });
     expect(snapshot.pages.find((each) => each.id === site.homePageId)?.item).toBeUndefined();
     expect(siteSnapshotSchema.safeParse(snapshot).success).toBe(true);
+  });
+});
+
+describe("syncMenuWithPages with a Blog (6.10a)", () => {
+  it("leaves posts out of a menu that follows the pages, and out of an edited one's additions", () => {
+    const site = siteWith(post("p1", "spring"));
+    const following = syncMenuWithPages(site, "p1" as PageId);
+
+    expect(following.items.map((item) => item.kind === "page" && item.pageId)).toEqual([
+      site.homePageId,
+    ]);
+    const edited = syncMenuWithPages(
+      { ...site, menu: { ...following, follows: "custom" } },
+      "p1" as PageId,
+    );
+    expect(edited.items).toHaveLength(1);
   });
 });

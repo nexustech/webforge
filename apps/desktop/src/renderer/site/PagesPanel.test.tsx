@@ -58,6 +58,8 @@ function setUp({ backToTop = false, analytics = false, published = false } = {})
     add: vi.fn(),
     addSuggested: vi.fn(),
     addPolicy: vi.fn(),
+    addBlog: vi.fn(),
+    addPost: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),

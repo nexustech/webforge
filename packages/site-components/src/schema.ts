@@ -91,7 +91,16 @@ export type FieldDef = {
        */
       readonly bindable?: readonly BindableSetting[];
     }
-  | { readonly kind: "richtext"; readonly label: string; readonly inline?: boolean }
+  | {
+      readonly kind: "richtext";
+      readonly label: string;
+      readonly inline?: boolean;
+      /**
+       * Can show a text or date field of the item it is drawn for instead (6.10a): offered in a
+       * collection's design, as `props.bindings` `item.summary`.
+       */
+      readonly itemBindable?: true;
+    }
   | { readonly kind: "select"; readonly label: string; readonly options: readonly FieldOption[] }
   /** On or off, stored as a boolean. */
   | { readonly kind: "toggle"; readonly label: string }

@@ -32,7 +32,7 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
    - `id` and `preset` (`"blog"`; later `"portfolio"`, `"team"`, `"events"` or `"menu"`);
    - `name` ("Blog"), which the person can change;
    - `folder`: where its items' pages go (`blog`, so `blog/spring-opening.html`);
-   - `fields`: the item's own fields beyond the title, each with a name, a label and a kind (`date`, `text`, `richtext` or `image`). The blog's are `date`, `summary` and `picture`.
+   - `fields`: the item's own fields beyond the title, each with a name, a label and a kind (`date`, `text` or `image`; more kinds when a preset needs them). The blog's are `date`, `summary` and `picture`.
    - `design: { before: NodeDoc[]; after: NodeDoc[] }`: the elements drawn above and below each item's body.
 
    The preset names the defaults: its fields, its starting design and its folder. **A preset adds no code paths,** so Portfolio is another preset, not another engine.
@@ -54,6 +54,7 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
 
 3. **Binding to an item's field** extends Site Settings' bindings (1.17), one mechanism as BS9-3's note asks.
    - **In a text element,** `props.bindings` gains `item.<field>` values beside the Site Settings keys, plus `item.title`.
+   - **In a Text element,** its rich text can show a text or date field the same way (`item.summary`), as a paragraph.
    - **In an image field,** the same `bindings` entry can name an image field (`item.picture`). An image field can't be bound today.
    - **Where it resolves:** `RenderContext` gains `item(field)`. The canvas gets the shown item's values; the export gets each page's.
    - **Where it isn't an item:** on a page that isn't one (a design element pasted onto an ordinary page), a binding to an item field shows the element's own text.
@@ -67,13 +68,16 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
 5. **The export and Preview** compose the same thing. `siteToSnapshot` expands the design into each item's page and fills in its bindings, as it expands shared copies today. The pipeline gains no new kind of page.
    - **Output:** `blog/<slug>.html`, at the item's path, with `pagePrefix` giving its links one `../`.
    - **Drafts** are left out by `publishedSite`, as any draft page is.
+   - **Sharing:** a post's picture is its share image, unless its Page Settings choose another.
+   - **The menu:** posts are never added to it by themselves, as the Blog lists them; a menu that follows the pages leaves them out.
 
 6. **The Pages panel** shows each collection as a group headed by its name, listing its items newest first by date, with **New post** (the preset names it).
    - **Add page** gains **Blog**, which:
      - adds the collection with its preset;
      - adds a first post to show it;
      - shows that post.
-   - **Item settings:** Page Settings for an item shows the collection's fields first (**Date**, **Summary**, **Picture**). Its slug and folder follow the collection.
+   - **Item settings:** Page Settings for an item shows the collection's fields first, after its title (**Date**, **Summary**, **Picture**). Its folder is the collection's: an item can't be moved to another folder, made the Home page or reordered by hand, and a duplicate is another item.
+   - **One Blog per site** is offered for now; the engine allows more.
    - **Undo labels:** each change is one step with its own label, such as _"Added post 'Spring opening'"_, _"Edited post 'Spring opening'"_ or _"Edited the blog's design"_.
 
 7. **Format 13** adds `collections: {}` to every site, with a migration step, a fixture and the inverse in `migrations.test.ts`. The new optional page fields need no bump of their own (ADR 0012, decision 1), but they ride on this one.

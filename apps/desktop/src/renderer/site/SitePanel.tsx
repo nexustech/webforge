@@ -3,6 +3,7 @@ import type { SiteDoc } from "@webforge/model";
 import { FilesIcon } from "lucide-react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import { addBlog, addPost } from "../blog/blog-actions.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument, useUi } from "../editor/use-document.js";
 import { linkTargets } from "../links/index.js";
@@ -57,6 +58,12 @@ export function pagesPanelActions(
     },
     addPolicy: (kind) => {
       addPolicyPage(session, kind);
+    },
+    addBlog: () => {
+      addBlog(session);
+    },
+    addPost: (collectionId) => {
+      addPost(session, collectionId);
     },
     rename: (pageId, name, keepOldAddress) => renamePage(session, pageId, name, keepOldAddress),
     duplicate: (pageId) => {

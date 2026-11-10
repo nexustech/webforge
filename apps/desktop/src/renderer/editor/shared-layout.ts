@@ -1,3 +1,4 @@
+import { t } from "@webforge/i18n";
 import type {
   CollectionDesign,
   CollectionId,
@@ -156,6 +157,22 @@ export function syncCanvasLayout(
       );
     }
   }
+}
+
+/**
+ * The undo label of an edit to an element of a collection's design (6.10a): "Edited the design of
+ * 'Blog'", whichever element, as an edit inside a shared section is named by the section. Undefined
+ * for an element that isn't in the design of page `pageId`'s collection.
+ */
+export function designLabel(
+  site: SiteDoc,
+  pageId: PageId,
+  nodeId: string | null,
+): string | undefined {
+  const home = nodeId === null ? undefined : sharedHomeOf(site, pageId, nodeId);
+  if (home === undefined || typeof home === "string") return undefined;
+  const name = site.collections[home.collection]?.name ?? "";
+  return t("blog.history.editedDesign", { name: t("history.namedItem", { name }) });
 }
 
 /** The region of `layout` that holds the node `nodeId`, at any depth, if any. */

@@ -20,7 +20,11 @@ function navigationPages(site: SiteDoc): NavigationPage[] {
             path: pagePath(page, site.homePageId),
             title: page.title,
             navLabel: page.navLabel,
-            hideFromNavigation: page.settings.hideFromNavigation || page.kind === "not-found",
+            // A Blog's posts are listed by the Blog, never one by one in the menu (6.10a).
+            hideFromNavigation:
+              page.settings.hideFromNavigation ||
+              page.kind === "not-found" ||
+              page.collection !== undefined,
           },
         ];
   });

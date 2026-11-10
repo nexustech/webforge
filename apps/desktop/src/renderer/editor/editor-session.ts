@@ -27,7 +27,7 @@ import {
   withSelected,
   withToggled,
 } from "./selection.js";
-import { canvasLayout, syncCanvasLayout } from "./shared-layout.js";
+import { canvasLayout, designLabel, syncCanvasLayout } from "./shared-layout.js";
 import { undoEntry } from "./undo-entry.js";
 
 export type { EditorSelection } from "./selection.js";
@@ -395,13 +395,20 @@ export function connectEngine(engine: CanvasEngine, session: EditorSession): Eng
           ? undefined
           : history.document.getState().sharedSections[sharedOf]?.name;
       const named = sharedName === undefined ? "" : t("history.namedItem", { name: sharedName });
+      // An edit inside a Blog's design (6.10a): named by the Blog, as every post shows it.
+      const design =
+        edit.shared === true
+          ? designLabel(history.document.getState(), pageId, edit.nodeId ?? edit.selection)
+          : undefined;
       session.edit(
         edit.kind,
-        sharedName === undefined
-          ? labelFor(edit, library, page, history.document.getState().sharedSections)
-          : copyOf === undefined
-            ? t("history.editedSharedSection", { name: named })
-            : t("history.addedSharedCopy", { name: named }),
+        design !== undefined
+          ? design
+          : sharedName === undefined
+            ? labelFor(edit, library, page, history.document.getState().sharedSections)
+            : copyOf === undefined
+              ? t("history.editedSharedSection", { name: named })
+              : t("history.addedSharedCopy", { name: named }),
         (draft) => {
           if (sharedSection !== undefined) {
             // Inside a linked copy (F-ED-23): its shared section, which every copy shows.

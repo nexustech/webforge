@@ -1,4 +1,4 @@
-import type { BundledFile, NodeDoc, SitePage, SiteSnapshot } from "@webforge/model";
+import type { BundledFile, ItemValue, NodeDoc, SitePage, SiteSnapshot } from "@webforge/model";
 import {
   hrefFor,
   navigationFor,
@@ -41,6 +41,12 @@ const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
  * The path from `page` to the site's root, which its links and files start with: `../` per folder,
  * or `rootPrefix` for the "Page not found" page, which is served at any missing address (F-ED-20).
  */
+/** The fields of a post, by name, as its design's elements read them (6.10a). */
+const itemOf =
+  (item: NonNullable<SitePage["item"]>) =>
+  (field: string): ItemValue | undefined =>
+    Object.hasOwn(item.values, field) ? item.values[field] : undefined;
+
 export function pagePrefix(page: SitePage, rootPrefix: string): string {
   return page.path === NOT_FOUND_PATH ? rootPrefix : "../".repeat(page.path.split("/").length - 1);
 }
@@ -137,6 +143,8 @@ export function pageRender(
     },
     // An empty binding has no emptySetting here: the export leaves it out (1.17).
     setting: (key) => site.settings?.[key],
+    // A post's fields, which its Blog's design shows (6.10a); an empty one shows nothing.
+    ...(page.item === undefined ? {} : { item: itemOf(page.item) }),
     openingHours: site.openingHours ?? [],
     socialProfiles: site.socialProfiles ?? [],
     language: site.language,

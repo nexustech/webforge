@@ -19,6 +19,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Element:** anything inside a section: a heading, text, a picture, a button, a form. See [Elements](elements.md).
 - **Header and Footer:** the top and bottom of every page. Change them once and every page changes. See [Header, Footer and shared sections](header-and-footer.md).
 - **Shared section:** a section kept once and placed on several pages, so a change to it shows everywhere. **Detach from shared section** turns one copy back into a section of its own. See [Shared sections](header-and-footer.md#shared-sections).
+- **Blog** and **post:** your blog holds your news; each post is a page of it, with a date, a summary and a picture. The blog's **design** is drawn above and below every post. See [Your blog](blog.md).
 - **Template:** a ready-made site to start from, chosen when you make a new site. See [Templates and example sites](templates.md).
 - **Theme:** your site's colours, fonts and corners, used on every page. See [Themes, colours and fonts](themes.md).
 - **Media:** the pictures and files your site uses. A **file** is anything in Media that isn't a picture, such as a PDF price list, which visitors can download. See [Media](media.md).

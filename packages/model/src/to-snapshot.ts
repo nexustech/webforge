@@ -30,12 +30,18 @@ export function siteToSnapshot(
       hideBackToTop,
       hideFromSearch,
     } = page.settings;
-    const shareImage = page.settings.shareImage ?? site.settings.social.shareImage;
     // Copies of shared sections are exported inline, as their shared section (F-ED-23).
     const content = expandSharedCopies(page.doc.content, site.sharedSections);
     // An item is drawn inside its collection's design, its elements showing the item's fields
     // (6.10a, ADR 0025, decision 5).
     const collection = collectionOf(site, page);
+    const values = collection === undefined ? undefined : itemValues(collection, page);
+    // A post shared shows its own picture, unless its Page Settings choose another.
+    const picture = Object.values(values ?? {}).find((value) => value.kind === "image");
+    const shareImage =
+      page.settings.shareImage ??
+      (picture?.kind === "image" ? picture.mediaId : undefined) ??
+      site.settings.social.shareImage;
     return [
       {
         id: page.id,
@@ -52,7 +58,7 @@ export function siteToSnapshot(
         ...(hideFromSearch === true ? { hideFromSearch } : {}),
         ...(page.updated === undefined ? {} : { updated: page.updated }),
         ...(shareImage === undefined ? {} : { shareImage }),
-        ...(collection === undefined ? {} : { item: { values: itemValues(collection, page) } }),
+        ...(values === undefined ? {} : { item: { values } }),
         doc: {
           ...page.doc,
           content:

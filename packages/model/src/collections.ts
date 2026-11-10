@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { validBindings } from "./bindings.js";
 import { type NodeDoc, nodeDocSchema } from "./documents.js";
 import { type CollectionId, collectionIdSchema, type MediaId, mediaIdSchema } from "./ids.js";
+import { findNode } from "./node-tree.js";
 import type { PageEntry, SiteDoc } from "./site-doc.js";
 
 /**
@@ -242,4 +244,28 @@ export function newCollection(options: NewCollectionOptions): Collection {
     })),
     design: options.design,
   };
+}
+
+/**
+ * The pictures of the item `page` is that its design's elements show (6.10a): what the export needs
+ * beyond the pictures its elements place themselves. `page` is a snapshot's page, its design
+ * already around its content.
+ */
+export function itemPicturesShown(page: {
+  readonly item?: { readonly values: Readonly<Record<string, ItemValue>> } | undefined;
+  readonly doc: { readonly content: readonly NodeDoc[] };
+}): MediaId[] {
+  const values = page.item?.values;
+  if (values === undefined) return [];
+  const shown = new Set<MediaId>();
+  findNode(page.doc.content, (node) => {
+    for (const field of Object.values(validBindings(node.props.bindings))) {
+      const name = field.startsWith("item.") ? field.slice("item.".length) : undefined;
+      const value = name !== undefined && Object.hasOwn(values, name) ? values[name] : undefined;
+      if (value?.kind === "image") shown.add(value.mediaId);
+    }
+    // Every node, so none matches.
+    return false;
+  });
+  return [...shown];
 }

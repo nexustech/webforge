@@ -1,9 +1,13 @@
 import { FormDialog, type FormField, type FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  type CollectionField,
+  collectionOf,
   type ImageMeta,
+  ITEM_VALUE_MAX,
   isImageMeta,
   type MediaId,
+  mediaItem,
   PAGE_DESCRIPTION_MAX,
   PAGE_SLUG_MAX,
   PAGE_TITLE_MAX,
@@ -33,8 +37,14 @@ export type PageSettingsDialogProps = {
   readonly imageUrl?: (image: ImageMeta) => string;
 };
 
-/** What the dialog edits: each value as typed. */
-type PageValues = {
+/**
+ * A post's field as the dialog names its value (6.10a): `item.date`, beside the page's own
+ * values, so its fields are one form.
+ */
+const itemKey = (field: string) => `item.${field}` as const;
+
+/** What the dialog edits: each value as typed; a post's fields under {@link itemKey}. */
+type PageValues = Readonly<Record<`item.${string}`, string | undefined>> & {
   readonly title: string;
   readonly slug: string;
   readonly description: string;
@@ -66,7 +76,54 @@ const pageSettingsFormSchema = z.object({
   hideFromSearch: z.boolean(),
   privacy: z.boolean(),
   draft: z.boolean(),
+  // A post's fields (6.10a): read for their kind by the model, so any text up to the limit.
+  entry: z.record(z.string(), z.string().max(ITEM_VALUE_MAX)).optional(),
 });
+
+/**
+ * A post's field in Page Settings (6.10a): a date picker, a few lines of text, or a picture from
+ * Media, labelled as its Blog names it.
+ */
+function postField(
+  field: CollectionField,
+  images: readonly ImageMeta[],
+  imageUrl: (image: ImageMeta) => string,
+): FormField {
+  const name = itemKey(field.name);
+  switch (field.kind) {
+    case "date":
+      return {
+        kind: "text",
+        name,
+        label: field.label,
+        inputType: "date",
+        help: t("blog.settings.dateHint"),
+        width: "md",
+      };
+    case "text":
+      return {
+        kind: "text",
+        name,
+        label: field.label,
+        multiline: true,
+        maxLength: ITEM_VALUE_MAX,
+        help: t("blog.settings.summaryHint"),
+      };
+    case "image":
+      return {
+        kind: "imageChoice",
+        name,
+        label: field.label,
+        noneLabel: t("blog.settings.noPicture"),
+        options: images.map((image) => ({
+          value: image.id,
+          label: image.name,
+          thumbnail: imageUrl(image),
+        })),
+        ...(images.length === 0 ? { help: t("pageSettings.noImages") } : {}),
+      };
+  }
+}
 
 /**
  * Page Settings as a form (F-SET-2, 2.21): the title and description, the file name (fixed for
@@ -86,6 +143,9 @@ export function pageSettingsSpec(
         : undefined;
   const images = Object.values(site.media).filter(isImageMeta);
   const siteDescription = site.settings.general.description;
+  // A post's fields come straight after its title, where they're easy to find (6.10a, M2-1).
+  const postFields = collectionOf(site, page)?.fields ?? [];
+  const isPost = page.collection !== undefined;
   return {
     fields: ({ slug }): readonly FormField[] => [
       {
@@ -94,6 +154,7 @@ export function pageSettingsSpec(
         label: t("pageSettings.pageTitle"),
         maxLength: PAGE_TITLE_MAX,
       },
+      ...postFields.map((field) => postField(field, images, imageUrl)),
       {
         kind: "text",
         name: "slug",
@@ -141,14 +202,19 @@ export function pageSettingsSpec(
         : []),
       { kind: "toggle", name: "hideHeader", label: t("pageSettings.hideHeader") },
       { kind: "toggle", name: "hideFooter", label: t("pageSettings.hideFooter") },
-      // "Page not found" is never in navigation, nor shown by search engines.
-      ...(page.kind === "page"
+      // "Page not found" is never in navigation, nor shown by search engines. A post is never in
+      // navigation by itself: its Blog lists it.
+      ...(page.kind === "page" && !isPost
         ? [
             {
               kind: "toggle" as const,
               name: "hideFromNavigation",
               label: t("pageSettings.hideFromNavigation"),
             },
+          ]
+        : []),
+      ...(page.kind === "page"
+        ? [
             // One is the menu, the other is search (3.15, SEO-2).
             {
               kind: "toggle" as const,
@@ -186,12 +252,26 @@ export function pageSettingsSpec(
       };
     },
     schema: pageSettingsFormSchema,
-    toModel: (values) => ({
-      ...values,
-      // An emptied file name keeps the page's own; a fixed one isn't the dialog's to change.
-      slug: fixedFile !== undefined || values.slug.trim() === "" ? page.slug : slugify(values.slug),
-      description: values.description.trim(),
-    }),
+    toModel: (values) => {
+      // The page's own values, without its post's fields, which go together as its entry.
+      const own = Object.fromEntries(
+        Object.entries(values).filter(([key]) => !key.startsWith("item.")),
+      );
+      return {
+        ...own,
+        // An emptied file name keeps the page's own; a fixed one isn't the dialog's to change.
+        slug:
+          fixedFile !== undefined || values.slug.trim() === "" ? page.slug : slugify(values.slug),
+        description: values.description.trim(),
+        ...(isPost
+          ? {
+              entry: Object.fromEntries(
+                postFields.map((field) => [field.name, (values[itemKey(field.name)] ?? "").trim()]),
+              ),
+            }
+          : {}),
+      };
+    },
   };
 }
 
@@ -232,6 +312,19 @@ export function PageSettingsDialog({
         hideFromSearch: page.settings.hideFromSearch === true,
         privacy: page.settings.privacy === true,
         draft: page.settings.draft === true,
+        // A post's fields as stored; a picture that isn't one shows as none (6.10a).
+        ...Object.fromEntries(
+          (collectionOf(site, page)?.fields ?? []).map((field) => {
+            const stored = page.entry?.[field.name];
+            const value =
+              field.kind === "image"
+                ? stored !== undefined && mediaItem(site.media, stored)?.kind === "image"
+                  ? stored
+                  : undefined
+                : (stored ?? "");
+            return [itemKey(field.name), value];
+          }),
+        ),
       }}
       onSave={(change) => onSave({ ...change, shareImage: change.shareImage })}
       onCancel={onCancel}

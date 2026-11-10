@@ -1,8 +1,8 @@
 import {
-  expandSharedCopies,
   type FileMeta,
   type ImageMeta,
   isImageMeta,
+  itemPicturesShown,
   menuFileLinks,
   previewedSite,
   publishedSite,
@@ -42,21 +42,22 @@ export function siteContentFor(
 
 /** {@link siteContentFor} of a site as it is published. */
 function contentOf(site: SiteDoc, library: ComponentLibrary): SiteContent {
+  const snapshot = siteToSnapshot(site, new Map());
   const nodes = [
     ...site.layout.header,
     ...site.layout.footer,
-    // Copies of shared sections as the export shows them (F-ED-23): their images and documents
-    // are the pages' too.
-    ...site.pageOrder.flatMap((id) =>
-      expandSharedCopies(site.pages[id]?.doc.content ?? [], site.sharedSections),
-    ),
+    // Pages as the export shows them: copies of shared sections as their section (F-ED-23), a
+    // post inside its Blog's design (6.10a). Their images and documents are the pages' too.
+    ...snapshot.pages.flatMap((page) => page.doc.content),
   ];
   const used = mediaUsedBy(nodes, library);
-  // The favicon set's source and the share pictures (3.4), from Site Settings and Page Settings.
+  // The favicon set's source and the share pictures (3.4), from Site Settings and Page Settings,
+  // and the pictures of posts their design shows (6.10a).
   for (const id of [
     site.settings.general.icon,
     site.settings.social.shareImage,
-    ...Object.values(site.pages).map((page) => page.settings.shareImage),
+    ...snapshot.pages.map((page) => page.shareImage),
+    ...snapshot.pages.flatMap(itemPicturesShown),
   ]) {
     if (id !== undefined) used.add(id);
   }
@@ -64,7 +65,7 @@ function contentOf(site: SiteDoc, library: ComponentLibrary): SiteContent {
   const linked = documentsLinkedBy(nodes, library);
   for (const id of menuFileLinks(site.menu)) linked.add(id);
   return {
-    snapshot: siteToSnapshot(site, new Map()),
+    snapshot,
     media: Object.values(site.media)
       .filter(isImageMeta)
       .filter((image) => used.has(image.id))

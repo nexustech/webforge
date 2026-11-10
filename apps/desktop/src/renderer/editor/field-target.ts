@@ -2,6 +2,7 @@ import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import {
   type Breakpoint,
+  type CollectionField,
   findNode,
   type NodeDoc,
   type PageDoc,
@@ -14,6 +15,7 @@ import { updateField } from "./apply-patch.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
 import {
   canvasLayout,
+  designLabel,
   nodesAtHome,
   type SharedHome,
   type SharedRegion,
@@ -41,6 +43,8 @@ export type FieldTarget = {
    * the collection, and its fields can show the post's.
    */
   readonly design: Exclude<SharedHome, SharedRegion> | undefined;
+  /** In a Blog's design, the post's fields its elements can show (6.10a). */
+  readonly itemFields: readonly CollectionField[] | undefined;
   /** Set for an element of a linked copy: its changes go to the shared section. */
   readonly inCopy: CopySelection | undefined;
   /** In a copy, every change is named as the canvas names it: "Edited shared section '…'". */
@@ -108,12 +112,15 @@ export function fieldTarget(
     selection: id,
     ...(home === undefined ? {} : { shared: true, layout: canvasLayout(site, pageId) }),
   });
+  // In a copy or a Blog's design, every change is named by the shared section or the Blog.
   const copyLabel =
-    inCopy === undefined
-      ? undefined
-      : t("history.editedSharedSection", {
+    inCopy !== undefined
+      ? t("history.editedSharedSection", {
           name: t("history.namedItem", { name: inCopy.shared.name }),
-        });
+        })
+      : design === undefined
+        ? undefined
+        : designLabel(site, pageId, nodeId);
   const labelOf = (name: string, field: FieldDef, breakpoint: Breakpoint, reset = false) => {
     if (copyLabel !== undefined) return copyLabel;
     const edit = editOf(field.kind === "text" ? "text" : "props", name);
@@ -145,6 +152,7 @@ export function fieldTarget(
     id,
     region,
     design,
+    itemFields: design === undefined ? undefined : site.collections[design.collection]?.fields,
     inCopy,
     copyLabel,
     storedOr,

@@ -49,6 +49,7 @@ export {
   type ItemEntry,
   type ItemValue,
   itemEntrySchema,
+  itemPicturesShown,
   itemValue,
   itemValues,
   type NewCollectionOptions,

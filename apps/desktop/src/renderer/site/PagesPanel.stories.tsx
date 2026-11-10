@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { PageEntry, PageId, SiteDoc } from "@webforge/model";
+import type { CollectionId, PageEntry, PageId, SiteDoc } from "@webforge/model";
 import { userEvent, within } from "storybook/test";
 import { starterSite } from "../../shared/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
@@ -49,6 +49,8 @@ const actions: PagesPanelActions = {
   add: noop,
   addSuggested: noop,
   addPolicy: noop,
+  addBlog: noop,
+  addPost: noop,
   rename: noop,
   duplicate: noop,
   move: noop,
@@ -125,5 +127,39 @@ export const PageSettings: Story = {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Actions for About us" }));
     await userEvent.click(within(document.body).getByRole("menuitem", { name: "Page Settings…" }));
+  },
+};
+
+/** The site with a Blog (6.10a): its posts in a group of their own, newest first, with New Post. */
+export const WithBlog: Story = {
+  args: {
+    site: (() => {
+      const withBlog = site();
+      const blogId = "blog" as CollectionId;
+      withBlog.collections[blogId] = {
+        id: blogId,
+        preset: "blog",
+        name: "Blog",
+        folder: "blog",
+        fields: [{ name: "date", label: "Date", kind: "date" }],
+        design: { before: [], after: [] },
+      };
+      const posts = [
+        page("spring", "Spring opening", {
+          folder: "blog",
+          collection: blogId,
+          entry: { date: "2026-03-01" },
+        }),
+        page("new-ovens", "Our new ovens", {
+          folder: "blog",
+          collection: blogId,
+          entry: { date: "2026-11-10" },
+        }),
+      ];
+      for (const post of posts) withBlog.pages[post.id] = post;
+      withBlog.pageOrder.splice(-1, 0, ...posts.map((post) => post.id));
+      return withBlog;
+    })(),
+    shownPageId: "new-ovens" as PageId,
   },
 };

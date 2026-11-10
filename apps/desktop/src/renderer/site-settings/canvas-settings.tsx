@@ -17,7 +17,7 @@ function emptySettingHint(key: BindableSetting) {
  * A faint hint on the canvas, saying what to fill in where: faint enough to tell from the site's
  * text, and still readable at WCAG AA on a theme's surfaces (2.15b).
  */
-function hint(text: string) {
+export function hint(text: string) {
   return <span style={{ opacity: 0.75, fontStyle: "italic" }}>{text}</span>;
 }
 

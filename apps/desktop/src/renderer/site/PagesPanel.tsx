@@ -15,6 +15,9 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  type Collection,
+  type CollectionId,
+  collectionItems,
   isDraftPage,
   PAGE_FOLDER_MAX,
   PAGE_TITLE_MAX,
@@ -31,6 +34,7 @@ import {
   FileQuestionIcon,
   FolderIcon,
   HouseIcon,
+  NewspaperIcon,
   PlusIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -63,6 +67,10 @@ export type PagesPanelActions = {
   addSuggested(recipeId: string): void;
   /** Adds the privacy page, the terms or the cookie policy, from Site Settings (#855, #866). */
   addPolicy(kind: PolicyPageKind): void;
+  /** Adds a Blog and its first post (6.10a). */
+  addBlog(): void;
+  /** Adds a post to the Blog `collectionId` (6.10a). */
+  addPost(collectionId: CollectionId): void;
   /** Renames a page, keeping its old address working if `keepOldAddress` (#862). */
   rename(pageId: PageId, name: string, keepOldAddress: boolean): void;
   duplicate(pageId: PageId): void;
@@ -91,18 +99,39 @@ type OpenDialog =
   | { readonly kind: "add" }
   | { readonly kind: "rename" | "folder" | "settings"; readonly pageId: PageId };
 
-/** A row of the list: a page at the top level, or a folder with its pages. */
+/** A row of the list: a page at the top level, a folder with its pages, or a Blog with its posts. */
 type Row =
   | { readonly kind: "page"; readonly page: PageEntry }
-  | { readonly kind: "folder"; readonly folder: string; readonly pages: readonly PageEntry[] };
+  | { readonly kind: "folder"; readonly folder: string; readonly pages: readonly PageEntry[] }
+  | {
+      readonly kind: "collection";
+      readonly collection: Collection;
+      readonly pages: readonly PageEntry[];
+    };
 
-/** The list in Pages panel order; each folder sits where its first page is. */
+/**
+ * The list in Pages panel order; each folder sits where its first page is. A Blog (6.10a) is a
+ * group of its own, headed by its name, listing its posts newest first; it sits where its first
+ * post is, and after the pages when it has none.
+ */
 function rowsOf(site: SiteDoc): Row[] {
   const pages = site.pageOrder.flatMap((id) => site.pages[id] ?? []);
   const rows: Row[] = [];
   const seen = new Set<string>();
+  const shown = new Set<string>();
+  const collectionRow = (collection: Collection): Row => ({
+    kind: "collection",
+    collection,
+    pages: collectionItems(site, collection.id),
+  });
   for (const page of pages) {
-    if (page.folder === undefined) {
+    if (page.collection !== undefined) {
+      const collection = site.collections[page.collection];
+      if (collection !== undefined && !shown.has(collection.id)) {
+        shown.add(collection.id);
+        rows.push(collectionRow(collection));
+      }
+    } else if (page.folder === undefined) {
       rows.push({ kind: "page", page });
     } else if (!seen.has(page.folder)) {
       seen.add(page.folder);
@@ -110,9 +139,12 @@ function rowsOf(site: SiteDoc): Row[] {
       rows.push({
         kind: "folder",
         folder,
-        pages: pages.filter((other) => other.folder === folder),
+        pages: pages.filter((other) => other.folder === folder && other.collection === undefined),
       });
     }
+  }
+  for (const collection of Object.values(site.collections)) {
+    if (!shown.has(collection.id)) rows.push(collectionRow(collection));
   }
   return rows;
 }
@@ -218,6 +250,10 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
             <DropdownMenuItem onSelect={() => actions.addPolicy("terms")}>
               {t("pages.addTerms")}
             </DropdownMenuItem>
+            {/* One Blog per site: its group has New Post (6.10a). */}
+            {!Object.values(site.collections).some((each) => each.preset === "blog") && (
+              <DropdownMenuItem onSelect={actions.addBlog}>{t("blog.add")}</DropdownMenuItem>
+            )}
             {/* Only while Google Analytics is on: nothing else on the site sets cookies unasked. */}
             {offersCookiePolicy(site) && (
               <DropdownMenuItem onSelect={() => actions.addPolicy("cookies")}>
@@ -256,6 +292,32 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
           {rowsOf(site).map((row) =>
             row.kind === "page" ? (
               pageRow(row.page, false)
+            ) : row.kind === "collection" ? (
+              <li key={`collection:${row.collection.id}`}>
+                <div className="group/blog flex h-6 items-center gap-1.5 pr-1 pl-2 text-xs text-muted-foreground">
+                  <NewspaperIcon aria-hidden className="size-3.5 shrink-0" />
+                  <span className="truncate">{row.collection.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="ml-auto size-5"
+                    aria-label={`${t("blog.newPost")} (${row.collection.name})`}
+                    title={t("blog.newPost")}
+                    onClick={() => actions.addPost(row.collection.id)}
+                  >
+                    <PlusIcon />
+                  </Button>
+                </div>
+                <ul aria-label={row.collection.name}>
+                  {row.pages.length === 0 ? (
+                    <li className="h-6 pl-6 text-xs leading-6 text-muted-foreground">
+                      {t("blog.noPosts")}
+                    </li>
+                  ) : (
+                    row.pages.map((page) => pageRow(page, true))
+                  )}
+                </ul>
+              </li>
             ) : (
               <li key={`folder:${row.folder}`}>
                 <div className="flex h-6 items-center gap-1.5 px-2 text-xs text-muted-foreground">
@@ -406,19 +468,24 @@ function PageMenuItems({
           {t("pages.duplicate")}
         </DropdownMenuItem>
       )}
-      <DropdownMenuSeparator />
-      <DropdownMenuItem
-        disabled={neighbour(site, page.id, -1) === undefined}
-        onSelect={() => actions.move(page.id, -1)}
-      >
-        {t("pages.moveUp")}
-      </DropdownMenuItem>
-      <DropdownMenuItem
-        disabled={neighbour(site, page.id, 1) === undefined}
-        onSelect={() => actions.move(page.id, 1)}
-      >
-        {t("pages.moveDown")}
-      </DropdownMenuItem>
+      {/* A Blog lists its posts by date, so they aren't moved up or down (6.10a). */}
+      {page.collection === undefined && (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={neighbour(site, page.id, -1) === undefined}
+            onSelect={() => actions.move(page.id, -1)}
+          >
+            {t("pages.moveUp")}
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={neighbour(site, page.id, 1) === undefined}
+            onSelect={() => actions.move(page.id, 1)}
+          >
+            {t("pages.moveDown")}
+          </DropdownMenuItem>
+        </>
+      )}
       {canMoveToFolder(site, page) && (
         <DropdownMenuSub>
           <DropdownMenuSubTrigger>{t("pages.moveToFolder")}</DropdownMenuSubTrigger>

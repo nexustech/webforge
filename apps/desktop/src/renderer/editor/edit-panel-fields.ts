@@ -300,62 +300,69 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
     const unavailable = field.unavailable?.(values);
     const help = unavailable ?? field.help;
     const warning = overlayWarning(field, values, theme, component);
-    // A text field that can show a Site Settings value gets a choice of what it shows (1.17).
-    return withBindingChoice(name, field, node.props.bindings, [
-      {
-        ...spec,
-        name,
-        group: fieldGroupOf(field),
-        value: responsive ? valueAt(stored, breakpoint) : stored,
-        ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
-        ...(help === undefined ? {} : { help }),
-        ...(warning === undefined ? {} : { warning }),
-        // Where its value comes from (CT-3), on the Appearance basics and the dialog's deeper
-        // groups; and, on the Colour of a background drawn as a gradient, that (CT-4).
-        ...(field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id ||
-        field.inDialog === true
-          ? provenance(name, field.label, own, responsive)
-          : {}),
-        ...(name === "lookBackground"
-          ? gradientSource(
-              values,
-              breakpoint,
-              dialogGroups === undefined
-                ? {
-                    item: component.label,
-                    ...(options.openStyle === undefined ? {} : { open: options.openStyle }),
-                  }
-                : { inDialog: true },
-            )
-          : {}),
-        // Its Reset leaves it to its kind's look, where the theme has one for it (3.12): on
-        // Desktop, while no other device keeps a value of its own (#567).
-        ...(look[name] !== undefined &&
-        breakpoint === "desktop" &&
-        !isOverridden(own, "tablet") &&
-        !isOverridden(own, "mobile")
-          ? { resetLabel: t("editPanel.resetToLook") }
-          : {}),
-        ...(unavailable === undefined ? {} : { disabled: true }),
-        ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
-        ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
-          ? { changed: true }
-          : {}),
-        ...(responsive && isOverridden(own, breakpoint) ? { overridden: true } : {}),
-        // Its value on each device, in rows of their own (SP-5).
-        ...(responsive
-          ? {
-              devices: DEVICES.map((each) => ({
-                id: each,
-                label: t(`device.${each}`),
-                value: valueAt(stored, each),
-                own: each === "desktop" || isOverridden(own, each),
-                inEffect: each === sourceOf(own, breakpoint),
-              })),
-            }
-          : {}),
-      },
-    ]);
+    // A text field that can show a Site Settings value gets a choice of what it shows (1.17); in a
+    // Blog's design, a text or picture that can show the post's (6.10a).
+    return withBindingChoice(
+      name,
+      field,
+      node.props.bindings,
+      [
+        {
+          ...spec,
+          name,
+          group: fieldGroupOf(field),
+          value: responsive ? valueAt(stored, breakpoint) : stored,
+          ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
+          ...(help === undefined ? {} : { help }),
+          ...(warning === undefined ? {} : { warning }),
+          // Where its value comes from (CT-3), on the Appearance basics and the dialog's deeper
+          // groups; and, on the Colour of a background drawn as a gradient, that (CT-4).
+          ...(field.optionGroup?.id === APPEARANCE_FIELDS.lookShadow.optionGroup.id ||
+          field.inDialog === true
+            ? provenance(name, field.label, own, responsive)
+            : {}),
+          ...(name === "lookBackground"
+            ? gradientSource(
+                values,
+                breakpoint,
+                dialogGroups === undefined
+                  ? {
+                      item: component.label,
+                      ...(options.openStyle === undefined ? {} : { open: options.openStyle }),
+                    }
+                  : { inDialog: true },
+              )
+            : {}),
+          // Its Reset leaves it to its kind's look, where the theme has one for it (3.12): on
+          // Desktop, while no other device keeps a value of its own (#567).
+          ...(look[name] !== undefined &&
+          breakpoint === "desktop" &&
+          !isOverridden(own, "tablet") &&
+          !isOverridden(own, "mobile")
+            ? { resetLabel: t("editPanel.resetToLook") }
+            : {}),
+          ...(unavailable === undefined ? {} : { disabled: true }),
+          ...(responsive && breakpoint !== "desktop" ? { responsive: true } : {}),
+          ...(differsFromDefault(stored, storedOr(name, undefined), responsive, breakpoint)
+            ? { changed: true }
+            : {}),
+          ...(responsive && isOverridden(own, breakpoint) ? { overridden: true } : {}),
+          // Its value on each device, in rows of their own (SP-5).
+          ...(responsive
+            ? {
+                devices: DEVICES.map((each) => ({
+                  id: each,
+                  label: t(`device.${each}`),
+                  value: valueAt(stored, each),
+                  own: each === "desktop" || isOverridden(own, each),
+                  inEffect: each === sourceOf(own, breakpoint),
+                })),
+              }
+            : {}),
+        },
+      ],
+      target.itemFields,
+    );
   });
 
   if (options.advanced && !options.appearanceOnly) {
