@@ -279,10 +279,13 @@ describe("startApp", () => {
       expect.arrayContaining([
         {
           scheme: "webforge-app",
-          privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true },
+          privileges: { standard: true, secure: true, supportFetchAPI: true },
         },
       ]),
     );
+    // No scheme keeps V8's compiled code in the profile: #893's cache, turned off (ADR 0023).
+    const schemes: unknown = fake.electron.protocol.registerSchemesAsPrivileged.mock.calls[0]?.[0];
+    expect(JSON.stringify(schemes)).not.toContain("codeCache");
     expect(window?.maximize).toHaveBeenCalled();
     window?.events.emit("ready-to-show");
     expect(window?.show).toHaveBeenCalled();

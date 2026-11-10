@@ -14,15 +14,16 @@ export const APP_SCHEME = "webforge-app";
 const APP_HOST = "editor";
 
 /**
- * How the scheme is registered before "ready": a standard, secure origin that may `fetch`, and
- * whose scripts V8 keeps compiled in the profile's code cache (#893, ADR 0023): without it, the
- * editor's 7 MB of JavaScript is compiled again at every start. Blink checks each entry against a
- * SHA-256 of the script's text and drops one that doesn't match, so an update's scripts never run
- * an old entry. The privilege grants a page nothing else.
+ * How the scheme is registered before "ready": a standard, secure origin that may `fetch`. Never
+ * `codeCache`: V8's compiled code kept in the profile would let someone who can write to the
+ * profile give the editor code to run with the preload API, past the asar integrity fuse. #893
+ * turned it on for 0.26 s at the first render; the product owner declined that risk, and it's off
+ * (ADR 0023). An entry an earlier version wrote is never read: Chromium only reads or writes the
+ * code cache for a custom scheme registered with `codeCache`.
  */
 export const APP_SCHEME_PRIVILEGES = {
   scheme: APP_SCHEME,
-  privileges: { standard: true, secure: true, supportFetchAPI: true, codeCache: true },
+  privileges: { standard: true, secure: true, supportFetchAPI: true },
 } as const;
 
 /** The address of the renderer's page `file` (`index.html`, `help.html`). */

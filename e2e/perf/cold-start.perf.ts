@@ -29,8 +29,8 @@ import { createFromTemplate, TEMPLATES } from "../app/templates.js";
 // Launches without a site are timed too, to the start screen's first render (#896): what someone
 // opening Webforge from its icon waits for.
 //
-// The first launch, on a new profile, is kept apart from the later ones: it has no code cache and
-// no GPU cache yet. The operating system's file cache can't be emptied from here, so even the first
+// The first launch, on a new profile, is kept apart from the later ones: it has no GPU cache yet.
+// The editor's scripts have no code cache on any launch (ADR 0023). The operating system's file cache can't be emptied from here, so even the first
 // launch reads a build that was just read; a launch after a reboot is slower still.
 
 /** §10: a cold start to an editable canvas of a 5-page site, on a mid-range laptop. */
@@ -49,7 +49,7 @@ const RESULTS = join(import.meta.dirname, "../perf-results/cold-start.json");
  * Each stage of a start-up, in order, how the table names it, and the stage its step is timed
  * from, as the review's table has them: the main process's from the stage before, the editor's
  * from its page's navigation, but `DOMContentLoaded` from `domInteractive`: the editor's scripts
- * loading and running, which a code cache shortens (#893).
+ * loading and running, which #893 measured a code cache against.
  */
 const STAGES = [
   ["processStart", "process started", undefined],
