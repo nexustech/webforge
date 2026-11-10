@@ -43,7 +43,11 @@ function site(): SiteDoc {
 
 export type Setup = {
   readonly history: HistoryManager<SiteDoc, null>;
-  readonly host: CommandHost & { editing: () => boolean; mode: () => "design" | "content" };
+  readonly host: CommandHost & {
+    editing: () => boolean;
+    mode: () => "design" | "content";
+    published: ReturnType<typeof vi.fn<CommandHost["published"]>>;
+  };
   readonly confirm: ReturnType<typeof vi.fn<CommandHost["confirm"]>>;
 };
 
