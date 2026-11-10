@@ -101,6 +101,12 @@ export type CheckRule = {
    * *Done* rather than ignored.
    */
   readonly oneTime?: true;
+  /**
+   * Given the whole site, draft pages included (G37, #864). Every other rule is given the site as
+   * it is published ({@link runRule}), so nothing on a draft page is checked. A rule with this
+   * leaves out what isn't published itself: it is for links to a draft page.
+   */
+  readonly drafts?: true;
   readonly check: (input: CheckInput) => readonly Finding[];
 };
 

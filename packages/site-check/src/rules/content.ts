@@ -1,10 +1,13 @@
 import { t } from "@webforge/i18n";
 import {
   altTextFor,
+  eachLink,
   findBrokenLinks,
   imageValueSchema,
+  isDraftPage,
   linkValueSchema,
   mediaItem,
+  publishedSite,
 } from "@webforge/model";
 import type { Catalogue } from "@webforge/site-components/catalogue-data";
 import {
@@ -19,14 +22,16 @@ import type { CheckRule, Finding, FindingPlace } from "../types.js";
 
 /**
  * Links to a page, a section or a document that isn't there any more (F-ED-18): *Should fix*, and
- * *Must fix* to publish (X5). Links in hidden elements aren't exported, so they don't count.
+ * *Must fix* to publish (X5). Links in hidden elements aren't exported, so they don't count, nor do
+ * those on a draft page. A draft page is there: links to it are {@link draftLinksRule}'s.
  */
 export const brokenLinksRule: CheckRule = {
   id: "brokenLinks",
   level: "should",
   strictOnPublish: true,
+  drafts: true,
   check: ({ site }) => {
-    const exported = exportedPlaces(site);
+    const exported = exportedPlaces(publishedSite(site));
     return findBrokenLinks(site, { skipHidden: true })
       .filter((link) => exported(link.on))
       .map((link) => ({
@@ -36,6 +41,37 @@ export const brokenLinksRule: CheckRule = {
             ? { kind: "menu", itemId: link.nodeId }
             : { kind: "element", on: link.on, nodeId: link.nodeId },
       }));
+  },
+};
+
+/**
+ * Links on the published site to a draft page (G37, #864): the export leaves them out, as the page
+ * isn't published. *Should fix*, and *Must fix* to publish, as a broken link is. A menu item for a
+ * draft page isn't one: the menu leaves it out until the page is published, as it should.
+ */
+export const draftLinksRule: CheckRule = {
+  id: "draftLinks",
+  level: "should",
+  strictOnPublish: true,
+  drafts: true,
+  check: ({ site }) => {
+    const exported = exportedPlaces(publishedSite(site));
+    const found: Finding[] = [];
+    eachLink(
+      site,
+      (on, nodeId, link) => {
+        if (on === "menu" || link.kind !== "page" || !exported(on)) return;
+        const page = site.pages[link.pageId];
+        if (page === undefined || !isDraftPage(site, page)) return;
+        found.push({
+          key: `${on}/${nodeId}/${link.pageId}#${link.anchor ?? ""}`,
+          place: { kind: "element", on, nodeId },
+          values: { pageId: link.pageId, draftPage: page.title },
+        });
+      },
+      { skipHidden: true },
+    );
+    return found;
   },
 };
 
