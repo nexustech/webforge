@@ -15,6 +15,7 @@ import {
   textToolbarsArea,
 } from "./editor/editor-areas.js";
 import { exportCommandArea } from "./export/area.js";
+import { findReplacePanelArea } from "./find/area.js";
 import { helpForElementArea } from "./help/index.js";
 import { layersPanelArea } from "./layers/area.js";
 import { canvasImagesArea, mediaPanelArea } from "./media/area.js";
@@ -92,4 +93,5 @@ export const WINDOW_AREAS: readonly Area<WindowContext>[] = [
   helpForElementArea,
   onboardingArea,
   updatesArea,
+  findReplacePanelArea,
 ];

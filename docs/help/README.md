@@ -41,6 +41,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 
 **Your work**
 
+- [Find and Replace](find-and-replace.md): change a word everywhere on your site at once
 - [Undo and Undo History](undo-and-history.md)
 - [Version History](version-history.md): save versions, preview, restore, publish one again or open one as a new site
 - [Saving, copies and backups](saving-and-backups.md)
