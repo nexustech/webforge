@@ -7,8 +7,14 @@ import type { CssLintData, CssSiteData } from "./css-language.js";
 
 /** Props of {@link StylesheetPanel}. */
 export type StylesheetPanelProps = {
-  /** The site's `custom.css`, as the document has it. */
+  /** The site's `custom.css`, as the document has it when the panel opens. */
   readonly css: string;
+  /**
+   * Calls `show` with the stylesheet each time the document changes it (undo, *Target this
+   * element*), at once, not on the next render: a render can come after more typing, and would
+   * put older text back. Returns how to stop.
+   */
+  readonly followCss?: ((show: (css: string) => void) => () => void) | undefined;
   /** The person typed: the whole stylesheet as it is now. */
   readonly onChange: (css: string) => void;
   readonly siteData: () => CssSiteData;
@@ -31,6 +37,7 @@ export type StylesheetPanelProps = {
  */
 export function StylesheetPanel({
   css,
+  followCss,
   onChange,
   siteData,
   lintData,
@@ -46,6 +53,7 @@ export function StylesheetPanel({
   const readSite = useEffectEvent(() => siteData());
   const readLint = useEffectEvent(() => lintData());
   const firstCss = useEffectEvent(() => css);
+  const follow = useEffectEvent((show: (next: string) => void) => followCss?.(show));
 
   useEffect(() => {
     const parent = host.current;
@@ -57,15 +65,13 @@ export function StylesheetPanel({
       lintData: readLint,
     });
     editor.current = made;
+    const stop = follow((next) => made.setCss(next));
     return () => {
+      stop?.();
       made.destroy();
       editor.current = null;
     };
   }, []);
-
-  useEffect(() => {
-    editor.current?.setCss(css);
-  }, [css]);
 
   useEffect(() => {
     if (caret !== undefined) editor.current?.focusAt(caret.at);

@@ -39,6 +39,9 @@ export type StylesheetPanelOptions = {
   readonly allowListConfirmed: ReadonlyStore<boolean>;
 };
 
+/** A class name a selector can have as it is: no variant (`md:`) or brackets to escape. */
+const PLAIN_CLASS = /^-?[a-z_][\w-]*$/i;
+
 /** The panel's two commands on the selected element, in the command box. */
 const STYLESHEET_COMMANDS = {
   target: "stylesheet.target",
@@ -84,28 +87,48 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
       .catch((error: unknown) => reportFailure("stylesheet.moveLook", error));
   };
 
+  /**
+   * The completion's data, worked out again only when what it's made of changes: the pages, the
+   * Header and Footer, the shared sections, the theme or the catalogue. Typing in the stylesheet
+   * changes none of them.
+   */
+  let completionData: {
+    readonly made: readonly unknown[];
+    readonly data: CssSiteData;
+  } | null = null;
+  const siteDataFor = (catalogue: readonly string[] | undefined): CssSiteData => {
+    const site = session.history.document.getState();
+    const made = [site.pages, site.layout, site.sharedSections, site.theme, catalogue];
+    if (completionData?.made.every((part, index) => part === made[index]) === true) {
+      return completionData.data;
+    }
+    const used = siteSelectors(site, session);
+    const anchors = new Set<string>();
+    for (const page of Object.values(site.pages)) anchorsIn(page.doc.content, anchors);
+    // Plain names only: `md:flex` or `[&_a]:underline` would need escaping in a selector.
+    const plain = (name: string) => PLAIN_CLASS.test(name);
+    const data = {
+      variables: themeVariables(site.theme),
+      classes: [
+        ...new Set([...[...used.classes].filter(plain).sort(), ...(catalogue ?? []).filter(plain)]),
+      ],
+      ids: [...anchors].sort(),
+    };
+    completionData = { made, data };
+    return data;
+  };
+
   function Stylesheet() {
-    const css = useStore(session.history.document, stylesheetOf);
     const theme = useStore(session.history.document, (site) => site.theme);
     const hasSelection = useStore(session.ui, (ui) => ui.nodeId !== null);
     const at = useStore(caret);
-    const catalogue = useClassCatalogue(options.canvas, theme);
-    const siteData = (): CssSiteData => {
-      const site = session.history.document.getState();
-      const used = siteSelectors(site, session);
-      const anchors = new Set<string>();
-      for (const page of Object.values(site.pages)) anchorsIn(page.doc.content, anchors);
-      return {
-        variables: themeVariables(site.theme),
-        classes: [...new Set([...[...used.classes].sort(), ...(catalogue?.classes ?? [])])],
-        ids: [...anchors].sort(),
-      };
-    };
+    const catalogue = useClassCatalogue(options.canvas, theme)?.classes;
     return (
       <StylesheetPanel
-        css={css}
+        css={stylesheetOf(session.history.document.getState())}
+        followCss={(show) => session.history.document.subscribe((site) => show(stylesheetOf(site)))}
         onChange={(next) => editStylesheet(session, next)}
-        siteData={siteData}
+        siteData={() => siteDataFor(catalogue)}
         lintData={() => {
           const site = session.history.document.getState();
           return {
