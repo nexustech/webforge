@@ -19,6 +19,7 @@ import {
   PAGE_TITLE_MAX,
   type PageEntry,
   type PageId,
+  pageFile,
   type SiteDoc,
 } from "@webforge/model";
 import { recipesFor, TEMPLATE_CATEGORIES } from "@webforge/templates";
@@ -47,6 +48,7 @@ import {
   neighbour,
   type PageSettingsChange,
   renamedFileName,
+  renameMovesPage,
 } from "./page-actions.js";
 import type { PolicyPageKind } from "./policy-sections.js";
 import { recipeName } from "./recipe-name.js";
@@ -59,7 +61,8 @@ export type PagesPanelActions = {
   addSuggested(recipeId: string): void;
   /** Adds the privacy page, the terms or the cookie policy, from Site Settings (#855, #866). */
   addPolicy(kind: PolicyPageKind): void;
-  rename(pageId: PageId, name: string): void;
+  /** Renames a page, keeping its old address working if `keepOldAddress` (#862). */
+  rename(pageId: PageId, name: string, keepOldAddress: boolean): void;
   duplicate(pageId: PageId): void;
   move(pageId: PageId, direction: -1 | 1): void;
   moveToFolder(pageId: PageId, folder: string | undefined): void;
@@ -74,6 +77,8 @@ export type PagesPanelProps = {
   readonly site: SiteDoc;
   /** The page the canvas shows. */
   readonly shownPageId: PageId;
+  /** Whether the site has been published: renaming a page then keeps its old address by default. */
+  readonly published?: boolean;
   readonly actions: PagesPanelActions;
 };
 
@@ -114,7 +119,7 @@ function rowsOf(site: SiteDoc): Row[] {
  * the Home page, hides it from navigation or deletes it (after a confirmation, D5). The "Page not
  * found" page (F-ED-20) is listed like any page but can only be renamed and designed.
  */
-export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
+export function PagesPanel({ site, shownPageId, published = false, actions }: PagesPanelProps) {
   const [dialog, setDialog] = useState<OpenDialog | null>(null);
   // Closing keeps `dialog`, so a dialog keeps its text while it fades out.
   const [open, setOpen] = useState(false);
@@ -276,9 +281,18 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
             path: dialogPage === undefined ? "" : renamedFileName(site, dialogPage.id, name),
           })
         }
-        onSubmit={(name) => {
+        option={{
+          label: t("pages.keepOldAddress"),
+          help: () =>
+            t("pages.keepOldAddressHint", {
+              path: dialogPage === undefined ? "" : (pageFile(site, dialogPage.id) ?? ""),
+            }),
+          initial: published,
+          shown: (name) => dialogPage !== undefined && renameMovesPage(site, dialogPage.id, name),
+        }}
+        onSubmit={(name, keepOldAddress) => {
           if (dialogPage !== undefined) {
-            actions.rename(dialogPage.id, name);
+            actions.rename(dialogPage.id, name, keepOldAddress);
           }
           close();
         }}

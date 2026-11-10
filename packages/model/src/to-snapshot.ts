@@ -1,9 +1,10 @@
 import { settingValues } from "./bindings.js";
+import { fileKey, keptAddressesOf, keptAddressWorks, pageFiles } from "./kept-addresses.js";
 import { isImageMeta } from "./media.js";
 import type { SiteSettings } from "./settings.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import { pagePath, type SiteDoc } from "./site-doc.js";
-import type { MediaItem, SitePage, SiteSnapshot } from "./site-snapshot.js";
+import type { MediaItem, SitePage, SiteRedirect, SiteSnapshot } from "./site-snapshot.js";
 
 /**
  * The snapshot a build gets from the open site (export pipeline stage 1). Pages come in Pages panel
@@ -99,6 +100,7 @@ export function siteToSnapshot(
         : { verification: site.settings.search.verification }),
     },
     ...(hasCode(site.code) ? { code: site.code } : {}),
+    ...redirectsOf(site),
   };
 }
 
@@ -113,6 +115,23 @@ function analyticsOf(analytics: SiteSettings["analytics"]): Pick<SiteSnapshot, "
       ...(consentMessage === undefined ? {} : { consentMessage }),
     },
   };
+}
+
+/**
+ * The old addresses `site` keeps working (#862) for the export: those that still work, each going
+ * to its page's path now, once per file in any case (the later stays, as Site Settings' list
+ * keeps it). None when there are none.
+ */
+function redirectsOf(site: SiteDoc): { redirects?: SiteRedirect[] } {
+  const files = pageFiles(site);
+  const byFile = new Map<string, SiteRedirect>();
+  for (const kept of keptAddressesOf(site)) {
+    const page = site.pages[kept.page];
+    if (page === undefined || !keptAddressWorks(site, kept, files)) continue;
+    byFile.delete(fileKey(kept.from));
+    byFile.set(fileKey(kept.from), { from: kept.from, to: pagePath(page, site.homePageId) });
+  }
+  return byFile.size === 0 ? {} : { redirects: [...byFile.values()] };
 }
 
 /** Whether `code` has any code of its own: the bundled files only serve it. */

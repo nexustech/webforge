@@ -52,6 +52,7 @@ The **Opening hours and contact** section and the **Map** show these details, an
 - **Let search engines show the site:** turn it off while the site isn't ready to be found.
 - **Include a sitemap for search engines:** a list of your pages that helps search engines find them. Needs the web address.
 - **Google verification code** and **Bing verification code:** paste the code from Google Search Console or Bing Webmaster Tools, to prove the site is yours. Nothing is sent from {appName}.
+- **Old addresses kept working:** the old addresses of pages you renamed or moved after publishing, each with the page it goes to. **Remove** one to stop it working. **Add an old address** for a page of an older website: type its address, such as `old-page.html` or the whole address copied from your browser, and choose the page it goes to. See [Keeping old addresses working](pages.md#keeping-old-addresses-working).
 
 ## Analytics
 

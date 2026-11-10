@@ -23,6 +23,8 @@ export function registerPageSettingsCommand(
   commands: CommandRegistry,
   windowDialogs: WindowDialogRegistry,
   session: PagesSession & Pick<EditorSession, "ui">,
+  /** Whether the site has been published: a new file name then keeps the old address (#862). */
+  published: () => boolean = () => false,
 ): () => void {
   const opened = createStore<Opened>(() => ({ open: false, pageId: undefined }));
   const close = () => opened.setState({ open: false });
@@ -42,7 +44,7 @@ export function registerPageSettingsCommand(
         site={site}
         page={pageId === undefined ? undefined : site.pages[pageId]}
         onSave={(change) => {
-          if (pageId !== undefined) changePageSettings(session, pageId, change);
+          if (pageId !== undefined) changePageSettings(session, pageId, change, published());
           close();
         }}
         onCancel={close}

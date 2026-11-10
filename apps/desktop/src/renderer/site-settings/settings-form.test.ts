@@ -1,8 +1,10 @@
+import { t } from "@webforge/i18n";
 import { defaultSiteSettings, type SiteSettings } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   fromSettingsForm,
+  keptAddressFile,
   type SettingsForm,
   saveSiteSettings,
   settingsSchema,
@@ -185,6 +187,46 @@ describe("settings form", () => {
     expect(fromSettingsForm(edit(full, { consentMessage: " " }), full)).not.toHaveProperty(
       "analytics.consentMessage",
     );
+  });
+
+  it("keeps old addresses as files, from addresses copied from a browser too (#862)", () => {
+    expect(keptAddressFile(" https://old.example/about-us.html?ref=1 ")).toBe("about-us.html");
+    expect(keptAddressFile("/services/plumbing/")).toBe("services/plumbing.html");
+    expect(keptAddressFile("team")).toBe("team.html");
+    expect(keptAddressFile("  ")).toBe("");
+
+    const settings = defaultSiteSettings("Rosa's Bakery", "en");
+    const page = "AbCdEfGhIjKlMnOp";
+    const form: SettingsForm = {
+      ...toSettingsForm(settings),
+      keptAddresses: [
+        { id: "a", from: "/about-us", page },
+        { id: "b", from: "", page },
+        { id: "c", from: "old.html", page: "" },
+      ],
+    };
+    expect(checkSettings(form, settings)).toEqual({
+      ok: false,
+      errors: {
+        "search.keptAddresses.1.from": t("site.settings.error.keptAddress"),
+        "search.keptAddresses.2.page": t("site.settings.error.keptAddressPage"),
+      },
+    });
+
+    const first = form.keptAddresses[0];
+    if (first === undefined) throw new Error("no address");
+    const kept = checkSettings({ ...form, keptAddresses: [first] }, settings);
+    expect(kept.ok && kept.settings.search.keptAddresses).toEqual([
+      { from: "about-us.html", page },
+    ]);
+    // None at all stays absent, as before them.
+    const none = checkSettings({ ...form, keptAddresses: [] }, settings);
+    expect(none.ok && none.settings.search).not.toHaveProperty("keptAddresses");
+    if (kept.ok) {
+      expect(toSettingsForm(kept.settings).keptAddresses).toEqual([
+        { id: "kept-0", from: "about-us.html", page },
+      ]);
+    }
   });
 
   it("sets and clears the form service", () => {

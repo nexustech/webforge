@@ -2,6 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createStore } from "zustand/vanilla";
 import { createPanelRegistry } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { pagesPanelActions, registerSitePanel } from "./SitePanel.js";
@@ -45,6 +46,60 @@ describe("Site panel", () => {
     expect(panels.list()).toEqual([]);
   });
 
+  it("offers the cookie policy as soon as Google Analytics is turned on (#866)", async () => {
+    const session = sessionWith();
+    const panels = createPanelRegistry();
+    registerSitePanel(panels, session);
+    const SitePanel = panels.list()[0]?.component;
+    if (SitePanel === undefined) throw new Error("not registered");
+    render(<SitePanel />);
+
+    act(() => {
+      session.edit("props", "Changed Site Settings", (draft) => {
+        draft.settings.analytics.measurementId = "G-ABC123DEF4";
+      });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+
+    expect(screen.getByRole("menuitem", { name: "Cookie Policy Page" })).toBeTruthy();
+  });
+
+  it("keeps a page's old address once the site has been published (#862)", async () => {
+    const session = sessionWith();
+    const publishedYear = createStore<number | undefined>(() => undefined);
+    const panels = createPanelRegistry();
+    registerSitePanel(panels, session, undefined, publishedYear);
+    const SitePanel = panels.list()[0]?.component;
+    if (SitePanel === undefined) throw new Error("not registered");
+    render(<SitePanel />);
+    const actions = pagesPanelActions(
+      session,
+      undefined,
+      () => publishedYear.getState() !== undefined,
+    );
+    act(() => actions.add("About"));
+    const about = session.ui.getState().pageId;
+    const kept = () => session.history.document.getState().settings.search.keptAddresses;
+
+    act(() => actions.moveToFolder(about, "Info"));
+    expect(kept()).toBeUndefined();
+
+    act(() => publishedYear.setState(2026, true));
+    act(() => actions.moveToFolder(about, undefined));
+    expect(kept()).toEqual([{ from: "info/about.html", page: about }]);
+
+    // The rename dialog starts with it on.
+    const pages = within(screen.getByRole("list", { name: "Pages" }));
+    await userEvent.click(pages.getByRole("button", { name: "Actions for About" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    await screen.findByRole("textbox", { name: "Page name" });
+    await userEvent.keyboard("Our story");
+    expect(screen.getByRole("checkbox", { name: "Keep the old address working" })).toHaveProperty(
+      "checked",
+      true,
+    );
+  });
+
   it("asks before deleting a page, saying how many pages it changes (D7)", async () => {
     const session = sessionWith();
     const answers = [false, true];
@@ -80,7 +135,7 @@ describe("Site panel", () => {
     const about = session.ui.getState().pageId;
     actions.show(home);
     expect(session.ui.getState().pageId).toBe(home);
-    actions.rename(about, "Company");
+    actions.rename(about, "Company", false);
     actions.duplicate(about);
     actions.move(about, -1);
     actions.moveToFolder(about, "Info");
