@@ -95,6 +95,16 @@ export const Pages: Story = {
   },
 };
 
+/** *Pages* on one page (GA10, 5.9): the pages kept become sections of the home page. */
+export const PagesOnOnePage: Story = {
+  play: async ({ canvasElement }) => {
+    await answerBusiness(canvasElement);
+    await goTo(canvasElement, t("quickStart.step.pages"));
+    const body = dialog(canvasElement);
+    await userEvent.click(body.getByText(t("quickStart.layout.onePage"), { exact: true }));
+  },
+};
+
 /** *Pages* with no business type chosen: Blank's pages, and no suggestions yet. */
 export const PagesWithoutType: Story = { args: { initialStep: "pages" } };
 
