@@ -23,7 +23,8 @@ import {
   extensionManifest,
   extensionVersion,
 } from "./claude-extension.js";
-import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
+import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
+import { type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 
 const CLAUDE: McpApp = { id: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e", name: "Claude Desktop" };

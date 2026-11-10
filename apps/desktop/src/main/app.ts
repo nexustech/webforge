@@ -92,6 +92,7 @@ import {
   registerSpellCheckHandlers,
   spellCheckAvailable,
 } from "./spellcheck.js";
+import { logStartupTimes, markStartup } from "./startup-timing.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
@@ -474,7 +475,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   });
 
   // The canvas compiles its site CSS, and lists the classes the site supports (#276), in one
-  // long-lived worker, started when first needed (1.12).
+  // long-lived worker (1.12), started when first needed, or as the window opens with a site (#894).
   const canvasStyles = createCanvasStyles(
     () => forkWorker("Webforge canvas styles"),
     undefined,
@@ -523,6 +524,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         zoomFactor: interfaceZoom,
       },
     });
+    // Before its page starts loading (#891); only the first window's is logged.
+    markStartup("window-created");
     // Zoomed in, the smallest window grows, capped by the screen the window opens on.
     fitWindowToZoom(window, interfaceZoom, screen.getDisplayMatching(window.getBounds()).workArea);
     // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
@@ -555,6 +558,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
 
   async function start(): Promise<void> {
     await app.whenReady();
+    markStartup("ready");
     // No default menu: its zoom and reload keys are the editor's (F-ED-27).
     const menu = applicationMenu(process.platform, devServerUrl !== undefined);
     Menu.setApplicationMenu(menu === null ? null : Menu.buildFromTemplate(menu));
@@ -767,12 +771,19 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       site: (sessionId) => projectSession.site(sessionId),
       secrets: publishSecrets,
     });
+    markStartup("ipc-registered");
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
       await openSite(projectToOpen);
+      markStartup("site-opened");
     }
     createMainWindow(preferences);
+    // With a site open, the canvas will want its CSS: its worker starts while the editor loads
+    // (#894). Never for the start screen, which may never open a site.
+    if (projectSession.current() !== null) canvasStyles.start();
+    // The start-up's stages, in a perf build (#891).
+    logStartupTimes(import.meta.env.MODE);
     void crashReports.noticeAfterLaunch();
     startUpdates();
 

@@ -6,7 +6,8 @@ import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiResponse } from "../shared/ipc/ai.js";
 import { APP_TOOLS } from "../shared/ipc/ai.js";
-import { MCP_HOST, MCP_PATH, type McpListener, startMcpListener } from "./mcp-listener.js";
+import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
+import { type McpListener, startMcpListener } from "./mcp-listener.js";
 import { createMcpServer, type McpApp } from "./mcp-server.js";
 import { MAIN_TOOLS } from "./site-brief.js";
 

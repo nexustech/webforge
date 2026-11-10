@@ -7,6 +7,7 @@ import babel from "@rolldown/plugin-babel";
 import tailwindcss from "@tailwindcss/vite";
 import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import { buildBridge } from "@webforge/mcp-bridge/build";
+import { moduleSideEffects } from "@webforge/tools/bundle-side-effects";
 import {
   collectNotices,
   dependencyDirs,
@@ -115,6 +116,30 @@ function inlineBase64(): Plugin {
       }
       const data = await readFile(id.slice(BASE64_PREFIX.length));
       return `export default ${JSON.stringify(data.toString("base64"))};`;
+    },
+  };
+}
+
+/**
+ * fflate's Node build declares a `require` of its own at its top level (`createRequire('/')`), and
+ * electron-vite's CommonJS shim declares `const require` in every chunk that calls one: in the same
+ * chunk, the main process fails to load ("Identifier 'require' has already been declared"), unless
+ * the bundler happens to rename fflate's. Since main's start-up chunks are small (#892), it doesn't:
+ * fflate's is renamed here. Fails the build if fflate's code no longer reads as expected.
+ */
+function fflateRequire(): Plugin {
+  const declared = "var require = createRequire('/');";
+  const called = "_a = require('worker_threads')";
+  return {
+    name: "webforge:fflate-require",
+    transform(code, id) {
+      if (!/[\\/]fflate[\\/]esm[\\/]index\.mjs$/.test(id)) return null;
+      if (!code.includes(declared) || !code.includes(called)) {
+        throw new Error("fflate's own require has changed: update webforge:fflate-require");
+      }
+      return code
+        .replace(declared, "var fflateRequire = createRequire('/');")
+        .replace(called, "_a = fflateRequire('worker_threads')");
     },
   };
 }
@@ -265,6 +290,7 @@ export default defineConfig(({ command }) => {
     main: {
       plugins: [
         inlineBase64(),
+        fflateRequire(),
         bundleFonts(),
         bundleTemplates(),
         bundleBridge(bundled),
@@ -315,6 +341,9 @@ export default defineConfig(({ command }) => {
       ...(devNonce === undefined ? {} : { html: { cspNonce: devNonce } }),
       build: {
         rolldownOptions: {
+          // Webforge's own modules are left out when nothing they export is used, so the start
+          // screen's first bundle holds none of the editor's code (#896).
+          treeshake: { moduleSideEffects },
           // The editor's page, and the Help window's (5.4b), each with the same policy.
           input: {
             index: fileURLToPath(new URL("src/renderer/index.html", import.meta.url)),

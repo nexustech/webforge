@@ -65,6 +65,14 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **`renderer/testing/` is for tests and stories only** (`renderer-testing-only-in-tests`).
 - **The renderer never imports Node or Electron,** and only `packages/engine` imports Puck.
 
+### The start screen's code
+
+The start screen loads without the editor's code (#896): `main.tsx` loads `editor-start.tsx`, and with it `App`, with `import()` only when a site is open.
+
+- **Taking one thing from an index takes only that.** The bundler leaves out a module of Webforge's own (`apps/desktop/src`, `packages/*/src`) when nothing it exports is used (`tools/src/bundle-side-effects.ts`). So the start screen can take `hexOf` from `fields/index.ts` without every kind of field, and Puck with them.
+- **A module that does something when loaded,** beyond what it exports, is listed in `SIDE_EFFECT_MODULES` there, as `shell/form-messages.ts` is; otherwise it is left out wherever nothing it exports is used. The test fails for an import made only to load a module (`import "./x.js";`) that isn't listed.
+- **Keep what the start screen needs out of the editor's modules.** A function the start screen takes from a module that imports a panel brings the panel; `recipeName` has a module of its own for that reason. The start screen's first bundle is measured by `e2e/perf/`'s cold-start check.
+
 ## Panels
 
 A panel is a tab in one of the window's slots: `left.top`, `left.bottom`, `left.lower`, `right.top`, `right.bottom` or `drawer` (`shell/panels.ts`).

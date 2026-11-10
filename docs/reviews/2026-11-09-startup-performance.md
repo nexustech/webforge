@@ -49,6 +49,16 @@ Most benefit first. **Measured** means the cost is measured; **hypothesis** mean
 - **Benefit:** perhaps 0.3–0.8 s on each warm start, for two small changes.
 - **Risk:** the cache lives in the user's profile, and a new version's scripts have new names, so stale entries are ignored. The security review should confirm the privilege adds nothing else (S5).
 - **Measure:** the renderer's `DOMContentLoaded` minus `domInteractive`, and main's first mark, on a second launch, with and without the cache.
+- **Result (#893, 9 Nov):** the cold-start check three times with each build, alternating, on the machine above, after #892, #894 and #895. Medians of the 12 launches after the first, on the same profile (first launch in brackets):
+
+  | Stage (ms)                                  | Without     | With both caches |
+  | ------------------------------------------- | ----------- | ---------------- |
+  | Main's first mark, after the process starts | 387 (407)   | 364 (454)        |
+  | `DOMContentLoaded` − `domInteractive`       | 781 (803)   | 802 (1040)       |
+  | The editor's first render, after navigation | 1922 (2033) | 1660 (2142)      |
+  | A styled canvas, after the launch           | 3211 (3380) | 3036 (3477)      |
+  - **The renderer's cache helps, later than expected:** V8 compiles most functions only when they first run, so the saving shows in React's first render (−0.26 s), not before `DOMContentLoaded`. The first launch, which builds the cache, is about 0.1 s slower. Kept.
+  - **Main's compile cache saves too little to measure:** since #892, main loads 1.4 MB at start-up, and Node's log showed every cached module accepted. Dropped. Both caches let someone who can write to the profile give the app code to run, and main's is checked against less: [ADR 0023](../adr/0023-app-scheme-and-canvas-boundary.md#amendment-9-nov-2026-893-the-code-cache).
 
 ### 3. Start the canvas's CSS worker while the editor loads ([#894](https://github.com/nexustech/webforge/issues/894))
 

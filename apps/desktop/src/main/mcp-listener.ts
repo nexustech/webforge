@@ -6,13 +6,8 @@ import { isInitializeRequest } from "@modelcontextprotocol/sdk/types.js";
 import { NONCE, PROOF_PATH, proofFor } from "@webforge/mcp-bridge";
 import { z } from "zod";
 import { AI_INPUT_MAX_CHARS } from "../shared/ipc/ai.js";
+import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import type { McpApp } from "./mcp-server.js";
-
-/** The one address AI apps reach: the literal loopback address, never a name (ADR 0021). */
-export const MCP_HOST = "127.0.0.1";
-
-/** The one path the server answers. */
-export const MCP_PATH = "/mcp";
 
 /** The most a request's body may hold: an AI request's input, with room for its envelope. */
 const MAX_BODY_BYTES = AI_INPUT_MAX_CHARS * 4 + 64 * 1024;

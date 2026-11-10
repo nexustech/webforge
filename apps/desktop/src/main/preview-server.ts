@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
 import { t } from "@webforge/i18n";
-import { PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import { PREVIEW_STYLESHEET } from "@webforge/pipeline/light";
 import { THEME_VALUES_MARKER } from "@webforge/themes";
 import type { PreviewOutcome } from "../shared/export-worker-protocol.js";
 import { LIVE_RELOAD_SCRIPT } from "./preview-live-reload.js";
