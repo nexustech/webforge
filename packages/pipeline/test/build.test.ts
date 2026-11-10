@@ -108,6 +108,43 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     expect(text(built, fileNamed(built, /^assets\/js\//))).toContain("Sticky header (F-DS-6)");
   });
 
+  it(
+    "shows the section in view for a menu linking to a section, a dropdown holding it too (5.10)",
+    async () => {
+      const css = text(built, fileNamed(built, /^assets\/css\//));
+
+      // The sample's menu links to the home page's Questions, in its Visit us dropdown.
+      expect(text(built, fileNamed(built, /^assets\/js\//))).toContain("Section in view (5.10");
+      expect(css).toMatch(
+        /details:has\(\[aria-current\]\) > \S+ \{\n\s*background-color: var\(--menu-active-bg\);/,
+      );
+      expect(css).toMatch(
+        /details:has\(\[aria-current\]\) > \S+ \{\n\s*color: var\(--menu-active-fg\);/,
+      );
+
+      // Without one, the site's script has none of it.
+      const base = sampleSite();
+      const withoutSections = await buildSite(
+        {
+          ...base,
+          menu: {
+            follows: "custom",
+            items: (base.menu?.items ?? []).filter((item) => item.kind !== "group"),
+          },
+        },
+        siteLibrary,
+        resources,
+      );
+      const script = [...withoutSections.files.keys()].find((path) =>
+        path.startsWith("assets/js/"),
+      );
+      expect(script === undefined ? "" : text(withoutSections, script)).not.toContain(
+        "Section in view",
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
+
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
     const css = text(built, fileNamed(built, /^assets\/css\//));
 
