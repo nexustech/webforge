@@ -15,6 +15,7 @@
   },
   "devDependencies": {
     "@babel/core": "catalog:",
+    "@resvg/resvg-js": "2.6.2",
     "@swc/core": "1.16.22",
     "@types/babel__core": "7.20.5",
     "@types/node": "catalog:",

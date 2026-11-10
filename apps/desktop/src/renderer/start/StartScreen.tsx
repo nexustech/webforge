@@ -21,6 +21,7 @@ import type { AppInfo, RecentSite } from "../../shared/ipc-contract.js";
 import { HelpCommands } from "../help/index.js";
 import { reportFailure } from "../log.js";
 import { AboutDialog } from "../shell/AboutDialog.js";
+import { AppMark } from "../shell/AppMark.js";
 import {
   CommandRegistryProvider,
   useCommand,
@@ -31,7 +32,6 @@ import { createCommandRegistry, installCommandShortcuts, isMac } from "../shell/
 import { ShortcutSheet } from "../shell/ShortcutSheet.js";
 import { TitleBar } from "../shell/TitleBar.js";
 import { watchUpdates } from "../updates/index.js";
-import { AppMark } from "./AppMark.js";
 import { openSiteWith } from "./open-site.js";
 import { RecentSites } from "./RecentSites.js";
 import { SiteCommands } from "./SiteCommands.js";

@@ -28,6 +28,8 @@ import { startSftpServer } from "./sftp-server.js";
 // the native file dialogs answer from the file WEBFORGE_E2E_DIALOGS names (ADR 0005).
 
 const releaseDir = join(import.meta.dirname, "../../apps/desktop/release", desktopVersion);
+/** electron-builder's build resources: the app's icons (#454). */
+const iconsDir = join(import.meta.dirname, "../../apps/desktop/build");
 
 /** The packaged executable that `electron-builder --dir` writes for this platform. */
 function packagedExecutable(): string | undefined {
@@ -188,6 +190,33 @@ test("is fused as architecture §3 requires, read from the packaged executable (
   // Each named as @electron/fuses names it, at the same place.
   for (const [index, name] of FUSES) {
     expect(FuseV1Options[name], name).toBe(index);
+  }
+});
+
+/** The images in `apps/desktop/build/icon.ico`, each a PNG (`pnpm app-icons`). */
+function icoImages(): Buffer[] {
+  const ico = readFileSync(join(iconsDir, "icon.ico"));
+  return Array.from({ length: ico.readUInt16LE(4) }, (_, index) => {
+    const at = 6 + 16 * index;
+    const offset = ico.readUInt32LE(at + 12);
+    return ico.subarray(offset, offset + ico.readUInt32LE(at + 8));
+  });
+}
+
+test("carries Webforge's icon: in the executable on Windows, in the bundle on macOS (#454)", () => {
+  const dir = resourcesDir();
+  test.skip(executable === undefined || dir === undefined, "Linux is not a release target");
+  if (executable === undefined || dir === undefined) return;
+  if (process.platform === "darwin") {
+    // The bundle's icon, in place of Electron's own: the Dock, Finder and the DMG show it.
+    const ours = readFileSync(join(iconsDir, "icon.icns"));
+    const icns = readdirSync(dir).filter((file) => file.endsWith(".icns"));
+    expect(icns.map((file) => readFileSync(join(dir, file)).equals(ours))).toContain(true);
+  } else {
+    // electron-builder writes the .ico's images into the executable's resources as they are, so
+    // each one is in it: the taskbar, the window, Explorer and the installer show them.
+    const exe = readFileSync(executable);
+    for (const png of icoImages()) expect(exe.includes(png)).toBe(true);
   }
 });
 

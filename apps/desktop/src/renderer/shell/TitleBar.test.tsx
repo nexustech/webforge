@@ -155,7 +155,7 @@ describe("TitleBar", () => {
     expect(screen.queryByRole("menuitem", { name: "Edit" })).toBeNull();
   });
 
-  it("shows the app version in Help → About Webforge", async () => {
+  it("shows the app's icon and version in Help → About Webforge (#454)", async () => {
     const registry = renderTitleBar();
 
     act(() => {
@@ -164,6 +164,11 @@ describe("TitleBar", () => {
 
     const dialog = await screen.findByRole("dialog", { name: "Webforge" });
     expect(within(dialog).getByText("Version 1.2.0")).toBeTruthy();
+    // Decorative, beside the name that says what it is.
+    const icon = dialog.querySelector("img");
+    // The master, which the build inlines as a data: URL (the editor's img-src allows it).
+    expect(decodeURIComponent(icon?.getAttribute("src") ?? "")).toMatch(/^data:image\/svg\+xml/);
+    expect(icon?.getAttribute("alt")).toBe("");
   });
 });
 
