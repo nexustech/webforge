@@ -6,6 +6,7 @@ import { expect, test as setup } from "@playwright/test";
 import {
   DEFAULT_THEME,
   expandSharedCopies,
+  type MediaId,
   type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
@@ -19,6 +20,7 @@ import { launchDesktopApp } from "../app/launch.js";
 import { stubFileDialogs } from "../app/sites.js";
 import {
   ANNOUNCEMENT_SITE_DIR,
+  BLOG_SITE_DIR,
   CHECK_TEMPLATES,
   EXPORTED_SITE_DIR,
   NO_BANNER_SITE_DIR,
@@ -418,6 +420,70 @@ setup("export a site with an Announcement bar above the Header (6.4)", async () 
     ANNOUNCEMENT_SITE_DIR,
   );
   expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
+});
+
+setup("export a site with a Blog's post (6.10a)", async () => {
+  const sample = sampleSite();
+  rmSync(BLOG_SITE_DIR, { recursive: true, force: true });
+  // A post as siteToSnapshot gives it: the Blog's design around its own text, its fields'
+  // values, out of the menu, in the Blog's folder.
+  const element = (type: string, id: string, props: Record<string, unknown>): NodeDoc => ({
+    type,
+    props: { id, ...props },
+  });
+  const section = (id: string, content: NodeDoc[]) =>
+    element("Section", id, { contentWidth: "narrow", content });
+  const pages = await exportSnapshot(
+    {
+      ...sample,
+      documents: [],
+      pages: [
+        ...sample.pages,
+        {
+          id: "spring",
+          path: "blog/spring-opening",
+          title: "Spring opening",
+          hideFromNavigation: true,
+          shareImage: "hero-photo",
+          item: {
+            values: {
+              title: { kind: "text", text: "Spring opening" },
+              date: { kind: "date", date: "2026-11-10" },
+              picture: { kind: "image", mediaId: "hero-photo" as MediaId },
+            },
+          },
+          doc: {
+            root: { props: {} },
+            content: [
+              section("post-top", [
+                element("Heading", "post-title", {
+                  text: "Post title",
+                  size: "large",
+                  bindings: { text: "item.title" },
+                }),
+                element("Text", "post-date", {
+                  text: "<p>Date</p>",
+                  bindings: { text: "item.date" },
+                }),
+                element("Image", "post-picture", { bindings: { image: "item.picture" } }),
+              ]),
+              section("post-body", [
+                element("Text", "post-text", { text: "<p>We open on Saturday.</p>" }),
+              ]),
+              section("post-end", [
+                element("Button", "post-home", {
+                  label: "Back to Home",
+                  link: { kind: "page", pageId: sample.pages[0]?.id ?? "" },
+                }),
+              ]),
+            ],
+          },
+        },
+      ],
+    },
+    BLOG_SITE_DIR,
+  );
+  expect(pages).toContain("blog/spring-opening.html");
 });
 
 setup("export every template, as a site made from it starts (3.10)", async () => {

@@ -16,7 +16,6 @@ export const blog = {
   // What a new Blog starts with: its design, and a first post to show it.
   "blog.design.title": "Post title",
   "blog.design.date": "Date",
-  "blog.design.summary": "Summary",
   "blog.design.home": "Back to Home",
   "blog.firstPost.title": "Our first post",
   "blog.firstPost.summary": "What's new, in a sentence or two.",
@@ -24,21 +23,20 @@ export const blog = {
   // The banner over the canvas while an element of the design is selected.
   "blog.banner.one": "Editing the design of {name}: changes show on its 1 post",
   "blog.banner.many": "Editing the design of {name}: changes show on all {count} posts",
+  // Asked before an element leaves the design, and so every post (D7).
+  "blog.designDelete.title": "Delete {item} from the design of {name}?",
+  "blog.designCut.title": "Cut {item} from the design of {name}?",
+  "blog.designChange": "Every post shows the change.",
   // What an element of the design shows while the post's field is empty, on the canvas only.
   "blog.empty": "The post's {field}: add it in Page Settings",
   // The Edit panel's "shows" choice, in the design.
   "blog.binding.field": "The post's {field}",
   "blog.binding.title": "Title",
   "blog.binding.ownPicture": "Its own picture",
-  "blog.binding.shows": "{field} shows",
   // Page Settings for a post.
-  "blog.settings.post": "Post",
-  "blog.settings.date": "{field}",
-  "blog.settings.picture": "{field}",
   "blog.settings.noPicture": "No picture",
   "blog.settings.dateHint": "Posts are listed newest first.",
   "blog.settings.summaryHint": "A sentence or two, shown where the design shows the summary.",
-  "blog.settings.folder": "Posts are in the folder {folder}.",
   // Undo steps.
   "blog.item": "post '{name}'",
   "blog.history.addedBlog": "Added a blog",

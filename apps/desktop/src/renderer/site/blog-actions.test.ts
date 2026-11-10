@@ -2,6 +2,7 @@ import {
   type CollectionId,
   changedDocuments,
   migrateSite,
+  type NodeDoc,
   type PageId,
   type SiteDoc,
   siteDocSchema,
@@ -9,9 +10,11 @@ import {
 } from "@webforge/model";
 import { siteLibrary, siteSnapshotFor } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { connectEngine } from "../editor/editor-session.js";
+import { confirmSharedRemovals } from "../editor/shared-confirmations.js";
 import { canvasLayout } from "../editor/shared-layout.js";
+import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { addBlog, addPost, blogDesign, insertBlog } from "./blog-actions.js";
 import {
@@ -241,5 +244,74 @@ describe("editing a post's design on the canvas (6.10a)", () => {
     expect(labels().at(-1)).toBe("Edited the design of 'Blog'");
     // The other post draws the same design.
     expect(canvasLayout(site(), other ?? postId).header.at(-1)).toBe(section);
+  });
+});
+
+describe("removing from a post's design or Header (6.10a, D7)", () => {
+  /** A session on a post, with the Footer's own Heading, connected through the confirmations. */
+  function onPost(answer: boolean) {
+    const site = sessionWith().history.document.getState();
+    const withFooter = structuredClone(site);
+    withFooter.layout.footer.push({ type: "Heading", props: { id: "fh", text: "Hours" } });
+    const session = sessionWith(withFooter);
+    const postId = addBlog(session);
+    const engine = createFakeEngine();
+    const confirmSiteWide = vi.fn((_action: SiteWideAction) => Promise.resolve(answer));
+    connectEngine(
+      confirmSharedRemovals(engine, session, { confirmSiteWide, busy: () => false }),
+      session,
+    );
+    const now = () => session.history.document.getState();
+    const design = () => Object.values(now().collections)[0]?.design;
+    const remove = (nodeId: string, componentType: string) => {
+      const drawn = structuredClone(canvasLayout(now(), postId));
+      engine.edit({
+        kind: "remove",
+        nodeId,
+        componentType,
+        page: now().pages[postId]?.doc ?? { root: { props: {} }, content: [] },
+        selection: null,
+        shared: true,
+        layout: drawn,
+      });
+    };
+    return { session, engine, confirmSiteWide, now, design, remove, postId };
+  }
+  const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it("asks before an element leaves the design, saying every post shows it", async () => {
+    const { confirmSiteWide, design, remove } = onPost(true);
+    const button = ((design()?.after[0]?.props.content ?? []) as NodeDoc[])[0];
+    if (button === undefined) throw new Error("no button");
+
+    remove(button.props.id, "Button");
+    await flush();
+
+    expect(confirmSiteWide).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: "Delete Button from the design of 'Blog'?",
+        description: "Every post shows the change.",
+        affectedPages: 1,
+      }),
+    );
+    expect(design()?.after[0]?.props.content).toEqual([]);
+  });
+
+  it("keeps the design when an element leaves the Footer on a post, or a removal is cancelled", async () => {
+    const confirmed = onPost(true);
+    const before = confirmed.design();
+
+    confirmed.remove("fh", "Heading");
+    await flush();
+
+    expect(confirmed.now().layout.footer.some((node) => node.props.id === "fh")).toBe(false);
+    expect(confirmed.design()).toEqual(before);
+
+    const cancelled = onPost(false);
+    cancelled.remove("fh", "Heading");
+    await flush();
+    expect(cancelled.engine.applyChange).toHaveBeenLastCalledWith(
+      expect.objectContaining({ layout: canvasLayout(cancelled.now(), cancelled.postId) }),
+    );
   });
 });

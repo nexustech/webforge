@@ -34,13 +34,13 @@ export type CollectionFieldKind = (typeof COLLECTION_FIELD_KINDS)[number];
 /** The longest name a collection can have ("Blog", "News"). */
 export const COLLECTION_NAME_MAX = 100;
 /** The longest label a collection's field can have ("Summary"). */
-export const COLLECTION_FIELD_LABEL_MAX = 100;
+const COLLECTION_FIELD_LABEL_MAX = 100;
 /** The most fields a collection can have. */
 export const COLLECTION_FIELDS_MAX = 20;
 /** The longest value an item's field can hold: a summary of a few sentences. */
 export const ITEM_VALUE_MAX = 500;
 /** The longest folder a collection's items can be in. */
-export const COLLECTION_FOLDER_MAX = 80;
+const COLLECTION_FOLDER_MAX = 80;
 
 /** The field every item has, its page's title: a design's element can show it too. */
 export const ITEM_TITLE_FIELD = "title";
@@ -61,7 +61,7 @@ export const collectionFolderSchema = z
   .refine((folder) => folder !== "assets", { message: "The folder 'assets' is reserved" });
 
 /** One of an item's own fields beyond its title: its name in bindings, its label and its kind. */
-export const collectionFieldSchema = z.strictObject({
+const collectionFieldSchema = z.strictObject({
   name: fieldNameSchema.refine((name) => name !== ITEM_TITLE_FIELD, {
     message: "Every item has its title already",
   }),

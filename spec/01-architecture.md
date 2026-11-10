@@ -123,7 +123,9 @@ Site (.wforge)
 ├── theme             Theme preset + brand colours, fonts, radius, spacing (05), stored as CSS-variable tokens
 ├── layout            Header, Footer (C5): Puck data, stored once, rendered on every page
 ├── sharedSections[]  Shared sections (F-ED-23): named section data stored once; pages hold linked copies by ID
-├── pages[]           Page: slug → about.html (X1), Page Settings, Puck data (sections → elements)
+├── collections[]     Collections (6.10a, ADR 0025): the Blog, its fields and its design drawn around each post
+├── pages[]           Page: slug → about.html (X1), Page Settings, Puck data (sections → elements); a Blog's
+│                     post is a page with its collection and field values
 ├── media[]           Originals (images, fonts, files: F-ED-24) as content-addressed blobs
 ├── code              custom.css, custom.js, head/body snippets (C7, Advanced mode)
 ├── versions[]        Named + automatic versions (P3: last 20 automatic, configurable)

@@ -39,6 +39,12 @@ export const NO_BANNER_SITE_DIR = join(EXPORTED_SITE_DIR, "no-banner");
 export const ANNOUNCEMENT_SITE_DIR = join(EXPORTED_SITE_DIR, "announcement");
 
 /**
+ * Where the setup exports the fixture's pages with a Blog's post (6.10a), inside the fixture's
+ * folder so CI uploads it with it.
+ */
+export const BLOG_SITE_DIR = join(EXPORTED_SITE_DIR, "blog");
+
+/**
  * Where the setup exports every template, one folder each by its id (3.10), inside the fixture's
  * folder so CI uploads them with it.
  */

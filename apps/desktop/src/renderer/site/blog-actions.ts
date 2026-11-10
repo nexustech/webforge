@@ -21,7 +21,7 @@ import { editShowing, type PagesSession } from "./page-actions.js";
  */
 
 /** "post 'Spring opening'", for the history's "Added {item}" labels. */
-export const postItem = (name: string) => t("blog.item", { name });
+const postItem = (name: string) => t("blog.item", { name });
 
 /**
  * A new Blog's design (ADR 0025, decision 4): above each post, its title, date and picture; below

@@ -30,7 +30,7 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
 
 1. **A collection** is a new part of the site, `collections: Record<CollectionId, Collection>`, stored as one document, `collections`, like `sharedSections`. A collection has:
    - `id` and `preset` (`"blog"`; later `"portfolio"`, `"team"`, `"events"` or `"menu"`);
-   - `name` ("Blog"), which the person can change;
+   - `name` ("Blog"), the Pages panel group's heading and undo labels' name for it (renaming it comes later);
    - `folder`: where its items' pages go (`blog`, so `blog/spring-opening.html`);
    - `fields`: the item's own fields beyond the title, each with a name, a label and a kind (`date`, `text` or `image`; more kinds when a preset needs them). The blog's are `date`, `summary` and `picture`.
    - `design: { before: NodeDoc[]; after: NodeDoc[] }`: the elements drawn above and below each item's body.
@@ -63,6 +63,7 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
 4. **The canvas** draws an item as Header, design `before`, the item's content, design `after`, then Footer.
    - The design's elements are edited in place, with a banner like the Header's: _"This is the blog's design: changes show on every post."_
    - Edits go to `draft.collections[id].design`, as edits to the Header go to `draft.layout`.
+   - The design's top-level sections are locked, as the Header's are. Deleting an element from it asks first, saying every post shows the change (D7).
    - A page that hides the Header or Footer still shows the design.
 
 5. **The export and Preview** compose the same thing. `siteToSnapshot` expands the design into each item's page and fills in its bindings, as it expands shared copies today. The pipeline gains no new kind of page.

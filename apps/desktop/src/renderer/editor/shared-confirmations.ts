@@ -1,19 +1,23 @@
 import type { CanvasEngine } from "@webforge/engine";
 import { t } from "@webforge/i18n";
-import type { SharedSectionId } from "@webforge/model";
-import { removeNode } from "@webforge/model";
+import type { CollectionId, SharedSectionId } from "@webforge/model";
+import { collectionById, collectionItems, removeNode } from "@webforge/model";
 import type { SiteWideAction, SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { EditorSession } from "./editor-session.js";
-import { pagesShowing, type SharedRegion, sharedRegionOf, shownLayout } from "./shared-layout.js";
+import { canvasLayout, pagesShowing, type SharedRegion, sharedHomeOf } from "./shared-layout.js";
 import { copySelection, reachOf } from "./shared-sections.js";
 
 type Session = Pick<EditorSession, "history" | "ui" | "library">;
 type Confirm = Pick<SiteWideConfirm, "confirmSiteWide">;
 
-/** What an element shared across pages is in: the shared Header or Footer, or a shared section. */
+/**
+ * What an element shared across pages is in: the shared Header or Footer, a shared section, or a
+ * Blog's design, which every post shows (6.10a).
+ */
 export type SharedPlace =
   | { readonly region: SharedRegion }
-  | { readonly sharedSection: SharedSectionId };
+  | { readonly sharedSection: SharedSectionId }
+  | { readonly collection: CollectionId };
 
 /** The question to ask before `how` takes `item` out of `place`, and every page showing it. */
 function question(
@@ -30,6 +34,21 @@ function question(
       action: t(how === "delete" ? "canvas.sharedDelete.title" : "canvas.sharedCut.title", where),
       confirm,
       affectedPages: pagesShowing(site, place.region),
+    };
+  }
+  if ("collection" in place) {
+    // A Blog's design (6.10a): every post of the Blog.
+    const name = t("history.namedItem", {
+      name: collectionById(site, place.collection)?.name ?? "",
+    });
+    return {
+      action: t(how === "delete" ? "blog.designDelete.title" : "blog.designCut.title", {
+        item,
+        name,
+      }),
+      description: t("blog.designChange"),
+      confirm,
+      affectedPages: collectionItems(site, place.collection).length,
     };
   }
   // A shared section (F-ED-23): every copy of it, on every page with one.
@@ -65,7 +84,8 @@ function confirmShared(
 
 /**
  * The canvas `engine` as the editor session sees it, with removals from the shared Header or
- * Footer (F-ED-7) or from a linked copy's shared section (F-ED-23) held back until the person
+ * Footer (F-ED-7), from a post's Blog design (6.10a) or from a linked copy's shared section
+ * (F-ED-23) held back until the person
  * confirms them (D7): the quick action, the Delete key, the Edit menu and Layers all report one
  * this way. Confirmed, the removal is recorded as usual, one undo step, against the document as it
  * is then; cancelled, the canvas is put back as the document still is. While a question is open,
@@ -85,8 +105,9 @@ export function confirmSharedRemovals(
         const site = session.history.document.getState();
         const pageId = session.ui.getState().pageId;
         const nodeId = edit.kind === "remove" ? edit.nodeId : null;
-        const region =
-          nodeId !== null && edit.shared === true ? sharedRegionOf(site.layout, nodeId) : undefined;
+        // The shared Header or Footer, or a post's Blog design: where the canvas draws it.
+        const home =
+          nodeId !== null && edit.shared === true ? sharedHomeOf(site, pageId, nodeId) : undefined;
         const inCopy =
           nodeId !== null && edit.sharedSection !== undefined
             ? copySelection(site, pageId, nodeId)
@@ -108,9 +129,11 @@ export function confirmSharedRemovals(
         const place: SharedPlace | undefined =
           inCopy !== undefined
             ? { sharedSection: inCopy.shared.id }
-            : region !== undefined
-              ? { region }
-              : undefined;
+            : home === undefined
+              ? undefined
+              : typeof home === "string"
+                ? { region: home }
+                : { collection: home.collection };
         if (nodeId === null || place === undefined) {
           listener(edit);
           return;
@@ -122,12 +145,11 @@ export function confirmSharedRemovals(
           if (confirmed) {
             // The removal itself, from the document as it is now: nothing else the canvas held
             // when it was asked for comes back.
-            if ("region" in place) {
-              const layout = {
-                ...now.layout,
-                [place.region]: structuredClone(now.layout[place.region]),
-              };
-              removeNode(layout[place.region], nodeId);
+            if (!("sharedSection" in place)) {
+              // As the canvas draws it around this page: the Header and Footer, and on a post its
+              // Blog's design, which the session writes back each to its own place.
+              const layout = structuredClone(canvasLayout(now, pageId));
+              if (!removeNode(layout.header, nodeId)) removeNode(layout.footer, nodeId);
               listener({ ...edit, layout });
               return;
             }
@@ -146,7 +168,7 @@ export function confirmSharedRemovals(
           if (page !== undefined) {
             engine.applyChange({
               page,
-              layout: shownLayout(now, pageId),
+              layout: canvasLayout(now, pageId),
               shared: now.sharedSections,
             });
           }
