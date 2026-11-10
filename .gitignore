@@ -6,6 +6,8 @@ node_modules/
 dist/
 out/
 build/
+# The app's icons (#454): electron-builder's build resources, drawn by `pnpm app-icons`.
+!apps/desktop/build/
 release/
 *.tsbuildinfo
 storybook-static/
