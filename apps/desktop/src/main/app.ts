@@ -47,7 +47,7 @@ import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
 import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
-import { applyInterfaceZoom } from "./interface-zoom.js";
+import { applyInterfaceZoom, fitWindowToZoom } from "./interface-zoom.js";
 import { registerIpcHandler } from "./ipc.js";
 import { createJsonStore } from "./json-store.js";
 import { licenceFiles, registerLicenceHandlers } from "./licences.js";
@@ -106,11 +106,11 @@ import { updatesFeature } from "./updates-ipc.js";
 import { registerVersionsHandlers } from "./versions-ipc.js";
 import {
   editorPageAddress,
+  MIN_WINDOW_SIZE,
   mainWindowPlacement,
   titleBarOptions,
   titleBarOverlay,
   windowBackground,
-  zoomedMinimumSize,
 } from "./window-options.js";
 import { rememberWindowState } from "./window-state.js";
 import { createWorkerRequests } from "./worker-requests.js";
@@ -504,14 +504,15 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
 
   function createMainWindow(preferences: PreferencesStore): void {
     const { theme, window: saved, interfaceZoom } = preferences.get();
-    const workAreas = screen.getAllDisplays().map((display) => display.workArea);
-    const placement = mainWindowPlacement(saved, workAreas);
-    const minimum = zoomedMinimumSize(interfaceZoom, largestArea(workAreas));
+    const placement = mainWindowPlacement(
+      saved,
+      screen.getAllDisplays().map((display) => display.workArea),
+    );
     const window = new BrowserWindow({
       title: t("app.name"),
       ...placement.bounds,
-      minWidth: minimum.width,
-      minHeight: minimum.height,
+      minWidth: MIN_WINDOW_SIZE.width,
+      minHeight: MIN_WINDOW_SIZE.height,
       // The renderer draws the title bar (1.2), in the person's theme, at the interface zoom.
       ...titleBarOptions(process.platform, theme, interfaceZoom),
       backgroundColor: windowBackground(theme),
@@ -522,6 +523,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         zoomFactor: interfaceZoom,
       },
     });
+    // Zoomed in, the smallest window grows, capped by the screen the window opens on.
+    fitWindowToZoom(window, interfaceZoom, screen.getDisplayMatching(window.getBounds()).workArea);
     // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
     installContextMenu(window, (template) => Menu.buildFromTemplate(template));
     // Maximised the first time, so the canvas gets the room (ADR 0008). Maximising shows the
@@ -582,14 +585,13 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           windowZoom = interfaceZoom;
           // Every window of the app zooms (View › Zoom In Interface): Help's page only, as it has
           // the system's own title bar.
-          const workArea = largestArea(screen.getAllDisplays().map((display) => display.workArea));
           for (const window of BrowserWindow.getAllWindows()) {
             if (helpWindows.is(window)) window.webContents.setZoomFactor(interfaceZoom);
             else {
               applyInterfaceZoom(window, interfaceZoom, {
                 platform: process.platform,
                 theme,
-                workArea,
+                workArea: screen.getDisplayMatching(window.getBounds()).workArea,
               });
             }
           }
@@ -857,15 +859,4 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   });
 
   return started;
-}
-
-/** The largest of `areas` (the screens' work areas), so a window may be as big as any screen. */
-function largestArea(areas: readonly { readonly width: number; readonly height: number }[]): {
-  readonly width: number;
-  readonly height: number;
-} {
-  return {
-    width: Math.max(0, ...areas.map((area) => area.width)),
-    height: Math.max(0, ...areas.map((area) => area.height)),
-  };
 }

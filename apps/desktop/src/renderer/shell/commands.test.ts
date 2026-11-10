@@ -308,6 +308,36 @@ describe("shortcuts", () => {
       expect(run.moveUp).toHaveBeenCalledOnce();
     });
 
+    it("runs the interface zoom's Ctrl+Alt+= and Ctrl+Alt+− on an AltGr layout, but leaves AltGr+ß to the text", () => {
+      const registry = withKeys({
+        zoomIn: { keys: ["Mod+Alt+="] },
+        zoomOut: { keys: ["Mod+Alt+-"] },
+      });
+      const run = { zoomIn: vi.fn(), zoomOut: vi.fn() };
+      for (const [id, fn] of Object.entries(run)) registry.register({ id, label: id, run: fn });
+      remove = installCommandShortcuts(window, registry);
+      const ctrl = !isMac();
+      const chromium = (init: { key: string; code: string }) => {
+        const event = key({ ...init, ctrlKey: ctrl, metaKey: !ctrl, altKey: true });
+        Object.defineProperty(event, "getModifierState", {
+          value: (modifier: string) => modifier === "AltGraph",
+        });
+        return event;
+      };
+
+      // UK English has AltGr (for € and é): Ctrl+Alt+= and Ctrl+Alt+− type nothing there.
+      window.dispatchEvent(chromium({ key: "=", code: "Equal" }));
+      window.dispatchEvent(chromium({ key: "-", code: "Minus" }));
+      expect(run.zoomIn).toHaveBeenCalledOnce();
+      expect(run.zoomOut).toHaveBeenCalledOnce();
+
+      // German AltGr+ß types a backslash: the text's.
+      const typed = chromium({ key: "\\", code: "Minus" });
+      window.dispatchEvent(typed);
+      expect(run.zoomOut).toHaveBeenCalledOnce();
+      expect(typed.defaultPrevented).toBe(false);
+    });
+
     it("runs a command from its extra shortcuts too", () => {
       const registry = withKeys({ palette: { keys: ["Mod+P", "Mod+K"] } });
       const run = vi.fn();

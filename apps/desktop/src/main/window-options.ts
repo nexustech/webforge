@@ -73,12 +73,12 @@ export function titleBarOptions(
 const DEFAULT_WINDOW_SIZE = { width: 1280, height: 800 } as const;
 
 /** The smallest the main window may be. */
-const MIN_WINDOW_SIZE = { width: 960, height: 600 } as const;
+export const MIN_WINDOW_SIZE = { width: 960, height: 600 } as const;
 
 /**
  * The main window's smallest size at the interface zoom `zoom`: {@link MIN_WINDOW_SIZE} of the
  * page's own pixels, so the editor keeps the room it is laid out for when zoomed in, but never
- * bigger than the screen it is on (`workArea`). Zoomed out, it stays {@link MIN_WINDOW_SIZE}.
+ * bigger than the work area of the screen the window is on (`workArea`), so it can't run off it. Zoomed out, it stays {@link MIN_WINDOW_SIZE}.
  */
 export function zoomedMinimumSize(
   zoom: number,

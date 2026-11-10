@@ -67,9 +67,26 @@ test("zooms the interface in, out and back to 100% from its keys and the View me
 
 test("stops at its largest and smallest levels, the window kept within the screen", async () => {
   await launch(join(mkdtempSync(join(tmpdir(), "webforge-zoom-")), "user-data"));
+  // A window smaller than 150% needs, which the zoom grows to 960 × 600 of the page's own pixels.
+  const roomy = await (app as ElectronApplication).evaluate(({ BrowserWindow, screen }) => {
+    const window = BrowserWindow.getAllWindows()[0];
+    if (window === undefined) return false;
+    window.unmaximize();
+    window.setBounds({
+      ...screen.getDisplayMatching(window.getBounds()).workArea,
+      width: 1280,
+      height: 800,
+    });
+    const area = screen.getDisplayMatching(window.getBounds()).workArea;
+    return area.width >= 1440 && area.height >= 900;
+  });
 
   for (let step = 0; step < 8; step++) await page.keyboard.press("ControlOrMeta+Alt+Equal");
   await expect.poll(zoomFactor).toBeCloseTo(1.5);
+  if (roomy) {
+    await expect.poll(() => page.evaluate(() => window.innerWidth)).toBeGreaterThanOrEqual(960);
+    await expect.poll(() => page.evaluate(() => window.innerHeight)).toBeGreaterThanOrEqual(600);
+  }
   // The title bar's buttons stay on screen and work: the editor is usable at the limit.
   await expect(page.getByRole("button", { name: "Undo" }).first()).toBeInViewport();
   const fits = await (app as ElectronApplication).evaluate(({ BrowserWindow, screen }) => {

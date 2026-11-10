@@ -288,9 +288,6 @@ function parseShortcut(shortcut: string): ParsedShortcut {
 type KeyInfo = Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "shiftKey"> &
   Partial<Pick<KeyboardEvent, "code">>;
 
-/** The keys besides letters whose place a shortcut with Alt matches: digits, `=` and `-`. */
-const OTHER_PLACES: Readonly<Record<string, string>> = { Equal: "=", Minus: "-" };
-
 /**
  * The letter (or digit, `=` or `-`) a key press with Alt is for. On a Mac, Option changes the
  * character (⌥B types `∫`, ⌥0 `º`, ⌥= `≠`), so a shortcut with Alt matches the key's place (`KeyB`,
@@ -298,11 +295,8 @@ const OTHER_PLACES: Readonly<Record<string, string>> = { Equal: "=", Minus: "-" 
  */
 function letterOf(event: KeyInfo): string {
   const key = event.key.toLowerCase();
-  const code = event.code ?? "";
   if (!event.altKey || /^[a-z0-9=-]$/.test(key)) return key;
-  const place = /^(?:Key([A-Z])|Digit([0-9]))$/.exec(code);
-  if (place !== null) return (place[1] ?? place[2] ?? key).toLowerCase();
-  return OTHER_PLACES[code] ?? key;
+  return ownCharacter(event.code ?? "") ?? key;
 }
 
 /**
@@ -498,10 +492,16 @@ function isForText(target: Window, event: KeyboardEvent): boolean {
   return selection !== null && !selection.isCollapsed && selection.toString() !== "";
 }
 
-/** The character a key types without modifiers: `KeyS` is "s", `Digit2` is "2"; else undefined. */
+/** The symbol keys whose own character a shortcut names: the interface zoom's `=` and `-`. */
+const SYMBOL_KEYS: Readonly<Record<string, string>> = { Equal: "=", Minus: "-" };
+
+/**
+ * The character a key types without modifiers on a US layout: `KeyS` is "s", `Digit2` is "2",
+ * `Equal` is "="; else undefined.
+ */
 function ownCharacter(code: string): string | undefined {
   const match = /^(?:Key([A-Z])|Digit([0-9]))$/.exec(code);
-  return (match?.[1] ?? match?.[2])?.toLowerCase();
+  return (match?.[1] ?? match?.[2])?.toLowerCase() ?? SYMBOL_KEYS[code];
 }
 
 /**

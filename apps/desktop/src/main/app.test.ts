@@ -61,6 +61,8 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     readonly setBackgroundColor = vi.fn();
     readonly setTitleBarOverlay = vi.fn();
     readonly setMinimumSize = vi.fn();
+    readonly setBounds = vi.fn();
+    getBounds = () => ({ x: 0, y: 0, width: 1280, height: 800 });
     readonly setWindowButtonPosition = vi.fn();
     readonly loadFile = vi.fn(async () => undefined);
     readonly loadURL = vi.fn(async () => undefined);
@@ -150,7 +152,10 @@ function fakeElectron(options: { primary?: boolean } = {}) {
     },
     net: { fetch: vi.fn() },
     protocol: { registerSchemesAsPrivileged: vi.fn() },
-    screen: { getAllDisplays: () => [{ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }] },
+    screen: {
+      getAllDisplays: () => [{ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }],
+      getDisplayMatching: () => ({ workArea: { x: 0, y: 0, width: 1920, height: 1080 } }),
+    },
     session,
     shell: { openPath: vi.fn(async () => ""), showItemInFolder: vi.fn() },
     utilityProcess: { fork: vi.fn() },
@@ -364,16 +369,17 @@ describe("startApp", () => {
     const [window] = fake.windows;
 
     expect(window?.options).toMatchObject({
-      minWidth: 1200,
-      minHeight: 750,
       webPreferences: { zoomFactor: 1.25, sandbox: true, contextIsolation: true },
     });
+    expect(window?.setMinimumSize).toHaveBeenCalledWith(1200, 750);
     await fake.invoke("prefs:set", { interfaceZoom: 1.5 });
     await fake.invoke("prefs:set", { theme: "light" });
 
     expect(window?.webContents.setZoomFactor).toHaveBeenCalledTimes(1);
     expect(window?.webContents.setZoomFactor).toHaveBeenCalledWith(1.5);
-    expect(window?.setMinimumSize).toHaveBeenCalledWith(1440, 900);
+    expect(window?.setMinimumSize).toHaveBeenLastCalledWith(1440, 900);
+    // The 1280 × 800 window grows to it, on its screen.
+    expect(window?.setBounds).toHaveBeenLastCalledWith({ x: 0, y: 0, width: 1440, height: 900 });
     // The theme's colours keep the zoomed title bar's height.
     expect(window?.setTitleBarOverlay).toHaveBeenLastCalledWith(
       expect.objectContaining({ height: 60 }),
