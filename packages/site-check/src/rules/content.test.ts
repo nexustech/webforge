@@ -14,6 +14,7 @@ import {
   brokenLinksRule,
   missingImagesRule,
   outdatedYearRule,
+  pastAnnouncementRule,
   placeholdersRule,
 } from "./content.js";
 
@@ -308,5 +309,53 @@ describe("outdated year (F-CM-8)", () => {
         published: { year: 2026, thisYear: 2027 },
       }),
     ).toEqual([]);
+  });
+});
+
+describe("an Announcement bar past its last day (6.4)", () => {
+  const bar = (id: string, lastDay: string, props: Record<string, unknown> = {}) =>
+    element("AnnouncementBar", id, { text: "Closed 24–26 December", lastDay, ...props });
+  const site = siteWith([
+    bar("on-the-page", "2026-12-20"),
+    bar("hidden", "2026-12-01", { hidden: true }),
+  ]);
+  const withBars = {
+    ...site,
+    layout: { ...site.layout, header: [bar("every-page", "2026-12-26"), ...site.layout.header] },
+  };
+  const past = (today?: string) =>
+    pastAnnouncementRule.check({
+      site: withBars,
+      catalogue: CATALOGUE,
+      ...(today === undefined ? {} : { today }),
+    });
+
+  it("tips at each shown bar whose last day was before today, keyed by its last day", () => {
+    expect(past("2026-12-27")).toEqual([
+      {
+        key: "header/every-page/2026-12-26",
+        place: { kind: "element", on: "header", nodeId: "every-page" },
+      },
+      {
+        key: `${site.homePageId}/on-the-page/2026-12-20`,
+        place: { kind: "element", on: site.homePageId, nodeId: "on-the-page" },
+      },
+    ]);
+  });
+
+  it("says nothing on its last day, for a bar with none, or without today", () => {
+    expect(past("2026-12-20")).toEqual([]);
+    expect(past()).toEqual([]);
+    expect(
+      pastAnnouncementRule.check({
+        site: siteWith([bar("no-day", "")]),
+        catalogue: CATALOGUE,
+        today: "2027-01-01",
+      }),
+    ).toEqual([]);
+  });
+
+  it("has its texts", () => {
+    expect(t("siteCheck.rule.pastAnnouncement.fail.one")).toContain("Delete it");
   });
 });

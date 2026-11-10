@@ -4,6 +4,11 @@
 // the visit, on every page, until its text changes. The choice is kept in this tab only
 // (sessionStorage); a browser that keeps nothing asks again on each page. The page itself then
 // takes the focus, so the next Tab starts from the top of what's left.
+//
+// The script runs after the page is first drawn (it is deferred, as animate.js says), so a bar the
+// visitor closed, or one past its last day, shows for a moment on each page and the page moves up
+// as it hides. For a closed bar that's the cost of a classic deferred script; a bar past its last
+// day is better deleted, which Site Check suggests. The export never depends on the date.
 (() => {
   const KEY = "webforge-announcement-closed";
   /** Today in the visitor's time zone, as the bar's last day is written. */

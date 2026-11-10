@@ -234,6 +234,25 @@ describe("addComponent", () => {
     ).toBe(false);
   });
 
+  it("puts the Announcement bar on a page that hides the Header, which shows none of it", () => {
+    const site = starterSite();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home page");
+    home.settings.hideHeader = true;
+    site.layout.header.unshift({ type: "AnnouncementBar", props: { id: "every-page" } });
+    const session = sessionWith(site);
+    const header = () => session.history.document.getState().layout.header;
+    const before = header();
+
+    expect(addComponent(session, "AnnouncementBar")).toBe(true);
+    // Where a click puts any section: here, at the end of the page.
+    const added = currentPage(session)?.doc.content.at(-1);
+    expect(added?.type).toBe("AnnouncementBar");
+    expect(added?.props.id).not.toBe("every-page");
+    expect(session.ui.getState().nodeId).toBe(added?.props.id);
+    expect(header()).toEqual(before);
+  });
+
   it("adds with its defaults as one 'Added …' step that selects it, undone in one go", () => {
     const session = sessionWith();
     const content = () => currentPage(session)?.doc.content ?? [];

@@ -76,6 +76,11 @@ export type CheckInput = {
    */
   readonly published?: { readonly year: number; readonly thisYear: number };
   /**
+   * Today in the owner's time zone, `YYYY-MM-DD`, as a date field stores a day: an Announcement
+   * bar past its last day is a tip (6.4). Left out, no date has passed.
+   */
+  readonly today?: string;
+  /**
    * The SHA-256 of every picture the shipped templates come with (4.12b), from
    * `@webforge/templates`: an image with one is still a template's placeholder. Left out, none is.
    */

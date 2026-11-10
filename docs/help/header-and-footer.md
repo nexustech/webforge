@@ -4,7 +4,7 @@ id: header-and-footer
 title: Header, Footer, announcements and shared sections
 summary: The parts that are the same on every page, an announcement bar above them, and sections you share between pages.
 components: [Header, Footer, AnnouncementBar]
-related: [pages, layers, add-panel]
+related: [pages, layers, add-panel, site-check]
 updated: 2026-11-10
 ---
 
@@ -39,9 +39,9 @@ An **Announcement bar** is a thin strip of news above the Header, such as "Close
 
 The bar is in your theme's dark colour, and has a close button for visitors. Closing it hides it for the rest of their visit, on every page, until you change its text. Its colours, padding and look are in the **Style** tab, as for any section.
 
-To remove the bar, select it and press Delete. A page whose Header is hidden (in its Page Settings) hides the bar too. If you drag the Announcement bar onto a page instead, it shows on that page only.
+To remove the bar, select it and press Delete. A page whose Header is hidden (in its Page Settings) hides the bar too: clicking **Announcement bar** there adds one to that page only. If you drag the Announcement bar onto a page instead, it shows on that page only.
 
-Visitors whose browser runs no scripts see the bar without its close button, even after its last day. Delete the bar once it's out of date.
+Your site hides the bar once the page has opened, so a visitor who closed it, or a bar past its last day, still shows for a moment on each page. Visitors whose browser runs no scripts see the bar without its close button, even after its last day. Delete the bar once it's out of date: [Site Check](site-check.md) reminds you.
 
 ## Shared sections
 

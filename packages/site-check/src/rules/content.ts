@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   altTextFor,
+  eachElement,
   findBrokenLinks,
   imageValueSchema,
   linkValueSchema,
@@ -236,6 +237,41 @@ export const outdatedYearRule: CheckRule = {
         ];
   },
 };
+/** The Announcement bar (6.4), by its type: this package reads the components as data. */
+const ANNOUNCEMENT_BAR = "AnnouncementBar";
+/** A date field's value: `YYYY-MM-DD`. */
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * An Announcement bar past its last day (6.4): the export still writes it, and its script hides
+ * it only once the page is drawn, so visitors see it for a moment on every page. A tip to delete
+ * it, at each one. Its key has the last day, so a new last day asks again.
+ */
+export const pastAnnouncementRule: CheckRule = {
+  id: "pastAnnouncement",
+  level: "tip",
+  check: ({ site, today }) => {
+    if (today === undefined) return [];
+    const exported = exportedPlaces(site);
+    const found: Finding[] = [];
+    eachElement(
+      site,
+      (node, on) => {
+        if (node.type !== ANNOUNCEMENT_BAR || !exported(on)) return;
+        const { lastDay } = node.props;
+        if (typeof lastDay === "string" && DATE.test(lastDay) && lastDay < today) {
+          found.push({
+            key: `${on}/${node.props.id}/${lastDay}`,
+            place: elementPlace({ on, node }),
+          });
+        }
+      },
+      { skipHidden: true },
+    );
+    return found;
+  },
+};
+
 /**
  * Placeholder text and links (X5): a starter text's instruction, a default naming its field, dummy
  * Latin, or a link to `example.com`. *Should fix*, and *Must fix* to publish; *Ignore* covers a false alarm.
