@@ -70,6 +70,7 @@ export function parsePreferences(raw: unknown): Preferences {
     editPanel: field("editPanel"),
     versionsKept: field("versionsKept"),
     onboarding: field("onboarding"),
+    interfaceZoom: field("interfaceZoom"),
     ...(updateChannel === undefined ? {} : { updateChannel }),
   };
 }

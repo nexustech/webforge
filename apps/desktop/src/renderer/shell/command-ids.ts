@@ -37,6 +37,10 @@ export const COMMAND_IDS = {
   zoomOut: "view.zoomOut",
   zoomActual: "view.zoomActual",
   zoomFit: "view.zoomFit",
+  /** The whole interface's zoom, not the canvas's: every window of the app. */
+  interfaceZoomIn: "view.interfaceZoomIn",
+  interfaceZoomOut: "view.interfaceZoomOut",
+  interfaceZoomReset: "view.interfaceZoomReset",
   /** The canvas's View options with a key (#857): its outlines and its element names. */
   showOutlines: "view.showOutlines",
   elementNames: "view.elementNames",

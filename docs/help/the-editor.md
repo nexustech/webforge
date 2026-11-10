@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-09
+updated: 2026-11-10
 ---
 
 # The editor
@@ -78,6 +78,16 @@ On the left of the canvas toolbar:
 You can also drag the canvas's left or right edge to change the width. It snaps to each device's width; hold Alt to place it freely.
 
 Changes you make while viewing Tablet or Mobile can apply to that device only. See [The Edit panel](edit-panel.md#different-on-each-device).
+
+## Making everything bigger or smaller
+
+The zoom above changes only the page on the canvas. To make all of {appName} bigger or smaller (its menus, panels and text, the Help window too), use the **View** menu:
+
+- **Zoom In Interface** (Ctrl+Alt+=)
+- **Zoom Out Interface** (Ctrl+Alt+−)
+- **Reset Interface Zoom** (Ctrl+Alt+0), back to 100%
+
+On a Mac, use Cmd+Option. On some keyboards Ctrl+Alt with a key types a character instead, such as } on a German keyboard: use the View menu there. It goes from 80% to 150%, and {appName} remembers it next time you open it. It never changes your site, or how it looks to visitors.
 
 ## Finding a command
 

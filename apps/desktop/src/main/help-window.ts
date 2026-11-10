@@ -39,6 +39,8 @@ export type HelpWindowOptions = {
   readonly theme: () => Theme;
   /** The window's background in `theme`, as the editor's, so it never flashes white. */
   readonly background: (theme: Theme) => string;
+  /** The interface zoom now (View › Zoom In Interface), which Help opens at; 100% if not given. */
+  readonly zoom?: () => number;
   /** Logs a failed load, by the error's kind only. */
   readonly onLoadFailed: (error: unknown) => void;
 };
@@ -105,7 +107,10 @@ export function createHelpWindows(options: HelpWindowOptions): HelpWindows {
       backgroundColor: options.background(theme),
       autoHideMenuBar: true,
       show: false,
-      webPreferences: createSecureWebPreferences(options.preload),
+      webPreferences: {
+        ...createSecureWebPreferences(options.preload),
+        zoomFactor: options.zoom?.() ?? 1,
+      },
     });
     hardenWebContents(created.webContents, options.pageUrl);
     // Only the Help page itself: on the dev server, the editor's page has the same origin.
