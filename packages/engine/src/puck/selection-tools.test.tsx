@@ -215,7 +215,7 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => 
     expect(await perform("editText")).toBe(false);
   });
 
-  it("offers Edit for text and images, and Hide, asking the app for what it owns", async () => {
+  it("offers Edit for text and images, and Don't publish, asking the app for what it owns", async () => {
     const requests: ElementRequest[] = [];
     engine.onElementRequest((request) => requests.push(request));
 
@@ -225,7 +225,7 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => 
     expect(element.ownerDocument.activeElement?.getAttribute("contenteditable")).toBe(
       "plaintext-only",
     );
-    await act(async () => button("Hide")?.click());
+    await act(async () => button("Don't publish")?.click());
     // Style this ‹kind›… for an element with a look (3.13a).
     await act(async () => button("Style")?.click());
 
@@ -242,7 +242,7 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => 
     ]);
   });
 
-  it("offers Hide only on the page's own elements: a linked copy whole, not inside it or the Header", async () => {
+  it("offers Don't publish only on the page's own elements: a linked copy whole, not inside it or the Header", async () => {
     const HOURS = "shared-hours" as SharedSectionId;
     const box = (id: string, inside: string) => ({
       type: "Box",
@@ -261,16 +261,16 @@ describe("selection tools (1.30, F-ED-25, F-ED-27)", { timeout: 15_000 }, () => 
     await settle();
 
     await select(copiedNodeId("c1", "hours"));
-    expect(button("Hide")).not.toBeNull();
+    expect(button("Don't publish")).not.toBeNull();
     for (const id of [copiedNodeId("c1", "times"), "logo"]) {
       await select(id);
       expect(button("Edit")).not.toBeNull();
-      expect(button("Hide")).toBeNull();
+      expect(button("Don't publish")).toBeNull();
     }
     // Loading the Header and a shared section takes Puck a while on a busy machine.
   }, 20_000);
 
-  it("says Show for a hidden element, and offers no Hide in Content mode (M3)", async () => {
+  it("says Show for a hidden element, and offers no Don't publish in Content mode (M3)", async () => {
     await act(async () =>
       engine.loadPage(
         {

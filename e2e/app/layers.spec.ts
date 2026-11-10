@@ -38,9 +38,12 @@ const row = (name: string) => tree().getByRole("treeitem", { name: new RegExp(`^
 const selected = () => canvas().locator(`${SELECTED_COMPONENT} ${ACTION_BAR_LABEL}`);
 const steps = () => page.locator(".undo-history__step");
 
-/** Shows `item`, which shows as `now`, as `choice` says, from its row's eye (UX-23). */
-async function setShown(item: string, now: string, choice: string): Promise<void> {
-  await row(item).hover();
+/**
+ * Shows `item`, which shows as `now`, as `choice` says, from its row's eye (UX-23): the row named
+ * `item` unless `on` is given (the Header's row starts with *On every page*).
+ */
+async function setShown(item: string, now: string, choice: string, on = row(item)): Promise<void> {
+  await on.hover();
   await tree()
     .getByRole("button", { name: `Show or hide ${item} (now: ${now})` })
     .click();
@@ -110,7 +113,7 @@ test("lists the shared Header first and Footer last; the Header's eye hides it o
   await expect(rows.first()).toHaveAttribute("aria-selected", "true");
 
   // Its eye is the page's Hide the Header on this page: gone from the canvas, one step.
-  await setShown("Header", "Show", "Don't publish");
+  await setShown("Header", "Show", "Don't publish", rows.first());
   await expect(canvas().locator(".site-header")).toHaveCount(0);
   await expect(
     tree().getByRole("button", { name: "Show or hide Header (now: Don't publish)" }),
@@ -140,9 +143,12 @@ test("leaves out of the export a layer not published, and a draft page, but not 
     await page.getByRole("menuitem", { name: "Blank Page…" }).click();
     await page.getByRole("textbox", { name: "Page name" }).fill("Winter menu");
     await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
-    await page.getByRole("button", { name: "Actions for Winter menu" }).click();
+    await page
+      .getByRole("list", { name: "Pages" })
+      .getByRole("button", { name: "Actions for Winter menu" })
+      .click();
     await page.getByRole("menuitemcheckbox", { name: "Draft" }).click();
-    await expect(page.getByRole("button", { name: /^Winter menuDraft/ })).toBeVisible();
+    await expect(page.getByRole("button", { name: /^Winter menu Draft/ })).toBeVisible();
     await left().getByRole("tab", { name: "Undo History" }).click();
     await expect(steps().first()).toHaveText("Made 'Winter menu' a draft");
 

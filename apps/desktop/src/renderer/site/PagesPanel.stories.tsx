@@ -14,7 +14,10 @@ const page = (id: string, title: string, extra: Partial<PageEntry> = {}): PageEn
   ...extra,
 });
 
-/** A small business site: pages at the top level and in a folder, one hidden from navigation. */
+/**
+ * A small business site: pages at the top level and in a folder, one hidden from navigation, and a
+ * seasonal menu kept as a draft (G37).
+ */
 function site(): SiteDoc {
   const base = starterSite();
   const pages = [
@@ -22,6 +25,10 @@ function site(): SiteDoc {
     page("about", "About us"),
     page("cakes", "Cakes", { folder: "menu" }),
     page("bread", "Bread", { folder: "menu" }),
+    page("winter", "Winter specials", {
+      folder: "menu",
+      settings: { hideHeader: false, hideFooter: false, hideFromNavigation: false, draft: true },
+    }),
     page("contact", "Contact"),
     page("thanks", "Thank you", {
       settings: { hideHeader: false, hideFooter: false, hideFromNavigation: true },
