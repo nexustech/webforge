@@ -12,12 +12,19 @@ export const pageFile = (site: SiteDoc, id: PageId): string | undefined => {
   return page === undefined ? undefined : `${pagePath(page, site.homePageId)}.html`;
 };
 
-/** Every page's file in `site`. */
+/**
+ * A file as the folders it's written to tell files apart: Windows' and macOS's don't by case, so
+ * `About.html` would write over `about.html` there. Old addresses are compared with pages', and
+ * with each other, by this.
+ */
+export const fileKey = (file: string): string => file.toLowerCase();
+
+/** Every page's file in `site`, as {@link fileKey}s. */
 export const pageFiles = (site: SiteDoc): Set<string> =>
   new Set(
     site.pageOrder.flatMap((id) => {
       const file = pageFile(site, id);
-      return file === undefined ? [] : [file];
+      return file === undefined ? [] : [fileKey(file)];
     }),
   );
 
@@ -27,7 +34,7 @@ export const keptAddressesOf = (site: SiteDoc): readonly KeptAddress[] =>
 
 /**
  * Whether `kept` still means something in `site`: its page is there and is an ordinary page, and no
- * page is at its old address, which the page there takes.
+ * page is at its old address, in any case ({@link fileKey}), which the page there takes.
  */
 export function keptAddressWorks(
   site: SiteDoc,
@@ -35,14 +42,14 @@ export function keptAddressWorks(
   files = pageFiles(site),
 ): boolean {
   const page = site.pages[kept.page];
-  return page?.kind === "page" && !files.has(kept.from);
+  return page?.kind === "page" && !files.has(fileKey(kept.from));
 }
 
 /**
  * Leaves out of `draft`'s Site Settings the old addresses that no longer mean anything: a page is
  * at the address again (a page renamed back, or a new page), its page was deleted or is "Page not
- * found", or another entry has the address already (the later one stays). None left is none at
- * all (ADR 0012).
+ * found", or another entry has the address already, in any case (the later one stays). None left
+ * is none at all (ADR 0012).
  */
 export function tidyKeptAddresses(draft: SiteDoc): void {
   const kept = draft.settings.search.keptAddresses;
@@ -51,8 +58,8 @@ export function tidyKeptAddresses(draft: SiteDoc): void {
   const byFile = new Map<string, KeptAddress>();
   for (const entry of kept) {
     if (!keptAddressWorks(draft, entry, files)) continue;
-    byFile.delete(entry.from);
-    byFile.set(entry.from, entry);
+    byFile.delete(fileKey(entry.from));
+    byFile.set(fileKey(entry.from), entry);
   }
   const tidy = [...byFile.values()];
   if (tidy.length === kept.length && tidy.every((entry, at) => entry === kept[at])) return;

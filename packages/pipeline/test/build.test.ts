@@ -1602,6 +1602,8 @@ describe("buildSite: site files (3.5)", () => {
       expect(text(result, "sitemap.xml")).not.toContain("about-us");
       expect(text(result, "thank-you.html")).toContain("Thank you");
       expect(text(result, "thank-you.html")).not.toContain("http-equiv");
+      // No rule for it either: Netlify would send every form's visitors away from it.
+      expect(text(result, "_redirects")).not.toContain("thank-you");
 
       const previewed = await preview(site);
       expect(previewed.files.has("about-us.html")).toBe(false);

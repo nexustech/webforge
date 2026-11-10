@@ -81,6 +81,20 @@ describe("old addresses kept working (#862, SEO-5)", () => {
     // The old Home page's index.html now belongs to the new one: it isn't kept.
   });
 
+  it("doesn't keep an address a page has in another case, or the same address twice in any case", () => {
+    const { site: draft, about, team } = site();
+    draft.settings.search.keptAddresses = [
+      // Windows' and macOS's folders would write it over about-us.html.
+      { from: "About-Us.html", page: team },
+      { from: "Old.html", page: about },
+      { from: "old.html", page: team },
+    ];
+    expect(keptAddressWorks(draft, { from: "ABOUT-US.html", page: team })).toBe(false);
+
+    tidyKeptAddresses(draft);
+    expect(keptAddressesOf(draft)).toEqual([{ from: "old.html", page: team }]);
+  });
+
   it("drops a deleted page's old addresses, and keeps nothing for 'Page not found'", () => {
     const { site: draft, about } = site();
     keepingOldAddresses(draft, () => renamePageIn(draft, about, "About"));

@@ -58,12 +58,26 @@ export function redirectsFile(redirects: readonly SiteRedirect[]): string {
     .join("\n")}\n`;
 }
 
-/** The files `site`'s old addresses need: a page at each, and `_redirects`. None without any. */
-export function redirectFiles(site: SiteSnapshot): [string, string][] {
-  const redirects = site.redirects ?? [];
-  if (redirects.length === 0) return [];
+/**
+ * The files `site`'s old addresses need: a page at each, and `_redirects` with a rule for each page
+ * written. An old address at a file the export made already (`taken`, the thank-you page it adds,
+ * 3.7) gets neither, in any case: Windows' and macOS's folders don't tell `About.html` from
+ * `about.html`, and a rule would send the file's visitors away. None without any.
+ */
+export function redirectFiles(
+  site: SiteSnapshot,
+  taken: Iterable<string> = [],
+): [string, string][] {
+  const used = new Set([...taken].map((file) => file.toLowerCase()));
+  const written = (site.redirects ?? []).filter((redirect) => {
+    const file = redirect.from.toLowerCase();
+    if (used.has(file)) return false;
+    used.add(file);
+    return true;
+  });
+  if (written.length === 0) return [];
   return [
-    ...redirects.map((redirect): [string, string] => [redirect.from, redirectPage(site, redirect)]),
-    ["_redirects", redirectsFile(redirects)],
+    ...written.map((redirect): [string, string] => [redirect.from, redirectPage(site, redirect)]),
+    ["_redirects", redirectsFile(written)],
   ];
 }

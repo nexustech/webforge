@@ -110,6 +110,7 @@ export {
   sniffImage,
 } from "./image-size.js";
 export {
+  fileKey,
   keepingOldAddresses,
   keptAddressesOf,
   keptAddressWorks,

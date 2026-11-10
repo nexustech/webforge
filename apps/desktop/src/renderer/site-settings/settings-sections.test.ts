@@ -61,11 +61,14 @@ describe("Site Settings' old addresses (#862)", () => {
       keptAddresses: [
         { id: "a", from: "old.html", page: "about" },
         { id: "b", from: "/about", page: "home" },
+        // In any case: a folder on Windows or macOS would write it over the page (#862).
+        { id: "c", from: "About.html", page: "home" },
       ],
     };
 
     expect(keptAddressClashes(values, pages)).toEqual([
       { path: ["search", "keptAddresses", 1, "from"], message: expect.any(String) },
+      { path: ["search", "keptAddresses", 2, "from"], message: expect.any(String) },
     ]);
   });
 });

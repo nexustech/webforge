@@ -702,10 +702,10 @@ export async function* buildEvents(
   }
   for (const [path, content] of siteFiles(site, icons)) files.set(path, text.encode(content));
   // Old addresses kept working (#862), never in a preview, which no one else reads. A file the
-  // export made already (the thank-you page it adds, 3.7) keeps its place.
+  // export made already (the thank-you page it adds, 3.7) keeps its place, in any case.
   if (run.mode !== "preview") {
-    for (const [path, content] of redirectFiles(site)) {
-      if (!files.has(path)) files.set(path, text.encode(content));
+    for (const [path, content] of redirectFiles(site, files.keys())) {
+      files.set(path, text.encode(content));
     }
   }
   // AI tools' copies (F-EX-5), when Site Settings ask for them; never in a preview, which no one

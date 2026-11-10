@@ -347,15 +347,20 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
     })
     .superRefine((site, ctx) => {
       const paths = site.pages.map((page) => page.path);
-      // An old address goes to a page, and isn't one: the page there would be written over.
+      // An old address goes to a page, and isn't one, in any case: the page there would be written
+      // over in a folder that doesn't tell files apart by case (Windows', macOS's).
+      const files = new Set(paths.map((path) => `${path}.html`.toLowerCase()));
+      const olds = new Set<string>();
       for (const redirect of site.redirects ?? []) {
-        if (!paths.includes(redirect.to) || paths.includes(redirect.from.slice(0, -5))) {
+        const old = redirect.from.toLowerCase();
+        if (!paths.includes(redirect.to) || files.has(old) || olds.has(old)) {
           ctx.addIssue({
             code: "custom",
             message: `The old address ${redirect.from} can't go to ${redirect.to}`,
             path: ["redirects"],
           });
         }
+        olds.add(old);
       }
       if (!paths.includes("index")) {
         ctx.addIssue({ code: "custom", message: "The site has no home page", path: ["pages"] });

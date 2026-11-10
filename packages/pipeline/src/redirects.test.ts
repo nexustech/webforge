@@ -62,6 +62,27 @@ describe("a page's old address kept working (#862, SEO-5)", () => {
     expect(redirectFiles(site([]))).toEqual([]);
   });
 
+  it("writes neither a page nor a rule at a file the export made, in any case", () => {
+    const files = redirectFiles(
+      site([
+        { from: "Thank-You.html", to: "index" },
+        { from: "our-story.html", to: "about" },
+        { from: "Our-Story.html", to: "index" },
+      ]),
+      ["index.html", "thank-you.html"],
+    );
+
+    // A folder on Windows or macOS would write Thank-You.html over the thank-you page, and a rule
+    // would send every form's visitors away from it.
+    expect(files.map(([path]) => path)).toEqual(["our-story.html", "_redirects"]);
+    expect(files.at(-1)?.[1]).toBe(
+      ["/our-story.html /about.html 301!", "/our-story /about.html 301!", ""].join("\n"),
+    );
+    expect(
+      redirectFiles(site([{ from: "Thank-You.html", to: "index" }]), ["thank-you.html"]),
+    ).toEqual([]);
+  });
+
   it("refuses an old address that goes to no page, or is a page's own", () => {
     expect(siteSnapshotSchema.safeParse(site([{ from: "old.html", to: "about" }])).success).toBe(
       true,
@@ -72,5 +93,14 @@ describe("a page's old address kept working (#862, SEO-5)", () => {
     expect(siteSnapshotSchema.safeParse(site([{ from: "about.html", to: "index" }])).success).toBe(
       false,
     );
+    // In any case, and once per file in any case (#862).
+    expect(siteSnapshotSchema.safeParse(site([{ from: "About.html", to: "index" }])).success).toBe(
+      false,
+    );
+    const twice = site([
+      { from: "old.html", to: "about" },
+      { from: "OLD.html", to: "index" },
+    ]);
+    expect(siteSnapshotSchema.safeParse(twice).success).toBe(false);
   });
 });

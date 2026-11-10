@@ -198,6 +198,10 @@ describe("siteToSnapshot", () => {
       { from: "menu/cakes.html", page: kept.homePageId },
       { from: "gone.html", page: "gone" as PageId },
       { from: "lost.html", page: notFound as PageId },
+      // A page is there in another case, or another entry has it in another case: left out.
+      { from: "Menu/Cakes.html", page: kept.homePageId },
+      { from: "OLD-HOME.html", page: "cakes" as PageId },
+      { from: "old-home.html", page: kept.homePageId },
     ];
 
     const redirected = siteToSnapshot(kept, new Map());

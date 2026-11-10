@@ -6,6 +6,7 @@ import {
   BUSINESS_TYPES,
   type BusinessKind,
   CONSENT_MESSAGE_MAX,
+  fileKey,
   type ImageMeta,
   LANGUAGE_TAG_MAX,
   MEASUREMENT_ID_MAX,
@@ -181,16 +182,16 @@ function keptAddressesField(pages: readonly SettingsPage[]): FormField {
 }
 
 /**
- * The old addresses a page has now (#862): the page there takes the address, so keeping it would
- * do nothing.
+ * The old addresses a page has now (#862), in any case: the page there takes the address, so
+ * keeping it would do nothing.
  */
 export function keptAddressClashes(
   values: SettingsForm,
   pages: readonly SettingsPage[],
 ): FormIssue[] {
-  const files = new Set(pages.map((page) => page.file));
+  const files = new Set(pages.map((page) => fileKey(page.file)));
   return values.keptAddresses.flatMap((kept, index) =>
-    files.has(keptAddressFile(kept.from))
+    files.has(fileKey(keptAddressFile(kept.from)))
       ? [
           {
             path: ["search", "keptAddresses", index, "from"],
