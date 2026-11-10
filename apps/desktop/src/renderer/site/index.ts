@@ -5,7 +5,7 @@
 
 export {
   addPage,
-  addPrivacyPage,
+  addPolicyPage,
   renamePage,
   setDraftPage,
   setHiddenFromNavigation,

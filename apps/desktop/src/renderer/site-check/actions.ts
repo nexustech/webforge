@@ -20,7 +20,7 @@ import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
-import { addPrivacyPage } from "../site/index.js";
+import { addPolicyPage } from "../site/index.js";
 import { THEME_PANEL_ID } from "../theme/index.js";
 import { type BundleActions, canBundle, downloadAndBundle } from "./bundle.js";
 
@@ -255,7 +255,7 @@ export function fixFor(
   // Settings, and show it (#855).
   if (rule === "privacyPage") {
     return () => {
-      addPrivacyPage(actions.session);
+      addPolicyPage(actions.session, "privacy");
       actions.panels.show(SITE_PANEL_ID);
     };
   }

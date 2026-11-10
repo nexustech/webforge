@@ -48,7 +48,7 @@ const actions: PagesPanelActions = {
   show: noop,
   add: noop,
   addSuggested: noop,
-  addPrivacy: noop,
+  addPolicy: noop,
   rename: noop,
   duplicate: noop,
   move: noop,
@@ -98,8 +98,18 @@ export const AddPage: Story = {
   },
 };
 
-/** Add Page's menu: a blank page, or a page suggested for a business type (QS-3, 3.11a). */
+/**
+ * Add Page's menu: a blank page; the privacy page, the terms and, with Google Analytics on, the
+ * cookie policy (#855, #866); or a page suggested for a business type (QS-3, 3.11a).
+ */
 export const AddPageMenu: Story = {
+  args: {
+    site: (() => {
+      const withAnalytics = site();
+      withAnalytics.settings.analytics.measurementId = "G-ABC123DEF4";
+      return withAnalytics;
+    })(),
+  },
   play: async ({ canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
     await userEvent.click(within(canvasElement).getByRole("button", { name: "Add Page" }));

@@ -1,35 +1,19 @@
 import { t } from "@webforge/i18n";
-import { insertPage, type NodeDoc, type PageId, type SiteDoc } from "@webforge/model";
+import type { NodeDoc, PageId, SiteDoc } from "@webforge/model";
 import { siteCollects } from "@webforge/site-check";
-
-const HTML_ESCAPES: Readonly<Record<string, string>> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-};
-
-/** `text` as rich text's paragraph: a business name or an email address can hold `&` or `<`. */
-const paragraph = (text: string) =>
-  `<p>${text.replace(/[&<>"]/g, (character) => HTML_ESCAPES[character] ?? character)}</p>`;
-
-/** A Text section titled `title` with `paragraphs`, in the page's colours. */
-const textSection = (id: string, title: string, paragraphs: readonly string[]): NodeDoc => ({
-  type: "TextSection",
-  props: { id, colors: "page", title, text: paragraphs.map(paragraph).join("") },
-});
+import { businessOf, insertPolicyPage, openingSection, textSection } from "./policy-sections.js";
 
 /**
  * The privacy page's sections (#855, PH5-1): who runs the site, what it collects and why, how long
  * it's kept, the visitor's rights and how to ask. Written from `site`: its business name (or the
  * site's name) and email from Site Settings, and only what it collects: messages from a form,
  * newsletter sign-ups, and visits Google Analytics counts, with or without the consent banner
- * asking first. It opens with the page's main heading and a note to the owner that it's a start to
- * check, not legal advice, which Site Check finds while it's left in.
+ * asking first. It opens with the page's main heading and the note to the owner that it's a start
+ * to check, not legal advice ({@link openingSection}).
  */
 export function privacyPageContent(site: SiteDoc): NodeDoc[] {
-  const { contact, analytics, general } = site.settings;
-  const business = (contact.businessName ?? "").trim() || general.name;
+  const { contact, analytics } = site.settings;
+  const business = businessOf(site);
   const { messages, signups, visits } = siteCollects(site);
   const details = messages || signups;
   const visitText = analytics.consentBanner
@@ -41,18 +25,7 @@ export function privacyPageContent(site: SiteDoc): NodeDoc[] {
     ...(visits ? [visitText] : []),
   ];
   const sections: NodeDoc[] = [
-    // The page's main heading: a text-only Hero, without a button, holding the note to the owner.
-    {
-      type: "Hero",
-      props: {
-        id: "privacy",
-        variant: "minimal",
-        colors: "page",
-        title: t("privacyPage.title"),
-        text: t("privacyPage.note"),
-        buttonLabel: "",
-      },
-    },
+    openingSection("privacy", t("privacyPage.title")),
     textSection("privacy-who", t("privacyPage.whoTitle"), [t("privacyPage.who", { business })]),
     textSection(
       "privacy-collects",
@@ -91,11 +64,11 @@ export function privacyPageContent(site: SiteDoc): NodeDoc[] {
  * before a "Page not found" page that is last and in the menu if the menu follows the pages.
  */
 export function insertPrivacyPage(draft: SiteDoc, id: PageId): void {
-  const content = privacyPageContent(draft);
-  insertPage(draft, id, t("privacyPage.title"));
+  insertPolicyPage(draft, id, {
+    title: t("privacyPage.title"),
+    description: t("privacyPage.description"),
+    content: privacyPageContent(draft),
+  });
   const page = draft.pages[id];
-  if (page === undefined) return;
-  page.settings.description = t("privacyPage.description");
-  page.settings.privacy = true;
-  page.doc.content = content;
+  if (page !== undefined) page.settings.privacy = true;
 }

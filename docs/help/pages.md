@@ -28,6 +28,8 @@ Click **+** (**Add Page**):
 
 - **Blank Page…** asks for the page's name, and shows the file name it will have.
 - **Privacy Page** adds a page that tells visitors what your site collects and what you do with it. See [A privacy page](#a-privacy-page).
+- **Terms Page** adds your terms for using the site and for booking or buying from you. See [Terms and cookie pages](#terms-and-cookie-pages).
+- **Cookie Policy Page** adds a page about the cookies your site uses. It's offered while Google Analytics is on (Site Settings › Analytics). See [Terms and cookie pages](#terms-and-cookie-pages).
 - **Suggested Pages** offers ready-made pages for each kind of business, such as _Reviews_, _Gift vouchers_ or _Areas we cover_.
 
 ### The page's … menu
@@ -84,6 +86,26 @@ Its first paragraph reminds you that it's a starting point, not legal advice. Re
 The page goes in your menu like any other. To keep it off the menu, turn on **Hide from navigation** in its Page Settings, and link to it from the Footer instead.
 
 If you wrote your own privacy page, open its Page Settings and turn on **This is the site's privacy page**, so Site Check knows it's there.
+
+### Terms and cookie pages
+
+**Add Page › Terms Page** writes your terms for you to start from, using Site Settings › Contact & hours:
+
+- who runs the site (your business name, or your site's name) and your address;
+- that the site is for general information and its words and photos are yours;
+- that prices are a guide, and you confirm them before someone books or buys;
+- links to other websites, and changes to the terms;
+- how to ask a question: your email address, or your phone number.
+
+**Add Page › Cookie Policy Page** is there while Google Analytics is on. It explains cookies, then says what your site does:
+
+- with the consent banner, Google Analytics sets its cookies only if a visitor agrees, and **Cookie settings** at the bottom of each page lets them change their mind;
+- without the banner, visits are counted without cookies;
+- if your site has a video or a map, YouTube, Vimeo or the map's website may set their own cookies once it loads.
+
+Each page is written from your settings at the moment you add it. If you change them later, for example by turning the consent banner off, update the page too.
+
+Like the privacy page, each starts with a reminder that it's a starting point, not legal advice. Check every part, change what doesn't fit your business, then delete that paragraph: Site Check lists it as placeholder text until you do. To keep the pages off the menu, turn on **Hide from navigation** in their Page Settings, and link to them from the Footer.
 
 ## Page Settings
 

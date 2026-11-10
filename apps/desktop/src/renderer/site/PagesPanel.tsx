@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NameDialog } from "../shell/NameDialog.js";
+import { offersCookiePolicy } from "./cookie-page.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
   canBeDraft,
@@ -49,6 +50,7 @@ import {
   type PageSettingsChange,
   renamedFileName,
 } from "./page-actions.js";
+import type { PolicyPageKind } from "./policy-sections.js";
 import { recipeName } from "./recipe-name.js";
 
 /** What the Pages panel can do; {@link SitePanel} binds them to the editor session. */
@@ -57,8 +59,8 @@ export type PagesPanelActions = {
   add(name: string): void;
   /** Adds a page made from page recipe `recipeId` (QS-3, 3.11a). */
   addSuggested(recipeId: string): void;
-  /** Adds the site's privacy page, filled in from Site Settings (#855). */
-  addPrivacy(): void;
+  /** Adds the privacy page, the terms or the cookie policy, from Site Settings (#855, #866). */
+  addPolicy(kind: PolicyPageKind): void;
   rename(pageId: PageId, name: string): void;
   duplicate(pageId: PageId): void;
   move(pageId: PageId, direction: -1 | 1): void;
@@ -205,9 +207,18 @@ export function PagesPanel({ site, shownPageId, actions }: PagesPanelProps) {
             <DropdownMenuItem onSelect={() => menuDialog.choose({ kind: "add" })}>
               {t("pages.addBlank")}
             </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => actions.addPrivacy()}>
+            <DropdownMenuItem onSelect={() => actions.addPolicy("privacy")}>
               {t("pages.addPrivacy")}
             </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => actions.addPolicy("terms")}>
+              {t("pages.addTerms")}
+            </DropdownMenuItem>
+            {/* Only while Google Analytics is on: nothing else on the site sets cookies unasked. */}
+            {offersCookiePolicy(site) && (
+              <DropdownMenuItem onSelect={() => actions.addPolicy("cookies")}>
+                {t("pages.addCookies")}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>{t("pages.addSuggested")}</DropdownMenuSubTrigger>

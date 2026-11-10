@@ -31,6 +31,8 @@ export const panels = {
   "pages.addBlank": "Blank Page…",
   "pages.addSuggested": "Suggested Pages",
   "pages.addPrivacy": "Privacy Page",
+  "pages.addTerms": "Terms Page",
+  "pages.addCookies": "Cookie Policy Page",
   "pages.home": "Home page",
   "pages.notFound": "Shown when a page doesn't exist",
   "pages.hiddenFromNavigation": "Hidden from navigation",
