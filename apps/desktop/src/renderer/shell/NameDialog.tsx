@@ -19,12 +19,22 @@ export type NameDialogProps = {
   readonly maxLength: number;
   /** Why a name can't be used, if it can't: said under the field, with the confirm button off. */
   readonly problem?: (value: string) => string | undefined;
-  /** Called with the trimmed name; never with an empty one. */
-  readonly onSubmit: (value: string) => void;
+  /**
+   * A switch under the name, shown while `shown` says for the name typed: a page's _Keep the old
+   * address working_ when renaming it (#862). Its value goes to `onSubmit`.
+   */
+  readonly option?: {
+    readonly label: string;
+    readonly help?: (value: string) => string;
+    readonly initial: boolean;
+    readonly shown: (value: string) => boolean;
+  };
+  /** Called with the trimmed name, never an empty one, and the switch's value (false without one). */
+  readonly onSubmit: (value: string, option: boolean) => void;
   readonly onCancel: () => void;
 };
 
-type NameValues = { readonly name: string };
+type NameValues = { readonly name: string; readonly option: boolean };
 
 /**
  * Asks for a name: a page's when adding or renaming it, a folder's when moving a page into one, a
@@ -41,30 +51,45 @@ export function NameDialog({
   describe,
   maxLength,
   problem,
+  option,
   onSubmit,
   onCancel,
 }: NameDialogProps) {
-  const schema = z.string().trim().min(1).max(maxLength);
-  const spec: FormSpec<NameValues, string> = {
+  const schema = z.object({ name: z.string().trim().min(1).max(maxLength), option: z.boolean() });
+  const spec: FormSpec<NameValues, NameValues> = {
     fields: ({ name }) => {
       const typed = name.trim();
+      const shown = option !== undefined && typed !== "" && option.shown(typed);
       return [
         {
           kind: "text",
           name: "name",
-          path: "",
           label,
           maxLength,
           ...(describe === undefined || typed === "" ? {} : { help: describe(typed) }),
         },
+        ...(shown
+          ? [
+              {
+                kind: "toggle" as const,
+                name: "option",
+                label: option.label,
+                ...(option.help === undefined ? {} : { help: option.help(typed) }),
+              },
+            ]
+          : []),
       ];
     },
     schema,
-    toModel: ({ name }) => name,
+    // The switch counts only while it's shown.
+    toModel: ({ name, option: on }) => ({
+      name: name.trim(),
+      option: on && option !== undefined && option.shown(name.trim()),
+    }),
     check: ({ name }) => {
       const typed = name.trim();
       const issue = typed === "" ? undefined : problem?.(typed);
-      return issue === undefined ? [] : [{ path: [], message: issue }];
+      return issue === undefined ? [] : [{ path: ["name"], message: issue }];
     },
     validateOn: "change",
   };
@@ -75,8 +100,8 @@ export function NameDialog({
       {...(description === undefined ? {} : { description })}
       confirm={confirm}
       spec={spec}
-      initial={{ name: initialValue }}
-      onSave={(name) => onSubmit(name)}
+      initial={{ name: initialValue, option: option?.initial ?? false }}
+      onSave={(values) => onSubmit(values.name, values.option)}
       onCancel={onCancel}
     />
   );

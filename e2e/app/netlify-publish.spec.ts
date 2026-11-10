@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
-import { createSite } from "@webforge/model";
+import { createSite, insertPage, newId } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { launchDesktopApp, newUserDataDir } from "./launch.js";
 import { type MockNetlify, startMockNetlify } from "./netlify-mock.js";
@@ -253,4 +253,62 @@ test("says whether visitors reach the Netlify site or Netlify's login (4.4b's wa
   expect(await check()).toEqual({ status: "checked", protected: false });
   netlify.protect(siteId);
   expect(await check()).toEqual({ status: "checked", protected: true });
+});
+
+test("keeps a renamed page's old address working on Netlify, as one undo step with the rename (#862)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "the sign-in is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5)",
+  );
+  netlify = await startMockNetlify();
+  const siteId = await netlify.addSite("rosas-bakery");
+  const path = join(dir, "Rosa's Bakery.wforge");
+  const created = ProjectStore.create(path, { name: "Rosa's Bakery" });
+  const site = createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Not found",
+  });
+  site.settings.address.url = "https://rosas-bakery.netlify.app";
+  insertPage(site, newId("page"), "About us");
+  created.saveSite(site);
+  created.close();
+  app = await launchDesktopApp({
+    userDataDir: userData,
+    args: [path],
+    env: { WEBFORGE_E2E_NETLIFY_API: netlify.apiBase },
+  });
+  const page = await app.firstWindow();
+  await page.waitForLoadState("domcontentloaded");
+  await expect(page.getByRole("button", { name: "Publish…", exact: true })).toBeEnabled();
+  const { sessionId, destinationId } = await addNetlify(page, netlify, siteId);
+  expect(await publish(page, sessionId, destinationId)).toMatchObject({ status: "published" });
+  expect(netlify.file(siteId, "about-us.html")).toContain("About us");
+
+  // Renamed, its file name follows: the old address is kept, in the same undo step.
+  await page
+    .getByRole("region", { name: "Right panels" })
+    .getByRole("tab", { name: "Site" })
+    .click();
+  await page
+    .getByRole("list", { name: "Pages" })
+    .getByRole("button", { name: "Actions for About us" })
+    .click();
+  await page.getByRole("menuitem", { name: "Rename…" }).click();
+  const rename = page.getByRole("dialog", { name: "Rename Page" });
+  await rename.getByRole("textbox", { name: "Page name" }).fill("About");
+  await rename.getByRole("checkbox", { name: "Keep the old address working" }).check();
+  await rename.getByRole("button", { name: "Rename" }).click();
+  await expect(rename).toHaveCount(0);
+
+  expect(await publish(page, sessionId, destinationId)).toMatchObject({ status: "published" });
+  expect(netlify.file(siteId, "about.html")).toContain("About");
+  expect(netlify.file(siteId, "about-us.html")).toContain(
+    '<meta http-equiv="refresh" content="0; url=about.html">',
+  );
+  expect(netlify.file(siteId, "about-us.html")).toContain(
+    '<link rel="canonical" href="https://rosas-bakery.netlify.app/about.html">',
+  );
+  expect(netlify.file(siteId, "_redirects")).toContain("/about-us.html /about.html 301!");
 });

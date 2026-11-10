@@ -280,6 +280,19 @@ test.describe("exported site from disk", () => {
     }
   });
 
+  test("sends a renamed page's old address on to the page, from disk too (#862)", async ({
+    page,
+  }) => {
+    await open(page, "our-story.html");
+
+    await expect(page).toHaveURL(/\/about\.html$/);
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("About Rosa's Bakery");
+    // On Netlify, a real redirect: forced past the page at the old address.
+    const rules = readFileSync(join(EXPORTED_SITE_DIR, "_redirects"), "utf8");
+    expect(rules).toContain("/our-story.html /about.html 301!");
+    expect(rules).toContain("/our-story /about.html 301!");
+  });
+
   test("opens and closes the mobile menu with its button and Escape", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await open(page, "index.html");
