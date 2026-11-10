@@ -53,6 +53,13 @@ function NavLinkItem({ link }: { readonly link: NavLink }) {
 }
 
 /**
+ * A dropdown's own item while one of its links is current: the current page's, or the section in
+ * view's (5.10), in the menu's active colours, as daisyUI draws a current link.
+ */
+const CURRENT_DROPDOWN_CLASSES =
+  "[details:has([aria-current])>&]:bg-(--menu-active-bg) [details:has([aria-current])>&]:text-(--menu-active-fg)";
+
+/**
  * The navigation's items (F-ED-17): links, buttons and dropdowns. A dropdown is a `<details>`,
  * which its `<summary>` opens without the script too; `webforge.js`'s "menu" behaviour keeps one
  * open at a time and closes it with Escape, a click outside or focus moving on.
@@ -67,7 +74,7 @@ function NavItems({ items }: { readonly items: readonly NavItem[] }) {
         return (
           <li key={item.id ?? `${index}:${item.label}`}>
             <details className="site-submenu" data-wf-dropdown="">
-              <summary>{item.label}</summary>
+              <summary className={CURRENT_DROPDOWN_CLASSES}>{item.label}</summary>
               <ul className="md:z-20 md:w-48">
                 {item.children.map((link, childIndex) => (
                   <NavLinkItem key={link.id ?? `${childIndex}:${link.href}`} link={link} />

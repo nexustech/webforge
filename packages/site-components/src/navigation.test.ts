@@ -1,6 +1,6 @@
 import type { MediaId, MenuDoc, MenuItemId, PageId, SitePage } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { type NavigationSite, navigationFor } from "./navigation.js";
+import { menuLinksToSections, type NavigationSite, navigationFor } from "./navigation.js";
 
 const id = (value: string) => value as MenuItemId;
 const page = (pageId: string) => pageId as PageId;
@@ -216,5 +216,66 @@ describe("navigationFor (F-ED-17)", () => {
       },
     ]);
     expect(broken).toEqual(["gone"]);
+  });
+});
+
+describe("menuLinksToSections (5.10)", () => {
+  const home = "home" as PageId;
+  const id = (name: string) => name as MenuItemId;
+  const menu = (items: MenuDoc["items"]): MenuDoc => ({ follows: "custom", items });
+
+  it("finds a section item, or a link or button to a page's section, in a dropdown too", () => {
+    const toSection = { kind: "page" as const, pageId: home, anchor: "prices" };
+
+    expect(
+      menuLinksToSections(
+        menu([{ id: id("s"), kind: "section", label: "Prices", link: toSection, hidden: false }]),
+      ),
+    ).toBe(true);
+    expect(
+      menuLinksToSections(
+        menu([
+          {
+            id: id("g"),
+            kind: "group",
+            label: "More",
+            hidden: false,
+            children: [
+              { id: id("b"), kind: "button", label: "Book", link: toSection, hidden: false },
+            ],
+          },
+        ]),
+      ),
+    ).toBe(true);
+  });
+
+  it("finds none in page items, links elsewhere, hidden items or no menu", () => {
+    const toSection = { kind: "page" as const, pageId: home, anchor: "prices" };
+
+    expect(menuLinksToSections(undefined)).toBe(false);
+    expect(
+      menuLinksToSections(
+        menu([
+          { id: id("p"), kind: "page", pageId: home, hidden: false },
+          {
+            id: id("l"),
+            kind: "link",
+            label: "Map",
+            link: { kind: "url", href: "https://example.com" },
+            hidden: false,
+          },
+          { id: id("h"), kind: "section", label: "Prices", link: toSection, hidden: true },
+          {
+            id: id("g"),
+            kind: "group",
+            label: "More",
+            hidden: true,
+            children: [
+              { id: id("s"), kind: "section", label: "Prices", link: toSection, hidden: false },
+            ],
+          },
+        ]),
+      ),
+    ).toBe(false);
   });
 });

@@ -1,6 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
-  anchorIdSchema,
+  anchorFrom,
   copiedAnchor,
   copyHolding,
   expandSharedCopies,
@@ -11,7 +11,6 @@ import {
   pageAnchors,
   type SiteDoc,
   sameJson,
-  slugify,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { elementName } from "../editor/labels.js";
@@ -107,15 +106,7 @@ function clashes(site: SiteDoc, pageId: PageId, nodeId: string): (anchor: string
  * (on every page with a copy, for a section in a copy of a shared section).
  */
 export function newAnchorFor(site: SiteDoc, pageId: PageId, nodeId: string, label: string): string {
-  const base = slugify(label);
-  const start = /^[a-z]/.test(base) ? base : `section-${base}`;
-  const stem = start.slice(0, 56).replace(/-+$/, "");
-  const taken = clashes(site, pageId, nodeId);
-  let anchor = stem;
-  for (let number = 2; taken(anchor) || !anchorIdSchema.safeParse(anchor).success; number++) {
-    anchor = `${stem}-${number}`;
-  }
-  return anchor;
+  return anchorFrom(label, clashes(site, pageId, nodeId));
 }
 
 /**

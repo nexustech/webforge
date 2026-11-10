@@ -133,3 +133,58 @@ test("starts a site from the quick start's answers: the business, a look, pages,
   expect(titles).not.toContain("About us");
   expect(titles).toContain("Visit us");
 });
+
+test("starts a one-page site: every page a section of the home page, the menu scrolling to each (GA10, 5.9)", async () => {
+  app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
+  const page = await app.firstWindow();
+  await expect(page.getByRole("heading", { name: "Get started" })).toBeVisible({
+    timeout: APP_START_TIMEOUT_MS,
+  });
+  await stubFileDialogs(app, join(dir, "Brightside.wforge"));
+
+  await page.getByRole("button", { name: "Start a site…", exact: true }).click();
+  const quickStart = page.getByRole("dialog", { name: "Start a site" });
+  await quickStart.getByRole("radio", { name: "Trades" }).click();
+  await quickStart.getByRole("textbox", { name: "Business or site name" }).fill("Brightside");
+  await quickStart.getByRole("button", { name: "Next" }).click();
+  await quickStart.getByRole("button", { name: "Next" }).click();
+
+  // Pages: one page, of every page the template has.
+  await expect(quickStart.getByRole("radio", { name: /^Separate pages/ })).toBeChecked();
+  await quickStart.getByText("One page", { exact: true }).click();
+  await expect(quickStart.getByRole("radio", { name: /^One page/ })).toBeChecked();
+  await quickStart.getByRole("button", { name: "Create site" }).click();
+
+  const canvas = page.frameLocator(".editor__canvas iframe");
+  await expect(canvas.locator("h1").first()).toBeVisible({ timeout: OPEN_WAIT });
+  const { site } = (await page.evaluate(() =>
+    (window as unknown as RendererWindow).webforge.project.readSite(),
+  )) as {
+    site: {
+      homePageId: string;
+      pageOrder: string[];
+      menu: {
+        follows: string;
+        items: { kind: string; label?: string; link?: { pageId: string; anchor?: string } }[];
+      };
+      layout: { header: { type: string; props: { sticky?: boolean } }[] };
+    };
+  };
+  // The home page and "Page not found"; a section link for each of the template's other pages.
+  expect(site.pageOrder).toHaveLength(2);
+  expect(site.menu.follows).toBe("custom");
+  const sections = site.menu.items.filter((item) => item.kind === "section");
+  expect(sections.map((item) => item.label)).toEqual([
+    "Services",
+    "Our work",
+    "About us",
+    "Contact",
+  ]);
+  for (const item of sections) expect(item.link?.pageId).toBe(site.homePageId);
+  expect(site.layout.header[0]?.props.sticky).toBe(true);
+  // The Contact page's section, now on the home page, where the menu's link goes.
+  const contact = canvas.locator(`#${sections.at(-1)?.link?.anchor}`);
+  await contact.scrollIntoViewIfNeeded();
+  await expect(contact).toBeVisible();
+  await expect(contact.getByText("Get a free quote")).toBeVisible();
+});
