@@ -1,6 +1,6 @@
 # Template photos: 2.15a (Café/Restaurant, Salon/Beauty, Trades)
 
-**Status:** ✅ Decided (product owner, 26 Oct 2026; see _Decision_ below). The approved photos replace the generated placeholders in the Café, Salon and Trades templates, as **960 px copies** for now, to be replaced by full-size ones later.
+**Status:** ✅ Decided (product owner, 26 Oct 2026; see _Decision_ below). The approved photos replace the generated placeholders in the Café, Salon and Trades templates. They went in as 960 px copies, and were replaced by the full-size photos on 10 Nov 2026 ([#480](https://github.com/nexustech/webforge/issues/480); see _Full-size photos_ below).
 **Decision:** Q6, refined 26 Oct 2026 ([spec/04 §9](../../spec/04-implementation-plan.md#9-open-questions), [spec/02 §7](../../spec/02-mvp-spec.md)): templates ship with generated placeholders (CC0, made by `tools/src/template-placeholder.ts`), and each batch shortlists real CC0 or public-domain photos.
 
 ## How these were found
@@ -74,7 +74,7 @@ The same way as [stream C's shortlist](template-photos-c.md) and [2.15b's](templ
    - Salon 2: Barbershop Chair, Skitter Photo.
    - Salon 3: Blonde Hair, Alex Holyoake.
 2. **Portraits.** The rows that may show a face (Salon 1, 4, 6 and 8) use their first choices.
-   - **Trades 5 (the fuse box) keeps its generated picture.** Both its first choice (Breaker Electrical) and its alternate (Wires Electrical) have been taken down from StockSnap since the shortlist: their pages now redirect to StockSnap's home page, so neither still says CC0. Openverse still lists them. The full-size swap can look for another photo.
+   - **Trades 5 (the fuse box) keeps its generated picture.** Both its first choice (Breaker Electrical) and its alternate (Wires Electrical) have been taken down from StockSnap since the shortlist: their pages now redirect to StockSnap's home page, so neither still says CC0. Openverse still lists them. The full-size swap found another (10 Nov 2026): see _Full-size photos_ below.
 3. **Captions and alt text** are reworded to fit each photo, Trades 3's socket included:
 
    | Template | Gallery captions now                                                                         |
@@ -94,3 +94,12 @@ The same way as [stream C's shortlist](template-photos-c.md) and [2.15b's](templ
   - 4:5 from landscape photos: 512 × 640.
 - **Licence check.** Openverse lists each photo as CC0 1.0. All 26 photos used have StockSnap pages that, opened in a browser on 26 Oct 2026, still say CC0.
 - **What `images.json` records:** the StockSnap page as each image's source, with the Openverse record it was fetched through, plus its author and `CC0-1.0`.
+
+## Full-size photos (10 Nov 2026)
+
+[#480](https://github.com/nexustech/webforge/issues/480) replaced the 960 px copies with StockSnap's full-size downloads.
+
+- **Downloaded in the built-in browser,** with the product owner's OK (10 Nov 2026), from its StockSnap page's _Free Download_ button. No Cloudflare check came up. Each page, opened on 10 Nov 2026, still said CC0.
+- **The same framing.** Each crop is the region the 960 px copy showed, found in the full-size photo and cut from it, then scaled down to its placeholder's size: 1200 × 1200 for the heroes, 1000 × 750 for the 4:3 gallery photos, 1200 × 900 for the About photos, 900 × 1125 for the 4:5 ones and 800 × 800 for the team. None is upscaled. They are JPEGs at quality 82, without the camera's metadata.
+- **Trades 5 (the fuse box)** is now [One row of ABB 230V 16A fuses in fuse box in German shop, 2024](https://commons.wikimedia.org/wiki/File:One_row_of_ABB_230V_16A_fuses_in_fuse_box_in_German_shop,_2024.jpg) (3418×2649) by Pittigrilli, CC0 1.0 on Wikimedia Commons, chosen by the product owner from four CC0 candidates (StockSnap has no fuse box left). Its caption, "New fuse box, Armley", stays; its alt text is "A row of labelled circuit breakers in a new consumer unit".
+- **What `images.json` records:** each photo's page (StockSnap's, or Wikimedia Commons' for the fuse box) as its source, its author and `CC0-1.0`.
