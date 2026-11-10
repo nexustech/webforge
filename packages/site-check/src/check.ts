@@ -23,6 +23,7 @@ import {
 } from "./rules/found.js";
 import { contrastRule, underlinedTextRule } from "./rules/look.js";
 import { largeFilesRule, largeImagesRule, templateImagesRule } from "./rules/media.js";
+import { notesRule } from "./rules/notes.js";
 import { deviceNamesRule, homePageRule, pageTitlesRule, webAddressRule } from "./rules/pages.js";
 import { privacyPageRule } from "./rules/privacy.js";
 import type {
@@ -59,6 +60,7 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   templateImagesRule,
   underlinedTextRule,
   outdatedYearRule,
+  notesRule,
   pastAnnouncementRule,
   searchHiddenRule,
   webAddressRule,

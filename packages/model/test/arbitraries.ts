@@ -116,6 +116,8 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
         draft: fc.boolean(),
         // Its text hidden while editing, or not published (UX-23, #864).
         textShown: fc.constantFrom("hidden", "editorHidden"),
+        // A note on its text (UX-17, #868).
+        note: anyText(60).filter((note) => note.length > 0),
         updated: fc
           .date({ min: new Date("2026-01-01"), max: new Date("2030-12-31"), noInvalidDate: true })
           .map((day) => day.toISOString().slice(0, 10)),
@@ -123,33 +125,36 @@ const pageEntry = (pageId: string, kind: PageEntry["kind"], pageSlug: string, in
       },
       { requiredKeys: ["title", "hideHeader", "hideFooter", "hideFromNavigation", "text"] },
     )
-    .map(({ title, navLabel, description, text, updated, textShown, ...flags }): PageEntry => {
-      const entry: PageEntry = {
-        id: pageId as PageId,
-        kind,
-        slug: pageSlug,
-        title,
-        settings: { ...flags, ...(description === undefined ? {} : { description }) },
-        doc: {
-          root: { props: {} },
-          content: [
-            {
-              type: "Text",
-              props: {
-                id: `${pageId}-text`,
-                text,
-                ...(textShown === undefined ? {} : { [textShown]: true }),
+    .map(
+      ({ title, navLabel, description, text, updated, textShown, note, ...flags }): PageEntry => {
+        const entry: PageEntry = {
+          id: pageId as PageId,
+          kind,
+          slug: pageSlug,
+          title,
+          settings: { ...flags, ...(description === undefined ? {} : { description }) },
+          doc: {
+            root: { props: {} },
+            content: [
+              {
+                type: "Text",
+                props: {
+                  id: `${pageId}-text`,
+                  text,
+                  ...(textShown === undefined ? {} : { [textShown]: true }),
+                  ...(note === undefined ? {} : { note }),
+                },
               },
-            },
-          ],
-        },
-      };
-      if (navLabel !== undefined) entry.navLabel = navLabel;
-      // The day it last changed (3.15), as an edit dates a page.
-      if (updated !== undefined) entry.updated = updated;
-      if (inFolder !== undefined) entry.folder = inFolder;
-      return entry;
-    });
+            ],
+          },
+        };
+        if (navLabel !== undefined) entry.navLabel = navLabel;
+        // The day it last changed (3.15), as an edit dates a page.
+        if (updated !== undefined) entry.updated = updated;
+        if (inFolder !== undefined) entry.folder = inFolder;
+        return entry;
+      },
+    );
 
 const imageMeta = (mediaId: string, name: string): fc.Arbitrary<MediaMeta> =>
   fc

@@ -25,6 +25,7 @@ import {
   LockIcon,
   PencilIcon,
   SparklesIcon,
+  StickyNoteIcon,
   Trash2Icon,
 } from "lucide-react";
 import {
@@ -442,6 +443,8 @@ export function LayersPanel({
                 aria-setsize={row.siblings}
                 aria-posinset={row.index + 1}
                 aria-expanded={hasChildren ? row.expanded : undefined}
+                // A note's text (UX-17), read after the name: the name only says it has one.
+                aria-description={layer.note}
                 tabIndex={focusable ? 0 : -1}
                 {...rowDrag.rowProps(row, draggable)}
                 className={cn(
@@ -571,6 +574,16 @@ export function LayersPanel({
                       <>
                         {layer.name} <span className="text-muted-foreground">{layer.kind}</span>
                       </>
+                    )}
+                    {layer.note !== undefined && (
+                      // A note for the person (UX-17, #868), after the name, its text on pointing at it.
+                      <span title={layer.note}>
+                        <StickyNoteIcon
+                          aria-hidden
+                          className="ml-1 inline size-3.5 align-[-2px] text-warning"
+                        />
+                        <span className="sr-only">{`, ${t("notes.marker")}`}</span>
+                      </span>
                     )}
                   </span>
                 )}

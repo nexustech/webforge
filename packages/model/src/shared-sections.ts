@@ -4,6 +4,7 @@ import {
   isNodeDoc,
   LAYER_NAME_MAX,
   type LayoutDoc,
+  NOTE_MAX,
   type NodeAdvanced,
   type NodeDoc,
   nodeDocSchema,
@@ -47,6 +48,8 @@ export type SharedCopyNode = {
     readonly hidden?: boolean | undefined;
     /** *Hide while editing* in Layers (UX-23): this copy not drawn on the canvas, and exported. */
     readonly editorHidden?: boolean | undefined;
+    /** Its note (UX-17): the copy's own, shown for its section, as its Layers name is. */
+    readonly note?: string | undefined;
     /** Kept as any node may have it; the copy shows its shared section's own. */
     readonly advanced?: NodeAdvanced | undefined;
   };
@@ -85,6 +88,7 @@ const sharedCopyNodeSchema = z.strictObject({
     layerName: z.string().max(LAYER_NAME_MAX).optional(),
     hidden: z.boolean().optional(),
     editorHidden: z.boolean().optional(),
+    note: z.string().min(1).max(NOTE_MAX).optional(),
     advanced: storedAdvancedSchema.optional(),
   }),
 });
@@ -249,8 +253,9 @@ function inCopy(node: NodeDoc, copy: SharedCopyNode): NodeDoc {
  */
 function shownBy(section: NodeDoc, copy: SharedCopyNode): NodeDoc {
   const shown = inCopy(section, copy);
-  const { layerName, hidden, editorHidden } = copy.props;
+  const { layerName, hidden, editorHidden, note } = copy.props;
   if (layerName !== undefined) shown.props.layerName = layerName;
+  if (note !== undefined) shown.props.note = note;
   if (hidden === true) shown.props.hidden = true;
   if (editorHidden === true) shown.props.editorHidden = true;
   return shown;

@@ -47,7 +47,7 @@ import {
   runHistoryCommand,
   TEXT_SESSION_GRACE_MS,
 } from "./editor-session.js";
-import { copyLayer, setLayerShown } from "./layers.js";
+import { copyLayer, setLayerNote, setLayerShown } from "./layers.js";
 import { applyListChange, editableList, listItems } from "./list-edit.js";
 import { withoutOverride, withValueAt } from "./responsive-value.js";
 import {
@@ -786,6 +786,15 @@ const commands: fc.Arbitrary<Command>[] = [
     run: (ctx) => {
       ctx.connection.flush();
       setDraftPage(ctx.session, ctx.pages[at % ctx.pages.length] as PageId, draft);
+    },
+  })),
+  // A note on the selected element (UX-17, #868): added, changed or resolved (empty).
+  fc.constantFrom("Swap this photo", "  Check the date ", "").map((note) => ({
+    name: `note the selected layer "${note}"`,
+    run: (ctx) => {
+      ctx.connection.flush();
+      const { nodeId } = ctx.session.ui.getState();
+      if (nodeId !== null) setLayerNote(ctx.session, nodeId, note);
     },
   })),
   fc.constant<Command>({
