@@ -75,7 +75,12 @@ export function createCanvasStyles(
     classCatalogue: async (theme) => {
       const outcome = await request({ type: "class-catalogue", theme });
       return outcome?.type === "class-catalogue"
-        ? { status: "loaded", classes: outcome.classes, variants: outcome.variants }
+        ? {
+            status: "loaded",
+            classes: outcome.classes,
+            variants: outcome.variants,
+            variables: outcome.variables,
+          }
         : { status: "failed" };
     },
     classCss: async (theme, classes) => {

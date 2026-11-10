@@ -43,6 +43,7 @@ export function createClassCatalogues(
             type: "class-catalogue",
             classes: [...catalogue.classes],
             variants: [...catalogue.variants],
+            variables: [...catalogue.variables],
           }
         : { type: "class-css", css: catalogue.cssFor(job.classes) };
     } catch {

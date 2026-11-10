@@ -40,6 +40,15 @@ describe("unusedCssRules (CT-8, 6.8)", () => {
     expect(findIn(unusedCssRulesRule, site, { usedSelectors })).toEqual([]);
   });
 
+  it("reports a selector once, however many rules repeat it, so each key is unique", () => {
+    const site = withCss(siteWith(), {
+      css: ".promo { color: red; } @media (min-width: 40rem) { .promo { color: blue; } }",
+    });
+
+    const found = findIn(unusedCssRulesRule, site, { usedSelectors });
+    expect(found.map((each) => each.key)).toEqual(["code/css/.promo"]);
+  });
+
   it("checks nothing without the site's classes", () => {
     const site = withCss(siteWith(), { css: ".buton { }" });
 

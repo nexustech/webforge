@@ -1,20 +1,17 @@
 import { toast } from "@webforge/editor-ui";
 import type { ReadonlyStore } from "@webforge/history";
 import { plural, t } from "@webforge/i18n";
-import { anchorsIn } from "@webforge/model";
 import { FileCode2Icon } from "lucide-react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import type { CanvasApi } from "../../shared/ipc/canvas.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { siteSelectors } from "../editor/site-css.js";
-import { useClassCatalogue } from "../fields/index.js";
+import { type ClassCatalogue, useClassCatalogue } from "../fields/index.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
-import { type CssSiteData, themeVariables } from "./css-language.js";
 import { StylesheetPanel } from "./StylesheetPanel.js";
 import {
   editStylesheet,
@@ -23,6 +20,7 @@ import {
   stylesheetOf,
   targetSelected,
 } from "./stylesheet-actions.js";
+import { type StylesheetFacts, stylesheetFacts } from "./stylesheet-data.js";
 
 /** The Stylesheet panel's id. */
 export const STYLESHEET_PANEL_ID = "stylesheet";
@@ -38,9 +36,6 @@ export type StylesheetPanelOptions = {
   /** Whether the owner has confirmed the addresses Settings allow (#649). */
   readonly allowListConfirmed: ReadonlyStore<boolean>;
 };
-
-/** A class name a selector can have as it is: no variant (`md:`) or brackets to escape. */
-const PLAIN_CLASS = /^-?[a-z_][\w-]*$/i;
 
 /** The panel's two commands on the selected element, in the command box. */
 const STYLESHEET_COMMANDS = {
@@ -88,53 +83,36 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   };
 
   /**
-   * The completion's data, worked out again only when what it's made of changes: the pages, the
-   * Header and Footer, the shared sections, the theme or the catalogue. Typing in the stylesheet
-   * changes none of them.
+   * What completion and lint read of the site, worked out again only when what it's made of
+   * changes: the pages, the Header and Footer, the shared sections, the theme or the catalogue.
+   * Typing in the stylesheet changes none of them, so a pause in it renders nothing again.
    */
-  let completionData: {
-    readonly made: readonly unknown[];
-    readonly data: CssSiteData;
-  } | null = null;
-  const siteDataFor = (catalogue: readonly string[] | undefined): CssSiteData => {
+  let siteFacts: (StylesheetFacts & { readonly made: readonly unknown[] }) | null = null;
+  const factsFor = (catalogue: ClassCatalogue | undefined) => {
     const site = session.history.document.getState();
     const made = [site.pages, site.layout, site.sharedSections, site.theme, catalogue];
-    if (completionData?.made.every((part, index) => part === made[index]) === true) {
-      return completionData.data;
-    }
-    const used = siteSelectors(site, session);
-    const anchors = new Set<string>();
-    for (const page of Object.values(site.pages)) anchorsIn(page.doc.content, anchors);
-    // Plain names only: `md:flex` or `[&_a]:underline` would need escaping in a selector.
-    const plain = (name: string) => PLAIN_CLASS.test(name);
-    const data = {
-      variables: themeVariables(site.theme),
-      classes: [
-        ...new Set([...[...used.classes].filter(plain).sort(), ...(catalogue ?? []).filter(plain)]),
-      ],
-      ids: [...anchors].sort(),
-    };
-    completionData = { made, data };
-    return data;
+    if (siteFacts?.made.every((part, index) => part === made[index]) === true) return siteFacts;
+    siteFacts = { made, ...stylesheetFacts(site, session, catalogue) };
+    return siteFacts;
   };
 
   function Stylesheet() {
     const theme = useStore(session.history.document, (site) => site.theme);
     const hasSelection = useStore(session.ui, (ui) => ui.nodeId !== null);
     const at = useStore(caret);
-    const catalogue = useClassCatalogue(options.canvas, theme)?.classes;
+    const catalogue = useClassCatalogue(options.canvas, theme);
     return (
       <StylesheetPanel
         css={stylesheetOf(session.history.document.getState())}
         followCss={(show) => session.history.document.subscribe((site) => show(stylesheetOf(site)))}
         onChange={(next) => editStylesheet(session, next)}
-        siteData={() => siteDataFor(catalogue)}
+        siteData={() => factsFor(catalogue).data}
         lintData={() => {
-          const site = session.history.document.getState();
+          const facts = factsFor(catalogue);
           return {
-            site,
-            variables: themeVariables(site.theme),
-            used: siteSelectors(site, session),
+            site: session.history.document.getState(),
+            variables: facts.data.variables,
+            used: facts.used,
             allowListConfirmed: options.allowListConfirmed.getState(),
           };
         }}

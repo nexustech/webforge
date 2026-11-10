@@ -2,6 +2,8 @@
 export type ClassCatalogue = {
   readonly classes: readonly string[];
   readonly variants: readonly string[];
+  /** Tailwind's theme variables (`--text-xl`), for the Stylesheet's lint (6.8); none in tests. */
+  readonly variables?: readonly string[];
 };
 
 /** The most suggestions the field shows at once: enough to choose from, quick to draw. */

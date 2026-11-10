@@ -242,6 +242,7 @@ const classesOutcomeSchema = z.discriminatedUnion("type", [
     type: z.literal("class-catalogue"),
     classes: z.array(classNameSchema).max(100_000),
     variants: z.array(classNameSchema).max(1_000),
+    variables: cssVariableNamesSchema.max(10_000),
   }),
   z.strictObject({
     type: z.literal("class-css"),

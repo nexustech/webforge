@@ -90,6 +90,7 @@ export function cssSiteCompletion(
 /** What the stylesheet's lint reads besides the CSS: the site, and what its pages have. */
 export type CssLintData = {
   readonly site: SiteDoc;
+  /** The variables the site's styles define: the theme's, then Tailwind's (`--text-xl`). */
   readonly variables: readonly string[];
   /** The classes and ids the pages have; left out, rules aren't checked for matching nothing. */
   readonly used?: UsedSelectors | undefined;
@@ -117,9 +118,10 @@ export function cssDiagnostics(css: string, tree: Tree, data: CssLintData): Diag
     },
   });
   const known = new Set([...data.variables, ...ownVariables(css)]);
-  for (const match of css.matchAll(/var\(\s*(--[\w-]+)/g)) {
+  // A name with a fallback after it is read knowing it may be missing, as Tailwind's own are.
+  for (const match of css.matchAll(/var\(\s*(--[\w-]+)\s*(,?)/g)) {
     const name = match[1] ?? "";
-    if (known.has(name)) continue;
+    if (known.has(name) || match[2] === "," || name.startsWith("--tw-")) continue;
     const from = (match.index ?? 0) + match[0].indexOf(name);
     found.push({
       from,

@@ -45,6 +45,8 @@ const classCatalogueResultSchema = z.discriminatedUnion("status", [
     status: z.literal("loaded"),
     classes: z.array(classNameSchema).max(100_000),
     variants: z.array(classNameSchema).max(1_000),
+    /** Tailwind's theme variables (`--text-xl`), for the stylesheet's lint (6.8). */
+    variables: cssVariableNamesSchema.max(10_000),
   }),
   z.strictObject({ status: z.literal("failed") }),
 ]);

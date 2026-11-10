@@ -26,7 +26,7 @@ export function withCodeWords(site: SiteDoc, used: UsedSelectors): UsedSelectors
  * section since deleted. A *Tip*: the CSS still works, and a script of the site's own may add the
  * class later, so a class or id its code names (Custom Code, `custom.js`) counts as used. Checked
  * only with the classes and ids the pages have (`usedSelectors`), which take rendering to know.
- * Each finding names the rule's selector.
+ * Each finding names a selector, once.
  */
 export const unusedCssRulesRule: CheckRule = {
   id: "unusedCssRules",
@@ -34,11 +34,14 @@ export const unusedCssRulesRule: CheckRule = {
   check: ({ site, usedSelectors }) => {
     if (usedSelectors === undefined || site.code.css.trim() === "") return [];
     const used = withCodeWords(site, usedSelectors);
-    return unusedCssRules(site.code.css, used).map(
-      (rule): Finding => ({
-        key: `code/css/${rule.selector}`,
+    // One finding for each selector, however many rules repeat it (at the top level and in a
+    // @media): the key names it, and Ignore covers all of them.
+    const selectors = new Set(unusedCssRules(site.code.css, used).map((rule) => rule.selector));
+    return [...selectors].map(
+      (selector): Finding => ({
+        key: `code/css/${selector}`,
         place: { kind: "code", part: "css" },
-        values: { selector: rule.selector },
+        values: { selector },
       }),
     );
   },

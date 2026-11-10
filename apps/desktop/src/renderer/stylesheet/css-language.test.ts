@@ -96,6 +96,25 @@ describe("cssDiagnostics (CT-8)", () => {
     ]);
   });
 
+  it("knows Tailwind's variables, --tw-*, and a variable read with a fallback", () => {
+    // A look moved to CSS reads them (`text-xl`'s rule); `--text-xl` is Tailwind's, in the list.
+    const moved = [
+      ".heading {",
+      "  font-size: var(--text-xl);",
+      "  line-height: var(--tw-leading, var(--text-xl--line-height));",
+      "  border-radius: var(--radius-lg, 0.5rem);",
+      "}",
+    ].join("\n");
+    const found = cssDiagnostics(moved, cssLanguage.parser.parse(moved), {
+      site,
+      variables: ["--color-primary", "--text-xl", "--text-xl--line-height"],
+      used: { classes: new Set(["heading"]), ids: new Set<string>() },
+      allowListConfirmed: false,
+    });
+
+    expect(found).toEqual([]);
+  });
+
   it("finds what isn't valid CSS", () => {
     expect(lint(".hero { color: red; } }").map((each) => each.severity)).toContain("error");
   });
