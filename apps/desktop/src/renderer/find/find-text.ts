@@ -31,17 +31,17 @@ export type FindOptions = {
 };
 
 /** The page fields searched: its title, its label in the menu and its description (F-SET-2). */
-export type PageField = "title" | "navLabel" | "description";
+type PageField = "title" | "navLabel" | "description";
 
 /** Site Settings' business details searched: free text the owner writes (F-SET-1). */
-export const SETTINGS_FIELDS = [
+const SETTINGS_FIELDS = [
   "general.name",
   "general.description",
   "contact.businessName",
   "contact.address",
   "contact.openingHoursNote",
 ] as const;
-export type SettingsField = (typeof SETTINGS_FIELDS)[number];
+type SettingsField = (typeof SETTINGS_FIELDS)[number];
 
 /** A piece of text the owner wrote: a field of an element, of a page or of Site Settings. */
 export type TextSpot =
