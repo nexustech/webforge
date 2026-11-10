@@ -182,6 +182,27 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
     expect(request?.themeTokens?.preset).toBe("bistro");
   });
 
+  it("makes one page of the pages kept, when asked (GA10, 5.9)", async () => {
+    const { onCreate } = await render();
+    await click(t("template.category.food"));
+    await goTo(t("quickStart.step.pages"));
+
+    // Separate pages, as before, unless One page is chosen.
+    expect(check(t("quickStart.layout.pages"))?.checked).toBe(true);
+    expect(document.body.textContent).toContain(t("quickStart.pagesText"));
+    await act(async () => check(t("quickStart.layout.onePage"))?.click());
+    expect(check(t("quickStart.layout.onePage"))?.checked).toBe(true);
+    expect(document.body.textContent).toContain(t("quickStart.onePageText"));
+    await act(async () => check("Visit us")?.click());
+    await click(t("quickStart.create"));
+
+    expect(onCreate.mock.calls[0]?.[0].pages).toEqual({
+      leaveOut: ["cafe-visit"],
+      recipes: [],
+      onePage: true,
+    });
+  });
+
   it("keeps a template of the type chosen, and changes one of another type", async () => {
     await render({ initialStep: "look" });
 

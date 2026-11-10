@@ -19,6 +19,7 @@ import {
   documentsLinkedBy,
   ENLARGE_ATTRIBUTE,
   mediaUsedBy,
+  menuLinksToSections,
   type RenderedPage,
   type ResolvedImage,
   renderPage,
@@ -362,6 +363,10 @@ export async function* buildEvents(
     }
     if (analytics !== undefined) {
       behaviours = [...behaviours, "consent" as const].sort();
+    }
+    // The section in view, on a page the menu links into (5.10, GA10).
+    if (menuLinksToSections(site.menu)) {
+      behaviours = [...behaviours, "section-spy" as const].sort();
     }
     mediaIds = mediaUsedBy(allNodes(site), library);
     documentIds = documentsLinkedBy(allNodes(site), library);

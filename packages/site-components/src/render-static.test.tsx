@@ -215,9 +215,10 @@ describe("renderNodesToHtml", () => {
       ],
     });
 
-    // The dropdown: a <details>, which opens and says whether it is open without the script too.
+    // The dropdown: a <details>, which opens and says whether it is open without the script too,
+    // its own item drawn as current while one of its links is (5.10).
     expect(html).toContain(
-      '<details class="site-submenu" data-wf-dropdown=""><summary>Visit us</summary><ul class="md:z-20 md:w-48"',
+      '<details class="site-submenu" data-wf-dropdown=""><summary class="[details:has([aria-current])&gt;&amp;]:bg-(--menu-active-bg) [details:has([aria-current])&gt;&amp;]:text-(--menu-active-fg)">Visit us</summary><ul class="md:z-20 md:w-48"',
     );
     expect(html).toContain('<a href="index.html#questions">Questions</a>');
     expect(html).toContain(
