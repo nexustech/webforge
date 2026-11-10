@@ -1,4 +1,4 @@
-import { DEFAULT_THEME, TEXT_MARK_CLASSES } from "@webforge/model";
+import { cssVariablesUsed, DEFAULT_THEME, TEXT_MARK_CLASSES } from "@webforge/model";
 import {
   appearanceBoxClasses,
   EDITOR_RENDER_CONTEXT,
@@ -8,6 +8,7 @@ import {
   siteLibrary,
 } from "@webforge/site-components";
 import { beforeAll, describe, expect, it } from "vitest";
+import { loadClassCatalogue } from "./class-catalogue.js";
 import { buildSiteCss, classCandidates, createStyleCompiler, siteStylesheetSource } from "./css.js";
 import { loadNodeResources } from "./node-resources.js";
 import type { PipelineResources } from "./resources.js";
@@ -402,5 +403,39 @@ describe("createStyleCompiler (3.1)", () => {
 
     // Still the preview's compiler, which has seen the class: a new one wouldn't have it.
     expect(await styles.css(options(some), true)).toContain(".skew-x-12");
+  });
+});
+
+describe("the variables the site's own stylesheet reads (6.8)", () => {
+  it("keeps a look moved to CSS styled once no class on the site uses its theme variables", async () => {
+    // The only element with these classes had its look moved to custom.css: its classes are gone.
+    const catalogue = await loadClassCatalogue(resources, DEFAULT_THEME);
+    const moved = catalogue
+      .cssFor(["text-xl", "shadow-lg!"])
+      .map((rule) => rule ?? "")
+      .join("\n");
+    const site = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates: ["flex"],
+      fontsUrl: "",
+      keptVariables: cssVariablesUsed(moved),
+    });
+
+    // Every variable the moved rules read without a fallback is defined: by the site's CSS, or by
+    // an @property the rules brought with them.
+    const defined = (name: string) =>
+      site.includes(`${name}:`) || moved.includes(`@property ${name} {`);
+    const needed = [...moved.matchAll(/var\((--[\w-]+)\)/g)].map((match) => match[1] ?? "");
+    expect(needed).toContain("--text-xl");
+    expect(needed.filter((name) => !defined(name))).toEqual([]);
+    expect(site).toContain("--text-xl--line-height:");
+
+    // Without them, the font size would be lost.
+    const without = await buildSiteCss(resources, {
+      theme: DEFAULT_THEME,
+      candidates: ["flex"],
+      fontsUrl: "",
+    });
+    expect(without).not.toContain("--text-xl:");
   });
 });

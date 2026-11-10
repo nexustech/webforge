@@ -3,7 +3,7 @@ import type { EditorMode, ViewOptions } from "../canvas-engine.js";
 import { keepElementsGroups } from "./element-roles.js";
 import { keepElementsEnabled } from "./enabled-elements.js";
 import { NO_VIEW_OPTIONS } from "./engine-support.js";
-import { applySiteStyles, type SiteStyles } from "./site-styles.js";
+import { applyCustomCss, applySiteStyles, type SiteStyles } from "./site-styles.js";
 import { applyViewOptions } from "./view-options.js";
 
 /** What the canvas's document says it is (#465): the site's name as its title, and its language. */
@@ -26,6 +26,8 @@ export type CanvasFrame = {
   setMode(mode: EditorMode): void;
   setViewOptions(options: ViewOptions): void;
   setSiteStyles(styles: SiteStyles): void;
+  /** The site's own `custom.css` (6.8), after the site's CSS. */
+  setCustomCss(css: string): void;
   setDocumentInfo(info: CanvasDocumentInfo): void;
   /** The canvas went away. */
   forget(): void;
@@ -37,6 +39,7 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
   let mode: EditorMode = "design";
   let viewOptions: ViewOptions = NO_VIEW_OPTIONS;
   let siteStyles: SiteStyles | null = null;
+  let customCss = "";
   /** Stops keeping the canvas's elements enabled; set in Content mode (see `keepElementsEnabled`). */
   let stopKeepingEnabled: (() => void) | null = null;
   let stopViewOptions: (() => void) | null = null;
@@ -76,6 +79,7 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
     attach(document) {
       frameDocument = document ?? null;
       if (document !== undefined && siteStyles !== null) applySiteStyles(document, siteStyles);
+      if (document !== undefined && customCss !== "") applyCustomCss(document, customCss);
       if (document !== undefined && documentInfo !== null)
         applyDocumentInfo(document, documentInfo);
       stopGroups?.();
@@ -103,6 +107,10 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
     setSiteStyles(styles) {
       siteStyles = styles;
       if (frameDocument !== null) applySiteStyles(frameDocument, styles);
+    },
+    setCustomCss(css) {
+      customCss = css;
+      if (frameDocument !== null) applyCustomCss(frameDocument, css);
     },
     setDocumentInfo(info) {
       documentInfo = info;

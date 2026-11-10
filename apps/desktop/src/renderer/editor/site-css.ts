@@ -1,5 +1,13 @@
 import type { CanvasEngine, Unsubscribe } from "@webforge/engine";
-import type { NodeDoc, PageId, SiteDoc } from "@webforge/model";
+import {
+  anchorsIn,
+  cssVariablesUsed,
+  expandSharedCopies,
+  type NodeDoc,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
+import type { UsedSelectors } from "@webforge/site-check";
 import {
   BOX_CLASS_SAFELIST,
   EDITOR_RENDER_CONTEXT,
@@ -22,7 +30,11 @@ export const SITE_CSS_DEBOUNCE_MS = 300;
  */
 const classesOfList = new WeakMap<
   readonly NodeDoc[],
-  { readonly looks: RenderContext["looks"]; readonly classes: readonly string[] }
+  {
+    readonly looks: RenderContext["looks"];
+    readonly classes: readonly string[];
+    readonly ids: readonly string[];
+  }
 >();
 
 /** The image every placed image renders as while classes are collected: which one never matters. */
@@ -72,28 +84,42 @@ export function classesOfHtml(html: string): string[] {
   return found.filter((name) => name !== "");
 }
 
-function listClasses(
+/** The ids in static `html`, in order. */
+const idsOfHtml = (html: string): string[] =>
+  [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => (match[1] ?? "").replaceAll("&amp;", "&"));
+
+/** The classes and ids of `nodes` as they render, collected once for each list (see above). */
+function listCollect(
+  nodes: readonly NodeDoc[],
+  session: Pick<EditorSession, "library">,
+  looks: RenderContext["looks"],
+): { readonly classes: readonly string[]; readonly ids: readonly string[] } {
+  const kept = classesOfList.get(nodes);
+  // Drawn with the theme's looks (3.12): a change to them collects the list's classes again.
+  if (kept !== undefined && kept.looks === looks) return kept;
+  // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
+  const html = CLASS_CONTEXTS.map((context) =>
+    renderNodesToHtml(
+      nodes,
+      session.library,
+      looks === undefined ? context : { ...context, looks },
+      { includeHidden: true },
+    ),
+  );
+  const collected = {
+    looks,
+    classes: html.flatMap(classesOfHtml),
+    ids: html.flatMap(idsOfHtml),
+  };
+  classesOfList.set(nodes, collected);
+  return collected;
+}
+
+const listClasses = (
   nodes: readonly NodeDoc[],
   session: EditorSession,
   looks: RenderContext["looks"],
-): readonly string[] {
-  const kept = classesOfList.get(nodes);
-  // Drawn with the theme's looks (3.12): a change to them collects the list's classes again.
-  if (kept !== undefined && kept.looks === looks) return kept.classes;
-  // Hidden elements too: the canvas shows them, dimmed, so it needs their styles (#142).
-  const classes = CLASS_CONTEXTS.flatMap((context) =>
-    classesOfHtml(
-      renderNodesToHtml(
-        nodes,
-        session.library,
-        looks === undefined ? context : { ...context, looks },
-        { includeHidden: true },
-      ),
-    ),
-  );
-  classesOfList.set(nodes, { looks, classes });
-  return classes;
-}
+): readonly string[] => listCollect(nodes, session, looks).classes;
 
 /** Whether `nodes`' classes are collected already, with the theme's `looks`. */
 function listCollected(nodes: readonly NodeDoc[], looks: RenderContext["looks"]): boolean {
@@ -132,6 +158,49 @@ export function siteClasses(site: SiteDoc, session: EditorSession): string[] {
 }
 
 /**
+ * What every exported page has around its content (the export's page template): the classes of its
+ * `<body>` and `<main>`, and `<main>`'s id, which the skip link goes to.
+ */
+const PAGE_SHELL = {
+  classes: [
+    "flex",
+    "min-h-screen",
+    "flex-col",
+    "bg-base-100",
+    "font-sans",
+    "text-base-content",
+    "flex-1",
+  ],
+  ids: ["main"],
+} as const;
+
+/**
+ * The classes and ids the site's pages, Header, Footer and shared sections have (6.8), and the page
+ * template's, for
+ * Site Check's rules of `custom.css` that match nothing. Renders what isn't collected yet, as
+ * {@link siteClasses} does.
+ */
+export function siteSelectors(
+  site: SiteDoc,
+  session: Pick<EditorSession, "library">,
+): UsedSelectors {
+  const classes = new Set<string>(PAGE_SHELL.classes);
+  const ids = new Set<string>(PAGE_SHELL.ids);
+  // Each shared section once, as its copies on the pages show it.
+  const shared = Object.values(site.sharedSections).map((entry) => [entry.section]);
+  for (const nodes of [...siteLists(site), ...shared]) {
+    const collected = listCollect(nodes, session, site.theme.looks);
+    for (const name of collected.classes) classes.add(name);
+    for (const id of collected.ids) ids.add(id);
+  }
+  // A copy's anchors are its own (`hours-2`) where the page has the section twice.
+  for (const page of Object.values(site.pages)) {
+    anchorsIn(expandSharedCopies(page.doc.content, site.sharedSections), ids);
+  }
+  return { classes, ids };
+}
+
+/**
  * The classes of what the canvas shows now (#895): the Header, the Footer and the page `pageId`,
  * with the spacing classes, as {@link siteClasses} has them.
  */
@@ -162,8 +231,15 @@ export function connectSiteCss(
   session: EditorSession,
   compile: CompileCanvasCss,
 ): Unsubscribe {
-  /** What was last sent to compile: the theme (any token change makes a new one) and the classes. */
-  let requested: { readonly theme: unknown; readonly classes: string } | null = null;
+  /**
+   * What was last sent to compile: the theme (any token change makes a new one), the classes and
+   * the variables the site's own custom.css reads (6.8).
+   */
+  let requested: {
+    readonly theme: unknown;
+    readonly classes: string;
+    readonly variables: string;
+  } | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   /** The next page's collection while every page's classes aren't collected yet. */
   let collecting: ReturnType<typeof setTimeout> | null = null;
@@ -214,12 +290,19 @@ export function connectSiteCss(
         collecting = setTimeout(collectNext, 0);
       }
     }
-    // Any change to the theme's tokens compiles again (2.1), as a change to the classes does.
+    // Any change to the theme's tokens compiles again (2.1), as a change to the classes does, or
+    // to what custom.css reads of the theme: a look moved to CSS needs its variables (6.8).
     const classes = candidates.join(" ");
-    if (requested?.theme === site.theme && requested.classes === classes) {
+    const used = cssVariablesUsed(site.code.css);
+    const variables = used.join(" ");
+    if (
+      requested?.theme === site.theme &&
+      requested.classes === classes &&
+      requested.variables === variables
+    ) {
       return;
     }
-    const key = { theme: site.theme, classes };
+    const key = { theme: site.theme, classes, variables };
     requested = key;
     const failed = () => {
       // Try again after the next change, even if the classes stay the same.
@@ -227,7 +310,11 @@ export function connectSiteCss(
     };
     sent += 1;
     const order = sent;
-    compile({ theme: site.theme, candidates }).then((result) => {
+    compile({
+      theme: site.theme,
+      candidates,
+      ...(used.length === 0 ? {} : { variables: used }),
+    }).then((result) => {
       if (result.status === "failed") {
         failed();
       } else if (!stopped && order > shown) {

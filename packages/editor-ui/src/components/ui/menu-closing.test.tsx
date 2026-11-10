@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { AnimationEvent } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { useMenuClosing } from "./menu-closing.js";
+import { focusMovedAway, useMenuClosing } from "./menu-closing.js";
 
 afterEach(cleanup);
 
@@ -101,5 +101,34 @@ describe("useMenuClosing (#689)", () => {
     const moved = new Event("focusoutside", { cancelable: true });
     focus(moved);
     expect(ownFocus).toHaveBeenCalledWith(moved);
+  });
+});
+
+describe("focusMovedAway (6.8)", () => {
+  /** Whether a menu closing with `focus` focused keeps the focus there. */
+  function keepsFocus(focus: string | null): boolean {
+    document.body.innerHTML = [
+      '<div data-slot="menubar"><button>View</button></div>',
+      '<div data-slot="menubar-content"><div role="menuitem" tabindex="-1">Stylesheet</div></div>',
+      "<textarea></textarea>",
+    ].join("");
+    if (focus !== null) document.querySelector<HTMLElement>(focus)?.focus();
+    const content = document.querySelector('[data-slot="menubar-content"]');
+    let kept = false;
+    content?.addEventListener("closing", (event) => {
+      kept = focusMovedAway(event);
+    });
+    content?.dispatchEvent(new Event("closing"));
+    return kept;
+  }
+
+  it("keeps the focus where a command or a click put it, outside the menu bar", () => {
+    expect(keepsFocus("textarea")).toBe(true);
+  });
+
+  it("lets it go back to the menu's title from the menu, the menu bar or nothing", () => {
+    expect(keepsFocus(null)).toBe(false);
+    expect(keepsFocus('[role="menuitem"]')).toBe(false);
+    expect(keepsFocus("button")).toBe(false);
   });
 });

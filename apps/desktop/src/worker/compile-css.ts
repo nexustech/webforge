@@ -21,6 +21,7 @@ export async function compileCss(
       fontsUrl: CANVAS_FONT_URL,
       fonts: [...FONT_CATALOGUE, ...job.families],
       evenSections: [CANVAS_EVEN_SECTIONS],
+      keptVariables: job.variables ?? [],
     });
     return { type: "css", css, bodyClass: BODY_CLASS };
   } catch {

@@ -177,7 +177,7 @@ export const site = {
   "site.code.open": "Custom Code…",
   "site.code.css": "Stylesheet (custom.css)",
   "site.code.cssHint":
-    "CSS for every page, after the site's own styles, so it wins over the theme.",
+    "CSS for every page, after the site's own styles, so it wins over the theme. View › Stylesheet edits it with suggestions, and shows it on the page as you type.",
   "site.code.js": "Script (custom.js)",
   "site.code.jsHint":
     "JavaScript for every page of the exported site, after {appName}'s own. It never runs in the editor.",

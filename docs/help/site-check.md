@@ -54,6 +54,7 @@ Each check shows a dot: green when all is well, amber or red when something need
 | **Year on your site**          | Your text uses `{year}`, which your published site shows as the year you last published it in, and that year has passed. The finding says which year it shows       | **Fix** opens [Publish](publish.md): publish again to show this year                                      |
 | **Announcement bar**           | Your [Announcement bar](header-and-footer.md#announcement-bar)'s last day has passed. Your site hides it then, but visitors still see it for a moment on every page | Delete it, or give it a new last day                                                                      |
 | **Notes**                      | A section or element has a [note](editing-on-the-page.md#notes) you haven't resolved yet. The finding shows the note                                                | Do what it says, then **Resolve Note** from the item's right-click menu                                   |
+| **Stylesheet rules**           | A rule in your [stylesheet](stylesheet.md) is for a class or id nothing on your site has: often a typing slip, or a rule for something since deleted                | Correct the class, or delete the rule                                                                     |
 
 ## Being found
 

@@ -109,11 +109,22 @@ const publishJobSchema = z.strictObject({
 /** Publishes a site to a destination. */
 export type PublishJob = z.infer<typeof publishJobSchema>;
 
+/** Custom property names (`--text-xl`), plain ones only, as `cssVariablesUsed` gives them (6.8). */
+export const cssVariableNamesSchema = z
+  .array(
+    z
+      .string()
+      .max(200)
+      .regex(/^--[\w-]+$/),
+  )
+  .max(1000);
+
 /** Compiles the site CSS for the canvas; a long-lived worker answers many of these (1.12). */
 const compileCssJobSchema = z.strictObject({
   type: z.literal("compile-css"),
   theme: themeSchema,
   candidates: z.array(z.string()),
+  variables: cssVariableNamesSchema.optional(),
   families: downloadedFamiliesSchema,
 });
 
@@ -231,6 +242,7 @@ const classesOutcomeSchema = z.discriminatedUnion("type", [
     type: z.literal("class-catalogue"),
     classes: z.array(classNameSchema).max(100_000),
     variants: z.array(classNameSchema).max(1_000),
+    variables: cssVariableNamesSchema.max(10_000),
   }),
   z.strictObject({
     type: z.literal("class-css"),

@@ -29,7 +29,30 @@ export type SiteCssOptions = {
    * for the canvas's CSS only (`themeCss`'s `evenSections`, A19). An export gives none.
    */
   readonly evenSections?: readonly string[];
+  /**
+   * The custom properties the site's own `custom.css` reads (6.8, `cssVariablesUsed`): the theme's
+   * that no class uses are kept for it, as a look moved to CSS needs them (`--text-xl`).
+   */
+  readonly keptVariables?: readonly string[];
 };
+
+/**
+ * A rule that reads `variables`, so Tailwind keeps the theme's among them, which it otherwise
+ * leaves out when no class uses them (6.8). Its one property is the stylesheet's own and means
+ * nothing to a page. Names that aren't plain are left out.
+ */
+function keptVariablesRule(variables: readonly string[]): string {
+  const plain = variables.filter((name) => /^--[\w-]+$/.test(name));
+  if (plain.length === 0) return "";
+  return [
+    "/* The theme's variables the site's own stylesheet (custom.css) uses, kept for it. */",
+    "@layer theme {",
+    "  :root {",
+    `    --wf-custom-css-uses: ${plain.map((name) => `var(${name})`).join(" ")};`,
+    "  }",
+    "}",
+  ].join("\n");
+}
 
 /**
  * An `@font-face` for each of `faces` (2.2): a variable font's weight range, and the subset's
@@ -92,6 +115,7 @@ export function siteStylesheetSource(
       options.theme,
       options.evenSections === undefined ? {} : { evenSections: options.evenSections },
     ),
+    keptVariablesRule(options.keptVariables ?? []),
     // The accent font's files only when something is set in it (3.22, C8).
     fontFaces(
       fontFacesFor(options.theme, options.fonts, {
