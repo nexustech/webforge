@@ -32,6 +32,23 @@ function setUp(nodes: NodeDoc[], css = "") {
   return { session, labels, node, css: () => stylesheetOf(session.history.document.getState()) };
 }
 
+/**
+ * The styles worker: the item with `rootClass` on its element, and a rule for each class the
+ * site's styles have, which are `known`: a Tailwind utility, a daisyUI component, a look's class.
+ */
+const worker = (rootClass: string, known: readonly string[]): ItemCssApi => ({
+  itemHtml: vi.fn(async () => ({
+    status: "html" as const,
+    html: `<!-- item --><h2 class="${rootClass}"><span>Opening times</span></h2>`,
+  })),
+  classCss: vi.fn(async (_theme, classes: readonly string[]) => ({
+    status: "css" as const,
+    css: classes.map((name) =>
+      known.includes(name) ? `.${CSS.escape(name)} {\n  --set: 1;\n}` : null,
+    ),
+  })),
+});
+
 afterEach(() => {
   vi.useRealTimers();
 });
@@ -68,27 +85,27 @@ describe("editStylesheet (CT-8, 6.8)", () => {
 });
 
 describe("targetSelected (CT-8)", () => {
-  it("adds a rule for the element's anchor, the caret inside it", () => {
+  it("adds a rule for the element's anchor, the caret inside it", async () => {
     const { session, labels, css } = setUp(
       [heading("hours", { advanced: { anchorId: "hours" } })],
       ".a {}",
     );
     session.select("hours");
 
-    const done = targetSelected(session);
+    const done = await targetSelected(session, worker("", []));
 
     expect(css()).toBe(".a {}\n\n#hours {\n  \n}\n");
     expect(done).toEqual({ caret: ".a {}\n\n#hours {\n  ".length });
     expect(labels()).toEqual(["Targeted Heading in the stylesheet"]);
   });
 
-  it("gives an element without an anchor a class of its own, in the same step", () => {
+  it("gives an element without an anchor a class of its own, in the same step", async () => {
     const { session, labels, css, node } = setUp([
       heading("hours", { advanced: { className: "big" } }),
     ]);
     session.select("hours");
 
-    targetSelected(session);
+    await targetSelected(session, worker("", []));
 
     expect(node("hours")?.props.advanced).toEqual({ className: "big heading" });
     expect(css()).toBe(".heading {\n  \n}\n");
@@ -98,25 +115,44 @@ describe("targetSelected (CT-8)", () => {
     expect(css()).toBe("");
   });
 
-  it("says to select an element when none is", () => {
-    const { session } = setUp([heading("hours")]);
+  it("never writes a class the site's styles have, or one the site or stylesheet uses", async () => {
+    // `heading` and `heading-2` make rules (as `hero` or `shadow-lg` would), `heading-3` is used on
+    // the site, and the stylesheet names `heading-4`.
+    const { session, css, node } = setUp(
+      [heading("hours"), heading("other", { advanced: { className: "heading-3" } })],
+      ".heading-4 { color: red; }",
+    );
+    session.select("hours");
+    const styles = worker("", ["heading", "heading-2"]);
 
-    expect(targetSelected(session)).toEqual({ refused: "Select an element on the canvas first." });
+    await targetSelected(session, styles);
+
+    expect(node("hours")?.props.advanced).toEqual({ className: "heading-5" });
+    expect(css()).toContain(".heading-5 {");
+    expect(styles.classCss).not.toHaveBeenCalledWith(expect.anything(), ["heading-3"]);
+  });
+
+  it("makes no class when the styles can't be asked, nor when nothing is selected", async () => {
+    const { session, labels } = setUp([heading("hours")]);
+    const failing: ItemCssApi = {
+      ...worker("", []),
+      classCss: vi.fn(async () => ({ status: "failed" as const })),
+    };
+
+    expect(await targetSelected(session, failing)).toEqual({
+      refused: "Select an element on the canvas first.",
+    });
+    session.select("hours");
+    expect(await targetSelected(session, failing)).toEqual({
+      refused: "A class for this element couldn't be made. Try again.",
+    });
+    expect(labels()).toEqual([]);
   });
 });
 
 describe("moveLookToCss (CT-8)", () => {
-  /** The worker: the item with `rootClass` on its element, and each class's rule. */
-  const api = (rootClass: string): ItemCssApi => ({
-    itemHtml: vi.fn(async () => ({
-      status: "html" as const,
-      html: `<!-- item --><h2 class="${rootClass}"><span>Opening times</span></h2>`,
-    })),
-    classCss: vi.fn(async (_theme, classes: readonly string[]) => ({
-      status: "css" as const,
-      css: classes.map((name) => `.${CSS.escape(name)} {\n  --set: 1;\n}`),
-    })),
-  });
+  const LOOK = ["text-3xl", "rounded-box!", "opacity-50!"];
+  const api = (rootClass: string) => worker(rootClass, LOOK);
 
   it("turns the element's own look into a rule under a class of its own, in one step", async () => {
     const { session, labels, css, node } = setUp(

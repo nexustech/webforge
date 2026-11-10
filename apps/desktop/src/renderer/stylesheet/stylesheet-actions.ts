@@ -42,17 +42,38 @@ function selected(session: StylesheetSession): FieldTarget | undefined {
 const ownClasses = (advanced: NodeAdvanced | undefined): string[] =>
   (advanced?.className ?? "").split(/\s+/).filter((name) => name !== "");
 
+/** How many names {@link newClassFor} tries before it gives up: one per clash it meets. */
+const NAME_TRIES = 10;
+
 /**
- * A class for `target` no element of the site has and the stylesheet doesn't name yet, after the
- * element's name: `opening-times`, `heading-2`.
+ * A class for `target` that no element of the site has, the stylesheet doesn't name yet, and the
+ * site's styles don't make a rule for, after the element's name: `opening-times`, `heading-2`. A
+ * name the styles know (`hero`, a daisyUI component; `shadow-lg`, a utility) would bring their
+ * look with it, so each name is compiled first, as the export would, and numbered while it makes a
+ * rule. Undefined when the styles can't be asked, or every name tried clashes.
  */
-function newClassFor(session: StylesheetSession, target: FieldTarget, site: SiteDoc): string {
+async function newClassFor(
+  session: StylesheetSession,
+  target: FieldTarget,
+  site: SiteDoc,
+  api: Pick<ItemCssApi, "classCss">,
+): Promise<string | undefined> {
   const { classes } = siteSelectors(site, session);
   const named = new Set(site.code.css.match(/[\w-]+/g));
-  return anchorFrom(
-    elementName(target.node, session.library, site.sharedSections),
-    (name) => classes.has(name) || named.has(name),
-  );
+  const clashes = new Set<string>();
+  const name = elementName(target.node, session.library, site.sharedSections);
+  for (let tries = 0; tries < NAME_TRIES; tries++) {
+    const candidate = anchorFrom(
+      name,
+      (each) => classes.has(each) || named.has(each) || clashes.has(each),
+    );
+    const compiled = await api.classCss(site.theme, [candidate]);
+    if (compiled.status === "failed") return undefined;
+    const css = compiled.css[0];
+    if (css === null || css === undefined || css.trim() === "") return candidate;
+    clashes.add(candidate);
+  }
+  return undefined;
 }
 
 /** `css` with `rule` after it, on a line of its own, and where the rule starts. */
@@ -68,23 +89,34 @@ export type Targeted = { readonly caret: number } | { readonly refused: string }
 /**
  * *Target this element* (CT-8): adds an empty rule for the selected element at the end of the
  * stylesheet, for the caret to go into. Its selector is the element's anchor (`#opening-times`),
- * or a class of its own, made from its name and added to its *CSS classes* in the same step. A
- * class already its own, made this way, is used again.
+ * or a class of its own ({@link newClassFor}), added to its *CSS classes* in the same undo step.
  */
-export function targetSelected(session: StylesheetSession): Targeted {
+export async function targetSelected(
+  session: StylesheetSession,
+  api: Pick<ItemCssApi, "classCss">,
+): Promise<Targeted> {
   const target = selected(session);
   if (target === undefined) return { refused: t("stylesheet.target.none") };
   const site = session.history.document.getState();
-  const advanced = target.node.props.advanced as NodeAdvanced | undefined;
-  const anchor = advanced?.anchorId;
-  const name = elementName(target.node, session.library, site.sharedSections);
-  const className = anchor === undefined ? newClassFor(session, target, site) : undefined;
+  const anchor = (target.node.props.advanced as NodeAdvanced | undefined)?.anchorId;
+  let className: string | undefined;
+  if (anchor === undefined) {
+    className = await newClassFor(session, target, site, api);
+    if (className === undefined) return { refused: t("stylesheet.target.failed") };
+  }
+  // The element as it is once the name is found: the person may have changed it meanwhile.
+  const now = selected(session);
+  if (now === undefined || now.node.props.id !== target.node.props.id) {
+    return { refused: t("stylesheet.target.none") };
+  }
+  const current = session.history.document.getState();
+  const name = elementName(now.node, session.library, current.sharedSections);
   const selector = className === undefined ? `#${anchor}` : `.${className}`;
-  const { css, at } = appended(stylesheetOf(site), `${selector} {\n  \n}`);
+  const { css, at } = appended(stylesheetOf(current), `${selector} {\n  \n}`);
   session.edit("props", t("stylesheet.history.target", { element: name }), (draft) => {
     draft.code.css = css;
     if (className !== undefined) {
-      target.write(draft, "advanced", (stored) => {
+      now.write(draft, "advanced", (stored) => {
         const own = stored as NodeAdvanced | undefined;
         return { ...own, className: [...ownClasses(own), className].join(" ") };
       });
@@ -138,15 +170,16 @@ export async function moveLookToCss(session: StylesheetSession, api: ItemCssApi)
   const classes = [...new Set(movable.flatMap((group) => split(group.classes)))];
   const compiled = await api.classCss(site.theme, classes);
   if (compiled.status === "failed") return { refused: t("stylesheet.move.failed") };
+  const className = await newClassFor(session, target, site, api);
+  if (className === undefined) return { refused: t("stylesheet.move.failed") };
 
-  // Each class's rule, under the element's own class instead.
+  // Each class's rule, under the element's own class instead, on the element as it is now.
   const now = session.history.document.getState();
   const current = selected(session);
   if (current === undefined || current.node.props.id !== target.node.props.id) {
     return { refused: t("stylesheet.target.none") };
   }
   const advanced = current.node.props.advanced as NodeAdvanced | undefined;
-  const className = newClassFor(session, current, now);
   const rules = classes.flatMap((name, index) => {
     const css = compiled.css[index];
     if (css === null || css === undefined || css.trim() === "") return [];

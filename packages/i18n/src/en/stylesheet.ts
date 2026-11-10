@@ -11,6 +11,7 @@ export const stylesheet = {
   "stylesheet.history.target": "Targeted {element} in the stylesheet",
   "stylesheet.history.move": "Moved {element}'s look to CSS",
   "stylesheet.target.none": "Select an element on the canvas first.",
+  "stylesheet.target.failed": "A class for this element couldn't be made. Try again.",
   "stylesheet.move.nothing":
     "This element has no look of its own to move: its Style tab follows the theme.",
   "stylesheet.move.inside":

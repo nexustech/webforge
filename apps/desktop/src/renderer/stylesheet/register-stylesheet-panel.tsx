@@ -46,7 +46,7 @@ const STYLESHEET_COMMANDS = {
 } as const;
 
 /**
- * Puts the Stylesheet panel (CT-8, 6.8) in the bottom drawer, in Advanced mode only, with *Site ›
+ * Puts the Stylesheet panel (CT-8, 6.8) in the bottom drawer, in Advanced mode only, with *View ›
  * Stylesheet* to show it and *Target this element* and *Move this look to CSS* in the command box.
  * Returns a function that removes them.
  */
@@ -59,13 +59,16 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
     panels.show(STYLESHEET_PANEL_ID);
   };
   const target = () => {
-    const done = targetSelected(session);
-    if ("refused" in done) {
-      toast(done.refused);
-      return;
-    }
-    show();
-    caret.setState({ at: done.caret }, true);
+    targetSelected(session, options.canvas())
+      .then((done) => {
+        if ("refused" in done) {
+          toast(done.refused);
+          return;
+        }
+        show();
+        caret.setState({ at: done.caret }, true);
+      })
+      .catch((error: unknown) => reportFailure("stylesheet.target", error));
   };
   const moveLook = () => {
     moveLookToCss(session, options.canvas())

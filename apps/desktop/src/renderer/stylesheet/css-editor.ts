@@ -75,7 +75,8 @@ const editorTheme = EditorView.theme({
 /** CSS's parts in the window's text colours, each readable on its background in both themes. */
 const highlighting = HighlightStyle.define([
   { tag: tags.comment, color: "var(--color-muted-foreground)", fontStyle: "italic" },
-  { tag: [tags.className, tags.labelName, tags.tagName], color: "var(--color-primary)" },
+  // Selectors stand out by weight: the main colour is too light to read as text on the panel.
+  { tag: [tags.className, tags.labelName, tags.tagName], fontWeight: "600" },
   { tag: [tags.propertyName, tags.variableName], color: "var(--color-foreground)" },
   { tag: [tags.string, tags.url], color: "var(--color-success)" },
   { tag: [tags.number, tags.unit, tags.color], color: "var(--color-destructive-text)" },

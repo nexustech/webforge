@@ -36,7 +36,7 @@ Each pause in your typing is one step for **Undo** (Ctrl+Z, Cmd+Z on a Mac), nam
 
 Select an element on the page, then:
 
-- **Target This Element** adds a rule for it at the end of your stylesheet, ready to type into. An element with an **Anchor ID** is styled by it (`#opening-times`). Any other element gets a class named after it, added to its **CSS classes** in the Advanced tab (`.opening-times`).
+- **Target This Element** adds a rule for it at the end of your stylesheet, ready to type into. An element with an **Anchor ID** is styled by it (`#opening-times`). Any other element gets a class named after it, added to its **CSS classes** in the Advanced tab (`.opening-times`), and numbered (`.heading-2`) when {appName}'s styles or your site already use that name. A copy of the element, made with **Duplicate** or Copy and Paste, keeps the class, so it keeps the look too; an anchor isn't copied.
 - **Move This Look to CSS** turns the element's own Style settings, such as its colours, corners and border, into a rule in your stylesheet, and clears them from its Style tab. The rule uses your theme's variables, so it still follows your theme. Settings that style a part inside the element, such as a section's title, stay in its Style tab.
 
 Both are one step for Undo.
