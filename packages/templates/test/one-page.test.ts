@@ -100,6 +100,7 @@ describe("mergeIntoHome on the Trades template", () => {
     const labels = site.menu.items.slice(1).map((item) => item.label);
     const pages = trades.template.site.pageOrder.slice(1, -1);
     expect(labels).toEqual([...pages.map((id) => trades.template.site.pages[id]?.title), "FAQ"]);
+    expect(site.menu.items.filter((item) => item.hidden)).toEqual([]);
     const anchors = home
       .map((node) => node.props.advanced?.anchorId)
       .filter((anchor) => anchor !== undefined);
