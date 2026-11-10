@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { RESERVED_SLUGS, slugSchema } from "./site-doc.js";
-import { slugify, uniqueSlug } from "./slugs.js";
+import { anchorFrom, slugify, uniqueSlug } from "./slugs.js";
 
 describe("slugify (X1)", () => {
   it.each([
@@ -62,5 +62,16 @@ describe("uniqueSlug", () => {
         }
       }),
     );
+  });
+});
+
+describe("anchorFrom", () => {
+  it("makes an anchor from a name, starting with a letter, numbered while it's taken", () => {
+    const taken = new Set(["opening-times", "opening-times-2"]);
+
+    expect(anchorFrom("Our menu", () => false)).toBe("our-menu");
+    expect(anchorFrom("2024 prices", () => false)).toBe("section-2024-prices");
+    expect(anchorFrom("Opening times", (anchor) => taken.has(anchor))).toBe("opening-times-3");
+    expect(anchorFrom("x".repeat(80), () => false)).toHaveLength(56);
   });
 });

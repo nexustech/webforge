@@ -300,7 +300,7 @@ export type {
   SiteSnapshot,
 } from "./site-snapshot.js";
 export { siteSnapshotSchema } from "./site-snapshot.js";
-export { slugify, uniqueSlug } from "./slugs.js";
+export { anchorFrom, slugify, uniqueSlug } from "./slugs.js";
 export type { TextMarkRole, UnderlinedText } from "./text-marks.js";
 export {
   findUnderlinedText,
