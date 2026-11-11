@@ -3,8 +3,9 @@ import {
   bindingOf,
   type ElementPlace,
   eachElement,
+  elementsAt,
   findNode,
-  isPageIn,
+  itemBindingOf,
   MENU_LABEL_MAX,
   type MenuItem,
   type MenuLeaf,
@@ -49,7 +50,10 @@ type SettingsField = (typeof SETTINGS_FIELDS)[number];
 export type TextSpot =
   | {
       readonly kind: "element";
-      /** Where the element is kept: a page, the Header, the Footer or a shared section. */
+      /**
+       * Where the element is kept: a page, the Header, the Footer, a shared section or a Blog's
+       * design (#936).
+       */
       readonly on: ElementPlace;
       readonly nodeId: string;
       /** The component's type, to name it. */
@@ -279,8 +283,10 @@ function* textFieldsOf(
     if (def.kind === "text" || def.kind === "richtext") {
       if (typeof value !== "string" || def.sensitive === true || isAddress(value)) continue;
       if (NOT_PROSE.has(`${node.type}.${name}`)) continue;
-      // A field showing a Site Settings value: what it shows is found in Site Settings.
+      // A field showing a Site Settings value: what it shows is found in Site Settings. One
+      // showing a post's field (#936) shows each post's: found in its Page Settings or title.
       if (bindingOf(node.props.bindings, name) !== undefined) continue;
+      if (itemBindingOf(node.props.bindings, name) !== undefined) continue;
       yield { field: name, value, rich: TEXT_KINDS[def.kind] };
     } else if (def.kind === "list" && Array.isArray(value)) {
       for (const item of value) {
@@ -303,7 +309,10 @@ function* textFieldsOf(
   }
 }
 
-/** Where a spot is listed: its page, the Header, the Footer, a shared section or Site Settings. */
+/**
+ * Where a spot is listed: its page, the Header, the Footer, a shared section, a Blog's design or
+ * Site Settings.
+ */
 export type SpotGroup = PageId | "header" | "footer" | "menu" | "settings" | string;
 
 export function groupOf(spot: TextSpot): SpotGroup {
@@ -322,8 +331,9 @@ export function groupOf(spot: TextSpot): SpotGroup {
 /**
  * Everything `options` finds in the site, in the list's order: each page in the Pages panel's
  * order (its own fields, then its elements), the Header, the Footer, the menu's labels, each
- * shared section once (never its copies, so it's replaced once) and Site Settings. Hidden elements are searched: their
- * text is still the owner's.
+ * shared section once (never its copies, so it's replaced once), each Blog's design once (#936),
+ * not once for each post, and Site Settings. Hidden elements are searched: their text is still the
+ * owner's.
  */
 export function findInSite(
   site: SiteDoc,
@@ -373,18 +383,10 @@ export function findInSite(
     "footer",
     "menu",
     ...Object.keys(site.sharedSections),
+    ...Object.keys(site.collections),
     "settings",
   ];
   return order.flatMap((group) => byGroup.get(group) ?? []);
-}
-
-/** The elements kept at `on` in `draft`: a page's, the Header's, the Footer's, a shared section. */
-export function elementsAt(draft: SiteDoc, on: ElementPlace): NodeDoc[] {
-  if (on === "header") return draft.layout.header;
-  if (on === "footer") return draft.layout.footer;
-  if (isPageIn(draft.pages, on)) return draft.pages[on]?.doc.content ?? [];
-  const shared = Object.values(draft.sharedSections).find((entry) => entry.id === on);
-  return shared === undefined ? [] : [shared.section];
 }
 
 /**

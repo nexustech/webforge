@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   copiedNodeId,
+  designAt,
   isDeviceName,
   isNodeDoc,
   isPageIn,
@@ -16,6 +17,7 @@ import {
 import type { Finding, FindingPlace, SearchGuide } from "@webforge/site-check";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
+import { postShowingDesign } from "../editor/shared-layout.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -81,7 +83,8 @@ function pageWithCopy(
 
 /**
  * Shows where `place` is (F-CHK-1, click to jump): an element selected on its page (the Header's
- * and Footer's on the page shown, a shared section's in a copy of it), a page in the Pages panel,
+ * and Footer's on the page shown, a shared section's in a copy of it, a Blog design's on a post),
+ * a page in the Pages panel,
  * Media, the Theme panel, Site Settings at the web address, Contact or Search engines, or Settings'
  * Custom Code. A guide opens its page in the browser.
  */
@@ -91,10 +94,19 @@ export function jumpTo(place: FindingPlace, actions: SiteCheckActions): void {
   switch (place.kind) {
     case "element": {
       const { on, nodeId } = place;
+      const design = designAt(site, on);
       if (on === "header" || on === "footer") {
         session.select(nodeId);
       } else if (isPageIn(site.pages, on)) {
         session.showPage(on);
+        session.select(nodeId);
+      } else if (design !== undefined) {
+        const post = postShowingDesign(site, design.id, session.ui.getState().pageId);
+        if (post === undefined) {
+          panels.show(SITE_PANEL_ID);
+          return;
+        }
+        session.showPage(post);
         session.select(nodeId);
       } else {
         const holder = pageWithCopy(site, on, session.ui.getState().pageId);

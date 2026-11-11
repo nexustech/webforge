@@ -261,6 +261,15 @@ export function itemValues(
 }
 
 /**
+ * Whether `id` is one of `collections`, as a collection id (#936): never a property every object
+ * has, such as `constructor`, for an id read from a place.
+ */
+export const isCollectionIn = (
+  collections: Readonly<Record<CollectionId, Collection>>,
+  id: string,
+): id is CollectionId => Object.hasOwn(collections, id);
+
+/**
  * Collection `id` of `site`, if it has one: its own entry only, so an id from a file such as
  * `constructor` never finds what every object has.
  */

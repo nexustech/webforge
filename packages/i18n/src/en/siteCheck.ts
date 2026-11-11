@@ -220,6 +220,7 @@ export const siteCheck = {
   "siteCheck.place.header": "{element} in the Header",
   "siteCheck.place.footer": "{element} in the Footer",
   "siteCheck.place.shared": "{element} in the shared section {name}",
+  "siteCheck.place.design": "{element} in the design of {name}",
   "siteCheck.place.menu": "Menu item {name}",
   "siteCheck.place.address": "Site Settings › Web address",
   "siteCheck.place.code.css": "Custom Code › Stylesheet",

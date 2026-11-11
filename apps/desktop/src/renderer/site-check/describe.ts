@@ -1,7 +1,9 @@
 import { t } from "@webforge/i18n";
 import {
   type ColorRole,
+  designAt,
   type ElementPlace,
+  elementsAt,
   isPageIn,
   type MenuItem,
   type NodeDoc,
@@ -21,12 +23,7 @@ const layoutRegion = (on: ElementPlace): "header" | "footer" | undefined =>
 
 /** The element `nodeId` kept `on`, at any depth, if it's there. */
 function findNode(site: SiteDoc, on: ElementPlace, nodeId: string): NodeDoc | undefined {
-  const region = layoutRegion(on);
-  const shared = sharedSectionOf(site.sharedSections, on)?.section;
-  const roots: readonly NodeDoc[] =
-    region !== undefined
-      ? site.layout[region]
-      : (pageEntryOf(site.pages, on)?.doc.content ?? (shared === undefined ? [] : [shared]));
+  const roots = elementsAt(site, on);
   const search = (nodes: readonly unknown[]): NodeDoc | undefined => {
     for (const node of nodes) {
       if (typeof node !== "object" || node === null) continue;
@@ -88,6 +85,14 @@ export function describePlace(
       if (region !== undefined) return t(`siteCheck.place.${region}`, { element });
       if (isPageIn(site.pages, place.on)) {
         return onPage(element, pageName(site, place.on));
+      }
+      // A Blog's design (#936), on every post: "Image in the design of 'Blog'".
+      const design = designAt(site, place.on);
+      if (design !== undefined) {
+        return t("siteCheck.place.design", {
+          element,
+          name: t("history.namedItem", { name: design.name }),
+        });
       }
       const shared = sharedSectionOf(site.sharedSections, place.on);
       return t("siteCheck.place.shared", { element, name: shared?.name ?? place.on });

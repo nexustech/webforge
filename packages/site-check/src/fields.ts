@@ -1,8 +1,12 @@
 import {
+  type CollectionId,
   type ElementPlace,
   eachElement,
+  isCollectionIn,
+  isDraftPage,
   isPageIn,
   isSharedCopy,
+  isSharedSectionIn,
   type NodeDoc,
   type SharedSectionId,
   type SiteDoc,
@@ -37,18 +41,30 @@ function placedSharedSections(site: SiteDoc): ReadonlySet<SharedSectionId> {
   );
 }
 
+/** The collections with an item that isn't a draft: the others' designs aren't exported (#936). */
+function publishedDesigns(site: SiteDoc): ReadonlySet<CollectionId> {
+  return new Set(
+    Object.values(site.pages).flatMap((page) =>
+      page.collection !== undefined && !isDraftPage(site, page) ? [page.collection] : [],
+    ),
+  );
+}
+
 /**
  * Whether what is kept `on` is exported: the Header, the Footer and pages are; a shared section
- * only while a page holds a copy of it. Made once for a check of `site`.
+ * only while a page holds a copy of it, and a collection's design (#936) while it has an item that
+ * isn't a draft. Made once for a check of `site`.
  */
 export function exportedPlaces(site: SiteDoc): (on: ElementPlace | "menu") => boolean {
   const placed = placedSharedSections(site);
+  const designs = publishedDesigns(site);
   return (on) =>
     on === "menu" ||
     on === "header" ||
     on === "footer" ||
     isPageIn(site.pages, on) ||
-    placed.has(on);
+    (isSharedSectionIn(site.sharedSections, on) && placed.has(on)) ||
+    (isCollectionIn(site.collections, on) && designs.has(on));
 }
 
 /**

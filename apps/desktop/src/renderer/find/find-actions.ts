@@ -1,6 +1,8 @@
 import { plural, t } from "@webforge/i18n";
 import {
   copiedNodeId,
+  designAt,
+  elementsAt,
   findNode,
   isPageIn,
   isSharedCopy,
@@ -11,13 +13,13 @@ import {
 import type { ComponentLibrary } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
+import { inDesign, postShowingDesign } from "../editor/shared-layout.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import {
-  elementsAt,
   type FindOptions,
   findInSite,
   groupOf,
@@ -46,6 +48,10 @@ export function groupName(site: SiteDoc, group: SpotGroup): string {
   if (group === "settings") return t("findReplace.group.settings");
   const page = pageEntryOf(site.pages, group);
   if (page !== undefined) return page.title.trim() === "" ? page.slug : page.title;
+  const design = designAt(site, group);
+  if (design !== undefined) {
+    return t("findReplace.group.design", { name: t("history.namedItem", { name: design.name }) });
+  }
   const shared = Object.values(site.sharedSections).find((entry) => entry.id === group);
   return t("findReplace.group.shared", { name: shared?.name ?? group });
 }
@@ -121,19 +127,25 @@ function pageWithCopy(
 
 /**
  * Shows where `spot` is: an element selected on its page (the Header's and Footer's on the page
- * shown, a shared section's in a copy of it), a page's title or description in its Page Settings,
- * its name in the menu and the menu's own labels in the Pages panel, a business detail in Site
- * Settings.
+ * shown, a shared section's in a copy of it, a Blog design's on a post, #936), a page's title or
+ * description in its Page Settings, its name in the menu and the menu's own labels in the Pages
+ * panel, a business detail in Site Settings.
  */
 export function showSpot(spot: TextSpot, { session, panels, settings, commands }: FindActions) {
   const site = session.history.document.getState();
   switch (spot.kind) {
     case "element": {
       const { on, nodeId } = spot;
+      const design = designAt(site, on);
       if (on === "header" || on === "footer") {
         session.select(nodeId);
       } else if (isPageIn(site.pages, on)) {
         session.showPage(on);
+        session.select(nodeId);
+      } else if (design !== undefined) {
+        const post = postShowingDesign(site, design.id, session.ui.getState().pageId);
+        if (post === undefined) return;
+        session.showPage(post);
         session.select(nodeId);
       } else {
         const holder = pageWithCopy(site, on, session.ui.getState().pageId);
@@ -165,7 +177,10 @@ export function showSpot(spot: TextSpot, { session, panels, settings, commands }
 /** The quoted text for an undo label, shortened: "'Smith'". */
 const quoted = (text: string) => (text.length > 40 ? `${text.slice(0, 39)}…` : text);
 
-/** Replaces the match at `occurrence` in `spot`: one undo step. */
+/**
+ * Replaces the match at `occurrence` in `spot`: one undo step, named by the Blog when the match is
+ * in its design (#936), which every post shows.
+ */
 export function replaceOne(
   session: EditorSession,
   options: FindOptions,
@@ -174,30 +189,38 @@ export function replaceOne(
   occurrence: number,
 ): void {
   session.flush();
+  const site = session.history.document.getState();
+  const designId = spot.kind === "element" ? designAt(site, spot.on)?.id : undefined;
+  const design = designId === undefined ? "" : inDesign(site, designId);
   session.edit(
     "props",
     t("findReplace.history.replacedOne", {
       find: quoted(options.query),
       replace: quoted(replacement),
-    }),
+    }) + design,
     (draft) => {
       replaceInSite(draft, session.library, options, replacement, [spot], occurrence);
     },
   );
 }
 
-/** The pages a change to `groups` shows on: each one's, a shared section's copies', or all. */
+/**
+ * The pages a change to `groups` shows on: each one's, a shared section's copies', a Blog design's
+ * posts (#936), or all.
+ */
 function pagesChanged(site: SiteDoc, groups: ReadonlySet<SpotGroup>): number {
   if (["header", "footer", "menu", "settings"].some((shown) => groups.has(shown))) {
     return site.pageOrder.length;
   }
   const pages = new Set<PageId>();
   for (const pageId of site.pageOrder) {
-    const content = site.pages[pageId]?.doc.content ?? [];
+    const page = site.pages[pageId];
+    const content = page?.doc.content ?? [];
     const holdsCopy = content
       .filter(isSharedCopy)
       .some((node) => groups.has(node.props.sharedSectionId));
-    if (groups.has(pageId) || holdsCopy) pages.add(pageId);
+    const showsDesign = page?.collection !== undefined && groups.has(page.collection);
+    if (groups.has(pageId) || holdsCopy || showsDesign) pages.add(pageId);
   }
   return pages.size;
 }

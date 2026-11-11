@@ -1,13 +1,12 @@
 import {
   type ElementPlace,
+  elementsAt,
   isNodeDoc,
   type NodeDoc,
   type Oklch,
-  pageEntryOf,
   type Responsive,
   resolveResponsive,
   type SiteDoc,
-  sharedSectionOf,
   type TextStyle,
   type ThemeTokens,
   valuesWithLook,
@@ -101,16 +100,6 @@ export function surfaceOf(
   return overPicture ? { ...surface, overPicture: true } : surface;
 }
 
-/** The nodes kept at `on`: a page's content, the Header, the Footer, or a shared section. */
-function nodesAt(site: SiteDoc, on: ElementPlace): readonly NodeDoc[] {
-  if (on === "header") return site.layout.header;
-  if (on === "footer") return site.layout.footer;
-  const page = pageEntryOf(site.pages, on);
-  if (page !== undefined) return page.doc.content;
-  const shared = sharedSectionOf(site.sharedSections, on);
-  return shared === undefined ? [] : [shared.section];
-}
-
 /** The elements from the top of `nodes` down to element `nodeId`, or none if it isn't there. */
 function chainTo(nodes: readonly NodeDoc[], nodeId: string): readonly NodeDoc[] {
   for (const node of nodes) {
@@ -136,7 +125,7 @@ export function surfaceAt(
   pictureBehind: (node: NodeDoc, values: Readonly<Record<string, unknown>>) => boolean,
 ): Surface {
   const { looks } = site.theme;
-  const nodes = chainTo(nodesAt(site, on), nodeId);
+  const nodes = chainTo(elementsAt(site, on), nodeId);
   const chain = nodes.map((node) => valuesWithLook(node.props, looks?.[node.type]));
   return surfaceOf(site.theme, chain, (at) => {
     const node = nodes[at];

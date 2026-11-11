@@ -1,4 +1,5 @@
 import {
+  type CollectionId,
   findNode,
   LOOK_FIELDS,
   type NodeDoc,
@@ -13,6 +14,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { saveAsSharedSection } from "../editor/shared-sections.js";
 import { createCommandRegistry } from "../shell/commands.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
+import { insertBlog, insertPost } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   APPEARANCE_GROUP_ID,
@@ -438,3 +440,71 @@ describe("registerLookCommands (2.27)", () => {
 function never(): never {
   throw new Error("unreachable");
 }
+
+describe("Apply Look to Every… in a Blog's design (#936)", () => {
+  const BLOG = "blog" as CollectionId;
+
+  /** The site above with a Blog of two posts, its design holding a plain Button. */
+  const withBlog = () =>
+    setUp((site) => {
+      insertBlog(site, BLOG, "older" as PageId, "2026-01-05");
+      insertPost(site, BLOG, "newer" as PageId, "Spring opening", {}, "2026-03-01");
+      const blog = site.collections[BLOG];
+      if (blog === undefined) throw new Error("no Blog");
+      blog.design.after = [section("design-end", [button("design-button")])];
+    });
+  const designButton = (session: EditorSession) =>
+    findNode(
+      session.history.document.getState().collections[BLOG]?.design.after ?? [],
+      (node) => node.props.id === "design-button",
+    );
+
+  it("gives the design's Button the look once, for every post, over the whole site", async () => {
+    const { session } = withBlog();
+
+    const change = lookChange(session, "site");
+    const target = change?.targets.find((each) => each.node.props.id === "design-button");
+    expect(target?.pages).toEqual(["older", "newer"]);
+    expect(change?.targets.filter((each) => each.node.props.id === "design-button")).toHaveLength(
+      1,
+    );
+
+    await applyLookToAll(session, "site", confirmer(true));
+    expect(lookOf(designButton(session)?.props)).toEqual(LOOK);
+  });
+
+  it("from a post, reaches the design, saying its other posts show it, named by the Blog", async () => {
+    const { session, labels } = withBlog();
+    session.showPage("newer" as PageId);
+    session.edit("props", "Added", (draft) => {
+      draft.pages["newer" as PageId]?.doc.content.push(section("own", [button("mine", LOOK)]));
+    });
+    session.select("mine");
+    const siteWide = confirmer(true);
+
+    await applyLookToAll(session, "page", siteWide);
+
+    expect(lookOf(designButton(session)?.props)).toEqual(LOOK);
+    expect(siteWide.asked[0]?.description).toBe(
+      "This gives 1 other Button the same look. The design of 'Blog' is on its other posts too.",
+    );
+    expect(labels().at(-1)).toBe("Applied the Button look to 1 other in the design of 'Blog'");
+  });
+
+  it("gives the look from the design's own Button to the others", () => {
+    const { session } = withBlog();
+    session.showPage("older" as PageId);
+    session.edit("props", "Styled", (draft) => {
+      const node = findNode(
+        draft.collections[BLOG]?.design.after ?? [],
+        (each) => each.props.id === "design-button",
+      );
+      if (node !== undefined) Object.assign(node.props, LOOK);
+    });
+    session.select("design-button");
+
+    const change = lookChange(session, "site");
+    expect(change?.targets.map((each) => each.node.props.id)).not.toContain("design-button");
+    expect(change?.targets.length).toBeGreaterThan(0);
+  });
+});

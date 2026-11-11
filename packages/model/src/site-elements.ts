@@ -1,12 +1,36 @@
+import { type Collection, isCollectionIn } from "./collections.js";
 import { isNodeDoc, type NodeDoc } from "./documents.js";
-import type { PageId, SharedSectionId } from "./ids.js";
+import type { CollectionId, PageId, SharedSectionId } from "./ids.js";
 import type { SiteDoc } from "./site-doc.js";
 
 /**
- * Where an element is kept: on a page, in the Header or Footer, or in a shared section (F-ED-23),
- * whose elements are on every page with a copy of it.
+ * Where an element is kept: on a page, in the Header or Footer, in a shared section (F-ED-23),
+ * whose elements are on every page with a copy of it, or in a collection's design (6.10a, #936),
+ * whose elements are on every one of its items, a Blog's posts.
  */
-export type ElementPlace = PageId | "header" | "footer" | SharedSectionId;
+export type ElementPlace = PageId | "header" | "footer" | SharedSectionId | CollectionId;
+
+/** The collection whose design `on` is (#936), if it is one of `site`'s. */
+export const designAt = (site: Pick<SiteDoc, "collections">, on: string): Collection | undefined =>
+  isCollectionIn(site.collections, on) ? site.collections[on] : undefined;
+
+/**
+ * The top-level elements kept `on` in `site`, or in an Immer draft of it: a page's content, the
+ * Header's or Footer's, a shared section, or a collection's design, above then below each item's
+ * content (#936). A design's is a list of its own, so change its elements, never the list itself.
+ * None for a place the site doesn't have.
+ */
+export function elementsAt(site: SiteDoc, on: string): readonly NodeDoc[] {
+  if (on === "header" || on === "footer") return site.layout[on];
+  // Their own entries only, so a place such as `constructor` finds nothing.
+  if (Object.hasOwn(site.pages, on)) return site.pages[on as PageId]?.doc.content ?? [];
+  if (Object.hasOwn(site.sharedSections, on)) {
+    const shared = site.sharedSections[on as SharedSectionId];
+    return shared === undefined ? [] : [shared.section];
+  }
+  const design = designAt(site, on)?.design;
+  return design === undefined ? [] : [...design.before, ...design.after];
+}
 
 /** What {@link eachElement} walks over. */
 type EachElementOptions = {
@@ -46,7 +70,8 @@ function walk(
 
 /**
  * Calls `visit` for every element of `site`, with where it is kept: the Header, the Footer, each
- * page in the Pages panel's order, then each shared section once (not its copies). Elements in
+ * page in the Pages panel's order, each shared section once (not its copies), then each
+ * collection's design once (#936), not once for each of its items. Elements in
  * slots are visited after the element holding them; each with the elements holding it, outermost
  * first (what it's drawn on, #670).
  */
@@ -63,5 +88,13 @@ export function eachElement(
   }
   for (const entry of Object.values(site.sharedSections)) {
     walk([entry.section], entry.id, visit, skipHidden);
+  }
+  for (const collection of Object.values(site.collections)) {
+    walk(
+      [...collection.design.before, ...collection.design.after],
+      collection.id,
+      visit,
+      skipHidden,
+    );
   }
 }

@@ -1,5 +1,7 @@
 import { plural, t } from "@webforge/i18n";
 import {
+  type CollectionId,
+  elementsAt,
   findNode,
   isNodeDoc,
   isSharedCopy,
@@ -20,7 +22,7 @@ import {
 } from "@webforge/site-components";
 import type { EditorSession } from "../editor/editor-session.js";
 import { type FieldTarget, fieldTarget } from "../editor/field-target.js";
-import { type SharedRegion, shownLayout } from "../editor/shared-layout.js";
+import { inDesign, type SharedRegion, shownLayout } from "../editor/shared-layout.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 
@@ -44,11 +46,15 @@ export function lookFieldsOf(component: ComponentDef): string[] {
   );
 }
 
-/** Where an element is kept: a page's own content, the shared Header or Footer, a shared section. */
+/**
+ * Where an element is kept: a page's own content, the shared Header or Footer, a shared section, or
+ * a Blog's design (#936).
+ */
 type Place =
   | { readonly kind: "page"; readonly pageId: PageId }
   | { readonly kind: "layout"; readonly region: SharedRegion }
-  | { readonly kind: "shared"; readonly id: SharedSectionId; readonly name: string };
+  | { readonly kind: "shared"; readonly id: SharedSectionId; readonly name: string }
+  | { readonly kind: "design"; readonly id: CollectionId; readonly name: string };
 
 /** An element of the kind, where it is kept, and the pages that show it. */
 type LookTarget = {
@@ -99,8 +105,9 @@ const REGIONS: readonly SharedRegion[] = ["header", "footer"];
 
 /**
  * Every element of `type` that `scope` reaches from page `pageId`, each where it is kept: the
- * page's own (each page's, for the site); the shared Header and Footer where shown; and each shared
- * section with a copy there, once, whatever the number of copies (its copies follow it).
+ * page's own (each page's, for the site); the shared Header and Footer where shown; each shared
+ * section with a copy there, once, whatever the number of copies (its copies follow it); and each
+ * Blog's design with a post there, once (#936), on every post.
  */
 function elementsOfType(
   site: SiteDoc,
@@ -112,9 +119,11 @@ function elementsOfType(
   const found: LookTarget[] = [];
   const sharedPages = new Map<SharedSectionId, PageId[]>();
   const layoutPages = new Map<SharedRegion, PageId[]>();
+  const designs = new Set<CollectionId>();
   for (const id of pageIds) {
     const page = site.pages[id];
     if (page === undefined) continue;
+    if (page.collection !== undefined) designs.add(page.collection);
     for (const { node, hidden } of nodesOfType(
       page.doc.content.filter((node) => !isSharedCopy(node)),
       type,
@@ -158,12 +167,24 @@ function elementsOfType(
       found.push({ place: { kind: "shared", id, name: shared.name }, node, hidden, pages });
     }
   }
+  for (const id of designs) {
+    const collection = site.collections[id];
+    if (collection === undefined) continue;
+    const pages = pageIdsOf(site.pages).filter((page) => site.pages[page]?.collection === id);
+    for (const { node, hidden } of nodesOfType(elementsAt(site, id), type)) {
+      found.push({ place: { kind: "design", id, name: collection.name }, node, hidden, pages });
+    }
+  }
   return found;
 }
 
 /** Where `target`, the selected element, is kept. */
-function placeOf(target: FieldTarget, pageId: PageId): Place {
+function placeOf(site: SiteDoc, target: FieldTarget, pageId: PageId): Place {
   if (target.region !== undefined) return { kind: "layout", region: target.region };
+  if (target.design !== undefined) {
+    const id = target.design.collection;
+    return { kind: "design", id, name: site.collections[id]?.name ?? "" };
+  }
   if (target.inCopy !== undefined) {
     return { kind: "shared", id: target.inCopy.shared.id, name: target.inCopy.shared.name };
   }
@@ -173,7 +194,8 @@ function placeOf(target: FieldTarget, pageId: PageId): Place {
 const samePlace = (a: Place, b: Place) =>
   (a.kind === "page" && b.kind === "page" && a.pageId === b.pageId) ||
   (a.kind === "layout" && b.kind === "layout" && a.region === b.region) ||
-  (a.kind === "shared" && b.kind === "shared" && a.id === b.id);
+  (a.kind === "shared" && b.kind === "shared" && a.id === b.id) ||
+  (a.kind === "design" && b.kind === "design" && a.id === b.id);
 
 /**
  * What a field draws with: its value as stored, else its kind's look in the theme (3.12), else the
@@ -216,7 +238,7 @@ export function lookChangeIn(
   // As the source stores them: a field it leaves to its kind's look or its default is undefined,
   // so the targets are left to them too.
   const values = Object.fromEntries(names.map((name) => [name, source.node.props[name]]));
-  const from = placeOf(source, pageId);
+  const from = placeOf(site, source, pageId);
   const targets = elementsOfType(site, source.node.type, pageId, scope).filter(
     ({ place, node }) =>
       !(samePlace(place, from) && node.props.id === source.node.props.id) &&
@@ -260,21 +282,25 @@ function changedFields(
     .map(([name]) => name);
 }
 
-/** The undo label: "Applied the Button look to 12 others". */
-function appliedLookLabel(change: LookChange): string {
-  return plural("history.appliedLook", change.targets.length, { item: change.item });
+/**
+ * The undo label: "Applied the Button look to 12 others", and " in the design of 'Blog'" when they
+ * are all in a Blog's design (#936).
+ */
+function appliedLookLabel(site: SiteDoc, change: LookChange): string {
+  const label = plural("history.appliedLook", change.targets.length, { item: change.item });
+  const [first] = change.targets;
+  const design = first?.place.kind === "design" ? first.place.id : undefined;
+  const allThere = change.targets.every(
+    ({ place }) => place.kind === "design" && place.id === design,
+  );
+  return design !== undefined && allThere ? label + inDesign(site, design) : label;
 }
 
 /** The nodes `place` keeps, in `site` (or a draft of it). */
 function nodesAt(site: SiteDoc, place: Place): readonly NodeDoc[] {
   if (place.kind === "layout") return site.layout[place.region];
-  if (place.kind === "shared") {
-    const shared = Object.hasOwn(site.sharedSections, place.id)
-      ? site.sharedSections[place.id]
-      : undefined;
-    return shared === undefined ? [] : [shared.section];
-  }
-  return site.pages[place.pageId]?.doc.content ?? [];
+  if (place.kind === "page") return site.pages[place.pageId]?.doc.content ?? [];
+  return elementsAt(site, place.id);
 }
 
 /**
@@ -287,8 +313,9 @@ export function applyLook(session: LookSession, change: LookChange): boolean {
   const type = change.targets[0]?.node.type ?? "";
   const component = session.library.components[type];
   if (component === undefined) return false;
-  const { looks } = session.history.document.getState().theme;
-  session.edit("props", appliedLookLabel(change), (draft) => {
+  const site = session.history.document.getState();
+  const { looks } = site.theme;
+  session.edit("props", appliedLookLabel(site, change), (draft) => {
     for (const { place, node } of change.targets) {
       const into = findNode(nodesAt(draft, place), (each) => each.props.id === node.props.id);
       if (into === undefined) continue;
@@ -313,10 +340,14 @@ function sharedReach(change: LookChange): string[] {
     const key = place.kind === "layout" ? place.region : place.id;
     if (said.has(key)) return [];
     said.add(key);
+    if (place.kind === "layout") {
+      return [t("look.confirm.reach.region", { region: t(`canvas.sharedRegion.${place.region}`) })];
+    }
+    const name = t("history.namedItem", { name: place.name });
     return [
-      place.kind === "layout"
-        ? t("look.confirm.reach.region", { region: t(`canvas.sharedRegion.${place.region}`) })
-        : t("look.confirm.reach.shared", { name: t("history.namedItem", { name: place.name }) }),
+      place.kind === "design"
+        ? t("look.confirm.reach.design", { name })
+        : t("look.confirm.reach.shared", { name }),
     ];
   });
 }

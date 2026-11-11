@@ -1,4 +1,5 @@
 import {
+  collectionOf,
   expandSharedCopies,
   isNodeDoc,
   type NodeDoc,
@@ -162,8 +163,9 @@ function mainHeadings(nodes: readonly NodeDoc[]): number {
 
 /**
  * A page with no main heading, or with several: search engines take the first as the page's
- * subject. Counted as the page shows: its Header and Footer unless it hides them, and its copies
- * of shared sections as they are. A tip.
+ * subject. Counted as the page shows: its Header and Footer unless it hides them, its copies of
+ * shared sections as they are, and a post's Blog design around it, which holds its title (#936). A
+ * tip.
  */
 export const mainHeadingRule: CheckRule = {
   id: "mainHeading",
@@ -171,8 +173,10 @@ export const mainHeadingRule: CheckRule = {
   group: "found",
   check: ({ site }) =>
     listedPages(site).flatMap((page) => {
+      const design = collectionOf(site, page)?.design;
       const count =
         (page.settings.hideHeader ? 0 : mainHeadings(site.layout.header)) +
+        (design === undefined ? 0 : mainHeadings([...design.before, ...design.after])) +
         mainHeadings(expandSharedCopies(page.doc.content, site.sharedSections)) +
         (page.settings.hideFooter ? 0 : mainHeadings(site.layout.footer));
       return count === 1

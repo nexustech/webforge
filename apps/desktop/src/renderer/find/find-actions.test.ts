@@ -1,4 +1,5 @@
 import {
+  type CollectionId,
   insertPage,
   type NodeDoc,
   newId,
@@ -11,6 +12,7 @@ import { describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
+import { insertBlog, insertPost } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
   type FindActions,
@@ -20,7 +22,7 @@ import {
   showSpot,
   spotName,
 } from "./find-actions.js";
-import type { FindOptions, TextSpot } from "./find-text.js";
+import { type FindOptions, findInSite, type TextSpot } from "./find-text.js";
 
 const SMITH: FindOptions = { query: "Smith", matchCase: false, wholeWords: false };
 
@@ -306,5 +308,75 @@ describe("naming what was found", () => {
     expect(spotName(doc(), siteLibrary, { kind: "settings", field: "contact.businessName" })).toBe(
       "Business name",
     );
+  });
+});
+
+describe("a Blog's design (#936)", () => {
+  const BLOG = "blog" as CollectionId;
+
+  /** The site above with a Blog of two posts, its design's own text "Smith's news". */
+  const withBlog = () =>
+    setUp((site) => {
+      insertBlog(site, BLOG, "older" as PageId, "2026-01-05");
+      insertPost(site, BLOG, "newer" as PageId, "Spring opening", {}, "2026-03-01");
+      const blog = site.collections[BLOG];
+      if (blog === undefined) throw new Error("no Blog");
+      blog.design.after = [heading("signed", "Smith's news")];
+    });
+
+  it("finds the design's text once, under the Blog's design, not each post's title binding", () => {
+    const { doc, session } = withBlog();
+    const found = findInSite(doc(), session.library, SMITH).filter(
+      ({ spot }) => spot.kind === "element" && spot.on === BLOG,
+    );
+
+    expect(found.map(({ spot }) => spot)).toEqual([
+      { kind: "element", on: BLOG, nodeId: "signed", type: "Heading", field: "text" },
+    ]);
+    expect(groupName(doc(), BLOG)).toBe("The design of 'Blog'");
+    // The title shown is each post's (bound), so the design's own "Post title" is never found.
+    expect(
+      findInSite(doc(), session.library, { ...SMITH, query: "Post title" }).map(
+        ({ spot }) => spot.kind,
+      ),
+    ).toEqual([]);
+  });
+
+  it("replaces it once for every post, named by the Blog, and counts the posts it shows on", async () => {
+    const { session, actions, asked, labels, doc } = withBlog();
+    const spot: TextSpot = {
+      kind: "element",
+      on: BLOG,
+      nodeId: "signed",
+      type: "Heading",
+      field: "text",
+    };
+
+    replaceOne(session, SMITH, "Rosa", spot, 0);
+    expect(doc().collections[BLOG]?.design.after[0]?.props.text).toBe("Rosa's news");
+    expect(labels()).toEqual(["Replaced 'Smith' with 'Rosa' in the design of 'Blog'"]);
+
+    session.history.undo();
+    await replaceAll(actions, { ...SMITH, query: "Smith's" }, "Our");
+    // In the design only: shown on its two posts.
+    expect(asked.map((action) => action.affectedPages)).toEqual([2]);
+    expect(doc().collections[BLOG]?.design.after[0]?.props.text).toBe("Our news");
+  });
+
+  it("shows a match in the design on the post shown, else the newest", () => {
+    const { session, actions } = withBlog();
+    const spot: TextSpot = {
+      kind: "element",
+      on: BLOG,
+      nodeId: "signed",
+      type: "Heading",
+      field: "text",
+    };
+
+    showSpot(spot, actions);
+    expect(session.ui.getState()).toMatchObject({ pageId: "newer", nodeId: "signed" });
+    session.showPage("older" as PageId);
+    showSpot(spot, actions);
+    expect(session.ui.getState()).toMatchObject({ pageId: "older", nodeId: "signed" });
   });
 });
