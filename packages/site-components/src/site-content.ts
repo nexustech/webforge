@@ -1,4 +1,5 @@
 import {
+  collectionPictures,
   type FileMeta,
   type ImageMeta,
   isImageMeta,
@@ -58,6 +59,8 @@ function contentOf(site: SiteDoc, library: ComponentLibrary): SiteContent {
     site.settings.social.shareImage,
     ...snapshot.pages.map((page) => page.shareImage),
     ...snapshot.pages.flatMap(itemPicturesShown),
+    // Every published post's picture: Latest posts' cards show it (6.10b).
+    ...collectionPictures(snapshot.collections),
   ]) {
     if (id !== undefined) used.add(id);
   }

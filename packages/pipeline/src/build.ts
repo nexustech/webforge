@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { WebforgeError } from "@webforge/errors";
 import {
   type BundledFile,
+  collectionPictures,
   cssVariablesUsed,
   DOCUMENT_EXTENSIONS,
   isDeviceName,
@@ -377,6 +378,9 @@ export async function* buildEvents(
     mediaIds = mediaUsedBy(allNodes(site), library);
     // The pictures of posts their Blog's design shows (6.10a).
     for (const id of site.pages.flatMap(itemPicturesShown)) mediaIds.add(id);
+    // And every published post's picture, which Latest posts' cards and the Blog's own pages
+    // show whether or not its design does (6.10b).
+    for (const id of collectionPictures(site.collections)) mediaIds.add(id);
     documentIds = documentsLinkedBy(allNodes(site), library);
     // Documents the navigation menu links to are exported too.
     for (const item of site.menu?.items.flatMap((entry) =>

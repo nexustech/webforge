@@ -2046,6 +2046,57 @@ describe("buildSite: a Blog's own pages and feed (6.10b)", () => {
   );
 
   it(
+    "exports each post's picture for Latest posts' cards, though no design shows it (#939 review)",
+    async () => {
+      const base = withBlog(2);
+      const [blog] = base.collections ?? [];
+      if (blog === undefined) throw new Error("no blog");
+      // A picture of their own, which nothing but the cards shows.
+      const picture = { kind: "image" as const, mediaId: "post-photo" as MediaId };
+      const hero = base.media.find((item) => item.id === "hero-photo");
+      if (hero === undefined) throw new Error("no photo");
+      const site: SiteSnapshot = {
+        ...base,
+        media: [...base.media, { ...hero, id: "post-photo", name: "post-photo" }],
+        // Only the home page shows anything of the pictures: Latest posts' cards.
+        pages: base.pages.map((page) =>
+          page.path === "index"
+            ? {
+                ...page,
+                doc: {
+                  ...page.doc,
+                  content: [
+                    {
+                      type: "LatestPosts",
+                      props: { ...siteLibrary.components.LatestPosts?.defaults, id: "latest" },
+                    },
+                  ],
+                },
+              }
+            : page.item === undefined
+              ? page
+              : { ...page, item: { values: { ...page.item.values, picture } } },
+        ),
+        collections: [
+          {
+            ...blog,
+            items: blog.items.map((item) => ({ ...item, values: { ...item.values, picture } })),
+          },
+        ],
+      };
+
+      const exported = await buildSite(site, siteLibrary, resources);
+
+      expect(text(exported, "index.html")).toContain('src="assets/img/post-photo-1600.jpg"');
+      expect(text(exported, "blog/index.html")).toContain(
+        'src="../assets/img/post-photo-1600.jpg"',
+      );
+      expect(exported.report.warnings.filter((each) => each.code === "missing-image")).toEqual([]);
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
     "writes the feed with the web address, and links it from every page",
     async () => {
       const exported = await buildSite(

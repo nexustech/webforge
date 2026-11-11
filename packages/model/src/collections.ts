@@ -157,15 +157,29 @@ const isoDate = z.iso.date();
  */
 export function tagSlug(name: string): string {
   // As a page's file name is made from its name (`slugify`, which the site document's module
-  // uses, so it can't be imported here).
-  const slug = name
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
+  // uses, so it can't be imported here): accents dropped, Latin letters and digits kept.
+  const plain = name.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();
+  // A name with letters in another script (Νέα, Новости, 新闻), even beside Latin ones, keeps a
+  // page of its own: a name made from it, the same every time, as pages' file names are lowercase
+  // ASCII letters, digits and hyphens. Never one Latin tag's: "Café Νέα" isn't "Café".
+  if (/[^\p{ASCII}]/u.test(plain.replace(/[^\p{L}\p{N}]/gu, ""))) {
+    return `tag-${nameHash(name.normalize("NFC").trim().toLowerCase())}`;
+  }
+  const slug = plain
     .replace(/[^a-z0-9]+/g, "-")
     .slice(0, TAG_SLUG_MAX)
     .replace(/^-+|-+$/g, "");
   return slug !== "" && isDeviceName(slug) ? `${slug}-tag` : slug;
+}
+
+/** A short name for `text`, the same for the same text (FNV-1a, in base 36). */
+function nameHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (const unit of text) {
+    hash ^= unit.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(36);
 }
 
 /** The longest file name a tag's page has. */
@@ -361,6 +375,29 @@ export function newCollection(options: NewCollectionOptions): Collection {
     })),
     design: options.design,
   };
+}
+
+/**
+ * Every picture of the items `collections` list (6.10b): what Latest posts' cards and a collection's
+ * own pages show, whatever each item's design shows. `collections` are a snapshot's, published
+ * items only.
+ */
+export function collectionPictures(
+  collections:
+    | readonly {
+        readonly items: readonly { readonly values: Readonly<Record<string, ItemValue>> }[];
+      }[]
+    | undefined,
+): MediaId[] {
+  const pictures = new Set<MediaId>();
+  for (const collection of collections ?? []) {
+    for (const item of collection.items) {
+      for (const value of Object.values(item.values)) {
+        if (value.kind === "image") pictures.add(value.mediaId);
+      }
+    }
+  }
+  return [...pictures];
 }
 
 /**

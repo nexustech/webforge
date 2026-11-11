@@ -320,6 +320,21 @@ describe("tags (6.10b)", () => {
     expect(itemValue(blog(), post("p2", "x", { tags: " , !!! ," }), "tags")).toBeUndefined();
   });
 
+  it("keeps tags in any script, each its own page, the same every time (#939 review)", () => {
+    const names = ["Νέα", "Προσφορές", "Новости", "新闻", "Café Νέα", "Café", "νέα"];
+    const tags = itemValue(blog(), post("p1", "x", { tags: names.join(", ") }), "tags");
+    const paths = tags?.kind === "tags" ? tags.tags.map((tag) => tag.path) : [];
+
+    // "νέα" is "Νέα" in another case: one tag, its first spelling.
+    expect(tags?.kind === "tags" ? tags.tags.map((tag) => tag.name) : []).toEqual(
+      names.slice(0, 6),
+    );
+    expect(new Set(paths).size).toBe(6);
+    expect(paths[5]).toBe("blog/tag/cafe");
+    for (const path of paths.slice(0, 5)) expect(path).toMatch(/^blog\/tag\/tag-[0-9a-z]+$/);
+    expect(tagSlug("Νέα")).toBe(tagSlug(" νέα "));
+  });
+
   it("keeps at most 20 tags, and gives each a name that makes a file", () => {
     const many = Array.from({ length: 25 }, (_, n) => `tag ${n}`).join(",");
 

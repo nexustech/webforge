@@ -1,4 +1,5 @@
 import {
+  type CollectionId,
   createSite,
   type MediaId,
   type MediaMeta,
@@ -87,5 +88,46 @@ describe("siteSnapshotFor", () => {
       media,
       documents,
     });
+  });
+});
+
+describe("siteContentFor's posts (6.10b, #939 review)", () => {
+  it("names each published post's picture, which Latest posts' cards show, whatever its design", () => {
+    const doc = site();
+    const blog = "blog" as CollectionId;
+    doc.collections[blog] = {
+      id: blog,
+      preset: "blog",
+      name: "Blog",
+      folder: "blog",
+      fields: [{ name: "picture", label: "Picture", kind: "image" }],
+      // A design that shows no picture.
+      design: { before: [], after: [] },
+    };
+    const post = "post" as PageId;
+    doc.pages[post] = {
+      id: post,
+      kind: "page",
+      slug: "spring",
+      folder: "blog",
+      title: "Spring",
+      collection: blog,
+      entry: { picture: unused.id },
+      // Shared with another picture, so only the cards show this one.
+      settings: {
+        hideHeader: false,
+        hideFooter: false,
+        hideFromNavigation: false,
+        shareImage: icon.id,
+      },
+      doc: { root: { props: {} }, content: [] },
+    };
+    doc.pageOrder.splice(1, 0, post);
+
+    expect(siteContentFor(doc, siteLibrary).media.map((item) => item.id)).toContain("spare");
+    // A draft's picture isn't on the website.
+    const page = doc.pages[post];
+    if (page !== undefined) page.settings.draft = true;
+    expect(siteContentFor(doc, siteLibrary).media.map((item) => item.id)).not.toContain("spare");
   });
 });

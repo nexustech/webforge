@@ -82,7 +82,7 @@ Export and Publish write each post as its own page, in the blog's folder, with t
 They also write your blog's own pages, with your Header and Footer:
 
 - **`blog/index.html`** lists your posts, ten a page, newest first, with **Older posts** and **Newer posts** links to `blog/page/2.html` and on. **All posts** in Latest posts goes here.
-- **`blog/tag/opening-times.html`** lists the posts with that tag, one page for each tag.
+- **`blog/tag/opening-times.html`** lists the posts with that tag, one page for each tag. A tag in another alphabet, such as _Νέα_, gets a file name made from it, such as `tag-1k3f9a.html`, as file names are in Latin letters.
 - **`blog/feed.xml`** is your blog's feed (RSS), for readers who follow blogs in an app. Every page links to it. A feed needs your site's web address ([Site Settings › Web address](site-settings.md#web-address)), as its links are whole addresses; until you add it, there's no feed and Site Check says so.
 
 Site Check also tips you when a post has no summary or no picture, which Latest posts and shares show.

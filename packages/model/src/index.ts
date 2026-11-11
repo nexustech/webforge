@@ -43,6 +43,7 @@ export {
   collectionFolderSchema,
   collectionItems,
   collectionOf,
+  collectionPictures,
   collectionSchema,
   collectionsDocSchema,
   freeCollectionFolder,
