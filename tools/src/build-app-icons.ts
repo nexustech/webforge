@@ -73,8 +73,18 @@ function masterFor(masters: Masters, size: number): string {
   return size <= SMALL_UP_TO ? masters.small : masters.full;
 }
 
+/**
+ * The masters' letters are outlines, so no font is loaded (#947). By default resvg reads every
+ * system font for each drawing: about 200 ms on a developer's machine and up to 6 s on CI's
+ * Windows runners, against under 1 ms for the drawing itself.
+ */
 function render(svg: string, size: number): Uint8Array {
-  return new Resvg(svg, { fitTo: { mode: "width", value: size } }).render().asPng();
+  return new Resvg(svg, {
+    fitTo: { mode: "width", value: size },
+    font: { loadSystemFonts: false },
+  })
+    .render()
+    .asPng();
 }
 
 /** The icon at `size` px, its tile filling the square: Windows and Linux. */
