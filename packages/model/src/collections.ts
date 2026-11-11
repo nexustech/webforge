@@ -330,13 +330,41 @@ export function collectionItems<Page extends ItemPage>(
   return items.map((item) => item.page);
 }
 
-/** A folder for a new collection's items, from `wanted`, that no collection has yet: `blog-2`. */
-export function freeCollectionFolder(site: WithCollections, wanted: string): string {
-  const taken = new Set(Object.values(site.collections).map((each) => each.folder));
-  if (!taken.has(wanted)) return wanted;
-  let n = 2;
-  while (taken.has(`${wanted}-${n}`)) n += 1;
-  return `${wanted}-${n}`;
+/**
+ * A folder for a collection's items, from `wanted` (a slug), that nothing else is in yet: `blog`,
+ * or `blog-2` when another collection has `blog` or ordinary pages are in it, so no item's address
+ * is ever a page's. Never `assets` or a Windows device name (`con`). `except` is the collection
+ * being given it, whose own folder and items don't count.
+ */
+export function freeCollectionFolder(
+  site: WithCollections & {
+    readonly pages?: Readonly<
+      Record<
+        PageId,
+        { readonly folder?: string | undefined; readonly collection?: CollectionId | undefined }
+      >
+    >;
+  },
+  wanted: string,
+  except?: CollectionId,
+): string {
+  const taken = new Set(["assets"]);
+  for (const each of Object.values(site.collections)) {
+    if (each.id !== except) taken.add(each.folder);
+  }
+  for (const page of Object.values(site.pages ?? {})) {
+    const top = page.folder?.split("/")[0];
+    if (top !== undefined && (except === undefined || page.collection !== except)) taken.add(top);
+  }
+  // A Windows device name (`con`) is no folder Windows can write.
+  const free = (folder: string) => !taken.has(folder) && !isDeviceName(folder);
+  const base = wanted.slice(0, COLLECTION_FOLDER_MAX).replace(/-+$/, "");
+  if (free(base)) return base;
+  for (let n = 2; ; n += 1) {
+    const suffix = `-${n}`;
+    const candidate = `${base.slice(0, COLLECTION_FOLDER_MAX - suffix.length).replace(/-+$/, "")}${suffix}`;
+    if (free(candidate)) return candidate;
+  }
 }
 
 /** What {@link newCollection} takes: the preset, and the words and design the caller translates. */

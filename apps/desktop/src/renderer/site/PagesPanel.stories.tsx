@@ -52,6 +52,8 @@ const actions: PagesPanelActions = {
   addBlog: noop,
   addPost: noop,
   importPosts: noop,
+  renameBlog: noop,
+  removeBlog: noop,
   rename: noop,
   duplicate: noop,
   move: noop,
@@ -131,36 +133,50 @@ export const PageSettings: Story = {
   },
 };
 
-/** The site with a Blog (6.10a): its posts in a group of their own, newest first, with New Post. */
-export const WithBlog: Story = {
-  args: {
-    site: (() => {
-      const withBlog = site();
-      const blogId = "blog" as CollectionId;
-      withBlog.collections[blogId] = {
-        id: blogId,
-        preset: "blog",
-        name: "Blog",
+/** The site with a Blog (6.10a) and two posts. */
+const withBlog = {
+  site: (() => {
+    const withBlog = site();
+    const blogId = "blog" as CollectionId;
+    withBlog.collections[blogId] = {
+      id: blogId,
+      preset: "blog",
+      name: "Blog",
+      folder: "blog",
+      fields: [{ name: "date", label: "Date", kind: "date" }],
+      design: { before: [], after: [] },
+    };
+    const posts = [
+      page("spring", "Spring opening", {
         folder: "blog",
-        fields: [{ name: "date", label: "Date", kind: "date" }],
-        design: { before: [], after: [] },
-      };
-      const posts = [
-        page("spring", "Spring opening", {
-          folder: "blog",
-          collection: blogId,
-          entry: { date: "2026-03-01" },
-        }),
-        page("new-ovens", "Our new ovens", {
-          folder: "blog",
-          collection: blogId,
-          entry: { date: "2026-11-10" },
-        }),
-      ];
-      for (const post of posts) withBlog.pages[post.id] = post;
-      withBlog.pageOrder.splice(-1, 0, ...posts.map((post) => post.id));
-      return withBlog;
-    })(),
-    shownPageId: "new-ovens" as PageId,
+        collection: blogId,
+        entry: { date: "2026-03-01" },
+      }),
+      page("new-ovens", "Our new ovens", {
+        folder: "blog",
+        collection: blogId,
+        entry: { date: "2026-11-10" },
+      }),
+    ];
+    for (const post of posts) withBlog.pages[post.id] = post;
+    withBlog.pageOrder.splice(-1, 0, ...posts.map((post) => post.id));
+    return withBlog;
+  })(),
+  shownPageId: "new-ovens" as PageId,
+};
+
+/** The site with a Blog (6.10a): its posts in a group of their own, newest first, with New Post. */
+export const WithBlog: Story = { args: withBlog };
+
+/** Renaming the Blog (#937): a new name offers to move its posts to the new name's folder. */
+export const RenameBlog: Story = {
+  args: withBlog,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Blog" }));
+    await userEvent.click(within(document.body).getByRole("menuitem", { name: "Rename…" }));
+    const name = within(document.body).getByRole("textbox", { name: "Name" });
+    await userEvent.clear(name);
+    await userEvent.type(name, "News");
   },
 };

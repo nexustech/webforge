@@ -62,6 +62,8 @@ function setUp({ backToTop = false, analytics = false, published = false } = {})
     addBlog: vi.fn(),
     addPost: vi.fn(),
     importPosts: vi.fn(),
+    renameBlog: vi.fn(),
+    removeBlog: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),
@@ -375,6 +377,8 @@ describe("PagesPanel with a Blog (6.10a)", () => {
     addBlog: vi.fn(),
     addPost: vi.fn(),
     importPosts: vi.fn(),
+    renameBlog: vi.fn(),
+    removeBlog: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),
@@ -420,5 +424,77 @@ describe("PagesPanel with a Blog (6.10a)", () => {
     await userEvent.keyboard("{Escape}");
     await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
     expect(screen.queryByRole("menuitem", { name: "Blog" })).toBeNull();
+  });
+
+  it("renames the Blog from its menu, offering to move its posts to the new name's folder (#937)", async () => {
+    const site = starterSite();
+    const blog = "blog" as CollectionId;
+    insertBlog(site, blog, "first" as PageId, "2026-01-05");
+    const panel = actions();
+    const { rerender } = render(
+      <PagesPanel site={site} shownPageId={site.homePageId} actions={panel} />,
+    );
+
+    await openMenu("Blog");
+    // It has a post, so it can't be deleted.
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "New Post",
+      "Import Posts…",
+      "Rename…",
+    ]);
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    const dialog = screen.getByRole("dialog", { name: "Rename Blog" });
+    const name = within(dialog).getByRole("textbox", { name: "Name" });
+    // The same name gives the same folder: nothing to offer.
+    expect(within(dialog).queryByRole("checkbox")).toBeNull();
+    await userEvent.clear(name);
+    await userEvent.type(name, "News");
+    const move = within(dialog).getByRole("checkbox", {
+      name: "Move its posts to a folder of the new name",
+    });
+    // Never published: moved by default, nothing out there to keep.
+    expect(move.getAttribute("aria-checked") ?? String((move as HTMLInputElement).checked)).toBe(
+      "true",
+    );
+    expect(dialog.textContent).toContain("Each post's address changes from blog/… to news/….");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Rename" }));
+    expect(panel.renameBlog).toHaveBeenCalledExactlyOnceWith(blog, "News", true);
+
+    // Once published, the posts stay where they are unless asked, and their old addresses are kept.
+    rerender(<PagesPanel site={site} shownPageId={site.homePageId} published actions={panel} />);
+    await openMenu("Blog");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Rename…" }));
+    const again = screen.getByRole("dialog", { name: "Rename Blog" });
+    await userEvent.clear(within(again).getByRole("textbox", { name: "Name" }));
+    await userEvent.type(within(again).getByRole("textbox", { name: "Name" }), "Journal");
+    expect(again.textContent).toContain("go on to the new ones");
+    await userEvent.click(within(again).getByRole("button", { name: "Rename" }));
+    expect(panel.renameBlog).toHaveBeenLastCalledWith(blog, "Journal", false);
+  });
+
+  it("deletes a Blog with no posts from its menu, after asking (#937)", async () => {
+    const site = starterSite();
+    const blog = "blog" as CollectionId;
+    insertBlog(site, blog, "first" as PageId, "2026-01-05");
+    const empty: SiteDoc = {
+      ...site,
+      pages: Object.fromEntries(Object.entries(site.pages).filter(([id]) => id !== "first")),
+      pageOrder: site.pageOrder.filter((id) => id !== "first"),
+    };
+    const panel = actions();
+    render(<PagesPanel site={empty} shownPageId={empty.homePageId} actions={panel} />);
+
+    await openMenu("Blog");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    const asked = screen.getByRole("alertdialog", { name: "Delete blog 'Blog'?" });
+    await userEvent.click(within(asked).getByRole("button", { name: "Cancel" }));
+    expect(panel.removeBlog).not.toHaveBeenCalled();
+
+    await openMenu("Blog");
+    await userEvent.click(screen.getByRole("menuitem", { name: "Delete" }));
+    await userEvent.click(
+      within(screen.getByRole("alertdialog")).getByRole("button", { name: "Delete Blog" }),
+    );
+    expect(panel.removeBlog).toHaveBeenCalledExactlyOnceWith(blog);
   });
 });
