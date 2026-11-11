@@ -17,6 +17,15 @@ function exists(site: MenuPages, item: MenuLeaf): boolean {
   }
 }
 
+/**
+ * Whether page `id` is one the menu takes in by itself: a page, not "Page not found", and not a
+ * Blog's post, which the Blog lists (6.10a). A post can still be added to an edited menu by hand.
+ */
+const takenIn = (site: MenuPages, id: PageId) => {
+  const page = site.pages[id];
+  return page?.kind === "page" && page.collection === undefined;
+};
+
 /** A new, shown menu item for page `pageId`. */
 const pageItem = (pageId: PageId): MenuItem => ({
   id: newId("menuItem"),
@@ -29,7 +38,8 @@ const pageItem = (pageId: PageId): MenuItem => ({
  * The site's menu kept in step with its pages (F-ED-17), for the same step as the page change, so
  * undo restores both together:
  * - while it `follows` the pages, it lists every page (not "Page not found") in page order, keeping
- *   each page's item (and its id); hiding one is the page's own setting;
+ *   each page's item (and its id); hiding one is the page's own setting; a Blog's posts are left
+ *   out, as the Blog lists them (6.10a);
  * - once edited (`custom`), its order is the person's: items of deleted pages, and section links
  *   into them, go, and the page `added` (if any) joins at the end.
  *
@@ -44,7 +54,7 @@ export function syncMenuWithPages(site: MenuPages, added?: PageId): MenuDoc {
     return {
       follows: "pages",
       items: site.pageOrder
-        .filter((id) => site.pages[id]?.kind === "page")
+        .filter((id) => takenIn(site, id))
         .map((pageId) => existing.get(pageId) ?? pageItem(pageId)),
     };
   }
@@ -62,7 +72,7 @@ export function syncMenuWithPages(site: MenuPages, added?: PageId): MenuDoc {
         (item.kind === "group" &&
           item.children.some((child) => child.kind === "page" && child.pageId === pageId)),
     );
-  if (added !== undefined && site.pages[added]?.kind === "page" && !listed(added)) {
+  if (added !== undefined && takenIn(site, added) && !listed(added)) {
     items.push(pageItem(added));
   }
   return { follows: "custom", items };

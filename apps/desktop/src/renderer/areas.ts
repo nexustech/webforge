@@ -28,7 +28,7 @@ import { publishArea } from "./publish/area.js";
 import { settingsArea } from "./settings/area.js";
 import { sharedSectionCommandsArea } from "./shared-sections/area.js";
 import { viewCommandsArea } from "./shell/area.js";
-import { pageCommandsArea, sitePanelArea } from "./site/area.js";
+import { canvasItemArea, pageCommandsArea, sitePanelArea } from "./site/area.js";
 import { siteCheckArea } from "./site-check/area.js";
 import { canvasSettingsArea, siteCodeArea, siteSettingsArea } from "./site-settings/area.js";
 import { saveSiteZipArea } from "./start/save-site-zip.js";
@@ -60,6 +60,7 @@ export const EDITOR_AREAS: readonly Area<EditorContext>[] = [
   customCssArea,
   canvasImagesArea,
   canvasSettingsArea,
+  canvasItemArea,
   canvasNavigationArea,
   clipboardCommandsArea,
   styleCommandsArea,

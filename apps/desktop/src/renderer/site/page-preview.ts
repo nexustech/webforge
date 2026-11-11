@@ -5,6 +5,7 @@ import {
   type ImageMeta,
   isImageMeta,
   type MediaId,
+  mediaItem,
   type PageEntry,
   pagePath,
   type SiteDoc,
@@ -19,6 +20,8 @@ export type PreviewValues = {
   readonly description: string;
   readonly shareImage: MediaId | undefined;
   readonly hideFromSearch: boolean;
+  /** A post's picture as typed (6.10a): what it's shared with when no share image is chosen. */
+  readonly picture?: string | undefined;
 };
 
 /**
@@ -62,7 +65,12 @@ export function pagePreview(
   const web = exportedSiteAddress(site.settings.address.url);
   const own = values.description.trim();
   const siteDescription = site.settings.general.description?.trim() ?? "";
-  const imageId = values.shareImage ?? site.settings.social.shareImage;
+  // As the export chooses: the page's own, a post's picture, then the site's (6.10a).
+  const picture = values.picture === undefined ? undefined : mediaItem(site.media, values.picture);
+  const imageId =
+    values.shareImage ??
+    (picture?.kind === "image" ? picture.id : undefined) ??
+    site.settings.social.shareImage;
   const image = imageId === undefined ? undefined : site.media[imageId];
   return {
     title: exportedTitle(site.settings.general.name, path, title),

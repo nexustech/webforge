@@ -2,6 +2,7 @@ import type { Recipe } from "@webforge/history";
 import { t } from "@webforge/i18n";
 import {
   canDeletePage,
+  collectionOf,
   deletePageFrom,
   insertPage,
   keepingOldAddresses,
@@ -17,6 +18,7 @@ import {
   pageTitle,
   renamePageIn,
   type SiteDoc,
+  sameJson,
   slugAfterRename,
   slugify,
   slugsInFolder,
@@ -86,7 +88,7 @@ export function fileNameInFolder(site: SiteDoc, pageId: PageId, name: string): s
 export { pagesChangedByDeleting };
 
 /** Runs `recipe` as one undo step, then shows `pageId` (the step remembers it for redo). */
-function editShowing(
+export function editShowing(
   session: PagesSession,
   kind: EditKind,
   label: string,
@@ -243,6 +245,9 @@ export function duplicatePage(session: PagesSession, pageId: PageId): PageId | n
       slug: pageSlugFor(draft, title, folder),
       ...(folder === undefined ? {} : { folder }),
       title,
+      // A post's copy is another post of its Blog, with its fields (6.10a).
+      ...(page.collection === undefined ? {} : { collection: page.collection }),
+      ...(page.entry === undefined ? {} : { entry: structuredClone(page.entry) }),
       settings: structuredClone(page.settings),
       doc: structuredClone(page.doc),
     };
@@ -268,9 +273,12 @@ export function movePage(session: PagesSession, pageId: PageId, direction: -1 | 
   );
 }
 
-/** Whether `page` can go into a folder: not the Home page or the "Page not found" page. */
+/**
+ * Whether `page` can go into a folder: not the Home page or the "Page not found" page, and not a
+ * Blog's post, which is always in the Blog's folder (6.10a).
+ */
 export const canMoveToFolder = (site: SiteDoc, page: PageEntry) =>
-  page.kind === "page" && page.id !== site.homePageId;
+  page.kind === "page" && page.id !== site.homePageId && page.collection === undefined;
 
 /** The folders pages are in, sorted. */
 export function foldersOf(site: SiteDoc): string[] {
@@ -310,9 +318,9 @@ export function moveToFolder(
   );
 }
 
-/** Whether `page` can be the Home page: an ordinary page that isn't already. */
+/** Whether `page` can be the Home page: an ordinary page that isn't already, nor a Blog's post. */
 export const canBeHome = (site: SiteDoc, page: PageEntry) =>
-  page.kind === "page" && page.id !== site.homePageId;
+  page.kind === "page" && page.id !== site.homePageId && page.collection === undefined;
 
 /**
  * Makes a page the Home page (`index.html`), taking it out of its folder. With `keepOldAddress`,
@@ -352,7 +360,8 @@ function setHomeIn(draft: SiteDoc, pageId: PageId): void {
 }
 
 /** Whether `page` can be shown in or hidden from navigation: never "Page not found". */
-export const canChangeNavigation = (page: PageEntry) => page.kind === "page";
+export const canChangeNavigation = (page: PageEntry) =>
+  page.kind === "page" && page.collection === undefined;
 
 /** Hides a page from navigation, or shows it again. */
 export function setHiddenFromNavigation(
@@ -443,7 +452,28 @@ export type PageSettingsChange = {
   readonly privacy?: boolean;
   /** A draft page (G37, #864); absent from older callers, which keep the page's own. */
   readonly draft?: boolean;
+  /**
+   * A post's field values by field name (6.10a): its date, summary and picture, `""` for none.
+   * Only a post's, and only its Blog's fields; absent from callers that don't change them.
+   */
+  readonly entry?: Readonly<Record<string, string>> | undefined;
 };
+
+/** A post's field values as `change` leaves them: only its Blog's fields, empty ones left out. */
+function entryAfter(
+  site: SiteDoc,
+  page: PageEntry,
+  change: PageSettingsChange,
+): Record<string, string> | undefined {
+  const collection = collectionOf(site, page);
+  if (collection === undefined || change.entry === undefined) return page.entry;
+  const entry: Record<string, string> = {};
+  for (const { name } of collection.fields) {
+    const value = Object.hasOwn(change.entry, name) ? change.entry[name]?.trim() : undefined;
+    if (value !== undefined && value !== "") entry[name] = value;
+  }
+  return Object.keys(entry).length === 0 ? undefined : entry;
+}
 
 /**
  * Applies Page Settings as one undo step, "Changed page settings", or nothing when nothing
@@ -480,6 +510,7 @@ export function changePageSettings(
   const privacy = page.kind === "page" && (change.privacy ?? page.settings.privacy === true);
   // The Home page and "Page not found" are always published.
   const isDraft = canBeDraft(site, page) && (change.draft ?? page.settings.draft === true);
+  const entry = entryAfter(site, page, change);
   const { settings } = page;
   if (
     title === page.title &&
@@ -492,11 +523,14 @@ export function changePageSettings(
     change.hideBackToTop === (settings.hideBackToTop === true) &&
     hideFromSearch === (settings.hideFromSearch === true) &&
     privacy === (settings.privacy === true) &&
-    isDraft === (settings.draft === true)
+    isDraft === (settings.draft === true) &&
+    sameJson(entry, page.entry)
   ) {
     return;
   }
-  session.edit("props", t("history.changedPage"), (draft) => {
+  const label =
+    page.collection === undefined ? t("history.changedPage") : t("blog.history.changedPost");
+  session.edit("props", label, (draft) => {
     const target = draft.pages[pageId];
     if (target === undefined) {
       return;
@@ -518,5 +552,10 @@ export function changePageSettings(
       ...(privacy ? { privacy: true } : {}),
       ...(isDraft ? { draft: true } : {}),
     };
+    // A post's fields (6.10a); a page with none has no entry.
+    if (!sameJson(entry, target.entry)) {
+      if (entry === undefined) delete target.entry;
+      else target.entry = entry;
+    }
   });
 }

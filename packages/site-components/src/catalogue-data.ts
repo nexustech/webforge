@@ -62,7 +62,13 @@ export const catalogueFieldSchema = z.discriminatedUnion("kind", [
     /** A date, `YYYY-MM-DD` or empty (#865). */
     inputType: z.literal("date").optional(),
   }),
-  z.strictObject({ ...common, kind: z.literal("richtext"), inline: z.boolean().optional() }),
+  z.strictObject({
+    ...common,
+    kind: z.literal("richtext"),
+    inline: z.boolean().optional(),
+    /** Can show a field of the post it is drawn for, in a Blog's design (6.10a). */
+    itemBindable: z.literal(true).optional(),
+  }),
   ...listItemFieldSchema.options.slice(1),
   z.strictObject({
     ...common,
@@ -77,7 +83,12 @@ export const catalogueFieldSchema = z.discriminatedUnion("kind", [
     accepts: z.enum(["section", "element", "layout", "child"]).optional(),
     max: z.int().positive().optional(),
   }),
-  z.strictObject({ ...common, kind: z.literal("media") }),
+  z.strictObject({
+    ...common,
+    kind: z.literal("media"),
+    /** Can show the picture of the post it is drawn for, in a Blog's design (6.10a). */
+    itemBindable: z.literal(true).optional(),
+  }),
   z.strictObject({ ...common, kind: z.literal("link") }),
   z.strictObject({ ...common, kind: z.literal("code") }),
   z.strictObject({ ...common, kind: z.literal("icon") }),

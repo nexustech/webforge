@@ -20,6 +20,8 @@ function navigationPages(site: SiteDoc): NavigationPage[] {
             path: pagePath(page, site.homePageId),
             title: page.title,
             navLabel: page.navLabel,
+            // A Blog's post is in the menu only where an edited menu has it (6.10a): a menu that
+            // follows the pages leaves posts out (syncMenuWithPages).
             hideFromNavigation: page.settings.hideFromNavigation || page.kind === "not-found",
           },
         ];

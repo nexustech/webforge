@@ -1886,3 +1886,87 @@ describe("buildSite: notes on elements (UX-17, #868)", () => {
     scaledTestTimeout(60_000),
   );
 });
+
+describe("buildSite: a Blog's posts (6.10a, ADR 0025)", () => {
+  it(
+    "writes each post in the Blog's folder, inside its design, showing its fields",
+    async () => {
+      const base = sampleSite();
+      const design: NodeDoc[] = [
+        {
+          type: "Heading",
+          props: { id: "post-title", text: "Title", bindings: { text: "item.title" } },
+        },
+        { type: "Text", props: { id: "post-date", text: "Date", bindings: { text: "item.date" } } },
+        { type: "Image", props: { id: "post-picture", bindings: { image: "item.picture" } } },
+        {
+          type: "Text",
+          props: { id: "post-summary", text: "Summary", bindings: { text: "item.summary" } },
+        },
+      ];
+      const site: SiteSnapshot = {
+        ...base,
+        pages: [
+          ...base.pages,
+          {
+            id: "spring",
+            path: "blog/spring-opening",
+            title: "Spring opening",
+            item: {
+              values: {
+                title: { kind: "text", text: "Spring opening" },
+                date: { kind: "date", date: "2026-11-10" },
+                picture: { kind: "image", mediaId: "hero-photo" as MediaId },
+              },
+            },
+            doc: {
+              root: { props: {} },
+              content: [
+                ...design,
+                { type: "Text", props: { id: "post-body", text: "We open on Saturday." } },
+              ],
+            },
+          },
+        ],
+      };
+
+      const exported = await buildSite(site, siteLibrary, resources);
+      const html = text(exported, "blog/spring-opening.html");
+
+      expect(html).toContain("Spring opening</h2>");
+      expect(html).toContain('<time dateTime="2026-11-10">10 November 2026</time>');
+      expect(html).toContain('src="../assets/img/hero-1600.jpg"');
+      expect(html).toContain("We open on Saturday.");
+      // An empty field shows nothing: no own text in its place.
+      expect(html).not.toContain("Summary");
+      // Out of a menu that doesn't list it: the Blog lists its posts.
+      expect(text(exported, "index.html")).not.toContain("spring-opening");
+
+      // Put in an edited menu by hand, the post is in the Header on every page (#935 review).
+      const listed = await buildSite(
+        {
+          ...site,
+          menu: {
+            follows: "custom",
+            items: [
+              ...(base.menu?.items ?? []),
+              {
+                id: "spring-item" as MenuItemId,
+                kind: "page",
+                pageId: "spring" as PageId,
+                hidden: false,
+              },
+            ],
+          },
+        },
+        siteLibrary,
+        resources,
+      );
+      expect(text(listed, "index.html")).toContain('href="blog/spring-opening.html"');
+      expect(text(listed, "blog/spring-opening.html")).toContain(
+        '<a href="../blog/spring-opening.html" aria-current="page">Spring opening</a>',
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
+});

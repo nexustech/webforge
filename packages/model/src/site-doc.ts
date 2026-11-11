@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { collectionOf, collectionsDocSchema, itemEntrySchema } from "./collections.js";
 import {
   type LayoutDoc,
   layoutDocSchema,
@@ -8,7 +9,7 @@ import {
   themeSchema,
   withoutUnsafeKeys,
 } from "./documents.js";
-import { mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
+import { collectionIdSchema, mediaIdSchema, newId, type PageId, pageIdSchema } from "./ids.js";
 import { mediaMetaSchema } from "./media.js";
 import { MENU_LABEL_MAX, type MenuItem, menuDocSchema } from "./menu.js";
 import { defaultSiteSettings, siteSettingsSchema } from "./settings.js";
@@ -16,7 +17,7 @@ import { containsCopy, copyIssues, sharedSectionsDocSchema } from "./shared-sect
 import { copyTheme, DEFAULT_THEME, type ThemeTokens } from "./theme.js";
 
 /** The format of {@link SiteDoc} this build writes. Bumped with a migration and a fixture. */
-export const SITE_FORMAT_VERSION = 12;
+export const SITE_FORMAT_VERSION = 13;
 
 const SEGMENT = "[a-z0-9]+(?:-[a-z0-9]+)*";
 
@@ -108,6 +109,14 @@ export const pageEntrySchema = z.strictObject({
    * sitemap's `lastmod`. Absent until it first changes (ADR 0012: absent leaves `lastmod` out).
    */
   updated: z.iso.date().optional(),
+  /**
+   * The collection this page is an item of (6.10a, ADR 0025): a Blog's post. Its folder is the
+   * collection's, and the collection's design is drawn around its content. An ordinary page when
+   * absent.
+   */
+  collection: collectionIdSchema.optional(),
+  /** An item's field values (a post's date, summary and picture), read for its collection's fields. */
+  entry: itemEntrySchema.optional(),
 });
 
 /** See {@link pageEntrySchema}. */
@@ -148,6 +157,8 @@ export const SITE_PART_SCHEMAS = {
   menu: menuDocSchema,
   /** Shared sections (F-ED-23): saved once, placed on pages as linked copies. */
   sharedSections: sharedSectionsDocSchema,
+  /** Collections (6.10a, ADR 0025): a Blog, its fields and its design; its items are pages. */
+  collections: collectionsDocSchema,
 } as const;
 
 /** The fields of the `site` document: the format and the pages' order, which concern every page. */
@@ -170,17 +181,19 @@ type SiteIssue = { readonly message: string; readonly path: PropertyKey[] };
 type SiteIssueScope = {
   readonly pages: "all" | ReadonlySet<string>;
   readonly layout: boolean;
+  readonly collections: boolean;
 };
 
-/** Every page and the layout: what checking a whole site covers. */
-const WHOLE_SITE: SiteIssueScope = { pages: "all", layout: true };
+/** Every page, the layout and the collections' designs: what checking a whole site covers. */
+const WHOLE_SITE: SiteIssueScope = { pages: "all", layout: true, collections: true };
 
 /**
  * What is wrong across the parts of a site that each part's schema can't see: pages keyed by their
  * id, reserved slugs and folders, one home page and one "Page not found" page, the page order,
- * unique page paths, media names and menu ids, and copies of shared sections only at the top of
- * pages. `scope` limits the tree walks to the pages and layout that changed (R13a); the site's
- * other parts must have passed before.
+ * unique page paths, media names and menu ids, copies of shared sections only at the top of pages,
+ * and collections' items in their collection's folder (ADR 0025). `scope` limits the tree walks to
+ * the pages, layout and designs that changed (R13a); the site's other parts must have passed
+ * before.
  */
 export function siteIssues(site: SiteDoc, scope: SiteIssueScope = WHOLE_SITE): SiteIssue[] {
   const issues: SiteIssue[] = [];
@@ -209,6 +222,47 @@ export function siteIssues(site: SiteDoc, scope: SiteIssueScope = WHOLE_SITE): S
         issue(message, ["pages", key, "doc", "content", ...path]);
       }
     }
+    if (page.collection === undefined) {
+      if (page.entry !== undefined) {
+        issue("Only a collection's item has field values", ["pages", key, "entry"]);
+      }
+      continue;
+    }
+    const collection = collectionOf(site, page);
+    if (collection === undefined) {
+      issue(`The collection "${page.collection}" is missing`, ["pages", key, "collection"]);
+    } else if (page.folder !== collection.folder) {
+      issue("An item is in its collection's folder", ["pages", key, "folder"]);
+    }
+    if (page.id === site.homePageId || page.kind === "not-found") {
+      issue("The home page and the 'Page not found' page are never items", [
+        "pages",
+        key,
+        "collection",
+      ]);
+    }
+  }
+
+  const collections = Object.entries(site.collections);
+  for (const [key, collection] of collections) {
+    if (collection.id !== key) {
+      issue(`Collection "${key}" has the id "${collection.id}"`, ["collections", key, "id"]);
+    }
+    // Copies of shared sections go on pages, never in a design shared by every item.
+    if (
+      scope.collections &&
+      (containsCopy(collection.design.before) || containsCopy(collection.design.after))
+    ) {
+      issue("A collection's design can't hold a copy of a shared section", [
+        "collections",
+        key,
+        "design",
+      ]);
+    }
+  }
+  const folders = duplicatesOf(collections.map(([, collection]) => collection.folder));
+  if (folders.length > 0) {
+    issue(`Collections share a folder: ${folders.join(", ")}`, ["collections"]);
   }
 
   // Copies of shared sections go on pages, never in the Header or Footer (F-ED-23).
@@ -277,6 +331,7 @@ const siteDocObjectSchema = z
     code: SITE_PART_SCHEMAS.code,
     menu: SITE_PART_SCHEMAS.menu,
     sharedSections: SITE_PART_SCHEMAS.sharedSections,
+    collections: SITE_PART_SCHEMAS.collections,
   })
   .superRefine((site, ctx) => {
     for (const { message, path } of siteIssues(site)) {
@@ -350,5 +405,6 @@ export function createSite(options: CreateSiteOptions): SiteDoc {
       items: [{ id: newId("menuItem"), kind: "page", pageId: homeId, hidden: false }],
     },
     sharedSections: {},
+    collections: {},
   };
 }

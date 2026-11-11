@@ -52,6 +52,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   9: sectionContentWidths,
   10: accentFonts,
   11: destinationsOutOfSettings,
+  12: siteCollections,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -75,8 +76,8 @@ function walkNodes(nodes: unknown, visit: (node: RawNode) => void): void {
 }
 
 /**
- * Every node of a raw site: its pages' content, the shared Header and Footer, then the shared
- * sections' (from format 3).
+ * Every node of a raw site: its pages' content, the shared Header and Footer, the shared sections'
+ * (from format 3), then the collections' designs (from format 13).
  */
 function walkSite(site: RawSite, visit: (node: RawNode) => void): void {
   if (isRecord(site.pages)) {
@@ -91,6 +92,14 @@ function walkSite(site: RawSite, visit: (node: RawNode) => void): void {
   if (isRecord(site.sharedSections)) {
     for (const entry of Object.values(site.sharedSections)) {
       if (isRecord(entry)) walkNodes([entry.section], visit);
+    }
+  }
+  if (isRecord(site.collections)) {
+    for (const collection of Object.values(site.collections)) {
+      if (isRecord(collection) && isRecord(collection.design)) {
+        walkNodes(collection.design.before, visit);
+        walkNodes(collection.design.after, visit);
+      }
     }
   }
 }
@@ -349,6 +358,19 @@ function destinationsOutOfSettings(site: RawSite): RawSite {
   if (!isRecord(settings) || !("publish" in settings)) return { ...site, formatVersion: 12 };
   const { publish: _publish, ...rest } = settings;
   return { ...site, settings: rest, formatVersion: 12 };
+}
+
+/**
+ * Format 12 → 13 (6.10a, ADR 0025): the site gets its collections, none yet. A page becomes an item
+ * of one only by being given its `collection`, which no older page has, so every page stays an
+ * ordinary one. A site that already has them keeps them.
+ */
+function siteCollections(site: RawSite): RawSite {
+  return {
+    ...site,
+    collections: isRecord(site.collections) ? site.collections : {},
+    formatVersion: 13,
+  };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

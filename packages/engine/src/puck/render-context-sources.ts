@@ -8,6 +8,7 @@ type Source =
   | "setPreviews"
   | "setLooks"
   | "setSettings"
+  | "setItem"
   | "export";
 
 /**
@@ -36,6 +37,9 @@ export const RENDER_CONTEXT_SOURCES = {
   netlifyForms: "export",
   // The canvas loads every image as it comes into view; only the export knows the first section.
   firstSection: "export",
+  // The post shown, on a Blog's post (6.10a): set again when the page shown or its fields change.
+  item: "setItem",
+  emptyItem: "setItem",
   setting: "setSettings",
   emptySetting: "setSettings",
   openingHours: "setSettings",

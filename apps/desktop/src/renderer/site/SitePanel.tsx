@@ -19,6 +19,7 @@ import {
 } from "../menu/index.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
+import { addBlog, addPost } from "./blog-actions.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
   addPage,
@@ -57,6 +58,12 @@ export function pagesPanelActions(
     },
     addPolicy: (kind) => {
       addPolicyPage(session, kind);
+    },
+    addBlog: () => {
+      addBlog(session);
+    },
+    addPost: (collectionId) => {
+      addPost(session, collectionId);
     },
     rename: (pageId, name, keepOldAddress) => renamePage(session, pageId, name, keepOldAddress),
     duplicate: (pageId) => {

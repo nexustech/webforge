@@ -1648,7 +1648,8 @@
         "text": {
           "kind": "richtext",
           "label": "Text",
-          "inline": true
+          "inline": true,
+          "itemBindable": true
         },
         "margin": {
           "kind": "box",
@@ -1730,7 +1731,8 @@
       "fields": {
         "image": {
           "kind": "media",
-          "label": "Image"
+          "label": "Image",
+          "itemBindable": true
         },
         "width": {
           "kind": "slider",

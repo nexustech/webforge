@@ -3,7 +3,7 @@
 id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
-related: [header-and-footer, links, site-settings, site-check]
+related: [header-and-footer, links, site-settings, site-check, blog]
 updated: 2026-11-10
 ---
 
@@ -29,6 +29,7 @@ Click **+** (**Add Page**):
 - **Blank Page…** asks for the page's name, and shows the file name it will have.
 - **Privacy Page** adds a page that tells visitors what your site collects and what you do with it. See [A privacy page](#a-privacy-page).
 - **Terms Page** adds your terms for using the site and for booking or buying from you. See [Terms and cookie pages](#terms-and-cookie-pages).
+- **Blog** adds a blog, with a first post. Its posts are listed in a group of their own, with **New Post**. See [Your blog](blog.md).
 - **Cookie Policy Page** adds a page about the cookies your site uses. It's offered while Google Analytics is on (Site Settings › Analytics). See [Terms and cookie pages](#terms-and-cookie-pages).
 - **Suggested Pages** offers ready-made pages for each kind of business, such as _Reviews_, _Gift vouchers_ or _Areas we cover_.
 
@@ -125,6 +126,7 @@ A page with two old addresses sends both straight to where it is now. If you lat
 Open a page's **…** menu and choose **Page Settings…**. These settings decide how the page shows in search results, browser tabs and when someone shares it.
 
 - **Title:** shown in the browser tab and as the link in search results. Give each page its own.
+- **Date**, **Summary** and **Picture**, for a blog's post only. See [Your blog](blog.md#a-posts-date-summary-and-picture).
 - **File name:** the end of the page's web address, such as `about.html`. The Home page is always `index.html`, and the Page not found page `404.html`.
 - **Description:** a sentence or two shown under the title in search results. Leave it empty to use the site's description.
 - **Share image:** the picture shown when someone shares the page. _The site's image_ uses the one from Site Settings.

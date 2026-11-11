@@ -69,3 +69,51 @@ describe("binding fields", () => {
     expect(bindingLabel("Heading", "")).toBe("Heading shows its own text");
   });
 });
+
+describe("binding fields in a Blog's design (6.10a)", () => {
+  const itemFields = [
+    { name: "date", label: "Date", kind: "date" },
+    { name: "summary", label: "Summary", kind: "text" },
+    { name: "picture", label: "Picture", kind: "image" },
+  ] as const;
+  const text = siteLibrary.components.Text?.fields.text;
+  const image = siteLibrary.components.Image?.fields.image;
+
+  it("offers a text the post's title, date and summary, and a picture its picture", () => {
+    if (heading === undefined || text === undefined || image === undefined) {
+      throw new Error("missing fields");
+    }
+    const values = (fields: ReturnType<typeof withBindingChoice>) => {
+      const [choice] = fields;
+      return choice?.kind === "select" ? choice.options.map((option) => option.value) : [];
+    };
+
+    expect(values(withBindingChoice("text", heading, undefined, own, itemFields))).toEqual(
+      expect.arrayContaining(["", "contact.phone", "item.title", "item.date", "item.summary"]),
+    );
+    expect(values(withBindingChoice("text", text, undefined, own, itemFields))).toEqual([
+      "",
+      "item.title",
+      "item.date",
+      "item.summary",
+    ]);
+    expect(values(withBindingChoice("image", image, undefined, own, itemFields))).toEqual([
+      "",
+      "item.picture",
+    ]);
+    // Outside a design, a Text and a picture have no choice.
+    expect(withBindingChoice("text", text, undefined, own)).toEqual(own);
+  });
+
+  it("shows only the choice while bound to the post, and binds and unbinds", () => {
+    if (text === undefined) throw new Error("Text has no text field");
+
+    const fields = withBindingChoice("text", text, { text: "item.summary" }, own, itemFields);
+
+    expect(fields).toHaveLength(1);
+    expect(fields[0]).toMatchObject({ value: "item.summary" });
+    expect(withBinding(undefined, "text", "item.date")).toEqual({ text: "item.date" });
+    expect(withBinding({ text: "item.date" }, "text", "")).toBeUndefined();
+    expect(bindingLabel("Text", "item.date")).toBe("Text shows the post's date");
+  });
+});

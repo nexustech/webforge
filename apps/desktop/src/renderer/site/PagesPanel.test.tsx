@@ -2,10 +2,11 @@
 
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { PageId, SiteDoc } from "@webforge/model";
+import type { CollectionId, PageId, SiteDoc } from "@webforge/model";
 import { scaledTestTimeout } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
+import { insertBlog, insertPost } from "./blog-actions.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
 afterEach(cleanup);
@@ -58,6 +59,8 @@ function setUp({ backToTop = false, analytics = false, published = false } = {})
     add: vi.fn(),
     addSuggested: vi.fn(),
     addPolicy: vi.fn(),
+    addBlog: vi.fn(),
+    addPost: vi.fn(),
     rename: vi.fn(),
     duplicate: vi.fn(),
     move: vi.fn(),
@@ -359,5 +362,61 @@ describe("PagesPanel (F-ED-13)", () => {
     expect(screen.getByRole("menuitem", { name: "Move Up" }).getAttribute("aria-disabled")).toBe(
       "true",
     );
+  });
+});
+
+describe("PagesPanel with a Blog (6.10a)", () => {
+  const actions = (): PagesPanelActions => ({
+    show: vi.fn(),
+    add: vi.fn(),
+    addSuggested: vi.fn(),
+    addPolicy: vi.fn(),
+    addBlog: vi.fn(),
+    addPost: vi.fn(),
+    rename: vi.fn(),
+    duplicate: vi.fn(),
+    move: vi.fn(),
+    moveToFolder: vi.fn(),
+    setHome: vi.fn(),
+    setHidden: vi.fn(),
+    setDraft: vi.fn(),
+    remove: vi.fn(),
+    changeSettings: vi.fn(),
+  });
+
+  it("adds a Blog from Add Page's menu while the site has none", async () => {
+    const panel = actions();
+    render(
+      <PagesPanel site={starterSite()} shownPageId={starterSite().homePageId} actions={panel} />,
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    await userEvent.click(screen.getByRole("menuitem", { name: "Blog" }));
+
+    expect(panel.addBlog).toHaveBeenCalledOnce();
+  });
+
+  it("lists the Blog's posts in a group, newest first, with New Post and no Move Up", async () => {
+    const site = starterSite();
+    const blog = "blog" as CollectionId;
+    insertBlog(site, blog, "first" as PageId, "2026-01-05");
+    insertPost(site, blog, "later" as PageId, "Spring opening", {}, "2026-03-01");
+    const panel = actions();
+    render(<PagesPanel site={site} shownPageId={site.homePageId} actions={panel} />);
+
+    const posts = within(screen.getByRole("list", { name: "Blog" }))
+      .getAllByRole("button", { name: /^(?!Actions)/ })
+      .map((button) => button.textContent);
+    expect(posts).toEqual(["Spring opening", "Our first post"]);
+    await userEvent.click(screen.getByRole("button", { name: "New Post (Blog)" }));
+    expect(panel.addPost).toHaveBeenCalledExactlyOnceWith(blog);
+
+    await openMenu("Spring opening");
+    expect(screen.queryByRole("menuitem", { name: "Move Up" })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: /Move to Folder/ })).toBeNull();
+    expect(screen.queryByRole("menuitem", { name: "Set as Home Page" })).toBeNull();
+    await userEvent.keyboard("{Escape}");
+    await userEvent.click(screen.getByRole("button", { name: "Add Page" }));
+    expect(screen.queryByRole("menuitem", { name: "Blog" })).toBeNull();
   });
 });

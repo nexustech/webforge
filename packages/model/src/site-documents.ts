@@ -13,7 +13,16 @@ import {
 } from "./site-doc.js";
 
 /** The parts of a {@link SiteDoc} stored as one document each, under their own name. */
-const PARTS = ["settings", "theme", "layout", "media", "code", "menu", "sharedSections"] as const;
+const PARTS = [
+  "settings",
+  "theme",
+  "layout",
+  "media",
+  "code",
+  "menu",
+  "sharedSections",
+  "collections",
+] as const;
 
 /**
  * What a {@link SiteDocument} can hold: the one list of document kinds, shared by storage and the
@@ -30,8 +39,8 @@ export type SiteDocumentKind = (typeof SITE_DOCUMENT_KINDS)[number];
  */
 export type SiteDocument = {
   /**
-   * `site`, `settings`, `theme`, `layout`, `media`, `code`, `menu`, `sharedSections` or
-   * `page:<PageId>`.
+   * `site`, `settings`, `theme`, `layout`, `media`, `code`, `menu`, `sharedSections`,
+   * `collections` or `page:<PageId>`.
    */
   readonly id: string;
   readonly kind: SiteDocumentKind;
@@ -262,7 +271,11 @@ export function validateSiteChanges(
   }
   // In the site's own key order: the spreads keep it.
   const next = { ...site, ...parts, ...fields, pages: ordered } as SiteDoc;
-  const issues = siteIssues(next, { pages: changedPages, layout: "layout" in parts });
+  const issues = siteIssues(next, {
+    pages: changedPages,
+    layout: "layout" in parts,
+    collections: "collections" in parts,
+  });
   return issues.length === 0 ? { success: true, data: next } : { success: false };
 }
 

@@ -22,12 +22,30 @@ export type BindableSetting = (typeof BINDABLE_SETTINGS)[number];
 export const bindableSettingSchema = z.enum(BINDABLE_SETTINGS);
 
 /**
- * An element's bindings: which of its text fields show a Site Settings value instead of their own
- * text, e.g. `{ siteName: "general.name" }`. Stored beside the fields (in `props.bindings`), so a
- * field keeps its own text for when the binding is removed, and the canvas's inline text editing
- * only ever sees strings.
+ * A binding to a field of the item the element is drawn for (6.10a, ADR 0025): `item.title`, or
+ * one of its collection's fields, `item.date`. Elements of a collection's design have them.
  */
-export type Bindings = Record<string, BindableSetting>;
+export type ItemBinding = `item.${string}`;
+
+const ITEM_BINDING = /^item\.[a-z][a-zA-Z0-9]{0,39}$/;
+
+/** Whether `value` is an {@link ItemBinding}. */
+export const isItemBinding = (value: unknown): value is ItemBinding =>
+  typeof value === "string" && ITEM_BINDING.test(value);
+
+/** What a field can be bound to: a Site Settings value, or a field of the item it is drawn for. */
+export type Binding = BindableSetting | ItemBinding;
+
+const isBinding = (value: unknown): value is Binding =>
+  bindableSettingSchema.safeParse(value).success || isItemBinding(value);
+
+/**
+ * An element's bindings: which of its fields show a Site Settings value or an item's field instead
+ * of their own, e.g. `{ siteName: "general.name" }` or `{ text: "item.title" }`. Stored beside the
+ * fields (in `props.bindings`), so a field keeps its own value for when the binding is removed, and
+ * the canvas's inline text editing only ever sees strings.
+ */
+export type Bindings = Record<string, Binding>;
 
 /**
  * The valid entries of an element's `props.bindings`. An entry this version doesn't know (a
@@ -39,17 +57,27 @@ export function validBindings(bindings: unknown): Bindings {
   }
   // fromEntries defines own properties, so even a "__proto__" entry stays a plain key.
   return Object.fromEntries(
-    Object.entries(bindings).filter(
-      (entry): entry is [string, BindableSetting] =>
-        bindableSettingSchema.safeParse(entry[1]).success,
-    ),
+    Object.entries(bindings).filter((entry): entry is [string, Binding] => isBinding(entry[1])),
   );
 }
 
-/** The binding of field `name` in an element's `props.bindings`, if it has a valid one. */
+/** The Site Settings value field `name` is bound to in an element's `props.bindings`, if any. */
 export function bindingOf(bindings: unknown, name: string): BindableSetting | undefined {
   const valid = validBindings(bindings);
-  return Object.hasOwn(valid, name) ? valid[name] : undefined;
+  const binding = Object.hasOwn(valid, name) ? valid[name] : undefined;
+  return binding === undefined || isItemBinding(binding) ? undefined : binding;
+}
+
+/**
+ * The item field (`title`, `date`) field `name` is bound to in an element's `props.bindings`, if
+ * any (ADR 0025, decision 3).
+ */
+export function itemBindingOf(bindings: unknown, name: string): string | undefined {
+  const valid = validBindings(bindings);
+  const binding = Object.hasOwn(valid, name) ? valid[name] : undefined;
+  return binding !== undefined && isItemBinding(binding)
+    ? binding.slice("item.".length)
+    : undefined;
 }
 
 /** The value of a bindable setting, or `undefined` while it is empty. */

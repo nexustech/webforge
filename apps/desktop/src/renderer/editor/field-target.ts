@@ -2,6 +2,8 @@ import type { EngineEdit } from "@webforge/engine";
 import { t } from "@webforge/i18n";
 import {
   type Breakpoint,
+  type CollectionField,
+  collectionById,
   findNode,
   type NodeDoc,
   type PageDoc,
@@ -13,9 +15,12 @@ import type { ComponentDef, ComponentLibrary, FieldDef } from "@webforge/site-co
 import { updateField } from "./apply-patch.js";
 import { deviceLabelFor, labelFor } from "./labels.js";
 import {
+  canvasLayout,
+  designLabel,
+  nodesAtHome,
+  type SharedHome,
   type SharedRegion,
-  sharedRegionOf,
-  shownLayout,
+  sharedHomeOf,
   updateSharedField,
 } from "./shared-layout.js";
 import { type CopySelection, copySelection, updateSectionField } from "./shared-sections.js";
@@ -34,6 +39,13 @@ export type FieldTarget = {
   readonly id: string;
   /** Set for an element of the shared Header or Footer: its changes go to the site's layout. */
   readonly region: SharedRegion | undefined;
+  /**
+   * Set for an element of a collection's design, drawn around a post (6.10a): its changes go to
+   * the collection, and its fields can show the post's.
+   */
+  readonly design: Exclude<SharedHome, SharedRegion> | undefined;
+  /** In a Blog's design, the post's fields its elements can show (6.10a). */
+  readonly itemFields: readonly CollectionField[] | undefined;
   /** Set for an element of a linked copy: its changes go to the shared section. */
   readonly inCopy: CopySelection | undefined;
   /** In a copy, every change is named as the canvas names it: "Edited shared section '…'". */
@@ -73,12 +85,13 @@ export function fieldTarget(
   }
   const isSelected = (candidate: NodeDoc) => candidate.props.id === nodeId;
   const ownNode = findNode(page.content, isSelected);
-  const region =
-    ownNode === undefined ? sharedRegionOf(shownLayout(site, pageId), nodeId) : undefined;
+  const home = ownNode === undefined ? sharedHomeOf(site, pageId, nodeId) : undefined;
+  const region = typeof home === "string" ? home : undefined;
+  const design = typeof home === "object" ? home : undefined;
   const inCopy =
-    ownNode === undefined && region === undefined ? copySelection(site, pageId, nodeId) : undefined;
+    ownNode === undefined && home === undefined ? copySelection(site, pageId, nodeId) : undefined;
   const node =
-    region === undefined ? (ownNode ?? inCopy?.node) : findNode(site.layout[region], isSelected);
+    home === undefined ? (ownNode ?? inCopy?.node) : findNode(nodesAtHome(site, home), isSelected);
   const component = node === undefined ? undefined : library.components[node.type];
   if (node === undefined || component === undefined) {
     return undefined;
@@ -98,14 +111,17 @@ export function fieldTarget(
     field,
     page,
     selection: id,
-    ...(region === undefined ? {} : { shared: true, layout: site.layout }),
+    ...(home === undefined ? {} : { shared: true, layout: canvasLayout(site, pageId) }),
   });
+  // In a copy or a Blog's design, every change is named by the shared section or the Blog.
   const copyLabel =
-    inCopy === undefined
-      ? undefined
-      : t("history.editedSharedSection", {
+    inCopy !== undefined
+      ? t("history.editedSharedSection", {
           name: t("history.namedItem", { name: inCopy.shared.name }),
-        });
+        })
+      : design === undefined
+        ? undefined
+        : designLabel(site, pageId, nodeId);
   const labelOf = (name: string, field: FieldDef, breakpoint: Breakpoint, reset = false) => {
     if (copyLabel !== undefined) return copyLabel;
     const edit = editOf(field.kind === "text" ? "text" : "props", name);
@@ -114,8 +130,8 @@ export function fieldTarget(
       : labelFor(edit, library);
   };
   const write = (draft: SiteDoc, name: string, next: (stored: unknown) => unknown) => {
-    if (region !== undefined) {
-      updateSharedField(draft.layout, site.layout, region, id, name, next);
+    if (home !== undefined) {
+      updateSharedField(draft, site, home, id, name, next);
       return;
     }
     if (inCopy !== undefined) {
@@ -136,6 +152,8 @@ export function fieldTarget(
     component,
     id,
     region,
+    design,
+    itemFields: design === undefined ? undefined : collectionById(site, design.collection)?.fields,
     inCopy,
     copyLabel,
     storedOr,

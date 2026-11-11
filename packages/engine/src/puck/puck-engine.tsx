@@ -411,6 +411,17 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       changeContext({ parts: { ...parts, looks: next } });
     },
 
+    setItem(next) {
+      const { item: _item, emptyItem: _emptyItem, ...rest } = parts;
+      changeContext({
+        parts: {
+          ...rest,
+          ...(next.item === undefined ? {} : { item: next.item }),
+          ...(next.emptyItem === undefined ? {} : { emptyItem: next.emptyItem }),
+        },
+      });
+    },
+
     setPreviews(previews) {
       // Drawing the page again is only worth it when what it previews changes.
       if (samePreviews(parts.previews ?? {}, previews)) return;
