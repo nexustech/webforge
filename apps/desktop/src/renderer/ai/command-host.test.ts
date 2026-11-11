@@ -65,6 +65,28 @@ describe("commandHost (4.8)", () => {
     );
   });
 
+  it("keeps a renamed page's old address once the window's site has been published (#925)", async () => {
+    const session = createEditorSession(siteLibrary, starterSite());
+    let published = false;
+    const host = commandHost(
+      session,
+      { getState: () => ({ mode: "design" }) as never },
+      createSiteWideConfirm(),
+      () => published,
+    );
+    const api = createCommandApi(host);
+    const page = newId("page");
+    session.edit("insert", "Added page 'Prices'", (draft) => insertPage(draft, page, "Prices"));
+    const kept = () => session.history.document.getState().settings.search.keptAddresses;
+
+    await api.run("renamePage", { pageId: page, title: "Price list" }, { app: "Claude" });
+    expect(kept()).toBeUndefined();
+
+    published = true;
+    await api.run("renamePage", { pageId: page, title: "Our prices" }, { app: "Claude" });
+    expect(kept()).toEqual([{ from: "price-list.html", page }]);
+  });
+
   it("runs a command as the session's own edit, of its kind", () => {
     const { session, host } = setup();
     const added = vi.fn();

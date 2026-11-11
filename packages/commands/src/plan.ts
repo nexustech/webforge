@@ -18,6 +18,21 @@ export type Plan = {
   readonly removesPages?: readonly PageId[];
 };
 
+/**
+ * What a command is planned with besides the site: what the window knows of it. Left out, the site
+ * counts as never published.
+ */
+export type PlanContext = {
+  /**
+   * Whether the site has been published (the window's `lastPublishedAt`): a page's new address
+   * then keeps its old one working, as the person's own rename does (#862, #925).
+   */
+  readonly published: boolean;
+};
+
+/** Planned with a site never published. */
+export const UNPUBLISHED: PlanContext = { published: false };
+
 /** Why a command can't be planned. */
 export type Failure = { readonly status: Refusal; readonly message: string };
 

@@ -6,13 +6,15 @@ import type { PreferencesStore } from "../shell/preferences-store.js";
 
 /**
  * What AI apps' commands run against in this window (4.8): the open site's session, whose steps
- * the editor shows as its own (a removal offers Undo in a toast, D4); Design or Content mode; and
- * the window's site-wide question (D7), which an AI app's change to more than one page asks.
+ * the editor shows as its own (a removal offers Undo in a toast, D4); Design or Content mode; the
+ * window's site-wide question (D7), which an AI app's change to more than one page asks; and
+ * whether the site has been published, so a page an AI app renames keeps its old address (#925).
  */
 export function commandHost(
   session: Pick<EditorSession, "history" | "edit" | "held" | "ui">,
   preferences: Pick<PreferencesStore, "getState">,
   siteWide: Pick<SiteWideConfirm, "confirmSiteWide" | "current" | "busy" | "answer">,
+  published: () => boolean = () => false,
 ): CommandHost {
   return {
     history: session.history,
@@ -33,6 +35,7 @@ export function commandHost(
     // dialog changing the site live holds others' changes, so its steps are all its own (3.13a).
     editing: () => textSessionOpen(session.history) || session.held() || siteWide.busy(),
     mode: () => preferences.getState().mode,
+    published,
     confirm(confirmation, signal) {
       const action: SiteWideAction = { ...confirmation };
       const answer = siteWide.confirmSiteWide(action);

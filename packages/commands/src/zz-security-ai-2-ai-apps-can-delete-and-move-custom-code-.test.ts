@@ -40,6 +40,7 @@ function setup() {
     run: vi.fn<CommandHost["run"]>((label, recipe) => history.run(label, recipe)),
     editing: () => false,
     mode: () => "design" as const,
+    published: () => false,
     confirm: vi.fn<CommandHost["confirm"]>(async () => true),
   } as unknown as CommandHost;
   const home = { kind: "page" as const, pageId: history.document.getState().homePageId };

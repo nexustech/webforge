@@ -5,6 +5,7 @@ import {
   insertPage,
   isNodeDoc,
   isPageIn,
+  keepingOldAddresses,
   linkValueSchema,
   type NodeDoc,
   newId,
@@ -21,6 +22,7 @@ import {
   type SiteDoc,
   swapPages,
   themeTokensSchema,
+  tidyKeptAddresses,
 } from "@webforge/model";
 import {
   CATALOGUE,
@@ -41,7 +43,7 @@ import {
   type Placed,
   pagesShowing,
 } from "./locations.js";
-import { type Failure, fail, failed, type Plan } from "./plan.js";
+import { type Failure, fail, failed, type Plan, type PlanContext, UNPUBLISHED } from "./plan.js";
 import { planCommand } from "./plan-command.js";
 import { updateSettings } from "./settings-command.js";
 
@@ -606,7 +608,11 @@ const STEPS = {
           affectedPages: site.pageOrder.length,
         }),
         id,
-        recipe: (draft) => insertPage(draft, id, title),
+        // A page added where an old address was kept takes it: the list loses it (#862, #925).
+        recipe: (draft) => {
+          insertPage(draft, id, title);
+          tidyKeptAddresses(draft);
+        },
       };
     },
   },
@@ -641,19 +647,34 @@ const STEPS = {
           affectedPages: pagesChangedByDeleting(site, id),
         }),
         removesPages: [id],
-        recipe: (draft) => deletePageFrom(draft, id),
+        // Its kept old addresses go with it (#862, #925).
+        recipe: (draft) => {
+          deletePageFrom(draft, id);
+          tidyKeptAddresses(draft);
+        },
       };
     },
   },
   /**
    * Renames a page, as the person's *Rename* does (4.11, AIB-3): its title, and its file name with
-   * it unless that was set by hand.
+   * it unless that was set by hand. Once the site has been published, or when `keepOldAddress`
+   * says so, the old address keeps working, listed in Site Settings, as the rename dialog's
+   * *Keep the old address working* does (#862, #925); either way, the list loses an address the
+   * page has again. All in the one undo step.
    */
   renamePage: {
     description:
-      "Renames a page: its title, and its file name with it unless the person set that by hand. updatePageSettings changes the title alone. One undo step.",
-    input: z.strictObject({ pageId, title: z.string().min(1).max(200) }),
-    plan(site: SiteDoc, input: { pageId: string; title: string }): Plan | Failure {
+      "Renames a page: its title, and its file name with it unless the person set that by hand. updatePageSettings changes the title alone. Once the site has been published, the page's old address keeps working (visitors and search engines are sent on to the new one); keepOldAddress true or false chooses. One undo step.",
+    input: z.strictObject({
+      pageId,
+      title: z.string().min(1).max(200),
+      keepOldAddress: z.boolean().optional(),
+    }),
+    plan(
+      site: SiteDoc,
+      input: { pageId: string; title: string; keepOldAddress?: boolean | undefined },
+      context: PlanContext = UNPUBLISHED,
+    ): Plan | Failure {
       const page = pageOf(site, input.pageId);
       if (failed(page)) return page;
       const title = pageTitle(input.title);
@@ -664,7 +685,14 @@ const STEPS = {
         action: t("pages.history.renamed", { name: title }),
         structural: true,
         kind: "props",
-        recipe: (draft) => renamePageIn(draft, id, title),
+        recipe: (draft) => {
+          if (input.keepOldAddress ?? context.published) {
+            keepingOldAddresses(draft, () => renamePageIn(draft, id, title));
+          } else {
+            renamePageIn(draft, id, title);
+            tidyKeptAddresses(draft);
+          }
+        },
       };
     },
   },
