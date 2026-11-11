@@ -88,7 +88,8 @@ export function blogDesign(
 
 /**
  * Adds post `id` called `title` to collection `collectionId` in `draft` (an undo step's): in the
- * collection's folder, dated today, before a "Page not found" page that is last. The menu doesn't
+ * collection's folder, dated today unless `entry` says, its text `body`, before a "Page not found"
+ * page that is last. The menu doesn't
  * take it in: the Blog lists its posts.
  */
 export function insertPost(
@@ -98,6 +99,8 @@ export function insertPost(
   title: string,
   entry: Readonly<Record<string, string>> = {},
   today: string = localDay(),
+  /** Its text as rich text, imported (6.10b); a line to start from when left out. */
+  body: string = t("blog.firstPost.text"),
 ): void {
   const collection = collectionById(draft, collectionId);
   if (collection === undefined) return;
@@ -118,9 +121,7 @@ export function insertPost(
           props: {
             id: newId("node"),
             contentWidth: "narrow",
-            content: [
-              { type: "Text", props: { id: newId("node"), text: t("blog.firstPost.text") } },
-            ],
+            content: [{ type: "Text", props: { id: newId("node"), text: body } }],
           },
         },
       ],

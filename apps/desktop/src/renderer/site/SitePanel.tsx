@@ -1,8 +1,9 @@
 import { t } from "@webforge/i18n";
-import type { SiteDoc } from "@webforge/model";
+import type { CollectionId, SiteDoc } from "@webforge/model";
 import { FilesIcon } from "lucide-react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand/vanilla";
+import type { ChosenPostFiles } from "../../shared/ipc/posts.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import { useDocument, useUi } from "../editor/use-document.js";
 import { linkTargets } from "../links/index.js";
@@ -20,6 +21,7 @@ import {
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { addBlog, addPost } from "./blog-actions.js";
+import { importPosts, postsFromFiles } from "./import-posts.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 import {
   addPage,
@@ -47,8 +49,12 @@ export function pagesPanelActions(
   session: EditorSession,
   siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
   published: () => boolean = () => false,
+  imports?: PostImports,
 ): PagesPanelActions {
   return {
+    importPosts: (collectionId) => {
+      if (imports !== undefined) void importChosenPosts(session, collectionId, imports);
+    },
     show: (pageId) => session.showPage(pageId),
     add: (name) => {
       addPage(session, name);
@@ -137,6 +143,40 @@ function samePageList(a: SiteDoc, b: SiteDoc): boolean {
   });
 }
 
+/** What *Import Posts…* needs (6.10b): main's file dialog, and a way to tell how it went. */
+export type PostImports = {
+  readonly chooseFiles: () => Promise<ChosenPostFiles>;
+  readonly notify: (message: string, failed: boolean) => void;
+};
+
+/**
+ * *Import Posts…* (6.10b): the files the person chooses, read in main, added to the Blog
+ * `collectionId` as one undo step, and a line saying how many, or why none.
+ */
+export async function importChosenPosts(
+  session: EditorSession,
+  collectionId: CollectionId,
+  { chooseFiles, notify }: PostImports,
+): Promise<void> {
+  const chosen = await chooseFiles();
+  switch (chosen.status) {
+    case "cancelled":
+      return;
+    case "tooMany":
+      return notify(t("blog.import.tooMany"), true);
+    case "tooLarge":
+      return notify(t("blog.import.tooLarge", { name: chosen.name }), true);
+    case "chosen": {
+      const count = importPosts(session, collectionId, postsFromFiles(chosen.files));
+      if (count === 0) return notify(t("blog.import.none"), true);
+      return notify(
+        count === 1 ? t("blog.import.done.one") : t("blog.import.done.other", { count }),
+        false,
+      );
+    }
+  }
+}
+
 /**
  * Adds the Site panel to the right column, as the tab after Edit (UI1, ADR 0008), in Simple and
  * Advanced mode: Pages, and the navigation Menu under them. Returns a function that removes it.
@@ -147,9 +187,11 @@ export function registerSitePanel(
   siteWide?: Pick<SiteWideConfirm, "confirmSiteWide">,
   /** The year the site was last published in, none when it hasn't been (F-CM-8, #862). */
   publishedYear: StoreApi<number | undefined> = createStore<number | undefined>(() => undefined),
+  /** *Import Posts…*'s files and messages (6.10b); none in stories, where it does nothing. */
+  imports?: PostImports,
 ): () => void {
   const published = () => publishedYear.getState() !== undefined;
-  const actions = pagesPanelActions(session, siteWide, published);
+  const actions = pagesPanelActions(session, siteWide, published, imports);
   const menuActions = menuPanelActions(session);
   const linkContext = () => {
     const site = session.history.document.getState();

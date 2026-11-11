@@ -1,3 +1,4 @@
+import { toast } from "@webforge/editor-ui";
 import type { Area, EditorContext, WindowContext } from "../editor/areas.js";
 import { connectCanvasItem } from "./canvas-item.js";
 import { connectCanvasPosts } from "./canvas-posts.js";
@@ -22,8 +23,11 @@ export const canvasItemArea: Area<EditorContext> = {
 /** The Site panel's Pages and Menu (2.20, B1). */
 export const sitePanelArea: Area<WindowContext> = {
   id: "sitePanel",
-  register: ({ panels, session, siteWide, publishedYear }) =>
-    registerSitePanel(panels, session, siteWide, publishedYear),
+  register: ({ api, panels, session, siteWide, publishedYear }) =>
+    registerSitePanel(panels, session, siteWide, publishedYear, {
+      chooseFiles: () => api.posts.chooseFiles(),
+      notify: (message, failed) => (failed ? toast.error(message) : toast.success(message)),
+    }),
 };
 
 /** The command palette's Go to page (1.34, F-ED-26), and Page Settings… for the page shown (3.17). */

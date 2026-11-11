@@ -50,6 +50,8 @@ export const blog = {
   "blog.import.tooLarge": "{name} is too large to import: split it into smaller files",
   "blog.import.tooMany": "Choose at most 200 files at once",
   // Undo steps.
+  "blog.history.imported.one": "Imported 1 post",
+  "blog.history.imported.other": "Imported {count} posts",
   "blog.item": "post '{name}'",
   "blog.history.addedBlog": "Added a blog",
   "blog.history.editedDesign": "Edited the design of {name}",
