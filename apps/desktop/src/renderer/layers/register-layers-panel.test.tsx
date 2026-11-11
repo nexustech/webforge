@@ -2,8 +2,10 @@
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import {
+  type CollectionId,
   copiedNodeId,
   type NodeDoc,
+  type PageId,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
@@ -16,14 +18,15 @@ import { selectedIds } from "../editor/selection.js";
 import { CommandRegistryProvider } from "../shell/command-context.js";
 import { createCommandRegistry, isMac } from "../shell/commands.js";
 import { createPanelRegistry, panelsInSlot } from "../shell/panels.js";
+import { insertBlog } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { dragRow } from "../testing/row-drag.js";
 import { registerLayersPanel } from "./register-layers-panel.js";
 
 afterEach(cleanup);
 
-function setUp(site: SiteDoc = starterSite()) {
-  const session = sessionWith(site);
+function setUp(site: SiteDoc = starterSite(), pageId?: PageId) {
+  const session = sessionWith(site, pageId);
   const panels = createPanelRegistry();
   const commands = createCommandRegistry();
   const remove = registerLayersPanel(panels, session);
@@ -329,5 +332,35 @@ describe("Layers' shared Header and Footer (#673)", () => {
       "footer",
     ]);
     expect(labels(session)).toEqual(["Moved Footer"]);
+  });
+
+  it("lists a post's Blog design around its sections, marked as on every post, never dragged (#936)", () => {
+    const site = starterSite();
+    const post = "post" as PageId;
+    insertBlog(site, "blog" as CollectionId, post, "2026-01-05");
+    const design = site.collections["blog" as CollectionId]?.design;
+    const { session } = setUp(site, post);
+    const own = currentPage(session)?.doc.content.map((node) => node.props.id) ?? [];
+    const top = design?.before[0]?.props.id ?? "";
+    const bottom = design?.after[0]?.props.id ?? "";
+
+    const topRows = screen
+      .getAllByRole("treeitem")
+      .filter((row) => row.getAttribute("aria-level") === "1")
+      .map((row) => row.dataset.layer);
+    expect(topRows).toEqual(["header", top, ...own, bottom, "footer"]);
+    for (const id of [top, bottom]) {
+      const row = document.querySelector(`[data-layer="${id}"]`);
+      expect(row?.textContent).toContain("In the blog's design: on every post");
+      expect(row?.textContent).toContain("Locked");
+      expect(row?.getAttribute("draggable")).not.toBe("true");
+    }
+    // The post's own section can't go into the design.
+    const [section] = own;
+    dragRow(
+      document.querySelector(`[data-layer="${section}"]`) as HTMLElement,
+      document.querySelector(`[data-layer="${top}"]`) as HTMLElement,
+    );
+    expect(session.history.entries()).toHaveLength(0);
   });
 });

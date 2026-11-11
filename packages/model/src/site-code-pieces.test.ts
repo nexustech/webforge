@@ -1,17 +1,21 @@
 import { describe, expect, it } from "vitest";
 import type { NodeDoc } from "./documents.js";
-import type { SharedSectionId } from "./ids.js";
+import type { CollectionId, SharedSectionId } from "./ids.js";
 import { siteCodePieces, withKeptCode } from "./site-code-pieces.js";
 import { createSite } from "./site-doc.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
+const BLOG = "blog" as CollectionId;
 
 const code = (id: string, text: string, extra: Record<string, unknown> = {}): NodeDoc => ({
   type: "CustomCode",
   props: { id, code: text, ...extra },
 });
 
-/** A site with code in Settings, in the Header, on the home page, hidden, and in a shared section. */
+/**
+ * A site with code in Settings, in the Header, on the home page, hidden, in a shared section and in
+ * the Blog's design.
+ */
 function site() {
   const base = createSite({
     name: "Bakery",
@@ -42,6 +46,16 @@ function site() {
     sharedSections: {
       [HOURS]: { id: HOURS, name: "Hours", section: code("shared", "<u>hours</u>") },
     },
+    collections: {
+      [BLOG]: {
+        id: BLOG,
+        preset: "blog" as const,
+        name: "Blog",
+        folder: "blog",
+        fields: [],
+        design: { before: [], after: [code("design", "<s>every post</s>")] },
+      },
+    },
   };
 }
 
@@ -55,6 +69,8 @@ describe("siteCodePieces (#649)", () => {
       { kind: "element", on: "header", nodeId: "top", text: "<b>top</b>" },
       { kind: "element", on: doc.homePageId, nodeId: "deep", text: "<script>skim()</script>" },
       { kind: "element", on: HOURS, nodeId: "shared", text: "<u>hours</u>" },
+      // The Blog's design, once, on every post (#936).
+      { kind: "element", on: BLOG, nodeId: "design", text: "<s>every post</s>" },
       { kind: "allowList", text: "https://a.example/\nhttps://b.example/x" },
     ]);
   });
@@ -74,7 +90,9 @@ describe("withKeptCode (#649)", () => {
     // Hidden elements too, should Layers show them again; the original is untouched.
     expect(JSON.stringify(kept)).not.toContain('"code":"x"');
     expect(JSON.stringify(doc)).toContain('"code":"x"');
-    expect(siteCodePieces(doc)).toHaveLength(6);
+    // The Blog's design's too (#936), which every post draws.
+    expect(JSON.stringify(kept)).not.toContain("every post");
+    expect(siteCodePieces(doc)).toHaveLength(7);
   });
 
   it("never asks about blank code", () => {

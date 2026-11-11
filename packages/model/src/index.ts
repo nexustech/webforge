@@ -49,6 +49,7 @@ export {
   ITEM_VALUE_MAX,
   type ItemEntry,
   type ItemValue,
+  isCollectionIn,
   itemEntrySchema,
   itemPicturesShown,
   itemValue,
@@ -338,7 +339,7 @@ export {
   siteFromDocuments,
   validateSiteChanges,
 } from "./site-documents.js";
-export { type ElementPlace, eachElement } from "./site-elements.js";
+export { designAt, type ElementPlace, eachElement, elementsAt } from "./site-elements.js";
 export { isDeviceName, sitePathSchema } from "./site-path.js";
 export type {
   DocumentItem,

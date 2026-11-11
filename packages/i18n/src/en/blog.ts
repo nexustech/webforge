@@ -41,6 +41,7 @@ export const blog = {
   "blog.item": "post '{name}'",
   "blog.history.addedBlog": "Added a blog",
   "blog.history.editedDesign": "Edited the design of {name}",
+  "blog.history.inDesign": " in the design of {name}",
   "blog.history.changedPost": "Changed post settings",
   "blog.history.binding": "{item} shows the post's {field}",
 } as const;

@@ -8,7 +8,7 @@ import type {
   PageId,
   SiteDoc,
 } from "@webforge/model";
-import { collectionById, collectionOf, findNode } from "@webforge/model";
+import { collectionById, collectionItems, collectionOf, findNode } from "@webforge/model";
 import { updateField } from "./apply-patch.js";
 
 /** The shared Header or Footer (F-ED-7, C5). */
@@ -174,6 +174,28 @@ export function designLabel(
   const name = collectionById(site, home.collection)?.name ?? "";
   return t("blog.history.editedDesign", { name: t("history.namedItem", { name }) });
 }
+
+/**
+ * A post of collection `id` to show its design on (#936): page `shown`, if it is one, else the
+ * newest. None while it has no posts.
+ */
+export function postShowingDesign(
+  site: SiteDoc,
+  id: CollectionId,
+  shown: PageId,
+): PageId | undefined {
+  if (site.pages[shown]?.collection === id) return shown;
+  return collectionItems(site, id)[0]?.id;
+}
+
+/**
+ * The words a change to collection `id`'s design is named with (#936): " in the design of 'Blog'",
+ * after what the change did ("Renamed Heading to 'Date'").
+ */
+export const inDesign = (site: SiteDoc, id: CollectionId): string =>
+  t("blog.history.inDesign", {
+    name: t("history.namedItem", { name: collectionById(site, id)?.name ?? "" }),
+  });
 
 /** The region of `layout` that holds the node `nodeId`, at any depth, if any. */
 export function sharedRegionOf(layout: LayoutDoc, nodeId: string): SharedRegion | undefined {

@@ -1,3 +1,4 @@
+import { collectionOf } from "./collections.js";
 import { anchorsIn, isNodeDoc } from "./documents.js";
 import type { MediaId, PageId } from "./ids.js";
 import { linkValueSchema } from "./link.js";
@@ -98,7 +99,8 @@ export function eachLink(
  * The links to pages, sections of pages or documents that don't exist any more (F-ED-18, 1.28):
  * the page was deleted, or the section with that anchor was, or the document was deleted from
  * Media. Site Check lists them (3.6), leaving out those in hidden elements (`skipHidden`), which
- * aren't exported. Links to the Header or Footer's anchors count as found on every page.
+ * aren't exported. Links to the Header or Footer's anchors count as found on every page, and to a
+ * collection's design's on each of its items (#936).
  */
 export function findBrokenLinks(
   site: SiteDoc,
@@ -110,8 +112,16 @@ export function findBrokenLinks(
     let anchors = anchorsOf.get(pageId);
     if (anchors === undefined) {
       // Copies of shared sections included, with the anchors they have on this page.
-      const content = site.pages[pageId]?.doc.content ?? [];
-      anchors = anchorsIn(expandSharedCopies(content, site.sharedSections), new Set(shared));
+      const page = site.pages[pageId];
+      const content = page?.doc.content ?? [];
+      const design = page === undefined ? undefined : collectionOf(site, page)?.design;
+      anchors = anchorsIn(
+        [
+          ...expandSharedCopies(content, site.sharedSections),
+          ...(design === undefined ? [] : [...design.before, ...design.after]),
+        ],
+        new Set(shared),
+      );
       anchorsOf.set(pageId, anchors);
     }
     return anchors;

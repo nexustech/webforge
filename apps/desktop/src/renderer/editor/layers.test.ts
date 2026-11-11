@@ -1,6 +1,8 @@
 import {
+  type CollectionId,
   copiedNodeId,
   type NodeDoc,
+  type PageId,
   SHARED_COPY_TYPE,
   type SharedSectionId,
   type SiteDoc,
@@ -9,14 +11,18 @@ import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { currentPage } from "../editor/editor-session.js";
+import { insertBlog } from "../site/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import {
+  copyLayer,
   layerItem,
   layerShown,
   layersOf,
   moveLayer,
+  pageLayers,
   renameLayer,
   setLayerHidden,
+  setLayerNote,
   setLayerShown,
   toggleLayerHidden,
 } from "./layers.js";
@@ -313,5 +319,97 @@ describe("linked copies in Layers (F-ED-23)", () => {
     expect(
       session.history.document.getState().sharedSections[HOURS]?.section.props,
     ).not.toHaveProperty("layerName");
+  });
+});
+
+describe("a post's Blog design in Layers (#936)", () => {
+  const BLOG = "blog" as CollectionId;
+  const POST = "post" as PageId;
+
+  /** A session on a post of a Blog whose design's sections hold elements. */
+  function onPost() {
+    const site = starterSite();
+    insertBlog(site, BLOG, POST, "2026-01-05");
+    const blog = site.collections[BLOG];
+    if (blog === undefined) throw new Error("no Blog");
+    blog.design = {
+      before: [
+        {
+          type: "Section",
+          props: { id: "top", content: [heading("title"), heading("date")] },
+        },
+      ],
+      after: [{ type: "Section", props: { id: "bottom", content: [heading("back")] } }],
+    };
+    const session = sessionWith(site, POST);
+    const design = () => session.history.document.getState().collections[BLOG]?.design;
+    const labels = () => session.history.entries().map((entry) => entry.label);
+    return { session, design, labels };
+  }
+
+  it("lists the design around the post's own sections, between the Header and Footer, locked", () => {
+    const { session } = onPost();
+    const site = session.history.document.getState();
+    const layers = pageLayers(site, POST, siteLibrary);
+    const own = site.pages[POST]?.doc.content.map((node) => node.props.id) ?? [];
+
+    expect(layers.map((layer) => layer.id)).toEqual([
+      ...site.layout.header.map((node) => node.props.id),
+      "top",
+      ...own,
+      "bottom",
+      ...site.layout.footer.map((node) => node.props.id),
+    ]);
+    expect(layers.find((layer) => layer.id === "top")).toMatchObject({
+      design: "before",
+      locked: true,
+    });
+    expect(layers.find((layer) => layer.id === "bottom")?.design).toBe("after");
+    // An ordinary page has none of it.
+    expect(
+      pageLayers(site, site.homePageId, siteLibrary).some((layer) => layer.design !== undefined),
+    ).toBe(false);
+  });
+
+  it("renames, hides and notes the design's elements in the Blog, each named by it", () => {
+    const { session, design, labels } = onPost();
+
+    renameLayer(session, "title", "Post title");
+    setLayerHidden(session, "date", true);
+    setLayerNote(session, "back", "Link to the Blog instead");
+
+    const [top] = design()?.before ?? [];
+    const inside = (top?.props.content as NodeDoc[] | undefined) ?? [];
+    expect(inside.map((node) => [node.props.layerName, node.props.hidden])).toEqual([
+      ["Post title", undefined],
+      [undefined, true],
+    ]);
+    const [bottom] = design()?.after ?? [];
+    expect((bottom?.props.content as NodeDoc[] | undefined)?.[0]?.props.note).toBe(
+      "Link to the Blog instead",
+    );
+    expect(labels()).toEqual([
+      "Renamed Heading to 'Post title' in the design of 'Blog'",
+      "Kept Heading off your website in the design of 'Blog'",
+      "Added a note to Heading in the design of 'Blog'",
+    ]);
+    session.history.undo();
+    expect(
+      ((design()?.after[0]?.props.content as NodeDoc[] | undefined) ?? [])[0]?.props.note,
+    ).toBeUndefined();
+  });
+
+  it("moves an element within the design, never its locked sections, and copies none", () => {
+    const { session, design, labels } = onPost();
+
+    moveLayer(session, "top", 1);
+    expect(labels()).toEqual([]);
+    moveLayer(session, "date", 0);
+    const inside = (design()?.before[0]?.props.content as NodeDoc[] | undefined) ?? [];
+    expect(inside.map((node) => node.props.id)).toEqual(["date", "title"]);
+    expect(labels()).toEqual(["Moved Heading in the design of 'Blog'"]);
+    expect(copyLayer(session, "title", 0, false)).toBe(
+      "Elements of the blog's design can't be copied: it's the same on every post.",
+    );
   });
 });

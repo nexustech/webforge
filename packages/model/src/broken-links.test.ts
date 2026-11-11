@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { findBrokenLinks } from "./broken-links.js";
 import type { NodeDoc } from "./documents.js";
-import type { MediaId, PageId, SharedSectionId } from "./ids.js";
+import type { CollectionId, MediaId, PageId, SharedSectionId } from "./ids.js";
 import { SHARED_COPY_TYPE } from "./shared-sections.js";
 import { createSite, type SiteDoc } from "./site-doc.js";
 
@@ -214,6 +214,45 @@ describe("findBrokenLinks (F-ED-18)", () => {
     expect(findBrokenLinks(doc)).toEqual([
       { on: doc.homePageId, nodeId: "hero", mediaId: "gone" },
       { on: doc.homePageId, nodeId: "text", mediaId: "lost" },
+    ]);
+  });
+
+  it("finds a post's sections in its Blog's design, and names a link in the design by the Blog (#936)", () => {
+    const BLOG = "blog" as CollectionId;
+    const POST = "page-post" as PageId;
+    const doc = site([
+      button("to-design", { kind: "page", pageId: POST, anchor: "comments" }),
+      button("to-about", { kind: "page", pageId: ABOUT, anchor: "comments" }),
+    ]);
+    const about = doc.pages[ABOUT];
+    if (about === undefined) throw new Error("no About page");
+    doc.collections[BLOG] = {
+      id: BLOG,
+      preset: "blog",
+      name: "Blog",
+      folder: "blog",
+      fields: [],
+      design: {
+        before: [],
+        after: [
+          {
+            type: "Section",
+            props: {
+              id: "comments",
+              advanced: { anchorId: "comments" },
+              content: [button("in-design", { kind: "page", pageId: "page-gone" })],
+            },
+          },
+        ],
+      },
+    };
+    doc.pages[POST] = { ...about, id: POST, slug: "post", folder: "blog", collection: BLOG };
+    doc.pageOrder.push(POST);
+
+    expect(findBrokenLinks(doc)).toEqual([
+      // About isn't a post: the design isn't drawn on it.
+      { on: doc.homePageId, nodeId: "to-about", pageId: ABOUT, anchor: "comments" },
+      { on: BLOG, nodeId: "in-design", pageId: "page-gone" },
     ]);
   });
 
