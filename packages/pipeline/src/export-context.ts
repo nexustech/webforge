@@ -35,18 +35,18 @@ export type BuildWarning = {
   readonly detail: string;
 };
 
-const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
-
-/**
- * The path from `page` to the site's root, which its links and files start with: `../` per folder,
- * or `rootPrefix` for the "Page not found" page, which is served at any missing address (F-ED-20).
- */
 /** The fields of a post, by name, as its design's elements read them (6.10a). */
 const itemOf =
   (item: NonNullable<SitePage["item"]>) =>
   (field: string): ItemValue | undefined =>
     Object.hasOwn(item.values, field) ? item.values[field] : undefined;
 
+const EXTERNAL_LINK = /^(?:https?:|mailto:|tel:)/i;
+
+/**
+ * The path from `page` to the site's root, which its links and files start with: `../` per folder,
+ * or `rootPrefix` for the "Page not found" page, which is served at any missing address (F-ED-20).
+ */
 export function pagePrefix(page: SitePage, rootPrefix: string): string {
   return page.path === NOT_FOUND_PATH ? rootPrefix : "../".repeat(page.path.split("/").length - 1);
 }

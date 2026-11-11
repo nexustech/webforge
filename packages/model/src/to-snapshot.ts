@@ -49,9 +49,9 @@ export function siteToSnapshot(
         title: page.title,
         navLabel: page.navLabel,
         description: description ?? site.settings.general.description,
-        // A collection's items are listed by the collection, never one by one in the menu.
-        hideFromNavigation:
-          hideFromNavigation || page.kind === "not-found" || collection !== undefined,
+        // A post is in the menu only where the owner put it in an edited menu: a menu that follows
+        // the pages leaves posts out (syncMenuWithPages, 6.10a).
+        hideFromNavigation: hideFromNavigation || page.kind === "not-found",
         hideHeader,
         hideFooter,
         hideBackToTop,

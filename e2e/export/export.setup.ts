@@ -426,7 +426,7 @@ setup("export a site with a Blog's post (6.10a)", async () => {
   const sample = sampleSite();
   rmSync(BLOG_SITE_DIR, { recursive: true, force: true });
   // A post as siteToSnapshot gives it: the Blog's design around its own text, its fields'
-  // values, out of the menu, in the Blog's folder.
+  // values, in the Blog's folder; the sample's menu doesn't list it.
   const element = (type: string, id: string, props: Record<string, unknown>): NodeDoc => ({
     type,
     props: { id, ...props },
@@ -443,7 +443,6 @@ setup("export a site with a Blog's post (6.10a)", async () => {
           id: "spring",
           path: "blog/spring-opening",
           title: "Spring opening",
-          hideFromNavigation: true,
           shareImage: "hero-photo",
           item: {
             values: {

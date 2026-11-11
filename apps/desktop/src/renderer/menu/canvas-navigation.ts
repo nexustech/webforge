@@ -20,11 +20,9 @@ function navigationPages(site: SiteDoc): NavigationPage[] {
             path: pagePath(page, site.homePageId),
             title: page.title,
             navLabel: page.navLabel,
-            // A Blog's posts are listed by the Blog, never one by one in the menu (6.10a).
-            hideFromNavigation:
-              page.settings.hideFromNavigation ||
-              page.kind === "not-found" ||
-              page.collection !== undefined,
+            // A Blog's post is in the menu only where an edited menu has it (6.10a): a menu that
+            // follows the pages leaves posts out (syncMenuWithPages).
+            hideFromNavigation: page.settings.hideFromNavigation || page.kind === "not-found",
           },
         ];
   });

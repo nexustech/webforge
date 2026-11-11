@@ -1912,7 +1912,6 @@ describe("buildSite: a Blog's posts (6.10a, ADR 0025)", () => {
             id: "spring",
             path: "blog/spring-opening",
             title: "Spring opening",
-            hideFromNavigation: true,
             item: {
               values: {
                 title: { kind: "text", text: "Spring opening" },
@@ -1940,8 +1939,33 @@ describe("buildSite: a Blog's posts (6.10a, ADR 0025)", () => {
       expect(html).toContain("We open on Saturday.");
       // An empty field shows nothing: no own text in its place.
       expect(html).not.toContain("Summary");
-      // Out of the menu: the Blog lists its posts.
+      // Out of a menu that doesn't list it: the Blog lists its posts.
       expect(text(exported, "index.html")).not.toContain("spring-opening");
+
+      // Put in an edited menu by hand, the post is in the Header on every page (#935 review).
+      const listed = await buildSite(
+        {
+          ...site,
+          menu: {
+            follows: "custom",
+            items: [
+              ...(base.menu?.items ?? []),
+              {
+                id: "spring-item" as MenuItemId,
+                kind: "page",
+                pageId: "spring" as PageId,
+                hidden: false,
+              },
+            ],
+          },
+        },
+        siteLibrary,
+        resources,
+      );
+      expect(text(listed, "index.html")).toContain('href="blog/spring-opening.html"');
+      expect(text(listed, "blog/spring-opening.html")).toContain(
+        '<a href="../blog/spring-opening.html" aria-current="page">Spring opening</a>',
+      );
     },
     scaledTestTimeout(60_000),
   );

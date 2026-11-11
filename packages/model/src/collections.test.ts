@@ -247,7 +247,11 @@ describe("siteToSnapshot with a Blog (6.10a)", () => {
     const page = snapshot.pages.find((each) => each.id === "p1");
 
     expect(page?.path).toBe("blog/spring");
-    expect(page?.hideFromNavigation).toBe(true);
+    // Out of the menu by the menu's own sync, not by hiding: an edited menu may list it.
+    expect(page?.hideFromNavigation).toBe(false);
+    expect(snapshot.menu?.items.some((item) => item.kind === "page" && item.pageId === "p1")).toBe(
+      false,
+    );
     expect(page?.doc.content.map((node) => node.props.id)).toEqual([
       "post-title",
       "p1-text",
