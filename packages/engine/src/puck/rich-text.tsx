@@ -4,6 +4,7 @@ import { t } from "@webforge/i18n";
 import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK, type TextMarkRole } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEditorState } from "./editor-state.js";
+import { MarkdownPaste } from "./markdown-paste.js";
 import { type PickLink, pickLinkInto } from "./text-keys.js";
 import { markRoles, type TextMarkName, ThemeColor, ThemeHighlight } from "./text-marks.js";
 
@@ -188,6 +189,9 @@ export function richTextField(
     contentEditable: inline,
     options: RICH_TEXT_OPTIONS,
     renderInlineMenu: toolbar,
-    tiptap: { extensions: [editorName(label), ThemeHighlight, ThemeColor, ...extensions] },
+    // Markdown pasted as the formatting it stands for (6.10b, BS9-4).
+    tiptap: {
+      extensions: [editorName(label), ThemeHighlight, ThemeColor, MarkdownPaste, ...extensions],
+    },
   };
 }
