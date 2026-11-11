@@ -422,11 +422,19 @@ setup("export a site with an Announcement bar above the Header (6.4)", async () 
   expect(pages).toEqual(expect.arrayContaining(["index.html", "about.html"]));
 });
 
-setup("export a site with a Blog's post (6.10a)", async () => {
+setup("export a site with a Blog's post, its own pages and its feed (6.10a, 6.10b)", async () => {
   const sample = sampleSite();
   rmSync(BLOG_SITE_DIR, { recursive: true, force: true });
   // A post as siteToSnapshot gives it: the Blog's design around its own text, its fields'
-  // values, in the Blog's folder; the sample's menu doesn't list it.
+  // values, in the Blog's folder; the sample's menu doesn't list it. With a web address, so the
+  // Blog's feed is written, and the Blog's posts, so its own pages are (6.10b).
+  const values = {
+    title: { kind: "text", text: "Spring opening" },
+    date: { kind: "date", date: "2026-11-10" },
+    summary: { kind: "text", text: "Doors open at nine." },
+    picture: { kind: "image", mediaId: "hero-photo" as MediaId },
+    tags: { kind: "tags", tags: [{ name: "Opening times", path: "blog/tag/opening-times" }] },
+  } as const;
   const element = (type: string, id: string, props: Record<string, unknown>): NodeDoc => ({
     type,
     props: { id, ...props },
@@ -437,6 +445,15 @@ setup("export a site with a Blog's post (6.10a)", async () => {
     {
       ...sample,
       documents: [],
+      settings: { ...sample.settings, "address.url": "https://rosas.example" },
+      collections: [
+        {
+          id: "blog",
+          name: "Blog",
+          folder: "blog",
+          items: [{ pageId: "spring", path: "blog/spring-opening", values }],
+        },
+      ],
       pages: [
         ...sample.pages,
         {
@@ -444,13 +461,7 @@ setup("export a site with a Blog's post (6.10a)", async () => {
           path: "blog/spring-opening",
           title: "Spring opening",
           shareImage: "hero-photo",
-          item: {
-            values: {
-              title: { kind: "text", text: "Spring opening" },
-              date: { kind: "date", date: "2026-11-10" },
-              picture: { kind: "image", mediaId: "hero-photo" as MediaId },
-            },
-          },
+          item: { values },
           doc: {
             root: { props: {} },
             content: [
@@ -470,6 +481,7 @@ setup("export a site with a Blog's post (6.10a)", async () => {
                 element("Text", "post-text", { text: "<p>We open on Saturday.</p>" }),
               ]),
               section("post-end", [
+                element("PostTags", "post-tags", {}),
                 element("Button", "post-home", {
                   label: "Back to Home",
                   link: { kind: "page", pageId: sample.pages[0]?.id ?? "" },
@@ -482,7 +494,13 @@ setup("export a site with a Blog's post (6.10a)", async () => {
     },
     BLOG_SITE_DIR,
   );
-  expect(pages).toContain("blog/spring-opening.html");
+  expect(pages).toEqual(
+    expect.arrayContaining([
+      "blog/spring-opening.html",
+      "blog/index.html",
+      "blog/tag/opening-times.html",
+    ]),
+  );
 });
 
 setup("export every template, as a site made from it starts (3.10)", async () => {
