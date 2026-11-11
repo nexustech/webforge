@@ -94,7 +94,7 @@ export function withBlogPages(site: SiteSnapshot, library: ComponentLibrary): Si
 }
 
 /** Where `collection`'s feed is: `blog/feed.xml`. */
-export const feedPath = (collection: SiteCollection) => `${collection.folder}/feed.xml`;
+const feedPath = (collection: SiteCollection) => `${collection.folder}/feed.xml`;
 
 /**
  * Each collection's RSS 2.0 feed (6.10b): its posts, newest first, each with its title, address,
