@@ -74,7 +74,7 @@ function pagesOf(collection: SiteCollection, library: ComponentLibrary): SitePag
   }
   const tagPages = [...tags].map(([path, name]) => {
     const title = t("siteText.postsTagged", { tag: name });
-    const id = `${collection.id}-${path.split("/").at(-1) ?? "tag"}`;
+    const id = `${collection.id}-tag-${path.split("/").at(-1) ?? ""}`;
     return ownPage(id, path, title, listSection(library, collection, id, title, { tag: path }));
   });
   return [...lists, ...tagPages];
