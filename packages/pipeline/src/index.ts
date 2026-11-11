@@ -9,8 +9,8 @@ export type {
 } from "./build.js";
 export { BuildError, buildSite } from "./build.js";
 export { type ClassCatalogue, loadClassCatalogue } from "./class-catalogue.js";
-export type { SiteCssOptions, StyleResources } from "./css.js";
-export { buildSiteCss, classCandidates } from "./css.js";
+export type { SiteCssOptions, StyleCompiler, StyleResources } from "./css.js";
+export { buildSiteCss, classCandidates, createStyleCompiler } from "./css.js";
 export { BODY_CLASS, type SiteIcon } from "./html.js";
 export { makeThumbnail } from "./images.js";
 export { itemHtml } from "./item-html.js";

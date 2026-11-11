@@ -4,7 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import indexHtml from "./index.html?raw";
 import themeScript from "./public/startup-theme.js?raw";
-import { applyTheme, markFirstRender, StartFailed } from "./startup.js";
+import {
+  applyTheme,
+  EDITOR_PRELOAD_TIMEOUT_MS,
+  markFirstRender,
+  preloadEditorWhenIdle,
+  StartFailed,
+} from "./startup.js";
 
 // The start-up screen (#887): index.html's markup, the classic script that sets its theme before
 // the first paint, and what main.tsx shows instead of it when starting fails.
@@ -107,5 +113,41 @@ describe("markFirstRender (#891)", () => {
     await Promise.resolve();
 
     expect(performance.getEntriesByName("webforge:first-render")).toHaveLength(1);
+  });
+});
+
+describe("preloadEditorWhenIdle (#945)", () => {
+  it("loads the editor's code once the start screen is idle, not before", () => {
+    performance.clearMarks("webforge:editor-preload");
+    let idleWork: (() => void) | undefined;
+    const idle = vi.fn((work: () => void) => {
+      idleWork = work;
+    });
+    const load = vi.fn(() => Promise.resolve());
+
+    preloadEditorWhenIdle(load, idle);
+
+    expect(idle).toHaveBeenCalledWith(expect.any(Function), {
+      timeout: EDITOR_PRELOAD_TIMEOUT_MS,
+    });
+    expect(load).not.toHaveBeenCalled();
+    expect(performance.getEntriesByName("webforge:editor-preload")).toHaveLength(0);
+    idleWork?.();
+    expect(load).toHaveBeenCalledOnce();
+    // Marked as it starts, for the E2E test to tell from the start screen's first render.
+    expect(performance.getEntriesByName("webforge:editor-preload")).toHaveLength(1);
+  });
+
+  it("leaves a load that fails to the opening, which loads it again", async () => {
+    const failed = Promise.reject(new Error("no chunk"));
+    const caught = vi.spyOn(failed, "catch");
+
+    preloadEditorWhenIdle(
+      () => failed,
+      (work) => work(),
+    );
+
+    expect(caught).toHaveBeenCalledOnce();
+    await expect(failed).rejects.toThrow("no chunk");
   });
 });

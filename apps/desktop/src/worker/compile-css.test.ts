@@ -1,9 +1,24 @@
 import { CANVAS_EVEN_SECTIONS } from "@webforge/engine/puck-dom";
 import { DEFAULT_THEME } from "@webforge/model";
+import type { StyleResources } from "@webforge/pipeline";
+import * as pipeline from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import type { CatalogueFont } from "@webforge/themes";
-import { describe, expect, it } from "vitest";
-import { compileCss } from "./compile-css.js";
+import { describe, expect, it, vi } from "vitest";
+import type { CompileCssJob } from "../shared/export-worker-protocol.js";
+import { createCompileCss } from "./compile-css.js";
+
+// Counts the style compilers a worker makes, to tell a kept one from a new one (#945).
+vi.mock("@webforge/pipeline", async (original) => {
+  const actual = await original<typeof import("@webforge/pipeline")>();
+  return { ...actual, createStyleCompiler: vi.fn(actual.createStyleCompiler) };
+});
+const createStyleCompiler = vi.mocked(pipeline.createStyleCompiler);
+
+/** One job, in a worker of its own. */
+function compileCss(job: CompileCssJob, load: () => StyleResources | Promise<StyleResources>) {
+  return createCompileCss(load)(job);
+}
 
 describe("compileCss", () => {
   it("compiles the classes the site uses, the body's classes and the theme", async () => {
@@ -88,6 +103,49 @@ describe("compileCss", () => {
     expect(outcome.type === "css" ? outcome.css : "").toContain(
       'url("webforge-font://fonts/comic-neue-latin-400-normal.woff2")',
     );
+  }, 60_000);
+
+  it("compiles the whole site's classes after the shown page's as a fresh worker would (#945)", async () => {
+    const theme = { ...DEFAULT_THEME, preset: "light" } as const;
+    const job = (candidates: string[]): CompileCssJob => ({
+      type: "compile-css",
+      theme,
+      candidates,
+      families: [],
+    });
+    const compile = createCompileCss(loadNodeResources);
+    createStyleCompiler.mockClear();
+
+    // The shown page's, then the whole site's while the first is compiled (#895).
+    const [shown, site] = await Promise.all([
+      compile(job(["btn"])),
+      compile(job(["btn", "text-4xl"])),
+    ]);
+    // An edit that removes a class.
+    const edited = await compile(job(["text-4xl"]));
+    // One for the worker, however close together its first jobs came.
+    expect(createStyleCompiler).toHaveBeenCalledOnce();
+
+    expect(shown).toEqual(await compileCss(job(["btn"]), loadNodeResources));
+    expect(site).toEqual(await compileCss(job(["btn", "text-4xl"]), loadNodeResources));
+    expect(edited).toEqual(await compileCss(job(["text-4xl"]), loadNodeResources));
+  }, 60_000);
+
+  it("reports a failure without details, and loads its resources again for the next job", async () => {
+    const load = vi
+      .fn<() => Promise<StyleResources>>()
+      .mockRejectedValueOnce(new Error("no resources"))
+      .mockImplementation(loadNodeResources);
+    const compile = createCompileCss(load);
+    const job: CompileCssJob = {
+      type: "compile-css",
+      theme: { ...DEFAULT_THEME, preset: "light" },
+      candidates: ["btn"],
+      families: [],
+    };
+
+    expect(await compile(job)).toEqual({ type: "css-failed" });
+    expect(await compile(job)).toMatchObject({ type: "css" });
   }, 60_000);
 
   it("reports a failure without details", async () => {

@@ -10,11 +10,12 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { type ElectronApplication, expect, type Page, test } from "@playwright/test";
+import { OPEN_WAIT } from "./budget.js";
 import { APP_START_TIMEOUT_MS, launchDesktopApp, type WebforgeApp } from "./launch.js";
 
 // The start-up screen (#887): drawn in the person's theme while the editor loads, replaced by the
-// editor, and by a way to try again if starting fails, never left up. The editor's code loads only
-// with a site open (#896).
+// editor, and by a way to try again if starting fails, never left up. The start screen draws
+// without the editor's code (#896), then loads it while idle, for a site opened from it (#945).
 
 /** The site's home page's heading: the Blank template's (2.15c). */
 const STARTER_HEADING = "Welcome";
@@ -100,7 +101,8 @@ async function answerEditorState(
 /**
  * Puts a stand-in in front of the app's own files (`webforge-app://`): it serves them from the
  * build as main does, notes each script asked for (`appScripts`), and fails the editor's code
- * while `failEditorCode` says so, as a missing or damaged file would.
+ * while `failEditorCode` says so, as a missing or damaged file would, or holds it back while
+ * `holdEditorCode` says so.
  */
 async function standInForAppFiles(electronApp: ElectronApplication): Promise<void> {
   await electronApp.evaluate(({ app, session }) => {
@@ -114,7 +116,12 @@ async function standInForAppFiles(electronApp: ElectronApplication): Promise<voi
       png: "image/png",
       woff2: "font/woff2",
     };
-    const state = { scripts: [] as string[], failEditor: false };
+    const state = {
+      scripts: [] as string[],
+      failEditor: false,
+      holdEditor: false,
+      held: [] as (() => void)[],
+    };
     Object.assign(globalThis, { e2eAppFiles: state });
     const scheme = session.defaultSession.protocol;
     scheme.unhandle("webforge-app");
@@ -122,8 +129,10 @@ async function standInForAppFiles(electronApp: ElectronApplication): Promise<voi
       const name = new URL(request.url).pathname.slice(1);
       const ending = name.split(".").at(-1) ?? "";
       if (ending === "js") state.scripts.push(name.split("/").at(-1) ?? name);
-      if (state.failEditor && /^assets\/editor-start-[\w-]+\.js$/.test(name)) {
-        return new Response(null, { status: 404 });
+      const editorCode = /^assets\/editor-start-[\w-]+\.js$/.test(name);
+      if (state.failEditor && editorCode) return new Response(null, { status: 404 });
+      if (state.holdEditor && editorCode) {
+        await new Promise<void>((release) => state.held.push(release));
       }
       try {
         const data = await readFile(join(app.getAppPath(), "out/renderer", name));
@@ -148,13 +157,41 @@ async function reloadAfresh(page: Page): Promise<void> {
   await page.reload();
 }
 
-type AppFiles = { scripts: string[]; failEditor: boolean };
+type AppFiles = {
+  scripts: string[];
+  failEditor: boolean;
+  holdEditor: boolean;
+  held: (() => void)[];
+};
 
 /** The scripts the window has asked for since the stand-in went in, by file name. */
 const appScripts = (electronApp: ElectronApplication) =>
   electronApp.evaluate(
     () => (globalThis as unknown as { e2eAppFiles: AppFiles }).e2eAppFiles.scripts,
   );
+
+/**
+ * Holds back the editor's code from now on, answering nothing for it until let go (`false`), when
+ * what was held is answered.
+ */
+const holdEditorCode = (electronApp: ElectronApplication, hold: boolean) =>
+  electronApp.evaluate((_electron, hold) => {
+    const files = (globalThis as unknown as { e2eAppFiles: AppFiles }).e2eAppFiles;
+    files.holdEditor = hold;
+    if (!hold) for (const release of files.held.splice(0)) release();
+  }, hold);
+
+/**
+ * When the start screen first drew, and when it started loading the editor's code, on the page's
+ * own clock (the renderer keeps no timing of the app's own files): `preloaded` is missing until it
+ * has started.
+ */
+const preloadTiming = (page: Page) =>
+  page.evaluate(() => {
+    const [drawn] = performance.getEntriesByName("webforge:first-render");
+    const [preloaded] = performance.getEntriesByName("webforge:editor-preload");
+    return { drawn: drawn?.startTime, preloaded: preloaded?.startTime };
+  });
 
 /** Makes every load of the editor's code fail from now on, or lets it load again (`false`). */
 const failEditorCode = (electronApp: ElectronApplication, fail: boolean) =>
@@ -210,18 +247,32 @@ test("shows the start-up screen while starting, then Try again if starting fails
   await expect(homePage(page)).toBeVisible({ timeout: APP_START_TIMEOUT_MS });
 });
 
-test("the start screen loads none of the editor's code, which a site's editor loads (#896)", async () => {
+test("the start screen draws without the editor's code, then loads it while idle (#896, #945)", async () => {
   app = await launchDesktopApp({ userDataDir: join(dir, "user-data"), site: false });
   const page = await app.firstWindow();
   const getStarted = page.getByRole("heading", { name: "Get started" });
   await expect(getStarted).toBeVisible({ timeout: APP_START_TIMEOUT_MS });
-  // Loaded again with the stand-in noting what it asks for.
+  // Loaded again with the stand-in noting what it asks for, and holding back the editor's code:
+  // the start screen draws all the same.
   await standInForAppFiles(app);
+  await holdEditorCode(app, true);
   await reloadAfresh(page);
   await expect(getStarted).toBeVisible({ timeout: APP_START_TIMEOUT_MS });
-  const atStart = await appScripts(app);
-  expect(atStart.some((name) => name.startsWith("index-"))).toBe(true);
-  expect(atStart.filter((name) => name.startsWith("editor-start-"))).toEqual([]);
+  expect((await appScripts(app)).some((name) => name.startsWith("index-"))).toBe(true);
+  // Then loads it, so a site opened from it finds it compiled: started only once it had drawn.
+  const atStart = app;
+  await expect
+    .poll(
+      async () => (await appScripts(atStart)).some((name) => name.startsWith("editor-start-")),
+      { timeout: OPEN_WAIT },
+    )
+    .toBe(true);
+  const { drawn, preloaded } = await preloadTiming(page);
+  if (drawn === undefined || preloaded === undefined) {
+    throw new Error("The start screen's first render or the editor's preload isn't marked");
+  }
+  expect(preloaded).toBeGreaterThanOrEqual(drawn);
+  await holdEditorCode(app, false);
   await app.close();
 
   app = await launchInLightTheme();
