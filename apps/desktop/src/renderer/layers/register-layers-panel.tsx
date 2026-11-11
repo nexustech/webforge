@@ -43,19 +43,18 @@ function useCommandAction(id: string): (() => void) | undefined {
   return command === undefined || command.enabled === false ? undefined : () => registry.run(id);
 }
 
+/** The list a top-level layer is in: the Header's, a Blog design's part, the page's, the Footer's. */
+const listOf = (layer: Layer) => layer.region ?? layer.design ?? "page";
+
 /**
- * Where `index` among a page's top-level rows (the shared Header's first, then the page's sections,
- * then the Footer's) falls in the list the top-level layer `id` is in: the Header's, the page's own
- * or the Footer's (#673). `index` itself for a layer inside another.
+ * Where `index` among a page's top-level rows (the shared Header's first, then a post's Blog design
+ * above it, the page's sections, the design below it, then the Footer's) falls in the list the
+ * top-level layer `id` is in (#673, #936). `index` itself for a layer inside another.
  */
 function listIndex(layers: readonly Layer[], id: string, index: number): number {
   const top = layers.find((layer) => layer.id === id);
-  if (top === undefined || top.region === "header") return index;
-  const before =
-    top.region === "footer"
-      ? layers.filter((layer) => layer.region !== "footer").length
-      : layers.filter((layer) => layer.region === "header").length;
-  return index - before;
+  if (top === undefined) return index;
+  return index - layers.findIndex((layer) => listOf(layer) === listOf(top));
 }
 
 /**
@@ -84,10 +83,17 @@ export function registerLayersPanel(
   // The tree as last shown, for the page (its content and settings), the shared sections and the
   // Header and Footer it was made from: rebuilt only when they change, and kept (same object) when
   // the rebuilt tree is the same, e.g. after typing.
-  let shown: { page: unknown; shared: unknown; layout: unknown; layers: Layer[] } = {
+  let shown: {
+    page: unknown;
+    shared: unknown;
+    layout: unknown;
+    collections: unknown;
+    layers: Layer[];
+  } = {
     page: undefined,
     shared: undefined,
     layout: undefined,
+    collections: undefined,
     layers: [],
   };
   const currentLayers = () => {
@@ -96,13 +102,20 @@ export function registerLayersPanel(
     const page = site.pages[pageId];
     const shared = site.sharedSections;
     const layout = site.layout;
-    if (page === shown.page && shared === shown.shared && layout === shown.layout) {
+    // A post's Blog design is in its tree too (#936).
+    const { collections } = site;
+    if (
+      page === shown.page &&
+      shared === shown.shared &&
+      layout === shown.layout &&
+      collections === shown.collections
+    ) {
       return shown.layers;
     }
     const layers = page === undefined ? [] : pageLayers(site, pageId, library);
     shown = sameJson(layers, shown.layers)
-      ? { ...shown, page, shared, layout }
-      : { page, shared, layout, layers };
+      ? { ...shown, page, shared, layout, collections }
+      : { page, shared, layout, collections, layers };
     return shown.layers;
   };
 

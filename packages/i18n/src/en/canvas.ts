@@ -157,6 +157,7 @@ export const canvas = {
   // On this page, a shared part it changes takes other pages with it.
   "look.confirm.reach.region": "The {region} is on other pages too.",
   "look.confirm.reach.shared": "Shared section {name} is on other pages too.",
+  "look.confirm.reach.design": "The design of {name} is on its other posts too.",
   "look.confirm.apply": "Apply Look",
   "look.same.page": "Every {item} on this page has this look already.",
   "look.same.site": "Every {item} on the site has this look already.",

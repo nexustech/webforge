@@ -3,19 +3,22 @@
 id: layers
 title: Layers
 summary: See everything on the page as a list, and select, reorder, hide, leave off your website and rename it.
-related: [editing-on-the-page, header-and-footer, keyboard-shortcuts]
-updated: 2026-11-10
+related: [editing-on-the-page, header-and-footer, blog, keyboard-shortcuts]
+updated: 2026-11-11
 ---
 
 # Layers
 
 **Layers**, under the Add panel, lists everything on the page in order: the Header, each section and the elements inside it, and the Footer. Selecting in Layers selects on the page, and the other way round. Pointing at a row outlines that item on the page.
 
+On a [blog post](blog.md), Layers also lists the blog's design: its sections above the post's own, after the Header, and those below, before the Footer. Renaming, hiding or adding a note to one of them changes the design, so every post shows it. Each change is one step you can undo, such as _Renamed Heading to 'Date' in the design of 'Blog'_.
+
 It's the easiest way to reach something small or hidden, or to see how a page is built.
 
 ## What the icons mean
 
-- **Link:** a linked copy of a [shared section](header-and-footer.md#shared-sections). On the Header and Footer, it means they're on every page.
+- **Link:** a linked copy of a [shared section](header-and-footer.md#shared-sections). On the Header and Footer, it means they're on every page; on a blog's design, on every post.
+- **Lock:** the item can't be moved or deleted, only changed: the blog design's own sections.
 - **Sparkles:** the item has an entrance animation.
 - **Crossed-out name:** the item isn't published. It's dimmed on the page.
 - **Name in italics:** the item is hidden while you edit. It isn't on the page in the editor, but it's on your website.

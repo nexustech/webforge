@@ -4,7 +4,7 @@ id: site-check
 title: Site Check
 summary: What Site Check looks for, what each finding means, and how to fix it.
 related: [export, publish, pages, media, forms, site-settings]
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Site Check
@@ -17,7 +17,7 @@ Findings come in three kinds:
 - **Should fix:** visitors or search engines will notice.
 - **Tips:** worth doing when you have a moment.
 
-Each check shows a dot: green when all is well, amber or red when something needs a look. Click a finding to go to the page and item it's about. Some findings have a **Fix** button that does it for you. You can **Ignore** anything except a Must fix; **Show ignored items again** brings ignored ones back.
+Each check shows a dot: green when all is well, amber or red when something needs a look. Click a finding to go to the page and item it's about. Something in your [blog](blog.md)'s design is listed once, as _in the design of 'Blog'_, and clicking it opens a post with the item selected. The design is checked while the blog has a post that isn't a draft. Some findings have a **Fix** button that does it for you. You can **Ignore** anything except a Must fix; **Show ignored items again** brings ignored ones back.
 
 ## Must fix
 

@@ -3,6 +3,8 @@
  * here is the area's own.
  */
 
+// A Blog and its posts (6.10a), for other areas' tests of what reads the Blog's design (#936).
+export { insertBlog, insertPost } from "./blog-actions.js";
 export {
   addPage,
   addPolicyPage,

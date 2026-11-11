@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-08
+updated: 2026-11-11
 ---
 
 # Styling
@@ -70,6 +70,6 @@ Each choice says how many other items it changes. Click **Apply** to make the ch
 ## Copy and paste a look
 
 - **Copy Style** (Ctrl+Alt+C) and **Paste Style** (Ctrl+Alt+V) copy one item's Style settings onto another of the same kind.
-- **Apply Look to Every ‹item› on This Page**, or **on the Site**, gives the selected item's look to every other item of its kind. {appName} asks first when other pages would change.
+- **Apply Look to Every ‹item› on This Page**, or **on the Site**, gives the selected item's look to every other item of its kind, in the Header, the Footer, shared sections and a [blog](blog.md)'s design too. {appName} asks first when other pages would change. The blog's design changes once, for every post.
 
 These are on the right-click menu and the Edit menu. On a Mac, use Cmd instead of Ctrl.

@@ -56,7 +56,8 @@ export function siteCodePieces(site: SiteDoc): SiteCodePiece[] {
 
 /**
  * `site` with the running code `keeps` doesn't keep blanked, as a build that leaves it out draws
- * it: Settings' parts and Custom Code elements, in shared sections too. The allowed addresses
+ * it: Settings' parts and Custom Code elements, in shared sections and collections' designs too
+ * (#936). The allowed addresses
  * stay; Site Check applies them only once confirmed.
  */
 export function withKeptCode(site: SiteDoc, keeps: (text: string) => boolean): SiteDoc {
@@ -101,5 +102,17 @@ export function withKeptCode(site: SiteDoc, keeps: (text: string) => boolean): S
         { ...entry, section: nodes([entry.section])[0] ?? entry.section },
       ]),
     ) as SiteDoc["sharedSections"],
+    collections: Object.fromEntries(
+      Object.entries(site.collections).map(([id, collection]) => [
+        id,
+        {
+          ...collection,
+          design: {
+            before: nodes(collection.design.before),
+            after: nodes(collection.design.after),
+          },
+        },
+      ]),
+    ) as SiteDoc["collections"],
   };
 }

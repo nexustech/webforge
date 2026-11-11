@@ -323,7 +323,9 @@ export function LayersPanel({
    * stay first and last (#673).
    */
   const canDropAt = (from: Row, row: Row) =>
-    from.parent === row.parent && (row.parent !== "" || from.layer.region === row.layer.region);
+    from.parent === row.parent &&
+    (row.parent !== "" ||
+      (from.layer.region === row.layer.region && from.layer.design === row.layer.design));
   /** How many top-level rows the shared `region` has. */
   const regionRows = (region: Layer["region"]) =>
     layers.filter((layer) => layer.region === region).length;
@@ -428,6 +430,8 @@ export function LayersPanel({
             // selected row can't be dragged while others are selected too.
             const draggable =
               !layoutLocked &&
+              // A Blog design's sections stay where they are (#936), as the canvas keeps them.
+              layer.locked !== true &&
               renaming !== layer.id &&
               !(isSelected && alsoSelected.length > 0) &&
               // The shared Header and Footer stay first and last: theirs move among their own (#673).
@@ -554,6 +558,13 @@ export function LayersPanel({
                         <span className="sr-only">{t("layers.onEveryPage")} </span>
                       </span>
                     )}
+                    {row.parent === "" && layer.design !== undefined && (
+                      // A Blog's design (#936), drawn on every post.
+                      <span title={t("layers.onEveryPost")}>
+                        <Link2Icon aria-hidden className="mr-1 inline size-3.5 align-[-2px]" />
+                        <span className="sr-only">{t("layers.onEveryPost")} </span>
+                      </span>
+                    )}
                     {layer.locked === true && (
                       // Can't be moved or deleted, only edited (UX-12).
                       <span title={t("layers.locked")}>
@@ -602,8 +613,9 @@ export function LayersPanel({
         </div>
       </ScrollArea>
 
-      {/* Only the shared Header and Footer (#673): the page has no sections of its own yet. */}
-      {layers.every((layer) => layer.region !== undefined) && (
+      {/* Only the shared Header and Footer (#673), and a post's Blog design (#936): the page has no
+      sections of its own yet. */}
+      {layers.every((layer) => layer.region !== undefined || layer.design !== undefined) && (
         <p className="m-0 shrink-0 px-2 pb-1 text-xs text-muted-foreground">{t("layers.empty")}</p>
       )}
 

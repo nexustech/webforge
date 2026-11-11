@@ -1,5 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
+  type CollectionDesign,
+  collectionOf,
   copiedNodeId,
   findNode,
   isNodeDoc,
@@ -26,8 +28,11 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { elementKind, givenElementName, quotedName } from "../editor/labels.js";
 import {
   hiddenSetting,
+  inDesign,
+  nodesAtHome,
   regionHidden,
   SHARED_REGIONS,
+  type SharedHome,
   type SharedRegion,
   shownLayout,
 } from "../editor/shared-layout.js";
@@ -57,7 +62,7 @@ export type Layer = {
   readonly sharedSection?: string;
   /**
    * It can't be moved or deleted, only edited (UX-12), as the shared Header and Footer themselves
-   * are. Nothing the page lists is locked yet; Layers marks it when something is.
+   * are: a top-level section of a Blog's design (#936).
    */
   readonly locked?: boolean;
   /** It has an entrance animation (UX-12, 2.12); Layers marks it. */
@@ -67,6 +72,11 @@ export type Layer = {
    * never moved among the page's sections. Hidden while the page's settings hide it.
    */
   readonly region?: SharedRegion;
+  /**
+   * The part of a Blog's design it is (#936): above the post's own sections or below them, on every
+   * post. Set on the design's top-level layers.
+   */
+  readonly design?: keyof CollectionDesign;
 };
 
 /** The node lists inside `node`: its slots' contents, in field order. */
@@ -133,12 +143,14 @@ export function layersOf(
 }
 
 /**
- * Page `pageId`'s whole Layers tree (#673): the shared Header first, then the page's own sections,
- * then the shared Footer. The Header's and Footer's layers are marked with their region, and are
- * hidden while the page's settings hide them, or while hidden themselves, on every page.
+ * Page `pageId`'s whole Layers tree (#673), as the canvas draws it: the shared Header first, then
+ * a post's Blog design above it (#936), the page's own sections, the design below it, then the
+ * shared Footer. The Header's and Footer's layers are marked with their region, and are hidden
+ * while the page's settings hide them, or while hidden themselves, on every page. The design's
+ * top-level layers are marked with their part and locked, as the canvas locks them.
  */
 export function pageLayers(
-  site: Pick<SiteDoc, "pages" | "layout" | "sharedSections">,
+  site: Pick<SiteDoc, "pages" | "layout" | "sharedSections" | "collections">,
   pageId: PageId,
   library: ComponentLibrary,
 ): Layer[] {
@@ -148,10 +160,21 @@ export function pageLayers(
       region: which,
       hidden: layer.hidden || regionHidden(site, pageId, which),
     }));
-  const content = site.pages[pageId]?.doc.content ?? [];
+  const page = site.pages[pageId];
+  const design = page === undefined ? undefined : collectionOf(site, page)?.design;
+  const part = (which: keyof CollectionDesign): Layer[] =>
+    design === undefined
+      ? []
+      : layersOf(design[which], library, site.sharedSections).map((layer) => ({
+          ...layer,
+          design: which,
+          locked: true,
+        }));
   return [
     ...region("header"),
-    ...layersOf(content, library, site.sharedSections),
+    ...part("before"),
+    ...layersOf(page?.doc.content ?? [], library, site.sharedSections),
+    ...part("after"),
     ...region("footer"),
   ];
 }
@@ -196,19 +219,32 @@ export function ownId(content: readonly NodeDoc[], shared: SharedSectionsDoc, id
 }
 
 /**
- * The shown page and the layer `id` on it, before a change, with the page's own node for it; or
- * the layer in the shared Header or Footer (#673), with its region, and whether it is the region's
- * own top layer (the Header itself), which the page's settings show or hide.
+ * The shown page and the layer `id` on it, before a change, with the page's own node for it; the
+ * layer in a post's Blog design (#936), with where in it, its top-level layers locked; or the layer
+ * in the shared Header or Footer (#673), with its region, and whether it is the region's own top
+ * layer (the Header itself), which the page's settings show or hide.
  */
 function target(session: LayersSession, id: string) {
   const { pageId } = session.ui.getState();
   const site = session.history.document.getState();
-  const page: PageDoc | undefined = site.pages[pageId]?.doc;
+  const entry = site.pages[pageId];
+  const page: PageDoc | undefined = entry?.doc;
   const own = page === undefined ? id : ownId(page.content, site.sharedSections, id);
   const node = page === undefined ? undefined : findNode(page.content, (n) => n.props.id === own);
   if (node !== undefined) {
     const [layer] = layersOf([node], session.library, site.sharedSections);
     return layer === undefined ? undefined : { pageId, layer, own };
+  }
+  const collection = entry === undefined ? undefined : collectionOf(site, entry);
+  for (const part of ["before", "after"] as const) {
+    const nodes = collection?.design[part] ?? [];
+    const designNode = findNode(nodes, (n) => n.props.id === id);
+    if (collection === undefined || designNode === undefined) continue;
+    const [layer] = layersOf([designNode], session.library, site.sharedSections);
+    if (layer === undefined) return undefined;
+    const top = nodes.some((each) => each.props.id === id);
+    const home: SharedHome = { collection: collection.id, part };
+    return { pageId, layer: top ? { ...layer, design: part, locked: true } : layer, own: id, home };
   }
   for (const region of SHARED_REGIONS) {
     const nodes = site.layout[region];
@@ -223,6 +259,7 @@ function target(session: LayersSession, id: string) {
         ? { ...layer, region, hidden: layer.hidden || regionHidden(site, pageId, region) }
         : layer,
       own: id,
+      home: region,
       region,
       top,
     };
@@ -232,15 +269,16 @@ function target(session: LayersSession, id: string) {
 
 /**
  * Runs `change` on the page's own node `own` for layer `id` (which a step that selects selects) on
- * the shown page, or in the shared `region` it is in (#673), as one undo step.
+ * the shown page, or where else it is kept, `home`: the shared Header or Footer (#673), or a
+ * Blog's design (#936), whose changes are named by the Blog. One undo step.
  */
 function editNode(
   session: LayersSession,
   {
     id,
     own,
-    region,
-  }: { readonly id: string; readonly own: string; readonly region?: SharedRegion | undefined },
+    home,
+  }: { readonly id: string; readonly own: string; readonly home?: SharedHome | undefined },
   kind: "props" | "move",
   /** Whether the step selects the layer (a move does; a hide or rename leaves the selection). */
   select: boolean,
@@ -251,12 +289,17 @@ function editNode(
   const { pageId } = current;
   // A step that selects selects the layer alone: keeping the others could list it twice (#262).
   const selectionAfter = select ? { ...current, nodeId: id, others: [] } : current;
+  const site = session.history.document.getState();
+  const named =
+    home === undefined || typeof home === "string"
+      ? label
+      : label + inDesign(site, home.collection);
   session.edit(
     kind,
-    label,
+    named,
     (draft) => {
       const content =
-        region === undefined ? draft.pages[pageId]?.doc.content : draft.layout[region];
+        home === undefined ? draft.pages[pageId]?.doc.content : nodesAtHome(draft, home);
       const place = content === undefined ? undefined : placeOf(content, own, session.library);
       const node = place?.list[place.index];
       if (place !== undefined && node !== undefined) {
@@ -286,7 +329,7 @@ export function setLayerNote(session: LayersSession, id: string, note: string): 
       : found.layer.note === undefined
         ? "notes.history.added"
         : "notes.history.changed";
-  const at = { id, own: found.own, region: found.region };
+  const at = { id, own: found.own, home: found.home };
   editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
     if (next === "") delete node.props.note;
     else node.props.note = next;
@@ -313,7 +356,7 @@ export function renameLayer(session: LayersSession, id: string, name: string): v
     next === ""
       ? t("layers.history.unnamed", { item: layerItem(found.layer) })
       : t("layers.history.renamed", { item: found.layer.kind, name: next });
-  editNode(session, { id, own: found.own, region: found.region }, "props", false, label, (node) => {
+  editNode(session, { id, own: found.own, home: found.home }, "props", false, label, (node) => {
     if (next === "") {
       delete node.props.layerName;
     } else {
@@ -353,7 +396,7 @@ export function setLayerShown(session: LayersSession, id: string, shown: LayerSh
     return;
   }
   if (shown === "editorHidden" && !canHideWhileEditing(session, id)) return;
-  const at = { id, own: found.own, region: found.region };
+  const at = { id, own: found.own, home: found.home };
   const editing = shown === "editorHidden";
   const key = editing ? "layers.history.hidWhileEditing" : "layers.history.showed";
   editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
@@ -401,7 +444,7 @@ export function setLayerHidden(session: LayersSession, id: string, hidden: boole
     return;
   }
   const key = hidden ? "layers.history.hid" : "layers.history.showed";
-  const at = { id, own: found.own, region: found.region };
+  const at = { id, own: found.own, home: found.home };
   editNode(session, at, "props", false, t(key, { item: layerItem(found.layer) }), (node) => {
     if (hidden) {
       node.props.hidden = true;
@@ -446,16 +489,19 @@ export function toggleLayerHidden(session: LayersSession, id: string): void {
 
 /**
  * Moves a layer to `index` among its siblings (by drag or Mod+Alt+arrow), as one step. An index past
- * either end, or the layer's own place, changes nothing.
+ * either end, the layer's own place, or a locked layer (a Blog design's section, #936) changes
+ * nothing.
  */
 export function moveLayer(session: LayersSession, id: string, index: number): void {
   const found = target(session, id);
-  // The Header's and Footer's own layers move among their region's only (#673).
+  if (found?.layer.locked === true) return;
+  // The Header's and Footer's own layers move among their region's only (#673), a design's among
+  // the design's.
   const site = session.history.document.getState();
   const content =
-    found?.region === undefined
+    found?.home === undefined
       ? site.pages[session.ui.getState().pageId]?.doc.content
-      : site.layout[found.region];
+      : nodesAtHome(site, found.home);
   const place =
     content === undefined || found === undefined
       ? undefined
@@ -471,7 +517,7 @@ export function moveLayer(session: LayersSession, id: string, index: number): vo
   }
   editNode(
     session,
-    { id, own: found.own, region: found.region },
+    { id, own: found.own, home: found.home },
     "move",
     true,
     t("history.moved", { item: layerItem(found.layer) }),
@@ -498,10 +544,12 @@ export function copyLayer(
   linked: boolean,
 ): string | undefined {
   const found = target(session, id);
-  // Not the shared Header's or Footer's (#673): the canvas copies none of theirs either.
+  // Not the shared Header's or Footer's (#673), nor a Blog design's (#936): the canvas copies none
+  // of theirs either.
   if (found?.region !== undefined) {
     return t("layers.copyRegion", { region: t(`canvas.sharedRegion.${found.region}`) });
   }
+  if (found?.home !== undefined) return t("layers.copyDesign");
   const site = session.history.document.getState();
   const current = session.ui.getState();
   const content = site.pages[current.pageId]?.doc.content;
