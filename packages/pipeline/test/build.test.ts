@@ -145,6 +145,38 @@ describe("buildSite: self-contained output (X1, C8)", () => {
     scaledTestTimeout(60_000),
   );
 
+  it(
+    "leaves the section in view out when the Header turns it off (5.10b, GA10-1)",
+    async () => {
+      const base = sampleSite();
+      const off = await buildSite(
+        {
+          ...base,
+          layout: {
+            ...base.layout,
+            header: base.layout.header.map((node) =>
+              node.type === "Header"
+                ? { ...node, props: { ...node.props, sectionHighlight: false } }
+                : node,
+            ),
+          },
+        },
+        siteLibrary,
+        resources,
+      );
+
+      // The menu still links to Questions; the sticky Header keeps the script.
+      const script = text(off, fileNamed(off, /^assets\/js\//));
+      expect(script).toContain("Sticky header (F-DS-6)");
+      expect(script).not.toContain("Section in view");
+      // On, as the sample's Header leaves it, it's there (the test above).
+      expect(base.layout.header.find((node) => node.type === "Header")?.props).not.toHaveProperty(
+        "sectionHighlight",
+      );
+    },
+    scaledTestTimeout(60_000),
+  );
+
   it("compiles readable CSS with daisyUI, the site theme, the fonts and only the classes used", () => {
     const css = text(built, fileNamed(built, /^assets\/css\//));
 

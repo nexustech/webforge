@@ -20,6 +20,7 @@ The **Header**, at the top, and the **Footer**, at the bottom, are the same on e
 - **Layout:** _Name left, menu right_, _Centred_ or _With a button_.
 - **Stay at the top when scrolling:** keeps the Header in view as visitors scroll.
 - **Change style when scrolling** (with _Stay at the top_ on): _Shadow_, _Shrink_, _Solid background_ or _None_.
+- **Highlight the section in view** (when your menu links to a section): as visitors scroll, the menu lights up the section they're looking at. On unless you turn it off. See [Menu links to sections](links.md#menu-links-to-sections).
 
 The Header's menu lists your pages. Change it in the [Site panel's Menu](pages.md#the-menu).
 

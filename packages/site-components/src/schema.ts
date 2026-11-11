@@ -34,6 +34,12 @@ export type FieldOption = { readonly label: string; readonly value: string };
  * A `slot` that allows one component type only (a FAQ's questions) is edited in the Edit panel as
  * a repeating list too (F-ED-6), its items being those elements.
  */
+/**
+ * What a field's `shownWhen` knows of the site besides the element's values: whether its menu links
+ * to a section of a page (`menuLinksToSections`), for the Header's section highlight (5.10b).
+ */
+export type FieldSite = { readonly menuLinksToSections: boolean };
+
 export type FieldDef = {
   readonly group?: "content" | "style";
   /**
@@ -48,11 +54,11 @@ export type FieldDef = {
    */
   readonly unavailable?: (values: Readonly<Record<string, unknown>>) => string | undefined;
   /**
-   * Whether the Edit panel shows the field while the element has `values` (with its defaults);
-   * always when left out. Hidden, it keeps its value for when it shows again: an Image's Height,
-   * only while its Shape is Set height (`fieldsHiddenBy`).
+   * Whether the Edit panel shows the field while the element has `values` (with its defaults), on
+   * `site`; always when left out. Hidden, it keeps its value for when it shows again: an Image's
+   * Height, only while its Shape is Set height (`fieldsHiddenBy`).
    */
-  readonly shownWhen?: (values: Readonly<Record<string, unknown>>) => boolean;
+  readonly shownWhen?: (values: Readonly<Record<string, unknown>>, site: FieldSite) => boolean;
   readonly responsive?: boolean;
   /**
    * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one

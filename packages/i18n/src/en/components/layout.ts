@@ -18,6 +18,10 @@ export const layout = {
   "field.scrollStyle.shrink": "Shrink",
   "field.scrollStyle.solid": "Solid background",
   "field.scrollStyle.none": "None",
+  // The section in view (5.10b, GA10-1).
+  "field.sectionHighlight": "Highlight the section in view",
+  "field.sectionHighlight.help":
+    "As visitors scroll, the menu lights up the section they're looking at.",
   // Text that appears on the exported site itself.
   "siteText.navigation": "Main navigation",
   "siteText.menu": "Menu",

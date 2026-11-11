@@ -136,6 +136,44 @@ export const StyleOnly: Story = {
   args: { heading: "Section", fields: heroFields.filter((field) => field.group === "style") },
 };
 
+/**
+ * The Header's options on a site whose menu links to a section: *Highlight the section in view*,
+ * with its help read as the switch's description (5.10b, GA10-1).
+ */
+export const HeaderSectionHighlight: Story = {
+  args: {
+    heading: "Header",
+    fields: [
+      {
+        name: "sticky",
+        kind: "toggle",
+        label: "Stay at the top when scrolling",
+        group: "style",
+        value: true,
+      },
+      {
+        name: "scrollStyle",
+        kind: "select",
+        label: "Change style when scrolling",
+        group: "style",
+        value: "shadow",
+        options: [
+          { label: "Shadow", value: "shadow" },
+          { label: "Shrink", value: "shrink" },
+        ],
+      },
+      {
+        name: "sectionHighlight",
+        kind: "toggle",
+        label: "Highlight the section in view",
+        group: "style",
+        value: true,
+        help: "As visitors scroll, the menu lights up the section they're looking at.",
+      },
+    ],
+  },
+};
+
 const sizes = [
   { label: "Small", value: "small" },
   { label: "Medium", value: "medium" },

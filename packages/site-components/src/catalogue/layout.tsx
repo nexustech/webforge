@@ -192,8 +192,21 @@ const header = defineComponent({
       label: t("field.scrollStyle"),
       options: SCROLL_STYLES.map((value) => ({ label: t(`field.scrollStyle.${value}`), value })),
     },
+    // The section in view (5.10b, GA10-1): the export leaves "section-spy" out when it's off
+    // (`highlightsSectionInView`). Offered only while the menu links to a section.
+    sectionHighlight: {
+      kind: "toggle",
+      label: t("field.sectionHighlight"),
+      help: t("field.sectionHighlight.help"),
+      shownWhen: (_values, site) => site.menuLinksToSections,
+    },
   },
-  defaults: { siteName: t("site.untitledName"), sticky: false, scrollStyle: "shadow" },
+  defaults: {
+    siteName: t("site.untitledName"),
+    sticky: false,
+    scrollStyle: "shadow",
+    sectionHighlight: true,
+  },
   behaviours: (values) => (values.sticky ? ["menu", "sticky"] : ["menu"]),
   render: ({ values, context }) => {
     const layout = values.variant;

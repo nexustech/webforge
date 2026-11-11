@@ -1,6 +1,11 @@
 import type { MediaId, MenuDoc, MenuItemId, PageId, SitePage } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { menuLinksToSections, type NavigationSite, navigationFor } from "./navigation.js";
+import {
+  highlightsSectionInView,
+  menuLinksToSections,
+  type NavigationSite,
+  navigationFor,
+} from "./navigation.js";
 
 const id = (value: string) => value as MenuItemId;
 const page = (pageId: string) => pageId as PageId;
@@ -277,5 +282,31 @@ describe("menuLinksToSections (5.10)", () => {
         ]),
       ),
     ).toBe(false);
+  });
+});
+
+describe("highlightsSectionInView (5.10b)", () => {
+  const toSection = { kind: "page" as const, pageId: page("home"), anchor: "prices" };
+  const withSection: MenuDoc = {
+    follows: "custom",
+    items: [{ id: id("s"), kind: "section", label: "Prices", link: toSection, hidden: false }],
+  };
+  const header = (props: Record<string, unknown>) => [
+    { type: "Header", props: { id: "header", ...props } },
+  ];
+
+  it("is on for a menu linking to a section, as on a site from before the option", () => {
+    expect(highlightsSectionInView(withSection, header({}))).toBe(true);
+    expect(highlightsSectionInView(withSection, header({ sectionHighlight: true }))).toBe(true);
+    expect(highlightsSectionInView(withSection, [])).toBe(true);
+  });
+
+  it("is off when the Header turns it off, or the menu links to no section", () => {
+    expect(highlightsSectionInView(withSection, header({ sectionHighlight: false }))).toBe(false);
+    const pagesOnly: MenuDoc = {
+      follows: "pages",
+      items: [{ id: id("p"), kind: "page", pageId: page("home"), hidden: false }],
+    };
+    expect(highlightsSectionInView(pagesOnly, header({}))).toBe(false);
   });
 });
