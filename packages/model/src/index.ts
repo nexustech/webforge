@@ -251,11 +251,13 @@ export {
 export type { RichTextLink } from "./rich-text-links.js";
 export {
   RICH_TEXT_FILE_LINK,
+  RICH_TEXT_LIST_LINK,
   RICH_TEXT_PAGE_LINK,
   rewriteRichTextLinks,
   richTextFileLinks,
   richTextHref,
   richTextLinkValue,
+  richTextListLinks,
   richTextPageLinks,
 } from "./rich-text-links.js";
 export { sameJson } from "./same-json.js";

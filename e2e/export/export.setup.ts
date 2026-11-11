@@ -4,9 +4,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test as setup } from "@playwright/test";
 import {
+  type CollectionId,
   DEFAULT_THEME,
   expandSharedCopies,
   type MediaId,
+  type MenuItemId,
   type NodeDoc,
   SHARED_COPY_TYPE,
   type SharedSectionId,
@@ -446,6 +448,20 @@ setup("export a site with a Blog's post, its own pages and its feed (6.10a, 6.10
       ...sample,
       documents: [],
       settings: { ...sample.settings, "address.url": "https://rosas.example" },
+      // The menu links to the Blog's own page (#940).
+      menu: {
+        follows: "custom",
+        items: [
+          ...(sample.menu?.items ?? []),
+          {
+            id: "menu-blog" as MenuItemId,
+            kind: "link",
+            label: "News",
+            link: { kind: "list", collectionId: "blog" as CollectionId },
+            hidden: false,
+          },
+        ],
+      },
       collections: [
         {
           id: "blog",

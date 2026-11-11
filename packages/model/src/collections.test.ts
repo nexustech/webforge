@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { itemBindingOf, validBindings } from "./bindings.js";
+import { findBrokenLinks } from "./broken-links.js";
 import {
   type Collection,
   collectionItems,
@@ -15,8 +16,9 @@ import {
   tagSlug,
 } from "./collections.js";
 import type { NodeDoc } from "./documents.js";
-import type { CollectionId, MediaId, PageId } from "./ids.js";
+import type { CollectionId, MediaId, MenuItemId, PageId } from "./ids.js";
 import { syncMenuWithPages } from "./menu-sync.js";
+import { rewriteRichTextLinks, richTextHref, richTextLinkValue } from "./rich-text-links.js";
 import { createSite, type PageEntry, type SiteDoc, siteDocSchema } from "./site-doc.js";
 import { siteSnapshotSchema } from "./site-snapshot.js";
 import { siteToSnapshot } from "./to-snapshot.js";
@@ -307,14 +309,52 @@ describe("syncMenuWithPages with a Blog (6.10a)", () => {
     const site = siteWith(post("p1", "spring"));
     const following = syncMenuWithPages(site, "p1" as PageId);
 
-    expect(following.items.map((item) => item.kind === "page" && item.pageId)).toEqual([
-      site.homePageId,
-    ]);
+    // The home page, then the Blog's list (#940): never the post itself.
+    expect(following.items.map((item) => (item.kind === "page" ? item.pageId : item.kind))).toEqual(
+      [site.homePageId, "link"],
+    );
     const edited = syncMenuWithPages(
       { ...site, menu: { ...following, follows: "custom" } },
       "p1" as PageId,
     );
-    expect(edited.items).toHaveLength(1);
+    expect(edited.items).toHaveLength(2);
+  });
+
+  it("lists each Blog's list after the pages, by its name, keeping its item (#940)", () => {
+    const site = siteWith();
+    const first = syncMenuWithPages(site);
+    const [, list] = first.items;
+
+    expect(list).toMatchObject({
+      kind: "link",
+      label: "Blog",
+      link: { kind: "list", collectionId: BLOG },
+      hidden: false,
+    });
+    // Renamed and hidden, it keeps its id and hidden state, and shows the new name.
+    const renamed = {
+      ...site,
+      menu: {
+        ...first,
+        items: first.items.map((item) => (item === list ? { ...item, hidden: true } : item)),
+      },
+      collections: { [BLOG]: blog({ name: "News" }) },
+    };
+    expect(syncMenuWithPages(renamed).items[1]).toEqual({ ...list, hidden: true, label: "News" });
+    // Without the Blog, its item goes.
+    expect(syncMenuWithPages({ ...site, collections: {} }).items).toHaveLength(1);
+  });
+
+  it("adds a Blog's list to an edited menu once, and drops it when the Blog is gone (#940)", () => {
+    const site = siteWith();
+    const custom = { ...site, menu: { follows: "custom" as const, items: [] } };
+
+    const added = syncMenuWithPages(custom, undefined, BLOG);
+    expect(added.items.map((item) => item.kind === "link" && item.link)).toEqual([
+      { kind: "list", collectionId: BLOG },
+    ]);
+    expect(syncMenuWithPages({ ...custom, menu: added }, undefined, BLOG).items).toHaveLength(1);
+    expect(syncMenuWithPages({ ...custom, menu: added, collections: {} }).items).toEqual([]);
   });
 });
 
@@ -409,5 +449,50 @@ describe("a Blog's own pages (6.10b)", () => {
     expect(issuesOf(site)).toEqual(["A page can't be in a Blog's own folders"]);
     expect(listPath("blog")).toBe("blog/index");
     expect(listPath("blog", 3)).toBe("blog/page/3");
+  });
+});
+
+describe("links to a Blog's list (#940)", () => {
+  it("are kept in rich text as webforge:list/, read back, and written where the export says", () => {
+    const link = { kind: "list", collectionId: BLOG } as const;
+    const href = richTextHref(link);
+
+    expect(href).toBe(`webforge:list/${BLOG}`);
+    expect(richTextLinkValue({ href, newTab: true })).toEqual({ ...link, newTab: true });
+    expect(
+      rewriteRichTextLinks(`<a href="${href}">All posts</a>`, (each) =>
+        each.kind === "list" ? `../blog/index.html` : "#",
+      ),
+    ).toBe('<a href="../blog/index.html">All posts</a>');
+  });
+
+  it("are broken once the Blog is gone, in the menu, a link field or rich text", () => {
+    const site = siteWith();
+    site.menu = {
+      follows: "custom",
+      items: [
+        {
+          id: "m1" as MenuItemId,
+          kind: "link",
+          label: "Blog",
+          link: { kind: "list", collectionId: BLOG },
+          hidden: false,
+        },
+      ],
+    };
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home");
+    home.doc.content = [
+      { type: "Button", props: { id: "b", link: { kind: "list", collectionId: BLOG } } },
+      { type: "Text", props: { id: "t", text: `<p><a href="webforge:list/${BLOG}">x</a></p>` } },
+    ];
+
+    expect(findBrokenLinks(site)).toEqual([]);
+    site.collections = {};
+    expect(findBrokenLinks(site)).toEqual([
+      { on: "menu", nodeId: "m1", collectionId: BLOG },
+      { on: site.homePageId, nodeId: "b", collectionId: BLOG },
+      { on: site.homePageId, nodeId: "t", collectionId: BLOG },
+    ]);
   });
 });

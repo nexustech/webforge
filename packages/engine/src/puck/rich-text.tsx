@@ -1,7 +1,12 @@
 import { type Field, RichTextMenu } from "@puckeditor/core";
 import { Extension, type Extensions } from "@tiptap/core";
 import { t } from "@webforge/i18n";
-import { RICH_TEXT_FILE_LINK, RICH_TEXT_PAGE_LINK, type TextMarkRole } from "@webforge/model";
+import {
+  RICH_TEXT_FILE_LINK,
+  RICH_TEXT_LIST_LINK,
+  RICH_TEXT_PAGE_LINK,
+  type TextMarkRole,
+} from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
 import { useEditorState } from "./editor-state.js";
 import { MarkdownPaste } from "./markdown-paste.js";
@@ -19,7 +24,7 @@ type ToolbarProps = Parameters<NonNullable<RichtextField["renderInlineMenu"]>>[0
  * and phone. Others are dropped, pasted ones too.
  */
 const ALLOWED_LINK = new RegExp(
-  `^(https?:|mailto:|tel:|${RICH_TEXT_PAGE_LINK}|${RICH_TEXT_FILE_LINK})`,
+  `^(https?:|mailto:|tel:|${RICH_TEXT_PAGE_LINK}|${RICH_TEXT_FILE_LINK}|${RICH_TEXT_LIST_LINK})`,
   "i",
 );
 

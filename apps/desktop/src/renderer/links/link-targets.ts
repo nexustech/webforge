@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   anchorFrom,
+  collectionById,
   copiedAnchor,
   copyHolding,
   expandSharedCopies,
@@ -135,6 +136,7 @@ export function describeLink(
   link: LinkValue | undefined,
   targets: readonly PageTarget[],
   media: SiteDoc["media"] = {},
+  collections: SiteDoc["collections"] = {},
 ): string {
   if (link === undefined) {
     return t("link.none");
@@ -157,6 +159,13 @@ export function describeLink(
     case "file": {
       const document = Object.hasOwn(media, link.mediaId) ? media[link.mediaId] : undefined;
       return document === undefined ? t("link.missingFile") : document.fileName;
+    }
+    case "list": {
+      // A Blog's own page (#940), by the Blog's name.
+      const collection = collectionById({ collections }, link.collectionId);
+      return collection === undefined
+        ? t("link.missingPage")
+        : t("link.list", { name: collection.name });
     }
   }
 }

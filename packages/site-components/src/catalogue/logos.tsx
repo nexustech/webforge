@@ -72,6 +72,7 @@ function destinationOf(link: LinkValue, href: string, context: RenderContext): s
     case "phone":
       return link.number;
     case "page":
+    case "list":
       return context.navigation
         .flatMap((item) => ("children" in item ? item.children : [item]))
         .find((item) => item.href === href)?.label;

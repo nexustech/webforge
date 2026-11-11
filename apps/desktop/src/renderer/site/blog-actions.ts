@@ -14,6 +14,7 @@ import {
   pageTitle,
   type SiteDoc,
   slugify,
+  syncMenuWithPages,
 } from "@webforge/model";
 import { localDay } from "../editor/page-updated.js";
 import { changingAddresses, editShowing, type PagesSession } from "./page-actions.js";
@@ -138,7 +139,7 @@ export function insertPost(
 
 /**
  * Adds a Blog to `draft` (an undo step's), as collection `collectionId` from the Blog preset in a
- * folder no other has (`blog`), with a first post `postId` to show it.
+ * folder no other has (`blog`), with a first post `postId` to show it, and to the menu.
  */
 export function insertBlog(
   draft: SiteDoc,
@@ -167,6 +168,9 @@ export function insertBlog(
     { summary: t("blog.firstPost.summary") },
     today,
   );
+  // The Blog in the menu, linking to its own page (#940): after the pages in a menu that follows
+  // them, at the end of an edited one.
+  draft.menu = syncMenuWithPages(draft, undefined, collectionId);
 }
 
 /**
@@ -250,7 +254,10 @@ export function renameBlog(
   session.edit("props", t("blog.history.renamed", { name: newName }), (draft) => {
     const blog = collectionById(draft, collectionId);
     if (blog === undefined) return;
+    renameListItems(draft, collectionId, blog.name, newName);
     blog.name = newName;
+    // A menu that follows the pages shows the Blog by its new name (#940).
+    draft.menu = syncMenuWithPages(draft);
     if (folder === blog.folder) return;
     const former = [
       ...(blog.formerFolders ?? []),
@@ -265,6 +272,25 @@ export function renameBlog(
       }
     });
   });
+}
+
+/**
+ * The menu items of `draft` linking to Blog `collectionId`'s own page that show its name, `from`,
+ * showing `to` instead (#940). An item the person named otherwise keeps its own name.
+ */
+function renameListItems(draft: SiteDoc, collectionId: CollectionId, from: string, to: string) {
+  for (const item of draft.menu.items.flatMap((each) =>
+    each.kind === "group" ? [each, ...each.children] : [each],
+  )) {
+    if (
+      item.kind === "link" &&
+      item.link.kind === "list" &&
+      item.link.collectionId === collectionId &&
+      item.label === from
+    ) {
+      item.label = to;
+    }
+  }
 }
 
 /** Whether Blog `collectionId` can be deleted: it has no posts (#937). */
@@ -285,6 +311,8 @@ export function deleteBlog(session: PagesSession, collectionId: CollectionId): v
     t("history.deleted", { item: t("blog.blogItem", { name: collection.name }) }),
     (draft) => {
       delete draft.collections[collectionId];
+      // Its item in the menu goes with it, as a deleted page's does (#940).
+      draft.menu = syncMenuWithPages(draft);
     },
   );
 }

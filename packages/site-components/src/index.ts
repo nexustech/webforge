@@ -77,6 +77,7 @@ export {
 } from "./motion.js";
 export {
   highlightsSectionInView,
+  listPathOf,
   menuLinksToSections,
   type NavigationPage,
   type NavigationSite,

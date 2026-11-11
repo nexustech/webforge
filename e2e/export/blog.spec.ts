@@ -69,6 +69,16 @@ test("lists the Blog's posts on its own page, with the site's Header and Footer"
   await passesAxe(page);
 });
 
+test("goes from the menu to the Blog's own page, from a post in its folder too (#940)", async ({
+  page,
+}) => {
+  await page.goto(post);
+
+  await page.locator("nav").getByRole("link", { name: "News" }).first().click();
+  await expect(page).toHaveURL(/\/blog\/index\.html$/);
+  await expect(page.getByRole("heading", { name: "Blog", level: 1 })).toBeVisible();
+});
+
 test("links its feed from every page, and the feed lists the post at its whole address", async ({
   page,
 }) => {

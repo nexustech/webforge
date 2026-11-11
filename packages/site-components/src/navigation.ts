@@ -1,4 +1,10 @@
-import type { MenuDoc, MenuLeaf, NodeDoc, SitePage } from "@webforge/model";
+import {
+  listPath,
+  type MenuDoc,
+  type MenuLeaf,
+  type NodeDoc,
+  type SitePage,
+} from "@webforge/model";
 import { hrefFor } from "./links.js";
 import type { NavItem, NavLink } from "./schema.js";
 
@@ -8,11 +14,22 @@ export type NavigationPage = Pick<
   "id" | "path" | "title" | "navLabel" | "hideFromNavigation"
 >;
 
-/** What the navigation needs of a site: its pages, in order, and its menu. */
+/** What the navigation needs of a site: its pages, in order, its menu, and its collections. */
 export type NavigationSite = {
   readonly pages: readonly NavigationPage[];
   readonly menu?: MenuDoc | undefined;
+  /** Where each collection's list is (#940), which a menu item can link to: a Blog's own page. */
+  readonly collections?: readonly { readonly id: string; readonly folder: string }[] | undefined;
 };
+
+/** Where the list of collection `id` of `site` is, `blog/index`, if the site has it. */
+export function listPathOf(
+  site: Pick<NavigationSite, "collections">,
+  id: string,
+): string | undefined {
+  const collection = site.collections?.find((each) => each.id === id);
+  return collection === undefined ? undefined : listPath(collection.folder);
+}
 
 /**
  * The navigation the Header shows on `page` (F-ED-17), with URLs relative to it (`prefix` is its
@@ -53,17 +70,33 @@ export function navigationFor(
         ? undefined
         : pageLink(target, item.id, item.label);
     }
-    const href = hrefFor(item.link, (id) => pages.get(id)?.path, prefix, pathOfFile);
+    const href = hrefFor(
+      item.link,
+      (id) => pages.get(id)?.path,
+      prefix,
+      pathOfFile,
+      (id) => listPathOf(site, id),
+    );
     if (href === undefined) {
       const { link } = item;
-      broken(link.kind === "page" ? link.pageId : link.kind === "file" ? link.mediaId : link.kind);
+      broken(
+        link.kind === "page"
+          ? link.pageId
+          : link.kind === "file"
+            ? link.mediaId
+            : link.kind === "list"
+              ? link.collectionId
+              : link.kind,
+      );
       return undefined;
     }
     const link = item.link;
+    // The current page's own item: its page, or the list it is the first page of (#940).
     const current =
-      link.kind === "page" &&
-      link.anchor === undefined &&
-      pages.get(link.pageId)?.path === page.path;
+      (link.kind === "page" &&
+        link.anchor === undefined &&
+        pages.get(link.pageId)?.path === page.path) ||
+      (link.kind === "list" && listPathOf(site, link.collectionId) === page.path);
     return {
       id: item.id,
       label: item.label,

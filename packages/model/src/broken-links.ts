@@ -1,8 +1,8 @@
-import { collectionOf } from "./collections.js";
+import { collectionById, collectionOf } from "./collections.js";
 import { anchorsIn, isNodeDoc } from "./documents.js";
-import type { MediaId, PageId } from "./ids.js";
+import type { CollectionId, MediaId, PageId } from "./ids.js";
 import { linkValueSchema } from "./link.js";
-import { richTextFileLinks, richTextPageLinks } from "./rich-text-links.js";
+import { richTextFileLinks, richTextListLinks, richTextPageLinks } from "./rich-text-links.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
 import { type ElementPlace, eachElement } from "./site-elements.js";
@@ -30,12 +30,20 @@ export type BrokenLink = {
       /** The document it points at, deleted from Media. */
       readonly mediaId: MediaId;
     }
+  | {
+      /** The collection whose list it points at (#940), a Blog the site no longer has. */
+      readonly collectionId: CollectionId;
+    }
 );
 
-/** What a link points at in the site: a page (and section), or a document in Media. */
+/**
+ * What a link points at in the site: a page (and section), a document in Media, or a collection's
+ * list (#940), a Blog's own page.
+ */
 export type SiteTarget =
   | { readonly kind: "page"; readonly pageId: PageId; readonly anchor?: string | undefined }
-  | { readonly kind: "file"; readonly mediaId: MediaId };
+  | { readonly kind: "file"; readonly mediaId: MediaId }
+  | { readonly kind: "list"; readonly collectionId: CollectionId };
 
 /**
  * Calls `visit` for every link to a page or a document in `value`, a field's value, but not in
@@ -47,6 +55,7 @@ function walkLinks(value: unknown, visit: (link: SiteTarget) => void): void {
     if (!value.includes("href=")) return;
     for (const link of richTextPageLinks(value)) visit({ kind: "page", ...link });
     for (const { mediaId } of richTextFileLinks(value)) visit({ kind: "file", mediaId });
+    for (const { collectionId } of richTextListLinks(value)) visit({ kind: "list", collectionId });
     return;
   }
   if (Array.isArray(value)) {
@@ -61,6 +70,9 @@ function walkLinks(value: unknown, visit: (link: SiteTarget) => void): void {
   if (link?.success === true) {
     if (link.data.kind === "page") visit(link.data);
     if (link.data.kind === "file") visit({ kind: "file", mediaId: link.data.mediaId });
+    if (link.data.kind === "list") {
+      visit({ kind: "list", collectionId: link.data.collectionId });
+    }
     return;
   }
   for (const item of Object.values(value)) walkLinks(item, visit);
@@ -134,6 +146,11 @@ export function findBrokenLinks(
       if (link.kind === "file") {
         const item = Object.hasOwn(site.media, link.mediaId) ? site.media[link.mediaId] : undefined;
         if (item?.kind !== "file") broken.push({ on, nodeId: id, mediaId: link.mediaId });
+      } else if (link.kind === "list") {
+        // A Blog's own page (#940): there while the site has the Blog.
+        if (collectionById(site, link.collectionId) === undefined) {
+          broken.push({ on, nodeId: id, collectionId: link.collectionId });
+        }
       } else if (site.pages[link.pageId] === undefined) {
         broken.push({ on, nodeId: id, pageId: link.pageId });
       } else if (link.anchor !== undefined && !anchorsOn(link.pageId).has(link.anchor)) {

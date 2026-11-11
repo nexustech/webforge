@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import type {
+  CollectionId,
   MediaId,
   MenuItemId,
   NodeDoc,
@@ -2092,6 +2093,57 @@ describe("buildSite: a Blog's own pages and feed (6.10b)", () => {
         'src="../assets/img/post-photo-1600.jpg"',
       );
       expect(exported.report.warnings.filter((each) => each.code === "missing-image")).toEqual([]);
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "links a menu item and a Button to the Blog's own page, from a page in a folder too (#940)",
+    async () => {
+      const base = withBlog(2);
+      const list = { kind: "list" as const, collectionId: "blog" as CollectionId };
+      const site: SiteSnapshot = {
+        ...base,
+        menu: {
+          follows: "custom",
+          items: [
+            ...(base.menu?.items ?? []),
+            {
+              id: "blog-item" as MenuItemId,
+              kind: "link",
+              label: "News",
+              link: list,
+              hidden: false,
+            },
+          ],
+        },
+        pages: [
+          ...base.pages,
+          {
+            id: "cakes",
+            path: "services/cakes",
+            title: "Cakes",
+            doc: {
+              root: { props: {} },
+              content: [
+                { type: "Button", props: { id: "to-blog", label: "Our news", link: list } },
+              ],
+            },
+          },
+        ],
+      };
+
+      const exported = await buildSite(site, siteLibrary, resources);
+      const cakes = text(exported, "services/cakes.html");
+
+      expect(text(exported, "index.html")).toContain('<a href="blog/index.html">News</a>');
+      expect(cakes).toContain('href="../blog/index.html">Our news</a>');
+      expect(cakes).toContain('<a href="../blog/index.html">News</a>');
+      // On the Blog's own page, its menu item is the current page's.
+      expect(text(exported, "blog/index.html")).toContain(
+        '<a href="../blog/index.html" aria-current="page">News</a>',
+      );
+      expect(exported.report.warnings.filter((each) => each.code === "broken-link")).toEqual([]);
     },
     scaledTestTimeout(60_000),
   );

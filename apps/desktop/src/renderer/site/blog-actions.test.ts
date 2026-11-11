@@ -1,6 +1,7 @@
 import {
   type CollectionId,
   changedDocuments,
+  findBrokenLinks,
   freeCollectionFolder,
   migrateSite,
   type NodeDoc,
@@ -87,8 +88,13 @@ describe("addBlog (6.10a)", () => {
     expect(shown()).toBe(postId);
     expect(labels()).toEqual(["Added a blog"]);
     expect(siteDocSchema.safeParse(site()).success).toBe(true);
-    // Not in the menu: the Blog lists its posts.
-    expect(site().menu).toEqual(before.menu);
+    // The post isn't in the menu, but the Blog is, linking to its own page (#940).
+    expect(site().menu.items.slice(0, -1)).toEqual(before.menu.items);
+    expect(site().menu.items.at(-1)).toMatchObject({
+      kind: "link",
+      label: "Blog",
+      link: { kind: "list", collectionId: blogId() },
+    });
 
     session.history.undo();
     expect(site().collections).toEqual({});
@@ -470,5 +476,59 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
     expect(cancelled.engine.applyChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ layout: canvasLayout(cancelled.now(), cancelled.postId) }),
     );
+  });
+});
+
+describe("the Blog in the menu, renamed or deleted (#940, #943 review)", () => {
+  /** A site with a Blog with no posts, its menu following the pages or `edited`. */
+  function blogInMenu(edited = false) {
+    const { session, site, blogId, labels } = setUp();
+    const postId = addBlog(session);
+    deletePage(session, postId);
+    if (edited) {
+      session.edit("props", "Edited menu", (draft) => {
+        draft.menu = { ...draft.menu, follows: "custom" };
+      });
+    }
+    const listItems = () =>
+      site().menu.items.filter((item) => item.kind === "link" && item.link.kind === "list");
+    return { session, site, blogId, labels, listItems };
+  }
+
+  it("shows the new name in the menu, in the same step, followed or edited", () => {
+    for (const edited of [false, true]) {
+      const { session, blogId, labels, listItems } = blogInMenu(edited);
+
+      renameBlog(session, blogId(), "News", false, false);
+
+      expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["News"]);
+      expect(labels().at(-1)).toBe("Renamed blog 'News'");
+      session.history.undo();
+      expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["Blog"]);
+    }
+  });
+
+  it("keeps a name the person gave the item in an edited menu", () => {
+    const { session, blogId, listItems } = blogInMenu(true);
+    session.edit("props", "Renamed menu item", (draft) => {
+      for (const item of draft.menu.items) if (item.kind === "link") item.label = "Our news";
+    });
+
+    renameBlog(session, blogId(), "Journal", false, false);
+
+    expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["Our news"]);
+  });
+
+  it("takes the Blog out of the menu when it's deleted, in the same step", () => {
+    for (const edited of [false, true]) {
+      const { session, site, blogId, listItems } = blogInMenu(edited);
+
+      deleteBlog(session, blogId());
+
+      expect(listItems()).toEqual([]);
+      expect(findBrokenLinks(site())).toEqual([]);
+      session.history.undo();
+      expect(listItems()).toHaveLength(1);
+    }
   });
 });

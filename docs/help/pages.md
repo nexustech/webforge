@@ -62,11 +62,11 @@ To make a page a draft, turn on **Draft** in its **…** menu, or in Page Settin
 
 ## The menu
 
-The **Menu**, under Pages, is what the Header shows. At first it lists your pages in order and follows them as you add, move or remove pages.
+The **Menu**, under Pages, is what the Header shows. At first it lists your pages in order and follows them as you add, move or remove pages. A [blog](blog.md)'s posts aren't listed one by one: the blog is, after your pages, linking to its own page of posts.
 
 Click **+** (**Add to Menu**) to add:
 
-- a **Link…**: to a page, a section, another website, an email address or a phone number;
+- a **Link…**: to a page, a section, your blog's own page (_Blog (all posts)_ under **Page**), another website, an email address or a phone number;
 - a **Button…**: a link that stands out as a button;
 - a **Dropdown…**: a heading that opens a list of links.
 

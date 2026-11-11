@@ -14,7 +14,7 @@ A **blog** holds your news, offers and stories. Each **post** is a page of your 
 
 ## Adding a blog
 
-In the **Site** panel, click **+** (**Add Page**) and choose **Blog**. {appName} adds the blog, with a first post to show you how a post looks, and opens it.
+In the **Site** panel, click **+** (**Add Page**) and choose **Blog**. {appName} adds the blog, with a first post to show you how a post looks, and opens it. It also adds the blog to your menu, linking to the blog's own page of posts: after your pages if the menu follows them, or at its end if you've changed the menu yourself.
 
 The **Pages** list shows your blog as a group of its own, under its name, with your posts newest first. A site has one blog.
 
@@ -94,7 +94,7 @@ Export and Publish write each post as its own page, in the blog's folder, with t
 
 They also write your blog's own pages, with your Header and Footer:
 
-- **`blog/index.html`** lists your posts, ten a page, newest first, with **Older posts** and **Newer posts** links to `blog/page/2.html` and on. **All posts** in Latest posts goes here.
+- **`blog/index.html`** lists your posts, ten a page, newest first, with **Older posts** and **Newer posts** links to `blog/page/2.html` and on. **All posts** in Latest posts goes here, as does the blog's item in your menu. Any link can go here too: in the link dialog, choose _Blog (all posts)_ under **Page**.
 - **`blog/tag/opening-times.html`** lists the posts with that tag, one page for each tag. A tag in another alphabet, such as _Νέα_, gets a file name made from it, such as `tag-1k3f9a.html`, as file names are in Latin letters.
 - **`blog/feed.xml`** is your blog's feed (RSS), for readers who follow blogs in an app. Every page links to it. A feed needs your site's web address ([Site Settings › Web address](site-settings.md#web-address)), as its links are whole addresses; until you add it, there's no feed and Site Check says so.
 

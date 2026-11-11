@@ -22,7 +22,7 @@ import {
 import type { CheckRule, Finding, FindingPlace } from "../types.js";
 
 /**
- * Links to a page, a section or a document that isn't there any more (F-ED-18): *Should fix*, and
+ * Links to a page, a section, a document or a Blog's list (#940) that isn't there any more (F-ED-18): *Should fix*, and
  * *Must fix* to publish (X5). Links in hidden elements aren't exported, so they don't count, nor do
  * those on a draft page. A draft page is there: links to it are {@link draftLinksRule}'s.
  */
@@ -36,7 +36,13 @@ export const brokenLinksRule: CheckRule = {
     return findBrokenLinks(site, { skipHidden: true })
       .filter((link) => exported(link.on))
       .map((link) => ({
-        key: `${link.on}/${link.nodeId}/${"mediaId" in link ? link.mediaId : `${link.pageId}#${link.anchor ?? ""}`}`,
+        key: `${link.on}/${link.nodeId}/${
+          "mediaId" in link
+            ? link.mediaId
+            : "collectionId" in link
+              ? `list:${link.collectionId}`
+              : `${link.pageId}#${link.anchor ?? ""}`
+        }`,
         place:
           link.on === "menu"
             ? { kind: "menu", itemId: link.nodeId }
