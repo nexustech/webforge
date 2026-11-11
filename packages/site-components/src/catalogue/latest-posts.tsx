@@ -119,7 +119,12 @@ const latestPosts = defineSection({
     // Props the export's own pages set beside the fields (6.10b): which collection, page and tag.
     const stored: Readonly<Record<string, unknown>> = values;
     const collection = context.posts?.(stringValue(stored.collection) || undefined);
-    const heading = values.title === "" ? null : <SectionTitle>{values.title}</SectionTitle>;
+    // On the Blog's own pages, the page's one main heading (6.10b); elsewhere a section's title.
+    const ownPage = stored.page !== undefined || stored.tag !== undefined;
+    const heading =
+      values.title === "" ? null : (
+        <SectionTitle size={ownPage ? "page" : "section"}>{values.title}</SectionTitle>
+      );
     if (collection === undefined) {
       // No Blog yet: its title, and a hint on the canvas saying where to add one.
       return (

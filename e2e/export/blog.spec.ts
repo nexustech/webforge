@@ -62,7 +62,7 @@ test("lists the Blog's posts on its own page, with the site's Header and Footer"
 }) => {
   await page.goto(file("blog", "index.html"));
 
-  await expect(page.getByRole("heading", { name: "Blog", level: 2 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Blog", level: 1 })).toBeVisible();
   await expect(page.getByText("Doors open at nine.")).toBeVisible();
   await expect(page.locator("header.site-header")).toBeVisible();
   await passesAxe(page);

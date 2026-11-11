@@ -82,12 +82,14 @@ describe("toPuckConfig", () => {
         contentEditable: true,
         options: RICH_TEXT_OPTIONS,
         renderInlineMenu: FormatToolbar,
-        // The editor's name (#465), and the theme's highlight and text colour (2.25, ST-3).
+        // The editor's name (#465), the theme's highlight and text colour (2.25, ST-3), and
+        // Markdown pasted as its formatting (6.10b, BS9-4).
         tiptap: {
           extensions: [
             expect.objectContaining({ name: "webforgeEditorName" }),
             expect.objectContaining({ name: "themeHighlight" }),
             expect.objectContaining({ name: "themeColor" }),
+            expect.objectContaining({ name: "webforgeMarkdownPaste" }),
           ],
         },
       },

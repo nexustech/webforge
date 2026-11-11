@@ -136,6 +136,7 @@ test.describe("desktop shell", () => {
         "help",
         "netlify",
         "updates",
+        "posts",
       ],
     });
   });
