@@ -9,14 +9,20 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** The Latest posts as it starts. Add a story for each of its layouts. */
-export const LatestPosts: Story = {
-  args: {
-    nodes: [
-      {
-        type: "LatestPosts",
-        props: { id: "latest-posts", ...siteLibrary.components.LatestPosts?.defaults },
-      },
-    ],
-  },
+const latest = (props: Record<string, unknown>) => ({
+  type: "LatestPosts",
+  props: { id: "latest-posts", ...siteLibrary.components.LatestPosts?.defaults, ...props },
+});
+
+/** The Blog's three newest posts as cards, with a link to all of them (6.10b). */
+export const LatestPosts: Story = { args: { nodes: [latest({})] } };
+
+/** Six posts as a list of titles and dates, without summaries. */
+export const List: Story = {
+  args: { nodes: [latest({ variant: "list", count: "6", showSummary: false })] },
+};
+
+/** One of the Blog's own pages, as the export writes it: its posts, with a link to newer ones. */
+export const BlogPage: Story = {
+  args: { nodes: [latest({ title: "Blog", page: 1, collection: "blog" })] },
 };

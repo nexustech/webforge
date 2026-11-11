@@ -4,7 +4,7 @@ id: site-check
 title: Site Check
 summary: What Site Check looks for, what each finding means, and how to fix it.
 related: [export, publish, pages, media, forms, site-settings]
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Site Check
@@ -53,6 +53,9 @@ Each check shows a dot: green when all is well, amber or red when something need
 | **Underlined text**            | Underlined text that isn't a link, which visitors may try to click, including text underlined by the style for all elements of its kind                             | Remove the underline, or make it a link. For a style, change it in [Style this…](styling.md#style-this)   |
 | **Year on your site**          | Your text uses `{year}`, which your published site shows as the year you last published it in, and that year has passed. The finding says which year it shows       | **Fix** opens [Publish](publish.md): publish again to show this year                                      |
 | **Announcement bar**           | Your [Announcement bar](header-and-footer.md#announcement-bar)'s last day has passed. Your site hides it then, but visitors still see it for a moment on every page | Delete it, or give it a new last day                                                                      |
+| **Post summaries**             | A [blog post](blog.md) has no summary, which Latest posts and the blog's feed show                                                                                  | Add one in the post's Page Settings                                                                       |
+| **Post pictures**              | A blog post has no picture, which its page, Latest posts and shares show                                                                                            | Choose one in the post's Page Settings                                                                    |
+| **Blog feed**                  | Your blog has no feed until Site Settings have your site's web address                                                                                              | Add your [web address](site-settings.md#web-address)                                                      |
 | **Notes**                      | A section or element has a [note](editing-on-the-page.md#notes) you haven't resolved yet. The finding shows the note                                                | Do what it says, then **Resolve Note** from the item's right-click menu                                   |
 | **Stylesheet rules**           | A rule in your [stylesheet](stylesheet.md) is for a class or id nothing on your site has: often a typing slip, or a rule for something since deleted                | Correct the class, or delete the rule                                                                     |
 

@@ -4,7 +4,7 @@ id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
 related: [header-and-footer, links, site-settings, site-check, blog]
-updated: 2026-11-10
+updated: 2026-11-11
 ---
 
 # Pages and the menu
@@ -126,7 +126,7 @@ A page with two old addresses sends both straight to where it is now. If you lat
 Open a page's **…** menu and choose **Page Settings…**. These settings decide how the page shows in search results, browser tabs and when someone shares it.
 
 - **Title:** shown in the browser tab and as the link in search results. Give each page its own.
-- **Date**, **Summary** and **Picture**, for a blog's post only. See [Your blog](blog.md#a-posts-date-summary-and-picture).
+- **Date**, **Summary**, **Picture** and **Tags**, for a blog's post only. See [Your blog](blog.md#a-posts-date-summary-picture-and-tags).
 - **File name:** the end of the page's web address, such as `about.html`. The Home page is always `index.html`, and the Page not found page `404.html`.
 - **Description:** a sentence or two shown under the title in search results. Leave it empty to use the site's description.
 - **Share image:** the picture shown when someone shares the page. _The site's image_ uses the one from Site Settings.
