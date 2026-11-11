@@ -31,6 +31,31 @@ export function markFirstRender(container: Node): void {
   observer.observe(container, { childList: true });
 }
 
+/** How long loading the editor's code may wait for the start screen to be idle (#945). */
+export const EDITOR_PRELOAD_TIMEOUT_MS = 2_000;
+
+/**
+ * Loads the editor's code with `load` once the start screen has drawn and the window is idle
+ * (#945). The start screen needs none of it (#896), so it draws without it. But opening a site from
+ * it reloads the window, and the editor's chunk compiled on the opening's path cost it about 1 CPU-s
+ * more on CI's runners; loaded here first, the reloaded window compiles it again for a fraction of
+ * that, and the editor shows sooner. A load that fails is left to the opening, which loads it again
+ * and says if it can't. Marks `webforge:editor-preload` in the window's performance timeline as it
+ * starts, after `webforge:first-render`.
+ */
+export function preloadEditorWhenIdle(
+  load: () => Promise<unknown>,
+  idle: (work: () => void, options: IdleRequestOptions) => unknown = requestIdleCallback,
+): void {
+  idle(
+    () => {
+      performance.mark("webforge:editor-preload");
+      load().catch(() => undefined);
+    },
+    { timeout: EDITOR_PRELOAD_TIMEOUT_MS },
+  );
+}
+
 /**
  * What replaces the start-up screen when the editor couldn't start (#887), such as the site not
  * being read: the error is reported as a crash report, and *Try again* reloads the window.

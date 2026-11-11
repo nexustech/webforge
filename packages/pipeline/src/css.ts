@@ -157,10 +157,13 @@ export type StyleCompiler = {
   css(options: SiteCssOptions, grow?: boolean): Promise<string>;
 };
 
-/** A Tailwind compiler kept between builds: its source, and the classes it has been given. */
+/**
+ * A Tailwind compiler kept between builds: its source, the compiler (still being prepared, until
+ * it is), and the classes it has been given.
+ */
 type KeptCompiler = {
   readonly source: string;
-  readonly compiler: Awaited<ReturnType<typeof compile>>;
+  readonly compiler: Promise<Awaited<ReturnType<typeof compile>>>;
   readonly seen: Set<string>;
 };
 
@@ -168,6 +171,11 @@ type KeptCompiler = {
  * A {@link StyleCompiler} over `resources`, which must stay the same for its lifetime. It keeps one
  * compiler for previews (`grow`) and one for exports: their sources never match, so with one
  * between them a preview and an export would each prepare a new compiler after the other (#671).
+ *
+ * A compiler is kept from the moment it starts being prepared, so a build asked for meanwhile uses
+ * it too (#945): the canvas asks for its shown page's classes, then for the whole site's, before
+ * the first compiler is ready. Builds from one compiler run in the order they were asked for, so an
+ * exact build never gets a class asked for after it. A compiler that fails to prepare isn't kept.
  */
 export function createStyleCompiler(resources: StyleResources): StyleCompiler {
   const kept: { grow?: KeptCompiler; exact?: KeptCompiler } = {};
@@ -179,22 +187,30 @@ export function createStyleCompiler(resources: StyleResources): StyleCompiler {
       const wanted = new Set(options.candidates);
       const slot = grow ? "grow" : "exact";
       const last = kept[slot];
-      // Checked and built in one go, with no await between: another build can't change it meanwhile.
+      // Checked and kept in one go, with no await between: another build can't change it meanwhile.
       const reusable =
         last !== undefined &&
         last.source === source &&
         (grow || [...last.seen].every((name) => wanted.has(name)));
-      const current =
+      const current: KeptCompiler =
         reusable && last !== undefined
           ? last
           : {
               source,
-              compiler: await compile(source, tailwindLoaders(resources)),
+              compiler: compile(source, tailwindLoaders(resources)),
               seen: new Set<string>(),
             };
       kept[slot] = current;
       for (const name of wanted) current.seen.add(name);
-      const css = current.compiler.build([...options.candidates]);
+      let compiler: Awaited<KeptCompiler["compiler"]>;
+      try {
+        // Each build waiting on one compiler resumes in the order it was asked for.
+        compiler = await current.compiler;
+      } catch (error) {
+        if (kept[slot] === current) delete kept[slot];
+        throw error;
+      }
+      const css = compiler.build([...options.candidates]);
       return grow
         ? `${css}
 ${themeValuesCss(options.theme)}

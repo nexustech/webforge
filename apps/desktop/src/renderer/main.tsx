@@ -6,7 +6,7 @@ import { createErrorReporter, installErrorReporting, rootErrorOptions } from "./
 import { StartScreen } from "./start/StartScreen.js";
 // Schemas word their problems in the editor's words (2.21).
 import "./shell/form-messages.js";
-import { applyTheme, markFirstRender, StartFailed } from "./startup.js";
+import { applyTheme, markFirstRender, preloadEditorWhenIdle, StartFailed } from "./startup.js";
 import "./styles.css";
 import { setFailureLog, showInDevConsole } from "./log.js";
 
@@ -60,6 +60,8 @@ try {
   root.render(
     <StrictMode>{showEditor?.(info, preferences) ?? <StartScreen info={info} />}</StrictMode>,
   );
+  // The start screen's site opens in this window, reloaded: its editor's code loads meanwhile (#945).
+  if (showEditor === undefined) preloadEditorWhenIdle(() => import("./editor-start.js"));
 } catch (error) {
   // Nothing to show without these: say so, with a way to try again, never leave the start-up
   // screen up (#887). The error becomes a crash report, as an uncaught one would.

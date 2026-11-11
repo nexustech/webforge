@@ -2,7 +2,7 @@ import { createPipeline } from "@webforge/pipeline";
 import { siteLibrary } from "@webforge/site-components";
 import { loadBundledResources, loadStyleResources } from "./bundled-resources.js";
 import { createClassCatalogues } from "./class-catalogue.js";
-import { compileCss } from "./compile-css.js";
+import { createCompileCss } from "./compile-css.js";
 import { installWorkerCrashHandlers } from "./crash-handlers.js";
 import { itemHtmlFor } from "./item-html.js";
 import { createJobDispatch } from "./job-dispatch.js";
@@ -26,6 +26,8 @@ installWorkerCrashHandlers(
 
 // The canvas styles worker's class catalogue (#276), kept per theme for the next jobs.
 const classes = createClassCatalogues(loadStyleResources);
+// ...and its CSS, from a Tailwind compiler kept for the next jobs (#945).
+const compileCss = createCompileCss(loadStyleResources);
 
 // An export asks the main process for each stored image and document as the build reaches it
 // (R15), tells it how far it has come, and stops when the main process cancels it. The worker
@@ -54,7 +56,7 @@ const dispatch = createJobDispatch(
     "class-catalogue": (job) => classes(job),
     "class-css": (job) => classes(job),
     "item-html": (job) => itemHtmlFor(job),
-    "compile-css": (job) => compileCss(job, loadStyleResources),
+    "compile-css": compileCss,
   },
   (message) => process.parentPort.postMessage(message),
 );
