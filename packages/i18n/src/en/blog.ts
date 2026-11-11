@@ -67,7 +67,7 @@ export const blog = {
   "blog.renameDialog.moveFolder": "Move its posts to a folder of the new name",
   "blog.renameDialog.moveHint": "Each post's address changes from {from}/… to {folder}/….",
   "blog.renameDialog.moveHintKept":
-    "Each post's address changes from {from}/… to {folder}/…. Links and search results that use the old addresses go on to the new ones.",
+    "Each post's address changes from {from}/… to {folder}/…. Links and search results that use a post's old address go on to the new one, but not those to the blog's list of posts, its tag pages or its feed.",
   "blog.deleteDialog.title": "Delete blog '{name}'?",
   "blog.deleteDialog.description": "It has no posts. Its design goes with it.",
   "blog.deleteDialog.cancel": "Cancel",
