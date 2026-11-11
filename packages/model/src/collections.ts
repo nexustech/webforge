@@ -171,6 +171,16 @@ export function tagSlug(name: string): string {
 /** The longest file name a tag's page has. */
 const TAG_SLUG_MAX = 60;
 
+/**
+ * The folders in a collection's own where the export writes its pages (6.10b): its list's later
+ * pages (`blog/page/2`) and its tags' (`blog/tag/news`). No page may be in them.
+ */
+export const COLLECTION_PAGE_FOLDERS = ["page", "tag"] as const;
+
+/** The path of the list of a collection whose folder is `folder`, page `n` (from 1). */
+export const listPath = (folder: string, n = 1) =>
+  n <= 1 ? `${folder}/index` : `${folder}/page/${n}`;
+
 /** The path of the page of tag `name` in a collection whose folder is `folder`. */
 export const tagPath = (folder: string, name: string) => `${folder}/tag/${tagSlug(name)}`;
 

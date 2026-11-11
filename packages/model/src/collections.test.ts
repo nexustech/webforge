@@ -8,6 +8,7 @@ import {
   freeCollectionFolder,
   itemValue,
   itemValues,
+  listPath,
   newCollection,
   tagNames,
   tagPath,
@@ -325,5 +326,43 @@ describe("tags (6.10b)", () => {
     expect(tagNames(many)).toHaveLength(20);
     expect(tagSlug("Ünïcode & More")).toBe("unicode-more");
     expect(tagPath("news", "Big Day")).toBe("news/tag/big-day");
+  });
+});
+
+describe("a Blog's own pages (6.10b)", () => {
+  it("lists every post in the snapshot, newest first, with its fields", () => {
+    const site = siteWith(
+      post("p1", "older", { date: "2026-01-05", tags: "News" }),
+      post("p2", "newer", { date: "2026-03-01" }),
+    );
+    const [blogList] = siteToSnapshot(site, new Map()).collections ?? [];
+
+    expect(blogList).toMatchObject({ id: BLOG, name: "Blog", folder: "blog" });
+    expect(blogList?.items.map((item) => [item.pageId, item.path])).toEqual([
+      ["p2", "blog/newer"],
+      ["p1", "blog/older"],
+    ]);
+    expect(blogList?.items[1]?.values.tags).toEqual({
+      kind: "tags",
+      tags: [{ name: "News", path: "blog/tag/news" }],
+    });
+    expect(
+      siteToSnapshot(
+        createSite({ name: "x", language: "en", homeTitle: "Home", notFoundTitle: "?" }),
+        new Map(),
+      ).collections,
+    ).toBeUndefined();
+  });
+
+  it("keeps pages out of the folders the export writes the Blog's pages to", () => {
+    const site = siteWith();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home");
+    site.pages["x" as PageId] = { ...home, id: "x" as PageId, slug: "x", folder: "blog/tag" };
+    site.pageOrder.push("x" as PageId);
+
+    expect(issuesOf(site)).toEqual(["A page can't be in a Blog's own folders"]);
+    expect(listPath("blog")).toBe("blog/index");
+    expect(listPath("blog", 3)).toBe("blog/page/3");
   });
 });

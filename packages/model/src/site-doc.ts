@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { collectionOf, collectionsDocSchema, itemEntrySchema } from "./collections.js";
+import {
+  COLLECTION_PAGE_FOLDERS,
+  collectionOf,
+  collectionsDocSchema,
+  itemEntrySchema,
+} from "./collections.js";
 import {
   type LayoutDoc,
   layoutDocSchema,
@@ -263,6 +268,19 @@ export function siteIssues(site: SiteDoc, scope: SiteIssueScope = WHOLE_SITE): S
   const folders = duplicatesOf(collections.map(([, collection]) => collection.folder));
   if (folders.length > 0) {
     issue(`Collections share a folder: ${folders.join(", ")}`, ["collections"]);
+  }
+  // A collection's own pages, which the export writes (6.10b): its list's later pages and its
+  // tags' pages, in folders of its own that no page may be in.
+  const ownFolders = new Set(
+    collections.flatMap(([, collection]) =>
+      COLLECTION_PAGE_FOLDERS.map((name) => `${collection.folder}/${name}`),
+    ),
+  );
+  for (const [key, page] of pages) {
+    const folder = page.folder ?? "";
+    if ([...ownFolders].some((own) => folder === own || folder.startsWith(`${own}/`))) {
+      issue("A page can't be in a Blog's own folders", ["pages", key, "folder"]);
+    }
   }
 
   // Copies of shared sections go on pages, never in the Header or Footer (F-ED-23).
