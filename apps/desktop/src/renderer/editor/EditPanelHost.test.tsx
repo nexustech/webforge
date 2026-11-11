@@ -17,6 +17,7 @@ import { starterSite } from "../../shared/starter-site.js";
 import { classesFieldRenderer, codeField } from "../fields/index.js";
 import { linkFieldRenderer } from "../links/index.js";
 import { addMedia, imageFieldRenderer } from "../media/index.js";
+import { addMenuItem } from "../menu/index.js";
 import { sessionWith } from "../testing/fixtures.js";
 import { EditPanelHost } from "./EditPanelHost.js";
 import {
@@ -1183,6 +1184,40 @@ describe("EditPanelHost with a layout that leaves fields out (#311)", () => {
     expect(imageField()).not.toBeNull();
     const hero = currentPage(session)?.doc.content.find((node) => node.props.id === "hero");
     expect(hero?.props.image).toEqual(image);
+  });
+});
+
+describe("the Header's Highlight the section in view (5.10b, GA10-1)", () => {
+  it("is offered once the menu links to a section, on by default, and turned off as one step", async () => {
+    const { session, labels, user } = setup("header");
+    const header = () => session.history.document.getState().layout.header[0]?.props;
+    const option = () => screen.queryByRole("switch", { name: "Highlight the section in view" });
+    await user.click(screen.getByRole("tab", { name: "Style" }));
+    expect(option()).toBeNull();
+
+    const home = session.history.document.getState().homePageId;
+    act(() => {
+      addMenuItem(session, {
+        kind: "link",
+        label: "Questions",
+        change: { link: { kind: "page", pageId: home, anchor: "questions" } },
+      });
+    });
+    const on = option();
+    expect(on?.getAttribute("aria-checked")).toBe("true");
+    expect(on?.getAttribute("aria-describedby")).not.toBeNull();
+    expect(
+      screen.getByText("As visitors scroll, the menu lights up the section they're looking at."),
+    ).toBeDefined();
+
+    await user.click(on as HTMLElement);
+
+    expect(header()?.sectionHighlight).toBe(false);
+    expect(labels().at(-1)).toBe("Changed shared Header highlight the section in view");
+    act(() => {
+      session.history.undo();
+    });
+    expect(header()?.sectionHighlight).toBeUndefined();
   });
 });
 

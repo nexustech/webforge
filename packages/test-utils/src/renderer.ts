@@ -87,6 +87,7 @@ export function createFakeEngine(): FakeEngine {
     setZoom: vi.fn(),
     onCanvasSize: () => () => undefined,
     setSiteCss: vi.fn(),
+    setCustomCss: vi.fn(),
     setImages: vi.fn(),
     setSettings: vi.fn(),
     setNavigation: vi.fn(),

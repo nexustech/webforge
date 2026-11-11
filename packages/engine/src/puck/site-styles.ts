@@ -3,6 +3,9 @@ import { ensureStyle } from "./styles.js";
 /** Marks the one `<style>` element that holds the site's CSS in the canvas document. */
 const SITE_STYLE_ATTRIBUTE = "data-webforge-site-css";
 
+/** Marks the `<style>` element that holds the site's own `custom.css` (F-ED-15, 6.8). */
+const CUSTOM_STYLE_ATTRIBUTE = "data-webforge-custom-css";
+
 /** The site's compiled CSS and the classes exported pages put on `<body>`. */
 export type SiteStyles = { readonly css: string; readonly bodyClass: string };
 
@@ -22,7 +25,9 @@ let canvasStyledMarked = false;
  */
 export function applySiteStyles(document: Document, styles: SiteStyles): void {
   // First, so Puck's own canvas styles (added later) still win where they overlap.
-  ensureStyle(document, SITE_STYLE_ATTRIBUTE, styles.css, "start");
+  const site = ensureStyle(document, SITE_STYLE_ATTRIBUTE, styles.css, "start");
+  const custom = document.head.querySelector(`style[${CUSTOM_STYLE_ATTRIBUTE}]`);
+  if (custom !== null && site.nextElementSibling !== custom) site.after(custom);
   const classes = styles.bodyClass.split(/\s+/).filter((name) => name !== "");
   document.body.classList.remove(...(appliedBodyClasses.get(document) ?? []));
   document.body.classList.add(...classes);
@@ -31,4 +36,15 @@ export function applySiteStyles(document: Document, styles: SiteStyles): void {
     canvasStyledMarked = true;
     performance.mark("webforge:canvas-styled");
   }
+}
+
+/**
+ * Shows the site's own `custom.css` in the canvas document (6.8): one `<style>` element, updated in
+ * place, right after the site's CSS, as the export links it after the site's stylesheet. Before the
+ * site's CSS is there, it goes first in the head; {@link applySiteStyles} keeps the order.
+ */
+export function applyCustomCss(document: Document, css: string): void {
+  const style = ensureStyle(document, CUSTOM_STYLE_ATTRIBUTE, css, "start");
+  const site = document.head.querySelector(`style[${SITE_STYLE_ATTRIBUTE}]`);
+  if (site !== null && site.nextElementSibling !== style) site.after(style);
 }

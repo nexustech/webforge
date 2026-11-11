@@ -6,6 +6,7 @@ import { useEffect, useRef } from "react";
 import { useStore } from "zustand";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
+import { siteSelectors } from "../editor/site-css.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
@@ -68,6 +69,7 @@ export function registerSiteCheckPanel(
     ...(allowListConfirmed === undefined ? {} : { allowListConfirmed }),
     ...(publishedYear === undefined ? {} : { publishedYear }),
     ...(onNetlify === undefined ? {} : { onNetlify }),
+    usedSelectors: (site) => siteSelectors(site, session),
   });
   const actions = {
     session,

@@ -75,6 +75,7 @@ export {
   hoverClasses,
 } from "./motion.js";
 export {
+  highlightsSectionInView,
   menuLinksToSections,
   type NavigationPage,
   type NavigationSite,
@@ -98,6 +99,7 @@ export type {
   DefaultsOf,
   FieldDef,
   FieldOption,
+  FieldSite,
   FieldValue,
   ImageSource,
   ListItem,

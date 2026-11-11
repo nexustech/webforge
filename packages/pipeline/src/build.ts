@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { WebforgeError } from "@webforge/errors";
 import {
   type BundledFile,
+  cssVariablesUsed,
   DOCUMENT_EXTENSIONS,
   isDeviceName,
   itemPicturesShown,
@@ -19,8 +20,8 @@ import {
   consentBannerHtml,
   documentsLinkedBy,
   ENLARGE_ATTRIBUTE,
+  highlightsSectionInView,
   mediaUsedBy,
-  menuLinksToSections,
   type RenderedPage,
   type ResolvedImage,
   renderPage,
@@ -365,8 +366,8 @@ export async function* buildEvents(
     if (analytics !== undefined) {
       behaviours = [...behaviours, "consent" as const].sort();
     }
-    // The section in view, on a page the menu links into (5.10, GA10).
-    if (menuLinksToSections(site.menu)) {
+    // The section in view, on a page the menu links into, unless the Header turns it off (5.10b).
+    if (highlightsSectionInView(site.menu, site.layout.header)) {
       behaviours = [...behaviours, "section-spy" as const].sort();
     }
     mediaIds = mediaUsedBy(allNodes(site), library);
@@ -637,6 +638,8 @@ export async function* buildEvents(
     ].sort(),
     fontsUrl: "../fonts/",
     ...(resources.fonts === undefined ? {} : { fonts: resources.fonts }),
+    // What the site's own custom.css reads of the theme (6.8): a look moved to CSS needs it.
+    keptVariables: cssVariablesUsed(site.code?.css ?? ""),
   };
   const readableCss =
     caches === undefined

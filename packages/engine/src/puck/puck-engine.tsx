@@ -371,6 +371,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onCanvasSize: view.onSize,
 
     setSiteCss: (css, bodyClass) => frame.setSiteStyles({ css, bodyClass }),
+    setCustomCss: (css) => frame.setCustomCss(css),
 
     perform: (action) =>
       getPuck !== null && !sync.inAction() && performOnCanvas(getPuck(), canvasDocument(), action),

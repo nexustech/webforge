@@ -29,7 +29,7 @@ function classCatalogue(
     .then(() => canvas().classCatalogue(theme))
     .then((result) =>
       result.status === "loaded"
-        ? { classes: result.classes, variants: result.variants }
+        ? { classes: result.classes, variants: result.variants, variables: result.variables }
         : undefined,
     )
     .catch(() => undefined)

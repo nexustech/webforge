@@ -59,6 +59,7 @@ export {
 } from "./collections.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
+export { cssVariablesUsed } from "./css-variables.js";
 export type {
   BundledFile,
   LayoutDoc,

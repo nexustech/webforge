@@ -1,5 +1,6 @@
 import { EditPanel, type GroupAction } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
+import { menuLinksToSections as linksToSections } from "@webforge/site-components";
 import { type ReactNode, useEffect, useMemo } from "react";
 import { createEditPanelController } from "./edit-panel-controller.js";
 import { type DialogGroups, fieldsFor, panelSlice, sameSlice } from "./edit-panel-fields.js";
@@ -78,6 +79,8 @@ export function EditPanelHost({
   );
   // The theme the section's overlay warning checks its text against (2.26).
   const theme = useDocument(session, (site) => site.theme);
+  // Whether the Header offers *Highlight the section in view* (5.10b).
+  const menuLinksToSections = useDocument(session, (site) => linksToSections(site.menu));
   const breakpoint = breakpointOf(viewport);
 
   const controller = useMemo(() => createEditPanelController(session), [session]);
@@ -108,6 +111,7 @@ export function EditPanelHost({
     library,
     theme,
     breakpoint,
+    site: { menuLinksToSections },
     advanced,
     anchors,
     appearanceOnly,

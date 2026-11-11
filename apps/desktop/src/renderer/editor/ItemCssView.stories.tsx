@@ -41,7 +41,7 @@ const services = (
     }),
   },
   copyText: async () => null,
-  onOpenCustomCode: () => undefined,
+  onOpenStylesheet: () => undefined,
 });
 
 /** The starter site, its Heading's props with `appearance` added. */

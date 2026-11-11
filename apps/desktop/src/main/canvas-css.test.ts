@@ -189,7 +189,13 @@ describe("createCanvasStyles' class catalogue (#276)", () => {
     const catalogue = styles.classCatalogue(DEFAULT_THEME);
     const css = styles.classCss(DEFAULT_THEME, ["p-4", "pading-4"]);
     const [a, b] = fake.jobs;
-    fake.answer({ type: "class-catalogue", id: a?.id, classes: ["p-4"], variants: ["md"] });
+    fake.answer({
+      type: "class-catalogue",
+      id: a?.id,
+      classes: ["p-4"],
+      variants: ["md"],
+      variables: ["--text-xl"],
+    });
     fake.answer({ type: "class-css", id: b?.id, css: [".p-4 {}", null] });
 
     expect(start).toHaveBeenCalledOnce();
@@ -197,7 +203,12 @@ describe("createCanvasStyles' class catalogue (#276)", () => {
       "class-catalogue",
       "class-css",
     ]);
-    expect(await catalogue).toEqual({ status: "loaded", classes: ["p-4"], variants: ["md"] });
+    expect(await catalogue).toEqual({
+      status: "loaded",
+      classes: ["p-4"],
+      variants: ["md"],
+      variables: ["--text-xl"],
+    });
     expect(await css).toEqual({ status: "css", css: [".p-4 {}", null] });
   });
 

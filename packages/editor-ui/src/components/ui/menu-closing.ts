@@ -69,3 +69,19 @@ export function useMenuClosing<
     },
   };
 }
+
+/**
+ * Whether something outside the menu bar took the focus while the menu faded out: a field the
+ * chosen command focused, or one the person clicked (the Stylesheet's editor, 6.8). The focus then
+ * stays there rather than going back to the menu's title.
+ */
+export function focusMovedAway(event: Event): boolean {
+  const target = event.currentTarget;
+  const document = (target instanceof Node ? target.ownerDocument : null) ?? globalThis.document;
+  const active = document.activeElement;
+  return (
+    active !== null &&
+    active !== document.body &&
+    active.closest('[data-slot="menubar"], [data-slot="menubar-content"]') === null
+  );
+}

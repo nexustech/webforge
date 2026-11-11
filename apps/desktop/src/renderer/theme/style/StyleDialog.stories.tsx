@@ -94,7 +94,7 @@ export const CssTab: Story = {
               }),
             },
             copyText: async () => null,
-            onOpenCustomCode: () => undefined,
+            onOpenStylesheet: () => undefined,
           }}
         />
       );

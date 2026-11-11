@@ -42,7 +42,7 @@ function setUp(api = fakeApi()) {
       copyText={copyText}
       groups={[{ field: "lookColor", classes: "text-primary!" }]}
       labelOf={(field) => (field === "lookColor" ? "Text colour" : field)}
-      onOpenCustomCode={openCustomCode}
+      onOpenStylesheet={openCustomCode}
     />,
   );
   return { session, api, copyText, openCustomCode };
@@ -62,7 +62,7 @@ describe("ItemCssView (3.14)", () => {
     expect(screen.getByText(/Read only/)).toBeDefined();
   });
 
-  it("copies each part, and opens Custom Code", async () => {
+  it("copies each part, and opens the Stylesheet panel", async () => {
     const { copyText, openCustomCode } = setUp();
     await screen.findByText('<h2 class="text-primary p-4">Fresh bread</h2>');
 
@@ -71,7 +71,7 @@ describe("ItemCssView (3.14)", () => {
     expect(await screen.findByText("Copied")).toBeDefined();
     await userEvent.click(screen.getByRole("button", { name: "Copy Classes by control" }));
     expect(copyText).toHaveBeenLastCalledWith("Text colour: text-primary!");
-    await userEvent.click(screen.getByRole("button", { name: "Open Custom Code" }));
+    await userEvent.click(screen.getByRole("button", { name: "Open Stylesheet" }));
     expect(openCustomCode).toHaveBeenCalled();
   });
 

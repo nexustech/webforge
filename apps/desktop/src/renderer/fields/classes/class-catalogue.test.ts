@@ -14,7 +14,7 @@ function canvasAnswering(...answers: ("loaded" | "failed")[]): CanvasApi {
   for (const answer of answers) {
     classCatalogue.mockResolvedValueOnce(
       answer === "loaded"
-        ? { status: "loaded", classes: ["p-4"], variants: [] }
+        ? { status: "loaded", classes: ["p-4"], variants: [], variables: [] }
         : { status: "failed" },
     );
   }
@@ -38,7 +38,9 @@ describe("the class catalogue (#276)", () => {
     // The failure isn't kept: the next field asks again, and gets it.
     await Promise.resolve();
     const second = renderHook(() => useClassCatalogue(canvas, THEME));
-    await waitFor(() => expect(second.result.current).toEqual({ classes: ["p-4"], variants: [] }));
+    await waitFor(() =>
+      expect(second.result.current).toEqual({ classes: ["p-4"], variants: [], variables: [] }),
+    );
     second.unmount();
 
     const third = renderHook(() => useClassCatalogue(canvas, THEME));

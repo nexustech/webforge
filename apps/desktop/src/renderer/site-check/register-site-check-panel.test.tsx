@@ -300,17 +300,25 @@ describe("registerSiteCheckPanel (3.6, F-CHK-1)", () => {
 
   it("stops the export for a file from another website, shown in Settings' Custom Code (3.9)", async () => {
     const site = siteWith({ content: [] });
-    const { rule, showSettings } = setUp({
+    const { rule, showSettings, commands } = setUp({
       ...site,
       code: { ...site.code, css: ".hero { background: url(https://img.example.com/hero.jpg); }" },
     });
     expect(rule("externalResources").textContent).toContain("https://img.example.com/hero.jpg");
+    const show = () =>
+      userEvent.click(
+        within(rule("externalResources")).getByRole("button", {
+          name: "Show Custom Code › Stylesheet",
+        }),
+      );
 
-    await userEvent.click(
-      within(rule("externalResources")).getByRole("button", {
-        name: "Show Custom Code › Stylesheet",
-      }),
-    );
+    // In Advanced mode, the Stylesheet panel (6.8).
+    await show();
+    expect(commands.run).toHaveBeenLastCalledWith("site.stylesheet");
+    expect(showSettings).not.toHaveBeenCalled();
+    // In Simple mode, where the panel isn't, Settings' Custom Code.
+    commands.run.mockImplementation(() => false);
+    await show();
     expect(showSettings).toHaveBeenCalledWith("code", "code");
   });
 

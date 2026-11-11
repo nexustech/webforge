@@ -21,7 +21,12 @@ const CLASSES: Readonly<Record<string, string>> = {
 
 const CANVAS: CanvasApi = {
   classCatalogue: () =>
-    Promise.resolve({ status: "loaded", classes: Object.keys(CLASSES), variants: ["md", "hover"] }),
+    Promise.resolve({
+      status: "loaded",
+      classes: Object.keys(CLASSES),
+      variants: ["md", "hover"],
+      variables: [],
+    }),
   classCss: (_theme, classes) =>
     Promise.resolve({ status: "css", css: classes.map((name) => CLASSES[name] ?? null) }),
   compileCss: () => Promise.resolve({ status: "failed" }),

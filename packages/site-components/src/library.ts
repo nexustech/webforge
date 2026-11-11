@@ -28,6 +28,7 @@ import type {
   BehaviourName,
   ComponentPlace,
   FieldDef,
+  FieldSite,
   RenderContext,
   SlotComponent,
 } from "./schema.js";
@@ -174,19 +175,21 @@ export { onAnyDevice } from "./hidden-fields.js";
 export { drawsPictureBehind } from "./picture-behind.js";
 
 /**
- * The fields `def`'s chosen layout doesn't use (#311), or its values don't (a field's `shownWhen`),
- * from its `values` (with its defaults): the Edit panel hides them, and shows them again with
- * their values once they are used.
+ * The fields `def`'s chosen layout doesn't use (#311), or its values or `site` don't (a field's
+ * `shownWhen`), from its `values` (with its defaults): the Edit panel hides them, and shows them
+ * again with their values once they are used. Without `site`, as on a site whose menu links to no
+ * section.
  */
 export function fieldsHiddenBy(
   def: Pick<ComponentDef, "variantHides"> & { readonly fields?: ComponentDef["fields"] },
   values: Readonly<Record<string, unknown>>,
+  site: FieldSite = { menuLinksToSections: false },
 ): ReadonlySet<string> {
   // The rule Site Check and the catalogue as data read too (#670).
   const hidden = hiddenFieldsOf(def, values);
-  // A field shown only with some values (3.19): an Image's Height.
+  // A field shown only with some values (3.19), an Image's Height, or on some sites (5.10b).
   for (const [name, field] of Object.entries(def.fields ?? {})) {
-    if (field.shownWhen?.(values) === false) hidden.add(name);
+    if (field.shownWhen?.(values, site) === false) hidden.add(name);
   }
   return hidden;
 }

@@ -1192,6 +1192,11 @@
             }
           ]
         },
+        "sectionHighlight": {
+          "kind": "toggle",
+          "label": "Highlight the section in view",
+          "help": "As visitors scroll, the menu lights up the section they're looking at."
+        },
         "variant": {
           "kind": "select",
           "group": "style",
@@ -1216,7 +1221,8 @@
         "variant": "left",
         "siteName": "My site",
         "sticky": false,
-        "scrollStyle": "shadow"
+        "scrollStyle": "shadow",
+        "sectionHighlight": true
       }
     },
     "Footer": {

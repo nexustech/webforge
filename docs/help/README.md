@@ -50,6 +50,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Settings](settings.md): {appName}'s own preferences
 - [Keyboard shortcuts](keyboard-shortcuts.md)
 - [Custom Code](custom-code.md): Advanced mode
+- [The Stylesheet panel](stylesheet.md): CSS of your own, in Advanced mode
 - [AI apps](ai-apps.md): let an AI app on this computer work on your site
 
 ## Writing a help page

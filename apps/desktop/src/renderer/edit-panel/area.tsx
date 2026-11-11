@@ -49,7 +49,7 @@ function PreferredEditPanel({
 > & {
   readonly preferences: PreferencesStore;
   /** The CSS tab's worker and clipboard (#668), in Advanced mode. */
-  readonly itemCss: Omit<ItemCssServices, "onOpenCustomCode">;
+  readonly itemCss: Omit<ItemCssServices, "onOpenStylesheet">;
 }) {
   const advanced = usePreferences(
     preferences,
@@ -66,8 +66,8 @@ function PreferredEditPanel({
   const onSite = useCommand(LOOK_COMMANDS.site);
   // The Style tab's *Style this ‹kind›…* (3.13a), while the selection has a look to style.
   const styleThis = useCommand(COMMAND_IDS.styleThis);
-  // The Advanced tab's CSS points at Custom Code (3.14).
-  const customCode = useCommand(COMMAND_IDS.customCode);
+  // The Advanced tab's CSS points at the Stylesheet panel (3.14, 6.8).
+  const stylesheet = useCommand(COMMAND_IDS.stylesheet);
   const appearance = [onPage, onSite].flatMap((command) =>
     command === undefined
       ? []
@@ -95,8 +95,8 @@ function PreferredEditPanel({
         advanced
           ? {
               ...itemCss,
-              onOpenCustomCode:
-                customCode === undefined ? undefined : () => void registry.run(customCode.id),
+              onOpenStylesheet:
+                stylesheet === undefined ? undefined : () => void registry.run(stylesheet.id),
             }
           : undefined
       }
