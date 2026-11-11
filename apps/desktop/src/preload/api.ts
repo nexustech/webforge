@@ -9,6 +9,7 @@ import { helpApi } from "./api/help.js";
 import { mcpApi } from "./api/mcp.js";
 import { mediaApi, type PathOfFile } from "./api/media.js";
 import { netlifyApi } from "./api/netlify.js";
+import { postsApi } from "./api/posts.js";
 import { prefsApi } from "./api/prefs.js";
 import { previewApi } from "./api/preview.js";
 import { projectApi } from "./api/project.js";
@@ -53,5 +54,6 @@ export function createWebforgeApi(
     help: helpApi(call),
     netlify: netlifyApi(call),
     updates: updatesApi(call, subscribe),
+    posts: postsApi(call),
   };
 }

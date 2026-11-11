@@ -60,6 +60,7 @@ import { createMyThemes } from "./my-themes.js";
 import { createNetlifySignIns } from "./netlify-auth.js";
 import { registerNetlifyHandlers } from "./netlify-ipc.js";
 import { hasAddress, phoneAddressFor } from "./network-address.js";
+import { filePostsParts, registerPostsHandlers } from "./posts-ipc.js";
 import {
   openPreferencesStore,
   type PreferencesStore,
@@ -772,6 +773,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       secrets: publishSecrets,
     });
     markStartup("ipc-registered");
+    registerPostsHandlers(ipcMain, isTrustedSender, filePostsParts(dialogs.posts.choosePostFiles));
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

@@ -8,6 +8,7 @@ import { helpChannels } from "./ipc/help.js";
 import { mcpChannels } from "./ipc/mcp.js";
 import { mediaChannels } from "./ipc/media.js";
 import { netlifyChannels } from "./ipc/netlify.js";
+import { postsChannels } from "./ipc/posts.js";
 import { prefsChannels } from "./ipc/prefs.js";
 import { previewChannels } from "./ipc/preview.js";
 import { projectChannels } from "./ipc/project.js";
@@ -65,6 +66,7 @@ export const ipcContract = {
   ...helpChannels,
   ...netlifyChannels,
   ...updatesChannels,
+  ...postsChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -88,6 +90,7 @@ export const ipcDomains = {
   help: helpChannels,
   netlify: netlifyChannels,
   updates: updatesChannels,
+  posts: postsChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */

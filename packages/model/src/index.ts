@@ -67,6 +67,7 @@ export {
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 export { cssVariablesUsed } from "./css-variables.js";
+export { csvRecords, parseCsv } from "./csv.js";
 export type {
   BundledFile,
   LayoutDoc,
@@ -170,6 +171,13 @@ export {
   looksSchema,
   valuesWithLook,
 } from "./look.js";
+export {
+  type FrontMatter,
+  frontMatter,
+  inlineMarkdown,
+  looksLikeMarkdown,
+  markdownToRichText,
+} from "./markdown.js";
 export type {
   FileMeta,
   FileMimeType,

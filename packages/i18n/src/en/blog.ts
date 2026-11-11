@@ -40,6 +40,15 @@ export const blog = {
   "blog.settings.summaryHint": "A sentence or two, shown where the design shows the summary.",
   "blog.settings.tagsHint":
     "Separated by commas: Opening times, News. Each tag gets a page listing its posts.",
+  // Import Posts… (6.10b).
+  "blog.import": "Import Posts…",
+  "blog.import.chooseTitle": "Import posts",
+  "blog.import.fileType": "Markdown or CSV",
+  "blog.import.done.one": "Imported 1 post",
+  "blog.import.done.other": "Imported {count} posts",
+  "blog.import.none": "No posts found in the files: see Help for what they need",
+  "blog.import.tooLarge": "{name} is too large to import: split it into smaller files",
+  "blog.import.tooMany": "Choose at most 200 files at once",
   // Undo steps.
   "blog.item": "post '{name}'",
   "blog.history.addedBlog": "Added a blog",
