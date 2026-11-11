@@ -153,6 +153,8 @@ export const panels = {
   // Links (F-ED-18): the link field and dialog.
   "link.none": "No link",
   "link.missingPage": "A page that was deleted",
+  // A Blog's own page, which the export writes (#940).
+  "link.list": "{name} (all posts)",
   "link.pageSection": "{page} › {section}",
   "link.add": "Add Link…",
   "link.edit": "Change Link…",

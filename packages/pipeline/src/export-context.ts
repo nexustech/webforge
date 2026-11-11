@@ -8,6 +8,7 @@ import type {
 } from "@webforge/model";
 import {
   hrefFor,
+  listPathOf,
   navigationFor,
   type RenderContext,
   type ResolvedImage,
@@ -137,10 +138,18 @@ export function pageRender(
         (id) => pathById.get(id),
         prefix,
         (id) => documentPaths.get(id),
+        // A collection's list (#940): the Blog's own page the export writes.
+        (id) => listPathOf(site, id),
       );
       if (href === undefined) {
         const detail =
-          link.kind === "page" ? link.pageId : link.kind === "file" ? link.mediaId : link.kind;
+          link.kind === "page"
+            ? link.pageId
+            : link.kind === "file"
+              ? link.mediaId
+              : link.kind === "list"
+                ? link.collectionId
+                : link.kind;
         warnings.push({ code: "broken-link", page: page.path, detail });
         return "#";
       }

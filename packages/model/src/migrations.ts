@@ -54,6 +54,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   11: destinationsOutOfSettings,
   12: siteCollections,
   13: collectionTags,
+  14: listLinks,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -397,6 +398,16 @@ function collectionTags(site: RawSite): RawSite {
     }),
   );
   return { ...site, collections, formatVersion: 14 };
+}
+
+/**
+ * Format 14 → 15 (#940): a link may go to a collection's list, a Blog's own page (`kind: "list"`),
+ * from the menu, a Button or a Call to action. No older link does, so nothing changes but the
+ * version: a build that reads format 14 opens a site with one read-only rather than refusing it as
+ * invalid.
+ */
+function listLinks(site: RawSite): RawSite {
+  return { ...site, formatVersion: 15 };
 }
 
 /** The Blog preset's Tags field, as format 14 gives a Blog that has none (in English, as it was). */

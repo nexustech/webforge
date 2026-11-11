@@ -1,4 +1,11 @@
-import { type MediaId, mediaIdSchema, type PageId, pageIdSchema } from "./ids.js";
+import {
+  type CollectionId,
+  collectionIdSchema,
+  type MediaId,
+  mediaIdSchema,
+  type PageId,
+  pageIdSchema,
+} from "./ids.js";
 import { anchorIdSchema, type LinkValue, linkValueSchema } from "./link.js";
 
 /**
@@ -15,6 +22,12 @@ export const RICH_TEXT_PAGE_LINK = "webforge:page/";
  * in `files/`.
  */
 export const RICH_TEXT_FILE_LINK = "webforge:file/";
+
+/**
+ * How rich text stores a link to a collection's list (#940), a Blog's own page:
+ * `webforge:list/<collection id>`. The export writes the list's relative address.
+ */
+export const RICH_TEXT_LIST_LINK = "webforge:list/";
 
 const DOWNLOAD = "?download";
 
@@ -36,7 +49,16 @@ export function richTextHref(link: LinkValue): string {
       return link.href;
     case "file":
       return `${RICH_TEXT_FILE_LINK}${link.mediaId}${link.download === true ? DOWNLOAD : ""}`;
+    case "list":
+      return `${RICH_TEXT_LIST_LINK}${link.collectionId}`;
   }
+}
+
+/** A link to a collection's list from a `webforge:list/…` address, if it is one. */
+function listLinkOf(href: string): { collectionId: CollectionId } | undefined {
+  if (!href.startsWith(RICH_TEXT_LIST_LINK)) return undefined;
+  const collectionId = collectionIdSchema.safeParse(href.slice(RICH_TEXT_LIST_LINK.length));
+  return collectionId.success ? { collectionId: collectionId.data } : undefined;
 }
 
 /** A link to a document from a `webforge:file/…` address, if it is one. */
@@ -77,9 +99,12 @@ export function richTextLinkValue({ href, newTab }: RichTextLink): LinkValue | u
   const tab = newTab ? { newTab: true } : {};
   const page = pageLinkOf(href);
   const file = fileLinkOf(href);
+  const list = listLinkOf(href);
   let value: unknown;
   if (page !== undefined) {
     value = { kind: "page", ...page, ...tab };
+  } else if (list !== undefined) {
+    value = { kind: "list", ...list, ...tab };
   } else if (file !== undefined) {
     value = { kind: "file", ...file, ...tab };
   } else if (href.startsWith("mailto:")) {
@@ -101,13 +126,24 @@ const PAGE_HREF = /href="webforge:page\/([^"]*)"/g;
 /** `webforge:file/…` in an `href` attribute, as the editor writes it. */
 const FILE_HREF = /href="webforge:file\/([^"]*)"/g;
 
-/** The `webforge:` links of either kind, for rewriting them in one pass. */
-const SITE_HREF = /href="(webforge:(?:page|file)\/[^"]*)"/g;
+/** `webforge:list/…` in an `href` attribute, as the editor writes it. */
+const LIST_HREF = /href="webforge:list\/([^"]*)"/g;
+
+/** The `webforge:` links of every kind, for rewriting them in one pass. */
+const SITE_HREF = /href="(webforge:(?:page|file|list)\/[^"]*)"/g;
 
 /** The links to the site's pages in rich-text `html`, for the broken-link check. */
 export function richTextPageLinks(html: string): { pageId: PageId; anchor?: string }[] {
   return [...html.matchAll(PAGE_HREF)].flatMap(([, rest = ""]) => {
     const link = pageLinkOf(`${RICH_TEXT_PAGE_LINK}${rest}`);
+    return link === undefined ? [] : [link];
+  });
+}
+
+/** The links to collections' lists in rich-text `html` (#940), for the broken-link check. */
+export function richTextListLinks(html: string): { collectionId: CollectionId }[] {
+  return [...html.matchAll(LIST_HREF)].flatMap(([, rest = ""]) => {
+    const link = listLinkOf(`${RICH_TEXT_LIST_LINK}${rest}`);
     return link === undefined ? [] : [link];
   });
 }
@@ -127,17 +163,20 @@ export function richTextFileLinks(html: string): { mediaId: MediaId; download?: 
  */
 export function rewriteRichTextLinks(
   html: string,
-  hrefOf: (link: Extract<LinkValue, { kind: "page" | "file" }>) => string,
+  hrefOf: (link: Extract<LinkValue, { kind: "page" | "file" | "list" }>) => string,
 ): string {
   return html.replace(SITE_HREF, (_match, address: string) => {
     const page = pageLinkOf(address);
     const file = fileLinkOf(address);
+    const list = listLinkOf(address);
     const href =
       page !== undefined
         ? hrefOf({ kind: "page", ...page })
         : file !== undefined
           ? hrefOf({ kind: "file", ...file })
-          : "#";
+          : list !== undefined
+            ? hrefOf({ kind: "list", ...list })
+            : "#";
     const escaped = href.replaceAll("&", "&amp;").replaceAll('"', "&quot;");
     // A deleted document's link goes to `#`: saving that would save the page itself.
     return file?.download === true && href !== "#"

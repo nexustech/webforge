@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { mediaIdSchema, pageIdSchema } from "./ids.js";
+import { collectionIdSchema, mediaIdSchema, pageIdSchema } from "./ids.js";
 
 /** The longest an anchor may be. */
 export const ANCHOR_ID_MAX = 64;
@@ -57,6 +57,11 @@ export const linkValueSchema = z.discriminatedUnion("kind", [
     /** Saves the file instead of opening it (the link's `download` attribute, 1.28). */
     download: z.boolean().optional(),
   }),
+  /**
+   * A collection's list of items (#940): a Blog's own page, `blog/index.html`, which the export
+   * writes, as it isn't a page of the site with an id of its own.
+   */
+  z.strictObject({ kind: z.literal("list"), collectionId: collectionIdSchema, newTab }),
 ]);
 
 /** See {@link linkValueSchema}. */

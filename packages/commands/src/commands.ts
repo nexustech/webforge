@@ -261,6 +261,8 @@ function addressOf(value: unknown): string {
       return `page:${link.data.pageId}${link.data.anchor === undefined ? "" : `#${link.data.anchor}`}`;
     case "file":
       return `file:${link.data.mediaId}`;
+    case "list":
+      return `list:${link.data.collectionId}`;
   }
 }
 

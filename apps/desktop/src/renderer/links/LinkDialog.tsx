@@ -2,6 +2,7 @@ import { FormDialog, type FormField, type FormSchema, type FormSpec } from "@web
 import { t } from "@webforge/i18n";
 import {
   anchorIdSchema,
+  collectionIdSchema,
   EMAIL_SUBJECT_MAX,
   type LinkValue,
   linkValueSchema,
@@ -117,6 +118,12 @@ function linkSchema(asksLabel: boolean): FormSchema<LinkOutput> {
   };
 }
 
+/**
+ * How the page choice names a collection's list (#940), a Blog's own page: among the pages, as
+ * `list:<collection id>`, since it isn't a page with an id of its own.
+ */
+const LIST = "list:";
+
 /** The values a link starts the form from, with the first page and document as the defaults. */
 function initialValues(
   link: LinkValue | undefined,
@@ -124,11 +131,17 @@ function initialValues(
   targets: readonly PageTarget[],
   documents: readonly { readonly id: string }[],
 ): LinkValues {
-  const pageId = link?.kind === "page" ? link.pageId : (targets[0]?.id ?? "");
+  const pageId =
+    link?.kind === "page"
+      ? link.pageId
+      : link?.kind === "list"
+        ? `${LIST}${link.collectionId}`
+        : (targets[0]?.id ?? "");
   const page = targets.find((target) => target.id === pageId);
   return {
     label: label ?? "",
-    kind: link === undefined ? "page" : link.kind,
+    // A list is chosen among the pages.
+    kind: link === undefined || link.kind === "list" ? "page" : link.kind,
     pageId,
     section:
       link?.kind === "page" && link.anchor !== undefined
@@ -160,6 +173,7 @@ function linkSpec(
   return {
     fields: (values) => {
       const page = targets.find((target) => target.id === values.pageId);
+      const isList = values.pageId.startsWith(LIST);
       const kindFields: Record<Kind, readonly FormField[]> = {
         page: [
           {
@@ -167,21 +181,33 @@ function linkSpec(
             name: "pageId",
             path: "link.pageId",
             label: t("link.page"),
-            options: targets.map((target) => ({ label: target.title, value: target.id })),
-          },
-          {
-            kind: "select",
-            name: "section",
-            path: SECTION.join("."),
-            label: t("link.section"),
             options: [
-              { label: t("link.top"), value: "" },
-              ...(page?.sections ?? []).map((target) => ({
-                label: target.label,
-                value: target.nodeId,
+              ...targets.map((target) => ({ label: target.title, value: target.id })),
+              // Each Blog's own page, which the export writes (#940).
+              ...Object.values(site.collections).map((collection) => ({
+                label: t("link.list", { name: collection.name }),
+                value: `${LIST}${collection.id}`,
               })),
             ],
           },
+          // A list has no sections to go to.
+          ...(isList
+            ? []
+            : [
+                {
+                  kind: "select" as const,
+                  name: "section",
+                  path: SECTION.join("."),
+                  label: t("link.section"),
+                  options: [
+                    { label: t("link.top"), value: "" },
+                    ...(page?.sections ?? []).map((target) => ({
+                      label: target.label,
+                      value: target.nodeId,
+                    })),
+                  ],
+                },
+              ]),
           newTab,
         ],
         email: [
@@ -266,6 +292,13 @@ function linkSpec(
       switch (values.kind) {
         case "page": {
           const tab = values.newTab ? { newTab: true } : {};
+          // A Blog's own page (#940), by its collection's id.
+          const list = values.pageId.startsWith(LIST)
+            ? collectionIdSchema.safeParse(values.pageId.slice(LIST.length))
+            : undefined;
+          if (list?.success === true) {
+            return { label, link: { kind: "list", collectionId: list.data, ...tab } };
+          }
           const page = targets.find((target) => target.id === values.pageId);
           const target = page?.sections.find((each) => each.nodeId === values.section);
           if (page === undefined || target === undefined) {

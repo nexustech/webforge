@@ -39,7 +39,10 @@ function LinkField({
   const link = linkValue(value);
   // A page path or address typed as text before link fields: shown as it is, until replaced.
   const text = typeof value === "string" ? value.trim() : "";
-  const summary = link === undefined && text !== "" ? text : describeLink(link, targets, media);
+  const summary =
+    link === undefined && text !== ""
+      ? text
+      : describeLink(link, targets, media, currentSite().collections);
   const report = (change: LinkFieldChange) => {
     onChange(change);
     onCommit();

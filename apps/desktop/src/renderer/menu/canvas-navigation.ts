@@ -53,7 +53,15 @@ export function connectCanvasNavigation(
     if (page === undefined) return;
     // A link to a document shows while the document is in Media; its address is inert here.
     const inMedia = (id: string) => (mediaItem(site.media, id)?.kind === "file" ? id : undefined);
-    const items = navigationFor({ pages, menu: site.menu }, page, "", () => undefined, inMedia).map(
+    // A menu item to a Blog's list goes nowhere on the canvas, as every link does (#940).
+    const collections = Object.values(site.collections);
+    const items = navigationFor(
+      { pages, menu: site.menu, collections },
+      page,
+      "",
+      () => undefined,
+      inMedia,
+    ).map(
       (item): NavItem =>
         "children" in item ? { ...item, children: item.children.map(inert) } : inert(item),
     );
