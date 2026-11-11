@@ -2,7 +2,7 @@
 
 - Status: Accepted (M2-1, product owner, 2026-11-10)
 - Date: 2026-11-10
-- Related: M2-1 in [product/02](../../research/product/02-cms.md#decisions-2026-10-19), 6.10a (#874), 6.10b (#875), M2 and its sketch in [product/02](../../research/product/02-cms.md), BS9-3 and its design note (§5) in [bootstrap-studio/06](../../research/bootstrap-studio/06-bootstrap-studio-9.md), [ADR 0012](0012-site-format-migrations.md), [ADR 0003](0003-wforge-sqlite-storage.md), 1.17 (Site Settings bindings), 6.1 (kept addresses), 6.3 (draft pages)
+- Related: 6.10b (#875), M2-1 in [product/02](../../research/product/02-cms.md#decisions-2026-10-19), 6.10a (#874), 6.10b (#875), M2 and its sketch in [product/02](../../research/product/02-cms.md), BS9-3 and its design note (§5) in [bootstrap-studio/06](../../research/bootstrap-studio/06-bootstrap-studio-9.md), [ADR 0012](0012-site-format-migrations.md), [ADR 0003](0003-wforge-sqlite-storage.md), 1.17 (Site Settings bindings), 6.1 (kept addresses), 6.3 (draft pages)
 
 ## Context
 
@@ -86,13 +86,24 @@ Product/02 sketched items as data: a Collections panel listing them like a sprea
    - `validateSiteChanges` gains its branch.
    - The clipboard's carrier (ADR 0012, its consequences) gets an empty `collections`.
 
-8. **What 6.10a doesn't do** (6.10b, then later presets):
+8. **What 6.10a doesn't do** (6.10b built it; later presets reuse it):
    - a list of items on a page (_Latest posts_, the blog's own page with pagination), and tags with a page each;
    - the RSS feed;
    - importing Markdown or CSV;
    - Site Check's rules for posts.
 
    **Lists of items** will be a section bound to a collection, rendered from its published items at build time, so the export stays flat HTML with no scripts (X1). The section reads items through one function, `collectionItems(site, id)`, that gives each item's title, field values and address, if it has one, never its page. That keeps it working for the item-only collections in decision 9.
+
+   **How 6.10b built them:**
+   - **Tags** are a field kind, `tags` (site format 14, ADR 0012): names typed separated by commas, each read with its page's path, `blog/tag/<name>`.
+   - **The build's list:** `siteToSnapshot` gives the build each collection's published items, newest first (`SiteSnapshot.collections`, from `collectionItems`), with their paths and field values.
+   - **Latest posts** is a site component that lists them, through `RenderContext.posts`: the canvas's from the site as it is (the engine's `setPosts`), the export's from the snapshot.
+   - **The collection's own pages** are written by the pipeline (`withBlogPages`), as the thank-you page is, so they go through the build as ordinary pages, each a Latest posts section with the page or tag it lists:
+     - its list, ten items a page: `blog/index`, then `blog/page/2`…;
+     - a page per tag: `blog/tag/<name>`.
+   - **Reserved folders:** the collection's `page/` and `tag/` folders are its own: `siteIssues` keeps every page out of them.
+   - **The feed:** `blog/feed.xml` (RSS 2.0), linked from every page's `<head>`. It's written only with the site's web address, as its links must be whole.
+   - **Importing:** Markdown files (front matter, else the first heading) or a CSV, read by main through the `posts` IPC domain and added as one undo step. Markdown is converted by the model's own small converter (`markdownToRichText`), which the canvas's paste uses too (BS9-4). There's no new dependency for it.
 
 9. **Items without a page of their own are a later, separate kind.** A dish on a menu or a member of a team is a card in a list, not a page.
    - **What 6.10a builds:** an engine shaped for blogs, portfolios and events, whose items are pages.
