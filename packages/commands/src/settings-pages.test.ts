@@ -1,4 +1,4 @@
-import type { PageId, SiteDoc } from "@webforge/model";
+import { keptAddressesOf, type PageId, type SiteDoc } from "@webforge/model";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { createCommandApi } from "./api.js";
@@ -350,6 +350,89 @@ describe("the page tools (4.11, AIB-3)", () => {
     expect(await api.run("renamePage", { pageId: about, title: " About us " }, app)).toMatchObject({
       status: "invalid",
     });
+  });
+
+  it("keeps a published page's old address when it renames it, in the same step (#925)", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const { about } = pages(history);
+    host.published.mockReturnValue(true);
+
+    await api.run("renamePage", { pageId: about, title: "About us" }, app);
+
+    expect(history.entries()).toHaveLength(1);
+    expect(keptAddressesOf(history.document.getState())).toEqual([
+      { from: "about.html", page: about },
+    ]);
+    history.undo();
+    expect(history.document.getState().settings.search).not.toHaveProperty("keptAddresses");
+
+    // Renamed back, the page has the address again: the list loses it in the same step.
+    history.redo();
+    await api.run("renamePage", { pageId: about, title: "About" }, app);
+    expect(keptAddressesOf(history.document.getState())).toEqual([
+      { from: "about-us.html", page: about },
+    ]);
+  });
+
+  it("keeps no old address for a site never published, unless asked to (#925)", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const { about } = pages(history);
+
+    await api.run("renamePage", { pageId: about, title: "About us" }, app);
+    expect(keptAddressesOf(history.document.getState())).toEqual([]);
+
+    await api.run("renamePage", { pageId: about, title: "Our story", keepOldAddress: true }, app);
+    expect(keptAddressesOf(history.document.getState())).toEqual([
+      { from: "about-us.html", page: about },
+    ]);
+
+    // Published, but asked not to.
+    host.published.mockReturnValue(true);
+    await api.run("renamePage", { pageId: about, title: "Who we are", keepOldAddress: false }, app);
+    expect(keptAddressesOf(history.document.getState())).toEqual([
+      { from: "about-us.html", page: about },
+    ]);
+  });
+
+  it("tidies the kept addresses when it adds or deletes a page (#925)", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const { about } = pages(history);
+    host.published.mockReturnValue(true);
+    await api.run("renamePage", { pageId: about, title: "Our story" }, app);
+    expect(keptAddressesOf(history.document.getState())).toHaveLength(1);
+
+    // A new page at the old address takes it.
+    const added = await api.run("addPage", { title: "About" }, app);
+    expect(added).toMatchObject({ status: "done" });
+    expect(keptAddressesOf(history.document.getState())).toEqual([]);
+    history.undo();
+
+    // A deleted page's old addresses go with it.
+    await api.run("removePage", { pageId: about }, app);
+    expect(keptAddressesOf(history.document.getState())).toEqual([]);
+  });
+
+  it("keeps a published page's old address when a plan renames it (#925)", async () => {
+    const { host, history } = setup();
+    const api = createCommandApi(host);
+    const { about } = pages(history);
+    host.published.mockReturnValue(true);
+
+    await api.run(
+      "plan",
+      {
+        title: "Tidy the pages",
+        commands: [{ name: "renamePage", input: { pageId: about, title: "About us" } }],
+      },
+      app,
+    );
+
+    expect(keptAddressesOf(history.document.getState())).toEqual([
+      { from: "about.html", page: about },
+    ]);
   });
 
   it("moves a page up or down among its folder's pages, steps at a time, as one step", async () => {

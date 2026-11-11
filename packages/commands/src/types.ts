@@ -54,6 +54,11 @@ export type CommandHost = {
   /** The editing mode: Content mode allows content edits only (1.26). */
   readonly mode: () => "design" | "content";
   /**
+   * Whether the open site has been published: a page an AI app renames then keeps its old address
+   * working, as the person's own rename does (#925).
+   */
+  readonly published: () => boolean;
+  /**
    * Shows `confirmation` in Webforge and resolves with whether the person allowed the change.
    * `signal` aborts when the question has waited too long: the dialog closes, and it's declined.
    */

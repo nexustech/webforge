@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
@@ -10,6 +10,16 @@ import { fakePreloadApi } from "../testing/preload.js";
 import { registerStylesheetPanel, STYLESHEET_PANEL_ID } from "./register-stylesheet-panel.js";
 
 afterEach(cleanup);
+
+// CodeMirror loads with the panel. Loaded once here, so no test waits on the import, which a busy
+// run can take seconds over; the editor is still drawn after the panel, so each test waits for it.
+beforeAll(async () => {
+  await import("./css-editor.js");
+}, 30_000);
+
+/** The panel's editor, once CodeMirror has drawn it. */
+const findEditor = () =>
+  screen.findByRole("textbox", { name: "Stylesheet (custom.css)" }, { timeout: 10_000 });
 
 /** The panel as the area registers it, in `level` mode. */
 function setUp(level: "simple" | "advanced") {
@@ -71,7 +81,7 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
     render(<Panel />);
 
     // CodeMirror loads with the panel, never with the window.
-    const editor = await screen.findByRole("textbox", { name: "Stylesheet (custom.css)" });
+    const editor = await findEditor();
     expect(editor.textContent).toBe(".hero { color: red; }");
     expect(screen.getByRole("button", { name: "Target This Element" })).toHaveProperty(
       "disabled",
@@ -94,17 +104,18 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
     const [panel] = panels.list();
     if (panel === undefined) throw new Error("No panel");
     const Panel = panel.component;
-    const editorBox = () => screen.findByRole("textbox", { name: "Stylesheet (custom.css)" });
+    const editorBox = findEditor;
 
     // Target This Element: the rule, and the caret in it.
     const shown = render(<Panel />);
     await act(async () => {
       commands.run("stylesheet.target");
     });
-    await waitFor(async () => expect((await editorBox()).textContent).toContain("#welcome {"));
-    await waitFor(async () =>
-      expect((await editorBox()).contains(document.activeElement)).toBe(true),
-    );
+    const editor = await editorBox();
+    await waitFor(() => expect(editor.textContent).toContain("#welcome {"), { timeout: 10_000 });
+    await waitFor(() => expect(editor.contains(document.activeElement)).toBe(true), {
+      timeout: 10_000,
+    });
 
     // Closed, the rule undone, then opened again: the old caret is gone, nothing throws.
     shown.unmount();

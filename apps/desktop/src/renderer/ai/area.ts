@@ -34,8 +34,13 @@ export const aiRequestsArea: Area<WindowContext> = {
     siteCheckIgnored,
     windowDialogs,
     onNetlify,
+    publishedYear,
   }) => {
-    const commandApi = createCommandApi(commandHost(session, preferences, siteWide));
+    // A page an AI app renames keeps its old address once the site has been published (#925), as
+    // the Pages panel's rename does: the same record of the last publish.
+    const commandApi = createCommandApi(
+      commandHost(session, preferences, siteWide, () => publishedYear.getState() !== undefined),
+    );
     const appTools = createAppTools({
       site: () => session.history.document.getState(),
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
