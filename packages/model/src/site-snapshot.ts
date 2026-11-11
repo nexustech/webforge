@@ -264,6 +264,10 @@ const sitePageSchema = z.object({
           z.object({ kind: z.literal("text"), text: z.string() }),
           z.object({ kind: z.literal("date"), date: z.iso.date() }),
           z.object({ kind: z.literal("image"), mediaId: mediaIdSchema }),
+          z.object({
+            kind: z.literal("tags"),
+            tags: z.array(z.object({ name: z.string(), path: pagePathSchema })),
+          }),
         ]),
       ),
     })

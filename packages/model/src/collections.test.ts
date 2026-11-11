@@ -9,6 +9,9 @@ import {
   itemValue,
   itemValues,
   newCollection,
+  tagNames,
+  tagPath,
+  tagSlug,
 } from "./collections.js";
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, MediaId, PageId } from "./ids.js";
@@ -32,7 +35,7 @@ function blog(overrides: Partial<Collection> = {}): Collection {
       preset: "blog",
       name: "Blog",
       folder: "blog",
-      labels: { date: "Date", summary: "Summary", picture: "Picture" },
+      labels: { date: "Date", summary: "Summary", picture: "Picture", tags: "Tags" },
       design: { before: [title], after: [more] },
     }),
     ...overrides,
@@ -79,13 +82,14 @@ function issuesOf(site: unknown): string[] {
 }
 
 describe("newCollection (6.10a)", () => {
-  it("gives the Blog a date, a summary and a picture, labelled as the caller says", () => {
+  it("gives the Blog a date, a summary, a picture and tags, labelled as the caller says", () => {
     const made = blog();
 
     expect(made.fields).toEqual([
       { name: "date", label: "Date", kind: "date" },
       { name: "summary", label: "Summary", kind: "text" },
       { name: "picture", label: "Picture", kind: "image" },
+      { name: "tags", label: "Tags", kind: "tags" },
     ]);
     expect(collectionSchema.safeParse(made).success).toBe(true);
   });
@@ -295,5 +299,31 @@ describe("collections read by own key (6.10a)", () => {
     expect(collectionItems(site, "constructor" as CollectionId)).toEqual([]);
     expect(issuesOf(site)).toEqual([`The collection "constructor" is missing`]);
     expect(() => siteToSnapshot(site, new Map())).not.toThrow();
+  });
+});
+
+describe("tags (6.10b)", () => {
+  it("reads tags typed with commas, each page once, with its page in the Blog's folder", () => {
+    const page = post("p1", "spring", { tags: " Opening times, news,,NEWS , Café  latte, con " });
+
+    expect(itemValue(blog(), page, "tags")).toEqual({
+      kind: "tags",
+      tags: [
+        { name: "Opening times", path: "blog/tag/opening-times" },
+        { name: "news", path: "blog/tag/news" },
+        { name: "Café latte", path: "blog/tag/cafe-latte" },
+        // A name Windows keeps for a device gets a file it can write.
+        { name: "con", path: "blog/tag/con-tag" },
+      ],
+    });
+    expect(itemValue(blog(), post("p2", "x", { tags: " , !!! ," }), "tags")).toBeUndefined();
+  });
+
+  it("keeps at most 20 tags, and gives each a name that makes a file", () => {
+    const many = Array.from({ length: 25 }, (_, n) => `tag ${n}`).join(",");
+
+    expect(tagNames(many)).toHaveLength(20);
+    expect(tagSlug("Ünïcode & More")).toBe("unicode-more");
+    expect(tagPath("news", "Big Day")).toBe("news/tag/big-day");
   });
 });

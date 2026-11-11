@@ -76,7 +76,7 @@ describe("Page Settings checked by the model (2.21, decision 5)", () => {
 });
 
 describe("Page Settings for a post (6.10a)", () => {
-  it("shows the post's Date, Summary and Picture after its title, and saves them as its entry", () => {
+  it("shows the post's Date, Summary, Picture and Tags after its title, and saves them as its entry", () => {
     const site = starterSite();
     insertBlog(site, "blog" as CollectionId, "post" as PageId, "2026-11-10");
     const post = site.pages["post" as PageId];
@@ -97,14 +97,16 @@ describe("Page Settings for a post (6.10a)", () => {
       "item.date": "2026-12-01",
       "item.summary": "  Open  ",
       "item.picture": undefined,
+      "item.tags": " News, Opening times ",
     };
     const fields = typeof spec.fields === "function" ? spec.fields(values) : spec.fields;
 
-    expect(fields.slice(0, 4).map((field) => [field.name, field.label])).toEqual([
+    expect(fields.slice(0, 5).map((field) => [field.name, field.label])).toEqual([
       ["title", "Title"],
       ["item.date", "Date"],
       ["item.summary", "Summary"],
       ["item.picture", "Picture"],
+      ["item.tags", "Tags"],
     ]);
     // A post's Blog lists it: it has no navigation toggle of its own.
     expect(fields.some((field) => field.name === "hideFromNavigation")).toBe(false);
@@ -113,6 +115,7 @@ describe("Page Settings for a post (6.10a)", () => {
       date: "2026-12-01",
       summary: "Open",
       picture: "",
+      tags: "News, Opening times",
     });
   });
 });

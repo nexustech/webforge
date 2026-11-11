@@ -56,7 +56,12 @@ describe("addBlog (6.10a)", () => {
     const blog = site().collections[blogId()];
     const post = site().pages[postId];
     expect(blog).toMatchObject({ preset: "blog", name: "Blog", folder: "blog" });
-    expect(blog?.fields.map((field) => field.label)).toEqual(["Date", "Summary", "Picture"]);
+    expect(blog?.fields.map((field) => field.label)).toEqual([
+      "Date",
+      "Summary",
+      "Picture",
+      "Tags",
+    ]);
     expect(post).toMatchObject({
       title: "Our first post",
       slug: "our-first-post",

@@ -13,6 +13,7 @@ export const blog = {
   "blog.field.date": "Date",
   "blog.field.summary": "Summary",
   "blog.field.picture": "Picture",
+  "blog.field.tags": "Tags",
   // What a new Blog starts with: its design, and a first post to show it.
   "blog.design.title": "Post title",
   "blog.design.date": "Date",
@@ -37,6 +38,8 @@ export const blog = {
   "blog.settings.noPicture": "No picture",
   "blog.settings.dateHint": "Posts are listed newest first.",
   "blog.settings.summaryHint": "A sentence or two, shown where the design shows the summary.",
+  "blog.settings.tagsHint":
+    "Separated by commas: Opening times, News. Each tag gets a page listing its posts.",
   // Undo steps.
   "blog.item": "post '{name}'",
   "blog.history.addedBlog": "Added a blog",

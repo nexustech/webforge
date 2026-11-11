@@ -45,9 +45,11 @@ export {
   collectionSchema,
   collectionsDocSchema,
   freeCollectionFolder,
+  ITEM_TAGS_MAX,
   ITEM_TITLE_FIELD,
   ITEM_VALUE_MAX,
   type ItemEntry,
+  type ItemTag,
   type ItemValue,
   itemEntrySchema,
   itemPicturesShown,
@@ -56,6 +58,9 @@ export {
   type NewCollectionOptions,
   newCollection,
   PRESET_FIELDS,
+  tagNames,
+  tagPath,
+  tagSlug,
 } from "./collections.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";

@@ -53,6 +53,7 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
   10: accentFonts,
   11: destinationsOutOfSettings,
   12: siteCollections,
+  13: collectionTags,
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
@@ -371,6 +372,15 @@ function siteCollections(site: RawSite): RawSite {
     collections: isRecord(site.collections) ? site.collections : {},
     formatVersion: 13,
   };
+}
+
+/**
+ * Format 13 → 14 (6.10b): a collection's field may be of kind `tags`, which the Blog's posts have.
+ * No older collection has one, so nothing changes but the version: a build that reads format 13
+ * opens a site with tags read-only rather than refusing it as invalid.
+ */
+function collectionTags(site: RawSite): RawSite {
+  return { ...site, formatVersion: 14 };
 }
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */

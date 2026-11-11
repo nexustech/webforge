@@ -148,6 +148,7 @@ export function insertBlog(
       date: t("blog.field.date"),
       summary: t("blog.field.summary"),
       picture: t("blog.field.picture"),
+      tags: t("blog.field.tags"),
     },
     design: blogDesign(draft.homePageId),
   });

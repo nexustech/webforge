@@ -275,6 +275,8 @@ function itemText(value: ItemValue, language: string | undefined): ReactNode {
       return createElement("time", { dateTime: value.date }, dateText(value.date, language));
     case "image":
       return null;
+    case "tags":
+      return value.tags.map((tag) => tag.name).join(", ");
   }
 }
 
