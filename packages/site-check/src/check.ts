@@ -1,4 +1,5 @@
 import { publishedSite, type SiteDoc } from "@webforge/model";
+import { blogFeedRule, postPictureRule, postSummaryRule } from "./rules/blog.js";
 import { buyButtonHttpsRule, buyButtonLinksRule } from "./rules/commerce.js";
 import {
   altTextRule,
@@ -64,6 +65,9 @@ export const SITE_CHECK_RULES: readonly CheckRule[] = [
   outdatedYearRule,
   notesRule,
   pastAnnouncementRule,
+  postSummaryRule,
+  postPictureRule,
+  blogFeedRule,
   searchHiddenRule,
   webAddressRule,
   pageDescriptionsRule,

@@ -136,6 +136,25 @@ export const siteCheck = {
     "The Announcement bar's last day has passed. Delete it, as visitors still see it for a moment on every page",
   "siteCheck.rule.pastAnnouncement.fail.other":
     "{count} Announcement bars are past their last day. Delete them, as visitors still see them for a moment on every page",
+  // A Blog's posts (6.10b).
+  "siteCheck.rule.postSummary": "Post summaries",
+  "siteCheck.rule.postSummary.pass": "Every post has a summary",
+  "siteCheck.rule.postSummary.fail.one":
+    "A post has no summary, which Latest posts and the blog's feed show. Add one in its Page Settings",
+  "siteCheck.rule.postSummary.fail.other":
+    "{count} posts have no summary, which Latest posts and the blog's feed show. Add them in their Page Settings",
+  "siteCheck.rule.postPicture": "Post pictures",
+  "siteCheck.rule.postPicture.pass": "Every post has a picture",
+  "siteCheck.rule.postPicture.fail.one":
+    "A post has no picture, which its page, Latest posts and shares show. Choose one in its Page Settings",
+  "siteCheck.rule.postPicture.fail.other":
+    "{count} posts have no picture, which their pages, Latest posts and shares show. Choose them in their Page Settings",
+  "siteCheck.rule.blogFeed": "Blog feed",
+  "siteCheck.rule.blogFeed.pass": "Your blog's feed is written with the site",
+  "siteCheck.rule.blogFeed.fail.one":
+    "Your blog has no feed for readers to follow until Site Settings have your site's web address",
+  "siteCheck.rule.blogFeed.fail.other":
+    "Your blog has no feed for readers to follow until Site Settings have your site's web address",
 
   // Being found (3.17): what stops people finding the site. Nothing on keywords or lengths (SEO-11).
   "siteCheck.group.found": "Being found",
