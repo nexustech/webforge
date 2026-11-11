@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
+  COLLECTION_FORMER_FOLDERS_MAX,
   COLLECTION_NAME_MAX,
   type CollectionDesign,
   type CollectionId,
@@ -233,8 +234,9 @@ export function renameMovesBlog(site: SiteDoc, collectionId: CollectionId, name:
 /**
  * Renames Blog `collectionId` to `name` (#937): its group in the Pages panel, the design's banner
  * and undo labels. With `moveFolder`, its posts move to the folder its new name gives
- * ({@link blogFolderFor}), each post's old address kept working when `keepOldAddresses` (#862), as
- * once the site has been published. One undo step ("Renamed blog 'News'").
+ * ({@link blogFolderFor}), its posts' old addresses kept working when `keepOldAddresses` (#862), as
+ * once the site has been published, and its own pages' too: its list's and its tags' (#942), by the
+ * folder it remembers. One undo step ("Renamed blog 'News'").
  */
 export function renameBlog(
   session: PagesSession,
@@ -257,6 +259,12 @@ export function renameBlog(
     // A menu that follows the pages shows the Blog by its new name (#940).
     draft.menu = syncMenuWithPages(draft);
     if (folder === blog.folder) return;
+    const former = [
+      ...(blog.formerFolders ?? []),
+      ...(keepOldAddresses ? [blog.folder] : []),
+    ].filter((each, at, all) => each !== folder && all.indexOf(each) === at);
+    if (former.length === 0) delete blog.formerFolders;
+    else blog.formerFolders = former.slice(-COLLECTION_FORMER_FOLDERS_MAX);
     changingAddresses(draft, keepOldAddresses, () => {
       blog.folder = folder;
       for (const page of Object.values(draft.pages)) {

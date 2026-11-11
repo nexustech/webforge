@@ -2,6 +2,7 @@ import {
   type CollectionId,
   changedDocuments,
   findBrokenLinks,
+  freeCollectionFolder,
   migrateSite,
   type NodeDoc,
   type PageId,
@@ -202,7 +203,12 @@ describe("renameBlog (#937)", () => {
     renameBlog(session, blogId(), "News", true, true);
 
     expect(labels().at(-1)).toBe("Renamed blog 'News'");
-    expect(site().collections[blogId()]).toMatchObject({ name: "News", folder: "news" });
+    // Its own pages' old addresses are kept by the folder it was in (#942).
+    expect(site().collections[blogId()]).toMatchObject({
+      name: "News",
+      folder: "news",
+      formerFolders: ["blog"],
+    });
     expect([site().pages[first]?.folder, site().pages[second]?.folder]).toEqual(["news", "news"]);
     expect(site().settings.search.keptAddresses).toEqual([
       { from: "blog/our-first-post.html", page: first },
@@ -213,6 +219,7 @@ describe("renameBlog (#937)", () => {
     expect(saved).toEqual(site());
     const snapshot = siteSnapshotFor(saved, siteLibrary);
     expect(snapshot.pages.find((each) => each.id === first)?.path).toBe("news/our-first-post");
+    expect(snapshot.collections?.[0]).toMatchObject({ folder: "news", formerFolders: ["blog"] });
 
     session.history.undo();
     expect(site()).toEqual(before);
@@ -231,6 +238,7 @@ describe("renameBlog (#937)", () => {
 
     expect(site().pages[postId]?.folder).toBe("news-2");
     expect(site().settings.search.keptAddresses).toBeUndefined();
+    expect(site().collections[blogId()]?.formerFolders).toBeUndefined();
     expect(siteDocSchema.safeParse(site()).success).toBe(true);
   });
 
@@ -243,6 +251,38 @@ describe("renameBlog (#937)", () => {
     expect(site().collections[blogId()]?.folder).toBe("blog");
     expect(site().settings.search.keptAddresses?.map((kept) => kept.from)).toEqual([
       "news/our-first-post.html",
+    ]);
+    // The folder it's in again is no former one (#942).
+    expect(site().collections[blogId()]?.formerFolders).toEqual(["news"]);
+  });
+
+  it("remembers the last few folders it was in, and none when moved without keeping (#942)", () => {
+    const { session, site, blogId } = setUp();
+    addBlog(session);
+    for (const name of ["One", "Two", "Three", "Four", "Five", "Six"]) {
+      renameBlog(session, blogId(), name, true, true);
+    }
+
+    // The oldest, "blog", gone past the limit.
+    expect(site().collections[blogId()]?.formerFolders).toEqual([
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
+    ]);
+    expect(siteDocSchema.safeParse(site()).success).toBe(true);
+    // Another Blog's folder can't be one this one remembers.
+    expect(freeCollectionFolder(site(), "two")).toBe("two-2");
+
+    // Moved on without keeping: the folders it remembers still send on to it, none added.
+    renameBlog(session, blogId(), "Seven", true, false);
+    expect(site().collections[blogId()]?.formerFolders).toEqual([
+      "one",
+      "two",
+      "three",
+      "four",
+      "five",
     ]);
   });
 });

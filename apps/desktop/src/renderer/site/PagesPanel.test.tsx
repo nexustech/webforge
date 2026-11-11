@@ -467,7 +467,9 @@ describe("PagesPanel with a Blog (6.10a)", () => {
     const again = screen.getByRole("dialog", { name: "Rename Blog" });
     await userEvent.clear(within(again).getByRole("textbox", { name: "Name" }));
     await userEvent.type(within(again).getByRole("textbox", { name: "Name" }), "Journal");
-    expect(again.textContent).toContain("go on to the new one, but not those to the blog's list");
+    expect(again.textContent).toContain(
+      "go on to the new ones. Your blog's feed gets a new address.",
+    );
     await userEvent.click(within(again).getByRole("button", { name: "Rename" }));
     expect(panel.renameBlog).toHaveBeenLastCalledWith(blog, "Journal", false);
   });

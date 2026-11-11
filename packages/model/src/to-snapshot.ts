@@ -150,6 +150,9 @@ export function siteCollectionsOf(site: SiteDoc): SiteCollection[] {
       id: collection.id,
       name: collection.name,
       folder: collection.folder,
+      ...(collection.formerFolders === undefined
+        ? {}
+        : { formerFolders: collection.formerFolders }),
       items: collectionItems(site, collection.id).map((page) => ({
         pageId: page.id,
         path: pagePath(page, site.homePageId),

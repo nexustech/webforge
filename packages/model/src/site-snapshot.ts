@@ -110,6 +110,8 @@ export type SiteCollection = {
   readonly name: string;
   /** Where its items are, and its own pages: `blog/index`, `blog/tag/news`. */
   readonly folder: string;
+  /** Where its own pages were, whose old addresses go on to them (#942): `journal`. */
+  readonly formerFolders?: readonly string[] | undefined;
   readonly items: readonly SiteCollectionItem[];
 };
 
@@ -283,6 +285,7 @@ const siteCollectionSchema = z.object({
   id: z.string(),
   name: z.string(),
   folder: pagePathSchema,
+  formerFolders: z.array(pagePathSchema).optional(),
   items: z.array(z.object({ pageId: z.string(), path: pagePathSchema, values: itemValuesSchema })),
 });
 

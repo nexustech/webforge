@@ -189,6 +189,18 @@ describe("freeCollectionFolder (6.10a)", () => {
     // Never longer than a folder can be.
     expect(freeCollectionFolder({ collections: {} }, "a".repeat(90))).toHaveLength(80);
   });
+
+  it("skips the folders another collection was in, but not the collection's own (#942)", () => {
+    const site = siteWith();
+    const blogDoc = site.collections[BLOG];
+    if (blogDoc === undefined) throw new Error("no blog");
+    blogDoc.formerFolders = ["journal"];
+
+    expect(freeCollectionFolder(site, "journal")).toBe("journal-2");
+    expect(freeCollectionFolder(site, "journal", BLOG)).toBe("journal");
+    expect(issuesOf(site)).toEqual([]);
+    expect(siteToSnapshot(site, new Map()).collections?.[0]?.formerFolders).toEqual(["journal"]);
+  });
 });
 
 describe("a site's collections and items (6.10a, ADR 0025)", () => {
