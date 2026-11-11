@@ -2121,4 +2121,42 @@ describe("buildSite: a Blog's own pages and feed (6.10b)", () => {
     },
     scaledTestTimeout(60_000),
   );
+
+  it(
+    "sends a moved Blog's old list and tag addresses on to its own pages, never over a page (#942)",
+    async () => {
+      const base = withBlog(12);
+      const [blog] = base.collections ?? [];
+      if (blog === undefined) throw new Error("no blog");
+      const home = base.pages.find((page) => page.path === "index");
+      if (home === undefined) throw new Error("no home page");
+      const site: SiteSnapshot = {
+        ...base,
+        // A page at one of the old addresses, which keeps it.
+        pages: [...base.pages, { ...home, id: "journal-home", path: "journal/index" }],
+        collections: [{ ...blog, formerFolders: ["journal", "news"] }],
+      };
+
+      const exported = await buildSite(site, siteLibrary, resources);
+
+      const moved = text(exported, "news/page/2.html");
+      expect(moved).toContain(
+        '<meta http-equiv="refresh" content="0; url=../../blog/page/2.html">',
+      );
+      // Named by the page it goes to.
+      expect(moved).toContain("<title>Blog");
+      expect(text(exported, "news/index.html")).toContain("url=../blog/index.html");
+      expect(text(exported, "news/tag/news-views.html")).toContain(
+        "url=../../blog/tag/news-views.html",
+      );
+      expect(text(exported, "journal/page/2.html")).toContain("url=../../blog/page/2.html");
+      expect(text(exported, "journal/index.html")).not.toContain("http-equiv");
+      // No feed to send on, and Netlify's rules too.
+      expect(exported.files.has("news/feed.xml")).toBe(false);
+      const rules = text(exported, "_redirects");
+      expect(rules).toContain("/news/index.html /blog/index.html 301!");
+      expect(rules).not.toContain("/journal/index.html");
+    },
+    scaledTestTimeout(60_000),
+  );
 });

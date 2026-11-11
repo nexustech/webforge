@@ -76,9 +76,9 @@ Call your blog what suits you, such as _News_ or _Journal_: open the **…** men
 When the new name would give your posts a new folder, such as `news/` for _News_, **Move its posts to a folder of the new name** is offered:
 
 - **Before you've published your site,** it's ticked: your posts move to the new folder.
-- **Once your site has been published,** it isn't ticked, so your posts keep their addresses. Tick it to move them anyway: links and search results that use a post's old address go on to its new one, as when you rename a page (see [Keeping old addresses working](pages.md#keeping-old-addresses-working)).
+- **Once your site has been published,** it isn't ticked, so your posts keep their addresses. Tick it to move them anyway: links and search results that use the old addresses go on to the new ones, as when you rename a page (see [Keeping old addresses working](pages.md#keeping-old-addresses-working)).
 
-If another folder of your site has the name already, the posts go to one with a number, such as `news-2/`. Your blog's own pages, its list of posts, its tag pages and its feed, move with them, but their old addresses aren't kept: links to `blog/` or to a tag's page, from other sites or search results, show _Page not found_ until they're updated, and readers who follow your feed in an app need its new address.
+If another folder of your site has the name already, the posts go to one with a number, such as `news-2/`. Your blog's own pages, its list of posts and its tag pages, move with them, and their old addresses go on to them too. Its feed moves as well, but a feed's old address can't send readers on: those who follow it in an app need its new address.
 
 A blog with no posts can be deleted from the same menu: choose **Delete**, then **Delete Blog**. Its design goes with it, and **Undo** brings both back.
 
