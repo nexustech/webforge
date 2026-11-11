@@ -56,7 +56,12 @@ describe("addBlog (6.10a)", () => {
     const blog = site().collections[blogId()];
     const post = site().pages[postId];
     expect(blog).toMatchObject({ preset: "blog", name: "Blog", folder: "blog" });
-    expect(blog?.fields.map((field) => field.label)).toEqual(["Date", "Summary", "Picture"]);
+    expect(blog?.fields.map((field) => field.label)).toEqual([
+      "Date",
+      "Summary",
+      "Picture",
+      "Tags",
+    ]);
     expect(post).toMatchObject({
       title: "Our first post",
       slug: "our-first-post",
@@ -76,7 +81,7 @@ describe("addBlog (6.10a)", () => {
     expect(site().pages[postId]).toBeUndefined();
   });
 
-  it("binds the design's title, date and picture to each post's, with a button back Home", () => {
+  it("binds the design's title, date and picture to each post's, with its tags and a button back Home", () => {
     let n = 0;
     const design = blogDesign("home" as PageId, () => `n${++n}`);
     const [top] = design.before;
@@ -88,9 +93,10 @@ describe("addBlog (6.10a)", () => {
       ["Image", { image: "item.picture" }],
     ]);
     expect(design.after[0]?.props.content).toEqual([
+      { type: "PostTags", props: { id: "n6" } },
       {
         type: "Button",
-        props: { id: "n6", label: "Back to Home", link: { kind: "page", pageId: "home" } },
+        props: { id: "n7", label: "Back to Home", link: { kind: "page", pageId: "home" } },
       },
     ]);
   });
@@ -281,7 +287,7 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
 
   it("asks before an element leaves the design, saying every post shows it", async () => {
     const { confirmSiteWide, design, remove } = onPost(true);
-    const button = ((design()?.after[0]?.props.content ?? []) as NodeDoc[])[0];
+    const button = ((design()?.after[0]?.props.content ?? []) as NodeDoc[]).at(-1);
     if (button === undefined) throw new Error("no button");
 
     remove(button.props.id, "Button");
@@ -294,7 +300,9 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
         affectedPages: 1,
       }),
     );
-    expect(design()?.after[0]?.props.content).toEqual([]);
+    expect(
+      ((design()?.after[0]?.props.content ?? []) as NodeDoc[]).map((node) => node.type),
+    ).toEqual(["PostTags"]);
   });
 
   it("keeps the design when an element leaves the Footer on a post, or a removal is cancelled", async () => {

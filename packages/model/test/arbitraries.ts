@@ -311,6 +311,7 @@ export const siteDocArbitrary: fc.Arbitrary<SiteDoc> = fc
                 { name: "date", label: "Date", kind: "date" },
                 { name: "summary", label: "Summary", kind: "text" },
                 { name: "picture", label: "Picture", kind: "image" },
+                { name: "tags", label: "Tags", kind: "tags" },
               ],
               design: {
                 before: [

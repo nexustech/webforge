@@ -14,6 +14,7 @@ import v10Site from "../test/fixtures/v10/site.json" with { type: "json" };
 import v11Site from "../test/fixtures/v11/site.json" with { type: "json" };
 import v12Site from "../test/fixtures/v12/site.json" with { type: "json" };
 import v13Site from "../test/fixtures/v13/site.json" with { type: "json" };
+import v14Site from "../test/fixtures/v14/site.json" with { type: "json" };
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
 import type { PageId, SharedSectionId } from "./ids.js";
 import {
@@ -95,14 +96,23 @@ const siteCollections =
     throw new Error("No migration from format 12");
   });
 
-/** Format 5 → 13, each step's own fixture tested below: what the later steps do to an older one. */
+/** Format 13 → 14 (`MIGRATIONS[13]`). */
+const collectionTags =
+  MIGRATIONS[13] ??
+  ((): never => {
+    throw new Error("No migration from format 13");
+  });
+
+/** Format 5 → 14, each step's own fixture tested below: what the later steps do to an older one. */
 function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
-  return siteCollections(
-    destinationsOutOfSettings(
-      accentFonts(
-        sectionContentWidths(
-          componentLooks(
-            ownThemes(themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site))))),
+  return collectionTags(
+    siteCollections(
+      destinationsOutOfSettings(
+        accentFonts(
+          sectionContentWidths(
+            componentLooks(
+              ownThemes(themeStyleTokens(sectionPaddingBoxes(JSON.parse(JSON.stringify(site))))),
+            ),
           ),
         ),
       ),
@@ -111,13 +121,15 @@ function latest(site: Record<string, unknown> & { formatVersion: 5 }): unknown {
 }
 
 /**
- * A format 10 site as format 13 opens it: its accent font its headings' (3.22), no publish
+ * A format 10 site as format 14 opens it: its accent font its headings' (3.22), no publish
  * destinations in its Site Settings (4.4a), and no collections (6.10a).
  */
-const asFormat13 = (site: Record<string, unknown>) =>
-  siteCollections(
-    destinationsOutOfSettings(
-      accentFonts(JSON.parse(JSON.stringify({ ...site, formatVersion: 10 }))),
+const asFormat14 = (site: Record<string, unknown>) =>
+  collectionTags(
+    siteCollections(
+      destinationsOutOfSettings(
+        accentFonts(JSON.parse(JSON.stringify({ ...site, formatVersion: 10 }))),
+      ),
     ),
   );
 
@@ -128,13 +140,13 @@ function withoutPublish<T extends { publish?: unknown }>(settings: T): Omit<T, "
 }
 
 /**
- * A format 9 site as format 13 opens it: its Sections at Medium, as they were (3.21), its accent
+ * A format 9 site as format 14 opens it: its Sections at Medium, as they were (3.21), its accent
  * font its headings' (3.22), no destinations in its Site Settings (4.4a), and no collections.
  */
 const asLatest = (site: Record<string, unknown>) =>
-  asFormat13(sectionContentWidths(JSON.parse(JSON.stringify({ ...site, formatVersion: 9 }))));
+  asFormat14(sectionContentWidths(JSON.parse(JSON.stringify({ ...site, formatVersion: 9 }))));
 
-/** The format 7 fixture as format 13 opens it: its theme still a built-in one. */
+/** The format 7 fixture as format 14 opens it: its theme still a built-in one. */
 const v7AsLatest = asLatest(v7Site);
 
 /** A raw format 9 site with one page holding `nodes`, and what format 10 makes of their props. */
@@ -149,22 +161,46 @@ function widthsOf(...nodes: { type: string; props: Record<string, unknown> }[]):
 }
 
 describe("migrateSite", () => {
-  it("opens the format 13 fixture unchanged, with its Blog and a post (6.10a)", () => {
-    const site = migrateSite(v13Site);
+  it("opens the format 14 fixture unchanged, with its Blog's tags (6.10b)", () => {
+    const site = migrateSite(v14Site);
 
-    expect(site).toEqual(v13Site);
+    expect(site).toEqual(v14Site);
     expect(site.formatVersion).toBe(SITE_FORMAT_VERSION);
     const [blog] = Object.values(site.collections);
-    expect(blog?.preset).toBe("blog");
-    const post = Object.values(site.pages).find((page) => page.collection === blog?.id);
-    expect(post?.folder).toBe(blog?.folder);
+    expect(blog?.fields.at(-1)).toEqual({ name: "tags", label: "Tags", kind: "tags" });
+  });
+
+  it("opens the format 13 fixture as format 14, its Blog given Tags, its post as it was (6.10b)", () => {
+    const site = migrateSite(v13Site);
+    const [blog] = Object.values(v13Site.collections);
+
+    expect(site).toEqual({
+      ...v13Site,
+      formatVersion: 14,
+      collections: {
+        [blog?.id ?? ""]: {
+          ...blog,
+          fields: [...(blog?.fields ?? []), { name: "tags", label: "Tags", kind: "tags" }],
+        },
+      },
+    });
+    // A Blog with Tags already, another collection, and a collection that isn't a record are left.
+    const tagged = { preset: "blog", fields: [{ name: "tags", label: "Labels", kind: "tags" }] };
+    expect(collectionTags({ formatVersion: 13, collections: { a: tagged, b: "none" } })).toEqual({
+      formatVersion: 14,
+      collections: { a: tagged, b: "none" },
+    });
+    const [opened] = Object.values(site.collections);
+    expect(opened?.preset).toBe("blog");
+    const post = Object.values(site.pages).find((page) => page.collection === opened?.id);
+    expect(post?.folder).toBe(opened?.folder);
     expect(post?.entry).toMatchObject({ date: "2026-11-10" });
   });
 
-  it("opens the format 12 fixture as format 13, with no collections yet (6.10a)", () => {
+  it("opens the format 12 fixture as format 14, with no collections yet (6.10a)", () => {
     const site = migrateSite(v12Site);
 
-    expect(site).toEqual({ ...v12Site, formatVersion: 13, collections: {} });
+    expect(site).toEqual({ ...v12Site, formatVersion: 14, collections: {} });
     expect(site.settings).not.toHaveProperty("publish");
     // A site that has collections already keeps them; one whose aren't a record gets none.
     const kept = { blog: { id: "blog" } };
@@ -178,7 +214,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 11 fixture as format 13, its destinations out of Site Settings (4.4a)", () => {
+  it("opens the format 11 fixture as format 14, its destinations out of Site Settings (4.4a)", () => {
     // The fixture has two, as format 11's schema allowed; no site could have any, as nothing could
     // add one, and a site's destinations are now beside its document (ADR 0018 §2).
     expect(v11Site.settings.publish.destinations).toHaveLength(2);
@@ -186,11 +222,11 @@ describe("migrateSite", () => {
 
     expect(site).toEqual({
       ...v11Site,
-      formatVersion: 13,
+      formatVersion: 14,
       settings: withoutPublish(v11Site.settings),
       collections: {},
     });
-    expect(site).toEqual({ ...v12Site, formatVersion: 13, collections: {} });
+    expect(site).toEqual({ ...v12Site, formatVersion: 14, collections: {} });
     // Settings that aren't a record, or have no destinations, are left for validation.
     for (const settings of ["none", { general: {} }]) {
       expect(destinationsOutOfSettings({ formatVersion: 11, settings })).toEqual({
@@ -208,12 +244,12 @@ describe("migrateSite", () => {
     expect(site.theme.looks?.CallToAction?.lookFont).toBe("accent");
   });
 
-  it("opens the format 10 fixture as format 13, its accent font its headings' (3.22)", () => {
+  it("opens the format 10 fixture as format 14, its accent font its headings' (3.22)", () => {
     const site = migrateSite(v10Site);
 
     expect(site).toEqual({
       ...v10Site,
-      formatVersion: 13,
+      formatVersion: 14,
       collections: {},
       settings: withoutPublish(v10Site.settings),
       theme: {
@@ -237,7 +273,7 @@ describe("migrateSite", () => {
     );
   });
 
-  it("opens the format 9 fixture as format 13, every Section Medium as it was (3.21)", () => {
+  it("opens the format 9 fixture as format 14, every Section Medium as it was (3.21)", () => {
     const site = migrateSite(v9Site);
     const sections = [
       ...Object.values(site.pages).flatMap((page) => page.doc.content),
@@ -309,7 +345,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 8 fixture as format 13, its theme without looks as it was (3.12)", () => {
+  it("opens the format 8 fixture as format 14, its theme without looks as it was (3.12)", () => {
     const site = migrateSite(v8Site);
 
     expect(site).toEqual(asLatest(v8Site));
@@ -327,7 +363,7 @@ describe("migrateSite", () => {
     expect(site.theme.own).toEqual({ id: "theme00000000001", name: "Cupcake (my version)" });
   });
 
-  it("opens the format 7 fixture as format 13, its theme a built-in one as it was (2.23)", () => {
+  it("opens the format 7 fixture as format 14, its theme a built-in one as it was (2.23)", () => {
     const site = migrateSite(v7Site);
 
     expect(site).toEqual(v7AsLatest);
@@ -338,7 +374,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 6 fixture as format 13, its theme's style tokens as it looked (2.13d)", () => {
+  it("opens the format 6 fixture as format 14, its theme's style tokens as it looked (2.13d)", () => {
     const site = migrateSite(v6Site);
 
     expect(v6Site.theme).not.toHaveProperty("cards");
@@ -358,7 +394,7 @@ describe("migrateSite", () => {
     });
   });
 
-  it("opens the format 5 fixture as format 13, a Section's padding size as its top and bottom (R14)", () => {
+  it("opens the format 5 fixture as format 14, a Section's padding size as its top and bottom (R14)", () => {
     const site = migrateSite(v5Site);
 
     // The fixture's Sections have format 5's sizes, one plain, one per device.
@@ -403,7 +439,7 @@ describe("migrateSite", () => {
     expect(hero.pages.home.doc.content[0]?.props.padding).toBe("large");
   });
 
-  it("opens the format 4 fixture as format 13, its theme as tokens named after it (2.1)", () => {
+  it("opens the format 4 fixture as format 14, its theme as tokens named after it (2.1)", () => {
     const site = migrateSite(v4Site);
 
     expect(site).toEqual(latest({ ...v4Site, formatVersion: 5, theme: cupcakeTokens }));
@@ -428,7 +464,7 @@ describe("migrateSite", () => {
     expect(migrateSite({ ...v4Site, theme: undefined }).theme.preset).toBe("light");
   });
 
-  it("opens the format 3 fixture as format 13, its shared sections' names made unique (3 → 4)", () => {
+  it("opens the format 3 fixture as format 14, its shared sections' names made unique (3 → 4)", () => {
     const site = migrateSite(v3Site);
 
     // The fixture's second shared section repeats the first's name, as format 3 allowed.
@@ -476,13 +512,13 @@ describe("migrateSite", () => {
     ]);
   });
 
-  it("opens the format 2 fixture as format 13, with no shared sections yet", () => {
+  it("opens the format 2 fixture as format 14, with no shared sections yet", () => {
     expect(migrateSite(v2Site)).toEqual(
       latest({ ...v2Site, formatVersion: 5, sharedSections: {}, theme: cupcakeTokens }),
     );
   });
 
-  it("opens the format 1 fixture as format 13, its Hero image one value with its alt text (1 → 2)", () => {
+  it("opens the format 1 fixture as format 14, its Hero image one value with its alt text (1 → 2)", () => {
     // Fixtures of released formats are never deleted: every old site must keep opening. This one
     // has its Hero image in the format 1 shape: a media id, and its alt text apart.
     const site = migrateSite(v1Site);
@@ -690,7 +726,7 @@ describe("migrateSite with a malformed file (R14)", () => {
     return top;
   }
   const withContent = (
-    site: typeof v7Site | typeof v13Site,
+    site: typeof v7Site | typeof v14Site,
     content: unknown[],
     formatVersion: number,
   ) => ({
@@ -733,7 +769,7 @@ describe("migrateSite with a malformed file (R14)", () => {
   });
 
   it("opens a site nested as deeply as a page plausibly is", () => {
-    const site = migrateSite(withContent(v13Site, [nested(40)], SITE_FORMAT_VERSION));
+    const site = migrateSite(withContent(v14Site, [nested(40)], SITE_FORMAT_VERSION));
 
     expect(site.pages[site.homePageId]?.doc.content).toHaveLength(1);
   });
@@ -745,7 +781,7 @@ describe("migrateSite with a malformed file (R14)", () => {
 
     for (const content of [[inSection], [deeper]]) {
       const error = formatError(() =>
-        migrateSite(withContent(v13Site, content, SITE_FORMAT_VERSION)),
+        migrateSite(withContent(v14Site, content, SITE_FORMAT_VERSION)),
       );
       expect(error.code).toBe("invalid");
     }
@@ -764,7 +800,7 @@ describe("migrateSite with a malformed file (R14)", () => {
         },
       },
     ];
-    expect(() => migrateSite(withContent(v13Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
+    expect(() => migrateSite(withContent(v14Site, lists, SITE_FORMAT_VERSION))).not.toThrow();
   });
 });
 
@@ -825,6 +861,18 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
+  // 14 → 13: no field was of kind `tags`; a Blog had no Tags, which format 14 gives it, last.
+  13: (site) => {
+    const collections = Object.fromEntries(
+      Object.entries(site.collections as Record<string, { fields: { name: string }[] }>).map(
+        ([id, collection]) => [
+          id,
+          { ...collection, fields: collection.fields.filter((field) => field.name !== "tags") },
+        ],
+      ),
+    );
+    return { ...site, collections, formatVersion: 13 };
+  },
   // 13 → 12: no collections yet; a site that had none didn't say so.
   12: (site) => {
     const { collections, ...rest } = site;

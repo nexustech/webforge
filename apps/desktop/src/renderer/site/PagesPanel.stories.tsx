@@ -51,6 +51,7 @@ const actions: PagesPanelActions = {
   addPolicy: noop,
   addBlog: noop,
   addPost: noop,
+  importPosts: noop,
   rename: noop,
   duplicate: noop,
   move: noop,

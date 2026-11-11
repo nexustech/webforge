@@ -39,8 +39,9 @@ function item(type: string, own: Readonly<Record<string, unknown>> = {}): NodeDo
 }
 
 /**
- * The context with `type`'s look in the theme, a large shadow, where a picture resolves and the
- * site has a social profile (Social links draw nothing without one).
+ * The context with `type`'s look in the theme, a large shadow, where a picture resolves, the site
+ * has a social profile (Social links draw nothing without one) and the page is a post with tags
+ * (Post tags draw nothing on another page, 6.10b).
  */
 const lookFor = (type: string): RenderContext => ({
   ...EDITOR_RENDER_CONTEXT,
@@ -53,6 +54,10 @@ const lookFor = (type: string): RenderContext => ({
     alt: "Loaves",
   }),
   socialProfiles: [{ network: "instagram", url: "https://instagram.com/rosasbakery" }],
+  item: (field) =>
+    field === "tags"
+      ? { kind: "tags", tags: [{ name: "News", path: "blog/tag/news" }] }
+      : undefined,
   looks: { [type]: { lookShadow: "large" } },
 });
 

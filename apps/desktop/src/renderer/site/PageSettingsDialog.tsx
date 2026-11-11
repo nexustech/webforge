@@ -109,6 +109,14 @@ function postField(
         maxLength: ITEM_VALUE_MAX,
         help: t("blog.settings.summaryHint"),
       };
+    case "tags":
+      return {
+        kind: "text",
+        name,
+        label: field.label,
+        maxLength: ITEM_VALUE_MAX,
+        help: t("blog.settings.tagsHint"),
+      };
     case "image":
       return {
         kind: "imageChoice",

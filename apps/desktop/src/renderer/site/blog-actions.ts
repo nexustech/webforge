@@ -25,7 +25,7 @@ const postItem = (name: string) => t("blog.item", { name });
 
 /**
  * A new Blog's design (ADR 0025, decision 4): above each post, its title, date and picture; below
- * it, a button back to the Home page. Each element is bound to the post's field, so it shows each
+ * it, its tags and a button back to the Home page. Each element is bound to the post's field, so it shows each
  * post's own; the text beside the binding is what shows on a page that isn't a post.
  */
 export function blogDesign(
@@ -69,6 +69,8 @@ export function blogDesign(
           id: id(),
           contentWidth: "narrow",
           content: [
+            // Its tags, each a link to the page listing its posts (6.10b).
+            { type: "PostTags", props: { id: id() } },
             {
               type: "Button",
               props: {
@@ -86,7 +88,8 @@ export function blogDesign(
 
 /**
  * Adds post `id` called `title` to collection `collectionId` in `draft` (an undo step's): in the
- * collection's folder, dated today, before a "Page not found" page that is last. The menu doesn't
+ * collection's folder, dated today unless `entry` says, its text `body`, before a "Page not found"
+ * page that is last. The menu doesn't
  * take it in: the Blog lists its posts.
  */
 export function insertPost(
@@ -96,6 +99,8 @@ export function insertPost(
   title: string,
   entry: Readonly<Record<string, string>> = {},
   today: string = localDay(),
+  /** Its text as rich text, imported (6.10b); a line to start from when left out. */
+  body: string = t("blog.firstPost.text"),
 ): void {
   const collection = collectionById(draft, collectionId);
   if (collection === undefined) return;
@@ -116,9 +121,7 @@ export function insertPost(
           props: {
             id: newId("node"),
             contentWidth: "narrow",
-            content: [
-              { type: "Text", props: { id: newId("node"), text: t("blog.firstPost.text") } },
-            ],
+            content: [{ type: "Text", props: { id: newId("node"), text: body } }],
           },
         },
       ],
@@ -148,6 +151,7 @@ export function insertBlog(
       date: t("blog.field.date"),
       summary: t("blog.field.summary"),
       picture: t("blog.field.picture"),
+      tags: t("blog.field.tags"),
     },
     design: blogDesign(draft.homePageId),
   });

@@ -8,7 +8,11 @@ import {
   freeCollectionFolder,
   itemValue,
   itemValues,
+  listPath,
   newCollection,
+  tagNames,
+  tagPath,
+  tagSlug,
 } from "./collections.js";
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, MediaId, PageId } from "./ids.js";
@@ -32,7 +36,7 @@ function blog(overrides: Partial<Collection> = {}): Collection {
       preset: "blog",
       name: "Blog",
       folder: "blog",
-      labels: { date: "Date", summary: "Summary", picture: "Picture" },
+      labels: { date: "Date", summary: "Summary", picture: "Picture", tags: "Tags" },
       design: { before: [title], after: [more] },
     }),
     ...overrides,
@@ -79,13 +83,14 @@ function issuesOf(site: unknown): string[] {
 }
 
 describe("newCollection (6.10a)", () => {
-  it("gives the Blog a date, a summary and a picture, labelled as the caller says", () => {
+  it("gives the Blog a date, a summary, a picture and tags, labelled as the caller says", () => {
     const made = blog();
 
     expect(made.fields).toEqual([
       { name: "date", label: "Date", kind: "date" },
       { name: "summary", label: "Summary", kind: "text" },
       { name: "picture", label: "Picture", kind: "image" },
+      { name: "tags", label: "Tags", kind: "tags" },
     ]);
     expect(collectionSchema.safeParse(made).success).toBe(true);
   });
@@ -295,5 +300,84 @@ describe("collections read by own key (6.10a)", () => {
     expect(collectionItems(site, "constructor" as CollectionId)).toEqual([]);
     expect(issuesOf(site)).toEqual([`The collection "constructor" is missing`]);
     expect(() => siteToSnapshot(site, new Map())).not.toThrow();
+  });
+});
+
+describe("tags (6.10b)", () => {
+  it("reads tags typed with commas, each page once, with its page in the Blog's folder", () => {
+    const page = post("p1", "spring", { tags: " Opening times, news,,NEWS , Café  latte, con " });
+
+    expect(itemValue(blog(), page, "tags")).toEqual({
+      kind: "tags",
+      tags: [
+        { name: "Opening times", path: "blog/tag/opening-times" },
+        { name: "news", path: "blog/tag/news" },
+        { name: "Café latte", path: "blog/tag/cafe-latte" },
+        // A name Windows keeps for a device gets a file it can write.
+        { name: "con", path: "blog/tag/con-tag" },
+      ],
+    });
+    expect(itemValue(blog(), post("p2", "x", { tags: " , !!! ," }), "tags")).toBeUndefined();
+  });
+
+  it("keeps tags in any script, each its own page, the same every time (#939 review)", () => {
+    const names = ["Νέα", "Προσφορές", "Новости", "新闻", "Café Νέα", "Café", "νέα"];
+    const tags = itemValue(blog(), post("p1", "x", { tags: names.join(", ") }), "tags");
+    const paths = tags?.kind === "tags" ? tags.tags.map((tag) => tag.path) : [];
+
+    // "νέα" is "Νέα" in another case: one tag, its first spelling.
+    expect(tags?.kind === "tags" ? tags.tags.map((tag) => tag.name) : []).toEqual(
+      names.slice(0, 6),
+    );
+    expect(new Set(paths).size).toBe(6);
+    expect(paths[5]).toBe("blog/tag/cafe");
+    for (const path of paths.slice(0, 5)) expect(path).toMatch(/^blog\/tag\/tag-[0-9a-z]+$/);
+    expect(tagSlug("Νέα")).toBe(tagSlug(" νέα "));
+  });
+
+  it("keeps at most 20 tags, and gives each a name that makes a file", () => {
+    const many = Array.from({ length: 25 }, (_, n) => `tag ${n}`).join(",");
+
+    expect(tagNames(many)).toHaveLength(20);
+    expect(tagSlug("Ünïcode & More")).toBe("unicode-more");
+    expect(tagPath("news", "Big Day")).toBe("news/tag/big-day");
+  });
+});
+
+describe("a Blog's own pages (6.10b)", () => {
+  it("lists every post in the snapshot, newest first, with its fields", () => {
+    const site = siteWith(
+      post("p1", "older", { date: "2026-01-05", tags: "News" }),
+      post("p2", "newer", { date: "2026-03-01" }),
+    );
+    const [blogList] = siteToSnapshot(site, new Map()).collections ?? [];
+
+    expect(blogList).toMatchObject({ id: BLOG, name: "Blog", folder: "blog" });
+    expect(blogList?.items.map((item) => [item.pageId, item.path])).toEqual([
+      ["p2", "blog/newer"],
+      ["p1", "blog/older"],
+    ]);
+    expect(blogList?.items[1]?.values.tags).toEqual({
+      kind: "tags",
+      tags: [{ name: "News", path: "blog/tag/news" }],
+    });
+    expect(
+      siteToSnapshot(
+        createSite({ name: "x", language: "en", homeTitle: "Home", notFoundTitle: "?" }),
+        new Map(),
+      ).collections,
+    ).toBeUndefined();
+  });
+
+  it("keeps pages out of the folders the export writes the Blog's pages to", () => {
+    const site = siteWith();
+    const home = site.pages[site.homePageId];
+    if (home === undefined) throw new Error("no home");
+    site.pages["x" as PageId] = { ...home, id: "x" as PageId, slug: "x", folder: "blog/tag" };
+    site.pageOrder.push("x" as PageId);
+
+    expect(issuesOf(site)).toEqual(["A page can't be in a Blog's own folders"]);
+    expect(listPath("blog")).toBe("blog/index");
+    expect(listPath("blog", 3)).toBe("blog/page/3");
   });
 });

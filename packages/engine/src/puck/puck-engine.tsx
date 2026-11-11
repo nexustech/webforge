@@ -422,6 +422,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
       });
     },
 
+    setPosts(posts) {
+      const { posts: _posts, ...rest } = parts;
+      changeContext({ parts: posts === undefined ? rest : { ...rest, posts } });
+    },
+
     setPreviews(previews) {
       // Drawing the page again is only worth it when what it previews changes.
       if (samePreviews(parts.previews ?? {}, previews)) return;

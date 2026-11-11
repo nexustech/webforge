@@ -7,6 +7,7 @@ import type { HelpApi } from "./ipc/help.js";
 import type { McpApi } from "./ipc/mcp.js";
 import type { MediaApi } from "./ipc/media.js";
 import type { NetlifyApi } from "./ipc/netlify.js";
+import type { PostsApi } from "./ipc/posts.js";
 import type { PrefsApi } from "./ipc/prefs.js";
 import type { PreviewApi } from "./ipc/preview.js";
 import type { ProjectApi } from "./ipc/project.js";
@@ -43,4 +44,5 @@ export interface WebforgeApi {
   readonly help: HelpApi;
   readonly netlify: NetlifyApi;
   readonly updates: UpdatesApi;
+  readonly posts: PostsApi;
 }

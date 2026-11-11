@@ -58,6 +58,8 @@ const DEFAULTS: Readonly<Record<string, ContentWidth>> = {
   Newsletter: "wide",
   // New with 3.21's widths in place (6.4): across the page.
   AnnouncementBar: "full",
+  // New in 6.10b: the Blog's posts in cards across a wide column.
+  LatestPosts: "wide",
 };
 
 /** What a kind needs to draw its whole width: an image beside the text, a form beside it. */

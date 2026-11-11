@@ -31,6 +31,7 @@ export {
   COLLECTION_FIELD_KINDS,
   COLLECTION_FIELDS_MAX,
   COLLECTION_NAME_MAX,
+  COLLECTION_PAGE_FOLDERS,
   COLLECTION_PRESETS,
   type Collection,
   type CollectionDesign,
@@ -42,25 +43,33 @@ export {
   collectionFolderSchema,
   collectionItems,
   collectionOf,
+  collectionPictures,
   collectionSchema,
   collectionsDocSchema,
   freeCollectionFolder,
+  ITEM_TAGS_MAX,
   ITEM_TITLE_FIELD,
   ITEM_VALUE_MAX,
   type ItemEntry,
+  type ItemTag,
   type ItemValue,
   isCollectionIn,
   itemEntrySchema,
   itemPicturesShown,
   itemValue,
   itemValues,
+  listPath,
   type NewCollectionOptions,
   newCollection,
   PRESET_FIELDS,
+  tagNames,
+  tagPath,
+  tagSlug,
 } from "./collections.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 export { cssVariablesUsed } from "./css-variables.js";
+export { csvRecords, parseCsv } from "./csv.js";
 export type {
   BundledFile,
   LayoutDoc,
@@ -164,6 +173,13 @@ export {
   looksSchema,
   valuesWithLook,
 } from "./look.js";
+export {
+  type FrontMatter,
+  frontMatter,
+  inlineMarkdown,
+  looksLikeMarkdown,
+  markdownToRichText,
+} from "./markdown.js";
 export type {
   FileMeta,
   FileMimeType,
@@ -345,6 +361,8 @@ export type {
   DocumentItem,
   MediaItem,
   SiteAnalytics,
+  SiteCollection,
+  SiteCollectionItem,
   SiteItem,
   SitePage,
   SiteRedirect,
@@ -393,4 +411,4 @@ export {
   THEME_NAME_MAX,
   themeTokensSchema,
 } from "./theme.js";
-export { siteToSnapshot } from "./to-snapshot.js";
+export { siteCollectionsOf, siteToSnapshot } from "./to-snapshot.js";

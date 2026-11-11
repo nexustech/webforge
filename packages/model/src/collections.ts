@@ -9,6 +9,7 @@ import {
   type PageId,
 } from "./ids.js";
 import { findNode } from "./node-tree.js";
+import { isDeviceName } from "./site-path.js";
 
 /**
  * Collections (6.10a, ADR 0025, M2-1): a Blog, later a Portfolio or Events. An item is a page that
@@ -26,7 +27,10 @@ export const COLLECTION_PRESETS = ["blog"] as const;
 export type CollectionPreset = (typeof COLLECTION_PRESETS)[number];
 
 /** The kinds of field an item can have beyond its title. */
-export const COLLECTION_FIELD_KINDS = ["date", "text", "image"] as const;
+export const COLLECTION_FIELD_KINDS = ["date", "text", "image", "tags"] as const;
+
+/** The most tags an item can have. */
+export const ITEM_TAGS_MAX = 20;
 
 /** One of {@link COLLECTION_FIELD_KINDS}. */
 export type CollectionFieldKind = (typeof COLLECTION_FIELD_KINDS)[number];
@@ -135,14 +139,99 @@ export type ItemValue =
   | { readonly kind: "text"; readonly text: string }
   /** `YYYY-MM-DD`, a real day. */
   | { readonly kind: "date"; readonly date: string }
-  | { readonly kind: "image"; readonly mediaId: MediaId };
+  | { readonly kind: "image"; readonly mediaId: MediaId }
+  /**
+   * A post's tags (6.10b), typed separated by commas: each with the path of its page in its
+   * collection's folder, `blog/tag/opening-times`, which the export writes.
+   */
+  | { readonly kind: "tags"; readonly tags: readonly ItemTag[] };
+
+/** One of an item's tags, and where its page is. */
+export type ItemTag = { readonly name: string; readonly path: string };
 
 const isoDate = z.iso.date();
 
-/** `raw`, a stored value, read as a field of `kind`: `undefined` when empty or it doesn't fit. */
-function readValue(kind: CollectionFieldKind, raw: string | undefined): ItemValue | undefined {
+/**
+ * The file name a tag's page has, from its name: `opening-times`. A name Windows keeps for a
+ * device (`con`) gets `-tag` after it, so the export can always write it.
+ */
+export function tagSlug(name: string): string {
+  // As a page's file name is made from its name (`slugify`, which the site document's module
+  // uses, so it can't be imported here): accents dropped, Latin letters and digits kept.
+  const plain = name.normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase();
+  // A name with letters in another script (Νέα, Новости, 新闻), even beside Latin ones, keeps a
+  // page of its own: a name made from it, the same every time, as pages' file names are lowercase
+  // ASCII letters, digits and hyphens. Never one Latin tag's: "Café Νέα" isn't "Café".
+  if (/[^\p{ASCII}]/u.test(plain.replace(/[^\p{L}\p{N}]/gu, ""))) {
+    return `tag-${nameHash(name.normalize("NFC").trim().toLowerCase())}`;
+  }
+  const slug = plain
+    .replace(/[^a-z0-9]+/g, "-")
+    .slice(0, TAG_SLUG_MAX)
+    .replace(/^-+|-+$/g, "");
+  return slug !== "" && isDeviceName(slug) ? `${slug}-tag` : slug;
+}
+
+/** A short name for `text`, the same for the same text (FNV-1a, in base 36). */
+function nameHash(text: string): string {
+  let hash = 0x811c9dc5;
+  for (const unit of text) {
+    hash ^= unit.codePointAt(0) ?? 0;
+    hash = Math.imul(hash, 0x01000193) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+/** The longest file name a tag's page has. */
+const TAG_SLUG_MAX = 60;
+
+/**
+ * The folders in a collection's own where the export writes its pages (6.10b): its list's later
+ * pages (`blog/page/2`) and its tags' (`blog/tag/news`). No page may be in them.
+ */
+export const COLLECTION_PAGE_FOLDERS = ["page", "tag"] as const;
+
+/** The path of the list of a collection whose folder is `folder`, page `n` (from 1). */
+export const listPath = (folder: string, n = 1) =>
+  n <= 1 ? `${folder}/index` : `${folder}/page/${n}`;
+
+/** The path of the page of tag `name` in a collection whose folder is `folder`. */
+export const tagPath = (folder: string, name: string) => `${folder}/tag/${tagSlug(name)}`;
+
+/**
+ * Tags typed separated by commas, `raw`, as their names: trimmed, without empty ones, each page
+ * once (the first spelling wins), at most {@link ITEM_TAGS_MAX}.
+ */
+export function tagNames(raw: string): string[] {
+  const seen = new Set<string>();
+  const names: string[] = [];
+  for (const part of raw.split(",")) {
+    const name = part.trim().replace(/\s+/g, " ");
+    const slug = name === "" ? "" : tagSlug(name);
+    if (slug === "" || seen.has(slug) || names.length === ITEM_TAGS_MAX) continue;
+    seen.add(slug);
+    names.push(name);
+  }
+  return names;
+}
+
+/**
+ * `raw`, a stored value, read as a field of `kind` of a collection whose folder is `folder`:
+ * `undefined` when empty or it doesn't fit.
+ */
+function readValue(
+  kind: CollectionFieldKind,
+  raw: string | undefined,
+  folder: string,
+): ItemValue | undefined {
   if (raw === undefined || raw.trim() === "") return undefined;
   switch (kind) {
+    case "tags": {
+      const names = tagNames(raw);
+      return names.length === 0
+        ? undefined
+        : { kind: "tags", tags: names.map((name) => ({ name, path: tagPath(folder, name) })) };
+    }
     case "text":
       return { kind: "text", text: raw };
     case "date":
@@ -164,12 +253,12 @@ export function itemValue(
   page: Pick<ItemPage, "title" | "entry">,
   field: string,
 ): ItemValue | undefined {
-  if (field === ITEM_TITLE_FIELD) return readValue("text", page.title);
+  if (field === ITEM_TITLE_FIELD) return readValue("text", page.title, collection.folder);
   const def = collection.fields.find((each) => each.name === field);
   if (def === undefined || page.entry === undefined || !Object.hasOwn(page.entry, field)) {
     return undefined;
   }
-  return readValue(def.kind, page.entry[field]);
+  return readValue(def.kind, page.entry[field], collection.folder);
 }
 
 /** Every field of `page`, an item of `collection`, that has a value: its title first. */
@@ -269,6 +358,7 @@ export const PRESET_FIELDS: Readonly<
     { name: "date", kind: "date" },
     { name: "summary", kind: "text" },
     { name: "picture", kind: "image" },
+    { name: "tags", kind: "tags" },
   ],
 };
 
@@ -285,6 +375,29 @@ export function newCollection(options: NewCollectionOptions): Collection {
     })),
     design: options.design,
   };
+}
+
+/**
+ * Every picture of the items `collections` list (6.10b): what Latest posts' cards and a collection's
+ * own pages show, whatever each item's design shows. `collections` are a snapshot's, published
+ * items only.
+ */
+export function collectionPictures(
+  collections:
+    | readonly {
+        readonly items: readonly { readonly values: Readonly<Record<string, ItemValue>> }[];
+      }[]
+    | undefined,
+): MediaId[] {
+  const pictures = new Set<MediaId>();
+  for (const collection of collections ?? []) {
+    for (const item of collection.items) {
+      for (const value of Object.values(item.values)) {
+        if (value.kind === "image") pictures.add(value.mediaId);
+      }
+    }
+  }
+  return [...pictures];
 }
 
 /**

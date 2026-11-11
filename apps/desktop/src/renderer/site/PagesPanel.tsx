@@ -72,6 +72,8 @@ export type PagesPanelActions = {
   addBlog(): void;
   /** Adds a post to the Blog `collectionId` (6.10a). */
   addPost(collectionId: CollectionId): void;
+  /** Imports posts from Markdown or CSV files into the Blog `collectionId` (6.10b). */
+  importPosts(collectionId: CollectionId): void;
   /** Renames a page, keeping its old address working if `keepOldAddress` (#862). */
   rename(pageId: PageId, name: string, keepOldAddress: boolean): void;
   duplicate(pageId: PageId): void;
@@ -308,6 +310,26 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
                   >
                     <PlusIcon />
                   </Button>
+                  <DropdownMenu modal={false}>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="size-5"
+                        aria-label={t("pages.actions", { name: row.collection.name })}
+                      >
+                        <EllipsisIcon />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => actions.addPost(row.collection.id)}>
+                        {t("blog.newPost")}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => actions.importPosts(row.collection.id)}>
+                        {t("blog.import")}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <ul aria-label={row.collection.name}>
                   {row.pages.length === 0 ? (

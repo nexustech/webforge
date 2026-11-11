@@ -9,8 +9,10 @@ import { embeds } from "./embeds.js";
 import { features } from "./features.js";
 import { forms } from "./forms.js";
 import { gallery } from "./gallery.js";
+import { latestPosts } from "./latestPosts.js";
 import { layout } from "./layout.js";
 import { logos } from "./logos.js";
+import { postTags } from "./postTags.js";
 import { pricing } from "./pricing.js";
 import { sections } from "./sections.js";
 import { shared } from "./shared.js";
@@ -45,6 +47,8 @@ export const componentFamilies = {
   stats,
   customCode,
   announcementBar,
+  latestPosts,
+  postTags,
 } as const;
 
 /** Site components: element names, their fields, exported-site text and the starter page. */
@@ -69,4 +73,6 @@ export const components = {
   ...stats,
   ...customCode,
   ...announcementBar,
+  ...latestPosts,
+  ...postTags,
 } as const;

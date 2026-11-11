@@ -1370,7 +1370,8 @@
             "Form",
             "BuyButton",
             "Tabs",
-            "CustomCode"
+            "CustomCode",
+            "PostTags"
           ]
         },
         "contentWidth": {
@@ -2518,7 +2519,8 @@
             "Form",
             "BuyButton",
             "Tabs",
-            "CustomCode"
+            "CustomCode",
+            "PostTags"
           ]
         }
       },
@@ -7846,7 +7848,8 @@
             "Form",
             "BuyButton",
             "Tabs",
-            "CustomCode"
+            "CustomCode",
+            "PostTags"
           ]
         }
       },
@@ -8626,6 +8629,279 @@
           "field": "backgroundImage"
         }
       ]
+    },
+    "LatestPosts": {
+      "label": "Latest posts",
+      "place": "section",
+      "category": "Blog",
+      "framed": true,
+      "appearance": "all",
+      "deeper": "titled",
+      "fields": {
+        "backgroundImage": {
+          "kind": "media",
+          "label": "Background image",
+          "help": "Shown behind the section, cut to fit with its focal point in view. Choose an overlay to keep the text readable.",
+          "group": "content"
+        },
+        "overlay": {
+          "kind": "slider",
+          "label": "Overlay",
+          "help": "A layer of colour over the background image, so the text on it is easier to read.",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "steps": [
+            {
+              "label": "None",
+              "value": "0"
+            },
+            {
+              "label": "Light",
+              "value": "20"
+            },
+            {
+              "label": "Medium",
+              "value": "40"
+            },
+            {
+              "label": "Strong",
+              "value": "60"
+            },
+            {
+              "label": "Very strong",
+              "value": "80"
+            }
+          ]
+        },
+        "overlayColor": {
+          "kind": "select",
+          "label": "Overlay colour",
+          "group": "style",
+          "optionGroup": {
+            "id": "appearance",
+            "label": "Appearance"
+          },
+          "options": [
+            {
+              "label": "Page background",
+              "value": "base"
+            },
+            {
+              "label": "Neutral",
+              "value": "neutral"
+            }
+          ]
+        },
+        "title": {
+          "kind": "text",
+          "label": "Title",
+          "inline": true
+        },
+        "count": {
+          "kind": "select",
+          "label": "Number of posts",
+          "options": [
+            {
+              "label": "3",
+              "value": "3"
+            },
+            {
+              "label": "6",
+              "value": "6"
+            },
+            {
+              "label": "9",
+              "value": "9"
+            },
+            {
+              "label": "12",
+              "value": "12"
+            }
+          ]
+        },
+        "showPicture": {
+          "kind": "toggle",
+          "label": "Show pictures"
+        },
+        "showDate": {
+          "kind": "toggle",
+          "label": "Show dates"
+        },
+        "showSummary": {
+          "kind": "toggle",
+          "label": "Show summaries"
+        },
+        "allPosts": {
+          "kind": "toggle",
+          "label": "Link to all posts"
+        },
+        "contentWidth": {
+          "kind": "select",
+          "label": "Content width",
+          "help": "How wide the section's content can be. Its background still goes across the page.",
+          "group": "style",
+          "options": [
+            {
+              "label": "Narrow",
+              "value": "narrow"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Wide",
+              "value": "wide"
+            },
+            {
+              "label": "Full",
+              "value": "full"
+            }
+          ]
+        },
+        "colors": {
+          "kind": "select",
+          "label": "Colours",
+          "help": "Reversed swaps the theme's light and dark colours: a dark band on a light page, a light one on a dark page.",
+          "options": [
+            {
+              "label": "Page colours",
+              "value": "page"
+            },
+            {
+              "label": "Reversed",
+              "value": "inverse"
+            }
+          ]
+        },
+        "padding": {
+          "kind": "box",
+          "label": "Padding",
+          "property": "padding",
+          "responsive": true
+        },
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        },
+        "entrance": {
+          "kind": "select",
+          "label": "Entrance animation",
+          "help": "Plays once as visitors scroll to it. Visitors who prefer less motion never see it move.",
+          "group": "style",
+          "options": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Fade in",
+              "value": "fade"
+            },
+            {
+              "label": "Slide up",
+              "value": "slideUp"
+            },
+            {
+              "label": "Slide in from the left",
+              "value": "slideLeft"
+            },
+            {
+              "label": "Slide in from the right",
+              "value": "slideRight"
+            },
+            {
+              "label": "Zoom in",
+              "value": "zoom"
+            }
+          ]
+        },
+        "entranceDelay": {
+          "kind": "slider",
+          "label": "Delay",
+          "group": "style",
+          "steps": [
+            {
+              "label": "None",
+              "value": "none"
+            },
+            {
+              "label": "Short",
+              "value": "short"
+            },
+            {
+              "label": "Medium",
+              "value": "medium"
+            },
+            {
+              "label": "Long",
+              "value": "long"
+            }
+          ]
+        },
+        "variant": {
+          "kind": "select",
+          "group": "style",
+          "label": "Layout",
+          "options": [
+            {
+              "label": "Cards",
+              "value": "cards"
+            },
+            {
+              "label": "List",
+              "value": "list"
+            }
+          ]
+        }
+      },
+      "defaults": {
+        "variant": "cards",
+        "colors": "page",
+        "overlay": "60",
+        "overlayColor": "base",
+        "title": "Latest posts",
+        "count": "3",
+        "showPicture": true,
+        "showDate": true,
+        "showSummary": true,
+        "allPosts": true,
+        "contentWidth": "wide"
+      },
+      "pictureBehind": [
+        {
+          "field": "backgroundImage"
+        }
+      ]
+    },
+    "PostTags": {
+      "label": "Post tags",
+      "place": "element",
+      "category": "Blog",
+      "appearance": "all",
+      "deeper": "element",
+      "fields": {
+        "margin": {
+          "kind": "box",
+          "label": "Margin",
+          "property": "margin",
+          "responsive": true,
+          "sides": [
+            "top",
+            "bottom"
+          ]
+        }
+      },
+      "defaults": {}
     }
   }
 }

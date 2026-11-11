@@ -1,11 +1,17 @@
 import { settingValues } from "./bindings.js";
-import { collectionOf, itemValues } from "./collections.js";
+import { collectionItems, collectionOf, itemValues } from "./collections.js";
 import { fileKey, keptAddressesOf, keptAddressWorks, pageFiles } from "./kept-addresses.js";
 import { isImageMeta } from "./media.js";
 import type { SiteSettings } from "./settings.js";
 import { expandSharedCopies } from "./shared-sections.js";
 import { pagePath, type SiteDoc } from "./site-doc.js";
-import type { MediaItem, SitePage, SiteRedirect, SiteSnapshot } from "./site-snapshot.js";
+import type {
+  MediaItem,
+  SiteCollection,
+  SitePage,
+  SiteRedirect,
+  SiteSnapshot,
+} from "./site-snapshot.js";
 
 /**
  * The snapshot a build gets from the open site (export pipeline stage 1). Pages come in Pages panel
@@ -120,8 +126,37 @@ export function siteToSnapshot(
         : { verification: site.settings.search.verification }),
     },
     ...(hasCode(site.code) ? { code: site.code } : {}),
+    ...collectionsOf(site),
     ...redirectsOf(site),
   };
+}
+
+/**
+ * The site's collections with their items, newest first (6.10b), for the lists of posts, the
+ * Blog's own pages and its feed. Only the items `site` has: a published site has no drafts.
+ */
+function collectionsOf(site: SiteDoc): { collections?: SiteCollection[] } {
+  const collections = siteCollectionsOf(site);
+  return collections.length === 0 ? {} : { collections };
+}
+
+/**
+ * Each of `site`'s collections with its items, newest first (6.10b): what lists of posts show. The
+ * canvas lists the site's as they are; a snapshot, a published site's.
+ */
+export function siteCollectionsOf(site: SiteDoc): SiteCollection[] {
+  return Object.values(site.collections).map(
+    (collection): SiteCollection => ({
+      id: collection.id,
+      name: collection.name,
+      folder: collection.folder,
+      items: collectionItems(site, collection.id).map((page) => ({
+        pageId: page.id,
+        path: pagePath(page, site.homePageId),
+        values: itemValues(collection, page),
+      })),
+    }),
+  );
 }
 
 /** Site Settings' Google Analytics for the export (3.8): nothing without a Measurement ID. */

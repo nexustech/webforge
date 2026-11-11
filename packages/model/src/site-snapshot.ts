@@ -100,6 +100,26 @@ export type SiteItem = {
   readonly values: Readonly<Record<string, ItemValue>>;
 };
 
+/**
+ * One of the site's collections as a build lists it (6.10b): its published items, newest first,
+ * which Latest posts sections, the Blog's own pages and its feed show.
+ */
+export type SiteCollection = {
+  readonly id: string;
+  /** "Blog": the heading of its own pages and its feed's title. */
+  readonly name: string;
+  /** Where its items are, and its own pages: `blog/index`, `blog/tag/news`. */
+  readonly folder: string;
+  readonly items: readonly SiteCollectionItem[];
+};
+
+/** An item of a {@link SiteCollection}: its page, and its fields' values, its title among them. */
+export type SiteCollectionItem = {
+  readonly pageId: string;
+  readonly path: string;
+  readonly values: Readonly<Record<string, ItemValue>>;
+};
+
 /** An image (or other file) the site uses, stored once and referenced by `id`. */
 export type MediaItem = {
   /** Stable id, e.g. the content hash of the original. Referenced from component props. */
@@ -190,6 +210,8 @@ export type SiteSnapshot = {
    * `<head>` and the end of its `<body>`. Left out when all four are empty.
    */
   readonly code?: SiteCode | undefined;
+  /** The site's collections with their published items (6.10b); none when left out. */
+  readonly collections?: readonly SiteCollection[] | undefined;
   /**
    * Old addresses kept working (#862, SEO-5): each old file, and the path of the page it goes to
    * now. Only those that still work: no page is at the old address, and the page is there. None
@@ -243,6 +265,27 @@ export type SiteAnalytics = {
   readonly consentMessage?: string | undefined;
 };
 
+/** An item's field values by name, as a snapshot carries them (6.10a). */
+const itemValuesSchema = z.record(
+  z.string(),
+  z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("text"), text: z.string() }),
+    z.object({ kind: z.literal("date"), date: z.iso.date() }),
+    z.object({ kind: z.literal("image"), mediaId: mediaIdSchema }),
+    z.object({
+      kind: z.literal("tags"),
+      tags: z.array(z.object({ name: z.string(), path: pagePathSchema })),
+    }),
+  ]),
+);
+
+const siteCollectionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  folder: pagePathSchema,
+  items: z.array(z.object({ pageId: z.string(), path: pagePathSchema, values: itemValuesSchema })),
+});
+
 const sitePageSchema = z.object({
   id: pageIdSchema,
   path: pagePathSchema,
@@ -256,18 +299,7 @@ const sitePageSchema = z.object({
   hideFromSearch: z.boolean().optional(),
   updated: z.iso.date().optional(),
   shareImage: mediaRefSchema.optional(),
-  item: z
-    .object({
-      values: z.record(
-        z.string(),
-        z.discriminatedUnion("kind", [
-          z.object({ kind: z.literal("text"), text: z.string() }),
-          z.object({ kind: z.literal("date"), date: z.iso.date() }),
-          z.object({ kind: z.literal("image"), mediaId: mediaIdSchema }),
-        ]),
-      ),
-    })
-    .optional(),
+  item: z.object({ values: itemValuesSchema }).optional(),
   doc: pageDocSchema,
 });
 
@@ -316,6 +348,7 @@ export const siteSnapshotSchema: z.ZodType<SiteSnapshot> = withoutUnsafeKeys(
       theme: themeSchema,
       layout: layoutDocSchema,
       pages: z.array(sitePageSchema).min(1),
+      collections: z.array(siteCollectionSchema).optional(),
       media: z.array(mediaItemSchema),
       documents: z.array(documentItemSchema).optional(),
       settings: z.partialRecord(bindableSettingSchema, z.string()).optional(),

@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { WebforgeError } from "@webforge/errors";
 import {
   type BundledFile,
+  collectionPictures,
   cssVariablesUsed,
   DOCUMENT_EXTENSIONS,
   isDeviceName,
@@ -29,6 +30,7 @@ import {
   UnknownComponentError,
 } from "@webforge/site-components";
 import { fontFacesFor, themeShape, usesAccentFont } from "@webforge/themes";
+import { feedFiles, feedLinks, withBlogPages } from "./blog-pages.js";
 import { buildSiteCss, classCandidates, type SiteCssOptions, type StyleCompiler } from "./css.js";
 import { developerFiles } from "./developer-files.js";
 import { type BuildWarning, pagePrefix, pageRender } from "./export-context.js";
@@ -243,6 +245,8 @@ function siteFiles(site: SiteSnapshot, icons: readonly SiteIcon[]): [string, str
   if (hasSitemap(site) && address !== undefined) {
     files.push(["sitemap.xml", sitemapXml(site, address)]);
   }
+  // Each Blog's RSS feed, with a web address (6.10b).
+  files.push(...feedFiles(site));
   return files;
 }
 
@@ -333,8 +337,9 @@ export async function* buildEvents(
   const runsCode = run.runsCode ?? (run.mode === "preview" ? RUNS_NO_CODE : RUNS_ALL_CODE);
   // The thank-you page a form service sends visitors to (3.7), made if the site has none.
   const onNetlify = run.host === "netlify";
+  // And the Blog's own pages, its list and each tag's (6.10b), written from its published posts.
   const { site, thanksPage } = withThanksPage(
-    withRunnableCode(parsed.data, runsCode),
+    withBlogPages(withRunnableCode(parsed.data, runsCode), library),
     library,
     onNetlify,
   );
@@ -373,6 +378,9 @@ export async function* buildEvents(
     mediaIds = mediaUsedBy(allNodes(site), library);
     // The pictures of posts their Blog's design shows (6.10a).
     for (const id of site.pages.flatMap(itemPicturesShown)) mediaIds.add(id);
+    // And every published post's picture, which Latest posts' cards and the Blog's own pages
+    // show whether or not its design does (6.10b).
+    for (const id of collectionPictures(site.collections)) mediaIds.add(id);
     documentIds = documentsLinkedBy(allNodes(site), library);
     // Documents the navigation menu links to are exported too.
     for (const item of site.menu?.items.flatMap((entry) =>
@@ -679,6 +687,8 @@ export async function* buildEvents(
       // The favicon set's links first (3.4); 3.5's share and search tags follow them.
       head: [
         ...iconLinks(icons, entry.prefix),
+        // Each Blog's feed, for browsers and feed readers to find from any page (6.10b).
+        ...feedLinks(site, entry.prefix),
         ...shareTags({
           site,
           page: entry.page,

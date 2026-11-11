@@ -1,4 +1,9 @@
-import type { BindableSetting, NodeDoc } from "@webforge/model";
+import {
+  type BindableSetting,
+  mediaIdSchema,
+  type NodeDoc,
+  type SiteCollection,
+} from "@webforge/model";
 import { siteLibrary } from "../catalogue/index.js";
 import { EDITOR_RENDER_CONTEXT } from "../library.js";
 import { renderNodesToHtml } from "../render-static.js";
@@ -76,8 +81,33 @@ const STORY_SETTINGS: Partial<Record<BindableSetting, string>> = {
   "contact.openingHoursNote": "Closed on bank holidays.",
 };
 
+/** A bakery's Blog (6.10b): posts newest first, with pictures, summaries and tags. */
+const STORY_POSTS: SiteCollection = {
+  id: "blog",
+  name: "Blog",
+  folder: "blog",
+  items: [
+    ["Our new ovens", "2026-11-10", "Bread out of the oven an hour earlier, every day."],
+    ["Spring opening times", "2026-03-01", "Open from eight, Tuesday to Sunday."],
+    ["A cake for every wedding", "2026-02-14", "Tastings on Saturday mornings."],
+    ["Sourdough classes", "2026-01-20", "Learn to bake your own, in two hours."],
+    ["Winter soups", "2025-12-05", "Three soups a day, with bread."],
+  ].map(([title, date, summary], n) => ({
+    pageId: `post-${n}`,
+    path: `blog/post-${n}`,
+    values: {
+      title: { kind: "text", text: title ?? "" },
+      date: { kind: "date", date: date ?? "" },
+      summary: { kind: "text", text: summary ?? "" },
+      picture: { kind: "image", mediaId: mediaIdSchema.parse("photo") },
+      tags: { kind: "tags", tags: [{ name: "News", path: "blog/tag/news" }] },
+    },
+  })),
+};
+
 /** What stories render with: the export's context, with a navigation, a photo and settings. */
 const storyContext: RenderContext = {
+  posts: () => STORY_POSTS,
   ...EDITOR_RENDER_CONTEXT,
   navigation: [
     { id: "home", label: "Home", href: "#", current: true },
@@ -109,12 +139,20 @@ const storyContext: RenderContext = {
  * `nodes` as an exported page shows them (ADR 0005): rendered by the export's own renderer, so a
  * story is what a site shows, without the editor around it.
  */
-export function SiteNodes({ nodes }: { readonly nodes: readonly NodeDoc[] }) {
+export function SiteNodes({
+  nodes,
+  context,
+}: {
+  readonly nodes: readonly NodeDoc[];
+  /** Beside the stories' own: a post's fields, for a Blog's design (6.10b). */
+  readonly context?: Partial<RenderContext>;
+}) {
+  const html = renderNodesToHtml(nodes, siteLibrary, { ...storyContext, ...context });
   return (
     <div
       className="bg-base-100 text-base-content"
       // biome-ignore lint/security/noDangerouslySetInnerHtml: the export's own sanitised HTML.
-      dangerouslySetInnerHTML={{ __html: renderNodesToHtml(nodes, siteLibrary, storyContext) }}
+      dangerouslySetInnerHTML={{ __html: html }}
     />
   );
 }

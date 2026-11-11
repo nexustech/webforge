@@ -30,6 +30,8 @@ export type NativeDialogs = {
   readonly export: ExportDialogs;
   readonly media: MediaDialogs;
   readonly publish: Pick<PublishParts, "chooseKeyFile">;
+  /** *Import Posts…*'s files (6.10b): Markdown or CSV, several at once. */
+  readonly posts: { choosePostFiles(): Promise<readonly string[] | undefined> };
 };
 
 /** The native file dialogs, each modal to the focused window when there is one. */
@@ -126,6 +128,20 @@ export function createNativeDialogs(parts: DialogParts): NativeDialogs {
               name: t("site.media.fileType"),
               extensions: ["jpg", "jpeg", "png", ...Object.values(DOCUMENT_EXTENSIONS)],
             },
+          ],
+          properties: ["openFile", "multiSelections"],
+        });
+        return result.canceled ? undefined : result.filePaths;
+      },
+    },
+    posts: {
+      choosePostFiles: async () => {
+        const answer = await parts.testAnswer("open");
+        if (answer !== undefined) return answer.path === undefined ? undefined : [answer.path];
+        const result = await open({
+          title: t("blog.import.chooseTitle"),
+          filters: [
+            { name: t("blog.import.fileType"), extensions: ["md", "markdown", "txt", "csv"] },
           ],
           properties: ["openFile", "multiSelections"],
         });
