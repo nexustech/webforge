@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { CollectionId, PageEntry, PageId, SiteDoc } from "@webforge/model";
-import { userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { starterSite } from "../../shared/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
@@ -174,9 +174,14 @@ export const RenameBlog: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await userEvent.click(canvas.getByRole("button", { name: "Actions for Blog" }));
-    await userEvent.click(within(document.body).getByRole("menuitem", { name: "Rename…" }));
-    const name = within(document.body).getByRole("textbox", { name: "Name" });
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await body.findByRole("menuitem", { name: "Rename…" }));
+    // The dialog opens once the menu has closed, then puts focus in its field.
+    const dialog = within(await body.findByRole("dialog", { name: "Rename Blog" }));
+    const name = dialog.getByRole("textbox", { name: "Name" });
+    await waitFor(() => expect(name).toHaveFocus());
     await userEvent.clear(name);
     await userEvent.type(name, "News");
+    await dialog.findByRole("checkbox", { name: "Move its posts to a folder of the new name" });
   },
 };
