@@ -45,6 +45,8 @@ export const COLLECTION_FIELDS_MAX = 20;
 export const ITEM_VALUE_MAX = 500;
 /** The longest folder a collection's items can be in. */
 const COLLECTION_FOLDER_MAX = 80;
+/** The most folders a collection remembers having been in, the most recent last (#942). */
+export const COLLECTION_FORMER_FOLDERS_MAX = 5;
 
 /** The field every item has, its page's title: a design's element can show it too. */
 export const ITEM_TITLE_FIELD = "title";
@@ -92,6 +94,16 @@ export const collectionSchema = z.strictObject({
   /** What the person calls it: the Pages panel's group, undo labels. */
   name: z.string().min(1).max(COLLECTION_NAME_MAX),
   folder: collectionFolderSchema,
+  /**
+   * The folders it was in before, when it moved keeping its old addresses (#942): the export sends
+   * its own pages' old addresses there (`blog/index.html`, `blog/tag/news.html`) on to their new
+   * ones. Its posts' are kept addresses, as any page's (#862). None is none at all (ADR 0012).
+   */
+  formerFolders: z
+    .array(collectionFolderSchema)
+    .min(1)
+    .max(COLLECTION_FORMER_FOLDERS_MAX)
+    .optional(),
   fields: z
     .array(collectionFieldSchema)
     .max(COLLECTION_FIELDS_MAX)
@@ -332,9 +344,9 @@ export function collectionItems<Page extends ItemPage>(
 
 /**
  * A folder for a collection's items, from `wanted` (a slug), that nothing else is in yet: `blog`,
- * or `blog-2` when another collection has `blog` or ordinary pages are in it, so no item's address
- * is ever a page's. Never `assets` or a Windows device name (`con`). `except` is the collection
- * being given it, whose own folder and items don't count.
+ * or `blog-2` when another collection has `blog` (or had it, #942) or ordinary pages are in it, so
+ * no item's address is ever a page's. Never `assets` or a Windows device name (`con`). `except` is
+ * the collection being given it, whose own folder, former folders and items don't count.
  */
 export function freeCollectionFolder(
   site: WithCollections & {
@@ -350,7 +362,10 @@ export function freeCollectionFolder(
 ): string {
   const taken = new Set(["assets"]);
   for (const each of Object.values(site.collections)) {
-    if (each.id !== except) taken.add(each.folder);
+    if (each.id === except) continue;
+    taken.add(each.folder);
+    // Its old addresses are kept there (#942).
+    for (const former of each.formerFolders ?? []) taken.add(former);
   }
   for (const page of Object.values(site.pages ?? {})) {
     const top = page.folder?.split("/")[0];

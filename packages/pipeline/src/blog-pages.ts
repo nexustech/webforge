@@ -5,6 +5,7 @@ import {
   type NodeDoc,
   type SiteCollection,
   type SitePage,
+  type SiteRedirect,
   type SiteSnapshot,
 } from "@webforge/model";
 import { type ComponentLibrary, POSTS_PER_PAGE } from "@webforge/site-components";
@@ -81,16 +82,40 @@ function pagesOf(collection: SiteCollection, library: ComponentLibrary): SitePag
 }
 
 /**
+ * The old addresses of `collection`'s own pages `own` (#942): at each folder it was in before, the
+ * same page's file (`journal/index.html`, `journal/tag/news.html`) goes on to it. Not its feed's,
+ * which a page can't send on.
+ */
+function formerAddresses(collection: SiteCollection, own: readonly SitePage[]): SiteRedirect[] {
+  const prefix = `${collection.folder}/`;
+  return (collection.formerFolders ?? []).flatMap((former) =>
+    own
+      .filter((page) => page.path.startsWith(prefix))
+      .map((page) => ({ from: `${former}/${page.path.slice(prefix.length)}.html`, to: page.path })),
+  );
+}
+
+/**
  * `site` with each collection's own pages after its pages, those it already has a page at left as
- * they are (`siteIssues` keeps pages out of their folders, so none should be).
+ * they are (`siteIssues` keeps pages out of their folders, so none should be), and their old
+ * addresses after the site's kept ones (#942), which the export writes unless a file it writes is
+ * there.
  */
 export function withBlogPages(site: SiteSnapshot, library: ComponentLibrary): SiteSnapshot {
   if (site.collections === undefined || site.collections.length === 0) return site;
   const paths = new Set(site.pages.map((page) => page.path));
-  const own = site.collections
-    .flatMap((collection) => pagesOf(collection, library))
-    .filter((page) => !paths.has(page.path));
-  return own.length === 0 ? site : { ...site, pages: [...site.pages, ...own] };
+  const pages = [...site.pages];
+  const redirects = [...(site.redirects ?? [])];
+  for (const collection of site.collections) {
+    const own = pagesOf(collection, library).filter((page) => !paths.has(page.path));
+    pages.push(...own);
+    redirects.push(...formerAddresses(collection, own));
+  }
+  return {
+    ...site,
+    pages,
+    ...(redirects.length === 0 ? {} : { redirects }),
+  };
 }
 
 /** Where `collection`'s feed is: `blog/feed.xml`. */
