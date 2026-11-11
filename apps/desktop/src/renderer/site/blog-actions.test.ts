@@ -73,8 +73,13 @@ describe("addBlog (6.10a)", () => {
     expect(shown()).toBe(postId);
     expect(labels()).toEqual(["Added a blog"]);
     expect(siteDocSchema.safeParse(site()).success).toBe(true);
-    // Not in the menu: the Blog lists its posts.
-    expect(site().menu).toEqual(before.menu);
+    // The post isn't in the menu, but the Blog is, linking to its own page (#940).
+    expect(site().menu.items.slice(0, -1)).toEqual(before.menu.items);
+    expect(site().menu.items.at(-1)).toMatchObject({
+      kind: "link",
+      label: "Blog",
+      link: { kind: "list", collectionId: blogId() },
+    });
 
     session.history.undo();
     expect(site().collections).toEqual({});

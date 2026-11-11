@@ -10,6 +10,7 @@ import {
   pageSlugFor,
   pageTitle,
   type SiteDoc,
+  syncMenuWithPages,
 } from "@webforge/model";
 import { localDay } from "../editor/page-updated.js";
 import { editShowing, type PagesSession } from "./page-actions.js";
@@ -134,7 +135,7 @@ export function insertPost(
 
 /**
  * Adds a Blog to `draft` (an undo step's), as collection `collectionId` from the Blog preset in a
- * folder no other has (`blog`), with a first post `postId` to show it.
+ * folder no other has (`blog`), with a first post `postId` to show it, and to the menu.
  */
 export function insertBlog(
   draft: SiteDoc,
@@ -163,6 +164,9 @@ export function insertBlog(
     { summary: t("blog.firstPost.summary") },
     today,
   );
+  // The Blog in the menu, linking to its own page (#940): after the pages in a menu that follows
+  // them, at the end of an edited one.
+  draft.menu = syncMenuWithPages(draft, undefined, collectionId);
 }
 
 /**

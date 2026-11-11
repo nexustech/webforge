@@ -277,14 +277,52 @@ describe("syncMenuWithPages with a Blog (6.10a)", () => {
     const site = siteWith(post("p1", "spring"));
     const following = syncMenuWithPages(site, "p1" as PageId);
 
-    expect(following.items.map((item) => item.kind === "page" && item.pageId)).toEqual([
-      site.homePageId,
-    ]);
+    // The home page, then the Blog's list (#940): never the post itself.
+    expect(following.items.map((item) => (item.kind === "page" ? item.pageId : item.kind))).toEqual(
+      [site.homePageId, "link"],
+    );
     const edited = syncMenuWithPages(
       { ...site, menu: { ...following, follows: "custom" } },
       "p1" as PageId,
     );
-    expect(edited.items).toHaveLength(1);
+    expect(edited.items).toHaveLength(2);
+  });
+
+  it("lists each Blog's list after the pages, by its name, keeping its item (#940)", () => {
+    const site = siteWith();
+    const first = syncMenuWithPages(site);
+    const [, list] = first.items;
+
+    expect(list).toMatchObject({
+      kind: "link",
+      label: "Blog",
+      link: { kind: "list", collectionId: BLOG },
+      hidden: false,
+    });
+    // Renamed and hidden, it keeps its id and hidden state, and shows the new name.
+    const renamed = {
+      ...site,
+      menu: {
+        ...first,
+        items: first.items.map((item) => (item === list ? { ...item, hidden: true } : item)),
+      },
+      collections: { [BLOG]: blog({ name: "News" }) },
+    };
+    expect(syncMenuWithPages(renamed).items[1]).toEqual({ ...list, hidden: true, label: "News" });
+    // Without the Blog, its item goes.
+    expect(syncMenuWithPages({ ...site, collections: {} }).items).toHaveLength(1);
+  });
+
+  it("adds a Blog's list to an edited menu once, and drops it when the Blog is gone (#940)", () => {
+    const site = siteWith();
+    const custom = { ...site, menu: { follows: "custom" as const, items: [] } };
+
+    const added = syncMenuWithPages(custom, undefined, BLOG);
+    expect(added.items.map((item) => item.kind === "link" && item.link)).toEqual([
+      { kind: "list", collectionId: BLOG },
+    ]);
+    expect(syncMenuWithPages({ ...custom, menu: added }, undefined, BLOG).items).toHaveLength(1);
+    expect(syncMenuWithPages({ ...custom, menu: added, collections: {} }).items).toEqual([]);
   });
 });
 
