@@ -401,4 +401,4 @@ export {
   THEME_NAME_MAX,
   themeTokensSchema,
 } from "./theme.js";
-export { siteToSnapshot } from "./to-snapshot.js";
+export { siteCollectionsOf, siteToSnapshot } from "./to-snapshot.js";

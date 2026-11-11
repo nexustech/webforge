@@ -16,6 +16,7 @@ import type {
   NodeDoc,
   OpeningHours,
   Responsive,
+  SiteCollection,
   SocialProfile,
 } from "@webforge/model";
 import type { ComponentType, ReactNode } from "react";
@@ -302,7 +303,7 @@ export type SiteBindings = {
  * What an element is missing, for {@link SiteBindings.elementHint}: a video's or a map's address,
  * a Buy button's payment link.
  */
-export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink";
+export type ElementHint = "videoAddress" | "mapAddress" | "paymentLink" | "blog";
 
 /**
  * Why a form has nowhere to send to (2.8): no form service chosen in Site Settings, Netlify Forms
@@ -319,6 +320,12 @@ export type RenderContext = SiteBindings & {
    * a bound element shows its own text.
    */
   readonly item?: (field: string) => ItemValue | undefined;
+  /**
+   * The site's collection `id`, or its first one, with its items newest first (6.10b): what
+   * Latest posts lists. The export's are the published ones; the canvas's, the site's as they are.
+   * None while the site has no Blog.
+   */
+  readonly posts?: (id?: string) => SiteCollection | undefined;
   /** What an element bound to an item's empty field shows: a hint on the canvas; nothing in the export. */
   readonly emptyItem?: (field: string) => ReactNode;
   /** The site's pages, for navigation. Empty on the canvas. */

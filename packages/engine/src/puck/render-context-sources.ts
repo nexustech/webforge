@@ -9,6 +9,7 @@ type Source =
   | "setLooks"
   | "setSettings"
   | "setItem"
+  | "setPosts"
   | "export";
 
 /**
@@ -40,6 +41,8 @@ export const RENDER_CONTEXT_SOURCES = {
   // The post shown, on a Blog's post (6.10a): set again when the page shown or its fields change.
   item: "setItem",
   emptyItem: "setItem",
+  // The site's posts, for Latest posts (6.10b): set again when they change.
+  posts: "setPosts",
   setting: "setSettings",
   emptySetting: "setSettings",
   openingHours: "setSettings",

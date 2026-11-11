@@ -165,6 +165,8 @@ export const site = {
   // An element without what it needs yet (2.11), on the canvas.
   "site.binding.elementHint.videoAddress": "Add a YouTube or Vimeo address in the Edit panel",
   "site.binding.elementHint.mapAddress": "Add an address or a map link in the Edit panel",
+  "site.binding.elementHint.blog":
+    "Add a blog (Site panel › Add Page › Blog) to list its posts here",
   "site.binding.elementHint.paymentLink":
     "Add the payment link (https://…) from Stripe, PayPal or your shop, in the Edit panel",
   "site.settings.title": "Site Settings",

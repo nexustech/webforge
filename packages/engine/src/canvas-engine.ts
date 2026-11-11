@@ -369,6 +369,11 @@ export interface CanvasEngine {
    */
   setItem(item: Pick<RenderContext, "item" | "emptyItem">): void;
   /**
+   * Shows the site's posts in Latest posts sections (6.10b), as they are on the site, drafts too.
+   * Called with none while the site has no Blog, and again when its posts change.
+   */
+  setPosts(posts: RenderContext["posts"]): void;
+  /**
    * Does `action` to the selected element. Edits are reported through {@link onUserEdit} as one
    * step each, like the same action done with the mouse. Returns false if there is nothing to do:
    * no selection, the end of the list, or an action Content mode doesn't allow.

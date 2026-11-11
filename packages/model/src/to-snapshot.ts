@@ -136,7 +136,16 @@ export function siteToSnapshot(
  * Blog's own pages and its feed. Only the items `site` has: a published site has no drafts.
  */
 function collectionsOf(site: SiteDoc): { collections?: SiteCollection[] } {
-  const collections = Object.values(site.collections).map(
+  const collections = siteCollectionsOf(site);
+  return collections.length === 0 ? {} : { collections };
+}
+
+/**
+ * Each of `site`'s collections with its items, newest first (6.10b): what lists of posts show. The
+ * canvas lists the site's as they are; a snapshot, a published site's.
+ */
+export function siteCollectionsOf(site: SiteDoc): SiteCollection[] {
+  return Object.values(site.collections).map(
     (collection): SiteCollection => ({
       id: collection.id,
       name: collection.name,
@@ -148,7 +157,6 @@ function collectionsOf(site: SiteDoc): { collections?: SiteCollection[] } {
       })),
     }),
   );
-  return collections.length === 0 ? {} : { collections };
 }
 
 /** Site Settings' Google Analytics for the export (3.8): nothing without a Measurement ID. */

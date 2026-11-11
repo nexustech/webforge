@@ -1,4 +1,11 @@
-import type { BundledFile, ItemValue, NodeDoc, SitePage, SiteSnapshot } from "@webforge/model";
+import type {
+  BundledFile,
+  ItemValue,
+  NodeDoc,
+  SiteCollection,
+  SitePage,
+  SiteSnapshot,
+} from "@webforge/model";
 import {
   hrefFor,
   navigationFor,
@@ -34,6 +41,12 @@ export type BuildWarning = {
   readonly page: string;
   readonly detail: string;
 };
+
+/** Collection `id` of `collections`, or the first one: what Latest posts lists (6.10b). */
+const postsOf =
+  (collections: NonNullable<SiteSnapshot["collections"]>) =>
+  (id?: string): SiteCollection | undefined =>
+    id === undefined ? collections[0] : collections.find((each) => each.id === id);
 
 /** The fields of a post, by name, as its design's elements read them (6.10a). */
 const itemOf =
@@ -145,6 +158,10 @@ export function pageRender(
     setting: (key) => site.settings?.[key],
     // A post's fields, which its Blog's design shows (6.10a); an empty one shows nothing.
     ...(page.item === undefined ? {} : { item: itemOf(page.item) }),
+    // The site's posts for Latest posts and the Blog's own pages (6.10b): the published ones.
+    ...(site.collections === undefined || site.collections.length === 0
+      ? {}
+      : { posts: postsOf(site.collections) }),
     openingHours: site.openingHours ?? [],
     socialProfiles: site.socialProfiles ?? [],
     language: site.language,

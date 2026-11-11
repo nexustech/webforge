@@ -95,6 +95,7 @@ export function createFakeEngine(): FakeEngine {
     setPreviews: vi.fn(),
     setLooks: vi.fn(),
     setItem: vi.fn(),
+    setPosts: vi.fn(),
     perform: vi.fn(() => true),
     onAddRequest: adds.add,
     onFieldDrag: drags.add,

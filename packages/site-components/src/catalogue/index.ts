@@ -13,8 +13,10 @@ import { embedsComponents } from "./embeds.js";
 import { featuresComponents } from "./features.js";
 import { formsComponents } from "./forms.js";
 import { galleryComponents } from "./gallery.js";
+import { latestPostsComponents } from "./latest-posts.js";
 import { layoutComponents } from "./layout.js";
 import { logosComponents } from "./logos.js";
+import { postTagsComponents } from "./post-tags.js";
 import { pricingComponents } from "./pricing.js";
 import { sectionsComponents } from "./sections.js";
 import { statsComponents } from "./stats.js";
@@ -48,6 +50,8 @@ export const siteLibrary: ComponentLibrary = createLibrary(
   statsComponents,
   customCodeComponents,
   announcementBarComponents,
+  latestPostsComponents,
+  postTagsComponents,
 );
 
 /** The page a new site starts with. */
