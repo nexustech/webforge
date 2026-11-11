@@ -65,7 +65,16 @@ function pageChange(
   };
 }
 
-const PARTS = ["settings", "theme", "layout", "media", "code", "menu", "sharedSections"] as const;
+const PARTS = [
+  "settings",
+  "theme",
+  "layout",
+  "media",
+  "code",
+  "menu",
+  "sharedSections",
+  "collections",
+] as const;
 
 /**
  * Changes to `of`, valid and not: what the editor sends, and what a broken or hostile renderer

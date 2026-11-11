@@ -6,6 +6,7 @@ import { defineComponent, LOOK_TARGET } from "../define.js";
 import { MARGIN_FIELD, marginClasses, SectionWidthContext } from "../frame.js";
 import { isIconName, LucideIcon } from "../icons.js";
 import {
+  boundImage,
   type ComponentDef,
   colorClass,
   linkAttributes,
@@ -180,7 +181,8 @@ const image = defineComponent({
   label: t("element.image"),
   category: t("category.media"),
   fields: {
-    image: { kind: "media", label: t("field.image") },
+    // A Blog's design can show each post's picture here (6.10a).
+    image: { kind: "media", label: t("field.image"), itemBindable: true },
     width: {
       kind: "slider",
       label: t("field.imageWidth"),
@@ -233,7 +235,7 @@ const image = defineComponent({
   behaviours: (values) =>
     values.enlarge ? [...entranceBehaviours(values), "lightbox"] : entranceBehaviours(values),
   render: ({ values, context }) => {
-    const placed = values.image;
+    const placed = boundImage(values, "image", context);
     const resolved = placed === undefined ? null : context.image(placed.mediaId);
     const width = responsiveClasses(values.width, (value) => IMAGE_WIDTH_CLASS[value]);
     const frame = `site-image w-full ${IMAGE_ALIGN_CLASS[values.alignment]} ${width}${marginClasses(values.margin)}${entranceClasses(values)}`;

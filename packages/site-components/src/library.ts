@@ -4,7 +4,10 @@ import {
   type Breakpoint,
   bindingOf,
   formatColorRef,
+  type ImageValue,
+  type ItemValue,
   isResponsiveValue,
+  itemBindingOf,
   type LinkValue,
   linkValueSchema,
   type NodeDoc,
@@ -17,7 +20,7 @@ import {
   type TextStyle,
   valuesWithLook,
 } from "@webforge/model";
-import { cloneElement, isValidElement, type ReactNode } from "react";
+import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
 import { hiddenFieldsOf } from "./hidden-fields.js";
 import type { PictureBehind } from "./picture-behind.js";
@@ -210,19 +213,69 @@ export type ComponentLibrary = {
 };
 
 /**
- * A text field's content: the Site Settings value it is bound to (1.17), else its own text. An
- * empty binding shows the context's hint on the canvas and nothing in the export.
+ * A text field's content: the Site Settings value it is bound to (1.17), the field of the item
+ * the page is (6.10a), else its own text. An empty binding shows the context's hint on the canvas
+ * and nothing in the export. On a page that isn't an item, an item binding shows the own text.
  */
 export function boundText<Values extends Readonly<Record<string, unknown>>>(
   values: Values,
   name: keyof Values & string,
   context: RenderContext,
 ): ReactNode {
+  const field = itemBindingOf(values.bindings, name);
+  if (field !== undefined && context.item !== undefined) {
+    const value = context.item(field);
+    const shown = value === undefined ? null : itemText(value, context.language);
+    return shown ?? context.emptyItem?.(field) ?? null;
+  }
   const key = bindingOf(values.bindings, name);
   if (key === undefined) {
     return textValue(values[name]);
   }
   return context.setting(key) ?? context.emptySetting?.(key) ?? null;
+}
+
+/**
+ * An image field's picture: the item's it is bound to (6.10a), else its own. On a page that isn't
+ * an item, the own one; on an item without that picture, none, so the context's empty image shows.
+ */
+export function boundImage<Values extends Readonly<Record<string, unknown>>>(
+  values: Values,
+  name: keyof Values & string,
+  context: RenderContext,
+): ImageValue | undefined {
+  const field = itemBindingOf(values.bindings, name);
+  const own = values[name] as ImageValue | undefined;
+  if (field === undefined || context.item === undefined) return own;
+  const value = context.item(field);
+  return value?.kind === "image" ? { mediaId: value.mediaId } : undefined;
+}
+
+/**
+ * `date`, `YYYY-MM-DD`, as `language` writes a day in full: "10 November 2026". As stored when
+ * there is no language, or one the browser or Node doesn't know.
+ */
+export function dateText(date: string, language: string | undefined): string {
+  if (language === undefined) return date;
+  try {
+    return new Intl.DateTimeFormat(language, { dateStyle: "long", timeZone: "UTC" }).format(
+      new Date(`${date}T00:00:00Z`),
+    );
+  } catch {
+    return date;
+  }
+}
+
+/** What an item's field shows as text: a date in a `<time>`; nothing for a picture. */
+function itemText(value: ItemValue, language: string | undefined): ReactNode {
+  switch (value.kind) {
+    case "text":
+      return value.text;
+    case "date":
+      return createElement("time", { dateTime: value.date }, dateText(value.date, language));
+    case "image":
+      return null;
+  }
 }
 
 /** Narrows a text field value for rendering: strings, numbers and elements pass, others are empty. */

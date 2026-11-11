@@ -761,6 +761,7 @@ describe("createPuckEngine", () => {
       engine.setPreviews({ mobileMenu: true });
       engine.setNavigation([{ label: "Home", href: "#", current: true }]);
       engine.setLooks({ Button: { lookCorners: "full" } });
+      engine.setItem({ item: () => undefined, emptyItem: () => "Add it" });
       engine.applyChange({ page: { ...page, content: [{ type: "Keys", props: { id: "k" } }] } });
     });
     await settle();

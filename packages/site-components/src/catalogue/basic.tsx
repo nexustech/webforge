@@ -1,4 +1,5 @@
 import { t } from "@webforge/i18n";
+import { itemBindingOf } from "@webforge/model";
 import { defineComponent } from "../define.js";
 import {
   contentWidthClass,
@@ -136,21 +137,29 @@ const text = defineComponent({
   label: t("element.text"),
   category: t("category.text"),
   fields: {
-    text: { kind: "richtext", label: t("field.text"), inline: true },
+    // A Blog's design can show each post's summary or date here (6.10a).
+    text: { kind: "richtext", label: t("field.text"), inline: true, itemBindable: true },
     margin: MARGIN_FIELD,
     ...ENTRANCE_FIELDS,
   },
   defaults: { text: `<p>${t("element.text")}</p>` },
   behaviours: entranceBehaviours,
   textStyle: () => "body",
-  render: ({ values }) => (
-    <div
-      className={`site-text ${BODY_TEXT_CLASSES}${marginClasses(values.margin)}${entranceClasses(values)}`}
-      {...entranceAttributes(values)}
-    >
-      {values.text}
-    </div>
-  ),
+  render: ({ values, context }) => {
+    // Showing a post's field (6.10a): a paragraph of it, or nothing in the export while it's empty.
+    const bound =
+      itemBindingOf(values.bindings, "text") !== undefined && context.item !== undefined;
+    const content = bound ? boundText(values, "text", context) : values.text;
+    if (bound && content === null) return null;
+    return (
+      <div
+        className={`site-text ${BODY_TEXT_CLASSES}${marginClasses(values.margin)}${entranceClasses(values)}`}
+        {...entranceAttributes(values)}
+      >
+        {bound ? <p>{content}</p> : content}
+      </div>
+    );
+  },
 });
 
 /** The basic components: a Section, and the Heading and Text that go in it. */

@@ -1,6 +1,7 @@
 import { ai } from "./en/ai.js";
 import { aiApps } from "./en/aiApps.js";
 import { app } from "./en/app.js";
+import { blog } from "./en/blog.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components/index.js";
 import { exportSite } from "./en/export.js";
@@ -53,6 +54,7 @@ export const areas = {
   find,
   stylesheet,
   notes,
+  blog,
 } as const;
 
 /**
@@ -84,4 +86,5 @@ export const en = {
   ...find,
   ...stylesheet,
   ...notes,
+  ...blog,
 } as const;

@@ -1,8 +1,10 @@
-export type { BindableSetting, Bindings } from "./bindings.js";
+export type { BindableSetting, Binding, Bindings, ItemBinding } from "./bindings.js";
 export {
   BINDABLE_SETTINGS,
   bindableSettingSchema,
   bindingOf,
+  isItemBinding,
+  itemBindingOf,
   settingValue,
   settingValues,
   validBindings,
@@ -25,6 +27,36 @@ export {
   pastedCopies,
   readClipboardPayload,
 } from "./clipboard.js";
+export {
+  COLLECTION_FIELD_KINDS,
+  COLLECTION_FIELDS_MAX,
+  COLLECTION_NAME_MAX,
+  COLLECTION_PRESETS,
+  type Collection,
+  type CollectionDesign,
+  type CollectionField,
+  type CollectionFieldKind,
+  type CollectionPreset,
+  type CollectionsDoc,
+  collectionById,
+  collectionFolderSchema,
+  collectionItems,
+  collectionOf,
+  collectionSchema,
+  collectionsDocSchema,
+  freeCollectionFolder,
+  ITEM_TITLE_FIELD,
+  ITEM_VALUE_MAX,
+  type ItemEntry,
+  type ItemValue,
+  itemEntrySchema,
+  itemPicturesShown,
+  itemValue,
+  itemValues,
+  type NewCollectionOptions,
+  newCollection,
+  PRESET_FIELDS,
+} from "./collections.js";
 export type { ColorRef } from "./color-ref.js";
 export { colorRefSchema, formatColorRef, parseColorRef } from "./color-ref.js";
 export { cssVariablesUsed } from "./css-variables.js";
@@ -89,6 +121,7 @@ export {
 } from "./forms.js";
 export type {
   Brand,
+  CollectionId,
   IdKind,
   MediaId,
   MenuItemId,
@@ -97,6 +130,7 @@ export type {
   ThemeId,
 } from "./ids.js";
 export {
+  collectionIdSchema,
   mediaIdSchema,
   menuItemIdSchema,
   newId,
@@ -310,6 +344,7 @@ export type {
   DocumentItem,
   MediaItem,
   SiteAnalytics,
+  SiteItem,
   SitePage,
   SiteRedirect,
   SiteSearch,

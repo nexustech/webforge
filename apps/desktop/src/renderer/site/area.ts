@@ -1,7 +1,15 @@
-import type { Area, WindowContext } from "../editor/areas.js";
+import type { Area, EditorContext, WindowContext } from "../editor/areas.js";
+import { connectCanvasItem } from "./canvas-item.js";
 import { registerPageCommands } from "./page-commands.js";
 import { registerPageSettingsCommand } from "./page-settings-command.js";
 import { registerSitePanel } from "./SitePanel.js";
+
+/** The fields of the post shown, in its Blog's design on the canvas (6.10a). */
+export const canvasItemArea: Area<EditorContext> = {
+  id: "canvasItem",
+  register: ({ engine, session }) =>
+    engine.whileMounted(({ engine: canvas }) => connectCanvasItem(canvas, session)),
+};
 
 /** The Site panel's Pages and Menu (2.20, B1). */
 export const sitePanelArea: Area<WindowContext> = {

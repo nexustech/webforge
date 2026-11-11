@@ -1,4 +1,5 @@
 import {
+  type CollectionId,
   type MediaId,
   type MenuItemId,
   type NodeDoc,
@@ -170,5 +171,44 @@ describe("mediaUsage", () => {
     expect(unplaced.get("team-photo")).toEqual(["Team", "Weekly offer"]);
     expect(unplaced.has("shop-photo")).toBe(false);
     expect(mediaUsage(site, siteLibrary).get("shop-photo")).toBe(1);
+  });
+});
+
+describe("mediaUsage with a Blog (6.10a)", () => {
+  it("counts a post's picture, and a picture in its Blog design, on each post", () => {
+    const site = starterSite();
+    const blog = "blog" as CollectionId;
+    site.collections[blog] = {
+      id: blog,
+      preset: "blog",
+      name: "Blog",
+      folder: "blog",
+      fields: [{ name: "picture", label: "Picture", kind: "image" }],
+      design: {
+        before: [],
+        after: [{ type: "Image", props: { id: "logo", image: { mediaId: "logo" } } }],
+      },
+    };
+    for (const [id, entry] of [
+      ["spring", { picture: "photo" }],
+      ["summer", {}],
+    ] as const) {
+      site.pages[id as PageId] = {
+        id: id as PageId,
+        kind: "page",
+        slug: id,
+        folder: "blog",
+        title: id,
+        collection: blog,
+        entry,
+        settings: { hideHeader: false, hideFooter: false, hideFromNavigation: false },
+        doc: { root: { props: {} }, content: [] },
+      };
+      site.pageOrder.push(id as PageId);
+    }
+
+    const usage = mediaUsage(site, siteLibrary);
+    expect(usage.get("photo")).toBe(1);
+    expect(usage.get("logo")).toBe(2);
   });
 });

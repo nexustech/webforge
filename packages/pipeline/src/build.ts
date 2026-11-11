@@ -5,6 +5,7 @@ import {
   cssVariablesUsed,
   DOCUMENT_EXTENSIONS,
   isDeviceName,
+  itemPicturesShown,
   type MediaItem,
   type NodeDoc,
   type SitePage,
@@ -370,6 +371,8 @@ export async function* buildEvents(
       behaviours = [...behaviours, "section-spy" as const].sort();
     }
     mediaIds = mediaUsedBy(allNodes(site), library);
+    // The pictures of posts their Blog's design shows (6.10a).
+    for (const id of site.pages.flatMap(itemPicturesShown)) mediaIds.add(id);
     documentIds = documentsLinkedBy(allNodes(site), library);
     // Documents the navigation menu links to are exported too.
     for (const item of site.menu?.items.flatMap((entry) =>

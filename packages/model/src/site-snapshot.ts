@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type BindableSetting, bindableSettingSchema } from "./bindings.js";
+import type { ItemValue } from "./collections.js";
 import {
   type LayoutDoc,
   layoutDocSchema,
@@ -11,7 +12,7 @@ import {
   themeSchema,
   withoutUnsafeKeys,
 } from "./documents.js";
-import { pageIdSchema } from "./ids.js";
+import { mediaIdSchema, pageIdSchema } from "./ids.js";
 import {
   cropSchema,
   FILE_MIME_TYPES,
@@ -85,7 +86,18 @@ export type SitePage = {
    * or the site's; none when neither is set.
    */
   readonly shareImage?: string | undefined;
+  /**
+   * For an item of a collection (6.10a, ADR 0025), a Blog's post: its field values by name, its
+   * title among them, which its design's elements are bound to. `doc` already holds the design
+   * around the item's own content.
+   */
+  readonly item?: SiteItem | undefined;
   readonly doc: PageDoc;
+};
+
+/** {@link SitePage}'s item: the values its bound elements show. Empty fields are left out. */
+export type SiteItem = {
+  readonly values: Readonly<Record<string, ItemValue>>;
 };
 
 /** An image (or other file) the site uses, stored once and referenced by `id`. */
@@ -244,6 +256,18 @@ const sitePageSchema = z.object({
   hideFromSearch: z.boolean().optional(),
   updated: z.iso.date().optional(),
   shareImage: mediaRefSchema.optional(),
+  item: z
+    .object({
+      values: z.record(
+        z.string(),
+        z.discriminatedUnion("kind", [
+          z.object({ kind: z.literal("text"), text: z.string() }),
+          z.object({ kind: z.literal("date"), date: z.iso.date() }),
+          z.object({ kind: z.literal("image"), mediaId: mediaIdSchema }),
+        ]),
+      ),
+    })
+    .optional(),
   doc: pageDocSchema,
 });
 
