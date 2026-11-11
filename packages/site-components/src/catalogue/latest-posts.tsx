@@ -38,6 +38,7 @@ function PostCard({
   showDate,
   showSummary,
   layout,
+  level,
 }: {
   readonly item: SiteCollectionItem;
   readonly context: RenderContext;
@@ -45,7 +46,10 @@ function PostCard({
   readonly showDate: boolean;
   readonly showSummary: boolean;
   readonly layout: (typeof LAYOUTS)[number];
+  /** Its title's heading level: under the page's own title on the Blog's pages, else a section's. */
+  readonly level: "h2" | "h3";
 }) {
+  const Title = level;
   const { title, date, summary, picture } = item.values;
   const href = context.link(item.path);
   const image =
@@ -72,11 +76,11 @@ function PostCard({
           {dateText(date.date, context.language)}
         </time>
       ) : null}
-      <h3 className="font-heading text-h4">
+      <Title className="font-heading text-h4">
         <a href={href} className="link link-hover">
           {title?.kind === "text" ? title.text : ""}
         </a>
-      </h3>
+      </Title>
       {showSummary && summary?.kind === "text" ? <p>{summary.text}</p> : null}
     </li>
   );
@@ -176,6 +180,7 @@ const latestPosts = defineSection({
                 showDate={values.showDate}
                 showSummary={values.showSummary}
                 layout={layout}
+                level={ownPage ? "h2" : "h3"}
               />
             ))}
           </ul>

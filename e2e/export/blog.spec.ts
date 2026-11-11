@@ -26,9 +26,10 @@ test("shows the post inside its Blog's design: its title, date, picture and tags
   await expect(page.locator("time[datetime='2026-11-10']")).toHaveText("10 November 2026");
   const picture = page.locator("main img").first();
   await expect(picture).toBeVisible();
-  expect(
-    await picture.evaluate((image) => (image as HTMLImageElement).naturalWidth),
-  ).toBeGreaterThan(0);
+  // Loaded from the export folder, once the browser has fetched it (it loads lazily).
+  await expect
+    .poll(() => picture.evaluate((image) => (image as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
   await expect(page.getByText("We open on Saturday.")).toBeVisible();
   await expect(page.locator("header.site-header")).toBeVisible();
   await expect(page.locator("footer")).toBeVisible();
