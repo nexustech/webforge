@@ -2,7 +2,7 @@
 import { act, cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { FieldRenderersProvider } from "@webforge/editor-ui";
-import type { MediaId, NodeDoc, PageDoc } from "@webforge/model";
+import type { CollectionId, MediaId, NodeDoc, PageDoc } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
@@ -59,6 +59,31 @@ function setUp(buttonLink?: unknown, times: Record<string, unknown> = {}) {
 }
 
 describe("LinkField and LinkDialog (F-ED-18)", () => {
+  it("links to a Blog's own page, chosen among the pages, with no section (#940)", async () => {
+    const { session, node, user } = setUp();
+    const blog = "blog" as CollectionId;
+    session.edit("insert", "Added a blog", (draft) => {
+      draft.collections[blog] = {
+        id: blog,
+        preset: "blog",
+        name: "Blog",
+        folder: "blog",
+        fields: [],
+        design: { before: [], after: [] },
+      };
+    });
+    session.select("hero");
+
+    await user.click(await screen.findByRole("button", { name: "Add Link…" }));
+    const dialog = within(screen.getByRole("dialog", { name: "Link" }));
+    await user.selectOptions(dialog.getByRole("combobox", { name: "Page" }), "Blog (all posts)");
+    expect(dialog.queryByRole("combobox", { name: "Section" })).toBeNull();
+    await user.click(dialog.getByRole("button", { name: "Save Link" }));
+
+    expect(node("hero")?.buttonLink).toEqual({ kind: "list", collectionId: "blog" });
+    expect(screen.getByText("Blog (all posts)")).toBeTruthy();
+  });
+
   it("links to a section, giving it an anchor in the same undo step", async () => {
     const { session, node, labels, home, user } = setUp();
     expect(screen.getByText("No link")).toBeTruthy();
