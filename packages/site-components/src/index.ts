@@ -27,6 +27,7 @@ export {
 } from "./catalogue/column-layouts.js";
 export { serviceFormLabel } from "./catalogue/forms.js";
 export { siteLibrary, starterLayout, starterNotFoundPage, starterPage } from "./catalogue/index.js";
+export { POSTS_PER_PAGE } from "./catalogue/latest-posts.js";
 export { consentBannerHtml } from "./consent-banner.js";
 export type { ComponentSpec } from "./define.js";
 export { createLibrary, defineComponent } from "./define.js";

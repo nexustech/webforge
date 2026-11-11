@@ -20,4 +20,5 @@ export const latestPosts = {
   "siteText.olderPosts": "Older posts",
   "siteText.postPages": "More posts",
   "siteText.postsTagged": "Posts tagged '{tag}'",
+  "siteText.blogPage": "{name}, page {page}",
 } as const;

@@ -1970,3 +1970,104 @@ describe("buildSite: a Blog's posts (6.10a, ADR 0025)", () => {
     scaledTestTimeout(60_000),
   );
 });
+
+describe("buildSite: a Blog's own pages and feed (6.10b)", () => {
+  /** The sample site with a Blog of `count` posts, newest first, every other one tagged News. */
+  function withBlog(count: number, address?: string): SiteSnapshot {
+    const base = sampleSite();
+    const items = Array.from({ length: count }, (_, index) => {
+      const n = index + 1;
+      return {
+        pageId: `post-${n}`,
+        path: `blog/post-${n}`,
+        values: {
+          title: { kind: "text" as const, text: `Post ${n} <news>` },
+          date: { kind: "date" as const, date: `2026-01-${String(28 - n).padStart(2, "0")}` },
+          summary: { kind: "text" as const, text: `About ${n}` },
+          ...(n % 2 === 1
+            ? {
+                tags: {
+                  kind: "tags" as const,
+                  tags: [{ name: "News & views", path: "blog/tag/news-views" }],
+                },
+              }
+            : {}),
+        },
+      };
+    });
+    return {
+      ...base,
+      ...(address === undefined ? {} : { settings: { ...base.settings, "address.url": address } }),
+      pages: [
+        ...base.pages,
+        ...items.map((item) => ({
+          id: item.pageId,
+          path: item.path,
+          title: item.values.title.text,
+          item: { values: item.values },
+          doc: { root: { props: {} }, content: [] },
+        })),
+      ],
+      collections: [{ id: "blog", name: "Blog", folder: "blog", items }],
+    };
+  }
+
+  it(
+    "lists the posts ten a page, newest first, with pages for older ones and each tag",
+    async () => {
+      const exported = await buildSite(withBlog(23), siteLibrary, resources);
+      const index = text(exported, "blog/index.html");
+      const second = text(exported, "blog/page/2.html");
+
+      expect([...exported.files.keys()]).toEqual(
+        expect.arrayContaining(["blog/index.html", "blog/page/2.html", "blog/page/3.html"]),
+      );
+      expect(exported.files.has("blog/page/4.html")).toBe(false);
+      expect(index).toContain("<title>Blog | Rosa's Bakery</title>");
+      expect(index).toContain('href="../blog/post-1.html"');
+      expect(index).toContain("Post 1 &lt;news&gt;");
+      expect(index).not.toContain("Post 11 ");
+      expect(index).toContain('href="../blog/page/2.html" class="link" rel="next"');
+      expect(second).toContain("Post 11 &lt;news&gt;");
+      expect(second).toContain('href="../../blog/index.html" class="link" rel="prev"');
+      // The site's Header and Footer around it, as on every page.
+      expect(index).toContain("site-header");
+
+      const tag = text(exported, "blog/tag/news-views.html");
+      expect(tag).toContain("Posts tagged &#x27;News &amp; views&#x27;");
+      expect(tag).toContain("Post 23 &lt;news&gt;");
+      expect(tag).not.toContain("Post 2 &lt;news&gt;");
+      // Built without a web address: no feed, and no link to one.
+      expect(exported.files.has("blog/feed.xml")).toBe(false);
+      expect(index).not.toContain("application/rss+xml");
+      expect(exported.report.warnings.filter((each) => each.code === "broken-link")).toEqual([]);
+    },
+    scaledTestTimeout(60_000),
+  );
+
+  it(
+    "writes the feed with the web address, and links it from every page",
+    async () => {
+      const exported = await buildSite(
+        withBlog(2, "https://rosas.example"),
+        siteLibrary,
+        resources,
+      );
+      const feed = text(exported, "blog/feed.xml");
+
+      expect(feed).toContain('<rss version="2.0"');
+      expect(feed).toContain("<title>Blog | Rosa's Bakery</title>");
+      expect(feed).toContain("<link>https://rosas.example/blog/index.html</link>");
+      expect(feed).toContain("<title>Post 1 &lt;news&gt;</title>");
+      expect(feed).toContain("<link>https://rosas.example/blog/post-1.html</link>");
+      expect(feed).toContain("<pubDate>Tue, 27 Jan 2026 00:00:00 GMT</pubDate>");
+      expect(feed).toContain("<description>About 1</description>");
+      expect(feed.indexOf("Post 1 ")).toBeLessThan(feed.indexOf("Post 2 "));
+      expect(text(exported, "index.html")).toContain(
+        '<link rel="alternate" type="application/rss+xml" title="Blog" href="blog/feed.xml">',
+      );
+      expect(text(exported, "blog/post-1.html")).toContain('href="../blog/feed.xml"');
+    },
+    scaledTestTimeout(60_000),
+  );
+});
