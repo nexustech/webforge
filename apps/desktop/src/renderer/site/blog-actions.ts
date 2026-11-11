@@ -25,7 +25,7 @@ const postItem = (name: string) => t("blog.item", { name });
 
 /**
  * A new Blog's design (ADR 0025, decision 4): above each post, its title, date and picture; below
- * it, a button back to the Home page. Each element is bound to the post's field, so it shows each
+ * it, its tags and a button back to the Home page. Each element is bound to the post's field, so it shows each
  * post's own; the text beside the binding is what shows on a page that isn't a post.
  */
 export function blogDesign(
@@ -69,6 +69,8 @@ export function blogDesign(
           id: id(),
           contentWidth: "narrow",
           content: [
+            // Its tags, each a link to the page listing its posts (6.10b).
+            { type: "PostTags", props: { id: id() } },
             {
               type: "Button",
               props: {
