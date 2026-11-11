@@ -172,7 +172,7 @@ export function addPolicyPage(session: PagesSession, kind: PolicyPageKind): Page
  * `keep` (#862): listed in Site Settings, written by the export. Either way, the list loses the
  * addresses a page has again.
  */
-function changingAddresses(draft: SiteDoc, keep: boolean, change: () => void): void {
+export function changingAddresses(draft: SiteDoc, keep: boolean, change: () => void): void {
   if (keep) {
     keepingOldAddresses(draft, change);
     return;

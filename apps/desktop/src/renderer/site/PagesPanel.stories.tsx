@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { CollectionId, PageEntry, PageId, SiteDoc } from "@webforge/model";
-import { userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 import { starterSite } from "../../shared/starter-site.js";
 import { PagesPanel, type PagesPanelActions } from "./PagesPanel.js";
 
@@ -52,6 +52,8 @@ const actions: PagesPanelActions = {
   addBlog: noop,
   addPost: noop,
   importPosts: noop,
+  renameBlog: noop,
+  removeBlog: noop,
   rename: noop,
   duplicate: noop,
   move: noop,
@@ -131,36 +133,55 @@ export const PageSettings: Story = {
   },
 };
 
-/** The site with a Blog (6.10a): its posts in a group of their own, newest first, with New Post. */
-export const WithBlog: Story = {
-  args: {
-    site: (() => {
-      const withBlog = site();
-      const blogId = "blog" as CollectionId;
-      withBlog.collections[blogId] = {
-        id: blogId,
-        preset: "blog",
-        name: "Blog",
+/** The site with a Blog (6.10a) and two posts. */
+const withBlog = {
+  site: (() => {
+    const withBlog = site();
+    const blogId = "blog" as CollectionId;
+    withBlog.collections[blogId] = {
+      id: blogId,
+      preset: "blog",
+      name: "Blog",
+      folder: "blog",
+      fields: [{ name: "date", label: "Date", kind: "date" }],
+      design: { before: [], after: [] },
+    };
+    const posts = [
+      page("spring", "Spring opening", {
         folder: "blog",
-        fields: [{ name: "date", label: "Date", kind: "date" }],
-        design: { before: [], after: [] },
-      };
-      const posts = [
-        page("spring", "Spring opening", {
-          folder: "blog",
-          collection: blogId,
-          entry: { date: "2026-03-01" },
-        }),
-        page("new-ovens", "Our new ovens", {
-          folder: "blog",
-          collection: blogId,
-          entry: { date: "2026-11-10" },
-        }),
-      ];
-      for (const post of posts) withBlog.pages[post.id] = post;
-      withBlog.pageOrder.splice(-1, 0, ...posts.map((post) => post.id));
-      return withBlog;
-    })(),
-    shownPageId: "new-ovens" as PageId,
+        collection: blogId,
+        entry: { date: "2026-03-01" },
+      }),
+      page("new-ovens", "Our new ovens", {
+        folder: "blog",
+        collection: blogId,
+        entry: { date: "2026-11-10" },
+      }),
+    ];
+    for (const post of posts) withBlog.pages[post.id] = post;
+    withBlog.pageOrder.splice(-1, 0, ...posts.map((post) => post.id));
+    return withBlog;
+  })(),
+  shownPageId: "new-ovens" as PageId,
+};
+
+/** The site with a Blog (6.10a): its posts in a group of their own, newest first, with New Post. */
+export const WithBlog: Story = { args: withBlog };
+
+/** Renaming the Blog (#937): a new name offers to move its posts to the new name's folder. */
+export const RenameBlog: Story = {
+  args: withBlog,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Actions for Blog" }));
+    const body = within(canvasElement.ownerDocument.body);
+    await userEvent.click(await body.findByRole("menuitem", { name: "Rename…" }));
+    // The dialog opens once the menu has closed, then puts focus in its field.
+    const dialog = within(await body.findByRole("dialog", { name: "Rename Blog" }));
+    const name = dialog.getByRole("textbox", { name: "Name" });
+    await waitFor(() => expect(name).toHaveFocus());
+    await userEvent.clear(name);
+    await userEvent.type(name, "News");
+    await dialog.findByRole("checkbox", { name: "Move its posts to a folder of the new name" });
   },
 };
