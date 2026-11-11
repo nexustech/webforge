@@ -170,14 +170,30 @@ describe("migrateSite", () => {
     expect(blog?.fields.at(-1)).toEqual({ name: "tags", label: "Tags", kind: "tags" });
   });
 
-  it("opens the format 13 fixture as format 14, with its Blog and a post as they were (6.10a)", () => {
+  it("opens the format 13 fixture as format 14, its Blog given Tags, its post as it was (6.10b)", () => {
     const site = migrateSite(v13Site);
+    const [blog] = Object.values(v13Site.collections);
 
-    expect(site).toEqual({ ...v13Site, formatVersion: 14 });
-    const [blog] = Object.values(site.collections);
-    expect(blog?.preset).toBe("blog");
-    const post = Object.values(site.pages).find((page) => page.collection === blog?.id);
-    expect(post?.folder).toBe(blog?.folder);
+    expect(site).toEqual({
+      ...v13Site,
+      formatVersion: 14,
+      collections: {
+        [blog?.id ?? ""]: {
+          ...blog,
+          fields: [...(blog?.fields ?? []), { name: "tags", label: "Tags", kind: "tags" }],
+        },
+      },
+    });
+    // A Blog with Tags already, another collection, and a collection that isn't a record are left.
+    const tagged = { preset: "blog", fields: [{ name: "tags", label: "Labels", kind: "tags" }] };
+    expect(collectionTags({ formatVersion: 13, collections: { a: tagged, b: "none" } })).toEqual({
+      formatVersion: 14,
+      collections: { a: tagged, b: "none" },
+    });
+    const [opened] = Object.values(site.collections);
+    expect(opened?.preset).toBe("blog");
+    const post = Object.values(site.pages).find((page) => page.collection === opened?.id);
+    expect(post?.folder).toBe(opened?.folder);
     expect(post?.entry).toMatchObject({ date: "2026-11-10" });
   });
 
@@ -845,8 +861,18 @@ const LAYOUT_WIDTHS: Readonly<Record<string, Readonly<Record<string, string>>>> 
 
 /** Each step's inverse, keyed by the version it goes down *to*. */
 const DOWN: Readonly<Record<number, (site: Raw) => Raw>> = {
-  // 14 → 13: no field was of kind `tags`; a site with one keeps it, as format 14 reads it.
-  13: (site) => ({ ...site, formatVersion: 13 }),
+  // 14 → 13: no field was of kind `tags`; a Blog had no Tags, which format 14 gives it, last.
+  13: (site) => {
+    const collections = Object.fromEntries(
+      Object.entries(site.collections as Record<string, { fields: { name: string }[] }>).map(
+        ([id, collection]) => [
+          id,
+          { ...collection, fields: collection.fields.filter((field) => field.name !== "tags") },
+        ],
+      ),
+    );
+    return { ...site, collections, formatVersion: 13 };
+  },
   // 13 → 12: no collections yet; a site that had none didn't say so.
   12: (site) => {
     const { collections, ...rest } = site;

@@ -375,13 +375,32 @@ function siteCollections(site: RawSite): RawSite {
 }
 
 /**
- * Format 13 → 14 (6.10b): a collection's field may be of kind `tags`, which the Blog's posts have.
- * No older collection has one, so nothing changes but the version: a build that reads format 13
- * opens a site with tags read-only rather than refusing it as invalid.
+ * Format 13 → 14 (6.10b): a collection's field may be of kind `tags`, and the Blog preset has one,
+ * Tags, after its other fields. A Blog made in format 13 gets it, so its posts can be tagged as a
+ * new Blog's are; no post has tags yet, so nothing else changes. A build that reads format 13
+ * opens a site with tags read-only rather than refusing it as invalid. Collections that aren't
+ * records, and fields that aren't a list, are left for validation.
  */
 function collectionTags(site: RawSite): RawSite {
-  return { ...site, formatVersion: 14 };
+  if (!isRecord(site.collections)) return { ...site, formatVersion: 14 };
+  const collections = Object.fromEntries(
+    Object.entries(site.collections).map(([id, collection]) => {
+      if (
+        !isRecord(collection) ||
+        collection.preset !== "blog" ||
+        !Array.isArray(collection.fields) ||
+        collection.fields.some((field) => isRecord(field) && field.name === "tags")
+      ) {
+        return [id, collection];
+      }
+      return [id, { ...collection, fields: [...collection.fields, BLOG_TAGS_FIELD] }];
+    }),
+  );
+  return { ...site, collections, formatVersion: 14 };
 }
+
+/** The Blog preset's Tags field, as format 14 gives a Blog that has none (in English, as it was). */
+const BLOG_TAGS_FIELD = { name: "tags", label: "Tags", kind: "tags" } as const;
 
 /** Options of {@link migrateSiteWith}; the defaults are this build's chain and version. */
 export type MigrateOptions = {
