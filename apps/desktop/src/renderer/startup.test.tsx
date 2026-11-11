@@ -118,6 +118,7 @@ describe("markFirstRender (#891)", () => {
 
 describe("preloadEditorWhenIdle (#945)", () => {
   it("loads the editor's code once the start screen is idle, not before", () => {
+    performance.clearMarks("webforge:editor-preload");
     let idleWork: (() => void) | undefined;
     const idle = vi.fn((work: () => void) => {
       idleWork = work;
@@ -130,8 +131,11 @@ describe("preloadEditorWhenIdle (#945)", () => {
       timeout: EDITOR_PRELOAD_TIMEOUT_MS,
     });
     expect(load).not.toHaveBeenCalled();
+    expect(performance.getEntriesByName("webforge:editor-preload")).toHaveLength(0);
     idleWork?.();
     expect(load).toHaveBeenCalledOnce();
+    // Marked as it starts, for the E2E test to tell from the start screen's first render.
+    expect(performance.getEntriesByName("webforge:editor-preload")).toHaveLength(1);
   });
 
   it("leaves a load that fails to the opening, which loads it again", async () => {

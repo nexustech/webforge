@@ -40,7 +40,8 @@ export const EDITOR_PRELOAD_TIMEOUT_MS = 2_000;
  * it reloads the window, and the editor's chunk compiled on the opening's path cost it about 1 CPU-s
  * more on CI's runners; loaded here first, the reloaded window compiles it again for a fraction of
  * that, and the editor shows sooner. A load that fails is left to the opening, which loads it again
- * and says if it can't.
+ * and says if it can't. Marks `webforge:editor-preload` in the window's performance timeline as it
+ * starts, after `webforge:first-render`.
  */
 export function preloadEditorWhenIdle(
   load: () => Promise<unknown>,
@@ -48,6 +49,7 @@ export function preloadEditorWhenIdle(
 ): void {
   idle(
     () => {
+      performance.mark("webforge:editor-preload");
       load().catch(() => undefined);
     },
     { timeout: EDITOR_PRELOAD_TIMEOUT_MS },

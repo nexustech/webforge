@@ -86,6 +86,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
   - **What was done, without changing the budgets or what is measured:**
     - **Waste removed:** the canvas's worker keeps its Tailwind compiler between jobs (`createStyleCompiler`), from the moment it starts preparing it, so the whole site's compile, asked for while the shown page's is prepared, reuses it.
     - **Work moved out of the opening, for the person too:** the start screen loads the editor's code once it has drawn and the window is idle (`preloadEditorWhenIdle`), so it still draws without it (#896), and a site opened from it finds it compiled. It shows about 0.4 s sooner locally.
+  - **What's left, and expected:** about 0.5 CPU-s over 9 Nov locally (all 4.6–5.6 against 3.5–5.0). The worker still builds twice, on one compiler (1.2–1.4 against 0.8–1.2), and the canvas applies a second stylesheet. That's #904's price for showing a large site's first styles sooner. On CI, macOS's openings took 2.37–3.04 CPU-s, inside what #526 measured (1.15–3.51).
   - **Not re-measured:** the budgets stay #526's. If CI's openings stay above #526's most after this, re-measure them as Consequences above says, and record it here.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
 - **On Windows, each opening's wall time is checked for hangs only** (#561), so a wait in a Windows-only branch of the open path (a retry with a delay after `EBUSY`, say) gets past it: Linux and macOS never run that branch.
