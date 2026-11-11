@@ -1,4 +1,12 @@
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
   Button,
   cn,
   DropdownMenu,
@@ -15,6 +23,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
+  COLLECTION_NAME_MAX,
   type Collection,
   type CollectionId,
   collectionItems,
@@ -40,6 +49,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NameDialog } from "../shell/NameDialog.js";
+import { blogFolderFor, canDeleteBlog, renameMovesBlog } from "./blog-actions.js";
 import { offersCookiePolicy } from "./cookie-page.js";
 import { PageSettingsDialog } from "./PageSettingsDialog.js";
 import {
@@ -74,6 +84,10 @@ export type PagesPanelActions = {
   addPost(collectionId: CollectionId): void;
   /** Imports posts from Markdown or CSV files into the Blog `collectionId` (6.10b). */
   importPosts(collectionId: CollectionId): void;
+  /** Renames the Blog `collectionId`, moving its posts to the new name's folder if `moveFolder`. */
+  renameBlog(collectionId: CollectionId, name: string, moveFolder: boolean): void;
+  /** Deletes the Blog `collectionId`, which has no posts (#937). */
+  removeBlog(collectionId: CollectionId): void;
   /** Renames a page, keeping its old address working if `keepOldAddress` (#862). */
   rename(pageId: PageId, name: string, keepOldAddress: boolean): void;
   duplicate(pageId: PageId): void;
@@ -100,7 +114,8 @@ export type PagesPanelProps = {
 /** A dialog the panel has open. */
 type OpenDialog =
   | { readonly kind: "add" }
-  | { readonly kind: "rename" | "folder" | "settings"; readonly pageId: PageId };
+  | { readonly kind: "rename" | "folder" | "settings"; readonly pageId: PageId }
+  | { readonly kind: "renameBlog" | "deleteBlog"; readonly collectionId: CollectionId };
 
 /** A row of the list: a page at the top level, a folder with its pages, or a Blog with its posts. */
 type Row =
@@ -172,8 +187,9 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
     next.kind === "delete" ? actions.remove(next.pageId) : openDialog(next),
   );
   const close = () => setOpen(false);
-  const dialogPage =
-    dialog !== null && dialog.kind !== "add" ? site.pages[dialog.pageId] : undefined;
+  const dialogPage = dialog !== null && "pageId" in dialog ? site.pages[dialog.pageId] : undefined;
+  const dialogBlog =
+    dialog !== null && "collectionId" in dialog ? site.collections[dialog.collectionId] : undefined;
 
   const pageRow = (page: PageEntry, indented: boolean) => {
     const home = page.id === site.homePageId;
@@ -321,13 +337,34 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
                         <EllipsisIcon />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent align="end" onCloseAutoFocus={menuDialog.onCloseAutoFocus}>
                       <DropdownMenuItem onSelect={() => actions.addPost(row.collection.id)}>
                         {t("blog.newPost")}
                       </DropdownMenuItem>
                       <DropdownMenuItem onSelect={() => actions.importPosts(row.collection.id)}>
                         {t("blog.import")}
                       </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          menuDialog.choose({ kind: "renameBlog", collectionId: row.collection.id })
+                        }
+                      >
+                        {t("blog.rename")}
+                      </DropdownMenuItem>
+                      {canDeleteBlog(site, row.collection.id) && (
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onSelect={() =>
+                            menuDialog.choose({
+                              kind: "deleteBlog",
+                              collectionId: row.collection.id,
+                            })
+                          }
+                        >
+                          {t("blog.delete")}
+                        </DropdownMenuItem>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
@@ -418,6 +455,61 @@ export function PagesPanel({ site, shownPageId, published = false, actions }: Pa
         }}
         onCancel={close}
       />
+      <NameDialog
+        open={open && dialog?.kind === "renameBlog" && dialogBlog !== undefined}
+        title={t("blog.renameDialog.title")}
+        label={t("blog.renameDialog.label")}
+        maxLength={COLLECTION_NAME_MAX}
+        initialValue={dialogBlog?.name ?? ""}
+        confirm={t("blog.renameDialog.confirm")}
+        option={{
+          label: t("blog.renameDialog.moveFolder"),
+          help: (name) =>
+            dialogBlog === undefined
+              ? ""
+              : t(published ? "blog.renameDialog.moveHintKept" : "blog.renameDialog.moveHint", {
+                  from: dialogBlog.folder,
+                  folder: blogFolderFor(site, dialogBlog.id, name),
+                }),
+          // Once the site has been published, its posts' addresses are out there: kept unless asked.
+          initial: !published,
+          shown: (name) => dialogBlog !== undefined && renameMovesBlog(site, dialogBlog.id, name),
+        }}
+        onSubmit={(name, moveFolder) => {
+          if (dialogBlog !== undefined) {
+            actions.renameBlog(dialogBlog.id, name, moveFolder);
+          }
+          close();
+        }}
+        onCancel={close}
+      />
+      <AlertDialog
+        open={open && dialog?.kind === "deleteBlog" && dialogBlog !== undefined}
+        onOpenChange={(next) => {
+          if (!next) close();
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {t("blog.deleteDialog.title", { name: dialogBlog?.name ?? "" })}
+            </AlertDialogTitle>
+            <AlertDialogDescription>{t("blog.deleteDialog.description")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("blog.deleteDialog.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (dialogBlog !== undefined) actions.removeBlog(dialogBlog.id);
+                close();
+              }}
+            >
+              {t("blog.deleteDialog.confirm")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <PageSettingsDialog
         open={open && dialog?.kind === "settings"}
         site={site}

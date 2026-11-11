@@ -1,6 +1,7 @@
 import {
   type CollectionId,
   changedDocuments,
+  findBrokenLinks,
   migrateSite,
   type NodeDoc,
   type PageId,
@@ -16,13 +17,26 @@ import { confirmSharedRemovals } from "../editor/shared-confirmations.js";
 import { canvasLayout } from "../editor/shared-layout.js";
 import type { SiteWideAction } from "../shell/confirm-site-wide.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { addBlog, addPost, blogDesign, insertBlog } from "./blog-actions.js";
 import {
+  addBlog,
+  addPost,
+  blogDesign,
+  blogFolderFor,
+  canDeleteBlog,
+  deleteBlog,
+  insertBlog,
+  renameBlog,
+  renameMovesBlog,
+} from "./blog-actions.js";
+import {
+  addPage,
   canBeHome,
   canChangeNavigation,
   canMoveToFolder,
   changePageSettings,
+  deletePage,
   duplicatePage,
+  moveToFolder,
   type PageSettingsChange,
 } from "./page-actions.js";
 
@@ -157,6 +171,102 @@ describe("a post through save, undo and export (6.10a, acceptance)", () => {
     // Undone, the saved site loses the Blog and its post again.
     session.history.undo();
     expect(savedAndOpened(saved, site())).toEqual(empty);
+  });
+});
+
+describe("renameBlog (#937)", () => {
+  it("renames the Blog alone, one step, its posts staying where they are", () => {
+    const { session, site, labels, blogId } = setUp();
+    const postId = addBlog(session);
+
+    renameBlog(session, blogId(), "  News  ", false, true);
+
+    expect(site().collections[blogId()]).toMatchObject({ name: "News", folder: "blog" });
+    expect(site().pages[postId]?.folder).toBe("blog");
+    expect(site().settings.search.keptAddresses).toBeUndefined();
+    expect(labels().at(-1)).toBe("Renamed blog 'News'");
+    // The same name, or none, changes nothing.
+    renameBlog(session, blogId(), "News", false, true);
+    renameBlog(session, blogId(), "   ", true, true);
+    expect(labels()).toHaveLength(2);
+  });
+
+  it("moves the posts to the new name's folder, keeping their old addresses, through save, undo and export", () => {
+    const { session, site, labels, blogId } = setUp();
+    const first = addBlog(session);
+    const second = addPost(session, blogId(), "Spring opening") ?? ("" as PageId);
+    const before = site();
+
+    expect(renameMovesBlog(before, blogId(), "News")).toBe(true);
+    expect(renameMovesBlog(before, blogId(), "Blog")).toBe(false);
+    renameBlog(session, blogId(), "News", true, true);
+
+    expect(labels().at(-1)).toBe("Renamed blog 'News'");
+    expect(site().collections[blogId()]).toMatchObject({ name: "News", folder: "news" });
+    expect([site().pages[first]?.folder, site().pages[second]?.folder]).toEqual(["news", "news"]);
+    expect(site().settings.search.keptAddresses).toEqual([
+      { from: "blog/our-first-post.html", page: first },
+      { from: "blog/spring-opening.html", page: second },
+    ]);
+
+    const saved = savedAndOpened(before, site());
+    expect(saved).toEqual(site());
+    const snapshot = siteSnapshotFor(saved, siteLibrary);
+    expect(snapshot.pages.find((each) => each.id === first)?.path).toBe("news/our-first-post");
+
+    session.history.undo();
+    expect(site()).toEqual(before);
+    expect(savedAndOpened(saved, site())).toEqual(before);
+  });
+
+  it("keeps no old addresses for a site never published, and gives the posts a free folder", () => {
+    const { session, site, blogId } = setUp();
+    const postId = addBlog(session);
+    // An ordinary page is in a folder called "news" already.
+    const page = addPage(session, "Local") ?? ("" as PageId);
+    moveToFolder(session, page, "news", false);
+
+    expect(blogFolderFor(site(), blogId(), "News!")).toBe("news-2");
+    renameBlog(session, blogId(), "News!", true, false);
+
+    expect(site().pages[postId]?.folder).toBe("news-2");
+    expect(site().settings.search.keptAddresses).toBeUndefined();
+    expect(siteDocSchema.safeParse(site()).success).toBe(true);
+  });
+
+  it("tidies an old address a post has again when renamed back", () => {
+    const { session, site, blogId } = setUp();
+    addBlog(session);
+    renameBlog(session, blogId(), "News", true, true);
+    renameBlog(session, blogId(), "Blog", true, true);
+
+    expect(site().collections[blogId()]?.folder).toBe("blog");
+    expect(site().settings.search.keptAddresses?.map((kept) => kept.from)).toEqual([
+      "news/our-first-post.html",
+    ]);
+  });
+});
+
+describe("deleteBlog (#937)", () => {
+  it("deletes a Blog with no posts as one step, and never one with posts", () => {
+    const { session, site, labels, blogId } = setUp();
+    const postId = addBlog(session);
+    const id = blogId();
+
+    expect(canDeleteBlog(site(), id)).toBe(false);
+    deleteBlog(session, id);
+    expect(site().collections[id]).toBeDefined();
+
+    deletePage(session, postId);
+    expect(canDeleteBlog(site(), id)).toBe(true);
+    const before = site();
+    deleteBlog(session, id);
+
+    expect(site().collections).toEqual({});
+    expect(labels().at(-1)).toBe("Deleted blog 'Blog'");
+    expect(savedAndOpened(before, site()).collections).toEqual({});
+    session.history.undo();
+    expect(site().collections[id]?.name).toBe("Blog");
   });
 });
 
@@ -326,5 +436,59 @@ describe("removing from a post's design or Header (6.10a, D7)", () => {
     expect(cancelled.engine.applyChange).toHaveBeenLastCalledWith(
       expect.objectContaining({ layout: canvasLayout(cancelled.now(), cancelled.postId) }),
     );
+  });
+});
+
+describe("the Blog in the menu, renamed or deleted (#940, #943 review)", () => {
+  /** A site with a Blog with no posts, its menu following the pages or `edited`. */
+  function blogInMenu(edited = false) {
+    const { session, site, blogId, labels } = setUp();
+    const postId = addBlog(session);
+    deletePage(session, postId);
+    if (edited) {
+      session.edit("props", "Edited menu", (draft) => {
+        draft.menu = { ...draft.menu, follows: "custom" };
+      });
+    }
+    const listItems = () =>
+      site().menu.items.filter((item) => item.kind === "link" && item.link.kind === "list");
+    return { session, site, blogId, labels, listItems };
+  }
+
+  it("shows the new name in the menu, in the same step, followed or edited", () => {
+    for (const edited of [false, true]) {
+      const { session, blogId, labels, listItems } = blogInMenu(edited);
+
+      renameBlog(session, blogId(), "News", false, false);
+
+      expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["News"]);
+      expect(labels().at(-1)).toBe("Renamed blog 'News'");
+      session.history.undo();
+      expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["Blog"]);
+    }
+  });
+
+  it("keeps a name the person gave the item in an edited menu", () => {
+    const { session, blogId, listItems } = blogInMenu(true);
+    session.edit("props", "Renamed menu item", (draft) => {
+      for (const item of draft.menu.items) if (item.kind === "link") item.label = "Our news";
+    });
+
+    renameBlog(session, blogId(), "Journal", false, false);
+
+    expect(listItems().map((item) => item.kind === "link" && item.label)).toEqual(["Our news"]);
+  });
+
+  it("takes the Blog out of the menu when it's deleted, in the same step", () => {
+    for (const edited of [false, true]) {
+      const { session, site, blogId, listItems } = blogInMenu(edited);
+
+      deleteBlog(session, blogId());
+
+      expect(listItems()).toEqual([]);
+      expect(findBrokenLinks(site())).toEqual([]);
+      session.history.undo();
+      expect(listItems()).toHaveLength(1);
+    }
   });
 });

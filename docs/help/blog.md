@@ -69,6 +69,19 @@ To bring in posts you wrote elsewhere, open the **…** menu beside the blog's n
 
 A post without a title is left out, and one without a date is dated today. All the posts come in as one step you can undo, such as _Imported 12 posts_. You can choose up to 200 files at once, each up to 1 MB.
 
+## Renaming your blog
+
+Call your blog what suits you, such as _News_ or _Journal_: open the **…** menu beside its name and choose **Rename…**. Its new name shows in the **Pages** list and in the banner over its design. Renaming it is one step you can undo.
+
+When the new name would give your posts a new folder, such as `news/` for _News_, **Move its posts to a folder of the new name** is offered:
+
+- **Before you've published your site,** it's ticked: your posts move to the new folder.
+- **Once your site has been published,** it isn't ticked, so your posts keep their addresses. Tick it to move them anyway: links and search results that use a post's old address go on to its new one, as when you rename a page (see [Keeping old addresses working](pages.md#keeping-old-addresses-working)).
+
+If another folder of your site has the name already, the posts go to one with a number, such as `news-2/`. Your blog's own pages, its list of posts, its tag pages and its feed, move with them, but their old addresses aren't kept: links to `blog/` or to a tag's page, from other sites or search results, show _Page not found_ until they're updated, and readers who follow your feed in an app need its new address.
+
+A blog with no posts can be deleted from the same menu: choose **Delete**, then **Delete Blog**. Its design goes with it, and **Undo** brings both back.
+
 ## What a post can't do
 
 A post is always in the blog's folder, so **Move to Folder** isn't offered for it, and posts are listed by date, so they aren't moved up or down. A post can't be the Home page. The menu doesn't list posts by itself; to put one in it, add it to the menu yourself (see [The menu](pages.md#the-menu)). **Duplicate** makes another post of the same blog.

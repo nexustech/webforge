@@ -171,6 +171,24 @@ describe("freeCollectionFolder (6.10a)", () => {
     site.collections["b2" as CollectionId] = blog({ id: "b2" as CollectionId, folder: "blog-2" });
     expect(freeCollectionFolder(site, "blog")).toBe("blog-3");
   });
+
+  it("skips ordinary pages' folders and `assets`, but not the collection's own (#937)", () => {
+    const site = siteWith(post("p1", "spring"));
+    const own = BLOG;
+    const pages = {
+      ...site.pages,
+      n1: { folder: "news/local" },
+      n2: { folder: "news-2" },
+    };
+
+    expect(freeCollectionFolder({ ...site, pages }, "news")).toBe("news-3");
+    expect(freeCollectionFolder({ ...site, pages }, "assets")).toBe("assets-2");
+    expect(freeCollectionFolder({ ...site, pages }, "con")).toBe("con-2");
+    expect(freeCollectionFolder({ ...site, pages }, "blog", own)).toBe("blog");
+    expect(freeCollectionFolder({ ...site, pages }, "blog")).toBe("blog-2");
+    // Never longer than a folder can be.
+    expect(freeCollectionFolder({ collections: {} }, "a".repeat(90))).toHaveLength(80);
+  });
 });
 
 describe("a site's collections and items (6.10a, ADR 0025)", () => {

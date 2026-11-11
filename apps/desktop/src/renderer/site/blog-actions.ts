@@ -1,8 +1,10 @@
 import { t } from "@webforge/i18n";
 import {
+  COLLECTION_NAME_MAX,
   type CollectionDesign,
   type CollectionId,
   collectionById,
+  collectionItems,
   freeCollectionFolder,
   newCollection,
   newId,
@@ -10,10 +12,11 @@ import {
   pageSlugFor,
   pageTitle,
   type SiteDoc,
+  slugify,
   syncMenuWithPages,
 } from "@webforge/model";
 import { localDay } from "../editor/page-updated.js";
-import { editShowing, type PagesSession } from "./page-actions.js";
+import { changingAddresses, editShowing, type PagesSession } from "./page-actions.js";
 
 /**
  * The Blog (6.10a, ADR 0025, M2-1): a post is a page that belongs to the Blog, written on the
@@ -204,4 +207,104 @@ export function addPost(
     insertPost(draft, collectionId, id, title),
   );
   return id;
+}
+
+/** A Blog's name as typed: trimmed, and no longer than a name can be. */
+const blogName = (name: string) => name.trim().slice(0, COLLECTION_NAME_MAX).trim();
+
+/**
+ * The folder Blog `collectionId`'s posts would move to if it were called `name` (#937): its name as
+ * a folder (`news`), or the next free one (`news-2`) when another Blog or ordinary pages are there.
+ */
+export function blogFolderFor(site: SiteDoc, collectionId: CollectionId, name: string): string {
+  return freeCollectionFolder(site, slugify(blogName(name)), collectionId);
+}
+
+/** Whether calling Blog `collectionId` `name` would give its posts another folder (#937). */
+export function renameMovesBlog(site: SiteDoc, collectionId: CollectionId, name: string): boolean {
+  const collection = collectionById(site, collectionId);
+  return (
+    collection !== undefined &&
+    blogName(name) !== "" &&
+    blogFolderFor(site, collectionId, name) !== collection.folder
+  );
+}
+
+/**
+ * Renames Blog `collectionId` to `name` (#937): its group in the Pages panel, the design's banner
+ * and undo labels. With `moveFolder`, its posts move to the folder its new name gives
+ * ({@link blogFolderFor}), each post's old address kept working when `keepOldAddresses` (#862), as
+ * once the site has been published. One undo step ("Renamed blog 'News'").
+ */
+export function renameBlog(
+  session: PagesSession,
+  collectionId: CollectionId,
+  name: string,
+  moveFolder: boolean,
+  keepOldAddresses: boolean,
+): void {
+  const site = session.history.document.getState();
+  const collection = collectionById(site, collectionId);
+  const newName = blogName(name);
+  if (collection === undefined || newName === "") return;
+  const folder = moveFolder ? blogFolderFor(site, collectionId, newName) : collection.folder;
+  if (newName === collection.name && folder === collection.folder) return;
+  session.edit("props", t("blog.history.renamed", { name: newName }), (draft) => {
+    const blog = collectionById(draft, collectionId);
+    if (blog === undefined) return;
+    renameListItems(draft, collectionId, blog.name, newName);
+    blog.name = newName;
+    // A menu that follows the pages shows the Blog by its new name (#940).
+    draft.menu = syncMenuWithPages(draft);
+    if (folder === blog.folder) return;
+    changingAddresses(draft, keepOldAddresses, () => {
+      blog.folder = folder;
+      for (const page of Object.values(draft.pages)) {
+        if (page.collection === collectionId) page.folder = folder;
+      }
+    });
+  });
+}
+
+/**
+ * The menu items of `draft` linking to Blog `collectionId`'s own page that show its name, `from`,
+ * showing `to` instead (#940). An item the person named otherwise keeps its own name.
+ */
+function renameListItems(draft: SiteDoc, collectionId: CollectionId, from: string, to: string) {
+  for (const item of draft.menu.items.flatMap((each) =>
+    each.kind === "group" ? [each, ...each.children] : [each],
+  )) {
+    if (
+      item.kind === "link" &&
+      item.link.kind === "list" &&
+      item.link.collectionId === collectionId &&
+      item.label === from
+    ) {
+      item.label = to;
+    }
+  }
+}
+
+/** Whether Blog `collectionId` can be deleted: it has no posts (#937). */
+export function canDeleteBlog(site: SiteDoc, collectionId: CollectionId): boolean {
+  return (
+    collectionById(site, collectionId) !== undefined &&
+    collectionItems(site, collectionId).length === 0
+  );
+}
+
+/** Deletes Blog `collectionId`, which has no posts, and its design. One undo step (#937). */
+export function deleteBlog(session: PagesSession, collectionId: CollectionId): void {
+  const site = session.history.document.getState();
+  const collection = collectionById(site, collectionId);
+  if (collection === undefined || !canDeleteBlog(site, collectionId)) return;
+  session.edit(
+    "remove",
+    t("history.deleted", { item: t("blog.blogItem", { name: collection.name }) }),
+    (draft) => {
+      delete draft.collections[collectionId];
+      // Its item in the menu goes with it, as a deleted page's does (#940).
+      draft.menu = syncMenuWithPages(draft);
+    },
+  );
 }
