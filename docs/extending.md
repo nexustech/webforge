@@ -67,7 +67,7 @@ export const bookingsPanelArea: Area<EditorContext> = {
 
 ### The start screen's code
 
-The start screen loads without the editor's code (#896): `main.tsx` loads `editor-start.tsx`, and with it `App`, with `import()` only when a site is open.
+The start screen draws without the editor's code (#896): `main.tsx` loads `editor-start.tsx`, and with it `App`, with `import()` when a site is open, and on the start screen only once it has drawn and the window is idle (`preloadEditorWhenIdle`, #945). A site opened from the start screen reloads the window, which then finds the editor's code compiled already.
 
 - **Taking one thing from an index takes only that.** The bundler leaves out a module of Webforge's own (`apps/desktop/src`, `packages/*/src`) when nothing it exports is used (`tools/src/bundle-side-effects.ts`). So the start screen can take `hexOf` from `fields/index.ts` without every kind of field, and Puck with them.
 - **A module that does something when loaded,** beyond what it exports, is listed in `SIDE_EFFECT_MODULES` there, as `shell/form-messages.ts` is; otherwise it is left out wherever nothing it exports is used. The test fails for an import made only to load a module (`import "./x.js";`) that isn't listed.

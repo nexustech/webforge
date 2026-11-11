@@ -2,7 +2,7 @@
 
 - Status: Accepted
 - Date: 2026-10-27
-- Related: #446, #489, #526, [standards §5](../../spec/03-engineering-standards.md#test-conventions), [ADR 0007](0007-large-page-performance.md), [ADR 0013](0013-store-gate.md) (R13, R15)
+- Related: #446, #489, #526, #945, [standards §5](../../spec/03-engineering-standards.md#test-conventions), [ADR 0007](0007-large-page-performance.md), [ADR 0013](0013-store-gate.md) (R13, R15)
 
 ## Context
 
@@ -24,7 +24,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
    - The store-gate property test holds each piece of work for a few turns of the microtask queue rather than 0–3 ms of real time. It checks the gate's order and exclusion with no clock in it.
 2. **Opening a site is checked in every run by its CPU time, with a loose wall-clock backstop** (`e2e/app/budget.ts`).
    - **What is measured:** `measureWork(app)` takes each process's `cumulativeCPUUsage` (Electron's `app.getAppMetrics()`) just before Create, and again once the hero shows. A process that starts in between, such as the export worker, counts from 0. One that exits in between is lost, so the count can only come out low.
-   - **The check:** `expectWorkWithin(work, OPEN_BUDGET, what)` checks the CPU budget, then the backstop, and prints both in the report and the log.
+   - **The check:** `expectWorkWithin(work, OPEN_BUDGET, what)` checks the CPU budget, then the backstop, and prints both in the report and the log, with each kind of process's share (the canvas's tab, the browser process, the GPU process, each utility process by its service name), so a rise says where it is (#945).
    - **The CPU budget** is about 30% over the most CI's runners measured for any opening, per platform. CPU-seconds scale with clock speed, and the runners differ.
      - **CI** (`CI=true`): Linux 4.4, Windows 5.4, macOS 4.6 CPU-s (#526, 27 Oct 2026). They're set from every E2E job of 26 and 27 Oct, on `main` and on PRs, every attempt included: 31 runs per platform, about 300 openings each (six templates, a template from the start screen, Personal / CV and the example).
 
@@ -71,6 +71,22 @@ Re-running a failed job hides all three, and each makes the next failure harder 
 
 - **Every run catches the opening doing more work, or waiting longer,** whatever else the machine runs. Whether it opens in 3 s is a question for a quiet machine: answer it with `pnpm e2e:perf` before a release, and after work that touches opening a site.
 - **The CPU budget follows CI's runners.** If a platform's runners get much slower or faster, re-measure from the `[work]` lines of every E2E job over a day or two, every attempt included (a re-run job's first attempt is only in `actions/runs/<id>/attempts/<n>/jobs`), and set its budget again at the most plus 30%, and `CI_CALIBRATION_SECONDS` at the most the usual runners' calibrations took. One or two runs aren't enough (#526). A developer whose machine needs more than three times CI's sets `WEBFORGE_E2E_CPU_SCALE`.
+- **Work started during an opening counts in it, and that's what the budget is for** (#945, 11 Nov 2026).
+  - **What happened:** openings cost about twice as much on CI from 10 Nov (Linux's nightly 1.6–1.95 CPU-s on 9 Nov, 3.8–4.1 on 10 Nov), and macOS went over its 4.6 sixteen times on 10 and 11 Nov, never before. Its runners' calibration was as usual, so the slow-runner allowance rightly didn't move.
+  - **Where it was,** measured locally against `main` of 9 Nov (89171021), each template opened twice, by process:
+
+    | Build     | The canvas's tab | The styles worker | All     | Wall      |
+    | --------- | ---------------- | ----------------- | ------- | --------- |
+    | 9 Nov     | 1.6–2.1          | 0.8–1.2           | 3.5–5.0 | 1.6–2.0 s |
+    | 11 Nov    | 2.6–3.4          | 0.5–1.8           | 4.6–6.8 | 2.0–2.5 s |
+    | With #945 | 1.9–2.7          | 1.2–1.4           | 4.6–5.6 | 1.8–2.1 s |
+    - **The tab, from #905:** the start screen no longer loads the editor's code (#896), so opening a site from it, which reloads the window, compiled the editor's 5 MB chunk inside the opening. Before, the start screen had compiled it before it showed, and the reloaded window compiled it again for much less.
+    - **The styles worker, from #904:** the canvas asks for its shown page's classes, then for the whole site's (#895). Each compile prepared a Tailwind compiler afresh, about as costly as the whole compile, so the second doubled the worker's work.
+    - **Not #902:** its worker starts early only when the app opens with a site, never on the start screen the timed openings start from.
+  - **What was done, without changing the budgets or what is measured:**
+    - **Waste removed:** the canvas's worker keeps its Tailwind compiler between jobs (`createStyleCompiler`), from the moment it starts preparing it, so the whole site's compile, asked for while the shown page's is prepared, reuses it.
+    - **Work moved out of the opening, for the person too:** the start screen loads the editor's code once it has drawn and the window is idle (`preloadEditorWhenIdle`), so it still draws without it (#896), and a site opened from it finds it compiled. It shows about 0.4 s sooner locally.
+  - **Not re-measured:** the budgets stay #526's. If CI's openings stay above #526's most after this, re-measure them as Consequences above says, and record it here.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
 - **On Windows, each opening's wall time is checked for hangs only** (#561), so a wait in a Windows-only branch of the open path (a retry with a delay after `EBUSY`, say) gets past it: Linux and macOS never run that branch.
   - **The median of templates.spec's openings catches it instead** (#569, `expectMedianWithin` in its `afterAll`).

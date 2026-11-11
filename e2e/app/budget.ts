@@ -236,7 +236,8 @@ async function cpuSoFar(app: ElectronApplication): Promise<Map<ProcessKey, Proce
   const metrics = await app.evaluate(({ app: electronApp }) =>
     electronApp.getAppMetrics().map((metric) => ({
       key: `${metric.pid}@${metric.creationTime}`,
-      type: metric.type,
+      // A utility process by its name, such as "Webforge canvas styles" (#945).
+      type: metric.name === undefined ? metric.type : `${metric.type} (${metric.name})`,
       cpu: metric.cpu.cumulativeCPUUsage,
     })),
   );
@@ -260,6 +261,8 @@ export type Work = {
   readonly wallMs: number;
   readonly cpuSeconds: number;
   readonly exited: readonly string[];
+  /** The CPU seconds by kind of process, costliest first, for a miss to say where it went. */
+  readonly byProcess: readonly (readonly [string, number])[];
 };
 
 /**
@@ -276,9 +279,15 @@ export async function measureWork(app: ElectronApplication): Promise<() => Promi
     const wallMs = Date.now() - started;
     const after = await cpuSoFar(app);
     let cpuSeconds = 0;
-    for (const [key, { cpu }] of after) cpuSeconds += cpu - (before.get(key)?.cpu ?? 0);
+    const byType = new Map<string, number>();
+    for (const [key, { type, cpu }] of after) {
+      const used = cpu - (before.get(key)?.cpu ?? 0);
+      cpuSeconds += used;
+      byType.set(type, (byType.get(type) ?? 0) + used);
+    }
     const exited = [...before].filter(([key]) => !after.has(key)).map(([, { type }]) => type);
-    return { wallMs, cpuSeconds, exited };
+    const byProcess = [...byType].toSorted(([, a], [, b]) => b - a);
+    return { wallMs, cpuSeconds, exited, byProcess };
   };
 }
 
@@ -290,7 +299,8 @@ export function expectWorkWithin(work: Work, budget: Budget, what: string): void
   const cpu = work.cpuSeconds.toFixed(2);
   const lost =
     work.exited.length === 0 ? "" : `; exited meanwhile, not counted: ${work.exited.join(", ")}`;
-  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds}, ${work.wallMs} ms of ${budget.wallMs} (${budget.source})${lost}`;
+  const by = work.byProcess.map(([type, used]) => `${type} ${used.toFixed(2)}`).join(", ");
+  const line = `${what}: ${cpu} CPU-s of ${budget.cpuSeconds} (${by}), ${work.wallMs} ms of ${budget.wallMs} (${budget.source})${lost}`;
   test.info().annotations.push({ type: "work", description: line });
   console.log(`[work] ${line}`);
   if (work.cpuSeconds > budget.cpuSeconds) {
