@@ -48,7 +48,7 @@ Current code size (approx. lines): desktop 2.7k · engine 1.6k · history 1.6k �
 
 ## 3. Timeline
 
-**Total: 473.25 working days** for the MVP (438.25 before 6.1–6.10b were pulled forward, PH6-4; 463.75 before one-page sites were added, GA10; 468.25 before 5.10b, GA10-1; 468.75 before 5.11 and 5.12, CT-10 and CT-11); Phase 6's 26.5 come after v1.0 (≈ 93 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**; at the Phase 4 exit (9 Nov 2026), with the beta waiting on code-signing enrolment: about **15 Jan 2027**.
+**Total: 473.25 working days** for the MVP (438.25 before 6.1–6.10b were pulled forward, PH6-4; 463.75 before one-page sites were added, GA10; 468.25 before 5.10b, GA10-1; 468.75 before 5.11 and 5.12, CT-10 and CT-11); Phase 6's 26.5 come after v1.0 (≈ 95 weeks of effort; 335 before the 22–30 Oct additions) including the 4-week beta. Baseline v1.0 (sequential, for the original 277 days, before the Phase 1 re-plan) at 100% of estimates: **19 Nov 2027**; with +25% contingency: **25 Feb 2028**. Re-planned at the Phase 1 exit (25 Oct 2026, below): v1.0 about **22 Jan 2027**; at the Phase 2 exit (28 Oct 2026): about **23 Dec 2026**; at the Phase 4 exit (9 Nov 2026), with the beta waiting on code-signing enrolment: about **15 Jan 2027**.
 
 **Re-plan, 20 Oct 2026:** Phase 1 runs in three concurrent streams (82 days of effort in about 28 working days, see [Phase 1](#phase-1-editor-core)). Phase 2–5 dates and the v1.0 date are re-planned at the Phase 1 exit review.
 
@@ -1673,15 +1673,16 @@ The Header gets _Highlight the section in view_, on by default (a site without i
 _5.11 and 5.12 added on 12 Nov 2026 (CT-10, CT-11, [product/11](../research/product/11-component-theming.md) §5); their issues hold the full scope._
 
 **5.11 Gradients: choosing a direction sets both colours**  
-A gradient (CT-4) draws only with its direction and both colours, and both default to _Theme's_, which draws nothing. Choosing a direction fills an unset colour (Brand to start, Accent to end) in the same undo step, through a new mechanism for a field change that sets its partners, shared by the Edit panel, _Style this ‹component›…_ and Theme Studio › Components. The colour rows show only with a direction and offer no _Theme's_; _None_ keeps the colours for next time. Drawing uses the same defaults for a missing end, on the canvas and in the export.
+A gradient (CT-4) draws only with its direction and both colours, and both default to _Theme's_, which draws nothing. Choosing a direction fills an unset colour (Brand to start, Accent to end) in the same undo step, through a new mechanism for a field change that sets its partners, shared by the Edit panel, _Style this ‹component›…_ and Theme Studio › Components. The colour rows show only with a direction and offer no _Theme's_; _None_ keeps the colours for next time. The fill writes on the devices the direction was set for, and keeps a colour another device already has. Drawing uses the same defaults for a missing end, on the canvas and in the export; an end stored as _Theme's_ still takes the kind's look first (`withLook`), and only falls back to the default where the look has none.
 
 - [ ] Choosing a direction with no colours draws Brand → Accent at once, in all three places; a colour chosen before is kept
 - [ ] One undo step takes the direction and its filled colours back, with a meaningful label
-- [ ] A stored direction with a missing end draws with the defaults on the canvas and in the export
+- [ ] A stored direction with a missing end draws with the defaults on the canvas and in the export; an end stored as _Theme's_ takes the kind's look first
+- [ ] A direction set on one device fills colours on that device only
 - [ ] Help pages updated in `docs/help/` (HP-4)
 
 **5.12 Theme Studio and _Style this ‹component›…_: fill the window, preview on top**  
-One frame for both dialogs, filling the window less a 1rem margin (still a dialog, F-DS-7): a preview strip fixed at the top (Desktop and Mobile, a divider to drag; Theme Studio's _Now / With your changes_ moves into it, and its Colours, Text and Styles get a sample page), the controls below at full width (_Style this…_'s Style and CSS tabs; Theme Studio's sections as tabs and its kinds as a searchable list in a top bar), `EditPanel`'s groups in as many columns as fit, and the actions fixed at the bottom.
+One frame for both dialogs, filling the window less a 1rem margin (still a dialog, F-DS-7): a preview strip fixed at the top (Desktop and Mobile, a divider to drag; Theme Studio's _Now / With your changes_ moves into it, and its Colours, Text and Styles get a sample page), the controls below at full width (_Style this…_'s Style and CSS tabs; Theme Studio's sections as tabs and its kinds as a searchable list in a top bar), `EditPanel`'s groups in as many columns as fit, and the actions fixed at the bottom. The strip replaces 4.10's enlarge dialog (`StudioLookPreview`), whose before-and-after it now shows in place.
 
 - [ ] At 1280 and 1920 px both dialogs fill the window less 1rem, and the preview stays in view while the controls scroll
 - [ ] _Style this…_'s colour names show in full at 1280 px; at 1920 px the groups lay out in at least two columns
