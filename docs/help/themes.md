@@ -61,7 +61,7 @@ Built-in themes never change. The first time you change one, {appName} asks you 
 - **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an image…** suggests brand colours from your logo or a photo in Media.
 - **Text:** size, weight and line spacing for each kind of text.
 - **Styles:** corners, shadows and the other settings, drawn as examples.
-- **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs.
+- **Components:** the look of every kind of section and element across the site, such as every Button or every card. Choose which kind from the list beside the tabs. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
 
 Above Colours, Text and Styles, a sample page shows your theme on Desktop and Mobile as you change it. It stays in view while you scroll the settings. To give it more room, drag the line under it, or select the line and use the arrow keys.
 

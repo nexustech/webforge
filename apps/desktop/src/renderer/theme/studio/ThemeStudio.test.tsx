@@ -444,6 +444,25 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     });
   });
 
+  it("gives a gradient's direction its colours, Brand to Accent, in the same draft (CT-10)", async () => {
+    const { button, labels, theme, user } = onButton();
+    // No colour rows while the gradient has no direction.
+    expect(button().queryByText("Gradient starts with")).toBeNull();
+
+    await user.selectOptions(button().getByRole("combobox", { name: "Gradient" }), "toRight");
+    expect(button().getByText("Gradient starts with")).toBeDefined();
+    await user.click(screen.getByRole("button", { name: "Apply Changes" }));
+
+    expect(theme().looks).toEqual({
+      Button: {
+        lookGradientDirection: "toRight",
+        lookGradientFrom: "primary",
+        lookGradientTo: "secondary",
+      },
+    });
+    expect(labels()).toEqual(["Changed the theme's look for Button"]);
+  });
+
   it("applies only its own changes, keeping one made to the look since it began (review)", async () => {
     const { session, dialog, button, theme, user } = onButton();
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");

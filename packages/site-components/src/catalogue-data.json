@@ -473,10 +473,6 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
-          "value": "theme"
-        },
-        {
           "label": "Surface",
           "value": "base-100"
         },
@@ -504,7 +500,8 @@
           "label": "Neutral",
           "value": "neutral"
         }
-      ]
+      ],
+      "unset": "primary"
     },
     "lookGradientTo": {
       "kind": "color",
@@ -518,10 +515,6 @@
       "inDialog": true,
       "options": [
         {
-          "label": "Theme's",
-          "value": "theme"
-        },
-        {
           "label": "Surface",
           "value": "base-100"
         },
@@ -549,7 +542,8 @@
           "label": "Neutral",
           "value": "neutral"
         }
-      ]
+      ],
+      "unset": "secondary"
     },
     "lookBorderTop": {
       "kind": "select",

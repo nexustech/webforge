@@ -93,4 +93,50 @@ describe("an item's values with its kind's look (#670)", () => {
       text: "own",
     });
   });
+
+  it("take a gradient's end stored as Theme's from the look, as one never set (CT-10)", () => {
+    const look = {
+      lookGradientFrom: "accent",
+      lookGradientTo: { $responsive: { desktop: "neutral", mobile: "primary" } },
+    };
+    // Theme's is a choice of its own elsewhere: a colour stored so keeps it.
+    const stored = { lookGradientFrom: "theme", lookGradientTo: "theme", lookColor: "theme" };
+
+    expect(valuesWithLook(stored, look)).toEqual({ ...look, lookColor: "theme" });
+    const { sources } = effectiveValues("Hero", stored, {}, { Hero: look });
+    expect(sources).toEqual({ lookGradientFrom: "look", lookGradientTo: "look", lookColor: "own" });
+  });
+
+  it("take Theme's from the look on the devices that have it, and keep the others' own", () => {
+    const stored = {
+      lookGradientTo: { $responsive: { desktop: "theme", tablet: "secondary" } },
+    };
+
+    expect(valuesWithLook(stored, { lookGradientTo: "accent" })).toEqual({
+      lookGradientTo: {
+        $responsive: { desktop: "accent", tablet: "secondary", mobile: "secondary" },
+      },
+    });
+    // A look that doesn't set the end: per device, Theme's stays as stored, Desktop's included,
+    // so the value is still one the stored form takes (#956 review); it draws as unset.
+    const perDevice = { lookGradientTo: { $responsive: { desktop: "theme", mobile: "accent" } } };
+    expect(valuesWithLook(perDevice, { lookItalic: true })).toEqual({
+      ...perDevice,
+      lookItalic: true,
+    });
+    const { values, sources } = effectiveValues(
+      "Hero",
+      perDevice,
+      {},
+      {
+        Hero: { lookItalic: true },
+      },
+    );
+    expect(values.lookGradientTo).toEqual(perDevice.lookGradientTo);
+    expect(sources.lookGradientTo).toBe("own");
+    // Without a look for it, Theme's is no value: the end draws with its default.
+    expect(valuesWithLook({ lookGradientFrom: "theme" }, { lookItalic: true })).toEqual({
+      lookItalic: true,
+    });
+  });
 });
