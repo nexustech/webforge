@@ -154,7 +154,9 @@ const valueOn = (value: unknown, device: Breakpoint) =>
 function ownValue(name: string, own: unknown, look: unknown): unknown {
   if (!THEMES_IS_UNSET.has(name)) return own;
   if (own === "theme") return undefined;
-  if (!isResponsiveValue(own as Responsive<unknown>)) return own;
+  // Per device, Theme's takes the look's value there: without one, it stays as stored, which
+  // draws as unset, so every device keeps a value (the stored form needs Desktop's).
+  if (!isResponsiveValue(own as Responsive<unknown>) || look === undefined) return own;
   if (!DEVICES.some((device) => valueOn(own, device) === "theme")) return own;
   const [desktop, tablet, mobile] = DEVICES.map((device) => {
     const one = valueOn(own, device);

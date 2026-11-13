@@ -117,6 +117,23 @@ describe("an item's values with its kind's look (#670)", () => {
         $responsive: { desktop: "accent", tablet: "secondary", mobile: "secondary" },
       },
     });
+    // A look that doesn't set the end: per device, Theme's stays as stored, Desktop's included,
+    // so the value is still one the stored form takes (#956 review); it draws as unset.
+    const perDevice = { lookGradientTo: { $responsive: { desktop: "theme", mobile: "accent" } } };
+    expect(valuesWithLook(perDevice, { lookItalic: true })).toEqual({
+      ...perDevice,
+      lookItalic: true,
+    });
+    const { values, sources } = effectiveValues(
+      "Hero",
+      perDevice,
+      {},
+      {
+        Hero: { lookItalic: true },
+      },
+    );
+    expect(values.lookGradientTo).toEqual(perDevice.lookGradientTo);
+    expect(sources.lookGradientTo).toBe("own");
     // Without a look for it, Theme's is no value: the end draws with its default.
     expect(valuesWithLook({ lookGradientFrom: "theme" }, { lookItalic: true })).toEqual({
       lookItalic: true,
