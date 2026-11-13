@@ -26,7 +26,6 @@ export const themePanelArea: Area<WindowContext> = {
     session,
     preferences,
     siteWide,
-    kindPreviews,
     itemPreviews,
     tips,
   }) => {
@@ -52,7 +51,6 @@ export const themePanelArea: Area<WindowContext> = {
     const removeStudio = registerThemeStudio(windowDialogs, session, studio, {
       siteWide,
       ownThemes,
-      kindPreviews,
       itemPreviews,
     });
     const removeOwn = registerOwnThemes(windowDialogs, session, ownThemes);
