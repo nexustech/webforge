@@ -29,6 +29,25 @@ describe("postsFromFiles (6.10b)", () => {
     ]);
   });
 
+  it("takes the first heading as the title, quickly however long its line (#974)", () => {
+    // The pattern that found it took over a minute on a line of a few thousand spaces.
+    const spaces = " ".repeat(200_000);
+    const start = performance.now();
+    const posts = postsFromFiles([
+      md("long.md", `Intro\n  # New ovens ##  \nThey bake.`),
+      md("spaces.md", `# a${spaces}b\n\nText`),
+    ]);
+
+    expect(performance.now() - start).toBeLessThan(1000);
+    expect(posts[0]).toEqual({
+      title: "New ovens",
+      entry: {},
+      body: "<p>Intro They bake.</p>",
+    });
+    // A heading still, cut to a page title's 200 characters, which leaves its first word.
+    expect(posts[1]?.title).toBe("a");
+  });
+
   it("reads a CSV a post a row, leaving out rows without a title and dates that aren't", () => {
     const posts = postsFromFiles([
       md(
