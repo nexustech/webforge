@@ -66,7 +66,7 @@ Assistant panel  ──IPC──▶ assistant loop ──HTTPS (net.fetch)──
 | **LM Studio**            | `http://localhost:1234/v1`, editable         | None                                       | Nobody                                             |
 | **Another server…**      | Any `http:` or `https:` URL the person types | Optional, pasted                           | Whoever runs that server: the panel names its host |
 
-- **One provider at a time,** chosen in Preferences › _Assistant_, with its model and the monthly limit.
+- **One provider at a time,** chosen in Settings › _Assistant_, with its model and the monthly limit.
 - **A key never travels unencrypted:** the client refuses to send one over plain `http:` to a server that isn't on this computer (`insecure-server`), so nothing of the site goes there either (#976). Over `https:`, or to `localhost`, `127.0.0.1` or `[::1]`, it goes.
 - **Keys** live in 4.4a's credential store: `assistant/openrouter`, or `assistant/server` for _Another server…_. Never the site file, the settings JSON or logs.
   - Where the store refuses (Linux's `basic_text` backend), the assistant can't sign in, and says why.
@@ -349,7 +349,7 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - Otherwise something has happened since: it offers the reply's conversation's `safety-version` in Version History instead, as product/14 §6.2 says.
   - _Keep_ only closes the card.
 - **_Review before applying_ (AIA-5's setting) isn't in this contract yet.** Holding changes back until the person agrees needs the tool layer to stage commands, which 4.9's doesn't.
-  - **Until it works, the panel and Preferences don't show it:** no setting that does nothing. `AssistantStatus` still carries `reviewBeforeApplying` (always `false`), and changes apply at once, which is the default the product owner chose.
+  - **Until it works, the panel and Settings don't show it:** no setting that does nothing. `AssistantStatus` still carries `reviewBeforeApplying` (always `false`), and changes apply at once, which is the default the product owner chose.
   - **It must work before the beta ships the assistant.** 6.9b makes it work, and adds its events to this contract with a note to stream A. If 6.9b can't, a follow-up issue in Phase 5 does, before the beta.
 - **Errors carry a code, never the provider's own text,** which could quote the request. The panel words each code with `t()`. Main logs the HTTP status and the provider's error type, without content.
 
