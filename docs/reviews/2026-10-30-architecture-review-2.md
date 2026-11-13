@@ -2,6 +2,8 @@
 
 **Date:** 30 Oct 2026 · **Commit:** `main` at `c602885` (Phase 3 exit) · **First review:** [2026-10-23](2026-10-23-architecture-review.md) · **Security review:** [2026-10-30](2026-10-30-security-review.md)
 
+**Status since (13 Nov 2026):** R17 (#250) closed on 1 Nov. The R9, R10 and R12 remainders were done in #671, closed on 8 Nov with the smaller findings. R10's branded-id casts have grown again since, from 9 to 26; #989 (from the [13 Nov codebase review](2026-11-13-codebase-review.md)) adds typed helpers and a check.
+
 The first review's work landed. Of its 17 findings, 13 hold in the code, 3 hold only in part (R9, R10, R12) and 1 is not done (R17, docs only). The largest structural problems are gone:
 
 - `main/index.ts` went from 538 lines to 21.

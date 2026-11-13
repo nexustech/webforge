@@ -49,15 +49,15 @@ files/<sha-256>          other files the site names, such as bundled code (3.9)
 
 ## `manifest.json`
 
-| Field      | What it holds                                                                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------------ |
-| `format`   | `"webforge-site-zip"`: a ZIP without it isn't a site's                                                             |
-| `version`  | The layout's version, now `1`. A ZIP of a later one comes from a newer app, which the person is asked to update to |
-| `name`     | The site's name, which the new site's file takes                                                                   |
-| `media`    | `{ mediaId, path, mime, width?, height?, originalName, sha256 }` for each Media item's original                    |
-| `files`    | `{ path, mime, sha256 }` for each other file the site names by its SHA-256                                         |
-| `versions` | Newest first: `{ id, name, kind, createdAt, path }`, `kind` being `manual` or `auto`                               |
-| `project`  | The project block: `{ editorMode, exportChoices, siteCheckIgnored }`                                               |
+| Field      | What it holds                                                                                                                                                                                                                                        |
+| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `format`   | `"webforge-site-zip"`: a ZIP without it isn't a site's                                                                                                                                                                                               |
+| `version`  | The layout's version, now `2`. A ZIP of a later one comes from a newer app, which the person is asked to update to. Version 1 still opens: its versions have no `reason`, so each takes one from its `kind` (`manual`, else `daily`; `reasonOfKind`) |
+| `name`     | The site's name, which the new site's file takes                                                                                                                                                                                                     |
+| `media`    | `{ mediaId, path, mime, width?, height?, originalName, sha256 }` for each Media item's original                                                                                                                                                      |
+| `files`    | `{ path, mime, sha256 }` for each other file the site names by its SHA-256                                                                                                                                                                           |
+| `versions` | Newest first: `{ id, name, kind, reason?, createdAt, path }`, `kind` being `manual` or `auto`, and `reason` why it was saved (version 2): `manual`, `daily`, `before-restore`, `before-site-wide` or `on-publish`                                    |
+| `project`  | The project block: `{ editorMode, exportChoices, siteCheckIgnored }`                                                                                                                                                                                 |
 
 ## Opening one
 
