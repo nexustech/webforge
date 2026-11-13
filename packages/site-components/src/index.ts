@@ -83,6 +83,7 @@ export {
   type NavigationSite,
   navigationFor,
 } from "./navigation.js";
+export { partnersOf, shownValueOf } from "./partner-fields.js";
 export { type EditPreviews, PREVIEW_ATTRIBUTE, samePreviews } from "./previews.js";
 export type { RenderedPage } from "./render-static.js";
 export {

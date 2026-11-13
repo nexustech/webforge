@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-11
+updated: 2026-11-13
 ---
 
 # Styling
@@ -57,6 +57,12 @@ Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when h
 - the right-click menu or the Edit menu.
 
 It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title. Previews show Desktop and Mobile as you go.
+
+### Gradients
+
+A gradient blends one colour into another across the background. To add one, choose a direction in **Gradient** under **Background**. It starts as **Brand** to **Accent**; change either colour in **Gradient starts with** and **Gradient ends with**, which show once the gradient has a direction. If you chose a colour before, it's kept. Choosing **None** turns the gradient off and keeps its colours, so choosing a direction again brings the same gradient back.
+
+Like the other choices here, a gradient can differ by device: choosing a direction while viewing Mobile adds it on Mobile only.
 
 **Where it applies** sets which items get the look:
 

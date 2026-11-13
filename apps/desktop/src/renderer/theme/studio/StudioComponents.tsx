@@ -8,7 +8,12 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { LOOK_FIELDS, type NodeDoc, type ThemeTokens } from "@webforge/model";
-import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components";
+import {
+  type ComponentLibrary,
+  fieldsHiddenBy,
+  partnersOf,
+  shownValueOf,
+} from "@webforge/site-components";
 import { useRef, useState } from "react";
 import { lookFieldsOf } from "../../clipboard/index.js";
 import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
@@ -121,6 +126,31 @@ function previewNode(library: ComponentLibrary, type: string): NodeDoc {
 }
 
 /**
+ * What changing the look's field `name` to `value` changes in the draft: its Desktop value, and
+ * the fields it sets besides there (CT-10), as the Edit panel does: a gradient's direction gives
+ * the colours the look has none of.
+ */
+function lookChange(
+  def: ComponentLibrary["components"][string] | undefined,
+  look: Readonly<Record<string, unknown>>,
+  name: string,
+  value: unknown,
+): Record<string, unknown> {
+  const change: Record<string, unknown> = { [name]: withValueAt(look[name], "desktop", value) };
+  if (def === undefined) return change;
+  const values = Object.fromEntries(
+    Object.entries({ ...def.defaults, ...look }).map(([field, stored]) => [
+      field,
+      valueAt(stored, "desktop"),
+    ]),
+  );
+  for (const [partner, given] of Object.entries(partnersOf(def.fields, name, value, values))) {
+    change[partner] = withValueAt(look[partner], "desktop", given);
+  }
+  return change;
+}
+
+/**
  * Theme Studio's Components (3.12, CT-1): every kind of section and element with a look, by
  * category, and for the one chosen, it drawn live in the theme beside its look's controls, so a
  * kind is styled without selecting one on a page. A look is the Appearance group's fields; its
@@ -164,8 +194,9 @@ export function StudioComponents({
   const fields = names.flatMap((name): EditPanelField[] => {
     const field = def?.fields[name];
     const spec = field === undefined ? undefined : specOf(field);
-    if (spec === undefined || hidden.has(name)) return [];
-    const value = valueAt(look[name] ?? def?.defaults[name], "desktop");
+    if (field === undefined || spec === undefined || hidden.has(name)) return [];
+    // A gradient's end without a colour shows the one it draws with (CT-10).
+    const value = shownValueOf(field, valueAt(look[name] ?? def?.defaults[name], "desktop"));
     return [
       {
         ...spec,
@@ -297,9 +328,7 @@ export function StudioComponents({
               itemKey={shown.type}
               fields={fields}
               onChange={(name, value) =>
-                onChange(shown.type, shown.label, {
-                  [name]: withValueAt(look[name], "desktop", value),
-                })
+                onChange(shown.type, shown.label, lookChange(def, look, name, value))
               }
               onCommit={() => undefined}
               onResetToDefault={(reset) =>

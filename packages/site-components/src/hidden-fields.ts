@@ -24,9 +24,15 @@ type Hiding = {
 
 /**
  * The fields {@link hiddenFieldsOf} hides by other values, whatever the layout: the Appearance
- * group's Border colour (2.22b), and a section's overlay (2.26).
+ * group's Border colour (2.22b), a section's overlay (2.26), and a gradient's colours (CT-10).
  */
-const HIDDEN_BY_VALUES = ["lookBorderColor", "overlay", "overlayColor"] as const;
+const HIDDEN_BY_VALUES = [
+  "lookBorderColor",
+  "overlay",
+  "overlayColor",
+  "lookGradientFrom",
+  "lookGradientTo",
+] as const;
 
 /**
  * The fields of `component` that {@link hiddenFieldsOf} can hide, with some values or other: its
@@ -63,6 +69,18 @@ export function hiddenFieldsOf(
     !onAnyDevice(values.lookBorder, (one) => one === "thin" || one === "thick")
   ) {
     hidden.add("lookBorderColor");
+  }
+  // A gradient's colours, only while it has a direction on some device (CT-10): *None* keeps them
+  // for when one is chosen again.
+  if (
+    Object.hasOwn(fields, "lookGradientFrom") &&
+    !onAnyDevice(
+      values.lookGradientDirection,
+      (one) => typeof one === "string" && one !== "default",
+    )
+  ) {
+    hidden.add("lookGradientFrom");
+    hidden.add("lookGradientTo");
   }
   // A section's overlay, only once it has a background image to lie over (2.26).
   if (
