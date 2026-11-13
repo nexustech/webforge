@@ -107,7 +107,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Test client is added" });
   await expect(shown.getByText(/You won't see it again/)).toBeVisible();
-  const [address, key] = await shown.locator("dd").allTextContents();
+  const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   expect(address).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
   await shown.getByRole("button", { name: "Done" }).click();
@@ -175,8 +175,8 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Claude Desktop is added" });
   // Shown once the key is in the keychain, which can take a moment.
-  await expect(shown.locator("dd").first()).toBeVisible();
-  const [key] = await shown.locator("dd").allTextContents();
+  await expect(shown.locator("dd code").first()).toBeVisible();
+  const [key] = await shown.locator("dd code").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   await shown.getByRole("button", { name: "Install in Claude Desktop" }).click();
   await expect(shown.getByText(/Claude Desktop is opening the extension/)).toBeVisible();
@@ -247,6 +247,82 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
 });
 
 /** Adds "Another app" called `name` in AI apps…, turned on: its address and key. */
+/** Adds the app chosen in *Which app?* by `choice`, under the name offered, and shows its key. */
+async function addFromChoice(choice: string, name: string) {
+  await chooseFromMenu(app, page, "File", "AI apps…");
+  const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
+  if (!(await allow.isChecked())) await allow.click();
+  await dialog().getByRole("button", { name: "Add AI app" }).click();
+  await dialog().getByRole("radio", { name: choice }).click();
+  await expect(dialog().getByRole("textbox", { name: "Name" })).toHaveValue(name);
+  await dialog().getByRole("button", { name: "Add", exact: true }).click();
+  const shown = dialog().getByRole("region", { name: `${name} is added` });
+  await expect(shown.getByText(/You won't see it again/)).toBeVisible();
+  return shown;
+}
+
+test("VS Code installs through its link, which has no key: the key VS Code asks for connects it (5.13)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  // What Install in VS Code opens, instead of opening it: VS Code is this test.
+  await app.evaluate(({ shell }) => {
+    const opened: string[] = [];
+    Object.assign(globalThis, { opened });
+    Object.assign(shell, {
+      openExternal: async (url: string) => {
+        opened.push(url);
+      },
+    });
+  });
+  const shown = await addFromChoice("VS Code (GitHub Copilot)", "VS Code");
+  const [key] = await shown.locator("dd code").allTextContents();
+  if (key === undefined) throw new Error("no key shown");
+  await shown.getByRole("button", { name: "Install in VS Code" }).click();
+  await expect(shown.getByText(/VS Code is opening/)).toBeVisible();
+
+  const opened = await app.evaluate(() => (globalThis as { opened?: string[] }).opened ?? []);
+  expect(opened).toHaveLength(1);
+  const [link = ""] = opened;
+  expect(link).toMatch(/^vscode:mcp\/install\?/);
+  expect(link).not.toContain(key);
+  const server = JSON.parse(decodeURIComponent(link.slice(link.indexOf("?") + 1))) as {
+    url: string;
+    headers: Record<string, string>;
+    inputs: { id: string; password: boolean }[];
+  };
+  expect(server.inputs).toEqual([expect.objectContaining({ password: true })]);
+  // As VS Code fills its input with what the person pastes.
+  const header = server.headers.Authorization?.replace(`\${input:${server.inputs[0]?.id}}`, key);
+  expect(header).toBe(`Bearer ${key}`);
+  const client = await connect(server.url, key);
+  expect((await client.listTools()).tools.length).toBeGreaterThan(0);
+  await expect(dialog().getByText("Connected")).toBeVisible();
+  await client.close();
+});
+
+test("Claude Code's command has no key: with the key in its variable, it connects (5.13)", async () => {
+  test.skip(
+    process.platform !== "win32" && process.platform !== "darwin",
+    "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
+  );
+  const shown = await addFromChoice("Claude Code", "Claude Code");
+  const [command = "", key] = await shown.locator("dd code").allTextContents();
+  if (key === undefined) throw new Error("no key shown");
+  expect(command).not.toContain(key);
+  const [, url, header] =
+    /^claude mcp add --transport http --scope user webforge (\S+) --header '([^']+)'$/.exec(
+      command,
+    ) ?? [];
+  // As Claude Code expands WEBFORGE_KEY when it connects.
+  expect(header?.replace(`\${WEBFORGE_KEY}`, key)).toBe(`Authorization: Bearer ${key}`);
+  const client = await connect(url ?? "", key);
+  expect((await client.listTools()).tools.length).toBeGreaterThan(0);
+  await expect(dialog().getByText("Connected")).toBeVisible();
+  await client.close();
+});
+
 async function pairAnotherApp(name: string): Promise<{ address: string; key: string }> {
   await chooseFromMenu(app, page, "File", "AI apps…");
   const allow = dialog().getByRole("checkbox", { name: "Let AI apps connect" });
@@ -258,7 +334,7 @@ async function pairAnotherApp(name: string): Promise<{ address: string; key: str
   const shown = dialog().getByRole("region", { name: `${name} is added` });
   // Shown once the key is in the keychain, which can take a moment (macOS's especially).
   await expect(shown.getByText(/You won't see it again/)).toBeVisible();
-  const [address, key] = await shown.locator("dd").allTextContents();
+  const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   await shown.getByRole("button", { name: "Done" }).click();
   await dialog().getByRole("button", { name: "Close" }).click();
