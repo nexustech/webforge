@@ -135,7 +135,7 @@ const signInResultSchema = z.strictObject({
 type SignInResult = z.infer<typeof signInResultSchema>;
 
 /** Why a message wasn't sent, or a reply stopped early. The panel words each with `t()`. */
-export const ASSISTANT_ERRORS = [
+const ASSISTANT_ERRORS = [
   /** The app's or this site's yes is missing (§4). */
   "consent-needed",
   "not-signed-in",
