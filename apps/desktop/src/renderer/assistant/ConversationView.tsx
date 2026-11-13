@@ -157,15 +157,21 @@ export function errorKey(code: string | undefined) {
 /**
  * The assistant's conversation on this site (6.9c, ADR 0026 §7): each message and its reply as it
  * streams, in limited Markdown and never as HTML, what the reply's tool calls did, why it stopped
- * early, and its cost in money. New text is announced politely as it comes (a log).
+ * early, and its cost in money. A reply is announced politely once it has ended (a log, busy while
+ * one streams).
  */
 export function ConversationView({ turns, onOpenLink, afterReply }: ConversationViewProps) {
   if (turns.length === 0) {
     return <p className="m-0 p-3 text-sm text-muted-foreground">{t("assistant.empty")}</p>;
   }
   return (
-    // The log is the list's container: a list keeps its own role, for its items.
-    <div role="log" aria-label={t("assistant.conversation")}>
+    // The log is the list's container: a list keeps its own role, for its items. Busy while a
+    // reply streams, so a screen reader announces it once it has ended, not delta by delta.
+    <div
+      role="log"
+      aria-label={t("assistant.conversation")}
+      aria-busy={turns.some((turn) => turn.state === "replying")}
+    >
       <ol className="m-0 flex list-none flex-col gap-4 p-3">
         {turns.map((turn) => (
           <Turn key={turn.replyId} turn={turn} onOpenLink={onOpenLink} afterReply={afterReply} />

@@ -33,6 +33,7 @@ describe("ConversationView (6.9c)", () => {
     expect(log.getByText("Fresh bread").tagName).toBe("STRONG");
     expect(log.getByText("This reply cost $0.0042")).toBeDefined();
     expect(log.getByText("card")).toBeDefined();
+    expect(screen.getByRole("log").getAttribute("aria-busy")).toBe("false");
   });
 
   it("says it is replying before any text, with nothing after it until it ends", () => {
@@ -46,6 +47,8 @@ describe("ConversationView (6.9c)", () => {
     ]);
 
     expect(screen.getByText("Replying…")).toBeDefined();
+    // Announced once it has ended, not as it streams.
+    expect(screen.getByRole("log").getAttribute("aria-busy")).toBe("true");
     expect(screen.getByRole("status").textContent).toBe("Working on your site…");
     expect(screen.queryByText("card")).toBeNull();
   });
