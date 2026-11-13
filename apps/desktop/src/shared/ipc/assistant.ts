@@ -68,7 +68,7 @@ const monthSchema = z.strictObject({
 /** See {@link monthSchema}. */
 type AssistantMonth = z.infer<typeof monthSchema>;
 
-/** The assistant as the panel and Preferences show it. */
+/** The assistant as the panel and Settings show it. */
 const statusSchema = z.strictObject({
   /** The app's consent given and not turned off. */
   enabled: z.boolean(),
@@ -99,7 +99,7 @@ const statusSchema = z.strictObject({
 /** See {@link statusSchema}. */
 export type AssistantStatus = z.infer<typeof statusSchema>;
 
-/** What Preferences changes; what's left out stays as it is. */
+/** What Settings changes; what's left out stays as it is. */
 const settingsSchema = z.strictObject({
   provider: z
     .discriminatedUnion("kind", [

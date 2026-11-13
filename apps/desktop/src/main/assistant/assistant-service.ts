@@ -31,7 +31,7 @@ import type { OpenRouterSignIn } from "./openrouter-sign-in.js";
 const OPENROUTER_KEY = assistantCredentialKey("openrouter");
 const SERVER_KEY = assistantCredentialKey("server");
 
-/** A local server's address when Preferences gives none (ADR 0026 §2). */
+/** A local server's address when Settings gives none (ADR 0026 §2). */
 const LOCAL_DEFAULTS = {
   ollama: "http://localhost:11434/v1",
   lmstudio: "http://localhost:1234/v1",
@@ -210,7 +210,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     };
   };
 
-  /** The status, told to the window too: Preferences and the panel follow it. */
+  /** The status, told to the window too: Settings and the panel follow it. */
   const changed = async () => {
     const next = await status();
     options.emit({ type: "status", status: next });
