@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.2.0](https://github.com/nexustech/webforge/compare/v0.1.0...v0.2.0) (2026-11-13)
+
+
+### Features
+
+* **blog:** link the menu and buttons to a blog's own page ([#940](https://github.com/nexustech/webforge/issues/940)) ([#943](https://github.com/nexustech/webforge/issues/943)) ([798932d](https://github.com/nexustech/webforge/commit/798932de8c904d16e331a3b4e4f95dab79f5058a))
+* **blog:** tags, latest posts, the blog's own pages and feed, and importing posts (6.10b) ([#939](https://github.com/nexustech/webforge/issues/939)) ([3386170](https://github.com/nexustech/webforge/commit/33861709073b7bb9e2b1f2fd166a5d2a89cf7279))
+* **blog:** the Blog on a collections engine, posts written on the canvas (6.10a) ([#935](https://github.com/nexustech/webforge/issues/935)) ([648dd2d](https://github.com/nexustech/webforge/commit/648dd2daa07ac640393603651e756961603a27b7))
+* **branding:** the Webforge logo and app icons ([#916](https://github.com/nexustech/webforge/issues/916)) ([7fb7459](https://github.com/nexustech/webforge/commit/7fb7459f42c25cdd98e86c92a2ae152a7be61f4d))
+* **find:** find and replace across the site ([#926](https://github.com/nexustech/webforge/issues/926)) ([ff9c32e](https://github.com/nexustech/webforge/commit/ff9c32e053328fc765e3a166e8210f2ea1e54073))
+* **gradients:** a direction gives a gradient its colours, brand to accent (5.11 part 1) ([#956](https://github.com/nexustech/webforge/issues/956)) ([0a2752c](https://github.com/nexustech/webforge/commit/0a2752cf71807a98aeeacbae2bf9f10aaf36d7ac))
+* **notes:** notes on elements, on the canvas, in Layers and as Site Check tips (6.7) ([#930](https://github.com/nexustech/webforge/issues/930)) ([329fab5](https://github.com/nexustech/webforge/commit/329fab5b9a5034cbc1451f38635f555990a7b3cb))
+* **site-components:** a Header option to turn off the section highlight (5.10b) ([#933](https://github.com/nexustech/webforge/issues/933)) ([ed8c956](https://github.com/nexustech/webforge/commit/ed8c9569b5469518598e80c45de612a0f8de87f7))
+* **site-components:** an announcement bar above the header on every page ([#929](https://github.com/nexustech/webforge/issues/929)) ([d8563ad](https://github.com/nexustech/webforge/commit/d8563ada7f52865543b222c598f044bc082ae624))
+* **site-components:** the menu shows the section in view on a one-page site (5.10) ([#927](https://github.com/nexustech/webforge/issues/927)) ([bc282a5](https://github.com/nexustech/webforge/commit/bc282a562480ad1af6d4b73a353a26a90ae5376f))
+* **site:** draft pages, and elements hidden while editing or not published (6.3) ([#923](https://github.com/nexustech/webforge/issues/923)) ([5a8d89e](https://github.com/nexustech/webforge/commit/5a8d89ee55d6a09bd5a061efbb1448a319ed2043))
+* **site:** keep a renamed page's old address working ([#924](https://github.com/nexustech/webforge/issues/924)) ([39d8d20](https://github.com/nexustech/webforge/commit/39d8d202101d8aaf7912bc91bf35d6714d07a00c))
+* **site:** terms and cookie policy pages to start from ([#919](https://github.com/nexustech/webforge/issues/919)) ([917fa84](https://github.com/nexustech/webforge/commit/917fa842fbc6a698b57ff218f741cecba24d5b3f))
+* **start:** one-page sites from the quick start ([#928](https://github.com/nexustech/webforge/issues/928)) ([ed5951f](https://github.com/nexustech/webforge/commit/ed5951f0b61fdae178dbcddd4710f8c4fcb015b8))
+* **stylesheet:** the Stylesheet panel for custom.css (6.8) ([#931](https://github.com/nexustech/webforge/issues/931)) ([44a88d7](https://github.com/nexustech/webforge/commit/44a88d72b1107e373dd34a2aff1e923292d9d116))
+
+
+### Bug Fixes
+
+* **commands:** an AI app's rename keeps a published page's old address ([#934](https://github.com/nexustech/webforge/issues/934)) ([eaa9402](https://github.com/nexustech/webforge/commit/eaa94027a1faec068c1c24820c50f3b80bf5368a))
+* **deps:** move hono and @hono/node-server to their patched releases ([#952](https://github.com/nexustech/webforge/issues/952)) ([#954](https://github.com/nexustech/webforge/issues/954)) ([6291ffc](https://github.com/nexustech/webforge/commit/6291ffc6dbd3df0adfb71d84c9bd748bfc2becc0))
+
+
+### Performance Improvements
+
+* **canvas:** keep the opening's work out of it: one Tailwind compiler, editor code preloaded ([#946](https://github.com/nexustech/webforge/issues/946)) ([e9e824a](https://github.com/nexustech/webforge/commit/e9e824adc33c293c0926a7057a36e086c0f6604f))
+
 ## 0.1.0 (2026-11-10)
 
 
