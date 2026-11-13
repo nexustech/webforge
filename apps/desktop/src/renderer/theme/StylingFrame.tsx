@@ -17,9 +17,19 @@ const PREVIEW_DEVICES = ["desktop", "mobile"] as const;
 /** A device a preview strip shows. */
 type PreviewDevice = (typeof PREVIEW_DEVICES)[number];
 
-/** What can take the focus, for the first of the controls to take it as the dialog opens. */
-const FOCUSABLE =
-  'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+/**
+ * What can take the focus, for the first of the controls to take it as the dialog opens: never
+ * one the keyboard skips (`tabindex="-1"`), such as a tab not chosen, which focus would choose.
+ */
+const FOCUSABLE = [
+  "button:not([disabled])",
+  "input:not([disabled])",
+  "select:not([disabled])",
+  "textarea:not([disabled])",
+  "[tabindex]",
+]
+  .map((each) => `${each}:not([tabindex="-1"])`)
+  .join(", ");
 
 /** How tall the preview starts, of the frame's body, and the least the preview and controls keep. */
 const SIZES = { preview: "40%", previewMin: "6rem", controlsMin: "14rem" } as const;

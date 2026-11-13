@@ -55,6 +55,15 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
     expect(studio.getState().open).toBe(false);
   });
 
+  it("opens with the focus on its section's tab, keeping the section it opens on (CT-11)", async () => {
+    const { studio } = setUp("components");
+
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("tab", { name: "Components" })),
+    );
+    expect(studio.getState().section).toBe("components");
+  });
+
   it("keeps a sample page in the theme in view over Colours, Text and Styles, not Themes (CT-11)", async () => {
     const session = sessionWith();
     const studio = createStudio();
