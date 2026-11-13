@@ -8,9 +8,10 @@ import { openStyle } from "./style-apply.js";
 import { createStyleDialog } from "./style-state.js";
 
 // Style this ‹kind›…'s deeper groups (3.13b, CT-2), one story each: the dialog open on an item
-// with values in that group, scrolled to it. The previews draw with the canvas's CSS compiler,
-// which Storybook doesn't have: their places show.
-const meta = { title: "Dialogs/Style This/Groups" } satisfies Meta;
+// with values in that group, scrolled to it, in a window of 1280 × 800 px, which it fills (CT-11).
+// The previews draw with the canvas's CSS compiler, which Storybook doesn't have: their places
+// show.
+const meta = { title: "Dialogs/Style This/Groups", tags: ["full-window"] } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 

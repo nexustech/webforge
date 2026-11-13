@@ -49,6 +49,8 @@ export type EditPanelHostProps = {
   readonly headingAside?: ReactNode;
   /** The Advanced tab's read-only *CSS* of the item (3.14); none without it. */
   readonly itemCss?: ItemCssServices | undefined;
+  /** The groups in as many columns as fit: a panel as wide as its dialog (CT-11). */
+  readonly columns?: boolean | undefined;
 };
 
 /**
@@ -69,6 +71,7 @@ export function EditPanelHost({
   styleAction,
   headingAside,
   itemCss,
+  columns = false,
 }: EditPanelHostProps) {
   const { library } = session;
   const { pageId, nodeId, viewport, others = [] } = useUi(session, (ui) => ui);
@@ -148,6 +151,7 @@ export function EditPanelHost({
       contentOnly={contentOnly}
       single={appearanceOnly}
       itemKey={id}
+      columns={columns}
       styleAction={styleAction}
       advancedFooter={
         itemCss === undefined ? undefined : (
