@@ -61,12 +61,16 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   const field = studio().locator('[data-field="lookBackground"]');
   const accent = field.getByRole("radio", { name: "Accent", exact: true });
   // It stays where it first shows while the look's preview draws, so one click lands (#626):
-  // the preview is in the strip above the controls (CT-11).
+  // the preview is in the strip above the controls (CT-11). Within 2 px: the dialog may still be
+  // finishing its zoom as it opens (0.7 px on macOS, #972), while a preview pushing the controls
+  // down moved them by its height.
   await expect(accent).toBeVisible();
   const shownAt = await accent.boundingBox();
   // Drawn: the strip's figures hold the drawings' frames.
   await expect(studio().locator("figure iframe")).toHaveCount(2);
-  expect(await accent.boundingBox()).toEqual(shownAt);
+  const drawnAt = await accent.boundingBox();
+  expect(Math.abs((drawnAt?.x ?? 0) - (shownAt?.x ?? Number.NaN))).toBeLessThanOrEqual(2);
+  expect(Math.abs((drawnAt?.y ?? 0) - (shownAt?.y ?? Number.NaN))).toBeLessThanOrEqual(2);
   // One click: a draft (4.10). Applied, a built-in theme asks for a name for the person's own
   // version first (2.23).
   await accent.click();
