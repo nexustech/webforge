@@ -22,6 +22,7 @@ import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu, runMenuCommand } from "./app-menu.js";
 import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
+import { registerAssistantHandlers, unbuiltAssistant } from "./assistant-ipc.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
@@ -774,6 +775,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     markStartup("ipc-registered");
     registerPostsHandlers(ipcMain, isTrustedSender, filePostsParts(dialogs.posts.choosePostFiles));
+    registerAssistantHandlers(ipcMain, isTrustedSender, unbuiltAssistant);
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

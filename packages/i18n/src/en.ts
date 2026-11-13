@@ -1,6 +1,7 @@
 import { ai } from "./en/ai.js";
 import { aiApps } from "./en/aiApps.js";
 import { app } from "./en/app.js";
+import { assistant } from "./en/assistant.js";
 import { blog } from "./en/blog.js";
 import { canvas } from "./en/canvas.js";
 import { components } from "./en/components/index.js";
@@ -47,6 +48,7 @@ export const areas = {
   templates,
   ai,
   aiApps,
+  assistant,
   versions,
   help,
   onboarding,
@@ -79,6 +81,7 @@ export const en = {
   ...templates,
   ...ai,
   ...aiApps,
+  ...assistant,
   ...versions,
   ...help,
   ...onboarding,
