@@ -111,6 +111,35 @@ type Shown = {
   readonly address: string;
 };
 
+/**
+ * A row of the pairing's list: what it is, its value and a button that copies it. The button is in
+ * the `dd` with the value, as a list holds only terms and values; `contents` keeps both in the
+ * list's grid columns.
+ */
+function CopyRow({
+  label,
+  value,
+  copyLabel,
+  onCopy,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly copyLabel: string;
+  readonly onCopy: () => void;
+}) {
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd className="contents">
+        <code className="break-all font-mono">{value}</code>
+        <Button variant="outline" size="sm" onClick={onCopy}>
+          {copyLabel}
+        </Button>
+      </dd>
+    </>
+  );
+}
+
 /** What *Install in VS Code* came to for `name`, in words. */
 const vsCodeText = (status: McpVsCodeResult["status"], name: string) =>
   status === "opened"
@@ -301,40 +330,33 @@ export function AiAppsDialog({
                 ) : null}
                 <dl className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
                   {shown.kind === "other" ? (
-                    <>
-                      <dt>{t("aiApps.key.address")}</dt>
-                      <dd className="break-all font-mono">{shown.address}</dd>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copy("address", shown.address)}
-                      >
-                        {copied === "address"
-                          ? t("aiApps.key.copied")
-                          : t("aiApps.key.copyAddress")}
-                      </Button>
-                    </>
+                    <CopyRow
+                      label={t("aiApps.key.address")}
+                      value={shown.address}
+                      copyLabel={
+                        copied === "address" ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")
+                      }
+                      onCopy={() => copy("address", shown.address)}
+                    />
                   ) : null}
                   {shown.kind === "claudeCode" ? (
-                    <>
-                      <dt>{t("aiApps.claudeCode.command")}</dt>
-                      <dd className="break-all font-mono">{claudeCodeCommand(shown.address)}</dd>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copy("command", claudeCodeCommand(shown.address))}
-                      >
-                        {copied === "command"
+                    <CopyRow
+                      label={t("aiApps.claudeCode.command")}
+                      value={claudeCodeCommand(shown.address)}
+                      copyLabel={
+                        copied === "command"
                           ? t("aiApps.key.copied")
-                          : t("aiApps.claudeCode.copyCommand")}
-                      </Button>
-                    </>
+                          : t("aiApps.claudeCode.copyCommand")
+                      }
+                      onCopy={() => copy("command", claudeCodeCommand(shown.address))}
+                    />
                   ) : null}
-                  <dt>{t("aiApps.key.key")}</dt>
-                  <dd className="break-all font-mono">{shown.key}</dd>
-                  <Button variant="outline" size="sm" onClick={() => copy("key", shown.key)}>
-                    {copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
-                  </Button>
+                  <CopyRow
+                    label={t("aiApps.key.key")}
+                    value={shown.key}
+                    copyLabel={copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
+                    onCopy={() => copy("key", shown.key)}
+                  />
                 </dl>
                 {/* Empty, it takes no room: the screenshots of a key not yet copied stay as they were. */}
                 <p role="status" className={copied === "key" ? "mt-2 text-sm" : "text-sm"}>

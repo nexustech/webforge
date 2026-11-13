@@ -107,7 +107,7 @@ test("an AI app paired in AI apps… changes the site, as undo steps named after
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Test client is added" });
   await expect(shown.getByText(/You won't see it again/)).toBeVisible();
-  const [address, key] = await shown.locator("dd").allTextContents();
+  const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   expect(address).toMatch(/^http:\/\/127\.0\.0\.1:\d+\/mcp$/);
   await shown.getByRole("button", { name: "Done" }).click();
@@ -175,8 +175,8 @@ test("Claude Desktop connects through the extension AI apps… writes, with its 
   await dialog().getByRole("button", { name: "Add", exact: true }).click();
   const shown = dialog().getByRole("region", { name: "Claude Desktop is added" });
   // Shown once the key is in the keychain, which can take a moment.
-  await expect(shown.locator("dd").first()).toBeVisible();
-  const [key] = await shown.locator("dd").allTextContents();
+  await expect(shown.locator("dd code").first()).toBeVisible();
+  const [key] = await shown.locator("dd code").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   await shown.getByRole("button", { name: "Install in Claude Desktop" }).click();
   await expect(shown.getByText(/Claude Desktop is opening the extension/)).toBeVisible();
@@ -277,7 +277,7 @@ test("VS Code installs through its link, which has no key: the key VS Code asks 
     });
   });
   const shown = await addFromChoice("VS Code (GitHub Copilot)", "VS Code");
-  const [key] = await shown.locator("dd").allTextContents();
+  const [key] = await shown.locator("dd code").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   await shown.getByRole("button", { name: "Install in VS Code" }).click();
   await expect(shown.getByText(/VS Code is opening/)).toBeVisible();
@@ -308,7 +308,7 @@ test("Claude Code's command has no key: with the key in its variable, it connect
     "an app's key is kept in the OS keychain, Windows' and macOS's (ADR 0006 §5, ADR 0021)",
   );
   const shown = await addFromChoice("Claude Code", "Claude Code");
-  const [command = "", key] = await shown.locator("dd").allTextContents();
+  const [command = "", key] = await shown.locator("dd code").allTextContents();
   if (key === undefined) throw new Error("no key shown");
   expect(command).not.toContain(key);
   const [, url, header] =
@@ -334,7 +334,7 @@ async function pairAnotherApp(name: string): Promise<{ address: string; key: str
   const shown = dialog().getByRole("region", { name: `${name} is added` });
   // Shown once the key is in the keychain, which can take a moment (macOS's especially).
   await expect(shown.getByText(/You won't see it again/)).toBeVisible();
-  const [address, key] = await shown.locator("dd").allTextContents();
+  const [address, key] = await shown.locator("dd code").allTextContents();
   if (address === undefined || key === undefined) throw new Error("no address or key shown");
   await shown.getByRole("button", { name: "Done" }).click();
   await dialog().getByRole("button", { name: "Close" }).click();
