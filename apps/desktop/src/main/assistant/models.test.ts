@@ -138,6 +138,20 @@ describe("the assistant's model list (6.9a, ADR 0026 §2)", () => {
     expect(new Headers(fetchFn.mock.calls[1]?.[1]?.headers).has("authorization")).toBe(false);
   });
 
+  it("never sends a key over plain http to another computer (#976)", async () => {
+    const fetchFn = vi.fn(async () => Response.json({ data: [{ id: "llama3.2" }] }));
+    const asFetch = fetchFn as unknown as typeof fetch;
+    expect(await serverModels(asFetch, "http://ai.example.com/v1", "sk-server")).toEqual({
+      status: "insecure-server",
+    });
+    expect(fetchFn).not.toHaveBeenCalled();
+    // Without a key, or with one on this computer, it lists as usual.
+    expect(await serverModels(asFetch, "http://ai.example.com/v1")).toMatchObject({ status: "ok" });
+    expect(await serverModels(asFetch, "http://127.0.0.1:1234/v1", "sk-local")).toMatchObject({
+      status: "ok",
+    });
+  });
+
   it("preselects the first tested model, and nothing while none is tested", async () => {
     const models = await openRouterModels(openRouter(), false);
     if (models.status !== "ok") throw new Error(models.status);
