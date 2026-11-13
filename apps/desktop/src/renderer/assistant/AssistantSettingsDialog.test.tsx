@@ -59,6 +59,20 @@ describe("the assistant's settings (6.9c, AIA-6, AIA-8)", () => {
     expect(await dialog.findByText("This month: $0.00 of $12.00")).toBeDefined();
   });
 
+  it("shows the status as it is now when opened again (#1005 review)", async () => {
+    const api = createFakeAssistant();
+    const { rerender } = render(<AssistantSettingsDialog open onOpenChange={vi.fn()} api={api} />);
+    expect(await screen.findByText("The assistant is on")).toBeDefined();
+
+    rerender(<AssistantSettingsDialog open={false} onOpenChange={vi.fn()} api={api} />);
+    // Changed elsewhere while it's closed (the panel, another window).
+    await api.setEnabled(false, ASSISTANT_CONSENT_VERSION);
+    rerender(<AssistantSettingsDialog open onOpenChange={vi.fn()} api={api} />);
+
+    expect(await screen.findByText("The assistant is off")).toBeDefined();
+    expect(screen.queryByText("The assistant is on")).toBeNull();
+  });
+
   it("is a line in Settings › Assistant that opens the dialog", async () => {
     const register = vi.fn((_entry: unknown) => () => undefined);
     let Dialog: ComponentType = () => null;

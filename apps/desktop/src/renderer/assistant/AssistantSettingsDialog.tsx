@@ -29,7 +29,11 @@ export type AssistantSettingsDialogProps = {
   readonly api: Pick<AssistantApi, "status" | "setEnabled" | "update" | "onEvent">;
 };
 
-/** The app's assistant status, loaded as the dialog opens and kept by main's `status` events. */
+/**
+ * The app's assistant status, loaded as the dialog opens and kept by main's `status` events while
+ * it's open. Forgotten as it closes: events go unheard meanwhile, so a later opening loads it anew
+ * (#1005 review).
+ */
 function useStatus(api: AssistantSettingsDialogProps["api"], open: boolean) {
   const [status, setStatus] = useState<AssistantStatus | undefined>(undefined);
   useEffect(() => {
@@ -47,6 +51,7 @@ function useStatus(api: AssistantSettingsDialogProps["api"], open: boolean) {
     return () => {
       current = false;
       stop();
+      setStatus(undefined);
     };
   }, [api, open]);
   return [status, setStatus] as const;
