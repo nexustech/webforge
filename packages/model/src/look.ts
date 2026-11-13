@@ -38,6 +38,8 @@ export const LOOK_FIELDS = [
   "lookGradientDirection",
   "lookGradientFrom",
   "lookGradientTo",
+  // How much of a picture a gradient over it covers (CT-14).
+  "lookGradientOpacity",
   "lookBorderTop",
   "lookBorderRight",
   "lookBorderBottom",

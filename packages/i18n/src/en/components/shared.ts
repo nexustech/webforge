@@ -190,6 +190,7 @@ export const shared = {
   "field.look.shadow.large": "Large",
   "field.look.opacity": "Opacity",
   "field.look.opacity.default": "Theme's",
+  "field.look.opacity.100": "100%",
   "field.look.opacity.90": "90%",
   "field.look.opacity.75": "75%",
   "field.look.opacity.50": "50%",
@@ -210,6 +211,9 @@ export const shared = {
   "field.look.gradient.toTopRight": "Diagonal, upwards",
   "field.look.gradientFrom": "Gradient starts with",
   "field.look.gradientTo": "Gradient ends with",
+  // Over a background picture only (CT-14): how much of the picture the gradient covers.
+  "field.look.gradientOpacity": "Gradient opacity",
+  "field.look.gradientOpacity.help": "How much of the picture shows through the gradient.",
   "field.look.borderTop": "Top border",
   "field.look.borderRight": "Right border",
   "field.look.borderBottom": "Bottom border",

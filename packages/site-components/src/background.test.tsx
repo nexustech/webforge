@@ -250,6 +250,84 @@ describe("the section frame's background (2.26)", () => {
     expect(html).toContain("bg-base-100/60");
   });
 
+  it("draws a gradient over the image and under the overlay, half see-through (CT-12, CT-14)", () => {
+    const story = (props: Record<string, unknown>) =>
+      renderNodesToHtml(
+        [
+          {
+            type: "TextSection",
+            props: {
+              id: "story",
+              backgroundImage: { mediaId: "shop" },
+              overlay: "40",
+              lookGradientDirection: "toRight",
+              lookGradientFrom: "primary",
+              lookGradientTo: "secondary",
+              ...props,
+            },
+          },
+        ],
+        siteLibrary,
+        context,
+      );
+    const layer = (opacity: string) =>
+      `<div aria-hidden="true" class="absolute inset-0 -z-10 bg-linear-to-r! from-primary! to-secondary! ${opacity}"></div>`;
+
+    // 50% while unset, so the picture shows at once.
+    const html = story({});
+    expect(html).toContain(layer("opacity-50"));
+    // Drawn in this order: the picture, the gradient, the overlay, then the content.
+    expect(html.indexOf("</picture>")).toBeLessThan(html.indexOf(layer("opacity-50")));
+    expect(html.indexOf(layer("opacity-50"))).toBeLessThan(html.indexOf("bg-base-100/40"));
+    // Its own opacity, per device; on the layer only, never on the section.
+    expect(story({ lookGradientOpacity: "100" })).toContain(layer("opacity-100"));
+    expect(
+      story({ lookGradientOpacity: { $responsive: { desktop: "25", mobile: "75" } } }),
+    ).toContain(layer("max-md:opacity-75 md:opacity-25"));
+    expect(story({ lookGradientOpacity: "25" })).toMatch(/^<section class="[^"]*"/);
+    expect(
+      story({ lookGradientOpacity: "25" }).match(/^<section class="([^"]*)"/)?.[1],
+    ).not.toContain("opacity");
+  });
+
+  it("offers Gradient opacity only with a direction and a picture behind (CT-14)", () => {
+    const section = siteLibrary.components.TextSection;
+    const hero = siteLibrary.components.Hero;
+    if (section === undefined || hero === undefined) throw new Error("no TextSection or Hero");
+    const shown = (def: typeof section, values: Record<string, unknown>) =>
+      !fieldsHiddenBy(def, { ...def.defaults, ...values }).has("lookGradientOpacity");
+    const picture = { backgroundImage: { mediaId: "shop" } };
+
+    expect(shown(section, { ...picture, lookGradientDirection: "toRight" })).toBe(true);
+    expect(shown(section, { lookGradientDirection: "toRight" })).toBe(false);
+    expect(shown(section, { ...picture, lookGradientDirection: "default" })).toBe(false);
+    // A Hero's picture is behind its text in its background layout only.
+    const heroPicture = { image: { mediaId: "shop" }, lookGradientDirection: "toBottom" };
+    expect(shown(hero, { ...heroPicture, variant: "background" })).toBe(true);
+    expect(shown(hero, { ...heroPicture, variant: "split" })).toBe(false);
+  });
+
+  it("draws a gradient on the section itself without an image, as before (CT-4)", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "TextSection",
+          props: {
+            id: "story",
+            lookGradientDirection: "toRight",
+            lookGradientFrom: "primary",
+            lookGradientTo: "accent",
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toMatch(/^<section class="[^"]*bg-linear-to-r! from-primary! to-accent!/);
+    expect(html).not.toContain("aria-hidden");
+  });
+
   it("changes nothing without an image", () => {
     const html = renderNodesToHtml(
       [{ type: "TextSection", props: { id: "story", overlay: "60" } }],

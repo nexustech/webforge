@@ -90,12 +90,13 @@ export function StudioLookPreview({
             {t("theme.components.previewDraft")}
           </ToggleGroupItem>
         </ToggleGroup>
-        <div className="flex flex-wrap items-start gap-4">
+        {/* Each preview fills its column: Desktop wide, Mobile beside it. */}
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,10rem)] items-start gap-4">
           {(["desktop", "mobile"] as const).map((device) => (
             <figure
               key={device}
               aria-label={t("theme.components.previewOn", { item, device: t(`device.${device}`) })}
-              className="m-0 flex flex-col gap-1"
+              className="m-0 flex min-w-0 flex-col gap-1"
             >
               <figcaption className="text-xs text-muted-foreground">
                 {t(`device.${device}`)}
