@@ -4,7 +4,7 @@ id: ai-apps
 title: AI apps
 summary: Let an AI app on this computer, such as Claude, read and change the site you have open.
 related: [undo-and-history, version-history, site-check]
-updated: 2026-11-10
+updated: 2026-11-13
 ---
 
 # AI apps
@@ -128,25 +128,66 @@ An app reads your site's content to work on it, and what it does with it is up t
 
 ChatGPT can't connect to {appName} yet.
 
-## For developers: other AI apps
+## For developers: Claude Code, VS Code and other apps
 
-An app that connects to an MCP server at an address, such as Claude Code, Cursor or VS Code, connects to {appName} directly.
+Developer tools connect to {appName} directly, at an address on this computer: `http://127.0.0.1:<port>/mcp`. **Add AI app** sets up Claude Code and VS Code for you, and shows the address for any other app.
+
+Unlike Claude Desktop's extension, these tools can't check who answers at the address. While {appName} is closed, another program on this computer could answer there and get the key. So turn {appName}'s server off in the tool while {appName} is closed: in Claude Code, with `/mcp`; in VS Code, with **MCP: List Servers** › **webforge** › **Stop Server**.
+
+### Claude Code
+
+You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
+
+1. Click **Add AI app**, choose **Claude Code**, and click **Add**.
+2. Click **Copy the command**, and run it in a terminal (Bash, Zsh or PowerShell). It adds {appName}'s server, named `webforge`, to Claude Code for all your projects:
+
+   ```
+   claude mcp add --transport http --scope user webforge http://127.0.0.1:<port>/mcp --header 'Authorization: Bearer ${WEBFORGE_KEY}'
+   ```
+
+   The key isn't in it. Claude Code reads it from `WEBFORGE_KEY` each time it connects, so the key isn't in your terminal's history or in Claude Code's settings.
+3. Click **Copy the key**. In the terminal you start Claude Code from, set `WEBFORGE_KEY` to it, then start Claude Code within 5 minutes. These commands ask for the key, so it isn't typed on the command line: paste it when asked, and press Return.
+   - On a Mac or Linux:
+
+     ```
+     read -rs WEBFORGE_KEY && export WEBFORGE_KEY
+     ```
+
+   - In Windows PowerShell:
+
+     ```
+     $env:WEBFORGE_KEY = [Net.NetworkCredential]::new('', (Read-Host 'Key' -AsSecureString)).Password
+     ```
+
+4. Back in {appName}, click **Done**. In Claude Code, `/mcp` lists `webforge` as connected.
+
+`WEBFORGE_KEY` lasts as long as that terminal: set it again in each new one. If you keep it in your shell's profile instead, the key is in that file as plain text.
+
+If Claude Code says a server named `webforge` already exists, from an earlier time you added it, remove that one first with `claude mcp remove --scope user webforge`, then run the command again.
+
+### VS Code (GitHub Copilot)
+
+You need VS Code with GitHub Copilot, whose agent mode uses {appName}'s tools.
+
+1. Click **Add AI app**, choose **VS Code (GitHub Copilot)**, and click **Add**.
+2. Click **Copy the key**.
+3. Click **Install in VS Code**. VS Code shows {appName}'s server, named `webforge`: click **Install**.
+4. When VS Code starts the server, it asks for {appName}'s key: paste it. VS Code keeps it in its own secret storage, not in its settings. If it doesn't start the server itself, choose **MCP: List Servers** › **webforge** › **Start Server** within 5 minutes of adding it.
+5. Back in {appName}, click **Done**. In Copilot Chat, choose **Agent**, and ask about your site.
+
+If {appName} says **VS Code didn't open**, VS Code may not be installed. Install it, then click **Install in VS Code** again.
+
+If VS Code already has a server named `webforge`, from an earlier time you added it, remove that one first: **MCP: List Servers** › **webforge** › **Uninstall**.
+
+### Other apps
 
 1. Click **Add AI app**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
-2. {appName} shows an **Address** and a **Key**. Copy both with **Copy the address** and **Copy the key**. The address is `http://127.0.0.1:<port>/mcp`, on this computer only.
+2. {appName} shows an **Address** and a **Key**. Copy both with **Copy the address** and **Copy the key**.
 3. In the app's settings for MCP servers, add an HTTP (Streamable HTTP) server at that address, with this header:
 
    ```
    Authorization: Bearer <key>
    ```
-
-   For Claude Code, for example:
-
-   ```
-   claude mcp add --transport http my-site http://127.0.0.1:<port>/mcp --header "Authorization: Bearer <key>"
-   ```
-
-Unlike Claude Desktop's extension, these apps can't check who answers at the address. While {appName} is closed, another program on this computer could answer there and get the key, so turn {appName}'s server off in the app while {appName} is closed.
 
 Some things to know:
 

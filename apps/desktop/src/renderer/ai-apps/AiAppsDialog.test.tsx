@@ -46,6 +46,7 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
       return { status: "paired", app, key: KEY, address: ADDRESS };
     }),
     installClaude: vi.fn<McpApi["installClaude"]>(async () => ({ status: "opened" })),
+    installVsCode: vi.fn<McpApi["installVsCode"]>(async () => ({ status: "opened" })),
     remove: vi.fn(async (id: string) => {
       status = { ...status, apps: status.apps.filter((app) => app.id !== id) };
       return status;
@@ -187,6 +188,69 @@ describe("AI apps (4.9)", () => {
     await user.click(dialog().getByRole("button", { name: "Done" }));
     expect(dialog().queryByText(KEY)).toBeNull();
     expect(dialog().getByText("Waiting for its key")).toBeTruthy();
+  });
+
+  it("adds Claude Code as another app is added, with a command to run that has no key (5.13)", async () => {
+    const { dialog, mcp, copyText, copySecret, user } = setUp();
+    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
+    // Its name offered in place of Claude Desktop's.
+    expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "Claude Code");
+    await user.click(dialog().getByRole("button", { name: "Add" }));
+
+    // Paired directly, as Another app is: the same key, limits and removal.
+    expect(mcp.add).toHaveBeenCalledWith("Claude Code", "other");
+    expect(await dialog().findByText(KEY)).toBeTruthy();
+    const command = `claude mcp add --transport http --scope user webforge ${ADDRESS} --header 'Authorization: Bearer \${WEBFORGE_KEY}'`;
+    expect(dialog().getByText(command)).toBeTruthy();
+    expect(command).not.toContain(KEY);
+    expect(dialog().getAllByText(/WEBFORGE_KEY/).length).toBeGreaterThan(1);
+    expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
+    await user.click(dialog().getByRole("button", { name: "Copy the command" }));
+    expect(copyText).toHaveBeenCalledWith(command);
+    await user.click(dialog().getByRole("button", { name: "Copy the key" }));
+    expect(copySecret).toHaveBeenCalledWith(KEY);
+    expect(copyText).not.toHaveBeenCalledWith(KEY);
+  });
+
+  it("adds VS Code as another app is added, and opens its install link (5.13)", async () => {
+    const { dialog, mcp, user } = setUp();
+    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(dialog().getByRole("radio", { name: "VS Code (GitHub Copilot)" }));
+    expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "VS Code");
+    await user.click(dialog().getByRole("button", { name: "Add" }));
+
+    expect(mcp.add).toHaveBeenCalledWith("VS Code", "other");
+    expect(await dialog().findByText(KEY)).toBeTruthy();
+    // The link holds the address: none to copy.
+    expect(dialog().queryByText(ADDRESS)).toBeNull();
+    expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
+    await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
+    expect(mcp.installVsCode).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
+    expect(await dialog().findByText(/VS Code is opening Webforge's server/)).toBeTruthy();
+
+    mcp.installVsCode.mockResolvedValueOnce({ status: "failed" });
+    await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
+    expect(await dialog().findByText(/VS Code didn't open/)).toBeTruthy();
+
+    mcp.installVsCode.mockResolvedValueOnce({ status: "unknown" });
+    await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
+    expect(
+      await dialog().findByText(
+        "VS Code's key wasn't used within 5 minutes, so VS Code was removed. Add it again.",
+      ),
+    ).toBeTruthy();
+  });
+
+  it("keeps a name the person typed when they choose another app, and swaps an offered one", async () => {
+    const { dialog, user } = setUp();
+    await user.click(await dialog().findByRole("button", { name: "Add AI app" }));
+    await user.click(dialog().getByRole("radio", { name: "VS Code (GitHub Copilot)" }));
+    await user.click(dialog().getByRole("radio", { name: "Another app" }));
+    expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "");
+    await user.type(dialog().getByRole("textbox", { name: "Name" }), "My editor");
+    await user.click(dialog().getByRole("radio", { name: "Claude Code" }));
+    expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "My editor");
   });
 
   it("says why an app wasn't added, and adds nothing while AI apps is off", async () => {

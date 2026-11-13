@@ -745,7 +745,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     // Any left when Webforge last quit, with their proofs: they've been opened, or never will be.
     void extensions.sweep().catch((error: unknown) => logFailure("mcp claude extension", error));
-    registerMcpHandlers(ipcMain, isTrustedSender, service, extensions);
+    // Looked up as it's called: the E2E tests replace `shell.openExternal`.
+    registerMcpHandlers(ipcMain, isTrustedSender, service, extensions, (url) =>
+      electron.shell.openExternal(url),
+    );
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
       session: projectSession,
