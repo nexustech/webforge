@@ -250,6 +250,54 @@ describe("the section frame's background (2.26)", () => {
     expect(html).toContain("bg-base-100/60");
   });
 
+  it("draws a gradient over the image and under the overlay, its opacity showing the image (CT-12)", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "TextSection",
+          props: {
+            id: "story",
+            backgroundImage: { mediaId: "shop" },
+            overlay: "40",
+            lookGradientDirection: "toRight",
+            lookGradientFrom: "primary/60",
+            lookGradientTo: "secondary/20",
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+    const layer =
+      '<div aria-hidden="true" class="absolute inset-0 -z-10 bg-linear-to-r! from-primary/60! to-secondary/20!"></div>';
+
+    expect(html).toContain(layer);
+    // Drawn in this order: the picture, the gradient, the overlay, then the content.
+    expect(html.indexOf("</picture>")).toBeLessThan(html.indexOf(layer));
+    expect(html.indexOf(layer)).toBeLessThan(html.indexOf("bg-base-100/40"));
+  });
+
+  it("draws a gradient on the section itself without an image, as before (CT-4)", () => {
+    const html = renderNodesToHtml(
+      [
+        {
+          type: "TextSection",
+          props: {
+            id: "story",
+            lookGradientDirection: "toRight",
+            lookGradientFrom: "primary",
+            lookGradientTo: "accent",
+          },
+        },
+      ],
+      siteLibrary,
+      context,
+    );
+
+    expect(html).toMatch(/^<section class="[^"]*bg-linear-to-r! from-primary! to-accent!/);
+    expect(html).not.toContain("aria-hidden");
+  });
+
   it("changes nothing without an image", () => {
     const html = renderNodesToHtml(
       [{ type: "TextSection", props: { id: "story", overlay: "60" } }],

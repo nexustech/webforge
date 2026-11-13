@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-06
+updated: 2026-11-13
 ---
 
 # Sections
@@ -22,7 +22,7 @@ Select a section and open the Edit panel's **Style** tab:
 - **Colours:** _Page colours_, or _Reversed_, which swaps the theme's light and dark colours to make a dark band on a light page (or a light band on a dark one).
 - **Content width:** _Narrow_, _Medium_, _Wide_ or _Full_. The background always fills the page's width; this sets how wide the content inside is.
 - **Padding** and **Margin:** the room inside and around the section.
-- **Background image** (in the Content tab, on every section but the Hero, which has _Image behind the text_), with an **Overlay** (_None_ to _Very strong_) and **Overlay colour** that darken or lighten the picture so text stays readable. {appName} warns you when the text would be hard to read.
+- **Background image** (in the Content tab, on every section but the Hero, which has _Image behind the text_), with an **Overlay** (_None_ to _Very strong_) and **Overlay colour** that darken or lighten the picture so text stays readable. {appName} warns you when the text would be hard to read. A gradient from **Style This…** is drawn over the picture and under the overlay; choose its colours with some transparency to let the picture show through.
 - **Entrance animation:** _Fade in_, _Slide up_, _Slide in from the left_, _Slide in from the right_ or _Zoom in_, with a _Delay_. It plays once, when a visitor scrolls to the section, and never for visitors whose device asks for less motion.
 - **Appearance:** text, colour, corners, border, shadow and opacity. See [Styling](styling.md).
 

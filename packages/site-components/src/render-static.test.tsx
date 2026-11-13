@@ -472,6 +472,22 @@ describe("renderNodesToHtml", () => {
       );
     });
 
+    it("draws a gradient over its picture and under its overlay (CT-12)", () => {
+      const html = heroIn("background", {
+        lookGradientDirection: "toBottom",
+        lookGradientFrom: "primary/50",
+        lookGradientTo: "accent",
+      });
+      const layer =
+        '<div aria-hidden="true" class="absolute inset-0 bg-linear-to-b! from-primary/50! to-accent!"></div>';
+
+      expect(html).toContain(layer);
+      expect(html.indexOf("</picture>")).toBeLessThan(html.indexOf(layer));
+      expect(html.indexOf(layer)).toBeLessThan(html.indexOf("bg-neutral/70"));
+      // Without a gradient, no layer.
+      expect(heroIn("background")).not.toContain("aria-hidden");
+    });
+
     it("shows text only, leaving out an image it was given", () => {
       const html = heroIn("minimal", { alignment: "centre", contentWidth: "narrow" });
 

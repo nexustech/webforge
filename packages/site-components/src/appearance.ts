@@ -654,6 +654,25 @@ export function appearanceBoxClasses(values: AppearanceValues): string {
   return classesOf(BOX_CLASSES, values);
 }
 
+/** The fields that draw a gradient (CT-4). */
+const GRADIENT_FIELDS: ReadonlySet<string> = new Set([
+  "lookGradientDirection",
+  "lookGradientFrom",
+  "lookGradientTo",
+]);
+
+/**
+ * The gradient's classes alone (CT-12), or "" for none: for a layer of its own over a picture
+ * behind the content and under its overlay, which would otherwise cover the item's own background
+ * and so the gradient.
+ */
+export function gradientLayerClasses(values: AppearanceValues): string {
+  return groupsOf(BOX_CLASSES, values)
+    .filter((group) => GRADIENT_FIELDS.has(group.field))
+    .map((group) => group.classes)
+    .join(" ");
+}
+
 /** A section's subtitle's classes (3.13b): its lead's, under its title. */
 export function appearanceSubtitleClasses(values: AppearanceValues): string {
   return classesOf(SUBTITLE_CLASSES, values);

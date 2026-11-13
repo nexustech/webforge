@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import { createContext, type ReactNode, useContext } from "react";
+import { gradientLayerClasses } from "../appearance.js";
 import { defineComponent } from "../define.js";
 import { CONTENT_WIDTH_PX, contentWidthClass, defineSection, narrowerWidth } from "../frame.js";
 import type { ComponentDef } from "../library.js";
@@ -90,6 +91,8 @@ const hero = defineSection({
       </div>
     );
     if (layout === "background") {
+      // Over its picture, the gradient, which the picture would cover (CT-12), then the overlay.
+      const gradient = image === null ? "" : gradientLayerClasses(values);
       // The text is set on the overlay.
       return (
         <>
@@ -101,6 +104,9 @@ const hero = defineSection({
               eager={first}
               className="absolute inset-0 h-full w-full object-cover"
             />
+          )}
+          {gradient === "" ? null : (
+            <div aria-hidden="true" className={`absolute inset-0 ${gradient}`} />
           )}
           <div className="absolute inset-0 bg-neutral/70" />
           <div className={`hero-content relative ${width} text-neutral-content ${aligned}`}>
