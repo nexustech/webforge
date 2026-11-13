@@ -22,11 +22,28 @@ export const CODE_PARTS: readonly CodePart[] = ["head", "bodyEnd", "js", "css"];
 const CSS_REACHES = /\\|\/\/|url\(|image-set\(|src\(|@import|(?<![\w-])content\s*:/i;
 
 /**
+ * What else puts text on a page: `@counter-style`, and a quoted string in a property that prints
+ * it, such as a list's markers (`list-style-type: "Call 0800 000 000: "`), a counter style's
+ * `symbols`, `prefix` or `suffix`, `text-overflow`'s ellipsis, `quotes` or `hyphenate-character`.
+ * `list-style: disc` has no string, and isn't asked about. A value is read only to its next `:`, so
+ * each character is read about once.
+ */
+const CSS_PRINTS =
+  /@counter-style|(?<![\w-])(?:list-style(?:-type)?|symbols|prefix|suffix|text-overflow|quotes|hyphenate-character)\s*:[^;}:]*["']/i;
+
+/** CSS's comments, which separate what's either side of them as a space does. */
+const CSS_COMMENTS = /\/\*[\s\S]*?(?:\*\/|$)/g;
+
+/**
  * Whether the site's CSS `css` needs its owner's yes, like its scripts (#975, S1): it can load
  * files, from another website too, or change the text its pages show (a phone number, bank
- * details). CSS that only changes how the site looks never does.
+ * details). CSS that only changes how the site looks never does. It's read as written, and with
+ * its comments as spaces, so a comment between a property's name and its colon can't hide it.
  */
-export const cssNeedsTrust = (css: string): boolean => CSS_REACHES.test(css);
+export function cssNeedsTrust(css: string): boolean {
+  const reaches = (text: string) => CSS_REACHES.test(text) || CSS_PRINTS.test(text);
+  return reaches(css) || reaches(css.replace(CSS_COMMENTS, " "));
+}
 
 /** Whether `text`, as part `part`, is code the owner confirms: none when it's blank. */
 const confirmed = (part: CodePart, text: string) =>
