@@ -71,6 +71,17 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
   }));
   /** What the person sent, until its reply's first event names it. */
   let sending: string | undefined;
+  /**
+   * Replies loaded while under way: words streamed between main's copy and the panel's may be
+   * missing, so each is read again once it ends (#993 review).
+   */
+  const loadedMidStream = new Set<string>();
+  /** Takes a reply's whole text from main's copy of the conversation. */
+  const reread = async (replyId: string) => {
+    if (!loadedMidStream.delete(replyId)) return;
+    const kept = (await api.conversation(session)).find((each) => each.replyId === replyId);
+    if (kept !== undefined) turn(replyId, (each) => ({ ...each, reply: kept.reply }));
+  };
   const turn = (replyId: string, change: (turn: PanelTurn) => PanelTurn) =>
     state.setState(({ turns }) => ({
       turns: turns.map((each) => (each.replyId === replyId ? change(each) : each)),
@@ -151,6 +162,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           steps: event.steps,
           links: event.links,
         }));
+        void reread(event.replyId);
         state.setState(({ status, replying }) => ({
           replying: replying === event.replyId ? undefined : replying,
           ...(status === undefined
@@ -165,6 +177,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           error: event.error,
           steps: event.steps,
         }));
+        void reread(event.replyId);
         state.setState(({ replying }) => ({
           replying: replying === event.replyId ? undefined : replying,
         }));
@@ -173,14 +186,16 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
   };
   const unsubscribe = api.onEvent(onEvent);
   void Promise.all([api.status(), api.siteConsent(session), api.conversation(session)]).then(
-    ([status, site, turns]) =>
+    ([status, site, turns]) => {
+      for (const each of turns) if (each.state === "replying") loadedMidStream.add(each.replyId);
       state.setState((now) => ({
         status: now.status ?? status,
         site: now.site ?? site,
         // Events that came meanwhile are newer than what was loaded.
         turns: now.turns.length > 0 ? now.turns : turns.map(panelTurn),
         replying: turns.find((each) => each.state === "replying")?.replyId ?? now.replying,
-      })),
+      }));
+    },
   );
   return {
     state,

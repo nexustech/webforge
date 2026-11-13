@@ -9,6 +9,7 @@ export const assistant = {
   // A link in a reply (product/14 §6.4): its address is always shown, and it opens only when clicked.
   "assistant.link.open": "Open {address} in your browser",
   "assistant.image": "Image not shown: {alt}",
+  "assistant.link.copied": "Address copied. Paste it in your browser to open it.",
   // What a reply did, besides its text.
   "assistant.tool.running": "Working on your site…",
   "assistant.tool.read.one": "Looked at 1 part of your site",
@@ -60,4 +61,17 @@ export const assistant = {
   "assistant.review.movedOn":
     "Other changes have been made since. To take back everything the assistant changed, restore the version saved before its changes.",
   "assistant.review.versions": "Open Version History",
+  // The panel (6.9c, UX-28).
+  "assistant.panel": "Assistant",
+  "assistant.loading": "Loading…",
+  "assistant.off": "The assistant is off. Set it up to ask it to change your site.",
+  "assistant.setUp": "Set Up the Assistant…",
+  "assistant.reconsent":
+    "The assistant now sends your requests somewhere new. Read where before you turn it on again.",
+  "assistant.siteDenied": "You chose not to use the assistant on this site.",
+  "assistant.newConversation": "New Conversation",
+  "assistant.message": "Message the assistant",
+  "assistant.messagePlaceholder": "Ask for a change, such as “Make the Hero's title shorter”",
+  "assistant.send": "Send",
+  "assistant.stop": "Stop",
 } as const;
