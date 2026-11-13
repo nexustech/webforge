@@ -14,10 +14,10 @@ const AUTH_URL = "https://openrouter.ai/auth";
 const KEYS_URL = "https://openrouter.ai/api/v1/auth/keys";
 
 /** A code's lifetime at OpenRouter, and so a sign-in's. */
-export const SIGN_IN_TIMEOUT_MS = 10 * 60 * 1000;
+const SIGN_IN_TIMEOUT_MS = 10 * 60 * 1000;
 
 /** How a sign-in ended: the key, which the caller stores and never shows; or why not. */
-export type SignInOutcome =
+type SignInOutcome =
   | { readonly status: "signed-in"; readonly key: string }
   | { readonly status: "cancelled" | "timed-out" | "refused" | "offline" | "failed" };
 
