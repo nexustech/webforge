@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { bodyFor, type ChatEndpoint, type ChatRequest, streamChat } from "./chat-client.js";
+import {
+  bodyFor,
+  type ChatEndpoint,
+  type ChatRequest,
+  isLoopback,
+  keySafeAt,
+  streamChat,
+} from "./chat-client.js";
 
 const OPENROUTER: ChatEndpoint = {
   baseUrl: "https://openrouter.ai/api/v1",
@@ -237,5 +244,37 @@ describe("the assistant's model client (6.9a, ADR 0026 §1–§2)", () => {
 
     expect(result.status).toBe("aborted");
     expect(pulled).toBeLessThan(10);
+  });
+
+  it("never sends a key over plain http to another computer, nor anything with it (#976)", async () => {
+    const { fetchFn, requests } = provider(() => new Response(sse([delta("Hi"), "[DONE]"])));
+    const remote: ChatEndpoint = { baseUrl: "http://ai.example.com/v1", key: "sk-secret" };
+
+    expect(await streamChat(fetchFn, remote, REQUEST, () => undefined)).toEqual({
+      status: "failed",
+      error: "insecure-server",
+    });
+    expect(requests).toEqual([]);
+
+    // Over https, or on this computer, it goes; and a keyless local server over http too.
+    for (const endpoint of [
+      { baseUrl: "https://ai.example.com/v1", key: "sk-secret" },
+      { baseUrl: "http://localhost:1234/v1", key: "sk-secret" },
+      { baseUrl: "http://127.0.0.1:11434/v1", key: "sk-secret" },
+      { baseUrl: "http://[::1]:8080/v1", key: "sk-secret" },
+      { baseUrl: "http://192.168.1.20:11434/v1" },
+    ]) {
+      expect((await streamChat(fetchFn, endpoint, REQUEST, () => undefined)).status).toBe("done");
+    }
+    expect(requests).toHaveLength(5);
+  });
+
+  it("counts only localhost, 127.0.0.1 and ::1 as this computer", () => {
+    expect(isLoopback("http://localhost:11434/v1")).toBe(true);
+    expect(isLoopback("http://localhost.example.com/v1")).toBe(false);
+    expect(isLoopback("http://127.0.0.1.example.com/v1")).toBe(false);
+    expect(isLoopback("not a url")).toBe(false);
+    expect(keySafeAt("http://192.168.1.20:11434/v1")).toBe(false);
+    expect(keySafeAt("https://192.168.1.20/v1")).toBe(true);
   });
 });
