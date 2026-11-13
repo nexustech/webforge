@@ -113,7 +113,7 @@ export function registerMcpHandlers(
       // Not listed: removed, or its key waited too long and it went.
       if (!(await service.list()).some((app) => app.id === id)) return { status: "unknown" };
       try {
-        await openExternal(vsCodeInstallLink(addressAt(port), t("aiApps.vscode.prompt")));
+        await openExternal(vsCodeInstallLink(addressAt(port), id, t("aiApps.vscode.prompt")));
         return { status: "opened" };
       } catch (error) {
         // Nothing handles `vscode:` links: VS Code isn't installed?

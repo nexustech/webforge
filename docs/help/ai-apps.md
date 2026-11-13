@@ -177,6 +177,8 @@ You need VS Code with GitHub Copilot, whose agent mode uses {appName}'s tools.
 
 If {appName} says **VS Code didn't open**, VS Code may not be installed. Install it, then click **Install in VS Code** again.
 
+If VS Code already has a server named `webforge`, from an earlier time you added it, remove that one first: **MCP: List Servers** › **webforge** › **Uninstall**.
+
 ### Other apps
 
 1. Click **Add AI app**, choose **Another app**, give it a **Name** such as "Cursor", and click **Add**.
