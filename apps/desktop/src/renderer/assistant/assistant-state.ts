@@ -46,8 +46,11 @@ function panelTurn(turn: ConversationTurn): PanelTurn {
 /** The panel's state, and what changes it. */
 export type AssistantPanelModel = {
   readonly state: StoreApi<AssistantPanelState>;
-  /** Sends a message with what's selected; nothing is sent while a reply is under way. */
-  readonly send: (text: string, context: MessageContext) => Promise<void>;
+  /**
+   * Sends a message with what's selected; nothing while a reply is under way or a message is on
+   * its way. Whether main took it: a refused message stays for the person to send again.
+   */
+  readonly send: (text: string, context: MessageContext) => Promise<boolean>;
   readonly stop: () => Promise<void>;
   readonly newConversation: () => Promise<void>;
   /** This site's yes or no (ADR 0026 §4), kept on this computer by main. */
@@ -212,17 +215,24 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
   return {
     state,
     send: async (text, context) => {
-      if (state.getState().replying !== undefined || text.trim() === "") return;
+      if (state.getState().replying !== undefined || sending !== undefined || text.trim() === "") {
+        return false;
+      }
       sending = text;
       state.setState({ refused: undefined });
       try {
         const result = await api.send(session, text, context);
-        if (result.status === "sending") ensure(result.replyId, text);
-        else state.setState({ refused: result.status });
+        if (result.status === "sending") {
+          ensure(result.replyId, text);
+          return true;
+        }
+        state.setState({ refused: result.status });
+        return false;
       } catch (error) {
         // Main couldn't take it: said as any failure, logged without content.
         reportFailure("assistant.send", error);
         state.setState({ refused: "failed" });
+        return false;
       } finally {
         sending = undefined;
       }

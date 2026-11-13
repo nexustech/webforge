@@ -107,8 +107,11 @@ export function AssistantPanel(props: AssistantPanelProps) {
   }
   const send = () => {
     if (text.trim() === "" || replying !== undefined) return;
-    void model.send(text, props.context());
-    setText("");
+    // Cleared once main has taken it: a refused message stays, to send again (#1000 review).
+    const sent = text;
+    void model.send(sent, props.context()).then((taken) => {
+      if (taken) setText((now) => (now === sent ? "" : now));
+    });
   };
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -173,8 +176,10 @@ export function AssistantPanel(props: AssistantPanelProps) {
           className="w-full resize-none rounded-sm border border-border bg-input px-2 py-1 text-sm"
           onChange={(event) => setText(event.currentTarget.value)}
           onKeyDown={(event) => {
-            // Enter sends; Shift+Enter is a new line.
-            if (event.key === "Enter" && !event.shiftKey) {
+            // Enter sends; Shift+Enter is a new line. Not while an input method composes a word:
+            // its Enter confirms the word (keyCode 229 where isComposing isn't set).
+            const composing = event.nativeEvent.isComposing || event.keyCode === 229;
+            if (event.key === "Enter" && !event.shiftKey && !composing) {
               event.preventDefault();
               send();
             }

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -96,13 +96,25 @@ describe("the assistant's panel (6.9c)", () => {
     expect(card.getByRole("status").textContent).toMatch(/These changes are undone/);
   });
 
-  it("says why a message wasn't sent", async () => {
+  it("says why a message wasn't sent, and keeps it to send again (#1000 review)", async () => {
     const { user } = shown({ reply: { refuse: "limit-reached" } });
-    await user.type(
-      await screen.findByRole("textbox", { name: "Message the assistant" }),
-      "Hi{Enter}",
-    );
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    await user.type(box, "Hi{Enter}");
 
     expect((await screen.findByRole("alert")).textContent).toMatch(/This month's limit is reached/);
+    expect((box as HTMLTextAreaElement).value).toBe("Hi");
+  });
+
+  it("sends nothing on the Enter that confirms a composed word (#1000 review)", async () => {
+    const { send } = shown();
+    const box = await screen.findByRole("textbox", { name: "Message the assistant" });
+    fireEvent.change(box, { target: { value: "日本" } });
+    fireEvent.keyDown(box, { key: "Enter", isComposing: true });
+    fireEvent.keyDown(box, { key: "Enter", keyCode: 229 });
+
+    expect(send).not.toHaveBeenCalled();
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(send).toHaveBeenCalledOnce();
+    await waitFor(() => expect((box as HTMLTextAreaElement).value).toBe(""));
   });
 });
