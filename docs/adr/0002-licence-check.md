@@ -13,18 +13,20 @@ Webforge is a paid, closed-source product, so every dependency must have a permi
 1. **Data:** `pnpm licenses list -r --json` (all workspaces, dev dependencies included). The desktop app bundles its devDependencies, so dev dependencies count too.
 2. **Check:** `tools/src/check-licences.ts` validates the report with zod and evaluates each package's SPDX expression. `A OR B` passes if either side is allowed, `A AND B` needs both, and `A WITH exception` is judged by `A`. Anything else ("UNLICENSED", "SEE LICENSE IN …") fails.
 3. **Allow-list:** MIT, ISC, Apache-2.0, BSD-2-Clause, BSD-3-Clause, 0BSD, BlueOak-1.0.0, CC0-1.0, MPL-2.0 (allowed only unmodified: we patch only permissively licensed packages, currently @puckeditor/core (MIT, see ADR 0007), and the check fails if a package in `patchedDependencies` has a licence other than the allowed ones without MPL-2.0) and OFL-1.1 (added by ADR 0005 for the Fontsource fonts that exported sites bundle; it allows embedding and redistribution, only not selling the fonts on their own).
-4. **Exceptions** are named per package and pinned to the exact licence string that was reviewed, each with a reason. If the package's licence changes, it is checked again. Current exceptions are all build-time only:
-   | Package             | Licence                             | Pulled in by                         |
-   | ------------------- | ----------------------------------- | ------------------------------------ |
-   | argparse            | Python-2.0 (permissive PSF licence) | electron-builder → js-yaml           |
-   | caniuse-lite        | CC-BY-4.0 (data)                    | browserslist                         |
-   | truncate-utf8-bytes | WTFPL                               | electron-builder → sanitize-filename |
-5. **Running it:** root script `pnpm licence-check`. It can't be named `licences`, because pnpm treats `pnpm licences` as its built-in `licenses` command. The script is part of `pnpm check` and runs in CI on ubuntu and windows, because each OS installs different platform-specific binary packages. The report is piped into the script, which fails on empty or malformed input, so a broken `pnpm licenses` call can't pass by accident.
+4. **Exceptions** are named per package and pinned to the exact licence string that was reviewed, each with a reason. If the package's licence changes, it is checked again. Current exceptions (13 Nov 2026; the list in the file is the authority). The first three are build-time only; simple-icons and tweetnacl ship with the app:
+   | Package             | Licence                                        | Pulled in by                                                     |
+   | ------------------- | ---------------------------------------------- | ---------------------------------------------------------------- |
+   | argparse            | Python-2.0 (permissive PSF licence)            | electron-builder → js-yaml                                       |
+   | caniuse-lite        | CC-BY-4.0 (data)                               | browserslist                                                     |
+   | truncate-utf8-bytes | WTFPL                                          | electron-builder → sanitize-filename                             |
+   | simple-icons        | CC0-1.0 (public-domain dedication, P4 / PH2-4) | Social links' six logos (`site-components/src/social-icons.tsx`) |
+   | tweetnacl           | Unlicense (public-domain dedication)           | SFTP publishing: ssh2 → bcrypt-pbkdf                             |
+5. **Running it:** root script `pnpm licence-check`. It can't be named `licences`, because pnpm treats `pnpm licences` as its built-in `licenses` command. The script is part of `pnpm check` and runs in CI on ubuntu and windows, because each OS installs different platform-specific binary packages. (Since then: Linux in the `check` job, Windows and macOS in the packaged-app job, on every ready PR and nightly; see `.github/workflows/ci.yml`.) The report is piped into the script, which fails on empty or malformed input, so a broken `pnpm licenses` call can't pass by accident.
 
 ## Consequences
 
 - One fewer dependency. The check depends on the shape of pnpm's JSON output; zod fails loudly if a pnpm upgrade changes it.
-- The macOS-only binary packages are not checked until a macOS CI job exists.
+- The macOS-only binary packages are not checked until a macOS CI job exists. (Since then: the packaged-app job checks them on macOS.)
 - Adding a dependency with a new licence needs either a policy change here or a reviewed exception in `tools/src/check-licences.ts`.
 - Not covered yet: the in-app "Open-source licences" screen (MVP §4) and a vulnerability audit (standards §7).
 - **Addendum (5.3, 7 Nov 2026):** the screen is Help › Open-Source Licences. The app's build writes the notices (`tools/src/third-party-notices.ts`, from `apps/desktop/electron.vite.config.ts`). They list what the app actually ships, not this check's whole report:
