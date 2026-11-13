@@ -1,5 +1,6 @@
 import { z } from "zod";
 import type { AssistantErrorCode, AssistantModel } from "../../shared/ipc/assistant.js";
+import { keySafeAt } from "./chat-client.js";
 
 /**
  * The models the assistant offers (6.9a, ADR 0026 §2): OpenRouter's that can call tools and have a
@@ -61,13 +62,17 @@ type ModelList =
   | { readonly status: "ok"; readonly models: AssistantModel[] }
   | { readonly status: AssistantErrorCode };
 
-/** GETs `url` as JSON checked by `schema`: the value, or the code for why not. */
+/**
+ * GETs `url` as JSON checked by `schema`: the value, or the code for why not. A key goes only where
+ * the chat client would send it (#976): never over plain `http:` to another computer.
+ */
 async function getJson<T>(
   fetchFn: typeof fetch,
   url: string,
   schema: z.ZodType<T>,
   key?: string,
 ): Promise<{ ok: true; value: T } | { ok: false; error: AssistantErrorCode }> {
+  if (key !== undefined && !keySafeAt(url)) return { ok: false, error: "insecure-server" };
   let response: Response;
   try {
     response = await fetchFn(url, {
