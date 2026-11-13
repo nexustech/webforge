@@ -65,6 +65,10 @@ The server's checks (decision 1) protect Webforge from its callers. Nothing in t
 4. **The developer tools connect directly.** _Add AI app_ → _Another app_ shows the URL and the header, ready to paste into Claude Code, Cursor or VS Code.
    - **They can't check the server,** so the risk remains, and the dialog and the help page name it: a developer tool sends its key to whatever answers at that address. While Webforge isn't running, another program on the computer could be answering.
    - The help page tells the person to turn that tool's Webforge server off while Webforge is closed. A tool that can run a stdio command can use the bridge instead, which does check.
+   - **Claude Code and VS Code get a setup of their own** (5.13, AIA-13, 13 Nov 2026). Each pairs as _Another app_ does, directly, and neither puts the key in what it gives the person:
+     - **VS Code:** a `vscode:mcp/install` link, opened by main. Its server entry declares a password input that the `Authorization` header names, so VS Code asks for the key and keeps it in its secret storage.
+     - **Claude Code:** a `claude mcp add --scope user` command whose header names `${WEBFORGE_KEY}`. Claude Code expands the variable as it connects.
+     - **Neither can run the bridge.** VS Code runs a stdio server's command from the PATH and provides no Node.js. Claude Code's native install is a binary that doesn't run Node.js. And the bridge itself is only in the `.mcpb`, deleted after ten minutes (S29).
 5. **ChatGPT isn't supported at first** (product owner, 1 Nov 2026). Its desktop app can't reach a server on this computer, short of a tunnel to OpenAI, which would send the site's content through OpenAI's servers, or Codex. The help page says so. When ChatGPT can start local servers, the bridge in 3 should serve it too.
 6. **Each request goes through what the security review asks for:**
    - **Checks:** main validates every request against the `ai` contract (S21);
