@@ -4,7 +4,7 @@ id: themes
 title: Themes, colours and fonts
 summary: Change your whole site's colours, fonts, corners and spacing at once, in the Theme panel or Theme Studio.
 related: [styling, templates, media]
-updated: 2026-11-08
+updated: 2026-11-13
 ---
 
 # Themes, colours and fonts
@@ -61,7 +61,7 @@ Built-in themes never change. The first time you change one, {appName} asks you 
 - **Colours:** every colour and its shades, for the page and for reversed sections side by side. **Colours from an image…** suggests brand colours from your logo or a photo in Media.
 - **Text:** size, weight and line spacing for each kind of text.
 - **Styles:** corners, shadows and the other settings, drawn as examples.
-- **Components:** the look of every kind of section and element across the site, such as every Button or every card. Changes stay a draft, with a before-and-after preview, until you click **Apply Changes**.
+- **Components:** the look of every kind of section and element across the site, such as every Button or every card. Changes stay a draft, with a before-and-after preview, until you click **Apply Changes**. A gradient is added as in **Style This…**: choose its direction, and it starts as Brand to Accent ([Gradients](styling.md#gradients)).
 
 ## Fonts
 

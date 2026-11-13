@@ -36,6 +36,8 @@ const common = {
   inDialog: z.literal(true).optional(),
   /** Where visitors' money or details go: an AI app's change to it is asked first (S18). */
   sensitive: z.literal(true).optional(),
+  /** What an item draws with while it has no value of its own: a gradient's end (CT-10). */
+  unset: z.string().optional(),
 };
 
 const listItemFieldSchema = z.discriminatedUnion("kind", [

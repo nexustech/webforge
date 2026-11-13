@@ -61,6 +61,21 @@ export type FieldDef = {
    * Height, only while its Shape is Set height (`fieldsHiddenBy`).
    */
   readonly shownWhen?: (values: Readonly<Record<string, unknown>>, site: FieldSite) => boolean;
+  /**
+   * Other fields a change to this one sets too, in the same step (CT-10): from the `value` chosen
+   * and the item's values on the device it's chosen for (its own, over its kind's look and its
+   * defaults), each partner's value there. A gradient's direction gives a colour it has none of.
+   * The Edit panel, *Style this ‹component›…* and Theme Studio › Components write them alike.
+   */
+  readonly partners?: (
+    value: unknown,
+    values: Readonly<Record<string, unknown>>,
+  ) => Readonly<Record<string, unknown>>;
+  /**
+   * The value an item draws with while it has none of its own, for a field whose options have no
+   * *Theme's*: a gradient's end, Brand or Accent (CT-10). The field shows it as chosen.
+   */
+  readonly unset?: string;
   readonly responsive?: boolean;
   /**
    * The option group the Edit panel shows it in (UX-13), by its kind if not given. Fields of one

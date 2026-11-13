@@ -93,4 +93,33 @@ describe("an item's values with its kind's look (#670)", () => {
       text: "own",
     });
   });
+
+  it("take a gradient's end stored as Theme's from the look, as one never set (CT-10)", () => {
+    const look = {
+      lookGradientFrom: "accent",
+      lookGradientTo: { $responsive: { desktop: "neutral", mobile: "primary" } },
+    };
+    // Theme's is a choice of its own elsewhere: a colour stored so keeps it.
+    const stored = { lookGradientFrom: "theme", lookGradientTo: "theme", lookColor: "theme" };
+
+    expect(valuesWithLook(stored, look)).toEqual({ ...look, lookColor: "theme" });
+    const { sources } = effectiveValues("Hero", stored, {}, { Hero: look });
+    expect(sources).toEqual({ lookGradientFrom: "look", lookGradientTo: "look", lookColor: "own" });
+  });
+
+  it("take Theme's from the look on the devices that have it, and keep the others' own", () => {
+    const stored = {
+      lookGradientTo: { $responsive: { desktop: "theme", tablet: "secondary" } },
+    };
+
+    expect(valuesWithLook(stored, { lookGradientTo: "accent" })).toEqual({
+      lookGradientTo: {
+        $responsive: { desktop: "accent", tablet: "secondary", mobile: "secondary" },
+      },
+    });
+    // Without a look for it, Theme's is no value: the end draws with its default.
+    expect(valuesWithLook({ lookGradientFrom: "theme" }, { lookItalic: true })).toEqual({
+      lookItalic: true,
+    });
+  });
 });

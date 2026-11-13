@@ -475,7 +475,7 @@ describe("Style this ‹component›…'s deeper groups (3.13b, CT-2)", () => {
     expect(appearanceSubtitleClasses(unset)).toBe("");
   });
 
-  it("draws a gradient between two theme colours, only with its direction and both ends (CT-4)", () => {
+  it("draws a gradient between two theme colours, only with its direction (CT-4)", () => {
     const gradient = {
       lookGradientDirection: "toBottomRight",
       lookGradientFrom: "primary",
@@ -483,8 +483,79 @@ describe("Style this ‹component›…'s deeper groups (3.13b, CT-2)", () => {
     };
 
     expect(appearanceBoxClasses(gradient)).toBe("bg-linear-to-br! from-primary! to-secondary-300!");
-    expect(appearanceBoxClasses({ ...gradient, lookGradientTo: "theme" })).toBe("");
     expect(appearanceBoxClasses({ ...gradient, lookGradientDirection: "default" })).toBe("");
+  });
+
+  it("draws an end without a colour with its default, Brand to Accent (CT-10)", () => {
+    // A direction alone, as an older site, a pasted look or an AI app's edit may have.
+    expect(appearanceBoxClasses({ lookGradientDirection: "toRight" })).toBe(
+      "bg-linear-to-r! from-primary! to-secondary!",
+    );
+    // Theme's, from before CT-10, is no colour of the end's own.
+    expect(
+      appearanceBoxClasses({
+        lookGradientDirection: "toBottom",
+        lookGradientFrom: "accent",
+        lookGradientTo: "theme",
+      }),
+    ).toBe("bg-linear-to-b! from-accent! to-secondary!");
+    // Per device: Mobile's end has no colour of its own, Desktop's has.
+    expect(
+      appearanceBoxClasses({
+        lookGradientDirection: "toBottom",
+        lookGradientTo: { $responsive: { desktop: "neutral", mobile: "theme" } },
+      }),
+    ).toBe("bg-linear-to-b! from-primary! max-md:to-secondary! md:to-neutral!");
+  });
+
+  it("exports a direction alone as Brand to Accent, as the canvas draws it (CT-10)", () => {
+    const html = render([
+      { type: "Hero", props: { id: "hero", lookGradientDirection: "toBottomRight" } },
+    ]);
+    expect(html).toMatch(/class="site-hero [^"]*bg-linear-to-br! from-primary! to-secondary!/);
+  });
+
+  it("offers the ends without Theme's, shown as their default while unset (CT-10)", () => {
+    for (const end of [DIALOG_FIELDS.lookGradientFrom, DIALOG_FIELDS.lookGradientTo]) {
+      expect(end.options.map((option) => option.value)).not.toContain("theme");
+    }
+    expect(DIALOG_FIELDS.lookGradientFrom.unset).toBe("primary");
+    expect(DIALOG_FIELDS.lookGradientTo.unset).toBe("secondary");
+  });
+
+  it("gives a direction the colours it has none of, on its device's values (CT-10)", () => {
+    const partners = DIALOG_FIELDS.lookGradientDirection.partners;
+
+    expect(partners("toRight", {})).toEqual({
+      lookGradientFrom: "primary",
+      lookGradientTo: "secondary",
+    });
+    // A colour chosen before is kept; Theme's is none.
+    expect(partners("toRight", { lookGradientFrom: "neutral", lookGradientTo: "theme" })).toEqual({
+      lookGradientTo: "secondary",
+    });
+    expect(partners("toRight", { lookGradientFrom: "accent", lookGradientTo: "base-200" })).toEqual(
+      {},
+    );
+    // None turns it off and leaves the colours as they are.
+    expect(partners("default", {})).toEqual({});
+  });
+
+  it("shows the colour rows only while the gradient has a direction on some device (CT-10)", () => {
+    const hero = siteLibrary.components.Hero;
+    if (hero === undefined) throw new Error("no Hero");
+    const hidden = (values: Record<string, unknown>) =>
+      fieldsHiddenBy(hero, { ...hero.defaults, ...values });
+
+    expect(hidden({})).toContain("lookGradientFrom");
+    expect(hidden({ lookGradientDirection: "default", lookGradientTo: "accent" })).toContain(
+      "lookGradientTo",
+    );
+    const mobileOnly = {
+      lookGradientDirection: { $responsive: { desktop: "default", mobile: "toBottom" } },
+    };
+    expect(hidden(mobileOnly)).not.toContain("lookGradientFrom");
+    expect(hidden(mobileOnly)).not.toContain("lookGradientTo");
   });
 
   it("draws a border on one side, its line solid unless set, and each corner of its own", () => {
