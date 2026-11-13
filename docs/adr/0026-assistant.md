@@ -1,6 +1,6 @@
 # 0026. The assistant: one OpenAI-compatible client in main, OpenRouter sign-in, consent, and the panel's contract
 
-- Status: Proposed
+- Status: Accepted (2026-11-13; it carries the product owner's AIA-1…AIA-14, and fixes the panel's contract for 6.9c, #968)
 - Date: 2026-11-13
 - Related: 6.9a–d (#870–#873), AIA-1…AIA-14 ([product/14](../../research/product/14-in-app-ai-assistant.md) §8, decided 13 Nov 2026), PH6-5, [ADR 0021](0021-mcp-transport.md) (AI apps, whose tools the assistant reuses), [ADR 0019](0019-code-trust.md) (a yes remembered per site on this computer), [ADR 0006](0006-publishing.md) (Netlify's sign-in), [spec/01 §9](../../spec/01-architecture.md#9-security--privacy), WF-2, UX-28, BS9-10, S18–S21
 
