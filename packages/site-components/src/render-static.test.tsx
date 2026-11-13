@@ -472,14 +472,15 @@ describe("renderNodesToHtml", () => {
       );
     });
 
-    it("draws a gradient over its picture and under its overlay (CT-12)", () => {
+    it("draws a gradient over its picture and under its overlay, at its opacity (CT-12, CT-14)", () => {
       const html = heroIn("background", {
         lookGradientDirection: "toBottom",
-        lookGradientFrom: "primary/50",
+        lookGradientFrom: "primary",
         lookGradientTo: "accent",
+        lookGradientOpacity: "75",
       });
       const layer =
-        '<div aria-hidden="true" class="absolute inset-0 bg-linear-to-b! from-primary/50! to-accent!"></div>';
+        '<div aria-hidden="true" class="absolute inset-0 bg-linear-to-b! from-primary! to-accent! opacity-75"></div>';
 
       expect(html).toContain(layer);
       expect(html.indexOf("</picture>")).toBeLessThan(html.indexOf(layer));

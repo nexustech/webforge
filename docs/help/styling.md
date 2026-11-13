@@ -64,6 +64,8 @@ A gradient blends one colour into another across the background. To add one, cho
 
 Like the other choices here, a gradient can differ by device: choosing a direction while viewing Mobile adds it on Mobile only.
 
+On a section with a background picture, or a Hero with **Image behind the text**, the gradient is drawn over the picture. **Gradient opacity** (100%, 75%, 50% or 25%) sets how much of the picture shows through; it starts at 50%.
+
 **Where it applies** sets which items get the look:
 
 - **This ‹item› only**
