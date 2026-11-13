@@ -3,7 +3,6 @@ import { pageIdSchema } from "@webforge/model";
 import { SparklesIcon } from "lucide-react";
 import { ASSISTANT_CONSENT_VERSION, type AssistantApi } from "../../shared/ipc/assistant.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { useDocument } from "../editor/use-document.js";
 import { reportFailure } from "../log.js";
 import type { PanelRegistry } from "../shell/panels.js";
@@ -20,7 +19,8 @@ export type AssistantPanelOptions = {
   readonly api: AssistantApi;
   /** The site open in the window, as main names it. */
   readonly sessionId: string;
-  readonly settings: Pick<SettingsRegistry, "show">;
+  /** Opens the assistant's settings (*Settings › Assistant*). */
+  readonly openSettings: () => void;
   /** Opens a web address in the person's browser. */
   readonly openLink: (href: string) => void;
 };
@@ -49,7 +49,7 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
             .setEnabled(true, ASSISTANT_CONSENT_VERSION)
             .catch((error: unknown) => reportFailure("assistant.enable", error))
         }
-        onOpenSettings={() => void options.settings.show("assistant", "assistant")}
+        onOpenSettings={options.openSettings}
         onOpenVersions={() => panels.show("versionHistory")}
         onShowStep={(step) => {
           // Only a page the site has: the id came from main.
