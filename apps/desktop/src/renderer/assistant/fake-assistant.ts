@@ -159,6 +159,7 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       if (live.stopped) return finish("stopped");
       const callId = `call-${index + 1}`;
       if (index === 0 && reply.safetyVersion !== undefined) {
+        turn.safetyVersion = { ...reply.safetyVersion };
         emit({ session, type: "safety-version", replyId, ...reply.safetyVersion });
       }
       emit({ session, type: "tool", replyId, callId, tool, state: "running" });

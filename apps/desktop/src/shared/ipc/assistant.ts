@@ -251,6 +251,13 @@ const turnSchema = z.strictObject({
   costUsd: z.number().nonnegative().nullable(),
   steps: z.array(stepSchema),
   links: z.array(linkSchema),
+  /**
+   * The safety version this reply saved before its first change (S20): on the conversation's
+   * first turn that changed something, for a panel opened again to point *Open Version History* at.
+   */
+  safetyVersion: z
+    .strictObject({ versionId: z.string().min(1).max(100), label: z.string().min(1).max(300) })
+    .optional(),
 });
 
 /** See {@link turnSchema}. */

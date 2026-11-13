@@ -305,6 +305,8 @@ type ConversationTurn = {
   costUsd: number | null;
   steps: ReplyStep[];
   links: ReplyLink[];
+  /** The safety version this reply saved before its first change (S20): its `safety-version` event's. */
+  safetyVersion?: { versionId: string; label: string };
 };
 
 /** A reply's events, about one site's conversation. */

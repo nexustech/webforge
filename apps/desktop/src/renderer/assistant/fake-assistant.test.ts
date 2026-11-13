@@ -139,4 +139,22 @@ describe("the stand-in assistant (ADR 0026 §7)", () => {
       expect(event).not.toHaveProperty("session");
     }
   });
+
+  it("gives the safety version back with the conversation, for a panel opened again", async () => {
+    const fake = createFakeAssistant({
+      delayMs: 0,
+      reply: {
+        steps: [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }],
+        safetyVersion: { versionId: "v1", label: "Before the assistant's changes" },
+      },
+    });
+    const { ended } = recorder(fake);
+    await fake.send(SESSION, "Hello", {});
+    await ended;
+    const [turn] = await fake.conversation(SESSION);
+    expect(turn?.safetyVersion).toEqual({
+      versionId: "v1",
+      label: "Before the assistant's changes",
+    });
+  });
 });
