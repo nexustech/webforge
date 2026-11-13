@@ -91,6 +91,37 @@ describe("EditPanel", () => {
     expect(onSelect).toHaveBeenCalledOnce();
   });
 
+  it("flows its groups into columns only when asked, each field kept whole (CT-11)", () => {
+    const grouped: EditPanelField[] = [
+      { ...(fields[0] as EditPanelField), optionGroup: { id: "a", label: "First" } },
+      { name: "more", kind: "text", label: "More", group: "content", value: "" },
+    ];
+    const { rerender } = render(
+      <EditPanel heading="Heading" single fields={grouped} onChange={vi.fn()} onCommit={vi.fn()} />,
+    );
+    const groupOf = (name: string) =>
+      screen.getByRole("button", { name }).closest(".border-b") as HTMLElement;
+    expect(groupOf("First").parentElement?.className).not.toContain("columns-");
+
+    rerender(
+      <EditPanel
+        heading="Heading"
+        single
+        columns
+        fields={grouped}
+        onChange={vi.fn()}
+        onCommit={vi.fn()}
+      />,
+    );
+    expect(groupOf("First").parentElement?.className).toContain("columns-[37rem]");
+    const header = screen.getByRole("button", { name: "First" }).parentElement;
+    expect(header?.className).toContain("break-after-avoid");
+    const body = document.getElementById(
+      screen.getByRole("button", { name: "First" }).getAttribute("aria-controls") ?? "",
+    );
+    expect(body?.className).toContain("*:break-inside-avoid");
+  });
+
   it("shows the Content tab only in Content mode, without Style or Advanced (M3)", () => {
     render(
       <EditPanel

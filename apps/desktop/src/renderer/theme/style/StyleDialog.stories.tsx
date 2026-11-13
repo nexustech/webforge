@@ -9,9 +9,10 @@ import { StyleDialog } from "./StyleDialog.js";
 import { openStyle } from "./style-apply.js";
 import { createStyleDialog, type StyleDialogState } from "./style-state.js";
 
-// Style this ‹kind›… (3.13a, CT-2), on a Button with a look of its own beside a plain one. The
-// previews draw with the canvas's CSS compiler, which Storybook doesn't have: their places show.
-const meta = { title: "Dialogs/Style This" } satisfies Meta;
+// Style this ‹kind›… (3.13a, CT-2), on a Button with a look of its own beside a plain one, in a
+// window of 1280 × 800 px and one of 1920 × 1080 (CT-11). The previews draw with the canvas's CSS
+// compiler, which Storybook doesn't have: stand-ins show their places.
+const meta = { title: "Dialogs/Style This", tags: ["full-window"] } satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -41,6 +42,16 @@ function site(): SiteDoc {
   return made;
 }
 
+/** A stand-in for the item's drawing on `device`: as wide as its place, a device's height. */
+const itemPreviews = (node: NodeDoc, device: "desktop" | "mobile") => (
+  <div
+    className="flex w-full items-center justify-center rounded-sm border border-dashed border-border text-xs text-muted-foreground"
+    style={{ height: device === "desktop" ? 160 : 260 }}
+  >
+    {`${node.type} (${device})`}
+  </div>
+);
+
 /** The dialog open on the styled Button, choosing `scope`. */
 const openWith = (scope: StyleDialogState["scope"]): Story =>
   dialogStory(
@@ -48,13 +59,26 @@ const openWith = (scope: StyleDialogState["scope"]): Story =>
       session.select("styled");
       const state = createStyleDialog();
       state.setState({ open: true, since: openStyle(session), scope });
-      return <StyleDialog session={session} state={state} preferences={createPreferencesStore()} />;
+      return (
+        <StyleDialog
+          session={session}
+          state={state}
+          preferences={createPreferencesStore()}
+          itemPreviews={itemPreviews}
+        />
+      );
     },
     { site: site() },
   );
 
-/** Its Appearance fields with their sources, the previews' places, and *This Button only*. */
+/**
+ * Its preview at the top, its groups below in columns with their sources, and *This Button only*
+ * in the bar at the bottom, at 1280 × 800 px.
+ */
 export const ThisOne: Story = openWith("this");
+
+/** At 1920 × 1080 px: the dialog fills the window, its groups in more columns (CT-11). */
+export const ThisOneWide: Story = { ...openWith("this"), tags: ["wide-window"] };
 
 /** *Every Button on the site*, with how many others it reaches. */
 export const EveryOne: Story = openWith("site");

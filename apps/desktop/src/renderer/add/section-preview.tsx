@@ -7,6 +7,7 @@ import {
 } from "@webforge/site-components";
 import {
   type ReactNode,
+  type RefObject,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -327,21 +328,43 @@ const ITEM_WIDTHS = { desktop: 1280, mobile: 375 } as const;
 /** A device an item's preview draws it for (3.13a). */
 type ItemDevice = keyof typeof ITEM_WIDTHS;
 
-/** How wide each device's preview is on screen, and at most how tall. */
-const ITEM_SHOWN = { desktop: { width: 400, height: 320 }, mobile: { width: 150, height: 320 } };
+/** How tall a preview is while it hasn't been drawn yet, in CSS pixels. */
+const ITEM_PLACEHOLDER_HEIGHT = 80;
 
 /**
- * `drawn` at `device`'s width, scaled into the preview's size, in a frame of its own: its media
- * queries see the device's width, as the canvas's do, so a value set for Mobile shows on Mobile.
- * The frame runs no scripts (an empty `sandbox` but for reading its height); the markup is the
- * site library's static HTML, as the export writes it.
+ * How wide the preview's place is (CT-11): the preview fills it, never drawn larger than the
+ * device's width. Followed as the dialog or the divider between its preview and controls moves.
+ */
+function useWidth(element: RefObject<HTMLElement | null>, fallback: number): number {
+  const [width, setWidth] = useState(fallback);
+  useLayoutEffect(() => {
+    const place = element.current;
+    if (place === null) return;
+    const measure = () => {
+      if (place.clientWidth > 0) setWidth(place.clientWidth);
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(place);
+    return () => observer.disconnect();
+  }, [element]);
+  return width;
+}
+
+/**
+ * `drawn` at `device`'s width, scaled down to the width of its place (never up), in a frame of its
+ * own: its media queries see the device's width, as the canvas's do, so a value set for Mobile shows
+ * on Mobile. It is as tall as the item, scaled; what holds it scrolls (CT-11). The frame runs no
+ * scripts (an empty `sandbox` but for reading its height); the markup is the site library's static
+ * HTML, as the export writes it.
  */
 function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: ItemDevice }) {
   const frame = useRef<HTMLIFrameElement>(null);
+  const place = useRef<HTMLDivElement>(null);
   const [height, setHeight] = useState(0);
   const width = ITEM_WIDTHS[device];
-  const shown = ITEM_SHOWN[device];
-  const scale = shown.width / width;
+  const scale = Math.min(1, useWidth(place, width) / width);
   const page = [
     "<!doctype html>",
     `<html data-theme="${drawn.theme}"><head><meta charset="utf-8"><style>`,
@@ -356,26 +379,27 @@ function ItemFrame({ drawn, device }: { readonly drawn: Drawn; readonly device: 
     void frame.current?.contentDocument?.fonts?.ready.then(() => setHeight(body.scrollHeight));
   };
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none overflow-hidden rounded-sm border border-border"
-      style={{ width: shown.width, height: Math.min(height * scale, shown.height) || undefined }}
-    >
-      <iframe
-        ref={frame}
-        title={t(`device.${device}`)}
-        tabIndex={-1}
-        sandbox="allow-same-origin"
-        srcDoc={page}
-        onLoad={measure}
-        style={{
-          width,
-          height: height || shown.height / scale,
-          border: 0,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-        }}
-      />
+    <div ref={place} aria-hidden className="pointer-events-none w-full">
+      <div
+        className="overflow-hidden rounded-sm border border-border"
+        style={{ width: width * scale, height: height * scale || undefined }}
+      >
+        <iframe
+          ref={frame}
+          title={t(`device.${device}`)}
+          tabIndex={-1}
+          sandbox="allow-same-origin"
+          srcDoc={page}
+          onLoad={measure}
+          style={{
+            width,
+            height: height || ITEM_PLACEHOLDER_HEIGHT / scale,
+            border: 0,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+          }}
+        />
+      </div>
     </div>
   );
 }
@@ -421,7 +445,7 @@ function ItemPreview({
     };
   }, [draw, node, theme]);
   return drawn === undefined ? (
-    <div aria-hidden style={{ width: ITEM_SHOWN[device].width, height: 80 }} />
+    <div aria-hidden className="w-full" style={{ height: ITEM_PLACEHOLDER_HEIGHT }} />
   ) : (
     <ItemFrame drawn={drawn} device={device} />
   );
