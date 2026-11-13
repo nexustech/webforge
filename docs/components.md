@@ -21,7 +21,7 @@ What it writes passes `pnpm check` and renders in Storybook as it is; then make 
 
 ## Where it goes
 
-- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `elements.tsx` (Image, Button, Spacer, Divider, Columns, List; Columns' layouts in `column-layouts.ts`), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel), `embeds.tsx` (Video, Map), `gallery.tsx` (Gallery), `contact-details.tsx` (Opening hours and contact), `forms.tsx` (Contact form, Newsletter signup), `features.tsx` (Features), `testimonials.tsx` (Testimonials), `team.tsx` (Team), `pricing.tsx` (Pricing), `logos.tsx` (Logos) and `stats.tsx` (Stats).
+- **One module per family:** components live in `src/catalogue/`, one file per family: `basic.tsx` (Section, Heading, Text), `elements.tsx` (Image, Button, Spacer, Divider, Columns, List, Icon, Social links; Columns' layouts in `column-layouts.ts`), `layout.tsx` (Header, Footer), `sections.tsx` (Hero, Text, Text + Image, Call to action, FAQ), `carousel.tsx` (Carousel), `embeds.tsx` (Video, Map), `gallery.tsx` (Gallery), `contact-details.tsx` (Opening hours and contact), `forms.tsx` (Contact form, Newsletter signup, Form), `features.tsx` (Features), `testimonials.tsx` (Testimonials), `team.tsx` (Team), `pricing.tsx` (Pricing), `commerce.tsx` (Buy button), `tabs.tsx` (Tabs), `logos.tsx` (Logos), `stats.tsx` (Stats), `custom-code.tsx` (Custom code), `announcement-bar.tsx` (Announcement bar), `latest-posts.tsx` (Latest posts) and `post-tags.tsx` (Post tags). `createLibrary` in `index.ts` lists them all.
 - **A new family:** add a module and list it in `createLibrary` in `src/catalogue/index.ts` (`pnpm new-component` does both). Streams adding components in parallel then never edit the same file.
 - **Its strings:** in a file of its own, `packages/i18n/src/en/components/<family>.ts`, listed in that folder's `index.ts` (2.19). Strings several families use (`field.title`, the spacing and colour choices, the starter page) are in `shared.ts`. A test fails on a key in two files.
 - **Each module ends with its family:** a record from component type to definition, e.g. `export const basicComponents = { Section: section, Heading: heading, Text: text }`.
@@ -114,6 +114,7 @@ Every section and element has the same _Appearance_ group (2.22, ST-1), first in
 - **A section without a title** of its own (the plain Section) says `titled: false` to `defineSection`, which leaves out the Text controls; a test checks every section that draws no title does. _Border colour_ shows only while _Border_ draws one on some device (`fieldsHiddenBy`).
 - **A part other than the root:** an element whose root only aligns it sets `lookTarget: true` and marks the part its Appearance belongs on with `LOOK_TARGET` (`data-wf-look`), as the Button's link and the Icon's drawing do. Only those components are searched for the mark: at any depth, the root itself and lists mapped from data included. The mark never reaches a page (a test renders every element and checks).
 - **A drawing's colour:** an element whose colour colours a drawing rather than text (the Icon, Social links' logos) sets `graphic: true`. The colour field and Site Check then ask 3:1 of it, as WCAG asks of graphics, not text's 4.5:1, whatever its field is called (#670). `pnpm catalogue-data` carries the flag into the catalogue as data.
+- **A gradient background (CT-4, CT-14):** the deeper controls (`DIALOG_FIELDS`, 3.13b), which `defineSection` and `defineComponent` also add, include a gradient: a direction, which turns it on, and two ends from the theme's colours. Over a picture behind the content it draws on a layer of its own, under the overlay, with _Gradient opacity_ setting how much of the picture shows (`gradientLayerClasses`).
 - **A picture behind the content:** a component that draws a picture behind its text names it in `pictureBehind`: its media field, and the layouts it's behind the text in (`[{ field: "image", variants: ["background"] }]` on the Hero). `defineSection` adds the background image itself. The colour field and Site Check measure no contrast on such a picture, as its colours can't be known (`drawsPictureBehind`, #670); `defineComponent` refuses a field that isn't a picture, or a layout it doesn't have.
 - **Why `!`:** the group's classes are marked to win (`underline!`, `shadow-lg!`), since a person's choice for this one item outranks how the component looks by default.
 - **A Button with a colour of its own** darkens when hovered, unless its hover row says otherwise: the group's colours outrank daisyUI's own hover colours. An Outline button also keeps its look when hovered, unfilled, or daisyUI's fill would hide its label. Both only on the devices the colour is set for (`whereOwnColour`), as the colour's own classes are.
@@ -160,12 +161,14 @@ As the module loads:
 
 - **Content:** `text` and `richtext`, which can be edited on the canvas with `inline`. `text` can also be bound to a Site Settings value with `bindable`.
 - **Media and links:** `media` (an image from Media, rendered with `Picture`) and `link` (rendered with `linkAttributes`).
+- **Icons and code:** `icon` (one of Lucide's icons by name, chosen in the icon picker and drawn as inline SVG) and `code` (code the person writes themselves, Custom code's HTML, edited in a monospace box, never on the canvas).
 - **Repeating content:** `list`, for repeating plain values.
+- **Bound to a value elsewhere:** a field's binding is stored in the element's `props.bindings`, not in the field. A `bindable` text field shows a Site Settings value (1.17); in a collection's design, a text field, or a `richtext` or `media` field marked `itemBindable`, shows a field of the item the page is (6.10a, ADR 0025). Render such a field with `boundText` or `boundImage` (`src/library.ts`), never by reading its value directly.
 - **Containers:** `slot`, for elements inside. Give a slot `accepts: "element"` to take every element, or `allow` for a fixed set (an FAQ's questions).
   - **Laying out a slot's elements:** pass a class to the slot (`<Items className="grid md:grid-cols-3" />`). It goes on the element that holds them, Puck's drop zone on the canvas and a `<div>` in the export, so a grid lays them out alike in both. A class on an element around `<Items />` would reach only the drop zone on the canvas.
 - **Shown or usable only with some values:** `shownWhen` hides a field in the Edit panel while it would change nothing, keeping its value for when it shows again (an Image's _Height_, only while its _Shape_ is _Set height_ on some device; read through `fieldsHiddenBy`). `unavailable` shows it disabled instead, with a sentence saying why (a List's style while an icon takes the markers' place).
 - **Where visitors' money or details go:** mark a field that holds such an address `sensitive: true` (a Buy button's _Payment link_, a Newsletter's _Form address_). An AI app's change to it then always asks the person first, naming where it sends visitors now and would (S18, #658). Run `pnpm catalogue-data` after marking one.
-- **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `basic.tsx`, rendered by `boxClasses` and `marginClasses`.
+- **Spacing:** padding and margin per side use `box`, with `PADDING_FIELD` and `MARGIN_FIELD` from `frame.tsx`, rendered by `boxClasses` and `marginClasses`.
   - Every section takes both.
   - Every element takes `margin: MARGIN_FIELD`, since its sides are its section's.
 
@@ -219,7 +222,7 @@ Every component has stories for its main variants, next to it in `src/catalogue/
 
 - **Rendering:** stories render with `SiteNodes` (`src/stories/site-nodes.tsx`), the export's own renderer, so a story is what a site shows. Its context has a navigation, the image `photo` and the site name.
 - **Running them:** `pnpm --filter @webforge/site-components storybook` opens them, with toolbars for the theme and the device width.
-- **Visual checks:** `pnpm visual` runs axe on every story in each theme on Desktop and Mobile. CI's Linux container also compares screenshots; make a new story's screenshots before CI with `pnpm visual:docker` (the same container, in Docker) and commit them with the PR.
+- **Visual checks:** `pnpm visual` runs axe on every story, plus a keyboard check, on Desktop and Mobile in the three development presets; `VISUAL_ALL_THEMES=1` checks every preset, as the nightly run does. CI's Linux container also compares screenshots; make a new story's screenshots before CI with `pnpm visual:docker` (the same container, in Docker) and commit them with the PR.
 
 ```tsx
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -245,7 +248,7 @@ export const Cards: Story = {
 
 - [ ] **Module:** a module in `src/catalogue/` (or added to its family's), and its family listed in `index.ts`.
 - [ ] **`defineSection` or `defineComponent`:** a section has its frame; titles, text and buttons come from the primitives; the label and field labels go through `t()`, with English text in its family's `packages/i18n/src/en/components/<family>.ts`.
-- [ ] **Stories:** for its variants, passing axe in every theme on Desktop and Mobile.
+- [ ] **Stories:** for its variants, passing axe on Desktop and Mobile in the three development presets (every preset nightly).
 - [ ] **Tests:** unit tests for anything its render works out. The export's golden files change only on purpose.
 - [ ] **Behaviours:** a new or changed script type-checks, has its unit test, and `pnpm behaviours` has been run.
 - [ ] **Edit panel:** each field shows in the Edit panel with a meaningful undo label ("Changed Cards layout").

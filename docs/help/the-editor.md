@@ -4,7 +4,7 @@ id: the-editor
 title: The editor
 summary: Where everything is in the editor window, and its modes and views.
 related: [editing-on-the-page, add-panel, layers, edit-panel, keyboard-shortcuts]
-updated: 2026-11-10
+updated: 2026-11-13
 ---
 
 # The editor
@@ -59,7 +59,7 @@ The **Design | Content** switch in the title bar sets what you can change.
 - the Edit panel's **Advanced** tab (CSS classes, anchor IDs and attributes, and the item's CSS);
 - **Custom Code**, in the Add panel and in Settings;
 - your own colours outside the theme in colour pickers;
-- a **CSS** tab in _Style this…_;
+- a **CSS** tab in **Style This…**;
 - **Include developer files** when you export.
 
 Switch with **View › Use Advanced Mode**, or in [Settings](settings.md#interface). The mode is yours, not the site's: it doesn't change your site.

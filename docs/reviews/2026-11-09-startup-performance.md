@@ -1,6 +1,8 @@
 # Start-up performance review (9 Nov 2026)
 
-What happens between launching Webforge and an editor you can use, what blocks it, and what could make it faster. It came with the start-up screen (#887), which covers the wait; the changes recommended here are **not** made. Each is a Phase 5 chore ([#892](https://github.com/nexustech/webforge/issues/892)–[#896](https://github.com/nexustech/webforge/issues/896)), measured with the cold-start check [#891](https://github.com/nexustech/webforge/issues/891). Architecture §10's target is a cold start to an editable canvas of a 5-page site in under 3 s on a mid-range laptop. Nothing measures that today: `e2e/perf/open-site.perf.ts` times opening a site from the start screen, which reloads the window but doesn't start the app; [#891](https://github.com/nexustech/webforge/issues/891) adds that check.
+What happens between launching Webforge and an editor you can use, what blocks it, and what could make it faster. It came with the start-up screen (#887), which covers the wait; the changes recommended here are **not** made. Each is a Phase 5 chore ([#892](https://github.com/nexustech/webforge/issues/892)–[#896](https://github.com/nexustech/webforge/issues/896)), measured with the cold-start check [#891](https://github.com/nexustech/webforge/issues/891). **Status since (13 Nov 2026):** all five are made. #892–#896 and the cold-start check #891 merged on 9 Nov (PRs #900, #902–#905, #908). The editor's V8 code cache (#893) was turned off again on 10 Nov (#910, PR #914): the product owner declined its residual risk (ADR 0023).
+
+Architecture §10's target is a cold start to an editable canvas of a 5-page site in under 3 s on a mid-range laptop. Nothing measures that today: `e2e/perf/open-site.perf.ts` times opening a site from the start screen, which reloads the window but doesn't start the app; [#891](https://github.com/nexustech/webforge/issues/891) adds that check.
 
 ## How it was measured
 
