@@ -1,5 +1,6 @@
 import type { AiApi } from "./ipc/ai.js";
 import type { AppApi } from "./ipc/app.js";
+import type { AssistantApi } from "./ipc/assistant.js";
 import type { CanvasApi } from "./ipc/canvas.js";
 import type { ClipboardApi } from "./ipc/clipboard.js";
 import type { FontsApi } from "./ipc/fonts.js";
@@ -45,4 +46,5 @@ export interface WebforgeApi {
   readonly netlify: NetlifyApi;
   readonly updates: UpdatesApi;
   readonly posts: PostsApi;
+  readonly assistant: AssistantApi;
 }

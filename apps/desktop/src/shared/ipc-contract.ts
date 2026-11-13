@@ -1,6 +1,7 @@
 import type { z } from "zod";
 import { aiChannels } from "./ipc/ai.js";
 import { appChannels } from "./ipc/app.js";
+import { assistantChannels } from "./ipc/assistant.js";
 import { canvasChannels } from "./ipc/canvas.js";
 import { clipboardChannels } from "./ipc/clipboard.js";
 import { fontsChannels } from "./ipc/fonts.js";
@@ -67,6 +68,7 @@ export const ipcContract = {
   ...netlifyChannels,
   ...updatesChannels,
   ...postsChannels,
+  ...assistantChannels,
 } as const;
 
 /** The channels of each domain, keyed by domain; the tests check none overwrites another. */
@@ -91,6 +93,7 @@ export const ipcDomains = {
   netlify: netlifyChannels,
   updates: updatesChannels,
   posts: postsChannels,
+  assistant: assistantChannels,
 } as const;
 
 /** Name of an entry in {@link ipcContract}. */
