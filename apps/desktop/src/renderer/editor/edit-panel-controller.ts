@@ -1,7 +1,13 @@
 import type { ListChange } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { Breakpoint, NodeAdvanced, SiteDoc } from "@webforge/model";
-import { acceptsFieldValue, type FieldDef, isIconName, withLook } from "@webforge/site-components";
+import {
+  acceptsFieldValue,
+  type FieldDef,
+  isIconName,
+  partnersOf,
+  withLook,
+} from "@webforge/site-components";
 import { advancedFieldLabel, isAdvancedField, withAdvancedChange } from "./advanced-fields.js";
 import { bindingLabel, boundFieldOf, isBindingField, withBinding } from "./binding-fields.js";
 import type { EditorSession } from "./editor-session.js";
@@ -17,7 +23,7 @@ import {
 } from "./list-edit.js";
 import { placedOverlay } from "./placed-overlay.js";
 import { resetValue } from "./reset-value.js";
-import { breakpointOf, withoutOverride, withValueAt } from "./responsive-value.js";
+import { breakpointOf, valueAt, withoutOverride, withValueAt } from "./responsive-value.js";
 
 /** A run of edits still open: typing in a text field, or a slider drag. */
 type Run = {
@@ -219,6 +225,37 @@ export function createEditPanelController(
     }
   };
 
+  /**
+   * `recipe`, a change to field `name`, with the fields it sets besides (CT-10) on device `at`, in
+   * the same step: a gradient's direction gives the colours it has none of there.
+   */
+  const withPartners = (
+    { live }: Where,
+    name: string,
+    value: unknown,
+    at: Breakpoint,
+    recipe: (draft: SiteDoc) => void,
+  ): ((draft: SiteDoc) => void) => {
+    const { component, node } = live;
+    if (component.fields[name]?.partners === undefined) return recipe;
+    const site = history.document.getState();
+    const values = { ...component.defaults, ...withLook(node.props, node.type, site.theme.looks) };
+    const onDevice = Object.fromEntries(
+      Object.entries(values).map(([field, stored]) => [field, valueAt(stored, at)]),
+    );
+    const partners = Object.entries(partnersOf(component.fields, name, value, onDevice));
+    if (partners.length === 0) return recipe;
+    return (draft) => {
+      recipe(draft);
+      for (const [partner, given] of partners) {
+        const responsive = component.fields[partner]?.responsive === true;
+        live.recipe(partner, (stored) => (responsive ? withValueAt(stored, at, given) : given))(
+          draft,
+        );
+      }
+    };
+  };
+
   const change = (name: string, value: unknown, given?: Breakpoint) => {
     const where = now();
     if (where === undefined) return;
@@ -258,7 +295,7 @@ export function createEditPanelController(
       // A drag is one step, shown live as it goes (U2).
       const run = open;
       if (run?.update !== undefined && run.key === key && run.nodeId === live.id && run.active()) {
-        run.update(live.recipe(name, next));
+        run.update(withPartners(where, name, value, at, live.recipe(name, next)));
         return;
       }
       endRun();
@@ -278,7 +315,7 @@ export function createEditPanelController(
           if (gesture.active) gesture.cancel();
         },
       };
-      gesture.update(live.recipe(name, next));
+      gesture.update(withPartners(where, name, value, at, live.recipe(name, next)));
       return;
     }
     if (open?.key !== key) {
@@ -298,7 +335,7 @@ export function createEditPanelController(
       site.theme,
       component,
     );
-    const recipe = live.recipe(name, next);
+    const recipe = withPartners(where, name, value, at, live.recipe(name, next));
     const codeBefore = live.storedOr(name, live.node.props[name]);
     session.edit(
       field.kind === "text" ? "text" : "props",
