@@ -275,10 +275,14 @@ interface AssistantApi {
   /** The site's conversation so far, for a panel opened again: main keeps it, in memory (§6). */
   conversation(session: SessionId): Promise<ConversationTurn[]>;
   /**
-   * Opens a link from a reply in the person's browser, once they've clicked it. Main opens only an
-   * `http:` or `https:` address that reply holds (in its `links`, or its text) in main's own copy
-   * of the conversation, so a renderer can't use the call to open anything else. Nothing is logged
-   * but the outcome.
+   * Opens a link from a reply in the person's browser, once they've clicked it. `href` is the
+   * address as the reply wrote it: the panel's Markdown token's `href`, not normalised. Main opens
+   * it (as `new URL(href).href`) only if it's an `http:` or `https:` address that reply holds in
+   * main's own copy of the conversation: its text contains `href` (for a bare `www.` address,
+   * without the `http://` Markdown added), or a review card's link is it. So a renderer can't use
+   * the call to open anything else. No pattern runs over the reply, which is model output of up to
+   * 200k characters: a plain search, so a reply built to stall a pattern can't freeze main
+   * (#1001's review). Nothing is logged but the outcome.
    */
   openLink(
     session: SessionId,

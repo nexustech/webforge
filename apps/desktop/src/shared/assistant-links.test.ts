@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { linkInTurn, webAddress } from "./assistant-links.js";
+import { linkToOpen, webAddress } from "./assistant-links.js";
 import type { ConversationTurn } from "./ipc/assistant.js";
 
 const turn = (reply: string, links: ConversationTurn["links"] = []): ConversationTurn => ({
@@ -22,21 +22,32 @@ describe("a reply's links (ADR 0026 §7, openLink)", () => {
     expect(webAddress("not a url")).toBeUndefined();
   });
 
-  it("finds a Markdown link, a bare address or a review card's link, and nothing else", () => {
+  it("opens a link as the reply wrote it, or a review card's, and nothing else", () => {
     const reply = turn(
-      "See [the page](https://a.example/x) and https://b.example/y, or <https://c.example/z>.",
+      "See [the page](https://a.example/x), https://b.example/y, <https://c.example/z> or www.e.example/w.",
       [{ host: "d.example", href: "https://d.example/" }],
     );
-    for (const href of [
-      "https://a.example/x",
-      "https://b.example/y",
-      "https://c.example/z",
-      "https://d.example",
-    ]) {
-      expect(linkInTurn(reply, href)).toBe(true);
-    }
-    expect(linkInTurn(reply, "https://a.example/other")).toBe(false);
-    expect(linkInTurn(reply, "https://b.example/y.")).toBe(false);
-    expect(linkInTurn(turn("Try [this](javascript:alert(1))"), "javascript:alert(1)")).toBe(false);
+    // Each as the panel's Markdown tokens give it, and as main opens it.
+    expect(linkToOpen(reply, "https://a.example/x")).toBe("https://a.example/x");
+    expect(linkToOpen(reply, "https://b.example/y")).toBe("https://b.example/y");
+    expect(linkToOpen(reply, "https://c.example/z")).toBe("https://c.example/z");
+    expect(linkToOpen(reply, "http://www.e.example/w")).toBe("http://www.e.example/w");
+    expect(linkToOpen(reply, "https://d.example")).toBe("https://d.example/");
+    expect(linkToOpen(reply, "https://a.example/other")).toBeUndefined();
+    expect(linkToOpen(reply, "https://evil.example/")).toBeUndefined();
+    expect(linkToOpen(reply, "http://www.evil.example/")).toBeUndefined();
+    expect(
+      linkToOpen(turn("Try [this](javascript:alert(1))"), "javascript:alert(1)"),
+    ).toBeUndefined();
+    expect(linkToOpen(turn("file:///etc/passwd"), "file:///etc/passwd")).toBeUndefined();
+  });
+
+  it("answers at once for a reply built to stall a pattern (#1001's review)", () => {
+    // 200k characters of unclosed Markdown links, the longest reply, against the longest href.
+    const stalling = turn("](a".repeat(66_667));
+    const started = performance.now();
+    expect(linkToOpen(stalling, `https://a.example/${"a".repeat(1_970)}`)).toBeUndefined();
+    expect(linkToOpen(stalling, "http://www.a.example/")).toBeUndefined();
+    expect(performance.now() - started).toBeLessThan(50);
   });
 });
