@@ -1,0 +1,386 @@
+import { join } from "node:path";
+import { z } from "zod";
+import {
+  ASSISTANT_CONSENT_VERSION,
+  type AssistantApi,
+  type AssistantEvent,
+  type AssistantModel,
+  type AssistantStatus,
+  MONTHLY_LIMIT_DEFAULT_USD,
+} from "../../shared/ipc/assistant.js";
+import type { AssistantService } from "../assistant-ipc.js";
+import type { CredentialStore } from "../credential-store.js";
+import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
+import { logFailure } from "../log.js";
+import { openRouterModels, preselected, serverModels } from "./models.js";
+import type { OpenRouterSignIn } from "./openrouter-sign-in.js";
+
+/**
+ * The assistant in main (6.9a, ADR 0026): its settings, consent, keys, sign-in, the month's spend
+ * and the model list, behind the `assistant` domain's calls. `send` and the conversation are
+ * 6.9b's loop: until it lands, a message that passes every check is answered `failed`.
+ *
+ * Kept in `assistant.json` in the app's user data, with no content: the provider and model, the
+ * limit, the month's spend, the app's consent version and each site's yes by its project id
+ * (never in the site file). Keys only in the credential store.
+ */
+
+const OPENROUTER_KEY = "assistant/openrouter";
+const SERVER_KEY = "assistant/server";
+
+/** A local server's address when Preferences gives none (ADR 0026 §2). */
+const LOCAL_DEFAULTS = {
+  ollama: "http://localhost:11434/v1",
+  lmstudio: "http://localhost:1234/v1",
+} as const;
+
+const modelSchema = z.strictObject({
+  id: z.string().min(1).max(200),
+  name: z.string().min(1).max(200),
+  maker: z.string().min(1).max(100).nullable(),
+  tested: z.boolean(),
+  zdr: z.boolean(),
+  perReplyUsd: z.number().nonnegative().nullable(),
+  pricey: z.boolean(),
+});
+
+const fileSchema = z.strictObject({
+  version: z.literal(1),
+  /** The app consent's wording the person agreed to; null before, or after *Turn off*. */
+  consentVersion: z.int().positive().nullable(),
+  provider: z.discriminatedUnion("kind", [
+    z.strictObject({ kind: z.literal("openrouter") }),
+    z.strictObject({
+      kind: z.enum(["ollama", "lmstudio", "server"]),
+      baseUrl: z.string().max(2000),
+    }),
+  ]),
+  model: modelSchema.nullable(),
+  limitUsd: z.number().min(1).max(1000),
+  allowRetainingModels: z.boolean(),
+  /** The spend of `month` (`2026-11`, in this computer's time zone), and whether 80% was said. */
+  month: z.strictObject({
+    key: z.string().regex(/^\d{4}-\d{2}$/),
+    spentUsd: z.number().nonnegative(),
+    warned: z.boolean(),
+  }),
+  /** Each site's yes or no, by its project id. */
+  sites: z.record(z.uuid(), z.boolean()),
+});
+
+type AssistantFile = z.infer<typeof fileSchema>;
+
+type SignInResult = Awaited<ReturnType<AssistantApi["signIn"]>>;
+
+/** A calendar month's key in this computer's time zone: `2026-11`. */
+const monthKey = (date: Date) =>
+  `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+
+/** Whether `baseUrl` is on this computer: nothing leaves it, and no site is asked (§2, §4). */
+export const onThisComputer = (baseUrl: string) => {
+  try {
+    return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(baseUrl).hostname);
+  } catch {
+    return false;
+  }
+};
+
+export type AssistantServiceOptions = {
+  readonly dir: string;
+  readonly credentials: CredentialStore;
+  readonly signIn: OpenRouterSignIn;
+  /** Electron's `net.fetch`, for the system's proxy. */
+  readonly fetchFn: typeof fetch;
+  /** The open site's project id for a session, or undefined if it isn't the open one. */
+  readonly projectOf: (session: string) => string | undefined;
+  /** The open site's session, which status events name; none while no site is open. */
+  readonly openSession: () => string | undefined;
+  /** Sends an event to the editor window. */
+  readonly emit: (event: AssistantEvent) => void;
+  readonly now?: () => Date;
+  readonly files?: JsonStoreFiles;
+};
+
+/** The service and what 6.9b's loop uses beside it: the endpoint's key, and adding a reply's cost. */
+export type Assistant = AssistantService & {
+  /** Adds a reply's cost to the month's (§5), saying so at 80% and at the limit. */
+  addCost(session: string, usd: number): Promise<AssistantStatus["month"]>;
+};
+
+/** The assistant's service in main (see the top of this file). */
+export function createAssistantService(options: AssistantServiceOptions): Assistant {
+  const now = options.now ?? (() => new Date());
+  const empty = (): AssistantFile => ({
+    version: 1,
+    consentVersion: null,
+    provider: { kind: "openrouter" },
+    model: null,
+    limitUsd: MONTHLY_LIMIT_DEFAULT_USD,
+    allowRetainingModels: false,
+    month: { key: monthKey(now()), spentUsd: 0, warned: false },
+    sites: {},
+  });
+  const store = createJsonStore(join(options.dir, "assistant.json"), fileSchema, {
+    empty: empty(),
+    onDamaged: "reset",
+    ...(options.files === undefined ? {} : { files: options.files }),
+  });
+  /** The file, with last month's spend let go. */
+  const read = async (): Promise<AssistantFile> => {
+    const file = await store.read();
+    const key = monthKey(now());
+    return file.month.key === key ? file : { ...file, month: { key, spentUsd: 0, warned: false } };
+  };
+  const write = async (change: (file: AssistantFile) => AssistantFile) => {
+    await store.update((file) => {
+      const key = monthKey(now());
+      const current =
+        file.month.key === key ? file : { ...file, month: { key, spentUsd: 0, warned: false } };
+      return change(current);
+    });
+  };
+  /** The models last listed, for `update({ modelId })` to keep the chosen one's details. */
+  let listed: readonly AssistantModel[] = [];
+  /** The sign-in under way, whose answer keeps the key: a pasted code's ends it. */
+  let signingIn: Promise<SignInResult> | null = null;
+
+  const status = async (): Promise<AssistantStatus> => {
+    const file = await read();
+    const key =
+      file.provider.kind === "openrouter"
+        ? await options.credentials.get(OPENROUTER_KEY)
+        : file.provider.kind === "server"
+          ? await options.credentials.get(SERVER_KEY)
+          : null;
+    const provider: AssistantStatus["provider"] =
+      file.provider.kind === "openrouter"
+        ? { kind: "openrouter", signedIn: key !== null }
+        : file.provider.kind === "server"
+          ? { kind: "server", baseUrl: file.provider.baseUrl, hasKey: key !== null }
+          : { kind: file.provider.kind, baseUrl: file.provider.baseUrl };
+    const reach =
+      file.provider.kind === "openrouter"
+        ? "openrouter"
+        : onThisComputer(file.provider.baseUrl)
+          ? "this-computer"
+          : "server";
+    return {
+      enabled: file.consentVersion === ASSISTANT_CONSENT_VERSION,
+      consentVersion: file.consentVersion,
+      provider,
+      reach,
+      model: file.model,
+      month: {
+        spentUsd: file.month.spentUsd,
+        limitUsd: file.limitUsd,
+        warned: file.month.warned,
+        reached: file.month.spentUsd >= file.limitUsd,
+      },
+      // AIA-5's setting stays off and hidden until 6.9b stages commands (ADR 0026 §7).
+      reviewBeforeApplying: false,
+      allowRetainingModels: file.allowRetainingModels,
+    };
+  };
+
+  /** The status, told to the window too: Preferences and the panel follow it. */
+  const changed = async () => {
+    const next = await status();
+    const session = options.openSession();
+    if (session !== undefined) options.emit({ session, type: "status", status: next });
+    return next;
+  };
+
+  /** A key, checked with one request before it's kept: OpenRouter's `/key`, a server's `/models`. */
+  const checkKey = async (url: string, key: string) => {
+    try {
+      const response = await options.fetchFn(url, { headers: { authorization: `Bearer ${key}` } });
+      await response.body?.cancel().catch(() => undefined);
+      if (response.ok) return "ok";
+      return response.status === 401 || response.status === 403 ? "refused" : "failed";
+    } catch {
+      return "offline";
+    }
+  };
+
+  /** Keeps `key` under `name`: `keychain-unavailable` where the store won't encrypt it. */
+  const keep = async (name: string, key: string) => {
+    try {
+      await options.credentials.set(name, key);
+      return true;
+    } catch (error) {
+      logFailure("assistant key", error);
+      return false;
+    }
+  };
+
+  const service: Assistant = {
+    status,
+    setEnabled: async (enabled, version) => {
+      if (enabled) {
+        await write((file) => ({ ...file, consentVersion: version }));
+      } else {
+        // Turn off: the keys go from this computer; the sites' answers name no secret, and stay.
+        options.signIn.cancel();
+        await options.credentials.delete(OPENROUTER_KEY);
+        await options.credentials.delete(SERVER_KEY);
+        await write((file) => ({ ...file, consentVersion: null }));
+      }
+      return changed();
+    },
+    update: async (settings) => {
+      const model =
+        settings.modelId === undefined
+          ? undefined
+          : (listed.find((each) => each.id === settings.modelId) ?? {
+              id: settings.modelId,
+              name: settings.modelId,
+              maker: null,
+              tested: false,
+              zdr: false,
+              perReplyUsd: null,
+              pricey: false,
+            });
+      await write((file) => {
+        let next = { ...file };
+        if (settings.provider !== undefined) {
+          const provider =
+            settings.provider.kind === "openrouter"
+              ? { kind: "openrouter" as const }
+              : {
+                  kind: settings.provider.kind,
+                  baseUrl: (
+                    settings.provider.baseUrl ??
+                    (settings.provider.kind === "server"
+                      ? ""
+                      : LOCAL_DEFAULTS[settings.provider.kind])
+                  ).replace(/\/+$/, ""),
+                };
+          // Another provider's models aren't this one's: the choice starts again.
+          if (JSON.stringify(provider) !== JSON.stringify(file.provider)) {
+            next = { ...next, provider, model: null };
+          }
+        }
+        if (model !== undefined) next = { ...next, model };
+        if (settings.monthlyLimitUsd !== undefined)
+          next = { ...next, limitUsd: settings.monthlyLimitUsd };
+        if (settings.allowRetainingModels !== undefined) {
+          next = { ...next, allowRetainingModels: settings.allowRetainingModels };
+        }
+        return next;
+      });
+      return changed();
+    },
+    signIn: (mode) => {
+      const signing = (async (): Promise<SignInResult> => {
+        const outcome = await options.signIn.start(mode);
+        if (outcome.status !== "signed-in") return { status: outcome.status };
+        if (!(await keep(OPENROUTER_KEY, outcome.key))) return { status: "keychain-unavailable" };
+        await changed();
+        return { status: "signed-in" };
+      })();
+      signingIn = signing;
+      void signing.finally(() => {
+        if (signingIn === signing) signingIn = null;
+      });
+      return signing;
+    },
+    finishSignIn: async (code) => {
+      const signing = signingIn;
+      const outcome = await options.signIn.finishWithCode(code);
+      // A right code ends the sign-in under way, which keeps the key: answer once it's kept.
+      if (outcome.status === "signed-in" && signing !== null) return signing;
+      return { status: outcome.status === "signed-in" ? "failed" : outcome.status };
+    },
+    cancelSignIn: async () => {
+      options.signIn.cancel();
+    },
+    setKey: async (key) => {
+      const file = await read();
+      if (file.provider.kind !== "openrouter" && file.provider.kind !== "server") {
+        return { status: "failed" };
+      }
+      const [url, name] =
+        file.provider.kind === "openrouter"
+          ? ["https://openrouter.ai/api/v1/key", OPENROUTER_KEY]
+          : [`${file.provider.baseUrl}/models`, SERVER_KEY];
+      const checked = await checkKey(url, key);
+      if (checked !== "ok") return { status: checked };
+      if (!(await keep(name, key))) return { status: "keychain-unavailable" };
+      await changed();
+      return { status: "signed-in" };
+    },
+    models: async () => {
+      const file = await read();
+      const result =
+        file.provider.kind === "openrouter"
+          ? await openRouterModels(options.fetchFn, file.allowRetainingModels)
+          : await serverModels(
+              options.fetchFn,
+              file.provider.baseUrl,
+              file.provider.kind === "server"
+                ? ((await options.credentials.get(SERVER_KEY)) ?? undefined)
+                : undefined,
+            );
+      if (result.status !== "ok") return result;
+      listed = result.models;
+      // A first list preselects Webforge's tested default (§2).
+      const first = preselected(result.models);
+      if (file.model === null && first !== null) {
+        await write((each) => (each.model === null ? { ...each, model: first } : each));
+        await changed();
+      }
+      return result;
+    },
+    siteConsent: async (session) => {
+      const current = await status();
+      if (current.reach === "this-computer") return { asked: true, allowed: true };
+      const project = options.projectOf(session);
+      if (project === undefined) return { asked: false, allowed: false };
+      const answer = (await read()).sites[project];
+      return { asked: answer !== undefined, allowed: answer === true };
+    },
+    setSiteConsent: async (session, allowed) => {
+      const project = options.projectOf(session);
+      if (project === undefined) return;
+      await write((file) => ({ ...file, sites: { ...file.sites, [project]: allowed } }));
+    },
+    send: async (session) => {
+      const current = await status();
+      if (options.projectOf(session) === undefined) return { status: "no-site" };
+      if (!current.enabled) return { status: "consent-needed" };
+      if (current.reach !== "this-computer" && !(await service.siteConsent(session)).allowed) {
+        return { status: "consent-needed" };
+      }
+      if (current.provider.kind === "openrouter" && !current.provider.signedIn) {
+        return { status: "not-signed-in" };
+      }
+      if (current.model === null) return { status: "no-model" };
+      if (current.month.reached) return { status: "limit-reached" };
+      // 6.9b's loop answers from here.
+      return { status: "failed" };
+    },
+    stop: async () => undefined,
+    newConversation: async () => undefined,
+    conversation: async () => [],
+    addCost: async (session, usd) => {
+      let crossed: "warning" | "reached" | undefined;
+      await write((file) => {
+        const spentUsd = file.month.spentUsd + usd;
+        const before = file.month.spentUsd;
+        if (before < file.limitUsd && spentUsd >= file.limitUsd) crossed = "reached";
+        else if (!file.month.warned && spentUsd >= file.limitUsd * 0.8) crossed = "warning";
+        return {
+          ...file,
+          month: { ...file.month, spentUsd, warned: file.month.warned || crossed !== undefined },
+        };
+      });
+      const { month } = await status();
+      const counted = { spentUsd: month.spentUsd, limitUsd: month.limitUsd };
+      if (crossed !== undefined) {
+        options.emit({ session, type: "limit", level: crossed, month: counted });
+      }
+      return month;
+    },
+  };
+  return service;
+}

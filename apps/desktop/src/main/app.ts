@@ -8,6 +8,7 @@ import {
   thumbnailOutcomeSchema,
 } from "../shared/export-worker-protocol.js";
 import { appEvents } from "../shared/ipc/app.js";
+import { assistantEvents } from "../shared/ipc/assistant.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
@@ -22,7 +23,9 @@ import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu, runMenuCommand } from "./app-menu.js";
 import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
-import { registerAssistantHandlers, unbuiltAssistant } from "./assistant-ipc.js";
+import { createAssistantService } from "./assistant/assistant-service.js";
+import { createOpenRouterSignIn } from "./assistant/openrouter-sign-in.js";
+import { registerAssistantHandlers } from "./assistant-ipc.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
@@ -778,7 +781,35 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     markStartup("ipc-registered");
     registerPostsHandlers(ipcMain, isTrustedSender, filePostsParts(dialogs.posts.choosePostFiles));
-    registerAssistantHandlers(ipcMain, isTrustedSender, unbuiltAssistant);
+    // The assistant (6.9a, ADR 0026): its model calls and sign-in go through `net.fetch`, for the
+    // system's proxy; looked up as they're called, as the E2E tests stand in for them.
+    const assistantFetch: typeof fetch = (input, init) => electron.net.fetch(input as string, init);
+    registerAssistantHandlers(
+      ipcMain,
+      isTrustedSender,
+      createAssistantService({
+        dir: app.getPath("userData"),
+        credentials,
+        fetchFn: assistantFetch,
+        signIn: createOpenRouterSignIn({
+          fetchFn: assistantFetch,
+          openExternal: (url) => electron.shell.openExternal(url),
+          keyLabel: () =>
+            t("assistant.signIn.keyLabel", { date: new Date().toISOString().slice(0, 10) }),
+          donePage: () => ({
+            title: t("assistant.signIn.doneTitle"),
+            body: t("assistant.signIn.done"),
+          }),
+        }),
+        projectOf: (session) =>
+          projectSession.staleReason(session) === undefined
+            ? projectSession.projectId()
+            : undefined,
+        openSession: () => projectSession.current()?.sessionId,
+        emit: (event) =>
+          lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
+      }),
+    );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {

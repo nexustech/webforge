@@ -33,6 +33,11 @@ export const assistant = {
   "assistant.stop.max-tokens": "The reply was cut short, as it was too long.",
   "assistant.stop.limit-reached":
     "The assistant stopped, as this month's limit is reached. Raise it in Settings › Assistant, or wait for next month.",
+  // OpenRouter's sign-in (§3): the key's label in the person's account, and the page the browser
+  // shows after it. Never the computer's name.
+  "assistant.signIn.keyLabel": "{appName}, {date}",
+  "assistant.signIn.doneTitle": "Signed in to OpenRouter",
+  "assistant.signIn.done": "You're signed in. You can close this tab and go back to {appName}.",
   // The month's spend (§5).
   "assistant.limit.warning": "You've used {spent} of this month's {limit} for the assistant.",
   "assistant.limit.reached":
