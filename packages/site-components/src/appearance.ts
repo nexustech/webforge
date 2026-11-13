@@ -66,6 +66,16 @@ const GRADIENT_DIRECTIONS = [
   "toTopRight",
 ] as const;
 const BORDER_STYLES = ["default", "solid", "dashed", "dotted"] as const;
+/**
+ * A gradient's ends: the theme's surfaces and colours, never *Theme's*, which for a gradient means
+ * nothing (CT-10).
+ */
+const GRADIENT_COLOURS = BACKGROUNDS.filter((value) => value !== "theme");
+/**
+ * The colours a gradient's ends draw with while they have none (CT-10): Brand to Accent. Choosing
+ * a direction gives an end without a colour this one, so the controls and the drawing agree.
+ */
+const GRADIENT_ENDS = { lookGradientFrom: "primary", lookGradientTo: "secondary" } as const;
 /** Spacing tokens (C4): an element's padding (CT-5); its margin is its own `margin` field. */
 const SPACINGS = ["default", "none", "s", "m", "l", "xl"] as const;
 
@@ -214,6 +224,30 @@ type StyleGroup = (typeof STYLE_GROUPS)[keyof typeof STYLE_GROUPS];
 const inDialog = (group: StyleGroup) =>
   ({ group: "style", optionGroup: group, responsive: true, inDialog: true }) as const;
 
+/** Whether `value`, on one device, is a colour a gradient's end can draw with. */
+const isEndColour = (value: unknown) => colorClass("bg", value) !== "";
+
+/**
+ * A gradient's direction turns it on (CT-10): one chosen gives each end without a colour on that
+ * device its default, Brand or Accent, in the same step; *None* leaves the colours for next time.
+ */
+const gradientPartners = (value: unknown, values: Readonly<Record<string, unknown>>) =>
+  value === "default" || !(GRADIENT_DIRECTIONS as readonly unknown[]).includes(value)
+    ? {}
+    : Object.fromEntries(
+        Object.entries(GRADIENT_ENDS).filter(([name]) => !isEndColour(values[name])),
+      );
+
+/** A gradient's end: a colour of the theme's, offered only while the gradient has a direction. */
+const gradientEnd = (name: keyof typeof GRADIENT_ENDS, label: string) =>
+  ({
+    kind: "color",
+    label,
+    ...inDialog(STYLE_GROUPS.background),
+    options: colourOptions(GRADIENT_COLOURS),
+    unset: GRADIENT_ENDS[name],
+  }) as const;
+
 /** A select in `group` of `options`, already named. */
 const select = (
   label: string,
@@ -234,23 +268,16 @@ const SPACING_OPTIONS = SPACINGS.map((value) => ({
  * each side's border and each corner, an inner shadow, and a colour when hovered. Theme tokens only.
  */
 export const DIALOG_FIELDS = {
-  lookGradientDirection: select(
-    t("field.look.gradient"),
-    STYLE_GROUPS.background,
-    GRADIENT_DIRECTIONS.map((value) => ({ label: t(`field.look.gradient.${value}`), value })),
-  ),
-  lookGradientFrom: {
-    kind: "color",
-    label: t("field.look.gradientFrom"),
-    ...inDialog(STYLE_GROUPS.background),
-    options: colourOptions(BACKGROUNDS),
+  lookGradientDirection: {
+    ...select(
+      t("field.look.gradient"),
+      STYLE_GROUPS.background,
+      GRADIENT_DIRECTIONS.map((value) => ({ label: t(`field.look.gradient.${value}`), value })),
+    ),
+    partners: gradientPartners,
   },
-  lookGradientTo: {
-    kind: "color",
-    label: t("field.look.gradientTo"),
-    ...inDialog(STYLE_GROUPS.background),
-    options: colourOptions(BACKGROUNDS),
-  },
+  lookGradientFrom: gradientEnd("lookGradientFrom", t("field.look.gradientFrom")),
+  lookGradientTo: gradientEnd("lookGradientTo", t("field.look.gradientTo")),
   lookBorderTop: select(t("field.look.borderTop"), STYLE_GROUPS.border, BORDER_OPTIONS),
   lookBorderRight: select(t("field.look.borderRight"), STYLE_GROUPS.border, BORDER_OPTIONS),
   lookBorderBottom: select(t("field.look.borderBottom"), STYLE_GROUPS.border, BORDER_OPTIONS),
@@ -524,21 +551,23 @@ const onDevices =
   (value) =>
     perDevice(value, one);
 
-/** Whether `value`, on any device, is a theme colour of the item's own (not *Theme's*). */
-const anyColour = (value: unknown) => onAnyDevice(value, (one) => colorClass("bg", one) !== "");
 /** Whether a select of `table`'s choices draws something on any device. */
 const anyChoice = (table: Readonly<Record<string, string>>) => (value: unknown) =>
   onAnyDevice(value, (one) => pick(table)(one) !== "");
 
-/** A gradient draws only with its direction and both its ends (CT-4). */
+/**
+ * A gradient draws with its direction (CT-4), each end without a colour of its own with its default
+ * (CT-10): an older site, a pasted look or an AI app's edit may set a direction alone.
+ */
 const hasGradient = (values: AppearanceValues) =>
-  anyChoice(GRADIENT_CLASSES)(values.lookGradientDirection) &&
-  anyColour(values.lookGradientFrom) &&
-  anyColour(values.lookGradientTo);
+  anyChoice(GRADIENT_CLASSES)(values.lookGradientDirection);
 const gradientPart =
   (one: (value: unknown) => string): FieldClasses =>
   (value, values) =>
     hasGradient(values) ? perDevice(value, one) : "";
+/** A gradient's end's colour class, `from-…` or `to-…`, its default's where it has none. */
+const gradientEndOf = (prefix: "from" | "to", name: keyof typeof GRADIENT_ENDS) =>
+  gradientPart((one) => colourOf(prefix)(isEndColour(one) ? one : GRADIENT_ENDS[name]));
 
 /** The item's border style, when the dialog sets one: then a width draws no solid line of its own. */
 const styled = (values: AppearanceValues) =>
@@ -604,8 +633,8 @@ const BOX_CLASSES = {
   lookColor: onDevices(colourOf("text")),
   lookBackground: onDevices(colourOf("bg")),
   lookGradientDirection: gradientPart(pick(GRADIENT_CLASSES)),
-  lookGradientFrom: gradientPart(colourOf("from")),
-  lookGradientTo: gradientPart(colourOf("to")),
+  lookGradientFrom: gradientEndOf("from", "lookGradientFrom"),
+  lookGradientTo: gradientEndOf("to", "lookGradientTo"),
   lookCorners: onDevices(pick(CORNER_CLASSES)),
   lookCornerTopLeft: onDevices(pick(cornerClasses("tl"))),
   lookCornerTopRight: onDevices(pick(cornerClasses("tr"))),

@@ -1,4 +1,10 @@
 import { z } from "zod";
+import {
+  type Breakpoint,
+  isResponsiveValue,
+  type Responsive,
+  resolveResponsive,
+} from "./responsive.js";
 
 /**
  * The fields a kind's look holds (3.12, CT-1): the Appearance group's, with a section's overlay over
@@ -129,16 +135,54 @@ export type Looks = z.infer<typeof looksSchema>;
 export type ValueSource = "own" | "look" | "default";
 
 /**
+ * The fields where *Theme's* (`theme`) is no value of an item's own: a gradient's ends, which no
+ * longer offer it (CT-10). An end stored so, from before, takes its kind's look on the devices it
+ * has it, as an end never set does, and else draws with its default.
+ */
+const THEMES_IS_UNSET: ReadonlySet<string> = new Set(["lookGradientFrom", "lookGradientTo"]);
+
+const DEVICES: readonly Breakpoint[] = ["desktop", "tablet", "mobile"];
+
+/** A value on `device`, set once or per device. */
+const valueOn = (value: unknown, device: Breakpoint) =>
+  resolveResponsive(value as Responsive<unknown>, device);
+
+/**
+ * An item's own value of field `name`, with *Theme's* taken from `look` where it isn't one of its
+ * own ({@link THEMES_IS_UNSET}): `undefined` for an item that has none.
+ */
+function ownValue(name: string, own: unknown, look: unknown): unknown {
+  if (!THEMES_IS_UNSET.has(name)) return own;
+  if (own === "theme") return undefined;
+  // Per device, Theme's takes the look's value there: without one, it stays as stored, which
+  // draws as unset, so every device keeps a value (the stored form needs Desktop's).
+  if (!isResponsiveValue(own as Responsive<unknown>) || look === undefined) return own;
+  if (!DEVICES.some((device) => valueOn(own, device) === "theme")) return own;
+  const [desktop, tablet, mobile] = DEVICES.map((device) => {
+    const one = valueOn(own, device);
+    return one === "theme" ? valueOn(look, device) : one;
+  });
+  return tablet === desktop && mobile === desktop
+    ? desktop
+    : { $responsive: { desktop, tablet, mobile } };
+}
+
+/**
  * `values`, an item's own, over its kind's `look` (3.12, CT-1): each field it doesn't set itself
- * takes the look's value; one it sets, even to the theme's (`default`), keeps it. The one rule the
- * canvas, the export, Site Check and AI apps' `fields` all read an item by (#670).
+ * takes the look's value; one it sets, even to the theme's (`default`), keeps it, but for a
+ * gradient's end, where *Theme's* is no choice (CT-10). The one rule the canvas, the export, Site
+ * Check and AI apps' `fields` all read an item by (#670).
  */
 export function valuesWithLook<Values extends Readonly<Record<string, unknown>>>(
   values: Values,
   look: Readonly<Record<string, unknown>> | undefined,
 ): Values {
   if (look === undefined) return values;
-  const own = Object.fromEntries(Object.entries(values).filter(([, value]) => value !== undefined));
+  const own = Object.fromEntries(
+    Object.entries(values)
+      .map(([name, value]) => [name, ownValue(name, value, look[name])] as const)
+      .filter(([, value]) => value !== undefined),
+  );
   return { ...look, ...own } as Values;
 }
 
@@ -163,7 +207,8 @@ export function effectiveValues(
     ...Object.keys(look),
     ...Object.keys(values),
   ])) {
-    const [own, looked, fallback] = [values[name], look[name], defaults[name]];
+    const looked = look[name];
+    const [own, fallback] = [ownValue(name, values[name], looked), defaults[name]];
     if (own !== undefined) {
       merged[name] = own;
       sources[name] = "own";

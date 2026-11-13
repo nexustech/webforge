@@ -33,9 +33,12 @@ const base: LooseSpec = {
   render: () => null,
 };
 
-/** The fields a layout hides: {@link fieldsHiddenBy}, without the Appearance group's Border colour. */
+/** Fields every item hides until another value uses them: a border's colour, a gradient's. */
+const HIDDEN_UNTIL_USED = new Set(["lookBorderColor", "lookGradientFrom", "lookGradientTo"]);
+
+/** The fields a layout hides: {@link fieldsHiddenBy}, without {@link HIDDEN_UNTIL_USED}. */
 const layoutHides = (...args: Parameters<typeof fieldsHiddenBy>) =>
-  new Set([...fieldsHiddenBy(...args)].filter((name) => name !== "lookBorderColor"));
+  new Set([...fieldsHiddenBy(...args)].filter((name) => !HIDDEN_UNTIL_USED.has(name)));
 
 describe("defineComponent (2.5)", () => {
   it("accepts a component that follows the conventions, as it is", () => {
