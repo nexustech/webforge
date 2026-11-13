@@ -7,4 +7,15 @@ export const assistant = {
   "assistant.month": "This month: {spent} of {limit}",
   "assistant.month.warning": "This month: {spent} of {limit}, over 80% of your limit",
   "assistant.month.reached": "This month's limit of {limit} is reached",
+  // The review card after a reply that changed the site (AIA-5, WF-2).
+  "assistant.review.title.one": "This reply made 1 change",
+  "assistant.review.title.other": "This reply made {count} changes",
+  "assistant.review.show": "Show {change} on the page",
+  "assistant.review.links": "Links to other websites",
+  "assistant.review.keep": "Keep",
+  "assistant.review.undo": "Undo These Changes",
+  "assistant.review.undone": "These changes are undone. Redo brings them back.",
+  "assistant.review.movedOn":
+    "Other changes have been made since. To take back everything the assistant changed, restore the version saved before its changes.",
+  "assistant.review.versions": "Open Version History",
 } as const;
