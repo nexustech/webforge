@@ -55,6 +55,50 @@ describe("Theme Studio (2.3b, F-DS-7)", () => {
     expect(studio.getState().open).toBe(false);
   });
 
+  it("keeps a sample page in the theme in view over Colours, Text and Styles, not Themes (CT-11)", async () => {
+    const session = sessionWith();
+    const studio = createStudio();
+    studio.setState({ open: true, section: "themes" });
+    render(
+      <ThemeStudio
+        session={session}
+        studio={studio}
+        siteWide={{ confirmSiteWide: () => Promise.resolve(true) }}
+        itemPreviews={(node, device, theme) => (
+          <span data-testid={`${node.type}-${device}`}>
+            {JSON.stringify(theme?.colors.primary)}
+          </span>
+        )}
+      />,
+    );
+    const user = userEvent.setup({ delay: null });
+    const page = () => screen.queryByRole("region", { name: "A sample page in your theme" });
+    expect(page()).toBeNull();
+
+    for (const section of ["Colours", "Text", "Styles"]) {
+      await user.click(screen.getByRole("tab", { name: section }));
+      const shown = within(page() as HTMLElement);
+      expect(shown.getByTestId("Hero-desktop")).toBeDefined();
+      expect(shown.getByTestId("Features-mobile")).toBeDefined();
+      expect(shown.getByTestId("CallToAction-desktop").textContent).toBe(
+        JSON.stringify(session.history.document.getState().theme.colors.primary),
+      );
+    }
+    // Drawn in the theme as it changes.
+    await user.click(screen.getByRole("tab", { name: "Colours" }));
+    const hex = screen.getByRole("textbox", { name: "Brand Page hex code" });
+    await user.clear(hex);
+    await user.type(hex, "#0369a1{Enter}");
+    await vi.waitFor(() =>
+      expect(within(page() as HTMLElement).getByTestId("Hero-desktop").textContent).toBe(
+        JSON.stringify(session.history.document.getState().theme.colors.primary),
+      ),
+    );
+    expect(session.history.document.getState().theme.colors.primary).not.toEqual(
+      starterSite().theme.colors.primary,
+    );
+  });
+
   it("shows each theme as a card, its own marked, and switches to one once asked (D7)", async () => {
     const { dialog, siteWide, labels, theme, user } = setUp();
 
@@ -209,7 +253,7 @@ describe("Theme Studio's My themes (2.23, PH2-17)", () => {
 });
 
 describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
-  /** Theme Studio on Components' Button, with previews that say which look they draw. */
+  /** Theme Studio on Components' Button, with a preview strip that says which look it draws. */
   function onButton() {
     const session = sessionWith();
     const studio = createStudio();
@@ -222,9 +266,8 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
         session={session}
         studio={studio}
         siteWide={siteWide}
-        kindPreviews={(type, theme) => <span data-testid="preview">{lookOf(type, theme)}</span>}
         itemPreviews={(node, device, theme) => (
-          <span data-testid={`large-${device}`}>{lookOf(node.type, theme)}</span>
+          <span data-testid={`preview-${device}`}>{lookOf(node.type, theme)}</span>
         )}
       />,
     );
@@ -234,6 +277,7 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
       siteWide,
       dialog: () => within(screen.getByRole("dialog", { name: "Theme Studio" })),
       button: () => within(screen.getByRole("region", { name: "Button" })),
+      kinds: () => screen.getByRole("combobox", { name: "Sections and elements" }),
       labels: () => session.history.entries().map((entry) => entry.label),
       theme: () => session.history.document.getState().theme,
       user: userEvent.setup({ delay: null }),
@@ -241,10 +285,10 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
   }
 
   it("lists each kind with a look by category, and applies several changes as one step", async () => {
-    const { dialog, button, labels, theme, siteWide, user } = onButton();
-    const kinds = within(dialog().getByRole("navigation", { name: "Sections and elements" }));
-    expect(kinds.getByRole("region", { name: "Sections" })).toBeDefined();
-    expect(kinds.getByRole("button", { name: "Card" })).toBeDefined();
+    const { dialog, button, kinds, labels, theme, siteWide, user } = onButton();
+    // In the bar at the top, by category (CT-11).
+    expect(kinds().querySelector('optgroup[label="Sections"] option[value="Card"]')).not.toBeNull();
+    expect((kinds() as HTMLSelectElement).value).toBe("Button");
     // The theme's button tokens beside the Button look, as in the Theme tab.
     expect(button().getByText("Every button")).toBeDefined();
 
@@ -253,25 +297,29 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     // Nothing in the theme yet; the preview draws the draft.
     expect(theme().looks).toBeUndefined();
     expect(labels()).toEqual([]);
-    expect(screen.getByTestId("preview").textContent).toBe(
+    expect(screen.getByTestId("preview-desktop").textContent).toBe(
       JSON.stringify({ lookCorners: "full", lookShadow: "large" }),
     );
     expect(
-      button().getByText("Changes to every Button that aren't in the theme yet."),
+      dialog().getByText("Changes to every Button that aren't in the theme yet."),
     ).toBeDefined();
 
-    await user.click(button().getByRole("button", { name: "Apply Changes" }));
+    await user.click(dialog().getByRole("button", { name: "Apply Changes" }));
     expect(theme().looks).toEqual({ Button: { lookCorners: "full", lookShadow: "large" } });
     expect(labels()).toEqual(["Changed the theme's look for Button"]);
     expect(siteWide.confirmSiteWide.mock.calls.length).toBeLessThanOrEqual(1);
     expect(
-      button().queryByText("Changes to every Button that aren't in the theme yet."),
+      dialog().queryByText("Changes to every Button that aren't in the theme yet."),
     ).toBeNull();
+    // Nothing to apply or discard now: the bar's buttons stay, in view, but off.
+    expect(
+      (dialog().getByRole("button", { name: "Apply Changes" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
 
     // Reset is a draft too: back to the theme's defaults once applied.
     await user.click(button().getByRole("button", { name: "Reset to Theme's Defaults" }));
     expect(theme().looks).toBeDefined();
-    await user.click(button().getByRole("button", { name: "Apply Changes" }));
+    await user.click(dialog().getByRole("button", { name: "Apply Changes" }));
     expect(theme().looks).toBeUndefined();
     expect(labels()).toEqual([
       "Changed the theme's look for Button",
@@ -280,30 +328,31 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
   });
 
   it("discards a draft, leaving the theme and its controls as they were", async () => {
-    const { button, labels, theme, user } = onButton();
+    const { dialog, button, labels, theme, user } = onButton();
 
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
-    await user.click(button().getByRole("button", { name: "Discard" }));
+    await user.click(dialog().getByRole("button", { name: "Discard" }));
 
     expect(theme().looks).toBeUndefined();
     expect(labels()).toEqual([]);
     expect(
       (button().getByRole("combobox", { name: "Corners" }) as HTMLSelectElement).value,
     ).not.toBe("full");
-    expect(screen.getByTestId("preview").textContent).toBe("{}");
+    expect(screen.getByTestId("preview-desktop").textContent).toBe("{}");
   });
 
   it("asks to apply or discard a draft before showing another kind", async () => {
-    const { dialog, button, labels, theme, studio, user } = onButton();
+    const { button, kinds, labels, theme, studio, user } = onButton();
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
 
-    await user.click(dialog().getByRole("button", { name: "Card" }));
+    await user.selectOptions(kinds(), "Card");
     let ask = screen.getByRole("alertdialog", { name: "Apply your changes to every Button?" });
     await user.click(within(ask).getByRole("button", { name: "Keep Editing" }));
     expect(studio.getState().kind).toBe("Button");
+    expect((kinds() as HTMLSelectElement).value).toBe("Button");
     expect(theme().looks).toBeUndefined();
 
-    await user.click(dialog().getByRole("button", { name: "Card" }));
+    await user.selectOptions(kinds(), "Card");
     ask = screen.getByRole("alertdialog", { name: "Apply your changes to every Button?" });
     await user.click(within(ask).getByRole("button", { name: "Apply Changes" }));
     expect(theme().looks).toEqual({ Button: { lookCorners: "full" } });
@@ -326,23 +375,43 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     expect(labels()).toEqual([]);
   });
 
-  it("opens the preview larger, on Desktop and Mobile, switching between now and the draft", async () => {
-    const { button, user } = onButton();
+  it("previews the kind on Desktop and Mobile in view above it, now or with the changes (CT-11)", async () => {
+    const { dialog, button, user } = onButton();
+    const strip = () =>
+      within(dialog().getByRole("region", { name: "Button, as it looks in this theme" }));
+    // Nothing to compare yet: the theme as it is.
+    expect(
+      (strip().getByRole("radio", { name: "With your changes" }) as HTMLButtonElement).disabled,
+    ).toBe(true);
+    expect(strip().getByTestId("preview-mobile").textContent).toBe("{}");
+
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
-
-    await user.click(
-      button().getByRole("button", { name: "Show Button larger, before and after" }),
-    );
-    const large = within(screen.getByRole("dialog", { name: "Every Button, before and after" }));
     const draft = JSON.stringify({ lookCorners: "full" });
-    expect(large.getByTestId("large-desktop").textContent).toBe(draft);
-    expect(large.getByTestId("large-mobile").textContent).toBe(draft);
+    expect(strip().getByTestId("preview-desktop").textContent).toBe(draft);
+    expect(strip().getByTestId("preview-mobile").textContent).toBe(draft);
 
-    await user.click(large.getByRole("radio", { name: "Theme now" }));
-    expect(large.getByTestId("large-desktop").textContent).toBe("{}");
-    expect(large.getByTestId("large-mobile").textContent).toBe("{}");
-    await user.click(large.getByRole("radio", { name: "With your changes" }));
-    expect(large.getByTestId("large-desktop").textContent).toBe(draft);
+    await user.click(strip().getByRole("radio", { name: "Theme now" }));
+    expect(strip().getByTestId("preview-desktop").textContent).toBe("{}");
+    expect(strip().getByTestId("preview-mobile").textContent).toBe("{}");
+    await user.click(strip().getByRole("radio", { name: "With your changes" }));
+    expect(strip().getByTestId("preview-desktop").textContent).toBe(draft);
+  });
+
+  it("shows a new draft's changes again, whatever was shown for the last one (4.10)", async () => {
+    const { dialog, button, user } = onButton();
+    const strip = () =>
+      within(dialog().getByRole("region", { name: "Button, as it looks in this theme" }));
+    await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
+    await user.click(strip().getByRole("radio", { name: "Theme now" }));
+    await user.click(dialog().getByRole("button", { name: "Discard" }));
+
+    await user.selectOptions(button().getByRole("combobox", { name: "Shadow" }), "large");
+    expect(
+      strip().getByRole("radio", { name: "With your changes" }).getAttribute("aria-checked"),
+    ).toBe("true");
+    expect(strip().getByTestId("preview-desktop").textContent).toBe(
+      JSON.stringify({ lookShadow: "large" }),
+    );
   });
 
   it("changes Desktop's value of a look set per device, keeping Tablet's and Mobile's", async () => {
@@ -359,7 +428,7 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
 
     expect(button.getByText(/^Set per device/)).toBeDefined();
     await user.selectOptions(button.getByRole("combobox", { name: "Shadow" }), "medium");
-    await user.click(button.getByRole("button", { name: "Apply Changes" }));
+    await user.click(screen.getByRole("button", { name: "Apply Changes" }));
 
     expect(session.history.document.getState().theme.looks).toEqual({
       Button: { lookShadow: { $responsive: { desktop: "medium", mobile: "none" } } },
@@ -367,20 +436,20 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
   });
 
   it("applies only its own changes, keeping one made to the look since it began (review)", async () => {
-    const { session, button, theme, user } = onButton();
+    const { session, dialog, button, theme, user } = onButton();
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
 
     // Meanwhile Style this Button… (or an AI app) sets the look's Border.
     await act(() => setLook(session, undefined, "Button", "Button", { lookBorder: "thick" }));
-    await user.click(button().getByRole("button", { name: "Apply Changes" }));
+    await user.click(dialog().getByRole("button", { name: "Apply Changes" }));
 
     expect(theme().looks).toEqual({ Button: { lookBorder: "thick", lookCorners: "full" } });
   });
 
   it("drops the question once the draft changes nothing, and never asks it later unprompted", async () => {
-    const { session, dialog, button, studio, user } = onButton();
+    const { session, button, kinds, studio, user } = onButton();
     await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
-    await user.click(dialog().getByRole("button", { name: "Card" }));
+    await user.selectOptions(kinds(), "Card");
     expect(screen.getByRole("alertdialog")).toBeDefined();
 
     // The look takes the same value elsewhere: there's nothing left to apply.
@@ -407,31 +476,13 @@ describe("Theme Studio's Components (3.12, CT-1; 4.10)", () => {
     expect(studio.getState().kind).toBe("Card");
   });
 
-  it("gives the focus back to the preview when the larger one closes, opening again on the changes", async () => {
-    const { button, user } = onButton();
-    await user.selectOptions(button().getByRole("combobox", { name: "Corners" }), "full");
-    const opener = button().getByRole("button", { name: "Show Button larger, before and after" });
-
-    await user.click(opener);
-    const large = () =>
-      within(screen.getByRole("dialog", { name: "Every Button, before and after" }));
-    await user.click(large().getByRole("radio", { name: "Theme now" }));
-    await user.keyboard("{Escape}");
-    await waitFor(() =>
-      expect(screen.queryByRole("dialog", { name: "Every Button, before and after" })).toBeNull(),
-    );
-    await waitFor(() => expect(document.activeElement).toBe(opener));
-
-    await user.click(opener);
-    expect(
-      large().getByRole("radio", { name: "With your changes" }).getAttribute("aria-checked"),
-    ).toBe("true");
-  });
-
   it("shows the card style as the Card look, changed at once", async () => {
     const { dialog, labels, theme, user } = setUp("components");
 
-    await user.click(dialog().getByRole("button", { name: "Card" }));
+    await user.selectOptions(
+      dialog().getByRole("combobox", { name: "Sections and elements" }),
+      "Card",
+    );
     const card = within(dialog().getByRole("region", { name: "Card" }));
     expect(card.getByText("The cards in Features, Stats, Team and Testimonials.")).toBeDefined();
     await user.selectOptions(card.getByRole("combobox", { name: "Card style" }), "raised");

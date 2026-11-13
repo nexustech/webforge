@@ -20,12 +20,6 @@ import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
 import type { PublishRequests } from "./publish-requests.js";
 
-/**
- * Theme Studio's previews of each kind (3.12): `type` with its defaults, in the site's theme or in
- * `theme`, with a look not applied yet (4.10).
- */
-export type KindPreviews = (type: string, theme?: Theme) => ReactNode;
-
 /** An item drawn on Desktop or Mobile (3.13a), in the site's theme or in `theme` (4.10). */
 export type ItemPreviews = (
   node: NodeDoc,
@@ -111,14 +105,9 @@ export type WindowContext = AreaContext & {
   /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). */
   readonly tips: FirstTips;
   /**
-   * Theme Studio's previews of each kind of section and element (3.12), drawn in the site's theme
-   * with its look; none without a CSS compiler.
-   */
-  readonly kindPreviews?: KindPreviews | undefined;
-  /**
-   * *Style this ‹kind›…*'s previews of the item being styled (3.13a), on Desktop or Mobile, drawn
-   * as the kind previews are, and Theme Studio's before and after (4.10); none without a CSS
-   * compiler.
+   * The previews at the top of *Style this ‹kind›…* and Theme Studio (3.13a, CT-11): an item or a
+   * kind on Desktop or Mobile, in the site's theme or with a look not applied yet (4.10); none
+   * without a CSS compiler.
    */
   readonly itemPreviews?: ItemPreviews | undefined;
 };

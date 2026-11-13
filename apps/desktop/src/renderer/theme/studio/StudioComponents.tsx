@@ -5,17 +5,15 @@ import {
   type EditPanelField,
   type FieldRenderers,
   FieldRenderersProvider,
+  fieldControlClass,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { LOOK_FIELDS, type NodeDoc, type ThemeTokens } from "@webforge/model";
 import { type ComponentLibrary, fieldsHiddenBy } from "@webforge/site-components";
-import { useRef, useState } from "react";
 import { lookFieldsOf } from "../../clipboard/index.js";
-import type { ItemPreviews, KindPreviews } from "../../editor/areas.js";
 import { specOf } from "../../editor/edit-panel-fields.js";
 import { isOverridden, valueAt, withValueAt } from "../../editor/responsive-value.js";
 import { TOKEN_CONTROLS, type TokenControl, tokenKey } from "../theme-controls.js";
-import { StudioLookPreview } from "./StudioLookPreview.js";
 import type { LookDraft } from "./studio-state.js";
 import { TokenRow } from "./TokenRow.js";
 
@@ -26,16 +24,17 @@ const CARD_KIND = "Card";
 const CARD_PREVIEW = "Features";
 
 /** A kind Components lists: a component type and its name, or the theme's card style. */
-type Kind = { readonly type: string; readonly label: string };
+export type Kind = { readonly type: string; readonly label: string };
+
+/** The kinds by category, as {@link lookKinds} lists them. */
+export type KindGroups = readonly { readonly category: string; readonly kinds: readonly Kind[] }[];
 
 /**
  * The kinds with a look (3.12, CT-1): every component whose Appearance group has fields a look
  * holds, by the Add panel's categories (its sections together, as the Add panel lists them), and
  * the theme's card style.
  */
-function lookKinds(
-  library: ComponentLibrary,
-): readonly { readonly category: string; readonly kinds: readonly Kind[] }[] {
+export function lookKinds(library: ComponentLibrary): KindGroups {
   const groups = new Map<string, Kind[]>();
   const add = (category: string, kind: Kind) =>
     groups.set(category, [...(groups.get(category) ?? []), kind]);
@@ -69,16 +68,25 @@ const tokensOf = (type: string): readonly TokenControl[] =>
       (type === CARD_KIND && tokenKey(control) === "cards.style"),
   );
 
+/** The kind `kind` names in `groups`, or the first while it names none. */
+export function shownKind(groups: KindGroups, kind: string | undefined): Kind | undefined {
+  const all = groups.flatMap((group) => group.kinds);
+  return all.find((each) => each.type === kind) ?? all[0];
+}
+
+/** The type drawn for a kind: the card style draws a section with cards. */
+export const previewTypeOf = (kind: Kind): string =>
+  kind.type === CARD_KIND ? CARD_PREVIEW : kind.type;
+
 /** Props of {@link StudioComponents}. */
 type StudioComponentsProps = {
   readonly theme: ThemeTokens;
   readonly library: ComponentLibrary;
-  /** The kind shown, a component type; the first while none is chosen. */
-  readonly kind: string | undefined;
-  readonly onKind: (type: string) => void;
+  /** The kind shown ({@link shownKind}). */
+  readonly shown: Kind;
   /**
-   * The look's changes not applied yet (4.10), and the theme with them, which the previews draw;
-   * the controls show them for their kind.
+   * The look's changes not applied yet (4.10), and the theme with them; the controls show them for
+   * their kind.
    */
   readonly draft?: { readonly look: LookDraft; readonly theme: ThemeTokens } | undefined;
   /** Sets fields of `type`'s draft look, by name; `undefined` takes one off. */
@@ -87,25 +95,49 @@ type StudioComponentsProps = {
     item: string,
     change: Readonly<Record<string, unknown>>,
   ) => void;
-  /** Applies the draft to the theme: one step (4.10). */
-  readonly onApply: () => void;
-  /** Drops the draft. */
-  readonly onDiscard: () => void;
   /** Sets a theme token shown beside a look: the buttons', the card style. */
   readonly onToken: (control: TokenControl, value: unknown) => void;
-  /** Draws a kind in the theme, with its look; nothing without one. */
-  readonly preview?: KindPreviews | undefined;
-  /** Draws a kind larger, on Desktop and Mobile, before and after the draft (4.10). */
-  readonly enlarge?: ItemPreviews | undefined;
   /** The colour fields' control: the theme's colours only, as a look holds (ADR 0009). */
   readonly renderers: FieldRenderers;
 };
+
+/** Props of {@link KindChoice}. */
+type KindChoiceProps = {
+  readonly groups: KindGroups;
+  readonly shown: Kind;
+  readonly onKind: (type: string) => void;
+};
+
+/**
+ * Which kind Components shows (CT-11): a list by category in Theme Studio's top bar, so no column
+ * is lost to it. Typing a kind's first letters picks it.
+ */
+export function KindChoice({ groups, shown, onKind }: KindChoiceProps) {
+  return (
+    <select
+      aria-label={t("theme.components.kinds")}
+      value={shown.type}
+      onChange={(event) => onKind(event.currentTarget.value)}
+      className={cn(fieldControlClass, "w-auto min-w-48")}
+    >
+      {groups.map(({ category, kinds }) => (
+        <optgroup key={category} label={category}>
+          {kinds.map((each) => (
+            <option key={each.type} value={each.type}>
+              {each.label}
+            </option>
+          ))}
+        </optgroup>
+      ))}
+    </select>
+  );
+}
 
 /** Each kind's node as its larger preview draws it, with its defaults: made once, so kept. */
 const previewNodes = new WeakMap<ComponentLibrary, Map<string, NodeDoc>>();
 
 /** `type`'s node in `library`, with its defaults, the same object each time. */
-function previewNode(library: ComponentLibrary, type: string): NodeDoc {
+export function previewNode(library: ComponentLibrary, type: string): NodeDoc {
   let nodes = previewNodes.get(library);
   if (nodes === undefined) {
     nodes = new Map();
@@ -121,40 +153,27 @@ function previewNode(library: ComponentLibrary, type: string): NodeDoc {
 }
 
 /**
- * Theme Studio's Components (3.12, CT-1): every kind of section and element with a look, by
- * category, and for the one chosen, it drawn live in the theme beside its look's controls, so a
- * kind is styled without selecting one on a page. A look is the Appearance group's fields; its
- * controls change a draft, which the preview draws, until **Apply changes** writes it as one step
- * (4.10), or **Discard** drops it. The preview opens larger, on Desktop and Mobile, before and
- * after. A Button's look also shows the theme's button tokens, and Card the card style, which stay
- * where they are in the theme and change at once (product/11, 3.12 note 5).
+ * Theme Studio's Components (3.12, CT-1): the chosen kind's look, so a kind is styled without
+ * selecting one on a page. A look is the Appearance group's fields, here in columns as wide as the
+ * dialog (CT-11); its controls change a draft, which the preview strip above draws, until **Apply
+ * Changes** in the bar below writes it as one step (4.10), or **Discard** drops it. A Button's look
+ * also shows the theme's button tokens, and Card the card style, which stay where they are in the
+ * theme and change at once (product/11, 3.12 note 5).
  */
 export function StudioComponents({
   theme,
   library,
-  kind,
-  onKind,
+  shown,
   draft,
   onChange,
-  onApply,
-  onDiscard,
   onToken,
-  preview,
-  enlarge,
   renderers,
 }: StudioComponentsProps) {
-  const [enlarged, setEnlarged] = useState(false);
-  const opener = useRef<HTMLButtonElement>(null);
-  const groups = lookKinds(library);
-  const all = groups.flatMap((group) => group.kinds);
-  const shown = all.find((each) => each.type === kind) ?? all[0];
-  if (shown === undefined) return null;
   const def = library.components[shown.type];
-  // The draft for this kind, if there is one: what its controls and previews show.
+  // The draft for this kind, if there is one: what its controls show.
   const drafted = draft?.look.type === shown.type ? draft : undefined;
   const look: Readonly<Record<string, unknown>> =
     (drafted?.theme ?? theme).looks?.[shown.type] ?? {};
-  const previewType = shown.type === CARD_KIND ? CARD_PREVIEW : shown.type;
   const names =
     def === undefined
       ? []
@@ -182,161 +201,73 @@ export function StudioComponents({
   });
   const tokens = tokensOf(shown.type);
   return (
-    // The kinds and the chosen one's look scroll on their own: the list is long.
-    <div className="grid h-full min-h-0 grid-cols-[minmax(0,11rem)_minmax(0,1fr)] gap-4">
-      <nav
-        aria-label={t("theme.components.kinds")}
-        className="flex min-h-0 flex-col gap-2 overflow-auto pr-1"
-      >
-        {groups.map(({ category, kinds }) => (
-          <section key={category} aria-label={category}>
-            <h3 className="m-0 mb-1 text-2xs font-semibold text-muted-foreground uppercase">
-              {category}
-            </h3>
-            <ul className="m-0 flex list-none flex-col p-0">
-              {kinds.map((each) => (
-                <li key={each.type}>
-                  <button
-                    type="button"
-                    aria-current={each.type === shown.type ? "true" : undefined}
-                    className={cn(
-                      "w-full rounded-sm px-2 py-1 text-left text-xs hover:bg-accent",
-                      each.type === shown.type && "bg-accent font-semibold",
-                    )}
-                    onClick={() => onKind(each.type)}
-                  >
-                    {each.label}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </section>
-        ))}
-      </nav>
-      <section
-        aria-label={shown.label}
-        className="flex min-h-0 min-w-0 flex-col gap-3 overflow-auto pr-1"
-      >
+    <section aria-label={shown.label} className="flex min-w-0 flex-col gap-3 pb-2">
+      <div>
         <h3 className="m-0 text-sm font-semibold">{shown.label}</h3>
         <p className="m-0 text-xs text-muted-foreground">
           {shown.type === CARD_KIND
             ? t("theme.components.cardHelp")
             : t("theme.components.help", { item: shown.label })}
         </p>
-        {preview === undefined ? null : (
-          <figure
-            aria-label={t("theme.components.preview", { item: shown.label })}
-            className="m-0 rounded-md border border-border bg-panel p-2"
-          >
-            {enlarge === undefined ? (
-              preview(previewType, drafted?.theme)
-            ) : (
-              // Clicked, it opens larger, before and after (4.10).
-              <button
-                ref={opener}
-                type="button"
-                aria-label={t("theme.components.enlarge", { item: shown.label })}
-                title={t("theme.components.enlarge", { item: shown.label })}
-                className="block cursor-zoom-in rounded-sm focus-visible:outline-2 focus-visible:outline-ring"
-                onClick={() => setEnlarged(true)}
-              >
-                {preview(previewType, drafted?.theme)}
-              </button>
-            )}
-          </figure>
-        )}
-        {enlarge === undefined ? null : (
-          <StudioLookPreview
-            open={enlarged}
-            onOpenChange={setEnlarged}
-            item={shown.label}
-            node={previewNode(library, previewType)}
-            theme={theme}
-            draft={drafted?.theme}
-            previews={enlarge}
-            opener={opener}
+      </div>
+      {tokens.length === 0 ? null : (
+        <div>
+          {shown.type === "Button" ? (
+            <h4 className="m-0 mb-1 text-xs font-semibold">{t("theme.components.buttons")}</h4>
+          ) : null}
+          {tokens.map((control) => (
+            <TokenRow key={tokenKey(control)} control={control} theme={theme} onChange={onToken} />
+          ))}
+        </div>
+      )}
+      {fields.length === 0 ? null : (
+        <FieldRenderersProvider renderers={renderers}>
+          <EditPanel
+            heading={t("theme.components.look", { item: shown.label })}
+            single
+            columns
+            itemKey={shown.type}
+            fields={fields}
+            onChange={(name, value) =>
+              onChange(shown.type, shown.label, {
+                [name]: withValueAt(look[name], "desktop", value),
+              })
+            }
+            onCommit={() => undefined}
+            onResetToDefault={(reset) =>
+              onChange(
+                shown.type,
+                shown.label,
+                Object.fromEntries(reset.map((name) => [name, undefined])),
+              )
+            }
           />
-        )}
-        {drafted === undefined ? null : (
-          // The changes aren't in the theme until they are applied (4.10).
-          <div
-            role="status"
-            className="flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/50 px-3 py-2"
+        </FieldRenderersProvider>
+      )}
+      {Object.keys(look).length === 0 ? (
+        fields.length === 0 ? null : (
+          <p className="m-0 text-xs text-muted-foreground">
+            {t("theme.components.none", { item: shown.label })}
+          </p>
+        )
+      ) : (
+        <div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              onChange(
+                shown.type,
+                shown.label,
+                Object.fromEntries(Object.keys(look).map((name) => [name, undefined])),
+              )
+            }
           >
-            <p className="m-0 flex-1 text-xs">
-              {t("theme.components.draft", { item: shown.label })}
-            </p>
-            <Button type="button" size="sm" variant="outline" onClick={onDiscard}>
-              {t("theme.components.discard")}
-            </Button>
-            <Button type="button" size="sm" onClick={onApply}>
-              {t("theme.components.apply")}
-            </Button>
-          </div>
-        )}
-        {tokens.length === 0 ? null : (
-          <div>
-            {shown.type === "Button" ? (
-              <h4 className="m-0 mb-1 text-xs font-semibold">{t("theme.components.buttons")}</h4>
-            ) : null}
-            {tokens.map((control) => (
-              <TokenRow
-                key={tokenKey(control)}
-                control={control}
-                theme={theme}
-                onChange={onToken}
-              />
-            ))}
-          </div>
-        )}
-        {fields.length === 0 ? null : (
-          <FieldRenderersProvider renderers={renderers}>
-            <EditPanel
-              heading={t("theme.components.look", { item: shown.label })}
-              single
-              itemKey={shown.type}
-              fields={fields}
-              onChange={(name, value) =>
-                onChange(shown.type, shown.label, {
-                  [name]: withValueAt(look[name], "desktop", value),
-                })
-              }
-              onCommit={() => undefined}
-              onResetToDefault={(reset) =>
-                onChange(
-                  shown.type,
-                  shown.label,
-                  Object.fromEntries(reset.map((name) => [name, undefined])),
-                )
-              }
-            />
-          </FieldRenderersProvider>
-        )}
-        {Object.keys(look).length === 0 ? (
-          fields.length === 0 ? null : (
-            <p className="m-0 text-xs text-muted-foreground">
-              {t("theme.components.none", { item: shown.label })}
-            </p>
-          )
-        ) : (
-          <div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                onChange(
-                  shown.type,
-                  shown.label,
-                  Object.fromEntries(Object.keys(look).map((name) => [name, undefined])),
-                )
-              }
-            >
-              {t("theme.components.reset")}
-            </Button>
-          </div>
-        )}
-      </section>
-    </div>
+            {t("theme.components.reset")}
+          </Button>
+        </div>
+      )}
+    </section>
   );
 }

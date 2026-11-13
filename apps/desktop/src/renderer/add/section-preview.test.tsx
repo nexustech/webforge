@@ -5,11 +5,7 @@ import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
 import { SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
-import {
-  createItemPreviews,
-  createKindPreviews,
-  createSectionPreviews,
-} from "./section-preview.js";
+import { createItemPreviews, createSectionPreviews } from "./section-preview.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -133,85 +129,6 @@ describe("createSectionPreviews (UX-10)", () => {
   });
 });
 
-describe("createKindPreviews (3.12, CT-1)", () => {
-  it("draws an element too, with its kind's look, and again once the theme changes", async () => {
-    let current = { ...theme, looks: { Button: { lookCorners: "full" } } };
-    const compileCss = vi.fn(async () => ({ status: "compiled" as const, css: "", bodyClass: "" }));
-    const previews = createKindPreviews({ library: siteLibrary, theme: () => current, compileCss });
-
-    const root = await shown(previews("Button"));
-    expect(root?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-full!");
-
-    current = { ...current, looks: { Button: { lookCorners: "none" } } };
-    cleanup();
-    const again = await shown(previews("Button"));
-    expect(again?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-none!");
-    expect(compileCss).toHaveBeenCalledTimes(2);
-  });
-
-  it("takes its whole size before it's drawn, so what follows it doesn't move (#626)", async () => {
-    let finish: (value: { status: "compiled"; css: string; bodyClass: string }) => void = () =>
-      undefined;
-    const compileCss = vi.fn(
-      () =>
-        new Promise<{ status: "compiled"; css: string; bodyClass: string }>((resolve) => {
-          finish = resolve;
-        }),
-    );
-    const previews = createKindPreviews({ library: siteLibrary, theme: () => theme, compileCss });
-    const { container } = render(previews("Features"));
-    const box = () => container.querySelector<HTMLElement>("[data-kind-preview]");
-
-    // Not drawn yet: its place is the preview's whole size already.
-    expect(box()?.style.height).toBe("200px");
-    expect(box()?.style.width).toBe("320px");
-    await act(async () => finish({ status: "compiled", css: "", bodyClass: "" }));
-
-    expect([...(box()?.querySelectorAll("div") ?? [])].some((each) => each.shadowRoot)).toBe(true);
-    expect(box()?.style.height).toBe("200px");
-  });
-
-  it("draws a preview that stays shown again when the look changes (#613)", async () => {
-    let current = { ...theme, looks: { Button: { lookCorners: "full" } } };
-    const listeners = new Set<() => void>();
-    const compileCss = vi.fn(async () => ({ status: "compiled" as const, css: "", bodyClass: "" }));
-    const previews = createKindPreviews({
-      library: siteLibrary,
-      theme: () => current,
-      compileCss,
-      subscribe: (listener) => {
-        listeners.add(listener);
-        return () => listeners.delete(listener);
-      },
-    });
-    const root = await shown(previews("Button"));
-    expect(root?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-full!");
-
-    // As Theme Studio's Components does: the same preview, shown on, while the look changes.
-    current = { ...current, looks: { Button: { lookCorners: "none" } } };
-    await act(async () => {
-      for (const listener of listeners) listener();
-    });
-    await act(async () => undefined);
-
-    expect(root?.querySelector(".wf-preview")?.innerHTML).toContain("rounded-none!");
-    expect(compileCss).toHaveBeenCalledTimes(2);
-    // Other changes to the site draw nothing again.
-    await act(async () => {
-      for (const listener of listeners) listener();
-    });
-    expect(compileCss).toHaveBeenCalledTimes(2);
-  });
-
-  it("draws nothing for a type the library doesn't have", async () => {
-    const compileCss = vi.fn();
-    const previews = createKindPreviews({ library: siteLibrary, theme: () => theme, compileCss });
-
-    expect(await shown(previews("Nothing"))).toBeNull();
-    expect(compileCss).not.toHaveBeenCalled();
-  });
-});
-
 /** Lets `ms` pass, and what it set going. */
 const wait = (ms: number) => act(() => new Promise<void>((resolve) => setTimeout(resolve, ms)));
 
@@ -259,5 +176,40 @@ describe("createItemPreviews (3.13a)", () => {
     expect(container.querySelectorAll("iframe")).toHaveLength(2);
     expect(container.querySelector("iframe")?.style.width).toBe("1280px");
     expect(compileCss).toHaveBeenCalledOnce();
+  });
+
+  it("draws a kind with its look, and again in a theme given anew (#613, CT-11)", async () => {
+    const compileCss = vi.fn(async () => ({ status: "compiled" as const, css: "", bodyClass: "" }));
+    const previews = createItemPreviews({ library: siteLibrary, theme: () => theme, compileCss });
+    const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
+    const looked = (lookCorners: string) => ({ ...theme, looks: { Button: { lookCorners } } });
+
+    // As Theme Studio's strip does: the same preview, shown on, while the theme changes.
+    const { container, rerender } = render(previews(button, "desktop", looked("full")));
+    await wait(0);
+    const page = () => container.querySelector("iframe")?.getAttribute("srcdoc") ?? "";
+    expect(page()).toContain("rounded-full!");
+
+    rerender(previews(button, "desktop", looked("none")));
+    await wait(SITE_CSS_DEBOUNCE_MS + 20);
+    expect(page()).toContain("rounded-none!");
+    expect(compileCss).toHaveBeenCalledTimes(2);
+  });
+
+  it("is never drawn larger than the device, and shown at its place's width (CT-11)", async () => {
+    const { compileCss } = setUp();
+    const previews = createItemPreviews({ library: siteLibrary, theme: () => theme, compileCss });
+    const button: NodeDoc = { type: "Button", props: { id: "b", label: "Book now", link: "" } };
+    const width = vi.spyOn(HTMLElement.prototype, "clientWidth", "get").mockReturnValue(640);
+
+    const { container } = render(previews(button, "desktop"));
+    await wait(0);
+    expect(container.querySelector("iframe")?.style.transform).toBe("scale(0.5)");
+    width.mockReturnValue(2560);
+    cleanup();
+    const again = render(previews(button, "desktop"));
+    await wait(0);
+    expect(again.container.querySelector("iframe")?.style.transform).toBe("scale(1)");
+    width.mockRestore();
   });
 });

@@ -34,6 +34,8 @@ type StylingFrameProps = Omit<ComponentProps<typeof DialogContent>, "title" | "c
   readonly children: ReactNode;
   /** The bar at the bottom, always in view: where the changes apply, and the dialog's buttons. */
   readonly actions?: ReactNode;
+  /** A bar under the title, over the preview: Theme Studio's sections and kinds. */
+  readonly bar?: ReactNode;
 };
 
 /**
@@ -48,10 +50,12 @@ export function StylingFrame({
   preview,
   children,
   actions,
+  bar,
   className,
   onOpenAutoFocus,
   ...content
 }: StylingFrameProps) {
+  const top = useRef<HTMLDivElement>(null);
   const controls = useRef<HTMLDivElement>(null);
   return (
     <DialogContent
@@ -60,21 +64,28 @@ export function StylingFrame({
         className,
       )}
       {...content}
-      // The focus starts in the controls, not on the preview above them, which is focusable only
-      // to be scrolled.
+      // The focus starts in the bar, or the controls, not on the preview above them, which is
+      // focusable only to be scrolled.
       onOpenAutoFocus={(event) => {
         onOpenAutoFocus?.(event);
         if (event.defaultPrevented) return;
-        const first = controls.current?.querySelector<HTMLElement>(FOCUSABLE);
+        const first = (top.current ?? controls.current)?.querySelector<HTMLElement>(FOCUSABLE);
         if (first === null || first === undefined) return;
         event.preventDefault();
         first.focus();
       }}
+      // Its own, over one given by a root it is the child of (Theme Studio's tabs).
+      data-slot="dialog-content"
     >
       <DialogHeader>
         <DialogTitle>{title}</DialogTitle>
         <DialogDescription>{description}</DialogDescription>
       </DialogHeader>
+      {bar === undefined ? null : (
+        <div ref={top} className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          {bar}
+        </div>
+      )}
       {preview === undefined ? (
         <div ref={controls} className="flex min-h-0 flex-1 flex-col">
           {children}
