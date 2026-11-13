@@ -805,7 +805,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           projectSession.staleReason(session) === undefined
             ? projectSession.projectId()
             : undefined,
-        openSession: () => projectSession.current()?.sessionId,
         emit: (event) =>
           lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
       }),

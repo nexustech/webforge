@@ -9,7 +9,7 @@ import {
   MONTHLY_LIMIT_DEFAULT_USD,
 } from "../../shared/ipc/assistant.js";
 import type { AssistantService } from "../assistant-ipc.js";
-import type { CredentialStore } from "../credential-store.js";
+import { assistantCredentialKey, type CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
 import { openRouterModels, preselected, serverModels } from "./models.js";
@@ -25,8 +25,8 @@ import type { OpenRouterSignIn } from "./openrouter-sign-in.js";
  * (never in the site file). Keys only in the credential store.
  */
 
-const OPENROUTER_KEY = "assistant/openrouter";
-const SERVER_KEY = "assistant/server";
+const OPENROUTER_KEY = assistantCredentialKey("openrouter");
+const SERVER_KEY = assistantCredentialKey("server");
 
 /** A local server's address when Preferences gives none (ADR 0026 §2). */
 const LOCAL_DEFAULTS = {
@@ -93,8 +93,6 @@ export type AssistantServiceOptions = {
   readonly fetchFn: typeof fetch;
   /** The open site's project id for a session, or undefined if it isn't the open one. */
   readonly projectOf: (session: string) => string | undefined;
-  /** The open site's session, which status events name; none while no site is open. */
-  readonly openSession: () => string | undefined;
   /** Sends an event to the editor window. */
   readonly emit: (event: AssistantEvent) => void;
   readonly now?: () => Date;
@@ -104,7 +102,7 @@ export type AssistantServiceOptions = {
 /** The service and what 6.9b's loop uses beside it: the endpoint's key, and adding a reply's cost. */
 export type Assistant = AssistantService & {
   /** Adds a reply's cost to the month's (§5), saying so at 80% and at the limit. */
-  addCost(session: string, usd: number): Promise<AssistantStatus["month"]>;
+  addCost(usd: number): Promise<AssistantStatus["month"]>;
 };
 
 /** The assistant's service in main (see the top of this file). */
@@ -185,8 +183,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   /** The status, told to the window too: Preferences and the panel follow it. */
   const changed = async () => {
     const next = await status();
-    const session = options.openSession();
-    if (session !== undefined) options.emit({ session, type: "status", status: next });
+    options.emit({ type: "status", status: next });
     return next;
   };
 
@@ -362,7 +359,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     stop: async () => undefined,
     newConversation: async () => undefined,
     conversation: async () => [],
-    addCost: async (session, usd) => {
+    addCost: async (usd) => {
       let crossed: "warning" | "reached" | undefined;
       await write((file) => {
         const spentUsd = file.month.spentUsd + usd;
@@ -377,7 +374,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       const { month } = await status();
       const counted = { spentUsd: month.spentUsd, limitUsd: month.limitUsd };
       if (crossed !== undefined) {
-        options.emit({ session, type: "limit", level: crossed, month: counted });
+        options.emit({ type: "limit", level: crossed, month: counted });
       }
       return month;
     },

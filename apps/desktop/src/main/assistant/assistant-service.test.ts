@@ -82,7 +82,6 @@ function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "
     fetchFn,
     projectOf: (session) =>
       session === SESSION && options.project !== undefined ? options.project : undefined,
-    openSession: () => SESSION,
     emit: (event) => events.push(event),
     now: () => month,
   });
@@ -123,7 +122,8 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     expect(await service.signIn("browser")).toEqual({ status: "signed-in" });
     expect(keys.get("assistant/openrouter")).toBe("sk-or-v1-from-sign-in");
     expect((await service.status()).provider).toEqual({ kind: "openrouter", signedIn: true });
-    expect(events.at(-1)).toMatchObject({ type: "status", session: SESSION });
+    expect(events.at(-1)).toMatchObject({ type: "status" });
+    expect(events.at(-1)).not.toHaveProperty("session");
     expect(readFileSync(join(dir, "assistant.json"), "utf8")).not.toContain("sk-or");
 
     // Turn off deletes the key from this computer.
@@ -205,19 +205,19 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     await service.update({ modelId: "anthropic/claude-model" });
     expect((await service.status()).model?.maker).toBe("Anthropic");
     await service.update({ monthlyLimitUsd: 1 });
-    await service.addCost(SESSION, 1.2);
+    await service.addCost(1.2);
     expect(await send()).toEqual({ status: "limit-reached" });
   });
 
   it("adds each reply's cost to the month, says 80% and the limit once, and starts afresh", async () => {
     const { service, events, nextMonth } = setUp();
-    await service.addCost(SESSION, 2);
+    await service.addCost(2);
     expect(events.filter((event) => event.type === "limit")).toEqual([]);
-    expect((await service.addCost(SESSION, 2.1)).warned).toBe(true);
-    await service.addCost(SESSION, 0.1);
+    expect((await service.addCost(2.1)).warned).toBe(true);
+    await service.addCost(0.1);
     const limits = () => events.flatMap((event) => (event.type === "limit" ? [event.level] : []));
     expect(limits()).toEqual(["warning"]);
-    expect((await service.addCost(SESSION, 1)).reached).toBe(true);
+    expect((await service.addCost(1)).reached).toBe(true);
     expect(limits()).toEqual(["warning", "reached"]);
 
     nextMonth();
