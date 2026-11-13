@@ -1,5 +1,5 @@
 import type { StoreApi } from "zustand/vanilla";
-import type { ItemPreviews, KindPreviews } from "../editor/areas.js";
+import type { ItemPreviews } from "../editor/areas.js";
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SiteWideConfirm } from "../shell/confirm-site-wide.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
@@ -11,9 +11,7 @@ import { ThemeStudio } from "./studio/ThemeStudio.js";
 type ThemeStudioOptions = {
   readonly siteWide?: Pick<SiteWideConfirm, "confirmSiteWide"> | undefined;
   readonly ownThemes?: OwnThemes | undefined;
-  /** Each kind of section and element drawn in the theme, for Components (3.12). */
-  readonly kindPreviews?: KindPreviews | undefined;
-  /** A kind drawn larger, on Desktop and Mobile, before and after a draft look (4.10). */
+  /** Its preview strip's drawings, on Desktop and Mobile, before and after a draft look (CT-11). */
   readonly itemPreviews?: ItemPreviews | undefined;
 };
 
@@ -26,7 +24,7 @@ export function registerThemeStudio(
   dialogs: WindowDialogRegistry,
   session: EditorSession,
   studio: StoreApi<StudioState>,
-  { siteWide, ownThemes, kindPreviews, itemPreviews }: ThemeStudioOptions = {},
+  { siteWide, ownThemes, itemPreviews }: ThemeStudioOptions = {},
 ): () => void {
   function Studio() {
     return (
@@ -35,7 +33,6 @@ export function registerThemeStudio(
         studio={studio}
         siteWide={siteWide}
         ownThemes={ownThemes}
-        kindPreviews={kindPreviews}
         itemPreviews={itemPreviews}
       />
     );
