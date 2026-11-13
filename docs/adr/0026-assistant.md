@@ -274,7 +274,7 @@ interface AssistantApi {
 }
 ```
 
-**Events main pushes** (`assistant:event`). They're in order per reply, and each names its site and reply:
+**Events main pushes** (`assistant:event`). They're in order per reply. A reply's events name its site's session and the reply; `limit` and `status` are the app's, and name no session, as main has none to name for them with no site open:
 
 ```ts
 /** A change one tool call made: one undo step (§1). */
@@ -301,7 +301,8 @@ type ConversationTurn = {
   links: ReplyLink[];
 };
 
-type AssistantEvent = { session: SessionId } & (
+/** A reply's events, about one site's conversation. */
+type ReplyEvent = { session: SessionId } & (
   | { type: "reply-started"; replyId: string; model: string }
   /** Streamed text. The panel shows it as plain text with limited Markdown: no images or HTML. */
   | { type: "text"; replyId: string; delta: string }
@@ -328,11 +329,16 @@ type AssistantEvent = { session: SessionId } & (
       links: ReplyLink[];
     }
   | { type: "reply-failed"; replyId: string; error: AssistantErrorCode; steps: ReplyStep[] }
+);
+
+/** The app's events, about no one site: they carry no session. */
+type AppEvent =
   /** The month's total crossed 80%, or reached the limit (§5). Once each, per month. */
   | { type: "limit"; level: "warning" | "reached"; month: { spentUsd: number; limitUsd: number } }
   /** The status changed in main: sign-in, Turn off, settings, a new month. */
-  | { type: "status"; status: AssistantStatus }
-);
+  | { type: "status"; status: AssistantStatus };
+
+type AssistantEvent = ReplyEvent | AppEvent;
 ```
 
 - **`reply-done` closes every reply that `reply-started` began,** or `reply-failed` does: nothing else comes for that reply. A reply that changed nothing has empty `steps`, and the panel shows no review card.

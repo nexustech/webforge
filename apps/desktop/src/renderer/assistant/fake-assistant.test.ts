@@ -107,4 +107,47 @@ describe("the stand-in assistant (ADR 0026 §7)", () => {
     expect(await fake.status()).toEqual(FAKE_STATUS);
     expect(await fake.models()).toEqual({ status: "ok", models: [FAKE_MODEL] });
   });
+
+  it("sends only events the preload lets through: a reply's, the limit's and the status's", async () => {
+    const fake = createFakeAssistant({
+      delayMs: 0,
+      status: { month: { spentUsd: 4.5, limitUsd: 5, warned: true, reached: false } },
+      reply: {
+        text: "Done.",
+        steps: [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }],
+        safetyVersion: { versionId: "v1", label: "Before the assistant's changes" },
+        links: [{ host: "example.com", href: "https://example.com/" }],
+        costUsd: 1,
+      },
+    });
+    const { events, ended } = recorder(fake);
+    await fake.setEnabled(true, 1);
+    await fake.update({ monthlyLimitUsd: 6 });
+    await fake.update({ monthlyLimitUsd: 5 });
+    await fake.signIn("browser");
+    await fake.send(SESSION, "Hello", {});
+    await ended;
+    await fake.setEnabled(false, 1);
+
+    const types = new Set(events.map((event) => event.type));
+    for (const type of [
+      "status",
+      "reply-started",
+      "text",
+      "tool",
+      "safety-version",
+      "reply-done",
+      "limit",
+    ]) {
+      expect(types).toContain(type);
+    }
+    expect(events.find((event) => event.type === "limit")).toMatchObject({ level: "reached" });
+    for (const event of events) {
+      expect(assistantEvents.event.args.safeParse([event]).success).toBe(true);
+    }
+    // The app's events name no site.
+    for (const event of events.filter((each) => each.type === "status" || each.type === "limit")) {
+      expect(event).not.toHaveProperty("session");
+    }
+  });
 });
