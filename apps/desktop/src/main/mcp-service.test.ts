@@ -8,7 +8,7 @@ import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
 import { createCredentialStore, type SecretCipher } from "./credential-store.js";
 import { createJsonStore } from "./json-store.js";
 import type { McpListener, McpListenerOptions } from "./mcp-listener.js";
-import { createMcpService } from "./mcp-service.js";
+import { answerMainTool, createMcpService } from "./mcp-service.js";
 import { siteChoices } from "./site-brief.js";
 
 const cipher: SecretCipher = {
@@ -314,5 +314,41 @@ describe("the version before an AI app's changes (S20)", () => {
 
     expect(result.isError).toBeUndefined();
     expect(ask).toHaveBeenCalledOnce();
+  });
+});
+
+describe("main's own tools (4.12a)", () => {
+  const briefs = () => ({
+    ask: vi.fn(async (): Promise<AiResponse> => ({ status: "declined", message: "closed" })),
+    choices: vi.fn(() => ({ status: "done", data: siteChoices([]) }) as const),
+    status: vi.fn((): AiResponse => ({ status: "not-found", message: "none" })),
+  });
+
+  it("answers each by its name", async () => {
+    const each = briefs();
+    const command = { kind: "command", input: {}, app: "Claude" } as const;
+
+    await answerMainTool(each, { ...command, name: "createSiteFromBrief" }, "app-1");
+    await answerMainTool(each, { kind: "query", name: "siteChoices", input: {} }, "app-1");
+    await answerMainTool(each, { kind: "query", name: "briefStatus", input: {} }, "app-1");
+
+    expect(each.ask).toHaveBeenCalledOnce();
+    expect(each.choices).toHaveBeenCalledOnce();
+    expect(each.status).toHaveBeenCalledWith({}, "app-1");
+  });
+
+  it("refuses a name it has no tool for, rather than starting a brief (#978)", async () => {
+    const each = briefs();
+
+    const answer = await answerMainTool(
+      each,
+      { kind: "command", name: "deleteSite", input: {}, app: "Claude" },
+      "app-1",
+    );
+
+    expect(answer).toEqual({ status: "invalid", message: "There is no such tool." });
+    expect(each.ask).not.toHaveBeenCalled();
+    expect(each.choices).not.toHaveBeenCalled();
+    expect(each.status).not.toHaveBeenCalled();
   });
 });
