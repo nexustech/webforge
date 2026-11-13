@@ -64,12 +64,17 @@ function fakeExtensions(outcome: "opened" | "shown" | Error = "opened") {
 }
 
 /** Each channel's handler, called as from a renderer that `trusted` says it trusts or not. */
-function handlers(service: McpService, trusted = true, extensions = fakeExtensions()) {
+function handlers(
+  service: McpService,
+  trusted = true,
+  extensions = fakeExtensions(),
+  openExternal: (url: string) => Promise<void> = async () => undefined,
+) {
   const registered = new Map<string, Handler>();
   const ipc = {
     handle: (name: string, handler: Handler) => registered.set(name, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerMcpHandlers(ipc, () => trusted, service, extensions);
+  registerMcpHandlers(ipc, () => trusted, service, extensions, openExternal);
   return (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
@@ -162,9 +167,52 @@ describe("the mcp IPC calls (4.9)", () => {
     ).toEqual({ status: "failed" });
   });
 
+  it("opens VS Code's install link for a paired app, at the address, with no key (5.13)", async () => {
+    const opened: string[] = [];
+    const call = handlers(fakeService(), true, fakeExtensions(), async (url) => {
+      opened.push(url);
+    });
+
+    expect(await call("mcp:install-vscode", CLAUDE.id)).toEqual({ status: "opened" });
+    expect(opened).toHaveLength(1);
+    const [link] = opened;
+    expect(link).toMatch(/^vscode:mcp\/install\?/);
+    const server = JSON.parse(decodeURIComponent(link?.split("?")[1] ?? ""));
+    expect(server).toMatchObject({ url: "http://127.0.0.1:51234/mcp" });
+    expect(link).not.toContain(KEY);
+    expect(link).not.toContain("p".repeat(43));
+  });
+
+  it("opens no link while off or for an app that's gone, and says when nothing opened it", async () => {
+    const openExternal = vi.fn(async () => undefined);
+    expect(
+      await handlers(
+        fakeService({ port: null }),
+        true,
+        fakeExtensions(),
+        openExternal,
+      )("mcp:install-vscode", CLAUDE.id),
+    ).toEqual({ status: "off" });
+    expect(
+      await handlers(
+        fakeService(),
+        true,
+        fakeExtensions(),
+        openExternal,
+      )("mcp:install-vscode", "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5"),
+    ).toEqual({ status: "unknown" });
+    expect(openExternal).not.toHaveBeenCalled();
+    expect(
+      await handlers(fakeService(), true, fakeExtensions(), async () => {
+        throw new Error("No application is associated with the specified file");
+      })("mcp:install-vscode", CLAUDE.id),
+    ).toEqual({ status: "failed" });
+  });
+
   it("checks what it's given, and refuses a renderer it doesn't trust", async () => {
     const call = handlers(fakeService());
     await expect(call("mcp:remove", "not an id")).rejects.toThrow();
+    await expect(call("mcp:install-vscode", "https://example.com")).rejects.toThrow();
     await expect(call("mcp:set-enabled", "yes")).rejects.toThrow();
     await expect(handlers(fakeService(), false)("mcp:status")).rejects.toThrow();
   });
