@@ -203,4 +203,67 @@ describe("createEditPanelController (#667)", () => {
     expect(props("icon")).not.toHaveProperty("icon", other);
     expect(labels()).toHaveLength(2);
   });
+
+  describe("a gradient's direction gives it its colours (CT-10)", () => {
+    it("fills both ends, Brand to Accent, in the direction's one step, which undo takes back", () => {
+      const { session, controller, labels, props } = setup();
+      controller.change("lookGradientDirection", "toRight");
+
+      expect(props("heading-1")).toMatchObject({
+        lookGradientDirection: "toRight",
+        lookGradientFrom: "primary",
+        lookGradientTo: "secondary",
+      });
+      expect(labels()).toEqual(["Changed Heading gradient"]);
+
+      session.history.undo();
+      expect(props("heading-1")).not.toHaveProperty("lookGradientDirection");
+      expect(props("heading-1")).not.toHaveProperty("lookGradientFrom");
+      expect(props("heading-1")).not.toHaveProperty("lookGradientTo");
+    });
+
+    it("keeps a colour chosen before, and None keeps both for next time", () => {
+      const { controller, props } = setup();
+      controller.change("lookGradientFrom", "neutral");
+      controller.change("lookGradientDirection", "toBottom");
+      expect(props("heading-1")).toMatchObject({
+        lookGradientFrom: "neutral",
+        lookGradientTo: "secondary",
+      });
+
+      controller.change("lookGradientDirection", "default");
+      controller.change("lookGradientDirection", "toRight");
+      expect(props("heading-1")).toMatchObject({
+        lookGradientDirection: "toRight",
+        lookGradientFrom: "neutral",
+        lookGradientTo: "secondary",
+      });
+    });
+
+    it("fills the device it's chosen for only, keeping a colour another device gives it", () => {
+      const { session, controller, labels, props } = setup();
+      controller.change("lookGradientTo", "accent");
+      session.setViewport("mobile");
+      controller.change("lookGradientDirection", "toBottom");
+
+      expect(props("heading-1")).toMatchObject({
+        lookGradientDirection: { $responsive: { mobile: "toBottom" } },
+        lookGradientFrom: { $responsive: { mobile: "primary" } },
+        // Mobile has Desktop's Accent already.
+        lookGradientTo: "accent",
+      });
+      expect(labels().at(-1)).toBe("Changed Heading gradient on Mobile");
+    });
+
+    it("takes the kind's look as chosen: an end the look colours isn't filled", () => {
+      const { session, controller, props } = setup();
+      session.history.run("Look", (draft) => {
+        draft.theme.looks = { Heading: { lookGradientTo: "neutral" } };
+      });
+      controller.change("lookGradientDirection", "toRight");
+
+      expect(props("heading-1")?.lookGradientFrom).toBe("primary");
+      expect(props("heading-1")).not.toHaveProperty("lookGradientTo");
+    });
+  });
 });

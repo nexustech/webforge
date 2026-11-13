@@ -17,6 +17,7 @@ import {
   type FieldSite,
   fieldsHiddenBy,
   MAX_TEXT_LENGTH,
+  shownValueOf,
   textStylesOf,
   withLook,
 } from "@webforge/site-components";
@@ -317,7 +318,8 @@ export function fieldsFor(target: FieldTarget, options: FieldsOptions): EditPane
           ...spec,
           name,
           group: fieldGroupOf(field),
-          value: responsive ? valueAt(stored, breakpoint) : stored,
+          // A gradient's end without a colour shows the one it draws with (CT-10).
+          value: shownValueOf(field, responsive ? valueAt(stored, breakpoint) : stored),
           ...(field.optionGroup === undefined ? {} : { optionGroup: field.optionGroup }),
           ...(help === undefined ? {} : { help }),
           ...(warning === undefined ? {} : { warning }),
