@@ -201,6 +201,8 @@ export function createOpenRouterSignIn(options: OpenRouterSignInOptions): OpenRo
       const signIn = current;
       if (signIn === null || signIn.mode !== "code") return { status: "cancelled" };
       const outcome = await exchange(options.fetchFn, code.trim(), signIn.verifier);
+      // Cancelled, or replaced, while the code was exchanged: its key isn't handed on.
+      if (current !== signIn) return { status: "cancelled" };
       // A wrong code leaves the sign-in waiting, for the person to paste it again.
       if (outcome.status === "signed-in" || outcome.status === "failed") signIn.end(outcome);
       return outcome;

@@ -132,6 +132,18 @@ describe("OpenRouter's sign-in (6.9a, ADR 0026 §3)", () => {
     expect(await signIn.finishWithCode("the-code")).toEqual({ status: "cancelled" });
   });
 
+  it("hands on no key from a pasted code when the sign-in is cancelled during the exchange", async () => {
+    const fake = openRouter();
+    const signIn = signInWith(fake);
+    const ended = signIn.start("code");
+    await authUrl(fake);
+    const finishing = signIn.finishWithCode("the-code");
+    signIn.cancel();
+    expect(await finishing).toEqual({ status: "cancelled" });
+    expect(await ended).toEqual({ status: "cancelled" });
+    expect(fake.exchanges).toHaveLength(1);
+  });
+
   it("ends as cancelled, timed out, offline, or failed when no browser opens", async () => {
     const cancelling = signInWith(openRouter());
     const cancelled = cancelling.start("browser");
