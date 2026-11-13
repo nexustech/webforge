@@ -92,6 +92,7 @@ function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "
   return {
     service,
     keys,
+    fetchFn,
     events,
     opened,
     dir,
@@ -335,5 +336,25 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     await service.update({ provider: { kind: "server", baseUrl: "http://ai.example.com/v1" } });
     expect(await service.setKey("sk-secret")).toEqual({ status: "insecure-server" });
     expect(keys.size).toBe(0);
+  });
+
+  it("never sends a server's key to another address (#870's review)", async () => {
+    const { service, keys, fetchFn } = setUp();
+    await service.update({ provider: { kind: "server", baseUrl: "https://ai.example.com/v1" } });
+    keys.set("assistant/server", "sk-for-ai-example");
+    expect((await service.status()).provider).toMatchObject({ hasKey: true });
+
+    // Another address forgets the key: it was given for the first server.
+    await service.update({ provider: { kind: "server", baseUrl: "https://other.example/v1" } });
+    expect(keys.has("assistant/server")).toBe(false);
+    expect((await service.status()).provider).toMatchObject({ hasKey: false });
+
+    // And a key at a plain http address on another computer is never sent with the model list.
+    await service.update({ provider: { kind: "server", baseUrl: "http://ai.example.com/v1" } });
+    keys.set("assistant/server", "sk-planted");
+    expect(await service.models()).toEqual({ status: "insecure-server" });
+    expect(vi.mocked(fetchFn).mock.calls.map(([url]) => String(url))).not.toContain(
+      "http://ai.example.com/v1/models",
+    );
   });
 });

@@ -269,6 +269,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
               perReplyUsd: null,
               pricey: false,
             });
+      let forgetServerKey = false;
       await write((file) => {
         let next = { ...file };
         if (settings.provider !== undefined) {
@@ -287,6 +288,8 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           // Another provider's models aren't this one's: the choice starts again.
           if (JSON.stringify(provider) !== JSON.stringify(file.provider)) {
             next = { ...next, provider, model: null };
+            // A server's key was given for that server: it never goes to another address.
+            forgetServerKey = file.provider.kind === "server";
           }
         }
         if (model !== undefined) next = { ...next, model };
@@ -297,6 +300,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         }
         return next;
       });
+      if (forgetServerKey) await options.credentials.delete(SERVER_KEY);
       return changed();
     },
     signIn: (mode) => {
@@ -344,16 +348,22 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     },
     models: async () => {
       const file = await read();
+      const key =
+        file.provider.kind === "server"
+          ? ((await options.credentials.get(SERVER_KEY)) ?? undefined)
+          : undefined;
+      // A key never travels unencrypted to another computer (#976), here as in the chat client.
+      if (
+        file.provider.kind !== "openrouter" &&
+        key !== undefined &&
+        !keySafeAt(file.provider.baseUrl)
+      ) {
+        return { status: "insecure-server" };
+      }
       const result =
         file.provider.kind === "openrouter"
           ? await openRouterModels(options.fetchFn, file.allowRetainingModels)
-          : await serverModels(
-              options.fetchFn,
-              file.provider.baseUrl,
-              file.provider.kind === "server"
-                ? ((await options.credentials.get(SERVER_KEY)) ?? undefined)
-                : undefined,
-            );
+          : await serverModels(options.fetchFn, file.provider.baseUrl, key);
       if (result.status !== "ok") return result;
       listed = result.models;
       // A first list preselects Webforge's tested default (§2).
