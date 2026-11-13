@@ -30,6 +30,7 @@ export function StyleGroups({ session, preferences }: StyleGroupsProps) {
         flush={() => session.flush()}
         appearanceOnly
         dialogGroups={STYLE_DIALOG_GROUPS}
+        columns
       />
     </FieldRenderersProvider>
   );

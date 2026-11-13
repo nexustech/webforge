@@ -177,6 +177,14 @@ export type EditPanelProps = {
   readonly headingHidden?: boolean | undefined;
   /** Drawn after the Advanced tab's fields: the item's CSS, read only (3.14). */
   readonly advancedFooter?: ReactNode | undefined;
+  /**
+   * Flows the option groups into as many columns as fit, for a panel as wide as a dialog (*Style
+   * this Feature…*, Theme Studio, CT-11). Each is at least 37rem wide (481 px): wide enough for a
+   * colour field's names in full, so a 1024 px window has one column, 1280 px two and 1920 px three.
+   * A long group goes on in the next column, as in a newspaper, so the columns come out even; a
+   * field, and a group's name with its first field, are never split.
+   */
+  readonly columns?: boolean | undefined;
 };
 
 /**
@@ -368,6 +376,8 @@ type FieldListProps = Omit<EditPanelProps, "heading" | "fields"> & {
   onToggle(key: string): void;
   /** Opens every group, or closes them all if all are open (Ctrl/Cmd + Enter). */
   onToggleAll(keys: readonly string[]): void;
+  /** The groups in columns, a long one going on in the next, each field kept whole (CT-11). */
+  readonly columns: boolean;
   /** The group copied last, from any element (SP-7). */
   readonly copied: CopiedGroup | null;
   onCopy(copied: CopiedGroup): void;
@@ -391,6 +401,7 @@ function FieldList({
   onToggleAll,
   copied,
   onCopy,
+  columns,
 }: FieldListProps) {
   if (fields.length === 0) {
     return (
@@ -402,7 +413,7 @@ function FieldList({
   const groups = optionGroupsOf(tab, fields);
   const all = groups.map(({ key }) => key);
   return (
-    <div className="flex flex-col pb-2">
+    <div className={cn("pb-2", columns ? "columns-[37rem] gap-x-4" : "flex flex-col")}>
       {groups.map(({ key, id, label: name, fields: inGroup }, index) => {
         const actions = groupActions?.(id) ?? [];
         // Searching shows every group with a match open.
@@ -445,7 +456,13 @@ function FieldList({
                 );
         return (
           <div key={key} className="border-b border-border">
-            <div className="group/header flex items-center gap-0.5 pr-1.5 hover:bg-hover">
+            <div
+              className={cn(
+                "group/header flex items-center gap-0.5 pr-1.5 hover:bg-hover",
+                // Its name stays with its first field.
+                columns && "break-after-avoid",
+              )}
+            >
               <ContextMenu>
                 <ContextMenuTrigger asChild>
                   <button
@@ -525,7 +542,13 @@ function FieldList({
               )}
             </div>
             {open ? (
-              <div id={bodyId} className="flex flex-col gap-1.5 px-3 pt-1 pb-2.5">
+              <div
+                id={bodyId}
+                className={cn(
+                  "flex flex-col gap-1.5 px-3 pt-1 pb-2.5",
+                  columns && "*:break-inside-avoid",
+                )}
+              >
                 {inGroup.map((field) => (
                   <FieldRow
                     key={field.name}
@@ -832,6 +855,7 @@ export function EditPanel({
   styleAction,
   headingHidden = false,
   advancedFooter,
+  columns = false,
 }: EditPanelProps) {
   const idPrefix = useId();
   // The option group copied last (SP-7): kept while other elements are selected, to paste there.
@@ -919,6 +943,7 @@ export function EditPanel({
         onToggleAll={toggleAll}
         copied={copied}
         onCopy={setCopied}
+        columns={columns}
         {...(onResetToDefault === undefined ? {} : { onResetToDefault })}
         {...(onPaste === undefined ? {} : { onPaste })}
         {...(groupActions === undefined ? {} : { groupActions })}

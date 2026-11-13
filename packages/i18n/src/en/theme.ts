@@ -330,4 +330,7 @@ export const theme = {
   "style.history.page": "Styled every {item} on this page",
   "style.history.site": "Styled every {item} on the site",
   "style.history.theme": "Made the theme's look for {item}",
+  // Theme Studio's and Style this ‹kind›…'s frame: the preview on top, the controls below (CT-11).
+  "styling.resizePreview": "Resize the preview",
+  "styling.previewOn": "Preview on {device}",
 } as const;

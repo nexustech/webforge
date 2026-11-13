@@ -4,7 +4,7 @@ id: styling
 title: Styling
 summary: Change how a section or element looks, and give the same look to others like it.
 related: [edit-panel, themes, sections, elements]
-updated: 2026-11-11
+updated: 2026-11-13
 ---
 
 # Styling
@@ -50,13 +50,18 @@ Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when h
 
 ## Style this
 
-**Style This…** opens the selected item's look in a larger window. Open it from:
+**Style This…** opens the selected item's look in a window that fills {appName}'s window. Open it from:
 
 - the button at the top of the Style tab;
 - **Style** on the item's bar;
 - the right-click menu or the Edit menu.
 
-It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title. Previews show Desktop and Mobile as you go.
+It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title.
+
+- **At the top**, previews show the item on Desktop and Mobile as you go. They stay in view while you scroll the settings.
+- **To give the previews more room**, drag the line under them, or select it and use the arrow keys.
+- **Below**, the settings fill the window's width, in as many columns as fit.
+- **At the bottom**, **Where it applies**, **Cancel** and **Apply** are always in view.
 
 **Where it applies** sets which items get the look:
 
