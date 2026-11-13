@@ -1,6 +1,6 @@
 # 0008. A roomier canvas: maximised window, narrower side columns, one panel per column
 
-- Status: Accepted
+- Status: Accepted (point 3 amended by [ADR 0011](0011-layers-always-visible.md) for the left column)
 - Date: 2026-10-21
 - Related: [UI1 editor layout](../../research/product/04-editor-look-and-feel.md#1-layout), [spec/04 item 1.2](../../spec/04-implementation-plan.md) (#18), 1.13 (Add panel), 1.14 (Edit panel), 1.18 (Pages panel)
 

@@ -3,6 +3,8 @@
 **Status:** Research complete, 2026-10-19
 **Recommendation:** **Electron** (confirms the initial preference), with a secure-by-default setup. Revisit Tauri only if install size becomes a real user complaint _and_ Tauri's Chromium (CEF) runtime has reached stable.
 
+> **Since then (13 Nov 2026):** Electron was kept. Phase 0 proved the secure shell (contextIsolation, sandbox, typed preload, IPC checked with zod), and the app is now on **Electron 45.2.3** (PR [#845](https://github.com/nexustech/webforge/pull/845)); this note's Electron 44 figures are as researched. Signed installers and auto-update, this note's spike item 1, moved to Phase 5 (0.5a, 0.5b).
+
 ## TL;DR
 
 For most apps, Tauri's smaller size and memory use win. **Webforge is not most apps.** It is a visual designer whose canvas must show users _exactly_ what their published site will look like, and whose core build step (Tailwind CSS) is a JavaScript tool. Both facts favour Electron:

@@ -5,6 +5,7 @@ import {
   csvRecords,
   frontMatter,
   ITEM_VALUE_MAX,
+  markdownHeading,
   markdownToRichText,
   newId,
   PAGE_TITLE_MAX,
@@ -57,11 +58,17 @@ function markdownPost(file: PostFile): ImportedPost | undefined {
   let text = body;
   let title = data.title;
   if (title === undefined) {
-    // Its first heading, taken out of its text, else its file's name.
-    const heading = /^\s*#\s+(.+?)\s*#*\s*$/m.exec(body);
-    if (heading !== null) {
-      title = heading[1];
-      text = body.replace(heading[0], "");
+    // Its first heading, taken out of its text, else its file's name. Read a line at a time: a
+    // pattern over the whole file took minutes on one long line (#974).
+    const lines = body.split("\n");
+    const at = lines.findIndex((line) => {
+      const heading = markdownHeading(line.trimStart());
+      return heading?.level === 1 && heading.text !== "";
+    });
+    const heading = at === -1 ? undefined : markdownHeading(lines[at]?.trimStart() ?? "");
+    if (heading !== undefined) {
+      title = heading.text;
+      text = lines.filter((_, index) => index !== at).join("\n");
     } else {
       title = file.name.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
     }

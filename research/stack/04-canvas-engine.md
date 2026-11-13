@@ -1,6 +1,9 @@
 # Canvas / Editor Engine
 
 **Status:** Researched 2026-10-19. Recommendation pending a spike. Product decisions recorded in [Decisions](#decisions-2026-10-19)
+
+> **Since then (13 Nov 2026):** the spike was a go: Puck runs under Webforge's own undo history ([ADR 0004](../../docs/adr/0004-puck-with-webforge-history.md)), and large pages were checked in 0.4 ([ADR 0007](../../docs/adr/0007-large-page-performance.md)), so the fallback wasn't needed. The app is on **Puck 0.24.0** (`@puckeditor/core`, PR [#717](https://github.com/nexustech/webforge/pull/717)) with a small patch of Webforge's own (`patches/@puckeditor__core@0.24.0.patch`); this note's 0.23.0 figures are as researched.
+
 **Recommendation:** **Puck** (MIT, React) as the primary candidate, validated by a 3–4 day spike. **Fallback:** build our own canvas on the same open-source building blocks Puck itself uses (dnd-kit, Tiptap, Zustand). **GrapesJS** is the only serious alternative engine but fits our decisions poorly.
 
 **Constraints:** open source only; no paid/commercial tools; prefer an existing engine over building from scratch. It must also fit earlier decisions: Electron, React + shadcn/ui, Tailwind v4, static HTML/CSS/JS output, our own undo/redo design (D1–D7), and click-to-edit text for non-technical users.

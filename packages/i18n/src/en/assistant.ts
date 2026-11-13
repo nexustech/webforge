@@ -89,6 +89,9 @@ export const assistant = {
   "assistant.site.kept": "Your answer stays on this computer, never in the site file.",
   "assistant.site.allow": "Use on This Site",
   "assistant.site.deny": "Not Now",
+  // A key that would go over plain http:// to another computer (ADR 0026 §7, #976).
+  "assistant.error.insecure-server":
+    "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Settings › Assistant, or a server on this computer.",
   // The panel (6.9c, UX-28).
   "assistant.panel": "Assistant",
   "assistant.loading": "Loading…",

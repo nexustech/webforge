@@ -12,6 +12,8 @@ The second review comes before the beta. Since the first one, nearly everything 
 
 **No critical, high or new medium finding.** Every finding of the first review that was fixed is still fixed, and each fix was checked in the code, not only its issue. Three lines are still open as planned: S5, S7 and S8 (#652), and S15 and S17 (#655). The new findings are 7 low and 8 info.
 
+**Status since (13 Nov 2026):** #652 (S5, S7, S8, and S33's Help window) and #655 (S15, S17) closed on 8 Nov, after this review. The issues this review filed, #794–#797, closed on 8 Nov too.
+
 - **Fixed in this review's PR:** five, S26, S31, S34, S36 and S37. S26's fix amends AIB-6, as the product owner decided (7 Nov 2026).
 - **Filed as issues:** the rest, in the Phase 5 milestone: #794–#797, plus a widened #652. #793 (S26) was filed, then fixed here.
 
