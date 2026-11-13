@@ -100,6 +100,12 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
   const emit = (event: AssistantEvent) => {
     for (const listener of listeners) listener(event);
   };
+  /** Changes the status, and says so as main does. */
+  const setStatus = (next: AssistantStatus) => {
+    status = next;
+    emit({ type: "status", status });
+    return status;
+  };
   const pause = () => new Promise<void>((resolve) => setTimeout(resolve, delayMs));
   const replyTo = (message: string): FakeReply => {
     const reply = options.reply ?? DEFAULT_REPLY;
@@ -118,7 +124,9 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       replying.delete(replyId);
       const costUsd = reply.costUsd === undefined ? 0.12 : reply.costUsd;
       const spentUsd = status.month.spentUsd + (costUsd ?? 0);
-      status = { ...status, month: { ...status.month, spentUsd } };
+      const reached = spentUsd >= status.month.limitUsd;
+      const crossed = reached && !status.month.reached;
+      status = { ...status, month: { ...status.month, spentUsd, reached } };
       const month = { spentUsd, limitUsd: status.month.limitUsd };
       Object.assign(turn, { state: "done", stop, costUsd, steps, links: [...(reply.links ?? [])] });
       emit({
@@ -133,8 +141,9 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       });
       if (!status.month.warned && spentUsd >= month.limitUsd * 0.8) {
         status = { ...status, month: { ...status.month, warned: true } };
-        emit({ session, type: "limit", level: "warning", month });
+        emit({ type: "limit", level: "warning", month });
       }
+      if (crossed) emit({ type: "limit", level: "reached", month });
     };
 
     emit({ session, type: "reply-started", replyId, model: status.model?.id ?? "" });
@@ -168,22 +177,22 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
   const api: AssistantApi = {
     status: async () => status,
     setEnabled: async (enabled, version) => {
-      status = enabled
-        ? { ...status, enabled, consentVersion: version }
-        : { ...status, enabled, provider: { kind: "openrouter", signedIn: false } };
-      emit({ session: "", type: "status", status });
-      return status;
+      return setStatus(
+        enabled
+          ? { ...status, enabled, consentVersion: version }
+          : { ...status, enabled, provider: { kind: "openrouter", signedIn: false } },
+      );
     },
     update: async (settings) => {
-      status = {
+      const limitUsd = settings.monthlyLimitUsd ?? status.month.limitUsd;
+      return setStatus({
         ...status,
-        month: { ...status.month, limitUsd: settings.monthlyLimitUsd ?? status.month.limitUsd },
+        month: { ...status.month, limitUsd, reached: status.month.spentUsd >= limitUsd },
         allowRetainingModels: settings.allowRetainingModels ?? status.allowRetainingModels,
-      };
-      return status;
+      });
     },
     signIn: async () => {
-      status = { ...status, provider: { kind: "openrouter", signedIn: true } };
+      setStatus({ ...status, provider: { kind: "openrouter", signedIn: true } });
       return { status: "signed-in" };
     },
     finishSignIn: async () => ({ status: "signed-in" }),

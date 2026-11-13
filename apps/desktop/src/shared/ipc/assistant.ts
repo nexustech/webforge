@@ -249,8 +249,9 @@ const toolSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
 const callIdSchema = z.string().min(1).max(100);
 
 /**
- * What main tells the panel (ADR 0026 §7), in order per reply. `reply-done` or `reply-failed`
- * closes every reply `reply-started` began; nothing more comes for it.
+ * What main tells the panel (ADR 0026 §7), in order per reply. A reply's events name its site's
+ * session; `limit` and `status` are the app's, and name none. `reply-done` or `reply-failed` closes
+ * every reply `reply-started` began; nothing more comes for it.
  */
 const eventSchema = z.discriminatedUnion("type", [
   z.strictObject({
@@ -302,15 +303,17 @@ const eventSchema = z.discriminatedUnion("type", [
     error: errorSchema,
     steps: z.array(stepSchema),
   }),
-  /** The month's total crossed 80%, or reached the limit (§5): once each a month. */
+  /**
+   * The month's total crossed 80%, or reached the limit (§5): once each a month. The app's, not a
+   * site's: it names no session.
+   */
   z.strictObject({
-    session: sessionIdSchema,
     type: z.literal("limit"),
     level: z.enum(["warning", "reached"]),
     month: monthSchema,
   }),
-  /** The status changed in main: sign-in, Turn off, settings, a new month. */
-  z.strictObject({ session: sessionIdSchema, type: z.literal("status"), status: statusSchema }),
+  /** The status changed in main: sign-in, Turn off, settings, a new month. The app's: no session. */
+  z.strictObject({ type: z.literal("status"), status: statusSchema }),
 ]);
 
 /** See {@link eventSchema}. */
