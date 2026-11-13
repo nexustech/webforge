@@ -27,29 +27,35 @@ const priceSchema = z
   .regex(/^\d+(\.\d+)?(e-?\d+)?$/i)
   .transform(Number);
 
-const modelsSchema = z.looseObject({
-  data: z.array(
-    z.looseObject({
-      id: z.string().min(1).max(200),
-      name: z.string().min(1).max(200),
-      pricing: z.looseObject({ prompt: priceSchema, completion: priceSchema }),
+/**
+ * A list whose entries are each checked with `entry`: one that doesn't fit is left out, rather than
+ * losing the list. OpenRouter prices a model with variable pricing, such as its router, at "-1".
+ */
+const listOf = <T>(entry: z.ZodType<T>) =>
+  z.looseObject({ data: z.array(z.unknown()) }).transform(({ data }) =>
+    data.flatMap((item) => {
+      const parsed = entry.safeParse(item);
+      return parsed.success ? [parsed.data] : [];
     }),
-  ),
-});
+  );
 
-const zdrSchema = z.looseObject({
-  data: z.array(
-    z.looseObject({
-      model_id: z.string().min(1).max(200),
-      supported_parameters: z.array(z.string()).optional(),
-      safety_retention: z.boolean().optional(),
-    }),
-  ),
-});
+const modelsSchema = listOf(
+  z.looseObject({
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    pricing: z.looseObject({ prompt: priceSchema, completion: priceSchema }),
+  }),
+);
 
-const localSchema = z.looseObject({
-  data: z.array(z.looseObject({ id: z.string().min(1).max(200) })),
-});
+const zdrSchema = listOf(
+  z.looseObject({
+    model_id: z.string().min(1).max(200),
+    supported_parameters: z.array(z.string()).optional(),
+    safety_retention: z.boolean().optional(),
+  }),
+);
+
+const localSchema = listOf(z.looseObject({ id: z.string().min(1).max(200) }));
 
 type ModelList =
   | { readonly status: "ok"; readonly models: AssistantModel[] }
@@ -105,7 +111,7 @@ export async function openRouterModels(
   if (!zdr.ok) return { status: zdr.error };
   // Safety Retention endpoints keep flagged prompts, so they don't count (ADR 0026 §2).
   const withZdr = new Set(
-    zdr.value.data
+    zdr.value
       .filter(
         (endpoint) =>
           endpoint.safety_retention !== true &&
@@ -113,7 +119,7 @@ export async function openRouterModels(
       )
       .map((endpoint) => endpoint.model_id),
   );
-  const models = listed.value.data
+  const models = listed.value
     .filter((model) => allowRetaining || withZdr.has(model.id))
     .map((model): AssistantModel => {
       const perReplyUsd =
@@ -149,7 +155,7 @@ export async function serverModels(
   if (!listed.ok) return { status: listed.error };
   return {
     status: "ok",
-    models: listed.value.data.map((model) => ({
+    models: listed.value.map((model) => ({
       id: model.id,
       name: model.id,
       maker: null,
