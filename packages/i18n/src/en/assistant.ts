@@ -90,5 +90,5 @@ export const assistant = {
   "assistant.site.deny": "Not Now",
   // A key that would go over plain http:// to another computer (ADR 0026 §7, #976).
   "assistant.error.insecure-server":
-    "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Preferences › Assistant, or a server on this computer.",
+    "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Settings › Assistant, or a server on this computer.",
 } as const;
