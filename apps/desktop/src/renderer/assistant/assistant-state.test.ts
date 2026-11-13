@@ -106,6 +106,22 @@ describe("the assistant panel's state (6.9c, ADR 0026 §7)", () => {
     panel.dispose();
   });
 
+  it("says a message main couldn't take failed, and logs nothing of it unhandled", async () => {
+    const api = createFakeAssistant({ delayMs: 0 });
+    const panel = createAssistantPanel(
+      { ...api, send: () => Promise.reject(new Error("IPC")) },
+      "site-1",
+    );
+    await panel.send("Hi", {});
+
+    expect(panel.state.getState()).toMatchObject({
+      refused: "failed",
+      turns: [],
+      replying: undefined,
+    });
+    panel.dispose();
+  });
+
   it("records this site's answer", async () => {
     const api = createFakeAssistant({ siteConsent: { asked: false, allowed: false } });
     const panel = createAssistantPanel(api, "site-1");

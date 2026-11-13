@@ -5,6 +5,7 @@ import { ASSISTANT_CONSENT_VERSION, type AssistantApi } from "../../shared/ipc/a
 import type { EditorSession } from "../editor/editor-session.js";
 import type { SettingsRegistry } from "../editor/settings-registry.js";
 import { useDocument } from "../editor/use-document.js";
+import { reportFailure } from "../log.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { AssistantPanel } from "./AssistantPanel.js";
 import { createAssistantPanel } from "./assistant-state.js";
@@ -43,7 +44,11 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
           const { pageId, nodeId } = session.ui.getState();
           return { pageId, ...(nodeId === null ? {} : { nodeId }) };
         }}
-        onAgree={() => void api.setEnabled(true, ASSISTANT_CONSENT_VERSION)}
+        onAgree={() =>
+          void api
+            .setEnabled(true, ASSISTANT_CONSENT_VERSION)
+            .catch((error: unknown) => reportFailure("assistant.enable", error))
+        }
         onOpenPreferences={() => void options.settings.show("assistant", "assistant")}
         onOpenVersions={() => panels.show("versionHistory")}
         onShowStep={(step) => {

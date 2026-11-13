@@ -12,7 +12,20 @@ type Story = StoryObj<typeof meta>;
 /** The panel on the stand-in, with `message` sent first when given. */
 const story = (options: FakeAssistantOptions, message?: string): Story =>
   panelStory((panels, session) => {
-    const api = createFakeAssistant({ delayMs: 0, ...options });
+    // The reply's change, in the site's Undo History, so its card can undo it.
+    session.history.run("AI (Assistant): Edited Hero text", (site) => {
+      site.settings.general.name = "Rosie's Bakery";
+    });
+    const entryId = session.history.entries().at(-1)?.id ?? "";
+    const api = createFakeAssistant({
+      delayMs: 0,
+      reply: {
+        text: "I've rewritten the Hero's heading to say you open on Saturdays.",
+        steps: [{ entryId, label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }],
+        costUsd: 0.12,
+      },
+      ...options,
+    });
     if (message !== undefined) void api.send("story", message, {});
     return registerAssistantPanel({
       panels,

@@ -56,7 +56,7 @@ function reachOf(status: AssistantStatus): ConsentReach {
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const { model, history } = props;
-  const { status, site, turns, replying, refused, safetyVersionId } = useStore(model.state);
+  const { status, site, turns, replying, refused } = useStore(model.state);
   const position = useStore(history.state);
   const [kept, setKept] = useState<ReadonlySet<string>>(new Set());
   const [text, setText] = useState("");
@@ -145,9 +145,8 @@ export function AssistantPanel(props: AssistantPanelProps) {
                   const now = replyUndo(history.state.getState(), ids);
                   if (now.kind === "undo") history.jumpTo(now.to);
                 }}
-                onOpenVersions={
-                  safetyVersionId === undefined ? () => undefined : props.onOpenVersions
-                }
+                // Version History lists the safety version, known here or not.
+                onOpenVersions={props.onOpenVersions}
                 onShowStep={props.onShowStep}
               />
             );

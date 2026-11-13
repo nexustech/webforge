@@ -8,6 +8,7 @@ import type {
   ReplyLink,
   ReplyStep,
 } from "../../shared/ipc/assistant.js";
+import { reportFailure } from "../log.js";
 import type { TurnView } from "./ConversationView.js";
 
 /** What was selected when a message was sent (ADR 0026 §6). */
@@ -69,6 +70,11 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     refused: undefined,
     safetyVersionId: undefined,
   }));
+  /** Logs a call main couldn't answer, without content; the panel stays as it was. */
+  const failed = (context: string) => (error: unknown) => {
+    reportFailure(context, error);
+    return false as const;
+  };
   /** What the person sent, until its reply's first event names it. */
   let sending: string | undefined;
   /**
@@ -77,10 +83,15 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
    */
   const loadedMidStream = new Set<string>();
   /** Takes a reply's whole text from main's copy of the conversation. */
-  const reread = async (replyId: string) => {
+  const reread = (replyId: string) => {
     if (!loadedMidStream.delete(replyId)) return;
-    const kept = (await api.conversation(session)).find((each) => each.replyId === replyId);
-    if (kept !== undefined) turn(replyId, (each) => ({ ...each, reply: kept.reply }));
+    void api
+      .conversation(session)
+      .then((turns) => {
+        const kept = turns.find((each) => each.replyId === replyId);
+        if (kept !== undefined) turn(replyId, (each) => ({ ...each, reply: kept.reply }));
+      })
+      .catch((error: unknown) => reportFailure("assistant.reread", error));
   };
   const turn = (replyId: string, change: (turn: PanelTurn) => PanelTurn) =>
     state.setState(({ turns }) => ({
@@ -162,7 +173,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           steps: event.steps,
           links: event.links,
         }));
-        void reread(event.replyId);
+        reread(event.replyId);
         state.setState(({ status, replying }) => ({
           replying: replying === event.replyId ? undefined : replying,
           ...(status === undefined
@@ -177,7 +188,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           error: event.error,
           steps: event.steps,
         }));
-        void reread(event.replyId);
+        reread(event.replyId);
         state.setState(({ replying }) => ({
           replying: replying === event.replyId ? undefined : replying,
         }));
@@ -185,8 +196,8 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     }
   };
   const unsubscribe = api.onEvent(onEvent);
-  void Promise.all([api.status(), api.siteConsent(session), api.conversation(session)]).then(
-    ([status, site, turns]) => {
+  void Promise.all([api.status(), api.siteConsent(session), api.conversation(session)])
+    .then(([status, site, turns]) => {
       for (const each of turns) if (each.state === "replying") loadedMidStream.add(each.replyId);
       state.setState((now) => ({
         status: now.status ?? status,
@@ -195,25 +206,35 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         turns: now.turns.length > 0 ? now.turns : turns.map(panelTurn),
         replying: turns.find((each) => each.state === "replying")?.replyId ?? now.replying,
       }));
-    },
-  );
+    })
+    // Loading failed: the panel stays on Loading…, and the failure is logged without content.
+    .catch((error: unknown) => reportFailure("assistant.load", error));
   return {
     state,
     send: async (text, context) => {
       if (state.getState().replying !== undefined || text.trim() === "") return;
       sending = text;
       state.setState({ refused: undefined });
-      const result = await api.send(session, text, context);
-      sending = undefined;
-      if (result.status === "sending") ensure(result.replyId, text);
-      else state.setState({ refused: result.status });
+      try {
+        const result = await api.send(session, text, context);
+        if (result.status === "sending") ensure(result.replyId, text);
+        else state.setState({ refused: result.status });
+      } catch (error) {
+        // Main couldn't take it: said as any failure, logged without content.
+        reportFailure("assistant.send", error);
+        state.setState({ refused: "failed" });
+      } finally {
+        sending = undefined;
+      }
     },
     stop: async () => {
       const replyId = state.getState().replying;
-      if (replyId !== undefined) await api.stop(replyId);
+      if (replyId !== undefined) await api.stop(replyId).catch(failed("assistant.stop"));
     },
     newConversation: async () => {
-      await api.newConversation(session);
+      if ((await api.newConversation(session).then(() => true, failed("assistant.new"))) !== true) {
+        return;
+      }
       state.setState({
         turns: [],
         replying: undefined,
@@ -222,7 +243,13 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
       });
     },
     answerSite: async (allowed) => {
-      await api.setSiteConsent(session, allowed);
+      // Recorded only once main has it: a yes the panel shows is one main keeps.
+      if (
+        (await api.setSiteConsent(session, allowed).then(() => true, failed("assistant.site"))) !==
+        true
+      ) {
+        return;
+      }
       state.setState({ site: { asked: true, allowed }, refused: undefined });
     },
     dispose: unsubscribe,
