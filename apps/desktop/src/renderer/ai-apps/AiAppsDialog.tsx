@@ -26,7 +26,9 @@ import {
   type McpApi,
   type McpInstallResult,
   type McpStatus,
+  type McpVsCodeResult,
 } from "../../shared/ipc/mcp.js";
+import { CLAUDE_CODE_KEY_VARIABLE, claudeCodeCommand } from "../../shared/mcp-setup.js";
 
 /** How often the dialog asks for the apps' status while open, so *Connected* follows them. */
 export const STATUS_EVERY_MS = 2_000;
@@ -55,9 +57,47 @@ const statusText = (app: AppStatus) =>
 
 /**
  * Which kind of app is added: Claude Desktop, through an extension that checks it's Webforge it
- * talks to; or another app, such as a developer tool, at the address (ADR 0021).
+ * talks to; or a developer tool at the address (ADR 0021): Claude Code, with a command to run, VS
+ * Code, through its install link (5.13, AIA-13), or another app, with the address and the header.
  */
-type Kind = "claude" | "other";
+type Kind = "claude" | "claudeCode" | "vscode" | "other";
+
+const KINDS: readonly Kind[] = ["claude", "claudeCode", "vscode", "other"];
+
+const isKind = (value: string): value is Kind => (KINDS as readonly string[]).includes(value);
+
+/** How a kind of app connects: through Claude Desktop's checking bridge, or directly. */
+const connectionOf = (kind: Kind) => (kind === "claude" ? "claude" : "other");
+
+/** Each kind of app's label in *Which app?*. */
+const labelOf = (kind: Kind) =>
+  kind === "claude"
+    ? t("aiApps.add.claude")
+    : kind === "claudeCode"
+      ? t("aiApps.add.claudeCode")
+      : kind === "vscode"
+        ? t("aiApps.add.vscode")
+        : t("aiApps.add.other");
+
+/** The name each kind of app is given unless the person types another. */
+const defaultNameOf = (kind: Kind) =>
+  kind === "claude"
+    ? t("aiApps.add.claude")
+    : kind === "claudeCode"
+      ? t("aiApps.add.claudeCode")
+      : kind === "vscode"
+        ? t("aiApps.add.vscodeName")
+        : "";
+
+/** What each kind of app's setup comes to, in a line. */
+const hintOf = (kind: Kind) =>
+  kind === "claude"
+    ? t("aiApps.add.claudeHint")
+    : kind === "claudeCode"
+      ? t("aiApps.add.claudeCodeHint")
+      : kind === "vscode"
+        ? t("aiApps.add.vscodeHint")
+        : t("aiApps.add.otherHint");
 
 /** An app being added: its kind, and the name typed so far. */
 type Adding = { readonly kind: Kind; readonly name: string };
@@ -70,6 +110,45 @@ type Shown = {
   readonly key: string;
   readonly address: string;
 };
+
+/**
+ * A row of the pairing's list: what it is, its value and a button that copies it. The button is in
+ * the `dd` with the value, as a list holds only terms and values; `contents` keeps both in the
+ * list's grid columns.
+ */
+function CopyRow({
+  label,
+  value,
+  copyLabel,
+  onCopy,
+}: {
+  readonly label: string;
+  readonly value: string;
+  readonly copyLabel: string;
+  readonly onCopy: () => void;
+}) {
+  return (
+    <>
+      <dt>{label}</dt>
+      <dd className="contents">
+        <code className="break-all font-mono">{value}</code>
+        <Button variant="outline" size="sm" onClick={onCopy}>
+          {copyLabel}
+        </Button>
+      </dd>
+    </>
+  );
+}
+
+/** What *Install in VS Code* came to for `name`, in words. */
+const vsCodeText = (status: McpVsCodeResult["status"], name: string) =>
+  status === "opened"
+    ? t("aiApps.vscode.opened")
+    : status === "off"
+      ? t("aiApps.add.failed.off")
+      : status === "unknown"
+        ? t("aiApps.vscode.unknown", { name })
+        : t("aiApps.vscode.failed");
 
 /** What *Install in Claude Desktop* came to for `name`, in words. */
 const installText = (status: McpInstallResult["status"], name: string) =>
@@ -102,9 +181,10 @@ export function AiAppsDialog({
   const [adding, setAdding] = useState<Adding | null>(null);
   const [addError, setAddError] = useState<string | undefined>(undefined);
   const [shown, setShown] = useState<Shown | null>(null);
-  const [copied, setCopied] = useState<"key" | "address" | null>(null);
+  const [copied, setCopied] = useState<"key" | "address" | "command" | null>(null);
   const [removing, setRemoving] = useState<AppStatus | null>(null);
   const [installed, setInstalled] = useState<McpInstallResult["status"] | null>(null);
+  const [vsCode, setVsCode] = useState<McpVsCodeResult["status"] | null>(null);
   const whichId = useId();
 
   useEffect(() => {
@@ -140,7 +220,7 @@ export function AiAppsDialog({
 
   const add = async () => {
     if (adding === null) return;
-    const result = await mcp.add(adding.name, adding.kind).catch(() => null);
+    const result = await mcp.add(adding.name, connectionOf(adding.kind)).catch(() => null);
     if (result === null) return notify(t("aiApps.failed"));
     if (result.status !== "paired") return setAddError(t(`aiApps.add.failed.${result.status}`));
     setAdding(null);
@@ -155,7 +235,7 @@ export function AiAppsDialog({
     await act(mcp.status());
   };
 
-  const copy = (what: "key" | "address", text: string) => {
+  const copy = (what: "key" | "address" | "command", text: string) => {
     const copying = what === "key" ? copySecret(text) : copyText(text);
     void copying.then(
       () => setCopied(what),
@@ -163,13 +243,15 @@ export function AiAppsDialog({
     );
   };
 
-  /** Switches the kind of app being added, offering Claude Desktop's name for it. */
+  /**
+   * Switches the kind of app being added, offering its name for it: a name the person typed stays,
+   * and one offered for another kind is replaced.
+   */
   const choose = (kind: Kind) => {
     setAdding((current) => {
-      const claudeName = t("aiApps.add.claude");
       const name = current?.name ?? "";
-      if (kind === "claude") return { kind, name: name === "" ? claudeName : name };
-      return { kind, name: name === claudeName ? "" : name };
+      const offered = name === "" || KINDS.some((each) => defaultNameOf(each) === name);
+      return { kind, name: offered ? defaultNameOf(kind) : name };
     });
     setAddError(undefined);
   };
@@ -181,11 +263,19 @@ export function AiAppsDialog({
     );
   };
 
+  const installVsCode = (id: string) => {
+    void mcp.installVsCode(id).then(
+      (result: McpVsCodeResult | undefined) => setVsCode(result?.status ?? "failed"),
+      () => setVsCode("failed"),
+    );
+  };
+
   const closeShown = () => {
     // The key goes with the dialog's state: it is never shown again.
     setShown(null);
     setCopied(null);
     setInstalled(null);
+    setVsCode(null);
   };
 
   const enabled = status?.enabled ?? false;
@@ -218,28 +308,55 @@ export function AiAppsDialog({
                       <li>{t("aiApps.claude.step3")}</li>
                     </ol>
                   </>
+                ) : shown.kind === "claudeCode" ? (
+                  <>
+                    <h4 className="mt-2 text-sm font-medium">{t("aiApps.claudeCode.steps")}</h4>
+                    <ol className="list-decimal pl-5 text-sm">
+                      <li>{t("aiApps.claudeCode.step1")}</li>
+                      <li>
+                        {t("aiApps.claudeCode.step2", { variable: CLAUDE_CODE_KEY_VARIABLE })}
+                      </li>
+                    </ol>
+                  </>
+                ) : shown.kind === "vscode" ? (
+                  <>
+                    <h4 className="mt-2 text-sm font-medium">{t("aiApps.vscode.steps")}</h4>
+                    <ol className="list-decimal pl-5 text-sm">
+                      <li>{t("aiApps.vscode.step1")}</li>
+                      <li>{t("aiApps.vscode.step2")}</li>
+                      <li>{t("aiApps.vscode.step3")}</li>
+                    </ol>
+                  </>
                 ) : null}
                 <dl className="mt-2 grid grid-cols-[auto_1fr_auto] items-center gap-2 text-sm">
                   {shown.kind === "other" ? (
-                    <>
-                      <dt>{t("aiApps.key.address")}</dt>
-                      <dd className="break-all font-mono">{shown.address}</dd>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => copy("address", shown.address)}
-                      >
-                        {copied === "address"
-                          ? t("aiApps.key.copied")
-                          : t("aiApps.key.copyAddress")}
-                      </Button>
-                    </>
+                    <CopyRow
+                      label={t("aiApps.key.address")}
+                      value={shown.address}
+                      copyLabel={
+                        copied === "address" ? t("aiApps.key.copied") : t("aiApps.key.copyAddress")
+                      }
+                      onCopy={() => copy("address", shown.address)}
+                    />
                   ) : null}
-                  <dt>{t("aiApps.key.key")}</dt>
-                  <dd className="break-all font-mono">{shown.key}</dd>
-                  <Button variant="outline" size="sm" onClick={() => copy("key", shown.key)}>
-                    {copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
-                  </Button>
+                  {shown.kind === "claudeCode" ? (
+                    <CopyRow
+                      label={t("aiApps.claudeCode.command")}
+                      value={claudeCodeCommand(shown.address)}
+                      copyLabel={
+                        copied === "command"
+                          ? t("aiApps.key.copied")
+                          : t("aiApps.claudeCode.copyCommand")
+                      }
+                      onCopy={() => copy("command", claudeCodeCommand(shown.address))}
+                    />
+                  ) : null}
+                  <CopyRow
+                    label={t("aiApps.key.key")}
+                    value={shown.key}
+                    copyLabel={copied === "key" ? t("aiApps.key.copied") : t("aiApps.key.copyKey")}
+                    onCopy={() => copy("key", shown.key)}
+                  />
                 </dl>
                 {/* Empty, it takes no room: the screenshots of a key not yet copied stay as they were. */}
                 <p role="status" className={copied === "key" ? "mt-2 text-sm" : "text-sm"}>
@@ -256,7 +373,26 @@ export function AiAppsDialog({
                   </>
                 ) : (
                   <>
-                    <p className="mt-2 text-sm text-muted-foreground">{t("aiApps.key.how")}</p>
+                    {shown.kind === "vscode" ? (
+                      <>
+                        <Button
+                          className="mt-2"
+                          variant="outline"
+                          onClick={() => installVsCode(shown.id)}
+                        >
+                          {t("aiApps.vscode.install")}
+                        </Button>
+                        <p role="status" className={vsCode === null ? "text-sm" : "mt-2 text-sm"}>
+                          {vsCode === null ? null : vsCodeText(vsCode, shown.name)}
+                        </p>
+                      </>
+                    ) : (
+                      <p className="mt-2 text-sm text-muted-foreground">
+                        {shown.kind === "claudeCode"
+                          ? t("aiApps.claudeCode.keyWhere", { variable: CLAUDE_CODE_KEY_VARIABLE })
+                          : t("aiApps.key.how")}
+                      </p>
+                    )}
                     <p className="mt-2 text-sm">{t("aiApps.key.risk")}</p>
                   </>
                 )}
@@ -272,24 +408,19 @@ export function AiAppsDialog({
                 <ToggleGroup
                   type="single"
                   aria-labelledby={whichId}
-                  className="flex w-full"
+                  className="grid w-full grid-cols-2"
                   value={adding.kind}
                   onValueChange={(next) => {
-                    if (next === "claude" || next === "other") choose(next);
+                    if (isKind(next)) choose(next);
                   }}
                 >
-                  <ToggleGroupItem value="claude" className="flex-1">
-                    {t("aiApps.add.claude")}
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="other" className="flex-1">
-                    {t("aiApps.add.other")}
-                  </ToggleGroupItem>
+                  {KINDS.map((kind) => (
+                    <ToggleGroupItem key={kind} value={kind}>
+                      {labelOf(kind)}
+                    </ToggleGroupItem>
+                  ))}
                 </ToggleGroup>
-                <p className="text-sm text-muted-foreground">
-                  {adding.kind === "claude"
-                    ? t("aiApps.add.claudeHint")
-                    : t("aiApps.add.otherHint")}
-                </p>
+                <p className="text-sm text-muted-foreground">{hintOf(adding.kind)}</p>
                 <TextInput
                   label={t("aiApps.add.name")}
                   hint={t("aiApps.add.nameHint")}
