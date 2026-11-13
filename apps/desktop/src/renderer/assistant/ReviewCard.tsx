@@ -8,7 +8,7 @@ type ReviewStep = {
   readonly entryId: string;
   readonly label: string;
   /** Where it changed the site; none for a site-wide change. */
-  readonly target?: { readonly pageId: string; readonly nodeId?: string } | undefined;
+  readonly target?: { readonly pageId: string; readonly nodeId?: string | undefined } | undefined;
 };
 
 /** Props of {@link ReviewCard}. */
