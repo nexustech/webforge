@@ -88,6 +88,7 @@ const OTHER_CHANNELS: Readonly<Record<string, string>> = {
   "mcp:set-enabled": "AI apps, which are the app's, whichever site is open",
   "mcp:add": "AI apps, which are the app's, whichever site is open",
   "mcp:install-claude": "an AI app's Claude Desktop extension, the app's, whichever site is open",
+  "mcp:install-vscode": "an AI app's VS Code install link, the app's, whichever site is open",
   "mcp:remove": "AI apps, which are the app's, whichever site is open",
   "mcp:seen-moved": "AI apps, which are the app's, whichever site is open",
   "posts:choose-files":

@@ -55,6 +55,14 @@ const installResultSchema = z.strictObject({
 /** See {@link mcpChannels}' `mcpInstallClaude`. */
 export type McpInstallResult = z.infer<typeof installResultSchema>;
 
+/** What *Install in VS Code* came to (5.13): its install link opened; or why not. */
+const vsCodeResultSchema = z.strictObject({
+  status: z.enum(["opened", "off", "unknown", "failed"]),
+});
+
+/** See {@link mcpChannels}' `mcpInstallVsCode`. */
+export type McpVsCodeResult = z.infer<typeof vsCodeResultSchema>;
+
 /** IPC channels of the `mcp` domain (`mcp:*`). Each one's arguments are checked. */
 export const mcpChannels = {
   /** AI apps as they are now: on or off, the address, the paired apps and who's connected. */
@@ -90,6 +98,15 @@ export const mcpChannels = {
     request: z.tuple([z.uuid()]),
     response: installResultSchema,
   },
+  /**
+   * Opens VS Code's link to install Webforge's server (5.13, AIA-13) for a paired app: main makes
+   * it from its own address, with an input VS Code asks the key with, never the key.
+   */
+  mcpInstallVsCode: {
+    channel: "mcp:install-vscode",
+    request: z.tuple([z.uuid()]),
+    response: vsCodeResultSchema,
+  },
   /** Removes a paired app, cutting it off at once. */
   mcpRemove: {
     channel: "mcp:remove",
@@ -106,5 +123,6 @@ export interface McpApi {
   add(name: string, kind: "claude" | "other"): Promise<McpAddResult>;
   seenMoved(): Promise<void>;
   installClaude(id: string): Promise<McpInstallResult>;
+  installVsCode(id: string): Promise<McpVsCodeResult>;
   remove(id: string): Promise<McpStatus>;
 }

@@ -1,5 +1,12 @@
+import { t } from "@webforge/i18n";
 import type { IpcMain } from "electron";
-import type { McpAddResult, McpInstallResult, McpStatus } from "../shared/ipc/mcp.js";
+import type {
+  McpAddResult,
+  McpInstallResult,
+  McpStatus,
+  McpVsCodeResult,
+} from "../shared/ipc/mcp.js";
+import { vsCodeInstallLink } from "../shared/mcp-setup.js";
 import type { ClaudeExtensions } from "./claude-extension.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
@@ -28,14 +35,16 @@ async function statusOf(service: McpService): Promise<McpStatus> {
 
 /**
  * Registers the `mcp` IPC calls (4.9): AI apps on or off, paired, listed and removed, through
- * `service`, and Claude Desktop's extension written through `extensions`. A key leaves main once,
- * in *Add AI app*'s answer, for the person to copy; nothing of it is logged.
+ * `service`; Claude Desktop's extension written through `extensions`; and VS Code's install link
+ * opened through `openExternal` (5.13). A key leaves main once, in *Add AI app*'s answer, for the
+ * person to copy; nothing of it is logged.
  */
 export function registerMcpHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   service: McpService,
   extensions: Pick<ClaudeExtensions, "install" | "remove">,
+  openExternal: (url: string) => Promise<void>,
 ): void {
   registerIpcHandler(ipc, "mcpStatus", isTrustedSender, () => statusOf(service));
   registerIpcHandler(ipc, "mcpSetEnabled", isTrustedSender, async (enabled) => {
@@ -90,6 +99,25 @@ export function registerMcpHandlers(
         return { status: outcome };
       } catch (error) {
         logFailure("mcp claude extension", error);
+        return { status: "failed" };
+      }
+    },
+  );
+  registerIpcHandler(
+    ipc,
+    "mcpInstallVsCode",
+    isTrustedSender,
+    async (id): Promise<McpVsCodeResult> => {
+      const { port } = await service.status();
+      if (port === null) return { status: "off" };
+      // Not listed: removed, or its key waited too long and it went.
+      if (!(await service.list()).some((app) => app.id === id)) return { status: "unknown" };
+      try {
+        await openExternal(vsCodeInstallLink(addressAt(port), id, t("aiApps.vscode.prompt")));
+        return { status: "opened" };
+      } catch (error) {
+        // Nothing handles `vscode:` links: VS Code isn't installed?
+        logFailure("mcp vscode link", error);
         return { status: "failed" };
       }
     },
