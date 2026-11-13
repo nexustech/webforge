@@ -163,6 +163,8 @@ You need [Claude Code](https://code.claude.com/docs/en/setup) installed.
 
 `WEBFORGE_KEY` lasts as long as that terminal: set it again in each new one. If you keep it in your shell's profile instead, the key is in that file as plain text.
 
+If Claude Code says a server named `webforge` already exists, from an earlier time you added it, remove that one first with `claude mcp remove --scope user webforge`, then run the command again.
+
 ### VS Code (GitHub Copilot)
 
 You need VS Code with GitHub Copilot, whose agent mode uses {appName}'s tools.
