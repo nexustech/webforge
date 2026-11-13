@@ -11,6 +11,7 @@ import { type AssistantService, registerAssistantHandlers } from "./assistant-ip
 const ASSISTANT_OFF: AssistantStatus = {
   enabled: false,
   consentVersion: null,
+  consentReach: null,
   provider: { kind: "openrouter", signedIn: false },
   reach: "openrouter",
   model: null,

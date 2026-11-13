@@ -49,6 +49,13 @@ const fileSchema = z.strictObject({
   version: z.literal(1),
   /** The app consent's wording the person agreed to; null before, or after *Turn off*. */
   consentVersion: z.int().positive().nullable(),
+  /** Where it was given for: the wording names who receives what (§4). */
+  consentReach: z
+    .strictObject({
+      reach: z.enum(["this-computer", "openrouter", "server"]),
+      host: z.string().min(1).max(300).optional(),
+    })
+    .nullable(),
   provider: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("openrouter") }),
     z.strictObject({
@@ -72,6 +79,31 @@ const fileSchema = z.strictObject({
 type AssistantFile = z.infer<typeof fileSchema>;
 
 type SignInResult = Awaited<ReturnType<AssistantApi["signIn"]>>;
+
+type ConsentReach = NonNullable<AssistantFile["consentReach"]>;
+
+/** Where requests go now: this computer, OpenRouter, or a named server by its host. */
+const reachOf = (file: AssistantFile): ConsentReach => {
+  if (file.provider.kind === "openrouter") return { reach: "openrouter" };
+  if (isLoopback(file.provider.baseUrl)) return { reach: "this-computer" };
+  let host = file.provider.baseUrl;
+  try {
+    host = new URL(file.provider.baseUrl).host;
+  } catch {
+    // An address that won't parse is its own host, so no other matches it.
+  }
+  return { reach: "server", host };
+};
+
+/**
+ * Whether consent given for `given` covers requests going to `now` (§4): the same reach, and for
+ * a named server the same host. Nothing leaves this computer for a local model, so any consent
+ * covers that; a consent for a local model covers nothing that leaves it.
+ */
+const covers = (given: ConsentReach | null, now: ConsentReach) =>
+  given !== null &&
+  (now.reach === "this-computer" ||
+    (given.reach === now.reach && (now.reach !== "server" || given.host === now.host)));
 
 /** A calendar month's key in this computer's time zone: `2026-11`. */
 const monthKey = (date: Date) =>
@@ -103,6 +135,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   const empty = (): AssistantFile => ({
     version: 1,
     consentVersion: null,
+    consentReach: null,
     provider: { kind: "openrouter" },
     model: null,
     limitUsd: MONTHLY_LIMIT_DEFAULT_USD,
@@ -148,15 +181,12 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         : file.provider.kind === "server"
           ? { kind: "server", baseUrl: file.provider.baseUrl, hasKey: key !== null }
           : { kind: file.provider.kind, baseUrl: file.provider.baseUrl };
-    const reach =
-      file.provider.kind === "openrouter"
-        ? "openrouter"
-        : isLoopback(file.provider.baseUrl)
-          ? "this-computer"
-          : "server";
+    const now = reachOf(file);
+    const reach = now.reach;
     return {
-      enabled: file.consentVersion === ASSISTANT_CONSENT_VERSION,
+      enabled: file.consentVersion === ASSISTANT_CONSENT_VERSION && covers(file.consentReach, now),
       consentVersion: file.consentVersion,
+      consentReach: file.consentReach,
       provider,
       reach,
       model: file.model,
@@ -206,13 +236,14 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     status,
     setEnabled: async (enabled, version) => {
       if (enabled) {
-        await write((file) => ({ ...file, consentVersion: version }));
+        // The consent covers where requests go now: the wording the person saw named it.
+        await write((file) => ({ ...file, consentVersion: version, consentReach: reachOf(file) }));
       } else {
         // Turn off: the keys go from this computer; the sites' answers name no secret, and stay.
         options.signIn.cancel();
         await options.credentials.delete(OPENROUTER_KEY);
         await options.credentials.delete(SERVER_KEY);
-        await write((file) => ({ ...file, consentVersion: null }));
+        await write((file) => ({ ...file, consentVersion: null, consentReach: null }));
       }
       return changed();
     },

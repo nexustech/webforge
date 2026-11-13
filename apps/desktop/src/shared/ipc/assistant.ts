@@ -74,6 +74,13 @@ const statusSchema = z.strictObject({
   enabled: z.boolean(),
   /** The app consent's wording the person agreed to; null before they have. */
   consentVersion: z.int().positive().nullable(),
+  /**
+   * Where the consent was given for (ADR 0026 §4): its wording depends on it. A change of provider
+   * that this doesn't cover leaves `enabled` false until the person agrees again.
+   */
+  consentReach: z
+    .strictObject({ reach: reachSchema, host: z.string().min(1).max(300).optional() })
+    .nullable(),
   provider: providerSchema,
   reach: reachSchema,
   model: modelSchema.nullable(),

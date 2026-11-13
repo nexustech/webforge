@@ -129,6 +129,7 @@ Main runs it:
 
 - **The yes is keyed by site.** A site sent to someone else doesn't carry the yes, and a site someone sends you doesn't arrive with it.
 - **_Stop using on this site_** forgets that site's yes. **_Turn off_** deletes the key, and keeps the yeses, which name no secret.
+- **The app's yes is for the reach it was given for** (#992's review): this computer, OpenRouter, or a named server by its host, as the wording names who receives what. A consent for a local model said only that nothing leaves the computer, so a switch to OpenRouter or a server, or to another server's host, needs the person's yes again: `status.enabled` is false, with `consentReach` saying what the consent covered, and the panel shows the consent again. Any consent covers a model on this computer.
 - **Main refuses `assistant:send` without both yeses** (`consent-needed`), so a panel bug can't send a site's content unasked.
 
 ### 5. Cost and the monthly limit
@@ -188,6 +189,8 @@ type AssistantModel = {
 type AssistantStatus = {
   enabled: boolean; // the app's consent given and not turned off
   consentVersion: number | null; // the app consent's wording the person agreed to
+  /** Where that consent was given for (§4); a provider it doesn't cover leaves `enabled` false. */
+  consentReach: { reach: Reach; host?: string } | null;
   provider: AssistantProvider;
   reach: Reach;
   model: AssistantModel | null;

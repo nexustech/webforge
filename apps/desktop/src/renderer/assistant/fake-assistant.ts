@@ -62,6 +62,7 @@ export const FAKE_MODEL: AssistantModel = {
 export const FAKE_STATUS: AssistantStatus = {
   enabled: true,
   consentVersion: ASSISTANT_CONSENT_VERSION,
+  consentReach: { reach: "openrouter" },
   provider: { kind: "openrouter", signedIn: true },
   reach: "openrouter",
   model: FAKE_MODEL,
@@ -179,7 +180,7 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
     setEnabled: async (enabled, version) => {
       return setStatus(
         enabled
-          ? { ...status, enabled, consentVersion: version }
+          ? { ...status, enabled, consentVersion: version, consentReach: { reach: status.reach } }
           : { ...status, enabled, provider: { kind: "openrouter", signedIn: false } },
       );
     },

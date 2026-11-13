@@ -235,6 +235,44 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     expect(keys.size).toBe(0);
   });
 
+  it("asks for consent again when requests would go somewhere it wasn't given for (#992)", async () => {
+    const { service } = setUp({ project: PROJECT });
+    await service.update({ provider: { kind: "ollama" } });
+    expect(await service.setEnabled(true, ASSISTANT_CONSENT_VERSION)).toMatchObject({
+      enabled: true,
+      consentReach: { reach: "this-computer" },
+    });
+
+    // A consent that said nothing leaves the computer isn't one for OpenRouter.
+    await service.update({ provider: { kind: "openrouter" } });
+    await service.signIn("browser");
+    await service.setSiteConsent(SESSION, true);
+    expect(await service.status()).toMatchObject({
+      enabled: false,
+      consentVersion: ASSISTANT_CONSENT_VERSION,
+      consentReach: { reach: "this-computer" },
+      reach: "openrouter",
+    });
+    expect(await service.send(SESSION, "Hello", {})).toEqual({ status: "consent-needed" });
+
+    // Agreed for OpenRouter: it covers OpenRouter, and a model on this computer, but not a server.
+    await service.setEnabled(true, ASSISTANT_CONSENT_VERSION);
+    expect((await service.status()).consentReach).toEqual({ reach: "openrouter" });
+    await service.update({ provider: { kind: "lmstudio" } });
+    expect((await service.status()).enabled).toBe(true);
+    await service.update({ provider: { kind: "server", baseUrl: "https://ai.example.com/v1" } });
+    expect((await service.status()).enabled).toBe(false);
+
+    // A server's consent is for its host.
+    await service.setEnabled(true, ASSISTANT_CONSENT_VERSION);
+    expect((await service.status()).consentReach).toEqual({
+      reach: "server",
+      host: "ai.example.com",
+    });
+    await service.update({ provider: { kind: "server", baseUrl: "https://other.example.com/v1" } });
+    expect((await service.status()).enabled).toBe(false);
+  });
+
   it("never keeps a key for a server over plain http that isn't on this computer (#976)", async () => {
     const { service, keys } = setUp();
     await service.update({ provider: { kind: "server", baseUrl: "http://ai.example.com/v1" } });
