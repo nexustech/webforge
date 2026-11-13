@@ -545,6 +545,37 @@
       ],
       "unset": "secondary"
     },
+    "lookGradientOpacity": {
+      "kind": "select",
+      "label": "Gradient opacity",
+      "group": "style",
+      "optionGroup": {
+        "id": "styleBackground",
+        "label": "Background"
+      },
+      "responsive": true,
+      "inDialog": true,
+      "options": [
+        {
+          "label": "100%",
+          "value": "100"
+        },
+        {
+          "label": "75%",
+          "value": "75"
+        },
+        {
+          "label": "50%",
+          "value": "50"
+        },
+        {
+          "label": "25%",
+          "value": "25"
+        }
+      ],
+      "help": "How much of the picture shows through the gradient.",
+      "unset": "50"
+    },
     "lookBorderTop": {
       "kind": "select",
       "label": "Top border",

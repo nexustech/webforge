@@ -103,9 +103,13 @@ for (const build of BUILDS) {
           const errors: string[] = [];
           page.on("pageerror", (error) => errors.push(error.message));
 
-          // Whole-window stories (the UI1 parity story) get a window-sized page.
+          // Whole-window stories (the UI1 parity story) get a window-sized page, and those that
+          // show a dialog filling a large window (CT-11) a full-HD one.
           if (story.tags.includes("full-window")) {
             await page.setViewportSize({ width: 1280, height: 800 });
+          }
+          if (story.tags.includes("wide-window")) {
+            await page.setViewportSize({ width: 1920, height: 1080 });
           }
           if (device !== undefined) {
             await page.setViewportSize({ width: device.width, height: device.height });

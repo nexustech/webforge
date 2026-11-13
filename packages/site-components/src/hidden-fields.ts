@@ -4,6 +4,7 @@ import {
   type Responsive,
   resolveResponsive,
 } from "@webforge/model";
+import { drawsPictureBehind, type PictureBehind } from "./picture-behind.js";
 
 /**
  * Whether `on` holds for `value` on any device: the value itself, or one of its per-device values
@@ -20,11 +21,14 @@ export function onAnyDevice(value: unknown, on: (one: unknown) => boolean): bool
 type Hiding = {
   readonly variantHides?: Readonly<Record<string, readonly string[]>> | undefined;
   readonly fields?: Readonly<Record<string, unknown>> | undefined;
+  readonly pictureBehind?: readonly PictureBehind[] | undefined;
+  readonly defaults?: Readonly<Record<string, unknown>> | undefined;
 };
 
 /**
  * The fields {@link hiddenFieldsOf} hides by other values, whatever the layout: the Appearance
- * group's Border colour (2.22b), a section's overlay (2.26), and a gradient's colours (CT-10).
+ * group's Border colour (2.22b), a section's overlay (2.26), a gradient's colours (CT-10) and its
+ * opacity over a picture (CT-14).
  */
 const HIDDEN_BY_VALUES = [
   "lookBorderColor",
@@ -32,6 +36,7 @@ const HIDDEN_BY_VALUES = [
   "overlayColor",
   "lookGradientFrom",
   "lookGradientTo",
+  "lookGradientOpacity",
 ] as const;
 
 /**
@@ -72,15 +77,20 @@ export function hiddenFieldsOf(
   }
   // A gradient's colours, only while it has a direction on some device (CT-10): *None* keeps them
   // for when one is chosen again.
-  if (
-    Object.hasOwn(fields, "lookGradientFrom") &&
-    !onAnyDevice(
-      values.lookGradientDirection,
-      (one) => typeof one === "string" && one !== "default",
-    )
-  ) {
+  const gradient = onAnyDevice(
+    values.lookGradientDirection,
+    (one) => typeof one === "string" && one !== "default",
+  );
+  if (Object.hasOwn(fields, "lookGradientFrom") && !gradient) {
     hidden.add("lookGradientFrom");
     hidden.add("lookGradientTo");
+  }
+  // Its opacity, only over a picture behind the content, where it sets how much shows (CT-14).
+  if (
+    Object.hasOwn(fields, "lookGradientOpacity") &&
+    !(gradient && drawsPictureBehind(component, values))
+  ) {
+    hidden.add("lookGradientOpacity");
   }
   // A section's overlay, only once it has a background image to lie over (2.26).
   if (

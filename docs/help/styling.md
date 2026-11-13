@@ -50,19 +50,26 @@ Sections of cards (Features, Testimonials, Team and Pricing) have **Cards when h
 
 ## Style this
 
-**Style This…** opens the selected item's look in a larger window. Open it from:
+**Style This…** opens the selected item's look in a window that fills {appName}'s window. Open it from:
 
 - the button at the top of the Style tab;
 - **Style** on the item's bar;
 - the right-click menu or the Edit menu.
 
-It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title. Previews show Desktop and Mobile as you go.
+It offers more than the Style tab: gradients, a border on each side, each corner's rounding, inner shadows, a background when hovered, and the look of a section's title.
+
+- **At the top**, previews show the item on Desktop and Mobile as you go. They stay in view while you scroll the settings.
+- **To give the previews more room**, drag the line under them, or select it and use the arrow keys.
+- **Below**, the settings fill the window's width, in as many columns as fit.
+- **At the bottom**, **Where it applies**, **Cancel** and **Apply** are always in view.
 
 ### Gradients
 
 A gradient blends one colour into another across the background. To add one, choose a direction in **Gradient** under **Background**. It starts as **Brand** to **Accent**; change either colour in **Gradient starts with** and **Gradient ends with**, which show once the gradient has a direction. If you chose a colour before, it's kept. Choosing **None** turns the gradient off and keeps its colours, so choosing a direction again brings the same gradient back.
 
 Like the other choices here, a gradient can differ by device: choosing a direction while viewing Mobile adds it on Mobile only.
+
+On a section with a background picture, or a Hero with **Image behind the text**, the gradient is drawn over the picture. **Gradient opacity** (100%, 75%, 50% or 25%) sets how much of the picture shows through; it starts at 50%.
 
 **Where it applies** sets which items get the look:
 

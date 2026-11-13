@@ -23,6 +23,8 @@ const ITEMS = [
 
 /** The gradient's fields, which draw the background as a gradient once set (CT-4). */
 const GRADIENT = ["lookGradientDirection", "lookGradientFrom", "lookGradientTo"];
+/** Shown only over a picture behind the content, with a gradient (CT-14). */
+const OVER_PICTURE = ["lookGradientOpacity"];
 
 /** `type`'s definition. */
 function defOf(type: string): ComponentDef {
@@ -85,14 +87,18 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
   describe.each(ITEMS)("on $place, $type", ({ type }) => {
     const { label } = defOf(type);
     const fields = lookFieldsOf(defOf(type));
-    /** Every field but the gradient's, which turn the background into a gradient. */
-    const plain = fields.filter((name) => !GRADIENT.includes(name));
+    /**
+     * Every field but the gradient's, which turn the background into a gradient, and its opacity,
+     * which shows only over a picture.
+     */
+    const plain = fields.filter((name) => !GRADIENT.includes(name) && !OVER_PICTURE.includes(name));
 
     it("shows every field a look holds", () => {
       expect(fields.length).toBeGreaterThan(20);
-      // A border's colour shows once it has a border: everything set, everything shows.
+      // A border's colour shows once it has a border: everything set, everything shows, but the
+      // gradient's opacity without a picture behind.
       const shown = sources(type, { own: values(type, fields) });
-      expect(fields.filter((name) => !shown.has(name))).toEqual([]);
+      expect(fields.filter((name) => !shown.has(name))).toEqual(OVER_PICTURE);
     });
 
     it("says each is set here when the item sets it", () => {
@@ -112,6 +118,16 @@ describe("every Appearance control says where its value comes from (3.12, #622)"
       const look = sources(type, { look: values(type, GRADIENT) });
       expect(GRADIENT.filter((name) => look.get(name) !== `Theme's look for ${label}`)).toEqual([]);
     });
+
+    if (type === "Hero") {
+      it("says the gradient's opacity is set here, over its picture (CT-14)", () => {
+        const picture = { variant: "background", image: { mediaId: "shop" } };
+        const shown = sources(type, {
+          own: { ...picture, ...values(type, GRADIENT), lookGradientOpacity: "75" },
+        });
+        expect(shown.get("lookGradientOpacity")).toBe("Set here");
+      });
+    }
 
     it("names the theme's token where one decides it, and says nothing more where none does", () => {
       const shown = sources(type, {});
