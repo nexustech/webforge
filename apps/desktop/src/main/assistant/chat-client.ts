@@ -121,6 +121,27 @@ const chunkSchema = z.looseObject({
   error: z.looseObject({ code: z.union([z.number(), z.string()]).nullish() }).nullish(),
 });
 
+/** Whether `url` is on this computer: `localhost`, `127.0.0.1` or `[::1]` (ADR 0026 §2). */
+export function isLoopback(url: string): boolean {
+  try {
+    return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(url).hostname);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Whether a key may be sent to `baseUrl`: over `https:`, or to a server on this computer. A key
+ * over plain `http:` to anywhere else could be read on the way, with everything sent beside it.
+ */
+export function keySafeAt(baseUrl: string): boolean {
+  try {
+    return new URL(baseUrl).protocol === "https:" || isLoopback(baseUrl);
+  } catch {
+    return false;
+  }
+}
+
 /** What an HTTP status means for the person (ADR 0026 §7's codes). */
 function errorForStatus(status: number): AssistantErrorCode {
   if (status === 401 || status === 403) return "unauthorized";
@@ -188,6 +209,10 @@ export async function streamChat(
 ): Promise<ChatResult> {
   let text = "";
   const aborted = () => request.signal?.aborted === true;
+  // Checked here, so no caller can send a key where it could be read on the way (#976).
+  if (endpoint.key !== undefined && !keySafeAt(endpoint.baseUrl)) {
+    return { status: "failed", error: "insecure-server" };
+  }
   let response: Response;
   try {
     response = await fetchFn(`${endpoint.baseUrl}/chat/completions`, {

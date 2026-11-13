@@ -157,6 +157,11 @@ const ASSISTANT_ERRORS = [
   "model-unavailable",
   /** Any other refusal or malformed answer from the provider. */
   "provider-error",
+  /**
+   * A key would go over plain `http:` to a server that isn't on this computer, where it and the
+   * site's text could be read on the way: nothing is sent (#976).
+   */
+  "insecure-server",
   "failed",
 ] as const;
 

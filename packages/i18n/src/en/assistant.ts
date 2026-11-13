@@ -7,4 +7,7 @@ export const assistant = {
   "assistant.month": "This month: {spent} of {limit}",
   "assistant.month.warning": "This month: {spent} of {limit}, over 80% of your limit",
   "assistant.month.reached": "This month's limit of {limit} is reached",
+  // A key that would go over plain http:// to another computer (ADR 0026 §7, #976).
+  "assistant.error.insecure-server":
+    "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Preferences › Assistant, or a server on this computer.",
 } as const;
