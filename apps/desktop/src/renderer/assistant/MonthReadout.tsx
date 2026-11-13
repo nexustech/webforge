@@ -25,7 +25,7 @@ export function MonthReadout({ month }: { readonly month: MonthView }) {
         className={cn(
           "m-0 text-xs",
           month.reached
-            ? "text-destructive"
+            ? "text-destructive-text"
             : month.warned
               ? "text-warning"
               : "text-muted-foreground",

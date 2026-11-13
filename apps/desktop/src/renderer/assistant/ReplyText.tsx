@@ -61,7 +61,11 @@ function inline(tokens: readonly Token[] | undefined, open: (href: string) => vo
   return (tokens ?? []).map((token, index) => {
     switch (token.type) {
       case "strong":
-        return <strong key={index}>{inline(token.tokens, open)}</strong>;
+        return (
+          <strong key={index} className="font-semibold">
+            {inline(token.tokens, open)}
+          </strong>
+        );
       case "em":
         return <em key={index}>{inline(token.tokens, open)}</em>;
       case "del":
