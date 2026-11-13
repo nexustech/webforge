@@ -807,6 +807,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
             : undefined,
         emit: (event) =>
           lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
+        openExternal: (url) => electron.shell.openExternal(url),
       }),
     );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).

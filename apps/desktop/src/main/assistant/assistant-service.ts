@@ -1,11 +1,13 @@
 import { join } from "node:path";
 import { z } from "zod";
+import { linkInTurn } from "../../shared/assistant-links.js";
 import {
   ASSISTANT_CONSENT_VERSION,
   type AssistantApi,
   type AssistantEvent,
   type AssistantModel,
   type AssistantStatus,
+  type ConversationTurn,
   MONTHLY_LIMIT_DEFAULT_USD,
 } from "../../shared/ipc/assistant.js";
 import type { AssistantService } from "../assistant-ipc.js";
@@ -119,12 +121,16 @@ export type AssistantServiceOptions = {
   readonly projectOf: (session: string) => string | undefined;
   /** Sends an event to the editor window. */
   readonly emit: (event: AssistantEvent) => void;
+  /** Opens a web address in the person's browser (`shell.openExternal`). */
+  readonly openExternal: (url: string) => Promise<void>;
   readonly now?: () => Date;
   readonly files?: JsonStoreFiles;
 };
 
 /** The service and what 6.9b's loop uses beside it: the endpoint's key, and adding a reply's cost. */
 export type Assistant = AssistantService & {
+  /** Each site's conversation, by its project id, in memory only: 6.9b's loop adds the turns. */
+  readonly conversations: Map<string, ConversationTurn[]>;
   /** Adds a reply's cost to the month's (§5), saying so at 80% and at the limit. */
   addCost(usd: number): Promise<AssistantStatus["month"]>;
 };
@@ -162,6 +168,8 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       return change(current);
     });
   };
+  /** Each site's conversation, by project id: in memory only, never written anywhere (§6). */
+  const conversations = new Map<string, ConversationTurn[]>();
   /** The models last listed, for `update({ modelId })` to keep the chosen one's details. */
   let listed: readonly AssistantModel[] = [];
   /** The sign-in under way, whose answer keeps the key: a pasted code's ends it. */
@@ -233,6 +241,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   };
 
   const service: Assistant = {
+    conversations,
     status,
     setEnabled: async (enabled, version) => {
       if (enabled) {
@@ -384,8 +393,29 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       return { status: "failed" };
     },
     stop: async () => undefined,
-    newConversation: async () => undefined,
-    conversation: async () => [],
+    newConversation: async (session) => {
+      const project = options.projectOf(session);
+      if (project !== undefined) conversations.delete(project);
+    },
+    conversation: async (session) => {
+      const project = options.projectOf(session);
+      return project === undefined ? [] : structuredClone(conversations.get(project) ?? []);
+    },
+    openLink: async (session, replyId, href) => {
+      const project = options.projectOf(session);
+      const turn =
+        project === undefined
+          ? undefined
+          : conversations.get(project)?.find((each) => each.replyId === replyId);
+      // Only a web address that reply holds, in main's own copy of it.
+      if (turn === undefined || !linkInTurn(turn, href)) return { status: "refused" };
+      try {
+        await options.openExternal(new URL(href).href);
+        return { status: "opened" };
+      } catch {
+        return { status: "failed" };
+      }
+    },
     addCost: async (usd) => {
       let crossed: "warning" | "reached" | undefined;
       await write((file) => {

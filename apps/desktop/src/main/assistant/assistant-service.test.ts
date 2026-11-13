@@ -56,6 +56,7 @@ function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "
   dirs.push(dir);
   const keys = new Map<string, string>();
   const events: AssistantEvent[] = [];
+  const opened: string[] = [];
   const fetchFn = vi.fn(async (url: string | URL | Request, init?: RequestInit) =>
     openRouter(String(url), init),
   ) as unknown as typeof fetch;
@@ -83,12 +84,16 @@ function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "
     projectOf: (session) =>
       session === SESSION && options.project !== undefined ? options.project : undefined,
     emit: (event) => events.push(event),
+    openExternal: async (url) => {
+      opened.push(url);
+    },
     now: () => month,
   });
   return {
     service,
     keys,
     events,
+    opened,
     dir,
     nextMonth: () => {
       month = new Date(2026, 11, 2);
@@ -271,6 +276,58 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     });
     await service.update({ provider: { kind: "server", baseUrl: "https://other.example.com/v1" } });
     expect((await service.status()).enabled).toBe(false);
+  });
+
+  it("opens only a web address the reply holds, from main's own conversation", async () => {
+    const { service, opened } = setUp({ project: PROJECT });
+    const REPLY = "2d3e4f5a-6b7c-4d8e-9fa0-b1c2d3e4f5a6";
+    service.conversations.set(PROJECT, [
+      {
+        replyId: REPLY,
+        message: "Where do I check my listing?",
+        reply:
+          "See [your listing](https://business.example.com/bakery), or https://maps.example.com.",
+        state: "done",
+        costUsd: 0.01,
+        steps: [],
+        links: [{ host: "shop.example.com", href: "https://shop.example.com/pay" }],
+      },
+    ]);
+    const open = (href: string, reply = REPLY, session = SESSION) =>
+      service.openLink(session, reply, href);
+
+    expect(await open("https://business.example.com/bakery")).toEqual({ status: "opened" });
+    // A bare address in the text, without the full stop that ends its sentence.
+    expect(await open("https://maps.example.com/")).toEqual({ status: "opened" });
+    expect(await open("https://shop.example.com/pay")).toEqual({ status: "opened" });
+    expect(opened).toEqual([
+      "https://business.example.com/bakery",
+      "https://maps.example.com/",
+      "https://shop.example.com/pay",
+    ]);
+
+    // Not in the reply; not on the web; an unknown reply; a session that isn't the open site's.
+    expect(await open("https://evil.example/steal")).toEqual({ status: "refused" });
+    expect(await open("javascript:alert(1)")).toEqual({ status: "refused" });
+    expect(await open("file:///C:/Windows/System32/calc.exe")).toEqual({ status: "refused" });
+    expect(
+      await open("https://business.example.com/bakery", "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a"),
+    ).toEqual({
+      status: "refused",
+    });
+    expect(
+      await open(
+        "https://business.example.com/bakery",
+        REPLY,
+        "9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a",
+      ),
+    ).toEqual({ status: "refused" });
+    expect(opened).toHaveLength(3);
+
+    // The conversation goes with New conversation, and so do its links.
+    await service.newConversation(SESSION);
+    expect(await service.conversation(SESSION)).toEqual([]);
+    expect(await open("https://business.example.com/bakery")).toEqual({ status: "refused" });
   });
 
   it("never keeps a key for a server over plain http that isn't on this computer (#976)", async () => {

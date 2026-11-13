@@ -1,3 +1,4 @@
+import { linkInTurn } from "../../shared/assistant-links.js";
 import {
   ASSISTANT_CONSENT_VERSION,
   type AssistantApi,
@@ -236,6 +237,10 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       conversations.delete(session);
     },
     conversation: async (session) => structuredClone(conversations.get(session) ?? []),
+    openLink: async (session, replyId, href) => {
+      const turn = turnOf(session, replyId);
+      return { status: turn !== undefined && linkInTurn(turn, href) ? "opened" : "refused" };
+    },
     onEvent: (listener) => {
       listeners.add(listener);
       return () => {

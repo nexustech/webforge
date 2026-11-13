@@ -49,4 +49,7 @@ export function registerAssistantHandlers(
   registerIpcHandler(ipc, "assistantConversation", isTrustedSender, (session) =>
     service.conversation(session),
   );
+  registerIpcHandler(ipc, "assistantOpenLink", isTrustedSender, (session, replyId, href) =>
+    service.openLink(session, replyId, href),
+  );
 }

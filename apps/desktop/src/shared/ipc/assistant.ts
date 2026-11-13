@@ -419,6 +419,15 @@ export const assistantChannels = {
     request: z.tuple([sessionIdSchema]),
     response: z.null(),
   },
+  /**
+   * Opens a link from a reply in the person's browser, once they've clicked it. Main opens only a
+   * web address that reply holds, in its own copy of the conversation.
+   */
+  assistantOpenLink: {
+    channel: "assistant:open-link",
+    request: z.tuple([sessionIdSchema, replyIdSchema, z.string().min(1).max(2000)]),
+    response: z.strictObject({ status: z.enum(["opened", "refused", "failed"]) }),
+  },
   /** The site's conversation so far, for a panel opened again. */
   assistantConversation: {
     channel: "assistant:conversation",
@@ -455,6 +464,12 @@ export interface AssistantApi {
   stop(replyId: string): Promise<void>;
   newConversation(session: string): Promise<void>;
   conversation(session: string): Promise<ConversationTurn[]>;
+  /** Opens `href` from that reply in the browser: only a web address the reply holds. */
+  openLink(
+    session: string,
+    replyId: string,
+    href: string,
+  ): Promise<{ status: "opened" | "refused" | "failed" }>;
   /** Calls `listener` with each event main pushes. Returns a stop function. */
   onEvent(listener: (event: AssistantEvent) => void): () => void;
 }

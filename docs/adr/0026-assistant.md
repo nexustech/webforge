@@ -274,6 +274,17 @@ interface AssistantApi {
   newConversation(session: SessionId): Promise<void>;
   /** The site's conversation so far, for a panel opened again: main keeps it, in memory (§6). */
   conversation(session: SessionId): Promise<ConversationTurn[]>;
+  /**
+   * Opens a link from a reply in the person's browser, once they've clicked it. Main opens only an
+   * `http:` or `https:` address that reply holds (in its `links`, or its text) in main's own copy
+   * of the conversation, so a renderer can't use the call to open anything else. Nothing is logged
+   * but the outcome.
+   */
+  openLink(
+    session: SessionId,
+    replyId: string,
+    href: string,
+  ): Promise<{ status: "opened" | "refused" | "failed" }>;
 
   /** Calls `listener` with each event below. Returns a stop function. */
   onEvent(listener: (event: AssistantEvent) => void): () => void;
