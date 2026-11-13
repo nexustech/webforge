@@ -33,8 +33,13 @@ const base: LooseSpec = {
   render: () => null,
 };
 
-/** Fields every item hides until another value uses them: a border's colour, a gradient's. */
-const HIDDEN_UNTIL_USED = new Set(["lookBorderColor", "lookGradientFrom", "lookGradientTo"]);
+/** Fields every item hides until other values use them: a border's colour, a gradient's. */
+const HIDDEN_UNTIL_USED = new Set([
+  "lookBorderColor",
+  "lookGradientFrom",
+  "lookGradientTo",
+  "lookGradientOpacity",
+]);
 
 /** The fields a layout hides: {@link fieldsHiddenBy}, without {@link HIDDEN_UNTIL_USED}. */
 const layoutHides = (...args: Parameters<typeof fieldsHiddenBy>) =>

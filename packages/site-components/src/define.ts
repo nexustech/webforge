@@ -142,12 +142,13 @@ function desktopOf(value: unknown): unknown {
 
 /**
  * A function that gives a field's stored value as `render` gets it (`FieldValue`). The document
- * comes from a file, so it can hold anything: a choice not offered falls back to the default, else
- * the first choice; an invalid image or link is left out; text is something to render.
+ * comes from a file, so it can hold anything: a choice not offered falls back to the default (or
+ * the field's `unset`), else the first choice; an invalid image or link is left out; text is something to render.
  */
 function valueReader(field: FieldDef, initial: unknown): (value: unknown) => unknown {
   const choices = choicesOf(field)?.map((choice) => choice.value);
-  const fallback = desktopOf(initial);
+  // A field without a default reads as it draws while unset (`unset`): Gradient opacity's 50%.
+  const fallback = desktopOf(initial ?? field.unset);
   const one = (value: unknown): unknown => {
     switch (field.kind) {
       case "text":

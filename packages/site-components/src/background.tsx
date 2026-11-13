@@ -7,7 +7,7 @@ import {
   type Responsive,
   resolveResponsive,
 } from "@webforge/model";
-import { APPEARANCE_GROUP } from "./appearance.js";
+import { APPEARANCE_GROUP, gradientLayerClasses } from "./appearance.js";
 import { Picture } from "./picture.js";
 import type { FieldDef, RenderContext } from "./schema.js";
 
@@ -149,6 +149,7 @@ export function SectionBackground({
   if (image === null) return null;
   const { opacity, color } = overlayOf(values);
   const overlay = OVERLAY_CLASSES[color][opacity];
+  const gradient = gradientLayerClasses(values);
   return (
     <>
       {/* Decorative, whatever alt text the image has: what the section says is in its content. */}
@@ -159,6 +160,10 @@ export function SectionBackground({
         eager={eager}
         className="absolute inset-0 -z-10 h-full w-full object-cover"
       />
+      {/* The gradient over the picture, its colours' opacity showing it through (CT-12). */}
+      {gradient === "" ? null : (
+        <div aria-hidden="true" className={`absolute inset-0 -z-10 ${gradient}`} />
+      )}
       {overlay === "" ? null : (
         <div aria-hidden="true" className={`absolute inset-0 -z-10 ${overlay}`} />
       )}
