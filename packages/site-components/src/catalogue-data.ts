@@ -22,6 +22,7 @@ export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
 export { drawsPictureBehind } from "./picture-behind.js";
 // Rich text from outside the editor is cleaned as the editor's is (4.8).
 export { sanitizeStoredRichText } from "./rich-text-html.js";
+export { TEXT_COLOUR_FIELDS } from "./text-colour-fields.js";
 
 const optionSchema = z.strictObject({ label: z.string(), value: z.string() });
 

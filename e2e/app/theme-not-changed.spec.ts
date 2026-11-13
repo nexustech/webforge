@@ -53,26 +53,25 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
 
   await chooseFromMenu(app, page, "View", "Theme Studio…");
   await studio().getByRole("tab", { name: "Components" }).click();
+  // The kinds are a list in the bar at the top (CT-11).
   await studio()
-    .getByRole("navigation", { name: "Sections and elements" })
-    .getByRole("button", { name: "Features", exact: true })
-    .click();
+    .getByRole("combobox", { name: "Sections and elements" })
+    .selectOption({ value: "Features" });
   // The section's own Background, not its cards'.
   const field = studio().locator('[data-field="lookBackground"]');
   const accent = field.getByRole("radio", { name: "Accent", exact: true });
-  // It stays where it first shows while the look's preview draws, so one click lands (#626).
+  // It stays where it first shows while the look's preview draws, so one click lands (#626):
+  // the preview is in the strip above the controls (CT-11).
   await expect(accent).toBeVisible();
   const shownAt = await accent.boundingBox();
-  // Drawn: the preview's figure holds the drawing's host.
-  await page.waitForFunction(() =>
-    [...document.querySelectorAll('[role="dialog"] figure div')].some((each) => each.shadowRoot),
-  );
+  // Drawn: the strip's figures hold the drawings' frames.
+  await expect(studio().locator("figure iframe")).toHaveCount(2);
   expect(await accent.boundingBox()).toEqual(shownAt);
   // One click: a draft (4.10). Applied, a built-in theme asks for a name for the person's own
   // version first (2.23).
   await accent.click();
-  const region = studio().getByRole("region", { name: "Features" });
-  const apply = region.getByRole("button", { name: "Apply Changes" });
+  // Apply Changes and Discard are in the bar at the bottom, always in view (CT-11).
+  const apply = studio().getByRole("button", { name: "Apply Changes" });
   await apply.click();
   const naming = page.getByRole("dialog", { name: "Save your own version of 'Light'?" });
   await expect(naming).toBeVisible();
@@ -92,7 +91,7 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await expect(studio()).toBeVisible();
   // The changes are still a draft to apply or discard; Discard goes back.
   await expect(accent).toHaveAttribute("aria-checked", "true");
-  await region.getByRole("button", { name: "Discard" }).click();
+  await studio().getByRole("button", { name: "Discard" }).click();
   await expect(accent).toHaveAttribute("aria-checked", "false");
 
   // Cancelled at the name it asks for first, too. The first note goes on its own after a few
@@ -105,7 +104,7 @@ test("a look cancelled at its question with Escape says 'Not changed' and goes b
   await naming.getByRole("button", { name: "Cancel" }).click();
   await expect(naming).toBeHidden();
   await expect(notChanged).toHaveCount(1);
-  await region.getByRole("button", { name: "Discard" }).click();
+  await studio().getByRole("button", { name: "Discard" }).click();
   await expect(corners).toHaveValue(theirs);
   await ownsEscape(studio());
   await page.keyboard.press("Escape");

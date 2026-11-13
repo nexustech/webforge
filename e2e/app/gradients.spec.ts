@@ -84,14 +84,15 @@ test("a direction chosen for every Hero in Theme Studio draws Brand to Accent on
   await chooseFromMenu(app, page, "View", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Components" }).click();
+  // The kinds are a list in the bar at the top (CT-11).
   await studio
-    .getByRole("navigation", { name: "Sections and elements" })
-    .getByRole("button", { name: "Hero", exact: true })
-    .click();
+    .getByRole("combobox", { name: "Sections and elements" })
+    .selectOption({ value: "Hero" });
   const look = studio.getByRole("region", { name: "Hero" });
   await look.getByRole("combobox", { name: "Gradient", exact: true }).selectOption("toRight");
   await expect(look.getByText("Gradient ends with")).toBeVisible();
-  await look.getByRole("button", { name: "Apply Changes" }).click();
+  // In the bar at the bottom, always in view (CT-11).
+  await studio.getByRole("button", { name: "Apply Changes" }).click();
   // A built-in theme is changed as the person's own copy of it (2.23), and every Hero asks (D7).
   await page
     .getByRole("dialog", { name: /^Save your own version of/ })

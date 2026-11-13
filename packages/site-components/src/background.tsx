@@ -160,7 +160,7 @@ export function SectionBackground({
         eager={eager}
         className="absolute inset-0 -z-10 h-full w-full object-cover"
       />
-      {/* The gradient over the picture, its colours' opacity showing it through (CT-12). */}
+      {/* The gradient over the picture, its Gradient opacity showing it through (CT-12, CT-14). */}
       {gradient === "" ? null : (
         <div aria-hidden="true" className={`absolute inset-0 -z-10 ${gradient}`} />
       )}

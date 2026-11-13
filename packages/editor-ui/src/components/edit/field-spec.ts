@@ -187,6 +187,11 @@ export type FieldRendererProps<K extends FieldKind = FieldKind> = {
    * message to show by that field.
    */
   readonly itemErrors?: Readonly<Record<string, Readonly<Record<string, string>>>>;
+  /**
+   * The name of the field it draws, where the Edit panel draws one: a renderer that measures by
+   * it (a colour field, whose text colours are checked on a gradient's two ends, CT-13).
+   */
+  readonly name?: string;
   readonly field: FieldSpec<K>;
   readonly value: unknown;
   /**

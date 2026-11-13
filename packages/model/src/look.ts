@@ -137,6 +137,16 @@ export type Looks = z.infer<typeof looksSchema>;
 export type ValueSource = "own" | "look" | "default";
 
 /**
+ * The colours a gradient's ends draw with while they have none of their own (CT-10): Brand to
+ * Accent. Choosing a direction gives an end without a colour this one, and the contrast check
+ * measures text on these (CT-13), so the controls, the drawing and the check agree.
+ */
+export const GRADIENT_END_DEFAULTS = {
+  lookGradientFrom: "primary",
+  lookGradientTo: "secondary",
+} as const;
+
+/**
  * The fields where *Theme's* (`theme`) is no value of an item's own: a gradient's ends, which no
  * longer offer it (CT-10). An end stored so, from before, takes its kind's look on the devices it
  * has it, as an end never set does, and else draws with its default.

@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   type Breakpoint,
+  GRADIENT_END_DEFAULTS,
   isResponsiveValue,
   type Responsive,
   resolveResponsive,
@@ -77,11 +78,6 @@ const BORDER_STYLES = ["default", "solid", "dashed", "dotted"] as const;
  * nothing (CT-10).
  */
 const GRADIENT_COLOURS = BACKGROUNDS.filter((value) => value !== "theme");
-/**
- * The colours a gradient's ends draw with while they have none (CT-10): Brand to Accent. Choosing
- * a direction gives an end without a colour this one, so the controls and the drawing agree.
- */
-const GRADIENT_ENDS = { lookGradientFrom: "primary", lookGradientTo: "secondary" } as const;
 /** Spacing tokens (C4): an element's padding (CT-5); its margin is its own `margin` field. */
 const SPACINGS = ["default", "none", "s", "m", "l", "xl"] as const;
 
@@ -241,17 +237,17 @@ const gradientPartners = (value: unknown, values: Readonly<Record<string, unknow
   value === "default" || !(GRADIENT_DIRECTIONS as readonly unknown[]).includes(value)
     ? {}
     : Object.fromEntries(
-        Object.entries(GRADIENT_ENDS).filter(([name]) => !isEndColour(values[name])),
+        Object.entries(GRADIENT_END_DEFAULTS).filter(([name]) => !isEndColour(values[name])),
       );
 
 /** A gradient's end: a colour of the theme's, offered only while the gradient has a direction. */
-const gradientEnd = (name: keyof typeof GRADIENT_ENDS, label: string) =>
+const gradientEnd = (name: keyof typeof GRADIENT_END_DEFAULTS, label: string) =>
   ({
     kind: "color",
     label,
     ...inDialog(STYLE_GROUPS.background),
     options: colourOptions(GRADIENT_COLOURS),
-    unset: GRADIENT_ENDS[name],
+    unset: GRADIENT_END_DEFAULTS[name],
   }) as const;
 
 /** A select in `group` of `options`, already named. */
@@ -582,8 +578,8 @@ const gradientPart =
   (value, values) =>
     hasGradient(values) ? perDevice(value, one) : "";
 /** A gradient's end's colour class, `from-…` or `to-…`, its default's where it has none. */
-const gradientEndOf = (prefix: "from" | "to", name: keyof typeof GRADIENT_ENDS) =>
-  gradientPart((one) => colourOf(prefix)(isEndColour(one) ? one : GRADIENT_ENDS[name]));
+const gradientEndOf = (prefix: "from" | "to", name: keyof typeof GRADIENT_END_DEFAULTS) =>
+  gradientPart((one) => colourOf(prefix)(isEndColour(one) ? one : GRADIENT_END_DEFAULTS[name]));
 
 /** The item's border style, when the dialog sets one: then a width draws no solid line of its own. */
 const styled = (values: AppearanceValues) =>
