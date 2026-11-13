@@ -78,6 +78,7 @@
     "happy-dom": "21.0.4",
     "lucide-react": "1.70.0",
     "lucide-static": "1.70.0",
+    "marked": "18.1.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "storybook": "10.6.6",
