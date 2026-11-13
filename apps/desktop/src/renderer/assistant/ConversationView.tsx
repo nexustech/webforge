@@ -116,7 +116,7 @@ function Turn({
           <p className="m-0 text-xs text-muted-foreground">{t(`assistant.stop.${turn.stop}`)}</p>
         ) : null}
         {turn.state === "failed" ? (
-          <p role="alert" className="m-0 text-xs text-destructive">
+          <p role="alert" className="m-0 text-xs text-destructive-text">
             {t(errorKey(turn.error))}
           </p>
         ) : null}
@@ -164,14 +164,13 @@ export function ConversationView({ turns, onOpenLink, afterReply }: Conversation
     return <p className="m-0 p-3 text-sm text-muted-foreground">{t("assistant.empty")}</p>;
   }
   return (
-    <ol
-      role="log"
-      aria-label={t("assistant.conversation")}
-      className="m-0 flex list-none flex-col gap-4 p-3"
-    >
-      {turns.map((turn) => (
-        <Turn key={turn.replyId} turn={turn} onOpenLink={onOpenLink} afterReply={afterReply} />
-      ))}
-    </ol>
+    // The log is the list's container: a list keeps its own role, for its items.
+    <div role="log" aria-label={t("assistant.conversation")}>
+      <ol className="m-0 flex list-none flex-col gap-4 p-3">
+        {turns.map((turn) => (
+          <Turn key={turn.replyId} turn={turn} onOpenLink={onOpenLink} afterReply={afterReply} />
+        ))}
+      </ol>
+    </div>
   );
 }
