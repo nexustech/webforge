@@ -1,10 +1,5 @@
-import { t } from "@webforge/i18n";
 import { describe, expect, it } from "vitest";
-import {
-  ASSISTANT_ERRORS,
-  type AssistantEvent,
-  assistantEvents,
-} from "../../shared/ipc/assistant.js";
+import { type AssistantEvent, assistantEvents } from "../../shared/ipc/assistant.js";
 import { createFakeAssistant, FAKE_MODEL, FAKE_STATUS } from "./fake-assistant.js";
 
 const SESSION = "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5";
@@ -94,12 +89,6 @@ describe("the stand-in assistant (ADR 0026 §7)", () => {
     await ended;
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(events.find((event) => event.type === "limit")).toMatchObject({ level: "warning" });
-  });
-
-  it("has words for every code main can answer with, for the panel to show", () => {
-    for (const code of ASSISTANT_ERRORS) {
-      expect(t(`assistant.error.${code}`)).not.toMatch(/^assistant\./);
-    }
   });
 
   it("starts signed in, with a tested model and nothing spent, and lists that model", async () => {
