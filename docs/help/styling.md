@@ -71,6 +71,8 @@ Like the other choices here, a gradient can differ by device: choosing a directi
 
 On a section with a background picture, or a Hero with **Image behind the text**, the gradient is drawn over the picture. **Gradient opacity** (100%, 75%, 50% or 25%) sets how much of the picture shows through; it starts at 50%.
 
+Text on a gradient has to be easy to read at both ends. If a text colour is too faint at one end, its colour row says so and suggests a theme colour that reads on both, and Site Check lists it under **Colour contrast**.
+
 **Where it applies** sets which items get the look:
 
 - **This ‹item› only**

@@ -1,17 +1,19 @@
 import {
   type ElementPlace,
   elementsAt,
+  GRADIENT_END_DEFAULTS,
   isNodeDoc,
   type NodeDoc,
   type Oklch,
   type Responsive,
   resolveResponsive,
+  SHADE_STEPS,
   type SiteDoc,
   type TextStyle,
   type ThemeTokens,
   valuesWithLook,
 } from "@webforge/model";
-import { inverseColors, resolveColorRef } from "./colors.js";
+import { contrastRatio, inverseColors, resolveColorRef } from "./colors.js";
 import { AA_LARGE, AA_TEXT } from "./contrast.js";
 
 /** Tailwind's text sizes in CSS pixels, as the type scale names them. */
@@ -54,6 +56,11 @@ export function contrastNeeded(theme: ThemeTokens, styles: readonly TextStyle[])
 export type Surface = {
   readonly palette: "colors" | "inverse";
   readonly background: Oklch;
+  /**
+   * A gradient behind it (CT-4), drawn over `background`: its two ends, the colours text on it is
+   * measured on, each (CT-13).
+   */
+  readonly gradient?: readonly [Oklch, Oklch];
   /** A background picture is behind it, not `background`: its contrast can't be measured. */
   readonly overPicture?: true;
 };
@@ -62,10 +69,33 @@ export type Surface = {
 const onDesktop = (value: unknown) => resolveResponsive(value as Responsive<unknown>, "desktop");
 
 /**
+ * The two ends of the gradient `values` draw on the desktop, in `palette`, or none without a
+ * direction: an end without a colour of its own draws with its default, Brand or Accent (CT-10).
+ * An end's own opacity is left out, as a background's is.
+ */
+function gradientOf(
+  theme: ThemeTokens,
+  values: Readonly<Record<string, unknown>>,
+  palette: Surface["palette"],
+): readonly [Oklch, Oklch] | undefined {
+  const direction = onDesktop(values.lookGradientDirection);
+  if (typeof direction !== "string" || direction === "default") return undefined;
+  const end = (name: keyof typeof GRADIENT_END_DEFAULTS) => {
+    const own = onDesktop(values[name]);
+    const resolved = typeof own === "string" ? resolveColorRef(theme, own, palette) : undefined;
+    return (resolved ?? resolveColorRef(theme, GRADIENT_END_DEFAULTS[name], palette))?.color;
+  };
+  const [from, to] = [end("lookGradientFrom"), end("lookGradientTo")];
+  return from === undefined || to === undefined ? undefined : [from, to];
+}
+
+/**
  * The surface under an element whose `chain` of values runs from its section to itself, each with
  * its kind's look (#670): a Reversed section (`colors: "inverse"`) switches to the inverse palette,
  * and the nearest Appearance background (`lookBackground`) is what's behind, else the palette's
- * page colour. A background's own opacity is left out: it's taken as drawn in full. A picture
+ * page colour; a gradient (CT-4) is drawn over its own element's background, so text on it is
+ * measured on its two ends (CT-13). A background's own opacity is left out: it's taken as drawn in
+ * full. A picture
  * one of them draws behind its content, as `pictureBehind` says by its place in the chain (the
  * component library knows which do), is drawn over its colours, so what's on it is `overPicture`,
  * unless an element nearer has a background of its own.
@@ -77,11 +107,13 @@ export function surfaceOf(
 ): Surface {
   let palette: Surface["palette"] = "colors";
   let background: Oklch | undefined;
+  let gradient: readonly [Oklch, Oklch] | undefined;
   let overPicture = false;
   for (const [at, values] of chain.entries()) {
     if (onDesktop(values.colors) === "inverse") {
       palette = "inverse";
       background = undefined;
+      gradient = undefined;
       overPicture = false;
     }
     const fill = onDesktop(values.lookBackground);
@@ -89,15 +121,69 @@ export function surfaceOf(
       const resolved = resolveColorRef(theme, fill, palette);
       if (resolved !== undefined) {
         background = resolved.color;
+        gradient = undefined;
         overPicture = false;
       }
+    }
+    // Over its own background colour, a gradient is what's behind its content.
+    const ends = gradientOf(theme, values, palette);
+    if (ends !== undefined) {
+      gradient = ends;
+      overPicture = false;
     }
     // Drawn over its own colours: its picture is what's behind its content.
     if (pictureBehind(at)) overPicture = true;
   }
   const colors = palette === "inverse" ? inverseColors(theme) : theme.colors;
-  const surface = { palette, background: background ?? colors["base-100"] };
+  const surface: Surface = {
+    palette,
+    background: background ?? colors["base-100"],
+    ...(gradient === undefined ? {} : { gradient }),
+  };
   return overPicture ? { ...surface, overPicture: true } : surface;
+}
+
+/**
+ * The contrast of `color` (at `opacity`) on `surface` (#670): on a gradient, the lower of its two
+ * ends', where the text is hardest to read (CT-13); else on its background.
+ */
+export function contrastOn(surface: Surface, color: Oklch, opacity = 1): number {
+  const behind = surface.gradient ?? [surface.background];
+  return Math.min(...behind.map((each) => contrastRatio(color, each, opacity)));
+}
+
+/**
+ * The theme's text colours, in the order {@link readableTextColour} prefers them: Text, then
+ * Brand, Accent and Second accent, each plain and then by shade, as the colour field offers them.
+ */
+const TEXT_CANDIDATES: readonly string[] = [
+  "base-content",
+  ...(["primary", "secondary", "accent"] as const).flatMap((role) => [
+    role,
+    ...SHADE_STEPS.map((step) => `${role}-${step}`),
+  ]),
+];
+
+/**
+ * A theme text colour, as a colour ref, that reads on every colour of `surface` at `needed`
+ * (ADR 0009, decision 4): Text if it does, else the one that reads best; none when none does.
+ * What the warning and Site Check suggest for text on a gradient (CT-13).
+ */
+export function readableTextColour(
+  theme: ThemeTokens,
+  surface: Surface,
+  needed: number,
+): string | undefined {
+  let best: { readonly ref: string; readonly ratio: number } | undefined;
+  for (const ref of TEXT_CANDIDATES) {
+    const shown = resolveColorRef(theme, ref, surface.palette);
+    if (shown === undefined) continue;
+    const ratio = contrastOn(surface, shown.color);
+    if (ratio < needed) continue;
+    if (ref === "base-content") return ref;
+    if (best === undefined || ratio > best.ratio) best = { ref, ratio };
+  }
+  return best?.ref;
 }
 
 /** The elements from the top of `nodes` down to element `nodeId`, or none if it isn't there. */

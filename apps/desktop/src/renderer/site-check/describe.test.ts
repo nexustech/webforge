@@ -102,6 +102,15 @@ describe("describeDetail", () => {
     expect(describeDetail(at(place, { ratio: 2.48, required: 3, drawn: "graphic" }))).toBe(
       "2.48:1, needs 3:1 for an icon or logo",
     );
+    // Text on a gradient, at its harder end, with a colour that reads on both if one does (CT-13).
+    expect(describeDetail(at(place, { ratio: 1, required: 4.5, on: "gradient" }))).toBe(
+      "1:1 at one end of its gradient, needs 4.5:1",
+    );
+    expect(
+      describeDetail(
+        at(place, { ratio: 3.2, required: 4.5, on: "gradient", suggested: "primary-900" }),
+      ),
+    ).toBe("3.2:1 at one end of its gradient, needs 4.5:1. Brand, shade 900 reads on both ends");
     expect(describeDetail(at(place, { width: 6000, height: 4000 }))).toBe("6000 × 4000 pixels");
     expect(describeDetail(at(place, { bytes: 12_500_000 }))).toMatch(/12\.5/);
     expect(describeDetail(at(place))).toBeUndefined();

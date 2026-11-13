@@ -170,6 +170,7 @@ export type { ComponentLook, LookField, Looks, ValueSource } from "./look.js";
 export {
   componentLookSchema,
   effectiveValues,
+  GRADIENT_END_DEFAULTS,
   LOOK_FIELDS,
   looksSchema,
   valuesWithLook,

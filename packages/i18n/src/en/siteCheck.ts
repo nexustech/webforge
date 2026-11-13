@@ -240,6 +240,11 @@ export const siteCheck = {
   "siteCheck.detail.contrast": "{ratio}:1, needs {required}:1",
   // An Icon's or Social links' colour (#670): graphics need 3:1, not text's 4.5:1 (WCAG 1.4.11).
   "siteCheck.detail.contrastGraphic": "{ratio}:1, needs {required}:1 for an icon or logo",
+  // Text on a gradient (CT-13): at its end where it's hardest to read; a theme colour that reads
+  // on both, when one does.
+  "siteCheck.detail.contrastGradient": "{ratio}:1 at one end of its gradient, needs {required}:1",
+  "siteCheck.detail.contrastGradientSuggested":
+    "{ratio}:1 at one end of its gradient, needs {required}:1. {colour} reads on both ends",
   "siteCheck.detail.size": "{width} × {height} pixels",
   "siteCheck.detail.insecure": "{url}: change it to https://, or remove it",
   "siteCheck.detail.noHeading": "No main heading: add a large Heading or a Hero",

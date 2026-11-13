@@ -15,6 +15,7 @@ import {
 import type { Finding } from "@webforge/site-check";
 import type { ComponentLibrary } from "@webforge/site-components";
 import { elementName } from "../editor/labels.js";
+import { colourRefName } from "../fields/index.js";
 import { ROLE_NAMES } from "../theme/index.js";
 
 /** `"header"` or `"footer"` when that is where `on` is. */
@@ -144,10 +145,18 @@ export function describeDetail(finding: Finding): string | undefined {
   const { values } = finding;
   if (values === undefined) return undefined;
   if (values.ratio !== undefined && values.required !== undefined) {
-    return t(
-      values.drawn === "graphic" ? "siteCheck.detail.contrastGraphic" : "siteCheck.detail.contrast",
-      { ratio: values.ratio, required: values.required },
-    );
+    const measured = { ratio: values.ratio, required: values.required };
+    if (values.drawn === "graphic") return t("siteCheck.detail.contrastGraphic", measured);
+    // On a gradient (CT-13), with a theme text colour that reads on both ends if one does.
+    if (values.on === "gradient") {
+      return typeof values.suggested === "string"
+        ? t("siteCheck.detail.contrastGradientSuggested", {
+            ...measured,
+            colour: colourRefName(values.suggested),
+          })
+        : t("siteCheck.detail.contrastGradient", measured);
+    }
+    return t("siteCheck.detail.contrast", measured);
   }
   if (values.width !== undefined && values.height !== undefined) {
     return t("siteCheck.detail.size", { width: values.width, height: values.height });

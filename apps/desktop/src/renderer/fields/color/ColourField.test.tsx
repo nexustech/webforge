@@ -6,7 +6,7 @@ import { DEFAULT_THEME, type TextStyle } from "@webforge/model";
 import { contrastNeeded, contrastRatio, hexToOklch, type Surface } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { sessionWith } from "../../testing/fixtures.js";
-import { ColourField, shownRatio } from "./ColourField.js";
+import { ColourField, colourRefName, shownRatio } from "./ColourField.js";
 
 afterEach(cleanup);
 
@@ -28,6 +28,7 @@ function setUp(
     readonly textStyles?: readonly TextStyle[];
     readonly surface?: Surface;
     readonly graphic?: boolean;
+    readonly name?: string;
   } = {},
 ) {
   const session = sessionWith();
@@ -39,6 +40,7 @@ function setUp(
       <ColourField
         id="field-color"
         labelId="label"
+        {...(options.name === undefined ? {} : { name: options.name })}
         field={FIELD}
         value={value}
         onChange={onChange}
@@ -171,6 +173,41 @@ describe("ColourField (1.37, UX-25, ADR 0009)", () => {
       surface: { palette: "colors", background: DEFAULT_THEME.colors.primary, overPicture: true },
     });
     expect(screen.queryByText(/Hard to read/)).toBeNull();
+  });
+
+  it("measures text on a gradient at its harder end, and names a colour that reads on both (CT-13)", () => {
+    const { colors } = DEFAULT_THEME;
+    // From the page colour to Brand: Brand text reads at one end only.
+    const gradient: Surface = {
+      palette: "colors",
+      background: colors["base-100"],
+      gradient: [colors["base-100"], colors.primary],
+    };
+    setUp("primary", { surface: gradient, name: "lookColor" });
+    expect(
+      screen.getByText(/^Hard to read on the gradient: contrast 1\.0:1 at one end/),
+    ).toBeTruthy();
+    cleanup();
+
+    // Between two light surfaces, Second accent's light shade fails; Text reads on both.
+    const light: Surface = {
+      palette: "colors",
+      background: colors["base-100"],
+      gradient: [colors["base-100"], colors["base-200"]],
+    };
+    setUp("accent-100", { surface: light, name: "lookTitleColor" });
+    expect(screen.getByText(/Text reads on both ends\.$/)).toBeTruthy();
+    cleanup();
+
+    // A gradient's own colours, and a background on it, aren't text: measured as before.
+    setUp("primary", { surface: gradient, name: "lookGradientTo" });
+    expect(screen.queryByText(/on the gradient/)).toBeNull();
+  });
+
+  it("names a suggested colour as people see it", () => {
+    expect(colourRefName("base-content")).toBe("Text");
+    expect(colourRefName("primary-100")).toBe("Brand, shade 100");
+    expect(colourRefName("[#1f6feb]")).toBe("[#1f6feb]");
   });
 
   it("holds an icon's or a logo's colour to graphics' 3:1, in words that say so (#670)", () => {
