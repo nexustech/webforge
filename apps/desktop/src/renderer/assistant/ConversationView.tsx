@@ -8,7 +8,7 @@ type StepView = {
   readonly entryId: string;
   /** "AI (Assistant): Edited Hero text". */
   readonly label: string;
-  readonly target?: { readonly pageId: string; readonly nodeId?: string } | undefined;
+  readonly target?: { readonly pageId: string; readonly nodeId?: string | undefined } | undefined;
 };
 
 /** How a tool call came out (ADR 0026 §7's `tool` events). */
