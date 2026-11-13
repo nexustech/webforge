@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, SharedSectionId } from "./ids.js";
-import { siteCodePieces, withKeptCode } from "./site-code-pieces.js";
+import { cssNeedsTrust, siteCodePieces, withKeptCode } from "./site-code-pieces.js";
 import { createSite } from "./site-doc.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
@@ -104,5 +104,60 @@ describe("withKeptCode (#649)", () => {
 
     expect(asked).not.toContain("");
     expect(asked).not.toContain("  ");
+  });
+});
+
+describe("the site's CSS, when it can load or show something (#975)", () => {
+  const TRACKER = 'body { background: image-set("https://tracker.example/p.png" 1x); }';
+  const ESCAPED = String.raw`body { background: \75rl(https://tracker.example/p.png); }`;
+
+  it("needs the owner's yes when it names a file or an address, imports, escapes or sets content", () => {
+    for (const css of [
+      TRACKER,
+      ESCAPED,
+      ".a { background: url(media/a.jpg) }",
+      '@import "theme.css";',
+      '@font-face { src: src("x.woff2") }',
+      ".a { background: URL(//cdn.example/a.png) }",
+      '.phone::after { content: "0800 000 000" }',
+      '.phone::after{content :"x"}',
+      '.phone::after { /**/content: "x" }',
+    ]) {
+      expect(cssNeedsTrust(css), css).toBe(true);
+    }
+  });
+
+  it("never asks about CSS that only changes how the site looks", () => {
+    for (const css of [
+      "",
+      ".hero { color: oklch(60% 0.1 200); padding: 2rem; }",
+      ".row { display: flex; align-content: center; justify-content: space-between; }",
+      ":root { --gap: calc(1rem + 2px); }",
+    ]) {
+      expect(cssNeedsTrust(css), css).toBe(false);
+    }
+  });
+
+  it("is a piece of code to confirm, which a build leaves out unless kept", () => {
+    const doc = { ...site(), code: { ...site().code, css: TRACKER } };
+
+    expect(siteCodePieces(doc)).toContainEqual({ kind: "code", part: "css", text: TRACKER });
+    expect(withKeptCode(doc, () => false).code.css).toBe("");
+    expect(withKeptCode(doc, (text) => text === TRACKER).code.css).toBe(TRACKER);
+  });
+
+  it("isn't asked about, and stays, when it only changes how the site looks", () => {
+    const asked: string[] = [];
+    const doc = site();
+    const kept = withKeptCode(doc, (text) => {
+      asked.push(text);
+      return false;
+    });
+
+    expect(siteCodePieces(doc).map((piece) => piece.kind === "code" && piece.part)).not.toContain(
+      "css",
+    );
+    expect(kept.code.css).toBe(".x {}");
+    expect(asked).not.toContain(".x {}");
   });
 });

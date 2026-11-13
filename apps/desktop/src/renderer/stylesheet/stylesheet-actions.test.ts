@@ -76,6 +76,17 @@ describe("editStylesheet (CT-8, 6.8)", () => {
     expect(css()).toBe("");
   });
 
+  it("says the owner wrote what they type, so the code trust step never asks about it (#975)", () => {
+    const { session } = setUp([], ".a {}");
+    const written = vi.fn();
+    session.onCodeWritten(written);
+
+    editStylesheet(session, '.a { background: url("media/a.jpg"); }');
+    editStylesheet(session, '.a { background: url("media/a.jpg"); }');
+
+    expect(written.mock.calls).toEqual([[".a {}", '.a { background: url("media/a.jpg"); }']]);
+  });
+
   it("makes no step when nothing changed", () => {
     const { session, labels } = setUp([], ".a {}");
 
@@ -91,10 +102,14 @@ describe("targetSelected (CT-8)", () => {
       ".a {}",
     );
     session.select("hours");
+    const written = vi.fn();
+    session.onCodeWritten(written);
 
     const done = await targetSelected(session, worker("", []));
 
     expect(css()).toBe(".a {}\n\n#hours {\n  \n}\n");
+    // The owner's, as what they type is (#975).
+    expect(written).toHaveBeenCalledWith(".a {}", css());
     expect(done).toEqual({ caret: ".a {}\n\n#hours {\n  ".length });
     expect(labels()).toEqual(["Targeted Heading in the stylesheet"]);
   });
@@ -160,10 +175,13 @@ describe("moveLookToCss (CT-8)", () => {
       ".a {}",
     );
     session.select("hours");
+    const written = vi.fn();
+    session.onCodeWritten(written);
 
     const done = await moveLookToCss(session, api("text-3xl rounded-box! opacity-50!"));
 
     expect(done).toEqual({ caret: ".a {}\n\n".length, moved: 2, kept: 0 });
+    expect(written).toHaveBeenCalledWith(".a {}", css());
     expect(css()).toBe(".a {}\n\n.heading {\n  --set: 1;\n}\n.heading {\n  --set: 1;\n}\n");
     expect(node("hours")?.props.lookOpacity).toBeUndefined();
     expect(node("hours")?.props.lookCorners).toBeUndefined();
