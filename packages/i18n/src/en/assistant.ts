@@ -28,15 +28,15 @@ export const assistant = {
   "assistant.stop.limit-reached": "Stopped: this month's limit is reached.",
   // Why a message wasn't sent, or a reply failed (ADR 0026 §7). Never the provider's own text.
   "assistant.error.consent-needed": "The assistant needs your yes before it can work on this site.",
-  "assistant.error.not-signed-in": "Sign in to OpenRouter in Preferences › Assistant first.",
-  "assistant.error.no-model": "Choose a model in Preferences › Assistant first.",
+  "assistant.error.not-signed-in": "Sign in to OpenRouter in Settings › Assistant first.",
+  "assistant.error.no-model": "Choose a model in Settings › Assistant first.",
   "assistant.error.limit-reached":
-    "This month's limit is reached. Raise it in Preferences › Assistant, or wait for next month.",
+    "This month's limit is reached. Raise it in Settings › Assistant, or wait for next month.",
   "assistant.error.busy": "The assistant is still replying. Wait for it, or stop it.",
   "assistant.error.no-site": "Open a site to use the assistant.",
   "assistant.error.offline": "The assistant couldn't be reached. Check your internet connection.",
   "assistant.error.unauthorized":
-    "OpenRouter didn't accept the sign-in. Sign in again in Preferences › Assistant.",
+    "OpenRouter didn't accept the sign-in. Sign in again in Settings › Assistant.",
   "assistant.error.no-credit": "Your OpenRouter account has run out of credit.",
   "assistant.error.rate-limited": "Too many messages at once. Try again in a minute.",
   "assistant.error.model-unavailable":
@@ -77,7 +77,7 @@ export const assistant = {
   "assistant.consent.people":
     "If your site holds other people's details, such as names in testimonials, staff or contact details, they may be sent when the assistant works on those sections. Don't ask it to work on anything you wouldn't put on your public site.",
   "assistant.consent.off":
-    "Preferences › Assistant › Turn Off stops it at once and deletes its key from this computer.",
+    "Settings › Assistant › Turn Off stops it at once and deletes its key from this computer.",
   "assistant.consent.perSite":
     "The first time you use it on each site, {appName} asks again. Your answer stays on this computer, never in the site file.",
   "assistant.consent.agree": "Turn On",

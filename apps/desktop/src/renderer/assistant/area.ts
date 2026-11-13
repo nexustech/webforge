@@ -6,7 +6,7 @@ import { registerAssistantPanel } from "./register-assistant-panel.js";
 
 /**
  * The assistant's panel (6.9c, UX-28, ADR 0026): a conversation on the open site with the model the
- * person chose, through main's `assistant` domain, beside the Edit panel.
+ * person chose, through main's `assistant` domain, in the left column.
  */
 export const assistantPanelArea: Area<WindowContext> = {
   id: "assistantPanel",

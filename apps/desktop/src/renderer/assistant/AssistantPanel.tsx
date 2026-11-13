@@ -31,7 +31,7 @@ export type AssistantPanelProps = {
   readonly context: () => { pageId?: string; nodeId?: string };
   /** Turns the assistant on at the consent's wording shown (ADR 0026 §4). */
   readonly onAgree: () => void;
-  readonly onOpenPreferences: () => void;
+  readonly onOpenSettings: () => void;
   readonly onOpenVersions: () => void;
   readonly onShowStep: (step: ReplyStep) => void;
   readonly onOpenLink: (href: string) => void;
@@ -51,7 +51,7 @@ function reachOf(status: AssistantStatus): ConsentReach {
 /**
  * The assistant's panel (6.9c, UX-28): the month's spend; the conversation on this site, each reply
  * with its review card; and a box to write in, with Send and Stop. Off until the person has turned
- * it on in Preferences, and asked again when its provider has changed to one their yes doesn't
+ * it on in Settings, and asked again when its provider has changed to one their yes doesn't
  * cover (ADR 0026 §4); used on a site only once that site has its own yes.
  */
 export function AssistantPanel(props: AssistantPanelProps) {
@@ -73,7 +73,7 @@ export function AssistantPanel(props: AssistantPanelProps) {
         <Button
           size="sm"
           className="self-start"
-          onClick={again ? () => setAsking(true) : props.onOpenPreferences}
+          onClick={again ? () => setAsking(true) : props.onOpenSettings}
         >
           {t(again ? "assistant.consent.agree" : "assistant.setUp")}
         </Button>

@@ -49,7 +49,7 @@ describe("the assistant's panel (6.9c)", () => {
     expect(await screen.findByRole("textbox", { name: "Message the assistant" })).toBeDefined();
   });
 
-  it("is off until set up in Preferences, and asks again when its provider is new", async () => {
+  it("is off until set up in Settings, and asks again when its provider is new", async () => {
     const off = shown({ status: { ...FAKE_STATUS, enabled: false, consentVersion: null } });
     await off.user.click(await screen.findByRole("button", { name: "Set Up the Assistant…" }));
     expect(off.settings.show).toHaveBeenCalledWith("assistant", "assistant");

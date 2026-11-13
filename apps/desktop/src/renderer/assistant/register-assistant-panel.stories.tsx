@@ -37,7 +37,7 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
     });
   });
 
-/** Not set up yet: Preferences turns it on. */
+/** Not set up yet: Settings turns it on. */
 export const Off: Story = story({
   status: { ...FAKE_STATUS, enabled: false, consentVersion: null },
 });

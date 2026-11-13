@@ -26,7 +26,7 @@ export type AssistantPanelOptions = {
 };
 
 /**
- * Puts the assistant's panel (6.9c, UX-28) beside the Edit panel: its conversation on this site
+ * Puts the assistant's panel (6.9c, UX-28) in the left column, after Undo History and Version History: its conversation on this site
  * with main, through the `assistant` domain (ADR 0026 §7). Returns a function that removes it and
  * stops following main's events.
  */
@@ -49,7 +49,7 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
             .setEnabled(true, ASSISTANT_CONSENT_VERSION)
             .catch((error: unknown) => reportFailure("assistant.enable", error))
         }
-        onOpenPreferences={() => void options.settings.show("assistant", "assistant")}
+        onOpenSettings={() => void options.settings.show("assistant", "assistant")}
         onOpenVersions={() => panels.show("versionHistory")}
         onShowStep={(step) => {
           // Only a page the site has: the id came from main.
@@ -66,7 +66,9 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
   }
   const remove = panels.register({
     id: ASSISTANT_PANEL_ID,
-    slot: "right.top",
+    // The left column's tabs show only their icons (#898): the right column's text tabs had no room
+    // for another, which pushed Theme out of view.
+    slot: "left.bottom",
     title: t("assistant.panel"),
     icon: SparklesIcon,
     component: Panel,
