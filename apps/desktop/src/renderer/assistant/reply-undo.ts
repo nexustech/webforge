@@ -18,8 +18,12 @@ export type ReplyUndo =
   | { readonly kind: "undone" }
   | { readonly kind: "moved-on" };
 
-/** Whether and how a reply's steps, by their entry ids, can be undone now. */
-export function replyUndo(history: HistoryPosition, entryIds: readonly string[]): ReplyUndo {
+/**
+ * Whether and how a reply's steps, by their entry ids, can be undone now. Two steps may name one
+ * entry: Undo History merges edits to one field in a row into a single step, so they count once.
+ */
+export function replyUndo(history: HistoryPosition, stepIds: readonly string[]): ReplyUndo {
+  const entryIds = stepIds.filter((id, index) => id !== stepIds[index - 1]);
   const at = history.entries.findIndex((entry) => entry.id === entryIds[0]);
   if (entryIds.length === 0 || at === -1) return { kind: "moved-on" };
   const theirs = history.entries.slice(at, at + entryIds.length).map((entry) => entry.id);

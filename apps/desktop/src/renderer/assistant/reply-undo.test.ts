@@ -11,6 +11,14 @@ describe("replyUndo (ADR 0026 §7, AIA-5)", () => {
     expect(replyUndo(history(["a", "b", "c"]), ["b", "c"])).toEqual({ kind: "undo", to: "a" });
   });
 
+  it("counts steps merged into one entry once: edits to one field in a row (#973 review)", () => {
+    expect(replyUndo(history(["a", "e1"]), ["e1", "e1"])).toEqual({ kind: "undo", to: "a" });
+    expect(replyUndo(history(["a", "e1", "e2"]), ["e1", "e1", "e2"])).toEqual({
+      kind: "undo",
+      to: "a",
+    });
+  });
+
   it("jumps to the start when the reply's steps are the first entries", () => {
     expect(replyUndo(history(["b", "c"]), ["b", "c"])).toEqual({ kind: "undo", to: null });
   });

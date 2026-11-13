@@ -57,10 +57,11 @@ export function ReviewCard({
         {plural("assistant.review.title", steps.length)}
       </h3>
       <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
-        {steps.map((step) => {
+        {steps.map((step, index) => {
           const label = step.label.replace(LABEL_PREFIX, "");
           return (
-            <li key={step.entryId}>
+            // Two steps can share an entry, merged into one Undo History step.
+            <li key={`${index}:${step.entryId}`}>
               {step.target === undefined ? (
                 <span className="px-1">{label}</span>
               ) : (
