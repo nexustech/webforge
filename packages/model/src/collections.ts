@@ -58,13 +58,17 @@ const fieldNameSchema = z.string().regex(FIELD_NAME);
 
 /**
  * The folder a collection's items are in, one level: `blog`, so a post is `blog/spring-opening.html`.
- * Never `assets`, which holds the site's images, styles and scripts.
+ * Never `assets`, which holds the site's images, styles and scripts, nor a Windows device name
+ * (`con`, `nul`, `com1`), which Windows can't write a folder for, as for pages (R16, #977).
  */
 export const collectionFolderSchema = z
   .string()
   .max(COLLECTION_FOLDER_MAX)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
-  .refine((folder) => folder !== "assets", { message: "The folder 'assets' is reserved" });
+  .refine((folder) => folder !== "assets", { message: "The folder 'assets' is reserved" })
+  .refine((folder) => !isDeviceName(folder), {
+    message: "Windows keeps this name for a device",
+  });
 
 /** One of an item's own fields beyond its title: its name in bindings, its label and its kind. */
 const collectionFieldSchema = z.strictObject({

@@ -145,6 +145,7 @@ const ERRORS = [
   "rate-limited",
   "model-unavailable",
   "provider-error",
+  "insecure-server",
   "failed",
 ] as const;
 
