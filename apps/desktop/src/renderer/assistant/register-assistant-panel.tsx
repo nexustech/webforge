@@ -10,7 +10,7 @@ import { AssistantPanel } from "./AssistantPanel.js";
 import { createAssistantPanel } from "./assistant-state.js";
 
 /** The assistant panel's id. */
-export const ASSISTANT_PANEL_ID = "assistant";
+const ASSISTANT_PANEL_ID = "assistant";
 
 /** What the panel works with. */
 export type AssistantPanelOptions = {
