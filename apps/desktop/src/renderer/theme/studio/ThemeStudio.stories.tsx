@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>;
  */
 const itemPreviews: ItemPreviews = (node, device, theme) => (
   <div
-    className="flex w-full items-center justify-center rounded-sm border border-dashed border-border p-2 text-center text-xs text-muted-foreground"
+    className="flex w-full items-center justify-center rounded-sm border border-dashed border-border p-2 text-center text-xs [overflow-wrap:anywhere] text-muted-foreground"
     style={{ height: device === "desktop" ? 120 : 200 }}
   >
     {`${node.type}: ${JSON.stringify(theme?.looks?.[node.type] ?? {})}`}
