@@ -101,7 +101,7 @@ Main runs it:
    - closed after its first valid callback, on _Cancel_, or after 10 minutes, the code's own lifetime.
 3. **Main opens the person's browser** (`shell.openExternal`) at `https://openrouter.ai/auth?callback_url=http://localhost:<port>/callback&code_challenge=…&code_challenge_method=S256&state=…&key_label=…`.
    - OpenRouter documents localhost callbacks on any port. It doesn't document `127.0.0.1`, so the URL says `localhost`, and the listener answers on both loopback addresses.
-   - `key_label` is "{appName} on ‹computer name›", so the person can find the key in their account.
+   - `key_label` is "{appName}, ‹the date the key was made›", so the person can find the key in their account. It never names the computer: host names are often the person's own name, and OpenRouter would keep it with the key for no need.
 4. **The callback:**
    - It must carry the same `state`. Anything else gets a 400, and the sign-in carries on waiting.
    - Its `Host` must name the listener (DNS rebinding, as for the preview server, S24).
@@ -191,7 +191,7 @@ type AssistantStatus = {
   reach: Reach;
   model: AssistantModel | null;
   month: { spentUsd: number; limitUsd: number; warned: boolean; reached: boolean };
-  reviewBeforeApplying: boolean; // AIA-5's setting; false by default
+  reviewBeforeApplying: boolean; // AIA-5's setting: always false, and not shown, until 6.9b stages commands (below)
   allowRetainingModels: boolean; // Advanced (§2); false by default
 };
 
@@ -340,7 +340,9 @@ type AssistantEvent = { session: SessionId } & (
   - If the reply's `entryId`s are the newest entries in Undo History, at its current position and in order, it jumps to the entry before the first (`jumpTo`), as one undo of all of them.
   - Otherwise something has happened since: it offers the reply's conversation's `safety-version` in Version History instead, as product/14 §6.2 says.
   - _Keep_ only closes the card.
-- **_Review before applying_ (AIA-5's setting) isn't in this contract yet.** Holding changes back until the person agrees needs the tool layer to stage commands, which 4.9's doesn't. 6.9b decides how, and adds its events here with a note to stream A. Until then the setting is stored and shown, and changes apply at once, which is the default the product owner chose.
+- **_Review before applying_ (AIA-5's setting) isn't in this contract yet.** Holding changes back until the person agrees needs the tool layer to stage commands, which 4.9's doesn't.
+  - **Until it works, the panel and Preferences don't show it:** no setting that does nothing. `AssistantStatus` still carries `reviewBeforeApplying` (always `false`), and changes apply at once, which is the default the product owner chose.
+  - **It must work before the beta ships the assistant.** 6.9b makes it work, and adds its events to this contract with a note to stream A. If 6.9b can't, a follow-up issue in Phase 5 does, before the beta.
 - **Errors carry a code, never the provider's own text,** which could quote the request. The panel words each code with `t()`. Main logs the HTTP status and the provider's error type, without content.
 
 **The stand-in loop for 6.9c:** `apps/desktop/src/renderer/assistant/fake-assistant.ts` (6.9a). It's an `AssistantApi` that answers from a script:
