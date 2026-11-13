@@ -64,6 +64,8 @@ A gradient blends one colour into another across the background. To add one, cho
 
 Like the other choices here, a gradient can differ by device: choosing a direction while viewing Mobile adds it on Mobile only.
 
+Text on a gradient has to be easy to read at both ends. If a text colour is too faint at one end, its colour row says so and suggests a theme colour that reads on both, and Site Check lists it under **Colour contrast**.
+
 **Where it applies** sets which items get the look:
 
 - **This ‹item› only**

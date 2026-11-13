@@ -105,6 +105,8 @@ export const shared = {
   "colour.useTheme": "Use a theme colour",
   "colour.shade": "Shade",
   "colour.shadeStep": "Shade {step}",
+  // A colour with its shade, in a sentence (CT-13): "Brand, shade 100".
+  "colour.shadeOf": "{colour}, shade {step}",
   "colour.opacity": "Opacity",
   "colour.opacityStep": "{step}%",
   "field.color.lowContrast":
@@ -112,6 +114,12 @@ export const shared = {
   // An Icon's or Social links' colour (#670): graphics need 3:1 (WCAG 1.4.11).
   "field.color.lowContrastGraphic":
     "Hard to see on the page: contrast {ratio}:1, less than the {needed}:1 an icon or logo needs.",
+  // Text on a gradient (CT-13): measured on the end where it's hardest to read, with a theme text
+  // colour that reads on both when one does.
+  "field.color.lowContrastGradient":
+    "Hard to read on the gradient: contrast {ratio}:1 at one end, less than the {needed}:1 this text needs.",
+  "field.color.lowContrastGradientSuggested":
+    "Hard to read on the gradient: contrast {ratio}:1 at one end, less than the {needed}:1 this text needs. {colour} reads on both ends.",
   // The Appearance group on every section and element (2.22, ST-1): theme tokens only, per device.
   // "Theme's" leaves the item as it draws itself.
   // The theme's three fonts (3.22, PF-5), by the Theme tab's names; one for every device.

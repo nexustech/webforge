@@ -121,3 +121,4 @@ export type {
 } from "./schema.js";
 export { type SiteContent, siteContentFor, siteSnapshotFor } from "./site-content.js";
 export { siteWithCleanRichText, withCleanRichText } from "./stored-rich-text.js";
+export { TEXT_COLOUR_FIELDS } from "./text-colour-fields.js";

@@ -61,7 +61,14 @@ export type { BrandProposal, ImageColour } from "./image-palette.js";
 export { brandedTheme, brandFromImage, imageColours, reversedBrand } from "./image-palette.js";
 export { THEME_PRESETS, themePreset } from "./presets.js";
 export type { Surface } from "./surface.js";
-export { contrastNeeded, surfaceAt, surfaceOf, TEXT_PX } from "./surface.js";
+export {
+  contrastNeeded,
+  contrastOn,
+  readableTextColour,
+  surfaceAt,
+  surfaceOf,
+  TEXT_PX,
+} from "./surface.js";
 export {
   oklchCss,
   radiusCss,

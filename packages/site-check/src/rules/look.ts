@@ -7,13 +7,18 @@ import {
   TEXT_COLOR_CLASSES,
   valuesWithLook,
 } from "@webforge/model";
-import { drawsPictureBehind, textStylesIn } from "@webforge/site-components/catalogue-data";
+import {
+  drawsPictureBehind,
+  TEXT_COLOUR_FIELDS,
+  textStylesIn,
+} from "@webforge/site-components/catalogue-data";
 import {
   AA_LARGE,
   AA_TEXT,
   contrastIssues,
   contrastNeeded,
-  contrastRatio,
+  contrastOn,
+  readableTextColour,
   resolveColorRef,
   type Surface,
   surfaceOf,
@@ -35,10 +40,19 @@ const MARK_COLORS = new Map(
 );
 
 /**
- * The fields that colour an element's text, which the rule measures (#670): on a graphic component
- * (an Icon, Social links), its drawing, measured as a graphic.
+ * On a gradient (CT-13), what a finding says besides its ratio: that it's measured on the
+ * gradient's end where the text is hardest to read, and a theme text colour that reads on both, if
+ * one does.
  */
-const TEXT_COLOUR_FIELDS = new Set(["color", "lookColor", "lookTitleColor"]);
+function onGradient(
+  input: CheckInput,
+  surface: Surface,
+  required: number,
+): Readonly<Record<string, string>> {
+  if (surface.gradient === undefined) return {};
+  const suggested = readableTextColour(input.site.theme, surface, required);
+  return { on: "gradient", ...(suggested === undefined ? {} : { suggested }) };
+}
 
 /**
  * What `placed`'s text is drawn on: its section's colours and the nearest background, or a picture
@@ -65,7 +79,9 @@ function surfaceUnder(
  * its size needs, as the colour field measures it: 3:1 for a large heading, 4.5:1 for other text.
  * A graphic component's colour (an Icon's, Social links' logos) needs 3:1, as graphics do (WCAG
  * 1.4.11), whatever its field is called. Each is measured on what the text is drawn on, a Reversed
- * section's colours or an Appearance background (#670). Nothing is measured over a picture drawn
+ * section's colours or an Appearance background (#670); on a gradient, on its end where it's
+ * hardest to read, with a theme text colour that reads on both (CT-13). Nothing is measured over a
+ * picture drawn
  * behind the content (a section's background image, a Hero's in its background layout), whose
  * colours can't be known. Site Check has no rule for those: the Edit panel's overlay field warns
  * when a section's text is hard to read over its background image (2.26, `overlay-warning.ts`).
@@ -98,12 +114,17 @@ export const contrastRule: CheckRule = {
         if (surface.overPicture) return;
         const shown = resolveColorRef(theme, role, surface.palette);
         if (shown === undefined) continue;
-        const ratio = contrastRatio(shown.color, surface.background);
+        const ratio = contrastOn(surface, shown.color);
         if (ratio < AA_TEXT) {
           found.push({
             key: `${fieldKey(placed)}/${role}`,
             place: elementPlace(placed),
-            values: { foreground: role, ratio: Math.floor(ratio * 100) / 100, required: AA_TEXT },
+            values: {
+              foreground: role,
+              ratio: Math.floor(ratio * 100) / 100,
+              required: AA_TEXT,
+              ...onGradient(input, surface, AA_TEXT),
+            },
           });
           break;
         }
@@ -122,7 +143,7 @@ export const contrastRule: CheckRule = {
       if (surface.overPicture) return;
       const shown = resolveColorRef(theme, ref, surface.palette);
       if (shown === undefined) return;
-      const ratio = contrastRatio(shown.color, surface.background, shown.opacity);
+      const ratio = contrastOn(surface, shown.color, shown.opacity);
       const component = input.catalogue[placed.node.type];
       // By the component's kind, not the field's name: an Icon's colour is a drawing's.
       const graphic = component?.graphic === true && placed.field !== "lookTitleColor";
@@ -141,7 +162,12 @@ export const contrastRule: CheckRule = {
                   }),
           );
       if (ratio < required) {
-        const values = { foreground: ref, ratio: Math.floor(ratio * 100) / 100, required };
+        const values = {
+          foreground: ref,
+          ratio: Math.floor(ratio * 100) / 100,
+          required,
+          ...onGradient(input, surface, required),
+        };
         found.push({
           key: fieldKey(placed),
           place: elementPlace(placed),

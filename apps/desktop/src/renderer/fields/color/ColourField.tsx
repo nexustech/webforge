@@ -22,11 +22,14 @@ import {
   type ShadeStep,
   type TextStyle,
 } from "@webforge/model";
+import { TEXT_COLOUR_FIELDS } from "@webforge/site-components";
 import {
   AA_LARGE,
   contrastNeeded,
+  contrastOn,
   contrastRatio,
   oklchCss,
+  readableTextColour,
   resolveColorRef,
   type Surface,
 } from "@webforge/themes";
@@ -72,6 +75,22 @@ const ROLE_NAMES: Partial<Record<ColorRole, MessageKey>> = {
   "base-100": "colour.role.surface",
   "base-content": "colour.role.text",
 };
+
+/**
+ * A theme colour ref by the names people see (CT-13): "Text", "Brand, shade 100"; a role without a
+ * name here, or a colour of its own, as stored. What the warning and Site Check suggest for text on
+ * a gradient, one of Text, Brand, Accent and Second accent.
+ */
+export function colourRefName(ref: string): string {
+  const parsed = parseColorRef(ref);
+  const key =
+    parsed !== undefined && "role" in parsed.base ? ROLE_NAMES[parsed.base.role] : undefined;
+  if (parsed === undefined || key === undefined) return ref;
+  const colour = t(key);
+  return parsed.shade === undefined
+    ? colour
+    : t("colour.shadeOf", { colour, step: String(parsed.shade) });
+}
 
 /** The base choice that stands for a field's own colour, off the theme. */
 const CUSTOM = "custom";
@@ -148,6 +167,7 @@ const swatchStyle = (colour: string): CSSProperties => ({ "--swatch": colour }) 
 export function ColourField({
   id,
   labelId,
+  name,
   field,
   value,
   onChange,
@@ -199,12 +219,32 @@ export function ColourField({
   const surface = surfaceOfField?.() ?? { palette: "colors", background: theme.colors["base-100"] };
   const shown =
     ref === undefined ? undefined : resolveColorRef(theme, formatColorRef(ref), surface.palette);
+  // Text on a gradient, on the end where it's hardest to read (CT-13); its own rows, a background
+  // or a border on it, aren't text.
+  const onGradient =
+    surface.gradient !== undefined && name !== undefined && TEXT_COLOUR_FIELDS.has(name);
   const ratio =
     shown === undefined || surface.overPicture
       ? undefined
-      : contrastRatio(shown.color, surface.background, shown.opacity);
+      : onGradient
+        ? contrastOn(surface, shown.color, shown.opacity)
+        : contrastRatio(shown.color, surface.background, shown.opacity);
   const graphic = isGraphic?.() ?? false;
   const needed = graphic ? AA_LARGE : contrastNeeded(theme, textStyles?.() ?? []);
+  const warning = (() => {
+    if (ratio === undefined || ratio >= needed) return undefined;
+    const values = { ratio: shownRatio(ratio), needed };
+    if (graphic) return t("field.color.lowContrastGraphic", values);
+    if (!onGradient) return t("field.color.lowContrast", values);
+    // A theme text colour that reads on both ends, if one does.
+    const suggested = readableTextColour(theme, surface, needed);
+    return suggested === undefined
+      ? t("field.color.lowContrastGradient", values)
+      : t("field.color.lowContrastGradientSuggested", {
+          ...values,
+          colour: colourRefName(suggested),
+        });
+  })();
 
   return (
     <div className="flex flex-col gap-2">
@@ -247,14 +287,7 @@ export function ColourField({
           const nextRole = roleOfOption(next);
           if (nextRole !== undefined) choose(withOpacity({ base: { role: nextRole } }));
         }}
-        warning={
-          ratio === undefined || ratio >= needed
-            ? undefined
-            : t(graphic ? "field.color.lowContrastGraphic" : "field.color.lowContrast", {
-                ratio: shownRatio(ratio),
-                needed,
-              })
-        }
+        warning={warning}
       />
       {hex !== undefined && advanced ? (
         <div className="flex flex-col gap-1">
