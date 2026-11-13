@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { z } from "zod";
-import { linkInTurn } from "../../shared/assistant-links.js";
+import { linkToOpen } from "../../shared/assistant-links.js";
 import {
   ASSISTANT_CONSENT_VERSION,
   type AssistantApi,
@@ -408,9 +408,10 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           ? undefined
           : conversations.get(project)?.find((each) => each.replyId === replyId);
       // Only a web address that reply holds, in main's own copy of it.
-      if (turn === undefined || !linkInTurn(turn, href)) return { status: "refused" };
+      const address = turn === undefined ? undefined : linkToOpen(turn, href);
+      if (address === undefined) return { status: "refused" };
       try {
-        await options.openExternal(new URL(href).href);
+        await options.openExternal(address);
         return { status: "opened" };
       } catch {
         return { status: "failed" };

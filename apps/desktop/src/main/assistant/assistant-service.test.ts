@@ -296,9 +296,9 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     const open = (href: string, reply = REPLY, session = SESSION) =>
       service.openLink(session, reply, href);
 
+    // Each as the reply wrote it (the panel's Markdown token's href), opened as the panel shows it.
     expect(await open("https://business.example.com/bakery")).toEqual({ status: "opened" });
-    // A bare address in the text, without the full stop that ends its sentence.
-    expect(await open("https://maps.example.com/")).toEqual({ status: "opened" });
+    expect(await open("https://maps.example.com")).toEqual({ status: "opened" });
     expect(await open("https://shop.example.com/pay")).toEqual({ status: "opened" });
     expect(opened).toEqual([
       "https://business.example.com/bakery",

@@ -420,8 +420,9 @@ export const assistantChannels = {
     response: z.null(),
   },
   /**
-   * Opens a link from a reply in the person's browser, once they've clicked it. Main opens only a
-   * web address that reply holds, in its own copy of the conversation.
+   * Opens a link from a reply in the person's browser, once they've clicked it: its address as the
+   * reply wrote it (the Markdown token's `href`). Main opens only a web address that reply holds,
+   * in its own copy of the conversation.
    */
   assistantOpenLink: {
     channel: "assistant:open-link",
@@ -464,7 +465,10 @@ export interface AssistantApi {
   stop(replyId: string): Promise<void>;
   newConversation(session: string): Promise<void>;
   conversation(session: string): Promise<ConversationTurn[]>;
-  /** Opens `href` from that reply in the browser: only a web address the reply holds. */
+  /**
+   * Opens `href`, a link in that reply as the reply wrote it (its Markdown token's `href`), in the
+   * browser: only a web address the reply holds.
+   */
   openLink(
     session: string,
     replyId: string,
