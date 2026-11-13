@@ -12,8 +12,10 @@ import { desktopDir } from "./launch.js";
 /**
  * The most main's static graph may weigh: 1.42 MB when this was written, after #892 (6.2 MB
  * before). Raise it for something main needs at start-up, never for something it could load later.
+ * 1.51 MB with the assistant's IPC contract (6.9a), whose schemas check every call to the handlers
+ * main registers as it starts.
  */
-const BUDGET_BYTES = 1_500_000;
+const BUDGET_BYTES = 1_600_000;
 
 /** Packages only the export worker, a publish, the MCP server or Site Check needs. */
 const NOT_AT_START = [
