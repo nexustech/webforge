@@ -67,6 +67,7 @@ Assistant panel  ──IPC──▶ assistant loop ──HTTPS (net.fetch)──
 | **Another server…**      | Any `http:` or `https:` URL the person types | Optional, pasted                           | Whoever runs that server: the panel names its host |
 
 - **One provider at a time,** chosen in Preferences › _Assistant_, with its model and the monthly limit.
+- **A key never travels unencrypted:** the client refuses to send one over plain `http:` to a server that isn't on this computer (`insecure-server`), so nothing of the site goes there either (#976). Over `https:`, or to `localhost`, `127.0.0.1` or `[::1]`, it goes.
 - **Keys** live in 4.4a's credential store: `assistant/openrouter`, or `assistant/server` for _Another server…_. Never the site file, the settings JSON or logs.
   - Where the store refuses (Linux's `basic_text` backend), the assistant can't sign in, and says why.
   - A key never leaves main: the renderer learns only whether there is one.
@@ -217,6 +218,7 @@ type SignInResult = {
     | "refused"
     | "keychain-unavailable"
     | "offline"
+    | "insecure-server" // a key for an http: server not on this computer: never kept (#976)
     | "failed";
 };
 
@@ -234,6 +236,7 @@ type AssistantErrorCode =
   | "rate-limited"
   | "model-unavailable" // the model or a ZDR endpoint for it isn't there now
   | "provider-error" // any other refusal or malformed answer from the provider
+  | "insecure-server" // a key would go over plain http: to a server not on this computer (#976)
   | "failed";
 
 type SendResult = { status: "sending"; replyId: string } | { status: AssistantErrorCode };

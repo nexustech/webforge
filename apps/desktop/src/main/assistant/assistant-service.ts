@@ -12,6 +12,7 @@ import type { AssistantService } from "../assistant-ipc.js";
 import { assistantCredentialKey, type CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
+import { isLoopback, keySafeAt } from "./chat-client.js";
 import { openRouterModels, preselected, serverModels } from "./models.js";
 import type { OpenRouterSignIn } from "./openrouter-sign-in.js";
 
@@ -75,15 +76,6 @@ type SignInResult = Awaited<ReturnType<AssistantApi["signIn"]>>;
 /** A calendar month's key in this computer's time zone: `2026-11`. */
 const monthKey = (date: Date) =>
   `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-
-/** Whether `baseUrl` is on this computer: nothing leaves it, and no site is asked (§2, §4). */
-export const onThisComputer = (baseUrl: string) => {
-  try {
-    return ["localhost", "127.0.0.1", "[::1]"].includes(new URL(baseUrl).hostname);
-  } catch {
-    return false;
-  }
-};
 
 export type AssistantServiceOptions = {
   readonly dir: string;
@@ -159,7 +151,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     const reach =
       file.provider.kind === "openrouter"
         ? "openrouter"
-        : onThisComputer(file.provider.baseUrl)
+        : isLoopback(file.provider.baseUrl)
           ? "this-computer"
           : "server";
     return {
@@ -295,6 +287,10 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       const file = await read();
       if (file.provider.kind !== "openrouter" && file.provider.kind !== "server") {
         return { status: "failed" };
+      }
+      // A key for a server over plain http that isn't on this computer is never kept (#976).
+      if (file.provider.kind === "server" && !keySafeAt(file.provider.baseUrl)) {
+        return { status: "insecure-server" };
       }
       const [url, name] =
         file.provider.kind === "openrouter"

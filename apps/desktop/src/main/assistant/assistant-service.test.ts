@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ASSISTANT_CONSENT_VERSION, type AssistantEvent } from "../../shared/ipc/assistant.js";
-import { createAssistantService, onThisComputer } from "./assistant-service.js";
+import { createAssistantService } from "./assistant-service.js";
 
 const SESSION = "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5";
 const PROJECT = "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e";
@@ -235,12 +235,10 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     expect(keys.size).toBe(0);
   });
 
-  it("counts localhost, 127.0.0.1 and ::1 as this computer, and nothing else", () => {
-    expect(onThisComputer("http://localhost:11434/v1")).toBe(true);
-    expect(onThisComputer("http://127.0.0.1:1234/v1")).toBe(true);
-    expect(onThisComputer("http://[::1]:8080/v1")).toBe(true);
-    expect(onThisComputer("http://localhost.example.com/v1")).toBe(false);
-    expect(onThisComputer("http://192.168.1.20:11434/v1")).toBe(false);
-    expect(onThisComputer("not a url")).toBe(false);
+  it("never keeps a key for a server over plain http that isn't on this computer (#976)", async () => {
+    const { service, keys } = setUp();
+    await service.update({ provider: { kind: "server", baseUrl: "http://ai.example.com/v1" } });
+    expect(await service.setKey("sk-secret")).toEqual({ status: "insecure-server" });
+    expect(keys.size).toBe(0);
   });
 });
