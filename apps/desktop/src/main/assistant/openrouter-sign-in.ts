@@ -82,11 +82,20 @@ const escapeHtml = (text: string) =>
     (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char] ?? "",
   );
 
-/** Listens on loopback, on a fresh port, at `127.0.0.1` and, where there is one, `::1`. */
+/** Binding `::1` failed with one of these: the computer has no IPv6 loopback, so `127.0.0.1` will do. */
+const NO_IPV6 = new Set(["EADDRNOTAVAIL", "EAFNOSUPPORT"]);
+
+/** How many fresh ports to try when another program holds `::1` on the one drawn. */
+const PORT_TRIES = 5;
+
+/**
+ * Listens on loopback, on a fresh port, at `127.0.0.1` and, where there is one, `::1`.
+ * `localhost` often resolves to `::1` first, so a port another program holds there would take
+ * the browser's redirect, and the sign-in would wait silently: that port is given up for another.
+ */
 async function listenOnLoopback(
   handle: (req: IncomingMessage, res: ServerResponse) => void,
 ): Promise<{ port: number; close: () => void }> {
-  const servers: Server[] = [];
   const listen = (host: string, port: number) =>
     new Promise<Server>((resolve, reject) => {
       const server = createServer({ requestTimeout: 10_000 }, handle);
@@ -96,20 +105,26 @@ async function listenOnLoopback(
         resolve(server);
       });
     });
-  const first = await listen("127.0.0.1", 0);
-  servers.push(first);
-  const { port } = first.address() as AddressInfo;
-  // `localhost` may resolve to `::1` first; a computer without IPv6 has only the first listener.
-  await listen("::1", port).then(
-    (server) => servers.push(server),
-    () => undefined,
-  );
-  return {
-    port,
-    close: () => {
-      for (const server of servers) server.close();
-    },
-  };
+  for (let attempt = 1; ; attempt++) {
+    const first = await listen("127.0.0.1", 0);
+    const { port } = first.address() as AddressInfo;
+    try {
+      const second = await listen("::1", port);
+      return {
+        port,
+        close: () => {
+          first.close();
+          second.close();
+        },
+      };
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code ?? "";
+      if (NO_IPV6.has(code)) return { port, close: () => first.close() };
+      first.close();
+      // Taken at `::1` by another program: draw another port. Anything else ends the sign-in.
+      if (code !== "EADDRINUSE" || attempt === PORT_TRIES) throw error;
+    }
+  }
 }
 
 /** OpenRouter's sign-in, one at a time (see the top of this file). */

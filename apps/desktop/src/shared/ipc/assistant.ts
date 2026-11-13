@@ -68,12 +68,19 @@ const monthSchema = z.strictObject({
 /** See {@link monthSchema}. */
 type AssistantMonth = z.infer<typeof monthSchema>;
 
-/** The assistant as the panel and Preferences show it. */
+/** The assistant as the panel and Settings show it. */
 const statusSchema = z.strictObject({
   /** The app's consent given and not turned off. */
   enabled: z.boolean(),
   /** The app consent's wording the person agreed to; null before they have. */
   consentVersion: z.int().positive().nullable(),
+  /**
+   * Where the consent was given for (ADR 0026 §4): its wording depends on it. A change of provider
+   * that this doesn't cover leaves `enabled` false until the person agrees again.
+   */
+  consentReach: z
+    .strictObject({ reach: reachSchema, host: z.string().min(1).max(300).optional() })
+    .nullable(),
   provider: providerSchema,
   reach: reachSchema,
   model: modelSchema.nullable(),
@@ -92,7 +99,7 @@ const statusSchema = z.strictObject({
 /** See {@link statusSchema}. */
 export type AssistantStatus = z.infer<typeof statusSchema>;
 
-/** What Preferences changes; what's left out stays as it is. */
+/** What Settings changes; what's left out stays as it is. */
 const settingsSchema = z.strictObject({
   provider: z
     .discriminatedUnion("kind", [
@@ -127,6 +134,8 @@ const signInResultSchema = z.strictObject({
     "refused",
     "keychain-unavailable",
     "offline",
+    /** A key for a server over plain `http:` that isn't on this computer: never kept (#976). */
+    "insecure-server",
     "failed",
   ]),
 });
@@ -242,6 +251,13 @@ const turnSchema = z.strictObject({
   costUsd: z.number().nonnegative().nullable(),
   steps: z.array(stepSchema),
   links: z.array(linkSchema),
+  /**
+   * The safety version this reply saved before its first change (S20): on the conversation's
+   * first turn that changed something, for a panel opened again to point *Open Version History* at.
+   */
+  safetyVersion: z
+    .strictObject({ versionId: z.string().min(1).max(100), label: z.string().min(1).max(300) })
+    .optional(),
 });
 
 /** See {@link turnSchema}. */
@@ -403,6 +419,15 @@ export const assistantChannels = {
     request: z.tuple([sessionIdSchema]),
     response: z.null(),
   },
+  /**
+   * Opens a link from a reply in the person's browser, once they've clicked it. Main opens only a
+   * web address that reply holds, in its own copy of the conversation.
+   */
+  assistantOpenLink: {
+    channel: "assistant:open-link",
+    request: z.tuple([sessionIdSchema, replyIdSchema, z.string().min(1).max(2000)]),
+    response: z.strictObject({ status: z.enum(["opened", "refused", "failed"]) }),
+  },
   /** The site's conversation so far, for a panel opened again. */
   assistantConversation: {
     channel: "assistant:conversation",
@@ -439,6 +464,12 @@ export interface AssistantApi {
   stop(replyId: string): Promise<void>;
   newConversation(session: string): Promise<void>;
   conversation(session: string): Promise<ConversationTurn[]>;
+  /** Opens `href` from that reply in the browser: only a web address the reply holds. */
+  openLink(
+    session: string,
+    replyId: string,
+    href: string,
+  ): Promise<{ status: "opened" | "refused" | "failed" }>;
   /** Calls `listener` with each event main pushes. Returns a stop function. */
   onEvent(listener: (event: AssistantEvent) => void): () => void;
 }
