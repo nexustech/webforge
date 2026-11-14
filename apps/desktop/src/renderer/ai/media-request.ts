@@ -1,7 +1,8 @@
 import { CONFIRM_TIMEOUT_MS } from "@webforge/commands";
 import type { MediaMeta } from "@webforge/model";
 import { z } from "zod";
-import { type AiRequest, type AiResponse, REQUEST_MEDIA } from "../../shared/ipc/ai.js";
+import { requestMediaInput } from "../../shared/ai-tools.js";
+import type { AiRequest, AiResponse } from "../../shared/ipc/ai.js";
 
 /** What an AI app asks the person for: who asks, and why, in the app's own words. */
 export type MediaAsk = { readonly app: string; readonly reason: string };
@@ -29,17 +30,17 @@ const BUSY: AiResponse = {
 };
 
 /**
- * The window's answer to `requestMedia` (4.12b, AIB-7): `undefined` for any other request. It
+ * The window's answer to `requestMedia` (4.12b, AIB-7), which it routes here by its definition. It
  * asks the person, with the app's reason, whether to add pictures or files; on **Add Files…** it
  * opens Webforge's own Add files dialog, and answers with the id, file name and kind of each one
  * the person added. The app never names a file, and nothing is fetched. One question at a time.
  */
 export function createMediaRequests(
   deps: MediaRequestDeps,
-): (request: AiRequest) => Promise<AiResponse> | undefined {
+): (request: AiRequest) => Promise<AiResponse> {
   let asking = false;
   const answer = async (app: string, input: unknown): Promise<AiResponse> => {
-    const parsed = REQUEST_MEDIA.input.safeParse(input);
+    const parsed = requestMediaInput.safeParse(input);
     if (!parsed.success) return { status: "invalid", message: z.prettifyError(parsed.error) };
     if (asking || deps.busy()) return BUSY;
     asking = true;
@@ -66,8 +67,8 @@ export function createMediaRequests(
       asking = false;
     }
   };
-  return (request) =>
-    request.kind === "command" && request.name === REQUEST_MEDIA.name
+  return async (request) =>
+    request.kind === "command"
       ? answer(request.app, request.input)
-      : undefined;
+      : { status: "invalid", message: "requestMedia is a command." };
 }

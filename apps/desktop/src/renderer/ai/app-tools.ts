@@ -3,12 +3,12 @@ import type { SiteDoc } from "@webforge/model";
 import { checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
 import { TEMPLATE_IMAGE_HASHES } from "@webforge/templates";
-import { type AiRequest, type AiResponse, isAppTool } from "../../shared/ipc/ai.js";
+import type { AiResponse } from "../../shared/ipc/ai.js";
 
 /** How long after one Open Preview another opens nothing more, so an app can't flood the browser. */
 export const PREVIEW_AGAIN_MS = 10_000;
 
-/** What the window's own tools (`APP_TOOLS`) work with. */
+/** What Run Site Check and Open Preview work with. */
 export type AppToolsDeps = {
   /** The open site as it is now. */
   readonly site: () => SiteDoc;
@@ -30,18 +30,20 @@ const ruleTitle = (rule: string) => {
 };
 
 /**
- * The window's answers to the tools it has itself (4.9): `undefined` for any other request, which
- * the command layer answers. Each takes nothing.
+ * The window's answers to two of the tools it has itself (4.9, `WINDOW_TOOLS`), each taking
+ * nothing.
  * - **runSiteCheck:** the export's check, by rule id, title and level, and each finding's place by
  *   id: never a finding's values, which can hold the site's text.
  * - **openPreview:** the Preview command, once in {@link PREVIEW_AGAIN_MS}.
  */
-export function createAppTools(deps: AppToolsDeps): (request: AiRequest) => AiResponse | undefined {
+export function createAppTools(deps: AppToolsDeps): {
+  readonly runSiteCheck: () => AiResponse;
+  readonly openPreview: () => AiResponse;
+} {
   const now = deps.now ?? Date.now;
   let previewedAt = Number.NEGATIVE_INFINITY;
-  return (request) => {
-    if (request.kind !== "query" || !isAppTool(request.name)) return undefined;
-    if (request.name === "runSiteCheck") {
+  return {
+    runSiteCheck: () => {
       const report = checkSite(
         {
           site: deps.site(),
@@ -67,13 +69,15 @@ export function createAppTools(deps: AppToolsDeps): (request: AiRequest) => AiRe
             })),
         },
       };
-    }
-    const at = now();
-    if (at - previewedAt < PREVIEW_AGAIN_MS) {
-      return { status: "done", data: { opened: false, reason: "Opened a moment ago." } };
-    }
-    previewedAt = at;
-    deps.openPreview();
-    return { status: "done", data: { opened: true } };
+    },
+    openPreview: () => {
+      const at = now();
+      if (at - previewedAt < PREVIEW_AGAIN_MS) {
+        return { status: "done", data: { opened: false, reason: "Opened a moment ago." } };
+      }
+      previewedAt = at;
+      deps.openPreview();
+      return { status: "done", data: { opened: true } };
+    },
   };
 }

@@ -144,6 +144,23 @@ A collection (a Blog; later a Portfolio or Events) is a set of pages that share 
 
 The built-in assistant ([ADR 0026](adr/0026-assistant.md), 6.9a–d, #870–#873) runs its loop in main and reuses the AI apps' tools; the renderer only shows the conversation. Its panel and review card are in `renderer/assistant/`, and its contract with main is the `assistant` IPC domain (`shared/ipc/assistant.ts`, `main/assistant-ipc.ts`). The ADR fixes that contract: a change to it needs a note to stream A.
 
+## AI tools
+
+Every tool an AI app or the assistant can call is one `ToolDef` (#981, `@webforge/commands`), and nothing else keys on its name. A definition has:
+
+- its name, its kind (`query` or `command`), its zod `input` and its description;
+- who answers it (`answeredBy`): main, or the window, for the site open in it;
+- whether a version is saved before it (`savesVersionFirst`);
+- whether the assistant has it too (`forAssistant`).
+
+The MCP server lists each one with the JSON Schema made from its zod, and the untrusted-site-text line added. It passes the definition with each call, and main routes the call and saves the version by it. Where a new one goes:
+
+- **A query or command of the command layer** goes in `QUERIES` or `COMMANDS` (`packages/commands`): `AI_TOOLS` lists it.
+- **One the window answers itself** goes in `WINDOW_TOOLS` (`apps/desktop/src/shared/ai-tools.ts`), with its handler in `renderer/ai/area.ts`'s `WindowToolHandlers`. One without a handler fails typecheck.
+- **One main answers** goes in `MAIN_TOOLS`, with its handler in `mcp-service.ts`'s `MAIN_TOOL_HANDLERS`, which is checked the same way.
+
+`main/__snapshots__/mcp-tools.json.snap` is what `tools/list` gives: a change to a tool shows there, for review.
+
 ## AI clients
 
 The kinds of AI app the person can pair in AI apps (4.9, #980), such as Claude Desktop, Claude Code and VS Code, are a registry, so the dialog has no vendor in its code. To add one:
