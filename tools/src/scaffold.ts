@@ -1,20 +1,22 @@
 // Editor scaffolds (2.20, B7), beside 2.19's `pnpm new-component`: an area of the editor, a panel,
 // commands, a kind of field or an IPC domain, with its strings, story and test, registered where
-// the app finds it. What it writes passes `pnpm check` as it is; then fill it in
-// (docs/extending.md).
+// the app finds it, and an area or panel with a help page and a **?** topic. What it writes passes
+// `pnpm check` as it is; then fill it in (docs/extending.md).
 //
 // Usage:
 //   pnpm scaffold area <Name> [--window]
 //   pnpm scaffold panel <Name> [--area <folder>] [--window]
 //   pnpm scaffold commands <Name> [--area <folder>] [--window]
 //   pnpm scaffold field-kind <Name>
-//   pnpm scaffold ipc-domain <Name>
+//   pnpm scaffold ipc-domain <Name> --site | --app "<why its calls needn't name the open site>"
 //
 //   <Name>    PascalCase: Bookings, OpeningTimes. An IPC domain's is one word (Calendar).
 //   --area    the renderer folder the panel or commands go in (bookings); made if it isn't there.
 //             Without it, the name's own folder: `panel Notes` goes in notes/
 //   --window  registered by the window (WINDOW_AREAS), after the shell's own commands, rather than
 //             around the canvas (EDITOR_AREAS): see renderer/areas.ts
+//   --site    an IPC domain whose calls read or change the open site: each names the opening first
+//   --app     one whose calls don't, and why, as ipc-sessions.test.ts lists every channel (#979)
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
@@ -315,10 +317,74 @@ function areaPlan(
   return { files: { [path]: areaFile(scope, lines, body) }, edits: listed };
 }
 
+// Help: something people see has a page in docs/help, listed in the Help window's contents, and a
+// **?** topic (HP-4, #979).
+
+const HELP = "docs/help";
+const HELP_README = `${HELP}/README.md`;
+const HELP_LINKS = `${RENDERER}/help/help-links.json`;
+
+/** `links`, the **?** topics' table, with `topic` opening page `page`. */
+export function addHelpTopic(links: string, topic: string, page: string): string {
+  if (Object.hasOwn(JSON.parse(links) as object, topic)) {
+    throw new Error(`a ? topic ${topic} is there already: pick another name`);
+  }
+  const end = links.lastIndexOf("}");
+  if (end === -1) throw new Error("can't find the table's end");
+  const before = links.slice(0, end).trimEnd();
+  const comma = before.endsWith("{") ? "" : ",";
+  return `${before}${comma}\n  ${JSON.stringify(topic)}: { "page": ${JSON.stringify(page)} }\n}\n`;
+}
+
+/**
+ * The help part of a plan: a page for `names` to write in the app's words, listed last in the Help
+ * window's contents, and a **?** topic, `topic`, that opens it. A panel's page may be its area's,
+ * there already (`share`); an area's is its own.
+ */
+function helpPlan(root: string, names: Names, today: string, topic: string, share: boolean) {
+  const page = `${HELP}/${names.file}.md`;
+  const there = existsSync(join(root, page));
+  if (there && !share) throw new Error(`${page} exists already: pick another name`);
+  const opens = { [HELP_LINKS]: [(text: string) => addHelpTopic(text, topic, names.file)] };
+  const button = `its ? topic is "${topic}" (<HelpButton topic="${topic}" />).`;
+  if (there) return { files: {}, edits: opens, next: [`Say what it adds in ${page}; ${button}`] };
+  const name = names.label.toLowerCase();
+  return {
+    files: {
+      [page]: [
+        "---",
+        `id: ${names.file}`,
+        `title: ${names.label}`,
+        `summary: Say in a line what the ${name} is for.`,
+        "related: []",
+        `updated: ${today}`,
+        "---",
+        "",
+        `# ${names.label}`,
+        "",
+        `Say what the ${name} shows and what you can do with it, in the words the app uses (docs/help/README.md).`,
+        "",
+      ].join("\n"),
+    },
+    edits: {
+      [HELP_README]: [
+        (text: string) =>
+          insertBefore(
+            text,
+            "\n## Writing a help page",
+            `- [${names.label}](${names.file}.md): say what it's for\n`,
+          ),
+      ],
+      ...opens,
+    },
+    next: [`Write ${page} and its line in ${HELP_README}; ${button}`],
+  };
+}
+
 // The scaffolds.
 
 /** `pnpm scaffold area`: a new renderer folder, its area listed, and its strings. */
-export function areaPlanFor(root: string, names: Names, scope: Scope): Plan {
+export function areaPlanFor(root: string, names: Names, scope: Scope, today: string): Plan {
   const folder = names.file;
   if (existsSync(join(root, RENDERER, folder)))
     throw new Error(`${RENDERER}/${folder} exists already: pick another name`);
@@ -332,14 +398,17 @@ export function areaPlanFor(root: string, names: Names, scope: Scope): Plan {
   );
   const area = areaPlan(root, folder, scope, [], body, name);
   const strings = stringsPlan(root, folder, names.label, []);
+  const help = helpPlan(root, names, today, names.camel, false);
   return {
     files: {
       ...area.files,
       [`${RENDERER}/${folder}/area.test.ts`]: areaTestFile(names, scope),
       ...strings.files,
+      ...help.files,
     },
-    edits: { ...area.edits, ...strings.edits },
+    edits: { ...area.edits, ...strings.edits, ...help.edits },
     next: [
+      ...help.next,
       `Say what the ${names.label} area adds, then register it in ${RENDERER}/${folder}/area.ts,`,
       `or add its parts: pnpm scaffold panel|commands <Name> --area ${folder}${scope === "window" ? " --window" : ""}.`,
     ],
@@ -362,7 +431,13 @@ function areaTestFile(names: Names, scope: Scope): string {
 }
 
 /** `pnpm scaffold panel`: a panel, its registration, story, test and strings, as an area. */
-export function panelPlanFor(root: string, names: Names, folder: string, scope: Scope): Plan {
+export function panelPlanFor(
+  root: string,
+  names: Names,
+  folder: string,
+  scope: Scope,
+  today: string,
+): Plan {
   const { pascal, camel, file, label } = names;
   const dir = `${RENDERER}/${folder}`;
   const keys = { title: `${camel}.panelTitle`, empty: `${camel}.panelEmpty` };
@@ -388,18 +463,26 @@ export function panelPlanFor(root: string, names: Names, folder: string, scope: 
     `"${keys.title}": "${label}",`,
     `"${keys.empty}": "Nothing in {site} to show here yet.",`,
   ]);
+  // Its own topic: an area of the same name has the name's.
+  const help = helpPlan(root, names, today, `${camel}Panel`, true);
   return {
     files: {
       [`${dir}/${pascal}Panel.tsx`]: [
         'import { t } from "@webforge/i18n";',
         'import type { EditorSession } from "../editor/editor-session.js";',
         'import { useDocument } from "../editor/use-document.js";',
+        'import { HelpButton } from "../help/index.js";',
         "",
         `/** The ${label} panel: say in a sentence what it shows, and what it lets the person do. */`,
         `export function ${pascal}Panel({ session }: { readonly session: EditorSession }) {`,
         "  const site = useDocument(session, (doc) => doc.settings.general.name);",
-        '  return <p className="m-0 p-3 text-sm text-muted-foreground">' +
-          `{t("${keys.empty}", { site })}</p>;`,
+        "  return (",
+        '    <div className="flex items-start gap-2 p-3">',
+        '      <p className="m-0 flex-1 text-sm text-muted-foreground">' +
+          `{t("${keys.empty}", { site })}</p>`,
+        `      <HelpButton topic="${camel}Panel" />`,
+        "    </div>",
+        "  );",
         "}",
         "",
       ].join("\n"),
@@ -472,15 +555,17 @@ export function panelPlanFor(root: string, names: Names, folder: string, scope: 
       ].join("\n"),
       ...area.files,
       ...strings.files,
+      ...help.files,
     },
     edits: merge(
-      merge(area.edits, strings.edits),
+      merge(merge(area.edits, strings.edits), help.edits),
       // The editor's test lists its panels exactly, so one added by mistake fails it: this one
       // joins the list.
       scope === "editor" ? { [EDITOR_TEST]: [(text: string) => listEditorPanel(text, camel)] } : {},
     ),
     next: [
       `Fill in ${dir}/${pascal}Panel.tsx; its story shows it in Storybook (Panels/Registered/${pascal}).`,
+      ...help.next,
     ],
   };
 }
@@ -788,21 +873,50 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
   };
 }
 
-/** `pnpm scaffold ipc-domain`: an IPC domain with one call, from the contract to main's handler. */
-export function ipcDomainPlanFor(root: string, names: Names): Plan {
+/**
+ * Whether an IPC domain's calls read or change the open site (R6, #663): the site's name the
+ * opening first, and main refuses one for a site a hand-off has replaced; the app's say why they
+ * needn't, as `ipc-sessions.test.ts` lists every channel.
+ */
+export type IpcReach = { readonly site: true } | { readonly site: false; readonly reason: string };
+
+const SESSIONS_TEST = "apps/desktop/src/shared/ipc-sessions.test.ts";
+
+/** The sessions test with `channel` listed as the open site's, or as the app's for `reason`. */
+export function listChannel(text: string, channel: string, reach: IpcReach): string {
+  return reach.site
+    ? addEntry(text, "const SITE_CHANNELS = [", "] as const;", `${JSON.stringify(channel)},`)
+    : addEntry(
+        text,
+        "const OTHER_CHANNELS: Readonly<Record<string, string>> = {",
+        "\n};",
+        `${JSON.stringify(channel)}: ${JSON.stringify(reach.reason)},`,
+      );
+}
+
+/** `pnpm scaffold ipc-domain`: a contract, its preload API and main's handler, registered. */
+export function ipcDomainPlanFor(root: string, names: Names, reach: IpcReach | undefined): Plan {
   const { pascal, camel: domain } = names;
   if (domain !== names.file)
     throw new Error(`An IPC domain's name is one word (Calendar), not ${pascal}`);
+  if (reach === undefined || (!reach.site && reach.reason.trim() === "")) {
+    throw new Error(
+      'Say whether its calls read or change the open site: --site, or --app "<why they needn\'t>"',
+    );
+  }
   const shared = "apps/desktop/src/shared";
   const contract = `${shared}/ipc/${domain}.ts`;
   if (existsSync(join(root, contract)))
     throw new Error(`${contract} exists already: pick another name`);
   const call = `${domain}Status`;
+  const channel = `${domain}:status`;
   const handlers = `register${pascal}Handlers`;
+  const { site } = reach;
   return {
     files: {
       [contract]: [
         'import { z } from "zod";',
+        ...(site ? ['import { sessionIdSchema } from "./project.js";'] : []),
         "",
         `/** Whether the ${domain} domain is ready: say what the renderer asks the main process for. */`,
         "const statusSchema = z.strictObject({ ready: z.boolean() });",
@@ -812,10 +926,12 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         "",
         `/** IPC channels of the \`${domain}\` domain (\`${domain}:*\`). Each one's arguments are checked. */`,
         `export const ${domain}Channels = {`,
-        "  /** Whether it is ready. */",
+        site
+          ? "  /** Whether it is ready, for the opening of the site the window was loaded for. */"
+          : "  /** Whether it is ready. */",
         `  ${call}: {`,
-        `    channel: "${domain}:status",`,
-        "    request: z.tuple([]),",
+        `    channel: "${channel}",`,
+        `    request: z.tuple([${site ? "sessionIdSchema" : ""}]),`,
         "    response: statusSchema,",
         "  },",
         "} as const;",
@@ -823,7 +939,7 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         `/** \`window.webforge.${domain}\`. */`,
         `export interface ${pascal}Api {`,
         "  /** Whether it is ready. */",
-        `  status(): Promise<${pascal}Status>;`,
+        `  status(${site ? "session: string" : ""}): Promise<${pascal}Status>;`,
         "}",
         "",
       ].join("\n"),
@@ -833,7 +949,9 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         "",
         `/** \`window.webforge.${domain}\`. */`,
         `export const ${domain}Api = (call: Call): ${pascal}Api => ({`,
-        `  status: () => call("${call}"),`,
+        site
+          ? `  status: (session) => call("${call}", session),`
+          : `  status: () => call("${call}"),`,
         "});",
         "",
       ].join("\n"),
@@ -845,8 +963,21 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         `export function ${handlers}(`,
         '  ipc: Pick<IpcMain, "handle">,',
         "  isTrustedSender: (senderUrl: string) => boolean,",
-        "): void {",
-        `  registerIpcHandler(ipc, "${call}", isTrustedSender, () => ({ ready: true }));`,
+        ...(site
+          ? [
+              "  /** Whether `session` is the opening of the site open in the window. */",
+              "  isOpen: (session: string) => boolean,",
+              "): void {",
+              `  registerIpcHandler(ipc, "${call}", isTrustedSender, (session) => {`,
+              "    // A call for a site a hand-off has replaced is refused (R6, #663).",
+              '    if (!isOpen(session)) throw new Error("Not the site open in the window");',
+              "    return { ready: true };",
+              "  });",
+            ]
+          : [
+              "): void {",
+              `  registerIpcHandler(ipc, "${call}", isTrustedSender, () => ({ ready: true }));`,
+            ]),
         "}",
         "",
       ].join("\n"),
@@ -856,26 +987,35 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         `import { ${handlers} } from "./${domain}-ipc.js";`,
         "",
         "type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;",
+        ...(site ? ["", 'const SESSION = "00000000-0000-4000-8000-000000000001";'] : []),
         "",
         "/** The handler of `channel`, called as from a renderer that `trusted` says it trusts or not. */",
-        "function invoker(channel: string, trusted = true) {",
+        `function invoker(channel: string, trusted = true${site ? ", open = true" : ""}) {`,
         "  const registered = new Map<string, Handler>();",
         "  const ipc = {",
         "    handle: (name: string, handler: Handler) => registered.set(name, handler),",
         '  } as unknown as Pick<IpcMain, "handle">;',
-        `  ${handlers}(ipc, () => trusted);`,
+        `  ${handlers}(ipc, () => trusted${site ? ", () => open" : ""});`,
         "  return (...args: unknown[]) =>",
         '    registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);',
         "}",
         "",
         `describe("${handlers}", () => {`,
         '  it("says it is ready", async () => {',
-        `    expect(await invoker("${domain}:status")()).toEqual({ ready: true });`,
+        `    expect(await invoker("${channel}")(${site ? "SESSION" : ""})).toEqual({ ready: true });`,
         "  });",
         "",
         '  it("refuses a renderer it does not trust", async () => {',
-        `    await expect(invoker("${domain}:status", false)()).rejects.toThrow();`,
+        `    await expect(invoker("${channel}", false)(${site ? "SESSION" : ""})).rejects.toThrow();`,
         "  });",
+        ...(site
+          ? [
+              "",
+              '  it("refuses a site a hand-off has replaced", async () => {',
+              `    await expect(invoker("${channel}", true, false)(SESSION)).rejects.toThrow();`,
+              "  });",
+            ]
+          : []),
         "});",
         "",
       ].join("\n"),
@@ -893,6 +1033,7 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
             `${domain}: ${domain}Channels,`,
           ),
       ],
+      [SESSIONS_TEST]: [(text) => listChannel(text, channel, reach)],
       [`${shared}/webforge-api.ts`]: [
         (text) => addImport(text, `./ipc/${domain}.js`, `${pascal}Api`, true),
         (text) =>
@@ -919,13 +1060,18 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
           insertBefore(
             text,
             "    // A site double-clicked in Explorer arrives",
-            `    ${handlers}(ipcMain, isTrustedSender);\n`,
+            site
+              ? `    ${handlers}(ipcMain, isTrustedSender, (session) =>\n      projectSession.staleReason(session) === undefined,\n    );\n`
+              : `    ${handlers}(ipcMain, isTrustedSender);\n`,
           ),
       ],
     },
     next: [
       `Fill in ${contract} (the calls and their zod schemas), then main's handler and the preload's`,
       `${domain}Api. The renderer calls it as window.webforge.${domain}.`,
+      site
+        ? `Each new call that reads or changes the open site takes the opening first: list it in ${SESSIONS_TEST}'s SITE_CHANNELS.`
+        : `List each new call in ${SESSIONS_TEST}, with why it needn't name the opening, or as the site's.`,
     ],
   };
 }
@@ -952,7 +1098,13 @@ function merge(
 export function planFor(
   what: What,
   name: string,
-  { root = ".", folder, scope = "editor" }: { root?: string; folder?: string; scope?: Scope } = {},
+  {
+    root = ".",
+    folder,
+    scope = "editor",
+    reach,
+    today = new Date().toISOString().slice(0, 10),
+  }: { root?: string; folder?: string; scope?: Scope; reach?: IpcReach; today?: string } = {},
 ): Plan {
   const names = namesOf(name);
   if (typeof names === "string") throw new Error(names);
@@ -965,15 +1117,15 @@ export function planFor(
   };
   switch (what) {
     case "area":
-      return areaPlanFor(root, names, scope);
+      return areaPlanFor(root, names, scope, today);
     case "panel":
-      return panelPlanFor(root, names, area(), scope);
+      return panelPlanFor(root, names, area(), scope, today);
     case "commands":
       return commandsPlanFor(root, names, area(), scope);
     case "field-kind":
       return fieldKindPlanFor(root, names);
     case "ipc-domain":
-      return ipcDomainPlanFor(root, names);
+      return ipcDomainPlanFor(root, names, reach);
   }
 }
 
@@ -1055,7 +1207,7 @@ const USAGE = [
   "  pnpm scaffold panel <Name> [--area <folder>] [--window]",
   "  pnpm scaffold commands <Name> [--area <folder>] [--window]",
   "  pnpm scaffold field-kind <Name>",
-  "  pnpm scaffold ipc-domain <Name>",
+  '  pnpm scaffold ipc-domain <Name> --site | --app "<why its calls needn\'t name the open site>"',
   "",
 ].join("\n");
 
@@ -1078,9 +1230,16 @@ export function main(
   }
   try {
     const folder = option(args, "--area");
+    const why = option(args, "--app");
+    const reach: IpcReach | undefined = args.includes("--site")
+      ? { site: true }
+      : why === undefined
+        ? undefined
+        : { site: false, reason: why };
     const plan = planFor(what as What, name, {
       root,
       ...(folder === undefined ? {} : { folder }),
+      ...(reach === undefined ? {} : { reach }),
       scope: args.includes("--window") ? "window" : "editor",
     });
     const result = scaffold(plan, root, format);

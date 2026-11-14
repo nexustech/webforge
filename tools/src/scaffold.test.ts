@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addEntry,
+  addHelpTopic,
   addImport,
   addImportLine,
   applyEdits,
@@ -38,8 +39,13 @@ const REPO = join(import.meta.dirname, "../..");
 // The repository's files each kind of scaffold reads and changes. Each test copies only those it
 // needs: on a slow runner every file copied and then read for the first time costs time (#403).
 
-/** An area's: the list of areas and the strings' index. */
-const AREA = ["apps/desktop/src/renderer/areas.ts", "packages/i18n/src/en.ts"];
+/** An area's: the list of areas, the strings' index, and Help's contents and **?** topics. */
+const AREA = [
+  "apps/desktop/src/renderer/areas.ts",
+  "packages/i18n/src/en.ts",
+  "docs/help/README.md",
+  "apps/desktop/src/renderer/help/help-links.json",
+];
 
 /** A panel's: an area's, and the editor's test that lists the panels. */
 const PANEL = [...AREA, "apps/desktop/src/renderer/editor/Editor.test.tsx"];
@@ -66,10 +72,14 @@ const FIELD_KIND = [
 /** An IPC domain's. */
 const IPC_DOMAIN = [
   "apps/desktop/src/shared/ipc-contract.ts",
+  "apps/desktop/src/shared/ipc-sessions.test.ts",
   "apps/desktop/src/shared/webforge-api.ts",
   "apps/desktop/src/preload/api.ts",
   "apps/desktop/src/main/app.ts",
 ];
+
+/** An IPC domain whose calls don't read or change the open site. */
+const APP = { site: false, reason: "the calendar's own settings, whichever site is open" } as const;
 
 const temporary: string[] = [];
 
@@ -185,6 +195,20 @@ ${test}`,
   });
 });
 
+describe("scaffold's ? topics", () => {
+  it("adds a topic last, as the table is written, and refuses one there already", () => {
+    const table = '{\n  "export": { "page": "export" },\n  "publish": { "page": "publish" }\n}\n';
+
+    expect(addHelpTopic(table, "bookings", "bookings")).toBe(
+      '{\n  "export": { "page": "export" },\n  "publish": { "page": "publish" },\n  "bookings": { "page": "bookings" }\n}\n',
+    );
+    expect(addHelpTopic("{}\n", "bookings", "bookings")).toBe(
+      '{\n  "bookings": { "page": "bookings" }\n}\n',
+    );
+    expect(() => addHelpTopic(table, "export", "export")).toThrow("there already");
+  });
+});
+
 describe("scaffold on the repository's files", () => {
   // Each edit finds its place in the files as they are now, without writing anything: a file
   // changed so a scaffold can't find its place fails here.
@@ -196,7 +220,9 @@ describe("scaffold on the repository's files", () => {
     "window commands": () =>
       planFor("commands", "JumpHome", { root: REPO, folder: "site", scope: "window" }),
     "field kind": () => planFor("field-kind", "Rating", { root: REPO }),
-    "IPC domain": () => planFor("ipc-domain", "Calendar", { root: REPO }),
+    "IPC domain": () => planFor("ipc-domain", "Calendar", { root: REPO, reach: APP }),
+    "site's IPC domain": () =>
+      planFor("ipc-domain", "Calendar", { root: REPO, reach: { site: true } }),
   };
 
   for (const [what, plan] of Object.entries(plans)) {
@@ -226,8 +252,32 @@ describe("scaffold", () => {
       "apps/desktop/src/renderer/bookings/area.ts",
       "apps/desktop/src/renderer/bookings/area.test.ts",
       "packages/i18n/src/en/bookings.ts",
+      "docs/help/bookings.md",
     ]);
-    expect(area.changed).toEqual(["apps/desktop/src/renderer/areas.ts", "packages/i18n/src/en.ts"]);
+    expect(area.changed).toEqual([
+      "apps/desktop/src/renderer/areas.ts",
+      "packages/i18n/src/en.ts",
+      "docs/help/README.md",
+      "apps/desktop/src/renderer/help/help-links.json",
+    ]);
+    // Something people see has a help page, in Help's contents, and a ? topic (HP-4, #979); a
+    // panel in the area shares its page, with a topic of its own.
+    expect(read(root, "docs/help/bookings.md")).toMatch(
+      /^---\nid: bookings\ntitle: Bookings\nsummary: .+\nrelated: \[\]\nupdated: \d{4}-\d\d-\d\d\n---\n/,
+    );
+    expect(read(root, "docs/help/README.md")).toContain(
+      "- [Bookings](bookings.md): say what it's for\n\n## Writing a help page",
+    );
+    const topics = JSON.parse(read(root, "apps/desktop/src/renderer/help/help-links.json"));
+    expect(topics).toMatchObject({
+      bookings: { page: "bookings" },
+      bookingsPanel: { page: "bookings" },
+    });
+    expect(panel.written).not.toContain("docs/help/bookings.md");
+    const bookingsPanel = read(root, "apps/desktop/src/renderer/bookings/BookingsPanel.tsx");
+    expect(bookingsPanel).toContain('<HelpButton topic="bookingsPanel" />');
+    // Through the help area's index, as dependency-cruiser has another area reach it.
+    expect(bookingsPanel).toContain('import { HelpButton } from "../help/index.js";');
     expect(panel.written).toContain(
       "apps/desktop/src/renderer/bookings/register-bookings-panel.stories.tsx",
     );
@@ -332,7 +382,7 @@ describe("scaffold", () => {
   it("writes an IPC domain from the contract to main's handler", () => {
     const root = copyOfRepo(IPC_DOMAIN);
 
-    const result = scaffold(planFor("ipc-domain", "Calendar", { root }), root, false);
+    const result = scaffold(planFor("ipc-domain", "Calendar", { root, reach: APP }), root, false);
 
     expect(result.written).toEqual([
       "apps/desktop/src/shared/ipc/calendar.ts",
@@ -351,6 +401,35 @@ describe("scaffold", () => {
     );
     expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
       "    registerCalendarHandlers(ipcMain, isTrustedSender);",
+    );
+    // Listed with why it needn't name the open site, as every channel is (#979).
+    expect(read(root, "apps/desktop/src/shared/ipc-sessions.test.ts")).toContain(
+      `  "calendar:status": "the calendar's own settings, whichever site is open",\n};`,
+    );
+  });
+
+  it("writes a site's IPC domain, whose calls name the opening and refuse a replaced one", () => {
+    const root = copyOfRepo(IPC_DOMAIN);
+
+    scaffold(planFor("ipc-domain", "Calendar", { root, reach: { site: true } }), root, false);
+
+    const contract = read(root, "apps/desktop/src/shared/ipc/calendar.ts");
+    expect(contract).toContain("request: z.tuple([sessionIdSchema]),");
+    expect(contract).toContain("status(session: string): Promise<CalendarStatus>;");
+    expect(read(root, "apps/desktop/src/preload/api/calendar.ts")).toContain(
+      'status: (session) => call("calendarStatus", session),',
+    );
+    expect(read(root, "apps/desktop/src/main/calendar-ipc.ts")).toContain(
+      "if (!isOpen(session)) throw",
+    );
+    expect(read(root, "apps/desktop/src/main/calendar-ipc.test.ts")).toContain(
+      "refuses a site a hand-off has replaced",
+    );
+    expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
+      "projectSession.staleReason(session) === undefined",
+    );
+    expect(read(root, "apps/desktop/src/shared/ipc-sessions.test.ts")).toContain(
+      '  "calendar:status",\n] as const;',
     );
   });
 
@@ -395,8 +474,18 @@ describe("scaffold's refusals", () => {
     expect(() => planFor("field-kind", "Icon", { root: REPO })).toThrow(
       /has a "icon" kind already/,
     );
-    expect(() => planFor("ipc-domain", "SpellCheck", { root: REPO })).toThrow(/one word/);
-    expect(() => planFor("ipc-domain", "Clipboard", { root: REPO })).toThrow(/exists already/);
+    expect(() => planFor("ipc-domain", "SpellCheck", { root: REPO, reach: APP })).toThrow(
+      /one word/,
+    );
+    expect(() => planFor("ipc-domain", "Clipboard", { root: REPO, reach: APP })).toThrow(
+      /exists already/,
+    );
+    // Every channel says whether it reads or changes the open site (R6, #979).
+    for (const reach of [undefined, { site: false, reason: " " } as const]) {
+      expect(() =>
+        planFor("ipc-domain", "Calendar", { root: REPO, ...(reach && { reach }) }),
+      ).toThrow(/--site, or --app/);
+    }
   });
 
   it("refuses an area whose strings file it doesn't know, rather than starting another", () => {
@@ -470,6 +559,21 @@ describe("pnpm scaffold", () => {
     expect(errors).toHaveBeenCalledTimes(3);
     expect(String(errors.mock.calls[0]?.[0])).toContain("pnpm scaffold area <Name> [--window]");
     expect(process.exitCode).toBe(1);
+  });
+
+  it("takes whether an IPC domain's calls are the open site's: --site, or --app and why", () => {
+    const root = copyOfRepo(IPC_DOMAIN);
+    const errors = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const sessions = () => read(root, "apps/desktop/src/shared/ipc-sessions.test.ts");
+
+    main(["ipc-domain", "Calendar"], { root, format: false });
+    main(["ipc-domain", "Calendar", "--app", "the calendar's own"], { root, format: false });
+    main(["ipc-domain", "Diary", "--site"], { root, format: false });
+
+    expect(String(errors.mock.calls[0]?.[0])).toContain("--site, or --app");
+    expect(sessions()).toContain(`"calendar:status": "the calendar's own",`);
+    expect(sessions()).toContain('"diary:status",\n] as const;');
   });
 
   it("lists what it wrote and changed, and what to do next", () => {

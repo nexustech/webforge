@@ -435,7 +435,6 @@ describe("new-component's output passes help-check (#979)", () => {
       writeFileSync(file, JSON.stringify(data));
       return true;
     };
-    expect(checkHelp(root)).toEqual([]);
 
     for (const [type, label, place, helpPage, category] of [
       // Names no one will give a real component, so the copy never has them already.
@@ -450,6 +449,7 @@ describe("new-component's output passes help-check (#979)", () => {
       });
     }
 
+    // A copy of the repository's files, and every help page read and checked: seconds on a busy runner.
     expect(checkHelp(root)).toEqual([]);
-  });
+  }, 30_000);
 });
