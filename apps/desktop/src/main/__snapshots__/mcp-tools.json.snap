@@ -29,7 +29,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -41,10 +44,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -60,13 +69,18 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
         }
       },
-      "required": ["location"],
+      "required": [
+        "location"
+      ],
       "additionalProperties": false
     }
   },
@@ -91,7 +105,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -103,10 +120,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -122,7 +145,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
@@ -133,7 +159,10 @@
           "maxLength": 200
         }
       },
-      "required": ["location", "nodeId"],
+      "required": [
+        "location",
+        "nodeId"
+      ],
       "additionalProperties": false
     }
   },
@@ -159,7 +188,11 @@
         },
         "place": {
           "type": "string",
-          "enum": ["section", "element", "child"]
+          "enum": [
+            "section",
+            "element",
+            "child"
+          ]
         }
       },
       "additionalProperties": false
@@ -204,7 +237,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -216,10 +252,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -235,7 +277,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
@@ -285,7 +330,10 @@
           "maximum": 9007199254740991
         }
       },
-      "required": ["location", "type"],
+      "required": [
+        "location",
+        "type"
+      ],
       "additionalProperties": false
     }
   },
@@ -310,7 +358,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -322,10 +373,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -341,7 +398,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
@@ -359,7 +419,11 @@
           "additionalProperties": {}
         }
       },
-      "required": ["location", "nodeId", "values"],
+      "required": [
+        "location",
+        "nodeId",
+        "values"
+      ],
       "additionalProperties": false
     }
   },
@@ -384,7 +448,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -396,10 +463,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -415,7 +488,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
@@ -435,7 +511,12 @@
           "maxLength": 20000
         }
       },
-      "required": ["location", "nodeId", "field", "text"],
+      "required": [
+        "location",
+        "nodeId",
+        "field",
+        "text"
+      ],
       "additionalProperties": false
     }
   },
@@ -460,7 +541,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -472,10 +556,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -491,7 +581,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
@@ -533,7 +626,11 @@
           "maximum": 9007199254740991
         }
       },
-      "required": ["location", "nodeId", "index"],
+      "required": [
+        "location",
+        "nodeId",
+        "index"
+      ],
       "additionalProperties": false
     }
   },
@@ -558,7 +655,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "pageId"],
+              "required": [
+                "kind",
+                "pageId"
+              ],
               "additionalProperties": false
             },
             {
@@ -570,10 +670,16 @@
                 },
                 "part": {
                   "type": "string",
-                  "enum": ["header", "footer"]
+                  "enum": [
+                    "header",
+                    "footer"
+                  ]
                 }
               },
-              "required": ["kind", "part"],
+              "required": [
+                "kind",
+                "part"
+              ],
               "additionalProperties": false
             },
             {
@@ -589,7 +695,10 @@
                   "maxLength": 64
                 }
               },
-              "required": ["kind", "sharedSectionId"],
+              "required": [
+                "kind",
+                "sharedSectionId"
+              ],
               "additionalProperties": false
             }
           ]
@@ -600,7 +709,10 @@
           "maxLength": 200
         }
       },
-      "required": ["location", "nodeId"],
+      "required": [
+        "location",
+        "nodeId"
+      ],
       "additionalProperties": false
     }
   },
@@ -616,7 +728,9 @@
           "maxLength": 200
         }
       },
-      "required": ["title"],
+      "required": [
+        "title"
+      ],
       "additionalProperties": false
     }
   },
@@ -633,7 +747,9 @@
           "description": "A page's id, as the outline gives it."
         }
       },
-      "required": ["pageId"],
+      "required": [
+        "pageId"
+      ],
       "additionalProperties": false
     }
   },
@@ -658,7 +774,10 @@
           "type": "boolean"
         }
       },
-      "required": ["pageId", "title"],
+      "required": [
+        "pageId",
+        "title"
+      ],
       "additionalProperties": false
     }
   },
@@ -676,7 +795,10 @@
         },
         "direction": {
           "type": "string",
-          "enum": ["up", "down"]
+          "enum": [
+            "up",
+            "down"
+          ]
         },
         "steps": {
           "default": 1,
@@ -685,7 +807,10 @@
           "maximum": 200
         }
       },
-      "required": ["pageId", "direction"],
+      "required": [
+        "pageId",
+        "direction"
+      ],
       "additionalProperties": false
     }
   },
@@ -717,7 +842,9 @@
           "type": "boolean"
         }
       },
-      "required": ["pageId"],
+      "required": [
+        "pageId"
+      ],
       "additionalProperties": false
     }
   },
@@ -754,7 +881,15 @@
               "anyOf": [
                 {
                   "type": "string",
-                  "enum": ["food", "beauty", "trades", "services", "creative", "shop", "personal"]
+                  "enum": [
+                    "food",
+                    "beauty",
+                    "trades",
+                    "services",
+                    "creative",
+                    "shop",
+                    "personal"
+                  ]
                 },
                 {
                   "type": "null"
@@ -880,7 +1015,15 @@
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                      "enum": [
+                        "mon",
+                        "tue",
+                        "wed",
+                        "thu",
+                        "fri",
+                        "sat",
+                        "sun"
+                      ]
                     }
                   },
                   "opens": {
@@ -892,7 +1035,11 @@
                     "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
                   }
                 },
-                "required": ["days", "opens", "closes"],
+                "required": [
+                  "days",
+                  "opens",
+                  "closes"
+                ],
                 "additionalProperties": false
               }
             },
@@ -934,7 +1081,10 @@
                       "maximum": 180
                     }
                   },
-                  "required": ["latitude", "longitude"],
+                  "required": [
+                    "latitude",
+                    "longitude"
+                  ],
                   "additionalProperties": false
                 },
                 {
@@ -971,7 +1121,10 @@
                     "format": "uri"
                   }
                 },
-                "required": ["network", "url"],
+                "required": [
+                  "network",
+                  "url"
+                ],
                 "additionalProperties": false
               }
             },
@@ -999,7 +1152,10 @@
               "type": "boolean"
             },
             "readableByAi": {
-              "type": ["boolean", "null"]
+              "type": [
+                "boolean",
+                "null"
+              ]
             }
           },
           "additionalProperties": false
@@ -1023,7 +1179,9 @@
           "description": "The tokens to change. Nested groups (fonts, radius, typeScale…) are merged one level deep: what a group leaves out stays as it is."
         }
       },
-      "required": ["tokens"],
+      "required": [
+        "tokens"
+      ],
       "additionalProperties": false
     }
   },
@@ -1064,12 +1222,18 @@
               },
               "input": {}
             },
-            "required": ["name", "input"],
+            "required": [
+              "name",
+              "input"
+            ],
             "additionalProperties": false
           }
         }
       },
-      "required": ["title", "commands"],
+      "required": [
+        "title",
+        "commands"
+      ],
       "additionalProperties": false
     }
   },
@@ -1103,7 +1267,9 @@
           "maxLength": 200
         }
       },
-      "required": ["reason"],
+      "required": [
+        "reason"
+      ],
       "additionalProperties": false
     }
   },
@@ -1124,7 +1290,15 @@
       "properties": {
         "businessType": {
           "type": "string",
-          "enum": ["food", "beauty", "trades", "services", "creative", "shop", "personal"]
+          "enum": [
+            "food",
+            "beauty",
+            "trades",
+            "services",
+            "creative",
+            "shop",
+            "personal"
+          ]
         },
         "businessKind": {
           "type": "string",
@@ -1197,7 +1371,9 @@
                   "pattern": "^#[0-9a-fA-F]{6}$"
                 }
               },
-              "required": ["colour"],
+              "required": [
+                "colour"
+              ],
               "additionalProperties": false
             },
             {
@@ -1209,7 +1385,9 @@
                   "maxLength": 40
                 }
               },
-              "required": ["palette"],
+              "required": [
+                "palette"
+              ],
               "additionalProperties": false
             }
           ]
@@ -1255,7 +1433,15 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "enum": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+                  "enum": [
+                    "mon",
+                    "tue",
+                    "wed",
+                    "thu",
+                    "fri",
+                    "sat",
+                    "sun"
+                  ]
                 }
               },
               "opens": {
@@ -1267,7 +1453,11 @@
                 "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$"
               }
             },
-            "required": ["days", "opens", "closes"],
+            "required": [
+              "days",
+              "opens",
+              "closes"
+            ],
             "additionalProperties": false
           }
         },
@@ -1276,7 +1466,10 @@
           "pattern": "^https:\\/\\/[^/?#@]+\\/?$"
         }
       },
-      "required": ["businessType", "name"],
+      "required": [
+        "businessType",
+        "name"
+      ],
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false
     }
@@ -1292,7 +1485,9 @@
           "minimum": 1
         }
       },
-      "required": ["briefId"],
+      "required": [
+        "briefId"
+      ],
       "additionalProperties": false
     }
   }

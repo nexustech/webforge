@@ -132,7 +132,7 @@ describe("the MCP server (4.9)", () => {
   it("lists the same tools, word for word, as before they were one definition (#981)", async () => {
     const tools = (await (await inMemory()).listTools()).tools;
     await expect(`${JSON.stringify(tools, null, 2)}
-`).toMatchFileSnapshot("./__snapshots__/mcp-tools.json");
+`).toMatchFileSnapshot("./__snapshots__/mcp-tools.json.snap");
     const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
     await createAssistantMcpServer(INFO, ask).connect(serverSide);
     const assistant = new Client({ name: "test", version: "1" });
