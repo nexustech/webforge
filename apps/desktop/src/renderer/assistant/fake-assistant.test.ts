@@ -139,4 +139,39 @@ describe("the stand-in assistant (ADR 0026 §7)", () => {
       expect(event).not.toHaveProperty("session");
     }
   });
+
+  it("gives the safety version back with the conversation, for a panel opened again", async () => {
+    const fake = createFakeAssistant({
+      delayMs: 0,
+      reply: {
+        steps: [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }],
+        safetyVersion: { versionId: "v1", label: "Before the assistant's changes" },
+      },
+    });
+    const { ended } = recorder(fake);
+    await fake.send(SESSION, "Hello", {});
+    await ended;
+    const [turn] = await fake.conversation(SESSION);
+    expect(turn?.safetyVersion).toEqual({
+      versionId: "v1",
+      label: "Before the assistant's changes",
+    });
+  });
+
+  it("opens a link only from the reply that holds it, as main does", async () => {
+    const fake = createFakeAssistant({
+      delayMs: 0,
+      reply: { text: "See [our hours](https://bakery.example/hours)." },
+    });
+    const { ended } = recorder(fake);
+    const sent = await fake.send(SESSION, "Hello", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+    await ended;
+    expect(await fake.openLink(SESSION, sent.replyId, "https://bakery.example/hours")).toEqual({
+      status: "opened",
+    });
+    expect(await fake.openLink(SESSION, sent.replyId, "https://evil.example/")).toEqual({
+      status: "refused",
+    });
+  });
 });

@@ -1,5 +1,6 @@
 import { request } from "node:http";
-import { describe, expect, it, vi } from "vitest";
+import { type AddressInfo, Server } from "node:net";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { challengeFor, createOpenRouterSignIn } from "./openrouter-sign-in.js";
 
 /** A fake OpenRouter: hands out `key` for `code` with the right verifier, keeping what it got. */
@@ -64,7 +65,47 @@ async function authUrl(fake: ReturnType<typeof openRouter>): Promise<URL> {
   return url;
 }
 
+/**
+ * Makes the next binds of `::1` fail with `codes`, in turn, as another program holding the port
+ * or a computer without IPv6 would; gives the `127.0.0.1` listeners made meanwhile, and their ports.
+ */
+function failIpv6Binds(...codes: string[]): { loopback4: Server[]; ports: number[] } {
+  const loopback4: Server[] = [];
+  const ports: number[] = [];
+  const realListen = Server.prototype.listen;
+  vi.spyOn(Server.prototype, "listen").mockImplementation(function (
+    this: Server,
+    ...args: unknown[]
+  ) {
+    const code = args[1] === "::1" ? codes.shift() : undefined;
+    if (code !== undefined) {
+      process.nextTick(() => this.emit("error", Object.assign(new Error(code), { code })));
+      return this;
+    }
+    if (args[1] === "127.0.0.1") {
+      loopback4.push(this);
+      this.once("listening", () => ports.push((this.address() as AddressInfo).port));
+    }
+    return Reflect.apply(realListen, this, args) as Server;
+  });
+  return { loopback4, ports };
+}
+
+/** Signs in through the browser to the end. */
+async function signInThroughBrowser(fake: ReturnType<typeof openRouter>) {
+  const signedIn = signInWith(fake).start("browser");
+  const url = await authUrl(fake);
+  const callback = new URL(url.searchParams.get("callback_url") ?? "");
+  const page = await get(`${callback}?code=the-code&state=${url.searchParams.get("state")}`);
+  expect(page.status).toBe(200);
+  expect(await signedIn).toEqual({ status: "signed-in", key: "sk-or-v1-new" });
+}
+
 describe("OpenRouter's sign-in (6.9a, ADR 0026 §3)", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("opens OpenRouter with an S256 challenge, takes the callback, and exchanges the code", async () => {
     const fake = openRouter();
     const signIn = signInWith(fake);
@@ -112,6 +153,37 @@ describe("OpenRouter's sign-in (6.9a, ADR 0026 §3)", () => {
 
     expect((await get(`${callback}?code=the-code&state=${state}`)).status).toBe(200);
     expect(await signedIn).toMatchObject({ status: "signed-in" });
+  });
+
+  it("draws another port when another program holds the first at ::1, where localhost may go", async () => {
+    const { loopback4, ports } = failIpv6Binds("EADDRINUSE", "EADDRINUSE");
+    const fake = openRouter();
+    const signedIn = signInWith(fake).start("browser");
+    const url = await authUrl(fake);
+    // Two ports given up, closed at 127.0.0.1 too; the browser was sent to the third.
+    expect(loopback4).toHaveLength(3);
+    expect(loopback4.map((server) => server.listening)).toEqual([false, false, true]);
+    const callback = new URL(url.searchParams.get("callback_url") ?? "");
+    expect(Number(callback.port)).toBe(ports[2]);
+    const page = await get(`${callback}?code=the-code&state=${url.searchParams.get("state")}`);
+    expect(page.status).toBe(200);
+    expect(await signedIn).toEqual({ status: "signed-in", key: "sk-or-v1-new" });
+  });
+
+  it("carries on at 127.0.0.1 alone on a computer without IPv6", async () => {
+    const { loopback4 } = failIpv6Binds("EADDRNOTAVAIL");
+    await signInThroughBrowser(openRouter());
+    expect(loopback4).toHaveLength(1);
+  });
+
+  it("ends as failed when ::1 stays taken, or won't bind for another reason", async () => {
+    failIpv6Binds("EADDRINUSE", "EADDRINUSE", "EADDRINUSE", "EADDRINUSE", "EADDRINUSE");
+    const fake = openRouter();
+    expect(await signInWith(fake).start("browser")).toEqual({ status: "failed" });
+    expect(fake.opened).toHaveLength(0);
+
+    failIpv6Binds("EACCES");
+    expect(await signInWith(openRouter()).start("browser")).toEqual({ status: "failed" });
   });
 
   it("signs in with a pasted code where the browser can't call back, and takes a retry", async () => {
