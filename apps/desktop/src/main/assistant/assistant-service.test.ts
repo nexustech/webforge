@@ -173,6 +173,31 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     ]);
   });
 
+  it("turning off models that may keep requests clears one that may (AIA-7)", async () => {
+    const { service } = setUp();
+    await service.update({ allowRetainingModels: true });
+    await service.models();
+    await service.update({ modelId: "acme/keeps-everything" });
+    // Off: the chosen model may keep requests, so none is chosen; nothing tested is ZDR yet.
+    expect((await service.update({ allowRetainingModels: false })).model).toBeNull();
+
+    // A ZDR model stays chosen.
+    await service.update({ allowRetainingModels: true });
+    await service.update({ modelId: "anthropic/claude-model" });
+    expect((await service.update({ allowRetainingModels: false })).model?.id).toBe(
+      "anthropic/claude-model",
+    );
+
+    // One the last list didn't hold counts as one that may keep requests.
+    await service.update({ allowRetainingModels: true });
+    await service.update({ modelId: "unlisted/model" });
+    expect((await service.update({ allowRetainingModels: false })).model).toBeNull();
+
+    // A model on this computer keeps nothing elsewhere, and stays chosen.
+    await service.update({ provider: { kind: "ollama" }, modelId: "llama3" });
+    expect((await service.update({ allowRetainingModels: false })).model?.id).toBe("llama3");
+  });
+
   it("asks each site once unless the model is on this computer, and remembers by project", async () => {
     const { service } = setUp({ project: PROJECT });
     expect(await service.siteConsent(SESSION)).toEqual({ asked: false, allowed: false });
