@@ -52,6 +52,13 @@ export function registerAssistantHandlers(
   registerIpcHandler(ipc, "assistantConversation", isTrustedSender, (session) =>
     service.conversation(session),
   );
+  registerIpcHandler(ipc, "assistantApplyHeld", isTrustedSender, (session, replyId) =>
+    service.applyHeld(session, replyId),
+  );
+  registerIpcHandler(ipc, "assistantDiscardHeld", isTrustedSender, async (session, replyId) => {
+    await service.discardHeld(session, replyId);
+    return null;
+  });
   registerIpcHandler(ipc, "assistantOpenLink", isTrustedSender, (session, replyId, href) =>
     service.openLink(session, replyId, href),
   );

@@ -17,7 +17,7 @@ import type { AssistantService } from "../assistant-ipc.js";
 import type { CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
-import type { ReplyOutcome, Selection, ToolClient } from "./assistant-loop.js";
+import type { HeldCall, ReplyOutcome, Selection, ToolClient } from "./assistant-loop.js";
 import { isLoopback, keySafeAt, streamChat } from "./chat-client.js";
 import {
   type EndpointResult,
@@ -80,6 +80,8 @@ const fileSchema = z.strictObject({
   model: modelSchema.nullable(),
   limitUsd: z.number().min(1).max(1000),
   allowRetainingModels: z.boolean(),
+  /** AIA-5's _Review before applying_ (6.9e): a reply's changes are held until applied. */
+  reviewBeforeApplying: z.boolean().default(false),
   /** The spend of `month` (`2026-11`, in this computer's time zone), and whether 80% was said. */
   month: z.strictObject({
     key: z.string().regex(/^\d{4}-\d{2}$/),
@@ -143,6 +145,8 @@ export type AssistantServiceOptions = {
    */
   readonly connectTools: (
     beforeCommand: () => Promise<void>,
+    /** The reply whose changes are held (6.9e): its requests go to its draft in the window. */
+    stage?: string,
   ) => Promise<{ readonly client: ToolClient; close(): Promise<void> }>;
   /**
    * Saves a version of `session`'s site named `name` before the assistant's first change (S20):
@@ -200,6 +204,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     model: null,
     limitUsd: MONTHLY_LIMIT_DEFAULT_USD,
     allowRetainingModels: false,
+    reviewBeforeApplying: false,
     month: { key: monthKey(now()), spentUsd: 0, warned: false },
     sites: {},
   });
@@ -232,6 +237,33 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   let signingIn: Promise<SignInResult> | null = null;
   /** The sites with a draft under way, by project id. */
   const drafting = new Set<string>();
+  /**
+   * Each site's held changes (6.9e), by project id: the reply that made them, the opening of the
+   * site it was made in, and its calls as asked, to ask again when applied. Only the last reply's:
+   * its stage in the window replaces the one before. Never another opening's: the window's stage
+   * went with it, so a site switch discards them.
+   */
+  const held = new Map<
+    string,
+    { readonly replyId: string; readonly session: string; readonly calls: readonly HeldCall[] }
+  >();
+
+  /** `session`'s site's held changes of reply `replyId`, if it's still open as it was then. */
+  const holdingOf = (session: string, replyId: string) => {
+    const project = options.projectOf(session);
+    if (project === undefined) return undefined;
+    const holding = held.get(project);
+    if (holding === undefined || holding.replyId !== replyId) return undefined;
+    if (holding.session !== session) {
+      // Another opening of the site: its stage went with the window's, so they go too.
+      held.delete(project);
+      settled(project, replyId);
+      return undefined;
+    }
+    return { project, holding };
+  };
+  /** The sites whose held changes are being applied. */
+  const applying = new Set<string>();
   /** The replies under way, by their id: Stop aborts one. A site has one at a time. */
   const replies = new Map<string, { readonly project: string; readonly stop: AbortController }>();
   /**
@@ -269,8 +301,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         warned: file.month.warned,
         reached: file.month.spentUsd >= file.limitUsd,
       },
-      // AIA-5's setting stays off and hidden until 6.9b stages commands (ADR 0026 §7).
-      reviewBeforeApplying: false,
+      reviewBeforeApplying: file.reviewBeforeApplying,
       allowRetainingModels: file.allowRetainingModels,
     };
   };
@@ -342,21 +373,42 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     readonly selection: Selection;
     readonly target: Extract<EndpointResult, { status: "ok" }>;
     readonly signal: AbortSignal;
+    /** _Review before applying_ (6.9e): the reply's changes go to a draft, held. */
+    readonly staged: boolean;
   }) => {
     const { session, project, turn } = run;
     const { replyId } = turn;
     /** Whether the reply's site is still the one open: another's is never its to read or change. */
     const stillOpen = () => options.projectOf(session) === project;
+    // A new reply's stage replaces the last one's in the window: its held changes go, and the
+    // last reply's card says so (#1059's review).
+    const replaced = held.get(project);
+    if (replaced !== undefined) {
+      held.delete(project);
+      settled(project, replaced.replyId);
+      options.emit({
+        session: replaced.session,
+        type: "held",
+        replyId: replaced.replyId,
+        state: "discarded",
+        steps: [],
+        refused: [],
+      });
+    }
     let outcome: ReplyOutcome;
     try {
       // Loaded with the first reply, never at start-up (#892): the loop brings the commands
       // package, and the MCP service the SDK.
       const { runReply } = await import("./assistant-loop.js");
-      const tools = await options.connectTools(async () => {
-        // The window acts on whichever site it has open: not this reply's, no change is asked.
-        if (!stillOpen()) throw new Error("The reply's site isn't open");
-        await safetyFirst(session, project, turn);
-      });
+      const tools = await options.connectTools(
+        async () => {
+          // The window acts on whichever site it has open: not this reply's, no change is asked.
+          if (!stillOpen()) throw new Error("The reply's site isn't open");
+          // Held, nothing changes until they're applied: the version is saved then.
+          if (!run.staged) await safetyFirst(session, project, turn);
+        },
+        run.staged ? replyId : undefined,
+      );
       try {
         outcome = await runReply({
           fetchFn: options.fetchFn,
@@ -368,6 +420,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           selection: run.selection,
           signal: run.signal,
           stillOpen,
+          staged: run.staged,
           addCost: async (usd) => (await service.addCost(usd)).reached,
           onText: (delta) => {
             turn.reply += delta;
@@ -380,10 +433,17 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       }
     } catch (error) {
       logFailure("assistant reply", error);
-      outcome = { status: "failed", error: "failed", costUsd: null, steps: [] };
+      outcome = { status: "failed", error: "failed", costUsd: null, steps: [], held: [] };
     }
     turn.costUsd = outcome.costUsd;
     turn.steps = [...outcome.steps];
+    // Held only while the reply's site is still the one open: a site switch discards them.
+    const holds = outcome.held.length > 0 && stillOpen();
+    const changes = holds ? outcome.held.map((call) => call.change) : [];
+    if (holds) {
+      held.set(project, { replyId, session, calls: outcome.held });
+      turn.held = changes;
+    }
     if (outcome.status === "failed") {
       turn.state = "failed";
       turn.error = outcome.error;
@@ -409,7 +469,19 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       month: { spentUsd: month.spentUsd, limitUsd: month.limitUsd },
       steps: turn.steps,
       links: turn.links,
+      ...(changes.length > 0 ? { held: changes } : {}),
     });
+  };
+
+  /** Turn `replyId` of `project`'s conversation, without its held changes now they're settled. */
+  const settled = (project: string, replyId: string) => {
+    const turns = conversations.get(project) ?? [];
+    const index = turns.findIndex((each) => each.replyId === replyId);
+    const turn = turns[index];
+    if (turn === undefined) return undefined;
+    const { held: _settled, ...rest } = turn;
+    turns[index] = rest;
+    return rest;
   };
 
   const service: Assistant = {
@@ -467,6 +539,9 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         if (model !== undefined) next = { ...next, model };
         if (settings.monthlyLimitUsd !== undefined)
           next = { ...next, limitUsd: settings.monthlyLimitUsd };
+        if (settings.reviewBeforeApplying !== undefined) {
+          next = { ...next, reviewBeforeApplying: settings.reviewBeforeApplying };
+        }
         if (settings.allowRetainingModels !== undefined) {
           next = { ...next, allowRetainingModels: settings.allowRetainingModels };
         }
@@ -590,7 +665,8 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       const checked = await service.preflight(session);
       if (checked.status !== "ok") return { status: checked.status };
       const { project } = checked;
-      if ([...replies.values()].some((each) => each.project === project)) {
+      // One reply at a time for a site, and none while its held changes are being applied.
+      if (applying.has(project) || [...replies.values()].some((each) => each.project === project)) {
         return { status: "busy" };
       }
       // Taken before anything is awaited, so a second message can't start a second reply.
@@ -616,6 +692,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       };
       turns.push(turn);
       options.emit({ session, type: "reply-started", replyId, model: target.model });
+      const { reviewBeforeApplying: staged } = await read();
       void reply({
         session,
         project,
@@ -624,6 +701,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         selection: context,
         target,
         signal: stop.signal,
+        staged,
       })
         .catch((error: unknown) => logFailure("assistant reply", error))
         .finally(() => replies.delete(replyId));
@@ -664,12 +742,53 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       // A command waiting for the person's yes is declined, and the reply ends after it.
       options.cancelQuestions();
     },
+    applyHeld: async (session, replyId) => {
+      if (options.projectOf(session) === undefined) return { status: "no-site" };
+      const found = holdingOf(session, replyId);
+      if (found === undefined) return { status: "nothing-held" };
+      const { project, holding } = found;
+      const replying = [...replies.values()].some((each) => each.project === project);
+      if (replying || applying.has(project)) return { status: "busy" };
+      applying.add(project);
+      try {
+        const stillOpen = () => options.projectOf(session) === project;
+        const turn = conversations.get(project)?.find((each) => each.replyId === replyId);
+        const { applyHeld } = await import("./assistant-loop.js");
+        const tools = await options.connectTools(async () => {
+          if (!stillOpen()) throw new Error("The reply's site isn't open");
+          if (turn !== undefined) await safetyFirst(session, project, turn);
+        });
+        let applied: Awaited<ReturnType<typeof applyHeld>>;
+        try {
+          applied = await applyHeld(tools.client, holding.calls, stillOpen);
+        } finally {
+          await tools.close().catch(() => undefined);
+        }
+        held.delete(project);
+        const now = settled(project, replyId);
+        if (now !== undefined) now.steps = [...now.steps, ...applied.steps];
+        options.emit({ session, type: "held", replyId, state: "applied", ...applied });
+        return { status: "applied" };
+      } finally {
+        applying.delete(project);
+      }
+    },
+    discardHeld: async (session, replyId) => {
+      const found = holdingOf(session, replyId);
+      if (found === undefined) return;
+      const { project } = found;
+      if (applying.has(project)) return;
+      held.delete(project);
+      settled(project, replyId);
+      options.emit({ session, type: "held", replyId, state: "discarded", steps: [], refused: [] });
+    },
     newConversation: async (session) => {
       const project = options.projectOf(session);
       if (project === undefined) return;
       conversations.delete(project);
       // A new conversation's first change saves a version of its own.
       safety.delete(project);
+      held.delete(project);
     },
     conversation: async (session) => {
       const project = options.projectOf(session);

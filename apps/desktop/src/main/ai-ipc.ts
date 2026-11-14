@@ -65,12 +65,13 @@ export type AiBridge = {
    * (S21). Nothing is logged of a request or its answer (architecture §9). With no site open, or
    * no answer in time, it says so.
    */
-  ask(request: unknown): Promise<AiResponse>;
+  ask(request: unknown, appId?: string): Promise<AiResponse>;
   /**
-   * Gives up on app `app`'s commands waiting for the window (the assistant's Stop, 6.9b): a
-   * question asked for one closes, and it's declined. Each still answers through `ask`.
+   * Gives up on the commands of the app with id `appId` waiting for the window (the assistant's
+   * Stop, 6.9b): a question asked for one closes, and it's declined. Each still answers through
+   * `ask`. By id, never by name: a paired app may be named "Assistant" (#1050's review).
    */
-  cancel(app: string): void;
+  cancel(appId: string): void;
 };
 
 /**
@@ -106,7 +107,11 @@ export function registerAiHandlers(
   /** Each request waiting on the window: how to settle it, and who asked (a command's app). */
   const waiting = new Map<
     number,
-    { readonly settle: (response: AiResponse) => void; readonly app: string | undefined }
+    {
+      readonly settle: (response: AiResponse) => void;
+      readonly app: string | undefined;
+      readonly appId: string | undefined;
+    }
   >();
   /** Whether one more `request` would wait past {@link MAX_WAITING}. */
   const tooMany = (request: AiRequest) => {
@@ -150,7 +155,7 @@ export function registerAiHandlers(
   });
 
   return {
-    ask(asked) {
+    ask(asked, appId) {
       const parsed = aiRequestSchema.safeParse(asked);
       if (!parsed.success) {
         return Promise.resolve({ status: "invalid", message: z.prettifyError(parsed.error) });
@@ -178,15 +183,19 @@ export function registerAiHandlers(
           resolve(response);
         };
         const timer = setTimeout(() => settle(NO_ANSWER), timeoutMs);
-        waiting.set(id, { settle, app: request.kind === "command" ? request.app : undefined });
+        waiting.set(id, {
+          settle,
+          app: request.kind === "command" ? request.app : undefined,
+          appId: request.kind === "command" ? appId : undefined,
+        });
         target.webContents.send(aiEvents.request.channel, id, request);
       });
     },
-    cancel(app) {
+    cancel(appId) {
       const target = window();
       if (target === undefined || target.webContents.isCrashed()) return;
       for (const [id, each] of waiting) {
-        if (each.app === app) target.webContents.send(aiEvents.cancel.channel, id);
+        if (each.appId === appId) target.webContents.send(aiEvents.cancel.channel, id);
       }
     },
   };

@@ -11,8 +11,13 @@ import type { ToolClient } from "./assistant-loop.js";
 import { createAssistantService } from "./assistant-service.js";
 
 const SESSION = "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5";
+/** The site's next opening. */
+const REOPENED = "2d3e4f5a-6b7c-4d8e-9fa0-b1c2d3e4f5a6";
 const PROJECT = "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e";
 const dirs: string[] = [];
+
+/** Waits for a reply's events: longer than vitest's second, for a busy computer's full run. */
+const until = (check: () => void) => vi.waitFor(check, { timeout: 10_000 });
 
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });
@@ -63,7 +68,7 @@ function setUp(
     /** Answers a model call: its body and headers. */
     chat?: (body: Record<string, unknown>, headers: Headers) => Response | Promise<Response>;
     /** The tool layer's answer to each tool call by its name (6.9b): a command's runs `before`. */
-    tools?: Record<string, () => unknown>;
+    tools?: Record<string, (stage: string | undefined) => unknown>;
     /** What saving the safety version comes to: saved, at first. */
     safety?: "saved" | "held" | "failed";
   } = {},
@@ -81,8 +86,9 @@ function setUp(
   let month = new Date(2026, 10, 13);
   const versions: string[] = [];
   const cancelled = { count: 0 };
-  /** The site open now: another may be opened part way through a reply. */
+  /** The site open now, and its opening: another may be opened part way through a reply. */
   let project = options.project;
+  let opening = SESSION;
   const connections = { open: 0 };
   const service = createAssistantService({
     dir,
@@ -105,13 +111,13 @@ function setUp(
     },
     fetchFn,
     appName: "Webforge",
-    projectOf: (session) => (session === SESSION && project !== undefined ? project : undefined),
+    projectOf: (session) => (session === opening && project !== undefined ? project : undefined),
     emit: (event) => events.push(event),
     openExternal: async (url) => {
       opened.push(url);
     },
     now: () => month,
-    connectTools: async (beforeCommand) => {
+    connectTools: async (beforeCommand, stage) => {
       connections.open += 1;
       const answers = options.tools ?? {};
       return {
@@ -125,7 +131,7 @@ function setUp(
           callTool: (async ({ name }: { name: string }) => {
             // Every tool here but `outline` is a command, which saves the version first.
             if (name !== "outline") await beforeCommand();
-            const answer = (await answers[name]?.()) ?? {
+            const answer = (await answers[name]?.(stage)) ?? {
               status: "invalid",
               message: "No such tool",
             };
@@ -152,6 +158,15 @@ function setUp(
     cancelled,
     connections,
     /** Opens another site in the window, as Open Recent does. */
+    /** Back to the first site, in the same opening: as if the switch hadn't happened. */
+    openBack: () => {
+      project = options.project;
+    },
+    /** Opens the same site again, as a new opening of it (Open Recent, a hand-off). */
+    reopen: () => {
+      opening = REOPENED;
+      project = options.project;
+    },
     openOther: () => {
       project = "7d6c5b4a-3f2e-4d1c-8b0a-9f8e7d6c5b4a";
     },
@@ -408,11 +423,11 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
       chat: () => new Promise<Response>((resolve) => waiting.push(resolve)),
     });
     const answer = async (text: string) => {
-      await vi.waitFor(() => expect(waiting).toHaveLength(1));
+      await until(() => expect(waiting).toHaveLength(1));
       waiting.pop()?.(sse({ choices: [{ delta: { content: text } }] }));
     };
     const first = service.draft(SESSION, REWRITE);
-    await vi.waitFor(() => expect(waiting).toHaveLength(1));
+    await until(() => expect(waiting).toHaveLength(1));
     expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "busy" });
     await answer("Open daily.");
     expect(await first).toMatchObject({ status: "ok", texts: ["Open daily."] });
@@ -590,7 +605,7 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     ]);
     if (sent.status !== "sending") throw new Error(`not sent: ${sent.status}`);
     expect(second).toEqual({ status: "busy" });
-    await vi.waitFor(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
     const replied = events.filter((event) => "replyId" in event && event.replyId === sent.replyId);
     expect(replied.map((event) => event.type)).toEqual([
       "reply-started",
@@ -617,13 +632,13 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
 
     // The same conversation's next change saves no other version; a new conversation's does.
     await service.send(SESSION, "Again", {});
-    await vi.waitFor(() =>
+    await until(() =>
       expect(events.filter((event) => event.type === "reply-done")).toHaveLength(2),
     );
     expect(versions).toHaveLength(1);
     await service.newConversation(SESSION);
     await service.send(SESSION, "Once more", {});
-    await vi.waitFor(() =>
+    await until(() =>
       expect(events.filter((event) => event.type === "reply-done")).toHaveLength(3),
     );
     expect(versions).toHaveLength(2);
@@ -648,7 +663,7 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     });
     const sent = await set.service.send(SESSION, "Change the hero", {});
     expect(sent.status).toBe("sending");
-    await vi.waitFor(() => expect(set.events.at(-1)?.type).toBe("reply-failed"));
+    await until(() => expect(set.events.at(-1)?.type).toBe("reply-failed"));
     expect(set.events.at(-1)).toMatchObject({ error: "no-site", steps: [] });
     expect(calls).toBe(1);
     expect(commands).toEqual([]);
@@ -674,11 +689,11 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
       },
     });
     await service.send(SESSION, "One", {});
-    await vi.waitFor(() =>
+    await until(() =>
       expect(events.filter((event) => event.type === "reply-done")).toHaveLength(1),
     );
     await service.send(SESSION, "Two", {});
-    await vi.waitFor(() =>
+    await until(() =>
       expect(events.filter((event) => event.type === "reply-done")).toHaveLength(2),
     );
     expect(versions).toHaveLength(1);
@@ -697,12 +712,12 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     });
     const sent = await service.send(SESSION, "Look around", {});
     if (sent.status !== "sending") throw new Error("not sent");
-    await vi.waitFor(() => expect(events.some((event) => event.type === "tool")).toBe(true));
+    await until(() => expect(events.some((event) => event.type === "tool")).toBe(true));
     await service.stop(sent.replyId);
     // A question the window asks for the reply's command closes (D7), declined.
     expect(cancelled.count).toBe(1);
     release();
-    await vi.waitFor(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
     expect(events.at(-1)).toMatchObject({ stop: "stopped" });
     // One model call: none after Stop.
     const chats = vi
@@ -731,3 +746,131 @@ function toolCall(name: string, args: unknown) {
 function finished(reason: string) {
   return { choices: [{ delta: {}, finish_reason: reason }], usage: { cost: 0.001 } };
 }
+
+describe("Review before applying (6.9e)", () => {
+  /** A reply that edits the hero once, then says so; its answer a draft's while staged. */
+  const editing = () => {
+    let calls = 0;
+    let entry = 0;
+    return {
+      chat: () => {
+        calls += 1;
+        return calls % 2 === 1
+          ? sse(toolCall("editText", { nodeId: "hero" }), finished("tool_calls"))
+          : sse({ choices: [{ delta: { content: "Done." } }] }, finished("stop"));
+      },
+      tools: {
+        editText: (stage: string | undefined) => {
+          if (stage !== undefined) {
+            return {
+              status: "done",
+              label: "AI (Assistant): Edited Hero text",
+              target: { pageId: "home" },
+            };
+          }
+          entry += 1;
+          return {
+            status: "done",
+            label: "AI (Assistant): Edited Hero text",
+            entryId: `h${entry}`,
+            target: { pageId: "home" },
+          };
+        },
+      },
+    };
+  };
+
+  it("holds a reply's changes until they're applied, each then a step, the version saved first", async () => {
+    const { service, events, versions } = await ready(editing());
+    expect((await service.update({ reviewBeforeApplying: true })).reviewBeforeApplying).toBe(true);
+    const sent = await service.send(SESSION, "Change the hero", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+    await until(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    expect(events.at(-1)).toMatchObject({
+      steps: [],
+      held: [{ label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }],
+    });
+    // Nothing changed yet: no version, and the turn holds the change.
+    expect(versions).toEqual([]);
+    expect((await service.conversation(SESSION))[0]?.held).toHaveLength(1);
+
+    expect(await service.applyHeld(SESSION, sent.replyId)).toEqual({ status: "applied" });
+    expect(events.at(-1)).toMatchObject({
+      type: "held",
+      replyId: sent.replyId,
+      state: "applied",
+      steps: [{ entryId: "h1", label: "AI (Assistant): Edited Hero text" }],
+      refused: [],
+    });
+    expect(versions).toEqual(["Before the assistant's changes"]);
+    const [turn] = await service.conversation(SESSION);
+    expect(turn?.steps).toMatchObject([{ entryId: "h1" }]);
+    expect(turn).not.toHaveProperty("held");
+    expect(await service.applyHeld(SESSION, sent.replyId)).toEqual({ status: "nothing-held" });
+  });
+
+  it("never keeps held changes past a site switch or another opening of the site", async () => {
+    // The person opens another site while the reply works: nothing is held.
+    let calls = 0;
+    const switching = await ready({
+      chat: () => {
+        calls += 1;
+        if (calls === 2) switching.openOther();
+        return sse(toolCall("editText", { nodeId: "hero" }), finished("tool_calls"));
+      },
+      tools: {
+        editText: () => ({ status: "done", label: "AI (Assistant): Edited Hero text" }),
+      },
+    });
+    await switching.service.update({ reviewBeforeApplying: true });
+    const sent = await switching.service.send(SESSION, "Change the hero", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+    await until(() => expect(switching.events.at(-1)?.type).toBe("reply-failed"));
+    switching.openBack();
+    expect(await switching.service.applyHeld(SESSION, sent.replyId)).toEqual({
+      status: "nothing-held",
+    });
+
+    // Held, then the site opened again: its draft went with the window, so they go too.
+    const reopened = await ready(editing());
+    await reopened.service.update({ reviewBeforeApplying: true });
+    const held = await reopened.service.send(SESSION, "Change the hero", {});
+    if (held.status !== "sending") throw new Error("not sent");
+    await until(() => expect(reopened.events.at(-1)?.type).toBe("reply-done"));
+    reopened.reopen();
+    expect(await reopened.service.applyHeld(REOPENED, held.replyId)).toEqual({
+      status: "nothing-held",
+    });
+    expect((await reopened.service.conversation(REOPENED))[0]).not.toHaveProperty("held");
+    expect(reopened.versions).toEqual([]);
+  });
+
+  it("discards held changes, changing nothing, and holds only the last reply's", async () => {
+    const { service, events, versions } = await ready(editing());
+    await service.update({ reviewBeforeApplying: true });
+    const first = await service.send(SESSION, "Change the hero", {});
+    if (first.status !== "sending") throw new Error("not sent");
+    await until(() => expect(events.filter((each) => each.type === "reply-done")).toHaveLength(1));
+    const second = await service.send(SESSION, "And again", {});
+    if (second.status !== "sending") throw new Error("not sent");
+    await until(() => expect(events.filter((each) => each.type === "reply-done")).toHaveLength(2));
+    // The window's draft is the last reply's: the first's changes are dropped, and its card is
+    // told (#1059's review).
+    expect(
+      events.find((each) => each.type === "held" && each.replyId === first.replyId),
+    ).toMatchObject({ state: "discarded", steps: [], refused: [] });
+    expect((await service.conversation(SESSION))[0]).not.toHaveProperty("held");
+    expect((await service.conversation(SESSION))[1]?.held).toHaveLength(1);
+    expect(await service.applyHeld(SESSION, first.replyId)).toEqual({ status: "nothing-held" });
+
+    await service.discardHeld(SESSION, second.replyId);
+    expect(events.at(-1)).toMatchObject({
+      type: "held",
+      state: "discarded",
+      steps: [],
+      refused: [],
+    });
+    expect(versions).toEqual([]);
+    expect(await service.applyHeld(SESSION, second.replyId)).toEqual({ status: "nothing-held" });
+  });
+});
