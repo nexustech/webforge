@@ -36,3 +36,16 @@ export const On: Story = {
     />
   ),
 };
+
+/** On, not signed in to OpenRouter yet: by the browser, or with a code. */
+export const SignedOut: Story = {
+  render: () => (
+    <AssistantSettingsDialog
+      open
+      onOpenChange={() => undefined}
+      api={createFakeAssistant({
+        status: { ...FAKE_STATUS, provider: { kind: "openrouter", signedIn: false } },
+      })}
+    />
+  ),
+};
