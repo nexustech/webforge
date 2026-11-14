@@ -22,6 +22,13 @@ type Answer = {
 type Failure = keyof BridgeConfig["messages"];
 
 /**
+ * Node's callback for a new connection, as Node calls it when the connection fails: with the error
+ * and no socket, which it reads only on success. `@types/node` types the socket as always there.
+ * As a method, its parameters are compared both ways, so a callback of either type fits.
+ */
+type Connected = { done(error: Error, socket?: Duplex): void };
+
+/**
  * An agent that opens one connection, and never another: a request that would need a new one fails
  * before anything is sent. The bridge checks the server on that connection, then sends the key on
  * the same one, so the key never goes to a server it didn't check (ADR 0021).
@@ -34,7 +41,9 @@ class OneConnectionAgent extends Agent {
     callback?: (error: Error | null, socket: Duplex) => void,
   ): Duplex | null | undefined {
     if (this.#opened) {
-      callback?.(new Error("connection closed"), undefined as unknown as Duplex);
+      // No socket comes with the error (#989).
+      const done: Connected["done"] | undefined = callback;
+      done?.(new Error("connection closed"));
       return undefined;
     }
     this.#opened = true;

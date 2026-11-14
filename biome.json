@@ -85,13 +85,11 @@
     {
       "includes": [
         "**/*.{ts,tsx}",
-        "!packages/model/src/**",
-        "!packages/test-utils/**",
+        "!packages/model/src/ids.ts",
         "!**/*.test.{ts,tsx}",
         "!**/*.test-helper.ts",
         "!**/test/**",
         "!**/*.stories.tsx",
-        "!bench/**",
         "!e2e/**"
       ],
       "plugins": ["./tools/biome/no-branded-id-cast.grit"]
