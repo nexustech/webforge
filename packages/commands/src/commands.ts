@@ -43,7 +43,17 @@ import {
   type Placed,
   pagesShowing,
 } from "./locations.js";
-import { type Failure, fail, failed, type Plan, type PlanContext, UNPUBLISHED } from "./plan.js";
+import {
+  type Failure,
+  fail,
+  failed,
+  type Plan,
+  type PlanContext,
+  type PlanSummary,
+  pageTitleOf,
+  summarizeRename,
+  UNPUBLISHED,
+} from "./plan.js";
 import { planCommand } from "./plan-command.js";
 import { updateSettings } from "./settings-command.js";
 
@@ -372,6 +382,9 @@ const STEPS = {
       values: values.default({}),
       ...placement,
     }),
+    summarize(summary: PlanSummary) {
+      summary.elements.added += 1;
+    },
     plan(
       site: SiteDoc,
       input: {
@@ -426,6 +439,9 @@ const STEPS = {
     description:
       "Sets fields of an element, by the names and value schemas fields gives. One undo step. A change to the shared Header, Footer or a shared section, or to where visitors' payments or details go, waits for the person to allow it.",
     input: z.strictObject({ location: locationSchema, nodeId, values }),
+    summarize(summary: PlanSummary) {
+      summary.elements.changed += 1;
+    },
     plan(
       site: SiteDoc,
       input: { location: Location; nodeId: string; values: Record<string, unknown> },
@@ -468,6 +484,9 @@ const STEPS = {
       field: z.string().min(1).max(64),
       text: z.string().max(20_000),
     }),
+    summarize(summary: PlanSummary) {
+      summary.elements.changed += 1;
+    },
     plan(
       site: SiteDoc,
       input: { location: Location; nodeId: string; field: string; text: string },
@@ -510,6 +529,9 @@ const STEPS = {
       ...placement,
       index: z.int().min(0),
     }),
+    summarize(summary: PlanSummary) {
+      summary.elements.moved += 1;
+    },
     plan(
       site: SiteDoc,
       input: {
@@ -561,6 +583,9 @@ const STEPS = {
     description:
       "Removes an element, or a linked copy of a shared section from a page. One undo step, which the person can undo.",
     input: z.strictObject({ location: locationSchema, nodeId }),
+    summarize(summary: PlanSummary) {
+      summary.elements.removed += 1;
+    },
     plan(site: SiteDoc, input: { location: Location; nodeId: string }): Plan | Failure {
       const placed = find(site, input.location, input.nodeId);
       if (failed(placed)) return placed;
@@ -595,6 +620,9 @@ const STEPS = {
     description:
       'Adds an empty page called title, before "Page not found", with a menu entry on every page: waits for the person to allow it. Answers with the new page\'s id.',
     input: z.strictObject({ title: z.string().min(1).max(200) }),
+    summarize(summary: PlanSummary, _site: SiteDoc, input: { title: string }) {
+      summary.pagesAdded.push(input.title.trim());
+    },
     plan(site: SiteDoc, input: { title: string }): Plan | Failure {
       const title = pageTitle(input.title);
       if (title === "") return fail("invalid", "A page needs a title.");
@@ -626,6 +654,9 @@ const STEPS = {
     description:
       'Deletes a page and its content, as the person\'s Delete Page does. It waits for the person to allow it, saying how many pages change: links to it on other pages break. Never the home page or "Page not found". One undo step.',
     input: z.strictObject({ pageId }),
+    summarize(summary: PlanSummary, site: SiteDoc, input: { pageId: string }) {
+      summary.pagesRemoved.push(pageTitleOf(site, input.pageId));
+    },
     plan(site: SiteDoc, input: { pageId: string }): Plan | Failure {
       const page = pageOf(site, input.pageId);
       if (failed(page)) return page;
@@ -672,6 +703,9 @@ const STEPS = {
       title: z.string().min(1).max(200),
       keepOldAddress: z.boolean().optional(),
     }),
+    summarize(summary: PlanSummary, site: SiteDoc, input: { pageId: string; title: string }) {
+      summarizeRename(summary, site, input.pageId, input.title);
+    },
     plan(
       site: SiteDoc,
       input: { pageId: string; title: string; keepOldAddress?: boolean | undefined },
@@ -710,6 +744,9 @@ const STEPS = {
       direction: z.enum(["up", "down"]),
       steps: z.int().min(1).max(200).default(1),
     }),
+    summarize(summary: PlanSummary, site: SiteDoc, input: { pageId: string }) {
+      summary.pagesMoved.add(pageTitleOf(site, input.pageId));
+    },
     plan(
       site: SiteDoc,
       input: { pageId: string; direction: "up" | "down"; steps: number },
@@ -772,6 +809,16 @@ const STEPS = {
           input.hideFromSearch !== undefined,
         "Give at least one setting to change.",
       ),
+    summarize(
+      summary: PlanSummary,
+      site: SiteDoc,
+      input: { pageId: string; title?: string | undefined },
+    ) {
+      const { pageId, title, ...others } = input;
+      summarizeRename(summary, site, pageId, title);
+      // Its other settings, besides the title, are named as Page Settings changed.
+      if (Object.keys(others).length > 0) summary.pagesSet.add(pageTitleOf(site, pageId));
+    },
     plan(
       site: SiteDoc,
       input: {
@@ -845,6 +892,9 @@ const STEPS = {
             "deep: what a group leaves out stays as it is.",
         ),
     }),
+    summarize(summary: PlanSummary) {
+      summary.theme = true;
+    },
     plan(site: SiteDoc, input: { tokens: Record<string, unknown> }): Plan | Failure {
       const theme = themeTokensSchema.safeParse(withTokens(site.theme, input.tokens));
       if (!theme.success) return fail("invalid", z.prettifyError(theme.error));

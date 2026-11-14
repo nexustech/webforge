@@ -1,4 +1,4 @@
-import type { PageId, SiteDoc } from "@webforge/model";
+import { type PageId, pageEntryOf, type SiteDoc } from "@webforge/model";
 import type { ChangeKind, Confirmation, Refusal } from "./types.js";
 
 /** What a command will do: one undo step, and the confirmation it waits for, if any (D7). */
@@ -41,3 +41,40 @@ export const fail = (status: Refusal, message: string): Failure => ({ status, me
 
 /** Whether a planning step failed. */
 export const failed = (value: object): value is Failure => "status" in value;
+
+/**
+ * What a plan does, for its one question (D7): counted and named. Each command adds what it does
+ * to it with its own `summarize` (#981).
+ */
+export type PlanSummary = {
+  readonly pagesAdded: string[];
+  readonly pagesRemoved: string[];
+  /** Pages renamed, by their titles before and after. */
+  readonly pagesRenamed: { readonly from: string; readonly to: string }[];
+  readonly pagesMoved: Set<string>;
+  /** Pages whose Page Settings change, besides their title. */
+  readonly pagesSet: Set<string>;
+  theme: boolean;
+  elements: { added: number; changed: number; moved: number; removed: number };
+  /** The questions its commands would each have asked: the question, and what it names. */
+  readonly asks: string[];
+  /** Those that name where visitors' money or details go, or change Site Settings (S30). */
+  readonly asksFirst: string[];
+};
+
+/** Page `pageId`'s title, as a summary names it: none for a page that isn't there. */
+export const pageTitleOf = (site: SiteDoc, pageId: string): string =>
+  pageEntryOf(site.pages, pageId)?.title ?? "";
+
+/** Page `pageId` renamed `to`, in `summary`, when that's another title than its own. */
+export function summarizeRename(
+  summary: PlanSummary,
+  site: SiteDoc,
+  pageId: string,
+  to: string | undefined,
+): void {
+  const page = pageEntryOf(site.pages, pageId);
+  if (page !== undefined && to !== undefined && to.trim() !== page.title) {
+    summary.pagesRenamed.push({ from: page.title, to: to.trim() });
+  }
+}
