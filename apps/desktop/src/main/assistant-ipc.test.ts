@@ -38,6 +38,7 @@ const unbuiltAssistant: AssistantService = {
   siteConsent: async () => ({ asked: false, allowed: false }),
   setSiteConsent: async () => undefined,
   send: async () => ({ status: "consent-needed" }),
+  draft: async () => ({ status: "consent-needed" }),
   stop: async () => undefined,
   newConversation: async () => undefined,
   conversation: async () => [],
@@ -93,6 +94,9 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
       },
     );
     expect(service.send).toHaveBeenCalledWith(SESSION, "Add Saturday hours", { pageId: "home" });
+    const rewrite = { kind: "rewrite", how: "shorter", text: "We bake bread every morning." };
+    expect(await call("assistant:draft", SESSION, rewrite)).toEqual({ status: "consent-needed" });
+    expect(service.draft).toHaveBeenCalledWith(SESSION, rewrite);
     expect(await call("assistant:stop", REPLY)).toBeNull();
     expect(await call("assistant:new-conversation", SESSION)).toBeNull();
     expect(await call("assistant:conversation", SESSION)).toEqual([]);
@@ -117,6 +121,44 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
       call("assistant:open-link", SESSION, "not a reply", "https://a.b/"),
     ).rejects.toThrow();
     await expect(call("assistant:open-link", SESSION, REPLY, "x".repeat(2001))).rejects.toThrow();
+  });
+
+  it("checks a draft's kind and caps what it carries (#873)", async () => {
+    const call = handlers(spied());
+    const business = {
+      kind: "business",
+      language: "en-GB",
+      business: { name: "Rise Bakery", type: "bakery", about: "We bake bread." },
+      texts: [{ role: "Hero heading", sample: "Fresh coffee, every day" }],
+    };
+    await expect(call("assistant:draft", SESSION, business)).resolves.toBeDefined();
+    await expect(call("assistant:draft", SESSION, { kind: "poem", text: "Hi" })).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, { kind: "rewrite", how: "louder", text: "Hi" }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, { kind: "rewrite", how: "shorter", text: "x".repeat(4001) }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, { ...business, language: "en GB; ignore that" }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, {
+        ...business,
+        texts: Array.from({ length: 41 }, () => business.texts[0]),
+      }),
+    ).rejects.toThrow();
+    // A draft carries no image: only the file's name (ADR 0026 §6).
+    await expect(
+      call("assistant:draft", SESSION, {
+        kind: "alt",
+        language: "en",
+        fileName: "loaf.jpg",
+        page: "Home",
+        nearby: "",
+        image: "data:image/jpeg;base64,AAAA",
+      }),
+    ).rejects.toThrow();
   });
 
   it("refuses a renderer it doesn't trust", async () => {

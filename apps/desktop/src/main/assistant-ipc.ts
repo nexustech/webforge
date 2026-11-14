@@ -38,6 +38,9 @@ export function registerAssistantHandlers(
   registerIpcHandler(ipc, "assistantSend", isTrustedSender, (session, text, context) =>
     service.send(session, text, context),
   );
+  registerIpcHandler(ipc, "assistantDraft", isTrustedSender, (session, request) =>
+    service.draft(session, request),
+  );
   registerIpcHandler(ipc, "assistantStop", isTrustedSender, async (replyId) => {
     await service.stop(replyId);
     return null;
