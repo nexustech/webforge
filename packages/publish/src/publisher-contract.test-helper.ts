@@ -26,12 +26,12 @@ export type PublisherUnderTest<D extends FolderDestination> = {
 const bytes = (text: string) => new TextEncoder().encode(text);
 
 /** A site's files, as the export builds them. */
-export const build = (files: Record<string, string>): BuildOutput => ({
+const build = (files: Record<string, string>): BuildOutput => ({
   files: new Map(Object.entries(files).map(([path, content]) => [path, bytes(content)])),
 });
 
 /** Runs a publish to its end: its events, or the error it stopped with. */
-export async function run(
+async function run(
   publishing: AsyncIterable<PublishEvent>,
 ): Promise<{ readonly events: PublishEvent[]; readonly error?: unknown }> {
   const events: PublishEvent[] = [];
