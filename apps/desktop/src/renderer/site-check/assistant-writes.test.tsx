@@ -5,7 +5,7 @@ import type { Finding } from "@webforge/site-check";
 import { siteLibrary } from "@webforge/site-components";
 import { afterEach, describe, expect, it } from "vitest";
 import { starterSite } from "../../shared/starter-site.js";
-import { createFakeAssistant, type FakeAssistantOptions } from "../assistant/fake-assistant.js";
+import { createFakeAssistant, type FakeAssistantOptions } from "../assistant/index.js";
 import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
 import { type SiteCheckAssistant, useAssistantWrites } from "./assistant-writes.js";
 

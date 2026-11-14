@@ -4,6 +4,8 @@
  */
 
 // The writing help's drafts (#873): Site Check's description and alt text, the quick start's copy.
-export { asAssistantStep, assistantLabel } from "./assistant-step.js";
+export { assistantLabel } from "./assistant-step.js";
 export { DraftDialog } from "./DraftDialog.js";
+// A stand-in for main's assistant, for other areas' tests of what asks it (#873).
+export { createFakeAssistant, type FakeAssistantOptions } from "./fake-assistant.js";
 export { type DraftApi, type DraftState, useAssistantStatus, useDraft } from "./use-draft.js";
