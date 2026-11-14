@@ -89,8 +89,15 @@ export const aiRequestsArea: Area<WindowContext> = {
     const removeDialog = windowDialogs.register({ id: "aiMediaRequest", component: MediaRequest });
 
     // For the opening of the site this page was loaded for (#663).
-    const stopAnswering = api.ai.onRequest(siteSession(), async (request) => {
-      return appTools(request) ?? mediaRequests(request) ?? answerRequest(commandApi, request);
+    const stopAnswering = api.ai.onRequest(siteSession(), async (request, onCancel) => {
+      // Main's cancel (the assistant's Stop) closes a question the command waits on.
+      const cancel = new AbortController();
+      onCancel(() => cancel.abort());
+      return (
+        appTools(request) ??
+        mediaRequests(request) ??
+        answerRequest(commandApi, request, cancel.signal)
+      );
     });
     return () => {
       stopAnswering();

@@ -196,6 +196,11 @@ export const aiChannels = {
 export const aiEvents = {
   /** An AI app's request, with an id; the renderer answers with `ai:answer` and that id. */
   request: { channel: "ai:request", args: z.tuple([requestIdSchema, aiRequestSchema]) },
+  /**
+   * Its asker gave up on request `id` (the assistant's Stop, 6.9b): a question the window is
+   * asking for it closes, and the command is declined. One already answered is untouched.
+   */
+  cancel: { channel: "ai:cancel", args: z.tuple([requestIdSchema]) },
   /** An AI app's brief (4.12a): the window opens the quick start with it, filled in. */
   brief: { channel: "ai:brief", args: z.tuple([requestIdSchema, siteBriefSchema]) },
 } as const;
@@ -206,7 +211,10 @@ export interface AiApi {
    * Answers AI apps' requests with `answer` until the returned function is called; meanwhile the
    * main process knows a site is open to ask.
    */
-  onRequest(sessionId: string, answer: (request: AiRequest) => Promise<AiResponse>): () => void;
+  onRequest(
+    sessionId: string,
+    answer: (request: AiRequest, onCancel: (cancelled: () => void) => void) => Promise<AiResponse>,
+  ): () => void;
   /**
    * Calls `open` with each AI app's brief (4.12a) until the returned function is called: the window
    * shows the quick start filled in, and tells main what became of it with `answer`, which it waits

@@ -346,7 +346,7 @@ describe("createWebforgeApi AI requests (4.8)", () => {
         data: { name: "Bakery" },
       }),
     );
-    expect(answer).toHaveBeenCalledWith(request);
+    expect(answer).toHaveBeenCalledWith(request, expect.any(Function));
 
     stop();
     expect(listeners.has("ai:request")).toBe(false);
