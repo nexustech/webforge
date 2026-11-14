@@ -5,11 +5,13 @@ import type {
   AssistantEvent,
   AssistantStatus,
   ConversationTurn,
+  HeldChange,
   ReplyLink,
   ReplyStep,
 } from "../../shared/ipc/assistant.js";
 import { reportFailure } from "../log.js";
 import type { TurnView } from "./ConversationView.js";
+import type { HeldOutcome } from "./HeldCard.js";
 
 /** What was selected when a message was sent (ADR 0026 §6). */
 type MessageContext = Parameters<AssistantApi["send"]>[2];
@@ -18,6 +20,12 @@ type MessageContext = Parameters<AssistantApi["send"]>[2];
 type PanelTurn = TurnView & {
   readonly steps: readonly ReplyStep[];
   readonly links: readonly ReplyLink[];
+  /** The changes it holds for the person to apply (6.9e, _Review before applying_). */
+  readonly held: readonly HeldChange[];
+  /** Why it holds none any more, if they were dropped rather than applied. */
+  readonly heldOutcome?: HeldOutcome | undefined;
+  /** Held changes it couldn't make when they were applied, as the site had changed. */
+  readonly refused?: readonly HeldChange[] | undefined;
 };
 
 /** What the assistant's panel shows for the site open in the window. */
@@ -33,12 +41,15 @@ type AssistantPanelState = {
   readonly refused: AssistantErrorCode | undefined;
   /** The version saved before this conversation's first change (S20), for the review card. */
   readonly safetyVersionId: string | undefined;
+  /** The reply whose held changes are being applied (6.9e). */
+  readonly applying: string | undefined;
 };
 
 /** A reply the conversation keeps, as the panel shows it: its steps are its tool calls that changed something. */
 function panelTurn(turn: ConversationTurn): PanelTurn {
   return {
     ...turn,
+    held: turn.held ?? [],
     tools: turn.steps.map((step) => ({ callId: step.entryId, state: "done" as const, step })),
   };
 }
@@ -60,6 +71,10 @@ export type AssistantPanelModel = {
    * only a web address its copy of that reply holds; a call it couldn't answer is *failed*.
    */
   readonly openLink: (replyId: string, href: string) => Promise<"opened" | "refused" | "failed">;
+  /** Applies reply `replyId`'s held changes (6.9e): each then an undo step, as if made at once. */
+  readonly applyHeld: (replyId: string) => Promise<void>;
+  /** Discards reply `replyId`'s held changes (6.9e): the site stays as it is. */
+  readonly discardHeld: (replyId: string) => Promise<void>;
   /** Stops following main's events. */
   readonly dispose: () => void;
 };
@@ -77,7 +92,10 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
     replying: undefined,
     refused: undefined,
     safetyVersionId: undefined,
+    applying: undefined,
   }));
+  /** The replies whose held changes the person discarded: others' were dropped for a newer one. */
+  const discarding = new Set<string>();
   /** Logs a call main couldn't answer, without content; the panel stays as it was. */
   const failed = (context: string) => (error: unknown) => {
     reportFailure(context, error);
@@ -122,6 +140,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
                 tools: [],
                 steps: [],
                 links: [],
+                held: [],
               },
             ],
           },
@@ -180,6 +199,7 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           costUsd: event.costUsd,
           steps: event.steps,
           links: event.links,
+          held: event.held ?? [],
         }));
         reread(event.replyId);
         state.setState(({ status, replying }) => ({
@@ -187,6 +207,24 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
           ...(status === undefined
             ? {}
             : { status: { ...status, month: { ...status.month, ...event.month } } }),
+        }));
+        return;
+      case "held":
+        turn(event.replyId, (each) =>
+          // Nothing held to drop: a panel opened again after main dropped them itself (#1063).
+          event.state === "discarded" && each.held.length === 0
+            ? each
+            : {
+                ...each,
+                held: [],
+                steps: [...each.steps, ...event.steps],
+                ...(event.state === "applied"
+                  ? { refused: event.refused }
+                  : { heldOutcome: discarding.delete(event.replyId) ? "discarded" : "replaced" }),
+              },
+        );
+        state.setState(({ applying }) => ({
+          applying: applying === event.replyId ? undefined : applying,
         }));
         return;
       case "reply-failed":
@@ -277,6 +315,29 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         reportFailure("assistant.link", error);
         return "failed";
       }
+    },
+    applyHeld: async (replyId) => {
+      if (state.getState().applying !== undefined) return;
+      state.setState({ applying: replyId });
+      try {
+        const result = await api.applyHeld(session, replyId);
+        // Applied, the `held` event settles the card. Gone from main (the site was opened again
+        // since), it's settled here, so Apply isn't left doing nothing (#1063's review).
+        if (result.status === "nothing-held") {
+          turn(replyId, (each) => ({ ...each, held: [], heldOutcome: "unavailable" }));
+        }
+        if (result.status !== "applied") state.setState({ applying: undefined });
+      } catch (error) {
+        reportFailure("assistant.apply", error);
+        state.setState({ applying: undefined });
+      }
+    },
+    discardHeld: async (replyId) => {
+      discarding.add(replyId);
+      await api.discardHeld(session, replyId).catch((error: unknown) => {
+        discarding.delete(replyId);
+        reportFailure("assistant.discard", error);
+      });
     },
     dispose: unsubscribe,
   };

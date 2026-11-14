@@ -67,6 +67,15 @@ describe("which model answers (AIA-8, ADR 0026 §2)", () => {
     expect(api.update).toHaveBeenCalledWith({ allowRetainingModels: true });
   });
 
+  it("turns Review before applying on and off at once (AIA-5, 6.9e)", async () => {
+    const { api, user } = shown();
+    await user.click(screen.getByText("Advanced"));
+    const review = screen.getByRole("checkbox", { name: /Review changes before they're made/ });
+    expect((review as HTMLInputElement).checked).toBe(false);
+    await user.click(review);
+    expect(api.update).toHaveBeenCalledWith({ reviewBeforeApplying: true });
+  });
+
   it("takes an OpenRouter key pasted instead of signing in (AIA-1)", async () => {
     const { api, user } = shown();
     await user.click(screen.getByText("Advanced"));
