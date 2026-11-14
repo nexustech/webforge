@@ -316,7 +316,11 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
       state.setState({ applying: replyId });
       try {
         const result = await api.applyHeld(session, replyId);
-        // Applied, the `held` event settles the card; anything else leaves it as it was.
+        // Applied, the `held` event settles the card. Gone from main (the site was opened again
+        // since), it's settled here, so Apply isn't left doing nothing (#1063's review).
+        if (result.status === "nothing-held") {
+          turn(replyId, (each) => ({ ...each, held: [], heldOutcome: "unavailable" }));
+        }
         if (result.status !== "applied") state.setState({ applying: undefined });
       } catch (error) {
         reportFailure("assistant.apply", error);

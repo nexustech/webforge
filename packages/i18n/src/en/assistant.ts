@@ -77,6 +77,7 @@ export const assistant = {
   "assistant.held.applying": "Applying…",
   "assistant.held.discard": "Discard",
   "assistant.held.discarded": "These changes were discarded. Your site is as it was.",
+  "assistant.held.unavailable": "These changes aren't available any more. Your site is as it was.",
   "assistant.held.replaced":
     "These changes were dropped when you sent a new message. Your site is as it was.",
   // Consent (product/14 §5.3, AIA-6, ADR 0026 §4): the app's once, then each site's.

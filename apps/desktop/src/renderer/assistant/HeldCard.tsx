@@ -6,7 +6,7 @@ import { useId } from "react";
 type Held = { readonly label: string };
 
 /** What became of held changes that aren't waiting any more. */
-export type HeldOutcome = "discarded" | "replaced";
+export type HeldOutcome = "discarded" | "replaced" | "unavailable";
 
 /** Props of {@link HeldCard}. */
 export type HeldCardProps = {
@@ -14,13 +14,23 @@ export type HeldCardProps = {
   readonly held: readonly Held[];
   /** Links to other websites the changes would add or change, by host (S18). */
   readonly links: readonly { readonly host: string; readonly href: string }[];
-  /** Why none are waiting: discarded by the person, or dropped for a newer reply's. */
+  /**
+   * Why none are waiting: discarded by the person, dropped for a newer reply's, or gone from main
+   * (the site was opened again since).
+   */
   readonly outcome?: HeldOutcome | undefined;
   /** _Apply_ is under way. */
   readonly applying: boolean;
   readonly onApply: () => void;
   readonly onDiscard: () => void;
 };
+
+/** What each outcome says. */
+const OUTCOME_KEYS = {
+  discarded: "assistant.held.discarded",
+  replaced: "assistant.held.replaced",
+  unavailable: "assistant.held.unavailable",
+} as const;
 
 /** The "AI (Assistant): " every change's label starts with, which the card needn't repeat. */
 const LABEL_PREFIX = /^AI \([^)]*\): /;
@@ -38,7 +48,7 @@ export function HeldCard({ held, links, outcome, applying, onApply, onDiscard }:
         role="status"
         className="m-0 rounded-md border border-border p-2 text-xs text-muted-foreground"
       >
-        {t(outcome === "discarded" ? "assistant.held.discarded" : "assistant.held.replaced")}
+        {t(OUTCOME_KEYS[outcome])}
       </p>
     );
   }

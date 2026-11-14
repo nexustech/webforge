@@ -64,6 +64,17 @@ describe("the card for a reply's held changes (6.9e, AIA-5)", () => {
       />,
     );
     expect(screen.getByRole("status").textContent).toMatch(/when you sent a new message/);
+    rerender(
+      <HeldCard
+        held={[]}
+        links={[]}
+        outcome="unavailable"
+        applying={false}
+        onApply={vi.fn()}
+        onDiscard={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("status").textContent).toMatch(/aren't available any more/);
     expect(screen.queryByRole("button")).toBeNull();
   });
 });

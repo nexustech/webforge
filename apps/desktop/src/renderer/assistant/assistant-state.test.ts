@@ -240,6 +240,15 @@ describe("held changes in the panel (6.9e, Review before applying)", () => {
     dropped.panel.dispose();
   });
 
+  it("settles held changes main no longer has, so Apply doesn't do nothing (#1063's review)", async () => {
+    const { api, panel } = await holding(REPLY);
+    vi.spyOn(api, "applyHeld").mockResolvedValue({ status: "nothing-held" });
+    await panel.applyHeld(REPLY);
+    expect(turnOf(panel, REPLY)).toMatchObject({ held: [], heldOutcome: "unavailable" });
+    expect(panel.state.getState().applying).toBeUndefined();
+    panel.dispose();
+  });
+
   it("leaves held changes waiting when main can't apply them now", async () => {
     const { api, panel } = await holding(REPLY);
     vi.spyOn(api, "applyHeld").mockResolvedValue({ status: "busy" });
