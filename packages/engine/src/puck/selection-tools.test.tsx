@@ -17,11 +17,6 @@ import { afterAll, afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { CanvasEngine, ElementRequest } from "../canvas-engine.js";
 import { createPuckEngine } from "./puck-engine.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 // Puck's canvas starts a 500 ms timer when it mounts; let the last one fire while there's a window.
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 600));

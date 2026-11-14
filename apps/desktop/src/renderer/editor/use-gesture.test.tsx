@@ -7,11 +7,6 @@ import { sessionWith } from "../testing/fixtures.js";
 import { type EditorSession, runHistoryCommand } from "./editor-session.js";
 import { type GestureControls, useGesture } from "./use-gesture.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const setName = (name: string) => (draft: SiteDoc) => {
   draft.settings.general.name = name;
 };

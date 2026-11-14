@@ -7,11 +7,6 @@ import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { QuickStartDialog, type QuickStartStep } from "./QuickStartDialog.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const cafe: TemplateSummary = {
   id: "cafe",
   category: "food",

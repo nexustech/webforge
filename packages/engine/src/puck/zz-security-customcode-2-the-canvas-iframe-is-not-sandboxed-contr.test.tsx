@@ -10,11 +10,6 @@ import { act } from "react";
 import { afterAll, describe, expect, it } from "vitest";
 import { createPuckEngine } from "./puck-engine.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 600));
 });

@@ -1,7 +1,7 @@
-import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
+import type { MediaId, MediaMeta } from "@webforge/model";
 import { describe, expect, it } from "vitest";
 import type { EditorSession } from "../editor/editor-session.js";
-import { sessionWith } from "../testing/fixtures.js";
+import { PHOTO as photo, PRICES as prices, sessionWith } from "../testing/fixtures.js";
 import {
   addMedia,
   cropMedia,
@@ -10,26 +10,6 @@ import {
   replaceMedia,
   setFocalPoint,
 } from "./media-commands.js";
-
-const photo: ImageMeta = {
-  id: "photo" as MediaId,
-  hash: "a".repeat(64),
-  name: "shop",
-  fileName: "shop.jpg",
-  kind: "image",
-  mimeType: "image/jpeg",
-  width: 1600,
-  height: 1000,
-  alt: "",
-};
-const prices: MediaMeta = {
-  id: "prices" as MediaId,
-  hash: "b".repeat(64),
-  name: "prices",
-  fileName: "prices.pdf",
-  kind: "file",
-  mimeType: "application/pdf",
-};
 
 function sessionWithMedia(...items: MediaMeta[]): EditorSession {
   const session = sessionWith();

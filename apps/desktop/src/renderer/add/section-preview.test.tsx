@@ -7,11 +7,6 @@ import { starterSite } from "../../shared/starter-site.js";
 import { SITE_CSS_DEBOUNCE_MS } from "../editor/site-css.js";
 import { createItemPreviews, createSectionPreviews } from "./section-preview.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 afterEach(cleanup);
 
 const HOURS = "shared-hours" as SharedSectionId;
