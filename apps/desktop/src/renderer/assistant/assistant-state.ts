@@ -55,6 +55,11 @@ export type AssistantPanelModel = {
   readonly newConversation: () => Promise<void>;
   /** This site's yes or no (ADR 0026 §4), kept on this computer by main. */
   readonly answerSite: (allowed: boolean) => Promise<void>;
+  /**
+   * Asks main to open a link from a reply in the browser: `href` as the reply wrote it. Main opens
+   * only a web address its copy of that reply holds; a call it couldn't answer is *failed*.
+   */
+  readonly openLink: (replyId: string, href: string) => Promise<"opened" | "refused" | "failed">;
   /** Stops following main's events. */
   readonly dispose: () => void;
 };
@@ -208,6 +213,9 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         // Events that came meanwhile are newer than what was loaded.
         turns: now.turns.length > 0 ? now.turns : turns.map(panelTurn),
         replying: turns.find((each) => each.state === "replying")?.replyId ?? now.replying,
+        // The safety version a reply saved before this conversation's first change (S20).
+        safetyVersionId:
+          now.safetyVersionId ?? turns.find((each) => each.safetyVersion)?.safetyVersion?.versionId,
       }));
     })
     // Loading failed: the panel stays on Loading…, and the failure is logged without content.
@@ -261,6 +269,14 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         return;
       }
       state.setState({ site: { asked: true, allowed }, refused: undefined });
+    },
+    openLink: async (replyId, href) => {
+      try {
+        return (await api.openLink(session, replyId, href)).status;
+      } catch (error) {
+        reportFailure("assistant.link", error);
+        return "failed";
+      }
     },
     dispose: unsubscribe,
   };
