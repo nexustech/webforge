@@ -224,6 +224,27 @@ describe("copy and paste (1.25)", () => {
     expect(second.history.document.getState().media).toEqual({});
   });
 
+  it("pastes into another site with the documents the elements link to (#979)", async () => {
+    const first = sessionWith();
+    addMedia(first, [prices]);
+    first.edit("insert", "Added Button", (draft) => {
+      draft.pages[draft.homePageId]?.doc.content.push({
+        type: "Button",
+        props: { id: "button", label: "Our prices", link: { kind: "file", mediaId: prices.id } },
+      });
+    });
+    const clipboard = fakeClipboard();
+    select(first, "button");
+    await copySelected(first, clipboard, vi.fn());
+
+    const second = sessionWith();
+    await pasteElements(second, clipboard, vi.fn());
+
+    expect(second.history.document.getState().media[prices.id]).toMatchObject({
+      hash: prices.hash,
+    });
+  });
+
   it("pastes the elements and says how many images couldn't come along, after a restart (#459)", async () => {
     const hero: NodeDoc = { type: "Hero", props: { id: "hero", image: { mediaId: photo.id } } };
     const paste = async (missingImages: number) => {
