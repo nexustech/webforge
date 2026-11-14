@@ -13,6 +13,7 @@ import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   addEntry,
+  addHelpTopic,
   addImport,
   addImportLine,
   applyEdits,
@@ -38,8 +39,13 @@ const REPO = join(import.meta.dirname, "../..");
 // The repository's files each kind of scaffold reads and changes. Each test copies only those it
 // needs: on a slow runner every file copied and then read for the first time costs time (#403).
 
-/** An area's: the list of areas and the strings' index. */
-const AREA = ["apps/desktop/src/renderer/areas.ts", "packages/i18n/src/en.ts"];
+/** An area's: the list of areas, the strings' index, and Help's contents and **?** topics. */
+const AREA = [
+  "apps/desktop/src/renderer/areas.ts",
+  "packages/i18n/src/en.ts",
+  "docs/help/README.md",
+  "apps/desktop/src/renderer/help/help-links.json",
+];
 
 /** A panel's: an area's, and the editor's test that lists the panels. */
 const PANEL = [...AREA, "apps/desktop/src/renderer/editor/Editor.test.tsx"];
@@ -189,6 +195,20 @@ ${test}`,
   });
 });
 
+describe("scaffold's ? topics", () => {
+  it("adds a topic last, as the table is written, and refuses one there already", () => {
+    const table = '{\n  "export": { "page": "export" },\n  "publish": { "page": "publish" }\n}\n';
+
+    expect(addHelpTopic(table, "bookings", "bookings")).toBe(
+      '{\n  "export": { "page": "export" },\n  "publish": { "page": "publish" },\n  "bookings": { "page": "bookings" }\n}\n',
+    );
+    expect(addHelpTopic("{}\n", "bookings", "bookings")).toBe(
+      '{\n  "bookings": { "page": "bookings" }\n}\n',
+    );
+    expect(() => addHelpTopic(table, "export", "export")).toThrow("there already");
+  });
+});
+
 describe("scaffold on the repository's files", () => {
   // Each edit finds its place in the files as they are now, without writing anything: a file
   // changed so a scaffold can't find its place fails here.
@@ -232,8 +252,32 @@ describe("scaffold", () => {
       "apps/desktop/src/renderer/bookings/area.ts",
       "apps/desktop/src/renderer/bookings/area.test.ts",
       "packages/i18n/src/en/bookings.ts",
+      "docs/help/bookings.md",
     ]);
-    expect(area.changed).toEqual(["apps/desktop/src/renderer/areas.ts", "packages/i18n/src/en.ts"]);
+    expect(area.changed).toEqual([
+      "apps/desktop/src/renderer/areas.ts",
+      "packages/i18n/src/en.ts",
+      "docs/help/README.md",
+      "apps/desktop/src/renderer/help/help-links.json",
+    ]);
+    // Something people see has a help page, in Help's contents, and a ? topic (HP-4, #979); a
+    // panel in the area shares its page, with a topic of its own.
+    expect(read(root, "docs/help/bookings.md")).toMatch(
+      /^---\nid: bookings\ntitle: Bookings\nsummary: .+\nrelated: \[\]\nupdated: \d{4}-\d\d-\d\d\n---\n/,
+    );
+    expect(read(root, "docs/help/README.md")).toContain(
+      "- [Bookings](bookings.md): say what it's for\n\n## Writing a help page",
+    );
+    const topics = JSON.parse(read(root, "apps/desktop/src/renderer/help/help-links.json"));
+    expect(topics).toMatchObject({
+      bookings: { page: "bookings" },
+      bookingsPanel: { page: "bookings" },
+    });
+    expect(panel.written).not.toContain("docs/help/bookings.md");
+    const bookingsPanel = read(root, "apps/desktop/src/renderer/bookings/BookingsPanel.tsx");
+    expect(bookingsPanel).toContain('<HelpButton topic="bookingsPanel" />');
+    // Through the help area's index, as dependency-cruiser has another area reach it.
+    expect(bookingsPanel).toContain('import { HelpButton } from "../help/index.js";');
     expect(panel.written).toContain(
       "apps/desktop/src/renderer/bookings/register-bookings-panel.stories.tsx",
     );
