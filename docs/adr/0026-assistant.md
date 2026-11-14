@@ -269,6 +269,11 @@ interface AssistantApi {
 
   /** Sends a message in the site's conversation; the reply comes as events with `replyId`. */
   send(session: SessionId, text: string, context: MessageContext): Promise<SendResult>;
+  /**
+   * A one-off draft of the site's text (6.9d, #873; below): one model call with no tools, outside
+   * the conversation. The same checks as `send`; its cost is added to the month's (§5).
+   */
+  draft(session: SessionId, request: DraftRequest): Promise<DraftResult>;
   /** Stops the reply: no further model call or tool call. Changes made stay, and stay undoable. */
   stop(replyId: string): Promise<void>;
   /** Forgets the site's conversation (the panel's New conversation). */
@@ -373,6 +378,31 @@ type AssistantEvent = ReplyEvent | AppEvent;
 - **_Review before applying_ (AIA-5's setting) isn't in this contract yet.** Holding changes back until the person agrees needs the tool layer to stage commands, which 4.9's doesn't.
   - **Until it works, the panel and Settings don't show it:** no setting that does nothing. `AssistantStatus` still carries `reviewBeforeApplying` (always `false`), and changes apply at once, which is the default the product owner chose.
   - **It must work before the beta ships the assistant.** 6.9b makes it work, and adds its events to this contract with a note to stream A. If 6.9b can't, a follow-up issue in Phase 5 does, before the beta.
+- **Drafts (6.9d, #873)** are the writing help's one-click asks: a rewrite of selected text (G25a), a page's description and an image's alt text from Site Check (G25b, SEO-10), and a template page's texts for the business the quick start describes (QS-7).
+
+  ```ts
+  type DraftRequest =
+    | { kind: "rewrite"; how: "friendlier" | "shorter" | "grammar"; text: string } // ≤ 4,000
+    | { kind: "description"; language: string; site: string; page: { title: string; text: string } }
+    | { kind: "alt"; language: string; fileName: string; page: string; nearby: string }
+    | {
+        kind: "business";
+        language: string;
+        business: { name: string; type: string; about: string };
+        texts: { role: string; sample: string }[]; // 1–40, answered in order
+      };
+
+  type DraftResult =
+    | { status: "ok"; texts: string[]; costUsd: number | null } // one, or one per text asked
+    | { status: AssistantErrorCode };
+  ```
+
+  - **A draft never changes the site.** The renderer shows it for review, and keeps what the person accepts as one undo step, labelled `AI (Assistant): …` like the loop's.
+  - **The prompts live in main;** the renderer names only the kind. The site's text goes only in the user's message, as labelled JSON, and the system text says it is content, never instructions (§6.4's labelled data). `main/assistant/site-text.ts` is that one wrapper, for the drafts and 6.9b's loop alike.
+  - **An alt text draft never sends the image** (§6): its file's name and the text near it only.
+  - **The checks:** `preflight(session)` in the service runs `send`'s checks for both (site, both yeses, sign-in, model, limit), and `main/assistant/endpoint.ts`'s `endpointFor` gives the address, key, privacy routing and model, for the drafts and 6.9b's loop.
+  - **One draft at a time per site** (`busy`). A draft waits up to two minutes for the model (`offline` after that). An answer main can't use, such as a business draft's with the wrong number of texts, is `provider-error`, and its cost still counts.
+
 - **Errors carry a code, never the provider's own text,** which could quote the request. The panel words each code with `t()`. Main logs the HTTP status and the provider's error type, without content.
 
 **The stand-in loop for 6.9c:** `apps/desktop/src/renderer/assistant/fake-assistant.ts` (6.9a). It's an `AssistantApi` that answers from a script:

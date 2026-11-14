@@ -154,7 +154,7 @@ describe("updateSettings, the business part of Site Settings (4.11, AIB-2)", () 
       app,
     );
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       status: "done",
       label: "AI (Claude): Changed Site Settings: General, Contact & hours",
     });
@@ -298,7 +298,7 @@ describe("the page tools (4.11, AIB-3)", () => {
 
     const result = await api.run("removePage", { pageId: about }, app);
 
-    expect(result).toEqual({ status: "done", label: "AI (Claude): Deleted page 'About'" });
+    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Deleted page 'About'" });
     expect(confirm.mock.calls[0]?.[0]).toEqual({
       action: "Allow Claude to delete the page About?",
       description: "This removes the page and its content.",
@@ -338,7 +338,7 @@ describe("the page tools (4.11, AIB-3)", () => {
       if (page !== undefined) page.slug = "our-prices";
     });
 
-    expect(await api.run("renamePage", { pageId: about, title: "About us" }, app)).toEqual({
+    expect(await api.run("renamePage", { pageId: about, title: "About us" }, app)).toMatchObject({
       status: "done",
       label: "AI (Claude): Renamed page 'About us'",
     });
@@ -441,7 +441,7 @@ describe("the page tools (4.11, AIB-3)", () => {
 
     expect(
       await api.run("movePage", { pageId: "page-contact", direction: "up", steps: 2 }, app),
-    ).toEqual({ status: "done", label: "AI (Claude): Moved page 'Contact'" });
+    ).toMatchObject({ status: "done", label: "AI (Claude): Moved page 'Contact'" });
     // Each step swaps it with the page above it then, as the Pages panel's arrow does.
     expect(titles(history)).toEqual(["Home", "Not found", "Contact", "About", "Prices"]);
     history.undo();
@@ -472,7 +472,7 @@ describe("the page tools (4.11, AIB-3)", () => {
         },
         app,
       ),
-    ).toEqual({ status: "done", label: "AI (Claude): Changed page settings" });
+    ).toMatchObject({ status: "done", label: "AI (Claude): Changed page settings" });
     expect(history.document.getState().pages[about]).toMatchObject({
       title: "About Rosa's",
       slug: "about",

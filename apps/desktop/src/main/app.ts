@@ -791,6 +791,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         dir: app.getPath("userData"),
         credentials,
         fetchFn: assistantFetch,
+        appName: t("app.name"),
         signIn: createOpenRouterSignIn({
           fetchFn: assistantFetch,
           openExternal: (url) => electron.shell.openExternal(url),
