@@ -218,6 +218,11 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
   const names = Object.keys(commands) as [string, ...string[]];
   return {
     description: `Runs a titled list of commands as one change: one question for the person, with a summary of everything it does, then one undo step named after the title ("Build the Rapidfix site"), a version saved before it. Every command is checked first, each against the site as the ones before it leave it; if any fails, nothing changes and the answer says which. Use it for a build of more than a few edits. Each command takes what it takes on its own (${names.join(", ")}); a plan holds no plan. New ids from addPage and addNode aren't known before it runs: add a page and fill it in two plans.`,
+    /**
+     * No version of its own before it (S26, AIB-6 amended): a plan always asks, and the person's
+     * Allow saves one, so a plan refused as invalid saves nothing.
+     */
+    savesVersionFirst: false,
     input: z.strictObject({
       title: z.string().trim().min(1).max(80),
       commands: z

@@ -14,23 +14,28 @@ export const UNTRUSTED_SITE_TEXT =
 export type ToolInputSchema = { readonly type: "object" } & Readonly<Record<string, unknown>>;
 
 /**
- * A query or command as an AI app sees it (4.9): its name, what it does, and its input as JSON
- * Schema. The MCP server lists these as its tools; an in-app assistant would use the same ones
- * (AIA-4).
+ * One tool an AI app or the in-app assistant can call (4.9, #981), wherever it's answered: its
+ * name, what it does and what it takes, and the policy that goes with it. The MCP server lists
+ * these and routes each call by them; nothing else keys on a tool's name.
  */
-export type AiTool =
-  | {
-      readonly kind: "query";
-      readonly name: QueryName;
-      readonly description: string;
-      readonly inputSchema: ToolInputSchema;
-    }
-  | {
-      readonly kind: "command";
-      readonly name: CommandName;
-      readonly description: string;
-      readonly inputSchema: ToolInputSchema;
-    };
+export type ToolDef<I extends z.ZodType = z.ZodType> = {
+  readonly name: string;
+  /** A query reads; a command changes something, on behalf of the app that asks. */
+  readonly kind: "query" | "command";
+  /** What it takes: checked by whoever answers it, and listed as JSON Schema. */
+  readonly input: I;
+  /** What it does, for the app; the listing adds {@link UNTRUSTED_SITE_TEXT}. */
+  readonly description: string;
+  /** Main answers it itself (a brief, 4.12a), or the window does, for the site open in it. */
+  readonly answeredBy: "main" | "window";
+  /**
+   * Whether a version "Before ‹app›'s changes" is saved before it runs, the first time in each
+   * opening of the site (S20, S26).
+   */
+  readonly savesVersionFirst: boolean;
+  /** Whether the in-app assistant has it too (AIA-9), beside AI apps. */
+  readonly forAssistant: boolean;
+};
 
 /** `schema`, an object schema, as JSON Schema of what a caller sends: defaults may be left out. */
 function inputSchemaOf(schema: z.ZodType): ToolInputSchema {
@@ -42,24 +47,41 @@ function inputSchemaOf(schema: z.ZodType): ToolInputSchema {
   return json as ToolInputSchema;
 }
 
-const describe = (description: string) => `${description} ${UNTRUSTED_SITE_TEXT}`;
+/** A tool as MCP's `tools/list` gives it: its name, its description, and its input. */
+export type McpTool = {
+  readonly name: string;
+  readonly description: string;
+  readonly inputSchema: ToolInputSchema;
+};
 
-/** Every query and command, as AI apps' tools: the queries first. */
-export const AI_TOOLS: readonly AiTool[] = [
-  ...Object.entries(QUERIES).map(
-    ([name, query]): AiTool => ({
-      kind: "query",
-      name: name as QueryName,
-      description: describe(query.description),
-      inputSchema: inputSchemaOf(query.input),
-    }),
-  ),
-  ...Object.entries(COMMANDS).map(
-    ([name, command]): AiTool => ({
-      kind: "command",
-      name: name as CommandName,
-      description: describe(command.description),
-      inputSchema: inputSchemaOf(command.input),
-    }),
-  ),
+/** `tool` as an AI app sees it: what it takes as JSON Schema, and that site text is untrusted. */
+export const toMcpTool = (tool: ToolDef): McpTool => ({
+  name: tool.name,
+  description: `${tool.description} ${UNTRUSTED_SITE_TEXT}`,
+  inputSchema: inputSchemaOf(tool.input),
+});
+
+/**
+ * Every query and command, as tools the window answers (4.9): the queries first. A command saves a
+ * version first unless its own definition says not (a plan, whose Allow saves one).
+ */
+export const AI_TOOLS: readonly (ToolDef & { readonly name: QueryName | CommandName })[] = [
+  ...Object.entries(QUERIES).map(([name, query]) => ({
+    kind: "query" as const,
+    name: name as QueryName,
+    description: query.description,
+    input: query.input,
+    answeredBy: "window" as const,
+    savesVersionFirst: false,
+    forAssistant: true,
+  })),
+  ...Object.entries(COMMANDS).map(([name, command]) => ({
+    kind: "command" as const,
+    name: name as CommandName,
+    description: command.description,
+    input: command.input,
+    answeredBy: "window" as const,
+    savesVersionFirst: !("savesVersionFirst" in command) || command.savesVersionFirst,
+    forAssistant: true,
+  })),
 ];

@@ -1,14 +1,15 @@
 import { randomInt } from "node:crypto";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { t } from "@webforge/i18n";
+import { isMainTool, type MainToolName } from "../shared/ai-tools.js";
 import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import type { AiApps, AppKind, PairedApp, Pairing } from "./ai-apps.js";
 import type { AiBridge } from "./ai-ipc.js";
 import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
 import type { McpListener, McpListenerOptions } from "./mcp-listener.js";
-import type { McpApp, McpServerInfo } from "./mcp-server.js";
-import { isMainTool, type MainToolName, type SiteBriefs } from "./site-brief.js";
+import type { McpApp, McpAsk, McpServerInfo } from "./mcp-server.js";
+import type { SiteBriefs } from "./site-brief.js";
 
 /** The ephemeral range a port is drawn from (ADR 0021). */
 const EPHEMERAL = { from: 49152, to: 65535 } as const;
@@ -184,20 +185,22 @@ export function createMcpService(options: McpServiceOptions): McpService {
     return askWith(app, versionFirst);
   };
 
-  /** `app`'s requests, with `before` run ahead of each command but a plan's. */
+  /**
+   * `app`'s requests, each answered where its tool's definition says (#981), with `before` run
+   * ahead of those whose definition saves a version first.
+   */
   const askWith =
-    (app: McpApp, before: () => Promise<void>) =>
-    (request: AiRequest, signal?: AbortSignal): Promise<AiResponse> =>
-      isMainTool(request.name)
-        ? // A brief changes no open site: no version before it.
-          limits.ask(app.id, request, undefined, mainTool(app, signal))
-        : limits.ask(
-            app.id,
-            request,
-            request.kind !== "command" || request.name === "plan" ? undefined : before,
-            // The window's bridge knows each command's app by id, for a cancel (6.9b).
+    (app: McpApp, before: () => Promise<void>): McpAsk =>
+    (request, tool, signal) =>
+      limits.ask(
+        app.id,
+        request,
+        tool.savesVersionFirst ? before : undefined,
+        tool.answeredBy === "main"
+          ? mainTool(app, signal)
+          : // The window's bridge knows each command's app by id, for a cancel (6.9b).
             (asked) => options.ask(asked, app.id),
-          );
+      );
 
   /**
    * A paired app's server proof, looked up only for an app in the list: a caller naming made-up

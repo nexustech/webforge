@@ -91,13 +91,9 @@ describe("requestMedia (4.12b, AIB-7)", () => {
     expect(deps.ask).toHaveBeenCalledOnce();
   });
 
-  it("waits while the person is busy, and leaves other requests to the command layer", async () => {
+  it("waits while the person is busy", async () => {
     const busy = setup({ busy: () => true });
     expect(await busy.answer(request({ reason: "Photos" }))).toMatchObject({ status: "busy" });
     expect(busy.deps.ask).not.toHaveBeenCalled();
-
-    const { answer } = setup();
-    expect(answer({ kind: "query", name: "requestMedia", input: {} })).toBeUndefined();
-    expect(answer({ ...request({}), name: "addPage" })).toBeUndefined();
   });
 });
