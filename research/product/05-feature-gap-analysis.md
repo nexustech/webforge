@@ -156,7 +156,13 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 - **Multilingual (M4)** split into the site's own labels in the site's language (CC-1, a defect today), language versions (CC-2) and translation with the Assistant (CC-3).
 - Three search-engine additions (CC-6 to CC-8); SEO-11's rule is kept.
 
-Nothing in this section is decided, and no status in the tables above has changed.
+**Decided 2026-11-14** ([the note's §11](../competitors/03-comparison-2026-11.md#11-decisions)). The tables above keep their wording; these lines are what stands now:
+
+- **G12** is CC-5: v1.1, off until the owner chooses it, with the switch element.
+- **G16:** tables and a timeline move from Later to v1.1 (CC-10), with an Accordion element and contact buttons. Countdown and charts stay Later.
+- **G19's popup** is not in v1.1; if one is ever built it opens by a button only.
+- **Multilingual** moves from v1.2+ to v1.1 (CC-1 to CC-3); right-to-left languages and the editor's own language are held until there is demand.
+- `BlogPosting` data (CC-6) and `.htaccess` redirects (CC-7) come before v1.0; `Product` data on Buy buttons (CC-8) is not adopted.
 
 ## 4. Proposed changes
 
