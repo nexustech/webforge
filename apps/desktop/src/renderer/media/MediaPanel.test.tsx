@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 import {
-  type ImageMeta,
   type MediaId,
   type MediaMeta,
   SHARED_COPY_TYPE,
@@ -11,34 +10,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import type { EditorSession } from "../editor/editor-session.js";
-import { sessionWith } from "../testing/fixtures.js";
+import { PHOTO as photo, PRICES as prices, sessionWith } from "../testing/fixtures.js";
 import { MediaPanel } from "./MediaPanel.js";
 import { addMedia } from "./media-commands.js";
-
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
-const photo: ImageMeta = {
-  id: "photo" as MediaId,
-  hash: "a".repeat(64),
-  name: "shop",
-  fileName: "shop.jpg",
-  kind: "image",
-  mimeType: "image/jpeg",
-  width: 1600,
-  height: 1000,
-  alt: "",
-};
-const prices: MediaMeta = {
-  id: "prices" as MediaId,
-  hash: "b".repeat(64),
-  name: "prices",
-  fileName: "prices.pdf",
-  kind: "file",
-  mimeType: "application/pdf",
-};
 
 let container: HTMLDivElement;
 let root: Root;

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
+import { describeChannels } from "./contract-kit.test-helper.js";
 import {
   applyPreferencesChange,
   DEFAULT_PREFERENCES,
   INTERFACE_ZOOM_LEVELS,
   interfaceZoomStep,
   preferencesSchema,
+  prefsChannels,
 } from "./prefs.js";
 
 describe("interfaceZoomStep", () => {
@@ -41,3 +43,5 @@ describe("interfaceZoom", () => {
     expect(applyPreferencesChange(changed, { theme: "light" }).interfaceZoom).toBe(1.25);
   });
 });
+
+describeChannels("prefs", prefsChannels);

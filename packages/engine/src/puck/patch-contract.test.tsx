@@ -20,11 +20,6 @@ import { puckPrivateApi } from "./puck-dom.js";
 //   8. Whether a zone accepts what's dragged, read by the drag library as it asks: below.
 //   9. An element's active zones, read by the drag library as it asks: below.
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 /** How many elements the page has: the walk reads each one's config, the patched check none. */
 const ELEMENTS = 30;
 

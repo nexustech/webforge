@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { sessionWith } from "../testing/fixtures.js";
 import { addBlog } from "./blog-actions.js";
 import { importPosts, postsFromFiles } from "./import-posts.js";
-import { importChosenPosts } from "./SitePanel.js";
+import { importChosenPosts } from "./register-site-panel.js";
 
 const md = (name: string, text: string) => ({ name, text });
 

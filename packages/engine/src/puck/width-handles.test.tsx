@@ -8,12 +8,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { FieldDrag } from "../canvas-engine.js";
 import { anchorOf, nearestStep, WidthHandles, widthAt, widthHandleField } from "./width-handles.js";
 
-declare global {
-  // Tells React that act() is available (testing without @testing-library).
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const imageWidth = widthHandleField(siteLibrary, "Image");
 
 describe("the width a handle sets (2.17)", () => {

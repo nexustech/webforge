@@ -20,6 +20,7 @@ import { BrushCleaningIcon, HistoryIcon, MoreHorizontalIcon, SaveIcon } from "lu
 import { useState } from "react";
 import { mediaImageUrl } from "../../shared/ipc/media.js";
 import type { VersionSummary } from "../../shared/ipc/versions.js";
+import { reportFailure } from "../log.js";
 import { fileSizeLabel } from "../media/index.js";
 import type { VersionActions } from "./version-actions.js";
 import type { VersionListState } from "./version-list.js";
@@ -62,9 +63,10 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
 
   const run = (work: () => Promise<unknown>) => {
     setBusy(true);
-    // Each action says itself what went wrong; the panel only waits for it.
+    // Each action says itself what went wrong; the panel only waits for it, and logs a failure
+    // by its code (#990).
     void work()
-      .catch(() => undefined)
+      .catch((error: unknown) => reportFailure("versions.action", error))
       .then(() => setBusy(false));
   };
   const answer = () => {

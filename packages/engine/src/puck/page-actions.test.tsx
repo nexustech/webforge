@@ -12,11 +12,6 @@ import { toPageDoc } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { allNodes, ROOT_ZONE } from "./tree.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const library: ComponentLibrary = {
   components: {
     Section: {
