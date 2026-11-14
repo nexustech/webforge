@@ -11,6 +11,7 @@ import {
   BEFORE_SITE_WIDE_GAP_MS,
   registerVersionsHandlers,
   type VersionsOptions,
+  versionsFeature,
 } from "./versions-ipc.js";
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
@@ -405,5 +406,41 @@ describe("the versions IPC calls (4.6)", () => {
       status: "canceled",
     });
     expect(session.current()?.sessionId).toBe(sessionId);
+  });
+});
+
+describe("versionsFeature (#985)", () => {
+  const options = (): VersionsOptions => ({
+    session,
+    dialogs: { chooseNewProjectPath: async (name) => join(dir, `${name}.wforge`) },
+    captureCanvas: async () => JPEG,
+    versionsKept: async () => 5,
+  });
+
+  it("saves no version before its calls are registered, as with no site open", async () => {
+    const feature = versionsFeature(options());
+    const sessionId = session.current()?.sessionId ?? "";
+
+    expect(await feature.saveVersionBefore(sessionId, "Before Claude's changes")).toEqual({
+      status: "failed",
+      reason: "unknown",
+    });
+  });
+
+  it("registers Version History's calls, and saves through them once it has", async () => {
+    const channels: string[] = [];
+    const ipc = {
+      handle: (channel: string) => channels.push(channel),
+    } as unknown as Pick<IpcMain, "handle">;
+    const feature = versionsFeature(options());
+
+    feature.register?.(ipc, (url) => url === APP_URL);
+
+    expect(channels).toContain("versions:save");
+    const sessionId = session.current()?.sessionId ?? "";
+    expect(await feature.saveVersionBefore(sessionId, "Before Claude's changes")).toMatchObject({
+      status: "saved",
+      version: { name: "Before Claude's changes" },
+    });
   });
 });

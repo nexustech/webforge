@@ -52,6 +52,7 @@ async function render(
   options: {
     readonly read?: (url: string) => Promise<ArrayLike<number>>;
     readonly initialStep?: QuickStartStep;
+    readonly askAbout?: boolean;
   } = {},
 ) {
   const onCreate = vi.fn((_request: NewSiteRequest) => undefined);
@@ -175,6 +176,19 @@ describe("QuickStartDialog (QS-1, 3.11b)", () => {
       pages: { leaveOut: ["cafe-visit"], recipes: ["food-private-hire"] },
     });
     expect(request?.themeTokens?.preset).toBe("bistro");
+  });
+
+  it("asks about the business only while the assistant is on, and sends it trimmed (QS-7)", async () => {
+    await render();
+    expect(field(t("quickStart.about"))).toBeUndefined();
+
+    const { onCreate } = await render({ askAbout: true });
+    await type(field(t("quickStart.about")), "  Sourdough and rye, baked in Leeds.  ");
+    await click(t("quickStart.create"));
+
+    expect(onCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ about: "Sourdough and rye, baked in Leeds." }),
+    );
   });
 
   it("makes one page of the pages kept, when asked (GA10, 5.9)", async () => {

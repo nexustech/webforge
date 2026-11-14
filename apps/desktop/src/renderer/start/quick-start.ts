@@ -41,6 +41,11 @@ export type QuickStartAnswers = {
   readonly businessKind?: BusinessKind;
   readonly name: string;
   readonly whatYouDo: string;
+  /**
+   * *Tell us about your business* (QS-7, #873): a paragraph the assistant drafts the home and
+   * About pages' words from, once the site opens. Asked only while the assistant is on.
+   */
+  readonly about: string;
   /** *A look*: the template, the theme preset. */
   readonly template: TemplateId | null;
   readonly theme: string;
@@ -65,6 +70,7 @@ export function emptyAnswers(untitled: string): QuickStartAnswers {
     category: null,
     name: untitled,
     whatYouDo: "",
+    about: "",
     template: null,
     theme: DEFAULT_THEME.preset,
     leaveOut: [],
@@ -181,6 +187,7 @@ export function quickStartRequest(answers: QuickStartAnswers, untitled: string):
   const email = given(answers.email);
   const address = given(answers.address);
   const webAddress = given(answers.webAddress);
+  const about = given(answers.about);
   return {
     name,
     theme: answers.theme,
@@ -203,6 +210,7 @@ export function quickStartRequest(answers: QuickStartAnswers, untitled: string):
       ...(answers.onePage ? { onePage: true } : {}),
     },
     ...(answers.colours.kind === "theme" ? {} : { themeTokens: themeOf(answers) }),
+    ...(about === undefined ? {} : { about }),
   };
 }
 

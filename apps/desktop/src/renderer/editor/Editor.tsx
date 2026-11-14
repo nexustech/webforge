@@ -11,6 +11,7 @@ import { shallow } from "zustand/shallow";
 import type { CustomDevice } from "../../shared/ipc/prefs.js";
 import type { WebforgeApi } from "../../shared/webforge-api.js";
 import { createSectionPreviews } from "../add/index.js";
+import { BusinessDraftHost } from "../assistant/BusinessDraftHost.js";
 import { RewriteHost } from "../assistant/RewriteHost.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
@@ -387,6 +388,12 @@ export function Editor({
         session={session}
         engine={engine}
         api={api.assistant}
+        sessionId={siteSession()}
+      />
+      <BusinessDraftHost
+        session={session}
+        api={api.assistant}
+        takeAbout={api.project.takeBusinessAbout}
         sessionId={siteSession()}
       />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />

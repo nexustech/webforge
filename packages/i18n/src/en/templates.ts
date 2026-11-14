@@ -135,6 +135,9 @@ export const templates = {
   "quickStart.whatYouDo": "What you do",
   "quickStart.whatYouDoHint":
     "One line, such as “Bread and cakes, baked every morning”. Search engines show it under your site's name.",
+  "quickStart.about": "Tell us about your business",
+  "quickStart.aboutHint":
+    "A few sentences: what you offer, who for, and what makes you different. Once your site opens, the assistant writes its home and About pages' words from this, for you to check.",
   // A look.
   "quickStart.templates": "Templates",
   "quickStart.templatesFor": "Templates for {type}",

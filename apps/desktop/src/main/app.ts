@@ -2,9 +2,7 @@ import { networkInterfaces } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
-import { ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import { appEvents } from "../shared/ipc/app.js";
-import { assistantEvents } from "../shared/ipc/assistant.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
@@ -13,15 +11,12 @@ import { siteEvents } from "../shared/ipc/site.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { updateChannelFor } from "../shared/update-channel.js";
-import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
-import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
+import { aiAppsFeature } from "./ai-apps-feature.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu, runMenuCommand } from "./app-menu.js";
 import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
-import { createAssistantService } from "./assistant/assistant-service.js";
-import { createOpenRouterSignIn } from "./assistant/openrouter-sign-in.js";
-import { registerAssistantHandlers } from "./assistant-ipc.js";
+import { assistantFeature } from "./assistant-feature.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
@@ -29,7 +24,6 @@ import { registerBundleHandlers } from "./bundle-ipc.js";
 import { electronBundleFetch } from "./bundle-net.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { canvasStylesFeature, createCanvasStyles } from "./canvas-css.js";
-import { createClaudeExtensions } from "./claude-extension.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
@@ -48,12 +42,9 @@ import { createHandOff } from "./hand-off.js";
 import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
 import { registerIpcHandler } from "./ipc.js";
-import { createJsonStore } from "./json-store.js";
 import { licenceFiles, registerLicenceHandlers } from "./licences.js";
 import { logFailure } from "./log.js";
 import { createMainWindows } from "./main-window.js";
-import { registerMcpHandlers } from "./mcp-ipc.js";
-import { createMcpService, type McpService } from "./mcp-service.js";
 import { mediaFeature } from "./media-feature.js";
 import { createMyThemes } from "./my-themes.js";
 import { createNetlifySignIns } from "./netlify-auth.js";
@@ -74,7 +65,6 @@ import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import { hardenSession, hardenWebContents, isAppUrl } from "./security.js";
-import { createSiteBriefs } from "./site-brief.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
@@ -86,7 +76,7 @@ import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
 import { type Updater, updatesSupported } from "./updates.js";
 import { createUpdates } from "./updates-ipc.js";
-import { registerVersionsHandlers } from "./versions-ipc.js";
+import { versionsFeature } from "./versions-ipc.js";
 import { windowBackground } from "./window-options.js";
 
 // The app's wiring (R13c): Electron comes in as a parameter, so app.test.ts runs all of it against
@@ -231,8 +221,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   // Publish passwords, keys and tokens (#666, 4.4a), encrypted with the OS's keychain (Windows
   // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
-  /** The MCP server for AI apps (4.9), once Electron is ready. */
-  let mcp: McpService | undefined;
   const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
     isEncryptionAvailable: () => electron.safeStorage.isAsyncEncryptionAvailable(),
     encryptString: (text) => electron.safeStorage.encryptStringAsync(text),
@@ -407,6 +395,31 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       lifecycle.mainWindow()?.webContents.send(updatesEvents.status.channel, status),
     quitting: () => lifecycle.quitting,
   });
+  // Version History (4.6): its calls, and the versions main saves before AI apps' changes.
+  const versions = versionsFeature({
+    session: projectSession,
+    dialogs: dialogs.project,
+    captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
+    versionsKept: async () => versionsKept(),
+    beforeSwitch: () => siteSwitch.leaveSite(),
+    // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
+    flush: requestFlush,
+  });
+  // AI apps on this computer (4.8, 4.9, ADR 0021): their requests go to the open site's window.
+  const aiApps = aiAppsFeature({
+    userData: app.getPath("userData"),
+    packaged: app.isPackaged,
+    bridgeFile: app.isPackaged
+      ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
+      : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
+    info: { name: t("app.name"), version: app.getVersion() },
+    window: () => lifecycle.mainWindow(),
+    site: projectSession,
+    credentials,
+    templates: () => templates.briefTemplates(),
+    versions,
+    shell: () => electron.shell,
+  });
   /**
    * The app's features (A12): each is told as sites open, are saved and close (a hand-off's
    * included), registered once Electron is ready, and given its last work before Webforge exits.
@@ -462,6 +475,18 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     canvasStylesFeature(canvasStyles, () => projectSession.current() !== null),
     // Webforge's own updates (0.5a): their state for the window. Quitting installs one, last.
     updates,
+    versions,
+    aiApps,
+    // The assistant (6.9a, ADR 0026), on AI apps' tools.
+    assistantFeature({
+      userData: app.getPath("userData"),
+      credentials,
+      electron: () => electron,
+      window: () => lifecycle.mainWindow(),
+      site: projectSession,
+      tools: aiApps,
+      versions,
+    }),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);
@@ -567,72 +592,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       },
     });
     for (const feature of features) feature.register?.(ipcMain, isTrustedSender);
-    // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
-    const ai = registerAiHandlers(
-      ipcMain,
-      isTrustedSender,
-      () => lifecycle.mainWindow(),
-      projectSession,
-    );
-    exposeForE2eTests(ai, app.isPackaged);
-    // AI apps' briefs (4.12a): main shows them in the window as the quick start, filled in.
-    const briefs = createSiteBriefs({
-      window: () => lifecycle.mainWindow(),
-      templates: () => templates.briefTemplates(),
-    });
-    briefs.register(ipcMain, isTrustedSender);
-    // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
-    // 0021): nothing listens until the person turns it on.
-    const service = createMcpService({
-      apps: createAiApps(
-        createJsonStore(join(app.getPath("userData"), "ai-apps.json"), aiAppsFileSchema, {
-          empty: NO_AI_APPS,
-          onDamaged: "move-aside",
-        }),
-        credentials,
-      ),
-      ask: (request) => ai.ask(request),
-      briefs,
-      info: { name: t("app.name"), version: app.getVersion() },
-      // Version History's, for the site open now: none to save without one.
-      saveVersionBefore: async (name) => {
-        const open = projectSession.current();
-        if (open === null) return "failed";
-        // One from the last few minutes holds the site from before the changes already.
-        const saved = await versions.saveVersionBefore(open.sessionId, name);
-        return saved.status === "failed" ? "failed" : "saved";
-      },
-      opening: () => projectSession.current()?.sessionId,
-    });
-    mcp = service;
-    void service.start().catch((error: unknown) => logFailure("mcp start", error));
-    // Claude Desktop's extensions, in the person's own profile, with the bundled bridge.
-    const extensions = createClaudeExtensions({
-      dir: join(app.getPath("userData"), "ai-apps"),
-      bridgeFile: app.isPackaged
-        ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
-        : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
-      version: app.getVersion(),
-      // Looked up as they're called, so the E2E tests can stand in for Claude Desktop.
-      open: (path) => electron.shell.openPath(path),
-      show: (path) => electron.shell.showItemInFolder(path),
-    });
-    // Any left when Webforge last quit, with their proofs: they've been opened, or never will be.
-    void extensions.sweep().catch((error: unknown) => logFailure("mcp claude extension", error));
-    // Looked up as it's called: the E2E tests replace `shell.openExternal`.
-    registerMcpHandlers(ipcMain, isTrustedSender, service, extensions, (url) =>
-      electron.shell.openExternal(url),
-    );
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
-    const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
-      session: projectSession,
-      dialogs: dialogs.project,
-      captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
-      versionsKept: async () => versionsKept(),
-      beforeSwitch: () => siteSwitch.leaveSite(),
-      // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
-      flush: requestFlush,
-    });
     registerHelpHandlers(ipcMain, isTrustedSender, helpWindows, (url) =>
       electron.shell.openExternal(url),
     );
@@ -651,48 +611,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     markStartup("ipc-registered");
     registerPostsHandlers(ipcMain, isTrustedSender, filePostsParts(dialogs.posts.choosePostFiles));
-    // The assistant (6.9a, ADR 0026): its model calls and sign-in go through `net.fetch`, for the
-    // system's proxy; looked up as they're called, as the E2E tests stand in for them.
-    const assistantFetch: typeof fetch = (input, init) => electron.net.fetch(input as string, init);
-    registerAssistantHandlers(
-      ipcMain,
-      isTrustedSender,
-      createAssistantService({
-        dir: app.getPath("userData"),
-        credentials,
-        fetchFn: assistantFetch,
-        appName: t("app.name"),
-        signIn: createOpenRouterSignIn({
-          fetchFn: assistantFetch,
-          openExternal: (url) => electron.shell.openExternal(url),
-          keyLabel: () =>
-            t("assistant.signIn.keyLabel", { date: new Date().toISOString().slice(0, 10) }),
-          donePage: () => ({
-            title: t("assistant.signIn.donePageTitle"),
-            body: t("assistant.signIn.donePage"),
-          }),
-        }),
-        projectOf: (session) =>
-          projectSession.staleReason(session) === undefined
-            ? projectSession.projectId()
-            : undefined,
-        emit: (event) =>
-          lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
-        openExternal: (url) => electron.shell.openExternal(url),
-        // The loop's tools: 4.9's, in memory, with *AI apps* on or off (6.9b, ADR 0026 §1).
-        connectTools: async (beforeCommand, stage) => {
-          if (mcp === undefined) throw new Error("The MCP service isn't there");
-          return mcp.connectAssistant(beforeCommand, stage);
-        },
-        // The conversation's safety version (S20): its id, for Version History's button.
-        cancelQuestions: () => ai.cancel(ASSISTANT_APP_ID),
-        saveVersionBefore: async (session, name) => {
-          const saved = await versions.saveVersionBefore(session, name);
-          if (saved.status === "saved") return { status: "saved", versionId: saved.version.id };
-          return saved.status === "skipped" ? { status: "held" } : { status: "failed" };
-        },
-      }),
-    );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
@@ -757,7 +675,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         await secretClipboard
           .clearIfHeld()
           .catch((error: unknown) => logFailure("secret clipboard clear", error));
-        await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
+        await aiApps.close();
         await projectSession.close();
       },
       // Then each feature's last work, such as My themes' and the Recent list's last writes, and

@@ -285,7 +285,7 @@ const DRAFT_PAGE_MAX = 8000;
 export const DRAFT_RESULT_MAX = 2 * DRAFT_TEXT_MAX;
 
 /** The most texts one page's draft rewrites for the business (QS-7). */
-const DRAFT_TEXTS_MAX = 40;
+export const DRAFT_TEXTS_MAX = 40;
 
 /** The site's language, as Site Settings holds it (`en-GB`): what a draft is written in. */
 const languageSchema = z

@@ -22,7 +22,7 @@ import { type BusinessDetails, TEMPLATE_CATEGORIES } from "@webforge/templates";
 import { hexOf, type ImageColour, imageColours, oklchCss, THEME_PRESETS } from "@webforge/themes";
 import { FileIcon, ImageIcon } from "lucide-react";
 import { type ChangeEvent, useEffect, useId, useRef, useState } from "react";
-import type { NewSiteRequest } from "../../shared/ipc/project.js";
+import { BUSINESS_ABOUT_MAX, type NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { recipeName } from "../site/index.js";
 import { readPixels } from "../theme/index.js";
@@ -74,6 +74,11 @@ export type QuickStartDialogProps = {
   readonly initialStep?: QuickStartStep;
   /** The answers it opens with: none, but for an AI app's brief (4.12a), filled in to check. */
   readonly initialAnswers?: QuickStartAnswers;
+  /**
+   * Whether *Your business* asks *Tell us about your business* (QS-7, #873): while the assistant
+   * is on, which drafts the pages' words from it once the site opens.
+   */
+  readonly askAbout?: boolean;
 };
 
 /**
@@ -107,6 +112,7 @@ function QuickStartBody({
   read = readPixels,
   initialStep = "business",
   initialAnswers,
+  askAbout = false,
 }: Omit<QuickStartDialogProps, "open">) {
   const untitled = t("site.untitledName");
   const [answers, setAnswers] = useState(() => initialAnswers ?? emptyAnswers(untitled));
@@ -156,6 +162,7 @@ function QuickStartBody({
         {current === "business" ? (
           <BusinessStep
             answers={answers}
+            askAbout={askAbout}
             onChange={change}
             onCategory={(category) => setAnswers((now) => withCategory(now, category, templates))}
           />
@@ -245,13 +252,18 @@ function StepList({
   );
 }
 
-/** *Your business*: the business type, the name and one line of what it does. */
+/**
+ * *Your business*: the business type, the name and one line of what it does; while the assistant
+ * is on, a paragraph about the business, for it to write the pages' words from (QS-7).
+ */
 function BusinessStep({
   answers,
+  askAbout,
   onChange,
   onCategory,
 }: {
   readonly answers: QuickStartAnswers;
+  readonly askAbout: boolean;
   readonly onChange: (patch: Partial<QuickStartAnswers>) => void;
   readonly onCategory: (category: QuickStartAnswers["category"]) => void;
 }) {
@@ -292,6 +304,16 @@ function BusinessStep({
           onChange={(whatYouDo) => onChange({ whatYouDo })}
           maxLength={SITE_DESCRIPTION_MAX}
         />
+        {askAbout ? (
+          <TextInput
+            label={t("quickStart.about")}
+            hint={t("quickStart.aboutHint")}
+            value={answers.about}
+            onChange={(about) => onChange({ about })}
+            maxLength={BUSINESS_ABOUT_MAX}
+            multiline
+          />
+        ) : null}
       </div>
     </ScrollArea>
   );

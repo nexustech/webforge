@@ -104,6 +104,28 @@ describe("registerProjectHandlers", () => {
     expect(session.create).not.toHaveBeenCalled();
   });
 
+  it("gives the quick start's paragraph to the new site's editor once, and to no other (QS-7)", async () => {
+    const { invoke } = setUp();
+    const about = "We bake sourdough and rye in Leeds, and sell it from our shop on Kirkgate.";
+    const other = "0e1d2c3b-4a59-4687-9a8b-7c6d5e4f3a2b";
+
+    await invoke("project:create", APP_URL, { ...bakery, about });
+    await expect(invoke("project:take-about", APP_URL, other)).resolves.toBeNull();
+    await expect(invoke("project:take-about", APP_URL, project.sessionId)).resolves.toBe(about);
+    await expect(invoke("project:take-about", APP_URL, project.sessionId)).resolves.toBeNull();
+  });
+
+  it("forgets the paragraph once another site opens, and holds none without one", async () => {
+    const { invoke } = setUp();
+
+    await invoke("project:create", APP_URL, { ...bakery, about: "Sourdough." });
+    await invoke("project:open");
+    await expect(invoke("project:take-about", APP_URL, project.sessionId)).resolves.toBeNull();
+
+    await invoke("project:create", APP_URL, bakery);
+    await expect(invoke("project:take-about", APP_URL, project.sessionId)).resolves.toBeNull();
+  });
+
   it("opens the site chosen in the open dialog", async () => {
     const { invoke, session } = setUp();
 

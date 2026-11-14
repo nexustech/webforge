@@ -58,6 +58,16 @@ While the assistant is on, [Site Check](site-check.md) offers **Write One…** b
 
 Change the text as you like, then click **Use This**, **Try Again** for another, or **Cancel**. What you use is one step in Undo History, named _AI (Assistant): …_.
 
+## Writing your pages' words
+
+While the assistant is on, **Start a site…**'s first step asks you to **Tell us about your business**: a few sentences on what you offer, who for, and what makes you different.
+
+1. Once your new site opens, the assistant writes the words of its home page and About page from what you said, in place of the template's. The site's question comes first, as {appName} asks it for every site.
+2. {appName} shows each one under where it goes, such as _Home · Hero · Title_. Change any of them, or empty one to keep the template's words there.
+3. Click **Use These**, **Try Again** for new words, or **Keep the Template's Words**.
+
+What you use is one step in Undo History, named _AI (Assistant): Wrote the home and About pages' words_. The assistant is told your business's name, its kind, what you said, and the template's words on those two pages: nothing else of the site. What you said isn't saved, in the site or anywhere else: it's used once, when the site first opens.
+
 ## Asking for a change
 
 The **Assistant** panel is a tab in the left column, after **Version History**: the sparkles.

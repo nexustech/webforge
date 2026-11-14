@@ -1,6 +1,7 @@
 import { fillFromSitePackage } from "@webforge/storage";
 import type { IpcMain } from "electron";
 import type { SaveVersionResult } from "../shared/ipc/versions.js";
+import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
 import type { ProjectDialogs } from "./project-ipc.js";
 import type { ProjectSession } from "./project-session.js";
@@ -119,5 +120,23 @@ export function registerVersionsHandlers(
   });
   return {
     saveVersionBefore: (sessionId, name) => save(sessionId, name, "before-site-wide"),
+  };
+}
+
+/**
+ * Version History as one of the app's features (4.6, #985): its calls, registered once Electron is
+ * ready, and the versions main saves itself, before AI apps' and the assistant's changes. One asked
+ * for before then fails, as with no site open.
+ */
+export function versionsFeature(options: VersionsOptions): AppFeature & Versions {
+  let versions: Versions | undefined;
+  return {
+    register(ipc, isTrustedSender) {
+      versions = registerVersionsHandlers(ipc, isTrustedSender, options);
+    },
+    saveVersionBefore: async (sessionId, name) =>
+      versions === undefined
+        ? { status: "failed", reason: "unknown" }
+        : versions.saveVersionBefore(sessionId, name),
   };
 }
