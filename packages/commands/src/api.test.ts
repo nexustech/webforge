@@ -441,6 +441,30 @@ describe("the command API's commands (4.8)", () => {
     expect(unanswered.confirm.mock.calls[0]?.[1].aborted).toBe(true);
     expect(unanswered.history.state.getState().entries).toEqual([]);
 
+    // The asker gives up (the assistant's Stop, 6.9b): the question closes, declined at once.
+    const stopped = setup("never");
+    const stop = new AbortController();
+    const asking = createCommandApi(stopped.host).run("setThemeTokens", tokens, {
+      ...app,
+      signal: stop.signal,
+    });
+    await vi.advanceTimersByTimeAsync(10);
+    stop.abort();
+    expect((await asking).status).toBe("declined");
+    expect(stopped.confirm.mock.calls[0]?.[1].aborted).toBe(true);
+    expect(stopped.history.state.getState().entries).toEqual([]);
+    // Given up before it's asked: no question at all.
+    const gone = setup("never");
+    expect(
+      (
+        await createCommandApi(gone.host).run("setThemeTokens", tokens, {
+          ...app,
+          signal: stop.signal,
+        })
+      ).status,
+    ).toBe("declined");
+    expect(gone.confirm).not.toHaveBeenCalled();
+
     // The Header is on every page; the home page's own elements aren't.
     const header = setup(true);
     const api = createCommandApi(header.host);

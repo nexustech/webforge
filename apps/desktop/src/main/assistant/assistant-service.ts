@@ -150,6 +150,11 @@ export type AssistantServiceOptions = {
    * already; `failed` when none could be saved.
    */
   readonly saveVersionBefore: (session: string, name: string) => Promise<SafetySave>;
+  /**
+   * Closes any question the window is asking for the assistant's commands (D7), declined: Stop
+   * doesn't wait for the person's answer (6.9b).
+   */
+  readonly cancelQuestions: () => void;
   readonly now?: () => Date;
   readonly files?: JsonStoreFiles;
 };
@@ -653,7 +658,11 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       }
     },
     stop: async (replyId) => {
-      replies.get(replyId)?.stop.abort();
+      const reply = replies.get(replyId);
+      if (reply === undefined) return;
+      reply.stop.abort();
+      // A command waiting for the person's yes is declined, and the reply ends after it.
+      options.cancelQuestions();
     },
     newConversation: async (session) => {
       const project = options.projectOf(session);
