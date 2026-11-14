@@ -19,6 +19,7 @@ import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { updateChannelFor } from "../shared/update-channel.js";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
+import { clientInstalls } from "./ai-clients/index.js";
 import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
@@ -754,8 +755,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     // Any left when Webforge last quit, with their proofs: they've been opened, or never will be.
     void extensions.sweep().catch((error: unknown) => logFailure("mcp claude extension", error));
     // Looked up as it's called: the E2E tests replace `shell.openExternal`.
-    registerMcpHandlers(ipcMain, isTrustedSender, service, extensions, (url) =>
-      electron.shell.openExternal(url),
+    registerMcpHandlers(
+      ipcMain,
+      isTrustedSender,
+      service,
+      clientInstalls({ extensions, openExternal: (url) => electron.shell.openExternal(url) }),
     );
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
     const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {

@@ -9,7 +9,6 @@ export const mcpApi = (call: Call): McpApi => ({
   seenMoved: async () => {
     await call("mcpSeenMoved");
   },
-  installClaude: (id) => call("mcpInstallClaude", id),
-  installVsCode: (id) => call("mcpInstallVsCode", id),
+  install: (id) => call("mcpInstall", id),
   remove: (id) => call("mcpRemove", id),
 });

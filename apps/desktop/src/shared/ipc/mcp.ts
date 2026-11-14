@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { AI_CLIENT_IDS, type AiClientId } from "../ai-clients/index.js";
 
 /** The longest name the person can give an AI app (the AI contract's limit). */
 export const AI_APP_NAME_MAX = 80;
@@ -45,23 +46,16 @@ const addResultSchema = z.discriminatedUnion("status", [
 export type McpAddResult = z.infer<typeof addResultSchema>;
 
 /**
- * What *Install in Claude Desktop* came to: the extension written and opened, or shown in its
- * folder as nothing opened it (Claude Desktop isn't installed?); or why not.
+ * What installing a paired app came to (#980): opened in the app, or shown in its folder as
+ * nothing opened it (the app isn't installed?); or why not. `unknown`: the app isn't paired any
+ * more, or isn't a kind main installs.
  */
 const installResultSchema = z.strictObject({
   status: z.enum(["opened", "shown", "off", "unknown", "failed"]),
 });
 
-/** See {@link mcpChannels}' `mcpInstallClaude`. */
+/** See {@link mcpChannels}' `mcpInstall`. */
 export type McpInstallResult = z.infer<typeof installResultSchema>;
-
-/** What *Install in VS Code* came to (5.13): its install link opened; or why not. */
-const vsCodeResultSchema = z.strictObject({
-  status: z.enum(["opened", "off", "unknown", "failed"]),
-});
-
-/** See {@link mcpChannels}' `mcpInstallVsCode`. */
-export type McpVsCodeResult = z.infer<typeof vsCodeResultSchema>;
 
 /** IPC channels of the `mcp` domain (`mcp:*`). Each one's arguments are checked. */
 export const mcpChannels = {
@@ -80,7 +74,7 @@ export const mcpChannels = {
   /** Pairs an app by the name the person gives it; only while *AI apps* is on. */
   mcpAdd: {
     channel: "mcp:add",
-    request: z.tuple([z.string().max(1_000), z.enum(["claude", "other"])]),
+    request: z.tuple([z.string().max(1_000), z.enum(AI_CLIENT_IDS)]),
     response: addResultSchema,
   },
   /** The person has seen that Webforge's address for AI apps changed (S27): stop saying so. */
@@ -90,22 +84,14 @@ export const mcpChannels = {
     response: z.null(),
   },
   /**
-   * Writes a paired app's Claude Desktop extension (ADR 0021): the bridge, with the address and the
-   * app's server proof, never its key. Then opens it, for Claude Desktop to install.
+   * Installs Webforge's server in a paired app, as its kind does (#980): Claude Desktop's
+   * extension written and opened (ADR 0021), VS Code's install link opened (5.13). Never with the
+   * app's key.
    */
-  mcpInstallClaude: {
-    channel: "mcp:install-claude",
+  mcpInstall: {
+    channel: "mcp:install",
     request: z.tuple([z.uuid()]),
     response: installResultSchema,
-  },
-  /**
-   * Opens VS Code's link to install Webforge's server (5.13, AIA-13) for a paired app: main makes
-   * it from its own address, with an input VS Code asks the key with, never the key.
-   */
-  mcpInstallVsCode: {
-    channel: "mcp:install-vscode",
-    request: z.tuple([z.uuid()]),
-    response: vsCodeResultSchema,
   },
   /** Removes a paired app, cutting it off at once. */
   mcpRemove: {
@@ -119,10 +105,10 @@ export const mcpChannels = {
 export interface McpApi {
   status(): Promise<McpStatus>;
   setEnabled(enabled: boolean): Promise<McpStatus>;
-  /** Pairs an app: Claude Desktop through its extension, or another app directly. */
-  add(name: string, kind: "claude" | "other"): Promise<McpAddResult>;
+  /** Pairs an app of kind `kind` (`AI_CLIENTS`). */
+  add(name: string, kind: AiClientId): Promise<McpAddResult>;
   seenMoved(): Promise<void>;
-  installClaude(id: string): Promise<McpInstallResult>;
-  installVsCode(id: string): Promise<McpVsCodeResult>;
+  /** Installs Webforge's server in paired app `id`, as its kind does. */
+  install(id: string): Promise<McpInstallResult>;
   remove(id: string): Promise<McpStatus>;
 }

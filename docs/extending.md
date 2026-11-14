@@ -144,6 +144,23 @@ A collection (a Blog; later a Portfolio or Events) is a set of pages that share 
 
 The built-in assistant ([ADR 0026](adr/0026-assistant.md), 6.9a–d, #870–#873) runs its loop in main and reuses the AI apps' tools; the renderer only shows the conversation. Its panel and review card are in `renderer/assistant/`, and its contract with main is the `assistant` IPC domain (`shared/ipc/assistant.ts`, `main/assistant-ipc.ts`). The ADR fixes that contract: a change to it needs a note to stream A.
 
+## AI clients
+
+The kinds of AI app the person can pair in AI apps (4.9, #980), such as Claude Desktop, Claude Code and VS Code, are a registry, so the dialog has no vendor in its code. To add one:
+
+1. **A module in `apps/desktop/src/shared/ai-clients/`** exports an `AiClient`:
+   - its `id`, kept as the paired app's kind, so never renamed;
+   - whether it `verifiesServer` (checks it's Webforge before it sends its key, as Claude Desktop's extension does);
+   - its label, default name and hint for _Which app?_;
+   - and, where it has them, its setup `steps`, something to `copy` besides the key, an `install` button and what each outcome says, and a `note` on where the key goes.
+
+   The dialog shows each part it has, and adds the risk line for an app that doesn't verify the server.
+2. **Its entry in `AI_CLIENTS` and `AI_CLIENT_IDS`** (`shared/ai-clients/index.ts`). `AI_CLIENTS`' order is _Which app?_'s.
+3. **Its strings under `aiApps.client.<id>.*`.**
+4. **If main installs it,** such as by writing a file or opening a link: a module in `apps/desktop/src/main/ai-clients/` with its `ClientInstall`, and its entry in `clientInstalls`. A test checks that main installs exactly the kinds that offer an install.
+
+Nothing else changes: pairing stores the kind, `mcp:install` dispatches by it, and removing an app removes what any install left.
+
 ## IPC domains
 
 The renderer reaches the main process only through `window.webforge`, the preload's typed API (`shared/webforge-api.ts`), which areas get as `ctx.api`. A domain is:

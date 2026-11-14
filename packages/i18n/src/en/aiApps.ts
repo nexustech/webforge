@@ -24,19 +24,20 @@ export const aiApps = {
   "aiApps.removeConfirm": "Remove",
   "aiApps.add": "Add AI app",
   "aiApps.add.which": "Which app?",
-  "aiApps.add.claude": "Claude Desktop",
-  "aiApps.add.claudeHint":
+  "aiApps.client.claude.label": "Claude Desktop",
+  "aiApps.client.claude.hint":
     "{appName} makes an extension for Claude Desktop to install, which checks it's {appName} it talks to.",
   // Named plainly, with no logos (5.13, AIA-13).
-  "aiApps.add.claudeCode": "Claude Code",
-  "aiApps.add.claudeCodeHint":
+  "aiApps.client.claudeCode.label": "Claude Code",
+  "aiApps.client.claudeCode.hint":
     "{appName} gives you a command that adds it to Claude Code. The key stays out of the command.",
-  "aiApps.add.vscode": "VS Code (GitHub Copilot)",
-  "aiApps.add.vscodeName": "VS Code",
-  "aiApps.add.vscodeHint":
+  "aiApps.client.vscode.label": "VS Code (GitHub Copilot)",
+  "aiApps.client.vscode.name": "VS Code",
+  "aiApps.client.vscode.hint":
     "{appName} opens VS Code to add it, for GitHub Copilot to use. VS Code asks for the key and keeps it safe.",
-  "aiApps.add.other": "Another app",
-  "aiApps.add.otherHint": "An app that connects to an MCP server at an address, such as Cursor.",
+  "aiApps.client.other.label": "Another app",
+  "aiApps.client.other.hint":
+    "An app that connects to an MCP server at an address, such as Cursor.",
   "aiApps.add.name": "Name",
   "aiApps.add.nameHint":
     "What you call it, such as Claude Desktop. Its changes are named after it.",
@@ -61,41 +62,44 @@ export const aiApps = {
   "aiApps.key.risk":
     "While {appName} is closed, another program on this computer could answer at this address and get the key. Turn this server off in the app while {appName} is closed.",
   "aiApps.key.done": "Done",
-  "aiApps.claude.steps": "To connect Claude Desktop",
-  "aiApps.claude.step1": "Copy the key.",
-  "aiApps.claude.step2": "Choose Install in Claude Desktop. Claude Desktop opens the extension.",
-  "aiApps.claude.step3": "In Claude Desktop, paste the key into Key, and install the extension.",
-  "aiApps.claude.install": "Install in Claude Desktop",
-  "aiApps.claude.opened": "Claude Desktop is opening the extension. Paste the key into Key there.",
-  "aiApps.claude.shown":
+  "aiApps.client.claude.steps": "To connect Claude Desktop",
+  "aiApps.client.claude.step1": "Copy the key.",
+  "aiApps.client.claude.step2":
+    "Choose Install in Claude Desktop. Claude Desktop opens the extension.",
+  "aiApps.client.claude.step3":
+    "In Claude Desktop, paste the key into Key, and install the extension.",
+  "aiApps.client.claude.install": "Install in Claude Desktop",
+  "aiApps.client.claude.opened":
+    "Claude Desktop is opening the extension. Paste the key into Key there.",
+  "aiApps.client.claude.shown":
     "Nothing opened the extension. If Claude Desktop is installed, open the file shown in its folder with it.",
-  "aiApps.claude.failed": "{appName} couldn't make the extension. Try again.",
-  "aiApps.claude.unknown":
+  "aiApps.client.claude.failed": "{appName} couldn't make the extension. Try again.",
+  "aiApps.client.claude.unknown":
     "{name}'s key wasn't used within 5 minutes, so {name} was removed. Add it again, then install its new extension.",
-  "aiApps.claudeCode.steps": "To connect Claude Code",
-  "aiApps.claudeCode.step1":
+  "aiApps.client.claudeCode.steps": "To connect Claude Code",
+  "aiApps.client.claudeCode.step1":
     "Copy the command, and run it in a terminal. It adds {appName} to Claude Code for all your projects.",
-  "aiApps.claudeCode.step2":
+  "aiApps.client.claudeCode.step2":
     "Copy the key. In the terminal you start Claude Code from, set {variable} to it, then start Claude Code.",
-  "aiApps.claudeCode.keyWhere":
+  "aiApps.client.claudeCode.keyWhere":
     "Claude Code reads the key from {variable} as it connects, so the key isn't in the command or in Claude Code's settings. The help page shows how to set it without leaving it in the terminal's history.",
-  "aiApps.claudeCode.command": "Command",
-  "aiApps.claudeCode.copyCommand": "Copy the command",
-  "aiApps.vscode.steps": "To connect VS Code",
-  "aiApps.vscode.step1": "Copy the key.",
-  "aiApps.vscode.step2":
+  "aiApps.client.claudeCode.command": "Command",
+  "aiApps.client.claudeCode.copyCommand": "Copy the command",
+  "aiApps.client.vscode.steps": "To connect VS Code",
+  "aiApps.client.vscode.step1": "Copy the key.",
+  "aiApps.client.vscode.step2":
     "Choose Install in VS Code. VS Code shows {appName}'s server: install it there.",
-  "aiApps.vscode.step3":
+  "aiApps.client.vscode.step3":
     "When VS Code starts the server and asks for {appName}'s key, paste the key. VS Code keeps it safe.",
-  "aiApps.vscode.install": "Install in VS Code",
-  "aiApps.vscode.opened":
+  "aiApps.client.vscode.install": "Install in VS Code",
+  "aiApps.client.vscode.opened":
     "VS Code is opening {appName}'s server. Install it there, and paste the key when VS Code asks for it.",
-  "aiApps.vscode.failed":
+  "aiApps.client.vscode.failed":
     "VS Code didn't open. If it isn't installed, install it, then choose Install in VS Code again.",
-  "aiApps.vscode.unknown":
+  "aiApps.client.vscode.unknown":
     "{name}'s key wasn't used within 5 minutes, so {name} was removed. Add it again.",
   // What VS Code asks for the key with, in its own window.
-  "aiApps.vscode.prompt": "The key {appName} showed when you added VS Code in AI apps",
+  "aiApps.client.vscode.prompt": "The key {appName} showed when you added VS Code in AI apps",
   "aiApps.extension.description": "Lets Claude work on the site you have open in {appName}.",
   "aiApps.extension.key": "Key",
   "aiApps.extension.keyHint": "The key {appName} showed when you added Claude Desktop in AI apps.",
