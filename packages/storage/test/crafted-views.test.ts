@@ -40,18 +40,15 @@ function openResult(path: string): ProjectFileErrorCode | "opened" {
 describe("a crafted file's views and triggers (S4)", () => {
   it("refuses a meta view without running it", () => {
     const path = createProject();
+    // Running it fails with SQLite's own error, which no refusal gives: a crafted view could as well
+    // take minutes (a recursive one of 30 million rows did), but a clock would read a busy machine
+    // as the view having run (#1052).
     tamper(path, (db) =>
       db.exec(`DROP TABLE meta;
-        CREATE VIEW meta AS WITH RECURSIVE c(x) AS
-          (SELECT 1 UNION ALL SELECT x + 1 FROM c WHERE x < 30000000)
-        SELECT 'k' AS key, 'v' AS value FROM c WHERE x < 0`),
+        CREATE VIEW meta AS SELECT 'k' AS key, json('{ not JSON') AS value`),
     );
-    const start = performance.now();
-    const result = openResult(path);
-    const elapsed = performance.now() - start;
-    expect(result).toBe("unexpected-schema");
-    expect(elapsed).toBeLessThan(500);
-  }, 60_000);
+    expect(openResult(path)).toBe("unexpected-schema");
+  });
 
   it("refuses a newer-format file whose documents table is a view", () => {
     const path = createProject();

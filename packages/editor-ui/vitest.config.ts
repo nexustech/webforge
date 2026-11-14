@@ -9,6 +9,8 @@ export default defineProject({
     testTimeout: scaledTimeout(15_000),
     // For a test that sets its own timeout: `scaledTestTimeout()` reads it.
     provide: { timeoutScale: TIMEOUT_SCALE },
+    // Testing Library's waits last `WAIT_MS` (#1052).
+    setupFiles: ["./vitest.waits.ts"],
     // Vitest empties CSS files by default; contrast.test.ts reads theme.css as text (?raw).
     css: { include: [/theme\.css/] },
   },

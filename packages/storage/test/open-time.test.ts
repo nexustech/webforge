@@ -3,6 +3,9 @@ import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
 import { ProjectStore } from "../src/index.js";
 
+// Timeouts (#1052): building the large project takes seconds alone, several times that on a busy
+// machine, so the test sets its own timeout; the open it measures is checked by its CPU time.
+
 // Opening checks the whole content (#295): it hashes every document's blob and checks every
 // version's manifest. This keeps that affordable on a large site: 40 pages of about 60 KB of JSON
 // each (a 225-element page is about that size) and 300 saved versions.
@@ -32,8 +35,10 @@ const tempDir = tempDirFactory();
 const PAGES = 40;
 const VERSIONS = 300;
 /**
- * Far above what it takes (a median of about 70 ms on a developer's Windows machine; the manifest
- * check alone took 2.4 s before it became one query), so only a real slowdown fails it.
+ * This thread's CPU time for an open, where SQLite runs: far above what it takes (a median of about
+ * 70 ms of wall time on a developer's Windows machine; the manifest check alone took 2.4 s before it
+ * became one query), so only a real slowdown fails it. CPU time rather than wall time, which a busy
+ * machine stretches (ADR 0014, #1052); waiting for the disk isn't counted, and isn't what grew.
  */
 const OPEN_BUDGET_MS = 1_500;
 
@@ -79,12 +84,15 @@ describe("opening a large project (#295)", () => {
 
     const times: number[] = [];
     for (let run = 0; run < 5; run += 1) {
-      const start = performance.now();
+      const start = process.threadCpuUsage();
       ProjectStore.open(path).close();
-      times.push(performance.now() - start);
+      const { user, system } = process.threadCpuUsage(start);
+      times.push((user + system) / 1000);
     }
     const median = [...times].sort((a, b) => a - b)[2] ?? Number.POSITIVE_INFINITY;
-    console.info(`Open of ${PAGES} pages and ${VERSIONS} versions: median ${median.toFixed(1)} ms`);
+    console.info(
+      `Open of ${PAGES} pages and ${VERSIONS} versions: median ${median.toFixed(1)} CPU-ms`,
+    );
     expect(median).toBeLessThan(OPEN_BUDGET_MS);
   }, 120_000);
 });
