@@ -21,12 +21,6 @@ vi.mock("./page-actions.js", async (importOriginal) => {
   return { ...actual, pageActions: vi.fn(actual.pageActions) };
 });
 
-declare global {
-  // Tells React that act() is available (testing without @testing-library).
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 // Puck's canvas starts a 500 ms timer when it mounts (to show its loader). One left from the last
 // test would fire after the test environment is gone, where React finds no `window`.
 afterAll(async () => {

@@ -11,11 +11,6 @@ import type { UpdateStatus } from "../../shared/ipc/updates.js";
 import type { ProjectResult, RecentSite } from "../../shared/ipc-contract.js";
 import { StartScreen } from "./StartScreen.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const info = { name: "Webforge", version: "1.0.0" };
 const project = {
   sessionId: "9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d",

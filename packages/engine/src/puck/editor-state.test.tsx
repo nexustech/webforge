@@ -5,11 +5,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
 import { useEditorState } from "./editor-state.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 /** An editor whose state is a counter, changed (with a `transaction`) by `change`. */
 function fakeEditor() {
   const listeners = new Set<() => void>();

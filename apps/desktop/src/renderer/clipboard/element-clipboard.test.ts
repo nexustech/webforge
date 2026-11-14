@@ -20,28 +20,10 @@ import { createEditorSession, currentPage, type EditorSession } from "../editor/
 import { saveAsSharedSection } from "../editor/shared-sections.js";
 import { setFailureLog } from "../log.js";
 import { addMedia } from "../media/index.js";
-import { sessionWith } from "../testing/fixtures.js";
+import { PHOTO, PRICES as prices, sessionWith } from "../testing/fixtures.js";
 import { copySelected, pasteElements, pasteTarget } from "./element-clipboard.js";
 
-const prices: MediaMeta = {
-  id: "prices" as MediaId,
-  hash: "b".repeat(64),
-  name: "prices",
-  fileName: "prices.pdf",
-  kind: "file",
-  mimeType: "application/pdf",
-};
-const photo: ImageMeta = {
-  id: "photo" as MediaId,
-  hash: "a".repeat(64),
-  name: "shop",
-  fileName: "shop.jpg",
-  kind: "image",
-  mimeType: "image/jpeg",
-  width: 1600,
-  height: 1000,
-  alt: "Our shop",
-};
+const photo: ImageMeta = { ...PHOTO, alt: "Our shop" };
 
 /** A clipboard that keeps what was copied, as the main process would; or holds `held`. */
 function fakeClipboard(held?: ClipboardReadResult) {
