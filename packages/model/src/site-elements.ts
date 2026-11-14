@@ -2,6 +2,7 @@ import { type Collection, isCollectionIn } from "./collections.js";
 import { isNodeDoc, type NodeDoc } from "./documents.js";
 import type { CollectionId, PageId, SharedSectionId } from "./ids.js";
 import { isKeyOf } from "./records.js";
+import { isSharedCopy } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
 
 /**
@@ -98,4 +99,22 @@ export function eachElement(
       skipHidden,
     );
   }
+}
+
+/**
+ * A page of `site` holding a copy of shared section `sharedId`, and the copy's id there: where one
+ * of its elements is shown. Page `shown` first, if it holds one (#988).
+ */
+export function pageWithCopy(
+  site: SiteDoc,
+  sharedId: string,
+  shown: PageId,
+): { readonly pageId: PageId; readonly copyId: string } | undefined {
+  for (const pageId of [shown, ...site.pageOrder]) {
+    const copy = site.pages[pageId]?.doc.content
+      .filter(isSharedCopy)
+      .find((node) => node.props.sharedSectionId === sharedId);
+    if (copy !== undefined) return { pageId, copyId: copy.props.id };
+  }
+  return undefined;
 }

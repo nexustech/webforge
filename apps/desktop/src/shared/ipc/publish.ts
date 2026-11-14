@@ -7,28 +7,16 @@ import {
   publishDestinationSchema,
   SECRET_MAX,
 } from "@webforge/model";
+import { PUBLISH_ERROR_CODES } from "@webforge/publish/codes";
 import { z } from "zod";
 import { PUBLISH_FAILURES } from "../export-worker-protocol.js";
 import { sessionIdSchema } from "./project.js";
 
 /**
- * Why a connection test failed (`PublishErrorCode` of `@webforge/publish`), which the destination
- * form words for the person.
+ * Why a connection test failed: the publisher's codes (`PUBLISH_ERROR_CODES`), each worded by the
+ * destination form.
  */
-export const CONNECTION_FAILURES = [
-  "unauthorized",
-  "not-found",
-  "rate-limited",
-  "rejected",
-  "network",
-  "timeout",
-  "untrusted-host",
-  "no-encryption",
-  "bad-key",
-  "other-site",
-  "cancelled",
-  "failed",
-] as const;
+export const CONNECTION_FAILURES = PUBLISH_ERROR_CODES;
 
 /** What Test connection found: the folder can be published to, or why not. */
 export const connectionResultSchema = z.discriminatedUnion("ok", [

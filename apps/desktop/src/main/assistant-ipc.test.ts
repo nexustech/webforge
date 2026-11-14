@@ -1,12 +1,48 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
-import { ASSISTANT_CONSENT_VERSION } from "../shared/ipc/assistant.js";
 import {
-  ASSISTANT_OFF,
-  type AssistantService,
-  registerAssistantHandlers,
-  unbuiltAssistant,
-} from "./assistant-ipc.js";
+  ASSISTANT_CONSENT_VERSION,
+  type AssistantStatus,
+  MONTHLY_LIMIT_DEFAULT_USD,
+} from "../shared/ipc/assistant.js";
+import { type AssistantService, registerAssistantHandlers } from "./assistant-ipc.js";
+
+/** The assistant before it's turned on: off, signed out, nothing spent (ADR 0026 §2, §5). */
+const ASSISTANT_OFF: AssistantStatus = {
+  enabled: false,
+  consentVersion: null,
+  consentReach: null,
+  provider: { kind: "openrouter", signedIn: false },
+  reach: "openrouter",
+  model: null,
+  month: {
+    spentUsd: 0,
+    limitUsd: MONTHLY_LIMIT_DEFAULT_USD,
+    warned: false,
+    reached: false,
+  },
+  reviewBeforeApplying: false,
+  allowRetainingModels: false,
+};
+
+/** A service that stays off, and refuses to turn on or send: each call answered as a default. */
+const unbuiltAssistant: AssistantService = {
+  status: async () => ASSISTANT_OFF,
+  setEnabled: async () => ASSISTANT_OFF,
+  update: async () => ASSISTANT_OFF,
+  signIn: async () => ({ status: "failed" }),
+  finishSignIn: async () => ({ status: "failed" }),
+  cancelSignIn: async () => undefined,
+  setKey: async () => ({ status: "failed" }),
+  models: async () => ({ status: "not-signed-in" }),
+  siteConsent: async () => ({ asked: false, allowed: false }),
+  setSiteConsent: async () => undefined,
+  send: async () => ({ status: "consent-needed" }),
+  stop: async () => undefined,
+  newConversation: async () => undefined,
+  conversation: async () => [],
+  openLink: async () => ({ status: "refused" }),
+};
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 

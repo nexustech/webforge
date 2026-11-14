@@ -1,3 +1,4 @@
+import { sha256HexSchema } from "@webforge/model";
 import { z } from "zod";
 import { bytesSchema } from "./export-worker-protocol.js";
 import { publishProgressSchema } from "./ipc/publish.js";
@@ -52,7 +53,7 @@ export const fromWorkerSchema = z.discriminatedUnion("message", [
     message: z.literal("read-blob"),
     id: idSchema,
     read: idSchema,
-    hash: z.string().regex(/^[0-9a-f]{64}$/),
+    hash: sha256HexSchema,
   }),
 ]);
 
