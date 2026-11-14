@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clipboardChannels, MAX_ADDRESS_BYTES } from "./clipboard.js";
+import { describeChannels } from "./contract-kit.test-helper.js";
 
 describe("clipboard:read's answer (F-ED-16)", () => {
   const answer = clipboardChannels.readClipboard.response;
@@ -16,4 +17,11 @@ describe("clipboard:read's answer (F-ED-16)", () => {
       expect(address(value).success).toBe(false);
     }
   });
+});
+
+/** Elements as a copy carries them: one heading, with no Media. */
+const COPIED = { nodes: [{ type: "Heading", props: { id: "heading" } }], media: [] };
+
+describeChannels("clipboard", clipboardChannels, {
+  writeClipboard: { request: ["00000000-0000-4000-8000-000000000001", COPIED] },
 });
