@@ -79,6 +79,49 @@ describe("which model answers (AIA-8, ADR 0026 §2)", () => {
     expect(await screen.findByText("Signed in.")).toBeDefined();
   });
 
+  it("reads the list again for a new server address, never offering the old one's", async () => {
+    const at = (baseUrl: string): AssistantStatus => ({
+      ...FAKE_STATUS,
+      provider: { kind: "server", baseUrl, hasKey: false },
+      model: null,
+    });
+    let answer: (models: AssistantModel[]) => void = () => undefined;
+    const api = {
+      models: vi.fn<AssistantApi["models"]>(
+        () => new Promise((resolve) => (answer = (models) => resolve({ status: "ok", models }))),
+      ),
+      update: vi.fn<AssistantApi["update"]>(),
+      setKey: vi.fn<AssistantApi["setKey"]>(),
+    };
+    const { rerender } = render(
+      <ModelSection status={at("http://localhost:8080/v1")} api={api} onStatus={vi.fn()} />,
+    );
+    answer([FAKE_MODEL]);
+    expect(await screen.findByRole("combobox", { name: "The model that answers" })).toBeDefined();
+
+    rerender(<ModelSection status={at("http://localhost:9090/v1")} api={api} onStatus={vi.fn()} />);
+    expect(api.models).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole("combobox")).toBeNull();
+    expect(screen.getByText("Loading…")).toBeDefined();
+    answer([PRICEY]);
+    const list = await screen.findByRole("combobox", { name: "The model that answers" });
+    expect([...(list as HTMLSelectElement).options].map((option) => option.value)).toEqual([
+      "",
+      "example/model-large",
+    ]);
+  });
+
+  it("shows the model that answers even when the list no longer offers it", async () => {
+    const retaining = { ...PRICEY, id: "example/model-keeps", name: "Example Keeps" };
+    shown({ ...FAKE_STATUS, model: retaining });
+    const list = (await screen.findByRole("combobox", {
+      name: "The model that answers",
+    })) as HTMLSelectElement;
+
+    expect(list.value).toBe("example/model-keeps");
+    expect(list.selectedOptions[0]?.textContent).toMatch(/^Example Keeps/);
+  });
+
   it("asks to sign in first, and words why the list can't be read", async () => {
     const signedOut = shown({ ...FAKE_STATUS, provider: { kind: "openrouter", signedIn: false } });
     expect(screen.getByText("Sign in to OpenRouter to choose a model.")).toBeDefined();

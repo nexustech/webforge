@@ -49,11 +49,15 @@ export function ModelSection({ status, api, onStatus }: ModelSectionProps) {
   const [key, setKey] = useState("");
   const [said, setSaid] = useState<SignInStatus | undefined>(undefined);
   const ready = status.provider.kind !== "openrouter" || status.provider.signedIn;
-  const { kind } = status.provider;
+  // The whole provider: its kind, address, sign-in and whether it has a key.
+  const provider = JSON.stringify(status.provider);
   const allowing = status.allowRetainingModels;
-  // The list again whenever the provider, the sign-in or what it may offer changes.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: main's list depends on `kind` and `allowing`, which the effect doesn't read.
+  // The list again whenever the provider, the sign-in, the key or what it may offer changes, never
+  // the old provider's list in the meantime: main takes any id, so picking from it would save a
+  // model the new provider doesn't have.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: main's list depends on `provider` and `allowing`, which the effect doesn't read.
   useEffect(() => {
+    setModels(undefined);
     if (!ready) return;
     let current = true;
     void api
@@ -68,7 +72,7 @@ export function ModelSection({ status, api, onStatus }: ModelSectionProps) {
     return () => {
       current = false;
     };
-  }, [api, ready, kind, allowing]);
+  }, [api, ready, provider, allowing]);
   /** Changes a setting in main, keeping the status it answers. */
   const change = (settings: Parameters<AssistantApi["update"]>[0]) =>
     void api
@@ -104,6 +108,12 @@ export function ModelSection({ status, api, onStatus }: ModelSectionProps) {
             }}
           >
             {status.model === null ? <option value="">{t("assistant.model.none")}</option> : null}
+            {/* The model that answers, even when the list no longer offers it (a model that may keep
+                requests, no longer allowed; one the server stopped offering), so the list doesn't
+                show another as chosen. */}
+            {status.model !== null && !models.some((model) => model.id === status.model?.id) ? (
+              <option value={status.model.id}>{labelOf(status.model)}</option>
+            ) : null}
             {models.map((model) => (
               <option key={model.id} value={model.id}>
                 {labelOf(model)}
