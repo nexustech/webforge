@@ -8,12 +8,14 @@ import type { AiResponse } from "../shared/ipc/ai.js";
 import { APP_TOOLS } from "../shared/ipc/ai.js";
 import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import { type McpListener, startMcpListener } from "./mcp-listener.js";
-import { createMcpServer, type McpApp } from "./mcp-server.js";
+import { createAssistantMcpServer, createMcpServer, type McpApp } from "./mcp-server.js";
 import { MAIN_TOOLS } from "./site-brief.js";
 
 const INFO = { name: "Webforge", version: "1.0.0" };
 const CLAUDE: McpApp = { id: "app-1", name: "Claude" };
 const KEY = "k".repeat(43);
+/** The tools the in-app assistant has (AIA-9): the command layer's, and Site Check. */
+const ASSISTANT_TOOL_NAMES = [...AI_TOOLS.map((tool) => tool.name), "runSiteCheck"];
 
 const ask = vi.fn(
   async (): Promise<AiResponse> => ({ status: "done", data: { name: "Rosa's Bakery" } }),
@@ -125,6 +127,20 @@ describe("the MCP server (4.9)", () => {
     });
     expect(http.tools).toEqual(memory.tools);
     expect(memory.tools[0]?.inputSchema).toEqual(AI_TOOLS[0]?.inputSchema);
+  });
+
+  it("lists the same tools, word for word, as before they were one definition (#981)", async () => {
+    const tools = (await (await inMemory()).listTools()).tools;
+    await expect(`${JSON.stringify(tools, null, 2)}
+`).toMatchFileSnapshot("./__snapshots__/mcp-tools.json");
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await createAssistantMcpServer(INFO, ask).connect(serverSide);
+    const assistant = new Client({ name: "test", version: "1" });
+    await assistant.connect(clientSide);
+    // The assistant's are a few of the same (AIA-9), in the same order.
+    expect((await assistant.listTools()).tools).toEqual(
+      tools.filter((tool) => ASSISTANT_TOOL_NAMES.includes(tool.name)),
+    );
   });
 
   it("asks the open site for a query, and runs a command on the paired app's behalf", async () => {
