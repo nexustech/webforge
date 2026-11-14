@@ -1,18 +1,11 @@
 import type { CanvasEngine, RewriteAnswer, RewriteRequest } from "@webforge/engine";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import {
-  type AssistantApi,
-  type AssistantStatus,
-  DRAFT_TEXT_MAX,
-  type DraftRequest,
-  type DraftResult,
-} from "../../shared/ipc/assistant.js";
+import { DRAFT_TEXT_MAX } from "../../shared/ipc/assistant.js";
 import { type EditorSession, textSessionKey } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
-import { reportFailure } from "../log.js";
 import { asAssistantStep } from "./assistant-step.js";
-import { reachOf } from "./Consent.js";
 import { RewriteDialog, type RewriteState } from "./RewriteDialog.js";
+import { type DraftApi, type DraftState, useAssistantStatus, useDraft } from "./use-draft.js";
 
 /** A rewrite the format toolbar asked for, waiting for the person. */
 type Asked = {
@@ -20,37 +13,18 @@ type Asked = {
   readonly answer: (accepted: RewriteAnswer | undefined) => void;
 };
 
-/** `request`'s draft from main, or `failed` if the call itself failed. */
-async function draftOrFailure(
-  api: Pick<AssistantApi, "draft">,
-  sessionId: string,
-  request: DraftRequest,
-): Promise<DraftResult> {
-  try {
-    return await api.draft(sessionId, request);
-  } catch (error) {
-    reportFailure("assistant draft", error);
-    return { status: "failed" };
-  }
-}
-
-/** What a rewrite's draft shows: its one text, or why there's none. */
-function stateOf(result: DraftResult): RewriteState {
-  if (result.status !== "ok") return { step: "failed", error: result.status };
-  const [draft] = result.texts;
-  return draft === undefined
-    ? { step: "failed", error: "provider-error" }
-    : { step: "draft", text: draft };
+/** What the rewrite dialog shows for `state`: a draft's one text, or why there's none. */
+function rewriteStateOf(state: DraftState): RewriteState {
+  if (state.step !== "draft") return state;
+  const [text] = state.texts;
+  return text === undefined ? { step: "failed", error: "provider-error" } : { step: "draft", text };
 }
 
 /** Props of {@link RewriteHost}. */
 export type RewriteHostProps = {
   readonly session: EditorSession;
   readonly engine: CanvasEngine | null;
-  readonly api: Pick<
-    AssistantApi,
-    "status" | "onEvent" | "siteConsent" | "setSiteConsent" | "draft"
-  >;
+  readonly api: DraftApi;
   /** The open site's session in main. */
   readonly sessionId: string;
 };
@@ -61,60 +35,18 @@ export type RewriteHostProps = {
  * the person uses replaces the selection as one undo step of its own, labelled as the assistant's.
  */
 export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProps) {
-  const [status, setStatus] = useState<AssistantStatus | null>(null);
-  const [asked, setAsked] = useState<Asked | null>(null);
-  const [state, setState] = useState<RewriteState>({ step: "writing" });
+  const status = useAssistantStatus(api);
   const siteName = useDocument(session, (site) => site.settings.general.name);
-  // The rewrite open now: an answer for one that's gone is dropped.
+  const draft = useDraft(api, sessionId, siteName, status);
+  const [asked, setAsked] = useState<Asked | null>(null);
+  // The rewrite open now: answering one that's gone does nothing.
   const current = useRef<Asked | null>(null);
-
-  useEffect(() => {
-    let live = true;
-    Promise.resolve()
-      .then(() => api.status())
-      .then(
-        (next) => {
-          if (live) setStatus(next);
-        },
-        (error: unknown) => reportFailure("assistant status", error),
-      );
-    const stop = api.onEvent((event) => {
-      if (event.type === "status") setStatus(event.status);
-    });
-    return () => {
-      live = false;
-      stop();
-    };
-  }, [api]);
-
-  /** Asks main for a draft of `asking`'s text, and shows it if that rewrite is still open. */
-  const write = async (asking: Asked) => {
-    const { how, text } = asking.request;
-    if (text.length > DRAFT_TEXT_MAX) {
-      setState({ step: "too-long" });
-      return;
-    }
-    setState({ step: "writing" });
-    const next = stateOf(await draftOrFailure(api, sessionId, { kind: "rewrite", how, text }));
-    if (current.current === asking) setState(next);
-  };
-
-  /**
-   * Starts `asking`: this site's question first if it hasn't been asked, unless the model is on
-   * this computer, then the draft. Reads the status and the site's name as they are now.
-   */
-  const start = useEffectEvent(async (asking: Asked) => {
-    const away = status === null ? null : reachOf(status);
-    if (away === null || away.kind === "this-computer") return write(asking);
-    const consent = await api.siteConsent(sessionId).catch((error: unknown) => {
-      reportFailure("assistant site consent", error);
-      return { asked: false, allowed: false };
-    });
-    if (current.current !== asking) return;
-    if (!consent.asked) setState({ step: "site", site: siteName, reach: away });
-    else if (!consent.allowed) setState({ step: "denied" });
-    else await write(asking);
+  // Read as each rewrite starts and ends: the menu is set again only as the engine or `on` change.
+  const ask = useEffectEvent((request: RewriteRequest) => {
+    const { how, text } = request;
+    void draft.ask({ kind: "rewrite", how, text }, text.length > DRAFT_TEXT_MAX);
   });
+  const close = useEffectEvent(() => draft.close());
 
   // The Rewrite menu is there while the assistant is on: its consent given for where it sends.
   const on = status?.enabled === true;
@@ -131,14 +63,14 @@ export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProp
               if (current.current === asking) {
                 current.current = null;
                 setAsked(null);
+                close();
               }
               resolve(accepted);
             },
           };
           current.current = asking;
           setAsked(asking);
-          setState({ step: "writing" });
-          void start(asking);
+          ask(request);
         }),
     );
     return () => {
@@ -146,7 +78,6 @@ export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProp
       current.current?.answer(undefined);
     };
   }, [engine, on]);
-
   if (asked === null) return null;
   const { request } = asked;
   return (
@@ -155,17 +86,9 @@ export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProp
       how={request.how}
       original={request.text}
       formatted={request.formatted}
-      state={state}
-      onSiteAnswer={(allowed) => {
-        void api.setSiteConsent(sessionId, allowed).then(
-          () => (allowed ? write(asked) : setState({ step: "denied" })),
-          (error: unknown) => {
-            reportFailure("assistant site consent", error);
-            setState({ step: "failed", error: "failed" });
-          },
-        );
-      }}
-      onAgain={() => void write(asked)}
+      state={rewriteStateOf(draft.state)}
+      onSiteAnswer={draft.answerSite}
+      onAgain={draft.again}
       onUse={(text) => {
         if (text === request.text) {
           asked.answer(undefined);

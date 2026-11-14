@@ -130,7 +130,8 @@ export const altTextRule: CheckRule = {
         found.push({
           key: fieldKey(placed),
           place: elementPlace(placed),
-          values: { image: meta.fileName },
+          // The image, for the assistant to write its alt text from its name (#873).
+          values: { image: meta.fileName, mediaId: image.data.mediaId },
         });
       }
     });

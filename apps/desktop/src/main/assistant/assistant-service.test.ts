@@ -838,10 +838,17 @@ describe("Review before applying (6.9e)", () => {
     if (held.status !== "sending") throw new Error("not sent");
     await until(() => expect(reopened.events.at(-1)?.type).toBe("reply-done"));
     reopened.reopen();
+    // The reopened panel loads the conversation first: it never shows them, and its card is told.
+    expect((await reopened.service.conversation(REOPENED))[0]).not.toHaveProperty("held");
+    expect(reopened.events.at(-1)).toMatchObject({
+      session: REOPENED,
+      type: "held",
+      replyId: held.replyId,
+      state: "discarded",
+    });
     expect(await reopened.service.applyHeld(REOPENED, held.replyId)).toEqual({
       status: "nothing-held",
     });
-    expect((await reopened.service.conversation(REOPENED))[0]).not.toHaveProperty("held");
     expect(reopened.versions).toEqual([]);
   });
 
