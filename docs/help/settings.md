@@ -3,8 +3,8 @@
 id: settings
 title: Settings
 summary: {appName}'s own preferences, such as its appearance, Simple or Advanced mode, your devices and where updates come from.
-related: [site-settings, the-editor, ai-apps]
-updated: 2026-11-09
+related: [site-settings, the-editor, ai-apps, assistant]
+updated: 2026-11-14
 ---
 
 # Settings
@@ -39,6 +39,10 @@ Click **Save** to keep your changes.
 - Going back from Beta to Stable never puts an older version on: {appName} waits for a Stable version newer than the one you have.
 
 How updates arrive is in [Getting started](getting-started.md#updates). On a Mac, {appName} doesn't update itself yet, so this changes nothing there.
+
+## Assistant
+
+**Assistant Settings…** opens the [assistant](assistant.md)'s settings: turning it on or off, where its requests go, the model that answers and its monthly limit. What you change there happens at once, without **Save**. Settings stays open behind it, with any changes you haven't saved yet.
 
 ## AI apps
 

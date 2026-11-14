@@ -1,3 +1,4 @@
+import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { pageIdSchema } from "@webforge/model";
 import { SparklesIcon } from "lucide-react";
@@ -21,8 +22,6 @@ export type AssistantPanelOptions = {
   readonly sessionId: string;
   /** Opens the assistant's settings (*Settings › Assistant*). */
   readonly openSettings: () => void;
-  /** Opens a web address in the person's browser. */
-  readonly openLink: (href: string) => void;
 };
 
 /**
@@ -60,7 +59,12 @@ export function registerAssistantPanel(options: AssistantPanelOptions): () => vo
           session.showPage(page.data);
           if (step.target?.nodeId !== undefined) session.select(step.target.nodeId);
         }}
-        onOpenLink={options.openLink}
+        onOpenLink={(href, replyId) =>
+          void model.openLink(replyId, href).then((status) => {
+            // Opened in the browser, which says so itself; otherwise a word why not.
+            if (status !== "opened") toast(t(`assistant.link.${status}`));
+          })
+        }
       />
     );
   }

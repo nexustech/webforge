@@ -50,6 +50,15 @@ describe("ReplyText (product/14 §6.4)", () => {
     expect(onOpenLink).toHaveBeenCalledWith("https://bakery.example/hours");
   });
 
+  it("shows a link's address tidied, and opens it as the reply wrote it (main checks that)", async () => {
+    const { onOpenLink } = shown("[Home](HTTPS://Bakery.example)");
+    const link = screen.getByRole("link", { name: /Home/ });
+
+    expect(link.textContent).toContain("(https://bakery.example/)");
+    await userEvent.click(link);
+    expect(onOpenLink).toHaveBeenCalledWith("HTTPS://Bakery.example");
+  });
+
   it("shows a link that isn't a web address as its text", () => {
     shown("[click me](javascript:alert(1)) and [mail](file:///etc/passwd)");
 
