@@ -1,3 +1,4 @@
+import { linkToOpen } from "../../shared/assistant-links.js";
 import {
   ASSISTANT_CONSENT_VERSION,
   type AssistantApi,
@@ -62,6 +63,7 @@ export const FAKE_MODEL: AssistantModel = {
 export const FAKE_STATUS: AssistantStatus = {
   enabled: true,
   consentVersion: ASSISTANT_CONSENT_VERSION,
+  consentReach: { reach: "openrouter" },
   provider: { kind: "openrouter", signedIn: true },
   reach: "openrouter",
   model: FAKE_MODEL,
@@ -158,6 +160,7 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       if (live.stopped) return finish("stopped");
       const callId = `call-${index + 1}`;
       if (index === 0 && reply.safetyVersion !== undefined) {
+        turn.safetyVersion = { ...reply.safetyVersion };
         emit({ session, type: "safety-version", replyId, ...reply.safetyVersion });
       }
       emit({ session, type: "tool", replyId, callId, tool, state: "running" });
@@ -179,7 +182,7 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
     setEnabled: async (enabled, version) => {
       return setStatus(
         enabled
-          ? { ...status, enabled, consentVersion: version }
+          ? { ...status, enabled, consentVersion: version, consentReach: { reach: status.reach } }
           : { ...status, enabled, provider: { kind: "openrouter", signedIn: false } },
       );
     },
@@ -234,6 +237,12 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       conversations.delete(session);
     },
     conversation: async (session) => structuredClone(conversations.get(session) ?? []),
+    openLink: async (session, replyId, href) => {
+      const turn = turnOf(session, replyId);
+      return {
+        status: turn !== undefined && linkToOpen(turn, href) !== undefined ? "opened" : "refused",
+      };
+    },
     onEvent: (listener) => {
       listeners.add(listener);
       return () => {

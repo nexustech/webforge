@@ -19,6 +19,7 @@ const PART_KEYS = {
   head: "site.code.trust.part.head",
   bodyEnd: "site.code.trust.part.bodyEnd",
   js: "site.code.trust.part.js",
+  css: "site.code.trust.part.css",
 } as const;
 
 /**
