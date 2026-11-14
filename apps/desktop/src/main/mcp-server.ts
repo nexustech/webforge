@@ -17,7 +17,13 @@ import {
   UNTRUSTED_SITE_TEXT,
 } from "@webforge/commands";
 import { t } from "@webforge/i18n";
-import { type AiRequest, type AiResponse, APP_TOOLS, REQUEST_MEDIA } from "../shared/ipc/ai.js";
+import {
+  type AiRequest,
+  type AiResponse,
+  APP_TOOLS,
+  ASSISTANT_APP_ID,
+  REQUEST_MEDIA,
+} from "../shared/ipc/ai.js";
 import { buildSitePrompt, buildSitePromptInfo } from "./mcp-prompts.js";
 import { MAIN_TOOLS } from "./site-brief.js";
 
@@ -78,9 +84,6 @@ const ASSISTANT_TOOLS = TOOLS.filter((tool) => ASSISTANT_TOOL_NAMES.has(tool.nam
 /** Who the in-app assistant is to the tool layer: its steps are "AI (Assistant): …" (ADR 0026 §1). */
 export const assistantApp = (): McpApp => ({ id: ASSISTANT_APP_ID, name: t("assistant.name") });
 
-/** The assistant's app id, which no paired app has: theirs are drawn at random (4.9). */
-const ASSISTANT_APP_ID = "assistant";
-
 /**
  * A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done, or a
  * brief still waiting for the person. A command's undo step and what it changed go only to the
@@ -126,8 +129,9 @@ export function createMcpServer(
 export function createAssistantMcpServer(
   info: McpServerInfo,
   ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
+  stage?: string,
 ): Server {
-  return serve(info, assistantApp(), ask, ASSISTANT_TOOLS, true, PROGRESS_EVERY_MS);
+  return serve(info, assistantApp(), ask, ASSISTANT_TOOLS, true, PROGRESS_EVERY_MS, stage);
 }
 
 /** A server for `app` with `tools`, its commands' undo steps told to it when `steps`. */
@@ -138,7 +142,10 @@ function serve(
   tools: readonly (typeof TOOLS)[number][],
   steps: boolean,
   progressEveryMs: number,
+  /** The reply whose changes are held (6.9e): each request goes to its draft of the site. */
+  stage?: string,
 ): Server {
+  const held = stage === undefined ? {} : { stage };
   const server = new Server(info, { capabilities: { tools: {}, resources: {}, prompts: {} } });
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
@@ -196,8 +203,8 @@ function serve(
       return toolResult(
         await ask(
           tool.kind === "query"
-            ? { kind: "query", name: tool.name, input }
-            : { kind: "command", name: tool.name, input, app: app.name },
+            ? { kind: "query", name: tool.name, input, ...held }
+            : { kind: "command", name: tool.name, input, app: app.name, ...held },
           // The app giving up on the request: a brief stops waiting for the person.
           extra.signal,
         ),

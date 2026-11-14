@@ -57,19 +57,34 @@ const inputSchema = z.unknown().refine(fitsAsJson, {
   message: `A request's input can be at most ${AI_INPUT_MAX_CHARS} characters as JSON.`,
 });
 
+/** The in-app assistant's app id in the tool layer (6.9b): paired apps' are random UUIDs. */
+export const ASSISTANT_APP_ID = "assistant";
+
+/**
+ * The assistant's reply whose changes are held (6.9e, _Review before applying_): its requests go
+ * to a draft of the site in the window, never to the site. Only the assistant's server sets it.
+ */
+const stageSchema = z.uuid();
+
 /**
  * What an AI app asks of the open site (F-AI-1, 4.8): a query that reads it, or a command that
  * changes it, on behalf of the app the person paired (4.9). Main checks it and forwards it (S21);
  * the renderer runs it.
  */
 export const aiRequestSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("query"), name: nameSchema, input: inputSchema }),
+  z.strictObject({
+    kind: z.literal("query"),
+    name: nameSchema,
+    input: inputSchema,
+    stage: stageSchema.optional(),
+  }),
   z.strictObject({
     kind: z.literal("command"),
     name: nameSchema,
     input: inputSchema,
     /** The app's name, as the person gave it when pairing: "AI (‹app›): …" in Undo History. */
     app: z.string().min(1).max(80),
+    stage: stageSchema.optional(),
   }),
 ]);
 

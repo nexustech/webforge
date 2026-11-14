@@ -4,6 +4,7 @@ import { z } from "zod";
 import type {
   AssistantErrorCode,
   ConversationTurn,
+  HeldChange,
   ReplyLink,
   ReplyStep,
   ReplyStop,
@@ -82,6 +83,11 @@ export type ReplyOptions = {
    * its to send or make (consent is by site, AIA-6).
    */
   readonly stillOpen: () => boolean;
+  /**
+   * Whether the reply's changes are held (6.9e): its tools act on a draft of the site, and each
+   * change it makes is kept, as it was asked, for the person to apply or discard.
+   */
+  readonly staged?: boolean;
   /** Adds a model call's cost to the month; whether its limit is reached now (§5). */
   readonly addCost: (usd: number) => Promise<boolean>;
   readonly onText: (delta: string) => void;
@@ -98,13 +104,31 @@ export type ToolEvent = {
   readonly step?: ReplyStep;
 };
 
-/** How the reply ended: its stop, its cost (null if no call gave one), its changes and links. */
+/** A change a staged reply made on its draft, as it was asked, to ask again when applied. */
+export type HeldCall = {
+  readonly name: string;
+  readonly input: Readonly<Record<string, unknown>>;
+  readonly change: HeldChange;
+  /** The new element's or page's id it made on the draft, which its replay makes afresh. */
+  readonly made?: string;
+  /**
+   * What it made, as the draft's tree had it straight after: its ids and types, to pair with
+   * the replay's. Read then, as later calls of the reply may reorder or remove its children.
+   */
+  readonly snapshot?: unknown;
+};
+
+/**
+ * How the reply ended: its stop, its cost (null if no call gave one), its changes, the changes it
+ * holds (6.9e) and its links.
+ */
 export type ReplyOutcome =
   | {
       readonly status: "done";
       readonly stop: ReplyStop;
       readonly costUsd: number | null;
       readonly steps: readonly ReplyStep[];
+      readonly held: readonly HeldCall[];
       readonly links: readonly ReplyLink[];
     }
   | {
@@ -112,12 +136,23 @@ export type ReplyOutcome =
       readonly error: AssistantErrorCode;
       readonly costUsd: number | null;
       readonly steps: readonly ReplyStep[];
+      readonly held: readonly HeldCall[];
     };
+
+/** What a tool call needs: the client, and Stop for a wait before asking again. */
+type CallContext = {
+  readonly tools: ToolClient;
+  readonly signal: AbortSignal;
+  readonly busyRetryMs?: number;
+  readonly staged?: boolean;
+};
 
 /** A tool's answer, as 4.9's server words it: only what the loop reads. */
 const answerSchema = z.looseObject({
   status: z.string(),
   label: z.string().optional(),
+  /** What a command made: the new element's or page's id. */
+  id: z.string().min(1).max(200).optional(),
   entryId: z.string().min(1).max(100).optional(),
   target: z
     .strictObject({
@@ -202,6 +237,7 @@ const pause = (ms: number, signal: AbortSignal) =>
 export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   const { signal } = options;
   const steps: ReplyStep[] = [];
+  const held: HeldCall[] = [];
   const links = new Map<string, ReplyLink>();
   let costUsd: number | null = null;
   const done = (stop: ReplyStop): ReplyOutcome => ({
@@ -209,6 +245,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     stop,
     costUsd,
     steps,
+    held,
     links: [...links.values()],
   });
   const failed = (error: AssistantErrorCode): ReplyOutcome => ({
@@ -216,6 +253,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     error,
     costUsd,
     steps,
+    held,
   });
 
   let tools: ChatTool[];
@@ -290,8 +328,11 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       options.onTool({ callId, tool, state: "running" });
       const answered = await callTool(options, name, asked.function.arguments);
       if (answered.step !== undefined) steps.push(answered.step);
+      if (answered.held !== undefined) held.push(await withSnapshot(options.tools, answered.held));
       // A change's addresses: the links the reply added or changed, by host (S18).
-      if (answered.step !== undefined) linksIn(answered.input, links);
+      if (answered.step !== undefined || answered.held !== undefined) {
+        linksIn(answered.input, links);
+      }
       options.onTool({
         callId,
         tool,
@@ -305,10 +346,17 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
 
 /** One tool call: its arguments read, asked once more if the person's editing held it up. */
 async function callTool(
-  options: ReplyOptions,
+  options: CallContext,
   name: string,
   argumentText: string,
-): Promise<{ state: ToolEvent["state"]; text: string; step?: ReplyStep; input?: unknown }> {
+): Promise<{
+  state: ToolEvent["state"];
+  text: string;
+  step?: ReplyStep;
+  held?: HeldCall;
+  input?: unknown;
+  made?: string;
+}> {
   let parsed: unknown;
   try {
     parsed = argumentText.trim() === "" ? {} : JSON.parse(argumentText);
@@ -351,13 +399,161 @@ async function callTool(
   }
   const { answer } = asked;
   const state = answer === undefined ? "failed" : stateOf(answer.status);
-  const step =
-    state === "done" && answer?.entryId !== undefined && answer.label !== undefined
+  const change =
+    state === "done" && answer?.label !== undefined
       ? {
-          entryId: answer.entryId,
           label: answer.label.slice(0, LABEL_MAX),
           ...(answer.target === undefined ? {} : { target: answer.target }),
         }
       : undefined;
-  return { state, text: asked.text, input, ...(step === undefined ? {} : { step }) };
+  const step =
+    change !== undefined && answer?.entryId !== undefined
+      ? { entryId: answer.entryId, ...change }
+      : undefined;
+  // Staged, a change is on the draft only: held as asked, to ask again when applied (6.9e).
+  const kept = options.staged === true && step === undefined && change !== undefined;
+  return {
+    state,
+    text: asked.text,
+    input,
+    ...(step === undefined ? {} : { step }),
+    ...(kept
+      ? { held: { name, input, change, ...(answer?.id === undefined ? {} : { made: answer.id }) } }
+      : {}),
+    ...(answer?.id === undefined ? {} : { made: answer.id }),
+  };
+}
+
+/**
+ * Applies a reply's held changes (6.9e): each asked again, in order, of the site itself, so it's
+ * planned against the site as it is now and becomes the undo step it would have been, asking the
+ * person where it would. One the site no longer allows, or any after its site closed, is refused.
+ */
+export async function applyHeld(
+  tools: ToolClient,
+  calls: readonly HeldCall[],
+  stillOpen: () => boolean,
+): Promise<{ readonly steps: ReplyStep[]; readonly refused: HeldChange[] }> {
+  const steps: ReplyStep[] = [];
+  const refused: HeldChange[] = [];
+  const context = { tools, signal: new AbortController().signal };
+  /**
+   * The ids the draft made, each to the one its replay made on the site: a new element or page
+   * gets a new id each time it's made, so later calls naming the draft's are given the site's
+   * (#1059's review). Its children's too, read from both trees.
+   */
+  const ids = new Map<string, string>();
+  for (const call of calls) {
+    const input = withIds(call.input, ids);
+    const answered = stillOpen()
+      ? await callTool(context, call.name, JSON.stringify(input))
+      : undefined;
+    if (answered?.step === undefined) {
+      refused.push(call.change);
+      continue;
+    }
+    steps.push(answered.step);
+    if (call.made !== undefined && answered.made !== undefined) {
+      ids.set(call.made, answered.made);
+      await pairTrees(tools, call, answered.made, ids);
+    }
+  }
+  return { steps, refused };
+}
+
+/** `input` with each string that's a draft's id as the site's: exact values, however deep. */
+function withIds(input: unknown, ids: ReadonlyMap<string, string>): unknown {
+  if (typeof input === "string") return ids.get(input) ?? input;
+  if (Array.isArray(input)) return input.map((each) => withIds(each, ids));
+  if (typeof input === "object" && input !== null) {
+    return Object.fromEntries(
+      Object.entries(input).map(([key, each]) => [key, withIds(each, ids)]),
+    );
+  }
+  return input;
+}
+
+/** The page tree of page `pageId` through `tools`, or none. */
+async function treeOf(tools: ToolClient, pageId: string): Promise<unknown> {
+  try {
+    const result = resultSchema.safeParse(
+      await tools.callTool({
+        name: "pageTree",
+        arguments: { location: { kind: "page", pageId } },
+      }),
+    );
+    const text = result.success ? (result.data.content[0]?.text ?? "") : "";
+    const answer = z
+      .looseObject({ status: z.literal("done"), data: z.unknown() })
+      .safeParse(JSON.parse(text));
+    return answer.success ? answer.data.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The object in `tree` whose `id` is `id`, however deep. */
+function nodeOf(tree: unknown, id: string): unknown {
+  if (Array.isArray(tree)) {
+    for (const each of tree) {
+      const found = nodeOf(each, id);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+  if (typeof tree !== "object" || tree === null) return undefined;
+  if ("id" in tree && tree.id === id) return tree;
+  return nodeOf(Object.values(tree), id);
+}
+
+/** Pairs each id in the draft's `draft` with the site's in `site`, the same shape in step. */
+function pairIds(draft: unknown, site: unknown, ids: Map<string, string>): void {
+  if (Array.isArray(draft) && Array.isArray(site)) {
+    for (const [index, each] of draft.entries()) pairIds(each, site[index], ids);
+    return;
+  }
+  if (typeof draft !== "object" || draft === null || typeof site !== "object" || site === null) {
+    return;
+  }
+  const theirs = new Map(Object.entries(site));
+  // Not the same kind of element: they aren't each other's, and neither are their children.
+  const type = Object.entries(draft).find(([key]) => key === "type")?.[1];
+  if (type !== undefined && type !== theirs.get("type")) return;
+  for (const [key, value] of Object.entries(draft)) {
+    const other = theirs.get(key);
+    if (key === "id" && typeof value === "string" && typeof other === "string") {
+      if (!ids.has(value)) ids.set(value, other);
+    } else {
+      pairIds(value, other, ids);
+    }
+  }
+}
+
+/**
+ * `call` with what it made as the draft has it now, straight after it (#1059's review): a new
+ * page's tree, or a new element's subtree, read through the reply's stage.
+ */
+async function withSnapshot(draft: ToolClient, call: HeldCall): Promise<HeldCall> {
+  const page = call.change.target?.pageId;
+  if (call.made === undefined || page === undefined) return call;
+  const tree = await treeOf(draft, page);
+  const snapshot = call.made === page ? tree : nodeOf(tree, call.made);
+  return snapshot === undefined ? call : { ...call, snapshot };
+}
+
+/**
+ * Pairs the ids within what `call` made on the draft, as its snapshot has them, and what its
+ * replay made on the site (`made`): a new page's elements, or a new element's children. The
+ * same command made both, so they're the same shape, unless a type differs.
+ */
+async function pairTrees(
+  site: ToolClient,
+  call: HeldCall,
+  made: string,
+  ids: Map<string, string>,
+): Promise<void> {
+  const draftPage = call.change.target?.pageId;
+  if (draftPage === undefined || call.snapshot === undefined) return;
+  const siteTree = await treeOf(site, ids.get(draftPage) ?? draftPage);
+  pairIds(call.snapshot, call.made === draftPage ? siteTree : nodeOf(siteTree, made), ids);
 }

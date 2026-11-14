@@ -42,6 +42,8 @@ const unbuiltAssistant: AssistantService = {
   stop: async () => undefined,
   newConversation: async () => undefined,
   conversation: async () => [],
+  applyHeld: async () => ({ status: "nothing-held" }),
+  discardHeld: async () => undefined,
   openLink: async () => ({ status: "refused" }),
 };
 
