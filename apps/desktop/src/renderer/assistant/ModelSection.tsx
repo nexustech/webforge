@@ -125,6 +125,21 @@ export function ModelSection({ status, api, onStatus }: ModelSectionProps) {
       <details className="text-xs">
         <summary className="cursor-pointer">{t("assistant.model.advanced")}</summary>
         <div className="mt-2 flex flex-col gap-2">
+          {/* AIA-5's Review before applying (6.9e): a reply's changes wait for Apply Changes. */}
+          <label className="flex items-start gap-2">
+            <input
+              type="checkbox"
+              checked={status.reviewBeforeApplying}
+              className="mt-0.5 accent-primary"
+              onChange={(event) => change({ reviewBeforeApplying: event.currentTarget.checked })}
+            />
+            <span className="flex flex-col">
+              {t("assistant.model.reviewBeforeApplying")}
+              <span className="text-muted-foreground">
+                {t("assistant.model.reviewBeforeApplyingHint")}
+              </span>
+            </span>
+          </label>
           <label className="flex items-start gap-2">
             <input
               type="checkbox"

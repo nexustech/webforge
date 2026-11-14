@@ -159,3 +159,93 @@ describe("the assistant panel's state (6.9c, ADR 0026 §7)", () => {
     panel.dispose();
   });
 });
+
+describe("held changes in the panel (6.9e, Review before applying)", () => {
+  const REPLY = "8a7b6c5d-4e3f-4a2b-9c1d-0e9f8a7b6c5d";
+  const NEXT = "9b8c7d6e-5f4a-4b3c-8d2e-1f0a9b8c7d6e";
+  const MONTH = { spentUsd: 0.1, limitUsd: 5 };
+  const held = [{ label: "AI (Assistant): Edited Hero text", target: { pageId: "home" } }];
+
+  /** A panel with reply `replyId` ended, holding `held`. */
+  const holding = async (replyId: string) => {
+    const api = createFakeAssistant({ delayMs: 0 });
+    const panel = createAssistantPanel(api, "site-1");
+    await vi.waitFor(() => expect(panel.state.getState().status).toBeDefined());
+    api.emit({ session: "site-1", type: "reply-started", replyId, model: "m" });
+    api.emit({
+      session: "site-1",
+      type: "reply-done",
+      replyId,
+      stop: "end",
+      costUsd: 0.1,
+      month: MONTH,
+      steps: [],
+      links: [],
+      held,
+    });
+    return { api, panel };
+  };
+  const turnOf = (panel: ReturnType<typeof createAssistantPanel>, replyId: string) =>
+    panel.state.getState().turns.find((each) => each.replyId === replyId);
+
+  it("holds a reply's changes, then takes its steps and the refused ones once applied", async () => {
+    const { api, panel } = await holding(REPLY);
+    expect(turnOf(panel, REPLY)?.held).toEqual(held);
+    const applied = vi.spyOn(api, "applyHeld").mockResolvedValue({ status: "applied" });
+    await panel.applyHeld(REPLY);
+    expect(applied).toHaveBeenCalledWith("site-1", REPLY);
+    expect(panel.state.getState().applying).toBe(REPLY);
+    api.emit({
+      session: "site-1",
+      type: "held",
+      replyId: REPLY,
+      state: "applied",
+      steps: [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }],
+      refused: [{ label: "AI (Assistant): Removed Text" }],
+    });
+    expect(turnOf(panel, REPLY)).toMatchObject({
+      held: [],
+      steps: [{ entryId: "e1" }],
+      refused: [{ label: "AI (Assistant): Removed Text" }],
+    });
+    expect(panel.state.getState().applying).toBeUndefined();
+    panel.dispose();
+  });
+
+  it("says held changes were discarded, or dropped for a new message", async () => {
+    const { api, panel } = await holding(REPLY);
+    await panel.discardHeld(REPLY);
+    api.emit({
+      session: "site-1",
+      type: "held",
+      replyId: REPLY,
+      state: "discarded",
+      steps: [],
+      refused: [],
+    });
+    expect(turnOf(panel, REPLY)).toMatchObject({ held: [], heldOutcome: "discarded" });
+
+    // Main drops them itself when a newer reply's held changes replace them.
+    const dropped = await holding(NEXT);
+    dropped.api.emit({
+      session: "site-1",
+      type: "held",
+      replyId: NEXT,
+      state: "discarded",
+      steps: [],
+      refused: [],
+    });
+    expect(turnOf(dropped.panel, NEXT)).toMatchObject({ held: [], heldOutcome: "replaced" });
+    panel.dispose();
+    dropped.panel.dispose();
+  });
+
+  it("leaves held changes waiting when main can't apply them now", async () => {
+    const { api, panel } = await holding(REPLY);
+    vi.spyOn(api, "applyHeld").mockResolvedValue({ status: "busy" });
+    await panel.applyHeld(REPLY);
+    expect(panel.state.getState().applying).toBeUndefined();
+    expect(turnOf(panel, REPLY)?.held).toEqual(held);
+    panel.dispose();
+  });
+});
