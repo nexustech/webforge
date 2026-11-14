@@ -15,6 +15,10 @@ import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
 import { businessDataSchema, websiteDataSchema } from "../src/structured-data.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 // Every template's export, as a site made from it starts (3.3): its pages as reviewed golden files,
 // and the files it writes. A change to a component, a theme or the pipeline that changes an
 // exported page shows up here, to review and accept with `vitest -u`.

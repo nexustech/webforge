@@ -189,11 +189,15 @@ describe("createPuckEngine", () => {
   });
 
   it("ignores a change to the page it already shows", async () => {
-    const before = element.innerHTML;
+    // The page as drawn, not all of Puck: Puck's own timers change its frame's classes, as when a
+    // busy machine let its loader's delay pass during the change (#1052).
+    const shown = () => element.querySelector("#preview-frame")?.innerHTML;
+    const before = shown();
+    expect(before).toContain("First");
 
     await act(async () => engine.applyChange({ page }));
 
-    expect(element.innerHTML).toBe(before);
+    expect(shown()).toBe(before);
   });
 
   it("sends Puck nothing for a page with the same content", async () => {

@@ -213,4 +213,9 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
   - `storyPreloadApi(overrides)` (`testing/story-preload.ts`): the same without Vitest, which Storybook doesn't load: a call not overridden does nothing;
   - `panelStory()` and `dialogStory()`: the story helpers.
 - **Why there are two places:** packages can't import the app, so only the engine fake is in `@webforge/test-utils`, and the helpers typed by the app are in the app (B6). That's a change from the issue's wording.
+- **Wait for events, not times** ([ADR 0014](adr/0014-time-budgets-under-load.md), #1052). Tests run beside other work, so a clock in a test fails when the machine is busy:
+  - **Wait for what you test:** a promise, `vi.waitFor` or `findBy…` on the state you mean, or fake timers. Never sleep a fixed time and hope.
+  - **Waits are generous by default:** `WAIT_MS` (`vitest.load.ts`), 10 s scaled to the run, for Testing Library, `vi.waitFor` and `expect.poll` in the app and the editor UI. A wait ends as soon as what it waits for happens, so don't shorten it.
+  - **Don't assert a duration.** Check the order of events, or the work done (a thread's CPU time, what was read or encoded). A pattern that could backtrack gets an input on which it would take minutes, and the test's timeout fails it. Speed belongs in `pnpm bench` and `e2e/perf`.
+  - **A heavy test states its timeout and why,** in a comment: one that builds a site, loads the pipeline's resources, starts a worker or a process, or runs a compiler. Scale it with `scaledTestTimeout()`. The defaults stay for the rest.
 - **Stories** run in Storybook's axe and screenshot checks (`pnpm visual:docker`; commit new screenshots with the PR). A story that draws after it renders says so with `data-story-state="drawing"` until it has, as `panelStory()` does.

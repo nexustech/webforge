@@ -1,3 +1,6 @@
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
 // Security review S6 (docs/reviews/2026-10-30-security-review.md), restored by #649.
 import type { SiteSnapshot } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";

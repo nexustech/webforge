@@ -49,17 +49,6 @@ describe("markdownToRichText (6.10b, BS9-4)", () => {
   });
 });
 
-/** How long `run` takes, in milliseconds: the fastest of three, as a busy machine may pause one. */
-const timed = (run: () => unknown) => {
-  let fastest = Number.POSITIVE_INFINITY;
-  for (let time = 0; time < 3; time += 1) {
-    const start = Date.now();
-    run();
-    fastest = Math.min(fastest, Date.now() - start);
-  }
-  return fastest;
-};
-
 /** The tags in rich text `html`, each closed in the order opened, of the kinds rich text has. */
 function wellFormed(html: string): boolean {
   const open: string[] = [];
@@ -78,17 +67,17 @@ describe("Markdown that never closes (#974)", () => {
   // Each took seconds to minutes before (quadratic, or worse), on the window's main thread: a
   // megabyte of bold left open, a quarter of an hour, and 200 KB of it, half a minute. Converting
   // a megabyte takes a few milliseconds now, as a paragraph is formatted to 10,000 characters;
-  // formatting 200 KB of it in full, and asking whether it reads as Markdown, a few dozen, well
-  // under a second on a busy machine with coverage on.
+  // formatting 200 KB of it in full, and asking whether it reads as Markdown, a few dozen. So a
+  // regression runs past the test's 5 s timeout, which fails it; nothing here reads a clock, which
+  // a busy machine stretches (#1052).
   const MB = 1_000_000;
   const KB_200 = 200_000;
-  const SECOND = 1000;
 
   it("converts a megabyte of bold left open in linear time", () => {
-    expect(timed(() => markdownToRichText("**a ".repeat(MB / 4)))).toBeLessThan(200);
+    expect(markdownToRichText("**a ".repeat(MB / 4))).toMatch(/^<p>\*\*a /);
     const text = "**a ".repeat(KB_200 / 4);
-    expect(timed(() => inlineMarkdown(text))).toBeLessThan(SECOND);
-    expect(timed(() => looksLikeMarkdown(text))).toBeLessThan(SECOND);
+    expect(inlineMarkdown(text)).toHaveLength(text.length);
+    looksLikeMarkdown(text);
     expect(inlineMarkdown("**b** **c _d")).toBe("<strong>b</strong> **c _d");
   });
 
@@ -101,9 +90,9 @@ describe("Markdown that never closes (#974)", () => {
       "_a ".repeat(KB_200 / 3),
       `# a${" ".repeat(KB_200)}b`,
     ]) {
-      expect(timed(() => markdownToRichText(text))).toBeLessThan(200);
-      expect(timed(() => inlineMarkdown(text))).toBeLessThan(SECOND);
-      expect(timed(() => looksLikeMarkdown(text))).toBeLessThan(SECOND);
+      markdownToRichText(text);
+      inlineMarkdown(text);
+      looksLikeMarkdown(text);
     }
     expect(markdownHeading(`# a${" ".repeat(MB)}b ##  `)?.text).toBe(`a${" ".repeat(MB)}b`);
     expect(markdownHeading("## Opening times ##")).toEqual({ level: 2, text: "Opening times" });
@@ -127,16 +116,14 @@ describe("Markdown that never closes (#974)", () => {
     expect(html.endsWith("a **off** &lt;b&gt;</p>")).toBe(true);
   });
 
-  it("makes well-formed rich text of any text, quickly", () => {
+  it("makes well-formed rich text of any text, within the test's timeout", () => {
     const markdown = fc.string({
       unit: fc.constantFrom(...'**__`[]()>#-+1. \n"<&ahttps:/'.split(""), "\u2028", "\t"),
       maxLength: 20_000,
     });
     fc.assert(
       fc.property(markdown, (text) => {
-        let html = "";
-        expect(timed(() => (html = markdownToRichText(text)))).toBeLessThan(SECOND);
-        expect(wellFormed(html)).toBe(true);
+        expect(wellFormed(markdownToRichText(text))).toBe(true);
       }),
       { numRuns: 60 },
     );

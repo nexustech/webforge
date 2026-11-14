@@ -43,11 +43,11 @@ describe("a reply's links (ADR 0026 §7, openLink)", () => {
   });
 
   it("answers at once for a reply built to stall a pattern (#1001's review)", () => {
-    // 200k characters of unclosed Markdown links, the longest reply, against the longest href.
+    // 200k characters of unclosed Markdown links, the longest reply, against the longest href. A
+    // pattern that backtracks on them runs past the test's timeout, which fails it; nothing reads a
+    // clock, which a busy machine stretches (#1052).
     const stalling = turn("](a".repeat(66_667));
-    const started = performance.now();
     expect(linkToOpen(stalling, `https://a.example/${"a".repeat(1_970)}`)).toBeUndefined();
     expect(linkToOpen(stalling, "http://www.a.example/")).toBeUndefined();
-    expect(performance.now() - started).toBeLessThan(50);
   });
 });
