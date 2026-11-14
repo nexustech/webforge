@@ -180,6 +180,7 @@ export {
   frontMatter,
   inlineMarkdown,
   looksLikeMarkdown,
+  markdownHeading,
   markdownToRichText,
 } from "./markdown.js";
 export type {

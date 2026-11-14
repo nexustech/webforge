@@ -3,8 +3,8 @@
 id: preview
 title: Preview
 summary: See your site in your web browser and on your phone, as visitors will, while you edit.
-related: [export, site-check, custom-code]
-updated: 2026-11-06
+related: [export, site-check, custom-code, pages, layers]
+updated: 2026-11-13
 ---
 
 # Preview
@@ -22,6 +22,12 @@ The preview follows you as you work:
 - go to another page in {appName} and the browser goes there too.
 
 The preview works only on this computer, and only while {appName} is open. Nothing is put on the internet.
+
+## Drafts and things you don't publish
+
+The preview shows your website as it will be published, with one difference: it shows your [draft pages](pages.md#draft-pages) too, so you can check them before they go live. Open a draft from the page itself; the menu leaves it out, as your website's will.
+
+Anything set to **Don't publish** in [Layers](layers.md#what-you-can-do) isn't in the preview, as it won't be on your website. Anything you **Hide while editing** is, as it is on your website.
 
 ## On your phone
 
