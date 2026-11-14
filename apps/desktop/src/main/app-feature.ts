@@ -8,8 +8,13 @@ import type { ProjectSessionEvents } from "./project-session.js";
  * is said where the feature is, not in three places of `app.ts`.
  */
 export type AppFeature = {
-  /** Registers its IPC handlers, once Electron is ready. */
+  /** Registers its IPC handlers, and any scheme it answers, once Electron is ready. */
   register?(ipc: Pick<IpcMain, "handle">, isTrustedSender: (senderUrl: string) => boolean): void;
+  /**
+   * Once the editor's window has opened, with the site Webforge was started with (#985): what may
+   * wait until then, such as a worker the canvas will want or a check for an update.
+   */
+  started?(): void;
   /**
    * What it does as sites open, are saved and close, a site a hand-off replaced included. Told in
    * the order the features are listed; one that throws is logged, and the others are still told.
