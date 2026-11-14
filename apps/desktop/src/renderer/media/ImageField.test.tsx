@@ -10,11 +10,6 @@ import { sessionWith } from "../testing/fixtures.js";
 import { ImageField } from "./ImageField.js";
 import { addMedia } from "./media-commands.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const image = (id: string, alt = ""): ImageMeta => ({
   id: id as MediaId,
   hash: id.padEnd(64, "0"),

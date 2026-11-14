@@ -5,11 +5,6 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 import { UndoHistoryPanel } from "./UndoHistoryPanel.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const entry = (id: string, label: string): HistoryEntry<string | null> => ({
   id,
   label,

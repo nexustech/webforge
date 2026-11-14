@@ -133,14 +133,20 @@ export function Picker<Item extends PickerItem>({
   const opener = useRef<HTMLElement | null>(null);
   const listId = useId();
 
-  // Each time it opens: no search, every category, on the current choice, scrolled into view.
+  // Each time it opens: no search, every category, on the current choice, from its first frame
+  // (#990): set as it renders, not in an effect after it has drawn the last search.
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) {
+      setQuery("");
+      setCategory(null);
+      setActiveId(value ?? null);
+    }
+  }
+  // The current choice scrolled into view, once the dialog has drawn its items.
   useEffect(() => {
-    if (!open) return;
-    setQuery("");
-    setCategory(null);
-    setActiveId(value ?? null);
-    if (value == null) return;
-    // Once the dialog has drawn its items.
+    if (!open || value == null) return;
     const frame = requestAnimationFrame(() => {
       list.current
         ?.querySelector(`[data-picker-item="${CSS.escape(value)}"]`)

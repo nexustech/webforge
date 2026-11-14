@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { panelStory } from "../testing/stories.js";
-import { registerSitePanel } from "./SitePanel.js";
+import { registerSitePanel } from "./register-site-panel.js";
 
 // The Site panel's Pages and Menu as registerSitePanel adds them (2.20, B6).
 const meta = { title: "Panels/Registered/Site" } satisfies Meta;

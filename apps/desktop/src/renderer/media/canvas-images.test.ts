@@ -1,28 +1,10 @@
-import type { ImageMeta, MediaId, MediaMeta } from "@webforge/model";
+import type { ImageMeta } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { sessionWith } from "../testing/fixtures.js";
+import { PHOTO, PRICES as prices, sessionWith } from "../testing/fixtures.js";
 import { canvasImage, connectCanvasImages } from "./canvas-images.js";
 import { addMedia, cropMedia, setFocalPoint } from "./media-commands.js";
 
-const photo: ImageMeta = {
-  id: "photo" as MediaId,
-  hash: "a".repeat(64),
-  name: "shop",
-  fileName: "shop.jpg",
-  kind: "image",
-  mimeType: "image/jpeg",
-  width: 1600,
-  height: 1000,
-  alt: "Our shop",
-};
-const prices: MediaMeta = {
-  id: "prices" as MediaId,
-  hash: "b".repeat(64),
-  name: "prices",
-  fileName: "prices.pdf",
-  kind: "file",
-  mimeType: "application/pdf",
-};
+const photo: ImageMeta = { ...PHOTO, alt: "Our shop" };
 
 describe("canvasImage", () => {
   it("shows the original through the media scheme, at its size, with its alt text", () => {

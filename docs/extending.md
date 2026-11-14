@@ -65,6 +65,10 @@ export const bookingsPanelArea: Area<EditorContext> = {
 - **`renderer/testing/` is for tests and stories only** (`renderer-testing-only-in-tests`).
 - **The renderer never imports Node or Electron,** and only `packages/engine` imports Puck.
 
+### File names
+
+In the renderer, a file whose main export is a component is named after it, in PascalCase: `versions/VersionHistoryPanel.tsx`. A file for registration or logic is kebab-case, even when it draws a small component of its own: `versions/register-version-history-panel.tsx`, `edit-panel/area.tsx`, `add/section-preview.tsx`. A file's test and story take its name (`register-site-panel.test.tsx`, `register-site-panel.stories.tsx`).
+
 ### The start screen's code
 
 The start screen draws without the editor's code (#896): `main.tsx` loads `editor-start.tsx`, and with it `App`, with `import()` when a site is open, and on the start screen only once it has drawn and the window is idle (`preloadEditorWhenIdle`, #945). A site opened from the start screen reloads the window, which then finds the editor's code compiled already.
