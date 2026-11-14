@@ -14,7 +14,7 @@ The assistant is an AI model you can ask to change the site you have open, such 
 
 It's off until you turn it on, and {appName} shows what it sends, and to whom, before anything is sent.
 
-Today you can set the assistant up, but it can't be turned on yet: the part of {appName} that sends your messages to a model is still being built.
+Today the assistant can [rewrite text you select](#rewriting-text). Its panel can't answer messages yet: the part of {appName} that sends them to a model is still being built.
 
 ## Setting it up
 
@@ -38,6 +38,17 @@ Under **Advanced**:
 The first time you use the assistant on a site, {appName} asks whether to use it there, and says who will receive the site's content. Click **Use on This Site** or **Not Now**. Your answer stays on this computer, never in the site file. A model on this computer doesn't ask, because nothing leaves it.
 
 **Stop Using on This Site**, at the top of the panel, takes your yes back. **Use on This Site** gives it again.
+
+## Rewriting text
+
+While the assistant is on, the toolbar you see while typing has a **Rewrite…** menu.
+
+1. Select the text to rewrite, up to 4,000 characters.
+2. Choose **Friendlier**, **Shorter** or **Fix spelling and grammar**.
+3. {appName} shows your text and the assistant's suggestion side by side. Nothing changes yet.
+4. Click **Use This** to put the suggestion in place of your text, **Try Again** for another, or **Cancel**.
+
+Only the selected text is sent. The suggestion is plain text: bold, italic, colours and links in the text you selected aren't kept, and {appName} says so before you use it. What you use is one step in Undo History, named _AI (Assistant): …_. Each suggestion counts towards your monthly limit.
 
 ## Asking for a change
 

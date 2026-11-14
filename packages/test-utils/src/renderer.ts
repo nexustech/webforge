@@ -106,6 +106,7 @@ export function createFakeEngine(): FakeEngine {
     markDrop: vi.fn(),
     addDragSource: vi.fn(() => () => undefined),
     setLinkPicker: vi.fn(),
+    setTextRewriter: vi.fn(),
     onFrameWindow: frames.add,
     setMode: vi.fn(),
     destroy: vi.fn(),

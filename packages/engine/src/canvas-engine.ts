@@ -37,6 +37,26 @@ export type LinkPicker = (
   at: RichTextAt | null,
 ) => Promise<RichTextLink | null | undefined>;
 
+/** How the assistant rewrites text selected in rich text (G25a, #873). */
+export type RewriteHow = "friendlier" | "shorter" | "grammar";
+
+/** What the format toolbar asks the app to rewrite: the selected text, as plain text. */
+export type RewriteRequest = {
+  readonly how: RewriteHow;
+  /** Paragraphs separated by a blank line. */
+  readonly text: string;
+  /** Whether the selection has formatting (bold, a colour, a link) that a rewrite leaves out. */
+  readonly formatted: boolean;
+  /** The rich-text field it's in, when known. */
+  readonly at: RichTextAt | null;
+};
+
+/**
+ * Asks the app to rewrite selected text (G25a, #873): resolves to the text the person accepted,
+ * which replaces the selection, or `undefined` to leave it as it is.
+ */
+export type TextRewriter = (request: RewriteRequest) => Promise<string | undefined>;
+
 /** Desktop · Tablet · Mobile, or a width in pixels. */
 export type Viewport = "desktop" | "tablet" | "mobile" | number;
 
@@ -336,6 +356,12 @@ export interface CanvasEngine {
    * button.
    */
   setLinkPicker(picker: LinkPicker | null): void;
+  /**
+   * Lets the app rewrite selected rich text with the assistant (G25a, #873): the format toolbar's
+   * Rewrite menu calls `rewriter` with the selection, and puts what it resolves to in its place, if
+   * the text there hasn't changed meanwhile. Without a rewriter the toolbar has no Rewrite menu.
+   */
+  setTextRewriter(rewriter: TextRewriter | null): void;
   /**
    * Shows the site's Site Settings on the canvas (1.17, 2.8): the values elements are bound to,
    * what an empty one shows instead (a hint), and the opening hours. Called again when Site
