@@ -1,6 +1,6 @@
 import { CompletionContext } from "@codemirror/autocomplete";
 import { css, cssLanguage } from "@codemirror/lang-css";
-import { syntaxTree } from "@codemirror/language";
+import { ensureSyntaxTree, syntaxTree } from "@codemirror/language";
 import { EditorState } from "@codemirror/state";
 import { DEFAULT_THEME, type SiteDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
@@ -22,9 +22,13 @@ const data: CssSiteData = {
 function complete(text: string) {
   const pos = text.indexOf("|");
   const state = EditorState.create({ doc: text.replace("|", ""), extensions: [css()] });
+  // The whole tree, however long parsing takes: `syntaxTree` gives what the parser reached in its
+  // time slice, which a busy machine shortens (#1052).
   const source = cssSiteCompletion(
     () => data,
-    (context) => syntaxTree(context.state),
+    (context) =>
+      ensureSyntaxTree(context.state, context.state.doc.length, 60_000) ??
+      syntaxTree(context.state),
   );
   const result = source(new CompletionContext(state, pos, true));
   return result === null

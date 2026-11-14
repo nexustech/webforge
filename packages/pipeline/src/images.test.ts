@@ -9,6 +9,10 @@ import { imageAt, makeThumbnail, processImage } from "./images.js";
 import { loadNodeResources } from "./node-resources.js";
 import type { CodecModules, ImageCache } from "./resources.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 let codecs: CodecModules;
 
 const sha256 = (data: Uint8Array) => createHash("sha256").update(data).digest("hex");

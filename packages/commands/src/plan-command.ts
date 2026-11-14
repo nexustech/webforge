@@ -1,8 +1,16 @@
 import { plural, t } from "@webforge/i18n";
-import { type PageId, pageEntryOf, type SiteDoc } from "@webforge/model";
+import type { PageId, SiteDoc } from "@webforge/model";
 import { produce } from "immer";
 import { z } from "zod";
-import { type Failure, fail, failed, type Plan, type PlanContext, UNPUBLISHED } from "./plan.js";
+import {
+  type Failure,
+  fail,
+  failed,
+  type Plan,
+  type PlanContext,
+  type PlanSummary,
+  UNPUBLISHED,
+} from "./plan.js";
 
 /** The longest plan: a whole site's build, with room to spare. */
 const MOST_COMMANDS = 200;
@@ -14,73 +22,12 @@ type Step = { readonly name: string; readonly input: unknown };
 type Command = {
   readonly input: z.ZodType;
   readonly plan: (site: SiteDoc, input: never, context?: PlanContext) => Plan | Failure;
+  /**
+   * What its planned change adds to the plan's summary, typed by its input (#981): one without it
+   * can't be a step, so a new command is named in a plan's question from the start.
+   */
+  readonly summarize: (summary: PlanSummary, site: SiteDoc, input: never) => void;
 };
-
-/** What a plan does, for its one question (D7): counted and named. */
-type Summary = {
-  readonly pagesAdded: string[];
-  readonly pagesRemoved: string[];
-  /** Pages renamed, by their titles before and after. */
-  readonly pagesRenamed: { readonly from: string; readonly to: string }[];
-  readonly pagesMoved: Set<string>;
-  /** Pages whose Page Settings change, besides their title. */
-  readonly pagesSet: Set<string>;
-  theme: boolean;
-  elements: { added: number; changed: number; moved: number; removed: number };
-  /** The questions its commands would each have asked: the question, and what it names. */
-  readonly asks: string[];
-  /** Those that name where visitors' money or details go, or change Site Settings (S30). */
-  readonly asksFirst: string[];
-};
-
-/** What a step's planned change counts as in the summary. */
-function count(summary: Summary, name: string, site: SiteDoc, input: unknown): void {
-  const pageId = (input as { pageId?: string }).pageId;
-  const page = pageId === undefined ? undefined : pageEntryOf(site.pages, pageId);
-  const renamed = (to: string | undefined) => {
-    if (page !== undefined && to !== undefined && to.trim() !== page.title) {
-      summary.pagesRenamed.push({ from: page.title, to: to.trim() });
-    }
-  };
-  switch (name) {
-    case "addPage":
-      summary.pagesAdded.push((input as { title: string }).title.trim());
-      return;
-    case "removePage":
-      summary.pagesRemoved.push(page?.title ?? "");
-      return;
-    case "renamePage":
-      renamed((input as { title: string }).title);
-      return;
-    case "movePage":
-      summary.pagesMoved.add(page?.title ?? "");
-      return;
-    case "updatePageSettings": {
-      const { title, ...others } = input as { title?: string };
-      renamed(title);
-      if (Object.keys(others).some((key) => key !== "pageId")) {
-        summary.pagesSet.add(page?.title ?? "");
-      }
-      return;
-    }
-    case "setThemeTokens":
-      summary.theme = true;
-      return;
-    case "addNode":
-      summary.elements.added += 1;
-      return;
-    case "moveNode":
-      summary.elements.moved += 1;
-      return;
-    case "removeNode":
-      summary.elements.removed += 1;
-      return;
-    case "editText":
-    case "updateFields":
-      summary.elements.changed += 1;
-      return;
-  }
-}
 
 /** A page of the site document. */
 type Page = SiteDoc["pages"][PageId];
@@ -150,7 +97,7 @@ const shortened = (title: string) => {
  * then what it adds, deletes and changes, each list and title shortened; then the other questions
  * its commands would have asked, the first {@link MOST_ASKS}.
  */
-function described(summary: Summary, switches: readonly string[]): string {
+function described(summary: PlanSummary, switches: readonly string[]): string {
   const groups: string[][] = [];
   if (summary.asksFirst.length > 0) groups.push([t("ai.plan.first"), ...summary.asksFirst]);
   const list = (names: Iterable<string>) => {
@@ -218,6 +165,11 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
   const names = Object.keys(commands) as [string, ...string[]];
   return {
     description: `Runs a titled list of commands as one change: one question for the person, with a summary of everything it does, then one undo step named after the title ("Build the Rapidfix site"), a version saved before it. Every command is checked first, each against the site as the ones before it leave it; if any fails, nothing changes and the answer says which. Use it for a build of more than a few edits. Each command takes what it takes on its own (${names.join(", ")}); a plan holds no plan. New ids from addPage and addNode aren't known before it runs: add a page and fill it in two plans.`,
+    /**
+     * No version of its own before it (S26, AIB-6 amended): a plan always asks, and the person's
+     * Allow saves one, so a plan refused as invalid saves nothing.
+     */
+    savesVersionFirst: false,
     input: z.strictObject({
       title: z.string().trim().min(1).max(80),
       commands: z
@@ -235,7 +187,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
       let working: SiteDoc = site;
       const recipes: ((draft: SiteDoc) => void)[] = [];
       const removesPages: PageId[] = [];
-      const summary: Summary = {
+      const summary: PlanSummary = {
         pagesAdded: [],
         pagesRemoved: [],
         pagesRenamed: [],
@@ -259,7 +211,7 @@ export function planCommand(commands: Readonly<Record<string, Command>>) {
         if (failed(planned)) {
           return fail(planned.status, `${where}: ${planned.message} Nothing changed.`);
         }
-        count(summary, step.name, working, parsed.data);
+        command.summarize(summary, working, parsed.data as never);
         const asked = planned.confirm?.("{app}");
         if (asked !== undefined) {
           const ask = [asked.action, asked.description].filter(Boolean).join(" ");

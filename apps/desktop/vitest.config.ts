@@ -1,5 +1,5 @@
 import { defineProject } from "vitest/config";
-import { scaledTimeout, TIMEOUT_SCALE } from "../../vitest.load.js";
+import { scaledTimeout, TIMEOUT_SCALE, WAIT_MS } from "../../vitest.load.js";
 
 export default defineProject({
   test: {
@@ -8,7 +8,9 @@ export default defineProject({
     // to the run's workers (ADR 0014); a test that sets its own scales it with `timeoutScale`.
     testTimeout: scaledTimeout(15_000),
     provide: { timeoutScale: TIMEOUT_SCALE },
-    // React's act() told it runs in a test, once for every file (#991).
-    setupFiles: ["../../vitest.react-act.ts"],
+    // React's act() told it runs in a test, once for every file (#991); and waits that last
+    // `WAIT_MS` (#1052).
+    setupFiles: ["../../vitest.react-act.ts", "./vitest.waits.ts"],
+    expect: { poll: { timeout: WAIT_MS } },
   },
 });

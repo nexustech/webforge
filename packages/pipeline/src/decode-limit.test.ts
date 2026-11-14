@@ -6,6 +6,10 @@ import { decodeOriginal, makeThumbnail, UndecodableImageError } from "./images.j
 import { loadNodeResources } from "./node-resources.js";
 import type { CodecModules } from "./resources.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 let codecs: CodecModules;
 
 beforeAll(async () => {

@@ -45,8 +45,7 @@ function fakeMcp(start: Partial<McpStatus> = {}) {
       status = { ...status, apps: [...status.apps, app] };
       return { status: "paired", app, key: KEY, address: ADDRESS };
     }),
-    installClaude: vi.fn<McpApi["installClaude"]>(async () => ({ status: "opened" })),
-    installVsCode: vi.fn<McpApi["installVsCode"]>(async () => ({ status: "opened" })),
+    install: vi.fn<McpApi["install"]>(async () => ({ status: "opened" })),
     remove: vi.fn(async (id: string) => {
       status = { ...status, apps: status.apps.filter((app) => app.id !== id) };
       return status;
@@ -154,7 +153,7 @@ describe("AI apps (4.9)", () => {
     await user.click(dialog().getByRole("button", { name: "Copy the key" }));
     expect(copySecret).toHaveBeenCalledWith(KEY);
     await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
-    expect(mcp.installClaude).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
+    expect(mcp.install).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
     await waitFor(() =>
       expect(
         dialog()
@@ -165,12 +164,12 @@ describe("AI apps (4.9)", () => {
       ).toBe(true),
     );
 
-    mcp.installClaude.mockResolvedValueOnce({ status: "shown" });
+    mcp.install.mockResolvedValueOnce({ status: "shown" });
     await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
     expect(await dialog().findByText(/Nothing opened the extension/)).toBeTruthy();
 
     // Its key waited too long, and it went: adding it again is what helps, not trying again.
-    mcp.installClaude.mockResolvedValueOnce({ status: "unknown" });
+    mcp.install.mockResolvedValueOnce({ status: "unknown" });
     await user.click(dialog().getByRole("button", { name: "Install in Claude Desktop" }));
     expect(
       await dialog().findByText(
@@ -221,7 +220,7 @@ describe("AI apps (4.9)", () => {
     await user.click(dialog().getByRole("button", { name: "Add" }));
 
     // Paired directly, as Another app is: the same key, limits and removal.
-    expect(mcp.add).toHaveBeenCalledWith("Claude Code", "other");
+    expect(mcp.add).toHaveBeenCalledWith("Claude Code", "claudeCode");
     expect(await dialog().findByText(KEY)).toBeTruthy();
     const command = `claude mcp add --transport http --scope user webforge ${ADDRESS} --header 'Authorization: Bearer \${WEBFORGE_KEY}'`;
     expect(dialog().getByText(command)).toBeTruthy();
@@ -242,20 +241,20 @@ describe("AI apps (4.9)", () => {
     expect(dialog().getByRole("textbox", { name: "Name" })).toHaveProperty("value", "VS Code");
     await user.click(dialog().getByRole("button", { name: "Add" }));
 
-    expect(mcp.add).toHaveBeenCalledWith("VS Code", "other");
+    expect(mcp.add).toHaveBeenCalledWith("VS Code", "vscode");
     expect(await dialog().findByText(KEY)).toBeTruthy();
     // The link holds the address: none to copy.
     expect(dialog().queryByText(ADDRESS)).toBeNull();
     expect(dialog().getByText(/another program on this computer could answer/)).toBeTruthy();
     await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
-    expect(mcp.installVsCode).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
+    expect(mcp.install).toHaveBeenCalledWith("1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5");
     expect(await dialog().findByText(/VS Code is opening Webforge's server/)).toBeTruthy();
 
-    mcp.installVsCode.mockResolvedValueOnce({ status: "failed" });
+    mcp.install.mockResolvedValueOnce({ status: "failed" });
     await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
     expect(await dialog().findByText(/VS Code didn't open/)).toBeTruthy();
 
-    mcp.installVsCode.mockResolvedValueOnce({ status: "unknown" });
+    mcp.install.mockResolvedValueOnce({ status: "unknown" });
     await user.click(dialog().getByRole("button", { name: "Install in VS Code" }));
     expect(
       await dialog().findByText(

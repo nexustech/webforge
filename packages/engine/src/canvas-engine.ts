@@ -457,5 +457,11 @@ export interface CanvasEngine {
    * one would never call `cb`.
    */
   onFrameWindow(cb: (frameWindow: Window | null) => void): Unsubscribe;
+  /**
+   * Calls `cb` once the canvas shows the site with its CSS and the fonts it uses (#1013), and each
+   * time a new canvas document does; at once if it already has. Until then the canvas shows the
+   * page's markup unstyled, which the editor covers.
+   */
+  onStyled(cb: () => void): Unsubscribe;
   destroy(): void;
 }

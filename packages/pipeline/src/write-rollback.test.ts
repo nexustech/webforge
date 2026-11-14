@@ -4,6 +4,9 @@ import { scaledTestTimeout, tempDirFactory } from "@webforge/test-utils/vitest";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { writeSiteFolder } from "./write.js";
 
+// Timeouts (#1052): a folder Windows keeps locked is retried with real waits between tries, so
+// that test sets its own timeout.
+
 // Fails chosen renames, which a real disk only does under conditions tests cannot set up
 // portably (a folder locked by another program, a full disk).
 const failures = vi.hoisted(() => ({

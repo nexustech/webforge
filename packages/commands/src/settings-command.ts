@@ -174,6 +174,8 @@ export const updateSettings = {
   description:
     "Changes Site Settings that say what the business is: general (name, description, language, businessType, businessKind), address (the web address), contact (business name, email, phone, postal address, opening hours, note, price range, map position), social (profiles, X handle) and search (allowIndexing, includeSitemap, readableByAi). Each as the settings query gives it; null clears an optional one, and what's left out stays. Never publishing, forms, analytics, code, search engines' verification codes, the icon or pictures. They show on every page, so it waits for the person to allow it. One undo step.",
   input: settingsChange,
+  /** Nothing to count: its question names the settings it changes, first in a plan's (S30). */
+  summarize() {},
   plan(site: SiteDoc, input: SettingsChange): Plan | Failure {
     const before = site.settings;
     const parsed = siteSettingsSchema.safeParse(changed(before, input));

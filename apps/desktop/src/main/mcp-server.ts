@@ -14,18 +14,14 @@ import {
   AI_TOOLS,
   CATALOGUE_RESOURCE,
   catalogueResourceText,
-  UNTRUSTED_SITE_TEXT,
+  type McpTool,
+  type ToolDef,
+  toMcpTool,
 } from "@webforge/commands";
 import { t } from "@webforge/i18n";
-import {
-  type AiRequest,
-  type AiResponse,
-  APP_TOOLS,
-  ASSISTANT_APP_ID,
-  REQUEST_MEDIA,
-} from "../shared/ipc/ai.js";
+import { MAIN_TOOLS, WINDOW_TOOLS } from "../shared/ai-tools.js";
+import { type AiRequest, type AiResponse, ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import { buildSitePrompt, buildSitePromptInfo } from "./mcp-prompts.js";
-import { MAIN_TOOLS } from "./site-brief.js";
 
 /** An AI app the person paired (4.9): its id, and the name they gave it, never its own. */
 export type McpApp = { readonly id: string; readonly name: string };
@@ -34,36 +30,27 @@ export type McpApp = { readonly id: string; readonly name: string };
 export type McpServerInfo = { readonly name: string; readonly version: string };
 
 /**
- * Every tool an AI app sees: the command layer's (`AI_TOOLS`), then those the window answers
- * itself (`APP_TOOLS`, each a query taking nothing, and `requestMedia`, which asks the person).
+ * Every tool an AI app sees, each one definition (#981): the command layer's (`AI_TOOLS`), then
+ * those the window answers itself, then main's own (4.12a): a new site from a brief, and what it
+ * chooses from.
  */
-const TOOLS = [
-  ...AI_TOOLS,
-  ...Object.entries(APP_TOOLS).map(([name, description]) => ({
-    kind: "query" as const,
-    name,
-    description: `${description} ${UNTRUSTED_SITE_TEXT}`,
-    inputSchema: { type: "object" as const, properties: {}, additionalProperties: false },
-  })),
-  {
-    kind: "command" as const,
-    name: REQUEST_MEDIA.name,
-    description: `${REQUEST_MEDIA.description} ${UNTRUSTED_SITE_TEXT}`,
-    inputSchema: {
-      type: "object" as const,
-      properties: { reason: { type: "string", minLength: 1, maxLength: 200 } },
-      required: ["reason"],
-      additionalProperties: false,
-    },
-  },
-  // Main's own (4.12a): a new site from a brief, and what it chooses from.
-  ...Object.entries(MAIN_TOOLS).map(([name, tool]) => ({
-    kind: tool.kind,
-    name,
-    description: `${tool.description} ${UNTRUSTED_SITE_TEXT}`,
-    inputSchema: tool.inputSchema,
-  })),
-];
+const TOOLS: readonly ToolDef[] = [...AI_TOOLS, ...WINDOW_TOOLS, ...MAIN_TOOLS];
+
+/** Each tool as `tools/list` gives it, made once: its input's JSON Schema comes from its zod. */
+const LISTED = new Map<ToolDef, McpTool>(TOOLS.map((tool) => [tool, toMcpTool(tool)]));
+
+/**
+ * What main's `ask` is told of the tool a call is for (#981): who answers it, and whether a version
+ * is saved before it. The server has the definitions; main's service never loads them.
+ */
+type ToolRoute = Pick<ToolDef, "answeredBy" | "savesVersionFirst">;
+
+/** A call to the open site or to main, for the tool `tool`, until `signal` gives up on it. */
+export type McpAsk = (
+  request: AiRequest,
+  tool: ToolRoute,
+  signal?: AbortSignal,
+) => Promise<AiResponse>;
 
 /**
  * How often a call that waits (a brief the person is checking, a change waiting for Allow) reports
@@ -75,11 +62,11 @@ const PROGRESS_EVERY_MS = 10_000;
 let catalogueText: string | undefined;
 
 /**
- * The assistant's tools (AIA-9): the command layer's, and Site Check. Not Preview, which opens the
- * browser, nor Media requests, which ask for files, nor main's site briefs, which start a new site.
+ * The assistant's tools (AIA-9): those whose definition says so. The command layer's and Site
+ * Check; not Preview, which opens the browser, nor Media requests, which ask for files, nor main's
+ * site briefs, which start a new site.
  */
-const ASSISTANT_TOOL_NAMES = new Set([...AI_TOOLS.map((tool) => tool.name), "runSiteCheck"]);
-const ASSISTANT_TOOLS = TOOLS.filter((tool) => ASSISTANT_TOOL_NAMES.has(tool.name));
+const ASSISTANT_TOOLS = TOOLS.filter((tool) => tool.forAssistant);
 
 /** Who the in-app assistant is to the tool layer: its steps are "AI (Assistant): …" (ADR 0026 §1). */
 export const assistantApp = (): McpApp => ({ id: ASSISTANT_APP_ID, name: t("assistant.name") });
@@ -115,7 +102,7 @@ function toolResult(response: AiResponse, steps: boolean): CallToolResult {
 export function createMcpServer(
   info: McpServerInfo,
   app: McpApp,
-  ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
+  ask: McpAsk,
   progressEveryMs = PROGRESS_EVERY_MS,
 ): Server {
   return serve(info, app, ask, TOOLS, false, progressEveryMs);
@@ -126,11 +113,7 @@ export function createMcpServer(
  * as an AI app's, with {@link ASSISTANT_TOOLS}, on behalf of {@link assistantApp}, and telling it
  * each command's undo step and what it changed.
  */
-export function createAssistantMcpServer(
-  info: McpServerInfo,
-  ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
-  stage?: string,
-): Server {
+export function createAssistantMcpServer(info: McpServerInfo, ask: McpAsk, stage?: string): Server {
   return serve(info, assistantApp(), ask, ASSISTANT_TOOLS, true, PROGRESS_EVERY_MS, stage);
 }
 
@@ -138,8 +121,8 @@ export function createAssistantMcpServer(
 function serve(
   info: McpServerInfo,
   app: McpApp,
-  ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
-  tools: readonly (typeof TOOLS)[number][],
+  ask: McpAsk,
+  tools: readonly ToolDef[],
   steps: boolean,
   progressEveryMs: number,
   /** The reply whose changes are held (6.9e): each request goes to its draft of the site. */
@@ -150,11 +133,7 @@ function serve(
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: tools.map(({ name, description, inputSchema }) => ({
-      name,
-      description,
-      inputSchema,
-    })),
+    tools: tools.map((tool) => LISTED.get(tool) ?? toMcpTool(tool)),
   }));
   server.setRequestHandler(ListResourcesRequestSchema, () => ({
     resources: [CATALOGUE_RESOURCE],
@@ -205,6 +184,7 @@ function serve(
           tool.kind === "query"
             ? { kind: "query", name: tool.name, input, ...held }
             : { kind: "command", name: tool.name, input, app: app.name, ...held },
+          tool,
           // The app giving up on the request: a brief stops waiting for the person.
           extra.signal,
         ),

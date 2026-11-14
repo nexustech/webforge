@@ -8,6 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 import type { CompileCssJob } from "../shared/export-worker-protocol.js";
 import { createCompileCss } from "./compile-css.js";
 
+// Timeouts (#1052): the first use of the worker's Node resources loads Tailwind, the image codecs
+// and the fonts, and a build runs them: seconds alone, several times that on a busy machine. So
+// these tests set their own timeouts.
+
 // Counts the style compilers a worker makes, to tell a kept one from a new one (#945).
 vi.mock("@webforge/pipeline", async (original) => {
   const actual = await original<typeof import("@webforge/pipeline")>();

@@ -57,7 +57,7 @@ describe("the window's own AI tools (4.9)", () => {
   it("runs Site Check, with each finding's place by id and never its text", () => {
     const { site, tools } = setUp();
 
-    const answer = tools({ kind: "query", name: "runSiteCheck", input: {} });
+    const answer = tools.runSiteCheck();
 
     expect(answer).toMatchObject({ status: "done", data: { mode: "export" } });
     const data = answer?.status === "done" && "data" in answer ? answer.data : undefined;
@@ -82,7 +82,7 @@ describe("the window's own AI tools (4.9)", () => {
         ignored: () => [],
         openPreview: () => {},
         onNetlify: () => onNetlify,
-      })({ kind: "query", name: "runSiteCheck", input: {} });
+      }).runSiteCheck();
       const data = answer?.status === "done" && "data" in answer ? answer.data : undefined;
       return (data as { found: { rule: string }[] }).found.map(({ rule }) => rule);
     };
@@ -98,28 +98,19 @@ describe("the window's own AI tools (4.9)", () => {
       allowListConfirmed: () => false,
       ignored: () => [`altText:${site.homePageId}/pic/image`],
       openPreview: () => undefined,
-    })({ kind: "query", name: "runSiteCheck", input: {} });
+    }).runSiteCheck();
 
     expect(JSON.stringify(ignored)).not.toContain('"altText"');
   });
 
   it("opens the Preview, once in a few seconds, never the phone's", () => {
     const { tools, openPreview, later } = setUp();
-    const open = () => tools({ kind: "query", name: "openPreview", input: {} });
+    const open = () => tools.openPreview();
 
     expect(open()).toEqual({ status: "done", data: { opened: true } });
     expect(open()).toMatchObject({ status: "done", data: { opened: false } });
     later(PREVIEW_AGAIN_MS);
     expect(open()).toEqual({ status: "done", data: { opened: true } });
     expect(openPreview).toHaveBeenCalledTimes(2);
-  });
-
-  it("leaves every other request to the command layer", () => {
-    const { tools } = setUp();
-
-    expect(tools({ kind: "query", name: "outline", input: {} })).toBeUndefined();
-    expect(
-      tools({ kind: "command", name: "openPreview", input: {}, app: "Claude" }),
-    ).toBeUndefined();
   });
 });
