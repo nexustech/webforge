@@ -236,4 +236,12 @@ export const assistant = {
     "The assistant's alt text for {subject}, from its file's name and the text near it. It can't see the picture, so check it says what the picture shows: nothing changes until you use it.",
   "assistant.write.alt.label": "Alt text",
   "assistant.write.history.description": "Wrote the description of {page}",
+  // The quick start's business step (QS-7, #873): the home and About pages' words.
+  "assistant.business.title": "Words for Your Pages",
+  "assistant.business.about":
+    "The assistant wrote your home and About pages' words from what you said about your business. Check each one and change what you like: nothing changes until you use them.",
+  "assistant.business.writing": "Writing your pages' words…",
+  "assistant.business.use": "Use These",
+  "assistant.business.keep": "Keep the Template's Words",
+  "assistant.business.history": "Wrote the home and About pages' words",
 } as const;

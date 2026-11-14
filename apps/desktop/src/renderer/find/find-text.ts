@@ -264,16 +264,20 @@ const NOT_PROSE: ReadonlySet<string> = new Set(["Newsletter.emailName"]);
 /** Whether `value` is a web address, an e-mail or phone link: never replaced as text. */
 const isAddress = (value: string) => /^\s*(?:https?:|mailto:|tel:|www\.)/i.test(value);
 
-/** Each text field of `node`, list items' included, with its value and whether it's rich. */
-function* textFieldsOf(
-  node: NodeDoc,
-  library: ComponentLibrary,
-): Generator<{
+/** A text field of an element: one of its own, or a field of an item in one of its lists. */
+export type TextFieldRef = {
   readonly field: string;
   readonly item?: { readonly id: string; readonly field: string };
-  readonly value: string;
-  readonly rich: boolean;
-}> {
+};
+
+/**
+ * Each text field of `node` the owner writes, list items' included, with its value and whether
+ * it's rich: Find & Replace's, and what the assistant drafts a business's words for (QS-7).
+ */
+export function* textFieldsOf(
+  node: NodeDoc,
+  library: ComponentLibrary,
+): Generator<TextFieldRef & { readonly value: string; readonly rich: boolean }> {
   const fields = library.components[node.type]?.fields ?? {};
   for (const [name, def] of Object.entries(fields)) {
     const value = node.props[name];
@@ -304,6 +308,24 @@ function* textFieldsOf(
       }
     }
   }
+}
+
+/** Sets `node`'s text field `ref` to `value`, in a draft; false if the field or item is gone. */
+export function setTextField(node: NodeDoc, ref: TextFieldRef, value: string): boolean {
+  const { item } = ref;
+  if (item === undefined) {
+    node.props[ref.field] = value;
+    return true;
+  }
+  const list = node.props[ref.field];
+  if (!Array.isArray(list)) return false;
+  const entry: unknown = list.find(
+    (each: unknown) =>
+      typeof each === "object" && each !== null && "id" in each && each.id === item.id,
+  );
+  if (typeof entry !== "object" || entry === null) return false;
+  (entry as Record<string, unknown>)[item.field] = value;
+  return true;
 }
 
 /**
@@ -416,20 +438,7 @@ export function replaceInSite(
       if (field === undefined) continue;
       const next = replaceInValue(field.value, field.rich, re, replacement, only);
       if (next.replaced === 0 || next.value.length > MAX_TEXT_LENGTH) continue;
-      const { item } = spot;
-      if (item === undefined) {
-        node.props[spot.field] = next.value;
-      } else {
-        const list = node.props[spot.field];
-        if (!Array.isArray(list)) continue;
-        const entry: unknown = list.find(
-          (each: unknown) =>
-            typeof each === "object" && each !== null && "id" in each && each.id === item.id,
-        );
-        if (typeof entry !== "object" || entry === null) continue;
-        (entry as Record<string, unknown>)[item.field] = next.value;
-      }
-      changed.push(spot);
+      if (setTextField(node, spot, next.value)) changed.push(spot);
     } else {
       const { value, max, required } = fieldOf(draft, spot);
       if (typeof value !== "string") continue;

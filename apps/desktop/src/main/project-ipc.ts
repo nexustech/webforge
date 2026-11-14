@@ -99,7 +99,12 @@ export function registerProjectHandlers(
       throw new Error(`No template ${id}`);
     },
   } = options;
+  // The quick start's *Tell us about your business* (QS-7, #873), for the site it made: in memory
+  // only, until that opening's editor takes it or another site opens here; only that opening can
+  // take it. Never written or logged.
+  let about: { readonly sessionId: string; readonly text: string } | undefined;
   const open = async (path: string) => {
+    about = undefined;
     await beforeSwitch?.();
     return recovery === undefined
       ? session.open(path)
@@ -111,10 +116,22 @@ export function registerProjectHandlers(
       return { status: "canceled" };
     }
     await beforeSwitch?.();
-    return session.create(path, {
+    about = undefined;
+    const result = await session.create(path, {
       name: request.name,
       fill: (target) => fillNewSite(target, request, template),
     });
+    if (result.status === "opened" && request.about !== undefined) {
+      about = { sessionId: result.project.sessionId, text: request.about };
+    }
+    return result;
+  });
+  // Once, and only to the editor of the opening it was given for.
+  registerIpcHandler(ipc, "takeBusinessAbout", isTrustedSender, (sessionId) => {
+    const held = about;
+    if (held === undefined || held.sessionId !== sessionId) return null;
+    about = undefined;
+    return session.staleReason(sessionId) === undefined ? held.text : null;
   });
   registerIpcHandler(ipc, "openProject", isTrustedSender, async () => {
     const path = await dialogs.chooseProjectToOpen();
@@ -143,6 +160,7 @@ export function registerProjectHandlers(
     const path = await dialogs.chooseNewProjectPath(site.name);
     if (path === undefined) return { status: "canceled" };
     await beforeSwitch?.();
+    about = undefined;
     return session.create(path, {
       name: site.name,
       fill: async ({ store }) => fillFromSiteZip(store, site),
