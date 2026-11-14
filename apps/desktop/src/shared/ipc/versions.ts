@@ -1,4 +1,9 @@
-import { DESTINATION_NAME_MAX, SITE_NAME_MAX, siteDocSchema } from "@webforge/model";
+import {
+  DESTINATION_NAME_MAX,
+  SITE_NAME_MAX,
+  sha256HexSchema,
+  siteDocSchema,
+} from "@webforge/model";
 import { z } from "zod";
 import type { ProjectResult } from "./project.js";
 import { projectResultSchema, sessionIdSchema } from "./project.js";
@@ -34,10 +39,7 @@ const versionSummarySchema = z.strictObject({
   /** When it was saved: ISO 8601, UTC. */
   createdAt: z.iso.datetime(),
   /** Its picture's hash, a JPEG of the canvas, served as `webforge-media://original/<hash>`. */
-  thumbnailHash: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/)
-    .optional(),
+  thumbnailHash: sha256HexSchema.optional(),
   /** What it alone keeps in the file: what deleting it would free. */
   bytes: z.int().nonnegative(),
   /**

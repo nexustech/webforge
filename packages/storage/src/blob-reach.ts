@@ -1,3 +1,4 @@
+import { SHA256_HEX, sha256HexSchema } from "@webforge/model";
 import type Database from "better-sqlite3";
 import { z } from "zod";
 import { ProjectFileError } from "./errors.js";
@@ -13,8 +14,6 @@ export type JsonValue = z.infer<typeof jsonValueSchema>;
 
 const utf8 = new TextDecoder("utf-8", { fatal: true });
 
-const HASH = /^[0-9a-f]{64}$/;
-
 /**
  * A version's documents in `readDocuments` order. An array, so any id (even "__proto__") works.
  * Keys a newer Webforge may add are ignored, so its versions still read.
@@ -24,7 +23,7 @@ const manifestSchema = z.object({
     z.object({
       id: z.string().min(1),
       kind: z.string().min(1),
-      hash: z.string().regex(HASH),
+      hash: sha256HexSchema,
     }),
   ),
 });
@@ -73,7 +72,7 @@ function collectHashes(value: unknown, into: Set<string>): void {
   while (pending.length > 0) {
     const item = pending.pop();
     if (typeof item === "string") {
-      if (HASH.test(item)) into.add(item);
+      if (SHA256_HEX.test(item)) into.add(item);
     } else if (Array.isArray(item)) {
       for (const each of item) pending.push(each);
     } else if (typeof item === "object" && item !== null) {

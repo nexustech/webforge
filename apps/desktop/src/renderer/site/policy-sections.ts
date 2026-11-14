@@ -1,20 +1,12 @@
 import { t } from "@webforge/i18n";
-import { insertPage, type NodeDoc, type PageId, type SiteDoc } from "@webforge/model";
+import { escapeHtml, insertPage, type NodeDoc, type PageId, type SiteDoc } from "@webforge/model";
 
 // What the pages Add Page writes for the owner to start from share (#855, #866): the Privacy,
 // Terms and Cookies pages are written from Site Settings as rich text, and open with the same
 // note that they aren't legal advice.
 
-const HTML_ESCAPES: Readonly<Record<string, string>> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-};
-
 /** `text` as rich text's paragraph: a business name or an email address can hold `&` or `<`. */
-const paragraph = (text: string) =>
-  `<p>${text.replace(/[&<>"]/g, (character) => HTML_ESCAPES[character] ?? character)}</p>`;
+const paragraph = (text: string) => `<p>${escapeHtml(text)}</p>`;
 
 /** A Text section titled `title` with `paragraphs`, in the page's colours. */
 export const textSection = (id: string, title: string, paragraphs: readonly string[]): NodeDoc => ({

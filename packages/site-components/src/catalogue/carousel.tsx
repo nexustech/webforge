@@ -3,32 +3,13 @@ import { defineComponent } from "../define.js";
 import { MARGIN_FIELD, marginClasses } from "../frame.js";
 import type { ComponentDef } from "../library.js";
 import { Picture } from "../picture.js";
+import { StrokeIcon } from "../stroke-icon.js";
 import { BUTTON_CLASSES, LEAD_TEXT_CLASSES } from "../typography.js";
 
 const CAROUSEL_LAYOUTS = ["images", "testimonials", "logos"] as const;
 const INTERVALS = ["5", "7", "10"] as const;
 /** Autoplay's options, shown together in the Edit panel. */
 const AUTOPLAY_GROUP = { id: "autoplay", label: t("field.autoplayGroup") };
-
-/** A small icon for the carousel's buttons, drawn inline so the site needs no icon font (C8). */
-function Icon({ path }: { readonly path: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={path} />
-    </svg>
-  );
-}
 
 const PREVIOUS_ICON = "m15 18-6-6 6-6";
 const NEXT_ICON = "m9 18 6-6-6-6";
@@ -95,10 +76,10 @@ const carousel = defineComponent({
               aria-label={t("siteText.stopSlides")}
             >
               <span className="hidden group-data-[playing]/carousel:inline">
-                <Icon path={PAUSE_ICON} />
+                <StrokeIcon path={PAUSE_ICON} />
               </span>
               <span className="group-data-[playing]/carousel:hidden">
-                <Icon path={PLAY_ICON} />
+                <StrokeIcon path={PLAY_ICON} />
               </span>
             </button>
           ) : null}
@@ -108,7 +89,7 @@ const carousel = defineComponent({
             data-wf-carousel-previous=""
             aria-label={t("siteText.previousSlide")}
           >
-            <Icon path={PREVIOUS_ICON} />
+            <StrokeIcon path={PREVIOUS_ICON} />
           </button>
           <button
             type="button"
@@ -116,7 +97,7 @@ const carousel = defineComponent({
             data-wf-carousel-next=""
             aria-label={t("siteText.nextSlide")}
           >
-            <Icon path={NEXT_ICON} />
+            <StrokeIcon path={NEXT_ICON} />
           </button>
         </div>
         {/* Focusable, so the keyboard can scroll it without the script too. */}

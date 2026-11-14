@@ -1,10 +1,9 @@
 import { cn, type FieldRendererProps, fieldControlClass } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { oklchSchema } from "@webforge/model";
-import { hexToOklch } from "@webforge/themes";
+import { hexOf, hexToOklch } from "@webforge/themes";
 import { TriangleAlertIcon } from "lucide-react";
 import { useId, useState } from "react";
-import { hexOf } from "../color/hex.js";
 
 /** Six hex digits, with or without the `#`: what the hex box takes. */
 const HEX = /^#?([0-9a-f]{6})$/i;
