@@ -70,7 +70,7 @@ const site = {
   "assets/css/site.css": "body {}",
 };
 
-describePublisherContract("sftpPublisher", () => ({
+describePublisherContract<SftpDestination>("sftpPublisher", () => ({
   publisher: (password) => sftpPublisher({ ...options, password }),
   destination,
   siteFolder: () => server.site,

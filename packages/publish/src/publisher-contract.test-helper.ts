@@ -9,7 +9,7 @@ import { MANIFEST_FILE } from "./remote-folder.js";
 // keeps the live site whole when cancelled, tells its failures apart, and never says the password.
 
 /** A destination whose folder and port a test can change. */
-type FolderDestination = { readonly folder: string; readonly port: number };
+type FolderDestination = { readonly folder: string; readonly port?: number };
 
 /** A publisher under test, read once its server has started (`beforeAll`). */
 export type PublisherUnderTest<D extends FolderDestination> = {

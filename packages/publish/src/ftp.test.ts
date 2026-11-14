@@ -58,7 +58,7 @@ const _site = {
   "assets/css/site.css": "body {}",
 };
 
-describePublisherContract("ftpPublisher, over FTPS where it can", () => ({
+describePublisherContract<FtpDestination>("ftpPublisher, over FTPS where it can", () => ({
   publisher: (password) => ftpPublisher({ ...trusted, password }),
   destination: () => destination(secure),
   siteFolder: () => server.site,
