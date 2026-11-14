@@ -8,3 +8,4 @@ export { fileSizeLabel } from "./document-types.js";
 export { ImageField, imageFieldRenderer } from "./ImageField.js";
 export { importItems, importMessages } from "./import-media.js";
 export { addMedia, putInMedia } from "./media-commands.js";
+export { filesPlacedIn } from "./media-usage.js";

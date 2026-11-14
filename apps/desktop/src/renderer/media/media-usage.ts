@@ -41,6 +41,18 @@ function placedIn(nodes: readonly NodeDoc[], library: ComponentLibrary, into: Se
 }
 
 /**
+ * The Media files `nodes` hold, at any depth (#979): images in `media` fields, and documents
+ * linked to from `link` fields and rich text. Media counts them as placed, and copying the elements
+ * carries them to the site they are pasted in. A new kind of field that holds a file is handled in
+ * {@link placedIn}, which `field-kind-files.test.ts` checks for every kind.
+ */
+export function filesPlacedIn(nodes: readonly NodeDoc[], library: ComponentLibrary): Set<string> {
+  const files = new Set<string>();
+  placedIn(nodes, library, files);
+  return files;
+}
+
+/**
  * Media used by the whole site, so on every page: the site icon, the site's share image, and files
  * the navigation menu links to (menu items hidden in the menu editor included).
  */

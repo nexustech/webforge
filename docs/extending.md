@@ -10,13 +10,13 @@ A site component (a Hero, a Heading) is a different thing: it's what people plac
 pnpm scaffold area Bookings
 ```
 
-| What            | Command                                                      | Writes and registers                                                                                                                                                                       |
-| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| An area         | `pnpm scaffold area <Name> [--window]`                       | `renderer/<name>/area.ts` and its test, listed in the composition root; its strings file; a help page, in Help's contents, and a **?** topic                                               |
-| A panel         | `pnpm scaffold panel <Name> [--area <folder>] [--window]`    | the panel, its `register…Panel`, a `panelStory()` story and a test; an area for it, listed; its strings; a help page (its area's, if there is one), and a **?** topic for its **?** button |
-| Commands        | `pnpm scaffold commands <Name> [--area <folder>] [--window]` | `register…Commands` with one command, and a test; an area for it, listed; its strings                                                                                                      |
-| A kind of field | `pnpm scaffold field-kind <Name>`                            | `fields/<kind>/` (renderer, registration, story, test), and the kind in all seven places it touches, storing a string                                                                      |
-| An IPC domain   | `pnpm scaffold ipc-domain <Name> --site` or `--app "<why>"`  | the contract with one call, the preload's API, main's handler and its test, each registered, and the call listed as the open site's or the app's                                           |
+| What            | Command                                                      | Writes and registers                                                                                                                                                                              |
+| --------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| An area         | `pnpm scaffold area <Name> [--window]`                       | `renderer/<name>/area.ts` and its test, listed in the composition root; its strings file; a help page, in Help's contents, and a **?** topic                                                      |
+| A panel         | `pnpm scaffold panel <Name> [--area <folder>] [--window]`    | the panel, its `register…Panel`, a `panelStory()` story and a test; an area for it, listed; its strings; its area's help page (written if it isn't there), and a **?** topic for its **?** button |
+| Commands        | `pnpm scaffold commands <Name> [--area <folder>] [--window]` | `register…Commands` with one command, and a test; an area for it, listed; its strings                                                                                                             |
+| A kind of field | `pnpm scaffold field-kind <Name>`                            | `fields/<kind>/` (renderer, registration, story, test), and the kind in all seven places it touches, storing a string                                                                             |
+| An IPC domain   | `pnpm scaffold ipc-domain <Name> --site` or `--app "<why>"`  | the contract with one call, the preload's API, main's handler and its test, each registered, and the call listed as the open site's or the app's                                                  |
 
 What it writes passes `pnpm check` as it is; then make it what it should be. A panel or commands go in the folder `--area` names, or without it the name's own (`pnpm scaffold panel Notes` makes `renderer/notes/`). `--window` registers the area with the window rather than the editor (see [Two lists](#two-lists-the-editors-and-the-windows)). It refuses a name, folder, file, string key or **?** topic that's taken, and writes nothing when it refuses. An area's or a panel's help page (`docs/help/<name>.md`) is a heading and a line to write in the app's words, as `docs/help/README.md` says, and its line in that README's contents (HP-4). 2.19's `pnpm new-component` does the same for site components.
 
@@ -107,23 +107,16 @@ The selected element's own controls, in the row under the canvas toolbar (SP-4, 
 
 ## Kinds of field
 
-What a component's field is (`text`, `select`, `media`, `link`…) decides how the Edit panel draws it (2.20, B5). `FIELD_KINDS` (`renderer/fields/field-kinds.ts`) lists every kind with the renderer that draws it and that renderer's story, and its comment lists the seven places a new kind touches:
+What a component's field is (`text`, `select`, `media`, `link`…) decides how the Edit panel draws it (2.20, B5). `FIELD_KINDS` (`renderer/fields/field-kinds.ts`) lists every kind with the renderer that draws it and that renderer's story. **Its comment is the checklist for a new kind** (#979): the seven places every kind touches, from `FieldDef` to its story, then those some kinds need: its Edit panel group, a file it holds (Media's count and copying), the export's renderer, and the model.
 
-1. `FieldDef`, `StoredOne` and `ValueOne` in site-components' `schema.ts`, and the values it may hold in `field-values.ts` (`FieldValueShape`, `fieldValueSchema`);
-2. `valueReader` in `define.ts`;
-3. `toPuckField` in the engine, and its every-kind test;
-4. `FieldSpecs` in editor-ui;
-5. its renderer: the Edit panel's own, or the app's in `renderer/fields/<kind>/`, listed in `fieldRenderers`;
-6. `specOf` in `renderer/editor/edit-panel-fields.ts`;
-7. its story, and its line in `FIELD_KINDS`.
-
-Three tests fail until a kind has all it needs, each saying what to add:
+Four tests fail until a kind has all it needs, each saying what to add:
 
 - **Renderer and story:** the renderer's field-kind test (`renderer/fields/field-kinds.test.ts`) checks the kind's renderer and that its story's title exists.
 - **Puck:** the engine's every-kind test checks it maps to a Puck field.
 - **Type check:** a kind missing from `FIELD_KINDS` doesn't type-check.
+- **Files:** `renderer/media/field-kind-files.test.ts` doesn't type-check until a new kind says whether it holds a file, and then checks Media and copying find it.
 
-`pnpm scaffold field-kind` writes a kind storing a string, drawn as a text box, in all seven places; then make it store and draw what it should.
+`pnpm scaffold field-kind` writes a kind storing a string, drawn as a text box, in all seven places; then make it store and draw what it should, and go through the rest of the checklist.
 
 Some kinds belong to no component, so they skip places 1–3, 6 and `FIELD_KINDS`. They need only their `FieldSpecs` entry and a renderer:
 
