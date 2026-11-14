@@ -8,13 +8,15 @@
 //   pnpm scaffold panel <Name> [--area <folder>] [--window]
 //   pnpm scaffold commands <Name> [--area <folder>] [--window]
 //   pnpm scaffold field-kind <Name>
-//   pnpm scaffold ipc-domain <Name>
+//   pnpm scaffold ipc-domain <Name> --site | --app "<why its calls needn't name the open site>"
 //
 //   <Name>    PascalCase: Bookings, OpeningTimes. An IPC domain's is one word (Calendar).
 //   --area    the renderer folder the panel or commands go in (bookings); made if it isn't there.
 //             Without it, the name's own folder: `panel Notes` goes in notes/
 //   --window  registered by the window (WINDOW_AREAS), after the shell's own commands, rather than
 //             around the canvas (EDITOR_AREAS): see renderer/areas.ts
+//   --site    an IPC domain whose calls read or change the open site: each names the opening first
+//   --app     one whose calls don't, and why, as ipc-sessions.test.ts lists every channel (#979)
 //
 // This file has no relative imports so Node can run it directly with type stripping.
 
@@ -788,21 +790,50 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
   };
 }
 
-/** `pnpm scaffold ipc-domain`: an IPC domain with one call, from the contract to main's handler. */
-export function ipcDomainPlanFor(root: string, names: Names): Plan {
+/**
+ * Whether an IPC domain's calls read or change the open site (R6, #663): the site's name the
+ * opening first, and main refuses one for a site a hand-off has replaced; the app's say why they
+ * needn't, as `ipc-sessions.test.ts` lists every channel.
+ */
+export type IpcReach = { readonly site: true } | { readonly site: false; readonly reason: string };
+
+const SESSIONS_TEST = "apps/desktop/src/shared/ipc-sessions.test.ts";
+
+/** The sessions test with `channel` listed as the open site's, or as the app's for `reason`. */
+export function listChannel(text: string, channel: string, reach: IpcReach): string {
+  return reach.site
+    ? addEntry(text, "const SITE_CHANNELS = [", "] as const;", `${JSON.stringify(channel)},`)
+    : addEntry(
+        text,
+        "const OTHER_CHANNELS: Readonly<Record<string, string>> = {",
+        "\n};",
+        `${JSON.stringify(channel)}: ${JSON.stringify(reach.reason)},`,
+      );
+}
+
+/** `pnpm scaffold ipc-domain`: a contract, its preload API and main's handler, registered. */
+export function ipcDomainPlanFor(root: string, names: Names, reach: IpcReach | undefined): Plan {
   const { pascal, camel: domain } = names;
   if (domain !== names.file)
     throw new Error(`An IPC domain's name is one word (Calendar), not ${pascal}`);
+  if (reach === undefined || (!reach.site && reach.reason.trim() === "")) {
+    throw new Error(
+      'Say whether its calls read or change the open site: --site, or --app "<why they needn\'t>"',
+    );
+  }
   const shared = "apps/desktop/src/shared";
   const contract = `${shared}/ipc/${domain}.ts`;
   if (existsSync(join(root, contract)))
     throw new Error(`${contract} exists already: pick another name`);
   const call = `${domain}Status`;
+  const channel = `${domain}:status`;
   const handlers = `register${pascal}Handlers`;
+  const { site } = reach;
   return {
     files: {
       [contract]: [
         'import { z } from "zod";',
+        ...(site ? ['import { sessionIdSchema } from "./project.js";'] : []),
         "",
         `/** Whether the ${domain} domain is ready: say what the renderer asks the main process for. */`,
         "const statusSchema = z.strictObject({ ready: z.boolean() });",
@@ -812,10 +843,12 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         "",
         `/** IPC channels of the \`${domain}\` domain (\`${domain}:*\`). Each one's arguments are checked. */`,
         `export const ${domain}Channels = {`,
-        "  /** Whether it is ready. */",
+        site
+          ? "  /** Whether it is ready, for the opening of the site the window was loaded for. */"
+          : "  /** Whether it is ready. */",
         `  ${call}: {`,
-        `    channel: "${domain}:status",`,
-        "    request: z.tuple([]),",
+        `    channel: "${channel}",`,
+        `    request: z.tuple([${site ? "sessionIdSchema" : ""}]),`,
         "    response: statusSchema,",
         "  },",
         "} as const;",
@@ -823,7 +856,7 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         `/** \`window.webforge.${domain}\`. */`,
         `export interface ${pascal}Api {`,
         "  /** Whether it is ready. */",
-        `  status(): Promise<${pascal}Status>;`,
+        `  status(${site ? "session: string" : ""}): Promise<${pascal}Status>;`,
         "}",
         "",
       ].join("\n"),
@@ -833,7 +866,9 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         "",
         `/** \`window.webforge.${domain}\`. */`,
         `export const ${domain}Api = (call: Call): ${pascal}Api => ({`,
-        `  status: () => call("${call}"),`,
+        site
+          ? `  status: (session) => call("${call}", session),`
+          : `  status: () => call("${call}"),`,
         "});",
         "",
       ].join("\n"),
@@ -845,8 +880,21 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         `export function ${handlers}(`,
         '  ipc: Pick<IpcMain, "handle">,',
         "  isTrustedSender: (senderUrl: string) => boolean,",
-        "): void {",
-        `  registerIpcHandler(ipc, "${call}", isTrustedSender, () => ({ ready: true }));`,
+        ...(site
+          ? [
+              "  /** Whether `session` is the opening of the site open in the window. */",
+              "  isOpen: (session: string) => boolean,",
+              "): void {",
+              `  registerIpcHandler(ipc, "${call}", isTrustedSender, (session) => {`,
+              "    // A call for a site a hand-off has replaced is refused (R6, #663).",
+              '    if (!isOpen(session)) throw new Error("Not the site open in the window");',
+              "    return { ready: true };",
+              "  });",
+            ]
+          : [
+              "): void {",
+              `  registerIpcHandler(ipc, "${call}", isTrustedSender, () => ({ ready: true }));`,
+            ]),
         "}",
         "",
       ].join("\n"),
@@ -856,26 +904,35 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
         `import { ${handlers} } from "./${domain}-ipc.js";`,
         "",
         "type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;",
+        ...(site ? ["", 'const SESSION = "00000000-0000-4000-8000-000000000001";'] : []),
         "",
         "/** The handler of `channel`, called as from a renderer that `trusted` says it trusts or not. */",
-        "function invoker(channel: string, trusted = true) {",
+        `function invoker(channel: string, trusted = true${site ? ", open = true" : ""}) {`,
         "  const registered = new Map<string, Handler>();",
         "  const ipc = {",
         "    handle: (name: string, handler: Handler) => registered.set(name, handler),",
         '  } as unknown as Pick<IpcMain, "handle">;',
-        `  ${handlers}(ipc, () => trusted);`,
+        `  ${handlers}(ipc, () => trusted${site ? ", () => open" : ""});`,
         "  return (...args: unknown[]) =>",
         '    registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);',
         "}",
         "",
         `describe("${handlers}", () => {`,
         '  it("says it is ready", async () => {',
-        `    expect(await invoker("${domain}:status")()).toEqual({ ready: true });`,
+        `    expect(await invoker("${channel}")(${site ? "SESSION" : ""})).toEqual({ ready: true });`,
         "  });",
         "",
         '  it("refuses a renderer it does not trust", async () => {',
-        `    await expect(invoker("${domain}:status", false)()).rejects.toThrow();`,
+        `    await expect(invoker("${channel}", false)(${site ? "SESSION" : ""})).rejects.toThrow();`,
         "  });",
+        ...(site
+          ? [
+              "",
+              '  it("refuses a site a hand-off has replaced", async () => {',
+              `    await expect(invoker("${channel}", true, false)(SESSION)).rejects.toThrow();`,
+              "  });",
+            ]
+          : []),
         "});",
         "",
       ].join("\n"),
@@ -893,6 +950,7 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
             `${domain}: ${domain}Channels,`,
           ),
       ],
+      [SESSIONS_TEST]: [(text) => listChannel(text, channel, reach)],
       [`${shared}/webforge-api.ts`]: [
         (text) => addImport(text, `./ipc/${domain}.js`, `${pascal}Api`, true),
         (text) =>
@@ -919,13 +977,18 @@ export function ipcDomainPlanFor(root: string, names: Names): Plan {
           insertBefore(
             text,
             "    // A site double-clicked in Explorer arrives",
-            `    ${handlers}(ipcMain, isTrustedSender);\n`,
+            site
+              ? `    ${handlers}(ipcMain, isTrustedSender, (session) =>\n      projectSession.staleReason(session) === undefined,\n    );\n`
+              : `    ${handlers}(ipcMain, isTrustedSender);\n`,
           ),
       ],
     },
     next: [
       `Fill in ${contract} (the calls and their zod schemas), then main's handler and the preload's`,
       `${domain}Api. The renderer calls it as window.webforge.${domain}.`,
+      site
+        ? `Each new call that reads or changes the open site takes the opening first: list it in ${SESSIONS_TEST}'s SITE_CHANNELS.`
+        : `List each new call in ${SESSIONS_TEST}, with why it needn't name the opening, or as the site's.`,
     ],
   };
 }
@@ -952,7 +1015,12 @@ function merge(
 export function planFor(
   what: What,
   name: string,
-  { root = ".", folder, scope = "editor" }: { root?: string; folder?: string; scope?: Scope } = {},
+  {
+    root = ".",
+    folder,
+    scope = "editor",
+    reach,
+  }: { root?: string; folder?: string; scope?: Scope; reach?: IpcReach } = {},
 ): Plan {
   const names = namesOf(name);
   if (typeof names === "string") throw new Error(names);
@@ -973,7 +1041,7 @@ export function planFor(
     case "field-kind":
       return fieldKindPlanFor(root, names);
     case "ipc-domain":
-      return ipcDomainPlanFor(root, names);
+      return ipcDomainPlanFor(root, names, reach);
   }
 }
 
@@ -1055,7 +1123,7 @@ const USAGE = [
   "  pnpm scaffold panel <Name> [--area <folder>] [--window]",
   "  pnpm scaffold commands <Name> [--area <folder>] [--window]",
   "  pnpm scaffold field-kind <Name>",
-  "  pnpm scaffold ipc-domain <Name>",
+  '  pnpm scaffold ipc-domain <Name> --site | --app "<why its calls needn\'t name the open site>"',
   "",
 ].join("\n");
 
@@ -1078,9 +1146,16 @@ export function main(
   }
   try {
     const folder = option(args, "--area");
+    const why = option(args, "--app");
+    const reach: IpcReach | undefined = args.includes("--site")
+      ? { site: true }
+      : why === undefined
+        ? undefined
+        : { site: false, reason: why };
     const plan = planFor(what as What, name, {
       root,
       ...(folder === undefined ? {} : { folder }),
+      ...(reach === undefined ? {} : { reach }),
       scope: args.includes("--window") ? "window" : "editor",
     });
     const result = scaffold(plan, root, format);
