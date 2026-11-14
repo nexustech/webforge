@@ -9,6 +9,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useId } from "react";
+import type { AssistantStatus } from "../../shared/ipc/assistant.js";
 
 /**
  * Where the assistant's requests go (ADR 0026 §2's `Reach`), and who receives them: OpenRouter and
@@ -18,6 +19,17 @@ export type ConsentReach =
   | { readonly kind: "openrouter"; readonly maker: string | null }
   | { readonly kind: "server"; readonly host: string }
   | { readonly kind: "this-computer" };
+
+/** Where requests go with the provider `status` names, for the consent's wording. */
+export function reachOf(status: AssistantStatus): ConsentReach {
+  if (status.provider.kind === "openrouter") {
+    return { kind: "openrouter", maker: status.model?.maker ?? null };
+  }
+  if (status.provider.kind === "server") {
+    return { kind: "server", host: new URL(status.provider.baseUrl).host };
+  }
+  return { kind: "this-computer" };
+}
 
 /** Where requests leave this computer: the reaches a site is asked about. */
 type AwayReach = Exclude<ConsentReach, { kind: "this-computer" }>;

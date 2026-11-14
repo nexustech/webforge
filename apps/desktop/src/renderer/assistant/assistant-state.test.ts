@@ -85,6 +85,43 @@ describe("the assistant panel's state (6.9c, ADR 0026 §7)", () => {
     panel.dispose();
   });
 
+  it("ends a reply it opened on part way with all its words (#993 review)", async () => {
+    const api = createFakeAssistant({ delayMs: 5, reply: { text: "one two three four five six" } });
+    await api.send("site-1", "Hi", {});
+    await new Promise((resolve) => setTimeout(resolve, 12));
+    // Opened part way through: main's copy is taken, then words stream before the panel has it.
+    const slow = {
+      ...api,
+      conversation: async (session: string) => {
+        const copy = await api.conversation(session);
+        await new Promise((resolve) => setTimeout(resolve, 15));
+        return copy;
+      },
+    };
+    const panel = createAssistantPanel(slow, "site-1");
+    await vi.waitFor(() => expect(panel.state.getState().turns[0]?.state).toBe("done"));
+    await vi.waitFor(() =>
+      expect(panel.state.getState().turns[0]?.reply).toBe("one two three four five six"),
+    );
+    panel.dispose();
+  });
+
+  it("says a message main couldn't take failed, and logs nothing of it unhandled", async () => {
+    const api = createFakeAssistant({ delayMs: 0 });
+    const panel = createAssistantPanel(
+      { ...api, send: () => Promise.reject(new Error("IPC")) },
+      "site-1",
+    );
+    await panel.send("Hi", {});
+
+    expect(panel.state.getState()).toMatchObject({
+      refused: "failed",
+      turns: [],
+      replying: undefined,
+    });
+    panel.dispose();
+  });
+
   it("records this site's answer", async () => {
     const api = createFakeAssistant({ siteConsent: { asked: false, allowed: false } });
     const panel = createAssistantPanel(api, "site-1");

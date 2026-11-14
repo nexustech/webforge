@@ -3,6 +3,7 @@ import { itemBindingOf, validBindings } from "./bindings.js";
 import { findBrokenLinks } from "./broken-links.js";
 import {
   type Collection,
+  collectionFolderSchema,
   collectionItems,
   collectionOf,
   collectionSchema,
@@ -18,6 +19,7 @@ import {
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, MediaId, MenuItemId, PageId } from "./ids.js";
 import { syncMenuWithPages } from "./menu-sync.js";
+import { migrateSite, SiteFormatError } from "./migrations.js";
 import { rewriteRichTextLinks, richTextHref, richTextLinkValue } from "./rich-text-links.js";
 import { createSite, type PageEntry, type SiteDoc, siteDocSchema } from "./site-doc.js";
 import { siteSnapshotSchema } from "./site-snapshot.js";
@@ -105,6 +107,45 @@ describe("newCollection (6.10a)", () => {
     expect(collectionSchema.safeParse(blog({ fields: [date, date] })).success).toBe(false);
     expect(collectionSchema.safeParse(blog({ folder: "assets" })).success).toBe(false);
     expect(collectionSchema.safeParse(blog({ folder: "blog/news" })).success).toBe(false);
+  });
+});
+
+describe("collectionFolderSchema and Windows device names (#977, R16)", () => {
+  const DEVICES = [
+    "con",
+    "prn",
+    "aux",
+    "nul",
+    ...Array.from({ length: 9 }, (_, index) => `com${index + 1}`),
+    ...Array.from({ length: 9 }, (_, index) => `lpt${index + 1}`),
+  ];
+
+  it.each(DEVICES)("refuses %s, which Windows can't write a folder for", (folder) => {
+    expect(collectionFolderSchema.safeParse(folder).success).toBe(false);
+    expect(collectionSchema.safeParse(blog({ formerFolders: [folder] })).success).toBe(false);
+  });
+
+  it("keeps names that only start or end like one", () => {
+    for (const folder of ["contact", "con-2", "news-con", "com10", "lpt0", "nul1"]) {
+      expect(collectionFolderSchema.safeParse(folder).success).toBe(true);
+    }
+  });
+
+  it("opens a file whose collection is in `con` as a damaged site, not a crash", () => {
+    const site = siteWith();
+    site.collections[BLOG] = blog({ folder: "con" });
+    const raw = JSON.parse(JSON.stringify(site)) as unknown;
+
+    let error: unknown;
+    try {
+      migrateSite(raw);
+    } catch (thrown) {
+      error = thrown;
+    }
+
+    expect(error).toBeInstanceOf(SiteFormatError);
+    expect((error as SiteFormatError).code).toBe("invalid");
+    expect(migrateSite(JSON.parse(JSON.stringify(siteWith())))).toBeDefined();
   });
 });
 

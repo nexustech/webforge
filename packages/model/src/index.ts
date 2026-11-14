@@ -146,6 +146,7 @@ export {
   menuItemIdSchema,
   newId,
   nodeIdSchema,
+  pageId,
   pageIdSchema,
   sharedSectionIdSchema,
   themeIdSchema,
@@ -242,6 +243,7 @@ export {
   publishDestinationsSchema,
 } from "./publish-destinations.js";
 export { isDraftPage, previewedSite, publishedSite } from "./published-site.js";
+export { entriesOf, isKeyOf, keysOf } from "./records.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
@@ -322,8 +324,9 @@ export {
 export { SITE_CHECK_IGNORED_MAX, siteCheckIgnoredSchema } from "./site-check-ignored.js";
 export {
   allowListText,
-  RUNNING_PARTS,
-  type RunningCodePart,
+  CODE_PARTS,
+  type CodePart,
+  cssNeedsTrust,
   type SiteCodePiece,
   siteCodePieces,
   withKeptCode,

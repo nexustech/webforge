@@ -9,6 +9,7 @@ export const assistant = {
   // A link in a reply (product/14 §6.4): its address is always shown, and it opens only when clicked.
   "assistant.link.open": "Open {address} in your browser",
   "assistant.image": "Image not shown: {alt}",
+  "assistant.link.copied": "Address copied. Paste it in your browser to open it.",
   // What a reply did, besides its text.
   "assistant.tool.running": "Working on your site…",
   "assistant.tool.read.one": "Looked at 1 part of your site",
@@ -27,15 +28,15 @@ export const assistant = {
   "assistant.stop.limit-reached": "Stopped: this month's limit is reached.",
   // Why a message wasn't sent, or a reply failed (ADR 0026 §7). Never the provider's own text.
   "assistant.error.consent-needed": "The assistant needs your yes before it can work on this site.",
-  "assistant.error.not-signed-in": "Sign in to OpenRouter in Preferences › Assistant first.",
-  "assistant.error.no-model": "Choose a model in Preferences › Assistant first.",
+  "assistant.error.not-signed-in": "Sign in to OpenRouter in Settings › Assistant first.",
+  "assistant.error.no-model": "Choose a model in Settings › Assistant first.",
   "assistant.error.limit-reached":
-    "This month's limit is reached. Raise it in Preferences › Assistant, or wait for next month.",
+    "This month's limit is reached. Raise it in Settings › Assistant, or wait for next month.",
   "assistant.error.busy": "The assistant is still replying. Wait for it, or stop it.",
   "assistant.error.no-site": "Open a site to use the assistant.",
   "assistant.error.offline": "The assistant couldn't be reached. Check your internet connection.",
   "assistant.error.unauthorized":
-    "OpenRouter didn't accept the sign-in. Sign in again in Preferences › Assistant.",
+    "OpenRouter didn't accept the sign-in. Sign in again in Settings › Assistant.",
   "assistant.error.no-credit": "Your OpenRouter account has run out of credit.",
   "assistant.error.rate-limited": "Too many messages at once. Try again in a minute.",
   "assistant.error.model-unavailable":
@@ -76,7 +77,7 @@ export const assistant = {
   "assistant.consent.people":
     "If your site holds other people's details, such as names in testimonials, staff or contact details, they may be sent when the assistant works on those sections. Don't ask it to work on anything you wouldn't put on your public site.",
   "assistant.consent.off":
-    "Preferences › Assistant › Turn Off stops it at once and deletes its key from this computer.",
+    "Settings › Assistant › Turn Off stops it at once and deletes its key from this computer.",
   "assistant.consent.perSite":
     "The first time you use it on each site, {appName} asks again. Your answer stays on this computer, never in the site file.",
   "assistant.consent.agree": "Turn On",
@@ -96,4 +97,37 @@ export const assistant = {
   // A key that would go over plain http:// to another computer (ADR 0026 §7, #976).
   "assistant.error.insecure-server":
     "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Settings › Assistant, or a server on this computer.",
+  // The panel (6.9c, UX-28).
+  "assistant.panel": "Assistant",
+  "assistant.loading": "Loading…",
+  "assistant.off": "The assistant is off. Set it up to ask it to change your site.",
+  "assistant.setUp": "Set Up the Assistant…",
+  "assistant.reconsent":
+    "The assistant now sends your requests somewhere new. Read where before you turn it on again.",
+  "assistant.siteDenied": "You chose not to use the assistant on this site.",
+  "assistant.newConversation": "New Conversation",
+  "assistant.message": "Message the assistant",
+  "assistant.messagePlaceholder": "Ask for a change, such as “Make the Hero's title shorter”",
+  "assistant.send": "Send",
+  "assistant.stop": "Stop",
+  // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
+  "assistant.settings.title": "Assistant",
+  "assistant.settings.line":
+    "An AI model that changes your site when you ask. It's off until you turn it on.",
+  "assistant.settings.open": "Assistant Settings…",
+  "assistant.settings.description":
+    "Turn the assistant on or off, and set how much it may spend each month.",
+  "assistant.settings.on": "The assistant is on",
+  "assistant.settings.off": "The assistant is off",
+  "assistant.settings.onHint": "Turn Off stops it at once and deletes its key from this computer.",
+  "assistant.settings.offHint":
+    "Turning it on shows what it sends, and to whom, before anything is sent.",
+  "assistant.settings.turnOn": "Turn On…",
+  "assistant.settings.turnOff": "Turn Off",
+  "assistant.settings.limit": "Monthly limit",
+  "assistant.settings.limitField": "Limit in US dollars",
+  "assistant.settings.setLimit": "Set Limit",
+  "assistant.settings.limitHint":
+    "Between $1 and $1,000. You're told at 80%, and the assistant stops at the limit until next month.",
+  "assistant.settings.close": "Close",
 } as const;

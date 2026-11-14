@@ -229,9 +229,18 @@ export function createHistoryManager<D extends Objectish, S>(
 ): HistoryManager<D, S>;
 export function createHistoryManager<D extends Objectish, S>(
   options: BaseOptions<D> & { readonly selection?: SelectionAdapter<S> },
-): HistoryManager<D, S> {
+): HistoryManager<D, S> | HistoryManager<D, null> {
   // Without an adapter S is null (see the type of `selection`).
-  const selection = options.selection ?? (NO_SELECTION as unknown as SelectionAdapter<S>);
+  return options.selection === undefined
+    ? historyManagerWith(options, NO_SELECTION)
+    : historyManagerWith(options, options.selection);
+}
+
+/** {@link createHistoryManager} with its selection adapter, a do-nothing one when it has none. */
+function historyManagerWith<D extends Objectish, S>(
+  options: BaseOptions<D>,
+  selection: SelectionAdapter<S>,
+): HistoryManager<D, S> {
   const limit = options.limit ?? 200;
   const maxBytes = options.maxBytes ?? 50 * 1024 * 1024;
   const defaultWindow = options.coalesceWindowMs ?? 1000;

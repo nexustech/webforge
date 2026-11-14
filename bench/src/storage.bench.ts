@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { changedDocuments, type PageId, type SiteDoc } from "@webforge/model";
+import { changedDocuments, type SiteDoc } from "@webforge/model";
 import { ProjectStore } from "@webforge/storage";
 import { describe, test } from "vitest";
 import { measure } from "./measure.js";
@@ -27,7 +27,7 @@ describe(`autosave, a site of ${PAGES} large pages (§10)`, () => {
             ...site,
             pages: {
               ...site.pages,
-              [site.homePageId as PageId]: { ...homeOf(site), title: `Home ${edit}` },
+              [site.homePageId]: { ...homeOf(site), title: `Home ${edit}` },
             },
           };
           store.commit(changedDocuments(site, next));
