@@ -16,7 +16,6 @@ import {
 import {
   type ComponentLibrary,
   holdsOverfullSlot,
-  mediaUsedBy,
   overfillsSlots,
   videoEmbed,
   withCleanRichText,
@@ -43,7 +42,7 @@ import {
   updateSectionField,
 } from "../editor/shared-sections.js";
 import { reportFailure } from "../log.js";
-import { addMedia, importMessages, putInMedia } from "../media/index.js";
+import { addMedia, filesPlacedIn, importMessages, putInMedia } from "../media/index.js";
 import { siteSession } from "../storage/index.js";
 
 /**
@@ -87,10 +86,13 @@ function selectedNode(
   return copy === undefined ? undefined : { node: copy.node, copy };
 }
 
-/** The Media items `nodes` show, as the site has them. */
+/**
+ * The Media items `nodes` hold, as the site has them: the images they show and the documents they
+ * link to (#979), so a paste in another site has them too.
+ */
 function mediaOf(session: ClipboardSession, nodes: readonly NodeDoc[]): MediaMeta[] {
   const { media } = session.history.document.getState();
-  return [...mediaUsedBy(nodes, session.library)].flatMap((id) => {
+  return [...filesPlacedIn(nodes, session.library)].flatMap((id) => {
     const item = mediaItem(media, id);
     return item === undefined ? [] : [item];
   });

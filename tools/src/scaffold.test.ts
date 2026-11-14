@@ -60,6 +60,8 @@ const LAYERS = ["apps/desktop/src/renderer/layers/area.ts", "packages/i18n/src/e
 const FIELD_KIND = [
   "apps/desktop/src/renderer/editor/edit-panel-fields.ts",
   "apps/desktop/src/renderer/fields/field-kinds.ts",
+  "apps/desktop/src/renderer/media/field-kind-files.test.ts",
+  "packages/editor-ui/src/components/form/form-engine.stories.tsx",
   "apps/desktop/src/renderer/fields/field-renderers.ts",
   "packages/site-components/src/schema.ts",
   "packages/site-components/src/define.ts",
@@ -354,7 +356,11 @@ describe("scaffold", () => {
     expect(result.written).toContain(
       "apps/desktop/src/renderer/fields/rating/RatingField.stories.tsx",
     );
-    expect(result.changed).toHaveLength(9);
+    expect(result.changed).toHaveLength(11);
+    // The form engine's story has a field of every kind, which it type-checks (#979).
+    expect(read(root, "packages/editor-ui/src/components/form/form-engine.stories.tsx")).toContain(
+      '  rating: { kind: "rating", name: "rating", label: "Rating" },\n} satisfies',
+    );
     expect(read(root, "packages/site-components/src/schema.ts")).toContain(
       '| { readonly kind: "rating"; readonly label: string }',
     );
@@ -370,6 +376,10 @@ describe("scaffold", () => {
     );
     expect(read(root, "apps/desktop/src/renderer/fields/field-kinds.ts")).toContain(
       'rating: { editPanel: "rating", story: "Edit/Fields/Rating" },',
+    );
+    // A string holds no file, which the every-kind files test needs said (#979).
+    expect(read(root, "apps/desktop/src/renderer/media/field-kind-files.test.ts")).toContain(
+      "  rating: null,\n} as const satisfies",
     );
     expect(read(root, "apps/desktop/src/renderer/fields/field-renderers.ts")).toContain(
       "    rating: ratingField(),",
@@ -536,6 +546,18 @@ describe("scaffold's refusals", () => {
     expect(read(root, "apps/desktop/src/renderer/editor/Editor.test.tsx")).toContain(
       '.toEqual(["add", "edit", "media", "notes", "undoHistory"]);',
     );
+  });
+
+  it("gives a panel its area's help page, whatever the panel is called (#1047's review)", () => {
+    const root = copyOfRepo(PANEL);
+    scaffold(planFor("area", "Bookings", { root }), root, false);
+
+    const notes = scaffold(planFor("panel", "Notes", { root, folder: "bookings" }), root, false);
+
+    expect(notes.written.filter((path) => path.startsWith("docs/"))).toEqual([]);
+    expect(JSON.parse(read(root, "apps/desktop/src/renderer/help/help-links.json"))).toMatchObject({
+      notesPanel: { page: "bookings" },
+    });
   });
 
   it("refuses strings the app has already", () => {

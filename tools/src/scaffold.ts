@@ -338,14 +338,15 @@ export function addHelpTopic(links: string, topic: string, page: string): string
 
 /**
  * The help part of a plan: a page for `names` to write in the app's words, listed last in the Help
- * window's contents, and a **?** topic, `topic`, that opens it. A panel's page may be its area's,
- * there already (`share`); an area's is its own.
+ * window's contents, and a **?** topic, `topic`, that opens it. An area's page is its own, named
+ * after it; a panel's is its area's, `area` (its folder), shared when it's there already.
  */
-function helpPlan(root: string, names: Names, today: string, topic: string, share: boolean) {
-  const page = `${HELP}/${names.file}.md`;
+function helpPlan(root: string, names: Names, today: string, topic: string, area?: string) {
+  const id = area ?? names.file;
+  const page = `${HELP}/${id}.md`;
   const there = existsSync(join(root, page));
-  if (there && !share) throw new Error(`${page} exists already: pick another name`);
-  const opens = { [HELP_LINKS]: [(text: string) => addHelpTopic(text, topic, names.file)] };
+  if (there && area === undefined) throw new Error(`${page} exists already: pick another name`);
+  const opens = { [HELP_LINKS]: [(text: string) => addHelpTopic(text, topic, id)] };
   const button = `its ? topic is "${topic}" (<HelpButton topic="${topic}" />).`;
   if (there) return { files: {}, edits: opens, next: [`Say what it adds in ${page}; ${button}`] };
   const name = names.label.toLowerCase();
@@ -353,7 +354,7 @@ function helpPlan(root: string, names: Names, today: string, topic: string, shar
     files: {
       [page]: [
         "---",
-        `id: ${names.file}`,
+        `id: ${id}`,
         `title: ${names.label}`,
         `summary: Say in a line what the ${name} is for.`,
         "related: []",
@@ -372,7 +373,7 @@ function helpPlan(root: string, names: Names, today: string, topic: string, shar
           insertBefore(
             text,
             "\n## Writing a help page",
-            `- [${names.label}](${names.file}.md): say what it's for\n`,
+            `- [${names.label}](${id}.md): say what it's for\n`,
           ),
       ],
       ...opens,
@@ -398,7 +399,7 @@ export function areaPlanFor(root: string, names: Names, scope: Scope, today: str
   );
   const area = areaPlan(root, folder, scope, [], body, name);
   const strings = stringsPlan(root, folder, names.label, []);
-  const help = helpPlan(root, names, today, names.camel, false);
+  const help = helpPlan(root, names, today, names.camel);
   return {
     files: {
       ...area.files,
@@ -463,8 +464,8 @@ export function panelPlanFor(
     `"${keys.title}": "${label}",`,
     `"${keys.empty}": "Nothing in {site} to show here yet.",`,
   ]);
-  // Its own topic: an area of the same name has the name's.
-  const help = helpPlan(root, names, today, `${camel}Panel`, true);
+  // Its area's page, and its own topic: the area has the area's name's.
+  const help = helpPlan(root, names, today, `${camel}Panel`, folder);
   return {
     files: {
       [`${dir}/${pascal}Panel.tsx`]: [
@@ -864,11 +865,27 @@ export function fieldKindPlanFor(root: string, names: Names): Plan {
             `  ${kind}: { editPanel: "${kind}", story: "${story}" },\n`,
           ),
       ],
+      // 4, still: the form engine's story shows a field of every kind (#979).
+      "packages/editor-ui/src/components/form/form-engine.stories.tsx": [
+        (text) =>
+          insertBefore(
+            text,
+            "} satisfies { readonly [K in FieldKind]",
+            `  ${kind}: { kind: "${kind}", name: "${kind}", label: "${names.label}" },\n`,
+          ),
+      ],
+      // 9. Whether it holds a file: a string doesn't (#979). One that does gives a value there.
+      [`${RENDERER}/media/field-kind-files.test.ts`]: [
+        (text) =>
+          addEntry(text, "const HOLDING_A_FILE = {", "} as const satisfies", `${kind}: null,`),
+      ],
     },
     next: [
       `The "${kind}" kind stores a string and is drawn as a text box. Make it what it should be:`,
       "what it stores (schema.ts's StoredOne, define.ts's valueReader, field-values.ts's fieldValueSchema),",
       `what its renderer needs (field-spec.ts) and how it draws (${dir}/${pascal}Field.tsx).`,
+      "Then the rest of field-kinds.ts's checklist, as it needs them: its Edit panel group, a file it",
+      "holds (field-kind-files.test.ts lists it as holding none), the export, the model.",
     ],
   };
 }
