@@ -11,6 +11,7 @@ import { shallow } from "zustand/shallow";
 import type { CustomDevice } from "../../shared/ipc/prefs.js";
 import type { WebforgeApi } from "../../shared/webforge-api.js";
 import { createSectionPreviews } from "../add/index.js";
+import { RewriteHost } from "../assistant/RewriteHost.js";
 import { CanvasElementMenu } from "../element-menu/CanvasElementMenu.js";
 import { createErrorReporter, type ReportError } from "../error-reporting.js";
 import { RichTextLinkHost } from "../links/RichTextLinkHost.js";
@@ -30,6 +31,7 @@ import {
   usePreferences,
 } from "../shell/preferences-store.js";
 import { REGION_ATTRIBUTE } from "../shell/regions.js";
+import { siteSession } from "../storage/index.js";
 import { type Area, connectAreas, type EditorContext, type EditorDialogs } from "./areas.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
@@ -381,6 +383,12 @@ export function Editor({
       <CanvasBreadcrumbs session={session} engine={engine} />
       <SharedRegionBanner session={session} />
       <RichTextLinkHost session={session} engine={engine} />
+      <RewriteHost
+        session={session}
+        engine={engine}
+        api={api.assistant}
+        sessionId={siteSession()}
+      />
       <SharedSectionNameDialog session={session} naming={naming} onClose={() => setNaming(null)} />
       <CanvasElementMenu
         engine={engine}

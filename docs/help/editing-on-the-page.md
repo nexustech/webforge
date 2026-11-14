@@ -42,7 +42,8 @@ While you type, a small toolbar offers:
 - **Highlight** and **Text colour**, from your theme's colours;
 - **Link…** and **Remove link** (see [Links](links.md));
 - bulleted and numbered lists;
-- alignment.
+- alignment;
+- **Rewrite…**, while the assistant is on: a friendlier or shorter version of the selected text, or its spelling and grammar fixed, for you to check first (see [Rewriting text](assistant.md#rewriting-text)).
 
 Keys while typing:
 

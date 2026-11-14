@@ -355,6 +355,7 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     setNavigation: (navigation) => changeContext({ parts: { ...parts, navigation } }),
 
     setLinkPicker: richText.setLinkPicker,
+    setTextRewriter: richText.setTextRewriter,
 
     // Replaces every binding: one left out goes. The other parts stay as they are.
     setSettings: (next) => {

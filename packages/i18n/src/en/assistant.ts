@@ -195,4 +195,17 @@ export const assistant = {
     "With these models, the model's maker may keep what you send, your site's text included, or use it to train its models.",
   "assistant.model.allowRetainingConfirm": "Allow Them",
   "assistant.model.openRouterKey": "An OpenRouter key, instead of signing in",
+  // The format toolbar's Rewrite (G25a, #873): the assistant's suggestion, reviewed before it's used.
+  "assistant.rewrite.title": "Rewrite Text",
+  "assistant.rewrite.description":
+    "{how}: the assistant's suggestion. Your text changes only if you use it.",
+  "assistant.rewrite.original": "Your text",
+  "assistant.rewrite.suggestion": "Suggestion",
+  "assistant.rewrite.writing": "Writing…",
+  "assistant.rewrite.formatting": "Bold, italic, colours and links in this text aren't kept.",
+  "assistant.rewrite.tooLong":
+    "Select less text: the assistant rewrites up to {count} characters at a time.",
+  "assistant.rewrite.use": "Use This",
+  "assistant.rewrite.again": "Try Again",
+  "assistant.rewrite.cancel": "Cancel",
 } as const;

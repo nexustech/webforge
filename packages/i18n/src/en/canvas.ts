@@ -39,6 +39,11 @@ export const canvas = {
   // The rich-text toolbar's links (1.23, F-ED-3).
   "canvas.richText.link": "Link…",
   "canvas.richText.removeLink": "Remove link",
+  // The assistant's Rewrite menu (G25a, #873): it goes back to this label once one is chosen.
+  "canvas.richText.rewrite": "Rewrite…",
+  "canvas.richText.rewrite.friendlier": "Friendlier",
+  "canvas.richText.rewrite.shorter": "Shorter",
+  "canvas.richText.rewrite.grammar": "Fix spelling and grammar",
   // A highlight or a text colour from the theme's roles (2.25, ST-3), as the glossary names them.
   "canvas.richText.highlight": "Highlight",
   "canvas.richText.highlight.none": "No highlight",
