@@ -1,15 +1,31 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
-import { createPipeline } from "@webforge/pipeline";
+import { createPipeline, type PipelineResources } from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
-import { tempDirFactory } from "@webforge/test-utils/vitest";
+import { scaledTestTimeout, tempDirFactory } from "@webforge/test-utils/vitest";
 import { fontFacesFor } from "@webforge/themes";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import type { ExportJob } from "../shared/export-worker-protocol.js";
 import { type ExportChannel, runExport } from "./run-export.js";
+
+// Timeouts (#1052): the first use of the worker's Node resources loads Tailwind, the image codecs
+// and the fonts, and a build runs them: seconds alone, several times that on a busy machine. So
+// these tests set their own timeouts.
+
+let resources: PipelineResources | undefined;
+
+/** The pipeline's Node resources, loaded once for the file: each load compiles the image codecs. */
+async function loadResources(): Promise<PipelineResources> {
+  resources ??= await loadNodeResources();
+  return resources;
+}
+
+beforeAll(async () => {
+  await loadResources();
+}, scaledTestTimeout(60_000));
 
 const tempDir = tempDirFactory("webforge-run-export-");
 
@@ -20,7 +36,7 @@ function channel(signal = new AbortController().signal): ExportChannel {
 
 /** An export of `snapshot`, with the site's font files as the main process sends them (2.2). */
 async function job(snapshot: SiteSnapshot, destination: string): Promise<ExportJob> {
-  const { readFont } = await loadNodeResources();
+  const { readFont } = await loadResources();
   const fonts = await Promise.all(
     fontFacesFor(snapshot.theme).map(async (face) => ({
       file: face.file,
@@ -43,7 +59,7 @@ describe("runExport", () => {
     const destination = join(tempDir(), "site");
     const stages: string[] = [];
 
-    await runExport(await job(sampleSite(), destination), loadNodeResources, {
+    await runExport(await job(sampleSite(), destination), loadResources, {
       ...channel(),
       onProgress: (progress) => stages.push(progress.stage),
     });
@@ -56,11 +72,7 @@ describe("runExport", () => {
   it("builds the site and writes it to the destination", async () => {
     const destination = join(tempDir(), "site");
 
-    const outcome = await runExport(
-      await job(sampleSite(), destination),
-      loadNodeResources,
-      channel(),
-    );
+    const outcome = await runExport(await job(sampleSite(), destination), loadResources, channel());
 
     expect(outcome).toMatchObject({
       type: "exported",
@@ -85,7 +97,7 @@ describe("runExport", () => {
         format: "zip",
         output: { minify: true, developerFiles: true },
       },
-      loadNodeResources,
+      loadResources,
       channel(),
     );
 
@@ -123,7 +135,7 @@ describe("runExport", () => {
 
     const outcome = await runExport(
       await job(withBrokenLink, join(tempDir(), "site")),
-      loadNodeResources,
+      loadResources,
       channel(),
     );
 
@@ -147,7 +159,7 @@ describe("runExport", () => {
       layout: { header: [{ type: "NoSuchComponent", props: { id: "c" } }], footer: [] },
     };
 
-    const outcome = await runExport(await job(broken, destination), loadNodeResources, channel());
+    const outcome = await runExport(await job(broken, destination), loadResources, channel());
 
     expect(outcome).toEqual({ type: "failed", code: "build-failed", detail: "unknown-component" });
     expect(existsSync(destination)).toBe(false);
@@ -157,11 +169,7 @@ describe("runExport", () => {
     const destination = tempDir();
     writeFileSync(join(destination, "notes.txt"), "mine");
 
-    const outcome = await runExport(
-      await job(sampleSite(), destination),
-      loadNodeResources,
-      channel(),
-    );
+    const outcome = await runExport(await job(sampleSite(), destination), loadResources, channel());
 
     expect(outcome).toEqual({
       type: "failed",
@@ -175,7 +183,7 @@ describe("runExport", () => {
 
     const outcome = await runExport(
       { ...(await job(sampleSite(), destination)), fonts: [] },
-      loadNodeResources,
+      loadResources,
       channel(),
     );
 
@@ -202,7 +210,7 @@ describe("runExport", () => {
 
     const outcome = await runExport(
       await job(sampleSite(), destination),
-      loadNodeResources,
+      loadResources,
       channel(controller.signal),
     );
 
@@ -225,7 +233,7 @@ describe("runExport", () => {
       ),
     };
 
-    const outcome = await runExport(await job(huge, destination), loadNodeResources, channel());
+    const outcome = await runExport(await job(huge, destination), loadResources, channel());
 
     expect(outcome).toEqual({
       type: "failed",
@@ -246,7 +254,7 @@ describe("runExport", () => {
       ),
     };
 
-    const outcome = await runExport(await job(named, destination), loadNodeResources, channel());
+    const outcome = await runExport(await job(named, destination), loadResources, channel());
 
     expect(outcome).toEqual({
       type: "failed",

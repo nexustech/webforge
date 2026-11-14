@@ -12,6 +12,9 @@ import {
   validateSiteChanges,
 } from "./site-documents.js";
 
+// Timeouts (#1052): fast-check makes and checks a hundred whole sites here, seconds alone and
+// several times that on a busy machine, so the property tests set their own timeouts.
+
 // validateSiteChanges (R13a): a save checks only the documents it changes, yet accepts exactly what
 // checking the whole changed site would.
 

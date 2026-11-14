@@ -1,7 +1,8 @@
 import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import {
   ASSISTANT_CONSENT_VERSION,
   type AssistantEvent,
@@ -16,8 +17,15 @@ const REOPENED = "2d3e4f5a-6b7c-4d8e-9fa0-b1c2d3e4f5a6";
 const PROJECT = "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e";
 const dirs: string[] = [];
 
-/** Waits for a reply's events: longer than vitest's second, for a busy computer's full run. */
-const until = (check: () => void) => vi.waitFor(check, { timeout: 10_000 });
+/** Waits for a reply's events, as long as the run's waits last (`WAIT_MS`, #1052). */
+const until = (check: () => void) => vi.waitFor(check);
+
+// The service loads the loop and the drafts' module with a site's first reply or draft (#892), and
+// with them sanitize-html and postcss: seconds on a busy machine, which the waits above would
+// count (#1052). Loaded once here, so each test waits only for what it tests.
+beforeAll(async () => {
+  await Promise.all([import("./assistant-loop.js"), import("./drafts.js")]);
+}, scaledTestTimeout(60_000));
 
 afterEach(() => {
   for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true });

@@ -10,6 +10,10 @@ import { BuildError, buildSite } from "../src/build.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { PipelineResources } from "../src/resources.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 // The fonts a site exports (2.2): only the faces its theme uses, each exactly the file the
 // catalogue lists, from the packages this package depends on.
 

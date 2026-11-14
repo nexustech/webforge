@@ -1,13 +1,30 @@
 import { createHash } from "node:crypto";
 import { createSite, type PublishDestination, type SiteDoc } from "@webforge/model";
-import { createPipeline } from "@webforge/pipeline";
+import { createPipeline, type PipelineResources } from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { type DestinationPublisher, PublishError, type publisherFor } from "@webforge/publish";
 import { siteLibrary } from "@webforge/site-components";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { fontFacesFor } from "@webforge/themes";
-import { describe, expect, it, vi } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { PublishJob } from "../shared/export-worker-protocol.js";
 import { type PublishChannel, runPublish } from "./run-publish.js";
+
+// Timeouts (#1052): the first use of the worker's Node resources loads Tailwind, the image codecs
+// and the fonts, and a build runs them: seconds alone, several times that on a busy machine. So
+// these tests set their own timeouts.
+
+let resources: PipelineResources | undefined;
+
+/** The pipeline's Node resources, loaded once for the file: each load compiles the image codecs. */
+async function loadResources(): Promise<PipelineResources> {
+  resources ??= await loadNodeResources();
+  return resources;
+}
+
+beforeAll(async () => {
+  await loadResources();
+}, scaledTestTimeout(60_000));
 
 const destination: PublishDestination = {
   id: "6f1c1b6e-8a3e-4c1e-9d55-2f5c1e0a7b10",
@@ -33,7 +50,7 @@ function site(): SiteDoc {
 
 /** A publish of `doc`, with its font files as the main process sends them. */
 async function job(doc: SiteDoc): Promise<PublishJob> {
-  const { readFont } = await loadNodeResources();
+  const { readFont } = await loadResources();
   const fonts = await Promise.all(
     fontFacesFor(doc.theme).map(async (face) => ({
       file: face.file,
@@ -94,7 +111,7 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     const stages: string[] = [];
     const publishing = await job(site());
 
-    const outcome = await runPublish(publishing, loadNodeResources, {
+    const outcome = await runPublish(publishing, loadResources, {
       ...channel(make),
       onProgress: (progress) => stages.push(progress.stage),
     });
@@ -124,7 +141,7 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
       netlifyApi: "http://127.0.0.1:51234/api/v1",
     };
 
-    await runPublish(publishing, loadNodeResources, channel(make));
+    await runPublish(publishing, loadResources, channel(make));
 
     expect(make).toHaveBeenCalledWith(destination, publishing.signIn, publishing.trust, {
       netlifyApi: "http://127.0.0.1:51234/api/v1",
@@ -160,7 +177,7 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
 
     const outcome = await runPublish(
       { ...(await job(site())), restore: "deploy-1" },
-      loadNodeResources,
+      loadResources,
       { ...channel(make), onProgress: (progress) => stages.push(progress.stage) },
     );
 
@@ -189,7 +206,7 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
 
     const outcome = await runPublish(
       { ...(await job(site())), restore: "deploy-gone" },
-      loadNodeResources,
+      loadResources,
       channel(withRestore),
     );
 
@@ -210,11 +227,11 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     };
     const publishing = { ...(await job(site())), destination: netlify, signIn: { token: "t" } };
 
-    await runPublish(publishing, loadNodeResources, {
+    await runPublish(publishing, loadResources, {
       ...channel(fakePublisher().make),
       pipeline,
     });
-    await runPublish(await job(site()), loadNodeResources, {
+    await runPublish(await job(site()), loadResources, {
       ...channel(fakePublisher().make),
       pipeline,
     });
@@ -224,20 +241,16 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
 
   it("answers the publisher's failure by its code, and a cancel as cancelled", async () => {
     const otherSite = fakePublisher(new PublishError("other-site", "another project's folder"));
-    expect(await runPublish(await job(site()), loadNodeResources, channel(otherSite.make))).toEqual(
-      {
-        type: "failed",
-        code: "other-site",
-        detail: "other-site",
-      },
-    );
+    expect(await runPublish(await job(site()), loadResources, channel(otherSite.make))).toEqual({
+      type: "failed",
+      code: "other-site",
+      detail: "other-site",
+    });
 
     const cancelled = fakePublisher(new PublishError("cancelled", "cancelled"));
-    expect(await runPublish(await job(site()), loadNodeResources, channel(cancelled.make))).toEqual(
-      {
-        type: "cancelled",
-      },
-    );
+    expect(await runPublish(await job(site()), loadResources, channel(cancelled.make))).toEqual({
+      type: "cancelled",
+    });
   }, 60_000);
 
   it("stops a cancelled build before anything is sent", async () => {
@@ -245,9 +258,9 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     const stop = new AbortController();
     stop.abort();
 
-    expect(
-      await runPublish(await job(site()), loadNodeResources, channel(make, stop.signal)),
-    ).toEqual({ type: "cancelled" });
+    expect(await runPublish(await job(site()), loadResources, channel(make, stop.signal))).toEqual({
+      type: "cancelled",
+    });
     expect(make).not.toHaveBeenCalled();
   }, 60_000);
 });

@@ -1,16 +1,33 @@
 import type { SiteSnapshot } from "@webforge/model";
-import { createPipeline, PREVIEW_STYLESHEET } from "@webforge/pipeline";
+import { createPipeline, type PipelineResources, PREVIEW_STYLESHEET } from "@webforge/pipeline";
 import { loadNodeResources } from "@webforge/pipeline/node";
 import { siteLibrary } from "@webforge/site-components";
 import { sampleSite } from "@webforge/test-utils";
+import { scaledTestTimeout } from "@webforge/test-utils/vitest";
 import { fontFacesFor } from "@webforge/themes";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import type { PreviewJob, PreviewOutcome } from "../shared/export-worker-protocol.js";
 import { createPreviewBuilds } from "./run-preview.js";
 
+// Timeouts (#1052): the first use of the worker's Node resources loads Tailwind, the image codecs
+// and the fonts, and a build runs them: seconds alone, several times that on a busy machine. So
+// these tests set their own timeouts.
+
+let resources: PipelineResources | undefined;
+
+/** The pipeline's Node resources, loaded once for the file: each load compiles the image codecs. */
+async function loadResources(): Promise<PipelineResources> {
+  resources ??= await loadNodeResources();
+  return resources;
+}
+
+beforeAll(async () => {
+  await loadResources();
+}, scaledTestTimeout(60_000));
+
 /** A preview of `snapshot`, with the site's font files as the main process sends them (2.2). */
 async function job(snapshot: SiteSnapshot): Promise<PreviewJob> {
-  const { readFont } = await loadNodeResources();
+  const { readFont } = await loadResources();
   const fonts = await Promise.all(
     fontFacesFor(snapshot.theme).map(async (face) => ({
       file: face.file,
@@ -32,7 +49,7 @@ function paths(outcome: PreviewOutcome) {
 
 describe("createPreviewBuilds (3.2)", () => {
   it("answers with every file first, then only what each change changed", async () => {
-    const build = createPreviewBuilds(loadNodeResources, { pipeline: createPipeline(siteLibrary) });
+    const build = createPreviewBuilds(loadResources, { pipeline: createPipeline(siteLibrary) });
     const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
     const site = sampleSite();
 
@@ -82,7 +99,7 @@ describe("createPreviewBuilds (3.2)", () => {
   }, 120_000);
 
   it("fails with a code, never the site's content", async () => {
-    const build = createPreviewBuilds(loadNodeResources, { pipeline: createPipeline(siteLibrary) });
+    const build = createPreviewBuilds(loadResources, { pipeline: createPipeline(siteLibrary) });
     const preview = (each: PreviewJob) => build(each, { readMedia: async () => undefined });
     // No font files sent: the build can't write the site's fonts.
     const site = sampleSite();

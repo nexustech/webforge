@@ -67,6 +67,8 @@ describe("the renderer's modules with side effects (#896)", () => {
     ).toEqual(["./styles.css", "./shell/form-messages.js"]);
   });
 
+  // Its own timeout (#1052): it reads every module the app is built from, a few thousand files,
+  // which took 3.5–13 s alone and past its 15 s on a busy machine (131 s once).
   it("lists every module of Webforge's own imported only to load it", () => {
     const listed = new Set(SIDE_EFFECT_MODULES);
     const unlisted: string[] = [];
@@ -84,7 +86,7 @@ describe("the renderer's modules with side effects (#896)", () => {
       }
     }
     expect(unlisted).toEqual([]);
-  });
+  }, 180_000);
 
   it("lists only modules that exist", () => {
     for (const module of SIDE_EFFECT_MODULES)

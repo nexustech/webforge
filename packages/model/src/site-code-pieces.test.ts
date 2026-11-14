@@ -146,16 +146,12 @@ describe("the site's CSS, when it can load or show something (#975)", () => {
     }
   });
 
-  it("reads 200 KB of property names without a value's end in well under a second", () => {
+  it("reads 200 KB of property names without a value's end, within the test's timeout", () => {
+    // A pattern that backtracks on it runs past the test's 5 s timeout, which fails it; nothing
+    // reads a clock, which a busy machine stretches (#1052).
     const css = "list-style:".repeat(20_000);
-    let fastest = Number.POSITIVE_INFINITY;
-    for (let run = 0; run < 3; run++) {
-      const started = Date.now();
-      cssNeedsTrust(css);
-      fastest = Math.min(fastest, Date.now() - started);
-    }
 
-    expect(fastest).toBeLessThan(200);
+    expect(cssNeedsTrust(css)).toBe(false);
   });
 
   it("never asks about CSS that only changes how the site looks", () => {

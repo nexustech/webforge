@@ -26,7 +26,7 @@ Re-running a failed job hides all three, and each makes the next failure harder 
    - **What is measured:** `measureWork(app)` takes each process's `cumulativeCPUUsage` (Electron's `app.getAppMetrics()`) just before Create, and again once the hero shows. A process that starts in between, such as the export worker, counts from 0. One that exits in between is lost, so the count can only come out low.
    - **The check:** `expectWorkWithin(work, OPEN_BUDGET, what)` checks the CPU budget, then the backstop, and prints both in the report and the log, with each kind of process's share (the canvas's tab, the browser process, the GPU process, each utility process by its service name), so a rise says where it is (#945).
    - **The CPU budget** is about 30% over the most CI's runners measured for any opening, per platform. CPU-seconds scale with clock speed, and the runners differ.
-     - **CI** (`CI=true`): Linux 4.4, Windows 5.4, macOS 4.6 CPU-s (#526, 27 Oct 2026). They're set from every E2E job of 26 and 27 Oct, on `main` and on PRs, every attempt included: 31 runs per platform, about 300 openings each (six templates, a template from the start screen, Personal / CV and the example).
+     - **CI** (`CI=true`): Linux 4.4, Windows 5.4, macOS 7.3 CPU-s (#526, 27 Oct 2026; macOS re-measured by #1052, 14 Nov 2026, below). They're set from every E2E job of 26 and 27 Oct, on `main` and on PRs, every attempt included: 31 runs per platform, about 300 openings each (six templates, a template from the start screen, Personal / CV and the example).
 
        | Platform | Openings | CPU-s: least, median, most | Wall: median, slowest |
        | -------- | -------- | -------------------------- | --------------------- |
@@ -88,6 +88,17 @@ Re-running a failed job hides all three, and each makes the next failure harder 
     - **Work moved out of the opening, for the person too:** the start screen loads the editor's code once it has drawn and the window is idle (`preloadEditorWhenIdle`), so it still draws without it (#896), and a site opened from it finds it compiled. It shows about 0.4 s sooner locally.
   - **What's left, and expected:** about 0.5 CPU-s over 9 Nov locally (all 4.6–5.6 against 3.5–5.0). The worker still builds twice, on one compiler (1.2–1.4 against 0.8–1.2), and the canvas applies a second stylesheet. That's #904's price for showing a large site's first styles sooner. On CI, macOS's openings took 2.37–3.04 CPU-s, inside what #526 measured (1.15–3.51).
   - **Not re-measured:** the budgets stay #526's. If CI's openings stay above #526's most after this, re-measure them as Consequences above says, and record it here.
+- **macOS re-measured** (#1052, 14 Nov 2026). Its openings stayed above #526's most after #945, and the 4.6 budget failed about one CI run in ten: on `main`'s nightly on 14 Nov, and on PRs whose changes couldn't touch opening.
+  - **Measured:** the `[work]` lines of every macOS E2E job of 13 and 14 Nov, every attempt included: 126 jobs, 1,125 openings.
+
+    | Openings | CPU-s: least, median, 90th percentile, most | Most, a slow runner's allowance taken out |
+    | -------- | ------------------------------------------- | ----------------------------------------- |
+    | 1,125    | 1.23, 2.59, 3.67, 6.14                      | 5.61                                      |
+
+  - **Where the misses were:** 11 openings over budget, in 7 jobs, each on a runner whose openings all cost more: those jobs' medians were 3.6–4.7 CPU-s, against 2.59 over all jobs. In the dearest openings every process cost about twice its median, not one of them: the canvas's tab 2.2–3.1 (median 1.25), the styles worker 1.1–1.4 (0.66), the browser process 0.8–1.1 (0.45) and the GPU process 0.4–0.7 (0.21). Their calibration was as usual, 0.125–0.216 CPU-s, so the slow-runner allowance didn't apply: whatever makes these runners slow, the main process's JSON work doesn't show it.
+  - **What the rise since #526 is:** the median opening went from 1.92 to 2.59 CPU-s, about what #945 left as expected (#904's second compile and stylesheet).
+  - **The macOS budget is now 7.3 CPU-s,** 5.61 plus 30%, as Consequences above says to set it. Linux's and Windows' stay #526's: the misses #1052 found were all on macOS.
+  - **What it still catches:** an opening twice as costly fails on nearly every runner as slow as those 7 jobs' (their medians, doubled, are 7.2–9.5), and one three times as costly on a usual runner (2.59 × 3 = 7.8). A smaller rise on a usual runner needs `pnpm e2e:perf`, as before.
 - **A real hang still fails, just later:** a wait after up to 45 s, a unit test after its scaled timeout.
 - **On Windows, each opening's wall time is checked for hangs only** (#561), so a wait in a Windows-only branch of the open path (a retry with a delay after `EBUSY`, say) gets past it: Linux and macOS never run that branch.
   - **The median of templates.spec's openings catches it instead** (#569, `expectMedianWithin` in its `afterAll`).
