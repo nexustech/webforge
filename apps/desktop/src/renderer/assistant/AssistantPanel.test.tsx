@@ -14,7 +14,7 @@ function shown(options: FakeAssistantOptions = {}) {
   const api = createFakeAssistant({ delayMs: 0, ...options });
   const send = vi.spyOn(api, "send");
   const session = sessionWith();
-  const settings = { show: vi.fn(async () => false) };
+  const openSettings = vi.fn();
   let Panel: () => ReactNode = () => null;
   const remove = registerAssistantPanel({
     panels: {
@@ -27,11 +27,11 @@ function shown(options: FakeAssistantOptions = {}) {
     session,
     api,
     sessionId: "site-1",
-    settings,
+    openSettings,
     openLink: vi.fn(),
   });
   render(<Panel />);
-  return { api, send, session, settings, remove, user: userEvent.setup({ delay: null }) };
+  return { api, send, session, openSettings, remove, user: userEvent.setup({ delay: null }) };
 }
 
 describe("the assistant's panel (6.9c)", () => {
@@ -52,7 +52,7 @@ describe("the assistant's panel (6.9c)", () => {
   it("is off until set up in Settings, and asks again when its provider is new", async () => {
     const off = shown({ status: { ...FAKE_STATUS, enabled: false, consentVersion: null } });
     await off.user.click(await screen.findByRole("button", { name: "Set Up the Assistant…" }));
-    expect(off.settings.show).toHaveBeenCalledWith("assistant", "assistant");
+    expect(off.openSettings).toHaveBeenCalledOnce();
     cleanup();
 
     const moved = shown({
