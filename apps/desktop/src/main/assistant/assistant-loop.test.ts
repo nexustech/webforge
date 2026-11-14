@@ -77,9 +77,11 @@ function toolLayer(answers: Record<string, (args: Record<string, unknown>) => un
         inputSchema: { type: "object" as const },
       })),
     })),
-    callTool: vi.fn(async ({ name, arguments: args }) => {
+    callTool: vi.fn(async ({ name, arguments: args }, _schema, requestOptions) => {
       called.push({ name, args });
       const answer = answers[name]?.(args ?? {}) ?? { status: "invalid", message: "No tool" };
+      // As the SDK's client does: its caller giving up rejects the call, whatever the server did.
+      if (requestOptions?.signal?.aborted === true) throw new Error("Request aborted");
       return { content: [{ type: "text", text: JSON.stringify(answer) }] };
     }) as unknown as ToolClient["callTool"],
   };
@@ -126,6 +128,7 @@ async function reply(
       text += delta;
     },
     onTool: (event) => tools.push(event),
+    stillOpen: () => true,
     busyRetryMs: 1,
     ...more,
   });
@@ -304,8 +307,62 @@ describe("the assistant's loop (6.9b, ADR 0026 §1, §5)", () => {
     expect(stopped.outcome).toMatchObject({ status: "done", stop: "stopped" });
     expect(stopped.called.map((call) => call.name)).toEqual(["outline"]);
 
+    // Stop during a change: the change still happens, so its step is kept (#1046's review).
+    const during = new AbortController();
+    const kept = await reply(
+      [
+        {
+          tools: [
+            { name: "editText", args: {} },
+            { name: "addNode", args: {} },
+          ],
+        },
+      ],
+      {
+        editText: () => {
+          during.abort();
+          return changed("Edited text");
+        },
+        addNode: () => changed("Added Hero"),
+      },
+      { signal: during.signal },
+    );
+    expect(kept.outcome).toMatchObject({
+      status: "done",
+      stop: "stopped",
+      steps: [{ label: "AI (Assistant): Edited text" }],
+    });
+    expect(kept.called.map((call) => call.name)).toEqual(["editText"]);
+
     const stalled = await reply([{ stall: true }], {}, { idleMs: 20 });
     expect(stalled.outcome).toMatchObject({ status: "failed", error: "offline" });
+  });
+
+  it("makes no further call once its site isn't the open one (#1046's review)", async () => {
+    let open = true;
+    const { outcome, called, bodies } = await reply(
+      [
+        {
+          tools: [
+            { name: "outline", args: {} },
+            { name: "editText", args: {} },
+          ],
+        },
+        { text: "Done." },
+      ],
+      {
+        outline: () => {
+          // Open Recent, or a hand-off: another site is open now.
+          open = false;
+          return { status: "done", data: {} };
+        },
+        editText: () => changed("Edited text"),
+      },
+      { stillOpen: () => open },
+    );
+    expect(outcome).toMatchObject({ status: "failed", error: "no-site", steps: [] });
+    expect(called.map((call) => call.name)).toEqual(["outline"]);
+    expect(bodies).toHaveLength(1);
   });
 
   it("fails with the provider's code, keeping the steps made before", async () => {

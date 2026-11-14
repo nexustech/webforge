@@ -146,12 +146,19 @@ export type AssistantServiceOptions = {
   ) => Promise<{ readonly client: ToolClient; close(): Promise<void> }>;
   /**
    * Saves a version of `session`'s site named `name` before the assistant's first change (S20):
-   * its id, or none if it wasn't saved (or one from the last few minutes holds the site already).
+   * `saved` with its id; `held` when one from the last few minutes holds the site from before
+   * already; `failed` when none could be saved.
    */
-  readonly saveVersionBefore: (session: string, name: string) => Promise<string | undefined>;
+  readonly saveVersionBefore: (session: string, name: string) => Promise<SafetySave>;
   readonly now?: () => Date;
   readonly files?: JsonStoreFiles;
 };
+
+/** What came of saving the safety version: see {@link AssistantServiceOptions.saveVersionBefore}. */
+type SafetySave =
+  | { readonly status: "saved"; readonly versionId: string }
+  | { readonly status: "held" }
+  | { readonly status: "failed" };
 
 /** What {@link Assistant.preflight} found: the site's project id, or why nothing may be sent. */
 type Preflight =
@@ -223,10 +230,10 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   /** The replies under way, by their id: Stop aborts one. A site has one at a time. */
   const replies = new Map<string, { readonly project: string; readonly stop: AbortController }>();
   /**
-   * Each conversation's safety version (S20), by project id, saved before its first change: the
-   * version's id, or undefined if it wasn't saved, when the next change tries again.
+   * Each conversation's safety version (S20), by project id, saved before its first change. One
+   * that failed is forgotten, so the next change tries again.
    */
-  const safety = new Map<string, Promise<string | undefined>>();
+  const safety = new Map<string, Promise<SafetySave>>();
 
   const status = async (): Promise<AssistantStatus> => {
     const file = await read();
@@ -304,14 +311,19 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       return;
     }
     const label = t("assistant.version.before");
-    const saving = options.saveVersionBefore(session, label).catch(() => undefined);
+    const saving = options
+      .saveVersionBefore(session, label)
+      .catch((): SafetySave => ({ status: "failed" }));
     safety.set(project, saving);
-    const versionId = await saving;
-    if (versionId === undefined) {
+    const saved = await saving;
+    if (saved.status === "failed") {
       // Not saved: the next change tries again. The command still runs, as an AI app's does.
       safety.delete(project);
       return;
     }
+    // A recent version holds the site from before already: kept for the conversation, unnamed.
+    if (saved.status === "held") return;
+    const { versionId } = saved;
     turn.safetyVersion = { versionId, label };
     options.emit({ session, type: "safety-version", replyId: turn.replyId, versionId, label });
   };
@@ -328,12 +340,18 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   }) => {
     const { session, project, turn } = run;
     const { replyId } = turn;
+    /** Whether the reply's site is still the one open: another's is never its to read or change. */
+    const stillOpen = () => options.projectOf(session) === project;
     let outcome: ReplyOutcome;
     try {
       // Loaded with the first reply, never at start-up (#892): the loop brings the commands
       // package, and the MCP service the SDK.
       const { runReply } = await import("./assistant-loop.js");
-      const tools = await options.connectTools(() => safetyFirst(session, project, turn));
+      const tools = await options.connectTools(async () => {
+        // The window acts on whichever site it has open: not this reply's, no change is asked.
+        if (!stillOpen()) throw new Error("The reply's site isn't open");
+        await safetyFirst(session, project, turn);
+      });
       try {
         outcome = await runReply({
           fetchFn: options.fetchFn,
@@ -344,6 +362,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           message: turn.message,
           selection: run.selection,
           signal: run.signal,
+          stillOpen,
           addCost: async (usd) => (await service.addCost(usd)).reached,
           onText: (delta) => {
             turn.reply += delta;

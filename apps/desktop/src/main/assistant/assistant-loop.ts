@@ -75,8 +75,13 @@ export type ReplyOptions = {
   readonly earlier: readonly ConversationTurn[];
   readonly message: string;
   readonly selection: Selection;
-  /** Stop: no further model or tool call. */
+  /** Stop: no further model or tool call. A tool call under way finishes, its step kept. */
   readonly signal: AbortSignal;
+  /**
+   * Whether the reply's site is still the one open: another site's text and changes are never
+   * its to send or make (consent is by site, AIA-6).
+   */
+  readonly stillOpen: () => boolean;
   /** Adds a model call's cost to the month; whether its limit is reached now (§5). */
   readonly addCost: (usd: number) => Promise<boolean>;
   readonly onText: (delta: string) => void;
@@ -230,6 +235,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   const messages = opening(options);
   let toolCalls = 0;
   for (let call = 1; ; call++) {
+    if (!options.stillOpen()) return failed("no-site");
     if (signal.aborted) return done("stopped");
     if (call > REPLY_CAPS.modelCalls) return done("model-call-cap");
 
@@ -272,6 +278,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       tool_calls: result.toolCalls,
     });
     for (const asked of result.toolCalls) {
+      if (!options.stillOpen()) return failed("no-site");
       if (signal.aborted) return done("stopped");
       if (toolCalls >= REPLY_CAPS.toolCalls) return done("tool-cap");
       toolCalls += 1;
@@ -319,9 +326,9 @@ async function callTool(
   const ask = async () => {
     try {
       const result = resultSchema.safeParse(
-        await options.tools.callTool({ name, arguments: input }, undefined, {
-          signal: options.signal,
-        }),
+        // Not stopped part way: the window runs a command however its asker gives up, so
+        // the call finishes and its change is kept in the reply's steps (#1046's review).
+        await options.tools.callTool({ name, arguments: input }),
       );
       const text = result.success ? (result.data.content[0]?.text ?? "") : "";
       let answer: z.infer<typeof answerSchema> | undefined;

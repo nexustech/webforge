@@ -64,6 +64,8 @@ function setUp(
     chat?: (body: Record<string, unknown>, headers: Headers) => Response | Promise<Response>;
     /** The tool layer's answer to each tool call by its name (6.9b): a command's runs `before`. */
     tools?: Record<string, () => unknown>;
+    /** What saving the safety version comes to: saved, at first. */
+    safety?: "saved" | "held" | "failed";
   } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "webforge-assistant-"));
@@ -78,6 +80,8 @@ function setUp(
   ) as unknown as typeof fetch;
   let month = new Date(2026, 10, 13);
   const versions: string[] = [];
+  /** The site open now: another may be opened part way through a reply. */
+  let project = options.project;
   const connections = { open: 0 };
   const service = createAssistantService({
     dir,
@@ -100,8 +104,7 @@ function setUp(
     },
     fetchFn,
     appName: "Webforge",
-    projectOf: (session) =>
-      session === SESSION && options.project !== undefined ? options.project : undefined,
+    projectOf: (session) => (session === SESSION && project !== undefined ? project : undefined),
     emit: (event) => events.push(event),
     openExternal: async (url) => {
       opened.push(url);
@@ -135,13 +138,18 @@ function setUp(
     },
     saveVersionBefore: async (_session, name) => {
       versions.push(name);
-      return `version-${versions.length}`;
+      const status = options.safety ?? "saved";
+      return status === "saved" ? { status, versionId: `version-${versions.length}` } : { status };
     },
   });
   return {
     service,
     versions,
     connections,
+    /** Opens another site in the window, as Open Recent does. */
+    openOther: () => {
+      project = "7d6c5b4a-3f2e-4d1c-8b0a-9f8e7d6c5b4a";
+    },
     keys,
     fetchFn,
     events,
@@ -614,6 +622,63 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
       expect(events.filter((event) => event.type === "reply-done")).toHaveLength(3),
     );
     expect(versions).toHaveLength(2);
+  });
+
+  it("makes no change to a site opened part way through a reply (#1046's review)", async () => {
+    let calls = 0;
+    const commands: string[] = [];
+    const set = await ready({
+      chat: () => {
+        calls += 1;
+        // The person opens another site while the model is thinking.
+        set.openOther();
+        return sse(toolCall("editText", { nodeId: "hero" }), finished("tool_calls"));
+      },
+      tools: {
+        editText: () => {
+          commands.push("editText");
+          return { status: "done", label: "AI (Assistant): Edited text", entryId: "h1" };
+        },
+      },
+    });
+    const sent = await set.service.send(SESSION, "Change the hero", {});
+    expect(sent.status).toBe("sending");
+    await vi.waitFor(() => expect(set.events.at(-1)?.type).toBe("reply-failed"));
+    expect(set.events.at(-1)).toMatchObject({ error: "no-site", steps: [] });
+    expect(calls).toBe(1);
+    expect(commands).toEqual([]);
+    expect(set.versions).toEqual([]);
+  });
+
+  it("keeps a recent version as the conversation's safety version, saving no other (#1046's review)", async () => {
+    let n = 0;
+    const { service, events, versions } = await ready({
+      safety: "held",
+      chat: () => {
+        n += 1;
+        return n % 2 === 1
+          ? sse(toolCall("editText", {}), finished("tool_calls"))
+          : sse({ choices: [{ delta: { content: "Done." } }] }, finished("stop"));
+      },
+      tools: {
+        editText: () => ({
+          status: "done",
+          label: "AI (Assistant): Edited text",
+          entryId: `h${n}`,
+        }),
+      },
+    });
+    await service.send(SESSION, "One", {});
+    await vi.waitFor(() =>
+      expect(events.filter((event) => event.type === "reply-done")).toHaveLength(1),
+    );
+    await service.send(SESSION, "Two", {});
+    await vi.waitFor(() =>
+      expect(events.filter((event) => event.type === "reply-done")).toHaveLength(2),
+    );
+    expect(versions).toHaveLength(1);
+    expect(events.some((event) => event.type === "safety-version")).toBe(false);
+    expect((await service.conversation(SESSION))[0]).not.toHaveProperty("safetyVersion");
   });
 
   it("stops a reply on Stop, before its next call", async () => {

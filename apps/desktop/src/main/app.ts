@@ -820,7 +820,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         // The conversation's safety version (S20): its id, for Version History's button.
         saveVersionBefore: async (session, name) => {
           const saved = await versions.saveVersionBefore(session, name);
-          return saved.status === "saved" ? saved.version.id : undefined;
+          if (saved.status === "saved") return { status: "saved", versionId: saved.version.id };
+          return saved.status === "skipped" ? { status: "held" } : { status: "failed" };
         },
       }),
     );
