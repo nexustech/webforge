@@ -10,7 +10,6 @@ import {
 } from "./ai-ipc.js";
 import type { AppFeature } from "./app-feature.js";
 import { createClaudeExtensions } from "./claude-extension.js";
-import type { CredentialStore } from "./credential-store.js";
 import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
 import { registerMcpHandlers } from "./mcp-ipc.js";
@@ -32,7 +31,8 @@ export type AiAppsFeatureDeps = {
   readonly window: () => AiWindow | undefined;
   /** The open site: whether a window's opening is still its own, and which opening it is. */
   readonly site: AiSite & { current(): { readonly sessionId: string } | null };
-  readonly credentials: CredentialStore;
+  /** The keychain's store, for AI apps' own keys only (S2, S38). */
+  readonly credentials: Parameters<typeof createAiApps>[1];
   readonly templates: SiteBriefsOptions["templates"];
   readonly versions: Pick<Versions, "saveVersionBefore">;
   /** Looked up as each is called: the E2E tests stand in for Claude Desktop and the browser. */

@@ -4,10 +4,12 @@ import { ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import { type AssistantEvent, assistantEvents } from "../shared/ipc/assistant.js";
 import type { AiAppsFeature } from "./ai-apps-feature.js";
 import type { AppFeature } from "./app-feature.js";
-import { createAssistantService } from "./assistant/assistant-service.js";
+import {
+  type AssistantServiceOptions,
+  createAssistantService,
+} from "./assistant/assistant-service.js";
 import { createOpenRouterSignIn } from "./assistant/openrouter-sign-in.js";
 import { registerAssistantHandlers } from "./assistant-ipc.js";
-import type { CredentialStore } from "./credential-store.js";
 import type { ProjectSession } from "./project-session.js";
 import type { Versions } from "./versions-ipc.js";
 
@@ -15,7 +17,8 @@ import type { Versions } from "./versions-ipc.js";
 export type AssistantFeatureDeps = {
   /** The person's own data folder, where its settings are kept. */
   readonly userData: string;
-  readonly credentials: CredentialStore;
+  /** The keychain's store, for the assistant's provider keys only (ADR 0026). */
+  readonly credentials: AssistantServiceOptions["credentials"];
   /** Looked up as each is called: the E2E tests stand in for the model and the browser. */
   readonly electron: () => {
     readonly net: Pick<Net, "fetch">;
