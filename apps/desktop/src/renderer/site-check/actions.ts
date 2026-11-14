@@ -252,8 +252,8 @@ export function fixFor(
     return () => showSiteSettings(actions.settings, "forms");
   }
   // A link to a draft page (G37, #864): its Page Settings, where the page is published.
-  const draftPage = finding.values?.pageId as PageId | undefined;
-  if (rule === "draftLinks" && draftPage !== undefined && site.pages[draftPage] !== undefined) {
+  const draftPage = finding.values?.pageId;
+  if (rule === "draftLinks" && typeof draftPage === "string" && isPageIn(site.pages, draftPage)) {
     return () => {
       actions.session.showPage(draftPage);
       actions.commands.run(COMMAND_IDS.pageSettings);

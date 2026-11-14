@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { mediaIdSchema, menuItemIdSchema, newId, nodeIdSchema, pageIdSchema } from "./ids.js";
+import {
+  mediaIdSchema,
+  menuItemIdSchema,
+  newId,
+  nodeIdSchema,
+  pageId,
+  pageIdSchema,
+} from "./ids.js";
 
 describe("newId", () => {
   it("makes 16-character ids that every id schema accepts", () => {
@@ -30,5 +37,14 @@ describe("id schemas", () => {
 
   it.each(["", "__proto__", "-a", "a b", "a/b", "a.b", "x".repeat(65), 1])("reject %j", (id) => {
     expect(pageIdSchema.safeParse(id).success).toBe(false);
+  });
+});
+
+describe("pageId (#989)", () => {
+  it("parses a page id written in code, and refuses anything not shaped like one", () => {
+    expect(pageId("about")).toBe("about");
+    expect(() => pageId("")).toThrow();
+    expect(() => pageId("about us")).toThrow();
+    expect(() => pageId("__proto__")).toThrow();
   });
 });

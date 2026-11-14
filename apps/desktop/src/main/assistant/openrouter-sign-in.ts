@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import type { AddressInfo } from "node:net";
+import { errnoOf } from "@webforge/errors";
 import { z } from "zod";
 
 /**
@@ -118,7 +119,7 @@ async function listenOnLoopback(
         },
       };
     } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code ?? "";
+      const code = errnoOf(error) ?? "";
       if (NO_IPV6.has(code)) return { port, close: () => first.close() };
       first.close();
       // Taken at `::1` by another program: draw another port. Anything else ends the sign-in.

@@ -1,4 +1,4 @@
-import type { PageId } from "./ids.js";
+import { entriesOf } from "./records.js";
 import type { PageEntry, SiteDoc } from "./site-doc.js";
 
 /**
@@ -21,11 +21,11 @@ export function publishedSite(site: SiteDoc): SiteDoc {
       .map((page) => page.id),
   );
   if (drafts.size === 0) return site;
+  const pages: SiteDoc["pages"] = {};
+  for (const [id, page] of entriesOf(site.pages)) if (!drafts.has(id)) pages[id] = page;
   return {
     ...site,
-    pages: Object.fromEntries(
-      Object.entries(site.pages).filter(([id]) => !drafts.has(id)),
-    ) as Record<PageId, PageEntry>,
+    pages,
     pageOrder: site.pageOrder.filter((id) => !drafts.has(id)),
   };
 }
