@@ -3,27 +3,14 @@ import { t } from "@webforge/i18n";
 import { useId, useState } from "react";
 import type { AssistantApi, AssistantStatus } from "../../shared/ipc/assistant.js";
 import { reportFailure } from "../log.js";
+import { type SignInStatus, signInKey } from "./sign-in-words.js";
 
 /** The providers the person can choose (ADR 0026 §2). */
 const PROVIDERS = ["openrouter", "ollama", "lmstudio", "server"] as const;
 type ProviderKind = (typeof PROVIDERS)[number];
 
-/** How a sign-in or a key came out (ADR 0026 §7's `SignInResult`). */
-type SignInStatus = Awaited<ReturnType<AssistantApi["signIn"]>>["status"];
-
-/** The sign-in outcomes the panel words; any other reads as *failed*. */
-const SIGN_IN = [
-  "signed-in",
-  "cancelled",
-  "timed-out",
-  "refused",
-  "keychain-unavailable",
-  "offline",
-  "insecure-server",
-  "failed",
-] as const;
-const signInKey = (status: string) =>
-  `assistant.signIn.${SIGN_IN.find((each) => each === status) ?? "failed"}` as const;
+/** The names this computer goes by, where a plain http:// server is safe for a key. */
+const LOCAL_HOSTS = ["localhost", "127.0.0.1", "[::1]"];
 
 /** Props of {@link ProviderSection}. */
 export type ProviderSectionProps = {
@@ -75,7 +62,11 @@ export function ProviderSection({ status, api, onStatus }: ProviderSectionProps)
       setSaid(result.status);
     });
   };
-  const url = URL.canParse(address) ? new URL(address) : undefined;
+  // Only a web address: main refuses any other (#1020 review).
+  const parsed = URL.canParse(address) ? new URL(address) : undefined;
+  const url = parsed !== undefined && /^https?:$/.test(parsed.protocol) ? parsed : undefined;
+  /** Plain http to another computer: a key isn't sent there (insecure-server). */
+  const unencrypted = url?.protocol === "http:" && !LOCAL_HOSTS.includes(url.hostname);
   return (
     <section aria-labelledby={`${id}-title`} className="flex flex-col gap-2">
       <h3 id={`${id}-title`} className="m-0 text-sm font-semibold">
@@ -127,6 +118,12 @@ export function ProviderSection({ status, api, onStatus }: ProviderSectionProps)
             {t("assistant.provider.useServer")}
           </Button>
         </form>
+      ) : null}
+      {chosen === "server" && address !== "" && url === undefined ? (
+        <p className="m-0 text-xs text-muted-foreground">{t("assistant.provider.addressHint")}</p>
+      ) : null}
+      {chosen === "server" && unencrypted ? (
+        <p className="m-0 text-xs text-muted-foreground">{t("assistant.provider.unencrypted")}</p>
       ) : null}
       {status.provider.kind === "openrouter" && chosen === "openrouter" ? (
         status.provider.signedIn ? (

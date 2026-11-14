@@ -17,6 +17,7 @@ import {
 } from "../../shared/ipc/assistant.js";
 import { reportFailure } from "../log.js";
 import { AppConsentDialog, reachOf } from "./Consent.js";
+import { ModelSection } from "./ModelSection.js";
 import { MonthReadout } from "./MonthReadout.js";
 import { ProviderSection } from "./ProviderSection.js";
 
@@ -37,6 +38,7 @@ export type AssistantSettingsDialogProps = {
     | "finishSignIn"
     | "cancelSignIn"
     | "setKey"
+    | "models"
   >;
 };
 
@@ -120,6 +122,7 @@ export function AssistantSettingsDialog({ open, onOpenChange, api }: AssistantSe
               </p>
             </section>
             <ProviderSection status={status} api={api} onStatus={setStatus} />
+            <ModelSection status={status} api={api} onStatus={setStatus} />
             <section aria-labelledby={`${id}-limit`} className="flex flex-col gap-2">
               <h3 id={`${id}-limit`} className="m-0 text-sm font-semibold">
                 {t("assistant.settings.limit")}
