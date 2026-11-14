@@ -12,6 +12,9 @@ import { toPageDoc } from "./edit-from-action.js";
 import { pageActions, type SlotsOf } from "./page-actions.js";
 import { allNodes, ROOT_ZONE } from "./tree.js";
 
+// Timeouts (#1052): the property test draws Puck's page for each of fast-check's runs of edits,
+// undos and redos, seconds alone and several times that on a busy machine, so it sets its own.
+
 const library: ComponentLibrary = {
   components: {
     Section: {

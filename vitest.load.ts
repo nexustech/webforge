@@ -15,6 +15,15 @@ export const TIMEOUT_SCALE = Math.max(1, WORKERS / 2);
 export const scaledTimeout = (ms: number): number => Math.round(ms * TIMEOUT_SCALE);
 
 /**
+ * How long a test waits for what it waits for, by default (ADR 0014 §4, #1052): Testing Library's
+ * `waitFor` and `findBy…`, `vi.waitFor` and `expect.poll`, whose own default of one second ran out
+ * on a busy machine before React had drawn. A wait ends as soon as what it waits for happens, so a
+ * generous one costs nothing; it stays under the tests' 15 s, so a test that never gets there fails
+ * on its wait, which says what it was waiting for.
+ */
+export const WAIT_MS = scaledTimeout(10_000);
+
+/**
  * Site Check's cost test (ADR 0016), from `packages/site-check`. It times the rules against a copy
  * of the site through JSON. Coverage counts every block of the rules' JavaScript as it runs, but
  * not the native JSON copy, so under coverage the rules read as up to twice as costly (#698). So

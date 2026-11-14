@@ -30,15 +30,14 @@ describe("postsFromFiles (6.10b)", () => {
   });
 
   it("takes the first heading as the title, quickly however long its line (#974)", () => {
-    // The pattern that found it took over a minute on a line of a few thousand spaces.
+    // The pattern that found it took over a minute on a line of a few thousand spaces: a regression
+    // runs past the test's timeout, which fails it, with no clock read here (#1052).
     const spaces = " ".repeat(200_000);
-    const start = performance.now();
     const posts = postsFromFiles([
       md("long.md", `Intro\n  # New ovens ##  \nThey bake.`),
       md("spaces.md", `# a${spaces}b\n\nText`),
     ]);
 
-    expect(performance.now() - start).toBeLessThan(1000);
     expect(posts[0]).toEqual({
       title: "New ovens",
       entry: {},

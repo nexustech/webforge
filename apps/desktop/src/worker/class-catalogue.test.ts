@@ -3,6 +3,10 @@ import { loadNodeResources } from "@webforge/pipeline/node";
 import { describe, expect, it, vi } from "vitest";
 import { createClassCatalogues } from "./class-catalogue.js";
 
+// Timeouts (#1052): the first use of the worker's Node resources loads Tailwind, the image codecs
+// and the fonts, and a build runs them: seconds alone, several times that on a busy machine. So
+// these tests set their own timeouts.
+
 describe("createClassCatalogues (#276)", () => {
   it("lists the site's classes, gives their CSS, and loads each theme once", async () => {
     const load = vi.fn(loadNodeResources);

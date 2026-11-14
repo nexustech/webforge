@@ -11,6 +11,10 @@ import { createPipeline, type Pipeline, type PipelineEvent } from "../src/pipeli
 import { PREVIEW_STYLESHEET } from "../src/preview-stylesheet.js";
 import type { PipelineResources } from "../src/resources.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 // Counts the pages rendered, to tell a cached page from a rendered one.
 vi.mock("@webforge/site-components", async (original) => {
   const actual = await original<typeof components>();

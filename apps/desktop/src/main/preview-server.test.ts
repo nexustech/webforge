@@ -254,8 +254,7 @@ describe("the preview server (3.2)", () => {
     const stream = events(port, preview.base);
     const stop = await stream.opened;
     expect(preview.watching()).toBe(1);
-    const next = (count: number) =>
-      expect.poll(() => stream.received.length, { timeout: 2000 }).toBe(count);
+    const next = (count: number) => expect.poll(() => stream.received.length).toBe(count);
 
     preview.update({
       type: "previewed",
@@ -294,7 +293,7 @@ describe("the preview server (3.2)", () => {
     expect((await get(port, `${preview.base}assets/img/cake-640.webp`)).status).toBe(404);
 
     stop();
-    await expect.poll(() => preview.watching(), { timeout: 2000 }).toBe(0);
+    await expect.poll(() => preview.watching()).toBe(0);
   });
 
   it("sends the theme's values alone when nothing else in the stylesheet changed", async () => {
@@ -322,7 +321,7 @@ ${THEME_VALUES_MARKER}
 
     preview.update(stylesheetOf(sheet(".a{}", "--color-primary: blue;")));
     preview.update(stylesheetOf(sheet(".a{} .b{}", "--color-primary: blue;")));
-    await expect.poll(() => stream.received.length, { timeout: 2000 }).toBe(2);
+    await expect.poll(() => stream.received.length).toBe(2);
 
     expect(stream.received).toEqual([
       {
@@ -410,7 +409,7 @@ ${THEME_VALUES_MARKER}
 
     // Closed, then unused: it stops, and says so.
     close();
-    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce(), { timeout: 2_000 });
+    await vi.waitFor(() => expect(stopped).toHaveBeenCalledOnce());
     expect(preview.phoneBase()).toBe(undefined);
     await expect(get(phonePort, phoneBase)).rejects.toThrow();
   });
