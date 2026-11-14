@@ -80,6 +80,7 @@ function setUp(
   ) as unknown as typeof fetch;
   let month = new Date(2026, 10, 13);
   const versions: string[] = [];
+  const cancelled = { count: 0 };
   /** The site open now: another may be opened part way through a reply. */
   let project = options.project;
   const connections = { open: 0 };
@@ -136,6 +137,9 @@ function setUp(
         },
       };
     },
+    cancelQuestions: () => {
+      cancelled.count += 1;
+    },
     saveVersionBefore: async (_session, name) => {
       versions.push(name);
       const status = options.safety ?? "saved";
@@ -145,6 +149,7 @@ function setUp(
   return {
     service,
     versions,
+    cancelled,
     connections,
     /** Opens another site in the window, as Open Recent does. */
     openOther: () => {
@@ -686,7 +691,7 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     const held = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const { service, events, fetchFn } = await ready({
+    const { service, events, fetchFn, cancelled } = await ready({
       chat: () => sse(toolCall("outline", {}), finished("tool_calls")),
       tools: { outline: () => held.then(() => ({ status: "done", data: {} })) },
     });
@@ -694,6 +699,8 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     if (sent.status !== "sending") throw new Error("not sent");
     await vi.waitFor(() => expect(events.some((event) => event.type === "tool")).toBe(true));
     await service.stop(sent.replyId);
+    // A question the window asks for the reply's command closes (D7), declined.
+    expect(cancelled.count).toBe(1);
     release();
     await vi.waitFor(() => expect(events.at(-1)?.type).toBe("reply-done"));
     expect(events.at(-1)).toMatchObject({ stop: "stopped" });

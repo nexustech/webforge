@@ -66,6 +66,11 @@ export type AiBridge = {
    * no answer in time, it says so.
    */
   ask(request: unknown): Promise<AiResponse>;
+  /**
+   * Gives up on app `app`'s commands waiting for the window (the assistant's Stop, 6.9b): a
+   * question asked for one closes, and it's declined. Each still answers through `ask`.
+   */
+  cancel(app: string): void;
 };
 
 /**
@@ -176,6 +181,13 @@ export function registerAiHandlers(
         waiting.set(id, { settle, app: request.kind === "command" ? request.app : undefined });
         target.webContents.send(aiEvents.request.channel, id, request);
       });
+    },
+    cancel(app) {
+      const target = window();
+      if (target === undefined || target.webContents.isCrashed()) return;
+      for (const [id, each] of waiting) {
+        if (each.app === app) target.webContents.send(aiEvents.cancel.channel, id);
+      }
     },
   };
 }

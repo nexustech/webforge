@@ -158,7 +158,7 @@ Main runs it:
   - what the model asks for through the read tools.
 
   It never includes Media files, Custom Code, publish settings, credentials or Version History.
-- **Logs** keep the provider's kind, the model's id, token counts, cost and tool names. A marker-string test (6.9b) plants a marker in a site's text, a message and a model reply, and finds it in no log or crash report.
+- **Logs** keep the provider's kind, the model's id, token counts, cost and tool names. A marker-string test (6.9b, `assistant-defences.test.ts`) plants a marker in a site's text, a message, a model reply, a tool's arguments and a window's failure, and finds it in no log, console or file.
 
 ### 7. The `assistant` IPC domain: the panel's contract
 
@@ -407,7 +407,7 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **One reply at a time per site** (`busy`). `send` answers `sending` with the reply's id, and the reply runs on.
   - **Each reply connects afresh** through `McpService.connectAssistant`, and closes when it ends.
   - **Tool calls run one at a time.** A `busy` answer (the person is editing) waits two seconds and asks once more, then the model hears it (§6.2).
-  - **Stop** ends the reply before its next model or tool call. A tool call under way finishes, and its change is kept in the reply's steps, since the window makes it however its asker gives up. Until 6.9b's part 3, a question the window is asking (D7) waits for the person's answer. Part 3 sends the window a cancel, which ends that call as declined.
+  - **Stop** ends the reply before its next model or tool call. A tool call under way finishes, and its change is kept in the reply's steps, since the window makes it however its asker gives up. A question the window is asking for one of the reply's commands (D7) closes: the bridge's `cancel(app)` sends `ai:cancel` for each command of the assistant's waiting for the window, and the command layer, given the asker's signal, declines it.
   - **A reply ends as `no-site`** when its site is no longer the open one, as after Open Recent. It's checked before each model call, each tool call, and each command. The window acts on whichever site it has open, and another site's text and changes are never this reply's (consent is by site, AIA-6).
   - **A model call that sends nothing for a minute** ends the reply as `offline`.
   - **The caps** (§5): 25 tool calls, 12 model calls, `max_tokens` 4096. The month's limit, reached by a call, stops the reply before that call's tool calls run.

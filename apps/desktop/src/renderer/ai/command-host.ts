@@ -52,9 +52,16 @@ export function commandHost(
   };
 }
 
-/** `request` run by `api`: a query's answer, or a command's, on behalf of the app that asked. */
-export function answerRequest(api: CommandApi, request: AiRequest): Promise<AiResponse> {
+/**
+ * `request` run by `api`: a query's answer, or a command's, on behalf of the app that asked. Its
+ * asker giving up (`signal`) closes a question the command is waiting on, declined.
+ */
+export function answerRequest(
+  api: CommandApi,
+  request: AiRequest,
+  signal?: AbortSignal,
+): Promise<AiResponse> {
   return request.kind === "query"
     ? Promise.resolve(api.query(request.name, request.input))
-    : api.run(request.name, request.input, { app: request.app });
+    : api.run(request.name, request.input, { app: request.app, signal });
 }

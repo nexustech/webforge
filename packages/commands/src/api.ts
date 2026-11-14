@@ -78,14 +78,19 @@ export function createCommandApi(host: CommandHost): CommandApi {
     )(host.history.document.getState(), parsed.data, { published: host.published() });
   };
 
-  /** Asks the person to allow a change; declined when they don't, or after a minute. */
-  const allowed = async (plan: Plan, app: string): Promise<boolean> => {
+  /**
+   * Asks the person to allow a change; declined when they don't, after a minute, or when the asker
+   * gives up (the assistant's Stop), which closes the question.
+   */
+  const allowed = async (plan: Plan, actor: Actor): Promise<boolean> => {
     if (plan.confirm === undefined) return true;
+    if (actor.signal?.aborted === true) return false;
     const timeout = new AbortController();
     const timer = setTimeout(() => timeout.abort(), CONFIRM_TIMEOUT_MS);
+    actor.signal?.addEventListener("abort", () => timeout.abort());
     try {
       return await Promise.race([
-        host.confirm(plan.confirm(app), timeout.signal),
+        host.confirm(plan.confirm(actor.app), timeout.signal),
         new Promise<false>((resolve) =>
           timeout.signal.addEventListener("abort", () => resolve(false)),
         ),
@@ -128,7 +133,7 @@ export function createCommandApi(host: CommandHost): CommandApi {
             "Webforge is in Content mode: AI apps can edit text and content, not structure or style.",
         };
       }
-      if (!(await allowed(first, actor.app))) {
+      if (!(await allowed(first, actor))) {
         return { status: "declined", message: "The person didn't allow this change." };
       }
       // Planned again: the site may have changed while the person was asked.
