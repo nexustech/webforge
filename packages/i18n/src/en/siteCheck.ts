@@ -12,6 +12,9 @@ export const siteCheck = {
   "siteCheck.count.tip.one": "1 tip",
   "siteCheck.count.tip.other": "{count} tips",
   "siteCheck.fix": "Fix",
+  // The assistant drafts what's missing, for the person to review (#873).
+  "siteCheck.write": "Write One…",
+  "siteCheck.write.label": "Write one with the assistant: {item}",
   "siteCheck.ignore": "Ignore",
   "siteCheck.ignore.label": "Ignore: {item}",
   "siteCheck.show.label": "Show {item}",

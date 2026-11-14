@@ -10,6 +10,7 @@ import { siteSelectors } from "../editor/site-css.js";
 import type { CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import { fixFor, jumpTo } from "./actions.js";
+import { type SiteCheckAssistant, useAssistantWrites } from "./assistant-writes.js";
 import type { BundleActions } from "./bundle.js";
 import { describeDetail, describePlace } from "./describe.js";
 import { SiteCheckPanel } from "./SiteCheckPanel.js";
@@ -40,6 +41,8 @@ type SiteCheckPanelOptions = {
   readonly onNetlify?: ReadonlyStore<boolean>;
   /** Called while the panel is on screen with a *Must fix* in it: its first-time tip (OB-4). */
   readonly onMustFixSeen?: () => void;
+  /** The assistant, for *Write One…* where a description or alt text is missing (#873). */
+  readonly assistant?: SiteCheckAssistant;
 };
 
 /**
@@ -61,6 +64,7 @@ export function registerSiteCheckPanel(
     publishedYear,
     onNetlify,
     onMustFixSeen,
+    assistant,
   }: SiteCheckPanelOptions,
 ): () => void {
   const siteCheck = createSiteCheck(session.history.document, {
@@ -82,6 +86,7 @@ export function registerSiteCheckPanel(
 
   function SiteCheck() {
     const report = useStore(siteCheck.state, (state) => state.report);
+    const writes = useAssistantWrites(session, assistant);
     const site = session.history.document.getState();
     const mustFix = report.results.some(
       (result) => result.level === "must" && result.findings.length > 0,
@@ -115,10 +120,12 @@ export function registerSiteCheckPanel(
             detail: describeDetail(finding),
           })}
           fixFor={(rule, finding) => fixFor(rule, finding, actions)}
+          writeFor={writes.writeFor}
           onJump={(finding) => jumpTo(finding.place, actions)}
           onIgnore={(rule, finding) => siteCheck.ignore(rule, finding.key)}
           onRestore={() => siteCheck.restoreIgnored()}
         />
+        {writes.dialog}
       </div>
     );
   }

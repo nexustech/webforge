@@ -202,7 +202,7 @@ describe("missing images and alt text", () => {
     expect(findIn(altTextRule, site)).toEqual([
       expect.objectContaining({
         key: `${site.homePageId}/none/image`,
-        values: { image: "bare.jpg" },
+        values: { image: "bare.jpg", mediaId: "bare" },
       }),
       expect.objectContaining({ key: `${site.homePageId}/blanked/image` }),
     ]);
