@@ -387,8 +387,9 @@ type AssistantEvent = ReplyEvent | AppEvent;
     - the safety version is saved first;
     - one the site no longer allows is `refused`, and the rest still apply;
     - **a new element or page gets a new id each time it's made,** so the site's ids replace the draft's in later calls (#1059's review):
-      - each replay that made something reads its tree on the draft (through the reply's stage) and on the site;
-      - it pairs their ids, the new element's children's too;
+      - a staged command that made something has its tree read through the reply's stage there and then, before a later call can reorder or remove its children;
+      - its replay's tree on the site is paired with that snapshot, the new element's children's ids too;
+      - an element of another type pairs with nothing, so nothing is changed in the wrong place;
       - "add a section, then edit its heading" applies whole. A `plan` answers with no new id, so ids made inside one aren't paired, and a later call naming one is refused.
 
     The `held` event (`applied`) carries the steps, with their entry ids for _Undo these changes_, and the refused.

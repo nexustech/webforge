@@ -758,21 +758,11 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           if (!stillOpen()) throw new Error("The reply's site isn't open");
           if (turn !== undefined) await safetyFirst(session, project, turn);
         });
-        // The draft, read through the reply's stage, to pair its new ids with the site's.
-        const draft = await options
-          .connectTools(async () => {
-            throw new Error("The draft is only read");
-          }, replyId)
-          .catch(async (error: unknown) => {
-            await tools.close().catch(() => undefined);
-            throw error;
-          });
         let applied: Awaited<ReturnType<typeof applyHeld>>;
         try {
-          applied = await applyHeld(tools.client, draft.client, holding.calls, stillOpen);
+          applied = await applyHeld(tools.client, holding.calls, stillOpen);
         } finally {
           await tools.close().catch(() => undefined);
-          await draft.close().catch(() => undefined);
         }
         held.delete(project);
         const now = settled(project, replyId);

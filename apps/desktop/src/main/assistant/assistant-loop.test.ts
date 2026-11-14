@@ -446,7 +446,7 @@ describe("held changes (6.9e, Review before applying)", () => {
         change: { label: "AI (Assistant): Removed Text" },
       },
     ];
-    const applied = await applyHeld(client, toolLayer({}).client, calls, () => true);
+    const applied = await applyHeld(client, calls, () => true);
     expect(called.map((call) => [call.name, call.args])).toEqual([
       ["editText", { nodeId: "hero" }],
       ["removeNode", { nodeId: "gone" }],
@@ -457,92 +457,121 @@ describe("held changes (6.9e, Review before applying)", () => {
 
     // With the site closed, none is asked.
     const closed = toolLayer({ editText: () => changed("Edited Hero text") });
-    const none = await applyHeld(closed.client, toolLayer({}).client, calls, () => false);
+    const none = await applyHeld(closed.client, calls, () => false);
     expect(closed.called).toEqual([]);
     expect(none.refused).toHaveLength(2);
   });
 
-  it("applies a change to an element the reply added, its children too, by the site's new ids (#1059's review)", async () => {
-    /** A page whose sections each hold a Heading: every element made gets a new random id. */
-    const world = (name: string) => {
+  it("applies changes to what the reply added, by the site's new ids, after a reorder (#1059's review)", async () => {
+    /** A page whose new Features each hold three Features: each made gets an id of its own. */
+    const world = (prefix: string, staged = false, kind = "Features") => {
       let made = 0;
       const sections: { id: string; type: string; content: { id: string; type: string }[] }[] = [];
-      const newId = (kind: string) =>
-        `${name}-${kind}-${++made}-${Math.random().toString(36).slice(2, 6)}`;
+      const id = (kind: string) => `${prefix}-${kind}-${++made}`;
       const texts = new Map<string, string>();
+      // A draft's step isn't the site's: the window answers it with no undo entry.
+      const answer = (label: string, nodeId: string) => {
+        entry += 1;
+        const target = { pageId: "home", nodeId };
+        return staged
+          ? { status: "done", label, target }
+          : { status: "done", label, entryId: `h${entry}`, target };
+      };
+      const find = (nodeId: string) => {
+        for (const section of sections) {
+          const index = section.content.findIndex((child) => child.id === nodeId);
+          if (index >= 0) return { section, index };
+        }
+        return undefined;
+      };
       return {
         texts,
+        sections,
         tools: toolLayer({
           addNode: () => {
-            const id = newId("section");
+            const section = id("features");
             sections.push({
-              id,
-              type: "Section",
-              content: [{ id: newId("heading"), type: "Heading" }],
+              id: section,
+              type: kind,
+              content: [id("feature"), id("feature"), id("feature")].map((each) => ({
+                id: each,
+                type: "Feature",
+              })),
             });
-            entry += 1;
-            return {
-              status: "done",
-              label: "AI (Assistant): Added Section",
-              id,
-              entryId: `h${entry}`,
-              target: { pageId: "home", nodeId: id },
-            };
+            return { ...answer("AI (Assistant): Added Features", section), id: section };
+          },
+          moveNode: (args) => {
+            const found = find(String(args.nodeId));
+            if (found === undefined)
+              return { status: "not-found", message: "There is no element." };
+            const [moved] = found.section.content.splice(found.index, 1);
+            if (moved !== undefined) found.section.content.splice(Number(args.index), 0, moved);
+            return answer("AI (Assistant): Moved Feature", String(args.nodeId));
           },
           editText: (args) => {
-            const nodeId = String(args.nodeId);
-            const known = sections.some(
-              (section) =>
-                section.id === nodeId || section.content.some((child) => child.id === nodeId),
-            );
-            if (!known) return { status: "not-found", message: "There is no element." };
-            texts.set(nodeId, String(args.text));
-            entry += 1;
-            return {
-              status: "done",
-              label: "AI (Assistant): Edited Heading text",
-              entryId: `h${entry}`,
-              target: { pageId: "home", nodeId },
-            };
+            if (find(String(args.nodeId)) === undefined) {
+              return { status: "not-found", message: "There is no element." };
+            }
+            texts.set(String(args.nodeId), String(args.text));
+            return answer("AI (Assistant): Edited Feature text", String(args.nodeId));
           },
           pageTree: () => ({ status: "done", data: sections }),
         }),
       };
     };
-    const draft = world("draft");
-    // The reply, on the draft: a section, then its heading's text.
-    const added = await draft.tools.client.callTool({ name: "addNode", arguments: {} });
-    const section = JSON.parse(String((added.content as { text: string }[])[0]?.text)).id as string;
-    const tree = await draft.tools.client.callTool({ name: "pageTree", arguments: {} });
-    const heading = JSON.parse(String((tree.content as { text: string }[])[0]?.text)).data[0]
-      .content[0].id;
-    const calls = [
-      {
-        name: "addNode",
-        input: { location: { kind: "page", pageId: "home" }, type: "Section" },
-        change: {
-          label: "AI (Assistant): Added Section",
-          target: { pageId: "home", nodeId: section },
-        },
-        made: section,
-      },
-      {
-        name: "editText",
-        input: { location: { kind: "page", pageId: "home" }, nodeId: heading, text: "Fresh bread" },
-        change: {
-          label: "AI (Assistant): Edited Heading text",
-          target: { pageId: "home", nodeId: heading },
-        },
-      },
-    ];
 
-    const site = world("site");
-    const applied = await applyHeld(site.tools.client, draft.tools.client, calls, () => true);
+    // The reply, staged on the draft: Features, its third feature moved to the top, then reworded.
+    const draft = world("d", true);
+    const { fetchFn } = model([
+      { tools: [{ name: "addNode", args: { type: "Features" } }] },
+      { tools: [{ name: "moveNode", args: { nodeId: "d-feature-4", index: 0 } }] },
+      { tools: [{ name: "editText", args: { nodeId: "d-feature-4", text: "Open Sundays" } }] },
+      { text: "Done." },
+    ]);
+    const outcome = await runReply({
+      fetchFn,
+      endpoint: { baseUrl: "https://openrouter.ai/api/v1", key: "sk-or-v1-test" },
+      model: "anthropic/claude-model",
+      tools: draft.tools.client,
+      earlier: [],
+      message: "Add features, the Sunday one first",
+      selection: {},
+      signal: new AbortController().signal,
+      stillOpen: () => true,
+      staged: true,
+      addCost: async () => false,
+      onText: () => undefined,
+      onTool: () => undefined,
+    });
+    if (outcome.status !== "done") throw new Error("not done");
+    // The draft's order by then: the moved feature first.
+    expect(draft.sections[0]?.content.map((each) => each.id)).toEqual([
+      "d-feature-4",
+      "d-feature-2",
+      "d-feature-3",
+    ]);
+
+    const site = world("s");
+    const applied = await applyHeld(site.tools.client, outcome.held, () => true);
     expect(applied.refused).toEqual([]);
-    expect(applied.steps).toHaveLength(2);
-    // The site's own heading got the text, by its own id, not the draft's.
-    const [siteHeading] = [...site.texts.keys()];
-    expect(siteHeading).toMatch(/^site-heading-/);
-    expect(site.texts.get(siteHeading ?? "")).toBe("Fresh bread");
+    expect(applied.steps).toHaveLength(3);
+    // The site's own third feature was moved and reworded, not the one now in its place.
+    expect(site.sections[0]?.content.map((each) => each.id)).toEqual([
+      "s-feature-4",
+      "s-feature-2",
+      "s-feature-3",
+    ]);
+    expect([...site.texts]).toEqual([["s-feature-4", "Open Sundays"]]);
+
+    // What the site made isn't the same kind as the draft's: nothing pairs, so nothing is
+    // changed in the wrong place; the changes naming its children are refused.
+    const other = world("s", false, "Gallery");
+    const guarded = await applyHeld(other.tools.client, outcome.held, () => true);
+    expect(guarded.steps).toHaveLength(1);
+    expect(guarded.refused.map((each) => each.label)).toEqual([
+      "AI (Assistant): Moved Feature",
+      "AI (Assistant): Edited Feature text",
+    ]);
+    expect(other.texts.size).toBe(0);
   });
 });

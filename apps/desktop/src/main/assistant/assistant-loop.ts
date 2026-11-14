@@ -111,6 +111,11 @@ export type HeldCall = {
   readonly change: HeldChange;
   /** The new element's or page's id it made on the draft, which its replay makes afresh. */
   readonly made?: string;
+  /**
+   * What it made, as the draft's tree had it straight after: its ids and types, to pair with
+   * the replay's. Read then, as later calls of the reply may reorder or remove its children.
+   */
+  readonly snapshot?: unknown;
 };
 
 /**
@@ -323,7 +328,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       options.onTool({ callId, tool, state: "running" });
       const answered = await callTool(options, name, asked.function.arguments);
       if (answered.step !== undefined) steps.push(answered.step);
-      if (answered.held !== undefined) held.push(answered.held);
+      if (answered.held !== undefined) held.push(await withSnapshot(options.tools, answered.held));
       // A change's addresses: the links the reply added or changed, by host (S18).
       if (answered.step !== undefined || answered.held !== undefined) {
         linksIn(answered.input, links);
@@ -426,7 +431,6 @@ async function callTool(
  */
 export async function applyHeld(
   tools: ToolClient,
-  draft: ToolClient,
   calls: readonly HeldCall[],
   stillOpen: () => boolean,
 ): Promise<{ readonly steps: ReplyStep[]; readonly refused: HeldChange[] }> {
@@ -451,7 +455,7 @@ export async function applyHeld(
     steps.push(answered.step);
     if (call.made !== undefined && answered.made !== undefined) {
       ids.set(call.made, answered.made);
-      await pairTrees(draft, tools, call, answered.made, ids);
+      await pairTrees(tools, call, answered.made, ids);
     }
   }
   return { steps, refused };
@@ -512,6 +516,9 @@ function pairIds(draft: unknown, site: unknown, ids: Map<string, string>): void 
     return;
   }
   const theirs = new Map(Object.entries(site));
+  // Not the same kind of element: they aren't each other's, and neither are their children.
+  const type = Object.entries(draft).find(([key]) => key === "type")?.[1];
+  if (type !== undefined && type !== theirs.get("type")) return;
   for (const [key, value] of Object.entries(draft)) {
     const other = theirs.get(key);
     if (key === "id" && typeof value === "string" && typeof other === "string") {
@@ -523,25 +530,30 @@ function pairIds(draft: unknown, site: unknown, ids: Map<string, string>): void 
 }
 
 /**
- * Pairs the ids within what `call` made on the draft and its replay made on the site (`made`):
- * a new page's elements, or a new element's children. Their trees are the same shape, as the
- * same command made them; the draft's is read through its stage.
+ * `call` with what it made as the draft has it now, straight after it (#1059's review): a new
+ * page's tree, or a new element's subtree, read through the reply's stage.
+ */
+async function withSnapshot(draft: ToolClient, call: HeldCall): Promise<HeldCall> {
+  const page = call.change.target?.pageId;
+  if (call.made === undefined || page === undefined) return call;
+  const tree = await treeOf(draft, page);
+  const snapshot = call.made === page ? tree : nodeOf(tree, call.made);
+  return snapshot === undefined ? call : { ...call, snapshot };
+}
+
+/**
+ * Pairs the ids within what `call` made on the draft, as its snapshot has them, and what its
+ * replay made on the site (`made`): a new page's elements, or a new element's children. The
+ * same command made both, so they're the same shape, unless a type differs.
  */
 async function pairTrees(
-  draft: ToolClient,
   site: ToolClient,
   call: HeldCall,
   made: string,
   ids: Map<string, string>,
 ): Promise<void> {
   const draftPage = call.change.target?.pageId;
-  if (draftPage === undefined || call.made === undefined) return;
-  const sitePage = ids.get(draftPage) ?? draftPage;
-  const [draftTree, siteTree] = await Promise.all([
-    treeOf(draft, draftPage),
-    treeOf(site, sitePage),
-  ]);
-  // A new page: its whole tree. A new element: its own subtree.
-  if (call.made === draftPage) pairIds(draftTree, siteTree, ids);
-  else pairIds(nodeOf(draftTree, call.made), nodeOf(siteTree, made), ids);
+  if (draftPage === undefined || call.snapshot === undefined) return;
+  const siteTree = await treeOf(site, ids.get(draftPage) ?? draftPage);
+  pairIds(call.snapshot, call.made === draftPage ? siteTree : nodeOf(siteTree, made), ids);
 }
