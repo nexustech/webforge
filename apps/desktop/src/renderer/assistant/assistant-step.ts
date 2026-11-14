@@ -5,6 +5,10 @@ import type { SiteDoc } from "@webforge/model";
 /** How long the change the person accepted may take to reach the history, at the most. */
 const ARRIVAL_MS = 1000;
 
+/** An undo step's label for a change the assistant made (ADR 0026 §1): "AI (Assistant): …". */
+export const assistantLabel = (action: string): string =>
+  t("ai.history", { app: t("assistant.name"), action });
+
 /** The id of the step the history is at: the last one applied, or null with none. */
 const currentStep = (history: Pick<HistoryManager<SiteDoc, unknown>, "state">) => {
   const { entries, cursor } = history.state.getState();
@@ -33,7 +37,7 @@ export function asAssistantStep(
     stop();
     // Its own step, named for the assistant: nothing typed later merges into it. Once the history
     // has finished telling its listeners about the change, not while it does.
-    const label = t("ai.history", { app: t("assistant.name"), action: step.label });
+    const label = assistantLabel(step.label);
     queueMicrotask(() => history.mergeSince(before, label));
   });
   timer = setTimeout(stop, ARRIVAL_MS);

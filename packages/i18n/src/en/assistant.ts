@@ -208,4 +208,14 @@ export const assistant = {
   "assistant.rewrite.use": "Use This",
   "assistant.rewrite.again": "Try Again",
   "assistant.rewrite.cancel": "Cancel",
+  // Site Check's Write One… (G25b, #873): a page's description, or an image's alt text.
+  "assistant.write.description.title": "Write a Description",
+  "assistant.write.description.about":
+    "The assistant's description of {subject}, for search results and shares. Change it as you like: nothing changes until you use it.",
+  "assistant.write.description.label": "Description",
+  "assistant.write.alt.title": "Write Alt Text",
+  "assistant.write.alt.about":
+    "The assistant's alt text for {subject}, from its file's name and the text near it. It can't see the picture, so check it says what the picture shows: nothing changes until you use it.",
+  "assistant.write.alt.label": "Alt text",
+  "assistant.write.history.description": "Wrote the description of {page}",
 } as const;

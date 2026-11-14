@@ -48,6 +48,15 @@ While the assistant is on, the toolbar you see while typing has a **Rewrite…**
 
 Only the selected text is sent. The suggestion is plain text: bold, italic, colours and links in the text you selected aren't kept, and {appName} says so before you use it. What you use is one step in Undo History, named _AI (Assistant): …_. Each suggestion counts towards your monthly limit.
 
+## Writing descriptions and alt text
+
+While the assistant is on, [Site Check](site-check.md) offers **Write One…** beside a page without a description and a picture without alt text.
+
+- **A page's description:** the assistant writes one from the page's title and text, and {appName} shows it as a search result would.
+- **A picture's alt text:** the assistant writes it from the picture's file name and the text near it. It can't see the picture itself, so check it says what the picture shows. What you use becomes the picture's alt text in [Media](media.md), wherever it's placed.
+
+Change the text as you like, then click **Use This**, **Try Again** for another, or **Cancel**. What you use is one step in Undo History, named _AI (Assistant): …_.
+
 ## Asking for a change
 
 The **Assistant** panel is a tab in the left column, after **Version History**: the sparkles.

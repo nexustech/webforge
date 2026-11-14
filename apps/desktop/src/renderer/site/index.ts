@@ -12,5 +12,8 @@ export {
   setDraftPage,
   setHiddenFromNavigation,
 } from "./page-actions.js";
+// The search result card (SEO-6), where a description the assistant drafts is reviewed (#873).
+export { pagePreview } from "./page-preview.js";
 export { recipeName } from "./recipe-name.js";
 export { registerSitePanel } from "./register-site-panel.js";
+export { SearchResultCard } from "./SearchResultCard.js";
