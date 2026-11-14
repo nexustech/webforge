@@ -974,6 +974,7 @@ export function ipcDomainPlanFor(root: string, names: Names, reach: IpcReach | u
       ].join("\n"),
       [`apps/desktop/src/main/${domain}-ipc.ts`]: [
         'import type { IpcMain } from "electron";',
+        'import type { AppFeature } from "./app-feature.js";',
         'import { registerIpcHandler } from "./ipc.js";',
         "",
         `/** Registers the \`${domain}\` IPC calls: say what the main process does for them. */`,
@@ -995,6 +996,13 @@ export function ipcDomainPlanFor(root: string, names: Names, reach: IpcReach | u
               "): void {",
               `  registerIpcHandler(ipc, "${call}", isTrustedSender, () => ({ ready: true }));`,
             ]),
+        "}",
+        "",
+        `/** The \`${domain}\` calls as one of the app's features (A12): \`startApp\` lists it. */`,
+        site
+          ? `export function ${domain}Feature(isOpen: (session: string) => boolean): AppFeature {`
+          : `export function ${domain}Feature(): AppFeature {`,
+        `  return { register: (ipc, isTrustedSender) => ${handlers}(ipc, isTrustedSender${site ? ", isOpen" : ""}) };`,
         "}",
         "",
       ].join("\n"),
@@ -1071,15 +1079,17 @@ export function ipcDomainPlanFor(root: string, names: Names, reach: IpcReach | u
             text.indexOf("export function createWebforgeApi"),
           ),
       ],
+      // Last in `startApp`'s features, whose calls it registers once Electron is ready (#985).
       "apps/desktop/src/main/app.ts": [
-        (text) => addImport(text, `./${domain}-ipc.js`, handlers),
+        (text) => addImport(text, `./${domain}-ipc.js`, `${domain}Feature`),
         (text) =>
-          insertBefore(
+          addEntry(
             text,
-            "    // A site double-clicked in Explorer arrives",
+            "const features: readonly AppFeature[] = [",
+            "\n  ];",
             site
-              ? `    ${handlers}(ipcMain, isTrustedSender, (session) =>\n      projectSession.staleReason(session) === undefined,\n    );\n`
-              : `    ${handlers}(ipcMain, isTrustedSender);\n`,
+              ? `  ${domain}Feature((session) => projectSession.staleReason(session) === undefined),`
+              : `  ${domain}Feature(),`,
           ),
       ],
     },

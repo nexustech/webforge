@@ -2,6 +2,7 @@ import { siteAddressSchema } from "@webforge/model";
 import { netlifySiteAccess, PublishError, type NetlifySite as Site } from "@webforge/publish/light";
 import type { IpcMain } from "electron";
 import type { NetlifyAccount, NetlifyFailure, NetlifySite } from "../shared/ipc/netlify.js";
+import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import type { NetlifySignIns } from "./netlify-auth.js";
@@ -245,4 +246,11 @@ export function registerNetlifyHandlers(
       gone,
     ),
   );
+}
+
+/** Netlify's sign-in for publish destinations as a feature of the app (4.2, A12, #985). */
+export function netlifyFeature(deps: NetlifyDeps): AppFeature {
+  return {
+    register: (ipc, isTrustedSender) => registerNetlifyHandlers(ipc, isTrustedSender, deps),
+  };
 }
