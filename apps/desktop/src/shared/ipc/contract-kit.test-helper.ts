@@ -214,10 +214,13 @@ function makeAt(schema: z.ZodType, path: string): unknown {
   }
 }
 
+/** A value a schema accepts, or where in it the kit couldn't make one. */
+type Sample =
+  | { readonly ok: true; readonly value: unknown }
+  | { readonly ok: false; readonly where: string };
+
 /** A value `schema` accepts, or why the kit can't make one. */
-export function sampleOf(
-  schema: z.ZodType,
-): { ok: true; value: unknown } | { ok: false; where: string } {
+export function sampleOf(schema: z.ZodType): Sample {
   missing = "";
   const value = make(schema);
   if (value === undefined || value === OMIT) return { ok: false, where: missing };
@@ -328,15 +331,15 @@ export function describeChannels<Channels extends Readonly<Record<string, Channe
   describe(`the ${domain} IPC contract (#991)`, () => {
     for (const [name, { channel, request, response }] of Object.entries(channels)) {
       const given = samples[name as keyof Channels];
-      const args = given?.request ?? sampleOf(request);
-      const answer =
+      const made: Sample =
+        given?.request === undefined ? sampleOf(request) : { ok: true, value: given.request };
+      const answer: Sample =
         given !== undefined && "response" in given
           ? { ok: true, value: given.response }
           : sampleOf(response);
+      const where = (sample: Sample) => (sample.ok ? "" : sample.where);
 
       it(`${channel}: a request and an answer go through as they are`, () => {
-        const made = Array.isArray(args) ? { ok: true, value: args } : args;
-        const where = (sample: { ok: boolean; where?: string }) => sample.where ?? "";
         expect(made.ok, `${channel}'s request: give a sample (${where(made)})`).toBe(true);
         expect(answer.ok, `${channel}'s answer: give a sample (${where(answer)})`).toBe(true);
         if (!made.ok || !answer.ok) return;
@@ -345,7 +348,6 @@ export function describeChannels<Channels extends Readonly<Record<string, Channe
       });
 
       it(`${channel}: refuses an argument too many, a wrong type and too much`, () => {
-        const made = Array.isArray(args) ? { ok: true, value: args } : args;
         if (!made.ok || !Array.isArray(made.value)) return;
         const values = made.value as unknown[];
         const items = defOf(request).items as z.ZodType[] | undefined;
