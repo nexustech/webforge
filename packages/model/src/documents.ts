@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sha256HexSchema } from "./hashes.js";
 import { anchorIdSchema } from "./link.js";
 import { type ThemeTokens, themeTokensSchema } from "./theme.js";
 
@@ -311,7 +312,7 @@ export const BUNDLED_FILE_MAX = 100;
 export const bundledFileSchema: z.ZodType<BundledFile> = z.strictObject({
   url: z.url({ protocol: /^https$/ }),
   file: z.string().regex(new RegExp(`^[a-z0-9][a-z0-9._-]{0,${BUNDLED_FILE_MAX - 1}}$`)),
-  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  hash: sha256HexSchema,
   mime: z.string().regex(/^[a-z]+\/[a-z0-9.+-]+$/),
 });
 

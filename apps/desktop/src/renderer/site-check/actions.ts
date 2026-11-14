@@ -5,12 +5,11 @@ import {
   isDeviceName,
   isNodeDoc,
   isPageIn,
-  isSharedCopy,
   type NodeDoc,
   type PageEntry,
   type PageId,
   pageTitle,
-  type SiteDoc,
+  pageWithCopy,
   slugsInFolder,
   uniqueSlug,
 } from "@webforge/model";
@@ -61,24 +60,6 @@ function showCode(settings: SiteCheckActions["settings"]): void {
   settings.show(CODE_SETTINGS, CODE_SETTINGS).catch((error: unknown) => {
     reportFailure("siteCheck.code", error);
   });
-}
-
-/**
- * A page holding a copy of shared section `sharedId`, and the copy's id there: where one of its
- * elements is shown. The page shown first, if it holds one.
- */
-function pageWithCopy(
-  site: SiteDoc,
-  sharedId: string,
-  shown: PageId,
-): { readonly pageId: PageId; readonly copyId: string } | undefined {
-  for (const pageId of [shown, ...site.pageOrder]) {
-    const copy = site.pages[pageId]?.doc.content
-      .filter(isSharedCopy)
-      .find((node) => node.props.sharedSectionId === sharedId);
-    if (copy !== undefined) return { pageId, copyId: copy.props.id };
-  }
-  return undefined;
 }
 
 /**

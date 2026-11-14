@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, resolve } from "node:path";
 import { z } from "zod";
+import { recentSiteIdSchema } from "../shared/ipc/project.js";
 import type { AppFeature } from "./app-feature.js";
 import { createJsonStore } from "./json-store.js";
 import { logFailure } from "./log.js";
@@ -11,7 +12,7 @@ const MAX_SITES = 12;
 
 const entrySchema = z.strictObject({
   /** A hash of the path: the renderer refers to a site by it and never sees or sends paths. */
-  id: z.string().regex(/^[0-9a-f]{32}$/),
+  id: recentSiteIdSchema,
   path: z.string().min(1),
   name: z.string().min(1),
   lastOpened: z.iso.datetime(),

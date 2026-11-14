@@ -16,6 +16,7 @@ import {
   clipboardPayload,
   type MediaMeta,
   readClipboardPayload,
+  SHA256_HEX,
   webUrlSchema,
 } from "@webforge/model";
 import {
@@ -40,9 +41,6 @@ const MAX_ELEMENTS_BYTES = 10 * 1024 * 1024;
 
 /** The most bytes of a list of copied files read: thousands of paths, far more than are taken. */
 const MAX_FILE_LIST_BYTES = 1024 * 1024;
-
-/** A file the clipboard keeps aside: an image's bytes, named by their SHA-256 hash. */
-const KEPT_FILE = /^[0-9a-f]{64}$/;
 
 /** What the system clipboard holds that Webforge can paste, most specific first. */
 export type ClipboardContent =
@@ -206,7 +204,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
   /** The kept bytes of `item`, if they are still there and unchanged. */
   const readKept = (item: MediaMeta): Uint8Array | undefined => {
     const path = join(dir, item.hash);
-    if (!KEPT_FILE.test(item.hash) || !existsSync(path)) return undefined;
+    if (!SHA256_HEX.test(item.hash) || !existsSync(path)) return undefined;
     const data = readFileSync(path);
     return sha256(data) === item.hash ? data : undefined;
   };
@@ -244,7 +242,7 @@ export function createElementClipboard(system: SystemClipboard, dir: string) {
         mkdirSync(dir, { recursive: true });
         const media: MediaMeta[] = [];
         for (const item of elements.media) {
-          if (!KEPT_FILE.test(item.hash)) continue;
+          if (!SHA256_HEX.test(item.hash)) continue;
           const path = join(dir, item.hash);
           if (!existsSync(path)) {
             const blob = await site.readMedia(item.hash);

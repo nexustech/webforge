@@ -1,4 +1,4 @@
-import { FILE_MIME_TYPES, IMAGE_MIME_TYPES } from "@webforge/model";
+import { FILE_MIME_TYPES, IMAGE_MIME_TYPES, sha256HexSchema } from "@webforge/model";
 import { z } from "zod";
 
 // Messages between the main process and the storage writer thread (R13b, ADR 0013). An import
@@ -27,7 +27,7 @@ const mediaSchema = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("file"), mimeType: z.enum(FILE_MIME_TYPES) }),
 ]);
 
-const hashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const hashSchema = sha256HexSchema;
 
 const bytesSchema = z.custom<Uint8Array>((value) => value instanceof Uint8Array);
 

@@ -8,6 +8,7 @@ import {
   isSharedCopy,
   type PageId,
   pageEntryOf,
+  pageWithCopy,
   type SiteDoc,
 } from "@webforge/model";
 import type { ComponentLibrary } from "@webforge/site-components";
@@ -108,21 +109,6 @@ function elementName(site: SiteDoc, spot: TextSpot & { kind: "element" }): strin
   const node = findNode(elementsAt(site, spot.on), (each) => each.props.id === spot.nodeId);
   const name = node?.props.layerName?.trim();
   return name === undefined || name === "" ? undefined : name;
-}
-
-/** A page holding a copy of shared section `sharedId`, and the copy's id: the shown page first. */
-function pageWithCopy(
-  site: SiteDoc,
-  sharedId: string,
-  shown: PageId,
-): { readonly pageId: PageId; readonly copyId: string } | undefined {
-  for (const pageId of [shown, ...site.pageOrder]) {
-    const copy = site.pages[pageId]?.doc.content
-      .filter(isSharedCopy)
-      .find((node) => node.props.sharedSectionId === sharedId);
-    if (copy !== undefined) return { pageId, copyId: copy.props.id };
-  }
-  return undefined;
 }
 
 /**
