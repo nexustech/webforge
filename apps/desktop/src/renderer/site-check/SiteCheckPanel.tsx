@@ -16,6 +16,8 @@ export type SiteCheckPanelProps = {
   readonly describe: (finding: Finding) => DescribedFinding;
   /** The finding's *Fix*, if it has one. */
   readonly fixFor: (rule: string, finding: Finding) => (() => void) | undefined;
+  /** The assistant's *Write One…* for the finding, while it's on and can (#873). */
+  readonly writeFor?: (rule: string, finding: Finding) => (() => void) | undefined;
   /** Shows where the finding is. */
   readonly onJump: (finding: Finding) => void;
   readonly onIgnore: (rule: string, finding: Finding) => void;
@@ -86,6 +88,7 @@ function FindingRow({
   const { rule, level } = result;
   const { place, detail } = props.describe(finding);
   const fix = props.fixFor(rule, finding);
+  const write = props.writeFor?.(rule, finding);
   const guide = finding.place.kind === "guide";
   const done = result.oneTime === true;
   return (
@@ -107,6 +110,16 @@ function FindingRow({
         {fix === undefined ? null : (
           <Button size="sm" variant="outline" onClick={fix}>
             {t("siteCheck.fix")}
+          </Button>
+        )}
+        {write === undefined ? null : (
+          <Button
+            size="sm"
+            variant="outline"
+            aria-label={t("siteCheck.write.label", { item: place })}
+            onClick={write}
+          >
+            {t("siteCheck.write")}
           </Button>
         )}
         {level === "must" ? null : (

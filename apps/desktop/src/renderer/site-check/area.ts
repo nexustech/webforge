@@ -52,6 +52,8 @@ export const siteCheckArea: Area<WindowContext> = {
       onNetlify,
       // The first *Must fix* the person sees (OB-4).
       onMustFixSeen: () => tips.reached("mustFix"),
+      // Write One… for a missing description or alt text, while the assistant is on (#873).
+      assistant: { api: api.assistant, sessionId: siteSession() },
       bundle: {
         confirm: question.confirm,
         download: (url) => api.site.bundleFile(siteSession(), url),
