@@ -18,6 +18,7 @@ import {
 import { reportFailure } from "../log.js";
 import { AppConsentDialog, reachOf } from "./Consent.js";
 import { MonthReadout } from "./MonthReadout.js";
+import { ProviderSection } from "./ProviderSection.js";
 
 /** The monthly limit's bounds, in US dollars (ADR 0026 §5): as main checks them. */
 const LIMIT = { min: 1, max: 1000 } as const;
@@ -26,7 +27,17 @@ const LIMIT = { min: 1, max: 1000 } as const;
 export type AssistantSettingsDialogProps = {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  readonly api: Pick<AssistantApi, "status" | "setEnabled" | "update" | "onEvent">;
+  readonly api: Pick<
+    AssistantApi,
+    | "status"
+    | "setEnabled"
+    | "update"
+    | "onEvent"
+    | "signIn"
+    | "finishSignIn"
+    | "cancelSignIn"
+    | "setKey"
+  >;
 };
 
 /**
@@ -59,8 +70,8 @@ function useStatus(api: AssistantSettingsDialogProps["api"], open: boolean) {
 
 /**
  * The assistant's settings (6.9c, AIA-6, AIA-8), opened from *Settings › Assistant* and the panel:
- * on or off, the consent shown before it's turned on (product/14 §5.3), and the monthly limit, with
- * this month's spend. Each acts at once in main, as AI apps' dialog does, so it isn't a part of
+ * on or off, the consent shown before it's turned on (product/14 §5.3); where requests go and
+ * signing in ({@link ProviderSection}); and the monthly limit, with this month's spend. Each acts at once in main, as AI apps' dialog does, so it isn't a part of
  * Settings, which saves on Save. *Turn Off* deletes the key from this computer.
  */
 export function AssistantSettingsDialog({ open, onOpenChange, api }: AssistantSettingsDialogProps) {
@@ -108,6 +119,7 @@ export function AssistantSettingsDialog({ open, onOpenChange, api }: AssistantSe
                 {t(status.enabled ? "assistant.settings.onHint" : "assistant.settings.offHint")}
               </p>
             </section>
+            <ProviderSection status={status} api={api} onStatus={setStatus} />
             <section aria-labelledby={`${id}-limit`} className="flex flex-col gap-2">
               <h3 id={`${id}-limit`} className="m-0 text-sm font-semibold">
                 {t("assistant.settings.limit")}

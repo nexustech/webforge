@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, sep } from "node:path";
-import { WebforgeError } from "@webforge/errors";
+import { errnoOf, WebforgeError } from "@webforge/errors";
 import { sitePathSchema } from "@webforge/model";
 import { z } from "zod";
 
@@ -66,7 +66,7 @@ async function entriesOf(folder: string): Promise<string[] | null> {
   try {
     return await readdir(folder);
   } catch (error) {
-    const code = (error as NodeJS.ErrnoException).code;
+    const code = errnoOf(error);
     if (code === "ENOENT") {
       return null;
     }
@@ -83,7 +83,7 @@ export async function renameWithRetry(from: string, to: string): Promise<void> {
       await rename(from, to);
       return;
     } catch (error) {
-      const code = (error as NodeJS.ErrnoException).code;
+      const code = errnoOf(error);
       if (attempt >= 5 || (code !== "EPERM" && code !== "EBUSY" && code !== "EACCES")) {
         throw error;
       }

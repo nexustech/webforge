@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { documentIssue } from "./documents.js";
 import { type PageId, pageIdSchema } from "./ids.js";
+import { entriesOf, isKeyOf, keysOf } from "./records.js";
 import { sameJson } from "./same-json.js";
 import {
   type PageEntry,
@@ -260,9 +261,11 @@ export function validateSiteChanges(
   const order = new Set(site.pageOrder);
   for (const change of changes) {
     if (!change.id.startsWith(PAGE_PREFIX)) continue;
-    const key = change.id.slice(PAGE_PREFIX.length);
-    if (change.type === "delete") order.delete(key as PageId);
-    else order.add(key as PageId);
+    // A put's id was checked above; a delete's that isn't a page id was never in the order.
+    const key = pageIdSchema.safeParse(change.id.slice(PAGE_PREFIX.length));
+    if (!key.success) continue;
+    if (change.type === "delete") order.delete(key.data);
+    else order.add(key.data);
   }
   const ordered: Record<string, PageEntry> = {};
   for (const key of order) {
@@ -304,14 +307,14 @@ export function changedDocuments(
       changes.push({ type: "put", id: part, kind: part, content: next[part] });
     }
   }
-  for (const [id, page] of Object.entries(next.pages)) {
-    if (previous.pages[id as PageId] !== page) {
-      changes.push({ type: "put", id: pageDocumentId(id as PageId), kind: "page", content: page });
+  for (const [id, page] of entriesOf(next.pages)) {
+    if (previous.pages[id] !== page) {
+      changes.push({ type: "put", id: pageDocumentId(id), kind: "page", content: page });
     }
   }
-  for (const id of Object.keys(previous.pages)) {
-    if (!Object.hasOwn(next.pages, id)) {
-      changes.push({ type: "delete", id: pageDocumentId(id as PageId) });
+  for (const id of keysOf(previous.pages)) {
+    if (!isKeyOf(next.pages, id)) {
+      changes.push({ type: "delete", id: pageDocumentId(id) });
     }
   }
   return changes;
@@ -335,10 +338,10 @@ export function restoreSite(draft: SiteDoc, target: SiteDoc): void {
       (draft as Record<Part, unknown>)[part] = take(target[part]);
     }
   }
-  for (const id of Object.keys(draft.pages) as PageId[]) {
+  for (const id of keysOf(draft.pages)) {
     if (!Object.hasOwn(target.pages, id)) delete draft.pages[id];
   }
-  for (const [id, page] of Object.entries(target.pages) as [PageId, PageEntry][]) {
+  for (const [id, page] of entriesOf(target.pages)) {
     if (!sameJson(draft.pages[id], page)) draft.pages[id] = take(page);
   }
 }

@@ -71,6 +71,13 @@ const idString = () => z.string().regex(ID_PATTERN);
 
 /** Validates a {@link PageId}. */
 export const pageIdSchema = idString().brand<"PageId">();
+
+/**
+ * `raw` as a {@link PageId}, parsed: one written in code, such as a sample site's `"about"`
+ * (#989). Throws when it isn't shaped like an id; an id from a file or a page is checked against
+ * the site instead (`isPageIn`).
+ */
+export const pageId = (raw: string): PageId => pageIdSchema.parse(raw);
 /** Validates the id of a section or element. */
 export const nodeIdSchema = idString();
 /** Validates a {@link MediaId}. */

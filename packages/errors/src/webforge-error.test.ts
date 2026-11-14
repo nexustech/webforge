@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { errorCode, WebforgeError } from "./webforge-error.js";
+import { errnoOf, errorCode, WebforgeError } from "./webforge-error.js";
 
 class TestError extends WebforgeError<"broken" | "gone"> {
   override readonly name = "TestError";
@@ -52,5 +52,19 @@ describe("errorCode", () => {
     expect(errorCode({ message: "secret" })).toBe("object");
     expect(errorCode(null)).toBe("null");
     expect(errorCode(undefined)).toBe("undefined");
+  });
+});
+
+describe("errnoOf (#989)", () => {
+  it("gives a Node error's system code", () => {
+    expect(errnoOf(Object.assign(new Error("gone"), { code: "ENOENT" }))).toBe("ENOENT");
+  });
+
+  it("gives nothing for an error without a string code, or for what isn't an error", () => {
+    expect(errnoOf(new Error("plain"))).toBeUndefined();
+    expect(errnoOf(Object.assign(new Error("odd"), { code: 5 }))).toBeUndefined();
+    expect(errnoOf({ code: "ENOENT" })).toBeUndefined();
+    expect(errnoOf("ENOENT")).toBeUndefined();
+    expect(errnoOf(null)).toBeUndefined();
   });
 });

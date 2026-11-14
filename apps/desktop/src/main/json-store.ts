@@ -1,5 +1,6 @@
 import * as fs from "node:fs/promises";
 import { basename, dirname, extname, join } from "node:path";
+import { errnoOf } from "@webforge/errors";
 import type { z } from "zod";
 
 /** The file operations a JSON store uses: Node's, or a stand-in in tests. */
@@ -44,13 +45,13 @@ const RENAME_ATTEMPTS = 5;
 
 /** Whether `error` is a file being briefly locked, as Windows does (antivirus, the indexer). */
 const isLocked = (error: unknown) => {
-  const code = (error as NodeJS.ErrnoException).code;
+  const code = errnoOf(error);
   return code === "EPERM" || code === "EBUSY" || code === "EACCES";
 };
 
 /** No file, or a parent that is a file (Linux reports ENOTDIR where Windows says ENOENT). */
 const isMissing = (error: unknown) => {
-  const code = (error as NodeJS.ErrnoException).code;
+  const code = errnoOf(error);
   return code === "ENOENT" || code === "ENOTDIR";
 };
 
