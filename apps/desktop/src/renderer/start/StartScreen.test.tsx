@@ -177,6 +177,34 @@ describe("StartScreen", () => {
     expect(project.open).toHaveBeenCalled();
   });
 
+  it("asks about the business while the assistant is on, and sends it with the site (QS-7)", async () => {
+    vi.stubGlobal("webforge", { assistant: { status: async () => ({ enabled: true }) } });
+    try {
+      const project = api([]);
+      await render(project);
+      await act(async () => button("Start a site…")?.click());
+      const about = [...document.querySelectorAll("textarea")].find(
+        (each) => each.labels?.[0]?.textContent === "Tell us about your business",
+      );
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set?.call(
+          about,
+          "Sourdough and rye, baked in Leeds.",
+        );
+        about?.dispatchEvent(new Event("input", { bubbles: true }));
+      });
+      const createSite = [...document.querySelectorAll("button")].find(
+        (element) => element.textContent === "Create site",
+      );
+      await act(async () => createSite?.click());
+      expect(project.create).toHaveBeenCalledWith(
+        expect.objectContaining({ about: "Sourdough and rye, baked in Leeds." }),
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("still offers a Blank site when the templates can't be listed", async () => {
     const project = api([]);
     await render(project, vi.fn(), async () => {

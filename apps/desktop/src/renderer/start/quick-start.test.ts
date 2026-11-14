@@ -61,6 +61,13 @@ describe("the quick start's request (QS-1, 3.11b)", () => {
     });
   });
 
+  it("sends what the person said about the business for the assistant, trimmed, if anything (QS-7)", () => {
+    expect(quickStartRequest(answers({ about: "  Sourdough.  " }), "My site").about).toBe(
+      "Sourdough.",
+    );
+    expect(quickStartRequest(answers({ about: "   " }), "My site")).not.toHaveProperty("about");
+  });
+
   it("asks for one page only when it was chosen (GA10, 5.9)", () => {
     const answers = emptyAnswers("My site");
 
