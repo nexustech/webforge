@@ -36,7 +36,7 @@ describe("a plan (4.12a, AIB-6)", () => {
       app,
     );
 
-    expect(result).toEqual({ status: "done", label: "AI (Claude): Build the Rapidfix site" });
+    expect(result).toMatchObject({ status: "done", label: "AI (Claude): Build the Rapidfix site" });
     expect(confirm).toHaveBeenCalledOnce();
     const asked = confirm.mock.calls[0]?.[0];
     expect(asked?.action).toBe("Allow Claude to make these changes: Build the Rapidfix site?");

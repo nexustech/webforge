@@ -199,6 +199,8 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   const conversations = new Map<string, ConversationTurn[]>();
   /** The models last listed, for `update({ modelId })` to keep the chosen one's details. */
   let listed: readonly AssistantModel[] = [];
+  /** Whether the models last listed say `id` keeps no requests: unknown counts as no. */
+  const isZdr = (id: string): boolean => listed.find((each) => each.id === id)?.zdr === true;
   /** The sign-in under way, whose answer keeps the key: a pasted code's ends it. */
   let signingIn: Promise<SignInResult> | null = null;
   /** The sites with a draft under way, by project id. */
@@ -326,6 +328,17 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           next = { ...next, limitUsd: settings.monthlyLimitUsd };
         if (settings.allowRetainingModels !== undefined) {
           next = { ...next, allowRetainingModels: settings.allowRetainingModels };
+        }
+        // Off, no request goes to a model that may keep it (AIA-7): an OpenRouter model not listed
+        // as ZDR, or not listed at all, gives way to the tested default if that's ZDR, or to none.
+        if (
+          settings.allowRetainingModels === false &&
+          next.provider.kind === "openrouter" &&
+          next.model !== null &&
+          !isZdr(next.model.id)
+        ) {
+          const first = preselected(listed);
+          next = { ...next, model: first?.zdr === true ? first : null };
         }
         return next;
       });
