@@ -16,7 +16,6 @@ import type { CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
 import { isLoopback, keySafeAt, streamChat } from "./chat-client.js";
-import { draftChat, draftTexts } from "./drafts.js";
 import {
   type EndpointResult,
   endpointFor,
@@ -448,6 +447,9 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       try {
         const target = await service.endpoint();
         if (target.status !== "ok") return { status: target.status };
+        // Loaded when first used, never at start-up (#892): the site text's rule comes from the
+        // commands package, which brings the site components with it.
+        const { draftChat, draftTexts } = await import("./drafts.js");
         const chat = draftChat(request, target.model, AbortSignal.timeout(DRAFT_TIMEOUT_MS));
         const result = await streamChat(options.fetchFn, target.endpoint, chat, () => undefined);
         // Only a timeout stops a draft: the model didn't answer in time.
