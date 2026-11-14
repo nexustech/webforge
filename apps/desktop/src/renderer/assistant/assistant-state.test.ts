@@ -85,6 +85,30 @@ describe("the assistant panel's state (6.9c, ADR 0026 §7)", () => {
     panel.dispose();
   });
 
+  it("finds the safety version in a conversation it loads, and opens only a reply's own links", async () => {
+    const api = createFakeAssistant({
+      delayMs: 0,
+      reply: {
+        text: "See [our hours](https://bakery.example/hours).",
+        steps: [{ entryId: "e1", label: "AI (Assistant): Edited Hero text" }],
+        safetyVersion: { versionId: "v1", label: "Before the assistant's changes" },
+      },
+    });
+    const sent = await api.send("site-1", "Hi", {});
+    await settle();
+    const panel = createAssistantPanel(api, "site-1");
+    await vi.waitFor(() => expect(panel.state.getState().safetyVersionId).toBe("v1"));
+    const replyId = sent.status === "sending" ? sent.replyId : "";
+
+    expect(await panel.openLink(replyId, "https://bakery.example/hours")).toBe("opened");
+    expect(await panel.openLink(replyId, "https://evil.example/")).toBe("refused");
+    vi.spyOn(api, "openLink").mockRejectedValueOnce(new Error("gone"));
+    const again = createAssistantPanel(api, "site-1");
+    expect(await again.openLink(replyId, "https://bakery.example/hours")).toBe("failed");
+    panel.dispose();
+    again.dispose();
+  });
+
   it("ends a reply it opened on part way with all its words (#993 review)", async () => {
     const api = createFakeAssistant({ delayMs: 5, reply: { text: "one two three four five six" } });
     await api.send("site-1", "Hi", {});

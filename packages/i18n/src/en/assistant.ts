@@ -9,7 +9,9 @@ export const assistant = {
   // A link in a reply (product/14 §6.4): its address is always shown, and it opens only when clicked.
   "assistant.link.open": "Open {address} in your browser",
   "assistant.image": "Image not shown: {alt}",
-  "assistant.link.copied": "Address copied. Paste it in your browser to open it.",
+  // Main opens only a web address the reply holds (ADR 0026 §7).
+  "assistant.link.refused": "This link can't be opened from here.",
+  "assistant.link.failed": "The link couldn't be opened. Try again.",
   // What a reply did, besides its text.
   "assistant.tool.running": "Working on your site…",
   "assistant.tool.read.one": "Looked at 1 part of your site",
@@ -89,6 +91,7 @@ export const assistant = {
   "assistant.site.kept": "Your answer stays on this computer, never in the site file.",
   "assistant.site.allow": "Use on This Site",
   "assistant.site.deny": "Not Now",
+  "assistant.site.stop": "Stop Using on This Site",
   // OpenRouter's sign-in (ADR 0026 §3): the key's label in the person's account, never the
   // computer's name, and the page the browser shows after it.
   "assistant.signIn.keyLabel": "{appName}, {date}",
@@ -145,6 +148,9 @@ export const assistant = {
   "assistant.provider.server.hint": "A server you name that offers AI models.",
   "assistant.provider.address": "Server address",
   "assistant.provider.addressPlaceholder": "https://",
+  "assistant.provider.addressHint": "Enter the server's web address, starting with https://.",
+  "assistant.provider.unencrypted":
+    "This address starts with http://, so it's unencrypted: no key will be sent to it. Use https:// if the server needs a key.",
   "assistant.provider.useServer": "Use This Server",
   "assistant.provider.key": "Key for this server, if it needs one",
   "assistant.provider.keyReplace": "A new key for this server",
@@ -166,4 +172,25 @@ export const assistant = {
   "assistant.signIn.insecure-server":
     "The server's address starts with http://, so the key would travel unencrypted. Use an https:// address, or a server on this computer.",
   "assistant.signIn.failed": "Signing in didn't work. Try again.",
+  // Which model answers (AIA-1, AIA-7, AIA-8, ADR 0026 §2).
+  "assistant.model.title": "Model",
+  "assistant.model.field": "The model that answers",
+  "assistant.model.none": "Choose a model",
+  "assistant.model.signInFirst": "Sign in to OpenRouter to choose a model.",
+  "assistant.model.perReply": "about {cost} a reply",
+  "assistant.model.tested": "tested",
+  "assistant.model.priceyTitle": "Use a costlier model?",
+  "assistant.model.priceyBody":
+    "{model} costs about {cost} a reply, more than most. Your monthly limit still applies.",
+  "assistant.model.usePricey": "Use This Model",
+  "assistant.model.cancel": "Cancel",
+  "assistant.model.advanced": "Advanced",
+  "assistant.model.allowRetaining": "Allow models that may keep requests",
+  "assistant.model.allowRetainingHint":
+    "Off: only models whose providers don't keep or train on what you send.",
+  "assistant.model.retainingTitle": "Allow models that may keep requests?",
+  "assistant.model.retainingBody":
+    "With these models, the model's maker may keep what you send, your site's text included, or use it to train its models.",
+  "assistant.model.allowRetainingConfirm": "Allow Them",
+  "assistant.model.openRouterKey": "An OpenRouter key, instead of signing in",
 } as const;

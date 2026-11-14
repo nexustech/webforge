@@ -52,6 +52,7 @@ The pages describe `main` as it is. Each page's `updated` date says when it was 
 - [Custom Code](custom-code.md): Advanced mode
 - [The Stylesheet panel](stylesheet.md): CSS of your own, in Advanced mode
 - [AI apps](ai-apps.md): let an AI app on this computer work on your site
+- [The assistant](assistant.md): ask {appName}'s built-in assistant to change your site
 
 ## Writing a help page
 
