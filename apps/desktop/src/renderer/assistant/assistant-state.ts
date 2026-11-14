@@ -210,14 +210,19 @@ export function createAssistantPanel(api: AssistantApi, session: string): Assist
         }));
         return;
       case "held":
-        turn(event.replyId, (each) => ({
-          ...each,
-          held: [],
-          steps: [...each.steps, ...event.steps],
-          ...(event.state === "applied"
-            ? { refused: event.refused }
-            : { heldOutcome: discarding.delete(event.replyId) ? "discarded" : "replaced" }),
-        }));
+        turn(event.replyId, (each) =>
+          // Nothing held to drop: a panel opened again after main dropped them itself (#1063).
+          event.state === "discarded" && each.held.length === 0
+            ? each
+            : {
+                ...each,
+                held: [],
+                steps: [...each.steps, ...event.steps],
+                ...(event.state === "applied"
+                  ? { refused: event.refused }
+                  : { heldOutcome: discarding.delete(event.replyId) ? "discarded" : "replaced" }),
+              },
+        );
         state.setState(({ applying }) => ({
           applying: applying === event.replyId ? undefined : applying,
         }));

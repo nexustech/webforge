@@ -249,6 +249,35 @@ describe("held changes in the panel (6.9e, Review before applying)", () => {
     panel.dispose();
   });
 
+  it("says nothing of main's discard for a turn that holds nothing, as after the site was reopened (#1063)", async () => {
+    const api = createFakeAssistant({ delayMs: 0 });
+    const panel = createAssistantPanel(api, "site-1");
+    await vi.waitFor(() => expect(panel.state.getState().status).toBeDefined());
+    // The reopened panel loaded the reply with nothing held: main had dropped them already.
+    api.emit({ session: "site-1", type: "reply-started", replyId: REPLY, model: "m" });
+    api.emit({
+      session: "site-1",
+      type: "reply-done",
+      replyId: REPLY,
+      stop: "end",
+      costUsd: 0.1,
+      month: MONTH,
+      steps: [],
+      links: [],
+    });
+    api.emit({
+      session: "site-1",
+      type: "held",
+      replyId: REPLY,
+      state: "discarded",
+      steps: [],
+      refused: [],
+    });
+    expect(turnOf(panel, REPLY)?.heldOutcome).toBeUndefined();
+    expect(turnOf(panel, REPLY)?.held).toEqual([]);
+    panel.dispose();
+  });
+
   it("leaves held changes waiting when main can't apply them now", async () => {
     const { api, panel } = await holding(REPLY);
     vi.spyOn(api, "applyHeld").mockResolvedValue({ status: "busy" });
