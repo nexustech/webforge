@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { escapeRegExp } from "@webforge/model";
 import { z } from "zod";
 import { type ErrorDetails, isStackFrame, MAX_FRAMES } from "../shared/error-details.js";
 
@@ -53,10 +54,6 @@ export type CrashContext = {
   readonly memory: () => { rss: number; heapUsed: number };
   readonly now?: () => Date;
 };
-
-function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 /**
  * Matches a path in either slash style, as stacks print them (also `file:///…` URLs). With

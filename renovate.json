@@ -43,9 +43,20 @@
       "groupName": "Playwright"
     },
     {
-      "description": "Puck on its own: only packages/engine imports it, and an upgrade needs pnpm e2e:perf (ADR 0007).",
+      "description": "Puck on its own, and only once approved on the Dependency Dashboard: only packages/engine imports it, its patch (pnpm-workspace.yaml) must be made again for a new version, and an upgrade needs pnpm e2e:perf (ADR 0007).",
       "matchPackageNames": ["@puckeditor/core"],
-      "groupName": "Puck"
+      "groupName": "Puck",
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Playwright stays on 1.64 until it bundles a Firefox that doesn't crash the exported tabs test (#839). Remove this rule then.",
+      "matchPackageNames": ["@playwright/test", "mcr.microsoft.com/playwright"],
+      "allowedVersions": "/^v?1\\.64\\./"
+    },
+    {
+      "description": "Babel stays on 7: the React Compiler's plugin is built against it (ADR 0010, #833). Remove this rule once babel-plugin-react-compiler supports Babel 8.",
+      "matchPackageNames": ["@babel/core"],
+      "allowedVersions": "<8.0.0"
     }
   ]
 }

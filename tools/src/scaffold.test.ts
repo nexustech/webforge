@@ -66,10 +66,14 @@ const FIELD_KIND = [
 /** An IPC domain's. */
 const IPC_DOMAIN = [
   "apps/desktop/src/shared/ipc-contract.ts",
+  "apps/desktop/src/shared/ipc-sessions.test.ts",
   "apps/desktop/src/shared/webforge-api.ts",
   "apps/desktop/src/preload/api.ts",
   "apps/desktop/src/main/app.ts",
 ];
+
+/** An IPC domain whose calls don't read or change the open site. */
+const APP = { site: false, reason: "the calendar's own settings, whichever site is open" } as const;
 
 const temporary: string[] = [];
 
@@ -196,7 +200,9 @@ describe("scaffold on the repository's files", () => {
     "window commands": () =>
       planFor("commands", "JumpHome", { root: REPO, folder: "site", scope: "window" }),
     "field kind": () => planFor("field-kind", "Rating", { root: REPO }),
-    "IPC domain": () => planFor("ipc-domain", "Calendar", { root: REPO }),
+    "IPC domain": () => planFor("ipc-domain", "Calendar", { root: REPO, reach: APP }),
+    "site's IPC domain": () =>
+      planFor("ipc-domain", "Calendar", { root: REPO, reach: { site: true } }),
   };
 
   for (const [what, plan] of Object.entries(plans)) {
@@ -332,7 +338,7 @@ describe("scaffold", () => {
   it("writes an IPC domain from the contract to main's handler", () => {
     const root = copyOfRepo(IPC_DOMAIN);
 
-    const result = scaffold(planFor("ipc-domain", "Calendar", { root }), root, false);
+    const result = scaffold(planFor("ipc-domain", "Calendar", { root, reach: APP }), root, false);
 
     expect(result.written).toEqual([
       "apps/desktop/src/shared/ipc/calendar.ts",
@@ -351,6 +357,35 @@ describe("scaffold", () => {
     );
     expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
       "    registerCalendarHandlers(ipcMain, isTrustedSender);",
+    );
+    // Listed with why it needn't name the open site, as every channel is (#979).
+    expect(read(root, "apps/desktop/src/shared/ipc-sessions.test.ts")).toContain(
+      `  "calendar:status": "the calendar's own settings, whichever site is open",\n};`,
+    );
+  });
+
+  it("writes a site's IPC domain, whose calls name the opening and refuse a replaced one", () => {
+    const root = copyOfRepo(IPC_DOMAIN);
+
+    scaffold(planFor("ipc-domain", "Calendar", { root, reach: { site: true } }), root, false);
+
+    const contract = read(root, "apps/desktop/src/shared/ipc/calendar.ts");
+    expect(contract).toContain("request: z.tuple([sessionIdSchema]),");
+    expect(contract).toContain("status(session: string): Promise<CalendarStatus>;");
+    expect(read(root, "apps/desktop/src/preload/api/calendar.ts")).toContain(
+      'status: (session) => call("calendarStatus", session),',
+    );
+    expect(read(root, "apps/desktop/src/main/calendar-ipc.ts")).toContain(
+      "if (!isOpen(session)) throw",
+    );
+    expect(read(root, "apps/desktop/src/main/calendar-ipc.test.ts")).toContain(
+      "refuses a site a hand-off has replaced",
+    );
+    expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
+      "projectSession.staleReason(session) === undefined",
+    );
+    expect(read(root, "apps/desktop/src/shared/ipc-sessions.test.ts")).toContain(
+      '  "calendar:status",\n] as const;',
     );
   });
 
@@ -395,8 +430,18 @@ describe("scaffold's refusals", () => {
     expect(() => planFor("field-kind", "Icon", { root: REPO })).toThrow(
       /has a "icon" kind already/,
     );
-    expect(() => planFor("ipc-domain", "SpellCheck", { root: REPO })).toThrow(/one word/);
-    expect(() => planFor("ipc-domain", "Clipboard", { root: REPO })).toThrow(/exists already/);
+    expect(() => planFor("ipc-domain", "SpellCheck", { root: REPO, reach: APP })).toThrow(
+      /one word/,
+    );
+    expect(() => planFor("ipc-domain", "Clipboard", { root: REPO, reach: APP })).toThrow(
+      /exists already/,
+    );
+    // Every channel says whether it reads or changes the open site (R6, #979).
+    for (const reach of [undefined, { site: false, reason: " " } as const]) {
+      expect(() =>
+        planFor("ipc-domain", "Calendar", { root: REPO, ...(reach && { reach }) }),
+      ).toThrow(/--site, or --app/);
+    }
   });
 
   it("refuses an area whose strings file it doesn't know, rather than starting another", () => {
@@ -470,6 +515,21 @@ describe("pnpm scaffold", () => {
     expect(errors).toHaveBeenCalledTimes(3);
     expect(String(errors.mock.calls[0]?.[0])).toContain("pnpm scaffold area <Name> [--window]");
     expect(process.exitCode).toBe(1);
+  });
+
+  it("takes whether an IPC domain's calls are the open site's: --site, or --app and why", () => {
+    const root = copyOfRepo(IPC_DOMAIN);
+    const errors = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    const sessions = () => read(root, "apps/desktop/src/shared/ipc-sessions.test.ts");
+
+    main(["ipc-domain", "Calendar"], { root, format: false });
+    main(["ipc-domain", "Calendar", "--app", "the calendar's own"], { root, format: false });
+    main(["ipc-domain", "Diary", "--site"], { root, format: false });
+
+    expect(String(errors.mock.calls[0]?.[0])).toContain("--site, or --app");
+    expect(sessions()).toContain(`"calendar:status": "the calendar's own",`);
+    expect(sessions()).toContain('"diary:status",\n] as const;');
   });
 
   it("lists what it wrote and changed, and what to do next", () => {

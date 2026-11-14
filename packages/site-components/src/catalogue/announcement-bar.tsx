@@ -1,27 +1,8 @@
 import { t } from "@webforge/i18n";
 import { contentWidthClass, defineSection } from "../frame.js";
 import { type ComponentDef, linkAttributes, linkValue } from "../library.js";
+import { StrokeIcon } from "../stroke-icon.js";
 import { BUTTON_CLASSES } from "../typography.js";
-
-/** A cross for the close button, drawn inline so the site needs no icon font (C8). */
-function CloseIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M18 6 6 18M6 6l12 12" />
-    </svg>
-  );
-}
 
 /** Its last day, as the date field stores it, or nothing: `YYYY-MM-DD`. */
 const LAST_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -84,7 +65,7 @@ const announcementBar = defineSection({
           data-wf-announcement-close=""
           hidden
         >
-          <CloseIcon />
+          <StrokeIcon path="M18 6 6 18M6 6l12 12" size={16} />
         </button>
       </div>
     );

@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import { z } from "zod";
 import { COMMANDS, type CommandName } from "./commands.js";
+import { locationSchema } from "./locations.js";
 import type { Failure, Plan, PlanContext } from "./plan.js";
 import { QUERIES, type QueryName, QueryRefusal } from "./queries.js";
 import type { Actor, CommandHost, CommandResult } from "./types.js";
@@ -18,6 +19,36 @@ export type CommandApi = {
   query(name: string, input: unknown): QueryResult;
   run(name: string, input: unknown, actor: Actor): Promise<CommandResult>;
 };
+
+/** What a command's checked input says of where it acts: its page, its location, its element. */
+const placeSchema = z.object({
+  location: locationSchema.optional(),
+  pageId: z.string().optional(),
+  nodeId: z.string().optional(),
+});
+
+/**
+ * The page, and the element on it, that `command` changed with `input` (already checked), making
+ * `made`: none for one that removes a page, or that names no page (the theme, a plan of several,
+ * the header, the footer or a shared section, which no one page shows).
+ */
+function targetOf(command: CommandName, input: unknown, made: string | undefined) {
+  if (command === "addPage") return made === undefined ? undefined : { pageId: made };
+  if (command === "removePage") return undefined;
+  const place = placeSchema.safeParse(input);
+  if (!place.success) return undefined;
+  const { location, nodeId } = place.data;
+  const pageId =
+    location === undefined
+      ? place.data.pageId
+      : location.kind === "page"
+        ? location.pageId
+        : undefined;
+  if (pageId === undefined) return undefined;
+  // A removed element isn't there to show: its page is.
+  const node = command === "addNode" ? made : command === "removeNode" ? undefined : nodeId;
+  return node === undefined ? { pageId } : { pageId, nodeId: node };
+}
 
 const BUSY =
   "The person is editing (a drag, a slider, typing, a dialog or a question): try again shortly.";
@@ -105,8 +136,24 @@ export function createCommandApi(host: CommandHost): CommandApi {
       if ("status" in plan) return plan;
       if (busy(host)) return { status: "busy", message: BUSY };
       const label = t("ai.history", { app: actor.app, action: plan.action });
+      const newest = () => {
+        const { entries, cursor } = host.history.state.getState();
+        return entries[cursor - 1]?.id;
+      };
+      const before = newest();
       host.run(label, plan.recipe, plan.kind, plan.removesPages);
-      return { status: "done", label, ...(plan.id === undefined ? {} : { id: plan.id }) };
+      // The step it ran as: an AI app's run has no coalesce key, so it's always an entry of its own.
+      // One that changed nothing added none, and the newest is someone else's: no step is named.
+      const after = newest();
+      const entryId = after === before ? undefined : after;
+      const target = targetOf(command, input, plan.id);
+      return {
+        status: "done",
+        label,
+        ...(plan.id === undefined ? {} : { id: plan.id }),
+        ...(entryId === undefined ? {} : { entryId }),
+        ...(target === undefined ? {} : { target }),
+      };
     },
   };
 }

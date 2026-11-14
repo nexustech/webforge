@@ -1,9 +1,5 @@
 import type { IpcMain } from "electron";
-import {
-  type AssistantApi,
-  type AssistantStatus,
-  MONTHLY_LIMIT_DEFAULT_USD,
-} from "../shared/ipc/assistant.js";
+import type { AssistantApi } from "../shared/ipc/assistant.js";
 import { registerIpcHandler } from "./ipc.js";
 
 /** What main does for the `assistant` domain (ADR 0026 §7): the panel's calls, without its events. */
@@ -42,6 +38,9 @@ export function registerAssistantHandlers(
   registerIpcHandler(ipc, "assistantSend", isTrustedSender, (session, text, context) =>
     service.send(session, text, context),
   );
+  registerIpcHandler(ipc, "assistantDraft", isTrustedSender, (session, request) =>
+    service.draft(session, request),
+  );
   registerIpcHandler(ipc, "assistantStop", isTrustedSender, async (replyId) => {
     await service.stop(replyId);
     return null;
@@ -57,43 +56,3 @@ export function registerAssistantHandlers(
     service.openLink(session, replyId, href),
   );
 }
-
-/** The assistant before it's turned on: off, signed out, nothing spent (ADR 0026 §2, §5). */
-export const ASSISTANT_OFF: AssistantStatus = {
-  enabled: false,
-  consentVersion: null,
-  consentReach: null,
-  provider: { kind: "openrouter", signedIn: false },
-  reach: "openrouter",
-  model: null,
-  month: {
-    spentUsd: 0,
-    limitUsd: MONTHLY_LIMIT_DEFAULT_USD,
-    warned: false,
-    reached: false,
-  },
-  reviewBeforeApplying: false,
-  allowRetainingModels: false,
-};
-
-/**
- * The service until 6.9a part 5 builds it: off, and refusing to turn on or send. Nothing
- * shows the assistant yet (6.9c), so no one meets it.
- */
-export const unbuiltAssistant: AssistantService = {
-  status: async () => ASSISTANT_OFF,
-  setEnabled: async () => ASSISTANT_OFF,
-  update: async () => ASSISTANT_OFF,
-  signIn: async () => ({ status: "failed" }),
-  finishSignIn: async () => ({ status: "failed" }),
-  cancelSignIn: async () => undefined,
-  setKey: async () => ({ status: "failed" }),
-  models: async () => ({ status: "not-signed-in" }),
-  siteConsent: async () => ({ asked: false, allowed: false }),
-  setSiteConsent: async () => undefined,
-  send: async () => ({ status: "consent-needed" }),
-  stop: async () => undefined,
-  newConversation: async () => undefined,
-  conversation: async () => [],
-  openLink: async () => ({ status: "refused" }),
-};

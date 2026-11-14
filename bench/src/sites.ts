@@ -2,6 +2,7 @@ import {
   createSite,
   type NodeDoc,
   type PageId,
+  pageId,
   type SiteDoc,
   type SitePage,
   type SiteSnapshot,
@@ -30,7 +31,7 @@ export function largeSite(pages = PAGES): SiteDoc {
     homeDoc: largePage({ sections: SECTIONS }),
   });
   const others = Array.from({ length: pages - 1 }, (_, index) => ({
-    id: `page-${index}` as PageId,
+    id: pageId(`page-${index}`),
     kind: "page" as const,
     slug: `page-${index}`,
     title: `Page ${index}`,

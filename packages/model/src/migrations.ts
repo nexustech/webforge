@@ -1,5 +1,6 @@
 import { WebforgeError } from "@webforge/errors";
 import { FORMAT_5_DAISYUI_THEMES } from "./format-5-themes.js";
+import { isRecord } from "./is-record.js";
 import { SITE_FORMAT_VERSION, type SiteDoc, siteDocSchema } from "./site-doc.js";
 
 /**
@@ -58,9 +59,6 @@ export const MIGRATIONS: Readonly<Record<number, SiteMigration>> = {
 };
 
 type RawNode = { type: string; props: Record<string, unknown> };
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 const isRawNode = (value: unknown): value is RawNode =>
   isRecord(value) && typeof value.type === "string" && isRecord(value.props);

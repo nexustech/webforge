@@ -6,9 +6,10 @@ packages:
   - tools
 
 # Versions shared by several workspaces; reference them as "catalog:". GitHub's dependency graph
-# reads "catalog:" as written, so Dependabot can't match these against advisories; a package with an
-# open advisory is pinned in each manifest instead until it is fixed (happy-dom, see `overrides`).
-# Renovate (renovate.json) does read the catalog, and updates it.
+# reads "catalog:" as written, so Dependabot's alerts can't match these against advisories; a
+# package with an open advisory is pinned in each manifest instead until it is fixed (happy-dom, see
+# `overrides`). CI's dependency audit reads the lockfile, so it covers them. Renovate
+# (renovate.json) reads the catalog, and updates it.
 catalog:
   # React Compiler (ADR 0010) through Babel. The compiler is built against Babel 7.
   "@babel/core": 7.29.7

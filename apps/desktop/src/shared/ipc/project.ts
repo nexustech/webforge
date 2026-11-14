@@ -151,9 +151,15 @@ const uiStateResultSchema = z.discriminatedUnion("status", [
 /** Outcome of remembering the editor state with the open site. */
 export type UiStateResult = z.infer<typeof uiStateResultSchema>;
 
+/**
+ * A site's id on the start screen's Recent list (#988): 32 hex digits, made by the main process,
+ * which alone knows the path it stands for.
+ */
+export const recentSiteIdSchema = z.string().regex(/^[0-9a-f]{32}$/);
+
 /** A site on the start screen's Recent list (F-SITE-2); its path stays in the main process. */
 const recentSiteSchema = z.strictObject({
-  id: z.string().regex(/^[0-9a-f]{32}$/),
+  id: recentSiteIdSchema,
   name: z.string().min(1),
   fileName: z.string().min(1),
   /** The name of the folder the file is in, never its path. */
@@ -262,19 +268,19 @@ export const projectChannels = {
   /** Opens a site from the Recent list by its id; a missing file is taken off the list. */
   openRecentSite: {
     channel: "project:open-recent",
-    request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/)]),
+    request: z.tuple([recentSiteIdSchema]),
     response: projectResultSchema,
   },
   /** Pins a site to the top of the Recent list, or unpins it (2.14b). */
   pinRecentSite: {
     channel: "project:pin-recent",
-    request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/), z.boolean()]),
+    request: z.tuple([recentSiteIdSchema, z.boolean()]),
     response: z.null(),
   },
   /** Takes a site off the Recent list; its file is untouched. */
   removeRecentSite: {
     channel: "project:remove-recent",
-    request: z.tuple([z.string().regex(/^[0-9a-f]{32}$/)]),
+    request: z.tuple([recentSiteIdSchema]),
     response: z.null(),
   },
   /** Takes every site off the Recent list but the pinned ones (3.18, Clear Recent). */

@@ -4,9 +4,9 @@ import { t } from "@webforge/i18n";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useStore } from "zustand";
-import type { AssistantStatus, ReplyStep } from "../../shared/ipc/assistant.js";
+import type { ReplyStep } from "../../shared/ipc/assistant.js";
 import type { AssistantPanelModel } from "./assistant-state.js";
-import { AppConsentDialog, type ConsentReach, SiteConsent } from "./Consent.js";
+import { AppConsentDialog, reachOf, SiteConsent } from "./Consent.js";
 import { ConversationView, errorKey } from "./ConversationView.js";
 import { MonthReadout } from "./MonthReadout.js";
 import { ReviewCard } from "./ReviewCard.js";
@@ -34,19 +34,9 @@ export type AssistantPanelProps = {
   readonly onOpenSettings: () => void;
   readonly onOpenVersions: () => void;
   readonly onShowStep: (step: ReplyStep) => void;
-  readonly onOpenLink: (href: string) => void;
+  /** Opens a link from a reply in the browser: its address as the reply wrote it. */
+  readonly onOpenLink: (href: string, replyId: string) => void;
 };
-
-/** Who a request goes to, for the consent's wording. */
-function reachOf(status: AssistantStatus): ConsentReach {
-  if (status.provider.kind === "openrouter") {
-    return { kind: "openrouter", maker: status.model?.maker ?? null };
-  }
-  if (status.provider.kind === "server") {
-    return { kind: "server", host: new URL(status.provider.baseUrl).host };
-  }
-  return { kind: "this-computer" };
-}
 
 /**
  * The assistant's panel (6.9c, UX-28): the month's spend; the conversation on this site, each reply
@@ -119,15 +109,28 @@ export function AssistantPanel(props: AssistantPanelProps) {
         <div className="min-w-0 flex-1">
           <MonthReadout month={status.month} />
         </div>
-        <Button
-          size="sm"
-          variant="ghost"
-          disabled={turns.length === 0 || replying !== undefined}
-          onClick={() => void model.newConversation()}
-        >
-          <PlusIcon aria-hidden />
-          {t("assistant.newConversation")}
-        </Button>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={turns.length === 0 || replying !== undefined}
+            onClick={() => void model.newConversation()}
+          >
+            <PlusIcon aria-hidden />
+            {t("assistant.newConversation")}
+          </Button>
+          {/* This site's yes taken back (AIA-6): asked only where requests leave this computer. */}
+          {reach.kind === "this-computer" ? null : (
+            <Button
+              size="sm"
+              variant="ghost"
+              disabled={replying !== undefined}
+              onClick={() => void model.answerSite(false)}
+            >
+              {t("assistant.site.stop")}
+            </Button>
+          )}
+        </div>
       </div>
       <div className="min-h-0 flex-1 overflow-auto">
         <ConversationView

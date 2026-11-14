@@ -1,4 +1,5 @@
 import {
+  escapeHtmlText,
   SITE_DESCRIPTION_MAX,
   type SiteDoc,
   siteSettingsSchema,
@@ -29,10 +30,6 @@ export const businessDetailsSchema = siteSettingsSchema.shape.contact
 
 /** See {@link businessDetailsSchema}. */
 export type BusinessDetails = z.infer<typeof businessDetailsSchema>;
-
-/** Escapes text for HTML, as rich text holds it. */
-const escapeHtml = (text: string) =>
-  text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
 /** A phone number as a `tel:` link writes it: its digits, and its leading `+`. */
 const dialled = (phone: string) => phone.replace(/[^\d+]/g, "");
@@ -89,8 +86,8 @@ export function withBusiness(site: SiteDoc, name: string, business: BusinessDeta
     for (const [sample, value] of ordered) {
       if (html) {
         result = result
-          .replaceAll(escapeHtml(sample), () => escapeHtml(value))
-          .replaceAll(sample, () => escapeHtml(value));
+          .replaceAll(escapeHtmlText(sample), () => escapeHtmlText(value))
+          .replaceAll(sample, () => escapeHtmlText(value));
       } else {
         result = result.replaceAll(sample, () => value);
       }

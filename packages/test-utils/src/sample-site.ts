@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { MenuItemId, PageId, SiteSnapshot } from "@webforge/model";
-import { DEFAULT_THEME } from "@webforge/model";
+import type { SiteSnapshot } from "@webforge/model";
+import { DEFAULT_THEME, menuItemIdSchema, pageId } from "@webforge/model";
 
 const FIXTURES = join(import.meta.dirname, "../fixtures");
 
@@ -105,7 +105,7 @@ export function sampleSite(): SiteSnapshot {
                     props: {
                       id: "intro-order",
                       label: "Order online",
-                      link: { kind: "page", pageId: "about" as PageId },
+                      link: { kind: "page", pageId: pageId("about") },
                       hover: "liftShadow",
                       hoverSpeed: "slow",
                       hoverEasing: "springy",
@@ -416,8 +416,8 @@ export function sampleSite(): SiteSnapshot {
     menu: {
       follows: "custom",
       items: [
-        { id: menuId("home"), kind: "page", pageId: "home" as PageId, hidden: false },
-        { id: menuId("about"), kind: "page", pageId: "about" as PageId, hidden: false },
+        { id: menuId("home"), kind: "page", pageId: pageId("home"), hidden: false },
+        { id: menuId("about"), kind: "page", pageId: pageId("about"), hidden: false },
         {
           id: menuId("visit"),
           kind: "group",
@@ -428,7 +428,7 @@ export function sampleSite(): SiteSnapshot {
               id: menuId("questions"),
               kind: "section",
               label: "Questions",
-              link: { kind: "page", pageId: "home" as PageId, anchor: "questions" },
+              link: { kind: "page", pageId: pageId("home"), anchor: "questions" },
               hidden: false,
             },
             {
@@ -444,7 +444,7 @@ export function sampleSite(): SiteSnapshot {
           id: menuId("order"),
           kind: "button",
           label: "Order a cake",
-          link: { kind: "page", pageId: "about" as PageId },
+          link: { kind: "page", pageId: pageId("about") },
           hidden: false,
         },
       ],
@@ -452,4 +452,4 @@ export function sampleSite(): SiteSnapshot {
   };
 }
 
-const menuId = (name: string) => name as MenuItemId;
+const menuId = (name: string) => menuItemIdSchema.parse(name);

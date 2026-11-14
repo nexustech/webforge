@@ -9,7 +9,9 @@ export const assistant = {
   // A link in a reply (product/14 §6.4): its address is always shown, and it opens only when clicked.
   "assistant.link.open": "Open {address} in your browser",
   "assistant.image": "Image not shown: {alt}",
-  "assistant.link.copied": "Address copied. Paste it in your browser to open it.",
+  // Main opens only a web address the reply holds (ADR 0026 §7).
+  "assistant.link.refused": "This link can't be opened from here.",
+  "assistant.link.failed": "The link couldn't be opened. Try again.",
   // What a reply did, besides its text.
   "assistant.tool.running": "Working on your site…",
   "assistant.tool.read.one": "Looked at 1 part of your site",
@@ -89,6 +91,12 @@ export const assistant = {
   "assistant.site.kept": "Your answer stays on this computer, never in the site file.",
   "assistant.site.allow": "Use on This Site",
   "assistant.site.deny": "Not Now",
+  "assistant.site.stop": "Stop Using on This Site",
+  // OpenRouter's sign-in (ADR 0026 §3): the key's label in the person's account, never the
+  // computer's name, and the page the browser shows after it.
+  "assistant.signIn.keyLabel": "{appName}, {date}",
+  "assistant.signIn.donePageTitle": "Signed in to OpenRouter",
+  "assistant.signIn.donePage": "You're signed in. You can close this tab and go back to {appName}.",
   // A key that would go over plain http:// to another computer (ADR 0026 §7, #976).
   "assistant.error.insecure-server":
     "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Settings › Assistant, or a server on this computer.",
@@ -105,4 +113,84 @@ export const assistant = {
   "assistant.messagePlaceholder": "Ask for a change, such as “Make the Hero's title shorter”",
   "assistant.send": "Send",
   "assistant.stop": "Stop",
+  // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
+  "assistant.settings.title": "Assistant",
+  "assistant.settings.line":
+    "An AI model that changes your site when you ask. It's off until you turn it on.",
+  "assistant.settings.open": "Assistant Settings…",
+  "assistant.settings.description":
+    "Turn the assistant on or off, choose where its requests go, and set how much it may spend each month.",
+  "assistant.settings.on": "The assistant is on",
+  "assistant.settings.off": "The assistant is off",
+  "assistant.settings.onHint": "Turn Off stops it at once and deletes its key from this computer.",
+  "assistant.settings.offHint":
+    "Turning it on shows what it sends, and to whom, before anything is sent.",
+  "assistant.settings.turnOn": "Turn On…",
+  "assistant.settings.turnOff": "Turn Off",
+  "assistant.settings.limit": "Monthly limit",
+  "assistant.settings.limitField": "Limit in US dollars",
+  "assistant.settings.setLimit": "Set Limit",
+  "assistant.settings.limitHint":
+    "Between $1 and $1,000. You're told at 80%, and the assistant stops at the limit until next month.",
+  "assistant.settings.close": "Close",
+  // Where requests go, and signing in (ADR 0026 §2–§3).
+  "assistant.provider.title": "Where requests go",
+  "assistant.provider.openrouter": "OpenRouter",
+  "assistant.provider.openrouter.hint":
+    "An online service with many AI models. Your own OpenRouter account pays.",
+  "assistant.provider.ollama": "Ollama on this computer",
+  "assistant.provider.ollama.hint":
+    "A model running on this computer with Ollama: nothing leaves it.",
+  "assistant.provider.lmstudio": "LM Studio on this computer",
+  "assistant.provider.lmstudio.hint":
+    "A model running on this computer with LM Studio: nothing leaves it.",
+  "assistant.provider.server": "Another server",
+  "assistant.provider.server.hint": "A server you name that offers AI models.",
+  "assistant.provider.address": "Server address",
+  "assistant.provider.addressPlaceholder": "https://",
+  "assistant.provider.addressHint": "Enter the server's web address, starting with https://.",
+  "assistant.provider.unencrypted":
+    "This address starts with http://, so it's unencrypted: no key will be sent to it. Use https:// if the server needs a key.",
+  "assistant.provider.useServer": "Use This Server",
+  "assistant.provider.key": "Key for this server, if it needs one",
+  "assistant.provider.keyReplace": "A new key for this server",
+  "assistant.provider.saveKey": "Save Key",
+  "assistant.signIn.browser": "Sign In with OpenRouter…",
+  "assistant.signIn.code": "Sign In with a Code…",
+  "assistant.signIn.waiting": "Finish signing in in your browser.",
+  "assistant.signIn.cancel": "Cancel",
+  "assistant.signIn.codeField": "The code OpenRouter shows",
+  "assistant.signIn.finish": "Sign In",
+  "assistant.signIn.done": "Signed in to OpenRouter.",
+  "assistant.signIn.signed-in": "Signed in.",
+  "assistant.signIn.cancelled": "Sign-in cancelled.",
+  "assistant.signIn.timed-out": "Signing in took too long. Try again.",
+  "assistant.signIn.refused": "That wasn't accepted. Check it and try again.",
+  "assistant.signIn.keychain-unavailable":
+    "This computer can't keep the key safely, so the assistant can't sign in here.",
+  "assistant.signIn.offline": "The provider couldn't be reached. Check your internet connection.",
+  "assistant.signIn.insecure-server":
+    "The server's address starts with http://, so the key would travel unencrypted. Use an https:// address, or a server on this computer.",
+  "assistant.signIn.failed": "Signing in didn't work. Try again.",
+  // Which model answers (AIA-1, AIA-7, AIA-8, ADR 0026 §2).
+  "assistant.model.title": "Model",
+  "assistant.model.field": "The model that answers",
+  "assistant.model.none": "Choose a model",
+  "assistant.model.signInFirst": "Sign in to OpenRouter to choose a model.",
+  "assistant.model.perReply": "about {cost} a reply",
+  "assistant.model.tested": "tested",
+  "assistant.model.priceyTitle": "Use a costlier model?",
+  "assistant.model.priceyBody":
+    "{model} costs about {cost} a reply, more than most. Your monthly limit still applies.",
+  "assistant.model.usePricey": "Use This Model",
+  "assistant.model.cancel": "Cancel",
+  "assistant.model.advanced": "Advanced",
+  "assistant.model.allowRetaining": "Allow models that may keep requests",
+  "assistant.model.allowRetainingHint":
+    "Off: only models whose providers don't keep or train on what you send.",
+  "assistant.model.retainingTitle": "Allow models that may keep requests?",
+  "assistant.model.retainingBody":
+    "With these models, the model's maker may keep what you send, your site's text included, or use it to train its models.",
+  "assistant.model.allowRetainingConfirm": "Allow Them",
+  "assistant.model.openRouterKey": "An OpenRouter key, instead of signing in",
 } as const;

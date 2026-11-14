@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { join } from "node:path";
 import type { SiteSnapshot } from "@webforge/model";
+import { sha256HexSchema } from "@webforge/model";
 import { withRunnableCode } from "@webforge/pipeline/light";
 import { z } from "zod";
 import { createJsonStore, type JsonStoreFiles } from "./json-store.js";
@@ -16,7 +17,7 @@ import { logFailure } from "./log.js";
 /** The most pieces kept for one site; the oldest confirmed go first. */
 const MAX_PER_SITE = 1000;
 
-const hashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const hashSchema = sha256HexSchema;
 
 const fileSchema = z.strictObject({
   version: z.literal(1),
