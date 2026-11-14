@@ -1,6 +1,6 @@
 import {
+  type FileMeta,
   type ImageMeta,
-  type MediaMeta,
   mediaIdSchema,
   type PageId,
   type SiteDoc,
@@ -36,7 +36,7 @@ export const PHOTO: ImageMeta = {
 };
 
 /** A document in Media: the price list, a PDF. */
-export const PRICES: MediaMeta = {
+export const PRICES: FileMeta = {
   id: mediaIdSchema.parse("prices"),
   hash: "b".repeat(64),
   name: "prices",
