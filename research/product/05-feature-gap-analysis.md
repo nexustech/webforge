@@ -147,6 +147,17 @@ Before 3.0 it already had Global Templates (reusable linked blocks) and a Resour
 - **Trial:** no publishing or export, and at most 3 pages per project.
 - **Our differences:** Webforge's Windows support and one-off $99 licence.
 
+### 3.8 November 2026 comparison (2026-11-14)
+
+[Where Webforge stands, November 2026](../competitors/03-comparison-2026-11.md) re-checks this list against 19 tools after six weeks of building. It proposes, for decision (CC-1…12):
+
+- **G12 (site dark mode)** made concrete as CC-5: follow the visitor's device, an optional switch element, the theme's second palette as the dark colours.
+- **G16 (tables, timeline, countdown)** and **G19's popup** brought forward in CC-10 and CC-11, with an Accordion element, a before-and-after slider and contact buttons, which this list didn't have.
+- **Multilingual (M4)** split into the site's own labels in the site's language (CC-1, a defect today), language versions (CC-2) and translation with the Assistant (CC-3).
+- Three search-engine additions (CC-6 to CC-8); SEO-11's rule is kept.
+
+Nothing in this section is decided, and no status in the tables above has changed.
+
 ## 4. Proposed changes
 
 **Add to MVP (mostly small; about 4–6 weeks of extra work in total, plus about 19 days from the Elements 3.0 review):**
