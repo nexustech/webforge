@@ -62,7 +62,7 @@ Right-click while typing to see spelling suggestions.
 
 - **Drag** an item to move it. Hold **Ctrl** (Cmd on a Mac) while you drag to drop a copy instead.
 - **Move up** and **Move down** are on the bar, and on Ctrl+Alt+↑ and Ctrl+Alt+↓. On Windows, Alt+↑ and Alt+↓ work too.
-- **Cut**, **Copy** and **Paste** (Ctrl+X, Ctrl+C, Ctrl+V) work on whole sections and elements, even between two of your sites.
+- **Cut**, **Copy** and **Paste** (Ctrl+X, Ctrl+C, Ctrl+V) work on whole sections and elements, even between two of your sites. Pasted in another site, they bring the pictures they show and the documents they link to, which join that site's [Media](media.md).
 - **Duplicate** (Ctrl+D) places a copy just after the item.
 
 ## Spacing and sizes
