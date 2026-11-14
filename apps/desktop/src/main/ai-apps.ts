@@ -1,5 +1,6 @@
 import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { z } from "zod";
+import { AI_CLIENT_IDS, type AiClientId, clientOf } from "../shared/ai-clients/index.js";
 import { type CredentialStore, mcpCredentialKey } from "./credential-store.js";
 import type { JsonStore } from "./json-store.js";
 import type { McpApp } from "./mcp-server.js";
@@ -26,11 +27,11 @@ const MAX_HELD_BACK = 16;
 const NAME_MAX = 80;
 
 /**
- * How an app reaches Webforge: Claude Desktop through its extension's bridge, which checks it's
- * Webforge before it sends its key; or another app directly, which sends its key to whatever
+ * Which kind of app it is (`AI_CLIENTS`, #980), and so how it reaches Webforge: through a bridge
+ * that checks it's Webforge before it sends its key, or directly, sending its key to whatever
  * answers at the address (ADR 0021).
  */
-export type AppKind = "claude" | "other";
+export type AppKind = AiClientId;
 
 /** A paired AI app, as Preferences › AI apps lists it: never its key. */
 export type PairedApp = {
@@ -47,7 +48,7 @@ export type PairedApp = {
 const pairedAppSchema = z.strictObject({
   id: z.uuid(),
   name: z.string().min(1).max(NAME_MAX),
-  kind: z.enum(["claude", "other"]).exactOptional(),
+  kind: z.enum(AI_CLIENT_IDS).exactOptional(),
   pairedAt: z.number().int().nonnegative(),
   claimedAt: z.number().int().nonnegative().nullable(),
 });
@@ -266,7 +267,7 @@ export function createAiApps(
     },
     remove,
     async movedFrom() {
-      const direct = (await file.read()).apps.filter((app) => app.kind !== "claude");
+      const direct = (await file.read()).apps.filter((app) => !clientOf(app.kind).verifiesServer);
       for (const app of direct) await remove(app.id);
       await file.update((current) =>
         current.moved === true ? undefined : { ...current, moved: true },

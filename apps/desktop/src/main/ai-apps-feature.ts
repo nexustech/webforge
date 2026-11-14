@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { Shell } from "electron";
 import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
+import { clientInstalls } from "./ai-clients/index.js";
 import {
   type AiBridge,
   type AiSite,
@@ -97,8 +98,12 @@ export function aiAppsFeature(deps: AiAppsFeatureDeps): AiAppsFeature {
       });
       // Any left when Webforge last quit, with their proofs: they've been opened, or never will be.
       void extensions.sweep().catch((error: unknown) => logFailure("mcp claude extension", error));
-      registerMcpHandlers(ipc, isTrustedSender, service, extensions, (url) =>
-        deps.shell().openExternal(url),
+      // Each kind's install (#980). Looked up as it's called: the E2E tests replace `openExternal`.
+      registerMcpHandlers(
+        ipc,
+        isTrustedSender,
+        service,
+        clientInstalls({ extensions, openExternal: (url) => deps.shell().openExternal(url) }),
       );
     },
     async connectAssistant(beforeCommand, stage) {

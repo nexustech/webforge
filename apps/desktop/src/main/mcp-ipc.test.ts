@@ -1,6 +1,7 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
 import type { PairedApp, Pairing } from "./ai-apps.js";
+import { clientInstalls } from "./ai-clients/index.js";
 import type { ExtensionPairing } from "./claude-extension.js";
 import { registerMcpHandlers } from "./mcp-ipc.js";
 import type { McpService, McpServiceStatus } from "./mcp-service.js";
@@ -10,13 +11,31 @@ type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknow
 const CLAUDE: PairedApp = {
   id: "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e",
   name: "Claude",
+  kind: "claude",
   pairedAt: 1,
   claimedAt: 2,
+};
+const VS_CODE: PairedApp = {
+  id: "2e3f4a5b-6c7d-4e8f-9a0b-1c2d3e4f5a6b",
+  name: "VS Code",
+  kind: "vscode",
+  pairedAt: 1,
+  claimedAt: null,
+};
+/** Paired before kinds were kept (#794): set up by hand, with nothing to install. */
+const CURSOR: PairedApp = {
+  id: "3f4a5b6c-7d8e-4f9a-8b1c-2d3e4f5a6b7c",
+  name: "Cursor",
+  pairedAt: 1,
+  claimedAt: null,
 };
 const KEY = "k".repeat(43);
 
 /** A service whose status, apps and answers a test sets. */
-function fakeService(status: Partial<McpServiceStatus> = {}) {
+function fakeService(
+  status: Partial<McpServiceStatus> = {},
+  paired: readonly PairedApp[] = [CLAUDE, VS_CODE, CURSOR],
+) {
   let current: McpServiceStatus = {
     enabled: true,
     port: 51_234,
@@ -24,7 +43,7 @@ function fakeService(status: Partial<McpServiceStatus> = {}) {
     connected: [],
     ...status,
   };
-  let apps: PairedApp[] = [CLAUDE];
+  let apps: PairedApp[] = [...paired];
   const service = {
     start: vi.fn(async () => undefined),
     setEnabled: vi.fn(async (enabled: boolean) => {
@@ -77,14 +96,14 @@ function handlers(
   const ipc = {
     handle: (name: string, handler: Handler) => registered.set(name, handler),
   } as unknown as Pick<IpcMain, "handle">;
-  registerMcpHandlers(ipc, () => trusted, service, extensions, openExternal);
+  registerMcpHandlers(ipc, () => trusted, service, clientInstalls({ extensions, openExternal }));
   return (channel: string, ...args: unknown[]) =>
     registered.get(channel)?.({ senderFrame: { url: "app" } } as IpcMainInvokeEvent, ...args);
 }
 
 describe("the mcp IPC calls (4.9)", () => {
   it("shows AI apps: on, at which address, each app and whether it's connected", async () => {
-    const call = handlers(fakeService({ connected: [CLAUDE.id] }));
+    const call = handlers(fakeService({ connected: [CLAUDE.id] }, [CLAUDE]));
 
     expect(await call("mcp:status")).toEqual({
       enabled: true,
@@ -128,7 +147,7 @@ describe("the mcp IPC calls (4.9)", () => {
   });
 
   it("removes an app, and its Claude Desktop extension", async () => {
-    const service = fakeService();
+    const service = fakeService({}, [CLAUDE]);
     const extensions = fakeExtensions();
 
     expect(await handlers(service, true, extensions)("mcp:remove", CLAUDE.id)).toMatchObject({
@@ -142,7 +161,7 @@ describe("the mcp IPC calls (4.9)", () => {
     const extensions = fakeExtensions();
     const call = handlers(fakeService(), true, extensions);
 
-    expect(await call("mcp:install-claude", CLAUDE.id)).toEqual({ status: "opened" });
+    expect(await call("mcp:install", CLAUDE.id)).toEqual({ status: "opened" });
     expect(extensions.install).toHaveBeenCalledWith({
       appId: CLAUDE.id,
       address: "http://127.0.0.1:51234/mcp",
@@ -153,20 +172,20 @@ describe("the mcp IPC calls (4.9)", () => {
 
   it("says when nothing opened the extension, and why none was written", async () => {
     expect(
-      await handlers(fakeService(), true, fakeExtensions("shown"))("mcp:install-claude", CLAUDE.id),
+      await handlers(fakeService(), true, fakeExtensions("shown"))("mcp:install", CLAUDE.id),
     ).toEqual({ status: "shown" });
-    expect(await handlers(fakeService({ port: null }))("mcp:install-claude", CLAUDE.id)).toEqual({
+    expect(await handlers(fakeService({ port: null }))("mcp:install", CLAUDE.id)).toEqual({
       status: "off",
     });
     expect(
-      await handlers(fakeService())("mcp:install-claude", "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5"),
+      await handlers(fakeService())("mcp:install", "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5"),
     ).toEqual({ status: "unknown" });
     expect(
       await handlers(
         fakeService(),
         true,
         fakeExtensions(new Error("EACCES")),
-      )("mcp:install-claude", CLAUDE.id),
+      )("mcp:install", CLAUDE.id),
     ).toEqual({ status: "failed" });
   });
 
@@ -176,7 +195,7 @@ describe("the mcp IPC calls (4.9)", () => {
       opened.push(url);
     });
 
-    expect(await call("mcp:install-vscode", CLAUDE.id)).toEqual({ status: "opened" });
+    expect(await call("mcp:install", VS_CODE.id)).toEqual({ status: "opened" });
     expect(opened).toHaveLength(1);
     const [link] = opened;
     expect(link).toMatch(/^vscode:mcp\/install\?/);
@@ -194,7 +213,7 @@ describe("the mcp IPC calls (4.9)", () => {
         true,
         fakeExtensions(),
         openExternal,
-      )("mcp:install-vscode", CLAUDE.id),
+      )("mcp:install", VS_CODE.id),
     ).toEqual({ status: "off" });
     expect(
       await handlers(
@@ -202,20 +221,32 @@ describe("the mcp IPC calls (4.9)", () => {
         true,
         fakeExtensions(),
         openExternal,
-      )("mcp:install-vscode", "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5"),
+      )("mcp:install", "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5"),
     ).toEqual({ status: "unknown" });
     expect(openExternal).not.toHaveBeenCalled();
     expect(
       await handlers(fakeService(), true, fakeExtensions(), async () => {
         throw new Error("No application is associated with the specified file");
-      })("mcp:install-vscode", CLAUDE.id),
+      })("mcp:install", VS_CODE.id),
     ).toEqual({ status: "failed" });
+  });
+
+  it("installs each app as its kind does, and nothing for one set up by hand (#980)", async () => {
+    const extensions = fakeExtensions();
+    const openExternal = vi.fn(async () => undefined);
+    const call = handlers(fakeService(), true, extensions, openExternal);
+    expect(await call("mcp:install", VS_CODE.id)).toEqual({ status: "opened" });
+    expect(extensions.install).not.toHaveBeenCalled();
+    expect(openExternal).toHaveBeenCalledOnce();
+    expect(await call("mcp:install", CURSOR.id)).toEqual({ status: "unknown" });
+    expect(openExternal).toHaveBeenCalledOnce();
+    expect(extensions.install).not.toHaveBeenCalled();
   });
 
   it("checks what it's given, and refuses a renderer it doesn't trust", async () => {
     const call = handlers(fakeService());
     await expect(call("mcp:remove", "not an id")).rejects.toThrow();
-    await expect(call("mcp:install-vscode", "https://example.com")).rejects.toThrow();
+    await expect(call("mcp:install", "https://example.com")).rejects.toThrow();
     await expect(call("mcp:set-enabled", "yes")).rejects.toThrow();
     await expect(handlers(fakeService(), false)("mcp:status")).rejects.toThrow();
   });

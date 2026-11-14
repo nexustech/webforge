@@ -1,13 +1,6 @@
-import { t } from "@webforge/i18n";
 import type { IpcMain } from "electron";
-import type {
-  McpAddResult,
-  McpInstallResult,
-  McpStatus,
-  McpVsCodeResult,
-} from "../shared/ipc/mcp.js";
-import { vsCodeInstallLink } from "../shared/mcp-setup.js";
-import type { ClaudeExtensions } from "./claude-extension.js";
+import type { McpAddResult, McpInstallResult, McpStatus } from "../shared/ipc/mcp.js";
+import type { ClientInstalls } from "./ai-clients/index.js";
 import { registerIpcHandler } from "./ipc.js";
 import { logFailure } from "./log.js";
 import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
@@ -35,16 +28,15 @@ async function statusOf(service: McpService): Promise<McpStatus> {
 
 /**
  * Registers the `mcp` IPC calls (4.9): AI apps on or off, paired, listed and removed, through
- * `service`; Claude Desktop's extension written through `extensions`; and VS Code's install link
- * opened through `openExternal` (5.13). A key leaves main once, in *Add AI app*'s answer, for the
+ * `service`; and installed in an app as its kind does, through `installs` (#980): Claude Desktop's
+ * extension, VS Code's install link. A key leaves main once, in *Add AI app*'s answer, for the
  * person to copy; nothing of it is logged.
  */
 export function registerMcpHandlers(
   ipc: Pick<IpcMain, "handle">,
   isTrustedSender: (senderUrl: string) => boolean,
   service: McpService,
-  extensions: Pick<ClaudeExtensions, "install" | "remove">,
-  openExternal: (url: string) => Promise<void>,
+  installs: ClientInstalls,
 ): void {
   registerIpcHandler(ipc, "mcpStatus", isTrustedSender, () => statusOf(service));
   registerIpcHandler(ipc, "mcpSetEnabled", isTrustedSender, async (enabled) => {
@@ -78,56 +70,36 @@ export function registerMcpHandlers(
       return { status: "failed" };
     }
   });
-  registerIpcHandler(
-    ipc,
-    "mcpInstallClaude",
-    isTrustedSender,
-    async (id): Promise<McpInstallResult> => {
-      const { port } = await service.status();
-      if (port === null) return { status: "off" };
-      try {
-        // Not listed: removed, or its key waited too long and it went.
-        const app = (await service.list()).find((each) => each.id === id);
-        const proof = app === undefined ? null : await service.proofOf(id);
-        if (app === undefined || proof === null) return { status: "unknown" };
-        const { outcome } = await extensions.install({
-          appId: id,
-          address: addressAt(port),
-          proof,
-          pairedAt: app.pairedAt,
-        });
-        return { status: outcome };
-      } catch (error) {
-        logFailure("mcp claude extension", error);
-        return { status: "failed" };
-      }
-    },
-  );
-  registerIpcHandler(
-    ipc,
-    "mcpInstallVsCode",
-    isTrustedSender,
-    async (id): Promise<McpVsCodeResult> => {
-      const { port } = await service.status();
-      if (port === null) return { status: "off" };
-      // Not listed: removed, or its key waited too long and it went.
-      if (!(await service.list()).some((app) => app.id === id)) return { status: "unknown" };
-      try {
-        await openExternal(vsCodeInstallLink(addressAt(port), id, t("aiApps.vscode.prompt")));
-        return { status: "opened" };
-      } catch (error) {
-        // Nothing handles `vscode:` links: VS Code isn't installed?
-        logFailure("mcp vscode link", error);
-        return { status: "failed" };
-      }
-    },
-  );
+  registerIpcHandler(ipc, "mcpInstall", isTrustedSender, async (id): Promise<McpInstallResult> => {
+    const { port } = await service.status();
+    if (port === null) return { status: "off" };
+    // Not listed: removed, or its key waited too long and it went.
+    const app = (await service.list()).find((each) => each.id === id);
+    const proof = app === undefined ? null : await service.proofOf(id);
+    // A kind main doesn't install, such as an app set up by hand, is none it knows to install.
+    const install = app === undefined ? undefined : installs[app.kind ?? "other"];
+    if (app === undefined || proof === null || install === undefined) return { status: "unknown" };
+    try {
+      const outcome = await install.install({
+        appId: id,
+        address: addressAt(port),
+        proof,
+        pairedAt: app.pairedAt,
+      });
+      return { status: outcome };
+    } catch (error) {
+      // The extension couldn't be written, or nothing opens VS Code's link: not installed?
+      logFailure("mcp install", error);
+      return { status: "failed" };
+    }
+  });
   registerIpcHandler(ipc, "mcpRemove", isTrustedSender, async (id) => {
     await service.remove(id);
-    // Its extension goes too: its proof is no use without the app, but nothing is left behind.
-    await extensions
-      .remove(id)
-      .catch((error: unknown) => logFailure("mcp claude extension", error));
+    // What its install left goes too, such as an extension with its proof: whichever kind it was,
+    // as an app paired before kinds were kept has none (#794).
+    for (const install of Object.values(installs)) {
+      await install.remove?.(id).catch((error: unknown) => logFailure("mcp remove install", error));
+    }
     return statusOf(service);
   });
 }
