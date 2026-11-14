@@ -6,6 +6,8 @@ export const canvas = {
   // The canvas ran into an error (R3): it shows this instead, and the panels keep working.
   "canvas.error.message": "Something went wrong showing this page. Your work is saved.",
   "canvas.error.reload": "Reload page",
+  // Over the canvas until the site's styles and fonts arrive (#1013), so it never shows unstyled.
+  "canvas.opening": "Opening your site…",
   // Quick actions on the selected element (1.12).
   "canvas.moveUp": "Move up",
   "canvas.moveDown": "Move down",

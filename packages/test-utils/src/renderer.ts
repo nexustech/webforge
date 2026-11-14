@@ -41,6 +41,8 @@ export type FakeEngine = CanvasEngine & {
   splitText(split: TextSplit): void;
   /** Switches the device view with the canvas's own controls. */
   switchView(viewport: Viewport): void;
+  /** The canvas shows the site with its CSS and fonts (#1013); a fake made `unstyled` waits for it. */
+  showStyled(): void;
   readonly applied: PageDoc[];
 };
 
@@ -57,7 +59,13 @@ function listeners<T>() {
   };
 }
 
-export function createFakeEngine(): FakeEngine {
+/**
+ * A fake canvas engine. It shows the site styled at once, as a test seldom cares; one made with
+ * `unstyled` waits for {@link FakeEngine.showStyled}, for the editor's cover (#1013).
+ */
+export function createFakeEngine(options: { readonly unstyled?: boolean } = {}): FakeEngine {
+  let styled = options.unstyled !== true;
+  const styledEvents = listeners<null>();
   const edits = listeners<EngineEdit>();
   const selections = listeners<{ id: string | null; adding: boolean }>();
   const commands = new Set<HistoryCommandHandler>();
@@ -108,6 +116,14 @@ export function createFakeEngine(): FakeEngine {
     setLinkPicker: vi.fn(),
     setTextRewriter: vi.fn(),
     onFrameWindow: frames.add,
+    onStyled: (cb) => {
+      if (styled) cb();
+      return styledEvents.add(() => cb());
+    },
+    showStyled: () => {
+      styled = true;
+      styledEvents.emit(null);
+    },
     setMode: vi.fn(),
     destroy: vi.fn(),
     edit: (edit) =>
