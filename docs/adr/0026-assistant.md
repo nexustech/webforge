@@ -418,6 +418,7 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **The prompts live in main;** the renderer names only the kind. The site's text goes only in the user's message, as labelled JSON, and the system text says it is content, never instructions (§6.4's labelled data). `main/assistant/site-text.ts` is that one wrapper, for the drafts and 6.9b's loop alike.
   - **An alt text draft never sends the image** (§6): its file's name and the text near it only.
   - **The checks:** `preflight(session)` in the service runs `send`'s checks for both (site, both yeses, sign-in, model, limit), and `main/assistant/endpoint.ts`'s `endpointFor` gives the address, key, privacy routing and model, for the drafts and 6.9b's loop.
+  - **The quick start's business draft (QS-7)** needs an open site, so it runs once the new site has opened. New Site's request carries the person's paragraph (`about`, up to 2,000 characters); main holds it in memory for that opening only, never in the file, and the new editor takes it once with `project:take-about(session)`, which answers `null` to any other opening and after the first call. The editor then asks the site's question and drafts the home and About pages' texts.
   - **One draft at a time per site** (`busy`). A draft waits up to two minutes for the model (`offline` after that). An answer main can't use, such as a business draft's with the wrong number of texts, is `provider-error`, and its cost still counts.
 
 - **The loop (6.9b, `main/assistant/assistant-loop.ts`),** loaded with a site's first reply, never at start-up (#892):

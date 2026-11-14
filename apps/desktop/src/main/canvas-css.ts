@@ -19,6 +19,7 @@ import type {
   ClassCssResult,
   ItemHtmlResult,
 } from "../shared/ipc/canvas.js";
+import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
 import type { WorkerProcess } from "./worker-process.js";
 import { createWorkerRequests } from "./worker-requests.js";
@@ -108,4 +109,18 @@ export function registerCanvasHandlers(
   registerIpcHandler(ipc, "classCatalogue", isTrustedSender, styles.classCatalogue);
   registerIpcHandler(ipc, "classCss", isTrustedSender, styles.classCss);
   registerIpcHandler(ipc, "itemHtml", isTrustedSender, styles.itemHtml);
+}
+
+/**
+ * The canvas's styles as a feature (1.12, #985): its calls, and its worker started as the window
+ * opens with a site, while the editor loads (#894). Never for the start screen, which may never
+ * open a site.
+ */
+export function canvasStylesFeature(styles: CanvasStyles, hasSite: () => boolean): AppFeature {
+  return {
+    register: (ipc, isTrustedSender) => registerCanvasHandlers(ipc, isTrustedSender, styles),
+    started: () => {
+      if (hasSite()) styles.start();
+    },
+  };
 }

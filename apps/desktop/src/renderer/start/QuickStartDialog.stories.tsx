@@ -76,6 +76,9 @@ export const BusinessAnswered: Story = {
   play: ({ canvasElement }) => answerBusiness(canvasElement),
 };
 
+/** *Your business* while the assistant is on: a paragraph about it, for the pages' words (QS-7). */
+export const BusinessWithAssistant: Story = { args: { askAbout: true } };
+
 /** *A look*: the business type's templates, its first chosen in its theme, and its example. */
 export const Look: Story = {
   play: async ({ canvasElement }) => {

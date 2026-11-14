@@ -2,14 +2,7 @@ import { networkInterfaces } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
-import {
-  type ThumbnailJob,
-  type ThumbnailOutcome,
-  thumbnailOutcomeSchema,
-} from "../shared/export-worker-protocol.js";
-import { ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import { appEvents } from "../shared/ipc/app.js";
-import { assistantEvents } from "../shared/ipc/assistant.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
@@ -18,24 +11,19 @@ import { siteEvents } from "../shared/ipc/site.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { updateChannelFor } from "../shared/update-channel.js";
-import { aiAppsFileSchema, createAiApps, NO_AI_APPS } from "./ai-apps.js";
-import { clientInstalls } from "./ai-clients/index.js";
-import { exposeForE2eTests, registerAiHandlers } from "./ai-ipc.js";
+import { aiAppsFeature } from "./ai-apps-feature.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu, runMenuCommand } from "./app-menu.js";
 import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
-import { createAssistantService } from "./assistant/assistant-service.js";
-import { createOpenRouterSignIn } from "./assistant/openrouter-sign-in.js";
-import { registerAssistantHandlers } from "./assistant-ipc.js";
+import { assistantFeature } from "./assistant-feature.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
 import { registerBundleHandlers } from "./bundle-ipc.js";
 import { electronBundleFetch } from "./bundle-net.js";
 import { captureCanvas } from "./canvas-capture.js";
-import { createCanvasStyles, registerCanvasHandlers } from "./canvas-css.js";
-import { createClaudeExtensions } from "./claude-extension.js";
+import { canvasStylesFeature, createCanvasStyles } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
@@ -53,25 +41,17 @@ import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
 import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
-import { applyInterfaceZoom, fitWindowToZoom } from "./interface-zoom.js";
 import { registerIpcHandler } from "./ipc.js";
-import { createJsonStore } from "./json-store.js";
 import { licenceFiles, registerLicenceHandlers } from "./licences.js";
 import { logFailure } from "./log.js";
-import { registerMcpHandlers } from "./mcp-ipc.js";
-import { createMcpService, type McpService } from "./mcp-service.js";
-import { registerMediaHandlers } from "./media-ipc.js";
-import { createMediaResponder } from "./media-protocol.js";
+import { createMainWindows } from "./main-window.js";
+import { mediaFeature } from "./media-feature.js";
 import { createMyThemes } from "./my-themes.js";
 import { createNetlifySignIns } from "./netlify-auth.js";
 import { registerNetlifyHandlers } from "./netlify-ipc.js";
 import { hasAddress, phoneAddressFor } from "./network-address.js";
 import { filePostsParts, registerPostsHandlers } from "./posts-ipc.js";
-import {
-  openPreferencesStore,
-  type PreferencesStore,
-  registerPreferencesHandlers,
-} from "./preferences.js";
+import { openPreferencesStore, registerPreferencesHandlers } from "./preferences.js";
 import { createPreviewBuilder } from "./preview-builder.js";
 import { createPreview, previewFeature } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
@@ -84,44 +64,20 @@ import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
-import {
-  createSecureWebPreferences,
-  hardenSession,
-  hardenWebContents,
-  isAppUrl,
-} from "./security.js";
-import { createSiteBriefs } from "./site-brief.js";
+import { hardenSession, hardenWebContents, isAppUrl } from "./security.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
-import {
-  installContextMenu,
-  registerSpellCheckHandlers,
-  spellCheckAvailable,
-} from "./spellcheck.js";
+import { registerSpellCheckHandlers } from "./spellcheck.js";
 import { logStartupTimes, markStartup } from "./startup-timing.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
-import {
-  createUpdateService,
-  type Updater,
-  type UpdateService,
-  updatesSupported,
-} from "./updates.js";
-import { updatesFeature } from "./updates-ipc.js";
-import { registerVersionsHandlers } from "./versions-ipc.js";
-import {
-  editorPageAddress,
-  MIN_WINDOW_SIZE,
-  mainWindowPlacement,
-  titleBarOptions,
-  titleBarOverlay,
-  windowBackground,
-} from "./window-options.js";
-import { rememberWindowState } from "./window-state.js";
-import { createWorkerRequests } from "./worker-requests.js";
+import { type Updater, updatesSupported } from "./updates.js";
+import { createUpdates } from "./updates-ipc.js";
+import { versionsFeature } from "./versions-ipc.js";
+import { windowBackground } from "./window-options.js";
 
 // The app's wiring (R13c): Electron comes in as a parameter, so app.test.ts runs all of it against
 // a fake one, and the E2E tests against the real one. The logic lives in the modules it wires.
@@ -179,7 +135,7 @@ async function testDialogAnswer(
  * Settles once the window is created; a second instance hands its site over and never starts.
  */
 export function startApp(electron: AppElectron, parts: AppParts): Promise<void> {
-  const { app, BrowserWindow, dialog, ipcMain, Menu, protocol, screen, session } = electron;
+  const { app, BrowserWindow, dialog, ipcMain, Menu, protocol, session } = electron;
   const rendererDir = join(parts.dir, "../renderer");
   const preloadScript = join(parts.dir, "../preload/index.cjs");
   const exportWorkerScript = join(parts.dir, "export-worker.js");
@@ -265,10 +221,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     lifecycle.preferences?.get().versionsKept ?? DEFAULT_PREFERENCES.versionsKept;
   // Publish passwords, keys and tokens (#666, 4.4a), encrypted with the OS's keychain (Windows
   // DPAPI, macOS Keychain): never in a site file. safeStorage is asked as each one is used.
-  /** The MCP server for AI apps (4.9), once Electron is ready. */
-  let mcp: McpService | undefined;
-  // Webforge's own updates (0.5a), once started after the window opens, in a build that has them.
-  let updates: UpdateService | undefined;
   const credentials = createCredentialStore(join(app.getPath("userData"), "credentials.json"), {
     isEncryptionAvailable: () => electron.safeStorage.isAsyncEncryptionAvailable(),
     encryptString: (text) => electron.safeStorage.encryptStringAsync(text),
@@ -319,7 +271,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       const window = lifecycle.focusMainWindow();
       if (window === undefined) {
         // A new window loads the site that is open now.
-        if (lifecycle.preferences !== undefined) createMainWindow(lifecycle.preferences);
+        if (lifecycle.preferences !== undefined) mainWindows.open(lifecycle.preferences);
       } else if (reload) {
         window.webContents.reload();
       }
@@ -352,6 +304,17 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     systemClipboard(electron),
     join(app.getPath("userData"), "clipboard"),
   );
+  // The editor's window (#985).
+  const mainWindows = createMainWindows({
+    electron,
+    platform: process.platform,
+    preload: preloadScript,
+    appUrl,
+    helpWindows,
+    installFlush: (window) => lifecycle.flushOnClose?.install(window),
+    // Something copied in another app replaces the copied elements: their images go (R13d).
+    onFocus: () => void elementClipboard.forgetIfReplaced(),
+  });
   // An AI app's key, copied out of clipboard history and cleared in a minute (4.9).
   const secretClipboard = createSecretClipboard(
     electronSecretClipboard(electron, process.platform),
@@ -416,6 +379,47 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     shell: electron.shell,
   });
   const publishSecrets = createPublishSecrets(credentials);
+  // The canvas compiles its site CSS, and lists the classes the site supports (#276), in one
+  // long-lived worker (1.12), started when first needed, or as the window opens with a site (#894).
+  const canvasStyles = createCanvasStyles(
+    () => forkWorker("Webforge canvas styles"),
+    undefined,
+    fonts.downloadedFamiliesOf,
+  );
+  // Webforge's own updates (0.5a), started once the window has opened, in a build that has them.
+  const updates = createUpdates({
+    supported: updatesSupported(app.isPackaged, process.platform),
+    load: parts.updater,
+    channel: () => updateChannelFor(lifecycle.preferences?.get().updateChannel, app.getVersion()),
+    onStatus: (status) =>
+      lifecycle.mainWindow()?.webContents.send(updatesEvents.status.channel, status),
+    quitting: () => lifecycle.quitting,
+  });
+  // Version History (4.6): its calls, and the versions main saves before AI apps' changes.
+  const versions = versionsFeature({
+    session: projectSession,
+    dialogs: dialogs.project,
+    captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
+    versionsKept: async () => versionsKept(),
+    beforeSwitch: () => siteSwitch.leaveSite(),
+    // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
+    flush: requestFlush,
+  });
+  // AI apps on this computer (4.8, 4.9, ADR 0021): their requests go to the open site's window.
+  const aiApps = aiAppsFeature({
+    userData: app.getPath("userData"),
+    packaged: app.isPackaged,
+    bridgeFile: app.isPackaged
+      ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
+      : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
+    info: { name: t("app.name"), version: app.getVersion() },
+    window: () => lifecycle.mainWindow(),
+    site: projectSession,
+    credentials,
+    templates: () => templates.briefTemplates(),
+    versions,
+    shell: () => electron.shell,
+  });
   /**
    * The app's features (A12): each is told as sites open, are saved and close (a hand-off's
    * included), registered once Electron is ready, and given its last work before Webforge exits.
@@ -460,107 +464,32 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
       netlifyApi: netlifyApiFor(app.isPackaged),
     }),
+    // Media's images and imports (1.16).
+    mediaFeature({
+      startWorker: () => forkWorker("Webforge thumbnails"),
+      readMedia: (hash) => projectSession.readOpenMedia(hash),
+      session: projectSession,
+      dialogs: dialogs.media,
+      protocol: () => session.defaultSession.protocol,
+    }),
+    canvasStylesFeature(canvasStyles, () => projectSession.current() !== null),
     // Webforge's own updates (0.5a): their state for the window. Quitting installs one, last.
-    updatesFeature(() => updates),
+    updates,
+    versions,
+    aiApps,
+    // The assistant (6.9a, ADR 0026), on AI apps' tools.
+    assistantFeature({
+      userData: app.getPath("userData"),
+      credentials,
+      electron: () => electron,
+      window: () => lifecycle.mainWindow(),
+      site: projectSession,
+      tools: aiApps,
+      versions,
+    }),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);
-  }
-
-  // Media thumbnails are made in a long-lived worker too, started when first needed (1.16).
-  const requestThumbnail = createWorkerRequests<ThumbnailOutcome, ThumbnailJob>(
-    () => forkWorker("Webforge thumbnails"),
-    thumbnailOutcomeSchema,
-    60_000,
-  );
-  const respondWithMedia = createMediaResponder({
-    readMedia: (hash) => projectSession.readOpenMedia(hash),
-    makeThumbnail: async (data, mimeType) => {
-      const outcome = await requestThumbnail({ type: "thumbnail", mimeType, data });
-      return outcome?.type === "thumbnail" ? outcome.data : undefined;
-    },
-  });
-
-  // The canvas compiles its site CSS, and lists the classes the site supports (#276), in one
-  // long-lived worker (1.12), started when first needed, or as the window opens with a site (#894).
-  const canvasStyles = createCanvasStyles(
-    () => forkWorker("Webforge canvas styles"),
-    undefined,
-    fonts.downloadedFamiliesOf,
-  );
-
-  /**
-   * Starts Webforge's own updates (0.5a) in a build that has them, once the window is open:
-   * electron-updater is loaded only then, so it never slows the start.
-   */
-  function startUpdates(): void {
-    if (!updatesSupported(app.isPackaged, process.platform)) return;
-    parts
-      .updater()
-      .then((updater) => {
-        if (lifecycle.quitting) return;
-        updates = createUpdateService({
-          updater,
-          channel: updateChannelFor(lifecycle.preferences?.get().updateChannel, app.getVersion()),
-          onStatus: (status) =>
-            lifecycle.mainWindow()?.webContents.send(updatesEvents.status.channel, status),
-        });
-        updates.start();
-      })
-      .catch((error: unknown) => logFailure("Webforge could not start its updates", error));
-  }
-
-  function createMainWindow(preferences: PreferencesStore): void {
-    const { theme, window: saved, interfaceZoom } = preferences.get();
-    const placement = mainWindowPlacement(
-      saved,
-      screen.getAllDisplays().map((display) => display.workArea),
-    );
-    const window = new BrowserWindow({
-      title: t("app.name"),
-      ...placement.bounds,
-      minWidth: MIN_WINDOW_SIZE.width,
-      minHeight: MIN_WINDOW_SIZE.height,
-      // The renderer draws the title bar (1.2), in the person's theme, at the interface zoom.
-      ...titleBarOptions(process.platform, theme, interfaceZoom),
-      backgroundColor: windowBackground(theme),
-      show: false,
-      webPreferences: {
-        ...createSecureWebPreferences(preloadScript, spellCheckAvailable(process.platform)),
-        // The interface zoom (View › Zoom In Interface) from the first paint.
-        zoomFactor: interfaceZoom,
-      },
-    });
-    // Before its page starts loading (#891); only the first window's is logged.
-    markStartup("window-created");
-    // Zoomed in, the smallest window grows, capped by the screen the window opens on.
-    fitWindowToZoom(window, interfaceZoom, screen.getDisplayMatching(window.getBounds()).workArea);
-    // Spelling suggestions, Add to Dictionary, Cut, Copy and Paste on right-clicks (F-ED-19).
-    installContextMenu(window, (template) => Menu.buildFromTemplate(template));
-    // Maximised the first time, so the canvas gets the room (ADR 0008). Maximising shows the
-    // window at once, in the theme's background colour; the editor then lays out at its final
-    // size, instead of at 1280 × 800 and again when the window grows.
-    if (placement.maximized) {
-      window.maximize();
-    }
-    window.once("ready-to-show", () => {
-      window.show();
-    });
-    rememberWindowState(window, preferences);
-    // Something copied in another app replaces the copied elements: their images go (R13d).
-    window.on("focus", () => {
-      void elementClipboard.forgetIfReplaced();
-    });
-    // Autosave writes the last changes before the window closes (P2).
-    lifecycle.flushOnClose?.install(window);
-    // Help goes with the editor, so the app quits with it (5.4b).
-    window.on("closed", () => helpWindows.close());
-    // In the person's theme from the first paint: the page's start-up screen reads it (#887).
-    const load = window.loadURL(editorPageAddress(appUrl, theme));
-    // A failed or aborted load (e.g. a reload while loading) is not fatal; the window stays open.
-    load.catch((error: unknown) => {
-      logFailure("Webforge could not load the editor window", error);
-    });
   }
 
   async function start(): Promise<void> {
@@ -573,9 +502,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     if (devServerUrl === undefined) {
       session.defaultSession.protocol.handle(APP_SCHEME, createAppResponder(rendererDir));
     }
-    session.defaultSession.protocol.handle(MEDIA_SCHEME, (request) =>
-      respondWithMedia(request.url),
-    );
     session.defaultSession.protocol.handle(FONT_SCHEME, (request) =>
       fonts.respondWithFont(request.url),
     );
@@ -583,46 +509,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       join(app.getPath("userData"), "preferences.json"),
     );
     lifecycle.preferences = preferences;
-    let windowTheme = preferences.get().theme;
-    let windowZoom = preferences.get().interfaceZoom;
-    registerPreferencesHandlers(
-      ipcMain,
-      isTrustedSender,
-      preferences,
-      ({ theme, updateChannel, interfaceZoom }) => {
-        // The person chose an update channel in Settings (5.2).
-        updates?.setChannel(updateChannelFor(updateChannel, app.getVersion()));
-        if (interfaceZoom !== windowZoom) {
-          windowZoom = interfaceZoom;
-          // Every window of the app zooms (View › Zoom In Interface): Help's page only, as it has
-          // the system's own title bar.
-          for (const window of BrowserWindow.getAllWindows()) {
-            if (helpWindows.is(window)) window.webContents.setZoomFactor(interfaceZoom);
-            else {
-              applyInterfaceZoom(window, interfaceZoom, {
-                platform: process.platform,
-                theme,
-                workArea: screen.getDisplayMatching(window.getBounds()).workArea,
-              });
-            }
-          }
-        }
-        if (theme === windowTheme) {
-          return;
-        }
-        windowTheme = theme;
-        // The native window controls follow the theme (macOS's traffic lights need nothing). The
-        // Help window has the system's own title bar, and follows the theme in its page.
-        for (const window of BrowserWindow.getAllWindows()) {
-          if (helpWindows.is(window)) continue;
-          window.setBackgroundColor(windowBackground(theme));
-          if (process.platform !== "darwin") {
-            window.setTitleBarOverlay(titleBarOverlay(theme, interfaceZoom));
-          }
-        }
-        helpWindows.setTheme(theme);
-      },
-    );
+    const followWindows = mainWindows.follow(preferences.get());
+    registerPreferencesHandlers(ipcMain, isTrustedSender, preferences, (next) => {
+      // The person chose an update channel in Settings (5.2).
+      updates.service()?.setChannel(updateChannelFor(next.updateChannel, app.getVersion()));
+      followWindows(next);
+    });
     registerIpcHandler(ipcMain, "getAppInfo", isTrustedSender, () => ({
       name: t("app.name"),
       version: app.getVersion(),
@@ -651,7 +543,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       template: templates.template,
       flush: requestFlush,
     });
-    registerCanvasHandlers(ipcMain, isTrustedSender, canvasStyles);
     registerSpellCheckHandlers(
       ipcMain,
       isTrustedSender,
@@ -659,7 +550,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       process.platform,
       app.getPreferredSystemLanguages(),
     );
-    registerMediaHandlers(ipcMain, isTrustedSender, projectSession, dialogs.media);
     // Download and bundle (3.9): the only download besides fonts, on the person's click.
     registerBundleHandlers(
       ipcMain,
@@ -702,75 +592,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       },
     });
     for (const feature of features) feature.register?.(ipcMain, isTrustedSender);
-    // AI apps' requests go to the open site's window (F-AI-1); the MCP server (4.9) asks through it.
-    const ai = registerAiHandlers(
-      ipcMain,
-      isTrustedSender,
-      () => lifecycle.mainWindow(),
-      projectSession,
-    );
-    exposeForE2eTests(ai, app.isPackaged);
-    // AI apps' briefs (4.12a): main shows them in the window as the quick start, filled in.
-    const briefs = createSiteBriefs({
-      window: () => lifecycle.mainWindow(),
-      templates: () => templates.briefTemplates(),
-    });
-    briefs.register(ipcMain, isTrustedSender);
-    // AI apps on this computer reach it through the MCP server, while *AI apps* is on (4.9, ADR
-    // 0021): nothing listens until the person turns it on.
-    const service = createMcpService({
-      apps: createAiApps(
-        createJsonStore(join(app.getPath("userData"), "ai-apps.json"), aiAppsFileSchema, {
-          empty: NO_AI_APPS,
-          onDamaged: "move-aside",
-        }),
-        credentials,
-      ),
-      ask: (request) => ai.ask(request),
-      briefs,
-      info: { name: t("app.name"), version: app.getVersion() },
-      // Version History's, for the site open now: none to save without one.
-      saveVersionBefore: async (name) => {
-        const open = projectSession.current();
-        if (open === null) return "failed";
-        // One from the last few minutes holds the site from before the changes already.
-        const saved = await versions.saveVersionBefore(open.sessionId, name);
-        return saved.status === "failed" ? "failed" : "saved";
-      },
-      opening: () => projectSession.current()?.sessionId,
-    });
-    mcp = service;
-    void service.start().catch((error: unknown) => logFailure("mcp start", error));
-    // Claude Desktop's extensions, in the person's own profile, with the bundled bridge.
-    const extensions = createClaudeExtensions({
-      dir: join(app.getPath("userData"), "ai-apps"),
-      bridgeFile: app.isPackaged
-        ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
-        : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
-      version: app.getVersion(),
-      // Looked up as they're called, so the E2E tests can stand in for Claude Desktop.
-      open: (path) => electron.shell.openPath(path),
-      show: (path) => electron.shell.showItemInFolder(path),
-    });
-    // Any left when Webforge last quit, with their proofs: they've been opened, or never will be.
-    void extensions.sweep().catch((error: unknown) => logFailure("mcp claude extension", error));
-    // Looked up as it's called: the E2E tests replace `shell.openExternal`.
-    registerMcpHandlers(
-      ipcMain,
-      isTrustedSender,
-      service,
-      clientInstalls({ extensions, openExternal: (url) => electron.shell.openExternal(url) }),
-    );
     registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
-    const versions = registerVersionsHandlers(ipcMain, isTrustedSender, {
-      session: projectSession,
-      dialogs: dialogs.project,
-      captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
-      versionsKept: async () => versionsKept(),
-      beforeSwitch: () => siteSwitch.leaveSite(),
-      // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
-      flush: requestFlush,
-    });
     registerHelpHandlers(ipcMain, isTrustedSender, helpWindows, (url) =>
       electron.shell.openExternal(url),
     );
@@ -789,69 +611,23 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     });
     markStartup("ipc-registered");
     registerPostsHandlers(ipcMain, isTrustedSender, filePostsParts(dialogs.posts.choosePostFiles));
-    // The assistant (6.9a, ADR 0026): its model calls and sign-in go through `net.fetch`, for the
-    // system's proxy; looked up as they're called, as the E2E tests stand in for them.
-    const assistantFetch: typeof fetch = (input, init) => electron.net.fetch(input as string, init);
-    registerAssistantHandlers(
-      ipcMain,
-      isTrustedSender,
-      createAssistantService({
-        dir: app.getPath("userData"),
-        credentials,
-        fetchFn: assistantFetch,
-        appName: t("app.name"),
-        signIn: createOpenRouterSignIn({
-          fetchFn: assistantFetch,
-          openExternal: (url) => electron.shell.openExternal(url),
-          keyLabel: () =>
-            t("assistant.signIn.keyLabel", { date: new Date().toISOString().slice(0, 10) }),
-          donePage: () => ({
-            title: t("assistant.signIn.donePageTitle"),
-            body: t("assistant.signIn.donePage"),
-          }),
-        }),
-        projectOf: (session) =>
-          projectSession.staleReason(session) === undefined
-            ? projectSession.projectId()
-            : undefined,
-        emit: (event) =>
-          lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
-        openExternal: (url) => electron.shell.openExternal(url),
-        // The loop's tools: 4.9's, in memory, with *AI apps* on or off (6.9b, ADR 0026 §1).
-        connectTools: async (beforeCommand, stage) => {
-          if (mcp === undefined) throw new Error("The MCP service isn't there");
-          return mcp.connectAssistant(beforeCommand, stage);
-        },
-        // The conversation's safety version (S20): its id, for Version History's button.
-        cancelQuestions: () => ai.cancel(ASSISTANT_APP_ID),
-        saveVersionBefore: async (session, name) => {
-          const saved = await versions.saveVersionBefore(session, name);
-          if (saved.status === "saved") return { status: "saved", versionId: saved.version.id };
-          return saved.status === "skipped" ? { status: "held" } : { status: "failed" };
-        },
-      }),
-    );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
       await openSite(projectToOpen);
       markStartup("site-opened");
     }
-    createMainWindow(preferences);
-    // With a site open, the canvas will want its CSS: its worker starts while the editor loads
-    // (#894). Never for the start screen, which may never open a site.
-    if (projectSession.current() !== null) canvasStyles.start();
+    mainWindows.open(preferences);
     // The start-up's stages, in a perf build (#891).
     logStartupTimes(import.meta.env.MODE);
     void crashReports.noticeAfterLaunch();
-    startUpdates();
+    // What waited for the window: the canvas's styles with a site open, a check for an update.
+    for (const feature of features) feature.started?.();
 
     // macOS: a click on the Dock icon while no window is open. Webforge quits when its window
     // closes (spec/02 §1), so that is only between the last window closing and the app quitting.
     app.on("activate", () => {
-      if (lifecycle.mainWindow() === undefined) {
-        createMainWindow(preferences);
-      }
+      if (lifecycle.mainWindow() === undefined) mainWindows.open(preferences);
     });
   }
 
@@ -899,7 +675,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         await secretClipboard
           .clearIfHeld()
           .catch((error: unknown) => logFailure("secret clipboard clear", error));
-        await mcp?.close().catch((error: unknown) => logFailure("mcp close", error));
+        await aiApps.close();
         await projectSession.close();
       },
       // Then each feature's last work, such as My themes' and the Recent list's last writes, and
@@ -907,7 +683,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       features: [...features, { quit: async () => await lifecycle.preferences?.idle() }],
       // Last, once all of that has finished: a downloaded update's installer (0.5a), which ends a
       // Webforge still running.
-      install: () => updates?.installOnQuit(),
+      install: () => updates.service()?.installOnQuit(),
       // The site is saved and closed: a launch from now on opens Webforge itself, rather than
       // handing its site to this one, which on a busy computer can take up to a minute more to
       // end (#413).

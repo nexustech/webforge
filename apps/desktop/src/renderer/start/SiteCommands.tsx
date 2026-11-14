@@ -2,6 +2,7 @@ import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { useEffect, useRef, useState } from "react";
 import type { AiApi, BriefOutcome } from "../../shared/ipc/ai.js";
+import type { AssistantApi } from "../../shared/ipc/assistant.js";
 import type { PrefsApi } from "../../shared/ipc/prefs.js";
 import type { NewSiteRequest, ProjectApi, ProjectResult } from "../../shared/ipc/project.js";
 import type { TemplateSummary, TemplatesApi } from "../../shared/ipc/templates.js";
@@ -37,6 +38,11 @@ export type SiteCommandsProps = {
   readonly refuseBrief?: () => boolean;
   /** The person's preferences, where the quick start asks for the tour (OB-1); injectable for tests. */
   readonly prefs?: Pick<PrefsApi, "get" | "set">;
+  /**
+   * The assistant, whether it's on: the quick start then asks about the business (QS-7);
+   * injectable for tests. Defaults to the preload API.
+   */
+  readonly assistant?: Pick<AssistantApi, "status">;
 };
 
 /** An AI app's brief, shown as the quick start filled in: its answers, and how to say what became of it. */
@@ -44,6 +50,18 @@ type Brief = {
   readonly answers: QuickStartAnswers;
   readonly answer: (outcome: BriefOutcome) => Promise<void>;
 };
+
+/** Whether the assistant is on, so the quick start asks about the business (QS-7); no if unsure. */
+const assistantOn = (assistant: Pick<AssistantApi, "status"> | undefined) =>
+  Promise.resolve()
+    .then(() => (assistant ?? window.webforge.assistant).status())
+    .then(
+      (status) => status.enabled,
+      (error: unknown) => {
+        reportFailure("assistant status", error);
+        return false;
+      },
+    );
 
 /** The templates main lists; none when it can't, so a Blank site can still be made. */
 const listTemplates = (templates: Pick<TemplatesApi, "list"> | undefined) =>
@@ -69,6 +87,7 @@ export function SiteCommands({
   ai,
   refuseBrief,
   prefs,
+  assistant,
 }: SiteCommandsProps) {
   const registry = useCommandRegistry();
   // The dialog open, New Site or the quick start, with the templates it shows, and the AI app's
@@ -77,6 +96,8 @@ export function SiteCommands({
     readonly dialog: "newSite" | "quickStart";
     readonly templates: readonly TemplateSummary[];
     readonly brief?: Brief;
+    /** Whether the quick start asks about the business, for the assistant (QS-7). */
+    readonly askAbout?: boolean;
   } | null>(null);
   // What's open, as a brief arriving reads it.
   const shown = useRef(open);
@@ -96,7 +117,10 @@ export function SiteCommands({
       id: COMMAND_IDS.quickStart,
       label: t("command.quickStart"),
       menu: "file",
-      run: () => listed().then((list) => setOpen({ dialog: "quickStart", templates: list })),
+      run: () =>
+        Promise.all([listed(), assistantOn(assistant)]).then(([list, askAbout]) =>
+          setOpen({ dialog: "quickStart", templates: list, askAbout }),
+        ),
     });
     const removeOpen = registry.register({
       id: COMMAND_IDS.openSite,
@@ -125,7 +149,7 @@ export function SiteCommands({
       removeRecent();
       removeOpenZip();
     };
-  }, [registry, project, templates, restart]);
+  }, [registry, project, templates, restart, assistant]);
 
   // Try an example (PG-3, 2.14b): the first template marked as one, if the app ships any.
   const [example, setExample] = useState<TemplateSummary>();
@@ -230,6 +254,7 @@ export function SiteCommands({
       <QuickStartDialog
         open={open?.dialog === "quickStart"}
         templates={listedTemplates}
+        askAbout={open?.askAbout === true}
         // A brief opens it filled in, on the step the person checks last.
         {...(open?.brief === undefined
           ? {}
