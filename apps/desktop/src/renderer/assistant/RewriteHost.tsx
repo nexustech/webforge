@@ -4,6 +4,8 @@ import {
   type AssistantApi,
   type AssistantStatus,
   DRAFT_TEXT_MAX,
+  type DraftRequest,
+  type DraftResult,
 } from "../../shared/ipc/assistant.js";
 import { type EditorSession, textSessionKey } from "../editor/editor-session.js";
 import { useDocument } from "../editor/use-document.js";
@@ -17,6 +19,29 @@ type Asked = {
   readonly request: RewriteRequest;
   readonly answer: (text: string | undefined) => void;
 };
+
+/** `request`'s draft from main, or `failed` if the call itself failed. */
+async function draftOrFailure(
+  api: Pick<AssistantApi, "draft">,
+  sessionId: string,
+  request: DraftRequest,
+): Promise<DraftResult> {
+  try {
+    return await api.draft(sessionId, request);
+  } catch (error) {
+    reportFailure("assistant draft", error);
+    return { status: "failed" };
+  }
+}
+
+/** What a rewrite's draft shows: its one text, or why there's none. */
+function stateOf(result: DraftResult): RewriteState {
+  if (result.status !== "ok") return { step: "failed", error: result.status };
+  const [draft] = result.texts;
+  return draft === undefined
+    ? { step: "failed", error: "provider-error" }
+    : { step: "draft", text: draft };
+}
 
 /** Props of {@link RewriteHost}. */
 export type RewriteHostProps = {
@@ -70,20 +95,7 @@ export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProp
       return;
     }
     setState({ step: "writing" });
-    let next: RewriteState;
-    try {
-      const result = await api.draft(sessionId, { kind: "rewrite", how, text });
-      const [draft] = result.status === "ok" ? result.texts : [];
-      next =
-        result.status !== "ok"
-          ? { step: "failed", error: result.status }
-          : draft === undefined
-            ? { step: "failed", error: "provider-error" }
-            : { step: "draft", text: draft };
-    } catch (error) {
-      reportFailure("assistant draft", error);
-      next = { step: "failed", error: "failed" };
-    }
+    const next = stateOf(await draftOrFailure(api, sessionId, { kind: "rewrite", how, text }));
     if (current.current === asking) setState(next);
   };
 
