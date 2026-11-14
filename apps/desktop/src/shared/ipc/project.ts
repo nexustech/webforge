@@ -183,6 +183,12 @@ const recentSiteSchema = z.strictObject({
 export type RecentSite = z.infer<typeof recentSiteSchema>;
 
 /**
+ * The longest paragraph the quick start's *Tell us about your business* takes (QS-7, #873): what
+ * the assistant drafts the new site's home and About pages' words from.
+ */
+export const BUSINESS_ABOUT_MAX = 2000;
+
+/**
  * What New Site makes (2.14a, F-SITE-1): a site named `name` (the save dialog's file name too), in
  * theme preset `theme`, from `template`, or the Blank site without one. Main checks the preset.
  * With `business`, the person's own (QS-2, 3.11), the template's sample business is replaced by
@@ -200,6 +206,12 @@ const newSiteRequestSchema = z.strictObject({
    * of `theme`'s preset, which still names it.
    */
   themeTokens: themeTokensSchema.optional(),
+  /**
+   * The quick start's *Tell us about your business* (QS-7, #873), while the assistant is on: held in
+   * main's memory for the new site's first opening, for the editor to take once with
+   * `project:take-about` and draft the pages' words from. Never written to the site's file.
+   */
+  about: z.string().trim().min(1).max(BUSINESS_ABOUT_MAX).optional(),
 });
 
 /** See {@link newSiteRequestSchema}. */
@@ -236,6 +248,15 @@ export const projectChannels = {
     channel: "project:open-zip",
     request: z.tuple([]),
     response: projectResultSchema,
+  },
+  /**
+   * The quick start's *Tell us about your business* for the site opened as the session given, once
+   * (QS-7, #873): `null` for any other opening, and after the first call. Main forgets it then.
+   */
+  takeBusinessAbout: {
+    channel: "project:take-about",
+    request: z.tuple([sessionIdSchema]),
+    response: z.string().max(BUSINESS_ABOUT_MAX).nullable(),
   },
   /** The site that is open, or `null`. */
   getCurrentProject: {
@@ -318,6 +339,11 @@ export interface ProjectApi {
   saveZip(sessionId: string): Promise<SaveSiteZipResult>;
   /** Opens a site's ZIP the person chooses as a new site, saved where they choose (4.7). */
   openZip(): Promise<ProjectResult>;
+  /**
+   * The quick start's *Tell us about your business* for the site opened as `sessionId`, once
+   * (QS-7): `null` for another opening, or once taken.
+   */
+  takeBusinessAbout(sessionId: string): Promise<string | null>;
   /** The site that is open, or `null`. */
   getCurrent(): Promise<ProjectSummary | null>;
   /** The open site's documents as one validated site. */

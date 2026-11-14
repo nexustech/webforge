@@ -12,6 +12,7 @@ const SITE_CHANNELS = [
   "project:commit",
   "project:set-ui-state",
   "project:save-zip",
+  "project:take-about",
   "media:import",
   "media:import-paths",
   "media:choose",

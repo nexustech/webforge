@@ -4,7 +4,7 @@ id: getting-started
 title: Getting started
 summary: Make your first site, with the quick start, a template or an example.
 related: [the-editor, templates, pages, themes, preview, publish, export]
-updated: 2026-11-10
+updated: 2026-11-14
 ---
 
 # Getting started
@@ -40,7 +40,7 @@ The **Help** tab lists the help pages to start with (this one, _The editor_ and 
 
 Four short steps. Every question is optional, you can go back to any step, and **Create site** works from any step. You can change every answer later.
 
-1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. Search engines show that line under your site's name.
+1. **Your business:** what kind of business it is (Food and drink, Beauty, Trades, Services, Creative, Shop or Personal), its name, and one line on what you do. Search engines show that line under your site's name. While [the assistant](assistant.md) is on, it also asks you to **Tell us about your business** in a few sentences: see [Writing your pages' words](assistant.md#writing-your-pages-words).
 2. **A look:** a theme, and a template suited to your kind of business. For Food and drink or Trades, you can open a finished example site instead.
 3. **Pages:** choose **Separate pages** or **One page**, which puts everything on your home page with a menu that scrolls to each section (see [One-page sites](one-page-sites.md)). Untick a template page to leave it out. **More pages for** your business type suggests extra pages, such as _Reviews_ or _Areas we cover_.
 4. **Colours and details:** keep the theme's colours, pick your own brand colour, or choose **From my logo…** to take colours from your logo. {appName} reads the logo on this computer and doesn't add it to your site. Then add your email, phone number, address, opening hours and web address, if you have them.
