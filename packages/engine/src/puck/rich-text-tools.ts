@@ -1,7 +1,8 @@
-import type { LinkPicker, RichTextAt, TextSplit } from "../canvas-engine.js";
+import type { LinkPicker, RichTextAt, TextRewriter, TextSplit } from "../canvas-engine.js";
 import type { PuckHandle } from "./engine-support.js";
 import { createFormatToolbar } from "./rich-text.js";
 import { createTextKeys, type PickLink } from "./text-keys.js";
+import type { Rewrite } from "./text-rewrite.js";
 
 /**
  * The rich-text field being edited in Puck (`puck`): the selected element, and the inline field
@@ -35,9 +36,18 @@ export function createRichTextTools(
     const picker = linkPicker;
     return picker === null ? null : (current) => picker(current, editingRichText(puck));
   };
+  /** Rewrites selected text with the assistant (#873); none while the app gives none. */
+  let textRewriter: TextRewriter | null = null;
+  // Read as the toolbar draws, and the field when the menu is used, before the dialog takes focus.
+  const rewrite = (): Rewrite | null => {
+    const rewriter = textRewriter;
+    return rewriter === null
+      ? null
+      : (request) => rewriter({ ...request, at: editingRichText(puck) });
+  };
   return {
     tools: {
-      toolbar: createFormatToolbar(pickLink),
+      toolbar: createFormatToolbar(pickLink, rewrite),
       extensions: [
         createTextKeys({
           pickLink,
@@ -50,6 +60,9 @@ export function createRichTextTools(
     },
     setLinkPicker(picker: LinkPicker | null) {
       linkPicker = picker;
+    },
+    setTextRewriter(rewriter: TextRewriter | null) {
+      textRewriter = rewriter;
     },
   };
 }

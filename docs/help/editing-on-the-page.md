@@ -4,7 +4,7 @@ id: editing-on-the-page
 title: Editing on the page
 summary: Select, type, move, copy and delete sections and elements right on the page.
 related: [the-editor, edit-panel, layers, styling, links, keyboard-shortcuts]
-updated: 2026-11-10
+updated: 2026-11-14
 ---
 
 # Editing on the page
@@ -42,7 +42,8 @@ While you type, a small toolbar offers:
 - **Highlight** and **Text colour**, from your theme's colours;
 - **Link…** and **Remove link** (see [Links](links.md));
 - bulleted and numbered lists;
-- alignment.
+- alignment;
+- **Rewrite…**, while the assistant is on: a friendlier or shorter version of the selected text, or its spelling and grammar fixed, for you to check first (see [Rewriting text](assistant.md#rewriting-text)).
 
 Keys while typing:
 
@@ -61,7 +62,7 @@ Right-click while typing to see spelling suggestions.
 
 - **Drag** an item to move it. Hold **Ctrl** (Cmd on a Mac) while you drag to drop a copy instead.
 - **Move up** and **Move down** are on the bar, and on Ctrl+Alt+↑ and Ctrl+Alt+↓. On Windows, Alt+↑ and Alt+↓ work too.
-- **Cut**, **Copy** and **Paste** (Ctrl+X, Ctrl+C, Ctrl+V) work on whole sections and elements, even between two of your sites.
+- **Cut**, **Copy** and **Paste** (Ctrl+X, Ctrl+C, Ctrl+V) work on whole sections and elements, even between two of your sites. Pasted in another site, they bring the pictures they show and the documents they link to, which join that site's [Media](media.md).
 - **Duplicate** (Ctrl+D) places a copy just after the item.
 
 ## Spacing and sizes

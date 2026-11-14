@@ -8,10 +8,12 @@ import {
   type TextMarkRole,
 } from "@webforge/model";
 import { LinkIcon, UnlinkIcon } from "lucide-react";
+import type { RewriteHow } from "../canvas-engine.js";
 import { useEditorState } from "./editor-state.js";
 import { MarkdownPaste } from "./markdown-paste.js";
 import { type PickLink, pickLinkInto } from "./text-keys.js";
 import { markRoles, type TextMarkName, ThemeColor, ThemeHighlight } from "./text-marks.js";
+import { type Rewrite, rewriteSelection } from "./text-rewrite.js";
 
 /** Puck's rich-text field, with the options and menus it takes. */
 type RichtextField = Extract<Field, { type: "richtext" }>;
@@ -110,17 +112,53 @@ function RoleSelect({ editor, name }: { editor: ToolbarProps["editor"]; name: Te
   );
 }
 
+/** The ways the assistant rewrites text, in the Rewrite menu's order. */
+const REWRITE_HOWS: readonly RewriteHow[] = ["friendlier", "shorter", "grammar"];
+
+/**
+ * The Rewrite menu (G25a, #873): the assistant rewrites the selected text as chosen, and the app
+ * shows the result for review before it replaces the selection. A native select, like the colours,
+ * that goes back to its label once chosen. Without text selected there's nothing to rewrite.
+ */
+function RewriteSelect({ editor, rewrite }: { editor: ToolbarProps["editor"]; rewrite: Rewrite }) {
+  const label = t("canvas.richText.rewrite");
+  return (
+    <select
+      aria-label={label}
+      value=""
+      disabled={editor === null || editor.state.selection.empty}
+      onMouseDown={(event) => event.stopPropagation()}
+      onChange={(event) => {
+        const how = REWRITE_HOWS.find((each) => each === event.currentTarget.value);
+        if (editor !== null && how !== undefined) void rewriteSelection(editor, how, rewrite);
+      }}
+    >
+      <option value="">{label}</option>
+      {REWRITE_HOWS.map((how) => (
+        <option key={how} value={how}>
+          {t(`canvas.richText.rewrite.${how}`)}
+        </option>
+      ))}
+    </select>
+  );
+}
+
 /**
  * The format toolbar shown over rich text being edited on the canvas (F-ED-3), in the selected
  * element's quick-action bar: bold, italic and underline, a highlight and a text colour from the
- * theme (ST-3), a link and its removal (when the app picks links, `picker()`), the two lists, and
- * left, centre and right alignment.
+ * theme (ST-3), a link and its removal (when the app picks links, `picker()`), the two lists,
+ * left, centre and right alignment, and the assistant's Rewrite menu (when the app rewrites text,
+ * `rewriter()`, #873).
  */
-export function createFormatToolbar(picker: () => PickLink | null) {
+export function createFormatToolbar(
+  picker: () => PickLink | null,
+  rewriter: () => Rewrite | null = () => null,
+) {
   return function FormatToolbar({ editor }: ToolbarProps) {
     // Drawn again on every change of the content or selection, so the link buttons follow it.
     useEditorState(editor);
     const pick = picker();
+    const rewrite = rewriter();
     return (
       <RichTextMenu>
         <RichTextMenu.Group>
@@ -156,6 +194,11 @@ export function createFormatToolbar(picker: () => PickLink | null) {
           <RichTextMenu.AlignCenter />
           <RichTextMenu.AlignRight />
         </RichTextMenu.Group>
+        {rewrite === null ? null : (
+          <RichTextMenu.Group>
+            <RewriteSelect editor={editor} rewrite={rewrite} />
+          </RichTextMenu.Group>
+        )}
       </RichTextMenu>
     );
   };

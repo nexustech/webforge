@@ -264,7 +264,7 @@ const turnSchema = z.strictObject({
 export type ConversationTurn = z.infer<typeof turnSchema>;
 
 /** The longest piece of the site's text a draft takes, and the longest page it reads. */
-const DRAFT_TEXT_MAX = 4000;
+export const DRAFT_TEXT_MAX = 4000;
 const DRAFT_PAGE_MAX = 8000;
 
 /** The longest draft main gives back: twice the longest text a rewrite takes. */
