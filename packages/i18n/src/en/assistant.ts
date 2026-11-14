@@ -111,7 +111,7 @@ export const assistant = {
     "An AI model that changes your site when you ask. It's off until you turn it on.",
   "assistant.settings.open": "Assistant Settings…",
   "assistant.settings.description":
-    "Turn the assistant on or off, and set how much it may spend each month.",
+    "Turn the assistant on or off, choose where its requests go, and set how much it may spend each month.",
   "assistant.settings.on": "The assistant is on",
   "assistant.settings.off": "The assistant is off",
   "assistant.settings.onHint": "Turn Off stops it at once and deletes its key from this computer.",
