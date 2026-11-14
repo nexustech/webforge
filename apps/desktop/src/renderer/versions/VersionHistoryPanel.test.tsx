@@ -4,12 +4,16 @@ import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { VersionSummary } from "../../shared/ipc/versions.js";
+import { setFailureLog } from "../log.js";
 import { registriesForTest } from "../testing/fixtures.js";
 import { registerVersionHistoryPanel } from "./register-version-history-panel.js";
 import { VersionHistoryPanel, type VersionHistoryPanelProps } from "./VersionHistoryPanel.js";
 import { createVersionList } from "./version-list.js";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  setFailureLog(undefined);
+});
 
 const mine: VersionSummary = {
   id: "7a2b3c4d-5e6f-4a1b-8c2d-3e4f5a6b7c8d",
@@ -92,6 +96,24 @@ describe("the Version History panel (4.6)", () => {
     );
 
     expect(actions.restore).toHaveBeenCalledWith(mine);
+  });
+
+  it("logs, by its code, an action that failed, and is ready for the next (#990)", async () => {
+    const failures = vi.fn(async () => undefined);
+    setFailureLog(failures);
+    const { actions } = draw();
+    actions.restore.mockRejectedValueOnce(new Error("disk full"));
+
+    await choose("Before the new menu", t("versionHistory.restore"));
+    const question = await screen.findByRole("alertdialog");
+    await userEvent.click(
+      within(question).getByRole("button", { name: t("versionHistory.restore.confirm") }),
+    );
+
+    await vi.waitFor(() =>
+      expect(failures).toHaveBeenCalledWith("versions.action", expect.any(String)),
+    );
+    expect(String(failures.mock.calls)).not.toContain("disk full");
   });
 
   it("deletes a version only once the person agrees", async () => {

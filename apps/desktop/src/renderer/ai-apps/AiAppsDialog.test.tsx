@@ -111,6 +111,28 @@ describe("AI apps (4.9)", () => {
     expect(dialog().getByText(/address for AI apps has changed/)).toBeTruthy();
   });
 
+  it("opens again without last time's moved note, once main has forgotten it (#990)", async () => {
+    const fake = fakeMcp({ moved: true });
+    const dialogWith = (open: boolean) => (
+      <AiAppsDialog
+        open={open}
+        mcp={fake.mcp}
+        copyText={vi.fn(async () => null)}
+        copySecret={vi.fn(async () => null)}
+        notify={vi.fn()}
+        onClose={() => undefined}
+      />
+    );
+    const { rerender } = render(dialogWith(true));
+    expect(await screen.findByText(/address for AI apps has changed/)).toBeTruthy();
+    fake.mcp.status.mockResolvedValue({ enabled: true, address: ADDRESS, moved: false, apps: [] });
+
+    rerender(dialogWith(false));
+    rerender(dialogWith(true));
+
+    expect(screen.queryByText(/address for AI apps has changed/)).toBeNull();
+  });
+
   it("adds Claude Desktop, with its key once to copy and its extension to install", async () => {
     const { dialog, mcp, copySecret, user } = setUp();
     await user.click(await dialog().findByRole("button", { name: "Add AI app" }));

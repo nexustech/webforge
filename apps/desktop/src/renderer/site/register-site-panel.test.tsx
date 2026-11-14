@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { createStore } from "zustand/vanilla";
 import { createPanelRegistry } from "../shell/panels.js";
 import { sessionWith } from "../testing/fixtures.js";
-import { pagesPanelActions, registerSitePanel } from "./SitePanel.js";
+import { pagesPanelActions, registerSitePanel } from "./register-site-panel.js";
 
 afterEach(cleanup);
 
