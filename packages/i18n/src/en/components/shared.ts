@@ -105,6 +105,8 @@ export const shared = {
   "colour.useTheme": "Use a theme colour",
   "colour.shade": "Shade",
   "colour.shadeStep": "Shade {step}",
+  // A colour with its shade, in a sentence (CT-13): "Brand, shade 100".
+  "colour.shadeOf": "{colour}, shade {step}",
   "colour.opacity": "Opacity",
   "colour.opacityStep": "{step}%",
   "field.color.lowContrast":
@@ -112,6 +114,12 @@ export const shared = {
   // An Icon's or Social links' colour (#670): graphics need 3:1 (WCAG 1.4.11).
   "field.color.lowContrastGraphic":
     "Hard to see on the page: contrast {ratio}:1, less than the {needed}:1 an icon or logo needs.",
+  // Text on a gradient (CT-13): measured on the end where it's hardest to read, with a theme text
+  // colour that reads on both when one does.
+  "field.color.lowContrastGradient":
+    "Hard to read on the gradient: contrast {ratio}:1 at one end, less than the {needed}:1 this text needs.",
+  "field.color.lowContrastGradientSuggested":
+    "Hard to read on the gradient: contrast {ratio}:1 at one end, less than the {needed}:1 this text needs. {colour} reads on both ends.",
   // The Appearance group on every section and element (2.22, ST-1): theme tokens only, per device.
   // "Theme's" leaves the item as it draws itself.
   // The theme's three fonts (3.22, PF-5), by the Theme tab's names; one for every device.
@@ -182,6 +190,7 @@ export const shared = {
   "field.look.shadow.large": "Large",
   "field.look.opacity": "Opacity",
   "field.look.opacity.default": "Theme's",
+  "field.look.opacity.100": "100%",
   "field.look.opacity.90": "90%",
   "field.look.opacity.75": "75%",
   "field.look.opacity.50": "50%",
@@ -202,6 +211,9 @@ export const shared = {
   "field.look.gradient.toTopRight": "Diagonal, upwards",
   "field.look.gradientFrom": "Gradient starts with",
   "field.look.gradientTo": "Gradient ends with",
+  // Over a background picture only (CT-14): how much of the picture the gradient covers.
+  "field.look.gradientOpacity": "Gradient opacity",
+  "field.look.gradientOpacity.help": "How much of the picture shows through the gradient.",
   "field.look.borderTop": "Top border",
   "field.look.borderRight": "Right border",
   "field.look.borderBottom": "Bottom border",

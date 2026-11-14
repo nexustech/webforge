@@ -1,6 +1,8 @@
 import { type Collection, isCollectionIn } from "./collections.js";
 import { isNodeDoc, type NodeDoc } from "./documents.js";
 import type { CollectionId, PageId, SharedSectionId } from "./ids.js";
+import { isKeyOf } from "./records.js";
+import { isSharedCopy } from "./shared-sections.js";
 import type { SiteDoc } from "./site-doc.js";
 
 /**
@@ -23,9 +25,9 @@ export const designAt = (site: Pick<SiteDoc, "collections">, on: string): Collec
 export function elementsAt(site: SiteDoc, on: string): readonly NodeDoc[] {
   if (on === "header" || on === "footer") return site.layout[on];
   // Their own entries only, so a place such as `constructor` finds nothing.
-  if (Object.hasOwn(site.pages, on)) return site.pages[on as PageId]?.doc.content ?? [];
-  if (Object.hasOwn(site.sharedSections, on)) {
-    const shared = site.sharedSections[on as SharedSectionId];
+  if (isKeyOf(site.pages, on)) return site.pages[on]?.doc.content ?? [];
+  if (isKeyOf(site.sharedSections, on)) {
+    const shared = site.sharedSections[on];
     return shared === undefined ? [] : [shared.section];
   }
   const design = designAt(site, on)?.design;
@@ -97,4 +99,22 @@ export function eachElement(
       skipHidden,
     );
   }
+}
+
+/**
+ * A page of `site` holding a copy of shared section `sharedId`, and the copy's id there: where one
+ * of its elements is shown. Page `shown` first, if it holds one (#988).
+ */
+export function pageWithCopy(
+  site: SiteDoc,
+  sharedId: string,
+  shown: PageId,
+): { readonly pageId: PageId; readonly copyId: string } | undefined {
+  for (const pageId of [shown, ...site.pageOrder]) {
+    const copy = site.pages[pageId]?.doc.content
+      .filter(isSharedCopy)
+      .find((node) => node.props.sharedSectionId === sharedId);
+    if (copy !== undefined) return { pageId, copyId: copy.props.id };
+  }
+  return undefined;
 }

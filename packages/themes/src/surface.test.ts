@@ -1,7 +1,8 @@
 import { createSite, type NodeDoc } from "@webforge/model";
 import { describe, expect, it } from "vitest";
-import { inverseColors } from "./colors.js";
-import { surfaceAt, surfaceOf } from "./surface.js";
+import { contrastRatio, inverseColors } from "./colors.js";
+import { AA_TEXT } from "./contrast.js";
+import { contrastOn, readableTextColour, surfaceAt, surfaceOf } from "./surface.js";
 
 const text = (id: string, props: Record<string, unknown> = {}): NodeDoc => ({
   type: "Text",
@@ -109,5 +110,83 @@ describe("what text is drawn on (#670)", () => {
     ]);
 
     expect(surface.background).toEqual(theme.colors.accent);
+  });
+});
+
+describe("text on a gradient (CT-13)", () => {
+  const site = siteWith([]);
+  const { theme } = site;
+  const { colors } = theme;
+
+  it("is drawn on both its ends, Brand to Accent where it has no colours, over the background", () => {
+    expect(
+      surfaceOf(theme, [{ lookBackground: "neutral", lookGradientDirection: "toRight" }]),
+    ).toEqual({
+      palette: "colors",
+      background: colors.neutral,
+      gradient: [colors.primary, colors.secondary],
+    });
+    // Its own colours, Theme's (from before CT-10) drawn as the default, and per device the
+    // desktop's.
+    expect(
+      surfaceOf(theme, [
+        {
+          lookGradientDirection: { $responsive: { desktop: "toBottom", mobile: "default" } },
+          lookGradientFrom: "accent",
+          lookGradientTo: "theme",
+        },
+      ]).gradient,
+    ).toEqual([colors.accent, colors.secondary]);
+    // None, or a direction on Mobile only: no gradient on the desktop.
+    expect(surfaceOf(theme, [{ lookGradientDirection: "default" }])).not.toHaveProperty("gradient");
+  });
+
+  it("is under a nearer element's background, and a picture is over it", () => {
+    const section = { lookGradientDirection: "toRight" };
+    expect(surfaceOf(theme, [section, { lookBackground: "base-200" }])).toEqual({
+      palette: "colors",
+      background: colors["base-200"],
+    });
+    expect(surfaceOf(theme, [section], () => true).overPicture).toBe(true);
+  });
+
+  it("measures text on the end it's hardest to read on", () => {
+    const surface = surfaceOf(theme, [
+      { lookGradientDirection: "toRight", lookGradientFrom: "base-100", lookGradientTo: "neutral" },
+    ]);
+    const text = colors["base-content"];
+
+    expect(contrastOn(surface, text)).toBe(
+      Math.min(contrastRatio(text, colors["base-100"]), contrastRatio(text, colors.neutral)),
+    );
+    // Without a gradient, on the background, as before.
+    const plain = surfaceOf(theme, []);
+    expect(contrastOn(plain, text)).toBe(contrastRatio(text, colors["base-100"]));
+  });
+
+  it("suggests Text where it reads on both ends, else the theme colour that reads best", () => {
+    const light = surfaceOf(theme, [
+      {
+        lookGradientDirection: "toRight",
+        lookGradientFrom: "base-100",
+        lookGradientTo: "base-200",
+      },
+    ]);
+    expect(readableTextColour(theme, light, AA_TEXT)).toBe("base-content");
+
+    // Dark ends: Text doesn't read on them, a light shade of a theme colour does.
+    const dark = surfaceOf(theme, [
+      {
+        lookGradientDirection: "toRight",
+        lookGradientFrom: "primary-900",
+        lookGradientTo: "neutral",
+      },
+    ]);
+    const suggested = readableTextColour(theme, dark, AA_TEXT);
+    expect(suggested).toBeDefined();
+    expect(suggested).not.toBe("base-content");
+    expect(contrastOn(dark, colors["base-content"])).toBeLessThan(AA_TEXT);
+    // Nothing reads at an impossible ratio.
+    expect(readableTextColour(theme, dark, 22)).toBeUndefined();
   });
 });

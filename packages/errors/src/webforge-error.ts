@@ -35,3 +35,12 @@ export function errorCode(error: unknown): string {
   const code = safe((error as { code?: unknown }).code);
   return code === undefined ? name : `${name} ${code}`;
 }
+
+/**
+ * The system's code for `error` (`ENOENT`, `EBUSY`), when it's an `Error` with one, as Node's file
+ * and network errors are (#989). Undefined for anything else.
+ */
+export function errnoOf(error: unknown): string | undefined {
+  if (!(error instanceof Error) || !("code" in error)) return undefined;
+  return typeof error.code === "string" ? error.code : undefined;
+}

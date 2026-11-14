@@ -83,6 +83,7 @@ export {
   type NavigationSite,
   navigationFor,
 } from "./navigation.js";
+export { partnersOf, shownValueOf } from "./partner-fields.js";
 export { type EditPreviews, PREVIEW_ATTRIBUTE, samePreviews } from "./previews.js";
 export type { RenderedPage } from "./render-static.js";
 export {
@@ -120,3 +121,4 @@ export type {
 } from "./schema.js";
 export { type SiteContent, siteContentFor, siteSnapshotFor } from "./site-content.js";
 export { siteWithCleanRichText, withCleanRichText } from "./stored-rich-text.js";
+export { TEXT_COLOUR_FIELDS } from "./text-colour-fields.js";

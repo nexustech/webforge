@@ -1,6 +1,6 @@
 {
   "name": "@webforge/desktop",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "description": "Webforge desktop app",
   "type": "module",
@@ -78,6 +78,7 @@
     "happy-dom": "21.0.4",
     "lucide-react": "1.70.0",
     "lucide-static": "1.70.0",
+    "marked": "18.1.3",
     "react": "catalog:",
     "react-dom": "catalog:",
     "storybook": "10.6.6",

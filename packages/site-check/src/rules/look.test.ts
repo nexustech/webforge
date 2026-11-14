@@ -239,3 +239,79 @@ describe("contrast on what the text is drawn on (#670)", () => {
     ]);
   });
 });
+
+describe("contrast on a gradient (CT-13)", () => {
+  it("measures text on the end it's hardest to read on", () => {
+    const { passing } = themeWithLightAccent();
+    // Text in Brand on a Text section whose gradient runs from the page colour to Brand: it reads
+    // at one end, not at the other.
+    const site = siteWith(
+      [
+        element("TextSection", "story", {
+          lookGradientDirection: "toRight",
+          lookGradientFrom: "base-100",
+          lookGradientTo: "primary",
+          lookColor: "primary",
+        }),
+      ],
+      { theme: passing },
+    );
+
+    const [finding] = findIn(contrastRule, site).filter(({ place }) => place.kind === "element");
+    expect(finding).toEqual(
+      expect.objectContaining({
+        key: `${site.homePageId}/story/lookColor`,
+        values: expect.objectContaining({ on: "gradient", ratio: 1 }),
+      }),
+    );
+    // From the page colour to dark Brand, no theme text colour reads at both ends.
+    expect(finding?.values).not.toHaveProperty("suggested");
+
+    // The same colour on the page alone reads: the gradient made it hard to read.
+    const plain = siteWith([element("TextSection", "story", { lookColor: "primary" })], {
+      theme: passing,
+    });
+    expect(findIn(contrastRule, plain).filter(({ place }) => place.kind === "element")).toEqual([]);
+  });
+
+  it("suggests a theme text colour that reads on both ends", () => {
+    const { light } = themeWithLightAccent();
+    // Light Accent text on a gradient between two light surfaces: Text reads on both.
+    const site = siteWith(
+      [
+        element("TextSection", "story", {
+          lookGradientDirection: "toRight",
+          lookGradientFrom: "base-100",
+          lookGradientTo: "base-200",
+          lookColor: "secondary",
+        }),
+      ],
+      { theme: light },
+    );
+
+    expect(
+      findIn(contrastRule, site)
+        .filter(({ place }) => place.kind === "element")
+        .map(({ values }) => ({ on: values?.on, suggested: values?.suggested })),
+    ).toEqual([{ on: "gradient", suggested: "base-content" }]);
+  });
+
+  it("measures a direction alone on Brand to Accent, as it draws (CT-10)", () => {
+    const { passing } = themeWithLightAccent();
+    const site = siteWith(
+      [
+        element("TextSection", "story", {
+          lookGradientDirection: "toBottom",
+          lookColor: "secondary",
+        }),
+      ],
+      { theme: passing },
+    );
+
+    expect(
+      findIn(contrastRule, site)
+        .filter(({ place }) => place.kind === "element")
+        .map(({ values }) => values?.on),
+    ).toEqual(["gradient"]);
+  });
+});

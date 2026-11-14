@@ -177,14 +177,9 @@ export const theme = {
   "theme.components.draft": "Changes to every {item} that aren't in the theme yet.",
   "theme.components.apply": "Apply Changes",
   "theme.components.discard": "Discard",
-  "theme.components.enlarge": "Show {item} larger, before and after",
-  "theme.components.previewTitle": "Every {item}, before and after",
-  "theme.components.previewDescription":
-    "How every {item} on the site looks on Desktop and Mobile, now and with your changes.",
   "theme.components.previewShow": "Look shown",
   "theme.components.previewNow": "Theme now",
   "theme.components.previewDraft": "With your changes",
-  "theme.components.previewOn": "{item} on {device}",
   "theme.components.pending.title": "Apply your changes to every {item}?",
   "theme.components.pending.description":
     "They aren't in the theme yet. Apply them as one change, or discard them.",
@@ -330,4 +325,8 @@ export const theme = {
   "style.history.page": "Styled every {item} on this page",
   "style.history.site": "Styled every {item} on the site",
   "style.history.theme": "Made the theme's look for {item}",
+  // Theme Studio's and Style this ‹kind›…'s frame: the preview on top, the controls below (CT-11).
+  "styling.resizePreview": "Resize the preview",
+  "styling.previewOn": "Preview on {device}",
+  "theme.studio.samplePage": "A sample page in your theme",
 } as const;

@@ -1,6 +1,7 @@
 import { t } from "@webforge/i18n";
 import {
   type Breakpoint,
+  GRADIENT_END_DEFAULTS,
   isResponsiveValue,
   type Responsive,
   resolveResponsive,
@@ -57,6 +58,12 @@ const BORDER_COLOURS = [
 /** Shadows from the theme's shadow scale, which a theme without shadows sets to none. */
 const SHADOWS = ["default", "none", "small", "medium", "large"] as const;
 const OPACITIES = ["default", "90", "75", "50", "25"] as const;
+/**
+ * How much a gradient over a picture covers it (CT-14): Opacity's steps, solid to faint, 50% while
+ * unset so the picture shows at once.
+ */
+const GRADIENT_OPACITIES = ["100", "75", "50", "25"] as const;
+const GRADIENT_OPACITY_UNSET = "50";
 /** A gradient's directions (CT-4): down, across, and the two diagonals. */
 const GRADIENT_DIRECTIONS = [
   "default",
@@ -66,6 +73,11 @@ const GRADIENT_DIRECTIONS = [
   "toTopRight",
 ] as const;
 const BORDER_STYLES = ["default", "solid", "dashed", "dotted"] as const;
+/**
+ * A gradient's ends: the theme's surfaces and colours, never *Theme's*, which for a gradient means
+ * nothing (CT-10).
+ */
+const GRADIENT_COLOURS = BACKGROUNDS.filter((value) => value !== "theme");
 /** Spacing tokens (C4): an element's padding (CT-5); its margin is its own `margin` field. */
 const SPACINGS = ["default", "none", "s", "m", "l", "xl"] as const;
 
@@ -214,6 +226,30 @@ type StyleGroup = (typeof STYLE_GROUPS)[keyof typeof STYLE_GROUPS];
 const inDialog = (group: StyleGroup) =>
   ({ group: "style", optionGroup: group, responsive: true, inDialog: true }) as const;
 
+/** Whether `value`, on one device, is a colour a gradient's end can draw with. */
+const isEndColour = (value: unknown) => colorClass("bg", value) !== "";
+
+/**
+ * A gradient's direction turns it on (CT-10): one chosen gives each end without a colour on that
+ * device its default, Brand or Accent, in the same step; *None* leaves the colours for next time.
+ */
+const gradientPartners = (value: unknown, values: Readonly<Record<string, unknown>>) =>
+  value === "default" || !(GRADIENT_DIRECTIONS as readonly unknown[]).includes(value)
+    ? {}
+    : Object.fromEntries(
+        Object.entries(GRADIENT_END_DEFAULTS).filter(([name]) => !isEndColour(values[name])),
+      );
+
+/** A gradient's end: a colour of the theme's, offered only while the gradient has a direction. */
+const gradientEnd = (name: keyof typeof GRADIENT_END_DEFAULTS, label: string) =>
+  ({
+    kind: "color",
+    label,
+    ...inDialog(STYLE_GROUPS.background),
+    options: colourOptions(GRADIENT_COLOURS),
+    unset: GRADIENT_END_DEFAULTS[name],
+  }) as const;
+
 /** A select in `group` of `options`, already named. */
 const select = (
   label: string,
@@ -234,22 +270,25 @@ const SPACING_OPTIONS = SPACINGS.map((value) => ({
  * each side's border and each corner, an inner shadow, and a colour when hovered. Theme tokens only.
  */
 export const DIALOG_FIELDS = {
-  lookGradientDirection: select(
-    t("field.look.gradient"),
-    STYLE_GROUPS.background,
-    GRADIENT_DIRECTIONS.map((value) => ({ label: t(`field.look.gradient.${value}`), value })),
-  ),
-  lookGradientFrom: {
-    kind: "color",
-    label: t("field.look.gradientFrom"),
-    ...inDialog(STYLE_GROUPS.background),
-    options: colourOptions(BACKGROUNDS),
+  lookGradientDirection: {
+    ...select(
+      t("field.look.gradient"),
+      STYLE_GROUPS.background,
+      GRADIENT_DIRECTIONS.map((value) => ({ label: t(`field.look.gradient.${value}`), value })),
+    ),
+    partners: gradientPartners,
   },
-  lookGradientTo: {
-    kind: "color",
-    label: t("field.look.gradientTo"),
-    ...inDialog(STYLE_GROUPS.background),
-    options: colourOptions(BACKGROUNDS),
+  lookGradientFrom: gradientEnd("lookGradientFrom", t("field.look.gradientFrom")),
+  lookGradientTo: gradientEnd("lookGradientTo", t("field.look.gradientTo")),
+  // Over a picture only (CT-14): `hiddenFieldsOf` hides it elsewhere.
+  lookGradientOpacity: {
+    ...select(
+      t("field.look.gradientOpacity"),
+      STYLE_GROUPS.background,
+      GRADIENT_OPACITIES.map((value) => ({ label: t(`field.look.opacity.${value}`), value })),
+    ),
+    help: t("field.look.gradientOpacity.help"),
+    unset: GRADIENT_OPACITY_UNSET,
   },
   lookBorderTop: select(t("field.look.borderTop"), STYLE_GROUPS.border, BORDER_OPTIONS),
   lookBorderRight: select(t("field.look.borderRight"), STYLE_GROUPS.border, BORDER_OPTIONS),
@@ -524,21 +563,23 @@ const onDevices =
   (value) =>
     perDevice(value, one);
 
-/** Whether `value`, on any device, is a theme colour of the item's own (not *Theme's*). */
-const anyColour = (value: unknown) => onAnyDevice(value, (one) => colorClass("bg", one) !== "");
 /** Whether a select of `table`'s choices draws something on any device. */
 const anyChoice = (table: Readonly<Record<string, string>>) => (value: unknown) =>
   onAnyDevice(value, (one) => pick(table)(one) !== "");
 
-/** A gradient draws only with its direction and both its ends (CT-4). */
+/**
+ * A gradient draws with its direction (CT-4), each end without a colour of its own with its default
+ * (CT-10): an older site, a pasted look or an AI app's edit may set a direction alone.
+ */
 const hasGradient = (values: AppearanceValues) =>
-  anyChoice(GRADIENT_CLASSES)(values.lookGradientDirection) &&
-  anyColour(values.lookGradientFrom) &&
-  anyColour(values.lookGradientTo);
+  anyChoice(GRADIENT_CLASSES)(values.lookGradientDirection);
 const gradientPart =
   (one: (value: unknown) => string): FieldClasses =>
   (value, values) =>
     hasGradient(values) ? perDevice(value, one) : "";
+/** A gradient's end's colour class, `from-…` or `to-…`, its default's where it has none. */
+const gradientEndOf = (prefix: "from" | "to", name: keyof typeof GRADIENT_END_DEFAULTS) =>
+  gradientPart((one) => colourOf(prefix)(isEndColour(one) ? one : GRADIENT_END_DEFAULTS[name]));
 
 /** The item's border style, when the dialog sets one: then a width draws no solid line of its own. */
 const styled = (values: AppearanceValues) =>
@@ -604,8 +645,8 @@ const BOX_CLASSES = {
   lookColor: onDevices(colourOf("text")),
   lookBackground: onDevices(colourOf("bg")),
   lookGradientDirection: gradientPart(pick(GRADIENT_CLASSES)),
-  lookGradientFrom: gradientPart(colourOf("from")),
-  lookGradientTo: gradientPart(colourOf("to")),
+  lookGradientFrom: gradientEndOf("from", "lookGradientFrom"),
+  lookGradientTo: gradientEndOf("to", "lookGradientTo"),
   lookCorners: onDevices(pick(CORNER_CLASSES)),
   lookCornerTopLeft: onDevices(pick(cornerClasses("tl"))),
   lookCornerTopRight: onDevices(pick(cornerClasses("tr"))),
@@ -652,6 +693,33 @@ export function appearanceTextClasses(values: AppearanceValues): string {
  */
 export function appearanceBoxClasses(values: AppearanceValues): string {
   return classesOf(BOX_CLASSES, values);
+}
+
+/** The fields that draw a gradient (CT-4). */
+const GRADIENT_FIELDS: ReadonlySet<string> = new Set([
+  "lookGradientDirection",
+  "lookGradientFrom",
+  "lookGradientTo",
+]);
+
+/** A gradient opacity's class on the layer (CT-14), 50% for a value it doesn't have. */
+const layerOpacity = (value: unknown) =>
+  `opacity-${(GRADIENT_OPACITIES as readonly unknown[]).includes(value) ? value : GRADIENT_OPACITY_UNSET}`;
+
+/**
+ * The gradient's classes alone (CT-12), or "" for none: for a layer of its own over a picture
+ * behind the content and under its overlay, which would otherwise cover the item's own background
+ * and so the gradient. With its *Gradient opacity*, per device (CT-14): the gradient's colours are
+ * solid, so this sets how much of the picture shows.
+ */
+export function gradientLayerClasses(values: AppearanceValues): string {
+  const gradient = groupsOf(BOX_CLASSES, values)
+    .filter((group) => GRADIENT_FIELDS.has(group.field))
+    .map((group) => group.classes)
+    .join(" ");
+  return gradient === ""
+    ? ""
+    : `${gradient} ${perDevice(values.lookGradientOpacity, layerOpacity)}`;
 }
 
 /** A section's subtitle's classes (3.13b): its lead's, under its title. */

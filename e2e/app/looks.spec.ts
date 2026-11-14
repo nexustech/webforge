@@ -32,10 +32,10 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
   await chooseFromMenu(app, page, "View", "Theme Studio…");
   const studio = page.getByRole("dialog", { name: "Theme Studio" });
   await studio.getByRole("tab", { name: "Components" }).click();
+  // The kinds are a list in the bar at the top (CT-11).
   await studio
-    .getByRole("navigation", { name: "Sections and elements" })
-    .getByRole("button", { name: "Features", exact: true })
-    .click();
+    .getByRole("combobox", { name: "Sections and elements" })
+    .selectOption({ value: "Features" });
   await studio
     .getByRole("region", { name: "Features" })
     .locator('[data-field="lookBackground"]')
@@ -43,10 +43,8 @@ test("a kind's look set in Theme Studio shows on an item without its own, once i
     .click();
   // A draft until applied (4.10): the canvas has nothing of it yet.
   await expect(features).not.toHaveClass(/bg-secondary!/);
-  await studio
-    .getByRole("region", { name: "Features" })
-    .getByRole("button", { name: "Apply Changes" })
-    .click();
+  // In the bar at the bottom, always in view (CT-11).
+  await studio.getByRole("button", { name: "Apply Changes" }).click();
   // A built-in theme is changed as the person's own copy of it (2.23), named first.
   await page
     .getByRole("dialog", { name: /^Save your own version of/ })

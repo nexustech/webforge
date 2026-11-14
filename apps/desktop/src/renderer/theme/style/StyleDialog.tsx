@@ -1,16 +1,4 @@
-import {
-  Button,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@webforge/editor-ui";
+import { Button, Dialog, Tabs, TabsContent, TabsList, TabsTrigger } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { NodeDoc } from "@webforge/model";
 import { type ReactNode, useId, useState } from "react";
@@ -22,6 +10,7 @@ import { ItemCss } from "../../editor/ItemCss.js";
 import type { ItemCssServices } from "../../editor/ItemCssView.js";
 import { useDocument, useUi } from "../../editor/use-document.js";
 import { type PreferencesStore, usePreferences } from "../../shell/preferences-store.js";
+import { PreviewStrip, StylingFrame } from "../StylingFrame.js";
 import { StyleGroups } from "./StyleGroups.js";
 import {
   applyStyle,
@@ -32,9 +21,6 @@ import {
   styledItemIn,
 } from "./style-apply.js";
 import type { StyleDialogState } from "./style-state.js";
-
-/** The devices the item is previewed on, side by side (3.13a). */
-const PREVIEW_DEVICES = ["desktop", "mobile"] as const;
 
 /** Props of {@link StyleDialog}. */
 export type StyleDialogProps = {
@@ -51,12 +37,12 @@ export type StyleDialogProps = {
 };
 
 /**
- * *Style this ‹kind›…* (3.13a, CT-2), in Theme Studio's chrome: the selected item's Appearance
- * fields as the Style tab has them, with their provenance (3.12), beside a live preview of the item
- * on Desktop and Mobile; a change shows there and on the canvas at once. At the bottom, where it
- * applies: this one only, every one of its kind on the page or the site (2.27), or the theme's look
- * for its kind (3.12). Apply makes it one labelled step; Cancel takes it back. 3.13b adds the
- * deeper groups beside the Appearance fields.
+ * *Style this ‹kind›…* (3.13a, CT-2), in Theme Studio's frame (CT-11): a live preview of the item on
+ * Desktop and Mobile at the top, and under it, as wide as the window, the selected item's Appearance
+ * fields as the Style tab has them and 3.13b's deeper groups, in columns, with their provenance
+ * (3.12); a change shows in the preview and on the canvas at once. At the bottom, always in view,
+ * where it applies: this one only, every one of its kind on the page or the site (2.27), or the
+ * theme's look for its kind (3.12). Apply makes it one labelled step; Cancel takes it back.
  */
 export function StyleDialog(props: StyleDialogProps) {
   const open = useStore(props.state, (dialog) => dialog.open);
@@ -107,69 +93,63 @@ function OpenStyleDialog({
         if (!next && !busy) cancel();
       }}
     >
-      <DialogContent className="flex h-[min(46rem,calc(100dvh-2rem))] max-w-[calc(100%-2rem)] flex-col gap-3 sm:max-w-5xl">
-        <DialogHeader>
-          <DialogTitle>{t("style.title", { item: name })}</DialogTitle>
-          <DialogDescription>{t("style.description")}</DialogDescription>
-        </DialogHeader>
-        <div className="grid min-h-0 flex-1 grid-cols-[minmax(0,20rem)_minmax(0,1fr)] gap-4">
-          {/* The groups' column: the Appearance fields, and 3.13b's groups in StyleGroups; in
-              Advanced mode, the item's CSS in a tab beside them (3.14). */}
-          <div className="flex min-h-0 flex-col overflow-hidden rounded-md border border-border">
-            {advanced && itemCss !== undefined ? (
-              <Tabs defaultValue="style" className="min-h-0 flex-1">
-                <TabsList aria-label={t("style.tabs")}>
-                  <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>
-                  <TabsTrigger value="css">{t("itemCss.tab")}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="style" className="min-h-0 overflow-hidden">
-                  <StyleGroups session={session} preferences={preferences} />
-                </TabsContent>
-                <TabsContent value="css" className="min-h-0 overflow-auto">
-                  <ItemCss
-                    session={session}
-                    node={node}
-                    component={item.component}
-                    services={itemCss}
-                  />
-                </TabsContent>
-              </Tabs>
-            ) : (
-              <StyleGroups session={session} preferences={preferences} />
-            )}
-          </div>
-          <section
-            aria-label={t("style.preview")}
-            className="flex min-h-0 flex-wrap content-start items-start gap-4 overflow-auto"
-          >
-            {PREVIEW_DEVICES.map((device) => (
-              <figure key={device} className="flex flex-col gap-1">
-                <figcaption className="text-xs text-muted-foreground">
-                  {t(`device.${device}`)}
-                </figcaption>
-                {itemPreviews?.(node, device)}
-              </figure>
-            ))}
-          </section>
+      <StylingFrame
+        title={t("style.title", { item: name })}
+        description={t("style.description")}
+        preview={
+          <PreviewStrip
+            label={t("style.preview")}
+            draw={(device) => itemPreviews?.(node, device)}
+          />
+        }
+        actions={
+          <>
+            <ScopeChoice
+              others={(reach) =>
+                lookChangeIn(site, session.library, selection.pageId, selection.nodeId, reach)
+                  ?.targets.length ?? 0
+              }
+              item={name}
+              scope={scope}
+              onChange={(next) => state.setState({ scope: next })}
+            />
+            <div className="ml-auto flex gap-2">
+              <Button variant="ghost" disabled={busy} onClick={cancel}>
+                {t("style.cancel")}
+              </Button>
+              <Button disabled={busy} onClick={apply}>
+                {t("style.apply")}
+              </Button>
+            </div>
+          </>
+        }
+      >
+        {/* The groups, as wide as the dialog: the Appearance fields, and 3.13b's groups in
+            StyleGroups; in Advanced mode, the item's CSS in a tab beside them (3.14). */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-md border border-border">
+          {advanced && itemCss !== undefined ? (
+            <Tabs defaultValue="style" className="min-h-0 flex-1">
+              <TabsList aria-label={t("style.tabs")}>
+                <TabsTrigger value="style">{t("editPanel.style")}</TabsTrigger>
+                <TabsTrigger value="css">{t("itemCss.tab")}</TabsTrigger>
+              </TabsList>
+              <TabsContent value="style" className="min-h-0 overflow-hidden">
+                <StyleGroups session={session} preferences={preferences} />
+              </TabsContent>
+              <TabsContent value="css" className="min-h-0 overflow-auto">
+                <ItemCss
+                  session={session}
+                  node={node}
+                  component={item.component}
+                  services={itemCss}
+                />
+              </TabsContent>
+            </Tabs>
+          ) : (
+            <StyleGroups session={session} preferences={preferences} />
+          )}
         </div>
-        <ScopeChoice
-          others={(reach) =>
-            lookChangeIn(site, session.library, selection.pageId, selection.nodeId, reach)?.targets
-              .length ?? 0
-          }
-          item={name}
-          scope={scope}
-          onChange={(next) => state.setState({ scope: next })}
-        />
-        <DialogFooter>
-          <Button variant="ghost" disabled={busy} onClick={cancel}>
-            {t("style.cancel")}
-          </Button>
-          <Button disabled={busy} onClick={apply}>
-            {t("style.apply")}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+      </StylingFrame>
     </Dialog>
   );
 }
@@ -202,9 +182,9 @@ function ScopeChoice({
     theme: t("style.scope.theme.hint", { item }),
   };
   return (
-    <fieldset className="flex flex-col gap-1.5">
+    <fieldset className="flex min-w-0 flex-1 flex-col gap-1.5">
       <legend className="mb-1 text-sm font-medium text-foreground">{t("style.scope")}</legend>
-      <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(14rem,1fr))] gap-x-4 gap-y-1.5">
         {STYLE_SCOPES.map((each) => {
           const detailId = `${id}-${each}`;
           const said = detail[each];

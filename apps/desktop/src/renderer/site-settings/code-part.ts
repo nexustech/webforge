@@ -2,7 +2,7 @@ import type { FormField, FormSchema, FormSpec } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
   allowListText,
-  RUNNING_PARTS,
+  CODE_PARTS,
   type SiteCode,
   type SiteDoc,
   sameJson,
@@ -178,7 +178,7 @@ export function saveSiteCode(
     };
     draft.settings.allowedExternalUrls = [...saved.allowedExternalUrls];
   });
-  for (const part of RUNNING_PARTS) session.codeWritten(site.code[part], saved.code[part]);
+  for (const part of CODE_PARTS) session.codeWritten(site.code[part], saved.code[part]);
   session.codeWritten(
     allowListText(site.settings.allowedExternalUrls),
     allowListText(saved.allowedExternalUrls),

@@ -132,12 +132,20 @@ The form engine's _Every kind_ story lists every kind, so a new one appears ther
 
 A rule (`packages/site-check`, [ADR 0016](adr/0016-site-check-in-the-renderer.md)) is:
 
-- **a `CheckRule`:** an `id`, a level (`must`, `should` or `tip`), `strictOnPublish` if publishing makes it _Must fix_ (X5), and `check({ site, catalogue })`. It returns findings, each with a key that stays the same while the problem lasts (what _Ignore_ remembers) and a place the panel can jump to;
+- **a `CheckRule`:** an `id`, a level (`must`, `should` or `tip`), `strictOnPublish` if publishing makes it _Must fix_ (X5), and `check({ site, catalogue })`. Three more flags are optional (`src/types.ts`): `group: "found"` lists it under _Being found_ (3.17, SEO-7); `oneTime` makes it a one-time tip, listed only while it has something to say, whose finding is _Done_ rather than ignored; `drafts` gives it the whole site, draft pages included, where every other rule gets the site as it is published (G37, #864). It returns findings, each with a key that stays the same while the problem lasts (what _Ignore_ remembers) and a place the panel can jump to;
 - **listed** in `SITE_CHECK_RULES` (`src/check.ts`), in the panel's order;
 - **worded** in `packages/i18n/src/en/siteCheck.ts`: `siteCheck.rule.<id>` for its name, `.pass` for its verdict when nothing is found, and `.fail.one` and `.fail.other` for its verdicts that count;
 - **tested** with a site built for it (`src/test-site.test-helper.ts`).
 
 `eachFieldValue` walks the values of fields of given kinds, as the catalogue describes them. It leaves out hidden elements and shared sections no page holds, as the export does. A one-click fix, if the rule has one, is the app's: `fixFor` in `renderer/site-check/actions.ts`, as one undo step.
+
+## Collections
+
+A collection (a Blog; later a Portfolio or Events) is a set of pages that share its fields and a design drawn above and below each item's own content ([ADR 0025](adr/0025-collections.md)). The model is `packages/model/src/collections.ts`; a new preset is another entry in `COLLECTION_PRESETS` there, with no code paths of its own. A component's fields show an item's values through bindings: see `itemBindable`, `boundText` and `boundImage` in [docs/components.md](components.md#fields).
+
+## The assistant
+
+The built-in assistant ([ADR 0026](adr/0026-assistant.md), 6.9a–d, #870–#873) runs its loop in main and reuses the AI apps' tools; the renderer only shows the conversation. Its panel and review card are in `renderer/assistant/`, and its contract with main is the `assistant` IPC domain (`shared/ipc/assistant.ts`, `main/assistant-ipc.ts`). The ADR fixes that contract: a change to it needs a note to stream A.
 
 ## IPC domains
 
@@ -170,7 +178,7 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
 
 - **Each area's strings** are in one file under `packages/i18n/src/en/`, listed in `en.ts`; a test fails on a key in two files. A new area gets its own (`<area>.ts`). The areas from before then share files, which `pnpm scaffold` knows (`STRINGS_FILES` in `tools/src/scaffold.ts`):
   - `panels.ts`: add, element-menu, layers, links, menu, site;
-  - `site.ts`: clipboard, media, site-settings, start;
+  - `site.ts`: clipboard, code-trust, media, site-settings, start;
   - `canvas.ts`: edit-panel, shared-sections;
   - `shell.ts`: preview, settings, undo-history (whose panel title, from before it was an area, is in `panels.ts`);
   - their own: export (`export.ts`), storage (`storage.ts`);

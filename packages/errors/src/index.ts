@@ -1,1 +1,1 @@
-export { errorCode, WebforgeError } from "./webforge-error.js";
+export { errnoOf, errorCode, WebforgeError } from "./webforge-error.js";

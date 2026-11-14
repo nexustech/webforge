@@ -55,6 +55,14 @@ export function mcpCredentialKey(appId: string): string {
   return `mcp/${encodeURIComponent(appId)}`;
 }
 
+/**
+ * The key of the assistant's provider key (6.9a, ADR 0026 §2): `assistant/openrouter`, or
+ * `assistant/server` for *Another server…*. Namespaced, as the others are.
+ */
+export function assistantCredentialKey(provider: "openrouter" | "server"): string {
+  return `assistant/${provider}`;
+}
+
 const fileSchema = z.object({
   version: z.literal(1),
   /** Key → base64 of the safeStorage-encrypted secret. */

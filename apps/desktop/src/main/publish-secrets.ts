@@ -6,6 +6,7 @@ import {
   fileTransferTrustSchema,
   type PublishDestination,
   SECRET_MAX,
+  sha256HexSchema,
 } from "@webforge/model";
 import type { PublishSignIn } from "@webforge/publish";
 import { z } from "zod";
@@ -20,7 +21,7 @@ import { type CredentialStore, publishCredentialKey } from "./credential-store.j
  */
 const savedSchema = z.strictObject({
   version: z.literal(1),
-  fingerprint: z.string().regex(/^[0-9a-f]{64}$/),
+  fingerprint: sha256HexSchema,
   signIn: z.union([
     fileTransferSignInSchema,
     z.strictObject({ token: z.string().min(1).max(SECRET_MAX) }),

@@ -7,7 +7,7 @@ import { logFailure } from "./log.js";
 import { createAppLimits } from "./mcp-limits.js";
 import type { McpListener, McpListenerOptions } from "./mcp-listener.js";
 import type { McpApp, McpServerInfo } from "./mcp-server.js";
-import { isMainTool, type SiteBriefs } from "./site-brief.js";
+import { isMainTool, type MainToolName, type SiteBriefs } from "./site-brief.js";
 
 /** The ephemeral range a port is drawn from (ADR 0021). */
 const EPHEMERAL = { from: 49152, to: 65535 } as const;
@@ -69,6 +69,36 @@ export type McpServiceOptions = {
   readonly drawPort?: () => number;
 };
 
+/** What main answers each of its own tools with (4.12a): a tool without one fails typecheck (#978). */
+type MainToolHandlers = {
+  readonly [name in MainToolName]: (
+    briefs: McpServiceOptions["briefs"],
+    request: AiRequest,
+    app: string,
+    signal: AbortSignal | undefined,
+  ) => AiResponse | Promise<AiResponse>;
+};
+
+const MAIN_TOOL_HANDLERS: MainToolHandlers = {
+  siteChoices: (briefs) => briefs.choices(),
+  createSiteFromBrief: (briefs, request, app, signal) => briefs.ask(request.input, app, signal),
+  briefStatus: (briefs, request, app) => briefs.status(request.input, app),
+};
+
+/**
+ * Main's answer to `request` from paired app `app`, by the tool's name: a name that isn't one of
+ * `MAIN_TOOLS` is refused, never taken for a brief (#978).
+ */
+export async function answerMainTool(
+  briefs: McpServiceOptions["briefs"],
+  request: AiRequest,
+  app: string,
+  signal?: AbortSignal,
+): Promise<AiResponse> {
+  if (!isMainTool(request.name)) return { status: "invalid", message: "There is no such tool." };
+  return MAIN_TOOL_HANDLERS[request.name](briefs, request, app, signal);
+}
+
 /**
  * Whether `error` says the port can't be had: in use, or (on Windows, where Hyper-V, WSL or Docker
  * reserve blocks of ports) not allowed (5.6). Either way another port is drawn.
@@ -93,16 +123,8 @@ export function createMcpService(options: McpServiceOptions): McpService {
   /** Main's own tools (4.12a), for `app`: a brief, its status, and what it chooses from. */
   const mainTool =
     (app: McpApp, signal: AbortSignal | undefined) =>
-    async (request: AiRequest): Promise<AiResponse> => {
-      switch (request.name) {
-        case "siteChoices":
-          return options.briefs.choices();
-        case "briefStatus":
-          return options.briefs.status(request.input, app.id);
-        default:
-          return options.briefs.ask(request.input, app.id, signal);
-      }
-    };
+    async (request: AiRequest): Promise<AiResponse> =>
+      answerMainTool(options.briefs, request, app.id, signal);
   let listener: McpListener | null = null;
   /**
    * The version "Before ‹app›'s changes" saved, or being saved, for each app in each opening of

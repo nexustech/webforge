@@ -4,7 +4,7 @@ id: glossary
 title: Glossary
 summary: The words {appName} uses, what each one means, and where to read more.
 related: [getting-started, the-editor, pages, publish]
-updated: 2026-11-10
+updated: 2026-11-13
 ---
 
 # Glossary
@@ -18,8 +18,11 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Section:** a band across the page, such as a Hero, Features or a Contact form. Pages are built from sections, one above another. See [Sections](sections.md).
 - **Element:** anything inside a section: a heading, text, a picture, a button, a form. See [Elements](elements.md).
 - **Header and Footer:** the top and bottom of every page. Change them once and every page changes. See [Header, Footer and shared sections](header-and-footer.md).
+- **Announcement bar:** a thin strip of news above the Header on every page, such as "Closed 24–26 December", with a close button for visitors. See [Announcement bar](header-and-footer.md#announcement-bar).
 - **Shared section:** a section kept once and placed on several pages, so a change to it shows everywhere. **Detach from shared section** turns one copy back into a section of its own. See [Shared sections](header-and-footer.md#shared-sections).
 - **Blog** and **post:** your blog holds your news; each post is a page of it, with a date, a summary and a picture. The blog's **design** is drawn above and below every post. See [Your blog](blog.md).
+- **Tags** and **Post tags:** words that group your posts, such as _Opening times_ or _News_. Each tag gets a page listing its posts, and the **Post tags** element links to them. See [Post tags](blog.md#post-tags).
+- **One-page site:** a site with everything on its home page, one section after another, and a menu that scrolls to each. See [One-page sites](one-page-sites.md).
 - **Template:** a ready-made site to start from, chosen when you make a new site. See [Templates and example sites](templates.md).
 - **Theme:** your site's colours, fonts and corners, used on every page. See [Themes, colours and fonts](themes.md).
 - **Media:** the pictures and files your site uses. A **file** is anything in Media that isn't a picture, such as a PDF price list, which visitors can download. See [Media](media.md).
@@ -39,10 +42,11 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 
 ## How it looks
 
-- **Theme Studio:** the larger window for changing your theme's colours, text, spacing and corners. See [Theme Studio](themes.md#theme-studio).
+- **Theme Studio:** your whole theme in a window that fills {appName}'s window, with tabs for **Themes**, **Colours**, **Text**, **Styles** and **Components**. See [Theme Studio](themes.md#theme-studio).
 - **My themes** and **Built-in themes:** your own themes, kept on this computer for all your sites, and the ones that come with {appName}. Changing a built-in theme saves your own version of it. See [Built-in themes and your own](themes.md#built-in-themes-and-your-own).
 - **Appearance:** the same look options on every section and element, in the Edit panel's **Style** tab: text, colour, corners, border, shadow and how it looks when hovered. See [Styling](styling.md).
-- **Style this…:** a larger window for an item's look, with a preview, that can also change every item of its kind. See [Style this…](styling.md#style-this).
+- **Style This…:** a window that fills {appName}'s window, for an item's look, with a preview, that can also change every item of its kind. See [Style This…](styling.md#style-this).
+- **Gradient:** a background that blends one colour into another, added in **Style This…**. On a background picture, **Gradient opacity** sets how much of the picture shows through. See [Gradients](styling.md#gradients).
 - **Hover effect:** what a button, picture or card does when the pointer is over it, such as lifting or growing. See [Hover effects](styling.md#hover-effects).
 - **Entrance animation:** how a section or element moves in as visitors scroll to it. It plays once, and never for visitors who prefer less movement. See [Entrance animation](styling.md#entrance-animation).
 - **Page colours** and **Reversed:** a section's colours: the page's own, or the theme's light and dark colours swapped, for a dark band on a light page. See [Sections](sections.md).
@@ -56,6 +60,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Site Settings:** your site's name, web address, contact details, social links, forms and search engines. See [Site Settings](site-settings.md).
 - **Page Settings:** one page's title, description, share picture and what it hides. See [Page Settings](pages.md#page-settings).
 - **Custom Code:** your own HTML, CSS or JavaScript, in Advanced mode. See [Custom Code](custom-code.md).
+- **Stylesheet:** your site's own CSS, for a look the Style options don't give, in Advanced mode. See [The Stylesheet panel](stylesheet.md).
 - **Undo History:** the list of your changes, to go back several steps at once. See [Undo and Undo History](undo-and-history.md).
 
 ## Checking and going live
@@ -69,6 +74,7 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 
 ## Your work
 
+- **Find and Replace:** finds a word or phrase wherever you've written it on your site, and changes it everywhere at once or one place at a time. See [Find and Replace](find-and-replace.md).
 - **Version History:** your site as it was at earlier times. **Save Version…** keeps the site as it is now, and **Restore…** goes back to a version. See [Version History](version-history.md).
 - **Save a Copy as ZIP…** and **Open Site from ZIP…:** your whole site in one ZIP file, for a backup or another computer, and opening it again. This isn't your website: that's Export. See [Saving, copies and backups](saving-and-backups.md).
 - **AI apps:** AI apps on your computer, such as Claude, that you let work on the site you have open. Each change they make is a step in Undo History. See [AI apps](ai-apps.md).

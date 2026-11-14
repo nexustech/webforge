@@ -1,26 +1,7 @@
 import { t, template } from "@webforge/i18n";
 import { renderToStaticMarkup } from "react-dom/server";
+import { StrokeIcon } from "./stroke-icon.js";
 import { BUTTON_CLASSES } from "./typography.js";
-
-/** A small icon for the lightbox's buttons, drawn inline so the site needs no icon font (C8). */
-function Icon({ path }: { readonly path: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      width="20"
-      height="20"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={path} />
-    </svg>
-  );
-}
 
 /**
  * The lightbox (2.7a, G10): a native `<dialog>`, which `webforge.js`'s "lightbox" behaviour opens
@@ -46,7 +27,7 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
       <div className="modal-box flex max-w-5xl flex-col items-center gap-3 p-4">
         <form method="dialog" className="self-end">
           <button type="submit" className={BUTTON_CLASSES.icon} aria-label={t("siteText.close")}>
-            <Icon path="M18 6 6 18M6 6l12 12" />
+            <StrokeIcon path="M18 6 6 18M6 6l12 12" />
           </button>
         </form>
         <figure className="flex w-full flex-col items-center gap-2">
@@ -67,7 +48,7 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
               aria-label={t("siteText.previousImage")}
               data-wf-lightbox-previous=""
             >
-              <Icon path="m15 18-6-6 6-6" />
+              <StrokeIcon path="m15 18-6-6 6-6" />
             </button>
             <p className="text-sm" aria-live="polite" data-wf-lightbox-status="" />
             <button
@@ -76,7 +57,7 @@ export function Lightbox({ single = false }: { readonly single?: boolean }) {
               aria-label={t("siteText.nextImage")}
               data-wf-lightbox-next=""
             >
-              <Icon path="m9 18 6-6-6-6" />
+              <StrokeIcon path="m9 18 6-6-6-6" />
             </button>
           </div>
         )}

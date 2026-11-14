@@ -98,6 +98,7 @@ export {
   storedAdvancedSchema,
   themeSchema,
 } from "./documents.js";
+export { escapeHtml, escapeHtmlText, escapeRegExp } from "./escape.js";
 export type { ExportChoices } from "./export-choices.js";
 export { DEFAULT_EXPORT_CHOICES, exportChoicesSchema } from "./export-choices.js";
 export { exportedAddress, exportedSiteAddress, exportedTitle } from "./exported-page.js";
@@ -130,6 +131,7 @@ export {
   THANKS_FIELD,
   THANKS_PATH,
 } from "./forms.js";
+export { SHA256_HEX, sha256HexSchema } from "./hashes.js";
 export type {
   Brand,
   CollectionId,
@@ -146,6 +148,7 @@ export {
   menuItemIdSchema,
   newId,
   nodeIdSchema,
+  pageId,
   pageIdSchema,
   sharedSectionIdSchema,
   themeIdSchema,
@@ -156,6 +159,7 @@ export {
   type SniffedImage,
   sniffImage,
 } from "./image-size.js";
+export { isRecord } from "./is-record.js";
 export {
   fileKey,
   keepingOldAddresses,
@@ -168,8 +172,10 @@ export type { LinkValue } from "./link.js";
 export { anchorIdSchema, EMAIL_SUBJECT_MAX, linkValueSchema, webUrlSchema } from "./link.js";
 export type { ComponentLook, LookField, Looks, ValueSource } from "./look.js";
 export {
+  CUSTOM_COLOUR,
   componentLookSchema,
   effectiveValues,
+  GRADIENT_END_DEFAULTS,
   LOOK_FIELDS,
   looksSchema,
   valuesWithLook,
@@ -179,6 +185,7 @@ export {
   frontMatter,
   inlineMarkdown,
   looksLikeMarkdown,
+  markdownHeading,
   markdownToRichText,
 } from "./markdown.js";
 export type {
@@ -240,6 +247,7 @@ export {
   publishDestinationsSchema,
 } from "./publish-destinations.js";
 export { isDraftPage, previewedSite, publishedSite } from "./published-site.js";
+export { entriesOf, isKeyOf, keysOf } from "./records.js";
 export type { Breakpoint, Responsive, ResponsiveValue } from "./responsive.js";
 export {
   breakpointForWidth,
@@ -320,8 +328,9 @@ export {
 export { SITE_CHECK_IGNORED_MAX, siteCheckIgnoredSchema } from "./site-check-ignored.js";
 export {
   allowListText,
-  RUNNING_PARTS,
-  type RunningCodePart,
+  CODE_PARTS,
+  type CodePart,
+  cssNeedsTrust,
   type SiteCodePiece,
   siteCodePieces,
   withKeptCode,
@@ -358,7 +367,13 @@ export {
   siteFromDocuments,
   validateSiteChanges,
 } from "./site-documents.js";
-export { designAt, type ElementPlace, eachElement, elementsAt } from "./site-elements.js";
+export {
+  designAt,
+  type ElementPlace,
+  eachElement,
+  elementsAt,
+  pageWithCopy,
+} from "./site-elements.js";
 export { isDeviceName, sitePathSchema } from "./site-path.js";
 export type {
   DocumentItem,

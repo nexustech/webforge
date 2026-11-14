@@ -1,6 +1,9 @@
 # Project File Format and Versions
 
 **Status:** Researched 2026-10-19. Spike done: SQLite confirmed, findings in [ADR 0003](../../docs/adr/0003-wforge-sqlite-storage.md) (packaging, rollback journal, sync folders, untrusted files); product decisions recorded in [Decisions](#decisions-2026-10-19)
+
+> **Since then (13 Nov 2026):** the app is on **Electron 45.2.3** (PR [#845](https://github.com/nexustech/webforge/pull/845)), with better-sqlite3 on its Node-API prebuilds (ADR 0003); the storage format moved on in [ADR 0020](../../docs/adr/0020-storage-format-2.md). This note's Electron 44 checks are as researched.
+
 **Recommendation:** a **single-file project (`.wforge`) that is an SQLite database** containing JSON documents and binary assets, stored **content-addressed** so **named versions (snapshots)** are cheap. Offer **"Export as .zip"** (plain JSON + asset files) for backup and interchange. **Fallback:** a ZIP container (Sketch-style) if SQLite causes problems in the spike.
 
 ## Requirements (from discussion)
