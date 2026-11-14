@@ -76,6 +76,47 @@ describe("CanvasFrame (R8)", () => {
     expect(frame.document()).toBe(document);
   });
 
+  it("says the site is shown styled once its CSS is drawn and its fonts loaded (#1013)", async () => {
+    let fontsLoaded = () => undefined as void;
+    const ready = new Promise<void>((resolve) => {
+      fontsLoaded = resolve;
+    });
+    Object.defineProperty(document, "fonts", { value: { ready }, configurable: true });
+    const styled = vi.fn();
+    const frame = createCanvasFrame(() => undefined, styled);
+    try {
+      frame.attach(document);
+      // No CSS yet: the page is unstyled.
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      expect(styled).not.toHaveBeenCalled();
+
+      frame.setSiteStyles({ css: "body { color: red }", bodyClass: "" });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      expect(styled).not.toHaveBeenCalled();
+      fontsLoaded();
+      await vi.waitFor(() => expect(styled).toHaveBeenCalledOnce());
+
+      // Later CSS changes nothing: the document was told once.
+      frame.setSiteStyles({ css: "body { color: blue }", bodyClass: "" });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await ready;
+      expect(styled).toHaveBeenCalledOnce();
+    } finally {
+      Reflect.deleteProperty(document, "fonts");
+    }
+  });
+
+  it("doesn't say a document is styled once the canvas has another (#1013)", async () => {
+    const styled = vi.fn();
+    const frame = createCanvasFrame(() => undefined, styled);
+    frame.setSiteStyles({ css: "body { color: red }", bodyClass: "" });
+    frame.attach(document);
+    frame.forget();
+    // After the frame its check waits for: requested first, so run first.
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    expect(styled).not.toHaveBeenCalled();
+  });
+
   it("keeps elements enabled in Content mode only, while there is a document", () => {
     const frame = createCanvasFrame(() => undefined);
 

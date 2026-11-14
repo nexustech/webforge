@@ -149,7 +149,16 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The names the View menu's labels show, by id, for the page shown: made once per change. */
   const names = memoByDocs((docs: CanvasDocs) => elementNames(docs, library));
-  const frame = createCanvasFrame((id) => names(page.docs()).get(id));
+  // Whether the canvas has shown the site with its CSS and fonts yet (#1013), and who's told.
+  let styled = false;
+  const styledEvents = emitter<null>();
+  const frame = createCanvasFrame(
+    (id) => names(page.docs()).get(id),
+    () => {
+      styled = true;
+      styledEvents.emit(null);
+    },
+  );
 
   const commandHandlers = new Set<HistoryCommandHandler>();
   /** True if any handler did something with the command (see installHistoryKeys). */
@@ -387,6 +396,11 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
     onContextMenu: contextMenus.add,
 
     addDragSource: dragSources.add,
+
+    onStyled(cb) {
+      if (styled) cb();
+      return styledEvents.add(() => cb());
+    },
 
     onFrameWindow(cb) {
       const current = frame.document()?.defaultView;

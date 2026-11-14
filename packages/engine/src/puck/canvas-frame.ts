@@ -33,9 +33,18 @@ export type CanvasFrame = {
   forget(): void;
 };
 
-/** A new {@link CanvasFrame}, in Design mode, labelling elements in the View menu with `nameOf`. */
-export function createCanvasFrame(nameOf: (id: string) => string | undefined): CanvasFrame {
+/**
+ * A new {@link CanvasFrame}, in Design mode, labelling elements in the View menu with `nameOf`.
+ * `onStyled` is told when a document of the canvas first shows the site with its CSS and the fonts
+ * it uses (#1013): the styles attached, a frame drawn with them, then its fonts loaded.
+ */
+export function createCanvasFrame(
+  nameOf: (id: string) => string | undefined,
+  onStyled: () => void = () => undefined,
+): CanvasFrame {
   let frameDocument: Document | null = null;
+  /** The documents shown with the site's CSS: each is told once. */
+  const styled = new WeakSet<Document>();
   let mode: EditorMode = "design";
   let viewOptions: ViewOptions = NO_VIEW_OPTIONS;
   let siteStyles: SiteStyles | null = null;
@@ -63,6 +72,25 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
     }
   };
 
+  /** Tells `onStyled` once `document`, now with the site's CSS, has drawn it and loaded its fonts. */
+  const tellStyled = (document: Document) => {
+    if (styled.has(document)) return;
+    styled.add(document);
+    const told = () => {
+      if (frameDocument === document) onStyled();
+    };
+    // A frame first: the fonts start loading once the styles apply, and `fonts.ready` resolves at
+    // once while nothing is loading yet.
+    const afterFrame = () => {
+      const fonts = document.fonts as FontFaceSet | undefined;
+      if (fonts === undefined) told();
+      else void fonts.ready.then(told, told);
+    };
+    const view = document.defaultView;
+    if (view === null) afterFrame();
+    else view.requestAnimationFrame(afterFrame);
+  };
+
   const followMode = () => {
     stopKeepingEnabled?.();
     stopKeepingEnabled =
@@ -78,7 +106,10 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
     document: () => frameDocument,
     attach(document) {
       frameDocument = document ?? null;
-      if (document !== undefined && siteStyles !== null) applySiteStyles(document, siteStyles);
+      if (document !== undefined && siteStyles !== null) {
+        applySiteStyles(document, siteStyles);
+        tellStyled(document);
+      }
       if (document !== undefined && customCss !== "") applyCustomCss(document, customCss);
       if (document !== undefined && documentInfo !== null)
         applyDocumentInfo(document, documentInfo);
@@ -106,7 +137,10 @@ export function createCanvasFrame(nameOf: (id: string) => string | undefined): C
     },
     setSiteStyles(styles) {
       siteStyles = styles;
-      if (frameDocument !== null) applySiteStyles(frameDocument, styles);
+      if (frameDocument !== null) {
+        applySiteStyles(frameDocument, styles);
+        tellStyled(frameDocument);
+      }
     },
     setCustomCss(css) {
       customCss = css;
