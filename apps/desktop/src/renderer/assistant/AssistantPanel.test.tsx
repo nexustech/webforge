@@ -28,7 +28,6 @@ function shown(options: FakeAssistantOptions = {}) {
     api,
     sessionId: "site-1",
     openSettings,
-    openLink: vi.fn(),
   });
   render(<Panel />);
   return { api, send, session, openSettings, remove, user: userEvent.setup({ delay: null }) };
@@ -47,6 +46,31 @@ describe("the assistant's panel (6.9c)", () => {
 
     await user.click(screen.getByRole("button", { name: "Use on This Site" }));
     expect(await screen.findByRole("textbox", { name: "Message the assistant" })).toBeDefined();
+  });
+
+  it("stops using the assistant on this site when asked (AIA-6)", async () => {
+    const { api, user } = shown();
+    const consent = vi.spyOn(api, "setSiteConsent");
+    await user.click(await screen.findByRole("button", { name: "Stop Using on This Site" }));
+
+    expect(consent).toHaveBeenCalledWith("site-1", false);
+    expect(await screen.findByText(/chose not to use the assistant on this site/)).toBeDefined();
+    expect(screen.queryByRole("textbox", { name: "Message the assistant" })).toBeNull();
+  });
+
+  it("opens a reply's link through main, as the reply wrote it", async () => {
+    const { api, user } = shown({
+      reply: { text: "See [our hours](HTTPS://Bakery.example/hours)." },
+    });
+    const open = vi.spyOn(api, "openLink");
+    await user.type(
+      await screen.findByRole("textbox", { name: "Message the assistant" }),
+      "Hi{Enter}",
+    );
+    await user.click(await screen.findByRole("link", { name: /our hours/ }));
+
+    expect(open).toHaveBeenCalledWith("site-1", expect.any(String), "HTTPS://Bakery.example/hours");
+    expect(await open.mock.results[0]?.value).toEqual({ status: "opened" });
   });
 
   it("is off until set up in Settings, and asks again when its provider is new", async () => {

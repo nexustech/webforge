@@ -9,7 +9,9 @@ export const assistant = {
   // A link in a reply (product/14 §6.4): its address is always shown, and it opens only when clicked.
   "assistant.link.open": "Open {address} in your browser",
   "assistant.image": "Image not shown: {alt}",
-  "assistant.link.copied": "Address copied. Paste it in your browser to open it.",
+  // Main opens only a web address the reply holds (ADR 0026 §7).
+  "assistant.link.refused": "This link can't be opened from here.",
+  "assistant.link.failed": "The link couldn't be opened. Try again.",
   // What a reply did, besides its text.
   "assistant.tool.running": "Working on your site…",
   "assistant.tool.read.one": "Looked at 1 part of your site",
@@ -89,6 +91,7 @@ export const assistant = {
   "assistant.site.kept": "Your answer stays on this computer, never in the site file.",
   "assistant.site.allow": "Use on This Site",
   "assistant.site.deny": "Not Now",
+  "assistant.site.stop": "Stop Using on This Site",
   // OpenRouter's sign-in (ADR 0026 §3): the key's label in the person's account, never the
   // computer's name, and the page the browser shows after it.
   "assistant.signIn.keyLabel": "{appName}, {date}",

@@ -47,6 +47,9 @@ function fakeService(status: Partial<McpServiceStatus> = {}) {
       apps.some((app) => app.id === id) ? "p".repeat(43) : null,
     ),
     status: vi.fn(async () => current),
+    connectAssistant: vi.fn(async () => {
+      throw new Error("not the assistant's test");
+    }),
     close: vi.fn(async () => undefined),
   } satisfies McpService;
   return service;

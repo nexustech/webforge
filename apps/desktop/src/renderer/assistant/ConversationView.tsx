@@ -1,5 +1,6 @@
 import { plural, t } from "@webforge/i18n";
 import type { ReactNode } from "react";
+import { ASSISTANT_ERRORS } from "../../shared/ipc/assistant.js";
 import { money } from "./money.js";
 import { ReplyText } from "./ReplyText.js";
 
@@ -48,8 +49,8 @@ export type TurnView = {
 /** Props of {@link ConversationView}. */
 export type ConversationViewProps = {
   readonly turns: readonly TurnView[];
-  /** Opens a web address from a reply in the browser, once clicked. */
-  readonly onOpenLink: (href: string) => void;
+  /** Opens a link from a reply in the browser, once clicked: its address as the reply wrote it. */
+  readonly onOpenLink: (href: string, replyId: string) => void;
   /** Drawn under a reply that has ended: 6.9c's review card. */
   readonly afterReply?: (turn: TurnView) => ReactNode;
 };
@@ -94,7 +95,7 @@ function Turn({
   afterReply,
 }: {
   readonly turn: TurnView;
-  readonly onOpenLink: (href: string) => void;
+  readonly onOpenLink: ConversationViewProps["onOpenLink"];
   readonly afterReply: ConversationViewProps["afterReply"];
 }) {
   const ended = turn.state !== "replying";
@@ -109,7 +110,7 @@ function Turn({
         {turn.reply === "" && !ended ? (
           <p className="m-0 text-sm text-muted-foreground">{t("assistant.replying")}</p>
         ) : (
-          <ReplyText text={turn.reply} onOpenLink={onOpenLink} />
+          <ReplyText text={turn.reply} onOpenLink={(href) => onOpenLink(href, turn.replyId)} />
         )}
         {turn.tools.length === 0 ? null : <ToolSummary tools={turn.tools} />}
         {turn.state === "done" && turn.stop !== undefined && turn.stop !== "end" ? (
@@ -131,27 +132,10 @@ function Turn({
   );
 }
 
-/** The error codes the panel words (ADR 0026 §7); any other falls back to *failed*. */
-const ERRORS = [
-  "consent-needed",
-  "not-signed-in",
-  "no-model",
-  "limit-reached",
-  "busy",
-  "no-site",
-  "offline",
-  "unauthorized",
-  "no-credit",
-  "rate-limited",
-  "model-unavailable",
-  "provider-error",
-  "insecure-server",
-  "failed",
-] as const;
-
 /** The message for an error code. */
 export function errorKey(code: string | undefined) {
-  const known = ERRORS.find((each) => each === code) ?? "failed";
+  // Any code the panel doesn't know (a newer main's) is worded as *failed*.
+  const known = ASSISTANT_ERRORS.find((each) => each === code) ?? "failed";
   return `assistant.error.${known}` as const;
 }
 

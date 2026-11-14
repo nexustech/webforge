@@ -286,6 +286,67 @@ describe("the command API's commands (4.8)", () => {
     ).toBe("refused");
   });
 
+  it("says each change's own undo step and what it changed, for the assistant (6.9b)", async () => {
+    const { history, host } = setup();
+    const api = createCommandApi(host);
+    const location = home(history);
+    const pageId = location.pageId;
+    // The person's own change first, under a coalesce key, as the editor's are.
+    const retitle = (title: string) =>
+      history.run(
+        "Edited page title",
+        (doc) => {
+          const page = doc.pages[doc.homePageId];
+          if (page !== undefined) page.title = title;
+        },
+        { coalesceKey: "title" },
+      );
+    retitle("Start");
+    const entryOf = () => history.state.getState().entries.at(-1)?.id;
+    const own = entryOf();
+    expect(own).toBeDefined();
+
+    const added = await api.run("addNode", { location, type: "Hero", values: {} }, app);
+    if (added.status !== "done" || added.id === undefined) throw new Error("not added");
+    expect(added).toMatchObject({ entryId: entryOf(), target: { pageId, nodeId: added.id } });
+    const edited = await api.run(
+      "editText",
+      { location, nodeId: "heading", field: "text", text: "Hello" },
+      app,
+    );
+    expect(edited).toMatchObject({ entryId: entryOf(), target: { pageId, nodeId: "heading" } });
+    const removed = await api.run("removeNode", { location, nodeId: "hero" }, app);
+    expect(removed).toMatchObject({ entryId: entryOf(), target: { pageId } });
+    expect(removed).not.toHaveProperty("target.nodeId");
+    const footer = await api.run(
+      "updateFields",
+      { location: { kind: "layout", part: "footer" }, nodeId: "footer", values: { text: "Hi" } },
+      app,
+    );
+    expect(footer.status).toBe("done");
+    expect(footer).not.toHaveProperty("target");
+    const page = await api.run("addPage", { title: "Menu" }, app);
+    expect(page).toMatchObject({ target: { pageId: page.status === "done" ? page.id : "" } });
+
+    // No AI change merged into the person's step, nor into another: one entry each, all apart.
+    const ids = [added, edited, removed, footer, page].map((each) =>
+      each.status === "done" ? each.entryId : undefined,
+    );
+    expect(new Set([own, ...ids]).size).toBe(6);
+    // A change that changes nothing adds no step, so it names none: not the person's.
+    const same = await api.run(
+      "editText",
+      { location, nodeId: "heading", field: "text", text: "Hello" },
+      app,
+    );
+    expect(same.status).toBe("done");
+    expect(same).not.toHaveProperty("entryId");
+    // The person's next change doesn't merge into the last AI step either.
+    retitle("Begin");
+    expect(entryOf()).not.toBe(ids.at(-1));
+    expect(history.state.getState().entries).toHaveLength(7);
+  });
+
   it("adds a page before 'Page not found'", async () => {
     const { history, host } = setup();
     const result = await createCommandApi(host).run("addPage", { title: "Menu" }, app);

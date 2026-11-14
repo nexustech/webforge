@@ -92,5 +92,12 @@ export type CommandResult =
       readonly label: string;
       /** What it made: the new element's or page's id. */
       readonly id?: string;
+      /** Its undo step's id in the history, which _Undo these changes_ goes back past (6.9b). */
+      readonly entryId?: string;
+      /** The page, and the element on it, that it changed, for the assistant's _Show_ (6.9b). */
+      readonly target?: CommandTarget;
     }
   | { readonly status: Refusal; readonly message: string };
+
+/** A page, and an element on it, that a command changed. */
+type CommandTarget = { readonly pageId: string; readonly nodeId?: string };

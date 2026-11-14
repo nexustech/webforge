@@ -352,3 +352,80 @@ describe("main's own tools (4.12a)", () => {
     expect(each.status).not.toHaveBeenCalled();
   });
 });
+
+describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", () => {
+  it("works with AI apps off, as Assistant, with the command layer's tools and Site Check alone", async () => {
+    const { service, listen, ask, saveVersionBefore } = setUp();
+    const before = vi.fn(async () => undefined);
+    const { client, close } = await service.connectAssistant(before);
+    expect(listen).not.toHaveBeenCalled();
+
+    const names = (await client.listTools()).tools.map((tool) => tool.name);
+    expect(names).toContain("addNode");
+    expect(names).toContain("outline");
+    expect(names).toContain("runSiteCheck");
+    for (const other of ["openPreview", "requestMedia", "createSiteFromBrief", "siteChoices"]) {
+      expect(names).not.toContain(other);
+    }
+    expect(await client.callTool({ name: "openPreview", arguments: {} })).toMatchObject({
+      isError: true,
+    });
+
+    // A command is the assistant's, its safety version left to it; a query and a plan take none.
+    ask.mockResolvedValueOnce({
+      status: "done",
+      label: "AI (Assistant): Added page 'Menu'",
+      entryId: "h1",
+      target: { pageId: "page-1" },
+    });
+    const added = await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
+    expect(ask).toHaveBeenLastCalledWith({
+      kind: "command",
+      name: "addPage",
+      input: { title: "Menu" },
+      app: "Assistant",
+    });
+    expect(added.content).toEqual([
+      {
+        type: "text",
+        text: JSON.stringify({
+          status: "done",
+          label: "AI (Assistant): Added page 'Menu'",
+          entryId: "h1",
+          target: { pageId: "page-1" },
+        }),
+      },
+    ]);
+    await client.callTool({ name: "outline", arguments: {} });
+    await client.callTool({ name: "plan", arguments: { steps: [] } });
+    expect(before).toHaveBeenCalledTimes(1);
+    expect(saveVersionBefore).not.toHaveBeenCalled();
+    await close();
+  });
+
+  it("never tells an AI app a command's undo step or what it changed", async () => {
+    const { service, listened, ask } = setUp();
+    await service.setEnabled(true);
+    const [options] = listened;
+    if (options === undefined) throw new Error("not listening");
+    ask.mockResolvedValueOnce({
+      status: "done",
+      label: "AI (Claude): Added page 'Menu'",
+      id: "page-1",
+      entryId: "h1",
+      target: { pageId: "page-1" },
+    });
+    const client = await connection(options, { id: "app-1", name: "Claude" });
+    const added = await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
+    expect(added.content).toEqual([
+      {
+        type: "text",
+        text: JSON.stringify({
+          status: "done",
+          label: "AI (Claude): Added page 'Menu'",
+          id: "page-1",
+        }),
+      },
+    ]);
+  });
+});

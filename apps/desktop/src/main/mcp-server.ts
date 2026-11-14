@@ -16,6 +16,7 @@ import {
   catalogueResourceText,
   UNTRUSTED_SITE_TEXT,
 } from "@webforge/commands";
+import { t } from "@webforge/i18n";
 import { type AiRequest, type AiResponse, APP_TOOLS, REQUEST_MEDIA } from "../shared/ipc/ai.js";
 import { buildSitePrompt, buildSitePromptInfo } from "./mcp-prompts.js";
 import { MAIN_TOOLS } from "./site-brief.js";
@@ -68,12 +69,34 @@ const PROGRESS_EVERY_MS = 10_000;
 let catalogueText: string | undefined;
 
 /**
- * A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done, or a
- * brief still waiting for the person.
+ * The assistant's tools (AIA-9): the command layer's, and Site Check. Not Preview, which opens the
+ * browser, nor Media requests, which ask for files, nor main's site briefs, which start a new site.
  */
-function toolResult(response: AiResponse): CallToolResult {
+const ASSISTANT_TOOL_NAMES = new Set([...AI_TOOLS.map((tool) => tool.name), "runSiteCheck"]);
+const ASSISTANT_TOOLS = TOOLS.filter((tool) => ASSISTANT_TOOL_NAMES.has(tool.name));
+
+/** Who the in-app assistant is to the tool layer: its steps are "AI (Assistant): …" (ADR 0026 §1). */
+export const assistantApp = (): McpApp => ({ id: ASSISTANT_APP_ID, name: t("assistant.name") });
+
+/** The assistant's app id, which no paired app has: theirs are drawn at random (4.9). */
+const ASSISTANT_APP_ID = "assistant";
+
+/**
+ * A tool's answer: the bridge's response as JSON, in labelled fields; an error unless done, or a
+ * brief still waiting for the person. A command's undo step and what it changed go only to the
+ * assistant (`steps`), which shows them (6.9b): an AI app is told what it made, as before.
+ */
+function toolResult(response: AiResponse, steps: boolean): CallToolResult {
+  const shown =
+    steps || response.status !== "done" || !("label" in response)
+      ? response
+      : {
+          status: response.status,
+          label: response.label,
+          ...(response.id === undefined ? {} : { id: response.id }),
+        };
   return {
-    content: [{ type: "text", text: JSON.stringify(response) }],
+    content: [{ type: "text", text: JSON.stringify(shown) }],
     ...(response.status === "done" || response.status === "waiting" ? {} : { isError: true }),
   };
 }
@@ -92,11 +115,35 @@ export function createMcpServer(
   ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
   progressEveryMs = PROGRESS_EVERY_MS,
 ): Server {
+  return serve(info, app, ask, TOOLS, false, progressEveryMs);
+}
+
+/**
+ * The MCP server for the in-app assistant (6.9b, ADR 0026 §1), over the SDK's in-memory transport:
+ * as an AI app's, with {@link ASSISTANT_TOOLS}, on behalf of {@link assistantApp}, and telling it
+ * each command's undo step and what it changed.
+ */
+export function createAssistantMcpServer(
+  info: McpServerInfo,
+  ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
+): Server {
+  return serve(info, assistantApp(), ask, ASSISTANT_TOOLS, true, PROGRESS_EVERY_MS);
+}
+
+/** A server for `app` with `tools`, its commands' undo steps told to it when `steps`. */
+function serve(
+  info: McpServerInfo,
+  app: McpApp,
+  ask: (request: AiRequest, signal?: AbortSignal) => Promise<AiResponse>,
+  tools: readonly (typeof TOOLS)[number][],
+  steps: boolean,
+  progressEveryMs: number,
+): Server {
   const server = new Server(info, { capabilities: { tools: {}, resources: {}, prompts: {} } });
   // The SDK reports a transport's or handler's errors here; they may quote a request.
   server.onerror = () => undefined;
   server.setRequestHandler(ListToolsRequestSchema, () => ({
-    tools: TOOLS.map(({ name, description, inputSchema }) => ({
+    tools: tools.map(({ name, description, inputSchema }) => ({
       name,
       description,
       inputSchema,
@@ -125,9 +172,9 @@ export function createMcpServer(
     return buildSitePrompt(params.arguments?.description);
   });
   server.setRequestHandler(CallToolRequestSchema, async ({ params }, extra) => {
-    const tool = TOOLS.find((each) => each.name === params.name);
+    const tool = tools.find((each) => each.name === params.name);
     if (tool === undefined) {
-      return toolResult({ status: "invalid", message: "There is no such tool." });
+      return toolResult({ status: "invalid", message: "There is no such tool." }, steps);
     }
     const input = params.arguments ?? {};
     // While it waits for the person, it says it's still going, if the app asked to be told (4.12a).
@@ -154,6 +201,7 @@ export function createMcpServer(
           // The app giving up on the request: a brief stops waiting for the person.
           extra.signal,
         ),
+        steps,
       );
     } finally {
       clearInterval(still);
