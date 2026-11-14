@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import {
+  escapeHtmlText,
   type NodeDoc,
   type SitePage,
   type SiteSnapshot,
@@ -28,10 +29,6 @@ function holdsForm(nodes: readonly NodeDoc[]): boolean {
         )),
   );
 }
-
-/** `escape`d for the Text element's HTML. */
-const escapeHtml = (text: string) =>
-  text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
 /** A node of `type` with its component's defaults and `props`. */
 const node = (
@@ -73,7 +70,7 @@ function madeThanksPage(site: SiteSnapshot, library: ComponentLibrary): SitePage
             }),
             node(library, "Text", {
               id: "thank-you-text",
-              text: `<p>${escapeHtml(t("siteText.thanks.text"))}</p>`,
+              text: `<p>${escapeHtmlText(t("siteText.thanks.text"))}</p>`,
             }),
             ...(home === undefined
               ? []

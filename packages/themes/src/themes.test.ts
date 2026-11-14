@@ -12,6 +12,7 @@ import { Window } from "happy-dom";
 import { describe, expect, it } from "vitest";
 import {
   contrastRatio,
+  hexOf,
   hexToOklch,
   inverseColors,
   oklchToSrgb,
@@ -621,5 +622,13 @@ describe("the scales' CSS for Theme Studio (2.3b)", () => {
     expect(shadowCss("none")).toBe("none");
     expect(shadowCss("soft")).toMatch(/rgb\(0 0 0 \/ 0\.1\)/);
     expect(shadowCss("strong")).toMatch(/rgb\(0 0 0 \/ 0\.2\)/);
+  });
+});
+
+describe("hexOf (#988)", () => {
+  it("writes a colour as six lower-case hex digits, which read back as the same colour", () => {
+    expect(hexOf(hexToOklch("#1f6feb"))).toBe("#1f6feb");
+    expect(hexOf({ l: 0, c: 0, h: 0 })).toBe("#000000");
+    expect(hexOf({ l: 1, c: 0, h: 0 })).toBe("#ffffff");
   });
 });

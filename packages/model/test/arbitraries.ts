@@ -1,4 +1,5 @@
 import fc from "fast-check";
+import { SHA256_HEX } from "../src/hashes.js";
 import type { CollectionId, MediaId, MenuItemId, PageId, SharedSectionId } from "../src/ids.js";
 import type { LinkValue } from "../src/link.js";
 import type { Looks } from "../src/look.js";
@@ -16,7 +17,7 @@ const folder = fc
   .filter((value) => !value.startsWith("assets"));
 const id = fc.stringMatching(/^[A-Za-z0-9][A-Za-z0-9_-]{0,20}$/);
 const anyText = (maxLength: number) => fc.string({ unit: "grapheme", maxLength });
-const hash = fc.stringMatching(/^[0-9a-f]{64}$/);
+const hash = fc.stringMatching(SHA256_HEX);
 
 const link = (pageIds: readonly string[]): fc.Arbitrary<LinkValue> =>
   fc.oneof(

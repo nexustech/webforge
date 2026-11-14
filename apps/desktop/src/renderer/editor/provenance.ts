@@ -1,5 +1,6 @@
 import { isMessageKey, t } from "@webforge/i18n";
 import type { Breakpoint, TextStyle, ThemeTokens } from "@webforge/model";
+import { CUSTOM_COLOUR } from "@webforge/model";
 import { isOverridden, valueAt } from "./responsive-value.js";
 
 /**
@@ -39,9 +40,6 @@ export type ProvenanceInput = {
 
 /** The colour fields, which may hold a custom colour (Advanced, ADR 0009). */
 const COLOURS = new Set(["lookColor", "lookBackground", "lookBorderColor"]);
-
-/** A custom colour, as ADR 0009 writes it: `[#1f6feb]`, with or without an opacity. */
-const CUSTOM_COLOUR = /^\[#[0-9a-f]{6}\]/i;
 
 /** Text utilities that align it, and that size it (Tailwind's scale, the theme's styles, a length). */
 const TEXT_ALIGN = /^text-(left|center|right|justify|start|end)$/;

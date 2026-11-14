@@ -1,6 +1,7 @@
 import {
   type BundledFile,
   cssNeedsTrust,
+  escapeRegExp,
   isNodeDoc,
   type NodeDoc,
   type SiteSnapshot,
@@ -92,9 +93,6 @@ export function withRunnableCode(site: SiteSnapshot, runs: RunsCode): SiteSnapsh
     })),
   };
 }
-
-/** `text` with the characters a regular expression gives a meaning to escaped. */
-const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /**
  * The site's own code with each address it names that is kept with the site (Download and bundle,

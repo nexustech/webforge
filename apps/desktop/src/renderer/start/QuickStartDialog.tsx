@@ -19,12 +19,11 @@ import {
 import { plural, t } from "@webforge/i18n";
 import { DEFAULT_THEME, SITE_DESCRIPTION_MAX, SITE_NAME_MAX } from "@webforge/model";
 import { type BusinessDetails, TEMPLATE_CATEGORIES } from "@webforge/templates";
-import { type ImageColour, imageColours, oklchCss, THEME_PRESETS } from "@webforge/themes";
+import { hexOf, type ImageColour, imageColours, oklchCss, THEME_PRESETS } from "@webforge/themes";
 import { FileIcon, ImageIcon } from "lucide-react";
 import { type ChangeEvent, useEffect, useId, useRef, useState } from "react";
 import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
-import { hexOf } from "../fields/index.js";
 import { recipeName } from "../site/index.js";
 import { readPixels } from "../theme/index.js";
 import {

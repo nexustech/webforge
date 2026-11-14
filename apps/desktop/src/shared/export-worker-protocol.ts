@@ -4,11 +4,13 @@ import {
   IMAGE_MIME_TYPES,
   publishDestinationSchema,
   SECRET_MAX,
+  sha256HexSchema,
   siteDocSchema,
   siteSnapshotSchema,
   themeSchema,
 } from "@webforge/model";
-import { catalogueFontSchema } from "@webforge/themes";
+import { PUBLISH_ERROR_CODES, type PublishErrorCode } from "@webforge/publish/codes";
+import { catalogueFontSchema, fontFileNameSchema } from "@webforge/themes";
 import { z } from "zod";
 import { exportWarningSchema, MAX_REPORTED_WARNINGS } from "./ipc/site.js";
 
@@ -35,7 +37,7 @@ const exportJobSchema = z.strictObject({
   fonts: z
     .array(
       z.strictObject({
-        file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
+        file: fontFileNameSchema,
         data: z.instanceof(Uint8Array),
       }),
     )
@@ -59,7 +61,7 @@ const previewJobSchema = exportJobSchema
 export type PreviewJob = z.infer<typeof previewJobSchema>;
 
 /** A SHA-256, as hex: of a piece of code, or of a stored file. */
-const sha256Schema = z.string().regex(/^[0-9a-f]{64}$/);
+const sha256Schema = sha256HexSchema;
 
 /**
  * Publishes a site to a destination (4.5, ADR 0018 §1): the site main read from the file and
@@ -317,21 +319,13 @@ export const exportOutcomeSchema = z.discriminatedUnion("type", [
 export type ExportOutcome = z.infer<typeof exportOutcomeSchema>;
 
 /**
- * Why a publish failed (4.5): the publisher's codes (`PublishErrorCode` of `@webforge/publish`),
- * or the build's, as an export's.
+ * Why a publish failed (4.5): the publisher's codes (`PUBLISH_ERROR_CODES`) but `cancelled`, which
+ * is an outcome of its own, then the build's, as an export's.
  */
 export const PUBLISH_FAILURES = [
-  "unauthorized",
-  "not-found",
-  "rate-limited",
-  "rejected",
-  "network",
-  "timeout",
-  "untrusted-host",
-  "no-encryption",
-  "bad-key",
-  "other-site",
-  "failed",
+  ...PUBLISH_ERROR_CODES.filter(
+    (code): code is Exclude<PublishErrorCode, "cancelled"> => code !== "cancelled",
+  ),
   "build-failed",
   "reserved-name",
   "unreadable-image",

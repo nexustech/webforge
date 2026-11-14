@@ -94,7 +94,7 @@ const lookValueSchema = z.union([
  * A custom colour as ADR 0009 writes it, `[#1f6feb]` with or without an opacity: read here by its
  * form, as the colour refs' parser needs the theme's roles, which import this module.
  */
-const CUSTOM_COLOUR = /^\[#[0-9a-f]{6}\]/i;
+export const CUSTOM_COLOUR = /^\[#[0-9a-f]{6}\]/i;
 
 /** Whether `value` names a custom colour, on any device. */
 function holdsCustomColour(value: z.infer<typeof lookValueSchema>): boolean {
