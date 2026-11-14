@@ -12,6 +12,7 @@ import { createAppTools } from "./app-tools.js";
 import { answerRequest, commandHost } from "./command-host.js";
 import { MediaRequestDialog } from "./MediaRequestDialog.js";
 import { createMediaRequests, type MediaAsk } from "./media-request.js";
+import { createStages } from "./stages.js";
 
 /** The question an AI app's `requestMedia` shows, and who waits for its answer. */
 type Asking = { readonly asked: MediaAsk; readonly answer: (addFiles: boolean) => void } | null;
@@ -38,9 +39,15 @@ export const aiRequestsArea: Area<WindowContext> = {
   }) => {
     // A page an AI app renames keeps its old address once the site has been published (#925), as
     // the Pages panel's rename does: the same record of the last publish.
-    const commandApi = createCommandApi(
-      commandHost(session, preferences, siteWide, () => publishedYear.getState() !== undefined),
+    const host = commandHost(
+      session,
+      preferences,
+      siteWide,
+      () => publishedYear.getState() !== undefined,
     );
+    const commandApi = createCommandApi(host);
+    // The assistant's held changes (6.9e): a draft of the site, never the site itself.
+    const stages = createStages(host);
     const appTools = createAppTools({
       site: () => session.history.document.getState(),
       allowListConfirmed: () => codeTrust.allowListConfirmed.getState(),
@@ -89,8 +96,19 @@ export const aiRequestsArea: Area<WindowContext> = {
     const removeDialog = windowDialogs.register({ id: "aiMediaRequest", component: MediaRequest });
 
     // For the opening of the site this page was loaded for (#663).
-    const stopAnswering = api.ai.onRequest(siteSession(), async (request) => {
-      return appTools(request) ?? mediaRequests(request) ?? answerRequest(commandApi, request);
+    const stopAnswering = api.ai.onRequest(siteSession(), async (request, onCancel) => {
+      // Main's cancel (the assistant's Stop) closes a question the command waits on.
+      const cancel = new AbortController();
+      onCancel(() => cancel.abort());
+      // Site Check reads the site itself; the rest of a held reply reads and changes its draft.
+      if (request.stage !== undefined) {
+        return appTools(request) ?? stages.answer({ ...request, stage: request.stage });
+      }
+      return (
+        appTools(request) ??
+        mediaRequests(request) ??
+        answerRequest(commandApi, request, cancel.signal)
+      );
     });
     return () => {
       stopAnswering();

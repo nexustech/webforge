@@ -8,5 +8,7 @@ export default defineProject({
     // to the run's workers (ADR 0014); a test that sets its own scales it with `timeoutScale`.
     testTimeout: scaledTimeout(15_000),
     provide: { timeoutScale: TIMEOUT_SCALE },
+    // React's act() told it runs in a test, once for every file (#991).
+    setupFiles: ["../../vitest.react-act.ts"],
   },
 });

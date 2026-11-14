@@ -69,7 +69,11 @@ export type CommandHost = {
 export type ChangeKind = "insert" | "move" | "remove" | "text" | "props";
 
 /** Who asks: the AI app, by the name the person gave it when pairing (4.9). */
-export type Actor = { readonly app: string };
+export type Actor = {
+  readonly app: string;
+  /** The asker giving up: a question it's waiting on closes, and the command is declined. */
+  readonly signal?: AbortSignal | undefined;
+};
 
 /** Why a command changed nothing, for the AI app to read. */
 export type Refusal =

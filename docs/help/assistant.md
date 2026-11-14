@@ -63,7 +63,7 @@ The **Assistant** panel is a tab in the left column, after **Version History**: 
 
 1. Select the section or element you mean, if there is one: the assistant is told what's selected and which page you're on.
 2. Type what you'd like in **Message the assistant**, and press Enter or click **Send**. Shift+Enter starts a new line.
-3. The reply appears as it's written, with what it changed. Click **Stop** to stop it: changes it has made stay, and can be undone.
+3. The reply appears as it's written, with what it changed. Click **Stop** to stop it: changes it has made stay, and can be undone. A question it's waiting on closes, as if you'd clicked **Cancel**.
 
 Each reply says what it cost, and the top of the panel shows this month's spend against your limit. **New Conversation** starts again.
 

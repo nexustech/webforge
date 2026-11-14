@@ -53,7 +53,10 @@ export type McpService = {
    * `beforeCommand` runs before each of its commands, other than a plan, which asks the person and
    * saves its own version: the assistant's safety version, once a conversation.
    */
-  connectAssistant(beforeCommand: () => Promise<void>): Promise<AssistantConnection>;
+  connectAssistant(
+    beforeCommand: () => Promise<void>,
+    stage?: string,
+  ): Promise<AssistantConnection>;
   /** Stops listening: Webforge is quitting. */
   close(): Promise<void>;
 };
@@ -192,6 +195,8 @@ export function createMcpService(options: McpServiceOptions): McpService {
             app.id,
             request,
             request.kind !== "command" || request.name === "plan" ? undefined : before,
+            // The window's bridge knows each command's app by id, for a cancel (6.9b).
+            (asked) => options.ask(asked, app.id),
           );
 
   /**
@@ -271,7 +276,7 @@ export function createMcpService(options: McpServiceOptions): McpService {
         connected: listener?.connectedApps() ?? [],
       };
     },
-    async connectAssistant(beforeCommand) {
+    async connectAssistant(beforeCommand, stage) {
       // Loaded once the assistant first answers, not with main at start-up (#892).
       const [{ assistantApp, createAssistantMcpServer }, { Client }, { InMemoryTransport }] =
         await Promise.all([
@@ -280,7 +285,11 @@ export function createMcpService(options: McpServiceOptions): McpService {
           import("@modelcontextprotocol/sdk/inMemory.js"),
         ]);
       const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
-      const server = createAssistantMcpServer(options.info, askWith(assistantApp(), beforeCommand));
+      const server = createAssistantMcpServer(
+        options.info,
+        askWith(assistantApp(), beforeCommand),
+        stage,
+      );
       await server.connect(serverSide);
       const client = new Client(options.info);
       try {

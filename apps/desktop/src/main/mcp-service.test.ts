@@ -380,12 +380,10 @@ describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", ()
       target: { pageId: "page-1" },
     });
     const added = await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
-    expect(ask).toHaveBeenLastCalledWith({
-      kind: "command",
-      name: "addPage",
-      input: { title: "Menu" },
-      app: "Assistant",
-    });
+    expect(ask).toHaveBeenLastCalledWith(
+      { kind: "command", name: "addPage", input: { title: "Menu" }, app: "Assistant" },
+      "assistant",
+    );
     expect(added.content).toEqual([
       {
         type: "text",
@@ -401,6 +399,25 @@ describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", ()
     await client.callTool({ name: "plan", arguments: { steps: [] } });
     expect(before).toHaveBeenCalledTimes(1);
     expect(saveVersionBefore).not.toHaveBeenCalled();
+    await close();
+  });
+
+  it("sends a held reply's requests to its stage in the window (6.9e)", async () => {
+    const { service, ask } = setUp();
+    const stage = "5d1c2b3a-4f5e-4d6c-8b7a-9e8f7d6c5b4a";
+    const { client, close } = await service.connectAssistant(async () => undefined, stage);
+    await client.callTool({ name: "outline", arguments: {} });
+    await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
+    expect(ask).toHaveBeenNthCalledWith(
+      1,
+      { kind: "query", name: "outline", input: {}, stage },
+      "assistant",
+    );
+    expect(ask).toHaveBeenNthCalledWith(
+      2,
+      { kind: "command", name: "addPage", input: { title: "Menu" }, app: "Assistant", stage },
+      "assistant",
+    );
     await close();
   });
 

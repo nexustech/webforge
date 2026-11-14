@@ -216,6 +216,18 @@ const stepSchema = z.strictObject({
 /** See {@link stepSchema}. */
 export type ReplyStep = z.infer<typeof stepSchema>;
 
+/**
+ * A change the reply holds for the person to apply (6.9e, _Review before applying_): what it would
+ * do, and where. Nothing in the site has changed, so it has no undo step yet.
+ */
+const heldSchema = stepSchema.omit({ entryId: true });
+
+/** See {@link heldSchema}. */
+export type HeldChange = z.infer<typeof heldSchema>;
+
+/** The most changes one reply holds: its tool calls' cap. */
+const HELD_MAX = 25;
+
 /** A link to another website the reply added or changed, by its host as a browser reads it (S18). */
 const linkSchema = z.strictObject({
   host: z.string().min(1).max(300),
@@ -258,6 +270,8 @@ const turnSchema = z.strictObject({
   safetyVersion: z
     .strictObject({ versionId: z.string().min(1).max(100), label: z.string().min(1).max(300) })
     .optional(),
+  /** The changes it holds, with _Review before applying_ on, until applied or discarded. */
+  held: z.array(heldSchema).max(HELD_MAX).optional(),
 });
 
 /** See {@link turnSchema}. */
@@ -407,6 +421,20 @@ const eventSchema = z.discriminatedUnion("type", [
     month: monthSchema,
     steps: z.array(stepSchema),
     links: z.array(linkSchema),
+    /** The changes it holds for the person to apply (6.9e); none when they apply at once. */
+    held: z.array(heldSchema).max(HELD_MAX).optional(),
+  }),
+  /**
+   * A reply's held changes, applied (each now a step) or discarded (6.9e). Applied ones the site
+   * no longer allows, such as an element since deleted, are `refused`.
+   */
+  z.strictObject({
+    session: sessionIdSchema,
+    type: z.literal("held"),
+    replyId: replyIdSchema,
+    state: z.enum(["applied", "discarded"]),
+    steps: z.array(stepSchema),
+    refused: z.array(heldSchema).max(HELD_MAX),
   }),
   z.strictObject({
     session: sessionIdSchema,
@@ -529,6 +557,21 @@ export const assistantChannels = {
     request: z.tuple([sessionIdSchema, replyIdSchema, z.string().min(1).max(2000)]),
     response: z.strictObject({ status: z.enum(["opened", "refused", "failed"]) }),
   },
+  /**
+   * Applies a reply's held changes (6.9e): each as the undo step it would have been, asking the
+   * person where it would. The outcome comes as a `held` event too.
+   */
+  assistantApplyHeld: {
+    channel: "assistant:apply-held",
+    request: z.tuple([sessionIdSchema, replyIdSchema]),
+    response: z.strictObject({ status: z.enum(["applied", "nothing-held", "busy", "no-site"]) }),
+  },
+  /** Discards a reply's held changes (6.9e): the site stays as it is. */
+  assistantDiscardHeld: {
+    channel: "assistant:discard-held",
+    request: z.tuple([sessionIdSchema, replyIdSchema]),
+    response: z.null(),
+  },
   /** The site's conversation so far, for a panel opened again. */
   assistantConversation: {
     channel: "assistant:conversation",
@@ -570,6 +613,16 @@ export interface AssistantApi {
   /** Stops the reply: changes made stay, and stay undoable. */
   stop(replyId: string): Promise<void>;
   newConversation(session: string): Promise<void>;
+  /**
+   * Applies reply `replyId`'s held changes (6.9e): `nothing-held` if it holds none, `busy` while
+   * a reply or another apply is under way.
+   */
+  applyHeld(
+    session: string,
+    replyId: string,
+  ): Promise<{ status: "applied" | "nothing-held" | "busy" | "no-site" }>;
+  /** Discards reply `replyId`'s held changes (6.9e). */
+  discardHeld(session: string, replyId: string): Promise<void>;
   conversation(session: string): Promise<ConversationTurn[]>;
   /**
    * Opens `href`, a link in that reply as the reply wrote it (its Markdown token's `href`), in the

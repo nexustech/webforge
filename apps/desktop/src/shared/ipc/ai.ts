@@ -57,19 +57,34 @@ const inputSchema = z.unknown().refine(fitsAsJson, {
   message: `A request's input can be at most ${AI_INPUT_MAX_CHARS} characters as JSON.`,
 });
 
+/** The in-app assistant's app id in the tool layer (6.9b): paired apps' are random UUIDs. */
+export const ASSISTANT_APP_ID = "assistant";
+
+/**
+ * The assistant's reply whose changes are held (6.9e, _Review before applying_): its requests go
+ * to a draft of the site in the window, never to the site. Only the assistant's server sets it.
+ */
+const stageSchema = z.uuid();
+
 /**
  * What an AI app asks of the open site (F-AI-1, 4.8): a query that reads it, or a command that
  * changes it, on behalf of the app the person paired (4.9). Main checks it and forwards it (S21);
  * the renderer runs it.
  */
 export const aiRequestSchema = z.discriminatedUnion("kind", [
-  z.strictObject({ kind: z.literal("query"), name: nameSchema, input: inputSchema }),
+  z.strictObject({
+    kind: z.literal("query"),
+    name: nameSchema,
+    input: inputSchema,
+    stage: stageSchema.optional(),
+  }),
   z.strictObject({
     kind: z.literal("command"),
     name: nameSchema,
     input: inputSchema,
     /** The app's name, as the person gave it when pairing: "AI (‹app›): …" in Undo History. */
     app: z.string().min(1).max(80),
+    stage: stageSchema.optional(),
   }),
 ]);
 
@@ -196,6 +211,11 @@ export const aiChannels = {
 export const aiEvents = {
   /** An AI app's request, with an id; the renderer answers with `ai:answer` and that id. */
   request: { channel: "ai:request", args: z.tuple([requestIdSchema, aiRequestSchema]) },
+  /**
+   * Its asker gave up on request `id` (the assistant's Stop, 6.9b): a question the window is
+   * asking for it closes, and the command is declined. One already answered is untouched.
+   */
+  cancel: { channel: "ai:cancel", args: z.tuple([requestIdSchema]) },
   /** An AI app's brief (4.12a): the window opens the quick start with it, filled in. */
   brief: { channel: "ai:brief", args: z.tuple([requestIdSchema, siteBriefSchema]) },
 } as const;
@@ -206,7 +226,10 @@ export interface AiApi {
    * Answers AI apps' requests with `answer` until the returned function is called; meanwhile the
    * main process knows a site is open to ask.
    */
-  onRequest(sessionId: string, answer: (request: AiRequest) => Promise<AiResponse>): () => void;
+  onRequest(
+    sessionId: string,
+    answer: (request: AiRequest, onCancel: (cancelled: () => void) => void) => Promise<AiResponse>,
+  ): () => void;
   /**
    * Calls `open` with each AI app's brief (4.12a) until the returned function is called: the window
    * shows the quick start filled in, and tells main what became of it with `answer`, which it waits

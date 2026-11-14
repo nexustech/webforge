@@ -8,12 +8,6 @@ import { describe, expect, it } from "vitest";
 import { PUCK_MESSAGES, puckDictionary } from "./dictionary.js";
 import { createPuckEngine } from "./puck-engine.js";
 
-declare global {
-  // Tells React that act() is available (testing without @testing-library).
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const library: ComponentLibrary = {
   components: {
     Heading: {

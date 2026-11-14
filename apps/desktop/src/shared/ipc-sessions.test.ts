@@ -35,6 +35,8 @@ const SITE_CHANNELS = [
   "assistant:new-conversation",
   "assistant:conversation",
   "assistant:open-link",
+  "assistant:apply-held",
+  "assistant:discard-held",
   "versions:list",
   "versions:save",
   "versions:delete",

@@ -7,6 +7,7 @@ import {
   type ThumbnailOutcome,
   thumbnailOutcomeSchema,
 } from "../shared/export-worker-protocol.js";
+import { ASSISTANT_APP_ID } from "../shared/ipc/ai.js";
 import { appEvents } from "../shared/ipc/app.js";
 import { assistantEvents } from "../shared/ipc/assistant.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
@@ -813,11 +814,12 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
         openExternal: (url) => electron.shell.openExternal(url),
         // The loop's tools: 4.9's, in memory, with *AI apps* on or off (6.9b, ADR 0026 §1).
-        connectTools: async (beforeCommand) => {
+        connectTools: async (beforeCommand, stage) => {
           if (mcp === undefined) throw new Error("The MCP service isn't there");
-          return mcp.connectAssistant(beforeCommand);
+          return mcp.connectAssistant(beforeCommand, stage);
         },
         // The conversation's safety version (S20): its id, for Version History's button.
+        cancelQuestions: () => ai.cancel(ASSISTANT_APP_ID),
         saveVersionBefore: async (session, name) => {
           const saved = await versions.saveVersionBefore(session, name);
           if (saved.status === "saved") return { status: "saved", versionId: saved.version.id };

@@ -158,7 +158,7 @@ Main runs it:
   - what the model asks for through the read tools.
 
   It never includes Media files, Custom Code, publish settings, credentials or Version History.
-- **Logs** keep the provider's kind, the model's id, token counts, cost and tool names. A marker-string test (6.9b) plants a marker in a site's text, a message and a model reply, and finds it in no log or crash report.
+- **Logs** keep the provider's kind, the model's id, token counts, cost and tool names. A marker-string test (6.9b, `assistant-defences.test.ts`) plants a marker in a site's text, a message, a model reply, a tool's arguments and a window's failure, and finds it in no log, console or file.
 
 ### 7. The `assistant` IPC domain: the panel's contract
 
@@ -196,7 +196,7 @@ type AssistantStatus = {
   reach: Reach;
   model: AssistantModel | null;
   month: { spentUsd: number; limitUsd: number; warned: boolean; reached: boolean };
-  reviewBeforeApplying: boolean; // AIA-5's setting: always false, and not shown, until 6.9b stages commands (below)
+  reviewBeforeApplying: boolean; // AIA-5's setting: a reply's changes held until applied (6.9e, below)
   allowRetainingModels: boolean; // Advanced (§2); false by default
 };
 
@@ -375,9 +375,26 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - If the reply's `entryId`s are the newest entries in Undo History, at its current position and in order, it jumps to the entry before the first (`jumpTo`), as one undo of all of them.
   - Otherwise something has happened since: it offers the reply's conversation's `safety-version` in Version History instead, as product/14 §6.2 says.
   - _Keep_ only closes the card.
-- **_Review before applying_ (AIA-5's setting) isn't in this contract yet.** Holding changes back until the person agrees needs the tool layer to stage commands, which 4.9's doesn't.
-  - **Until it works, the panel and Settings don't show it:** no setting that does nothing. `AssistantStatus` still carries `reviewBeforeApplying` (always `false`), and changes apply at once, which is the default the product owner chose.
-  - **It must work before the beta ships the assistant.** 6.9b makes it work, and adds its events to this contract with a note to stream A. If 6.9b can't, a follow-up issue in Phase 5 does, before the beta.
+- **_Review before applying_ (AIA-5's setting, 6.9e, #1022)** holds a reply's changes until the person applies them. Changes apply at once by default, as the product owner chose.
+  - **A stage per reply, in the window** (`renderer/ai/stages.ts`): a draft of the site with a history of its own, which nothing shows or saves.
+    - With the setting on, the assistant's requests name their reply (`stage` on the AI request, which only the assistant's server sets).
+    - A staged query reads the draft, so a later step builds on an earlier one. A staged command is planned, checked and run there, and asks nobody, as nothing real changes.
+    - A new reply's stage replaces the last one's, so only the last reply's changes can be held. The last reply's are then discarded, with a `held` event that says so, for its card.
+  - **Main keeps each held command as the model asked it.** The reply's `held: { label, target? }[]` (on `reply-done` and the turn) says what each would change.
+  - **`applyHeld(session, replyId)`** asks each again, unstaged and in order, through the same tool layer:
+    - each is planned against the site as it is then, so the person's own edits since count;
+    - each becomes the undo step it would have been, asking the person where it would (D7, S18);
+    - the safety version is saved first;
+    - one the site no longer allows is `refused`, and the rest still apply;
+    - **a new element or page gets a new id each time it's made,** so the site's ids replace the draft's in later calls (#1059's review):
+      - a staged command that made something has its tree read through the reply's stage there and then, before a later call can reorder or remove its children;
+      - its replay's tree on the site is paired with that snapshot, the new element's children's ids too;
+      - an element of another type pairs with nothing, so nothing is changed in the wrong place;
+      - "add a section, then edit its heading" applies whole. A `plan` answers with no new id, so ids made inside one aren't paired, and a later call naming one is refused.
+
+    The `held` event (`applied`) carries the steps, with their entry ids for _Undo these changes_, and the refused.
+  - **`discardHeld`** drops them, and the `held` event says `discarded`. The site and its history are as they were.
+  - **The panel's card and Settings' switch** come in 6.9e's second part.
 - **Drafts (6.9d, #873)** are the writing help's one-click asks: a rewrite of selected text (G25a), a page's description and an image's alt text from Site Check (G25b, SEO-10), and a template page's texts for the business the quick start describes (QS-7).
 
   ```ts
@@ -407,7 +424,7 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **One reply at a time per site** (`busy`). `send` answers `sending` with the reply's id, and the reply runs on.
   - **Each reply connects afresh** through `McpService.connectAssistant`, and closes when it ends.
   - **Tool calls run one at a time.** A `busy` answer (the person is editing) waits two seconds and asks once more, then the model hears it (§6.2).
-  - **Stop** ends the reply before its next model or tool call. A tool call under way finishes, and its change is kept in the reply's steps, since the window makes it however its asker gives up. Until 6.9b's part 3, a question the window is asking (D7) waits for the person's answer. Part 3 sends the window a cancel, which ends that call as declined.
+  - **Stop** ends the reply before its next model or tool call. A tool call under way finishes, and its change is kept in the reply's steps, since the window makes it however its asker gives up. A question the window is asking for one of the reply's commands (D7) closes: the bridge's `cancel(app)` sends `ai:cancel` for each command of the assistant's waiting for the window, and the command layer, given the asker's signal, declines it.
   - **A reply ends as `no-site`** when its site is no longer the open one, as after Open Recent. It's checked before each model call, each tool call, and each command. The window acts on whichever site it has open, and another site's text and changes are never this reply's (consent is by site, AIA-6).
   - **A model call that sends nothing for a minute** ends the reply as `offline`.
   - **The caps** (§5): 25 tool calls, 12 model calls, `max_tokens` 4096. The month's limit, reached by a call, stops the reply before that call's tool calls run.
@@ -446,5 +463,4 @@ The panel's stories and tests use it.
   - **The conversation kept on disk:** against "never store site content".
 - **Revisit:**
   - if OpenRouter lets an app set a key's spend limit;
-  - if a provider offers sign-in for third-party apps;
-  - or when 6.9b settles _Review before applying_.
+  - or if a provider offers sign-in for third-party apps.
