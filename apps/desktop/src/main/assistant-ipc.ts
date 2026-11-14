@@ -53,12 +53,16 @@ export function registerAssistantHandlers(
   registerIpcHandler(ipc, "assistantConversation", isTrustedSender, (session) =>
     service.conversation(session),
   );
+  registerIpcHandler(ipc, "assistantOpenLink", isTrustedSender, (session, replyId, href) =>
+    service.openLink(session, replyId, href),
+  );
 }
 
 /** The assistant before it's turned on: off, signed out, nothing spent (ADR 0026 §2, §5). */
 export const ASSISTANT_OFF: AssistantStatus = {
   enabled: false,
   consentVersion: null,
+  consentReach: null,
   provider: { kind: "openrouter", signedIn: false },
   reach: "openrouter",
   model: null,
@@ -73,7 +77,7 @@ export const ASSISTANT_OFF: AssistantStatus = {
 };
 
 /**
- * The service until 6.9a's parts 3 and 4 build it: off, and refusing to turn on or send. Nothing
+ * The service until 6.9a part 5 builds it: off, and refusing to turn on or send. Nothing
  * shows the assistant yet (6.9c), so no one meets it.
  */
 export const unbuiltAssistant: AssistantService = {
@@ -91,4 +95,5 @@ export const unbuiltAssistant: AssistantService = {
   stop: async () => undefined,
   newConversation: async () => undefined,
   conversation: async () => [],
+  openLink: async () => ({ status: "refused" }),
 };

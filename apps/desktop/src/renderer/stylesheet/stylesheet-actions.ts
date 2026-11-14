@@ -11,7 +11,10 @@ import { classesOfHtml, siteSelectors } from "../editor/site-css.js";
 const TYPING_KEY = "site-css";
 
 /** The session's parts the stylesheet's actions use. */
-export type StylesheetSession = Pick<EditorSession, "history" | "ui" | "library" | "edit">;
+export type StylesheetSession = Pick<
+  EditorSession,
+  "history" | "ui" | "library" | "edit" | "codeWritten"
+>;
 
 /** The stylesheet as `site` has it. */
 export const stylesheetOf = (site: SiteDoc): string => site.code.css;
@@ -21,7 +24,8 @@ export const stylesheetOf = (site: SiteDoc): string => site.code.css;
  * stretch of typing, "Edited site CSS", which the next pause ends.
  */
 export function editStylesheet(session: StylesheetSession, css: string): void {
-  if (stylesheetOf(session.history.document.getState()) === css) return;
+  const before = stylesheetOf(session.history.document.getState());
+  if (before === css) return;
   session.edit(
     "props",
     t("stylesheet.history.edited"),
@@ -30,6 +34,8 @@ export function editStylesheet(session: StylesheetSession, css: string): void {
     },
     { coalesceKey: TYPING_KEY },
   );
+  // Written here, so the owner's own (#975): the code trust step never asks about it.
+  session.codeWritten(before, css);
 }
 
 /** The selected element and how to change it, or nothing when none is selected. */
@@ -122,6 +128,7 @@ export async function targetSelected(
       });
     }
   });
+  session.codeWritten(stylesheetOf(current), css);
   // Inside the braces, on the empty line.
   return { caret: at + selector.length + " {\n  ".length };
 }
@@ -200,5 +207,6 @@ export async function moveLookToCss(session: StylesheetSession, api: ItemCssApi)
       className: [...ownClasses(advanced), className].join(" "),
     }));
   });
+  session.codeWritten(stylesheetOf(now), css);
   return { caret: at, moved: movable.length, kept: groups.length - movable.length };
 }

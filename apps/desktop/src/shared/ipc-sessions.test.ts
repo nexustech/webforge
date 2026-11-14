@@ -33,6 +33,7 @@ const SITE_CHANNELS = [
   "assistant:send",
   "assistant:new-conversation",
   "assistant:conversation",
+  "assistant:open-link",
   "versions:list",
   "versions:save",
   "versions:delete",

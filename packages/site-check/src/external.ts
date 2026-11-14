@@ -37,35 +37,208 @@ function unique(found: readonly ExternalResource[]): ExternalResource[] {
   return [...seen.values()];
 }
 
-/** A CSS comment. */
-const CSS_COMMENT = /\/\*[\s\S]*?\*\//g;
+/**
+ * CSS as a browser reads it, as far as what it loads goes (#975): strings, `url()`s, functions, at-
+ * rules and brackets, each with its escapes read (`\75rl(` is `url(`, `\2f\2f` is `//`), and comments
+ * left out. Anything else is skipped. Each character is read once.
+ */
+type CssToken =
+  | { readonly type: "string"; readonly value: string }
+  | { readonly type: "url"; readonly value: string }
+  | { readonly type: "function"; readonly name: string }
+  | { readonly type: "at"; readonly name: string }
+  | { readonly type: "open" | "close"; readonly bracket: string }
+  | { readonly type: "end" };
 
-/** `@import url("…")` or `@import "…"`: the address imported. */
-const CSS_IMPORT = /@import\s+(?:url\(\s*)?(["']?)([^"')\s;]+)\1/gi;
+/** Whether character `code` may start a name: a letter, `_`, `-` or anything past ASCII. */
+const isNameStart = (code: number) =>
+  (code >= 97 && code <= 122) ||
+  (code >= 65 && code <= 90) ||
+  code === 95 ||
+  code === 45 ||
+  code >= 128;
 
-/** `url(…)`, quoted or not: the address. */
-const CSS_URL = /url\(\s*(["']?)([^"')]+?)\1\s*\)/gi;
+/** Whether character `code` may go on a name: as {@link isNameStart}, or a digit. */
+const isNameCode = (code: number) => isNameStart(code) || (code >= 48 && code <= 57);
 
-/** An `@font-face` rule's body, whose addresses are fonts whatever their names. */
-const FONT_FACE = /@font-face\s*\{[^}]*\}/gi;
+const isHex = (code: number) =>
+  (code >= 48 && code <= 57) || (code >= 97 && code <= 102) || (code >= 65 && code <= 70);
 
-/** The outside files `css` loads: stylesheets it imports, fonts and images it names in `url()`. */
-export function cssResources(css: string): ExternalResource[] {
-  const text = css.replace(CSS_COMMENT, "");
-  const found: ExternalResource[] = [];
-  for (const match of text.matchAll(CSS_IMPORT)) {
-    const url = match[2] ?? "";
-    if (isExternalUrl(url)) found.push({ url, kind: "style" });
+const isNewline = (code: number) => code === 10 || code === 12 || code === 13;
+
+const isCssSpace = (code: number) => code === 32 || code === 9 || isNewline(code);
+
+/** The tokens of `css` that say what it loads. */
+function cssTokens(css: string): CssToken[] {
+  const tokens: CssToken[] = [];
+  let at = 0;
+  /** The escape at `at`, after its `\`: the character it stands for, read past. */
+  const escaped = (): string => {
+    let hex = "";
+    while (hex.length < 6 && isHex(css.charCodeAt(at))) hex += css.charAt(at++);
+    if (hex === "") return at < css.length ? css.charAt(at++) : "";
+    // One space after the digits is part of the escape.
+    if (isCssSpace(css.charCodeAt(at))) at += css.startsWith("\r\n", at) ? 2 : 1;
+    const point = Number.parseInt(hex, 16);
+    return point === 0 || point > 0x10ffff || (point >= 0xd800 && point <= 0xdfff)
+      ? "\uFFFD"
+      : String.fromCodePoint(point);
+  };
+  /** Whether a `\` at `from` starts an escape: one before a line break doesn't. */
+  const escapes = (from: number) =>
+    css.charAt(from) === "\\" && !isNewline(css.charCodeAt(from + 1));
+  const name = (): string => {
+    let read = "";
+    for (;;) {
+      if (escapes(at)) {
+        at += 1;
+        read += escaped();
+      } else if (isNameCode(css.charCodeAt(at))) {
+        read += css.charAt(at++);
+      } else {
+        return read;
+      }
+    }
+  };
+  const string = (quote: string): string => {
+    let read = "";
+    while (at < css.length) {
+      const character = css.charAt(at);
+      if (character === quote) {
+        at += 1;
+        return read;
+      }
+      // A line break ends a string left open, as a browser reads it.
+      if (isNewline(css.charCodeAt(at))) return read;
+      at += 1;
+      if (character !== "\\") read += character;
+      else if (isNewline(css.charCodeAt(at))) at += css.startsWith("\r\n", at) ? 2 : 1;
+      else read += escaped();
+    }
+    return read;
+  };
+  /** An unquoted `url(…)`'s address, after its `(` and any spaces, to its `)`. */
+  const unquotedUrl = (): string => {
+    let read = "";
+    while (at < css.length) {
+      const character = css.charAt(at);
+      if (character === ")") break;
+      at += 1;
+      if (character === "\\" && !isNewline(css.charCodeAt(at))) read += escaped();
+      else read += character;
+    }
+    at += 1;
+    return read.trim();
+  };
+  while (at < css.length) {
+    const character = css.charAt(at);
+    const code = css.charCodeAt(at);
+    if (css.startsWith("/*", at)) {
+      const end = css.indexOf("*/", at + 2);
+      at = end === -1 ? css.length : end + 2;
+    } else if (character === '"' || character === "'") {
+      at += 1;
+      tokens.push({ type: "string", value: string(character) });
+    } else if (character === "@") {
+      at += 1;
+      tokens.push({ type: "at", name: name().toLowerCase() });
+    } else if (escapes(at) || isNameStart(code)) {
+      const read = name().toLowerCase();
+      if (css.charAt(at) !== "(") continue;
+      at += 1;
+      if (read === "url") {
+        while (isCssSpace(css.charCodeAt(at))) at += 1;
+        const next = css.charAt(at);
+        if (next !== '"' && next !== "'") {
+          tokens.push({ type: "url", value: unquotedUrl() });
+          continue;
+        }
+      }
+      tokens.push({ type: "function", name: read });
+    } else if (character === "(" || character === "[" || character === "{") {
+      at += 1;
+      tokens.push({ type: "open", bracket: character });
+    } else if (character === ")" || character === "]" || character === "}") {
+      at += 1;
+      tokens.push({ type: "close", bracket: character });
+    } else if (character === ";") {
+      at += 1;
+      tokens.push({ type: "end" });
+    } else {
+      at += 1;
+    }
   }
-  const fonts = new Set(
-    Array.from(text.matchAll(FONT_FACE), (match) =>
-      Array.from(match[0].matchAll(CSS_URL), (url) => url[2] ?? ""),
-    ).flat(),
-  );
-  for (const match of text.matchAll(CSS_URL)) {
-    const url = (match[2] ?? "").trim();
-    if (!isExternalUrl(url)) continue;
-    found.push({ url, kind: fonts.has(url) ? "font" : (kindByExtension(url) ?? "image") });
+  return tokens;
+}
+
+/**
+ * The outside files `css` loads (C8, #975): stylesheets it imports, and the fonts and images it
+ * names in `url()`, or in quotes in `image-set()`, `src()` or any other function, however its
+ * escapes write them. A string outside a function (`content: "…"`, a font's name, an attribute
+ * selector's value) loads nothing.
+ */
+export function cssResources(css: string): ExternalResource[] {
+  const found: ExternalResource[] = [];
+  /** The functions and brackets open, innermost last: a function by its name, a bracket as it is. */
+  const open: string[] = [];
+  /** How deep in braces the `@font-face` rule being read starts, or -1 outside one. */
+  let fontFace = -1;
+  let braces = 0;
+  let fontFaceNext = false;
+  let importing = false;
+  const add = (url: string, kind?: ExternalKind) => {
+    const address = url.trim();
+    if (!isExternalUrl(address)) return;
+    found.push({
+      url: address,
+      kind: kind ?? (fontFace !== -1 ? "font" : (kindByExtension(address) ?? "image")),
+    });
+  };
+  for (const token of cssTokens(css)) {
+    switch (token.type) {
+      case "at":
+        importing = token.name === "import";
+        fontFaceNext = token.name === "font-face";
+        break;
+      case "string": {
+        const inside = open.at(-1);
+        if (importing && inside === undefined) add(token.value, "style");
+        else if (inside === "url") add(token.value, importing ? "style" : undefined);
+        // In `image-set()`, `src()` or another function; not in brackets or plain parentheses
+        // that a selector or a condition has.
+        else if (inside !== undefined && inside !== "[" && inside !== "(") add(token.value);
+        break;
+      }
+      case "url":
+        add(token.value, importing && open.length === 0 ? "style" : undefined);
+        break;
+      case "function":
+        open.push(token.name);
+        break;
+      case "open":
+        if (token.bracket === "{") {
+          braces += 1;
+          if (fontFaceNext) fontFace = braces;
+          fontFaceNext = false;
+          importing = false;
+        } else {
+          open.push(token.bracket);
+        }
+        break;
+      case "close":
+        if (token.bracket === "}") {
+          if (braces === fontFace) fontFace = -1;
+          braces = Math.max(0, braces - 1);
+          open.length = 0;
+        } else {
+          open.pop();
+        }
+        break;
+      case "end":
+        importing = false;
+        open.length = 0;
+        break;
+    }
   }
   return unique(found);
 }

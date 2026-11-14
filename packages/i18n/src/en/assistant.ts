@@ -105,4 +105,24 @@ export const assistant = {
   "assistant.messagePlaceholder": "Ask for a change, such as “Make the Hero's title shorter”",
   "assistant.send": "Send",
   "assistant.stop": "Stop",
+  // Settings › Assistant and its dialog (6.9c, AIA-6, AIA-8).
+  "assistant.settings.title": "Assistant",
+  "assistant.settings.line":
+    "An AI model that changes your site when you ask. It's off until you turn it on.",
+  "assistant.settings.open": "Assistant Settings…",
+  "assistant.settings.description":
+    "Turn the assistant on or off, and set how much it may spend each month.",
+  "assistant.settings.on": "The assistant is on",
+  "assistant.settings.off": "The assistant is off",
+  "assistant.settings.onHint": "Turn Off stops it at once and deletes its key from this computer.",
+  "assistant.settings.offHint":
+    "Turning it on shows what it sends, and to whom, before anything is sent.",
+  "assistant.settings.turnOn": "Turn On…",
+  "assistant.settings.turnOff": "Turn Off",
+  "assistant.settings.limit": "Monthly limit",
+  "assistant.settings.limitField": "Limit in US dollars",
+  "assistant.settings.setLimit": "Set Limit",
+  "assistant.settings.limitHint":
+    "Between $1 and $1,000. You're told at 80%, and the assistant stops at the limit until next month.",
+  "assistant.settings.close": "Close",
 } as const;
