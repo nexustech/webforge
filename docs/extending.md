@@ -144,6 +144,23 @@ A collection (a Blog; later a Portfolio or Events) is a set of pages that share 
 
 The built-in assistant ([ADR 0026](adr/0026-assistant.md), 6.9a–d, #870–#873) runs its loop in main and reuses the AI apps' tools; the renderer only shows the conversation. Its panel and review card are in `renderer/assistant/`, and its contract with main is the `assistant` IPC domain (`shared/ipc/assistant.ts`, `main/assistant-ipc.ts`). The ADR fixes that contract: a change to it needs a note to stream A.
 
+## AI tools
+
+Every tool an AI app or the assistant can call is one `ToolDef` (#981, `@webforge/commands`), and nothing else keys on its name. A definition has:
+
+- its name, its kind (`query` or `command`), its zod `input` and its description;
+- who answers it (`answeredBy`): main, or the window, for the site open in it;
+- whether a version is saved before it (`savesVersionFirst`);
+- whether the assistant has it too (`forAssistant`).
+
+The MCP server lists each one with the JSON Schema made from its zod, and the untrusted-site-text line added. It passes the definition with each call, and main routes the call and saves the version by it. Where a new one goes:
+
+- **A query or command of the command layer** goes in `QUERIES` or `COMMANDS` (`packages/commands`): `AI_TOOLS` lists it.
+- **One the window answers itself** goes in `WINDOW_TOOLS` (`apps/desktop/src/shared/ai-tools.ts`), with its handler in `renderer/ai/area.ts`'s `WindowToolHandlers`. One without a handler fails typecheck.
+- **One main answers** goes in `MAIN_TOOLS`, with its handler in `mcp-service.ts`'s `MAIN_TOOL_HANDLERS`, which is checked the same way.
+
+`main/__snapshots__/mcp-tools.json.snap` is what `tools/list` gives: a change to a tool shows there, for review.
+
 ## AI clients
 
 The kinds of AI app the person can pair in AI apps (4.9, #980), such as Claude Desktop, Claude Code and VS Code, are a registry, so the dialog has no vendor in its code. To add one:
@@ -168,13 +185,13 @@ The renderer reaches the main process only through `window.webforge`, the preloa
 - **its contract,** in `shared/ipc/<domain>.ts`: each call's channel (`<domain>:<call>`) and its request and response as zod schemas, which main checks on every call;
 - **listed** in `shared/ipc-contract.ts` (`ipcContract` and `ipcDomains`) and in `WebforgeApi`;
 - **the preload's builder,** `preload/api/<domain>.ts`, listed in `preload/api.ts`;
-- **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), called from `main/app.ts`.
+- **main's handlers,** `main/<domain>-ipc.ts`, registered with `registerIpcHandler` (which refuses a renderer it doesn't trust), as a feature (`<domain>Feature`) listed last in `startApp`'s `features` (`main/app.ts`, #985).
 
 Two windows call main: the editor's, and the Help window (5.4b, HP-10), whose page has its own preload (`preload/help.ts`, `window.webforgeHelp`). `startApp`'s `isTrustedSender` is the editor's page only. A call for the Help window is registered with `helpWindows.isHelpPage` instead, as `help:open-external` is (`main/help-ipc.ts`), so neither window can make the other's calls.
 
 A **?** that opens Help at a page and heading (5.4b) is a topic in `renderer/help/help-links.json` and a `<HelpButton topic="…" />` where it's drawn; `pnpm help-check` fails on a topic whose page or heading isn't there. A new site component needs a heading on its help page for _Help for This Element_, which `help-check` checks too.
 
-A domain with work that must stop when its site closes, or finish before Webforge exits, is a feature (`AppFeature` in `main/app-feature.ts`, A12): its `register`, its `site` events (opened, committed, closed, a site a hand-off replaced included) and its `quit`, made beside its handlers, as `createExportFeature` is, and listed in `startApp`'s `features`. `startApp` registers each, has the project session tell each as sites open and close, and has quitting wait for each `quit` once the site has closed.
+Every domain's calls are registered as a feature. One with work that must stop when its site closes, or finish before Webforge exits, is a fuller feature (`AppFeature` in `main/app-feature.ts`, A12): its `register`, its `site` events (opened, committed, closed, a site a hand-off replaced included) and its `quit`, made beside its handlers, as `createExportFeature` is, and listed in `startApp`'s `features`. `startApp` registers each, has the project session tell each as sites open and close, and has quitting wait for each `quit` once the site has closed.
 
 An operation on the open site's file is a function of its own module, written on `projectSession.site(sessionId)` (a `SiteStore`, A13), as `site-media.ts`, `export-choices.ts`, `editor-state.ts` and `site-zip.ts` are: `withStore(kind, work, none)` runs it through the store gate, and gives `none` once that opening has gone; only `writerTurn` stores an import. `ProjectSession` itself keeps to opening and closing sites, the gate, the opening's id, and reading and saving the site's documents (`readSite`, `commit`), because every save is checked against the site as last read or saved, which it holds. `forSession` lists the operations a call may use, and `uiState` and `setUiState` hand on to `editor-state.ts`. A write that throws becomes what the renderer is told through `storeFailure`, which logs it by its code only.
 
@@ -213,4 +230,9 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
   - `storyPreloadApi(overrides)` (`testing/story-preload.ts`): the same without Vitest, which Storybook doesn't load: a call not overridden does nothing;
   - `panelStory()` and `dialogStory()`: the story helpers.
 - **Why there are two places:** packages can't import the app, so only the engine fake is in `@webforge/test-utils`, and the helpers typed by the app are in the app (B6). That's a change from the issue's wording.
+- **Wait for events, not times** ([ADR 0014](adr/0014-time-budgets-under-load.md), #1052). Tests run beside other work, so a clock in a test fails when the machine is busy:
+  - **Wait for what you test:** a promise, `vi.waitFor` or `findBy…` on the state you mean, or fake timers. Never sleep a fixed time and hope.
+  - **Waits are generous by default:** `WAIT_MS` (`vitest.load.ts`), 10 s scaled to the run, for Testing Library, `vi.waitFor` and `expect.poll` in the app and the editor UI. A wait ends as soon as what it waits for happens, so don't shorten it.
+  - **Don't assert a duration.** Check the order of events, or the work done (a thread's CPU time, what was read or encoded). A pattern that could backtrack gets an input on which it would take minutes, and the test's timeout fails it. Speed belongs in `pnpm bench` and `e2e/perf`.
+  - **A heavy test states its timeout and why,** in a comment: one that builds a site, loads the pipeline's resources, starts a worker or a process, or runs a compiler. Scale it with `scaledTestTimeout()`. The defaults stay for the rest.
 - **Stories** run in Storybook's axe and screenshot checks (`pnpm visual:docker`; commit new screenshots with the PR). A story that draws after it renders says so with `data-story-state="drawing"` until it has, as `panelStory()` does.

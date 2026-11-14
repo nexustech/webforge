@@ -20,6 +20,9 @@ import {
 } from "./site-documents.js";
 import { DEFAULT_THEME } from "./theme.js";
 
+// Timeouts (#1052): fast-check makes and checks a hundred whole sites here, seconds alone and
+// several times that on a busy machine, so the property tests set their own timeouts.
+
 const site = createSite({
   name: "Rosa's Bakery",
   language: "en",

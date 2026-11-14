@@ -409,8 +409,10 @@ describe("scaffold", () => {
     expect(read(root, "apps/desktop/src/preload/api.ts")).toContain(
       "    calendar: calendarApi(call),",
     );
-    expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
-      "    registerCalendarHandlers(ipcMain, isTrustedSender);",
+    // Last in the app's features (#985).
+    expect(read(root, "apps/desktop/src/main/app.ts")).toContain("    calendarFeature(),\n  ];");
+    expect(read(root, "apps/desktop/src/main/calendar-ipc.ts")).toContain(
+      "export function calendarFeature(): AppFeature {",
     );
     // Listed with why it needn't name the open site, as every channel is (#979).
     expect(read(root, "apps/desktop/src/shared/ipc-sessions.test.ts")).toContain(
@@ -436,7 +438,7 @@ describe("scaffold", () => {
       "refuses a site a hand-off has replaced",
     );
     expect(read(root, "apps/desktop/src/main/app.ts")).toContain(
-      "projectSession.staleReason(session) === undefined",
+      "    calendarFeature((session) => projectSession.staleReason(session) === undefined),\n  ];",
     );
     expect(read(root, "apps/desktop/src/shared/ipc-sessions.test.ts")).toContain(
       '  "calendar:status",\n] as const;',

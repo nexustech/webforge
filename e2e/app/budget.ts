@@ -45,15 +45,19 @@ const LOCAL_OPEN_WALL_BACKSTOP_MS = 12_000;
 
 /**
  * The CPU time opening a site may cost on CI's runners, across Webforge's processes, by platform:
- * about 30% over the most CI measured in every E2E job of 26 and 27 Oct 2026 (#526: 31 runs per
- * platform, every attempt, about 300 openings each). Linux 1.34–3.34 CPU-s, Windows 1.64–4.16,
- * macOS 1.15–3.51. A job's openings rise and fall together with the runner it gets: the costliest
- * were all nine of one Windows job, whose re-run cost a quarter less. See ADR 0014.
+ * about 30% over the most CI measured, on a usual runner (a slow one's allowance taken out).
+ * - Linux and Windows: every E2E job of 26 and 27 Oct 2026 (#526: 31 runs per platform, every
+ *   attempt, about 300 openings each): Linux 1.34–3.34 CPU-s, Windows 1.64–4.16.
+ * - macOS: every E2E job of 13 and 14 Nov 2026 (#1052: 126 jobs, every attempt, 1,125 openings):
+ *   1.23–5.61, a median of 2.59. It was 4.6, from #526's 1.15–3.51, and failed 11 openings in 7
+ *   jobs on runners whose openings all cost about twice the usual, in every process, though their
+ *   calibration was as usual.
+ * A job's openings rise and fall together with the runner it gets. See ADR 0014.
  */
 const CI_OPEN_CPU_SECONDS: Readonly<Record<string, number>> = {
   linux: 4.4,
   win32: 5.4,
-  darwin: 4.6,
+  darwin: 7.3,
 };
 
 /**

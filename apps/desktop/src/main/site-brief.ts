@@ -4,6 +4,7 @@ import { PAGE_RECIPES } from "@webforge/templates";
 import { CURATED_THEMES, THEME_PRESETS } from "@webforge/themes";
 import type { IpcMain } from "electron";
 import { z } from "zod";
+import { briefStatusSchema } from "../shared/ai-tools.js";
 import {
   type AiResponse,
   aiEvents,
@@ -13,44 +14,6 @@ import {
 } from "../shared/ipc/ai.js";
 import type { AiWindow } from "./ai-ipc.js";
 import { registerIpcHandler } from "./ipc.js";
-
-/**
- * The tools main answers itself, beside the window's (4.12a): a new site is made without one open,
- * and the window that took the request starts over with it.
- */
-export const MAIN_TOOLS = {
-  siteChoices: {
-    kind: "query",
-    description:
-      "What createSiteFromBrief chooses from: each business type with its kinds, templates (their pages, by id and title) and page recipes; the theme presets; and the curated palettes. Needs no site open.",
-    inputSchema: { type: "object", properties: {}, additionalProperties: false },
-  },
-  createSiteFromBrief: {
-    kind: "command",
-    description:
-      "Starts a new site from a brief: Webforge opens its quick start filled in with these answers, for the person to check, change and create, or not. Nothing is made until they click Create; the site open now is saved first. Answers once they have: done, with the new site open, or declined. If they haven't decided within about 45 seconds, it answers waiting with a briefId: ask briefStatus with it a little later. Give the business type, and its kind, name and what it does; a template, theme, brand colour (or palette), pages to leave out and recipes to add, and contact details, each optional, as siteChoices lists them. Refused in Content mode.",
-    inputSchema: z.toJSONSchema(siteBriefSchema, { io: "input", unrepresentable: "any" }) as {
-      readonly type: "object";
-    },
-  },
-  briefStatus: {
-    kind: "query",
-    description:
-      "What became of a brief createSiteFromBrief answered waiting for: waiting still, done with the new site open, or declined. Takes its briefId; an app reads only its own briefs, each outcome once.",
-    inputSchema: {
-      type: "object",
-      properties: { briefId: { type: "integer", minimum: 1 } },
-      required: ["briefId"],
-      additionalProperties: false,
-    },
-  },
-} as const;
-
-/** The name of one of {@link MAIN_TOOLS}. */
-export type MainToolName = keyof typeof MAIN_TOOLS;
-
-/** Whether `name` is one of {@link MAIN_TOOLS}. */
-export const isMainTool = (name: string): name is MainToolName => Object.hasOwn(MAIN_TOOLS, name);
 
 /** How long a brief waits for the person to create the site or close the quick start. */
 const BRIEF_TIMEOUT_MS = 30 * 60_000;
@@ -321,9 +284,6 @@ export function createSiteBriefs(options: SiteBriefsOptions) {
     },
   };
 }
-
-/** What `briefStatus` takes: the id `createSiteFromBrief` answered `waiting` with. */
-const briefStatusSchema = z.strictObject({ briefId: z.int().positive() });
 
 /** The briefs. */
 export type SiteBriefs = ReturnType<typeof createSiteBriefs>;

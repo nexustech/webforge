@@ -3,6 +3,10 @@ import { heroPhoto } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
 import { thumbnailFor } from "./make-thumbnail.js";
 
+// Timeouts (#1052): the first use of the worker's Node resources loads Tailwind, the image codecs
+// and the fonts, and a build runs them: seconds alone, several times that on a busy machine. So
+// these tests set their own timeouts.
+
 describe("thumbnailFor", () => {
   it("answers with a WebP preview of the image", async () => {
     const outcome = await thumbnailFor(

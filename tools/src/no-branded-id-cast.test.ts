@@ -5,6 +5,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 
+// Timeouts (#1052): the test runs Biome with the plugin over every probe, seconds alone and
+// several times that on a busy machine, so it sets its own timeout.
+
 const plugin = fileURLToPath(new URL("../biome/no-branded-id-cast.grit", import.meta.url));
 const biome = fileURLToPath(
   new URL("../../node_modules/@biomejs/biome/bin/biome", import.meta.url),

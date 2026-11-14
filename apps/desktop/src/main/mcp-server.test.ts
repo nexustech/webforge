@@ -1,19 +1,20 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
-import { AI_TOOLS } from "@webforge/commands";
+import { AI_TOOLS, toMcpTool } from "@webforge/commands";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { MAIN_TOOLS, WINDOW_TOOLS } from "../shared/ai-tools.js";
 import type { AiResponse } from "../shared/ipc/ai.js";
-import { APP_TOOLS } from "../shared/ipc/ai.js";
 import { MCP_HOST, MCP_PATH } from "./mcp-address.js";
 import { type McpListener, startMcpListener } from "./mcp-listener.js";
-import { createMcpServer, type McpApp } from "./mcp-server.js";
-import { MAIN_TOOLS } from "./site-brief.js";
+import { createAssistantMcpServer, createMcpServer, type McpApp } from "./mcp-server.js";
 
 const INFO = { name: "Webforge", version: "1.0.0" };
 const CLAUDE: McpApp = { id: "app-1", name: "Claude" };
 const KEY = "k".repeat(43);
+/** The tools the in-app assistant has (AIA-9): the command layer's, and Site Check. */
+const ASSISTANT_TOOL_NAMES = [...AI_TOOLS.map((tool) => tool.name), "runSiteCheck"];
 
 const ask = vi.fn(
   async (): Promise<AiResponse> => ({ status: "done", data: { name: "Rosa's Bakery" } }),
@@ -106,9 +107,8 @@ describe("the MCP server (4.9)", () => {
 
     expect(memory.tools.map((tool) => tool.name)).toEqual([
       ...AI_TOOLS.map((tool) => tool.name),
-      ...Object.keys(APP_TOOLS),
-      "requestMedia",
-      ...Object.keys(MAIN_TOOLS),
+      ...WINDOW_TOOLS.map((tool) => tool.name),
+      ...MAIN_TOOLS.map((tool) => tool.name),
     ]);
     // requestMedia takes the app's reason: never a path or an address (4.12b).
     expect(memory.tools.find((tool) => tool.name === "requestMedia")?.inputSchema).toEqual({
@@ -124,7 +124,21 @@ describe("the MCP server (4.9)", () => {
       additionalProperties: false,
     });
     expect(http.tools).toEqual(memory.tools);
-    expect(memory.tools[0]?.inputSchema).toEqual(AI_TOOLS[0]?.inputSchema);
+    expect(memory.tools[0]?.inputSchema).toEqual(AI_TOOLS.map(toMcpTool)[0]?.inputSchema);
+  });
+
+  it("lists the same tools, word for word, as before they were one definition (#981)", async () => {
+    const tools = (await (await inMemory()).listTools()).tools;
+    await expect(`${JSON.stringify(tools, null, 2)}
+`).toMatchFileSnapshot("./__snapshots__/mcp-tools.json.snap");
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await createAssistantMcpServer(INFO, ask).connect(serverSide);
+    const assistant = new Client({ name: "test", version: "1" });
+    await assistant.connect(clientSide);
+    // The assistant's are a few of the same (AIA-9), in the same order.
+    expect((await assistant.listTools()).tools).toEqual(
+      tools.filter((tool) => ASSISTANT_TOOL_NAMES.includes(tool.name)),
+    );
   });
 
   it("asks the open site for a query, and runs a command on the paired app's behalf", async () => {
@@ -133,9 +147,17 @@ describe("the MCP server (4.9)", () => {
     const outline = await client.callTool({ name: "outline", arguments: {} });
     await client.callTool({ name: "addPage", arguments: { title: "Menu" } });
 
-    // Each with the request's signal: a brief stops waiting when the app gives up (4.12a).
+    // Each with its tool's definition, which main routes it by (#981), and the request's signal:
+    // a brief stops waiting when the app gives up (4.12a).
     const signal = expect.any(AbortSignal);
-    expect(ask).toHaveBeenNthCalledWith(1, { kind: "query", name: "outline", input: {} }, signal);
+    const route = (name: string, answeredBy: string, savesVersionFirst: boolean) =>
+      expect.objectContaining({ name, answeredBy, savesVersionFirst });
+    expect(ask).toHaveBeenNthCalledWith(
+      1,
+      { kind: "query", name: "outline", input: {} },
+      route("outline", "window", false),
+      signal,
+    );
     expect(ask).toHaveBeenNthCalledWith(
       2,
       {
@@ -144,12 +166,29 @@ describe("the MCP server (4.9)", () => {
         input: { title: "Menu" },
         app: "Claude",
       },
+      route("addPage", "window", true),
       signal,
     );
     await client.callTool({ name: "runSiteCheck", arguments: {} });
     expect(ask).toHaveBeenNthCalledWith(
       3,
       { kind: "query", name: "runSiteCheck", input: {} },
+      route("runSiteCheck", "window", false),
+      signal,
+    );
+    // A plan's Allow saves its version (S26); a brief is main's, and changes no open site.
+    await client.callTool({ name: "plan", arguments: {} });
+    await client.callTool({ name: "createSiteFromBrief", arguments: {} });
+    expect(ask).toHaveBeenNthCalledWith(
+      4,
+      expect.anything(),
+      route("plan", "window", false),
+      signal,
+    );
+    expect(ask).toHaveBeenNthCalledWith(
+      5,
+      expect.anything(),
+      route("createSiteFromBrief", "main", false),
       signal,
     );
     expect(outline).toEqual({

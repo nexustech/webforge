@@ -18,8 +18,7 @@ beforeAll(async () => {
 }, 30_000);
 
 /** The panel's editor, once CodeMirror has drawn it. */
-const findEditor = () =>
-  screen.findByRole("textbox", { name: "Stylesheet (custom.css)" }, { timeout: 10_000 });
+const findEditor = () => screen.findByRole("textbox", { name: "Stylesheet (custom.css)" });
 
 /** The panel as the area registers it, in `level` mode. */
 function setUp(level: "simple" | "advanced") {
@@ -112,10 +111,8 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
       commands.run("stylesheet.target");
     });
     const editor = await editorBox();
-    await waitFor(() => expect(editor.textContent).toContain("#welcome {"), { timeout: 10_000 });
-    await waitFor(() => expect(editor.contains(document.activeElement)).toBe(true), {
-      timeout: 10_000,
-    });
+    await waitFor(() => expect(editor.textContent).toContain("#welcome {"));
+    await waitFor(() => expect(editor.contains(document.activeElement)).toBe(true));
 
     // Closed, the rule undone, then opened again: the old caret is gone, nothing throws.
     shown.unmount();

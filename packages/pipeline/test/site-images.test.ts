@@ -9,6 +9,10 @@ import { createMemoryImageCache } from "../src/memory-image-cache.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { PipelineResources } from "../src/resources.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 let resources: PipelineResources;
 /** One build of the sample site with its site images, and the cache it filled, shared below. */
 let built: BuiltSite;

@@ -1,5 +1,5 @@
-export type { AiTool, ToolInputSchema } from "./ai-tools.js";
-export { AI_TOOLS, UNTRUSTED_SITE_TEXT } from "./ai-tools.js";
+export type { McpTool, ToolDef } from "./ai-tools.js";
+export { AI_TOOLS, toMcpTool, UNTRUSTED_SITE_TEXT } from "./ai-tools.js";
 export type { CommandApi, QueryResult } from "./api.js";
 export { CONFIRM_TIMEOUT_MS, createCommandApi } from "./api.js";
 export { CATALOGUE_RESOURCE, catalogueResourceText } from "./catalogue.js";

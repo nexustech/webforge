@@ -140,6 +140,9 @@ test("a save still on its way when a double-clicked site replaces the open one n
 });
 
 test("a second launch without a site, or with the open one, only brings the window forward", async () => {
+  // Two more Electron processes start and end after the app's own, each taking seconds: on a busy
+  // machine the three ran past the 60 s default (#1052), so three times that.
+  test.slow();
   const page = await openBakery();
   // A mark on this page: a reload would clear it.
   await page.evaluate(() => Object.assign(window, { beforeHandOff: true }));

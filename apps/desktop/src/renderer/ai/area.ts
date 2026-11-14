@@ -13,6 +13,7 @@ import { answerRequest, commandHost } from "./command-host.js";
 import { MediaRequestDialog } from "./MediaRequestDialog.js";
 import { createMediaRequests, type MediaAsk } from "./media-request.js";
 import { createStages } from "./stages.js";
+import { answerWindowTool, type WindowToolHandlers } from "./window-tools.js";
 
 /** The question an AI app's `requestMedia` shows, and who waits for its answer. */
 type Asking = { readonly asked: MediaAsk; readonly answer: (addFiles: boolean) => void } | null;
@@ -20,8 +21,8 @@ type Asking = { readonly asked: MediaAsk; readonly answer: (addFiles: boolean) =
 /**
  * AI apps' requests (F-AI-1, 4.8): while a site is open in the window, main forwards each tool
  * call here and the command layer answers it, every change one labelled undo step. Run Site Check
- * and Open Preview the window answers itself (4.9, `APP_TOOLS`), and `requestMedia`, which asks the
- * person for pictures or files (4.12b).
+ * and Open Preview the window answers itself (4.9, `WINDOW_TOOLS`), and `requestMedia`, which asks
+ * the person for pictures or files (4.12b).
  */
 export const aiRequestsArea: Area<WindowContext> = {
   id: "aiRequests",
@@ -94,21 +95,19 @@ export const aiRequestsArea: Area<WindowContext> = {
       });
     }
     const removeDialog = windowDialogs.register({ id: "aiMediaRequest", component: MediaRequest });
+    const windowTools: WindowToolHandlers = { ...appTools, requestMedia: mediaRequests };
 
     // For the opening of the site this page was loaded for (#663).
     const stopAnswering = api.ai.onRequest(siteSession(), async (request, onCancel) => {
       // Main's cancel (the assistant's Stop) closes a question the command waits on.
       const cancel = new AbortController();
       onCancel(() => cancel.abort());
-      // Site Check reads the site itself; the rest of a held reply reads and changes its draft.
-      if (request.stage !== undefined) {
-        return appTools(request) ?? stages.answer({ ...request, stage: request.stage });
-      }
-      return (
-        appTools(request) ??
-        mediaRequests(request) ??
-        answerRequest(commandApi, request, cancel.signal)
-      );
+      // The window's own tools by their definitions (#981): Site Check reads the site itself;
+      // the rest of a held reply reads and changes its draft.
+      const own = answerWindowTool(windowTools, request);
+      if (own !== undefined) return own;
+      if (request.stage !== undefined) return stages.answer({ ...request, stage: request.stage });
+      return answerRequest(commandApi, request, cancel.signal);
     });
     return () => {
       stopAnswering();

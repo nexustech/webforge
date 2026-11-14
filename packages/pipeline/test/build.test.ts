@@ -22,6 +22,10 @@ import { tailwindLoaders } from "../src/css.js";
 import { loadNodeResources } from "../src/node-resources.js";
 import type { ImageCache, PipelineResources } from "../src/resources.js";
 
+// Timeouts (#1052): these tests load the pipeline's Node resources (Tailwind, the image codecs, the
+// fonts) and build sites with them, which takes seconds alone and several times that on a busy
+// machine. Each sets its own timeout, scaled to the run (ADR 0014).
+
 const requireFrom = createRequire(import.meta.url);
 
 let resources: PipelineResources;
