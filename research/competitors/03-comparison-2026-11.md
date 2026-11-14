@@ -1,6 +1,6 @@
 # Where Webforge stands against its competitors, November 2026
 
-**Status:** 🟡 Proposals for decision (CC-1…CC-12, [§8](#8-proposals)). Nothing here changes the spec or the plan until the product owner decides.
+**Status:** ✅ Decided 2026-11-14 ([§11](#11-decisions)): two small search-engine items before v1.0, dark mode for visitors and sites in several languages in v1.1 with six new building blocks, and the rest held or not adopted.
 **Date:** 2026-11-14
 **Question:** Six weeks of building after the gap analysis, how does Webforge compare with the tools a small-business owner would otherwise choose, and what should come next? Four topics were asked for by name: sites in more than one language, a light/dark switch for visitors, search engines, and missing sections and elements.
 
@@ -181,7 +181,7 @@ Each new section or element has a known price in this codebase: `pnpm new-compon
 
 ## 8. Proposals
 
-For the product owner. Sizes are rough ideal days, to rank, not to plan with. None is in the plan.
+For the product owner, who decided them on 14 Nov 2026 ([§11](#11-decisions)). The table is as proposed. Sizes are rough ideal days, to rank, not to plan with.
 
 | ID    | Proposal                                                                                                                                                                                                     | Size             | When                            | Depends on                 |
 | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ------------------------------- | -------------------------- |
@@ -198,13 +198,15 @@ For the product owner. Sizes are rough ideal days, to rank, not to plan with. No
 | CC-11 | **Second batch**: menu / price list, marquee, countdown, audio, counting numbers, share buttons                                                                                                              | 7                | v1.1 or later                   | –                          |
 | CC-12 | **Events and Portfolio** as collections on the Blog's engine, with `Event` data                                                                                                                              | 8                | v1.2 (as planned)               | –                          |
 
-**Issues.** Each proposal has an issue that records it and what is still to decide: CC-1 to CC-12 are #1032 to #1043, in that order. CC-1, CC-6 and CC-7 sit in the Phase 5 milestone, CC-12 in none, the rest in v1.1. They are proposals until decided, and none is queued in a stream.
+**Issues.** Each proposal has an issue, which now carries its decision: CC-1 to CC-12 are #1032 to #1043, in that order. Right-to-left languages, split from CC-3, are #1056.
 
 **Suggested order.** CC-1, CC-6 and CC-7 are small and fix things that are wrong or thin today; do them in beta hardening. Then CC-10's Accordion and Steps. Then choose between CC-5 (dark mode: smaller, showy, two rivals have it) and CC-2 (languages: larger, no desktop rival has it properly, opens new markets). My recommendation is CC-5 first because it is a third of the size and mostly built, then CC-2 as the headline of the release after.
 
 **Not proposed, and why.** Bookings, a cart, members and comments (M5 stands). Instagram and Google review feeds (they load from other companies, against the export rule). IndexNow, keyword scores and AI-visibility dashboards (SEO-11 stands). Bundled or sold machine translation (AIA: the user's own account only). File-upload fields (depends on each form service).
 
 ## 9. Open questions
+
+All five were answered on 14 Nov 2026 ([§11](#11-decisions)). They are kept as asked.
 
 1. Is a wrong-language label on a non-English site (CC-1) a must-fix for v1.0, and which languages first? Suggested: French, German, Spanish, Italian, Dutch, Portuguese, Polish.
 2. For CC-2, should the main language sit at the root with the others in folders (suggested, and what Wix and Webflow do), or every language in a folder with a chooser at the root?
@@ -221,6 +223,29 @@ For the product owner. Sizes are rough ideal days, to rank, not to plan with. No
 - **Prices** were not re-checked beyond the changes in §2; the [pricing note](../product/10-competitor-pricing.md) is from 27 Oct 2026.
 - **Interface language counts** are verified only for Nicepage (10).
 - **Sizes** in §8 are estimates made without reading the model or the pipeline in depth.
+
+## 11. Decisions
+
+Product owner, 2026-11-14, one proposal at a time. Sizes are still rough; the plan items and their days follow in `spec/04`.
+
+| #     | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CC-1  | ✅ **v1.1**, not before v1.0: the site's own labels in the site's language, **French, German and Spanish first**, each translation checked by a person; per-site overrides and Language as a list of names. v1.0 ships with these labels in English on every site. [#1032](https://github.com/nexustech/webforge/issues/1032)                                                                                                                                          |
+| CC-2  | ✅ **v1.1, after CC-5:** language versions of a site, with **the main language at the root and the others in folders**, `hreflang`, a Language switcher element and Site Check for untranslated text. Pulls M4's multilingual half forward from v1.2+; site search stays there. Starts with an ADR for the model. [#1033](https://github.com/nexustech/webforge/issues/1033)                                                                                           |
+| CC-3  | ✅ **v1.1, right after CC-2:** translating a page with the Assistant or an AI app, on the user's own account, as one undoable step. ⏸ **Right-to-left languages are held until there is demand** ([#1056](https://github.com/nexustech/webforge/issues/1056)). [#1034](https://github.com/nexustech/webforge/issues/1034)                                                                                                                                              |
+| CC-4  | ⏸ **Held until there is demand:** the editor in other languages. Revisit after beta feedback from owners with non-English sites. [#1035](https://github.com/nexustech/webforge/issues/1035)                                                                                                                                                                                                                                                                            |
+| CC-5  | ✅ **v1.1, its first large feature:** dark mode for visitors, following the device, with the optional Light/dark switch element. **Off until the owner chooses it.** Makes G12 concrete. [#1036](https://github.com/nexustech/webforge/issues/1036)                                                                                                                                                                                                                    |
+| CC-6  | ✅ **Before v1.0:** `BlogPosting` data on posts. [#1037](https://github.com/nexustech/webforge/issues/1037)                                                                                                                                                                                                                                                                                                                                                            |
+| CC-7  | ✅ **Before v1.0:** 301 redirects in `.htaccess`, as **a tick box on each FTP, FTPS or SFTP destination, off by default**; only a marked block is written. [#1038](https://github.com/nexustech/webforge/issues/1038)                                                                                                                                                                                                                                                  |
+| CC-8  | ❌ **Not adopted:** `Product` data on Buy buttons. The price on the payment page can't be checked, so the data could mislead. [#1039](https://github.com/nexustech/webforge/issues/1039) (closed)                                                                                                                                                                                                                                                                      |
+| CC-9  | ✅ **v1.1:** "Ask AI companies not to train on this site", off by default, worded as a request; **turning it on turns `llms.txt` off**. [#1040](https://github.com/nexustech/webforge/issues/1040)                                                                                                                                                                                                                                                                     |
+| CC-10 | ✅ **v1.1: Accordion element, Steps / Timeline section, Table element, Contact buttons**, Accordion and Steps first (G16's tables and timeline move from Later). ❌ **Popup: not in v1.1**; if one is ever built it opens by a button only (G19's popup). ❌ **Before and after: not adopted**; option C's rejection stands. [#1041](https://github.com/nexustech/webforge/issues/1041)                                                                                |
+| CC-11 | ✅ **v1.1: a menu / price list section and share buttons on posts**, after checking whether Pricing's "Price list" layout already serves the Café template. ❌ **Not adopted: marquee, countdown, audio player, numbers that count up.** The scrolling logo strip already set for v1.1 (BS9-4…BS9-9, [MVP §5](../../spec/02-mvp-spec.md#5-explicitly-out-of-mvp)) is a different decision and is unchanged. [#1042](https://github.com/nexustech/webforge/issues/1042) |
+| CC-12 | ✅ **Stays at v1.2:** Events and Portfolio as collections. [#1043](https://github.com/nexustech/webforge/issues/1043)                                                                                                                                                                                                                                                                                                                                                  |
+
+**What this changes elsewhere.** [MVP §5](../../spec/02-mvp-spec.md#5-explicitly-out-of-mvp) and §7 item 46 carry the decisions; M4 in the [CMS note](../product/02-cms.md) and §3.8 of the [gap analysis](../product/05-feature-gap-analysis.md) point here. The plan items (two in Phase 5, the rest in Phase 6) are the coordinator's to add to `spec/04`.
+
+**A correction.** §7.2's row 8 says a marquee was "not proposed" by the Bootstrap Studio 9 review. A scrolling logo strip was adopted for v1.1 there. The row is left as written; the line above is what stands.
 
 ## Sources
 
