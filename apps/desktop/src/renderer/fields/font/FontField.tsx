@@ -13,6 +13,7 @@ import { FONT_CATALOGUE, previewFileOf } from "@webforge/themes";
 import { DownloadIcon } from "lucide-react";
 import { useEffect, useId, useState } from "react";
 import type { BrowsableFont, FontsApi, InstalledFont } from "../../../shared/ipc/fonts.js";
+import { reportFailure } from "../../log.js";
 import { addFontPreviews, previewFamily } from "./font-previews.js";
 
 /** A category's name in the picker: `fonts.category.<category>`, or the category as it is. */
@@ -79,7 +80,8 @@ function listInstalled(
       addFontPreviews(document, list);
       then(list);
     })
-    .catch(() => undefined);
+    // The list stays empty, and the failure is logged by its code (#990).
+    .catch((error: unknown) => reportFailure("fonts.list", error));
 }
 
 /** Downloads font `id` through `fonts`, a failure of any kind answered as one. */

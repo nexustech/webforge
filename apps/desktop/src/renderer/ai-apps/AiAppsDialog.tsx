@@ -186,12 +186,15 @@ export function AiAppsDialog({
   const [installed, setInstalled] = useState<McpInstallResult["status"] | null>(null);
   const [vsCode, setVsCode] = useState<McpVsCodeResult["status"] | null>(null);
   const whichId = useId();
+  // Opened again: no *moved* note from last time, from its first frame (#990).
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setMoved(false);
+  }
 
   useEffect(() => {
-    if (!open) {
-      setMoved(false);
-      return;
-    }
+    if (!open) return;
     let live = true;
     const refresh = () => {
       mcp.status().then(

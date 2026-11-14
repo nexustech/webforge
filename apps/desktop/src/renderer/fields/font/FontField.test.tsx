@@ -5,11 +5,15 @@ import type { FieldRendererProps } from "@webforge/editor-ui";
 import { FONT_CATALOGUE } from "@webforge/themes";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { FontsApi } from "../../../shared/ipc/fonts.js";
+import { setFailureLog } from "../../log.js";
 import { FontField } from "./FontField.js";
 import { fakeFonts } from "./fake-fonts.js";
 import { addFontPreviews, fontPreviewCss, previewFamily } from "./font-previews.js";
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  setFailureLog(undefined);
+});
 
 /** The field with `value`, the computer's fonts answered by `fonts`, and what it reports. */
 function setUp(
@@ -117,6 +121,17 @@ describe("the font field (2.3a)", () => {
     await user.click(screen.getByRole("button", { name: "Headings Inter" }));
 
     expect(list).toHaveBeenCalledTimes(2);
+  });
+
+  it("logs, by its code, a list of the computer's fonts it couldn't read (#990)", async () => {
+    const failures = vi.fn(async () => undefined);
+    setFailureLog(failures);
+    const fonts = fakeFonts();
+    vi.spyOn(fonts, "list").mockRejectedValue(new Error("C:\\Users\\rosa\\fonts"));
+    setUp(undefined, fonts);
+
+    await vi.waitFor(() => expect(failures).toHaveBeenCalledWith("fonts.list", expect.any(String)));
+    expect(String(failures.mock.calls)).not.toContain("rosa");
   });
 
   it("says why a font didn't download, and changes nothing", async () => {

@@ -1,6 +1,6 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Picker, type PickerItem } from "./picker.js";
 
@@ -14,6 +14,20 @@ const ITEMS: readonly PickerItem[] = [
   { id: "oven", label: "oven.jpg", category: "Places" },
 ];
 
+/** A preview that says each label it's drawn with once it's on screen: what a frame showed. */
+function Preview({
+  label,
+  onShown,
+}: {
+  readonly label: string;
+  readonly onShown?: ((label: string) => void) | undefined;
+}) {
+  useLayoutEffect(() => {
+    onShown?.(label);
+  }, [label, onShown]);
+  return <p>Preview of {label}</p>;
+}
+
 /** A picker opened by a button, as a field opens it, choosing into `onChoose`. */
 function setUp(
   props: {
@@ -21,6 +35,8 @@ function setUp(
     layout?: "grid" | "list";
     items?: readonly PickerItem[];
     limit?: number;
+    /** Told the item each frame previews once it's on screen, in order. */
+    onPreview?: (label: string) => void;
   } = {},
 ) {
   const onChoose = vi.fn();
@@ -42,7 +58,7 @@ function setUp(
           layout={props.layout ?? "grid"}
           value={props.value ?? null}
           renderItem={(item) => <span data-testid={`tile-${item.id}`} />}
-          renderPreview={(item) => <p>Preview of {item.label}</p>}
+          renderPreview={(item) => <Preview label={item.label} onShown={props.onPreview} />}
           onChoose={onChoose}
           actions={<button type="button">Add new…</button>}
           emptyText="This site has no images yet."
@@ -223,6 +239,27 @@ describe("Picker (UX-15)", () => {
     expect(options()).toEqual(["oven.jpg", "cake.jpg"]);
     expect(screen.getByRole("option", { name: "oven.jpg" }).getAttribute("aria-selected")).toBe(
       "true",
+    );
+  });
+
+  it("opens again on every category and the current choice (#990)", async () => {
+    const previewed: string[] = [];
+    const { opener } = setUp({ value: "bread", onPreview: (label) => previewed.push(label) });
+    await userEvent.click(opener);
+    // Left on another category, which Esc doesn't clear as it does a search.
+    await userEvent.click(screen.getByRole("button", { name: "Places" }));
+    expect(screen.getByText("Preview of shop-front.jpg")).toBeTruthy();
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    previewed.length = 0;
+    await userEvent.click(opener);
+
+    // The first preview on screen is the current choice's, not the last visit's category.
+    expect(previewed[0]).toBe("bread.jpg");
+    expect(previewed).not.toContain("shop-front.jpg");
+    expect(screen.getByRole("button", { name: "Places" }).getAttribute("aria-pressed")).toBe(
+      "false",
     );
   });
 

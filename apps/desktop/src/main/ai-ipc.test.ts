@@ -77,6 +77,25 @@ describe("registerAiHandlers", () => {
     expect(await second).toEqual({ status: "done", data: { name: "Rosa's" } });
   });
 
+  it("cancels an app's commands waiting for the window, and only that app's (6.9b)", async () => {
+    const { ai, sent, invoke } = bridge();
+    await invoke("ai:listening", SESSION, true);
+    const assistant = ai.ask({ ...addHero, app: "Assistant" });
+    const claude = ai.ask(addHero);
+    ai.ask(outline);
+    sent.length = 0;
+    ai.cancel("Assistant");
+    expect(sent).toEqual([["ai:cancel", 1]]);
+    // It still answers, as the window declines it.
+    await invoke("ai:answer", 1, { status: "declined", message: "Stopped." });
+    expect(await assistant).toEqual({ status: "declined", message: "Stopped." });
+    sent.length = 0;
+    ai.cancel("Assistant");
+    expect(sent).toEqual([]);
+    await invoke("ai:answer", 2, { status: "done", label: "AI (Claude): Added Hero" });
+    expect((await claude).status).toBe("done");
+  });
+
   it("says no site is open until the renderer listens, and after it stops or crashes", async () => {
     const { ai, sent, crashed, invoke } = bridge();
     expect((await ai.ask(outline)).status).toBe("not-found");

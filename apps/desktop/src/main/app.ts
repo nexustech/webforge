@@ -818,6 +818,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           return mcp.connectAssistant(beforeCommand);
         },
         // The conversation's safety version (S20): its id, for Version History's button.
+        cancelQuestions: () => ai.cancel(t("assistant.name")),
         saveVersionBefore: async (session, name) => {
           const saved = await versions.saveVersionBefore(session, name);
           if (saved.status === "saved") return { status: "saved", versionId: saved.version.id };

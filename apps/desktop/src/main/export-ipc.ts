@@ -5,7 +5,7 @@ import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.
 import type { ExportProgress, SiteContent } from "../shared/ipc/site.js";
 import type { ExportResult } from "../shared/ipc-contract.js";
 import { registerIpcHandler } from "./ipc.js";
-import { log } from "./log.js";
+import { log, logFailure } from "./log.js";
 import type { SessionSite } from "./project-session.js";
 
 /** Native dialogs, injected so the handler can be tested without Electron. */
@@ -161,8 +161,13 @@ export function registerExportHandlers(
         ) {
           return { status: "canceled" };
         }
-        // Remembered once the person has gone ahead; a site that can't save them still exports.
-        await site.setExportChoices(choices).catch(() => undefined);
+        // Remembered once the person has gone ahead; a site that can't save them still exports,
+        // and the failure is logged by its code (#990).
+        await site
+          .setExportChoices(choices)
+          .catch((error: unknown) =>
+            logFailure("Webforge could not keep the site's export choices", error),
+          );
         if (controller.signal.aborted) return { status: "canceled" };
         const target: ExportTarget = {
           destination,

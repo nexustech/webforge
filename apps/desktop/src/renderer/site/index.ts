@@ -13,4 +13,4 @@ export {
   setHiddenFromNavigation,
 } from "./page-actions.js";
 export { recipeName } from "./recipe-name.js";
-export { registerSitePanel } from "./SitePanel.js";
+export { registerSitePanel } from "./register-site-panel.js";
