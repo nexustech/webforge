@@ -16,6 +16,7 @@ export type {
   InsertPoint,
   LinkPicker,
   MountOptions,
+  RewriteAnswer,
   RewriteHow,
   RewriteRequest,
   RichTextAt,

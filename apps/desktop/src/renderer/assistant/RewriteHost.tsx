@@ -1,4 +1,4 @@
-import type { CanvasEngine, RewriteRequest } from "@webforge/engine";
+import type { CanvasEngine, RewriteAnswer, RewriteRequest } from "@webforge/engine";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import {
   type AssistantApi,
@@ -17,7 +17,7 @@ import { RewriteDialog, type RewriteState } from "./RewriteDialog.js";
 /** A rewrite the format toolbar asked for, waiting for the person. */
 type Asked = {
   readonly request: RewriteRequest;
-  readonly answer: (text: string | undefined) => void;
+  readonly answer: (accepted: RewriteAnswer | undefined) => void;
 };
 
 /** `request`'s draft from main, or `failed` if the call itself failed. */
@@ -127,12 +127,12 @@ export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProp
           current.current?.answer(undefined);
           const asking: Asked = {
             request,
-            answer: (text) => {
+            answer: (accepted) => {
               if (current.current === asking) {
                 current.current = null;
                 setAsked(null);
               }
-              resolve(text);
+              resolve(accepted);
             },
           };
           current.current = asking;
@@ -172,14 +172,20 @@ export function RewriteHost({ session, engine, api, sessionId }: RewriteHostProp
           return;
         }
         const { history, ui } = session;
-        // What was typed before is a step of its own; the rewrite, the next one.
-        if (request.at !== null) {
-          history.endSession(
-            textSessionKey(ui.getState().pageId, request.at.nodeId, request.at.field),
-          );
-        }
-        asAssistantStep(history);
-        asked.answer(text);
+        asked.answer({
+          text,
+          // Only once the text is sure to go in: a rewrite that doesn't leaves the next change
+          // alone (#1049's review).
+          applying: () => {
+            // What was typed before is a step of its own; the rewrite, the next one.
+            if (request.at !== null) {
+              history.endSession(
+                textSessionKey(ui.getState().pageId, request.at.nodeId, request.at.field),
+              );
+            }
+            asAssistantStep(history);
+          },
+        });
       }}
       onCancel={() => asked.answer(undefined)}
     />

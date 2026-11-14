@@ -32,7 +32,8 @@ describe("rewriting selected text (G25a, #873)", () => {
     const editor = editorWith("<p>We are open from nine until five.</p>");
     // "open from nine until five" (the paragraph starts at 1).
     editor.commands.setTextSelection({ from: 8, to: 33 });
-    const rewrite = vi.fn<Rewrite>(async () => "open 9 to 5");
+    const applying = vi.fn();
+    const rewrite = vi.fn<Rewrite>(async () => ({ text: "open 9 to 5", applying }));
 
     expect(await rewriteSelection(editor, "shorter", rewrite)).toBe(true);
     expect(rewrite).toHaveBeenCalledWith({
@@ -41,12 +42,13 @@ describe("rewriting selected text (G25a, #873)", () => {
       formatted: false,
     });
     expect(editor.getHTML()).toBe("<p>We are open 9 to 5.</p>");
+    expect(applying).toHaveBeenCalledOnce();
   });
 
   it("reads paragraphs apart and gives each answered paragraph its own", async () => {
     const editor = editorWith("<p>First <strong>one</strong>.</p><p>Second one.</p>");
     editor.commands.selectAll();
-    const rewrite = vi.fn<Rewrite>(async () => "Number one.\n\nNumber\ntwo.\n\n\n");
+    const rewrite = vi.fn<Rewrite>(async () => ({ text: "Number one.\n\nNumber\ntwo.\n\n\n" }));
 
     await rewriteSelection(editor, "friendlier", rewrite);
     expect(rewrite).toHaveBeenCalledWith({
@@ -63,12 +65,15 @@ describe("rewriting selected text (G25a, #873)", () => {
     expect(await rewriteSelection(editor, "grammar", async () => undefined)).toBe(false);
     expect(editor.getHTML()).toBe("<p>Open daily.</p>");
 
+    // The app prepares no undo step for a rewrite that doesn't go in (#1049's review).
+    const applying = vi.fn();
     const late: Rewrite = async () => {
       editor.commands.insertContentAt(1, "Now ");
-      return "Open every day.";
+      return { text: "Open every day.", applying };
     };
     expect(await rewriteSelection(editor, "grammar", late)).toBe(false);
     expect(editor.getHTML()).toBe("<p>Now Open daily.</p>");
+    expect(applying).not.toHaveBeenCalled();
   });
 
   it("asks nothing without text selected", async () => {

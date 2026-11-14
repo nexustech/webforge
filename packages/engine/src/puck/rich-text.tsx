@@ -125,7 +125,6 @@ function RewriteSelect({ editor, rewrite }: { editor: ToolbarProps["editor"]; re
   return (
     <select
       aria-label={label}
-      title={label}
       value=""
       disabled={editor === null || editor.state.selection.empty}
       onMouseDown={(event) => event.stopPropagation()}

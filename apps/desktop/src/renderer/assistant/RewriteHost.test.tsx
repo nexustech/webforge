@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { RewriteRequest, TextRewriter } from "@webforge/engine";
+import type { RewriteAnswer, RewriteRequest, TextRewriter } from "@webforge/engine";
 import { siteLibrary } from "@webforge/site-components";
 import { createFakeEngine } from "@webforge/test-utils/renderer";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -36,7 +36,7 @@ function setUp(options: FakeAssistantOptions = {}) {
   /** Asks as the toolbar's Rewrite menu does, once the assistant's status has come. */
   const ask = async (request: RewriteRequest = REQUEST) => {
     await waitFor(() => expect(rewriter()).toBeTypeOf("function"));
-    let answer: Promise<string | undefined> = Promise.resolve(undefined);
+    let answer: Promise<RewriteAnswer | undefined> = Promise.resolve(undefined);
     act(() => {
       answer = (rewriter() as TextRewriter)(request);
     });
@@ -73,8 +73,37 @@ describe("rewriting selected text with the assistant (G25a, #873)", () => {
     });
 
     await user.click(within(dialog).getByRole("button", { name: "Use This" }));
-    expect(await answer).toBe("Open daily from 9am.");
+    expect(await answer).toMatchObject({ text: "Open daily from 9am." });
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("names the next change for the assistant only once the rewrite goes in (#1049's review)", async () => {
+    const { ask, session, user } = setUp({ draft: draftOf("Open daily from 9am.") });
+    const edit = (name: string) =>
+      session.edit("props", "Changed site settings", (draft) => {
+        draft.settings.general.name = name;
+      });
+    const labels = () => session.history.entries().map((entry) => entry.label);
+
+    // The text changed while the person read the suggestion: the toolbar doesn't apply it, and
+    // the person's next change keeps its own name.
+    const declined = ask();
+    const dialog = await screen.findByRole("dialog", { name: "Rewrite Text" });
+    await user.click(await within(dialog).findByRole("button", { name: "Use This" }));
+    expect((await declined)?.applying).toBeTypeOf("function");
+    edit("Rise");
+    await Promise.resolve();
+    expect(labels()).toEqual(["Changed site settings"]);
+
+    // It goes in: the change it makes is the assistant's.
+    const applied = ask();
+    await user.click(
+      await within(await screen.findByRole("dialog")).findByRole("button", { name: "Use This" }),
+    );
+    (await applied)?.applying?.();
+    edit("Rise Bakery");
+    await Promise.resolve();
+    expect(labels()).toEqual(["Changed site settings", "AI (Assistant): Changed site settings"]);
   });
 
   it("leaves the text as it is on Cancel", async () => {

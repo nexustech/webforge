@@ -1,11 +1,11 @@
 import type { Editor, JSONContent } from "@tiptap/core";
-import type { RewriteHow, RewriteRequest } from "../canvas-engine.js";
+import type { RewriteAnswer, RewriteHow, RewriteRequest } from "../canvas-engine.js";
 
 /**
- * Asks the app to rewrite the selected text (G25a, #873): the text the person accepted, or
+ * Asks the app to rewrite the selected text (G25a, #873): what the person accepted, or
  * `undefined` to leave it.
  */
-export type Rewrite = (request: Omit<RewriteRequest, "at">) => Promise<string | undefined>;
+export type Rewrite = (request: Omit<RewriteRequest, "at">) => Promise<RewriteAnswer | undefined>;
 
 /** How paragraphs are told apart in the text a rewrite reads and gives back. */
 const PARAGRAPH_BREAK = "\n\n";
@@ -43,10 +43,12 @@ export async function rewriteSelection(
   editor.state.doc.nodesBetween(from, to, (node) => {
     if (node.marks.length > 0) formatted = true;
   });
-  const next = await rewrite({ how, text, formatted });
-  const content = next === undefined ? undefined : contentOf(next);
+  const answer = await rewrite({ how, text, formatted });
+  const content = answer === undefined ? undefined : contentOf(answer.text);
   if (content === undefined || editor.isDestroyed) return false;
   const { doc } = editor.state;
   if (to > doc.content.size || doc.textBetween(from, to, PARAGRAPH_BREAK) !== text) return false;
+  // Sure to go in now: the app prepares its undo step.
+  answer?.applying?.();
   return editor.chain().focus().insertContentAt({ from, to }, content).run();
 }
