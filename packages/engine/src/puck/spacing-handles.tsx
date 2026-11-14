@@ -23,6 +23,7 @@ import {
   useState,
 } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
+import { startGripDrag } from "./grip-drag.js";
 import { componentSelector, elementOf } from "./puck-dom.js";
 
 /**
@@ -291,7 +292,6 @@ export function SpacingHandles({
     const from = vertical ? event.clientY : event.clientX;
     let current = before;
     report("start", before);
-    grip.setPointerCapture(event.pointerId);
 
     const sidesFor = (moved: PointerEvent): readonly BoxSide[] => {
       if (moved.shiftKey && (moved.ctrlKey || moved.metaKey)) return field.sides;
@@ -308,38 +308,24 @@ export function SpacingHandles({
         report("update", next);
       }
     };
-    const windows = [frame, frame.parent].filter(
-      (each, index, all): each is Window => each !== null && all.indexOf(each) === index,
-    );
-    const stop = () => {
-      grip.removeEventListener("pointermove", move);
-      grip.removeEventListener("pointerup", end);
-      grip.removeEventListener("pointercancel", cancel);
-      for (const each of windows) each.removeEventListener("keydown", onKey, true);
-      if (grip.hasPointerCapture(event.pointerId)) grip.releasePointerCapture(event.pointerId);
+    const finished = () => {
       cancelDrag.current = null;
       setReadout(null);
     };
-    const end = () => {
-      stop();
-      report("commit", current);
-    };
-    const cancel = () => {
-      stop();
-      report("cancel", before);
-    };
-    // Esc cancels with Shift or Ctrl held too; nothing else sees it, wherever the focus is.
-    const onKey = (pressed: KeyboardEvent) => {
-      if (pressed.key !== "Escape") return;
-      pressed.preventDefault();
-      pressed.stopImmediatePropagation();
-      cancel();
-    };
-    cancelDrag.current = cancel;
-    grip.addEventListener("pointermove", move);
-    grip.addEventListener("pointerup", end);
-    grip.addEventListener("pointercancel", cancel);
-    for (const each of windows) each.addEventListener("keydown", onKey, true);
+    cancelDrag.current = startGripDrag({
+      grip,
+      pointerId: event.pointerId,
+      frame,
+      onMove: move,
+      onCommit: () => {
+        finished();
+        report("commit", current);
+      },
+      onCancel: () => {
+        finished();
+        report("cancel", before);
+      },
+    });
   };
 
   const grips = (property: BoxHandleField["property"]) =>
