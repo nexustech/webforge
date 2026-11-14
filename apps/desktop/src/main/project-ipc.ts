@@ -1,4 +1,5 @@
 import { readFile, stat } from "node:fs/promises";
+import { errnoOf } from "@webforge/errors";
 import {
   fillFromSiteZip,
   readSiteZip,
@@ -52,7 +53,7 @@ async function readSiteZipFile(
     return readSiteZip(await readFile(path));
   } catch (error) {
     if (error instanceof SiteZipError) return { reason: SITE_ZIP_FAILURES[error.code] };
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return { reason: "not-found" };
+    if (errnoOf(error) === "ENOENT") return { reason: "not-found" };
     logFailure("Webforge could not read a site's ZIP", error);
     return { reason: "unknown" };
   }

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { type MediaId, mediaIdSchema } from "./ids.js";
+import { isKeyOf } from "./records.js";
 
 /** Image types Media accepts; the export makes WebP plus a fallback in the original type (X2). */
 export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png"] as const;
@@ -124,7 +125,7 @@ export function mediaItem(
   media: Readonly<Record<MediaId, MediaMeta>>,
   id: string,
 ): MediaMeta | undefined {
-  return Object.hasOwn(media, id) ? media[id as MediaId] : undefined;
+  return isKeyOf(media, id) ? media[id] : undefined;
 }
 /** An image in Media. */
 export type ImageMeta = z.infer<typeof imageMetaSchema>;
