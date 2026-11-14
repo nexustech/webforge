@@ -116,7 +116,7 @@ export const assistant = {
     "An AI model that changes your site when you ask. It's off until you turn it on.",
   "assistant.settings.open": "Assistant Settings…",
   "assistant.settings.description":
-    "Turn the assistant on or off, and set how much it may spend each month.",
+    "Turn the assistant on or off, choose where its requests go, and set how much it may spend each month.",
   "assistant.settings.on": "The assistant is on",
   "assistant.settings.off": "The assistant is off",
   "assistant.settings.onHint": "Turn Off stops it at once and deletes its key from this computer.",
@@ -130,4 +130,40 @@ export const assistant = {
   "assistant.settings.limitHint":
     "Between $1 and $1,000. You're told at 80%, and the assistant stops at the limit until next month.",
   "assistant.settings.close": "Close",
+  // Where requests go, and signing in (ADR 0026 §2–§3).
+  "assistant.provider.title": "Where requests go",
+  "assistant.provider.openrouter": "OpenRouter",
+  "assistant.provider.openrouter.hint":
+    "An online service with many AI models. Your own OpenRouter account pays.",
+  "assistant.provider.ollama": "Ollama on this computer",
+  "assistant.provider.ollama.hint":
+    "A model running on this computer with Ollama: nothing leaves it.",
+  "assistant.provider.lmstudio": "LM Studio on this computer",
+  "assistant.provider.lmstudio.hint":
+    "A model running on this computer with LM Studio: nothing leaves it.",
+  "assistant.provider.server": "Another server",
+  "assistant.provider.server.hint": "A server you name that offers AI models.",
+  "assistant.provider.address": "Server address",
+  "assistant.provider.addressPlaceholder": "https://",
+  "assistant.provider.useServer": "Use This Server",
+  "assistant.provider.key": "Key for this server, if it needs one",
+  "assistant.provider.keyReplace": "A new key for this server",
+  "assistant.provider.saveKey": "Save Key",
+  "assistant.signIn.browser": "Sign In with OpenRouter…",
+  "assistant.signIn.code": "Sign In with a Code…",
+  "assistant.signIn.waiting": "Finish signing in in your browser.",
+  "assistant.signIn.cancel": "Cancel",
+  "assistant.signIn.codeField": "The code OpenRouter shows",
+  "assistant.signIn.finish": "Sign In",
+  "assistant.signIn.done": "Signed in to OpenRouter.",
+  "assistant.signIn.signed-in": "Signed in.",
+  "assistant.signIn.cancelled": "Sign-in cancelled.",
+  "assistant.signIn.timed-out": "Signing in took too long. Try again.",
+  "assistant.signIn.refused": "That wasn't accepted. Check it and try again.",
+  "assistant.signIn.keychain-unavailable":
+    "This computer can't keep the key safely, so the assistant can't sign in here.",
+  "assistant.signIn.offline": "The provider couldn't be reached. Check your internet connection.",
+  "assistant.signIn.insecure-server":
+    "The server's address starts with http://, so the key would travel unencrypted. Use an https:// address, or a server on this computer.",
+  "assistant.signIn.failed": "Signing in didn't work. Try again.",
 } as const;
