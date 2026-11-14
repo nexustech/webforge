@@ -379,13 +379,17 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **A stage per reply, in the window** (`renderer/ai/stages.ts`): a draft of the site with a history of its own, which nothing shows or saves.
     - With the setting on, the assistant's requests name their reply (`stage` on the AI request, which only the assistant's server sets).
     - A staged query reads the draft, so a later step builds on an earlier one. A staged command is planned, checked and run there, and asks nobody, as nothing real changes.
-    - A new reply's stage replaces the last one's, so only the last reply's changes can be held.
+    - A new reply's stage replaces the last one's, so only the last reply's changes can be held. The last reply's are then discarded, with a `held` event that says so, for its card.
   - **Main keeps each held command as the model asked it.** The reply's `held: { label, target? }[]` (on `reply-done` and the turn) says what each would change.
   - **`applyHeld(session, replyId)`** asks each again, unstaged and in order, through the same tool layer:
     - each is planned against the site as it is then, so the person's own edits since count;
     - each becomes the undo step it would have been, asking the person where it would (D7, S18);
     - the safety version is saved first;
-    - one the site no longer allows is `refused`, and the rest still apply.
+    - one the site no longer allows is `refused`, and the rest still apply;
+    - **a new element or page gets a new id each time it's made,** so the site's ids replace the draft's in later calls (#1059's review):
+      - each replay that made something reads its tree on the draft (through the reply's stage) and on the site;
+      - it pairs their ids, the new element's children's too;
+      - "add a section, then edit its heading" applies whole. A `plan` answers with no new id, so ids made inside one aren't paired, and a later call naming one is refused.
 
     The `held` event (`applied`) carries the steps, with their entry ids for _Undo these changes_, and the refused.
   - **`discardHeld`** drops them, and the `held` event says `discarded`. The site and its history are as they were.

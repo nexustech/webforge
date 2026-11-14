@@ -380,8 +380,21 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
     const { replyId } = turn;
     /** Whether the reply's site is still the one open: another's is never its to read or change. */
     const stillOpen = () => options.projectOf(session) === project;
-    // A new reply's stage replaces the last one's in the window: its held changes go.
-    held.delete(project);
+    // A new reply's stage replaces the last one's in the window: its held changes go, and the
+    // last reply's card says so (#1059's review).
+    const replaced = held.get(project);
+    if (replaced !== undefined) {
+      held.delete(project);
+      settled(project, replaced.replyId);
+      options.emit({
+        session: replaced.session,
+        type: "held",
+        replyId: replaced.replyId,
+        state: "discarded",
+        steps: [],
+        refused: [],
+      });
+    }
     let outcome: ReplyOutcome;
     try {
       // Loaded with the first reply, never at start-up (#892): the loop brings the commands
@@ -745,11 +758,21 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
           if (!stillOpen()) throw new Error("The reply's site isn't open");
           if (turn !== undefined) await safetyFirst(session, project, turn);
         });
+        // The draft, read through the reply's stage, to pair its new ids with the site's.
+        const draft = await options
+          .connectTools(async () => {
+            throw new Error("The draft is only read");
+          }, replyId)
+          .catch(async (error: unknown) => {
+            await tools.close().catch(() => undefined);
+            throw error;
+          });
         let applied: Awaited<ReturnType<typeof applyHeld>>;
         try {
-          applied = await applyHeld(tools.client, holding.calls, stillOpen);
+          applied = await applyHeld(tools.client, draft.client, holding.calls, stillOpen);
         } finally {
           await tools.close().catch(() => undefined);
+          await draft.close().catch(() => undefined);
         }
         held.delete(project);
         const now = settled(project, replyId);

@@ -854,7 +854,13 @@ describe("Review before applying (6.9e)", () => {
     const second = await service.send(SESSION, "And again", {});
     if (second.status !== "sending") throw new Error("not sent");
     await until(() => expect(events.filter((each) => each.type === "reply-done")).toHaveLength(2));
-    // The window's draft is the last reply's: the first's changes are no longer held.
+    // The window's draft is the last reply's: the first's changes are dropped, and its card is
+    // told (#1059's review).
+    expect(
+      events.find((each) => each.type === "held" && each.replyId === first.replyId),
+    ).toMatchObject({ state: "discarded", steps: [], refused: [] });
+    expect((await service.conversation(SESSION))[0]).not.toHaveProperty("held");
+    expect((await service.conversation(SESSION))[1]?.held).toHaveLength(1);
     expect(await service.applyHeld(SESSION, first.replyId)).toEqual({ status: "nothing-held" });
 
     await service.discardHeld(SESSION, second.replyId);

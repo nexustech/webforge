@@ -446,7 +446,7 @@ describe("held changes (6.9e, Review before applying)", () => {
         change: { label: "AI (Assistant): Removed Text" },
       },
     ];
-    const applied = await applyHeld(client, calls, () => true);
+    const applied = await applyHeld(client, toolLayer({}).client, calls, () => true);
     expect(called.map((call) => [call.name, call.args])).toEqual([
       ["editText", { nodeId: "hero" }],
       ["removeNode", { nodeId: "gone" }],
@@ -457,8 +457,92 @@ describe("held changes (6.9e, Review before applying)", () => {
 
     // With the site closed, none is asked.
     const closed = toolLayer({ editText: () => changed("Edited Hero text") });
-    const none = await applyHeld(closed.client, calls, () => false);
+    const none = await applyHeld(closed.client, toolLayer({}).client, calls, () => false);
     expect(closed.called).toEqual([]);
     expect(none.refused).toHaveLength(2);
+  });
+
+  it("applies a change to an element the reply added, its children too, by the site's new ids (#1059's review)", async () => {
+    /** A page whose sections each hold a Heading: every element made gets a new random id. */
+    const world = (name: string) => {
+      let made = 0;
+      const sections: { id: string; type: string; content: { id: string; type: string }[] }[] = [];
+      const newId = (kind: string) =>
+        `${name}-${kind}-${++made}-${Math.random().toString(36).slice(2, 6)}`;
+      const texts = new Map<string, string>();
+      return {
+        texts,
+        tools: toolLayer({
+          addNode: () => {
+            const id = newId("section");
+            sections.push({
+              id,
+              type: "Section",
+              content: [{ id: newId("heading"), type: "Heading" }],
+            });
+            entry += 1;
+            return {
+              status: "done",
+              label: "AI (Assistant): Added Section",
+              id,
+              entryId: `h${entry}`,
+              target: { pageId: "home", nodeId: id },
+            };
+          },
+          editText: (args) => {
+            const nodeId = String(args.nodeId);
+            const known = sections.some(
+              (section) =>
+                section.id === nodeId || section.content.some((child) => child.id === nodeId),
+            );
+            if (!known) return { status: "not-found", message: "There is no element." };
+            texts.set(nodeId, String(args.text));
+            entry += 1;
+            return {
+              status: "done",
+              label: "AI (Assistant): Edited Heading text",
+              entryId: `h${entry}`,
+              target: { pageId: "home", nodeId },
+            };
+          },
+          pageTree: () => ({ status: "done", data: sections }),
+        }),
+      };
+    };
+    const draft = world("draft");
+    // The reply, on the draft: a section, then its heading's text.
+    const added = await draft.tools.client.callTool({ name: "addNode", arguments: {} });
+    const section = JSON.parse(String((added.content as { text: string }[])[0]?.text)).id as string;
+    const tree = await draft.tools.client.callTool({ name: "pageTree", arguments: {} });
+    const heading = JSON.parse(String((tree.content as { text: string }[])[0]?.text)).data[0]
+      .content[0].id;
+    const calls = [
+      {
+        name: "addNode",
+        input: { location: { kind: "page", pageId: "home" }, type: "Section" },
+        change: {
+          label: "AI (Assistant): Added Section",
+          target: { pageId: "home", nodeId: section },
+        },
+        made: section,
+      },
+      {
+        name: "editText",
+        input: { location: { kind: "page", pageId: "home" }, nodeId: heading, text: "Fresh bread" },
+        change: {
+          label: "AI (Assistant): Edited Heading text",
+          target: { pageId: "home", nodeId: heading },
+        },
+      },
+    ];
+
+    const site = world("site");
+    const applied = await applyHeld(site.tools.client, draft.tools.client, calls, () => true);
+    expect(applied.refused).toEqual([]);
+    expect(applied.steps).toHaveLength(2);
+    // The site's own heading got the text, by its own id, not the draft's.
+    const [siteHeading] = [...site.texts.keys()];
+    expect(siteHeading).toMatch(/^site-heading-/);
+    expect(site.texts.get(siteHeading ?? "")).toBe("Fresh bread");
   });
 });

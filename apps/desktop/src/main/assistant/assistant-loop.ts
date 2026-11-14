@@ -109,6 +109,8 @@ export type HeldCall = {
   readonly name: string;
   readonly input: Readonly<Record<string, unknown>>;
   readonly change: HeldChange;
+  /** The new element's or page's id it made on the draft, which its replay makes afresh. */
+  readonly made?: string;
 };
 
 /**
@@ -144,6 +146,8 @@ type CallContext = {
 const answerSchema = z.looseObject({
   status: z.string(),
   label: z.string().optional(),
+  /** What a command made: the new element's or page's id. */
+  id: z.string().min(1).max(200).optional(),
   entryId: z.string().min(1).max(100).optional(),
   target: z
     .strictObject({
@@ -346,6 +350,7 @@ async function callTool(
   step?: ReplyStep;
   held?: HeldCall;
   input?: unknown;
+  made?: string;
 }> {
   let parsed: unknown;
   try {
@@ -407,7 +412,10 @@ async function callTool(
     text: asked.text,
     input,
     ...(step === undefined ? {} : { step }),
-    ...(kept ? { held: { name, input, change } } : {}),
+    ...(kept
+      ? { held: { name, input, change, ...(answer?.id === undefined ? {} : { made: answer.id }) } }
+      : {}),
+    ...(answer?.id === undefined ? {} : { made: answer.id }),
   };
 }
 
@@ -418,18 +426,122 @@ async function callTool(
  */
 export async function applyHeld(
   tools: ToolClient,
+  draft: ToolClient,
   calls: readonly HeldCall[],
   stillOpen: () => boolean,
 ): Promise<{ readonly steps: ReplyStep[]; readonly refused: HeldChange[] }> {
   const steps: ReplyStep[] = [];
   const refused: HeldChange[] = [];
   const context = { tools, signal: new AbortController().signal };
+  /**
+   * The ids the draft made, each to the one its replay made on the site: a new element or page
+   * gets a new id each time it's made, so later calls naming the draft's are given the site's
+   * (#1059's review). Its children's too, read from both trees.
+   */
+  const ids = new Map<string, string>();
   for (const call of calls) {
+    const input = withIds(call.input, ids);
     const answered = stillOpen()
-      ? await callTool(context, call.name, JSON.stringify(call.input))
+      ? await callTool(context, call.name, JSON.stringify(input))
       : undefined;
-    if (answered?.step === undefined) refused.push(call.change);
-    else steps.push(answered.step);
+    if (answered?.step === undefined) {
+      refused.push(call.change);
+      continue;
+    }
+    steps.push(answered.step);
+    if (call.made !== undefined && answered.made !== undefined) {
+      ids.set(call.made, answered.made);
+      await pairTrees(draft, tools, call, answered.made, ids);
+    }
   }
   return { steps, refused };
+}
+
+/** `input` with each string that's a draft's id as the site's: exact values, however deep. */
+function withIds(input: unknown, ids: ReadonlyMap<string, string>): unknown {
+  if (typeof input === "string") return ids.get(input) ?? input;
+  if (Array.isArray(input)) return input.map((each) => withIds(each, ids));
+  if (typeof input === "object" && input !== null) {
+    return Object.fromEntries(
+      Object.entries(input).map(([key, each]) => [key, withIds(each, ids)]),
+    );
+  }
+  return input;
+}
+
+/** The page tree of page `pageId` through `tools`, or none. */
+async function treeOf(tools: ToolClient, pageId: string): Promise<unknown> {
+  try {
+    const result = resultSchema.safeParse(
+      await tools.callTool({
+        name: "pageTree",
+        arguments: { location: { kind: "page", pageId } },
+      }),
+    );
+    const text = result.success ? (result.data.content[0]?.text ?? "") : "";
+    const answer = z
+      .looseObject({ status: z.literal("done"), data: z.unknown() })
+      .safeParse(JSON.parse(text));
+    return answer.success ? answer.data.data : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** The object in `tree` whose `id` is `id`, however deep. */
+function nodeOf(tree: unknown, id: string): unknown {
+  if (Array.isArray(tree)) {
+    for (const each of tree) {
+      const found = nodeOf(each, id);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  }
+  if (typeof tree !== "object" || tree === null) return undefined;
+  if ("id" in tree && tree.id === id) return tree;
+  return nodeOf(Object.values(tree), id);
+}
+
+/** Pairs each id in the draft's `draft` with the site's in `site`, the same shape in step. */
+function pairIds(draft: unknown, site: unknown, ids: Map<string, string>): void {
+  if (Array.isArray(draft) && Array.isArray(site)) {
+    for (const [index, each] of draft.entries()) pairIds(each, site[index], ids);
+    return;
+  }
+  if (typeof draft !== "object" || draft === null || typeof site !== "object" || site === null) {
+    return;
+  }
+  const theirs = new Map(Object.entries(site));
+  for (const [key, value] of Object.entries(draft)) {
+    const other = theirs.get(key);
+    if (key === "id" && typeof value === "string" && typeof other === "string") {
+      if (!ids.has(value)) ids.set(value, other);
+    } else {
+      pairIds(value, other, ids);
+    }
+  }
+}
+
+/**
+ * Pairs the ids within what `call` made on the draft and its replay made on the site (`made`):
+ * a new page's elements, or a new element's children. Their trees are the same shape, as the
+ * same command made them; the draft's is read through its stage.
+ */
+async function pairTrees(
+  draft: ToolClient,
+  site: ToolClient,
+  call: HeldCall,
+  made: string,
+  ids: Map<string, string>,
+): Promise<void> {
+  const draftPage = call.change.target?.pageId;
+  if (draftPage === undefined || call.made === undefined) return;
+  const sitePage = ids.get(draftPage) ?? draftPage;
+  const [draftTree, siteTree] = await Promise.all([
+    treeOf(draft, draftPage),
+    treeOf(site, sitePage),
+  ]);
+  // A new page: its whole tree. A new element: its own subtree.
+  if (call.made === draftPage) pairIds(draftTree, siteTree, ids);
+  else pairIds(nodeOf(draftTree, call.made), nodeOf(siteTree, made), ids);
 }
