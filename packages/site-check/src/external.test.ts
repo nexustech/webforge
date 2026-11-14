@@ -95,6 +95,55 @@ describe("cssResources (C8, 3.9)", () => {
       { url: "//img.example.com/hero.jpg", kind: "image" },
     ]);
   });
+
+  it("finds addresses in image-set(), src() and escaped url(), as a browser reads them (#975)", () => {
+    const css = String.raw`
+      body { background: image-set("https://tracker.example/p.png" 1x, 'https://tracker.example/p2.png' 2x); }
+      .a { background: -webkit-image-set(url(https://cdn.example/w.png) 1x); }
+      .b { background: \75rl(https://tracker.example/escaped.gif); }
+      .c { background: url("\68ttps://tracker.example/hex-in-string.png"); }
+      .d { background: url( "https:\2f\2ftracker.example/slashes.png" ); }
+      @\69mport "https://cdn.example/imported.css";
+      @font-face { font-family: X; src: src("https://fonts.example/x.woff2"); }
+      .e { cursor: URL(https://cdn.example/cursor.cur), auto; }`;
+
+    expect(cssResources(css)).toEqual([
+      { url: "https://tracker.example/p.png", kind: "image" },
+      { url: "https://tracker.example/p2.png", kind: "image" },
+      { url: "https://cdn.example/w.png", kind: "image" },
+      { url: "https://tracker.example/escaped.gif", kind: "image" },
+      { url: "https://tracker.example/hex-in-string.png", kind: "image" },
+      { url: "https://tracker.example/slashes.png", kind: "image" },
+      { url: "https://cdn.example/imported.css", kind: "style" },
+      { url: "https://fonts.example/x.woff2", kind: "font" },
+      { url: "https://cdn.example/cursor.cur", kind: "image" },
+    ]);
+  });
+
+  it("takes a string outside a function, a selector's or a comment's, as text (#975)", () => {
+    const css = String.raw`
+      a[href^="https://"]::after { content: "https://example.com"; }
+      :is([href="//example.com"]) { font-family: "//Not a font"; }
+      /* image-set("https://cdn.example/commented.png") */
+      .local { background: url(media/photo.jpg); }
+      @supports (background: image-set("https://cdn.example/supported.png" 1x)) {
+        .s { color: red; }
+      }`;
+
+    expect(cssResources(css)).toEqual([
+      { url: "https://cdn.example/supported.png", kind: "image" },
+    ]);
+  });
+
+  it("reads strings and addresses left open to their line's or the text's end", () => {
+    expect(cssResources("a { background: url(https://x.example/a.png")).toEqual([
+      { url: "https://x.example/a.png", kind: "image" },
+    ]);
+    expect(cssResources('a { background: image-set("https://x.example/b.png\n}')).toEqual([
+      { url: "https://x.example/b.png", kind: "image" },
+    ]);
+    expect(cssResources('a { content: "\\')).toEqual([]);
+  });
 });
 
 describe("scriptResources (C8, 3.9)", () => {

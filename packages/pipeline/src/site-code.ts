@@ -1,4 +1,10 @@
-import { type BundledFile, isNodeDoc, type NodeDoc, type SiteSnapshot } from "@webforge/model";
+import {
+  type BundledFile,
+  cssNeedsTrust,
+  isNodeDoc,
+  type NodeDoc,
+  type SiteSnapshot,
+} from "@webforge/model";
 
 /** The Custom Code element's type (2.11): HTML the person wrote, exported as it is. */
 const CUSTOM_CODE = "CustomCode";
@@ -44,8 +50,8 @@ export function withCustomCode(
 
 /**
  * Which of the site's own code a build lets run (#649, S1 and S6), by its text: the Script, Head
- * and End of page of Settings' Custom Code, and each Custom Code element's code. CSS isn't code
- * that runs, and is always built.
+ * and End of page of Settings' Custom Code, each Custom Code element's code, and the CSS when it
+ * can load files or put text on a page (`cssNeedsTrust`, #975). Other CSS is always built.
  */
 export type RunsCode = (code: string) => boolean;
 
@@ -69,6 +75,7 @@ export function withRunnableCode(site: SiteSnapshot, runs: RunsCode): SiteSnapsh
       : {
           code: {
             ...site.code,
+            css: cssNeedsTrust(site.code.css) ? kept(site.code.css) : site.code.css,
             js: kept(site.code.js),
             head: kept(site.code.head),
             bodyEnd: kept(site.code.bodyEnd),

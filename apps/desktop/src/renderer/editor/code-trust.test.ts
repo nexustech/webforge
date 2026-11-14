@@ -323,3 +323,33 @@ describe("what trusts no code (#649)", () => {
     });
   });
 });
+
+describe("the code trust step and the site's CSS (#975)", () => {
+  const TRACKER = 'body { background: image-set("https://tracker.example/p.png" 1x); }';
+  /** The starter site with `css` as its stylesheet, as a file from elsewhere has it. */
+  const siteWithCss = (css: string): SiteDoc => {
+    const site = starterSite();
+    return { ...site, code: { ...site.code, css } };
+  };
+
+  it("asks about CSS from elsewhere that loads files, and Leave it out builds without it", async () => {
+    const { codeTrust, session, answerWith } = setUp(siteWithCss(TRACKER));
+
+    const deciding = codeTrust.confirm(session.history.document.getState());
+    const pieces = await answerWith("leave");
+    const decision = await deciding;
+
+    expect(pieces).toEqual([{ kind: "code", part: "css", text: TRACKER }]);
+    if (!decision.go) throw new Error("stopped");
+    expect(decision.keeps(TRACKER)).toBe(false);
+  });
+
+  it("never asks about CSS that only changes how the site looks", async () => {
+    const { codeTrust, session } = setUp(siteWithCss(".hero { color: red; padding: 2rem; }"));
+
+    expect(await codeTrust.confirm(session.history.document.getState())).toMatchObject({
+      go: true,
+    });
+    expect(codeTrust.question.getState().question).toBeNull();
+  });
+});
