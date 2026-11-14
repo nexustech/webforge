@@ -136,7 +136,11 @@ describe("AddPanel (F-ED-1)", () => {
     show("elements");
 
     expect((button("Heading") as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.getByText("Add a section first: elements go inside sections.")).toBeTruthy();
+    expect(
+      screen.getByText(
+        "This page has no sections yet. Add a Section from Sections, then elements inside it.",
+      ),
+    ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Question" })).toBeNull();
   });
 });

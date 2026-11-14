@@ -38,4 +38,9 @@ export const sections = {
   "starter.faqTitle": "Frequently asked questions",
   "starter.faqQuestion": "When are you open?",
   "starter.faqAnswer": "Add your opening hours here.",
+  // A new FAQ's other sample questions (#1012), so it's edited rather than built.
+  "starter.faqQuestion2": "Where can I find you?",
+  "starter.faqAnswer2": "Add your address, and how to get there.",
+  "starter.faqQuestion3": "How do I book?",
+  "starter.faqAnswer3": "Say how people can book or order, and how far ahead.",
 } as const;

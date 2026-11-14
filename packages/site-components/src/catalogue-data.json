@@ -4087,7 +4087,32 @@
         "overlayColor": "base",
         "title": "Frequently asked questions",
         "contentWidth": "narrow",
-        "items": []
+        "items": [
+          {
+            "type": "FaqItem",
+            "props": {
+              "id": "faq-item-0",
+              "question": "When are you open?",
+              "answer": "<p>Add your opening hours here.</p>"
+            }
+          },
+          {
+            "type": "FaqItem",
+            "props": {
+              "id": "faq-item-1",
+              "question": "Where can I find you?",
+              "answer": "<p>Add your address, and how to get there.</p>"
+            }
+          },
+          {
+            "type": "FaqItem",
+            "props": {
+              "id": "faq-item-2",
+              "question": "How do I book?",
+              "answer": "<p>Say how people can book or order, and how far ahead.</p>"
+            }
+          }
+        ]
       },
       "pictureBehind": [
         {
