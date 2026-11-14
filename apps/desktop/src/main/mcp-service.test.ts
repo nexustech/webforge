@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
+import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { tempDirFactory } from "@webforge/test-utils/vitest";
 import { describe, expect, it, vi } from "vitest";
 import type { AiResponse } from "../shared/ipc/ai.js";
@@ -401,6 +402,20 @@ describe("the assistant's connection to the tool layer (6.9b, ADR 0026 §1)", ()
     expect(before).toHaveBeenCalledTimes(1);
     expect(saveVersionBefore).not.toHaveBeenCalled();
     await close();
+  });
+
+  it("closes its server when the client can't connect (#1028's review)", async () => {
+    const { service } = setUp();
+    const failed = new Error("no connection");
+    const connect = vi.spyOn(Client.prototype, "connect").mockRejectedValueOnce(failed);
+    const close = vi.spyOn(Server.prototype, "close");
+    try {
+      await expect(service.connectAssistant(async () => undefined)).rejects.toBe(failed);
+      expect(close).toHaveBeenCalledOnce();
+    } finally {
+      connect.mockRestore();
+      close.mockRestore();
+    }
   });
 
   it("never tells an AI app a command's undo step or what it changed", async () => {
