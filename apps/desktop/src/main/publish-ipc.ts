@@ -16,6 +16,7 @@ import type {
   KeyFileResult,
   SignInRef,
 } from "../shared/ipc/publish.js";
+import type { AppFeature } from "./app-feature.js";
 import { registerIpcHandler } from "./ipc.js";
 
 /** How long Test connection, or reading a host key, may take before it counts as unreachable. */
@@ -173,4 +174,11 @@ export function registerPublishHandlers(
     const path = await parts.chooseKeyFile();
     return path === undefined ? { status: "cancelled" } : readKeyFile(path, keys);
   });
+}
+
+/** The `publish` calls as a feature of the app (A12, #985). */
+export function publishCallsFeature(parts: PublishParts, keys: KeyFiles): AppFeature {
+  return {
+    register: (ipc, isTrustedSender) => registerPublishHandlers(ipc, isTrustedSender, parts, keys),
+  };
 }

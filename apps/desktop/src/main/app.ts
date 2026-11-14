@@ -1,8 +1,7 @@
 import { networkInterfaces } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
 import type { SiteSnapshot } from "@webforge/model";
-import { appEvents } from "../shared/ipc/app.js";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { previewEvents } from "../shared/ipc/preview.js";
@@ -12,20 +11,17 @@ import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { updateChannelFor } from "../shared/update-channel.js";
 import { aiAppsFeature } from "./ai-apps-feature.js";
+import { appCallsFeature } from "./app-calls.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
-import { applicationMenu, runMenuCommand } from "./app-menu.js";
+import { applicationMenu } from "./app-menu.js";
 import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
 import { assistantFeature } from "./assistant-feature.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
-import { bundleNetworkFor, resolveHost } from "./bundle-download.js";
-import { registerBundleHandlers } from "./bundle-ipc.js";
-import { electronBundleFetch } from "./bundle-net.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { canvasStylesFeature, createCanvasStyles } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
-import { registerClipboardHandlers } from "./clipboard-ipc.js";
 import { createCodeTrust, withTrustedCode } from "./code-trust.js";
 import type { startCrashReports } from "./crash-wiring.js";
 import { createCredentialStore } from "./credential-store.js";
@@ -34,41 +30,34 @@ import { announceClosedForE2eTests } from "./e2e-closed.js";
 import type { E2eDialog } from "./e2e-dialogs.js";
 import { netlifyApiFor } from "./e2e-netlify.js";
 import { createExportFeature } from "./export-feature.js";
-import { registerFailureLog } from "./failure-ipc.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { FONT_SCHEME } from "./fonts.js";
-import { registerGuideHandlers } from "./guides.js";
 import { createHandOff } from "./hand-off.js";
-import { registerHelpHandlers } from "./help-ipc.js";
 import { createHelpWindows } from "./help-window.js";
-import { registerIpcHandler } from "./ipc.js";
-import { licenceFiles, registerLicenceHandlers } from "./licences.js";
 import { logFailure } from "./log.js";
 import { createMainWindows } from "./main-window.js";
 import { mediaFeature } from "./media-feature.js";
 import { createMyThemes } from "./my-themes.js";
 import { createNetlifySignIns } from "./netlify-auth.js";
-import { registerNetlifyHandlers } from "./netlify-ipc.js";
+import { netlifyFeature } from "./netlify-ipc.js";
 import { hasAddress, phoneAddressFor } from "./network-address.js";
-import { filePostsParts, registerPostsHandlers } from "./posts-ipc.js";
 import { openPreferencesStore, registerPreferencesHandlers } from "./preferences.js";
 import { createPreviewBuilder } from "./preview-builder.js";
 import { createPreview, previewFeature } from "./preview-ipc.js";
 import { createPreviewServer } from "./preview-server.js";
-import { registerProjectHandlers } from "./project-ipc.js";
 import { ProjectSession } from "./project-session.js";
 import { publishDestinationsFeature } from "./publish-destinations-ipc.js";
-import { createKeyFiles, registerPublishHandlers, testSignIn } from "./publish-ipc.js";
+import { createKeyFiles, publishCallsFeature, testSignIn } from "./publish-ipc.js";
 import { publishRunFeature } from "./publish-run.js";
 import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
 import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import { hardenSession, hardenWebContents, isAppUrl } from "./security.js";
+import { siteCallsFeature } from "./site-calls.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
-import { registerSpellCheckHandlers } from "./spellcheck.js";
 import { logStartupTimes, markStartup } from "./startup-timing.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
@@ -487,6 +476,52 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       tools: aiApps,
       versions,
     }),
+    // Its name and version, the macOS menu bar, spell check, failures, guides, Help and licences.
+    appCallsFeature({
+      app,
+      menu: Menu,
+      focusedWindow: () => BrowserWindow.getFocusedWindow(),
+      session: () => session.defaultSession,
+      shell: () => electron.shell,
+      platform: process.platform,
+      development: devServerUrl !== undefined,
+      helpWindows,
+      mainWindow: () => lifecycle.mainWindow(),
+      crashReports,
+    }),
+    // Opening and closing sites, the Recent list, copy and paste, bundled files, imported posts.
+    siteCallsFeature({
+      session: projectSession,
+      dialogs: dialogs.project,
+      options: {
+        recovery: { backups, dialogs: parts.recoveryDialogs },
+        recent: recentSites,
+        beforeSwitch: () => siteSwitch.leaveSite(),
+        template: templates.template,
+        flush: requestFlush,
+      },
+      net: electron.net,
+      packaged: app.isPackaged,
+      clipboard: elementClipboard,
+      writeText: (text) => electron.clipboard.writeText(text),
+      copySecret: (secret) => secretClipboard.copy(secret),
+      choosePostFiles: dialogs.posts.choosePostFiles,
+    }),
+    // File-transfer destinations' tests and key files (4.3).
+    publishCallsFeature(dialogs.publish, keyFiles),
+    // Netlify sign-in for publish destinations (4.2): the OAuth client ID is a build setting,
+    // empty until Webforge's Netlify app is registered, when only a pasted token works.
+    netlifyFeature({
+      signIns: createNetlifySignIns({
+        clientId: import.meta.env.MAIN_VITE_NETLIFY_CLIENT_ID,
+        // The E2E tests' stand-in for Netlify, in an app run from its build folder only.
+        apiBase: netlifyApiFor(app.isPackaged),
+        // Looked up as it's called: the E2E tests replace `shell.openExternal`.
+        openExternal: (url) => electron.shell.openExternal(url),
+      }),
+      site: (sessionId) => projectSession.site(sessionId),
+      secrets: publishSecrets,
+    }),
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);
@@ -515,75 +550,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       updates.service()?.setChannel(updateChannelFor(next.updateChannel, app.getVersion()));
       followWindows(next);
     });
-    registerIpcHandler(ipcMain, "getAppInfo", isTrustedSender, () => ({
-      name: t("app.name"),
-      version: app.getVersion(),
-    }));
-    // On macOS the editor's menus are the menu bar's (LF-13): rebuilt as its commands change.
-    registerIpcHandler(ipcMain, "setNativeMenus", isTrustedSender, (menus) => {
-      if (process.platform !== "darwin") return null;
-      const template = applicationMenu(process.platform, devServerUrl !== undefined, {
-        menus,
-        // Undo and Redo, whose keys the menu bar takes, act on the Help window when it's in front.
-        run: (id) =>
-          runMenuCommand(id, {
-            focused: () => BrowserWindow.getFocusedWindow(),
-            isOther: (window) => helpWindows.is(window),
-            runInEditor: (command) =>
-              lifecycle.mainWindow()?.webContents.send(appEvents.runCommand.channel, command),
-          }),
-      });
-      Menu.setApplicationMenu(template === null ? null : Menu.buildFromTemplate(template));
-      return null;
-    });
-    registerProjectHandlers(ipcMain, isTrustedSender, projectSession, dialogs.project, {
-      recovery: { backups, dialogs: parts.recoveryDialogs },
-      recent: recentSites,
-      beforeSwitch: () => siteSwitch.leaveSite(),
-      template: templates.template,
-      flush: requestFlush,
-    });
-    registerSpellCheckHandlers(
-      ipcMain,
-      isTrustedSender,
-      session.defaultSession,
-      process.platform,
-      app.getPreferredSystemLanguages(),
-    );
-    // Download and bundle (3.9): the only download besides fonts, on the person's click.
-    registerBundleHandlers(
-      ipcMain,
-      isTrustedSender,
-      projectSession,
-      bundleNetworkFor(
-        { fetch: electronBundleFetch(electron.net), resolve: resolveHost },
-        app.isPackaged,
-      ),
-    );
-    registerClipboardHandlers(
-      ipcMain,
-      isTrustedSender,
-      elementClipboard,
-      projectSession,
-      (text) => electron.clipboard.writeText(text),
-      (secret) => secretClipboard.copy(secret),
-    );
-    crashReports.registerHandlers(ipcMain, isTrustedSender);
-    registerFailureLog(ipcMain, isTrustedSender);
-    registerGuideHandlers(ipcMain, isTrustedSender, (url) => electron.shell.openExternal(url));
-    // Help → Open-Source Licences (5.3): the build's notices, and Chromium's own.
-    registerLicenceHandlers(
-      ipcMain,
-      isTrustedSender,
-      licenceFiles({
-        packaged: app.isPackaged,
-        platform: process.platform,
-        appPath: app.getAppPath(),
-        resourcesPath: process.resourcesPath,
-        execDir: dirname(process.execPath),
-      }),
-      (path) => electron.shell.openPath(path),
-    );
     lifecycle.flushOnClose = createFlushOnClose(ipcMain, isTrustedSender, {
       // The flush has just run; capture the canvas for the Recent list before the window goes.
       beforeClose: () => siteSwitch.leaveSite(),
@@ -592,25 +558,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       },
     });
     for (const feature of features) feature.register?.(ipcMain, isTrustedSender);
-    registerPublishHandlers(ipcMain, isTrustedSender, dialogs.publish, keyFiles);
-    registerHelpHandlers(ipcMain, isTrustedSender, helpWindows, (url) =>
-      electron.shell.openExternal(url),
-    );
-    // Netlify sign-in for publish destinations (4.2): the OAuth client ID is a build setting,
-    // empty until Webforge's Netlify app is registered, when only a pasted token works.
-    registerNetlifyHandlers(ipcMain, isTrustedSender, {
-      signIns: createNetlifySignIns({
-        clientId: import.meta.env.MAIN_VITE_NETLIFY_CLIENT_ID,
-        // The E2E tests' stand-in for Netlify, in an app run from its build folder only.
-        apiBase: netlifyApiFor(app.isPackaged),
-        // Looked up as it's called: the E2E tests replace `shell.openExternal`.
-        openExternal: (url) => electron.shell.openExternal(url),
-      }),
-      site: (sessionId) => projectSession.site(sessionId),
-      secrets: publishSecrets,
-    });
     markStartup("ipc-registered");
-    registerPostsHandlers(ipcMain, isTrustedSender, filePostsParts(dialogs.posts.choosePostFiles));
     // A site double-clicked in Explorer arrives as a command-line argument (P1).
     const projectToOpen = lifecycle.projectFromFinder ?? findProjectArgument(process.argv);
     if (projectToOpen !== undefined) {
