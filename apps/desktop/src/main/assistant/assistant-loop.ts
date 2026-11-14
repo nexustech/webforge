@@ -4,6 +4,7 @@ import { z } from "zod";
 import type {
   AssistantErrorCode,
   ConversationTurn,
+  HeldChange,
   ReplyLink,
   ReplyStep,
   ReplyStop,
@@ -82,6 +83,11 @@ export type ReplyOptions = {
    * its to send or make (consent is by site, AIA-6).
    */
   readonly stillOpen: () => boolean;
+  /**
+   * Whether the reply's changes are held (6.9e): its tools act on a draft of the site, and each
+   * change it makes is kept, as it was asked, for the person to apply or discard.
+   */
+  readonly staged?: boolean;
   /** Adds a model call's cost to the month; whether its limit is reached now (§5). */
   readonly addCost: (usd: number) => Promise<boolean>;
   readonly onText: (delta: string) => void;
@@ -98,13 +104,24 @@ export type ToolEvent = {
   readonly step?: ReplyStep;
 };
 
-/** How the reply ended: its stop, its cost (null if no call gave one), its changes and links. */
+/** A change a staged reply made on its draft, as it was asked, to ask again when applied. */
+export type HeldCall = {
+  readonly name: string;
+  readonly input: Readonly<Record<string, unknown>>;
+  readonly change: HeldChange;
+};
+
+/**
+ * How the reply ended: its stop, its cost (null if no call gave one), its changes, the changes it
+ * holds (6.9e) and its links.
+ */
 export type ReplyOutcome =
   | {
       readonly status: "done";
       readonly stop: ReplyStop;
       readonly costUsd: number | null;
       readonly steps: readonly ReplyStep[];
+      readonly held: readonly HeldCall[];
       readonly links: readonly ReplyLink[];
     }
   | {
@@ -112,7 +129,16 @@ export type ReplyOutcome =
       readonly error: AssistantErrorCode;
       readonly costUsd: number | null;
       readonly steps: readonly ReplyStep[];
+      readonly held: readonly HeldCall[];
     };
+
+/** What a tool call needs: the client, and Stop for a wait before asking again. */
+type CallContext = {
+  readonly tools: ToolClient;
+  readonly signal: AbortSignal;
+  readonly busyRetryMs?: number;
+  readonly staged?: boolean;
+};
 
 /** A tool's answer, as 4.9's server words it: only what the loop reads. */
 const answerSchema = z.looseObject({
@@ -202,6 +228,7 @@ const pause = (ms: number, signal: AbortSignal) =>
 export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
   const { signal } = options;
   const steps: ReplyStep[] = [];
+  const held: HeldCall[] = [];
   const links = new Map<string, ReplyLink>();
   let costUsd: number | null = null;
   const done = (stop: ReplyStop): ReplyOutcome => ({
@@ -209,6 +236,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     stop,
     costUsd,
     steps,
+    held,
     links: [...links.values()],
   });
   const failed = (error: AssistantErrorCode): ReplyOutcome => ({
@@ -216,6 +244,7 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
     error,
     costUsd,
     steps,
+    held,
   });
 
   let tools: ChatTool[];
@@ -290,8 +319,11 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
       options.onTool({ callId, tool, state: "running" });
       const answered = await callTool(options, name, asked.function.arguments);
       if (answered.step !== undefined) steps.push(answered.step);
+      if (answered.held !== undefined) held.push(answered.held);
       // A change's addresses: the links the reply added or changed, by host (S18).
-      if (answered.step !== undefined) linksIn(answered.input, links);
+      if (answered.step !== undefined || answered.held !== undefined) {
+        linksIn(answered.input, links);
+      }
       options.onTool({
         callId,
         tool,
@@ -305,10 +337,16 @@ export async function runReply(options: ReplyOptions): Promise<ReplyOutcome> {
 
 /** One tool call: its arguments read, asked once more if the person's editing held it up. */
 async function callTool(
-  options: ReplyOptions,
+  options: CallContext,
   name: string,
   argumentText: string,
-): Promise<{ state: ToolEvent["state"]; text: string; step?: ReplyStep; input?: unknown }> {
+): Promise<{
+  state: ToolEvent["state"];
+  text: string;
+  step?: ReplyStep;
+  held?: HeldCall;
+  input?: unknown;
+}> {
   let parsed: unknown;
   try {
     parsed = argumentText.trim() === "" ? {} : JSON.parse(argumentText);
@@ -351,13 +389,47 @@ async function callTool(
   }
   const { answer } = asked;
   const state = answer === undefined ? "failed" : stateOf(answer.status);
-  const step =
-    state === "done" && answer?.entryId !== undefined && answer.label !== undefined
+  const change =
+    state === "done" && answer?.label !== undefined
       ? {
-          entryId: answer.entryId,
           label: answer.label.slice(0, LABEL_MAX),
           ...(answer.target === undefined ? {} : { target: answer.target }),
         }
       : undefined;
-  return { state, text: asked.text, input, ...(step === undefined ? {} : { step }) };
+  const step =
+    change !== undefined && answer?.entryId !== undefined
+      ? { entryId: answer.entryId, ...change }
+      : undefined;
+  // Staged, a change is on the draft only: held as asked, to ask again when applied (6.9e).
+  const kept = options.staged === true && step === undefined && change !== undefined;
+  return {
+    state,
+    text: asked.text,
+    input,
+    ...(step === undefined ? {} : { step }),
+    ...(kept ? { held: { name, input, change } } : {}),
+  };
+}
+
+/**
+ * Applies a reply's held changes (6.9e): each asked again, in order, of the site itself, so it's
+ * planned against the site as it is now and becomes the undo step it would have been, asking the
+ * person where it would. One the site no longer allows, or any after its site closed, is refused.
+ */
+export async function applyHeld(
+  tools: ToolClient,
+  calls: readonly HeldCall[],
+  stillOpen: () => boolean,
+): Promise<{ readonly steps: ReplyStep[]; readonly refused: HeldChange[] }> {
+  const steps: ReplyStep[] = [];
+  const refused: HeldChange[] = [];
+  const context = { tools, signal: new AbortController().signal };
+  for (const call of calls) {
+    const answered = stillOpen()
+      ? await callTool(context, call.name, JSON.stringify(call.input))
+      : undefined;
+    if (answered?.step === undefined) refused.push(call.change);
+    else steps.push(answered.step);
+  }
+  return { steps, refused };
 }

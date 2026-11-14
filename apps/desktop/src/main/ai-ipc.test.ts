@@ -77,20 +77,21 @@ describe("registerAiHandlers", () => {
     expect(await second).toEqual({ status: "done", data: { name: "Rosa's" } });
   });
 
-  it("cancels an app's commands waiting for the window, and only that app's (6.9b)", async () => {
+  it("cancels an app's commands waiting for the window, by its id and only its (6.9b)", async () => {
     const { ai, sent, invoke } = bridge();
     await invoke("ai:listening", SESSION, true);
-    const assistant = ai.ask({ ...addHero, app: "Assistant" });
-    const claude = ai.ask(addHero);
-    ai.ask(outline);
+    const assistant = ai.ask({ ...addHero, app: "Assistant" }, "assistant");
+    // A paired app's question stays, whatever its name: only the id counts (#1050's review).
+    const claude = ai.ask(addHero, "0b0c8f4e-2a6d-4c1e-9e10-3f6b1b2c4d5e");
+    ai.ask(outline, "assistant");
     sent.length = 0;
-    ai.cancel("Assistant");
+    ai.cancel("assistant");
     expect(sent).toEqual([["ai:cancel", 1]]);
     // It still answers, as the window declines it.
     await invoke("ai:answer", 1, { status: "declined", message: "Stopped." });
     expect(await assistant).toEqual({ status: "declined", message: "Stopped." });
     sent.length = 0;
-    ai.cancel("Assistant");
+    ai.cancel("assistant");
     expect(sent).toEqual([]);
     await invoke("ai:answer", 2, { status: "done", label: "AI (Claude): Added Hero" });
     expect((await claude).status).toBe("done");

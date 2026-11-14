@@ -256,6 +256,9 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       conversations.delete(session);
     },
     conversation: async (session) => structuredClone(conversations.get(session) ?? []),
+    // The stand-in holds nothing: its replies apply at once (6.9e's staging is main's).
+    applyHeld: async () => ({ status: "nothing-held" }),
+    discardHeld: async () => undefined,
     openLink: async (session, replyId, href) => {
       const turn = turnOf(session, replyId);
       return {

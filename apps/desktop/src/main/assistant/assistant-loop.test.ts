@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  applyHeld,
   REPLY_CAPS,
   type ReplyOptions,
   runReply,
@@ -382,5 +383,82 @@ describe("the assistant's loop (6.9b, ADR 0026 §1, §5)", () => {
       error: "no-credit",
       steps: [{ label: "AI (Assistant): Edited text" }],
     });
+  });
+});
+
+describe("held changes (6.9e, Review before applying)", () => {
+  it("holds a staged reply's changes as asked, with their links, and no steps", async () => {
+    const { outcome } = await reply(
+      [
+        {
+          tools: [
+            { name: "outline", args: {} },
+            {
+              name: "updateFields",
+              args: { nodeId: "hero", values: { link: "https://shop.example.com" } },
+            },
+          ],
+        },
+        { text: "Ready for you to apply." },
+      ],
+      {
+        outline: () => ({ status: "done", data: {} }),
+        // A staged command answers from the draft: no undo entry.
+        updateFields: () => ({
+          status: "done",
+          label: "AI (Assistant): Edited Hero Link",
+          target: { pageId: "home", nodeId: "hero" },
+        }),
+      },
+      { staged: true },
+    );
+    expect(outcome).toMatchObject({
+      status: "done",
+      steps: [],
+      held: [
+        {
+          name: "updateFields",
+          input: { nodeId: "hero", values: { link: "https://shop.example.com" } },
+          change: {
+            label: "AI (Assistant): Edited Hero Link",
+            target: { pageId: "home", nodeId: "hero" },
+          },
+        },
+      ],
+      links: [{ host: "shop.example.com" }],
+    });
+  });
+
+  it("applies held changes in order, each a step, refusing one the site no longer allows", async () => {
+    const { client, called } = toolLayer({
+      editText: () => changed("Edited Hero text"),
+      removeNode: () => ({ status: "not-found", message: "There is no element." }),
+    });
+    const calls = [
+      {
+        name: "editText",
+        input: { nodeId: "hero" },
+        change: { label: "AI (Assistant): Edited Hero text" },
+      },
+      {
+        name: "removeNode",
+        input: { nodeId: "gone" },
+        change: { label: "AI (Assistant): Removed Text" },
+      },
+    ];
+    const applied = await applyHeld(client, calls, () => true);
+    expect(called.map((call) => [call.name, call.args])).toEqual([
+      ["editText", { nodeId: "hero" }],
+      ["removeNode", { nodeId: "gone" }],
+    ]);
+    expect(applied.steps).toMatchObject([{ label: "AI (Assistant): Edited Hero text" }]);
+    expect(applied.steps[0]?.entryId).toBeDefined();
+    expect(applied.refused).toEqual([{ label: "AI (Assistant): Removed Text" }]);
+
+    // With the site closed, none is asked.
+    const closed = toolLayer({ editText: () => changed("Edited Hero text") });
+    const none = await applyHeld(closed.client, calls, () => false);
+    expect(closed.called).toEqual([]);
+    expect(none.refused).toHaveLength(2);
   });
 });
