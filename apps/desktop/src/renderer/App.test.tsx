@@ -41,7 +41,11 @@ const saveUiState = vi.fn(
 const setSpellCheckLanguage = vi.fn(async () => null);
 
 /** What main forwards AI apps' requests to: the window's answer while it listens. */
-const ai = { answer: undefined as ((request: AiRequest) => Promise<AiResponse>) | undefined };
+const ai = {
+  answer: undefined as
+    | ((request: AiRequest, onCancel: (cancelled: () => void) => void) => Promise<AiResponse>)
+    | undefined,
+};
 const answerAi = vi.fn<AiApi["onRequest"]>((_sessionId, answer) => {
   ai.answer = answer;
   return () => {
@@ -153,7 +157,9 @@ describe("App's AI apps (4.8)", () => {
     renderApp();
     const ask = (request: AiRequest) => {
       if (ai.answer === undefined) throw new Error("not listening");
-      return act(() => ai.answer?.(request) ?? Promise.reject(new Error("not listening")));
+      return act(
+        () => ai.answer?.(request, () => undefined) ?? Promise.reject(new Error("not listening")),
+      );
     };
 
     const outline = await ask({ kind: "query", name: "outline", input: {} });

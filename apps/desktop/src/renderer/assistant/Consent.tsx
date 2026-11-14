@@ -32,7 +32,7 @@ export function reachOf(status: AssistantStatus): ConsentReach {
 }
 
 /** Where requests leave this computer: the reaches a site is asked about. */
-type AwayReach = Exclude<ConsentReach, { kind: "this-computer" }>;
+export type AwayReach = Exclude<ConsentReach, { kind: "this-computer" }>;
 
 /** Who receives a request, named: "OpenRouter and Anthropic", or a server's host. */
 function receiversOf(reach: AwayReach): string {
