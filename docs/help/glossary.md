@@ -4,7 +4,7 @@ id: glossary
 title: Glossary
 summary: The words {appName} uses, what each one means, and where to read more.
 related: [getting-started, the-editor, pages, publish]
-updated: 2026-11-13
+updated: 2026-11-14
 ---
 
 # Glossary
@@ -78,3 +78,4 @@ The words you meet in {appName}, in plain English. Each one links to the page th
 - **Version History:** your site as it was at earlier times. **Save Version…** keeps the site as it is now, and **Restore…** goes back to a version. See [Version History](version-history.md).
 - **Save a Copy as ZIP…** and **Open Site from ZIP…:** your whole site in one ZIP file, for a backup or another computer, and opening it again. This isn't your website: that's Export. See [Saving, copies and backups](saving-and-backups.md).
 - **AI apps:** AI apps on your computer, such as Claude, that you let work on the site you have open. Each change they make is a step in Undo History. See [AI apps](ai-apps.md).
+- **Assistant:** {appName}'s built-in AI model, in its own panel, that changes your site when you ask. Each change is a step in Undo History named _AI (Assistant): …_. Set it up in **Settings › Assistant**. See [The assistant](assistant.md).

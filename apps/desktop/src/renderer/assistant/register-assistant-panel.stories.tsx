@@ -33,7 +33,6 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
       api,
       sessionId: "story",
       openSettings: () => undefined,
-      openLink: () => undefined,
     });
   });
 
