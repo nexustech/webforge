@@ -32,7 +32,7 @@ const story = (options: FakeAssistantOptions, message?: string): Story =>
       session,
       api,
       sessionId: "story",
-      settings: { show: async () => false },
+      openSettings: () => undefined,
       openLink: () => undefined,
     });
   });

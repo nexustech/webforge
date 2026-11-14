@@ -4,9 +4,9 @@ import { t } from "@webforge/i18n";
 import { PlusIcon } from "lucide-react";
 import { useState } from "react";
 import { useStore } from "zustand";
-import type { AssistantStatus, ReplyStep } from "../../shared/ipc/assistant.js";
+import type { ReplyStep } from "../../shared/ipc/assistant.js";
 import type { AssistantPanelModel } from "./assistant-state.js";
-import { AppConsentDialog, type ConsentReach, SiteConsent } from "./Consent.js";
+import { AppConsentDialog, reachOf, SiteConsent } from "./Consent.js";
 import { ConversationView, errorKey } from "./ConversationView.js";
 import { MonthReadout } from "./MonthReadout.js";
 import { ReviewCard } from "./ReviewCard.js";
@@ -36,17 +36,6 @@ export type AssistantPanelProps = {
   readonly onShowStep: (step: ReplyStep) => void;
   readonly onOpenLink: (href: string) => void;
 };
-
-/** Who a request goes to, for the consent's wording. */
-function reachOf(status: AssistantStatus): ConsentReach {
-  if (status.provider.kind === "openrouter") {
-    return { kind: "openrouter", maker: status.model?.maker ?? null };
-  }
-  if (status.provider.kind === "server") {
-    return { kind: "server", host: new URL(status.provider.baseUrl).host };
-  }
-  return { kind: "this-computer" };
-}
 
 /**
  * The assistant's panel (6.9c, UX-28): the month's spend; the conversation on this site, each reply

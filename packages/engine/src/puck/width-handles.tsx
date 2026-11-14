@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import type { FieldDrag } from "../canvas-engine.js";
+import { startGripDrag } from "./grip-drag.js";
 import { componentSelector, elementOf } from "./puck-dom.js";
 
 /** A slider field that sets how wide its element is, as its width handles need it (2.17). */
@@ -235,7 +236,6 @@ export function WidthHandles({
     const anchor = anchorOf(rect, inner, props?.alignment);
     let current = before;
     report("start", before);
-    grip.setPointerCapture(event.pointerId);
 
     const move = (moved: PointerEvent) => {
       const step = nearestStep(
@@ -250,38 +250,24 @@ export function WidthHandles({
         report("update", step.value);
       }
     };
-    const windows = [frame, frame.parent].filter(
-      (each, index, all): each is Window => each !== null && all.indexOf(each) === index,
-    );
-    const stop = () => {
-      grip.removeEventListener("pointermove", move);
-      grip.removeEventListener("pointerup", end);
-      grip.removeEventListener("pointercancel", cancel);
-      for (const each of windows) each.removeEventListener("keydown", onKey, true);
-      if (grip.hasPointerCapture(event.pointerId)) grip.releasePointerCapture(event.pointerId);
+    const finished = () => {
       cancelDrag.current = null;
       setReadout(null);
     };
-    const end = () => {
-      stop();
-      report("commit", current);
-    };
-    const cancel = () => {
-      stop();
-      report("cancel", before);
-    };
-    // Esc cancels; nothing else sees it, wherever the focus is.
-    const onKey = (pressed: KeyboardEvent) => {
-      if (pressed.key !== "Escape") return;
-      pressed.preventDefault();
-      pressed.stopImmediatePropagation();
-      cancel();
-    };
-    cancelDrag.current = cancel;
-    grip.addEventListener("pointermove", move);
-    grip.addEventListener("pointerup", end);
-    grip.addEventListener("pointercancel", cancel);
-    for (const each of windows) each.addEventListener("keydown", onKey, true);
+    cancelDrag.current = startGripDrag({
+      grip,
+      pointerId: event.pointerId,
+      frame,
+      onMove: move,
+      onCommit: () => {
+        finished();
+        report("commit", current);
+      },
+      onCancel: () => {
+        finished();
+        report("cancel", before);
+      },
+    });
   };
 
   return (
