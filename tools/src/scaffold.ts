@@ -1,7 +1,7 @@
 // Editor scaffolds (2.20, B7), beside 2.19's `pnpm new-component`: an area of the editor, a panel,
 // commands, a kind of field or an IPC domain, with its strings, story and test, registered where
-// the app finds it. What it writes passes `pnpm check` as it is; then fill it in
-// (docs/extending.md).
+// the app finds it, and an area or panel with a help page and a **?** topic. What it writes passes
+// `pnpm check` as it is; then fill it in (docs/extending.md).
 //
 // Usage:
 //   pnpm scaffold area <Name> [--window]
@@ -317,10 +317,74 @@ function areaPlan(
   return { files: { [path]: areaFile(scope, lines, body) }, edits: listed };
 }
 
+// Help: something people see has a page in docs/help, listed in the Help window's contents, and a
+// **?** topic (HP-4, #979).
+
+const HELP = "docs/help";
+const HELP_README = `${HELP}/README.md`;
+const HELP_LINKS = `${RENDERER}/help/help-links.json`;
+
+/** `links`, the **?** topics' table, with `topic` opening page `page`. */
+export function addHelpTopic(links: string, topic: string, page: string): string {
+  if (Object.hasOwn(JSON.parse(links) as object, topic)) {
+    throw new Error(`a ? topic ${topic} is there already: pick another name`);
+  }
+  const end = links.lastIndexOf("}");
+  if (end === -1) throw new Error("can't find the table's end");
+  const before = links.slice(0, end).trimEnd();
+  const comma = before.endsWith("{") ? "" : ",";
+  return `${before}${comma}\n  ${JSON.stringify(topic)}: { "page": ${JSON.stringify(page)} }\n}\n`;
+}
+
+/**
+ * The help part of a plan: a page for `names` to write in the app's words, listed last in the Help
+ * window's contents, and a **?** topic, `topic`, that opens it. A panel's page may be its area's,
+ * there already (`share`); an area's is its own.
+ */
+function helpPlan(root: string, names: Names, today: string, topic: string, share: boolean) {
+  const page = `${HELP}/${names.file}.md`;
+  const there = existsSync(join(root, page));
+  if (there && !share) throw new Error(`${page} exists already: pick another name`);
+  const opens = { [HELP_LINKS]: [(text: string) => addHelpTopic(text, topic, names.file)] };
+  const button = `its ? topic is "${topic}" (<HelpButton topic="${topic}" />).`;
+  if (there) return { files: {}, edits: opens, next: [`Say what it adds in ${page}; ${button}`] };
+  const name = names.label.toLowerCase();
+  return {
+    files: {
+      [page]: [
+        "---",
+        `id: ${names.file}`,
+        `title: ${names.label}`,
+        `summary: Say in a line what the ${name} is for.`,
+        "related: []",
+        `updated: ${today}`,
+        "---",
+        "",
+        `# ${names.label}`,
+        "",
+        `Say what the ${name} shows and what you can do with it, in the words the app uses (docs/help/README.md).`,
+        "",
+      ].join("\n"),
+    },
+    edits: {
+      [HELP_README]: [
+        (text: string) =>
+          insertBefore(
+            text,
+            "\n## Writing a help page",
+            `- [${names.label}](${names.file}.md): say what it's for\n`,
+          ),
+      ],
+      ...opens,
+    },
+    next: [`Write ${page} and its line in ${HELP_README}; ${button}`],
+  };
+}
+
 // The scaffolds.
 
 /** `pnpm scaffold area`: a new renderer folder, its area listed, and its strings. */
-export function areaPlanFor(root: string, names: Names, scope: Scope): Plan {
+export function areaPlanFor(root: string, names: Names, scope: Scope, today: string): Plan {
   const folder = names.file;
   if (existsSync(join(root, RENDERER, folder)))
     throw new Error(`${RENDERER}/${folder} exists already: pick another name`);
@@ -334,14 +398,17 @@ export function areaPlanFor(root: string, names: Names, scope: Scope): Plan {
   );
   const area = areaPlan(root, folder, scope, [], body, name);
   const strings = stringsPlan(root, folder, names.label, []);
+  const help = helpPlan(root, names, today, names.camel, false);
   return {
     files: {
       ...area.files,
       [`${RENDERER}/${folder}/area.test.ts`]: areaTestFile(names, scope),
       ...strings.files,
+      ...help.files,
     },
-    edits: { ...area.edits, ...strings.edits },
+    edits: { ...area.edits, ...strings.edits, ...help.edits },
     next: [
+      ...help.next,
       `Say what the ${names.label} area adds, then register it in ${RENDERER}/${folder}/area.ts,`,
       `or add its parts: pnpm scaffold panel|commands <Name> --area ${folder}${scope === "window" ? " --window" : ""}.`,
     ],
@@ -364,7 +431,13 @@ function areaTestFile(names: Names, scope: Scope): string {
 }
 
 /** `pnpm scaffold panel`: a panel, its registration, story, test and strings, as an area. */
-export function panelPlanFor(root: string, names: Names, folder: string, scope: Scope): Plan {
+export function panelPlanFor(
+  root: string,
+  names: Names,
+  folder: string,
+  scope: Scope,
+  today: string,
+): Plan {
   const { pascal, camel, file, label } = names;
   const dir = `${RENDERER}/${folder}`;
   const keys = { title: `${camel}.panelTitle`, empty: `${camel}.panelEmpty` };
@@ -390,18 +463,26 @@ export function panelPlanFor(root: string, names: Names, folder: string, scope: 
     `"${keys.title}": "${label}",`,
     `"${keys.empty}": "Nothing in {site} to show here yet.",`,
   ]);
+  // Its own topic: an area of the same name has the name's.
+  const help = helpPlan(root, names, today, `${camel}Panel`, true);
   return {
     files: {
       [`${dir}/${pascal}Panel.tsx`]: [
         'import { t } from "@webforge/i18n";',
         'import type { EditorSession } from "../editor/editor-session.js";',
         'import { useDocument } from "../editor/use-document.js";',
+        'import { HelpButton } from "../help/index.js";',
         "",
         `/** The ${label} panel: say in a sentence what it shows, and what it lets the person do. */`,
         `export function ${pascal}Panel({ session }: { readonly session: EditorSession }) {`,
         "  const site = useDocument(session, (doc) => doc.settings.general.name);",
-        '  return <p className="m-0 p-3 text-sm text-muted-foreground">' +
-          `{t("${keys.empty}", { site })}</p>;`,
+        "  return (",
+        '    <div className="flex items-start gap-2 p-3">',
+        '      <p className="m-0 flex-1 text-sm text-muted-foreground">' +
+          `{t("${keys.empty}", { site })}</p>`,
+        `      <HelpButton topic="${camel}Panel" />`,
+        "    </div>",
+        "  );",
         "}",
         "",
       ].join("\n"),
@@ -474,15 +555,17 @@ export function panelPlanFor(root: string, names: Names, folder: string, scope: 
       ].join("\n"),
       ...area.files,
       ...strings.files,
+      ...help.files,
     },
     edits: merge(
-      merge(area.edits, strings.edits),
+      merge(merge(area.edits, strings.edits), help.edits),
       // The editor's test lists its panels exactly, so one added by mistake fails it: this one
       // joins the list.
       scope === "editor" ? { [EDITOR_TEST]: [(text: string) => listEditorPanel(text, camel)] } : {},
     ),
     next: [
       `Fill in ${dir}/${pascal}Panel.tsx; its story shows it in Storybook (Panels/Registered/${pascal}).`,
+      ...help.next,
     ],
   };
 }
@@ -1020,7 +1103,8 @@ export function planFor(
     folder,
     scope = "editor",
     reach,
-  }: { root?: string; folder?: string; scope?: Scope; reach?: IpcReach } = {},
+    today = new Date().toISOString().slice(0, 10),
+  }: { root?: string; folder?: string; scope?: Scope; reach?: IpcReach; today?: string } = {},
 ): Plan {
   const names = namesOf(name);
   if (typeof names === "string") throw new Error(names);
@@ -1033,9 +1117,9 @@ export function planFor(
   };
   switch (what) {
     case "area":
-      return areaPlanFor(root, names, scope);
+      return areaPlanFor(root, names, scope, today);
     case "panel":
-      return panelPlanFor(root, names, area(), scope);
+      return panelPlanFor(root, names, area(), scope, today);
     case "commands":
       return commandsPlanFor(root, names, area(), scope);
     case "field-kind":
