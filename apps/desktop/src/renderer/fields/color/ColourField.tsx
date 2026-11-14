@@ -28,6 +28,7 @@ import {
   contrastNeeded,
   contrastOn,
   contrastRatio,
+  hexOf,
   oklchCss,
   readableTextColour,
   resolveColorRef,
@@ -37,7 +38,6 @@ import { type CSSProperties, useId } from "react";
 import type { EditorSession } from "../../editor/editor-session.js";
 import { useDocument } from "../../editor/use-document.js";
 import { type EditorPreferences, usePreferences } from "../../shell/preferences-store.js";
-import { hexOf } from "./hex.js";
 
 /** What the colour field needs besides its field's props. */
 export type ColourFieldContext = {

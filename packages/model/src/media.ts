@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { sha256HexSchema } from "./hashes.js";
 import { type MediaId, mediaIdSchema } from "./ids.js";
 import { isKeyOf } from "./records.js";
 
@@ -73,7 +74,7 @@ const fileNameSchema = z
   .max(255)
   .regex(/^[^/\\]+$/);
 
-const blobHashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const blobHashSchema = sha256HexSchema;
 
 const mediaBaseShape = {
   id: mediaIdSchema,

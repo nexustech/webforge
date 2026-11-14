@@ -1,5 +1,5 @@
 import { fontRefSchema } from "@webforge/model";
-import { FONT_CATEGORIES, fontIdSchema } from "@webforge/themes/font-plan";
+import { FONT_CATEGORIES, fontFileNameSchema, fontIdSchema } from "@webforge/themes/font-plan";
 import { z } from "zod";
 
 /** At most this many fonts are listed: Fontsource has about 2,100. */
@@ -22,7 +22,7 @@ const installedFontSchema = z.strictObject({
    */
   preview: z
     .strictObject({
-      file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
+      file: fontFileNameSchema,
       weight: z.union([z.number().int(), z.tuple([z.number().int(), z.number().int()])]),
     })
     .optional(),

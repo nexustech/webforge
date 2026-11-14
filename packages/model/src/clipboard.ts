@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { isNodeDoc, type NodeDoc, nodeDocSchema, withoutUnsafeKeys } from "./documents.js";
 import { newId, type SharedSectionId, sharedSectionIdSchema } from "./ids.js";
+import { isRecord } from "./is-record.js";
 import { type MediaMeta, mediaMetaSchema } from "./media.js";
 import { MIGRATIONS, type MigrateOptions, migrateSiteWith, type RawSite } from "./migrations.js";
 import { SITE_FORMAT_VERSION } from "./site-doc.js";
@@ -119,9 +120,6 @@ function migratedElements(
     return null;
   }
 }
-
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
 
 /**
  * Copies of `nodes` to paste: every element in them, slots included, gets a new id. A section

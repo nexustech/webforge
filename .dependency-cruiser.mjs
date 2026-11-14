@@ -73,7 +73,11 @@ export default {
       comment:
         "Renderer code never imports the packages that run in the main process or a worker: the pipeline, storage and publishing (R16).",
       from: { path: RENDERER_SAFE },
-      to: { path: "^packages/(pipeline|storage|publish)/" },
+      // But publishing's error codes, which have no imports (@webforge/publish/codes, #988).
+      to: {
+        path: "^packages/(pipeline|storage|publish)/",
+        pathNot: "^packages/publish/src/codes\\.ts$",
+      },
     },
     {
       name: "main-no-react",
@@ -141,6 +145,9 @@ export default {
           // the main process needs at start-up, without the export's or FTP's and SFTP's tools,
           // #892).
           "^packages/(pipeline|publish)/src/light\\.ts$",
+          // Declared subpath export: @webforge/publish/codes (publishing's error codes, with no
+          // imports, for shared/ to derive its lists from, #988).
+          "^packages/publish/src/codes\\.ts$",
           // Declared subpath export: @webforge/themes/font-plan (zod only: no font catalogue, so
           // the preload and the catalogue build under plain Node can take it).
           "^packages/themes/src/fonts/plan\\.ts$",

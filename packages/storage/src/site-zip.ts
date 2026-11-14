@@ -8,6 +8,7 @@ import {
   type SiteDoc,
   SiteFormatError,
   safeFileName,
+  sha256HexSchema,
   siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
@@ -87,7 +88,7 @@ export class SiteZipError extends WebforgeError<SiteZipErrorCode> {
   }
 }
 
-const hashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const hashSchema = sha256HexSchema;
 /** An entry's name: a relative path of plain parts. */
 const entryPathSchema = z
   .string()

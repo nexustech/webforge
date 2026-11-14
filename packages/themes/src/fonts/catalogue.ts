@@ -1,10 +1,11 @@
-import { type FontRef, fontRefSchema } from "@webforge/model";
+import { type FontRef, fontRefSchema, sha256HexSchema } from "@webforge/model";
 import { z } from "zod";
 import catalogueJson from "./catalogue.json" with { type: "json" };
 import {
   FONT_CATEGORIES,
   FONT_LICENCES,
   FONT_SUBSETS,
+  fontFileNameSchema,
   fontIdSchema,
   unicodeRangeSchema,
 } from "./plan.js";
@@ -17,7 +18,7 @@ const unique = (values: readonly string[]) => new Set(values).size === values.le
 
 const fileSchema = z.strictObject({
   /** The file's name in its package's `files/` folder, and in an exported site's `assets/fonts/`. */
-  file: z.string().regex(/^[a-z0-9-]+\.woff2$/),
+  file: fontFileNameSchema,
   subset: z.enum(FONT_SUBSETS),
   style: z.enum(["normal", "italic"]),
   /** The weight, or the range a variable font covers. */
@@ -25,7 +26,7 @@ const fileSchema = z.strictObject({
   /** The subset's characters, as `@font-face`'s `unicode-range` takes them; nothing else fits. */
   unicodeRange: unicodeRangeSchema,
   bytes: z.number().int().positive(),
-  sha256: z.string().regex(/^[0-9a-f]{64}$/),
+  sha256: sha256HexSchema,
 });
 
 /** A family as the catalogue lists it, and as the app keeps a downloaded one (2.2). */

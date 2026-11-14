@@ -1,13 +1,8 @@
+import { escapeHtml } from "@webforge/model";
 import beautify from "js-beautify";
 
-/** Escapes text for use in HTML content and double-quoted attributes. */
-export function escapeHtml(text: string): string {
-  return text
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
-}
+/** Escapes text for use in HTML content and double-quoted attributes: the model's (#988). */
+export { escapeHtml };
 
 /** Classes on every page's `<body>`; the pipeline adds them to the CSS candidates. */
 export const BODY_CLASS = "flex min-h-screen flex-col bg-base-100 font-sans text-base-content";
