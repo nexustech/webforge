@@ -7,17 +7,22 @@ This page is the template for adding one (2.5). The rules come from the engineer
 ## Starting one: `pnpm new-component`
 
 ```bash
-pnpm new-component PriceList --place section
+pnpm new-component PriceList --place section --category pricing --help-page sections
 ```
+
+- `--category` is the Add panel's group it joins, one there is already: `pricing` for `category.pricing` ("Prices"). It refuses any other and lists them. A child has none.
+- `--help-page` is the page in `docs/help` that explains it, such as `sections` or `elements` (HP-4).
 
 It writes a new family for the component, from the primitives below, and registers it:
 
 - `src/catalogue/price-list.tsx`: the component, with `defineSection` (or `defineComponent` for `--place element` or `child`);
 - `src/catalogue/price-list.stories.tsx` and `price-list.test.tsx`: a story and a test that render it with its defaults;
 - `packages/i18n/src/en/components/priceList.ts`: its strings;
-- the family's lines in `src/catalogue/index.ts` and in the strings' `components/index.ts`.
+- the family's lines in `src/catalogue/index.ts` and in the strings' `components/index.ts`;
+- the component on its help page: in the page's `components`, with a heading named after it and a line to word, for _Help for this element_;
+- `src/catalogue-data.json`, regenerated (`pnpm catalogue-data`).
 
-What it writes passes `pnpm check` and renders in Storybook as it is; then make it the component. The type (`PriceList`) is stored in every site file, so choose it with care. A child (`--place child`) is an item of another component's repeating list: add its type to that slot's `allow`.
+What it writes passes `pnpm check` and renders in Storybook as it is; then make it the component, and word its help page's heading. The type (`PriceList`) is stored in every site file, so choose it with care. A child (`--place child`) is an item of another component's repeating list: add its type to that slot's `allow`.
 
 ## Where it goes
 
@@ -175,7 +180,7 @@ As the module loads:
 ### Repeating items: a `list` or child elements
 
 - **Child elements (slot plus child):** use these when an item has an image, a link, its own spacing, or text people should edit on the canvas. Examples are an FAQ question, a Carousel's slide (2.10), a testimonial with a photo or a gallery image.
-  - The items are components of their own with `place: "child"` (`pnpm new-component <Name> --place child`).
+  - The items are components of their own with `place: "child"` (`pnpm new-component <Name> --place child --help-page <page>`).
   - The parent holds them in a slot that `allow`s just that type.
   - The Edit panel still edits them as a list, and each one gets a row in Layers.
 - **A `list` field:** use this for short plain values, such as opening hours or a price list's lines.

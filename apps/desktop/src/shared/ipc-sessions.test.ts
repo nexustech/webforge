@@ -31,6 +31,7 @@ const SITE_CHANNELS = [
   "assistant:site-consent",
   "assistant:set-site-consent",
   "assistant:send",
+  "assistant:draft",
   "assistant:new-conversation",
   "assistant:conversation",
   "assistant:open-link",

@@ -212,14 +212,14 @@ export default {
       comment:
         "A publish secret is saved only through PublishSecrets, tied to where it was typed for " +
         "(security review S2, S38): the keychain's store is opened by app.ts and used by " +
-        "publish-secrets.ts, ai-apps.ts (its own MCP keys) and the assistant's service (its " +
-        "provider keys, ADR 0026), and the publish IPC reads its error type.",
+        "publish-secrets.ts, ai-apps.ts (its own MCP keys) and the assistant's service and " +
+        "endpoint (its provider keys, ADR 0026), and the publish IPC reads its error type.",
       from: {
         path: "^apps/desktop/src/",
         pathNot: [
           "\\.test\\.tsx?$",
           "^apps/desktop/src/main/(app|publish-secrets|ai-apps|publish-destinations-ipc)\\.ts$",
-          "^apps/desktop/src/main/assistant/assistant-service\\.ts$",
+          "^apps/desktop/src/main/assistant/(assistant-service|endpoint)\\.ts$",
         ],
       },
       to: { path: "^apps/desktop/src/main/credential-store\\.ts$" },
