@@ -1,4 +1,5 @@
 import { randomInt } from "node:crypto";
+import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { t } from "@webforge/i18n";
 import type { AiRequest, AiResponse } from "../shared/ipc/ai.js";
 import type { AiApps, AppKind, PairedApp, Pairing } from "./ai-apps.js";
@@ -46,9 +47,19 @@ export type McpService = {
   /** The server proof of paired app `id`, which its Claude Desktop extension holds; or `null`. */
   proofOf(id: string): Promise<string | null>;
   status(): Promise<McpServiceStatus>;
+  /**
+   * Connects the in-app assistant to the tool layer (6.9b, ADR 0026 §1): an MCP client on the SDK's
+   * in-memory transport, through the same limits and window as AI apps, with *AI apps* on or off.
+   * `beforeCommand` runs before each of its commands, other than a plan, which asks the person and
+   * saves its own version: the assistant's safety version, once a conversation.
+   */
+  connectAssistant(beforeCommand: () => Promise<void>): Promise<AssistantConnection>;
   /** Stops listening: Webforge is quitting. */
   close(): Promise<void>;
 };
+
+/** The assistant's connection to the tool layer: its MCP client, until closed. */
+type AssistantConnection = { readonly client: Client; close(): Promise<void> };
 
 /** What {@link createMcpService} works with; the listener and the port drawn are fakes in tests. */
 export type McpServiceOptions = {
@@ -167,14 +178,21 @@ export function createMcpService(options: McpServiceOptions): McpService {
       }
       await saved;
     };
-    const versionFor = (request: AiRequest) =>
-      request.kind !== "command" || request.name === "plan" ? undefined : versionFirst;
-    return (request: AiRequest, signal?: AbortSignal): Promise<AiResponse> =>
+    return askWith(app, versionFirst);
+  };
+
+  /** `app`'s requests, with `before` run ahead of each command but a plan's. */
+  const askWith =
+    (app: McpApp, before: () => Promise<void>) =>
+    (request: AiRequest, signal?: AbortSignal): Promise<AiResponse> =>
       isMainTool(request.name)
         ? // A brief changes no open site: no version before it.
           limits.ask(app.id, request, undefined, mainTool(app, signal))
-        : limits.ask(app.id, request, versionFor(request));
-  };
+        : limits.ask(
+            app.id,
+            request,
+            request.kind !== "command" || request.name === "plan" ? undefined : before,
+          );
 
   /**
    * A paired app's server proof, looked up only for an app in the list: a caller naming made-up
@@ -251,6 +269,27 @@ export function createMcpService(options: McpServiceOptions): McpService {
         port: listener?.port ?? null,
         moved: await apps.moved(),
         connected: listener?.connectedApps() ?? [],
+      };
+    },
+    async connectAssistant(beforeCommand) {
+      // Loaded once the assistant first answers, not with main at start-up (#892).
+      const [{ assistantApp, createAssistantMcpServer }, { Client }, { InMemoryTransport }] =
+        await Promise.all([
+          import("./mcp-server.js"),
+          import("@modelcontextprotocol/sdk/client/index.js"),
+          import("@modelcontextprotocol/sdk/inMemory.js"),
+        ]);
+      const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+      const server = createAssistantMcpServer(options.info, askWith(assistantApp(), beforeCommand));
+      await server.connect(serverSide);
+      const client = new Client(options.info);
+      await client.connect(clientSide);
+      return {
+        client,
+        async close() {
+          await client.close();
+          await server.close();
+        },
       };
     },
     close: shut,
