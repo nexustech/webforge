@@ -11,7 +11,6 @@ export type { ClassCatalogue } from "./classes/class-match.js";
 export { codeField } from "./code/field.js";
 export { ColourField, colourRefName, shownRatio } from "./color/ColourField.js";
 export { colourField } from "./color/field.js";
-export { hexOf } from "./color/hex.js";
 export { fieldRenderers, themeFieldRenderers } from "./field-renderers.js";
 export { addFontPreviews, previewFamily } from "./font/font-previews.js";
 export { ThemeColorField } from "./theme-color/ThemeColorField.js";

@@ -1,3 +1,5 @@
+import { escapeHtml } from "./escape.js";
+
 /**
  * Markdown as owners write it elsewhere (6.10b, BS9-4), made into the rich text {appName} keeps: what
  * pasting Markdown into text and importing posts from Markdown give. A small converter of its own,
@@ -5,16 +7,6 @@
  * and quotes. A heading is a bold paragraph, as rich text has no headings; anything else is its
  * text. Every piece of text is escaped, and links go only to web, email and phone addresses.
  */
-
-const ESCAPES: Readonly<Record<string, string>> = {
-  "&": "&amp;",
-  "<": "&lt;",
-  ">": "&gt;",
-  '"': "&quot;",
-};
-
-const escapeText = (text: string) =>
-  text.replace(/[&<>"]/g, (character) => ESCAPES[character] ?? "");
 
 /** A link's address rich text may hold: the web, email and phone. */
 const SAFE_LINK = /^(?:https?:\/\/|mailto:|tel:)/i;
@@ -209,16 +201,16 @@ export function inlineMarkdown(line: string): string {
   const codes: string[] = [];
   // Code first, so nothing in it is formatting; held aside by its number until the end.
   let text = line.replace(/[\uE000\uE001]/g, "").replace(/`([^`]+)`/g, (_, code: string) => {
-    codes.push(`<code>${escapeText(code)}</code>`);
+    codes.push(`<code>${escapeHtml(code)}</code>`);
     return `\uE000${codes.length - 1}\uE000`;
   });
   const links: string[] = [];
   text = replaceLinks(text, (label, href) => {
-    const inner = formatted(escapeText(label));
-    links.push(SAFE_LINK.test(href) ? `<a href="${escapeText(href)}">${inner}</a>` : inner);
+    const inner = formatted(escapeHtml(label));
+    links.push(SAFE_LINK.test(href) ? `<a href="${escapeHtml(href)}">${inner}</a>` : inner);
     return `\uE001${links.length - 1}\uE001`;
   });
-  text = formatted(escapeText(text));
+  text = formatted(escapeHtml(text));
   return text
     .replace(/\uE001(\d+)\uE001/g, (_, n: string) => links[Number(n)] ?? "")
     .replace(/\uE000(\d+)\uE000/g, (_, n: string) => codes[Number(n)] ?? "");
@@ -235,7 +227,7 @@ function inlineCapped(text: string): string {
   if (text.length <= INLINE_MAX) return inlineMarkdown(text);
   // Not between the halves of a character written as two (an emoji).
   const cut = /[\uD800-\uDBFF]/.test(text.charAt(INLINE_MAX - 1)) ? INLINE_MAX - 1 : INLINE_MAX;
-  return inlineMarkdown(text.slice(0, cut)) + escapeText(text.slice(cut));
+  return inlineMarkdown(text.slice(0, cut)) + escapeHtml(text.slice(cut));
 }
 
 /**

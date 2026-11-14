@@ -4,6 +4,8 @@ import {
   type ElementPlace,
   eachElement,
   elementsAt,
+  escapeHtmlText,
+  escapeRegExp,
   findNode,
   itemBindingOf,
   MENU_LABEL_MAX,
@@ -89,7 +91,7 @@ const WORD = "[\\p{L}\\p{N}_]";
 /** A regular expression for `options`, or `undefined` while there's nothing to find. */
 export function matcher(options: FindOptions): RegExp | undefined {
   if (options.query === "") return undefined;
-  const escaped = options.query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = escapeRegExp(options.query);
   const body = options.wholeWords ? `(?<!${WORD})${escaped}(?!${WORD})` : escaped;
   return new RegExp(body, options.matchCase ? "gu" : "giu");
 }
@@ -112,11 +114,6 @@ function decode(html: string): string {
     if (name.startsWith("#")) return String.fromCodePoint(Number.parseInt(name.slice(1), 10));
     return ENTITIES[name.toLowerCase()] ?? reference;
   });
-}
-
-/** Text to put between rich text's tags: what HTML reads as markup escaped. */
-function encode(text: string): string {
-  return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 }
 
 /**
@@ -177,7 +174,7 @@ export function replaceInValue(
       return replacement;
     });
     if (!changed) return piece.raw;
-    return rich ? encode(text) : text;
+    return rich ? escapeHtmlText(text) : text;
   });
   return { value: pieces.join(""), replaced };
 }

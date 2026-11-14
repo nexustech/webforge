@@ -45,6 +45,12 @@ export const fontIdSchema = z
   .max(100)
   .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
 
+/**
+ * A font file's name (#988): in its package's `files/` folder, in the app's downloads, and in an
+ * exported site's `assets/fonts/`.
+ */
+export const fontFileNameSchema = z.string().regex(/^[a-z0-9-]+\.woff2$/);
+
 /** A subset's characters, as `@font-face`'s `unicode-range` takes them; nothing else fits. */
 export const unicodeRangeSchema = z.string().regex(/^U\+[0-9A-Fa-f?-]+(?:,U\+[0-9A-Fa-f?-]+)*$/);
 

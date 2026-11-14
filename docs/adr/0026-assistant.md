@@ -69,6 +69,7 @@ Assistant panel  ──IPC──▶ assistant loop ──HTTPS (net.fetch)──
 - **One provider at a time,** chosen in Settings › _Assistant_, with its model and the monthly limit.
 - **A key never travels unencrypted:** the client refuses to send one over plain `http:` to a server that isn't on this computer (`insecure-server`), so nothing of the site goes there either (#976). Over `https:`, or to `localhost`, `127.0.0.1` or `[::1]`, it goes.
 - **Keys** live in 4.4a's credential store: `assistant/openrouter`, or `assistant/server` for _Another server…_. Never the site file, the settings JSON or logs.
+  - A server's key was given for that server: changing its address, or the provider, forgets it, so it's never sent to another address. And a key never travels over plain `http:` to another computer: `setKey`, the model list and the chat client each refuse with `insecure-server` (#976, #870's review).
   - Where the store refuses (Linux's `basic_text` backend), the assistant can't sign in, and says why.
   - A key never leaves main: the renderer learns only whether there is one.
 - **OpenRouter requests carry the privacy defaults** (AIA-7):
