@@ -797,8 +797,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
           keyLabel: () =>
             t("assistant.signIn.keyLabel", { date: new Date().toISOString().slice(0, 10) }),
           donePage: () => ({
-            title: t("assistant.signIn.doneTitle"),
-            body: t("assistant.signIn.done"),
+            title: t("assistant.signIn.donePageTitle"),
+            body: t("assistant.signIn.donePage"),
           }),
         }),
         projectOf: (session) =>

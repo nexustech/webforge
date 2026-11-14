@@ -92,8 +92,8 @@ export const assistant = {
   // OpenRouter's sign-in (ADR 0026 §3): the key's label in the person's account, never the
   // computer's name, and the page the browser shows after it.
   "assistant.signIn.keyLabel": "{appName}, {date}",
-  "assistant.signIn.doneTitle": "Signed in to OpenRouter",
-  "assistant.signIn.done": "You're signed in. You can close this tab and go back to {appName}.",
+  "assistant.signIn.donePageTitle": "Signed in to OpenRouter",
+  "assistant.signIn.donePage": "You're signed in. You can close this tab and go back to {appName}.",
   // A key that would go over plain http:// to another computer (ADR 0026 §7, #976).
   "assistant.error.insecure-server":
     "The server's address starts with http://, so your key and your site's text would travel unencrypted. Use an https:// address in Settings › Assistant, or a server on this computer.",
