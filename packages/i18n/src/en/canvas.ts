@@ -8,6 +8,8 @@ export const canvas = {
   "canvas.error.reload": "Reload page",
   // An empty page's next step, where its sections would go (#1012).
   "canvas.addFirstSection": "Add Your First Section…",
+  // Over the canvas until the site's styles and fonts arrive (#1013), so it never shows unstyled.
+  "canvas.opening": "Opening your site…",
   // Quick actions on the selected element (1.12).
   "canvas.moveUp": "Move up",
   "canvas.moveDown": "Move down",

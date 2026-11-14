@@ -155,7 +155,7 @@ Every tool an AI app or the assistant can call is one `ToolDef` (#981, `@webforg
 
 The MCP server lists each one with the JSON Schema made from its zod, and the untrusted-site-text line added. It passes the definition with each call, and main routes the call and saves the version by it. Where a new one goes:
 
-- **A query or command of the command layer** goes in `QUERIES` or `COMMANDS` (`packages/commands`): `AI_TOOLS` lists it.
+- **A query or command of the command layer** goes in `QUERIES` or `COMMANDS` (`packages/commands`): `AI_TOOLS` lists it. A command also has a `summarize`, typed by its input, which adds what it does to a plan's one question (pages added, renamed or removed, elements changed). A command without one fails typecheck.
 - **One the window answers itself** goes in `WINDOW_TOOLS` (`apps/desktop/src/shared/ai-tools.ts`), with its handler in `renderer/ai/area.ts`'s `WindowToolHandlers`. One without a handler fails typecheck.
 - **One main answers** goes in `MAIN_TOOLS`, with its handler in `mcp-service.ts`'s `MAIN_TOOL_HANDLERS`, which is checked the same way.
 

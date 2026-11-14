@@ -35,6 +35,7 @@ import { REGION_ATTRIBUTE } from "../shell/regions.js";
 import { siteSession } from "../storage/index.js";
 import { type Area, connectAreas, type EditorContext, type EditorDialogs } from "./areas.js";
 import { CanvasBreadcrumbs } from "./CanvasBreadcrumbs.js";
+import { CanvasCover } from "./CanvasCover.js";
 import { CanvasResizeHandles } from "./CanvasResizeHandles.js";
 import type { CanvasPointerHost } from "./canvas-pointer.js";
 import { isDialogText } from "./dialog-keys.js";
@@ -410,6 +411,7 @@ export function Editor({
           {...{ [REGION_ATTRIBUTE]: "" }}
           ref={canvasRef}
         />
+        <CanvasCover engine={engine} />
         {canvasView !== undefined && (
           <CanvasEdges
             session={session}

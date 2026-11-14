@@ -1,7 +1,11 @@
 import type { SiteDoc } from "@webforge/model";
 import { describe, expect, it, vi } from "vitest";
+import { z } from "zod";
 import { createCommandApi } from "./api.js";
 import { app, content, home, setup } from "./api.test-helper.js";
+import { COMMANDS } from "./commands.js";
+import { fail } from "./plan.js";
+import { planCommand } from "./plan-command.js";
 
 /** The test site's About page's id. */
 const aboutOf = (doc: SiteDoc) => {
@@ -210,6 +214,17 @@ describe("a plan (4.12a, AIB-6)", () => {
       "remove",
       [about],
     );
+  });
+});
+
+describe("each command's part of a plan's summary (#981)", () => {
+  it("is its own, so a command without one can't be a step", () => {
+    for (const [name, command] of Object.entries(COMMANDS)) {
+      if (name !== "plan") expect(command).toHaveProperty("summarize");
+    }
+    const unsummarized = { input: z.strictObject({}), plan: () => fail("invalid", "Not yet.") };
+    // @ts-expect-error: a step must say what it adds to the plan's summary.
+    expect(planCommand({ unsummarized }).description).toContain("unsummarized");
   });
 });
 
