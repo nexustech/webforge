@@ -18,6 +18,7 @@ export const assistantApi = (call: Call, subscribe: Subscribe): AssistantApi => 
     await call("assistantSetSiteConsent", session, allowed);
   },
   send: (session, text, context) => call("assistantSend", session, text, context),
+  draft: (session, request) => call("assistantDraft", session, request),
   stop: async (replyId) => {
     await call("assistantStop", replyId);
   },

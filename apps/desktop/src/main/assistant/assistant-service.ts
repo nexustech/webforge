@@ -4,6 +4,7 @@ import { linkToOpen } from "../../shared/assistant-links.js";
 import {
   ASSISTANT_CONSENT_VERSION,
   type AssistantApi,
+  type AssistantErrorCode,
   type AssistantEvent,
   type AssistantModel,
   type AssistantStatus,
@@ -11,25 +12,34 @@ import {
   MONTHLY_LIMIT_DEFAULT_USD,
 } from "../../shared/ipc/assistant.js";
 import type { AssistantService } from "../assistant-ipc.js";
-import { assistantCredentialKey, type CredentialStore } from "../credential-store.js";
+import type { CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
-import { isLoopback, keySafeAt } from "./chat-client.js";
+import { isLoopback, keySafeAt, streamChat } from "./chat-client.js";
+import { draftChat, draftTexts } from "./drafts.js";
+import {
+  type EndpointResult,
+  endpointFor,
+  OPENROUTER_BASE_URL,
+  OPENROUTER_KEY,
+  SERVER_KEY,
+} from "./endpoint.js";
 import { openRouterModels, preselected, serverModels } from "./models.js";
 import type { OpenRouterSignIn } from "./openrouter-sign-in.js";
 
 /**
  * The assistant in main (6.9a, ADR 0026): its settings, consent, keys, sign-in, the month's spend
- * and the model list, behind the `assistant` domain's calls. `send` and the conversation are
- * 6.9b's loop: until it lands, a message that passes every check is answered `failed`.
+ * and the model list, behind the `assistant` domain's calls, and the one-off drafts of 6.9d's
+ * writing help (#873). `send` and the conversation are 6.9b's loop: until it lands, a message
+ * that passes every check is answered `failed`.
  *
  * Kept in `assistant.json` in the app's user data, with no content: the provider and model, the
  * limit, the month's spend, the app's consent version and each site's yes by its project id
  * (never in the site file). Keys only in the credential store.
  */
 
-const OPENROUTER_KEY = assistantCredentialKey("openrouter");
-const SERVER_KEY = assistantCredentialKey("server");
+/** How long a draft waits for the model before giving up: a local model on a slow computer. */
+const DRAFT_TIMEOUT_MS = 120_000;
 
 /** A local server's address when Settings gives none (ADR 0026 §2). */
 const LOCAL_DEFAULTS = {
@@ -117,6 +127,8 @@ export type AssistantServiceOptions = {
   readonly signIn: OpenRouterSignIn;
   /** Electron's `net.fetch`, for the system's proxy. */
   readonly fetchFn: typeof fetch;
+  /** The app's name, for OpenRouter's title header: it carries no content. */
+  readonly appName: string;
   /** The open site's project id for a session, or undefined if it isn't the open one. */
   readonly projectOf: (session: string) => string | undefined;
   /** Sends an event to the editor window. */
@@ -127,10 +139,26 @@ export type AssistantServiceOptions = {
   readonly files?: JsonStoreFiles;
 };
 
-/** The service and what 6.9b's loop uses beside it: the endpoint's key, and adding a reply's cost. */
+/** What {@link Assistant.preflight} found: the site's project id, or why nothing may be sent. */
+type Preflight =
+  | { readonly status: "ok"; readonly project: string }
+  | { readonly status: AssistantErrorCode };
+
+/**
+ * The service and what 6.9b's loop uses beside it: the checks before sending, the endpoint, and
+ * adding a reply's cost.
+ */
 export type Assistant = AssistantService & {
   /** Each site's conversation, by its project id, in memory only: 6.9b's loop adds the turns. */
   readonly conversations: Map<string, ConversationTurn[]>;
+  /**
+   * Whether anything of `session`'s site may be sent now: it's the open site, the app's and the
+   * site's yes are given (§4), the person is signed in, a model is chosen, and the month's limit
+   * isn't reached (§5). `send` and `draft` both ask it first.
+   */
+  preflight(session: string): Promise<Preflight>;
+  /** Where model calls go now, with the key and the model (§2). */
+  endpoint(): Promise<EndpointResult>;
   /** Adds a reply's cost to the month's (§5), saying so at 80% and at the limit. */
   addCost(usd: number): Promise<AssistantStatus["month"]>;
 };
@@ -174,6 +202,8 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   let listed: readonly AssistantModel[] = [];
   /** The sign-in under way, whose answer keeps the key: a pasted code's ends it. */
   let signingIn: Promise<SignInResult> | null = null;
+  /** The sites with a draft under way, by project id. */
+  const drafting = new Set<string>();
 
   const status = async (): Promise<AssistantStatus> => {
     const file = await read();
@@ -338,7 +368,7 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       }
       const [url, name] =
         file.provider.kind === "openrouter"
-          ? ["https://openrouter.ai/api/v1/key", OPENROUTER_KEY]
+          ? [`${OPENROUTER_BASE_URL}/key`, OPENROUTER_KEY]
           : [`${file.provider.baseUrl}/models`, SERVER_KEY];
       const checked = await checkKey(url, key);
       if (checked !== "ok") return { status: checked };
@@ -387,9 +417,10 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       if (project === undefined) return;
       await write((file) => ({ ...file, sites: { ...file.sites, [project]: allowed } }));
     },
-    send: async (session) => {
+    preflight: async (session) => {
       const current = await status();
-      if (options.projectOf(session) === undefined) return { status: "no-site" };
+      const project = options.projectOf(session);
+      if (project === undefined) return { status: "no-site" };
       if (!current.enabled) return { status: "consent-needed" };
       if (current.reach !== "this-computer" && !(await service.siteConsent(session)).allowed) {
         return { status: "consent-needed" };
@@ -399,8 +430,39 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       }
       if (current.model === null) return { status: "no-model" };
       if (current.month.reached) return { status: "limit-reached" };
+      return { status: "ok", project };
+    },
+    endpoint: async () => endpointFor(await read(), options.credentials, options.appName),
+    send: async (session) => {
+      const checked = await service.preflight(session);
+      if (checked.status !== "ok") return { status: checked.status };
       // 6.9b's loop answers from here.
       return { status: "failed" };
+    },
+    draft: async (session, request) => {
+      const checked = await service.preflight(session);
+      if (checked.status !== "ok") return { status: checked.status };
+      // One draft at a time for a site: a second ask waits for the first's answer.
+      if (drafting.has(checked.project)) return { status: "busy" };
+      drafting.add(checked.project);
+      try {
+        const target = await service.endpoint();
+        if (target.status !== "ok") return { status: target.status };
+        const chat = draftChat(request, target.model, AbortSignal.timeout(DRAFT_TIMEOUT_MS));
+        const result = await streamChat(options.fetchFn, target.endpoint, chat, () => undefined);
+        // Only a timeout stops a draft: the model didn't answer in time.
+        if (result.status === "aborted") return { status: "offline" };
+        if (result.status === "failed") return { status: result.error };
+        const { costUsd } = result.usage;
+        // Counted even when the answer can't be used: the provider has billed it.
+        if (costUsd !== null && costUsd > 0) await service.addCost(costUsd);
+        const texts = draftTexts(request, result.text);
+        return texts === undefined
+          ? { status: "provider-error" }
+          : { status: "ok", texts, costUsd };
+      } finally {
+        drafting.delete(checked.project);
+      }
     },
     stop: async () => undefined,
     newConversation: async (session) => {

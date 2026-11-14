@@ -2,7 +2,11 @@ import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ASSISTANT_CONSENT_VERSION, type AssistantEvent } from "../../shared/ipc/assistant.js";
+import {
+  ASSISTANT_CONSENT_VERSION,
+  type AssistantEvent,
+  type DraftRequest,
+} from "../../shared/ipc/assistant.js";
 import { createAssistantService } from "./assistant-service.js";
 
 const SESSION = "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5";
@@ -51,14 +55,23 @@ function openRouter(url: string, init?: RequestInit): Response {
 }
 
 /** A service in a fresh folder, with its keys, sign-in and events in memory. */
-function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "cancelled" } = {}) {
+function setUp(
+  options: {
+    project?: string | undefined;
+    signIn?: "signed-in" | "cancelled";
+    /** Answers a model call: its body and headers. */
+    chat?: (body: Record<string, unknown>, headers: Headers) => Response | Promise<Response>;
+  } = {},
+) {
   const dir = mkdtempSync(join(tmpdir(), "webforge-assistant-"));
   dirs.push(dir);
   const keys = new Map<string, string>();
   const events: AssistantEvent[] = [];
   const opened: string[] = [];
   const fetchFn = vi.fn(async (url: string | URL | Request, init?: RequestInit) =>
-    openRouter(String(url), init),
+    String(url).endsWith("/chat/completions") && options.chat !== undefined
+      ? options.chat(JSON.parse(String(init?.body)), new Headers(init?.headers))
+      : openRouter(String(url), init),
   ) as unknown as typeof fetch;
   let month = new Date(2026, 10, 13);
   const service = createAssistantService({
@@ -81,6 +94,7 @@ function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "
       cancel: () => undefined,
     },
     fetchFn,
+    appName: "Webforge",
     projectOf: (session) =>
       session === SESSION && options.project !== undefined ? options.project : undefined,
     emit: (event) => events.push(event),
@@ -101,6 +115,37 @@ function setUp(options: { project?: string | undefined; signIn?: "signed-in" | "
     },
   };
 }
+
+/** A streamed answer: each chunk as an SSE `data:` line, then `[DONE]`. */
+function sse(...chunks: unknown[]): Response {
+  const lines = chunks.map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`).join("");
+  return new Response(`${lines}data: [DONE]\n\n`, {
+    headers: { "content-type": "text/event-stream" },
+  });
+}
+
+/** A service that may send: turned on, the site's yes, signed in to OpenRouter, a model chosen. */
+async function ready(options: Parameters<typeof setUp>[0] = {}) {
+  const set = setUp({ project: PROJECT, ...options });
+  await set.service.setEnabled(true, ASSISTANT_CONSENT_VERSION);
+  await set.service.setSiteConsent(SESSION, true);
+  await set.service.signIn("browser");
+  await set.service.models();
+  await set.service.update({ modelId: "anthropic/claude-model" });
+  return set;
+}
+
+const REWRITE: DraftRequest = { kind: "rewrite", how: "shorter", text: "We are open 9 to 5." };
+
+const BUSINESS: DraftRequest = {
+  kind: "business",
+  language: "en-GB",
+  business: { name: "Rise Bakery", type: "bakery", about: "Sourdough, baked every morning." },
+  texts: [
+    { role: "Hero heading", sample: "Fresh coffee, every day" },
+    { role: "Hero text", sample: "Come in and stay a while." },
+  ],
+};
 
 describe("the assistant's service (6.9a, ADR 0026)", () => {
   it("starts off, signed out, with $5 a month and nothing spent", async () => {
@@ -213,6 +258,93 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
     await service.update({ monthlyLimitUsd: 1 });
     await service.addCost(1.2);
     expect(await send()).toEqual({ status: "limit-reached" });
+  });
+
+  it("drafts only after the same checks as a message (#873)", async () => {
+    const chat = vi.fn(() => sse({ choices: [{ delta: { content: "Hi" } }] }));
+    const { service } = setUp({ project: PROJECT, chat });
+    expect(await service.draft("9f8e7d6c-5b4a-4392-8170-6f5e4d3c2b1a", REWRITE)).toEqual({
+      status: "no-site",
+    });
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "consent-needed" });
+    await service.setEnabled(true, ASSISTANT_CONSENT_VERSION);
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "consent-needed" });
+    await service.setSiteConsent(SESSION, true);
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "not-signed-in" });
+    await service.signIn("browser");
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "no-model" });
+    await service.models();
+    await service.update({ modelId: "anthropic/claude-model", monthlyLimitUsd: 1 });
+    await service.addCost(1.2);
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "limit-reached" });
+    expect(chat).not.toHaveBeenCalled();
+  });
+
+  it("drafts with one model call: no tools, OpenRouter's privacy, the cost counted (#873)", async () => {
+    const asked: { body: Record<string, unknown>; headers: Headers }[] = [];
+    const { service } = await ready({
+      chat: (body, headers) => {
+        asked.push({ body, headers });
+        return sse(
+          { choices: [{ delta: { content: '"Warm sourdough, ' } }] },
+          { choices: [{ delta: { content: 'baked every morning."' }, finish_reason: "stop" }] },
+          { choices: [], usage: { prompt_tokens: 90, completion_tokens: 12, cost: 0.002 } },
+        );
+      },
+    });
+
+    expect(await service.draft(SESSION, REWRITE)).toEqual({
+      status: "ok",
+      texts: ["Warm sourdough, baked every morning."],
+      costUsd: 0.002,
+    });
+    expect(asked).toHaveLength(1);
+    const [{ body, headers }] = asked as [(typeof asked)[0]];
+    expect(body.tools).toBeUndefined();
+    expect(body).toMatchObject({
+      model: "anthropic/claude-model",
+      provider: { zdr: true, data_collection: "deny" },
+    });
+    expect(headers.get("authorization")).toBe("Bearer sk-or-v1-from-sign-in");
+    expect(headers.get("x-openrouter-title")).toBe("Webforge");
+    expect((await service.status()).month.spentUsd).toBeCloseTo(0.002);
+  });
+
+  it("says an answer it can't use, and counts what the provider billed for it (#873)", async () => {
+    const { service } = await ready({
+      chat: () =>
+        sse(
+          { choices: [{ delta: { content: '["Only one text"]' } }] },
+          { choices: [], usage: { cost: 0.01 } },
+        ),
+    });
+    expect(await service.draft(SESSION, BUSINESS)).toEqual({ status: "provider-error" });
+    expect((await service.status()).month.spentUsd).toBeCloseTo(0.01);
+  });
+
+  it("passes on the provider's refusal, as its code (#873)", async () => {
+    const { service } = await ready({ chat: () => new Response("", { status: 402 }) });
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "no-credit" });
+  });
+
+  it("drafts one at a time for a site (#873)", async () => {
+    const waiting: ((response: Response) => void)[] = [];
+    const { service } = await ready({
+      chat: () => new Promise<Response>((resolve) => waiting.push(resolve)),
+    });
+    const answer = async (text: string) => {
+      await vi.waitFor(() => expect(waiting).toHaveLength(1));
+      waiting.pop()?.(sse({ choices: [{ delta: { content: text } }] }));
+    };
+    const first = service.draft(SESSION, REWRITE);
+    await vi.waitFor(() => expect(waiting).toHaveLength(1));
+    expect(await service.draft(SESSION, REWRITE)).toEqual({ status: "busy" });
+    await answer("Open daily.");
+    expect(await first).toMatchObject({ status: "ok", texts: ["Open daily."] });
+    // The first has answered: the next may go.
+    const next = service.draft(SESSION, REWRITE);
+    await answer("Open every day.");
+    expect(await next).toMatchObject({ status: "ok", texts: ["Open every day."] });
   });
 
   it("adds each reply's cost to the month, says 80% and the limit once, and starts afresh", async () => {
