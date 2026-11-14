@@ -73,7 +73,8 @@ describe("the shared-section commands (1.29, F-ED-23)", () => {
     expect(enabled(SAVE)).toBe(false);
     registered.setLayoutLocked(false);
     expect(enabled(SAVE)).toBe(true);
-    session.ui.setState({ others: ["heading-1"] });
+    // Another element selected too (1.31).
+    session.toggleSelected("heading-1");
     expect(enabled(SAVE)).toBe(false);
   });
 
