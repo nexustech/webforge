@@ -88,6 +88,26 @@ describe("where the assistant's requests go (ADR 0026 §2–§3)", () => {
     });
   });
 
+  it("takes only a web address for another server, and says a key won't go over http (#1020 review)", async () => {
+    const { user } = shown();
+    await user.click(screen.getByRole("radio", { name: /Another server/ }));
+    const field = screen.getByRole("textbox", { name: "Server address" });
+    const use = screen.getByRole("button", { name: "Use This Server" });
+
+    await user.type(field, "ollama.local:11434/v1");
+    expect((use as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.getByText(/starting with https:\/\//)).toBeDefined();
+
+    await user.clear(field);
+    await user.type(field, "http://ai.example.org/v1");
+    expect((use as HTMLButtonElement).disabled).toBe(false);
+    expect(screen.getByText(/no key will be sent to it/)).toBeDefined();
+
+    await user.clear(field);
+    await user.type(field, "http://localhost:11434/v1");
+    expect(screen.queryByText(/no key will be sent to it/)).toBeNull();
+  });
+
   it("saves another server's key, saying why it wasn't taken", async () => {
     const { api, user } = shown({
       kind: "server",
