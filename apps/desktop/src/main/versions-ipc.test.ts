@@ -221,8 +221,14 @@ describe("the versions IPC calls (4.6)", () => {
     });
     const sessionId = session.current()?.sessionId ?? "";
 
-    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toBe("saved");
-    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toBe("saved");
+    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toMatchObject({
+      status: "saved",
+      version: { name: "Before Claude's changes" },
+    });
+    // The second of a burst isn't saved: the first holds the site from before it.
+    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toEqual({
+      status: "skipped",
+    });
 
     const result = await session.forSession(sessionId).listVersions();
     expect(result.status === "ok" ? result.versions.length : 0).toBe(1);
@@ -359,10 +365,12 @@ describe("the versions IPC calls (4.6)", () => {
     );
     const sessionId = session.current()?.sessionId ?? "";
 
-    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toBe("saved");
-    expect(await versions.saveVersionBefore("9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d", "x")).toBe(
-      "failed",
-    );
+    expect(await versions.saveVersionBefore(sessionId, "Before Claude's changes")).toMatchObject({
+      status: "saved",
+    });
+    expect(
+      await versions.saveVersionBefore("9b2f6c1e-4d3a-4f7b-8e21-5c6d7a8b9c0d", "x"),
+    ).toMatchObject({ status: "failed" });
 
     // Once, for the opening it saves in; another opening's request saves nothing.
     expect(flush).toHaveBeenCalledOnce();

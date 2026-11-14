@@ -7,6 +7,7 @@ import {
   type AssistantEvent,
   type DraftRequest,
 } from "../../shared/ipc/assistant.js";
+import type { ToolClient } from "./assistant-loop.js";
 import { createAssistantService } from "./assistant-service.js";
 
 const SESSION = "1c2d3e4f-5a6b-4c7d-8e9f-a0b1c2d3e4f5";
@@ -61,6 +62,8 @@ function setUp(
     signIn?: "signed-in" | "cancelled";
     /** Answers a model call: its body and headers. */
     chat?: (body: Record<string, unknown>, headers: Headers) => Response | Promise<Response>;
+    /** The tool layer's answer to each tool call by its name (6.9b): a command's runs `before`. */
+    tools?: Record<string, () => unknown>;
   } = {},
 ) {
   const dir = mkdtempSync(join(tmpdir(), "webforge-assistant-"));
@@ -74,6 +77,8 @@ function setUp(
       : openRouter(String(url), init),
   ) as unknown as typeof fetch;
   let month = new Date(2026, 10, 13);
+  const versions: string[] = [];
+  const connections = { open: 0 };
   const service = createAssistantService({
     dir,
     credentials: {
@@ -102,9 +107,41 @@ function setUp(
       opened.push(url);
     },
     now: () => month,
+    connectTools: async (beforeCommand) => {
+      connections.open += 1;
+      const answers = options.tools ?? {};
+      return {
+        client: {
+          listTools: async () => ({
+            tools: Object.keys(answers).map((name) => ({
+              name,
+              inputSchema: { type: "object" as const },
+            })),
+          }),
+          callTool: (async ({ name }: { name: string }) => {
+            // Every tool here but `outline` is a command, which saves the version first.
+            if (name !== "outline") await beforeCommand();
+            const answer = (await answers[name]?.()) ?? {
+              status: "invalid",
+              message: "No such tool",
+            };
+            return { content: [{ type: "text", text: JSON.stringify(answer) }] };
+          }) as unknown as ToolClient["callTool"],
+        },
+        close: async () => {
+          connections.open -= 1;
+        },
+      };
+    },
+    saveVersionBefore: async (_session, name) => {
+      versions.push(name);
+      return `version-${versions.length}`;
+    },
   });
   return {
     service,
+    versions,
+    connections,
     keys,
     fetchFn,
     events,
@@ -514,4 +551,111 @@ describe("the assistant's service (6.9a, ADR 0026)", () => {
       "http://ai.example.com/v1/models",
     );
   });
+  it("runs a reply: its steps, the conversation's safety version once, and how it ended (6.9b)", async () => {
+    let calls = 0;
+    const { service, events, versions, connections } = await ready({
+      chat: () => {
+        calls += 1;
+        return calls % 2 === 1
+          ? sse(toolCall("editText", { nodeId: "hero" }), finished("tool_calls"))
+          : sse({ choices: [{ delta: { content: "Done." } }] }, finished("stop"));
+      },
+      tools: {
+        editText: () => ({
+          status: "done",
+          label: "AI (Assistant): Edited Hero text",
+          entryId: `h${calls}`,
+          target: { pageId: "home", nodeId: "hero" },
+        }),
+      },
+    });
+
+    // One reply at a time for a site, even for two messages sent at once.
+    const [sent, second] = await Promise.all([
+      service.send(SESSION, "Say Fresh bread", { pageId: "home" }),
+      service.send(SESSION, "And another", {}),
+    ]);
+    if (sent.status !== "sending") throw new Error(`not sent: ${sent.status}`);
+    expect(second).toEqual({ status: "busy" });
+    await vi.waitFor(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    const replied = events.filter((event) => "replyId" in event && event.replyId === sent.replyId);
+    expect(replied.map((event) => event.type)).toEqual([
+      "reply-started",
+      "tool",
+      "safety-version",
+      "tool",
+      "text",
+      "reply-done",
+    ]);
+    expect(events.at(-1)).toMatchObject({
+      stop: "end",
+      steps: [{ entryId: "h1", label: "AI (Assistant): Edited Hero text" }],
+    });
+    expect(versions).toEqual(["Before the assistant's changes"]);
+    expect(connections.open).toBe(0);
+    const [turn] = await service.conversation(SESSION);
+    expect(turn).toMatchObject({
+      message: "Say Fresh bread",
+      reply: "Done.",
+      state: "done",
+      stop: "end",
+      safetyVersion: { versionId: "version-1", label: "Before the assistant's changes" },
+    });
+
+    // The same conversation's next change saves no other version; a new conversation's does.
+    await service.send(SESSION, "Again", {});
+    await vi.waitFor(() =>
+      expect(events.filter((event) => event.type === "reply-done")).toHaveLength(2),
+    );
+    expect(versions).toHaveLength(1);
+    await service.newConversation(SESSION);
+    await service.send(SESSION, "Once more", {});
+    await vi.waitFor(() =>
+      expect(events.filter((event) => event.type === "reply-done")).toHaveLength(3),
+    );
+    expect(versions).toHaveLength(2);
+  });
+
+  it("stops a reply on Stop, before its next call", async () => {
+    let release: () => void = () => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { service, events, fetchFn } = await ready({
+      chat: () => sse(toolCall("outline", {}), finished("tool_calls")),
+      tools: { outline: () => held.then(() => ({ status: "done", data: {} })) },
+    });
+    const sent = await service.send(SESSION, "Look around", {});
+    if (sent.status !== "sending") throw new Error("not sent");
+    await vi.waitFor(() => expect(events.some((event) => event.type === "tool")).toBe(true));
+    await service.stop(sent.replyId);
+    release();
+    await vi.waitFor(() => expect(events.at(-1)?.type).toBe("reply-done"));
+    expect(events.at(-1)).toMatchObject({ stop: "stopped" });
+    // One model call: none after Stop.
+    const chats = vi
+      .mocked(fetchFn)
+      .mock.calls.filter(([url]) => String(url).endsWith("/chat/completions"));
+    expect(chats).toHaveLength(1);
+  });
 });
+
+/** A streamed tool call, its arguments whole. */
+function toolCall(name: string, args: unknown) {
+  return {
+    choices: [
+      {
+        delta: {
+          tool_calls: [
+            { index: 0, id: "call-1", function: { name, arguments: JSON.stringify(args) } },
+          ],
+        },
+      },
+    ],
+  };
+}
+
+/** A model call's end, with its cost. */
+function finished(reason: string) {
+  return { choices: [{ delta: {}, finish_reason: reason }], usage: { cost: 0.001 } };
+}

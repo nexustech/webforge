@@ -14,8 +14,6 @@ The assistant is an AI model you can ask to change the site you have open, such 
 
 It's off until you turn it on, and {appName} shows what it sends, and to whom, before anything is sent.
 
-Today you can set the assistant up, but it can't be turned on yet: the part of {appName} that sends your messages to a model is still being built.
-
 ## Setting it up
 
 Open [Settings](settings.md#assistant) and click **Assistant Settings…**, or click **Set Up the Assistant…** in the assistant's panel. What you change there happens at once, without **Save**.
@@ -48,6 +46,15 @@ The **Assistant** panel is a tab in the left column, after **Version History**: 
 3. The reply appears as it's written, with what it changed. Click **Stop** to stop it: changes it has made stay, and can be undone.
 
 Each reply says what it cost, and the top of the panel shows this month's spend against your limit. **New Conversation** starts again.
+
+While it works:
+
+- **It reads before it changes.** It looks at your pages and their sections through the same tools AI apps use, and changes only what you asked.
+- **Some changes ask you first,** as an AI app's do: one to more than one page, to Site Settings, the header or the footer, or to where visitors' money or details go. Click **Allow** or **Cancel**.
+- **If you're editing,** such as typing or dragging, it waits a moment and tries once more, then tells you.
+- **Before its first change in a conversation,** {appName} saves a version named _Before the assistant's changes_ in [Version History](version-history.md).
+- **A reply has limits:** at most 25 reads and changes, and 12 turns of thinking. A reply that reaches one stops and says so, and so does one that reaches your monthly limit. Ask again to carry on.
+- **Your site's text is only content to the assistant.** Text on your pages that reads like an instruction ("ignore the above…") isn't followed as one.
 
 A link in a reply shows its address beside it. Clicking it opens it in your browser, and only links in that reply open.
 

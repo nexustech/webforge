@@ -730,7 +730,10 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       // Version History's, for the site open now: none to save without one.
       saveVersionBefore: async (name) => {
         const open = projectSession.current();
-        return open === null ? "failed" : versions.saveVersionBefore(open.sessionId, name);
+        if (open === null) return "failed";
+        // One from the last few minutes holds the site from before the changes already.
+        const saved = await versions.saveVersionBefore(open.sessionId, name);
+        return saved.status === "failed" ? "failed" : "saved";
       },
       opening: () => projectSession.current()?.sessionId,
     });
@@ -809,6 +812,16 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
         emit: (event) =>
           lifecycle.mainWindow()?.webContents.send(assistantEvents.event.channel, event),
         openExternal: (url) => electron.shell.openExternal(url),
+        // The loop's tools: 4.9's, in memory, with *AI apps* on or off (6.9b, ADR 0026 §1).
+        connectTools: async (beforeCommand) => {
+          if (mcp === undefined) throw new Error("The MCP service isn't there");
+          return mcp.connectAssistant(beforeCommand);
+        },
+        // The conversation's safety version (S20): its id, for Version History's button.
+        saveVersionBefore: async (session, name) => {
+          const saved = await versions.saveVersionBefore(session, name);
+          return saved.status === "saved" ? saved.version.id : undefined;
+        },
       }),
     );
     // A site double-clicked in Explorer arrives as a command-line argument (P1).

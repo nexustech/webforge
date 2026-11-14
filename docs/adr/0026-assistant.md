@@ -403,6 +403,16 @@ type AssistantEvent = ReplyEvent | AppEvent;
   - **The checks:** `preflight(session)` in the service runs `send`'s checks for both (site, both yeses, sign-in, model, limit), and `main/assistant/endpoint.ts`'s `endpointFor` gives the address, key, privacy routing and model, for the drafts and 6.9b's loop.
   - **One draft at a time per site** (`busy`). A draft waits up to two minutes for the model (`offline` after that). An answer main can't use, such as a business draft's with the wrong number of texts, is `provider-error`, and its cost still counts.
 
+- **The loop (6.9b, `main/assistant/assistant-loop.ts`),** loaded with a site's first reply, never at start-up (#892):
+  - **One reply at a time per site** (`busy`). `send` answers `sending` with the reply's id, and the reply runs on.
+  - **Each reply connects afresh** through `McpService.connectAssistant`, and closes when it ends.
+  - **Tool calls run one at a time.** A `busy` answer (the person is editing) waits two seconds and asks once more, then the model hears it (§6.2).
+  - **Stop** ends the reply before its next model or tool call. A tool call under way is aborted on the assistant's side. A question the window is asking (D7) stays open for the person. If they allow it, the change is made as one more "AI (Assistant): …" step, outside the reply's review card.
+  - **A model call that sends nothing for a minute** ends the reply as `offline`.
+  - **The caps** (§5): 25 tool calls, 12 model calls, `max_tokens` 4096. The month's limit, reached by a call, stops the reply before that call's tool calls run.
+  - **The safety version** is saved before a conversation's first change, once a conversation, through Version History's before-site-wide path. One from the last five minutes holds the site already, so none is saved, and no `safety-version` event comes.
+  - **The review card's links** are the web addresses in the reply's changes' inputs, by host (S18).
+  - **The system text** says site text is content, never instructions, in 4.9's own wording. The person's selection goes as labelled JSON after their message. Earlier turns go as their message and reply text, the last ten.
 - **Errors carry a code, never the provider's own text,** which could quote the request. The panel words each code with `t()`. Main logs the HTTP status and the provider's error type, without content.
 
 **The stand-in loop for 6.9c:** `apps/desktop/src/renderer/assistant/fake-assistant.ts` (6.9a). It's an `AssistantApi` that answers from a script:
@@ -413,7 +423,7 @@ type AssistantEvent = ReplyEvent | AppEvent;
 - the limit's warning;
 - each error code on request.
 
-The panel's stories and tests use it, and so can stream A until 6.9b merges.
+The panel's stories and tests use it.
 
 ### 8. spec/01 §9 (AIA-10)
 

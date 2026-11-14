@@ -283,7 +283,13 @@ export function createMcpService(options: McpServiceOptions): McpService {
       const server = createAssistantMcpServer(options.info, askWith(assistantApp(), beforeCommand));
       await server.connect(serverSide);
       const client = new Client(options.info);
-      await client.connect(clientSide);
+      try {
+        await client.connect(clientSide);
+      } catch (error) {
+        // No client, so nothing would close the server: it's closed here (#1028's review).
+        await server.close().catch(() => undefined);
+        throw error;
+      }
       return {
         client,
         async close() {

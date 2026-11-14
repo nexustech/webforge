@@ -37,7 +37,7 @@ export type Versions = {
    * connection ("Before ‹app›'s changes", 4.9). The same path as the renderer's before-site-wide
    * version, so it keeps Versions kept too.
    */
-  saveVersionBefore(sessionId: string, name: string): Promise<"saved" | "failed">;
+  saveVersionBefore(sessionId: string, name: string): Promise<SaveVersionResult>;
 };
 
 /**
@@ -118,9 +118,6 @@ export function registerVersionsHandlers(
     });
   });
   return {
-    saveVersionBefore: async (sessionId, name) => {
-      const saved = await save(sessionId, name, "before-site-wide");
-      return saved.status === "failed" ? "failed" : "saved";
-    },
+    saveVersionBefore: (sessionId, name) => save(sessionId, name, "before-site-wide"),
   };
 }
