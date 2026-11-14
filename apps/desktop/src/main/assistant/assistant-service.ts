@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { join } from "node:path";
+import { t } from "@webforge/i18n";
 import { z } from "zod";
 import { linkToOpen } from "../../shared/assistant-links.js";
 import {
@@ -15,6 +17,7 @@ import type { AssistantService } from "../assistant-ipc.js";
 import type { CredentialStore } from "../credential-store.js";
 import { createJsonStore, type JsonStoreFiles } from "../json-store.js";
 import { logFailure } from "../log.js";
+import type { ReplyOutcome, Selection, ToolClient } from "./assistant-loop.js";
 import { isLoopback, keySafeAt, streamChat } from "./chat-client.js";
 import {
   type EndpointResult,
@@ -29,8 +32,8 @@ import type { OpenRouterSignIn } from "./openrouter-sign-in.js";
 /**
  * The assistant in main (6.9a, ADR 0026): its settings, consent, keys, sign-in, the month's spend
  * and the model list, behind the `assistant` domain's calls, and the one-off drafts of 6.9d's
- * writing help (#873). `send` and the conversation are 6.9b's loop: until it lands, a message
- * that passes every check is answered `failed`.
+ * writing help (#873). `send` runs 6.9b's loop (`assistant-loop.ts`) for a message that passes
+ * every check, keeping the conversation in memory.
  *
  * Kept in `assistant.json` in the app's user data, with no content: the provider and model, the
  * limit, the month's spend, the app's consent version and each site's yes by its project id
@@ -134,9 +137,28 @@ export type AssistantServiceOptions = {
   readonly emit: (event: AssistantEvent) => void;
   /** Opens a web address in the person's browser (`shell.openExternal`). */
   readonly openExternal: (url: string) => Promise<void>;
+  /**
+   * Connects to 4.9's tool layer for a reply (6.9b): the MCP service's in-memory client, with
+   * `beforeCommand` run ahead of each of its commands.
+   */
+  readonly connectTools: (
+    beforeCommand: () => Promise<void>,
+  ) => Promise<{ readonly client: ToolClient; close(): Promise<void> }>;
+  /**
+   * Saves a version of `session`'s site named `name` before the assistant's first change (S20):
+   * `saved` with its id; `held` when one from the last few minutes holds the site from before
+   * already; `failed` when none could be saved.
+   */
+  readonly saveVersionBefore: (session: string, name: string) => Promise<SafetySave>;
   readonly now?: () => Date;
   readonly files?: JsonStoreFiles;
 };
+
+/** What came of saving the safety version: see {@link AssistantServiceOptions.saveVersionBefore}. */
+type SafetySave =
+  | { readonly status: "saved"; readonly versionId: string }
+  | { readonly status: "held" }
+  | { readonly status: "failed" };
 
 /** What {@link Assistant.preflight} found: the site's project id, or why nothing may be sent. */
 type Preflight =
@@ -205,6 +227,13 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
   let signingIn: Promise<SignInResult> | null = null;
   /** The sites with a draft under way, by project id. */
   const drafting = new Set<string>();
+  /** The replies under way, by their id: Stop aborts one. A site has one at a time. */
+  const replies = new Map<string, { readonly project: string; readonly stop: AbortController }>();
+  /**
+   * Each conversation's safety version (S20), by project id, saved before its first change. One
+   * that failed is forgotten, so the next change tries again.
+   */
+  const safety = new Map<string, Promise<SafetySave>>();
 
   const status = async (): Promise<AssistantStatus> => {
     const file = await read();
@@ -269,6 +298,113 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       logFailure("assistant key", error);
       return false;
     }
+  };
+
+  /**
+   * The conversation's safety version, saved before its first change (S20, ADR 0026 §1): the
+   * reply that saved it says so, and keeps it for a panel opened again.
+   */
+  const safetyFirst = async (session: string, project: string, turn: ConversationTurn) => {
+    const pending = safety.get(project);
+    if (pending !== undefined) {
+      await pending;
+      return;
+    }
+    const label = t("assistant.version.before");
+    const saving = options
+      .saveVersionBefore(session, label)
+      .catch((): SafetySave => ({ status: "failed" }));
+    safety.set(project, saving);
+    const saved = await saving;
+    if (saved.status === "failed") {
+      // Not saved: the next change tries again. The command still runs, as an AI app's does.
+      safety.delete(project);
+      return;
+    }
+    // A recent version holds the site from before already: kept for the conversation, unnamed.
+    if (saved.status === "held") return;
+    const { versionId } = saved;
+    turn.safetyVersion = { versionId, label };
+    options.emit({ session, type: "safety-version", replyId: turn.replyId, versionId, label });
+  };
+
+  /** Runs `turn`'s reply, telling the window as it goes, and keeps how it ended. */
+  const reply = async (run: {
+    readonly session: string;
+    readonly project: string;
+    readonly turn: ConversationTurn;
+    readonly earlier: readonly ConversationTurn[];
+    readonly selection: Selection;
+    readonly target: Extract<EndpointResult, { status: "ok" }>;
+    readonly signal: AbortSignal;
+  }) => {
+    const { session, project, turn } = run;
+    const { replyId } = turn;
+    /** Whether the reply's site is still the one open: another's is never its to read or change. */
+    const stillOpen = () => options.projectOf(session) === project;
+    let outcome: ReplyOutcome;
+    try {
+      // Loaded with the first reply, never at start-up (#892): the loop brings the commands
+      // package, and the MCP service the SDK.
+      const { runReply } = await import("./assistant-loop.js");
+      const tools = await options.connectTools(async () => {
+        // The window acts on whichever site it has open: not this reply's, no change is asked.
+        if (!stillOpen()) throw new Error("The reply's site isn't open");
+        await safetyFirst(session, project, turn);
+      });
+      try {
+        outcome = await runReply({
+          fetchFn: options.fetchFn,
+          endpoint: run.target.endpoint,
+          model: run.target.model,
+          tools: tools.client,
+          earlier: run.earlier,
+          message: turn.message,
+          selection: run.selection,
+          signal: run.signal,
+          stillOpen,
+          addCost: async (usd) => (await service.addCost(usd)).reached,
+          onText: (delta) => {
+            turn.reply += delta;
+            options.emit({ session, type: "text", replyId, delta });
+          },
+          onTool: (call) => options.emit({ session, type: "tool", replyId, ...call }),
+        });
+      } finally {
+        await tools.close().catch(() => undefined);
+      }
+    } catch (error) {
+      logFailure("assistant reply", error);
+      outcome = { status: "failed", error: "failed", costUsd: null, steps: [] };
+    }
+    turn.costUsd = outcome.costUsd;
+    turn.steps = [...outcome.steps];
+    if (outcome.status === "failed") {
+      turn.state = "failed";
+      turn.error = outcome.error;
+      options.emit({
+        session,
+        type: "reply-failed",
+        replyId,
+        error: outcome.error,
+        steps: turn.steps,
+      });
+      return;
+    }
+    turn.state = "done";
+    turn.stop = outcome.stop;
+    turn.links = [...outcome.links];
+    const { month } = await status();
+    options.emit({
+      session,
+      type: "reply-done",
+      replyId,
+      stop: outcome.stop,
+      costUsd: outcome.costUsd,
+      month: { spentUsd: month.spentUsd, limitUsd: month.limitUsd },
+      steps: turn.steps,
+      links: turn.links,
+    });
   };
 
   const service: Assistant = {
@@ -445,11 +581,48 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       return { status: "ok", project };
     },
     endpoint: async () => endpointFor(await read(), options.credentials, options.appName),
-    send: async (session) => {
+    send: async (session, text, context) => {
       const checked = await service.preflight(session);
       if (checked.status !== "ok") return { status: checked.status };
-      // 6.9b's loop answers from here.
-      return { status: "failed" };
+      const { project } = checked;
+      if ([...replies.values()].some((each) => each.project === project)) {
+        return { status: "busy" };
+      }
+      // Taken before anything is awaited, so a second message can't start a second reply.
+      const replyId = randomUUID();
+      const stop = new AbortController();
+      replies.set(replyId, { project, stop });
+      const target = await service.endpoint();
+      if (target.status !== "ok") {
+        replies.delete(replyId);
+        return { status: target.status };
+      }
+      const turns = conversations.get(project) ?? [];
+      conversations.set(project, turns);
+      const earlier = [...turns];
+      const turn: ConversationTurn = {
+        replyId,
+        message: text,
+        reply: "",
+        state: "replying",
+        costUsd: null,
+        steps: [],
+        links: [],
+      };
+      turns.push(turn);
+      options.emit({ session, type: "reply-started", replyId, model: target.model });
+      void reply({
+        session,
+        project,
+        turn,
+        earlier,
+        selection: context,
+        target,
+        signal: stop.signal,
+      })
+        .catch((error: unknown) => logFailure("assistant reply", error))
+        .finally(() => replies.delete(replyId));
+      return { status: "sending", replyId };
     },
     draft: async (session, request) => {
       const checked = await service.preflight(session);
@@ -479,10 +652,15 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
         drafting.delete(checked.project);
       }
     },
-    stop: async () => undefined,
+    stop: async (replyId) => {
+      replies.get(replyId)?.stop.abort();
+    },
     newConversation: async (session) => {
       const project = options.projectOf(session);
-      if (project !== undefined) conversations.delete(project);
+      if (project === undefined) return;
+      conversations.delete(project);
+      // A new conversation's first change saves a version of its own.
+      safety.delete(project);
     },
     conversation: async (session) => {
       const project = options.projectOf(session);

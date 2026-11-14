@@ -3,6 +3,8 @@ export const assistant = {
   "assistant.conversation": "Conversation with the assistant",
   "assistant.you": "You",
   "assistant.name": "Assistant",
+  // The version saved before a conversation's first change (S20, ADR 0026 §1).
+  "assistant.version.before": "Before the assistant's changes",
   "assistant.empty":
     "Ask the assistant to change your site, for example “Make the Hero's title shorter”.",
   "assistant.replying": "Replying…",

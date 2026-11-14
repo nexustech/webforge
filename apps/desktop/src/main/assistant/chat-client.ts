@@ -9,7 +9,7 @@ import type { AssistantErrorCode } from "../../shared/ipc/assistant.js";
  */
 
 /** A message of the conversation, as Chat Completions takes it. */
-type ChatMessage =
+export type ChatMessage =
   | { readonly role: "system" | "user"; readonly content: string }
   | {
       readonly role: "assistant";
@@ -19,7 +19,7 @@ type ChatMessage =
   | { readonly role: "tool"; readonly tool_call_id: string; readonly content: string };
 
 /** A tool the model may call: an MCP tool's name, description and JSON Schema, one to one. */
-type ChatTool = {
+export type ChatTool = {
   readonly type: "function";
   readonly function: {
     readonly name: string;
@@ -59,6 +59,8 @@ export type ChatRequest = {
   /** Per model call (ADR 0026 §5). */
   readonly maxTokens: number;
   readonly signal?: AbortSignal;
+  /** Called for each streamed chunk, text or not: a caller's idle timeout starts again (6.9b). */
+  readonly onActivity?: () => void;
 };
 
 /** How the model call ended. */
@@ -245,6 +247,7 @@ export async function streamChat(
       // Stop: read nothing more, even from a server that goes on sending. Leaving the loop
       // cancels the stream.
       if (aborted()) return { status: "aborted", text };
+      request.onActivity?.();
       if (data === "[DONE]") break;
       let json: unknown;
       try {
