@@ -1,5 +1,3 @@
-import { toast } from "@webforge/editor-ui";
-import { t } from "@webforge/i18n";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { siteSession } from "../storage/index.js";
 import { registerAssistantPanel } from "./register-assistant-panel.js";
@@ -20,9 +18,6 @@ export const assistantPanelArea: Area<WindowContext> = {
       api: api.assistant,
       sessionId: siteSession(),
       openSettings: assistantSettings.open,
-      // Until main can open a reply's link itself (6.9a part 5's openLink), its address is copied.
-      openLink: (href) =>
-        void api.clipboard.copyText(href).then(() => toast(t("assistant.link.copied"))),
     });
     return () => {
       removePanel();

@@ -1,24 +1,18 @@
 import { t } from "@webforge/i18n";
 import { Lexer, type Token, type Tokens } from "marked";
 import { Fragment, type ReactNode } from "react";
+import { webAddress } from "../../shared/assistant-links.js";
 
 /** Props of {@link ReplyText}. */
 export type ReplyTextProps = {
   /** The reply's text so far, as the model streamed it. */
   readonly text: string;
-  /** Opens a web address in the person's browser, once they have clicked its link. */
+  /**
+   * Opens a link in the person's browser, once they have clicked it: its address as the reply wrote
+   * it (the Markdown token's `href`), which main finds in its copy of the reply.
+   */
   readonly onOpenLink: (href: string) => void;
 };
-
-/** A link's address as the reply shows it, or none when it isn't a web address. */
-function webAddress(href: string): URL | undefined {
-  try {
-    const url = new URL(href);
-    return url.protocol === "https:" || url.protocol === "http:" ? url : undefined;
-  } catch {
-    return undefined;
-  }
-}
 
 /** A token's own text, for what is shown as text: raw HTML, a table. */
 const rawText = (token: Token) => ("text" in token ? String(token.text) : token.raw);
@@ -37,9 +31,9 @@ function ReplyLink({
   readonly children: ReactNode;
   readonly onOpenLink: (href: string) => void;
 }) {
-  const url = webAddress(href);
-  if (url === undefined) return <>{children}</>;
-  const address = url.href;
+  // As main opens it, tidied: none when it isn't a web address.
+  const address = webAddress(href);
+  if (address === undefined) return <>{children}</>;
   return (
     <a
       href={address}
@@ -47,7 +41,8 @@ function ReplyLink({
       className="font-medium underline underline-offset-2 hover:no-underline"
       onClick={(event) => {
         event.preventDefault();
-        onOpenLink(address);
+        // As the reply wrote it: main opens only an address its copy of the reply holds.
+        onOpenLink(href);
       }}
     >
       {children}
