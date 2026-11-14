@@ -167,4 +167,15 @@ describe("withRunnableCode (#649)", () => {
     ]);
     expect(withRunnableCode(all, RUNS_ALL_CODE)).toBe(all);
   });
+
+  it("blanks CSS that can load files or show text unless it's let in, as a script's (#975)", () => {
+    const css = 'body { background: image-set("https://tracker.example/p.png" 1x); }';
+    const withCss: SiteSnapshot = {
+      ...site(),
+      code: { css, js: "skim()", head: "<b>mine</b>", bodyEnd: "  " },
+    };
+
+    expect(withRunnableCode(withCss, () => false).code?.css).toBe("");
+    expect(withRunnableCode(withCss, (text) => text === css).code?.css).toBe(css);
+  });
 });
