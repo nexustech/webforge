@@ -8,12 +8,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FieldDrag } from "../canvas-engine.js";
 import { boxHandleFields, SpacingHandles } from "./spacing-handles.js";
 
-declare global {
-  // Tells React that act() is available (testing without @testing-library).
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const sectionFields = boxHandleFields(siteLibrary, "Section");
 
 let root: Root;

@@ -22,11 +22,6 @@ import { Editor } from "./Editor.js";
 import type { EditorSession } from "./editor-session.js";
 import { saveAsSharedSection } from "./shared-sections.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const compileCss = vi.fn(async () => ({
   status: "compiled" as const,
   css: ".btn{}",

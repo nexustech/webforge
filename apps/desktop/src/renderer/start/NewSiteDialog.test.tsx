@@ -8,11 +8,6 @@ import type { NewSiteRequest } from "../../shared/ipc/project.js";
 import type { TemplateSummary } from "../../shared/ipc/templates.js";
 import { arrangeTemplates, NewSiteDialog } from "./NewSiteDialog.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 const bakery: TemplateSummary = {
   id: "cafe",
   category: "food",

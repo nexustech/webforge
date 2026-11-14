@@ -190,11 +190,16 @@ describe("registerExportHandlers", () => {
     );
   });
 
-  it("still exports when the site can't remember the choices", async () => {
+  it("still exports when the site can't remember the choices, and logs why by its code (#990)", async () => {
     const { invoke, choices } = setUp(toFolder("/sites/my-site"));
     choices.write.mockRejectedValueOnce(new Error("read-only"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(invoke(request)).resolves.toMatchObject({ status: "exported" });
+    expect(error).toHaveBeenCalledWith(
+      expect.stringMatching(/^Webforge could not keep the site's export choices \(code=/),
+    );
+    expect(String(error.mock.calls)).not.toContain("read-only");
   });
 
   it("answers the open site's last choices, and remembers new ones at once (3.3)", async () => {

@@ -40,11 +40,6 @@ import { createPuckEngine } from "./puck-engine.js";
 // Puck's DOM contract (R8): every selector and private API the engine uses, checked against Puck
 // as it is installed. A Puck upgrade that renames one fails here, not in the E2E suite.
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 // Puck's canvas starts a 500 ms timer when it mounts: let it end before the environment goes.
 afterAll(async () => {
   await new Promise((resolve) => setTimeout(resolve, 600));

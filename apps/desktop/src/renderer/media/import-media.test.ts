@@ -3,21 +3,13 @@ import { describe, expect, it, vi } from "vitest";
 import { MAX_MEDIA_BYTES } from "../../shared/ipc/media.js";
 import type { MediaImportResult } from "../../shared/ipc-contract.js";
 import { setFailureLog } from "../log.js";
+import { PRICES as prices } from "../testing/fixtures.js";
 import {
   type DroppedFileLike,
   importDrop,
   importDroppedFiles,
   importItems,
 } from "./import-media.js";
-
-const prices: MediaMeta = {
-  id: "prices" as MediaId,
-  hash: "b".repeat(64),
-  name: "prices",
-  fileName: "prices.pdf",
-  kind: "file",
-  mimeType: "application/pdf",
-};
 
 /** A dropped file of `size` bytes that only says so; reading it gives a few bytes. */
 function file(name: string, size: number): DroppedFileLike & { read: ReturnType<typeof vi.fn> } {

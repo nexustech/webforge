@@ -1,4 +1,10 @@
-import type { PageId, SiteDoc } from "@webforge/model";
+import {
+  type FileMeta,
+  type ImageMeta,
+  mediaIdSchema,
+  type PageId,
+  type SiteDoc,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { starterSite } from "../../shared/starter-site.js";
 import { createEditorSession, type EditorSession } from "../editor/editor-session.js";
@@ -15,6 +21,29 @@ import { createPreferencesStore, type PreferencesStore } from "../shell/preferen
  * and the registries an area registers into. The fake canvas engine is in
  * `@webforge/test-utils/renderer`; a fake preload API in `./preload.ts` (tests only).
  */
+
+/** A photo in Media, as the media tests and the clipboard's use it: the shop, with no alt text yet. */
+export const PHOTO: ImageMeta = {
+  id: mediaIdSchema.parse("photo"),
+  hash: "a".repeat(64),
+  name: "shop",
+  fileName: "shop.jpg",
+  kind: "image",
+  mimeType: "image/jpeg",
+  width: 1600,
+  height: 1000,
+  alt: "",
+};
+
+/** A document in Media: the price list, a PDF. */
+export const PRICES: FileMeta = {
+  id: mediaIdSchema.parse("prices"),
+  hash: "b".repeat(64),
+  name: "prices",
+  fileName: "prices.pdf",
+  kind: "file",
+  mimeType: "application/pdf",
+};
 
 /**
  * An editor session on `site` (a new site's starter page by default), with the site library, on

@@ -11,11 +11,6 @@ import type { SaveStatus as Status } from "./autosave.js";
 import type { LoadedSite } from "./load-site.js";
 import { type AutosaveApi, useAutosave } from "./use-autosave.js";
 
-declare global {
-  var IS_REACT_ACT_ENVIRONMENT: boolean;
-}
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
-
 let container: HTMLDivElement;
 let root: Root;
 let session: EditorSession;
