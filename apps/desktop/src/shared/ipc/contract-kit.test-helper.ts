@@ -298,7 +298,10 @@ const refusesUnknownKeys = (schema: z.ZodType, value: unknown) =>
 /** Whether `schema` is a strict object, or a union of them, at its top. */
 function isStrict(schema: z.ZodType): boolean {
   const def = defOf(schema);
-  if (def.type === "object") return defOf(def.catchall as z.ZodType)?.type === "never";
+  // A strict object has a catchall that takes nothing; a loose one has none.
+  if (def.type === "object") {
+    return def.catchall !== undefined && defOf(def.catchall as z.ZodType).type === "never";
+  }
   if (def.type === "union") return (def.options as z.ZodType[]).every(isStrict);
   if (def.type === "nullable" || def.type === "optional")
     return isStrict(def.innerType as z.ZodType);
