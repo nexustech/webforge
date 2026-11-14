@@ -21,12 +21,13 @@ const STEPS = [
   { entryId: "e3", label: "AI (Assistant): Changed Brand colour" },
 ];
 
-/** The card in `undo`'s state, with a link to another website. */
-const card = (undo: ReplyUndo): Story => ({
+/** The card in `undo`'s state, with a link to another website, and any changes refused. */
+const card = (undo: ReplyUndo, refused: readonly { label: string }[] = []): Story => ({
   render: () => (
     <div className="w-80 rounded-md border border-border bg-panel p-3">
       <ReviewCard
         steps={STEPS}
+        refused={refused}
         links={[{ host: "business.example.com", href: "https://business.example.com/bakery" }]}
         undo={undo}
         onKeep={() => undefined}
@@ -46,3 +47,8 @@ export const MovedOn: Story = card({ kind: "moved-on" });
 
 /** Undone already. */
 export const Undone: Story = card({ kind: "undone" });
+
+/** Held changes applied (6.9e), one of them refused as the page had changed since. */
+export const AppliedWithRefused: Story = card({ kind: "undo", to: "e0" }, [
+  { label: "AI (Assistant): Removed Text from Hero" },
+]);

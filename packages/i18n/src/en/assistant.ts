@@ -65,6 +65,21 @@ export const assistant = {
   "assistant.review.movedOn":
     "Other changes have been made since. To take back everything the assistant changed, restore the version saved before its changes.",
   "assistant.review.versions": "Open Version History",
+  // Changes a reply couldn't make when they were applied, as the site had changed (6.9e).
+  "assistant.review.refused.one": "1 change couldn't be made, as the page has changed since:",
+  "assistant.review.refused.other":
+    "{count} changes couldn't be made, as the page has changed since:",
+  // Review before applying (AIA-5, 6.9e): a reply's changes held until the person applies them.
+  "assistant.held.title.one": "1 change is waiting for you",
+  "assistant.held.title.other": "{count} changes are waiting for you",
+  "assistant.held.description": "Nothing on your site has changed yet.",
+  "assistant.held.apply": "Apply Changes",
+  "assistant.held.applying": "Applying…",
+  "assistant.held.discard": "Discard",
+  "assistant.held.discarded": "These changes were discarded. Your site is as it was.",
+  "assistant.held.unavailable": "These changes aren't available any more. Your site is as it was.",
+  "assistant.held.replaced":
+    "These changes were dropped when you sent a new message. Your site is as it was.",
   // Consent (product/14 §5.3, AIA-6, ADR 0026 §4): the app's once, then each site's.
   "assistant.consent.title": "Turn on the assistant?",
   "assistant.consent.description":
@@ -187,6 +202,9 @@ export const assistant = {
   "assistant.model.usePricey": "Use This Model",
   "assistant.model.cancel": "Cancel",
   "assistant.model.advanced": "Advanced",
+  "assistant.model.reviewBeforeApplying": "Review changes before they're made",
+  "assistant.model.reviewBeforeApplyingHint":
+    "The assistant shows what it would change, and makes nothing until you click Apply Changes.",
   "assistant.model.allowRetaining": "Allow models that may keep requests",
   "assistant.model.allowRetainingHint":
     "Off: only models whose providers don't keep or train on what you send.",

@@ -16,6 +16,8 @@ export type ReviewCardProps = {
   readonly steps: readonly ReviewStep[];
   /** Links to other websites the reply added or changed, by host as a browser reads it (S18). */
   readonly links: readonly { readonly host: string; readonly href: string }[];
+  /** Held changes it couldn't make when they were applied, as the site had changed (6.9e). */
+  readonly refused?: readonly { readonly label: string }[] | undefined;
   /** What *Undo these changes* can do now ({@link replyUndo}). */
   readonly undo: ReplyUndo;
   /** Closes the card, keeping the changes. */
@@ -41,6 +43,7 @@ const LABEL_PREFIX = /^AI \([^)]*\): /;
 export function ReviewCard({
   steps,
   links,
+  refused = [],
   undo,
   onKeep,
   onUndo,
@@ -78,6 +81,20 @@ export function ReviewCard({
           );
         })}
       </ul>
+      {refused.length === 0 ? null : (
+        <div>
+          <p className="m-0 text-muted-foreground">
+            {plural("assistant.review.refused", refused.length)}
+          </p>
+          <ul className="m-0 list-none p-0 text-muted-foreground">
+            {refused.map((change, index) => (
+              <li key={`${index}:${change.label}`} className="px-1">
+                {change.label.replace(LABEL_PREFIX, "")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       {links.length === 0 ? null : (
         <div>
           <h4 className="m-0 text-xs font-semibold">{t("assistant.review.links")}</h4>

@@ -8,6 +8,7 @@ import type { ReplyStep } from "../../shared/ipc/assistant.js";
 import type { AssistantPanelModel } from "./assistant-state.js";
 import { AppConsentDialog, reachOf, SiteConsent } from "./Consent.js";
 import { ConversationView, errorKey } from "./ConversationView.js";
+import { HeldCard } from "./HeldCard.js";
 import { MonthReadout } from "./MonthReadout.js";
 import { ReviewCard } from "./ReviewCard.js";
 import { replyUndo } from "./reply-undo.js";
@@ -46,7 +47,7 @@ export type AssistantPanelProps = {
  */
 export function AssistantPanel(props: AssistantPanelProps) {
   const { model, history } = props;
-  const { status, site, turns, replying, refused } = useStore(model.state);
+  const { status, site, turns, replying, refused, applying } = useStore(model.state);
   const position = useStore(history.state);
   const [kept, setKept] = useState<ReadonlySet<string>>(new Set());
   const [text, setText] = useState("");
@@ -137,13 +138,30 @@ export function AssistantPanel(props: AssistantPanelProps) {
           turns={turns}
           onOpenLink={props.onOpenLink}
           afterReply={(turn) => {
-            const steps = turns.find((each) => each.replyId === turn.replyId)?.steps ?? [];
-            if (turn.state !== "done" || steps.length === 0 || kept.has(turn.replyId)) return null;
+            const shown = turns.find((each) => each.replyId === turn.replyId);
+            if (shown === undefined || turn.state !== "done" || kept.has(turn.replyId)) return null;
+            // Review before applying (6.9e): its changes wait for the person, or were dropped.
+            if (shown.held.length > 0 || shown.heldOutcome !== undefined) {
+              return (
+                <HeldCard
+                  held={shown.held}
+                  links={shown.links}
+                  outcome={shown.heldOutcome}
+                  applying={applying === turn.replyId}
+                  onApply={() => void model.applyHeld(turn.replyId)}
+                  onDiscard={() => void model.discardHeld(turn.replyId)}
+                />
+              );
+            }
+            const { steps } = shown;
+            const refusedChanges = shown.refused ?? [];
+            if (steps.length === 0 && refusedChanges.length === 0) return null;
             const ids = steps.map((step) => step.entryId);
             return (
               <ReviewCard
                 steps={steps}
-                links={turns.find((each) => each.replyId === turn.replyId)?.links ?? []}
+                links={shown.links}
+                refused={refusedChanges}
                 undo={replyUndo(position, ids)}
                 onKeep={() => setKept(new Set([...kept, turn.replyId]))}
                 onUndo={() => {

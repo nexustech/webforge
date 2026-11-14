@@ -28,6 +28,7 @@ Open [Settings](settings.md#assistant) and click **Assistant Settings…**, or c
 
 Under **Advanced**:
 
+- **Review changes before they're made:** off at first, so the assistant changes your site as it works. Turned on, it shows what it would change and waits for you. See [Reviewing changes first](#reviewing-changes-first).
 - **Allow models that may keep requests:** off at first, so only models whose providers don't keep or train on what you send are offered. Turning it on warns you first.
 - **An OpenRouter key, instead of signing in:** paste a key from your OpenRouter account and click **Save Key**.
 
@@ -88,3 +89,12 @@ After a reply that changed your site, a card says how many changes it made:
 - **Undo These Changes** undoes all of that reply's changes. **Redo** brings them back.
 
 If you've made other changes since, the card can't undo them on their own. Click **Open Version History** and restore the version saved before the assistant's changes. See [Version History](version-history.md).
+
+## Reviewing changes first
+
+With **Review changes before they're made** on, in Assistant Settings under **Advanced**, the assistant works on a copy of your site and changes nothing on it until you say so. After its reply, a card lists what it would change, and any links to other websites by their address.
+
+- **Apply Changes** makes them, one by one, each a step in [Undo History](undo-and-history.md) as if it had made them at once. A change that needs your OK asks first, as usual. If you've changed the page since and one of them no longer fits, that one isn't made, and the card says which.
+- **Discard** drops them. Your site is as it was.
+
+Only the last reply's changes wait: sending a new message drops the ones before, and so do **New Conversation** and opening another site.

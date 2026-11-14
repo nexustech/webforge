@@ -250,17 +250,35 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
 
   /** `session`'s site's held changes of reply `replyId`, if it's still open as it was then. */
   const holdingOf = (session: string, replyId: string) => {
-    const project = options.projectOf(session);
+    const project = dropStale(session);
     if (project === undefined) return undefined;
     const holding = held.get(project);
     if (holding === undefined || holding.replyId !== replyId) return undefined;
-    if (holding.session !== session) {
-      // Another opening of the site: its stage went with the window's, so they go too.
-      held.delete(project);
-      settled(project, replyId);
-      return undefined;
-    }
     return { project, holding };
+  };
+
+  /**
+   * Drops `session`'s site's held changes if another opening of it made them: their stage went
+   * with that window's. Its card is told, so it never offers an Apply that finds nothing
+   * (#1063's review). The site's project id, or undefined if `session` isn't the open site.
+   */
+  const dropStale = (session: string) => {
+    const project = options.projectOf(session);
+    if (project === undefined) return undefined;
+    const holding = held.get(project);
+    if (holding !== undefined && holding.session !== session) {
+      held.delete(project);
+      settled(project, holding.replyId);
+      options.emit({
+        session,
+        type: "held",
+        replyId: holding.replyId,
+        state: "discarded",
+        steps: [],
+        refused: [],
+      });
+    }
+    return project;
   };
   /** The sites whose held changes are being applied. */
   const applying = new Set<string>();
@@ -791,7 +809,8 @@ export function createAssistantService(options: AssistantServiceOptions): Assist
       held.delete(project);
     },
     conversation: async (session) => {
-      const project = options.projectOf(session);
+      // A panel opened again never shows held changes it can't apply.
+      const project = dropStale(session);
       return project === undefined ? [] : structuredClone(conversations.get(project) ?? []);
     },
     openLink: async (session, replyId, href) => {
