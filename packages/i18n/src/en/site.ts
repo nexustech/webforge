@@ -202,6 +202,8 @@ export const site = {
   "site.code.trust.part.head": "Custom Code in Settings: Head",
   "site.code.trust.part.bodyEnd": "Custom Code in Settings: End of page",
   "site.code.trust.part.js": "Custom Code in Settings: Script",
+  // The site's CSS, when it loads files or adds text (#975).
+  "site.code.trust.part.css": "Custom Code in Settings: Stylesheet",
   "site.code.trust.allowList": "Addresses allowed in Custom Code",
   // A Custom Code element on a page, in the prompt's list: "Custom Code element on Home"
   // (product owner, 1 Nov 2026). Site Check keeps its "{element} on {page}".

@@ -60,6 +60,10 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
     expect(await call("assistant:stop", REPLY)).toBeNull();
     expect(await call("assistant:new-conversation", SESSION)).toBeNull();
     expect(await call("assistant:conversation", SESSION)).toEqual([]);
+    expect(await call("assistant:open-link", SESSION, REPLY, "https://example.com/")).toEqual({
+      status: "refused",
+    });
+    expect(service.openLink).toHaveBeenCalledWith(SESSION, REPLY, "https://example.com/");
   });
 
   it("checks what it's given: no empty or overlong message, no limit out of range", async () => {
@@ -73,6 +77,10 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
       call("assistant:update", { provider: { kind: "server", baseUrl: "file:///etc/passwd" } }),
     ).rejects.toThrow();
     await expect(call("assistant:stop", "not a reply")).rejects.toThrow();
+    await expect(
+      call("assistant:open-link", SESSION, "not a reply", "https://a.b/"),
+    ).rejects.toThrow();
+    await expect(call("assistant:open-link", SESSION, REPLY, "x".repeat(2001))).rejects.toThrow();
   });
 
   it("refuses a renderer it doesn't trust", async () => {

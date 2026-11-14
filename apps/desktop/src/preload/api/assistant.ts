@@ -25,6 +25,7 @@ export const assistantApi = (call: Call, subscribe: Subscribe): AssistantApi => 
     await call("assistantNewConversation", session);
   },
   conversation: (session) => call("assistantConversation", session),
+  openLink: (session, replyId, href) => call("assistantOpenLink", session, replyId, href),
   onEvent: (listener) =>
     subscribe(assistantEvents.event.channel, (...args) => {
       const parsed = assistantEvents.event.args.safeParse(args);
