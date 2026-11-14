@@ -144,6 +144,40 @@ A collection (a Blog; later a Portfolio or Events) is a set of pages that share 
 
 The built-in assistant ([ADR 0026](adr/0026-assistant.md), 6.9a–d, #870–#873) runs its loop in main and reuses the AI apps' tools; the renderer only shows the conversation. Its panel and review card are in `renderer/assistant/`, and its contract with main is the `assistant` IPC domain (`shared/ipc/assistant.ts`, `main/assistant-ipc.ts`). The ADR fixes that contract: a change to it needs a note to stream A.
 
+## AI tools
+
+Every tool an AI app or the assistant can call is one `ToolDef` (#981, `@webforge/commands`), and nothing else keys on its name. A definition has:
+
+- its name, its kind (`query` or `command`), its zod `input` and its description;
+- who answers it (`answeredBy`): main, or the window, for the site open in it;
+- whether a version is saved before it (`savesVersionFirst`);
+- whether the assistant has it too (`forAssistant`).
+
+The MCP server lists each one with the JSON Schema made from its zod, and the untrusted-site-text line added. It passes the definition with each call, and main routes the call and saves the version by it. Where a new one goes:
+
+- **A query or command of the command layer** goes in `QUERIES` or `COMMANDS` (`packages/commands`): `AI_TOOLS` lists it.
+- **One the window answers itself** goes in `WINDOW_TOOLS` (`apps/desktop/src/shared/ai-tools.ts`), with its handler in `renderer/ai/area.ts`'s `WindowToolHandlers`. One without a handler fails typecheck.
+- **One main answers** goes in `MAIN_TOOLS`, with its handler in `mcp-service.ts`'s `MAIN_TOOL_HANDLERS`, which is checked the same way.
+
+`main/__snapshots__/mcp-tools.json.snap` is what `tools/list` gives: a change to a tool shows there, for review.
+
+## AI clients
+
+The kinds of AI app the person can pair in AI apps (4.9, #980), such as Claude Desktop, Claude Code and VS Code, are a registry, so the dialog has no vendor in its code. To add one:
+
+1. **A module in `apps/desktop/src/shared/ai-clients/`** exports an `AiClient`:
+   - its `id`, kept as the paired app's kind, so never renamed;
+   - whether it `verifiesServer` (checks it's Webforge before it sends its key, as Claude Desktop's extension does);
+   - its label, default name and hint for _Which app?_;
+   - and, where it has them, its setup `steps`, something to `copy` besides the key, an `install` button and what each outcome says, and a `note` on where the key goes.
+
+   The dialog shows each part it has, and adds the risk line for an app that doesn't verify the server.
+2. **Its entry in `AI_CLIENTS` and `AI_CLIENT_IDS`** (`shared/ai-clients/index.ts`). `AI_CLIENTS`' order is _Which app?_'s.
+3. **Its strings under `aiApps.client.<id>.*`.**
+4. **If main installs it,** such as by writing a file or opening a link: a module in `apps/desktop/src/main/ai-clients/` with its `ClientInstall`, and its entry in `clientInstalls`. A test checks that main installs exactly the kinds that offer an install.
+
+Nothing else changes: pairing stores the kind, `mcp:install` dispatches by it, and removing an app removes what any install left.
+
 ## IPC domains
 
 The renderer reaches the main process only through `window.webforge`, the preload's typed API (`shared/webforge-api.ts`), which areas get as `ctx.api`. A domain is:
@@ -196,4 +230,9 @@ No UI text is hard-coded (`pnpm ui-strings` checks): every string goes through `
   - `storyPreloadApi(overrides)` (`testing/story-preload.ts`): the same without Vitest, which Storybook doesn't load: a call not overridden does nothing;
   - `panelStory()` and `dialogStory()`: the story helpers.
 - **Why there are two places:** packages can't import the app, so only the engine fake is in `@webforge/test-utils`, and the helpers typed by the app are in the app (B6). That's a change from the issue's wording.
+- **Wait for events, not times** ([ADR 0014](adr/0014-time-budgets-under-load.md), #1052). Tests run beside other work, so a clock in a test fails when the machine is busy:
+  - **Wait for what you test:** a promise, `vi.waitFor` or `findBy…` on the state you mean, or fake timers. Never sleep a fixed time and hope.
+  - **Waits are generous by default:** `WAIT_MS` (`vitest.load.ts`), 10 s scaled to the run, for Testing Library, `vi.waitFor` and `expect.poll` in the app and the editor UI. A wait ends as soon as what it waits for happens, so don't shorten it.
+  - **Don't assert a duration.** Check the order of events, or the work done (a thread's CPU time, what was read or encoded). A pattern that could backtrack gets an input on which it would take minutes, and the test's timeout fails it. Speed belongs in `pnpm bench` and `e2e/perf`.
+  - **A heavy test states its timeout and why,** in a comment: one that builds a site, loads the pipeline's resources, starts a worker or a process, or runs a compiler. Scale it with `scaledTestTimeout()`. The defaults stay for the rest.
 - **Stories** run in Storybook's axe and screenshot checks (`pnpm visual:docker`; commit new screenshots with the PR). A story that draws after it renders says so with `data-story-state="drawing"` until it has, as `panelStory()` does.

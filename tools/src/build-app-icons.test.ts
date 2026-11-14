@@ -85,11 +85,13 @@ describe("the app's icons (#454)", () => {
 describe("drawing the icons", () => {
   const masters = readMasters();
 
+  // Its own timeout (#1052): it draws three icons from the masters' SVG, the first loading the
+  // renderer, which took 19.7 s on CI's Windows runner with coverage on, against the 5 s default.
   it("draws each size as a square PNG, for Windows and Linux and on Apple's grid", () => {
     expect(pngSize(Buffer.from(renderIcon(masters, 16)))).toEqual([16, 16]);
     expect(pngSize(Buffer.from(renderIcon(masters, 48)))).toEqual([48, 48]);
     expect(pngSize(Buffer.from(renderMacIcon(masters, 64)))).toEqual([64, 64]);
-  });
+  }, 60_000);
 
   it("refuses a master that isn't an SVG document", () => {
     expect(() => renderMacIcon({ full: "<png/>", small: "<png/>" }, 64)).toThrow(/isn't an SVG/);

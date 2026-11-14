@@ -9,6 +9,9 @@ import { MAX_MEDIA_BYTES } from "../shared/ipc/media.js";
 import { ProjectSession } from "./project-session.js";
 import { createStorageWriter, type WriterThread } from "./storage-writer.js";
 
+// Timeouts (#1052): the real writer thread starts on TypeScript's sources and writes 50 and 120 MB
+// files, seconds alone and far longer on a busy disk, so those tests set their own timeouts.
+
 /** The open site, as a call for its opening reaches it (R6, #663). */
 const scoped = (session: ProjectSession) => session.forSession(session.current()?.sessionId ?? "");
 
@@ -262,7 +265,7 @@ describe("the storage writer thread (R13b)", () => {
     await writer.stop();
   });
 
-  it("stores a 50 MB image keeping the main thread busy for less than 50 ms", async () => {
+  it("stores a 50 MB image without keeping the main thread busy", async () => {
     const dir = tempDir();
     const sitePath = join(dir, "Large.wforge");
     ProjectStore.create(sitePath, { name: "Large" }).close();
@@ -278,13 +281,16 @@ describe("the storage writer thread (R13b)", () => {
     }
   }, 60_000);
 
-  it("cleans a closing site's file up keeping the main thread busy for less than 50 ms (#664)", async () => {
+  it("cleans a closing site's file up without keeping the main thread busy (#664)", async () => {
     const sitePath = join(tempDir(), "Cluttered.wforge");
     const store = ProjectStore.create(sitePath, { name: "Cluttered" });
     // 120 MB that nothing names any more, as undone imports leave behind: garbage collection, then
     // a VACUUM that rewrites the file.
+    // One buffer, filled afresh for each: 120 MB of garbage left on this thread would be collected
+    // while the close is measured.
+    const blob = new Uint8Array(10 * 1024 * 1024);
     for (let index = 0; index < 12; index += 1) {
-      store.putBlob(new Uint8Array(10 * 1024 * 1024).fill(index + 1), "image/png");
+      store.putBlob(blob.fill(index + 1), "image/png");
     }
     store.close();
     const before = statSync(sitePath).size;
@@ -296,15 +302,23 @@ describe("the storage writer thread (R13b)", () => {
     const { user, system } = process.threadCpuUsage(cpu);
 
     // As for an import: this thread's CPU time, which an IPC call would wait behind.
-    expect((user + system) / 1000).toBeLessThan(50);
+    expect((user + system) / 1000).toBeLessThan(MAIN_THREAD_BUDGET_MS);
     expect(statSync(sitePath).size).toBeLessThan(before / 10);
     ProjectStore.open(sitePath).close();
   }, 120_000);
 
-  /** Imports `photo`, checking the main thread is never held up for 50 ms or more. */
+  /**
+   * The most CPU time this thread may spend on an import or a close (#664, #1052). Windows counts a
+   * thread's CPU time in ticks of 15.6 ms, so a quiet run reads 0, 16, 31 or 47 ms, and a busy one a
+   * tick more: 50 ms failed under load. Doing the work here instead costs far more: hashing the
+   * 50 MB image alone takes 280–313 ms of this thread, and a VACUUM of the file seconds.
+   */
+  const MAIN_THREAD_BUDGET_MS = 100;
+
+  /** Imports `photo`, checking the main thread is never held up for long. */
   async function expectQuickImport(session: ProjectSession, photo: string) {
     // The CPU time this thread spent while the import ran, which an IPC call would wait behind: a
-    // total under 50 ms means no single hold-up reached 50 ms. CPU time rather than wall or
+    // total under the budget means no single hold-up reached it. CPU time rather than wall or
     // event-loop time, which a loaded machine stretches (CI runs test files side by side). It
     // doesn't count waiting for the disk, so the import also writes nothing on this thread: its
     // bytes, asset and fingerprint are all the writer's (SiteFileWriter).
@@ -318,7 +332,7 @@ describe("the storage writer thread (R13b)", () => {
       size: MAX_MEDIA_BYTES,
       media: { kind: "image", mimeType: "image/png", width: 2000, height: 1500 },
     });
-    expect(busy).toBeLessThan(50);
+    expect(busy).toBeLessThan(MAIN_THREAD_BUDGET_MS);
     const blob = await scoped(session).readMedia(result.status === "stored" ? result.hash : "");
     expect(blob?.data.byteLength).toBe(MAX_MEDIA_BYTES);
   }
