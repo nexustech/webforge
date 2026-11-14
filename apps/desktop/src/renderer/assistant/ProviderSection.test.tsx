@@ -94,13 +94,14 @@ describe("where the assistant's requests go (ADR 0026 §2–§3)", () => {
       baseUrl: "http://ai.example.org/v1",
       hasKey: false,
     });
-    api.setKey.mockResolvedValue({ status: "keychain-unavailable" });
+    api.setKey.mockResolvedValue({ status: "insecure-server" });
 
     await user.type(
       screen.getByLabelText("Key for this server, if it needs one"),
       "sk-test{Enter}",
     );
     expect(api.setKey).toHaveBeenCalledWith("sk-test");
-    expect(await screen.findByText(/can't keep the key safely/)).toBeDefined();
+    // An http:// server that isn't on this computer (6.9a part 5).
+    expect(await screen.findByText(/would travel unencrypted/)).toBeDefined();
   });
 });
