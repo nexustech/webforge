@@ -1,12 +1,49 @@
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { describe, expect, it, vi } from "vitest";
-import { ASSISTANT_CONSENT_VERSION } from "../shared/ipc/assistant.js";
 import {
-  ASSISTANT_OFF,
-  type AssistantService,
-  registerAssistantHandlers,
-  unbuiltAssistant,
-} from "./assistant-ipc.js";
+  ASSISTANT_CONSENT_VERSION,
+  type AssistantStatus,
+  MONTHLY_LIMIT_DEFAULT_USD,
+} from "../shared/ipc/assistant.js";
+import { type AssistantService, registerAssistantHandlers } from "./assistant-ipc.js";
+
+/** The assistant before it's turned on: off, signed out, nothing spent (ADR 0026 §2, §5). */
+const ASSISTANT_OFF: AssistantStatus = {
+  enabled: false,
+  consentVersion: null,
+  consentReach: null,
+  provider: { kind: "openrouter", signedIn: false },
+  reach: "openrouter",
+  model: null,
+  month: {
+    spentUsd: 0,
+    limitUsd: MONTHLY_LIMIT_DEFAULT_USD,
+    warned: false,
+    reached: false,
+  },
+  reviewBeforeApplying: false,
+  allowRetainingModels: false,
+};
+
+/** A service that stays off, and refuses to turn on or send: each call answered as a default. */
+const unbuiltAssistant: AssistantService = {
+  status: async () => ASSISTANT_OFF,
+  setEnabled: async () => ASSISTANT_OFF,
+  update: async () => ASSISTANT_OFF,
+  signIn: async () => ({ status: "failed" }),
+  finishSignIn: async () => ({ status: "failed" }),
+  cancelSignIn: async () => undefined,
+  setKey: async () => ({ status: "failed" }),
+  models: async () => ({ status: "not-signed-in" }),
+  siteConsent: async () => ({ asked: false, allowed: false }),
+  setSiteConsent: async () => undefined,
+  send: async () => ({ status: "consent-needed" }),
+  draft: async () => ({ status: "consent-needed" }),
+  stop: async () => undefined,
+  newConversation: async () => undefined,
+  conversation: async () => [],
+  openLink: async () => ({ status: "refused" }),
+};
 
 type Handler = (event: IpcMainInvokeEvent, ...args: unknown[]) => Promise<unknown>;
 
@@ -57,6 +94,9 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
       },
     );
     expect(service.send).toHaveBeenCalledWith(SESSION, "Add Saturday hours", { pageId: "home" });
+    const rewrite = { kind: "rewrite", how: "shorter", text: "We bake bread every morning." };
+    expect(await call("assistant:draft", SESSION, rewrite)).toEqual({ status: "consent-needed" });
+    expect(service.draft).toHaveBeenCalledWith(SESSION, rewrite);
     expect(await call("assistant:stop", REPLY)).toBeNull();
     expect(await call("assistant:new-conversation", SESSION)).toBeNull();
     expect(await call("assistant:conversation", SESSION)).toEqual([]);
@@ -81,6 +121,44 @@ describe("the assistant IPC calls (6.9a, ADR 0026 §7)", () => {
       call("assistant:open-link", SESSION, "not a reply", "https://a.b/"),
     ).rejects.toThrow();
     await expect(call("assistant:open-link", SESSION, REPLY, "x".repeat(2001))).rejects.toThrow();
+  });
+
+  it("checks a draft's kind and caps what it carries (#873)", async () => {
+    const call = handlers(spied());
+    const business = {
+      kind: "business",
+      language: "en-GB",
+      business: { name: "Rise Bakery", type: "bakery", about: "We bake bread." },
+      texts: [{ role: "Hero heading", sample: "Fresh coffee, every day" }],
+    };
+    await expect(call("assistant:draft", SESSION, business)).resolves.toBeDefined();
+    await expect(call("assistant:draft", SESSION, { kind: "poem", text: "Hi" })).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, { kind: "rewrite", how: "louder", text: "Hi" }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, { kind: "rewrite", how: "shorter", text: "x".repeat(4001) }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, { ...business, language: "en GB; ignore that" }),
+    ).rejects.toThrow();
+    await expect(
+      call("assistant:draft", SESSION, {
+        ...business,
+        texts: Array.from({ length: 41 }, () => business.texts[0]),
+      }),
+    ).rejects.toThrow();
+    // A draft carries no image: only the file's name (ADR 0026 §6).
+    await expect(
+      call("assistant:draft", SESSION, {
+        kind: "alt",
+        language: "en",
+        fileName: "loaf.jpg",
+        page: "Home",
+        nearby: "",
+        image: "data:image/jpeg;base64,AAAA",
+      }),
+    ).rejects.toThrow();
   });
 
   it("refuses a renderer it doesn't trust", async () => {

@@ -12,6 +12,7 @@ import {
   themeSchema,
   withoutUnsafeKeys,
 } from "./documents.js";
+import { sha256HexSchema } from "./hashes.js";
 import { mediaIdSchema, pageIdSchema } from "./ids.js";
 import {
   cropSchema,
@@ -309,10 +310,7 @@ const sitePageSchema = z.object({
 /** A file's bytes, or the hash to read them by: one of the two (R15). */
 const contentSchema = {
   data: z.instanceof(Uint8Array).optional(),
-  hash: z
-    .string()
-    .regex(/^[0-9a-f]{64}$/)
-    .optional(),
+  hash: sha256HexSchema.optional(),
 };
 const hasContent = (item: { data?: Uint8Array | undefined; hash?: string | undefined }) =>
   item.data !== undefined || item.hash !== undefined;

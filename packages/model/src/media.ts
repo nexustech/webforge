@@ -1,5 +1,7 @@
 import { z } from "zod";
+import { sha256HexSchema } from "./hashes.js";
 import { type MediaId, mediaIdSchema } from "./ids.js";
+import { isKeyOf } from "./records.js";
 
 /** Image types Media accepts; the export makes WebP plus a fallback in the original type (X2). */
 export const IMAGE_MIME_TYPES = ["image/jpeg", "image/png"] as const;
@@ -72,7 +74,7 @@ const fileNameSchema = z
   .max(255)
   .regex(/^[^/\\]+$/);
 
-const blobHashSchema = z.string().regex(/^[0-9a-f]{64}$/);
+const blobHashSchema = sha256HexSchema;
 
 const mediaBaseShape = {
   id: mediaIdSchema,
@@ -124,7 +126,7 @@ export function mediaItem(
   media: Readonly<Record<MediaId, MediaMeta>>,
   id: string,
 ): MediaMeta | undefined {
-  return Object.hasOwn(media, id) ? media[id as MediaId] : undefined;
+  return isKeyOf(media, id) ? media[id] : undefined;
 }
 /** An image in Media. */
 export type ImageMeta = z.infer<typeof imageMetaSchema>;

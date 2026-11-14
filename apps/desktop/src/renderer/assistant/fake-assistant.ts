@@ -7,6 +7,8 @@ import {
   type AssistantModel,
   type AssistantStatus,
   type ConversationTurn,
+  type DraftRequest,
+  type DraftResult,
   MONTHLY_LIMIT_DEFAULT_USD,
   type ReplyLink,
   type ReplyStep,
@@ -46,7 +48,19 @@ export type FakeAssistantOptions = {
   readonly delayMs?: number;
   /** Each site's consent: `asked`, `allowed`. */
   readonly siteConsent?: { readonly asked: boolean; readonly allowed: boolean };
+  /** What each draft is answered with (#873); by default, a text for each one asked. */
+  readonly draft?: DraftResult | ((request: DraftRequest) => DraftResult);
 };
+
+/** The fake's draft when none is scripted: one text, or one per text a business draft asks. */
+const defaultDraft = (request: DraftRequest): DraftResult => ({
+  status: "ok",
+  texts:
+    request.kind === "business"
+      ? request.texts.map((text) => `${text.role} for ${request.business.name}.`)
+      : [`A ${request.kind} drafted by the assistant.`],
+  costUsd: 0.01,
+});
 
 /** A tested, mid-priced model, as OpenRouter's list would give it. */
 export const FAKE_MODEL: AssistantModel = {
@@ -228,6 +242,11 @@ export function createFakeAssistant(options: FakeAssistantOptions = {}) {
       replying.set(replyId, { session, stopped: false });
       void play(session, replyId, reply);
       return { status: "sending", replyId };
+    },
+    draft: async (_session, request) => {
+      await pause();
+      const draft = options.draft ?? defaultDraft;
+      return typeof draft === "function" ? draft(request) : draft;
     },
     stop: async (replyId) => {
       const live = replying.get(replyId);

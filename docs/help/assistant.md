@@ -1,0 +1,63 @@
+---
+
+id: assistant
+title: The assistant
+summary: Ask {appName}'s built-in assistant to change your site, and check, keep or undo what it changed.
+related: [settings, undo-and-history, version-history, ai-apps]
+updated: 2026-11-14
+status: partial
+---
+
+# The assistant
+
+The assistant is an AI model you can ask to change the site you have open, such as "Make the Hero's title shorter". It makes the changes itself, and each one is a step in [Undo History](undo-and-history.md) named _AI (Assistant): …_, so you can undo it like your own.
+
+It's off until you turn it on, and {appName} shows what it sends, and to whom, before anything is sent.
+
+Today you can set the assistant up, but it can't be turned on yet: the part of {appName} that sends your messages to a model is still being built.
+
+## Setting it up
+
+Open [Settings](settings.md#assistant) and click **Assistant Settings…**, or click **Set Up the Assistant…** in the assistant's panel. What you change there happens at once, without **Save**.
+
+- **Turn On…** shows what the assistant sends and who receives it. Read it, then click **Turn On**. **Turn Off** stops it at once and deletes its key from this computer.
+- **Where requests go:**
+  - _OpenRouter_, an online service with many AI models. Your own OpenRouter account pays. Click **Sign In with OpenRouter…** and finish in your browser, or **Sign In with a Code…** and paste the code OpenRouter shows.
+  - _Ollama on this computer_ or _LM Studio on this computer_: a model running on this computer. Nothing leaves it.
+  - _Another server_: a server you name that offers AI models. Enter its **Server address**, starting with `https://`, and click **Use This Server**. If it needs a key, enter it and click **Save Key**. An address starting with `http://` on another computer is unencrypted, so no key is sent to it.
+- **Model:** choose **The model that answers**. Each shows about what a reply costs, and the ones {appName} has tested say _tested_. A model that costs more than most asks first.
+- **Monthly limit:** between $1 and $1,000 ($5 at first). {appName} tells you at 80%, and the assistant stops at the limit until next month.
+
+Under **Advanced**:
+
+- **Allow models that may keep requests:** off at first, so only models whose providers don't keep or train on what you send are offered. Turning it on warns you first.
+- **An OpenRouter key, instead of signing in:** paste a key from your OpenRouter account and click **Save Key**.
+
+## Each site asks first
+
+The first time you use the assistant on a site, {appName} asks whether to use it there, and says who will receive the site's content. Click **Use on This Site** or **Not Now**. Your answer stays on this computer, never in the site file. A model on this computer doesn't ask, because nothing leaves it.
+
+**Stop Using on This Site**, at the top of the panel, takes your yes back. **Use on This Site** gives it again.
+
+## Asking for a change
+
+The **Assistant** panel is a tab in the left column, after **Version History**: the sparkles.
+
+1. Select the section or element you mean, if there is one: the assistant is told what's selected and which page you're on.
+2. Type what you'd like in **Message the assistant**, and press Enter or click **Send**. Shift+Enter starts a new line.
+3. The reply appears as it's written, with what it changed. Click **Stop** to stop it: changes it has made stay, and can be undone.
+
+Each reply says what it cost, and the top of the panel shows this month's spend against your limit. **New Conversation** starts again.
+
+A link in a reply shows its address beside it. Clicking it opens it in your browser, and only links in that reply open.
+
+## Checking what it changed
+
+After a reply that changed your site, a card says how many changes it made:
+
+- Click a change to show it on the page.
+- **Links to other websites** lists any links it added, by website, so a look-alike address stands out.
+- **Keep** closes the card.
+- **Undo These Changes** undoes all of that reply's changes. **Redo** brings them back.
+
+If you've made other changes since, the card can't undo them on their own. Click **Open Version History** and restore the version saved before the assistant's changes. See [Version History](version-history.md).

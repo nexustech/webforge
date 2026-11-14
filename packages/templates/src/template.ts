@@ -7,6 +7,7 @@ import {
   migrateSite,
   type SiteDoc,
   SiteFormatError,
+  sha256HexSchema,
   type ThemeTokens,
 } from "@webforge/model";
 import { z } from "zod";
@@ -59,7 +60,7 @@ export const templateImageSchema = z.strictObject({
   name: mediaNameSchema,
   mimeType: z.enum(IMAGE_MIME_TYPES),
   /** SHA-256 of the file: a test checks it, so the manifest always describes the file. */
-  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  hash: sha256HexSchema,
   width: z.int().positive(),
   height: z.int().positive(),
   alt: z.string(),

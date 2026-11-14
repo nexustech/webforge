@@ -1,6 +1,7 @@
 export type { Srgb } from "./colors.js";
 export {
   contrastRatio,
+  hexOf,
   hexToOklch,
   inverseColors,
   oklchToSrgb,
@@ -50,6 +51,7 @@ export {
   FONTSOURCE_API,
   fontAxesSchema,
   fontCategory,
+  fontFileNameSchema,
   fontIdSchema,
   fontMetadataSchema,
   fontPackage,

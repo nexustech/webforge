@@ -86,6 +86,14 @@ const aiResponseSchema = z.union([
     status: z.literal("done"),
     label: z.string().min(1),
     id: z.string().min(1).optional(),
+    /** Its undo step and what it changed: the assistant's alone (6.9b), never an AI app's. */
+    entryId: z.string().min(1).max(200).optional(),
+    target: z
+      .strictObject({
+        pageId: z.string().min(1).max(200),
+        nodeId: z.string().min(1).max(200).optional(),
+      })
+      .optional(),
   }),
   z.strictObject({
     status: z.enum(["invalid", "not-found", "refused", "busy", "declined"]),

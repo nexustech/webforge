@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { Embed } from "./embed.js";
+import { StrokeIcon } from "./stroke-icon.js";
 import { BUTTON_CLASSES } from "./typography.js";
 
 /** What an embed shows: a video, or a map. */
@@ -47,20 +48,7 @@ export function EmbedFrame({
         {/* Shown by the script, which makes it work. */}
         <div className="flex flex-col items-center gap-2" data-wf-embed-controls="" hidden>
           <button type="button" className={BUTTON_CLASSES.primary} data-wf-embed-load="">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              width="20"
-              height="20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <path d={kind === "video" ? PLAY_ICON : MAP_ICON} />
-            </svg>
+            <StrokeIcon path={kind === "video" ? PLAY_ICON : MAP_ICON} />
             {kind === "video"
               ? t("siteText.embed.playVideo", { provider })
               : t("siteText.embed.showMap", { provider })}

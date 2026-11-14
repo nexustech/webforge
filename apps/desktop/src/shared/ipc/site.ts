@@ -6,6 +6,7 @@ import {
   focalPointSchema,
   IMAGE_MIME_TYPES,
   mediaNameSchema,
+  sha256HexSchema,
   siteSnapshotSchema,
 } from "@webforge/model";
 import { z } from "zod";
@@ -19,7 +20,7 @@ const exportMediaSchema = z.strictObject({
   id: z.string().regex(/^[A-Za-z0-9_-]+$/),
   name: mediaNameSchema,
   mimeType: z.enum(IMAGE_MIME_TYPES),
-  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  hash: sha256HexSchema,
   alt: z.string(),
   focal: focalPointSchema.optional(),
   crop: cropSchema.optional(),
@@ -30,7 +31,7 @@ const exportDocumentSchema = z.strictObject({
   id: z.string().regex(/^[A-Za-z0-9_-]+$/),
   name: mediaNameSchema,
   mimeType: z.enum(FILE_MIME_TYPES),
-  hash: z.string().regex(/^[0-9a-f]{64}$/),
+  hash: sha256HexSchema,
 });
 
 import type { ExportChoices } from "@webforge/model";

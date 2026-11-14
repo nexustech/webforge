@@ -105,7 +105,7 @@ describe("saveSiteCode", () => {
     expect(session.history.document.getState().settings.allowedExternalUrls).toEqual([]);
   });
 
-  it("says what the owner wrote in the code that runs and the addresses, never the CSS (#649)", () => {
+  it("says what the owner wrote in the code, the CSS (#975) and the addresses (#649)", () => {
     const session = sessionWith();
     const written = vi.fn();
     session.onCodeWritten(written);
@@ -119,6 +119,7 @@ describe("saveSiteCode", () => {
       ["", CODE.head],
       ["", CODE.bodyEnd],
       ["", CODE.js],
+      ["", CODE.css],
       ["", "https://maps.example.com\nhttps://fonts.example.com"],
     ]);
   });

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { NodeDoc } from "./documents.js";
 import type { CollectionId, SharedSectionId } from "./ids.js";
 import { createSite } from "./site-doc.js";
-import { designAt, eachElement, elementsAt } from "./site-elements.js";
+import { designAt, eachElement, elementsAt, pageWithCopy } from "./site-elements.js";
 
 const HOURS = "shared-hours" as SharedSectionId;
 const BLOG = "blog" as CollectionId;
@@ -100,5 +100,29 @@ describe("elementsAt (#936)", () => {
     expect(ids("constructor")).toEqual([]);
     expect(designAt(doc, BLOG)?.name).toBe("Blog");
     expect(designAt(doc, HOURS)).toBeUndefined();
+  });
+});
+
+describe("pageWithCopy (#988)", () => {
+  it("finds a page with a copy of the shared section: the shown page first, then in order", () => {
+    const base = site();
+    const copy = (id: string): NodeDoc => ({
+      type: "SharedSectionCopy",
+      props: { id, sharedSectionId: HOURS },
+    });
+    const [home, notFound] = base.pageOrder;
+    if (home === undefined || notFound === undefined) throw new Error("No pages");
+    const homePage = base.pages[home];
+    const notFoundPage = base.pages[notFound];
+    if (homePage === undefined || notFoundPage === undefined) throw new Error("No pages");
+    homePage.doc.content.push(copy("on-home"));
+    notFoundPage.doc.content.push(copy("on-not-found"));
+
+    expect(pageWithCopy(base, HOURS, notFound)).toEqual({
+      pageId: notFound,
+      copyId: "on-not-found",
+    });
+    expect(pageWithCopy(base, HOURS, home)).toEqual({ pageId: home, copyId: "on-home" });
+    expect(pageWithCopy(base, "other", home)).toBeUndefined();
   });
 });

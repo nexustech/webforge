@@ -144,7 +144,7 @@ const signInResultSchema = z.strictObject({
 type SignInResult = z.infer<typeof signInResultSchema>;
 
 /** Why a message wasn't sent, or a reply stopped early. The panel words each with `t()`. */
-const ASSISTANT_ERRORS = [
+export const ASSISTANT_ERRORS = [
   /** The app's or this site's yes is missing (§4). */
   "consent-needed",
   "not-signed-in",
@@ -262,6 +262,97 @@ const turnSchema = z.strictObject({
 
 /** See {@link turnSchema}. */
 export type ConversationTurn = z.infer<typeof turnSchema>;
+
+/** The longest piece of the site's text a draft takes, and the longest page it reads. */
+const DRAFT_TEXT_MAX = 4000;
+const DRAFT_PAGE_MAX = 8000;
+
+/** The longest draft main gives back: twice the longest text a rewrite takes. */
+export const DRAFT_RESULT_MAX = 2 * DRAFT_TEXT_MAX;
+
+/** The most texts one page's draft rewrites for the business (QS-7). */
+const DRAFT_TEXTS_MAX = 40;
+
+/** The site's language, as Site Settings holds it (`en-GB`): what a draft is written in. */
+const languageSchema = z
+  .string()
+  .regex(/^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{1,8})*$/)
+  .max(35);
+
+/**
+ * What a draft is of (#873): the site's text it needs and nothing more (§6), for main to word the
+ * request. Main holds the prompts; the renderer names only the kind.
+ */
+const draftRequestSchema = z.discriminatedUnion("kind", [
+  /** The selected text, rewritten as asked, in its own language (G25a). */
+  z.strictObject({
+    kind: z.literal("rewrite"),
+    how: z.enum(["friendlier", "shorter", "grammar"]),
+    text: z.string().trim().min(1).max(DRAFT_TEXT_MAX),
+  }),
+  /** A page's description for search results and shares, from its title and text (G25b). */
+  z.strictObject({
+    kind: z.literal("description"),
+    language: languageSchema,
+    site: z.string().max(200),
+    page: z.strictObject({
+      title: z.string().max(200),
+      text: z.string().trim().min(1).max(DRAFT_PAGE_MAX),
+    }),
+  }),
+  /**
+   * An image's alt text, from its file's name and the text near it (G25b): never the image
+   * itself, as no Media file is ever sent (§6).
+   */
+  z.strictObject({
+    kind: z.literal("alt"),
+    language: languageSchema,
+    fileName: z.string().min(1).max(300),
+    page: z.string().max(200),
+    nearby: z.string().max(DRAFT_TEXT_MAX),
+  }),
+  /**
+   * A template page's texts rewritten for the business the quick start describes (QS-7): each
+   * text's role ("Hero heading") and its sample, answered in the same order.
+   */
+  z.strictObject({
+    kind: z.literal("business"),
+    language: languageSchema,
+    business: z.strictObject({
+      name: z.string().trim().min(1).max(200),
+      type: z.string().max(100),
+      about: z.string().trim().min(1).max(DRAFT_TEXT_MAX),
+    }),
+    texts: z
+      .array(
+        z.strictObject({
+          role: z.string().min(1).max(100),
+          sample: z.string().max(DRAFT_TEXT_MAX),
+        }),
+      )
+      .min(1)
+      .max(DRAFT_TEXTS_MAX),
+  }),
+]);
+
+/** See {@link draftRequestSchema}. */
+export type DraftRequest = z.infer<typeof draftRequestSchema>;
+
+/**
+ * A draft: one text, or a business draft's one per text asked, in order, with its cost. Nothing in
+ * the site has changed: the renderer shows it for review, and keeps it as one undo step.
+ */
+const draftResultSchema = z.union([
+  z.strictObject({
+    status: z.literal("ok"),
+    texts: z.array(z.string().max(DRAFT_RESULT_MAX)).min(1).max(DRAFT_TEXTS_MAX),
+    costUsd: z.number().nonnegative().nullable(),
+  }),
+  z.strictObject({ status: errorSchema }),
+]);
+
+/** See {@link draftResultSchema}. */
+export type DraftResult = z.infer<typeof draftResultSchema>;
 
 /** A tool's name, as 4.9's tool layer names it. */
 const toolSchema = z.string().regex(/^[a-zA-Z]{1,64}$/);
@@ -407,6 +498,15 @@ export const assistantChannels = {
     ]),
     response: sendResultSchema,
   },
+  /**
+   * A one-off draft of the site's text (#873), outside the conversation and with no tools: main
+   * makes one model call and answers with the text. It changes nothing in the site.
+   */
+  assistantDraft: {
+    channel: "assistant:draft",
+    request: z.tuple([sessionIdSchema, draftRequestSchema]),
+    response: draftResultSchema,
+  },
   /** Stops the reply: no further model or tool call. Changes made stay, and stay undoable. */
   assistantStop: {
     channel: "assistant:stop",
@@ -461,6 +561,12 @@ export interface AssistantApi {
   setSiteConsent(session: string, allowed: boolean): Promise<void>;
   /** Sends a message; the reply comes as events with the `replyId` this answers. */
   send(session: string, text: string, context: MessageContext): Promise<SendResult>;
+  /**
+   * A one-off draft of the site's text, with no tools (#873): the same checks as `send`, one
+   * model call, its cost added to the month's. It changes nothing: the renderer keeps it, after
+   * the person has reviewed it, as one undo step.
+   */
+  draft(session: string, request: DraftRequest): Promise<DraftResult>;
   /** Stops the reply: changes made stay, and stay undoable. */
   stop(replyId: string): Promise<void>;
   newConversation(session: string): Promise<void>;

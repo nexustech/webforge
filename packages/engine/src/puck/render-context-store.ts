@@ -1,4 +1,4 @@
-import { sameJson } from "@webforge/model";
+import { isRecord, sameJson } from "@webforge/model";
 import type { RenderContext } from "@webforge/site-components";
 import { isValidElement } from "react";
 import type { Unsubscribe } from "../canvas-engine.js";
@@ -61,8 +61,8 @@ type Read =
   | { readonly kind: "all" };
 
 /** A plain object of the context, whose entries are followed one by one (`looks`, `previews`). */
-const isRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
-  typeof value === "object" && value !== null && !Array.isArray(value) && !isValidElement(value);
+const isPlainRecord = (value: unknown): value is Readonly<Record<string, unknown>> =>
+  isRecord(value) && !isValidElement(value);
 
 /** Whether a function's result `before` still holds as `after`: data compared as JSON. */
 function sameResult(before: unknown, after: unknown): boolean {
@@ -83,7 +83,7 @@ function changes(read: Read, context: RenderContext): boolean {
       return !Object.is(source[read.key], read.value);
     case "entry": {
       const holder = source[read.key];
-      return !Object.is(isRecord(holder) ? holder[read.entry] : undefined, read.value);
+      return !Object.is(isPlainRecord(holder) ? holder[read.entry] : undefined, read.value);
     }
     case "call": {
       const fn = source[read.key];
@@ -175,7 +175,7 @@ export function createContextTracker(source: RenderContextSource): ContextTracke
               return result;
             };
           }
-          if (isRecord(value)) return entries(key, value, into);
+          if (isPlainRecord(value)) return entries(key, value, into);
           record({ kind: "value", key, value }, into);
           return value;
         },
