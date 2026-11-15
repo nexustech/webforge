@@ -1,7 +1,9 @@
 import { toast } from "@webforge/editor-ui";
+import { createItemPreviews } from "../add/index.js";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { whenClosed } from "../editor/first-tips.js";
 import { itemCssThrough } from "../editor/ItemCssView.js";
+import { TipPlaces } from "../editor/window-services.js";
 import { createOwnThemes } from "./own-themes.js";
 import { registerOwnThemes } from "./register-own-themes.js";
 import { registerThemePanel } from "./register-theme-panel.js";
@@ -18,17 +20,18 @@ import { registerThemeCommands } from "./theme-commands.js";
  */
 export const themePanelArea: Area<WindowContext> = {
   id: "themePanel",
-  register: ({
-    api,
-    panels,
-    commands,
-    windowDialogs,
-    session,
-    preferences,
-    siteWide,
-    itemPreviews,
-    tips,
-  }) => {
+  uses: [TipPlaces],
+  register: ({ api, panels, commands, windowDialogs, session, preferences, siteWide, use }) => {
+    const tips = use(TipPlaces);
+    // The previews at the top of *Style this ‹kind›…* and Theme Studio (3.13a, CT-11), drawn by the
+    // canvas's CSS compiler, as the Add panel's are: made once, as the window's areas register once.
+    const itemPreviews = createItemPreviews({
+      library: session.library,
+      theme: () => session.history.document.getState().theme,
+      compileCss: (request) => api.canvas.compileCss(request),
+      // A preview shown draws again as the theme changes (#613).
+      subscribe: (listener: () => void) => session.history.document.subscribe(listener),
+    });
     const studio = createStudio();
     // The first Theme Studio's tip (OB-4), once it has closed.
     const stopTip = whenClosed(

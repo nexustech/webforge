@@ -2,7 +2,14 @@ import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { createElement } from "react";
 import type { Area, WindowContext } from "../editor/areas.js";
-import { OnNetlify, PublishedYear } from "../editor/window-services.js";
+import { provide } from "../editor/services.js";
+import {
+  OnNetlify,
+  PublishedYear,
+  SiteCheckIgnored,
+  TipPlaces,
+  TrustedCode,
+} from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { siteSession } from "../storage/index.js";
 import { BundleDialog, createBundleConfirm } from "./bundle.js";
@@ -14,19 +21,24 @@ import { registerSiteCheckPanel } from "./register-site-check-panel.js";
  */
 export const siteCheckArea: Area<WindowContext> = {
   id: "siteCheck",
-  uses: [PublishedYear, OnNetlify],
-  register: ({
-    api,
-    panels,
-    session,
-    settings,
-    commands,
-    siteCheckIgnored,
-    windowDialogs,
-    codeTrust,
-    tips,
-    use,
-  }) => {
+  // What the person ignored, as the site's UI state kept it when the window opened (R9).
+  provides: [
+    provide(SiteCheckIgnored, ({ api, siteUiState }: WindowContext) => ({
+      initial: siteUiState?.siteCheckIgnored ?? [],
+      save: (ignored: readonly string[]) => {
+        api.project
+          .setUiState(siteSession(), { siteCheckIgnored: [...ignored] })
+          .catch((error: unknown) => {
+            reportFailure("siteCheck.ignored", error);
+          });
+      },
+    })),
+  ],
+  uses: [PublishedYear, OnNetlify, TrustedCode, TipPlaces],
+  register: ({ api, panels, session, settings, commands, windowDialogs, use }) => {
+    const siteCheckIgnored = use(SiteCheckIgnored);
+    const codeTrust = use(TrustedCode);
+    const tips = use(TipPlaces);
     const publishedYear = use(PublishedYear);
     const onNetlify = use(OnNetlify);
     // Download and bundle's question (3.9), drawn once in the window.
