@@ -53,6 +53,8 @@ const command = (
   id: item.id,
   label: item.label,
   enabled: item.enabled,
+  // Why it's disabled, under its label (#1010).
+  ...(item.reason === undefined ? {} : { sublabel: item.reason }),
   // Shown, not taken: the renderer handles its own keys (F-ED-27), Undo's and Redo's aside.
   ...(item.accelerator === undefined
     ? {}

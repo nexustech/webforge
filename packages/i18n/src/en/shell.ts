@@ -2,6 +2,13 @@
 export const shell = {
   "editor.undo": "Undo",
   "editor.redo": "Redo",
+  // Why a command is disabled (#1010): under it in menus and the command box, in its tooltip.
+  "editor.undo.none": "Nothing to undo yet.",
+  "editor.redo.none": "Nothing to redo.",
+  // A title-bar button whose command isn't there yet, as on the start screen.
+  "shell.disabled.noSite": "Open a site first.",
+  // Content mode's lock (M3) on a command that changes the layout.
+  "shell.disabled.layoutLocked": "Switch to Design mode to change the layout.",
   // The arrow beside Undo (UX-16).
   "shell.undoSteps": "Undo several steps",
   "shell.undoSteps.title": "Undo back to…",
@@ -245,6 +252,8 @@ export const shell = {
   "edit.copyStyle": "Copy Style",
   "edit.pasteStyle": "Paste Style",
   "edit.pasteStyleOnto": "Paste Style (onto a {item})",
+  "edit.pasteStyle.nothingCopied": "Copy a style first.",
+  "edit.pasteStyle.selectKind": "Select a {item} to paste its style onto.",
   // Gives every other one of the selected kind its look (2.27, ST-4); "any" while none is selected.
   "edit.applyLook.page": "Apply Look to Every {item} on This Page",
   "edit.applyLook.page.any": "Apply Look to All Like It on This Page",

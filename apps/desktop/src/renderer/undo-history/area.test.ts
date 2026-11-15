@@ -36,15 +36,22 @@ function setUp() {
 
 describe("undoHistoryArea (#668)", () => {
   it("registers Undo and Redo on as the history allows, following it as steps are made and undone", () => {
-    const { ctx, enabled, edit, session } = setUp();
+    const { ctx, enabled, edit, session, registries } = setUp();
     undoHistoryArea.register(ctx);
 
     expect(enabled(COMMAND_IDS.undo)).toBe(false);
     expect(enabled(COMMAND_IDS.redo)).toBe(false);
+    // Each says why it's off (#1010).
+    const reason = (id: string) => registries.commands.get(id)?.disabledReason;
+    expect([reason(COMMAND_IDS.undo), reason(COMMAND_IDS.redo)]).toEqual([
+      "Nothing to undo yet.",
+      "Nothing to redo.",
+    ]);
 
     edit();
     expect(enabled(COMMAND_IDS.undo)).toBe(true);
     expect(enabled(COMMAND_IDS.redo)).toBe(false);
+    expect(reason(COMMAND_IDS.undo)).toBeUndefined();
 
     session.history.undo();
     expect(enabled(COMMAND_IDS.undo)).toBe(false);

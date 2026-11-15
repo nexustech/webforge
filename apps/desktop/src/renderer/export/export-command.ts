@@ -14,7 +14,7 @@ import { gateOnSiteCheck, runWithProgress } from "../editor/build-flow.js";
 import type { CodeDecision } from "../editor/code-trust.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import type { CommandRegistry } from "../shell/commands.js";
+import { availability, type CommandRegistry } from "../shell/commands.js";
 import type { ExportDialogs, ExportReport } from "./export-dialogs.js";
 import { exportRequestFor } from "./export-request.js";
 
@@ -198,7 +198,7 @@ function exportWithProgress(
  */
 export function registerExportCommand(registry: CommandRegistry, flow: ExportFlow): () => void {
   const run = async () => {
-    registry.update(EXPORT_COMMAND_ID, { enabled: false });
+    registry.update(EXPORT_COMMAND_ID, availability(t("export.running")));
     try {
       // Code from someone else's file first (#649): what the owner leaves out isn't checked, as
       // it won't be exported, and the allowed addresses count once they're confirmed.
@@ -246,7 +246,7 @@ export function registerExportCommand(registry: CommandRegistry, flow: ExportFlo
       reportFailure("export", error);
       toast.error(t("export.failed.buildFailed"));
     } finally {
-      registry.update(EXPORT_COMMAND_ID, { enabled: true });
+      registry.update(EXPORT_COMMAND_ID, availability(undefined));
     }
   };
   return registry.register({

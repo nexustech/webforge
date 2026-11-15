@@ -371,7 +371,10 @@ describe("registerExportCommand", () => {
     expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({ menu: "file", shortcut: "Mod+E" });
 
     registry.run(EXPORT_COMMAND_ID);
-    expect(registry.get(EXPORT_COMMAND_ID)?.enabled).toBe(false);
+    expect(registry.get(EXPORT_COMMAND_ID)).toMatchObject({
+      enabled: false,
+      disabledReason: "An export is already running.",
+    });
     (await shown("web-address")).answer("skip");
     const options = await shown("options");
     expect(options).toMatchObject({ initial: LAST, advanced: false });

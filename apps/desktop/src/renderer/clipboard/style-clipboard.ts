@@ -5,7 +5,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { fieldGroupOf } from "../editor/field-group.js";
 import { type FieldTarget, fieldTarget } from "../editor/field-target.js";
 import { pastedStyleLabel } from "../editor/labels.js";
-import type { CommandRegistry } from "../shell/commands.js";
+import { availability, type CommandRegistry } from "../shell/commands.js";
 
 /** What Copy Style keeps (1.37, UX-14): the element's type, and the values of its style fields. */
 export type CopiedStyle = {
@@ -123,7 +123,15 @@ export function registerStyleCommands(
       enabled: !locked && target !== undefined && styleFieldsOf(target.component).length > 0,
     });
     registry.update("edit.pasteStyle", {
-      enabled: !locked && canPasteStyle(session, copied),
+      ...availability(
+        locked
+          ? t("shell.disabled.layoutLocked")
+          : copied === undefined
+            ? t("edit.pasteStyle.nothingCopied")
+            : canPasteStyle(session, copied)
+              ? undefined
+              : t("edit.pasteStyle.selectKind", { item: copied.label }),
+      ),
       label:
         copied === undefined || target?.node.type === copied.type
           ? t("edit.pasteStyle")

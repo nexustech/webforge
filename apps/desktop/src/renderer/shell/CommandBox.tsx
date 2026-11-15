@@ -15,6 +15,7 @@ import {
 import { t } from "@webforge/i18n";
 import { SearchIcon } from "lucide-react";
 import { useEffect, useState } from "react";
+import { CommandLabel, reasonOf, reasonRowProps } from "./CommandLabel.js";
 import { useCommandRegistry, useCommands } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
 import {
@@ -42,7 +43,7 @@ export type CommandBoxProps = {
  * The title bar's central box: shows the site's name and opens the command palette (Ctrl/Cmd+P,
  * F-ED-26, UX-11): every enabled command with its shortcut, the pages to go to, and the sections
  * and elements to add (those with nowhere to go shown off), found by fuzzy search. Choosing one
- * closes the palette and runs it.
+ * closes the palette and runs it. A disabled command that says why is shown off, with why (#1010).
  */
 export function CommandBox({ siteName }: CommandBoxProps) {
   const registry = useCommandRegistry();
@@ -62,14 +63,15 @@ export function CommandBox({ siteName }: CommandBoxProps) {
     [registry],
   );
 
-  // The app's own commands only when they can run; an Add with nowhere to go is shown, off. An
-  // item that opens a submenu runs nothing: its submenu's commands are listed instead (3.18).
+  // The app's own commands when they can run or say why not (#1010); an Add with nowhere to go is
+  // shown, off. An item that opens a submenu runs nothing: its submenu's commands are listed
+  // instead (3.18).
   const openers = submenuOpeners(commands);
   const shown = commands.filter(
     (command) =>
       command.id !== COMMAND_IDS.commandBox &&
       !openers.has(command.id) &&
-      (command.palette === "add" || command.enabled !== false),
+      (command.palette === "add" || command.enabled !== false || reasonOf(command) !== undefined),
   );
   const inGroup = (group: PaletteGroup | "commands") =>
     shown.filter((command) => (command.palette ?? "commands") === group);
@@ -79,12 +81,13 @@ export function CommandBox({ siteName }: CommandBoxProps) {
       value={command.id}
       keywords={[command.paletteLabel ?? command.label, ...(command.keywords ?? [])]}
       disabled={command.enabled === false}
+      {...reasonRowProps(command)}
       onSelect={() => {
         setOpen(false);
         registry.run(command.id);
       }}
     >
-      {command.paletteLabel ?? command.label}
+      <CommandLabel command={command} label={command.paletteLabel ?? command.label} />
       {command.shortcut !== undefined && (
         <CommandShortcut>{formatShortcut(command.shortcut)}</CommandShortcut>
       )}

@@ -46,6 +46,11 @@ export type Command = {
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
   /**
+   * Why it's disabled, already translated, while it is (#1010): "Nothing to undo yet". The title
+   * bar's tooltip, the menus and the command box show it. {@link availability} sets both.
+   */
+  readonly disabledReason?: string | undefined;
+  /**
    * The title-bar button whose caret menu lists it, by that button's command id (LF-13): Export's
    * caret for a ZIP export, say. A button shows its caret only while some command names it.
    */
@@ -117,7 +122,19 @@ export type CommandSpec = Omit<
 };
 
 /** What a registered command's owner may change later, such as Undo becoming available. */
-type CommandChanges = Partial<Pick<Command, "label" | "enabled">>;
+type CommandChanges = Partial<Pick<Command, "label" | "enabled" | "disabledReason">>;
+
+/**
+ * A command's `enabled` and `disabledReason` (#1010): disabled with `reason` when there is one,
+ * else enabled, with no reason left over from before.
+ */
+export function availability(
+  reason: string | undefined,
+): Pick<Command, "enabled" | "disabledReason"> {
+  return reason === undefined
+    ? { enabled: true, disabledReason: undefined }
+    : { enabled: false, disabledReason: reason };
+}
 
 /** The registry; one per window. */
 export type CommandRegistry = {
@@ -215,7 +232,11 @@ export function createCommandRegistry({
         return;
       }
       const next = { ...command, ...changes };
-      if (next.label === command.label && next.enabled === command.enabled) {
+      if (
+        next.label === command.label &&
+        next.enabled === command.enabled &&
+        next.disabledReason === command.disabledReason
+      ) {
         return;
       }
       commands.set(id, next);

@@ -2,6 +2,8 @@
 export const stylesheet = {
   "stylesheet.panelTitle": "Stylesheet",
   "stylesheet.command": "Stylesheet",
+  // Why its commands are disabled in Simple mode (#1010).
+  "stylesheet.advancedOnly": "Turn on Advanced mode to use the Stylesheet.",
   "stylesheet.editor": "Stylesheet (custom.css)",
   "stylesheet.toolbar": "Stylesheet actions",
   "stylesheet.target": "Target This Element",

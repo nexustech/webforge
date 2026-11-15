@@ -3,6 +3,8 @@ export const exportSite = {
   "export.dialogTitle": "Choose a folder for your site",
   "export.zipDialogTitle": "Save your site as a ZIP file",
   "export.zipFileType": "ZIP file",
+  // Why Export Site… is disabled while one runs (#1010).
+  "export.running": "An export is already running.",
   // The export dialog (3.3).
   "export.dialog.title": "Export Site",
   "export.dialog.description":

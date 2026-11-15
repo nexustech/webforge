@@ -9,7 +9,7 @@ import type { EditorSession } from "../editor/editor-session.js";
 import { type ClassCatalogue, useClassCatalogue } from "../fields/index.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
-import type { CommandRegistry } from "../shell/commands.js";
+import { availability, type CommandRegistry } from "../shell/commands.js";
 import type { PanelRegistry } from "../shell/panels.js";
 import type { PreferencesStore } from "../shell/preferences-store.js";
 import { StylesheetPanel } from "./StylesheetPanel.js";
@@ -143,26 +143,27 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   // The commands work in Advanced mode only, as the panel is there.
   const advanced = () => preferences.getState().preferences.editorLevel === "advanced";
   let enabled = advanced();
+  const available = () => availability(enabled ? undefined : t("stylesheet.advancedOnly"));
   const removeCommands = [
     commands.register({
       id: COMMAND_IDS.stylesheet,
       label: t("stylesheet.command"),
       menu: "view",
-      enabled,
+      ...available(),
       keywords: ["CSS", "custom.css"],
       run: show,
     }),
     commands.register({
       id: STYLESHEET_COMMANDS.target,
       label: t("stylesheet.target"),
-      enabled,
+      ...available(),
       keywords: ["CSS"],
       run: target,
     }),
     commands.register({
       id: STYLESHEET_COMMANDS.moveLook,
       label: t("stylesheet.move"),
-      enabled,
+      ...available(),
       keywords: ["CSS"],
       run: moveLook,
     }),
@@ -171,7 +172,7 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
     if (advanced() === enabled) return;
     enabled = !enabled;
     for (const id of [COMMAND_IDS.stylesheet, ...Object.values(STYLESHEET_COMMANDS)]) {
-      commands.update(id, { enabled });
+      commands.update(id, available());
     }
   });
   return () => {
