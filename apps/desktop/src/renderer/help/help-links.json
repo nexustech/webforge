@@ -2,6 +2,7 @@
   "editPanel": { "page": "edit-panel" },
   "export": { "page": "export" },
   "publish": { "page": "publish" },
+  "publish.choosingHost": { "page": "publish", "anchor": "choosing-a-web-host" },
   "pageSettings": { "page": "pages", "anchor": "page-settings" },
   "codeTrust": { "page": "custom-code", "anchor": "code-from-somewhere-else" },
   "phonePreview": { "page": "preview", "anchor": "on-your-phone" },

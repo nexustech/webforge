@@ -54,14 +54,20 @@ describe("notes on elements (UX-17, #868)", () => {
 
     act(() => session.select("h"));
     expect(commands.get(COMMAND_IDS.note)).toMatchObject({ enabled: true, label: "Add Note…" });
-    expect(commands.get(COMMAND_IDS.resolveNote)?.enabled).toBe(false);
+    expect(commands.get(COMMAND_IDS.resolveNote)).toMatchObject({
+      enabled: false,
+      disabledReason: "Select something with a note to resolve it.",
+    });
 
     await act(() => commands.run(COMMAND_IDS.note));
     await userEvent.type(screen.getByRole("textbox", { name: "Note" }), "  Swap this photo  ");
     await userEvent.click(screen.getByRole("button", { name: "Save Note" }));
     expect(note()).toBe("Swap this photo");
     expect(commands.get(COMMAND_IDS.note)?.label).toBe("Edit Note…");
-    expect(commands.get(COMMAND_IDS.resolveNote)?.enabled).toBe(true);
+    expect(commands.get(COMMAND_IDS.resolveNote)).toMatchObject({
+      enabled: true,
+      disabledReason: undefined,
+    });
 
     await act(() => commands.run(COMMAND_IDS.note));
     const field = screen.getByRole("textbox", { name: "Note" });

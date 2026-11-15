@@ -59,7 +59,11 @@ describe("registerStylesheetPanel (CT-8, 6.8)", () => {
   it("shows the panel from View › Stylesheet, on only in Advanced mode", () => {
     const { commands, preferences, show } = setUp("simple");
 
-    expect(commands.get(COMMAND_IDS.stylesheet)).toMatchObject({ menu: "view", enabled: false });
+    expect(commands.get(COMMAND_IDS.stylesheet)).toMatchObject({
+      menu: "view",
+      enabled: false,
+      disabledReason: "Turn on Advanced mode to use the Stylesheet.",
+    });
     expect(commands.run(COMMAND_IDS.stylesheet)).toBe(false);
 
     act(() => preferences.change({ editorLevel: "advanced" }));

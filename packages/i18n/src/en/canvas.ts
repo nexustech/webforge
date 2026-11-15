@@ -91,6 +91,10 @@ export const canvas = {
     "Editing shared section {name}: changes apply to {copies} copies on {pages} pages",
   "canvas.saveSharedSection": "Save as shared section…",
   "canvas.detachSharedSection": "Detach from shared section",
+  // Why the shared-section commands are disabled (#1010).
+  "canvas.sharedSection.selectOne": "Select just one section.",
+  "canvas.saveSharedSection.select": "Select a section of this page to save it.",
+  "canvas.sharedSection.selectCopy": "Select a shared section on this page first.",
   "canvas.saveSharedSection.title": "Save as shared section",
   "canvas.saveSharedSection.description":
     "A shared section is stored once. Place copies of it on any page; editing one copy changes them all.",

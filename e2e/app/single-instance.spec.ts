@@ -83,7 +83,7 @@ test("opens a site double-clicked while Webforge runs in the same window, saving
   const florist = join(dir, "Florist.wforge");
   ProjectStore.create(florist, { name: "Florist" }).close();
 
-  // The second launch hands the file over and quits at once, without a window of its own; the
+  // The second launch hands the file over and exits at once, without a window of its own; the
   // running window starts over with the new site.
   const reloaded = page.waitForEvent("load");
   expect(await launchSecondInstance({ args: [florist], userDataDir: userData })).toBe(0);

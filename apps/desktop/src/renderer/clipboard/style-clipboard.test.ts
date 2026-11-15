@@ -168,6 +168,8 @@ describe("registerStyleCommands", () => {
     const command = (id: string) => registry.get(id);
 
     expect(command("edit.copyStyle")).toMatchObject({ enabled: false, shortcut: "Mod+Alt+C" });
+    // Paste Style says why it's off (#1010).
+    expect(command("edit.pasteStyle")?.disabledReason).toBe("Copy a style first.");
     select("big");
     expect(command("edit.copyStyle")?.enabled).toBe(true);
     registry.run("edit.copyStyle");
@@ -175,14 +177,18 @@ describe("registerStyleCommands", () => {
     select("t");
     expect(command("edit.pasteStyle")).toMatchObject({
       enabled: false,
-      label: "Paste Style (onto a Heading)",
+      label: "Paste Style (onto Another Heading)",
+      disabledReason: "Select another Heading to paste its style onto.",
     });
     select("plain");
     expect(command("edit.pasteStyle")).toMatchObject({ enabled: true, label: "Paste Style" });
     // Content mode has no Style tab: neither is offered there.
     commands.setLayoutLocked(true);
     expect(command("edit.copyStyle")?.enabled).toBe(false);
-    expect(command("edit.pasteStyle")?.enabled).toBe(false);
+    expect(command("edit.pasteStyle")).toMatchObject({
+      enabled: false,
+      disabledReason: "Switch to Design mode to change the layout.",
+    });
     expect(registry.run("edit.pasteStyle")).toBe(false);
     commands.setLayoutLocked(false);
     registry.run("edit.pasteStyle");

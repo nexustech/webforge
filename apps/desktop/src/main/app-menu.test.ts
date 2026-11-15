@@ -113,6 +113,35 @@ describe("applicationMenu (F-ED-27)", () => {
     expect(run).toHaveBeenCalledWith("site.settings");
   });
 
+  it("says under a disabled item of the editor's why it's disabled (#1010)", () => {
+    const menu = applicationMenu("darwin", false, {
+      menus: [
+        {
+          id: "edit",
+          label: "Edit",
+          items: [
+            { id: "edit.copyStyle", label: "Copy Style", enabled: true },
+            {
+              id: "edit.pasteStyle",
+              label: "Paste Style",
+              enabled: false,
+              reason: "Copy a style first.",
+            },
+          ],
+        },
+      ],
+      run: vi.fn(),
+    });
+
+    const edit = (menu?.find((each) => each.label === "Edit")?.submenu ??
+      []) as MenuItemConstructorOptions[];
+    const ofEditor = edit.filter((each) => each.id?.startsWith("edit.") === true);
+    expect(ofEditor.map((each) => [each.label, each.enabled, each.sublabel])).toEqual([
+      ["Copy Style", true, undefined],
+      ["Paste Style", false, "Copy a style first."],
+    ]);
+  });
+
   it("takes only Undo's and Redo's keys from the page, so no other key reaches the editor from Help (5.4b)", () => {
     const item = (id: string, accelerator: string) => ({
       id,

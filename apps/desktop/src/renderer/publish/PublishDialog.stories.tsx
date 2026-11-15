@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { ListedDestination } from "../../shared/ipc/publish.js";
-import { PublishDialog, type PublishDialogApi } from "./PublishDialog.js";
+import { HelpProvider } from "../help/index.js";
+import { type NetlifyPublishApi, PublishDialog, type PublishDialogApi } from "./PublishDialog.js";
 
 const HOST_KEY = "SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8";
 
@@ -51,6 +52,20 @@ const publishWith = (listed: ListedDestination[]): PublishDialogApi => ({
   chooseKeyFile: async () => ({ status: "cancelled" }),
 });
 
+/** Netlify offered (4.4b), with no sign-in through its page; nothing it's asked for works. */
+const NETLIFY: NetlifyPublishApi = {
+  canSignIn: false,
+  signIn: async () => ({ status: "failed", reason: "not-set-up" }),
+  cancelSignIn: () => undefined,
+  forgetSignIn: () => undefined,
+  signInWithToken: async () => ({ status: "failed", reason: "unauthorized" }),
+  sites: async () => ({ status: "listed", sites: [] }),
+  checkAccess: async () => ({ status: "checked", protected: false }),
+  createSite: async () => ({ status: "failed", reason: "failed" }),
+  testSaved: async () => ({ ok: true }),
+  save: async () => ({ status: "failed", reason: "unknown" }),
+};
+
 const meta = {
   title: "Dialogs/Publish",
   component: PublishDialog,
@@ -72,8 +87,20 @@ type Story = StoryObj<typeof meta>;
 /** Two destinations: one ready to publish to, one whose password must be typed again. */
 export const Destinations: Story = {};
 
-/** A site with none yet: Add Destination is the way on. */
-export const None: Story = { args: { publish: publishWith([]) } };
+/**
+ * A site with none yet (#1014): "Where is your website hosted?", a card for each answer, Netlify
+ * offered and Help able to open, and Close alone.
+ */
+export const None: Story = {
+  args: { publish: publishWith([]), netlify: NETLIFY },
+  decorators: [
+    (Story) => (
+      <HelpProvider open={() => undefined}>
+        <Story />
+      </HelpProvider>
+    ),
+  ],
+};
 
 /** With Netlify offered (4.4b): a Netlify destination listed by its site's address. */
 export const WithNetlify: Story = {
@@ -92,17 +119,6 @@ export const WithNetlify: Story = {
         trust: {},
       },
     ]),
-    netlify: {
-      canSignIn: false,
-      signIn: async () => ({ status: "failed", reason: "not-set-up" }),
-      cancelSignIn: () => undefined,
-      forgetSignIn: () => undefined,
-      signInWithToken: async () => ({ status: "failed", reason: "unauthorized" }),
-      sites: async () => ({ status: "listed", sites: [] }),
-      checkAccess: async () => ({ status: "checked", protected: false }),
-      createSite: async () => ({ status: "failed", reason: "failed" }),
-      testSaved: async () => ({ ok: true }),
-      save: async () => ({ status: "failed", reason: "unknown" }),
-    },
+    netlify: NETLIFY,
   },
 };
