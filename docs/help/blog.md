@@ -5,7 +5,7 @@ title: Your blog
 summary: Add a blog, write posts on the page, tag them, list them anywhere, import them, and change the design every post shares.
 components: [LatestPosts, PostTags]
 related: [pages, header-and-footer, edit-panel, export, site-settings]
-updated: 2026-11-11
+updated: 2026-11-15
 ---
 
 # Your blog
@@ -91,6 +91,8 @@ Like any page, a post can be a **Draft**, kept off your website until you publis
 ## On your website
 
 Export and Publish write each post as its own page, in the blog's folder, with the design around it. The date is written out in your site's language, such as _10 November 2026_.
+
+Each post also tells search engines it's a blog post, in a form they read: its title, date, summary and picture, the day you last changed it, and your business as its publisher (or you, on a personal site). Nothing extra to fill in; what a post doesn't have is left out. A post kept from search engines has none.
 
 They also write your blog's own pages, with your Header and Footer:
 

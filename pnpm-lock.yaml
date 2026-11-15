@@ -1013,6 +1013,9 @@ importers:
       '@webforge/site-components':
         specifier: workspace:*
         version: link:../site-components
+      '@webforge/storage':
+        specifier: workspace:*
+        version: link:../storage
       '@webforge/themes':
         specifier: workspace:*
         version: link:../themes
