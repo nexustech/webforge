@@ -49,12 +49,13 @@ function savedCollapsed(size: number | undefined): boolean {
 }
 
 /**
- * The default layout: 240 px side columns, the drawer closed. Side columns stay between 200 and
+ * The default layout: 300 px side columns, the drawer closed. 300 px fits the Edit panel's fields
+ * (#1007: a Hero's needed 278 px, and colour names were cut at 240). A saved layout keeps its own. Side columns stay between 200 and
  * 360 px and the canvas keeps at least 40% of the width, so it is never squeezed to an unusable
  * zoom (ADR 0008).
  */
 const DEFAULTS = {
-  sideWidth: "240px",
+  sideWidth: "300px",
   sideMin: "200px",
   sideMax: "360px",
   centerMin: "40%",

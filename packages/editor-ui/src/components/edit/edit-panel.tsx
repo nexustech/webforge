@@ -577,6 +577,10 @@ function FieldList({
  * Lists, spacing boxes, images and a paragraph of text.
  */
 const isWide = (field: EditPanelField) =>
+  // A colour's names, a link's buttons and a long text need the panel's width (#1007).
+  field.kind === "color" ||
+  field.kind === "link" ||
+  (field.kind === "text" && field.wide === true) ||
   field.kind === "list" ||
   field.kind === "box" ||
   field.kind === "image" ||
@@ -797,6 +801,7 @@ function DeviceRow({
         <label
           id={labelId}
           htmlFor={id}
+          title={device.label}
           className={cn(
             "truncate text-xs",
             device.own ? "font-semibold text-ring" : "text-muted-foreground",
