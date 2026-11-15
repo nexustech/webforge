@@ -118,7 +118,7 @@ export function LayersPanel({
     setExpanded,
     hover: drag.hover,
     leave: drag.leave,
-    setShown: actions.setShown,
+    setShown: (id, shown) => actions.setShown(id, shown),
     shownClosed: focusRowOnly,
   };
 
