@@ -18,7 +18,7 @@ const toast = vi.hoisted(() => ({
   error: vi.fn(),
   dismiss: vi.fn(),
 }));
-vi.mock("@webforge/editor-ui", () => ({ toast }));
+vi.mock("@webforge/editor-ui", () => ({ toast, QUIET_ACTION_TOAST: "toast-quiet-action" }));
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -240,6 +240,32 @@ describe("publishTo (4.5, F-PB-2)", () => {
     );
   });
 
+  it("says how far a failure with no reason of its own came: here, sending (#1014)", async () => {
+    const { flow } = flowOf({ results: [{ status: "failed", reason: "failed" }] });
+    await publishTo(flow, destination);
+    // Its own last stage, not the other publish's "verifying".
+    expect(toast.error).toHaveBeenCalledWith(
+      "Publishing stopped while sending your files, so your website may be part old, part new. Publish again to send the rest.",
+      expect.objectContaining({ id: "progress" }),
+    );
+  });
+
+  it("says nothing was sent when it fails before publishing starts (#1014)", async () => {
+    const failures: string[] = [];
+    setFailureLog(async (context) => {
+      failures.push(context);
+    });
+    const { flow, api } = flowOf();
+    flow.confirmCode.mockRejectedValueOnce(new Error("gone"));
+    await publishTo(flow, destination);
+    expect(api.publish).not.toHaveBeenCalled();
+    expect(failures).toContain("publish");
+    expect(toast.error).toHaveBeenCalledWith(
+      expect.stringMatching(/couldn't start publishing, so nothing was sent\. Publish again\.$/),
+    );
+    setFailureLog(undefined);
+  });
+
   it("says so when the call itself fails, and reports it", async () => {
     const failures: string[] = [];
     setFailureLog(async (context) => {
@@ -249,8 +275,11 @@ describe("publishTo (4.5, F-PB-2)", () => {
     api.publish.mockRejectedValueOnce(new Error("gone"));
     await publishTo(flow, destination);
     expect(failures).toContain("publish");
+    // No stage reached: nothing was sent (#1014).
     expect(toast.error).toHaveBeenCalledWith(
-      "Publishing didn't work. Publish again.",
+      expect.stringMatching(
+        /stopped while getting your site ready, so nothing was sent\. Publish again\.$/,
+      ),
       expect.anything(),
     );
     setFailureLog(undefined);
@@ -364,6 +393,28 @@ describe("publishFailure", () => {
     expect(
       publishFailure({ status: "failed", reason: "unreadable-image", image: "photo" }, site),
     ).toContain("The image “Shop front.png” can't be published");
+  });
+});
+
+describe("publishFailure by stage (#1014)", () => {
+  it("tells a failure with no reason of its own by the last stage it reached", () => {
+    const site = publishable();
+    const failed = { status: "failed", reason: "unknown" } as const;
+    expect(publishFailure(failed, site)).toMatch(/getting your site ready, so nothing was sent/);
+    expect(publishFailure(failed, site, "fonts")).toMatch(/getting your site ready/);
+    expect(publishFailure(failed, site, "preparing")).toMatch(
+      /couldn't compare your site with what's on your host, so nothing was sent\. Check your internet connection/,
+    );
+    expect(publishFailure({ status: "failed", reason: "failed" }, site, "uploading")).toMatch(
+      /stopped while sending your files/,
+    );
+    expect(publishFailure(failed, site, "verifying")).toMatch(
+      /Your files were sent, but .+ couldn't check that your website is live\. Open its address/,
+    );
+    // A failure with its own reason keeps its own words, whatever the stage.
+    expect(publishFailure({ status: "failed", reason: "unauthorized" }, site, "uploading")).toMatch(
+      /^Your host refused the user name or password/,
+    );
   });
 });
 

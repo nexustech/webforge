@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
@@ -182,6 +182,60 @@ describe("Form (2.21)", () => {
     // Then it follows the fixes.
     await user.clear(phone);
     expect(screen.queryByText("At most 5 characters")).toBeNull();
+  });
+
+  it("focuses the first field with a problem after a failed Save, on its tab (#1014)", async () => {
+    const { user } = setUp();
+    await user.click(screen.getByRole("tab", { name: "Contact" }));
+    await user.clear(screen.getByRole("textbox", { name: "Form ID" }));
+    await user.click(screen.getByRole("tab", { name: "General" }));
+    await user.clear(screen.getByRole("textbox", { name: "Site name" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Site name" })),
+    );
+
+    // Typing a new problem moves nothing: only a Save or a check does.
+    await user.type(screen.getByRole("textbox", { name: "Site name" }), "Ana");
+    await user.click(screen.getByRole("tab", { name: "Contact" }));
+    await user.type(screen.getByRole("textbox", { name: "Phone" }), "0123456");
+    expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Phone" }));
+  });
+
+  it("checks the form for its own content, showing only the problems it counts (#1014)", async () => {
+    const found = vi.fn();
+    const { user } = setUp({
+      ...spec,
+      after: (_values, form) => ({
+        name: (
+          <button
+            type="button"
+            onClick={() => found(form.validate((issue) => issue.message !== "Give it a name"))}
+          >
+            Check
+          </button>
+        ),
+      }),
+    });
+    await user.clear(screen.getByRole("textbox", { name: "Site name" }));
+    await user.click(screen.getByRole("tab", { name: "Contact" }));
+    await user.clear(screen.getByRole("textbox", { name: "Form ID" }));
+    await user.click(screen.getByRole("tab", { name: "General" }));
+
+    await user.click(screen.getByRole("button", { name: "Check" }));
+
+    expect(found).toHaveBeenCalledWith([{ path: ["value"], message: "Give the form ID" }]);
+    // The problem it doesn't count isn't shown; the one it does is, on its tab, focused.
+    expect(screen.queryByText("Give it a name")).toBeNull();
+    expect(screen.getByText("Give the form ID")).toBeTruthy();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("textbox", { name: "Form ID" })),
+    );
+
+    // A Save shows them all.
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("tab", { name: "General" }));
+    expect(screen.getByText("Give it a name")).toBeTruthy();
   });
 
   it("shows problems as the person types when the form asks, and makes the values consistent", async () => {
