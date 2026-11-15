@@ -283,15 +283,23 @@ describe("StartScreen", () => {
     // A toggle (APG): the same name pinned or not, pressed while pinned; the tooltip says what a
     // click does.
     const pin = () => container.querySelector<HTMLButtonElement>('[aria-label="Pin Florist"]');
+    // Its tooltip, shown on the keyboard's focus (#1011).
+    const tip = async () => {
+      await act(async () => pin()?.focus());
+      const text = document.querySelector('[role="tooltip"]')?.textContent;
+      await act(async () => pin()?.blur());
+      return text;
+    };
     expect(pin()?.getAttribute("aria-pressed")).toBe("false");
-    expect(pin()?.title).toBe("Pin Florist to the top");
+    expect(pin()?.hasAttribute("title")).toBe(false);
+    expect(await tip()).toBe("Pin Florist to the top");
     await act(async () => pin()?.click());
 
     expect(project.pinRecent).toHaveBeenCalledWith(florist.id, true);
     const names = [...container.querySelectorAll("li")].map((item) => item.textContent);
     expect(names[0]).toContain("Florist");
     expect(pin()?.getAttribute("aria-pressed")).toBe("true");
-    expect(pin()?.title).toBe("Unpin Florist");
+    expect(await tip()).toBe("Unpin Florist");
     await act(async () => pin()?.click());
     expect(project.pinRecent).toHaveBeenLastCalledWith(florist.id, false);
   });

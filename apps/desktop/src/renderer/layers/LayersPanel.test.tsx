@@ -412,11 +412,7 @@ describe("LayersPanel (F-ED-12)", () => {
     for (const name of ["Move up", "Move down", "Duplicate", "Delete"]) {
       await userEvent.click(screen.getByRole("button", { name }));
     }
-    await userEvent.click(
-      screen
-        .getByRole("toolbar", { name: "Layer actions" })
-        .querySelector("[title=\"Don't publish 'Hours'\"]") as HTMLElement,
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Don't publish 'Hours'" }));
     await userEvent.click(screen.getByRole("button", { name: "Rename" }));
 
     expect(actions.moveUp).toHaveBeenCalledOnce();

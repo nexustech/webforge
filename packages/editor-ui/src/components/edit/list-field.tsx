@@ -76,7 +76,7 @@ function RowAction({
       variant="ghost"
       size="icon-sm"
       aria-label={label}
-      title={label}
+      tooltip={label}
       disabled={disabled}
       onClick={onClick}
     >

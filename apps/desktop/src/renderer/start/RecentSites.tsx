@@ -96,7 +96,7 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                   // tooltip says what a click does.
                   aria-pressed={site.pinned}
                   aria-label={t("site.start.pin", { name: site.name })}
-                  title={t(site.pinned ? "site.start.unpin" : "site.start.pinTip", {
+                  tooltip={t(site.pinned ? "site.start.unpin" : "site.start.pinTip", {
                     name: site.name,
                   })}
                   onClick={() => onPin(site, !site.pinned)}
@@ -110,7 +110,7 @@ export function RecentSites({ sites, locale, onOpen, onPin, onRemove }: RecentSi
                   variant="ghost"
                   className="bg-panel/80"
                   aria-label={t("site.start.remove", { name: site.name })}
-                  title={t("site.start.remove", { name: site.name })}
+                  tooltip={t("site.start.remove", { name: site.name })}
                   onClick={() => onRemove(site)}
                 >
                   <XIcon />

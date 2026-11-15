@@ -128,7 +128,7 @@ export function CanvasToolbar({
               size="icon"
               variant="ghost"
               aria-label={label}
-              title={label}
+              tooltip={label}
               disabled={disabled}
               onClick={() => onZoomChange(next)}
             >
@@ -140,7 +140,7 @@ export function CanvasToolbar({
             size="icon"
             variant="ghost"
             aria-label={t("canvasToolbar.rotate")}
-            title={t("canvasToolbar.rotate")}
+            tooltip={t("canvasToolbar.rotate")}
             disabled={rotated === undefined}
             onClick={rotate}
           >
@@ -399,7 +399,7 @@ function DeviceMenu({
             size={compact ? "icon" : "sm"}
             variant="ghost"
             className="text-xs whitespace-nowrap tabular-nums"
-            title={compact ? (readout ?? t("canvasToolbar.devices")) : undefined}
+            tooltip={compact ? (readout ?? t("canvasToolbar.devices")) : undefined}
             aria-label={
               readout === undefined
                 ? t("canvasToolbar.devices")
