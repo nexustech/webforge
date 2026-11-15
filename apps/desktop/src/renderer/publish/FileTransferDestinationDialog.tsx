@@ -557,7 +557,8 @@ export function FileTransferDestinationDialog({
             onChoose={() => void chooseKey()}
           />
         ) : undefined,
-      url: (
+      // After the last field, the redirects option (5.15): the connection's fields all above it.
+      redirectRules: (
         <TestConnection
           // Only a test of the connection as it is now.
           state={test?.at === connectionOf(values) ? test : undefined}
