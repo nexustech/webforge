@@ -145,6 +145,9 @@ export default {
           // the main process needs at start-up, without the export's or FTP's and SFTP's tools,
           // #892).
           "^packages/(pipeline|publish)/src/light\\.ts$",
+          // Declared subpath export: @webforge/storage/zip-writer (writing a ZIP beside its
+          // destination and moving it into place, which the export shares, without the store, #987).
+          "^packages/storage/src/zip-writer.ts$",
           // Declared subpath export: @webforge/publish/codes (publishing's error codes, with no
           // imports, for shared/ to derive its lists from, #988).
           "^packages/publish/src/codes\\.ts$",
