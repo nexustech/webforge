@@ -134,6 +134,7 @@ export function publisherFor(
     user: settings.user,
     folder: settings.folder,
     ...(settings.url === undefined ? {} : { url: settings.url }),
+    ...(settings.redirectRules === true ? { redirectRules: true } : {}),
   };
   if ("token" in signIn) return unusable("unauthorized", "File transfer signs in with a password");
   if (settings.protocol === "sftp") {

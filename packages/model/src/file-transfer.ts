@@ -69,6 +69,11 @@ const common = {
   user: z.string().min(1).max(FILE_TRANSFER_USER_MAX),
   folder: folderSchema,
   url: siteAddressSchema.optional(),
+  /**
+   * *Redirects for Apache hosts* (5.15, CC-7): publishing writes a real 301 for each old address
+   * into the host's `.htaccess`, in a block of its own. Off unless the person turns it on.
+   */
+  redirectRules: z.boolean().optional(),
 };
 
 /**

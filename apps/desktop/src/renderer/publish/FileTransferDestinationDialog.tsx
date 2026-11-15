@@ -50,6 +50,8 @@ export type FileTransferValues = {
   readonly passphrase: string;
   readonly folder: string;
   readonly url: string;
+  /** *Redirect old addresses on Apache hosts* (5.15, CC-7). */
+  readonly redirectRules: boolean;
 };
 
 /**
@@ -91,6 +93,7 @@ const NEW_VALUES: FileTransferValues = {
   passphrase: "",
   folder: PRESET_FOLDER.cpanel,
   url: "",
+  redirectRules: false,
 };
 
 /**
@@ -120,6 +123,7 @@ export function valuesOf(
     passphrase: "",
     folder: destination.folder,
     url: destination.url ?? "",
+    redirectRules: destination.redirectRules === true,
   };
 }
 
@@ -132,6 +136,7 @@ function toOutput(values: FileTransferValues, extra: Extra) {
     user: values.user.trim(),
     folder: values.folder.trim(),
     ...(values.url.trim() === "" ? {} : { url: values.url.trim() }),
+    ...(values.redirectRules ? { redirectRules: true } : {}),
   };
   const destination =
     values.protocol === "sftp"
@@ -349,6 +354,13 @@ function fieldsFor(
       inputType: "url",
       path: "destination.url",
     },
+    {
+      kind: "toggle",
+      name: "redirectRules",
+      label: t("publish.fileTransfer.redirectRules"),
+      help: t("publish.fileTransfer.redirectRules.help"),
+      path: "destination.redirectRules",
+    },
   ];
 }
 
@@ -561,7 +573,8 @@ export function FileTransferDestinationDialog({
             onChoose={() => void chooseKey()}
           />
         ) : undefined,
-      url: (
+      // After the last field, the redirects option (5.15): the connection's fields all above it.
+      redirectRules: (
         <TestConnection
           // Only a test of the connection as it is now.
           state={test?.at === connectionOf(values) ? test : undefined}

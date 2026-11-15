@@ -2,7 +2,13 @@ import type { SiteSnapshot } from "@webforge/model";
 import { siteSnapshotSchema } from "@webforge/model";
 import { sampleSite } from "@webforge/test-utils";
 import { describe, expect, it } from "vitest";
-import { redirectFiles, redirectPage, redirectsFile } from "./redirects.js";
+import {
+  htaccessRules,
+  redirectFiles,
+  redirectPage,
+  redirectsFile,
+  writtenRedirects,
+} from "./redirects.js";
 
 const ADDRESS = "https://rosas.example";
 
@@ -102,5 +108,47 @@ describe("a page's old address kept working (#862, SEO-5)", () => {
       { from: "OLD.html", to: "index" },
     ]);
     expect(siteSnapshotSchema.safeParse(twice).success).toBe(false);
+  });
+});
+
+describe("an Apache host's rules for old addresses (5.15, CC-7)", () => {
+  it("sends each old address, with or without .html, in any case, on with a 301", () => {
+    expect(
+      htaccessRules([
+        { from: "about-us.html", to: "about" },
+        { from: "Services/Old_Page.html", to: "index" },
+      ]),
+    ).toBe(
+      [
+        "<IfModule mod_rewrite.c>",
+        "RewriteEngine On",
+        "RewriteCond %{REQUEST_URI} ^(.*/)about-us(\\.html)?$ [NC]",
+        "RewriteRule ^about-us(\\.html)?$ %1about.html [R=301,NC,L]",
+        // The home page is the site's folder itself.
+        "RewriteCond %{REQUEST_URI} ^(.*/)Services/Old_Page(\\.html)?$ [NC]",
+        "RewriteRule ^Services/Old_Page(\\.html)?$ %1 [R=301,NC,L]",
+        "</IfModule>",
+      ].join("\n"),
+    );
+  });
+
+  it("goes to a page in a folder, under the folder the site is in on its host", () => {
+    const rules = htaccessRules([{ from: "old.html", to: "services/plumbing" }]);
+    // %1 is the folder the request came by: `/` at the top of the host, `/shop/` in a folder.
+    const [condition] = rules.split("\n").filter((line) => line.startsWith("RewriteCond"));
+    const folder = /\^\(\.\*\/\)(.*)\$ \[NC\]$/.exec(condition ?? "")?.[1] ?? "";
+    expect(new RegExp(`^(.*/)${folder}$`, "i").exec("/shop/OLD.html")?.[1]).toBe("/shop/");
+    expect(rules).toContain("%1services/plumbing.html [R=301,NC,L]");
+  });
+
+  it("is written for the old addresses the export writes a page at, and only those", () => {
+    const written = writtenRedirects(
+      site([
+        { from: "Thank-You.html", to: "index" },
+        { from: "our-story.html", to: "about" },
+      ]),
+      ["thank-you.html"],
+    );
+    expect(written).toEqual([{ from: "our-story.html", to: "about" }]);
   });
 });
