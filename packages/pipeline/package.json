@@ -77,6 +77,7 @@
     "@webforge/i18n": "workspace:*",
     "@webforge/model": "workspace:*",
     "@webforge/site-components": "workspace:*",
+    "@webforge/storage": "workspace:*",
     "@webforge/themes": "workspace:*",
     "daisyui": "catalog:",
     "fflate": "0.8.3",

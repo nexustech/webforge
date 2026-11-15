@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./zip-writer": "./src/zip-writer.ts"
   },
   "dependencies": {
     "@webforge/errors": "workspace:*",

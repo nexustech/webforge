@@ -1,5 +1,4 @@
 import {
-  BuildError,
   type Pipeline,
   type PipelineResources,
   type StoredMedia,
@@ -10,6 +9,7 @@ import {
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { ExportJob, ExportOutcome } from "../shared/export-worker-protocol.js";
 import { type ExportProgress, MAX_REPORTED_WARNINGS } from "../shared/ipc/site.js";
+import { buildFailureOf } from "./build-failure.js";
 
 /** What an export reaches outside the worker: the site's stored bytes, a cancel, its pipeline. */
 export type ExportChannel = {
@@ -72,33 +72,12 @@ export async function runExport(
     }
     return { type: "failed", code: "build-failed", detail: "unexpected" };
   } catch (error) {
-    if (
-      (error instanceof BuildError || error instanceof WriteError) &&
-      error.code === "cancelled"
-    ) {
-      return { type: "cancelled" };
-    }
-    if (error instanceof BuildError && error.code === "reserved-name") {
-      return {
-        type: "failed",
-        code: "reserved-name",
-        detail: error.code,
-        ...(error.page === undefined ? {} : { page: error.page }),
-      };
-    }
-    if (error instanceof BuildError && error.code === "unreadable-image") {
-      return {
-        type: "failed",
-        code: "unreadable-image",
-        detail: error.code,
-        ...(error.image === undefined ? {} : { image: error.image }),
-      };
-    }
-    if (error instanceof BuildError) {
-      return { type: "failed", code: "build-failed", detail: error.code };
-    }
-    if (error instanceof WriteError && error.code !== "cancelled") {
-      return { type: "failed", code: error.code, detail: error.code };
+    const built = buildFailureOf(error);
+    if (built !== undefined) return built;
+    if (error instanceof WriteError) {
+      return error.code === "cancelled"
+        ? { type: "cancelled" }
+        : { type: "failed", code: error.code, detail: error.code };
     }
     return { type: "failed", code: "build-failed", detail: "unexpected" };
   }

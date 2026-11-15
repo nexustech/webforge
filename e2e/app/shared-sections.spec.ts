@@ -202,7 +202,8 @@ test("renames and deletes a shared section on no page from the Add panel, and un
   await left.getByRole("tab", { name: "Add" }).click();
   const shared = left.getByRole("list", { name: "Shared sections" });
   await shared.getByRole("button", { name: "Actions for Welcome" }).click();
-  await page.getByRole("menuitem", { name: "Rename…" }).click();
+  // Exact: the Edit menu, just closed, may still list its own "Rename… F2" on a slow machine.
+  await page.getByRole("menuitem", { name: "Rename…", exact: true }).click();
   const rename = page.getByRole("dialog", { name: "Rename shared section" });
   await expect(rename.getByRole("textbox", { name: "Name" })).toBeFocused();
   await rename.getByRole("textbox", { name: "Name" }).fill("Opening hours");
@@ -211,7 +212,7 @@ test("renames and deletes a shared section on no page from the Add panel, and un
 
   // No page has a copy: nothing to ask (D7), and it goes in one step.
   await shared.getByRole("button", { name: "Actions for Opening hours" }).click();
-  await page.getByRole("menuitem", { name: "Delete…" }).click();
+  await page.getByRole("menuitem", { name: "Delete…", exact: true }).click();
   await expect(page.getByRole("alertdialog")).toHaveCount(0);
   await expect(shared).toHaveCount(0);
 
