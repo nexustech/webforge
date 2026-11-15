@@ -45,6 +45,8 @@ export const publish = {
   "publish.destinations.description":
     "Where {appName} publishes this site. Each destination's password is kept by this computer, never in your site's file.",
   "publish.destinations.loading": "Reading the destinations…",
+  "publish.destinations.unreadable":
+    "The destinations couldn't be read. Close Publish and open it again.",
   // A site with no destinations yet: where it's hosted, as cards (#1014, product owner).
   "publish.first.question": "Where is your website hosted?",
   "publish.first.fileTransfer": "A web host with a control panel",

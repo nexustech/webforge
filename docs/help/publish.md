@@ -17,10 +17,10 @@ Click **Publish** in the title bar, choose **File › Publish…**, or press Ctr
 
 Your website is a folder of plain files, so any host that can serve plain files works:
 
-- **A web host with a control panel,** such as cPanel or Plesk. Most hosting plans come with one, and its control panel shows the details {appName} asks for.
+- **Any web host you can upload files to.** Most hosting plans come with a control panel, such as cPanel or Plesk, that shows the details {appName} asks for: its address, your user name and your password. See [Adding your web host](#adding-your-web-host).
 - **Netlify,** which hosts websites for you and has a free plan. See [Adding Netlify](#adding-netlify).
 
-If your host isn't either of these, you can still put your site there: [export](export.md) it as a folder or a ZIP file, then upload the files with your host's own tools.
+If your host offers none of these, for example only a page in your browser where you upload files, you can still put your site there: [export](export.md) it as a folder or a ZIP file, then upload the files with your host's own tools.
 
 ## Adding your web host
 

@@ -150,7 +150,9 @@ export function PublishDialog({
   onPublish,
   onClose,
 }: PublishDialogProps) {
-  const [listed, setListed] = useState<readonly ListedDestination[] | undefined>();
+  // `undefined` while it's read; "unreadable" when it couldn't be, which shows neither the first-run
+  // cards nor Add, so a site's destinations aren't added again behind the error (#1014).
+  const [listed, setListed] = useState<readonly ListedDestination[] | "unreadable" | undefined>();
   const [editing, setEditing] = useState<Editing | undefined>();
   const [removing, setRemoving] = useState<ListedDestination | undefined>();
   const [tests, setTests] = useState<Tests>({});
@@ -170,7 +172,7 @@ export function PublishDialog({
     publish.destinations(sessionId()).then(
       (result) => {
         if (!current) return;
-        setListed(result.status === "listed" ? result.destinations : []);
+        setListed(result.status === "listed" ? result.destinations : "unreadable");
         if (result.status === "listed") {
           onListed?.(result.destinations.map(({ destination }) => destination));
         }
@@ -178,7 +180,7 @@ export function PublishDialog({
       },
       () => {
         if (!current) return;
-        setListed([]);
+        setListed("unreadable");
         notify(failureMessage("unknown"));
       },
     );
@@ -296,7 +298,8 @@ export function PublishDialog({
   const editedSettings =
     edited?.destination.kind === "file-transfer" ? edited.destination.settings : undefined;
   const editedNetlify = edited?.destination.kind === "netlify" ? edited.destination : undefined;
-  const cannotAdd = listed === undefined || listed.length >= PUBLISH_DESTINATIONS_MAX;
+  const cannotAdd =
+    listed === undefined || listed === "unreadable" || listed.length >= PUBLISH_DESTINATIONS_MAX;
 
   return (
     <>
@@ -317,6 +320,10 @@ export function PublishDialog({
           {listed === undefined ? (
             <p role="status" className="text-sm text-muted-foreground">
               {t("publish.destinations.loading")}
+            </p>
+          ) : listed === "unreadable" ? (
+            <p role="status" className="text-sm text-destructive-text">
+              {t("publish.destinations.unreadable")}
             </p>
           ) : listed.length === 0 ? (
             <FirstDestination
@@ -348,7 +355,7 @@ export function PublishDialog({
             </ul>
           )}
           <DialogFooter>
-            {listed?.length === 0 ? null : netlify === undefined ? (
+            {listed === "unreadable" || listed?.length === 0 ? null : netlify === undefined ? (
               <Button
                 variant="outline"
                 disabled={cannotAdd}

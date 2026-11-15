@@ -1,9 +1,9 @@
 import { t } from "@webforge/i18n";
 import type { PublishDestination } from "@webforge/model";
-import { type Ref, useEffect, useRef } from "react";
+import { type Ref, useEffect, useId, useRef } from "react";
 import { useHelpAt } from "../help/index.js";
 
-/** A card: what it is and what it needs, the whole of it one button. */
+/** A card: what it is and what it needs, the whole of it one button named by its title. */
 function Card({
   title,
   description,
@@ -15,16 +15,21 @@ function Card({
   readonly onChoose: () => void;
   readonly ref?: Ref<HTMLButtonElement>;
 }) {
+  const described = useId();
   return (
     <li>
       <button
         ref={ref}
         type="button"
         className="flex w-full flex-col gap-0.5 rounded-md border border-border bg-panel p-3 text-left hover:border-border-strong focus-visible:outline-2 focus-visible:outline-ring"
+        aria-label={title}
+        aria-describedby={described}
         onClick={onChoose}
       >
         <span className="text-sm font-medium">{title}</span>
-        <span className="text-xs text-muted-foreground">{description}</span>
+        <span id={described} className="text-xs text-muted-foreground">
+          {description}
+        </span>
       </button>
     </li>
   );

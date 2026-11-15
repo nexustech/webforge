@@ -37,7 +37,9 @@ test.afterEach(async () => {
 async function addTestHost(page: Page, sftp: Awaited<ReturnType<typeof startSftpServer>>) {
   const publish = page.getByRole("dialog", { name: "Publish" });
   // The site's first: where it's hosted, from the cards (#1014).
-  await publish.getByRole("button", { name: /^A web host with a control panel/ }).click();
+  await publish
+    .getByRole("button", { name: "A web host with a control panel", exact: true })
+    .click();
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
   await form.getByLabel("Name", { exact: true }).fill("Test host");
   await form.getByLabel("Connection", { exact: true }).selectOption("sftp");
@@ -82,7 +84,7 @@ test("starts the host form at the site's web address, and tests only a filled-in
   const page = await openPublish(path);
   await page
     .getByRole("dialog", { name: "Publish" })
-    .getByRole("button", { name: /^A web host with a control panel/ })
+    .getByRole("button", { name: "A web host with a control panel", exact: true })
     .click();
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
   // The address from Site Settings, not asked for again.
@@ -117,9 +119,13 @@ test("adds an SFTP destination and keeps its password in the keychain, never the
   await expect(
     publish.getByRole("heading", { name: "Where is your website hosted?" }),
   ).toBeVisible();
-  await expect(publish.getByRole("button", { name: /^I don't have a host yet/ })).toBeVisible();
+  await expect(
+    publish.getByRole("button", { name: "I don't have a host yet", exact: true }),
+  ).toBeVisible();
   await expect(publish.getByRole("button", { name: "Add Destination" })).toHaveCount(0);
-  await publish.getByRole("button", { name: /^A web host with a control panel/ }).click();
+  await publish
+    .getByRole("button", { name: "A web host with a control panel", exact: true })
+    .click();
 
   const form = page.getByRole("dialog", { name: "Publish to your web host" });
   await form.getByLabel("Name", { exact: true }).fill("Test host");
