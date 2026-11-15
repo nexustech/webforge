@@ -276,7 +276,7 @@ export const publish = {
   "publish.failed.stage.connect":
     "{appName} couldn't compare your site with what's on your host, so nothing was sent. Check your internet connection and publish again.",
   "publish.failed.stage.upload":
-    "Publishing stopped while sending your files, so your website may be part old, part new. Publish again to send the rest.",
+    "Publishing stopped while sending your files. Publish again to send the rest.",
   "publish.failed.stage.verify":
     "Your files were sent, but {appName} couldn't check that your website is live. Open its address in your browser to see it.",
 } as const;

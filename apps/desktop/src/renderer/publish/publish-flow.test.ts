@@ -245,7 +245,7 @@ describe("publishTo (4.5, F-PB-2)", () => {
     await publishTo(flow, destination);
     // Its own last stage, not the other publish's "verifying".
     expect(toast.error).toHaveBeenCalledWith(
-      "Publishing stopped while sending your files, so your website may be part old, part new. Publish again to send the rest.",
+      "Publishing stopped while sending your files. Publish again to send the rest.",
       expect.objectContaining({ id: "progress" }),
     );
   });
