@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PageId } from "@webforge/model";
+import { userEvent, within } from "storybook/test";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 
@@ -45,3 +46,35 @@ export const CustomWidth: Story = {
 
 /** Before the canvas has shown the page: no size yet. */
 export const SizeUnknown: Story = { args: { size: null } };
+
+/**
+ * The toolbar narrower (#1008), as smaller windows and wider side columns leave it: the controls
+ * that don't fit move into the View menu, never Desktop, Tablet or Mobile.
+ */
+const at = (width: number): Story => ({
+  render: (args) => (
+    <div style={{ width }}>
+      <CanvasToolbar {...args} />
+    </div>
+  ),
+});
+
+/** 640 px: the size read-out is an icon, its device list behind it. */
+export const At640: Story = at(640);
+
+/** 542 px: the width box is in the View menu too. */
+export const At542: Story = at(542);
+
+/** 478 px: Zoom In, Zoom Out and Rotate are in the View menu too. */
+export const At478: Story = at(478);
+
+/** 384 px, the toolbar at the smallest window: the page list narrower. */
+export const AtSmallestWindow: Story = at(384);
+
+/** The View menu at the smallest window, holding what the toolbar has no room for. */
+export const ViewMenuAtSmallestWindow: Story = {
+  ...at(384),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button", { name: "View" }));
+  },
+};

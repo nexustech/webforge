@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createPreviewStore } from "../editor/edit-previews.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
@@ -341,6 +341,88 @@ describe("View menu and devices (F-ED-25)", () => {
     });
     expect(onViewportChange).toHaveBeenCalledWith(1080);
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+describe("a narrow toolbar (#1008)", () => {
+  const user = () => userEvent.setup({ delay: null });
+
+  /** Every toolbar as narrow as `width`, its content `content` wide, however compact. */
+  function toolbarOf(width: number, content: number) {
+    // Over happy-dom's own getters, which measure nothing, for the toolbar only.
+    for (const [key, value] of [
+      ["clientWidth", width],
+      ["scrollWidth", content],
+    ] as const) {
+      Object.defineProperty(HTMLElement.prototype, key, {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.getAttribute("role") === "toolbar" ? value : 0;
+        },
+      });
+      onTestFinished(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, key);
+      });
+    }
+  }
+
+  it("keeps Desktop, Tablet and Mobile, and moves the rest into the View menu", async () => {
+    toolbarOf(380, 1000);
+    const { onZoomChange, onViewportChange } = setUp(375, { width: 375, height: 900, zoom: 1 });
+
+    for (const name of ["Desktop", "Tablet", "Mobile"]) {
+      expect(screen.getByRole("radio", { name })).toBeTruthy();
+    }
+    expect(screen.getByRole("combobox", { name: "Zoom" })).toBeTruthy();
+    for (const name of ["Zoom In", "Zoom Out", "Rotate"]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(screen.queryByRole("spinbutton", { name: "Canvas width in pixels" })).toBeNull();
+    // An icon, named by the size it no longer shows.
+    const sizeButton = screen.getByRole("button", {
+      name: "Page size 375 × 900 @ 100%: choose a device",
+    });
+    expect(sizeButton.textContent).toBe("");
+
+    await user().click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Zoom In",
+      "Zoom Out",
+      "Rotate",
+      "Canvas width…",
+    ]);
+    // Kept open, to zoom again.
+    await user().click(screen.getByRole("menuitem", { name: "Zoom Out" }));
+    expect(onZoomChange).toHaveBeenCalledOnce();
+    await user().click(screen.getByRole("menuitem", { name: "Rotate" }));
+    expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(812);
+  });
+
+  it("takes a width from the View menu's Canvas width…, as the width box did", async () => {
+    toolbarOf(380, 1000);
+    const { onViewportChange } = setUp(375);
+
+    await user().click(screen.getByRole("button", { name: "View" }));
+    await user().click(screen.getByRole("menuitem", { name: "Canvas width…" }));
+    const dialog = await openedDialog("Canvas width");
+    const width = dialog.getByRole("spinbutton", { name: "Width in pixels" });
+    expect((width as HTMLInputElement).value).toBe("375");
+    await user().clear(width);
+    await user().type(width, "900");
+    await user().click(dialog.getByRole("button", { name: "Show Width" }));
+
+    expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(900);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows everything again, the View menu its options only, once there is room", () => {
+    toolbarOf(2000, 2000);
+    setUp();
+    for (const name of ["Zoom In", "Zoom Out", "Rotate"]) {
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    }
+    expect(screen.getByRole("spinbutton", { name: "Canvas width in pixels" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Devices" }).textContent).toBe("Devices");
   });
 });
 
