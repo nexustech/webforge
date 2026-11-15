@@ -26,17 +26,18 @@ export function reasonRowProps(command: Command): {
  */
 export function CommandLabel({
   command,
-  label = command.label,
+  label,
 }: {
   readonly command: Command;
   /** Its name here, when not its label: the command box's `paletteLabel`. */
   readonly label?: string;
 }) {
+  const name = label ?? command.label;
   const reason = reasonOf(command);
-  if (reason === undefined) return label;
+  if (reason === undefined) return name;
   return (
     <span className="flex min-w-0 flex-col">
-      <span>{label}</span>
+      <span>{name}</span>
       <span className="text-xs" aria-hidden>
         {reason}
       </span>
