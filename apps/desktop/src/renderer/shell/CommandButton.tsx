@@ -59,8 +59,7 @@ export function CommandButton({
     <Button
       variant="ghost"
       size={size ?? (text === undefined ? "icon" : "default")}
-      // A disabled button mutes its colour-coded icon too.
-      className={cn("[&_svg]:transition-colors [&:disabled_svg]:text-disabled", className)}
+      className={cn("[&_svg]:transition-colors", className)}
       disabled={disabled}
       // Found by the tour, which points at it (OB-3).
       data-command={commandId}
