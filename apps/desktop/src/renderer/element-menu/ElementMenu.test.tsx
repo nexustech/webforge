@@ -184,7 +184,7 @@ describe("ElementMenu (1.35)", () => {
     commands.register({ id: "edit.copyStyle", label: "Copy Style", run: vi.fn() });
     commands.register({
       id: "edit.pasteStyle",
-      label: "Paste Style (onto a Heading)",
+      label: "Paste Style (onto Another Heading)",
       enabled: false,
       run: vi.fn(),
     });
@@ -196,7 +196,7 @@ describe("ElementMenu (1.35)", () => {
 
     expect(items().slice(5, 7)).toEqual([
       ["Copy StyleCtrl+Alt+C", false],
-      ["Paste Style (onto a Heading)Ctrl+Alt+V", true],
+      ["Paste Style (onto Another Heading)Ctrl+Alt+V", true],
     ]);
   });
 

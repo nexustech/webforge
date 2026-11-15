@@ -4,6 +4,8 @@ export const notes = {
   "notes.add": "Add Note…",
   "notes.edit": "Edit Note…",
   "notes.resolveCommand": "Resolve Note",
+  // Why Resolve Note is disabled (#1010).
+  "notes.resolve.none": "Select something with a note to resolve it.",
   // The dialog.
   "notes.title": "Note on {item}",
   "notes.description":

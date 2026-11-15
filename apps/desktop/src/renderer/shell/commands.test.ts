@@ -2,6 +2,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setFailureLog } from "../log.js";
 import {
+  availability,
   createCommandRegistry,
   formatShortcut,
   installCommandShortcuts,
@@ -49,6 +50,29 @@ describe("createCommandRegistry", () => {
     registry.update("undo", { enabled: true });
     expect(registry.run("undo")).toBe(true);
     expect(run).toHaveBeenCalledOnce();
+  });
+
+  it("says why a command is disabled, and forgets why once it's enabled (#1010)", () => {
+    const registry = createCommandRegistry();
+    const listener = vi.fn();
+    registry.register({
+      id: "undo",
+      label: "Undo",
+      ...availability("Nothing to undo."),
+      run: vi.fn(),
+    });
+    registry.subscribe(listener);
+
+    expect(registry.get("undo")).toMatchObject({
+      enabled: false,
+      disabledReason: "Nothing to undo.",
+    });
+    registry.update("undo", availability("Something else."));
+    expect(registry.get("undo")?.disabledReason).toBe("Something else.");
+    registry.update("undo", availability(undefined));
+    expect(registry.get("undo")).toMatchObject({ enabled: true, disabledReason: undefined });
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(registry.run("undo")).toBe(true);
   });
 
   it("tells subscribers about changes and keeps the list stable otherwise", () => {

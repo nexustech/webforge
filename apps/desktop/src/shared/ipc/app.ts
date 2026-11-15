@@ -35,6 +35,8 @@ const nativeSubmenuItemSchema = z.strictObject({
   /** Its shortcut as Electron writes accelerators (`CmdOrCtrl+Shift+Z`), shown only. */
   accelerator: z.string().max(40).optional(),
   enabled: z.boolean(),
+  /** Why it's disabled, already translated (#1010): shown under its label. */
+  reason: z.string().min(1).max(120).optional(),
   /** After a separator: Clear Recent at the foot of Open Recent. */
   separated: z.literal(true).optional(),
 });

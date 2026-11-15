@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { appChannels, type NativeMenus } from "../../shared/ipc/app.js";
 import { reportFailure } from "../log.js";
-import { createCommandRegistry, electronAccelerator } from "./commands.js";
+import { availability, createCommandRegistry, electronAccelerator } from "./commands.js";
 import { nativeMenusOf, syncNativeMenus } from "./native-menus.js";
 
 vi.mock("../log.js", () => ({ reportFailure: vi.fn() }));
@@ -70,6 +70,32 @@ describe("macOS's menu bar (LF-13)", () => {
         items: [{ id: "view.zoomIn", label: "Zoom In", enabled: true, accelerator: "CmdOrCtrl+=" }],
       },
     ]);
+  });
+
+  it("says why a disabled command is, in a way the schema takes (#1010)", () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: "edit.undo",
+      label: "Undo",
+      menu: "edit",
+      ...availability("Nothing to undo."),
+      run: vi.fn(),
+    });
+    registry.register({
+      id: "edit.redo",
+      label: "Redo",
+      menu: "edit",
+      enabled: false,
+      run: vi.fn(),
+    });
+
+    const menus = nativeMenusOf(registry);
+
+    expect(menus[0]?.items).toEqual([
+      expect.objectContaining({ id: "edit.undo", enabled: false, reason: "Nothing to undo." }),
+      expect.not.objectContaining({ reason: expect.anything() }),
+    ]);
+    expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);
   });
 
   it("lists a submenu's commands under the item that opens it, the schema's way (3.18)", () => {

@@ -29,11 +29,17 @@ const MENUS: readonly {
   { id: "help", label: () => t("shell.menu.help") },
 ];
 
-/** A command as an item of macOS's menu bar: its label, whether it can run, and its keys. */
+/**
+ * A command as an item of macOS's menu bar: its label, whether it can run and why not (#1010), and
+ * its keys.
+ */
 const nativeItem = (command: Command) => ({
   id: command.id,
   label: command.label,
   enabled: command.enabled !== false,
+  ...(command.enabled === false && command.disabledReason !== undefined
+    ? { reason: command.disabledReason }
+    : {}),
   ...(command.shortcut === undefined ? {} : { accelerator: electronAccelerator(command.shortcut) }),
 });
 

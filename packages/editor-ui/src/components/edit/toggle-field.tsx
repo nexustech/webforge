@@ -27,7 +27,8 @@ export function ToggleField({
       className={cn(
         "relative h-4 w-7 shrink-0 rounded-full border border-border transition-colors",
         "outline-none focus-visible:ring-2 focus-visible:ring-ring aria-invalid:border-destructive",
-        "disabled:pointer-events-none disabled:opacity-50",
+        // Disabled, a muted track and knob, on or off (#1010).
+        "group disabled:pointer-events-none disabled:bg-muted",
         on ? "bg-primary" : "bg-input",
       )}
       onClick={() => {
@@ -39,6 +40,7 @@ export function ToggleField({
         aria-hidden
         className={cn(
           "absolute top-px left-px size-3 rounded-full bg-foreground transition-transform",
+          "group-disabled:bg-disabled",
           on && "translate-x-3",
         )}
       />
