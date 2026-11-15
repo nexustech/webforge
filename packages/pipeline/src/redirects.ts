@@ -58,23 +58,58 @@ export function redirectsFile(redirects: readonly SiteRedirect[]): string {
     .join("\n")}\n`;
 }
 
+/** `text` as a regular expression matching it: an old address's `.` is all it needs escaping. */
+const literal = (text: string) => text.replace(/[.\\^$|?*+()[\]{}]/g, "\\$&");
+
 /**
- * The files `site`'s old addresses need: a page at each, and `_redirects` with a rule for each page
- * written. An old address at a file the export made already (`taken`, the thank-you page it adds,
- * 3.7) gets neither, in any case: Windows' and macOS's folders don't tell `About.html` from
- * `about.html`, and a rule would send the file's visitors away. None without any.
+ * The rules an Apache host's `.htaccess` needs to answer each old address with a real 301 (5.15,
+ * CC-7), which publishing writes into the host's file as a marked block, never touching the rest
+ * (`@webforge/publish`'s `withRedirectRules`). Each old address, with or without `.html`, in any
+ * case, goes on to its page. `%1`, the folder the request reached the site's folder by, keeps the
+ * rules right for a site in a folder of the host (`/shop/`), with no address to know;
+ * `mod_rewrite` only, which the rules check for. The pages at the old addresses stay, for hosts
+ * that ignore them and for the site opened from disk.
  */
-export function redirectFiles(
-  site: SiteSnapshot,
-  taken: Iterable<string> = [],
-): [string, string][] {
+export function htaccessRules(redirects: readonly SiteRedirect[]): string {
+  return [
+    "<IfModule mod_rewrite.c>",
+    "RewriteEngine On",
+    ...redirects.flatMap(({ from, to }) => {
+      const old = `${literal(from.slice(0, -".html".length))}(\\.html)?`;
+      const target = to === "index" ? "" : `${to}.html`;
+      return [
+        `RewriteCond %{REQUEST_URI} ^(.*/)${old}$ [NC]`,
+        `RewriteRule ^${old}$ %1${target} [R=301,NC,L]`,
+      ];
+    }),
+    "</IfModule>",
+  ].join("\n");
+}
+
+/**
+ * The old addresses `site`'s export writes: each but one at a file the export made already
+ * (`taken`, the thank-you page it adds, 3.7), in any case, as Windows' and macOS's folders don't
+ * tell `About.html` from `about.html`, and a rule would send the file's visitors away.
+ */
+export function writtenRedirects(site: SiteSnapshot, taken: Iterable<string> = []): SiteRedirect[] {
   const used = new Set([...taken].map((file) => file.toLowerCase()));
-  const written = (site.redirects ?? []).filter((redirect) => {
+  return (site.redirects ?? []).filter((redirect) => {
     const file = redirect.from.toLowerCase();
     if (used.has(file)) return false;
     used.add(file);
     return true;
   });
+}
+
+/**
+ * The files `site`'s old addresses need: a page at each, and `_redirects` with a rule for each page
+ * written ({@link writtenRedirects}). None without any.
+ */
+export function redirectFiles(
+  site: SiteSnapshot,
+  taken: Iterable<string> = [],
+): [string, string][] {
+  const written = writtenRedirects(site, taken);
   if (written.length === 0) return [];
   return [
     ...written.map((redirect): [string, string] => [redirect.from, redirectPage(site, redirect)]),

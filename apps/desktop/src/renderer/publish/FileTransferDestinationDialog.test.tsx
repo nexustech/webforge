@@ -78,6 +78,38 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     });
   });
 
+  it("leaves redirects for Apache hosts off until turned on, and keeps them on (5.15)", async () => {
+    const { user, fill, save, onSave } = setUp();
+    const redirects = () =>
+      screen.getByRole("checkbox", {
+        name: "Redirect old addresses on Apache hosts (.htaccess)",
+      }) as HTMLInputElement;
+    expect(redirects().checked).toBe(false);
+
+    await fill("Host", "ftp.rosasbakery.co.uk");
+    await fill("User name", "rosa");
+    await fill("Password", "test-only-password");
+    await user.click(redirects());
+    await save();
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destination: expect.objectContaining({ redirectRules: true }),
+      }),
+    );
+    cleanup();
+
+    // Opened again, it shows as on.
+    setUp({
+      protocol: "ftps",
+      host: "ftp.rosasbakery.co.uk",
+      user: "rosa",
+      folder: "/public_html",
+      redirectRules: true,
+    });
+    expect(redirects().checked).toBe(true);
+  });
+
   it("says a host isn't a host's name or address in its own words", async () => {
     const { fill, save, onSave } = setUp();
     await fill("Host", "192.168.1.");

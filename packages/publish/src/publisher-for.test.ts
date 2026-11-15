@@ -70,6 +70,24 @@ describe("publisherFor (4.4a, ADR 0018 §2)", { timeout: 30_000 }, () => {
     expect(manifest).toMatchObject({ site: target.site });
   });
 
+  it("writes the build's rules into the host's .htaccess only when the destination asks (5.15)", async () => {
+    const rules = "<IfModule mod_rewrite.c>\nRewriteEngine On\n</IfModule>";
+    const output = { ...build, htaccess: rules };
+    const htaccess = join(server.site, ".htaccess");
+    const off = publisherFor(sftp(), password, { hostKey: server.hostKey }, timeout);
+    await run(off.publish(output, target, AbortSignal.timeout(20_000)));
+    expect(() => readFileSync(htaccess, "utf8")).toThrow();
+
+    const destination = sftp();
+    const asked =
+      destination.kind === "file-transfer"
+        ? { ...destination, settings: { ...destination.settings, redirectRules: true } }
+        : destination;
+    const on = publisherFor(asked, password, { hostKey: server.hostKey }, timeout);
+    await run(on.publish(output, target, AbortSignal.timeout(20_000)));
+    expect(readFileSync(htaccess, "utf8")).toContain(`${rules}\n# END Webforge redirects`);
+  });
+
   it("refuses before connecting: no trusted key, or a sign-in of the wrong kind", async () => {
     const refusals = [
       [publisherFor(sftp(), password, {}), "untrusted-host"],

@@ -223,6 +223,73 @@ describe("publishToFolder", () => {
   });
 });
 
+describe("publishToFolder: the host's .htaccess (5.15, CC-7)", () => {
+  const RULES = "<IfModule mod_rewrite.c>\nRewriteEngine On\n</IfModule>";
+  const withRules = { ...publishing(), redirectRules: true };
+  const OWN = "ErrorDocument 404 /404.html\n";
+
+  /** Publishes `site` with `htaccess` as the build's rules. */
+  async function publishRules(
+    folder: RemoteFolder,
+    htaccess: string | undefined,
+    as: Parameters<typeof publishToFolder>[3],
+  ) {
+    const output: BuildOutput = { ...build(site), ...(htaccess === undefined ? {} : { htaccess }) };
+    for await (const _ of publishToFolder(folder, output, new AbortController().signal, as)) {
+      // Each event, until it's published.
+    }
+  }
+
+  it("writes the rules into the host's file once the pages are there, keeping its own", async () => {
+    const { folder, stored, log } = memoryFolder({ ".htaccess": OWN });
+    await publishRules(folder, RULES, withRules);
+
+    const written = text(stored.get(".htaccess"));
+    expect(written).toContain("# BEGIN Webforge redirects\n");
+    expect(written).toContain(`${RULES}\n# END Webforge redirects\n\n${OWN}`);
+    // After the last page, before the manifest says the publish is done.
+    expect(log.slice(-2)).toEqual(["write .htaccess", `write ${MANIFEST_FILE}`]);
+    // Not one of the site's files: never in the manifest, never removed as one.
+    expect(text(stored.get(MANIFEST_FILE))).not.toContain(".htaccess");
+  });
+
+  it("takes the block out when the site has no old addresses now, or the option is off", async () => {
+    const { folder, stored } = memoryFolder({ ".htaccess": OWN });
+    await publishRules(folder, RULES, withRules);
+    await publishRules(folder, undefined, withRules);
+    expect(text(stored.get(".htaccess"))).toBe(OWN);
+
+    await publishRules(folder, RULES, withRules);
+    await publishRules(folder, RULES, publishing());
+    expect(text(stored.get(".htaccess"))).toBe(OWN);
+  });
+
+  it("removes a file that held only its block, and writes nothing that hasn't changed", async () => {
+    const { folder, stored, log } = memoryFolder();
+    await publishRules(folder, RULES, withRules);
+    log.length = 0;
+    await publishRules(folder, RULES, withRules);
+    expect(log.filter((entry) => entry.endsWith(".htaccess"))).toEqual([]);
+
+    await publishRules(folder, undefined, publishing());
+    expect(stored.has(".htaccess")).toBe(false);
+    expect(log).toContain("remove .htaccess");
+  });
+
+  it("never touches a host's file it can't read as text, or one it isn't asked to", async () => {
+    const binary = new Uint8Array([0xff, 0xfe, 0x00]);
+    const { folder, stored, log } = memoryFolder();
+    stored.set(".htaccess", binary);
+    await publishRules(folder, RULES, withRules);
+    expect(stored.get(".htaccess")).toBe(binary);
+
+    const plain = memoryFolder({ ".htaccess": OWN });
+    await publishRules(plain.folder, RULES, publishing());
+    expect(plain.log.filter((entry) => entry.endsWith(".htaccess"))).toEqual([]);
+    expect(log.filter((entry) => entry.endsWith(".htaccess"))).toEqual([]);
+  });
+});
+
 describe("uploadPathFor", () => {
   it("records the site that published and when, in manifest version 2 (A8)", async () => {
     const { folder, manifest } = memoryFolder();

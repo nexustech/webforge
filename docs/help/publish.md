@@ -4,7 +4,7 @@ id: publish
 title: Publish
 summary: Put your website on your web host or on Netlify, and update it with one click whenever you change something.
 related: [export, site-check, site-settings, version-history]
-updated: 2026-11-08
+updated: 2026-11-15
 ---
 
 # Publish
@@ -26,6 +26,7 @@ Click **Add Destination**, choose **FTP, FTPS or SFTP…**, then fill in the det
 - **User name**, and sign in with **A password** or, for SFTP, **A private key file**.
 - **Folder:** the folder your host serves your website from, such as `/public_html`.
 - **Web address:** your site's address. If Site Settings has none yet, {appName} fills it in there too.
+- **Redirect old addresses on Apache hosts (.htaccess):** off unless you turn it on. Most hosts reached by FTP run Apache. Turn it on and each publish also sends a renamed page's old address on with a permanent redirect, which search engines follow, as Netlify does (see [Keeping old addresses working](pages.md#keeping-old-addresses-working)). {appName} writes only its own block of lines in your host's `.htaccess` file, between a `# BEGIN` line and an `# END` line with its name, and leaves everything else in the file as it is. Turn it off and the next publish takes the block out again.
 
 The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
 

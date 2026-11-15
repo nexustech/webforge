@@ -6,6 +6,7 @@ import {
   type StoredMedia,
 } from "@webforge/pipeline";
 import {
+  type BuildOutput,
   PublishError,
   type PublishedEvent,
   type PublishRunEvent,
@@ -74,7 +75,7 @@ export async function runPublish(
       readMedia: channel.readMedia,
     };
     const trusted = new Set(job.trustedCode);
-    let files: ReadonlyMap<string, Uint8Array> | undefined;
+    let built: BuildOutput | undefined;
     const build = channel.pipeline.build(siteSnapshotFor(job.site, channel.library), resources, {
       mode: "publish",
       signal: channel.signal,
@@ -83,16 +84,19 @@ export async function runPublish(
       host: job.destination.kind === "netlify" ? "netlify" : undefined,
     });
     for await (const event of build) {
-      if (event.stage === "done") files = event.site.files;
-      else progress(event);
+      // The files, and the rules for old addresses an Apache host may take (5.15).
+      if (event.stage === "done") {
+        const { files, htaccess } = event.site;
+        built = { files, ...(htaccess === undefined ? {} : { htaccess }) };
+      } else progress(event);
     }
-    if (files === undefined) return { type: "failed", code: "build-failed", detail: "unexpected" };
+    if (built === undefined) return { type: "failed", code: "build-failed", detail: "unexpected" };
 
     const target = {
       site: job.target.site,
       ...(job.target.replaceOtherSite === true ? { replaceOtherSite: true } : {}),
     };
-    const run = publisherOf().publish({ files }, target, channel.signal);
+    const run = publisherOf().publish(built, target, channel.signal);
     return await outcomeOf(run, progress, started);
   } catch (error) {
     return failureOf(error);
