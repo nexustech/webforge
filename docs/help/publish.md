@@ -13,9 +13,18 @@ updated: 2026-11-15
 
 Click **Publish** in the title bar, choose **File › Publish…**, or press Ctrl+U (Cmd+U on a Mac) when you're not typing text.
 
+## Choosing a web host
+
+Your website is a folder of plain files, so any host that can serve plain files works:
+
+- **A web host with a control panel,** such as cPanel or Plesk. Most hosting plans come with one, and its control panel shows the details {appName} asks for.
+- **Netlify,** which hosts websites for you and has a free plan. See [Adding Netlify](#adding-netlify).
+
+If your host isn't either of these, you can still put your site there: [export](export.md) it as a folder or a ZIP file, then upload the files with your host's own tools.
+
 ## Adding your web host
 
-Click **Add Destination**, choose **FTP, FTPS or SFTP…**, then fill in the details from your web host's control panel:
+The first time you publish, {appName} asks **Where is your website hosted?** Choose **A web host with a control panel**. After that, click **Add Destination** and choose **Web Host with a Control Panel…**. Then fill in the details from your web host's control panel:
 
 - **Name:** anything that helps you recognise it. Leave it empty to use the host's name.
 - **Control panel:** _cPanel_ or _Plesk_ fills in the usual settings for you. If you're not sure, choose _Another, or I don't know_.
@@ -31,7 +40,7 @@ Click **Add Destination**, choose **FTP, FTPS or SFTP…**, then fill in the det
 
 ## Adding Netlify
 
-[Netlify](https://www.netlify.com) hosts websites for you, and has a free plan. Click **Add Destination**, choose **Netlify…**, then:
+[Netlify](https://www.netlify.com) hosts websites for you, and has a free plan. Choose **Netlify** the first time you publish, or click **Add Destination** and choose **Netlify…**, then:
 
 1. **Sign in to Netlify.** Make a _personal access token_ on Netlify (in **User settings › Applications › Personal access tokens**), paste it into **Personal access token**, and click **Connect**. Where it's offered, **Sign In with Netlify** opens Netlify in your browser instead: approve {appName} there, then come back.
 2. **Choose the Netlify site** to publish to, or **A new site**. A new site's name becomes part of its address, such as `rosas-bakery.netlify.app`. Leave it empty and Netlify makes one up.

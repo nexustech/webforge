@@ -18,7 +18,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  EmptyState,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -27,6 +26,7 @@ import {
   PUBLISH_DESTINATIONS_MAX,
   type PublishDestination,
 } from "@webforge/model";
+import { ChevronDownIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type {
   ConnectionResult,
@@ -40,6 +40,7 @@ import {
   FileTransferDestinationDialog,
   type FileTransferSaved,
 } from "./FileTransferDestinationDialog.js";
+import { FirstDestination } from "./FirstDestination.js";
 import {
   type NetlifyAccount,
   type NetlifyDestinationApi,
@@ -318,7 +319,10 @@ export function PublishDialog({
               {t("publish.destinations.loading")}
             </p>
           ) : listed.length === 0 ? (
-            <EmptyState role="status">{t("publish.destinations.empty")}</EmptyState>
+            <FirstDestination
+              netlify={netlify !== undefined}
+              onAdd={(kind) => setEditing({ kind, listed: undefined })}
+            />
           ) : (
             <ul className="space-y-2">
               {listed.map((each) => (
@@ -344,7 +348,7 @@ export function PublishDialog({
             </ul>
           )}
           <DialogFooter>
-            {netlify === undefined ? (
+            {listed?.length === 0 ? null : netlify === undefined ? (
               <Button
                 variant="outline"
                 disabled={cannotAdd}
@@ -353,11 +357,13 @@ export function PublishDialog({
                 {t("publish.destinations.add")}
               </Button>
             ) : (
-              // Which kind of destination (4.4b): a web host over FTP, FTPS or SFTP, or Netlify.
+              // Which kind of destination (4.4b): a web host with a control panel, or Netlify. The
+              // first one is chosen from cards instead (#1014).
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" disabled={cannotAdd}>
                     {t("publish.destinations.add")}
+                    <ChevronDownIcon aria-hidden />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">

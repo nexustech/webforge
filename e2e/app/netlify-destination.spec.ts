@@ -75,12 +75,11 @@ async function formSettings(page: Page) {
   return settings;
 }
 
-/** The Publish dialog's *Add Destination › Netlify…*, signed in with the mock's token. */
+/** The Publish dialog's *Netlify* card, the site's first destination, signed in with the mock's token. */
 async function addNetlify(page: Page, mock: MockNetlify) {
   await page.getByRole("button", { name: "Publish…", exact: true }).click();
   const publish = page.getByRole("dialog", { name: "Publish" });
-  await publish.getByRole("button", { name: "Add Destination" }).click();
-  await page.getByRole("menuitem", { name: "Netlify…" }).click();
+  await publish.getByRole("button", { name: /^Netlify/ }).click();
   const form = page.getByRole("dialog", { name: "Add a Netlify Destination" });
   // Netlify's own sign-in waits for the app's client ID: only the token until then.
   await expect(form.getByRole("button", { name: "Sign In with Netlify" })).toHaveCount(0);
