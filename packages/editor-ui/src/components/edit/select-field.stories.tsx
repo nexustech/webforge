@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import type { EditPanelField } from "./edit-panel.js";
+import type { EditPanelField } from "./edit-panel-types.js";
 import { FieldStory, fieldStoryFrame } from "./field-story.js";
 
 /** A choice from a short list, as a native select (SelectField). */
