@@ -203,7 +203,7 @@ describe("the Elements tab's hint when nothing can be added (#1012)", () => {
     const session = sessionWithContent([{ type: "Hero", props: { id: "hero" } }]);
     session.select("hero");
     expect(noElementsHint(session)).toBe(
-      "A Hero holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
+      "The selected section, Hero, holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
     );
     expect(addTargetFor(session, "Heading")).toBeUndefined();
   });

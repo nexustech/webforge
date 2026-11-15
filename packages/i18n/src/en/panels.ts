@@ -88,7 +88,7 @@ export const panels = {
   "add.noSection":
     "This page has no sections yet. Add a Section from Sections, then elements inside it.",
   "add.noHolder.selected":
-    "A {section} holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
+    "The selected section, {section}, holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
   "add.noHolder": "Elements go inside a Section, and this page has none. Add one from Sections.",
   "add.noMatch": "Nothing matches '{query}'.",
   "add.other": "Other",
