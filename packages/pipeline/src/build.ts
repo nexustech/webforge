@@ -40,7 +40,7 @@ import { htmlToMarkdown } from "./markdown.js";
 import { minifiedCss, minifiedHtml, minifiedJs } from "./minify.js";
 import { netlifyFormNames } from "./netlify-forms.js";
 import { PREVIEW_STYLESHEET } from "./preview-stylesheet.js";
-import { redirectFiles } from "./redirects.js";
+import { htaccessRules, redirectFiles, writtenRedirects } from "./redirects.js";
 import type { PipelineResources } from "./resources.js";
 import { scriptMistake } from "./script-mistake.js";
 import {
@@ -143,6 +143,13 @@ export type BuiltSite = {
   readonly shareImages: ReadonlyMap<string, string>;
   /** The icon set made from Site Settings' icon (3.4), for the web app manifest (3.5). */
   readonly icons: readonly SiteIcon[];
+  /**
+   * The rules an Apache host needs for a real 301 at each old address the build wrote a page at
+   * (5.15, CC-7): what publishing to a file-transfer destination writes into the host's
+   * `.htaccess`, as a marked block, when the destination asks. None in a preview, or without old
+   * addresses.
+   */
+  readonly htaccess?: string | undefined;
   readonly report: {
     readonly pages: number;
     readonly files: number;
@@ -724,7 +731,10 @@ export async function* buildEvents(
   for (const [path, content] of siteFiles(site, icons)) files.set(path, text.encode(content));
   // Old addresses kept working (#862), never in a preview, which no one else reads. A file the
   // export made already (the thank-you page it adds, 3.7) keeps its place, in any case.
+  let htaccess: string | undefined;
   if (run.mode !== "preview") {
+    const written = writtenRedirects(site, files.keys());
+    if (written.length > 0) htaccess = htaccessRules(written);
     for (const [path, content] of redirectFiles(site, files.keys())) {
       files.set(path, text.encode(content));
     }
@@ -792,6 +802,7 @@ export async function* buildEvents(
     files: sorted,
     shareImages,
     icons,
+    ...(htaccess === undefined ? {} : { htaccess }),
     report: { pages: site.pages.length, files: sorted.size, bytes, warnings },
   };
 }

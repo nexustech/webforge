@@ -36,6 +36,8 @@ export type SftpDestination = {
   readonly site: PublishedSite;
   /** The person agreed to replace another site published to the folder, for this publish (4.5). */
   readonly replaceOtherSite?: boolean;
+  /** *Redirects for Apache hosts* (5.15, CC-7): the build's rules go into the host's `.htaccess`. */
+  readonly redirectRules?: boolean;
 };
 
 /**
@@ -326,6 +328,7 @@ export function sftpPublisher(options: SftpOptions): Publisher<SftpDestination> 
           ...(dest.replaceOtherSite === undefined
             ? {}
             : { replaceOtherSite: dest.replaceOtherSite }),
+          ...(dest.redirectRules === true ? { redirectRules: true } : {}),
         });
       } catch (error) {
         throw fileTransferError(error, signal, sftpErrorCode);

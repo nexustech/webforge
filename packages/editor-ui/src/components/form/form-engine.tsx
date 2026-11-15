@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode, useId, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { BoxField } from "../edit/box-field.js";
 import { ChoiceField } from "../edit/choice-field.js";
@@ -96,7 +96,20 @@ export function Form<V extends FormValues, Out>({
       <div className="float-right -mt-1 ml-2">{help}</div>
     );
   };
-  const after = form.spec.after?.(form.values) ?? {};
+  // After a Save or a check that failed, the first field with a problem has the focus, so the
+  // person starts there (#1014). A frame later: a tab just chosen for it draws its fields after
+  // this render.
+  const root = useRef<HTMLDivElement>(null);
+  const { attempts } = form;
+  useEffect(() => {
+    if (attempts === 0) return undefined;
+    const frame = requestAnimationFrame(() => {
+      root.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [attempts]);
+
+  const after = form.spec.after?.(form.values, { validate: form.validate }) ?? {};
   const draw = (shown: readonly FormField[]) => (
     <div className="grid gap-3">
       {shown.map((field) => (
@@ -127,7 +140,7 @@ export function Form<V extends FormValues, Out>({
     );
   if (groups.length === 0) {
     return (
-      <div className="grid gap-3">
+      <div ref={root} className="grid gap-3">
         {general}
         {draw(fields)}
       </div>
@@ -141,7 +154,7 @@ export function Form<V extends FormValues, Out>({
   const headings = [...new Set(groups.flatMap((group) => group.heading ?? []))];
   if (headings.length > 0) {
     return (
-      <div className="grid gap-3">
+      <div ref={root} className="grid gap-3">
         {general}
         <Tabs
           orientation="vertical"
@@ -197,7 +210,7 @@ export function Form<V extends FormValues, Out>({
     );
   }
   return (
-    <div className="grid gap-3">
+    <div ref={root} className="grid gap-3">
       {general}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList

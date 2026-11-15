@@ -47,6 +47,9 @@ async function addTestHost(page: Page, sftp: Awaited<ReturnType<typeof startSftp
   await form.getByLabel("User name", { exact: true }).fill("baker");
   await form.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await form.getByLabel("Folder", { exact: true }).fill("/site");
+  // No web address, though the form starts with Site Settings' (#1014): the live check then
+  // reaches no other website.
+  await form.getByLabel("Web address", { exact: true }).fill("");
   await form.getByRole("button", { name: "Test Connection" }).click();
   await form.getByRole("button", { name: "Trust This Host" }).click();
   await expect(form.getByText(/Connected/)).toBeVisible();
@@ -63,6 +66,43 @@ async function openPublish(path: string): Promise<Page> {
   await expect(page.getByRole("dialog", { name: "Publish" })).toBeVisible();
   return page;
 }
+
+test("starts the host form at the site's web address, and tests only a filled-in form (#1014)", async () => {
+  const path = join(dir, "Rosa's Bakery.wforge");
+  const created = ProjectStore.create(path, { name: "Rosa's Bakery" });
+  const site = createSite({
+    name: "Rosa's Bakery",
+    language: "en",
+    homeTitle: "Home",
+    notFoundTitle: "Not found",
+  });
+  site.settings.address.url = "https://www.rosas-bakery.example";
+  created.saveSite(site);
+  created.close();
+
+  const page = await openPublish(path);
+  await page
+    .getByRole("dialog", { name: "Publish" })
+    .getByRole("button", { name: "Add Destination" })
+    .click();
+  await page.getByRole("menuitem", { name: "FTP, FTPS or SFTP…" }).click();
+  const form = page.getByRole("dialog", { name: "Publish to your web host" });
+  // The address from Site Settings, not asked for again.
+  await expect(form.getByLabel("Web address", { exact: true })).toHaveValue(
+    "https://www.rosas-bakery.example",
+  );
+
+  // Test Connection on a form with no host marks what's missing, starts at it, and connects to
+  // nothing.
+  await form.getByRole("button", { name: "Test Connection" }).click();
+  const host = form.getByLabel("Host", { exact: true });
+  await expect(host).toHaveAttribute("aria-invalid", "true");
+  await expect(host).toBeFocused();
+  await expect(form.getByText("Enter your host's address, such as ftp.example.com.")).toBeVisible();
+  await expect(form.getByText("Enter the user name your host gave you.")).toBeVisible();
+  await expect(form.getByText("Connecting…")).toHaveCount(0);
+  await expect(form.getByText("The connection didn't work.")).toHaveCount(0);
+});
 
 test("adds an SFTP destination and keeps its password in the keychain, never the site file (4.4a)", async () => {
   test.skip(

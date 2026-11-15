@@ -76,8 +76,18 @@ export type FormSpec<V extends FormValues, Out> = {
   readonly validateOn?: "change" | "save";
   /**
    * What the form shows after a field besides it, by the field's name, from the values as typed:
-   * Page Settings' search result under its title and description (3.16). Drawn in the form only;
-   * a part of Settings (`combineForms`) has none.
+   * Page Settings' search result under its title and description (3.16), or a button that checks
+   * the form first (`form.validate`: Test Connection, #1014). Drawn in the form only; a part of
+   * Settings (`combineForms`) has none.
    */
-  readonly after?: (values: V) => Readonly<Partial<Record<string, ReactNode>>>;
+  readonly after?: (values: V, form: FormActions) => Readonly<Partial<Record<string, ReactNode>>>;
+};
+
+/** What a form's own content (`after`) can ask of the form. */
+export type FormActions = {
+  /**
+   * Checks the values as Save does, and shows the problems `counts` keeps (all of them when left
+   * out), the first field with one focused: those problems, none when the values pass.
+   */
+  readonly validate: (counts?: (issue: FormIssue) => boolean) => readonly FormIssue[];
 };

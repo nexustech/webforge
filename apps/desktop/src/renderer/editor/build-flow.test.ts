@@ -7,7 +7,7 @@ const toast = vi.hoisted(() => ({
   loading: vi.fn((_title: string, _options?: object) => "progress"),
   error: vi.fn(),
 }));
-vi.mock("@webforge/editor-ui", () => ({ toast }));
+vi.mock("@webforge/editor-ui", () => ({ toast, QUIET_ACTION_TOAST: "toast-quiet-action" }));
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -89,7 +89,11 @@ describe("runWithProgress (#668)", () => {
     running.answer("done");
 
     await expect(outcome).resolves.toEqual({ result: "done", progress: "progress" });
-    expect(toast.loading).toHaveBeenNthCalledWith(1, "Working…", { action: expect.anything() });
+    // Its Cancel quiet: the toast's only button (#1014).
+    expect(toast.loading).toHaveBeenNthCalledWith(1, "Working…", {
+      action: expect.anything(),
+      className: "toast-quiet-action",
+    });
     expect(toast.loading).toHaveBeenNthCalledWith(2, "Working…", {
       id: "progress",
       description: "At images",

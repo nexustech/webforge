@@ -36,6 +36,10 @@ export const publish = {
   "publish.fileTransfer.url": "Web address",
   "publish.fileTransfer.url.help":
     "Where visitors find your site, such as https://www.example.com.",
+  // Real redirects on an Apache host (5.15, CC-7): off unless the person turns it on.
+  "publish.fileTransfer.redirectRules": "Redirect old addresses on Apache hosts (.htaccess)",
+  "publish.fileTransfer.redirectRules.help":
+    "Most hosts reached by FTP run Apache. Turn this on to send a renamed page's old address on with a permanent redirect, which search engines follow. {appName} writes only its own lines in your host's .htaccess file and leaves the rest alone.",
   // The site's publish destinations (4.4a): where the Publish button publishes to.
   "publish.destinations.title": "Publish",
   "publish.destinations.description":
@@ -83,6 +87,10 @@ export const publish = {
   // Problems the form words itself.
   "publish.fileTransfer.error.host": "Use the host's name, such as ftp.example.com.",
   "publish.fileTransfer.error.folder": "Use a folder, such as /public_html.",
+  "publish.fileTransfer.error.host.empty": "Enter your host's address, such as ftp.example.com.",
+  "publish.fileTransfer.error.user.empty": "Enter the user name your host gave you.",
+  "publish.fileTransfer.error.folder.empty":
+    "Enter the folder your host serves your site from, such as /public_html.",
   "publish.fileTransfer.error.password": "Type the password.",
   "publish.fileTransfer.error.key": "Choose your private key file.",
   "publish.fileTransfer.error.passphrase": "This key needs its passphrase.",
@@ -217,7 +225,7 @@ export const publish = {
   "publish.live.restored":
     "Netlify put back this version as it was published before, so nothing needed sending.",
   "publish.live.versionNotSaved": "This publish couldn't be kept in Version History.",
-  "publish.live.open": "Open Site",
+  "publish.live.open": "Open in Browser",
   "publish.live.copy": "Copy Link",
   "publish.live.copied": "Link copied",
   "publish.live.openFailed": "Your site couldn't be opened in your browser.",
@@ -264,4 +272,15 @@ export const publish = {
   "publish.failed.unreadable-version":
     "{appName} can't read that version, so it can't be republished.",
   "publish.failed.unknown": "Publishing didn't work. Publish again.",
+  // A publish that stopped for no reason of its own, by how far it came (#1014).
+  "publish.failed.start":
+    "{appName} couldn't start publishing, so nothing was sent. Publish again.",
+  "publish.failed.stage.build":
+    "{appName} stopped while getting your site ready, so nothing was sent. Publish again.",
+  "publish.failed.stage.connect":
+    "{appName} couldn't compare your site with what's on your host, so nothing was sent. Check your internet connection and publish again.",
+  "publish.failed.stage.upload":
+    "Publishing stopped while sending your files. Publish again to send the rest.",
+  "publish.failed.stage.verify":
+    "Your files were sent, but {appName} couldn't check that your website is live. Open its address in your browser to see it.",
 } as const;

@@ -2,7 +2,8 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { t } from "@webforge/i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { EditPanel, type EditPanelField, hasBuiltInRenderer } from "./edit-panel.js";
+import { EditPanel, hasBuiltInRenderer } from "./edit-panel.js";
+import type { EditPanelField } from "./edit-panel-types.js";
 import { FieldRenderersProvider } from "./field-context.js";
 import type { FieldRendererProps } from "./field-spec.js";
 import { ListField } from "./list-field.js";
