@@ -7,7 +7,7 @@ import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { createPublishRequests, type VersionToRepublish } from "../editor/publish-requests.js";
 import { provide } from "../editor/services.js";
-import { OnNetlify, PublishedYear, Publishing } from "../editor/window-services.js";
+import { OnNetlify, PublishedYear, Publishing, TrustedCode } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
@@ -45,7 +45,9 @@ export const publishArea: Area<WindowContext> = {
     ),
     provide(Publishing, () => createPublishRequests()),
   ],
-  register: ({ api, commands, session, windowDialogs, panels, codeTrust, use }) => {
+  uses: [TrustedCode],
+  register: ({ api, commands, session, windowDialogs, panels, use }) => {
+    const codeTrust = use(TrustedCode);
     const publishedYear = use(PublishedYear);
     const onNetlify = use(OnNetlify);
     const requests = use(Publishing);

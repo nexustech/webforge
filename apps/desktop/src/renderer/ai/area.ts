@@ -5,7 +5,12 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
 import { textSessionOpen } from "../editor/editor-session.js";
-import { OnNetlify, PublishedYear } from "../editor/window-services.js";
+import {
+  OnNetlify,
+  PublishedYear,
+  SiteCheckIgnored,
+  TrustedCode,
+} from "../editor/window-services.js";
 import { addMedia, importItems } from "../media/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { siteSession } from "../storage/index.js";
@@ -27,20 +32,12 @@ type Asking = { readonly asked: MediaAsk; readonly answer: (addFiles: boolean) =
  */
 export const aiRequestsArea: Area<WindowContext> = {
   id: "aiRequests",
-  uses: [PublishedYear, OnNetlify],
-  register: ({
-    api,
-    session,
-    preferences,
-    siteWide,
-    commands,
-    codeTrust,
-    siteCheckIgnored,
-    windowDialogs,
-    use,
-  }) => {
+  uses: [PublishedYear, OnNetlify, TrustedCode, SiteCheckIgnored],
+  register: ({ api, session, preferences, siteWide, commands, windowDialogs, use }) => {
     const publishedYear = use(PublishedYear);
     const onNetlify = use(OnNetlify);
+    const codeTrust = use(TrustedCode);
+    const siteCheckIgnored = use(SiteCheckIgnored);
     // A page an AI app renames keeps its old address once the site has been published (#925), as
     // the Pages panel's rename does: the same record of the last publish.
     const host = commandHost(

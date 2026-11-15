@@ -6,12 +6,14 @@ import { DEFAULT_PREFERENCES, type OnboardingPreferences } from "../../shared/ip
 import { WINDOW_AREAS } from "../areas.js";
 import type { WindowContext } from "../editor/areas.js";
 import { createFirstTips } from "../editor/first-tips.js";
+import { TipPlaces } from "../editor/window-services.js";
 import { bundledHelpLibrary } from "../help/index.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createPreferencesStore } from "../shell/preferences-store.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { fakePreloadApi } from "../testing/preload.js";
+import { servicesForTest } from "../testing/services.js";
 import { onboardingArea } from "./area.js";
 import { offerTour } from "./offer.js";
 import { TOUR_STEPS } from "./tour-steps.js";
@@ -43,7 +45,7 @@ function setUp(
     preferences,
     session,
     windowDialogs,
-    tips: places,
+    ...servicesForTest([TipPlaces, places]),
     api: fakePreloadApi({ help: { open } }),
   } as unknown as WindowContext);
   render(<WindowDialogs registry={windowDialogs} />);

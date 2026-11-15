@@ -12,11 +12,9 @@ import type { PreferencesStore } from "../shell/preferences-store.js";
 import type { WindowDialogRegistry } from "../shell/window-dialogs.js";
 import type { AddItem } from "./add-item.js";
 import type { CanvasPointer } from "./canvas-pointer.js";
-import type { CodeTrust } from "./code-trust.js";
 import type { PreviewChoices } from "./edit-previews.js";
 import type { EditorSession } from "./editor-session.js";
 import type { EngineHandle } from "./engine-host.js";
-import type { FirstTips } from "./first-tips.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
 import { makeServices, type Provision, type Service, type ServiceUse } from "./services.js";
@@ -94,21 +92,6 @@ export type WindowContext = AreaContext &
     readonly appVersion: string;
     /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
     readonly windowDialogs: WindowDialogRegistry;
-    /** The code trust step (#649): asks before the site's code runs, and keeps what's trusted. */
-    readonly codeTrust: CodeTrust;
-    /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
-    readonly siteCheckIgnored: {
-      readonly initial: readonly string[];
-      readonly save: (ignored: readonly string[]) => void;
-    };
-    /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). */
-    readonly tips: FirstTips;
-    /**
-     * The previews at the top of *Style this ‹kind›…* and Theme Studio (3.13a, CT-11): an item or a
-     * kind on Desktop or Mobile, in the site's theme or with a look not applied yet (4.10); none
-     * without a CSS compiler.
-     */
-    readonly itemPreviews?: ItemPreviews | undefined;
   };
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */

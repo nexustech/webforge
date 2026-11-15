@@ -1,6 +1,9 @@
 import { t } from "@webforge/i18n";
 import { createElement } from "react";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { createFirstTips } from "../editor/first-tips.js";
+import { provide } from "../editor/services.js";
+import { TipPlaces } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { TipCard } from "./TipCard.js";
 import { TourCards } from "./TourCards.js";
@@ -17,7 +20,9 @@ import { createTour } from "./tour-store.js";
  */
 export const onboardingArea: Area<WindowContext> = {
   id: "onboarding",
-  register: ({ api, preferences, session, commands, windowDialogs, tips: places }) => {
+  provides: [provide(TipPlaces, () => createFirstTips())],
+  register: ({ api, preferences, session, commands, windowDialogs, use }) => {
+    const places = use(TipPlaces);
     const tour = createTour(preferences);
     const tips = createTips(preferences, () => tour.stage.getState() !== "closed");
     const Cards = () => createElement(TourCards, { tour, help: api.help });

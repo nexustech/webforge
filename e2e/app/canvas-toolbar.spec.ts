@@ -33,8 +33,16 @@ const pageWidth = () =>
     .evaluate((body) => body.ownerDocument.documentElement.clientWidth);
 const steps = () => page.locator(".undo-history__step");
 
-/** The size readout's text: "1600 × 640 @ 100%". */
+/** The size readout, a button that lists the devices. */
 const readout = () => toolbar().getByRole("button", { name: /^Page size/ });
+/**
+ * The size readout's text, "1600 × 640 @ 100%", from the button's name: in a narrow toolbar the
+ * button is an icon, its name still the size (#1008).
+ */
+const size = async () =>
+  /^Page size (.*): choose a device$/.exec(
+    (await readout().getAttribute("aria-label")) ?? "",
+  )?.[1] ?? "";
 
 /** Sets the window's content to `width` × 900 and waits until Desktop has taken the new room. */
 async function windowWidth(width: number): Promise<void> {
@@ -46,6 +54,8 @@ async function windowWidth(width: number): Promise<void> {
 }
 
 test("switches device views and widths at once, without undo steps", async () => {
+  // Wide enough for the width box, which a narrower toolbar moves into its View menu (#1008).
+  await windowWidth(1600);
   // Desktop fills the canvas (PH2-18), never under the desktop layout's 1024 px.
   await expect.poll(pageWidth).toBeGreaterThanOrEqual(1024);
 
@@ -73,16 +83,16 @@ test("switches device views and widths at once, without undo steps", async () =>
 test("zooms the canvas and shows the size and scale, back to Fit when the view changes", async () => {
   const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
   // The readout appears once the canvas has measured the page: "1600 × 640 @ 100%".
-  await expect(toolbar().getByText(/^\d{4} × \d+ @ \d+%$/)).toBeVisible();
+  await expect.poll(size).toMatch(/^\d{4} × \d+ @ \d+%$/);
 
   // Smaller than Fit, so the page never overflows the canvas and makes it fit again.
   await zoom.selectOption("25%");
-  await expect(toolbar().getByText(/^\d{4} × \d+ @ 25%$/)).toBeVisible();
+  await expect.poll(size).toMatch(/^\d{4} × \d+ @ 25%$/);
   await expect(zoom).toHaveValue("0.25");
 
   // Another view fits the page again.
   await toolbar().getByRole("radio", { name: "Tablet" }).click();
-  await expect(toolbar().getByText(/^768 × \d+ @ \d+%$/)).toBeVisible();
+  await expect.poll(size).toMatch(/^768 × \d+ @ \d+%$/);
   await expect(zoom).toHaveValue("fit");
   await expect(steps()).toHaveText(["Opened page"]);
 });
@@ -95,14 +105,13 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
   );
   const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
   // Desktop is 1024 px at least, wider than this window's canvas: Fit zooms it out.
-  const readout = toolbar().getByText(/^\d{4} × \d+ @ \d+%$/);
   // Let the window finish resizing (a resize does make the canvas fit the page again): the
   // readout shows the same small Fit four times in a row.
   const seen: string[] = [];
   await expect
     .poll(
       async () => {
-        seen.push((await readout.textContent()) ?? "");
+        seen.push(await size());
         const last = seen.slice(-4);
         return last.length === 4 && last.every((text) => text === last[0]) ? last[0] : "";
       },
@@ -112,7 +121,7 @@ test("keeps a zoom above Fit, though the page then overflows the canvas (#134)",
 
   await zoom.selectOption("150%");
 
-  await expect(toolbar().getByText(/^\d{4} × \d+ @ 150%$/)).toBeVisible();
+  await expect.poll(size).toMatch(/^\d{4} × \d+ @ 150%$/);
   // The scrollbars the overflow adds don't make the canvas fit the page again: the zoom stays at
   // 150% for five samples over a second.
   const zooms: string[] = [];
@@ -131,34 +140,32 @@ test("fills the canvas in Desktop view as the window grows and shrinks, and keep
   const width = toolbar().getByRole("spinbutton", { name: "Canvas width in pixels" });
   /** The readout's width, once it and the page agree: the window may resize in steps. */
   const settledWidth = async () => {
-    await expect
-      .poll(async () => (await readout().textContent())?.startsWith(`${await pageWidth()} × `))
-      .toBe(true);
+    await expect.poll(async () => (await size()).startsWith(`${await pageWidth()} × `)).toBe(true);
     return pageWidth();
   };
 
   await windowWidth(1800);
   await expect.poll(pageWidth).toBeGreaterThan(1100);
   const wide = await settledWidth();
-  await expect(readout()).toHaveText(/ @ 100%$/);
+  await expect.poll(size).toMatch(/ @ 100%$/);
   await expect(width).toHaveValue(String(wide));
 
   await windowWidth(2200);
   await expect.poll(pageWidth).toBeGreaterThan(wide);
   await settledWidth();
-  await expect(readout()).toHaveText(/ @ 100%$/);
+  await expect.poll(size).toMatch(/ @ 100%$/);
 
   // A window narrower than the desktop layout: Desktop stays 1024 px, zoomed out to fit.
   await windowWidth(1100);
   await expect.poll(pageWidth).toBe(1024);
-  await expect(readout()).toHaveText(/^1024 × [0-9]+ @ [1-9][0-9]%$/);
+  await expect.poll(size).toMatch(/^1024 × [0-9]+ @ [1-9][0-9]%$/);
 
   // A fixed width from the size menu keeps its width as the window changes.
   await readout().click();
   await page.getByRole("menuitem", { name: "Desktop (1440)" }).click();
   await expect.poll(pageWidth).toBe(1440);
   await windowWidth(2200);
-  await expect(readout()).toHaveText(/^1440 × [0-9]+ @ [0-9]+%$/);
+  await expect.poll(size).toMatch(/^1440 × [0-9]+ @ [0-9]+%$/);
   expect(await pageWidth()).toBe(1440);
   await expect(steps()).toHaveText(["Opened page"]);
 });
@@ -198,13 +205,65 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
   // Desktop takes the room's whole pixels: a fractional box can round one either way.
   expect(room.scrolls).toBe(false);
   expect(Math.abs(room.width - frame.width)).toBeLessThanOrEqual(1);
-  await expect(readout()).toHaveText(new RegExp(`^${frame.width} × [0-9]+ @ 100%$`));
+  await expect.poll(size).toMatch(new RegExp(`^${frame.width} × [0-9]+ @ 100%$`));
+});
+
+test("keeps Desktop, Tablet and Mobile in view in the smallest windows, the rest in its View menu (#1008)", async () => {
+  /** What of the toolbar is cut off: controls past its edges, or content wider than it. */
+  const cutOff = () =>
+    toolbar().evaluate((bar) => {
+      const box = bar.getBoundingClientRect();
+      const controls = [...bar.querySelectorAll<HTMLElement>("button, select, input")].filter(
+        (control) => {
+          const { left, right } = control.getBoundingClientRect();
+          return left < box.left - 1 || right > box.right + 1;
+        },
+      );
+      return [
+        ...(bar.scrollWidth > bar.clientWidth + 1
+          ? [`${bar.scrollWidth} > ${bar.clientWidth}`]
+          : []),
+        ...controls.map((control) => control.getAttribute("aria-label") ?? control.tagName),
+      ];
+    });
+  for (const [width, height] of [
+    [960, 600],
+    [1024, 768],
+  ] as const) {
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.unmaximize());
+    await app.evaluate(
+      ({ BrowserWindow }, size) => BrowserWindow.getAllWindows()[0]?.setContentSize(...size),
+      [width, height] as const,
+    );
+    await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(width);
+    await expect.poll(cutOff, `at ${width} px`).toEqual([]);
+    // The zoom box shows its value, not a bare arrow.
+    const zoom = toolbar().getByRole("combobox", { name: "Zoom" });
+    expect((await zoom.boundingBox())?.width).toBeGreaterThan(60);
+    await expect(zoom.locator("option:checked")).toHaveText(/^Fit \(\d+%\)$/);
+    for (const device of ["Mobile", "Tablet", "Desktop"]) {
+      await toolbar().getByRole("radio", { name: device }).click();
+      await expect(toolbar().getByRole("radio", { name: device })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+    }
+  }
+
+  // What has no room is in the View menu: zoom in, and a width of the person's own.
+  await toolbar().getByRole("button", { name: "View" }).click();
+  await page.getByRole("menuitem", { name: "Canvas width…" }).click();
+  const dialog = page.getByRole("dialog", { name: "Canvas width" });
+  await dialog.getByRole("spinbutton", { name: "Width in pixels" }).fill("900");
+  await dialog.getByRole("button", { name: "Show Width" }).click();
+  await expect.poll(pageWidth).toBe(900);
+  await expect(steps()).toHaveText(["Opened page"]);
 });
 
 test("selects a section from a click in its padding when Desktop is zoomed out (F-ED-3, PH2-18)", async () => {
   // A window too narrow for the desktop layout: Desktop stays 1024 px and the canvas zooms out.
   await windowWidth(1100);
-  await expect(readout()).toHaveText(/^1024 × [0-9]+ @ [1-9][0-9]%$/);
+  await expect.poll(size).toMatch(/^1024 × [0-9]+ @ [1-9][0-9]%$/);
   const right = page.getByRole("region", { name: "Right panels" });
   await right.getByRole("tab", { name: "Edit", exact: true }).click();
 
