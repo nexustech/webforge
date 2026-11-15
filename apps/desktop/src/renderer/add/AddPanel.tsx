@@ -288,7 +288,7 @@ export function AddPanel({
     const groups = groupItems(items, query);
     return (
       <ScrollArea className="min-h-0 flex-1">
-        <p className="m-0 px-2 pb-1 text-xs text-muted-foreground">{hint}</p>
+        <p className="m-0 px-2 pb-1 text-2xs text-muted-foreground">{hint}</p>
         {groups.length === 0 ? (
           <p className="m-0 px-2 text-xs text-muted-foreground">
             {t("add.noMatch", { query: query.trim() })}

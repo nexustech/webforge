@@ -61,12 +61,14 @@ const SURFACES = [
 /** Foreground → backgrounds it is used on as text: at least 4.5:1 (WCAG 1.4.3). */
 const TEXT_PAIRS: Readonly<Record<string, readonly string[]>> = {
   foreground: [...SURFACES, "hover@panel", "hover@popover", "tab-active-top"],
+  // On `input` too as the placeholder in a field (theme.css's `::placeholder`, #1015).
   "muted-foreground": ["background", "panel", "panel-group", "tabs", "titlebar", "card", "input"],
   "tab-inactive": ["tabs"],
   "card-foreground": ["card"],
   "popover-foreground": ["popover"],
   "secondary-foreground": ["secondary"],
-  "primary-foreground": ["primary"],
+  // A primary button, resting and under the pointer (#1015).
+  "primary-foreground": ["primary", "primary-hover"],
   "destructive-foreground": ["destructive"],
   // Errors under fields and in dialogs, and messages that something failed.
   "destructive-text": ["background", "panel", "panel-group", "card", "popover"],

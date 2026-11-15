@@ -48,6 +48,8 @@
   --secondary: #41474c;
   --secondary-foreground: #ffffff;
   --primary: #0a6fb7;
+  /* A primary button under the pointer: a step darker, keeping its white text over 4.5:1 (#1015). */
+  --primary-hover: #0e69aa;
   --primary-foreground: #ffffff;
   --accent: rgb(10 111 183 / 0.34);
   --accent-foreground: #ffffff;
@@ -99,6 +101,8 @@
   --secondary: #e5e9ef;
   --secondary-foreground: #26292b;
   --primary: #1d6fd0;
+  /* Darker, not lighter: a lighter blue under white text was 4.17:1 (#1015). */
+  --primary-hover: #1a63ba;
   --primary-foreground: #ffffff;
   --accent: rgb(29 111 208 / 0.16);
   --accent-foreground: #26292b;
@@ -141,6 +145,7 @@
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
@@ -157,19 +162,29 @@
   --color-save-status: var(--save-status);
   --color-disabled: var(--disabled);
 
-  /* Compact density: 13 px base, 12 px labels and rows, 11 px badges. */
+  /*
+   * One density (#1015, product owner 15 Nov 2026): 13 px working text, 12 px secondary text.
+   * Settings › Interface › Text size scales it all, through the interface zoom.
+   * - 2xs, 12 px: secondary text: help under a field, hints, errors, counts and badges. Nothing in
+   *   the editor is smaller.
+   * - xs and sm, 13 px: the working text. Panels write it xs, dialogs and buttons sm.
+   * - base, 14 px: a group's heading in a panel, a step above its labels; the start screen.
+   * - lg and up: dialog titles, the start screen's and Help's headings.
+   * Spacing is in rem, set on <html> below: 14 px, so a standard button (h-7) is 24.5 px high,
+   * over WCAG 2.2's 24 px target (2.5.8).
+   */
   --font-sans: system-ui, "Segoe UI", -apple-system, Roboto, sans-serif;
   --font-mono: ui-monospace, "Cascadia Mono", "SF Mono", Menlo, Consolas, monospace;
-  --text-2xs: 11px;
-  --text-2xs--line-height: 14px;
-  --text-xs: 12px;
-  --text-xs--line-height: 16px;
+  --text-2xs: 12px;
+  --text-2xs--line-height: 16px;
+  --text-xs: 13px;
+  --text-xs--line-height: 18px;
   --text-sm: 13px;
   --text-sm--line-height: 18px;
-  --text-base: 13px;
-  --text-base--line-height: 18px;
-  --text-lg: 15px;
-  --text-lg--line-height: 20px;
+  --text-base: 14px;
+  --text-base--line-height: 20px;
+  --text-lg: 16px;
+  --text-lg--line-height: 22px;
 
   /* Small corners, like Bootstrap Studio: 3–4 px. */
   --radius-xs: 2px;
@@ -194,6 +209,18 @@
   html,
   body {
     @apply bg-background text-foreground font-sans text-sm antialiased;
+  }
+
+  /* The rem every size in the editor is written in (see the type scale above). */
+  html {
+    font-size: 14px;
+  }
+
+  /* Tailwind's own placeholder is the text at half strength, 3.04:1 at its lowest; the muted
+     text passes AA on a field in both themes (contrast.test.ts, #1015). */
+  ::placeholder {
+    color: var(--muted-foreground);
+    opacity: 1;
   }
 
   ::-webkit-scrollbar {

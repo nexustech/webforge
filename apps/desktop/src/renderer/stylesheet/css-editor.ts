@@ -47,7 +47,8 @@ const editorTheme = EditorView.theme({
     height: "100%",
     color: "var(--color-foreground)",
     backgroundColor: "var(--color-background)",
-    fontSize: "0.8125rem",
+    // The working text size (theme.css) in px: in rem it would follow the spacing (#1015).
+    fontSize: "13px",
   },
   ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.5" },
   ".cm-content": { caretColor: "var(--color-foreground)" },

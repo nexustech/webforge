@@ -29,7 +29,7 @@ describe("TitleBar", () => {
     renderTitleBar();
     expect(TITLE_BAR_HEIGHT).toBe(40);
     expect(screen.getByRole("banner").style.height).toBe(`${TITLE_BAR_HEIGHT}px`);
-    // Not a rem class, which the editor's 13 px type scale shrinks to 32.5 px.
+    // Not a rem class, which the editor's 14 px rem would shrink to 35 px.
     expect(screen.getByRole("banner").className).not.toMatch(/(^| )h-\d/);
   });
 

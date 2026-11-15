@@ -84,7 +84,7 @@ export function Field({ label, hint, error, layout = "stacked", children }: Fiel
       </div>
       <ErrorText id={errorId} message={error} className={right} />
       {hint !== undefined && (
-        <p id={hintId} className={cn("m-0 text-xs text-muted-foreground", right)}>
+        <p id={hintId} className={cn("m-0 text-2xs text-muted-foreground", right)}>
           {hint}
         </p>
       )}
@@ -204,7 +204,7 @@ export function Check({
   ) : (
     <div className="grid gap-1">
       {box}
-      <p id={hintId} className="m-0 pl-6 text-xs text-muted-foreground">
+      <p id={hintId} className="m-0 pl-6 text-2xs text-muted-foreground">
         {hint}
       </p>
     </div>
