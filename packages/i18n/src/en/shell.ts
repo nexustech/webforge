@@ -314,6 +314,12 @@ export const shell = {
   "canvasToolbar.addDevice.height": "Height in pixels",
   "canvasToolbar.addDevice.range": "Between {min} and {max} pixels.",
   "canvasToolbar.addDevice.confirm": "Add Device",
+  // The width box, from the View menu once the toolbar is too narrow for it (#1008).
+  "canvasToolbar.widthItem": "Canvas width…",
+  "canvasToolbar.widthDialog.title": "Canvas width",
+  "canvasToolbar.widthDialog.description":
+    "Shows the page at a width of your own, without adding a device.",
+  "canvasToolbar.widthDialog.confirm": "Show Width",
 
   // Design | Content (M3): Design changes the layout, Content edits text and images only.
   "shell.mode": "Editing mode",

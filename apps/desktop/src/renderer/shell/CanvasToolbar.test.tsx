@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cloneElement } from "react";
+import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createPreviewStore } from "../editor/edit-previews.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
@@ -34,7 +36,7 @@ function setUp(
   const onViewportChange = vi.fn();
   const onZoomChange = vi.fn();
   const onCanvasChange = vi.fn();
-  render(
+  const toolbar = (
     <CanvasToolbar
       pages={[
         { id: HOME, title: "Home" },
@@ -49,10 +51,13 @@ function setUp(
       size={size}
       canvas={canvas}
       onCanvasChange={onCanvasChange}
-    />,
+    />
   );
+  const { rerender } = render(toolbar);
   const width = () => screen.getByRole("spinbutton", { name: "Canvas width in pixels" });
-  return { onShowPage, onViewportChange, onZoomChange, onCanvasChange, width };
+  /** Draws it again, as a new size from the canvas would: a copy, which React doesn't skip. */
+  const redraw = () => rerender(cloneElement(toolbar));
+  return { onShowPage, onViewportChange, onZoomChange, onCanvasChange, width, redraw };
 }
 
 describe("CanvasToolbar (F-ED-8)", () => {
@@ -341,6 +346,118 @@ describe("View menu and devices (F-ED-25)", () => {
     });
     expect(onViewportChange).toHaveBeenCalledWith(1080);
     expect(screen.queryByRole("dialog")).toBeNull();
+  });
+});
+
+describe("a narrow toolbar (#1008)", () => {
+  const user = () => userEvent.setup({ delay: null });
+
+  /**
+   * Every toolbar as narrow as `width`, its content `content` wide, however compact; the returned
+   * function changes both, as a resized window would.
+   */
+  function toolbarOf(width: number, content: number) {
+    const measures = { clientWidth: width, scrollWidth: content };
+    // Over happy-dom's own getters, which measure nothing, for the toolbar only.
+    for (const key of ["clientWidth", "scrollWidth"] as const) {
+      Object.defineProperty(HTMLElement.prototype, key, {
+        configurable: true,
+        get(this: HTMLElement) {
+          return this.getAttribute("role") === "toolbar" ? measures[key] : 0;
+        },
+      });
+      onTestFinished(() => {
+        Reflect.deleteProperty(HTMLElement.prototype, key);
+      });
+    }
+    return (next: number) => {
+      measures.clientWidth = next;
+      measures.scrollWidth = Math.max(next, content);
+    };
+  }
+
+  it("keeps Desktop, Tablet and Mobile, and moves the rest into the View menu", async () => {
+    toolbarOf(380, 1000);
+    const { onZoomChange, onViewportChange } = setUp(375, { width: 375, height: 900, zoom: 1 });
+
+    for (const name of ["Desktop", "Tablet", "Mobile"]) {
+      expect(screen.getByRole("radio", { name })).toBeTruthy();
+    }
+    expect(screen.getByRole("combobox", { name: "Zoom" })).toBeTruthy();
+    for (const name of ["Zoom In", "Zoom Out", "Rotate"]) {
+      expect(screen.queryByRole("button", { name })).toBeNull();
+    }
+    expect(screen.queryByRole("spinbutton", { name: "Canvas width in pixels" })).toBeNull();
+    // An icon, named by the size it no longer shows.
+    const sizeButton = screen.getByRole("button", {
+      name: "Page size 375 × 900 @ 100%: choose a device",
+    });
+    expect(sizeButton.textContent).toBe("");
+
+    await user().click(screen.getByRole("button", { name: "View" }));
+    expect(screen.getAllByRole("menuitem").map((item) => item.textContent)).toEqual([
+      "Zoom In",
+      "Zoom Out",
+      "Rotate",
+      "Canvas width…",
+    ]);
+    // Kept open, to zoom again.
+    await user().click(screen.getByRole("menuitem", { name: "Zoom Out" }));
+    expect(onZoomChange).toHaveBeenCalledOnce();
+    await user().click(screen.getByRole("menuitem", { name: "Rotate" }));
+    expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(812);
+  });
+
+  it("takes a width from the View menu's Canvas width…, as the width box did", async () => {
+    toolbarOf(380, 1000);
+    const { onViewportChange } = setUp(375);
+
+    await user().click(screen.getByRole("button", { name: "View" }));
+    await user().click(screen.getByRole("menuitem", { name: "Canvas width…" }));
+    const dialog = await openedDialog("Canvas width");
+    const width = dialog.getByRole("spinbutton", { name: "Width in pixels" });
+    expect((width as HTMLInputElement).value).toBe("375");
+    await user().clear(width);
+    await user().type(width, "900");
+    await user().click(dialog.getByRole("button", { name: "Show Width" }));
+
+    expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(900);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps Canvas width… open as the window widens, and never opens it again unasked", async () => {
+    const resize = toolbarOf(380, 1000);
+    const { redraw } = setUp(375);
+    await user().click(screen.getByRole("button", { name: "View" }));
+    await user().click(screen.getByRole("menuitem", { name: "Canvas width…" }));
+    await openedDialog("Canvas width");
+
+    // Wide: the width box is back in the toolbar, and the dialog stays until it's answered.
+    resize(2000);
+    redraw();
+    // Behind the open dialog, which hides the rest from the accessibility tree.
+    expect(
+      screen.getByRole("spinbutton", { name: "Canvas width in pixels", hidden: true }),
+    ).toBeTruthy();
+    const dialog = screen.getByRole("dialog", { name: "Canvas width" });
+    await user().click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // Narrow again: no dialog opens by itself.
+    resize(380);
+    redraw();
+    expect(screen.queryByRole("spinbutton", { name: "Canvas width in pixels" })).toBeNull();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("shows everything again, the View menu its options only, once there is room", () => {
+    toolbarOf(2000, 2000);
+    setUp();
+    for (const name of ["Zoom In", "Zoom Out", "Rotate"]) {
+      expect(screen.getByRole("button", { name })).toBeTruthy();
+    }
+    expect(screen.getByRole("spinbutton", { name: "Canvas width in pixels" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Devices" }).textContent).toBe("Devices");
   });
 });
 
