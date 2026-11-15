@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from "node:child_process";
-import { once } from "node:events";
+import { EventEmitter, once } from "node:events";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
@@ -16,6 +16,16 @@ function endless(): ChildProcess {
 
 const ended = (child: ChildProcess) => child.exitCode !== null || child.signalCode !== null;
 
+/** Whether the process `pid` is still running. */
+function alive(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 test("kills an app whose process hasn't exited once closing has taken too long", async () => {
   const child = endless();
   const app = closingWithin(
@@ -27,7 +37,8 @@ test("kills an app whose process hasn't exited once closing has taken too long",
   await app.close();
 
   expect(Date.now() - start).toBeLessThan(5_000);
-  expect(ended(child)).toBe(true);
+  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
+  await expect.poll(() => ended(child)).toBe(true);
 });
 
 test("kills a process outright that doesn't end when told to", async () => {
@@ -49,7 +60,30 @@ test("kills a process outright that doesn't end when told to", async () => {
   await app.close();
 
   expect(Date.now() - start).toBeLessThan(5_000);
-  expect(ended(child)).toBe(true);
+  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
+  await expect.poll(() => ended(child)).toBe(true);
+});
+
+test("gives up on a process that never exits, so a close can't outlast the test (#1099)", async () => {
+  // A process no signal ends: its kill does nothing and its exit never comes, as a process stuck in
+  // the kernel looks. It has no pid, so Windows' taskkill isn't asked to end a real one.
+  const child = Object.assign(new EventEmitter(), {
+    pid: undefined,
+    exitCode: null,
+    signalCode: null,
+    kill: () => true,
+  }) as unknown as ChildProcess;
+  const app = closingWithin(
+    { close: () => new Promise<void>(() => undefined), process: () => child },
+    200,
+    300,
+  );
+
+  const start = Date.now();
+  await app.close();
+
+  // Its time limit and two waits for the kills, and no more.
+  expect(Date.now() - start).toBeLessThan(5_000);
 });
 
 test("closes once, however often it's asked: a test, then its afterEach", async () => {
@@ -112,7 +146,8 @@ test("ends an app soon after it says it has closed, not at the time limit (#534)
 
   // Its two seconds' grace, and no more: not the minute.
   expect(Date.now() - start).toBeLessThan(10_000);
-  expect(ended(child)).toBe(true);
+  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
+  await expect.poll(() => ended(child)).toBe(true);
 });
 
 test("waits for an app that closes by itself until it says so, then ends it (#534)", async () => {
@@ -126,7 +161,8 @@ test("waits for an app that closes by itself until it says so, then ends it (#53
   await app.untilClosed();
 
   expect(Date.now() - start).toBeLessThan(10_000);
-  expect(ended(child)).toBe(true);
+  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
+  await expect.poll(() => ended(child)).toBe(true);
   // And a close after it waits for that, as an afterEach's does.
   await app.close();
 });
@@ -153,8 +189,9 @@ test("ends the processes the app started too, before it says it's done (#534)", 
 
   await app.close();
 
-  expect(ended(child)).toBe(true);
-  expect(() => process.kill(helper, 0)).toThrow();
+  // Windows' taskkill can finish just after the close: it runs alongside (#1099).
+  await expect.poll(() => ended(child)).toBe(true);
+  await expect.poll(() => alive(helper)).toBe(false);
 });
 
 test("cleans up with the asynchronous rm, whose retries work (#534)", () => {

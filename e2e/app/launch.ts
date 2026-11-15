@@ -1,4 +1,4 @@
-import { type ChildProcess, execFileSync, spawn } from "node:child_process";
+import { type ChildProcess, execFile, spawn } from "node:child_process";
 import { once } from "node:events";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { rm } from "node:fs/promises";
@@ -187,6 +187,12 @@ export type ClosingApp<App> = App & {
    * (call it first, then close the window), and ends its process as `close()` does.
    */
   untilClosed(): Promise<void>;
+  /**
+   * Resolves once Webforge says it has closed (its window gone, its site saved and closed), before
+   * Electron tears the process down: how long Webforge's own close took, apart from that teardown,
+   * which a busy machine slows (#1099). Never resolves for an app that doesn't say so.
+   */
+  readonly saidClosed: Promise<void>;
 };
 
 /** A launched Webforge, as {@link launchDesktopApp} returns it. */
@@ -196,15 +202,15 @@ export type WebforgeApp = ClosingApp<ElectronApplication>;
  * Ends `child` and, on Windows, every process it started: there, ending a process leaves its
  * children running, and an orphaned renderer or GPU process keeps the test's folders busy (EPERM).
  * Elsewhere Electron's helpers end with their parent. `force` kills outright (SIGKILL), which
- * Windows' `taskkill /F` always does.
+ * Windows' `taskkill /F` always does. `taskkill` runs alongside, and the caller waits for the
+ * process's exit: run synchronously, it stopped the test's own timers for as long as it took to
+ * walk the process tree on a busy machine (#1099).
  */
 function endProcess(child: ChildProcess, force = false): void {
   if (process.platform === "win32" && child.pid !== undefined) {
-    try {
-      execFileSync("taskkill", ["/pid", String(child.pid), "/T", "/F"], { stdio: "ignore" });
-    } catch {
-      // Gone already, or exiting.
-    }
+    execFile("taskkill", ["/pid", String(child.pid), "/T", "/F"], () => {
+      // An error is a process gone already, or exiting.
+    });
     return;
   }
   child.kill(force ? "SIGKILL" : "SIGTERM");
@@ -229,8 +235,9 @@ function closedLine(child: ChildProcess | undefined): Promise<void> {
  * {@link TEARDOWN_GRACE_MS} later: only Electron's teardown is left by then (#534). An app that
  * never says so is killed once `timeoutMs` has passed. A process that doesn't end when told to
  * (SIGTERM) is killed outright (SIGKILL) `killTimeoutMs` later, so one stuck in its teardown can't
- * outlast the test either. Closing it again (a test that closes it, then its `afterEach`) waits for
- * the first close.
+ * outlast the test either; one that still hasn't exited `killTimeoutMs` after that is left, so a
+ * close never takes more than `timeoutMs` and twice `killTimeoutMs` (#1099). Closing it again (a
+ * test that closes it, then its `afterEach`) waits for the first close.
  */
 export function closingWithin<App extends Pick<ElectronApplication, "close" | "process">>(
   app: App,
@@ -281,13 +288,13 @@ export function closingWithin<App extends Pick<ElectronApplication, "close" | "p
       endProcess(child);
       if (await Promise.race([exited.then(() => false), after(killTimeoutMs)])) {
         endProcess(child, true);
-        await exited;
+        await Promise.race([exited, after(killTimeoutMs)]);
       }
     } finally {
       for (const timer of timers) clearTimeout(timer);
     }
   };
-  const closing = app as ClosingApp<App>;
+  const closing = Object.assign(app, { saidClosed: announced }) as ClosingApp<App>;
   closing.close = () => {
     closed ??= settle(() => close());
     return closed;
