@@ -28,7 +28,7 @@ const toast = vi.hoisted(() => ({
   error: vi.fn(),
   dismiss: vi.fn(),
 }));
-vi.mock("@webforge/editor-ui", () => ({ toast }));
+vi.mock("@webforge/editor-ui", () => ({ toast, QUIET_ACTION_TOAST: "toast-quiet-action" }));
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -386,8 +386,10 @@ describe("registerExportCommand", () => {
       expect.any(String),
       expect.any(Function),
     );
+    // Its Cancel quiet: the toast's only button (#1014).
     expect(toast.loading).toHaveBeenCalledWith("Exporting…", {
       action: expect.objectContaining({ label: "Cancel" }),
+      className: "toast-quiet-action",
     });
     expect(toast.dismiss).toHaveBeenCalledWith("progress");
     expect(dialogs.shown()).toMatchObject({ kind: "report", report: { name: "my-site" } });

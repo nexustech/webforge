@@ -1,5 +1,5 @@
 import { t } from "@webforge/i18n";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
 import {
@@ -96,6 +96,8 @@ function FormDialogBody<V extends FormValues, Out>({
   onCancel,
 }: Omit<FormDialogProps<V, Out>, "open" | "size" | "help">) {
   const form = useForm(spec, initial);
+  // Whether Save was tried: a check the form's own content ran (Test Connection) isn't a save.
+  const [saveTried, setSaveTried] = useState(false);
   return (
     <form
       className="grid gap-3"
@@ -103,6 +105,7 @@ function FormDialogBody<V extends FormValues, Out>({
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
+        setSaveTried(true);
         const saved = form.submit();
         if (saved.ok) onSave(saved.output, { groups: saved.changedGroups });
       }}
@@ -118,7 +121,7 @@ function FormDialogBody<V extends FormValues, Out>({
         {...(groupHelp === undefined ? {} : { groupHelp })}
       />
       {/* After a Save that couldn't: why nothing happened, read out at once. */}
-      {form.attempts > 0 && form.issues.length > 0 ? (
+      {saveTried && form.issues.length > 0 ? (
         <p role="alert" className="m-0 text-xs text-destructive-text">
           {t("ui.form.fixErrors")}
         </p>

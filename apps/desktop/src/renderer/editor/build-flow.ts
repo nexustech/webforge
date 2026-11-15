@@ -1,4 +1,4 @@
-import { toast } from "@webforge/editor-ui";
+import { QUIET_ACTION_TOAST, toast } from "@webforge/editor-ui";
 import type { SiteDoc } from "@webforge/model";
 import { blockingCount, type CheckMode, checkSite } from "@webforge/site-check";
 import { CATALOGUE } from "@webforge/site-components/catalogue-data";
@@ -89,7 +89,11 @@ export async function runWithProgress<Progress, Result>(
       });
     },
   };
-  const progress = toast.loading(options.working, { action: cancelButton });
+  // Its Cancel is quiet: a long task's only button needn't stand out (#1014).
+  const progress = toast.loading(options.working, {
+    action: cancelButton,
+    className: QUIET_ACTION_TOAST,
+  });
   const show = (reached: Progress) => {
     if (quiet) return;
     toast.loading(options.working, {

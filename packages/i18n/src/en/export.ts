@@ -57,7 +57,7 @@ export const exportSite = {
   "export.report.more": "And {count} more.",
   "export.report.noWebAddress":
     "Your site has no web address, so search engines get no sitemap and link previews may show no image. You can add it in Site Settings.",
-  "export.report.openFolder": "Open Site",
+  "export.report.openFolder": "Open in Browser",
   "export.report.showZip": "Show ZIP File",
   "export.report.done": "Done",
   "export.report.missing":
