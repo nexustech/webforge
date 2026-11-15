@@ -1,6 +1,7 @@
 import type { Decorator } from "@storybook/react-vite";
 import { useState } from "react";
-import { EditPanel, type EditPanelField } from "./edit-panel.js";
+import { EditPanel } from "./edit-panel.js";
+import type { EditPanelField } from "./edit-panel-types.js";
 
 /**
  * One field in an Edit panel, for the Edit/Fields stories (R11): its label, help, error and device
