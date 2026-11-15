@@ -25,8 +25,10 @@ export type SwatchFieldProps = {
 };
 
 /**
- * Colours to choose from (UX-25), each as a swatch in the site's own colour with its name: one
- * click is one change. Below them, a warning about the colour chosen, read out when it appears.
+ * Colours to choose from (UX-25), each as a swatch in the site's own colour with its name, one to a
+ * row so the whole name shows (#1007: two to a row cut "Surface 2" to "Sur…"): one click is one
+ * change. A name still too long for the panel shows in full as its tooltip. Below them, a warning
+ * about the colour chosen, read out when it appears.
  */
 export function SwatchField({ id, labelId, options, value, onChoose, warning }: SwatchFieldProps) {
   const warningId = useId();
@@ -37,7 +39,7 @@ export function SwatchField({ id, labelId, options, value, onChoose, warning }: 
         type="single"
         aria-labelledby={labelId}
         aria-describedby={warning === undefined ? undefined : warningId}
-        className="grid w-full grid-cols-2 gap-1"
+        className="grid w-full grid-cols-1 gap-0.5"
         value={value ?? ""}
         onValueChange={(next) => {
           if (next !== "") onChoose(next);
@@ -47,6 +49,7 @@ export function SwatchField({ id, labelId, options, value, onChoose, warning }: 
           <ToggleGroupItem
             key={option.value}
             value={option.value}
+            title={option.label}
             className="h-7 justify-start gap-1.5 px-1.5 text-xs"
           >
             <span

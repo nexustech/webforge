@@ -27,6 +27,11 @@ type FieldSpecs = {
     readonly inputType?: "text" | "email" | "tel" | "url" | "password" | "date";
     /** The longest text it takes: the model's limit for it (forms, 2.21). */
     readonly maxLength?: number;
+    /**
+     * Under its label, the panel's whole width, rather than beside it (#1007): for text that runs
+     * long, such as a section's title.
+     */
+    readonly wide?: boolean;
   } & (
     | {
         /**
