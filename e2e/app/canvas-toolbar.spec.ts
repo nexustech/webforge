@@ -174,7 +174,8 @@ test("lays a long page out in Desktop view without overflowing sideways, its scr
       .getByRole("button", { name: "Hero" })
       .click();
   }
-  await windowWidth(1700);
+  // Wide enough for a page wider than Desktop's least, 1024 px, beside two 300 px columns (#1007).
+  await windowWidth(1800);
   await expect.poll(pageWidth).toBeGreaterThan(1100);
 
   const frame = await canvas()
