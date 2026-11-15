@@ -1,12 +1,7 @@
-import { networkInterfaces } from "node:os";
 import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
-import type { SiteSnapshot } from "@webforge/model";
 import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
-import { previewEvents } from "../shared/ipc/preview.js";
-import { publishEvents } from "../shared/ipc/publish.js";
-import { siteEvents } from "../shared/ipc/site.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
 import { openFailureMessage } from "../shared/open-failure.js";
 import { updateChannelFor } from "../shared/update-channel.js";
@@ -15,6 +10,7 @@ import { appCallsFeature } from "./app-calls.js";
 import type { AppFeature } from "./app-feature.js";
 import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
 import { applicationMenu } from "./app-menu.js";
+import { type AppElectron, type AppParts, testDialogAnswer } from "./app-parts.js";
 import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
 import { assistantFeature } from "./assistant-feature.js";
 import { createBackupSchedule } from "./backup-schedule.js";
@@ -22,14 +18,10 @@ import { createBackups } from "./backups.js";
 import { captureCanvas } from "./canvas-capture.js";
 import { canvasStylesFeature, createCanvasStyles } from "./canvas-css.js";
 import { createElementClipboard, systemClipboard } from "./clipboard.js";
-import { createCodeTrust, withTrustedCode } from "./code-trust.js";
-import type { startCrashReports } from "./crash-wiring.js";
+import { createCodeTrust } from "./code-trust.js";
 import { createCredentialStore } from "./credential-store.js";
 import { createNativeDialogs } from "./dialogs.js";
 import { announceClosedForE2eTests } from "./e2e-closed.js";
-import type { E2eDialog } from "./e2e-dialogs.js";
-import { netlifyApiFor } from "./e2e-netlify.js";
-import { createExportFeature } from "./export-feature.js";
 import { createFlushOnClose } from "./flush-on-close.js";
 import { FONT_SCHEME } from "./fonts.js";
 import { createHandOff } from "./hand-off.js";
@@ -38,86 +30,29 @@ import { logFailure } from "./log.js";
 import { createMainWindows } from "./main-window.js";
 import { mediaFeature } from "./media-feature.js";
 import { createMyThemes } from "./my-themes.js";
-import { createNetlifySignIns } from "./netlify-auth.js";
-import { netlifyFeature } from "./netlify-ipc.js";
-import { hasAddress, phoneAddressFor } from "./network-address.js";
 import { openPreferencesStore, registerPreferencesHandlers } from "./preferences.js";
-import { createPreviewBuilder } from "./preview-builder.js";
-import { createPreview, previewFeature } from "./preview-ipc.js";
-import { createPreviewServer } from "./preview-server.js";
 import { ProjectSession } from "./project-session.js";
-import { publishDestinationsFeature } from "./publish-destinations-ipc.js";
-import { createKeyFiles, publishCallsFeature, testSignIn } from "./publish-ipc.js";
-import { publishRunFeature } from "./publish-run.js";
-import { createPublishSecrets } from "./publish-secrets.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
-import { openOrRecover, type RecoveryDialogs } from "./recovery.js";
+import { openOrRecover } from "./recovery.js";
 import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
 import { hardenSession, hardenWebContents, isAppUrl } from "./security.js";
 import { siteCallsFeature } from "./site-calls.js";
 import { siteFontsOf } from "./site-fonts.js";
+import { siteOutput } from "./site-output.js";
 import { findProjectArgument } from "./site-paths.js";
 import { createSiteSwitch } from "./site-switch.js";
 import { logStartupTimes, markStartup } from "./startup-timing.js";
-import { createStorageWriter, type WriterThread } from "./storage-writer.js";
+import { createStorageWriter } from "./storage-writer.js";
 import { createTemplatesFeature } from "./templates-ipc.js";
 import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
-import { type Updater, updatesSupported } from "./updates.js";
+import { updatesSupported } from "./updates.js";
 import { createUpdates } from "./updates-ipc.js";
 import { versionsFeature } from "./versions-ipc.js";
 import { windowBackground } from "./window-options.js";
 
 // The app's wiring (R13c): Electron comes in as a parameter, so app.test.ts runs all of it against
 // a fake one, and the E2E tests against the real one. The logic lives in the modules it wires.
-
-/** The parts of Electron the app uses; a fake in tests. */
-export type AppElectron = Pick<
-  typeof import("electron"),
-  | "app"
-  | "BrowserWindow"
-  | "ClipboardItem"
-  | "clipboard"
-  | "dialog"
-  | "ipcMain"
-  | "Menu"
-  | "net"
-  | "protocol"
-  | "safeStorage"
-  | "screen"
-  | "session"
-  | "shell"
-  | "utilityProcess"
->;
-
-/** What the entry point hands the app besides Electron: the modules that use Electron directly. */
-export type AppParts = {
-  /** The built main process's folder, beside the preload, the editor and the workers. */
-  readonly dir: string;
-  /** Local crash reports (crash-wiring.ts), started first, so even a failing start leaves one. */
-  readonly startCrashReports: typeof startCrashReports;
-  /** The native dialogs of the damaged-site recovery (recovery-dialogs.ts). */
-  readonly recoveryDialogs: RecoveryDialogs;
-  /** Starts the storage writer's thread from its script (R13b, ADR 0013). */
-  readonly startStorageWriter: (script: string) => WriterThread;
-  /** Loads electron-updater (0.5a), only in a build that updates itself (`updatesSupported`). */
-  readonly updater: () => Promise<Updater>;
-};
-
-/**
- * A test's answer for a native file dialog, in `--mode e2e` builds only (see e2e-dialogs.ts):
- * the packaged E2E tests can't replace `dialog` as the unpacked ones do. Other builds drop the
- * branch, and the module with it.
- */
-async function testDialogAnswer(
-  kind: E2eDialog,
-): Promise<{ path: string | undefined } | undefined> {
-  if (import.meta.env.MODE !== "e2e") {
-    return undefined;
-  }
-  const { e2eDialogAnswer } = await import("./e2e-dialogs.js");
-  return e2eDialogAnswer(kind);
-}
 
 /**
  * Starts Webforge: everything before "ready" at once, then the window once Electron is ready.
@@ -215,8 +150,6 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     encryptString: (text) => electron.safeStorage.encryptStringAsync(text),
     decryptString: (encrypted) => electron.safeStorage.decryptStringAsync(encrypted),
   });
-  // The key files the person chose (4.3), by handle: Test connection and saving read them.
-  const keyFiles = createKeyFiles();
   const projectSession = new ProjectSession(
     {},
     {
@@ -319,55 +252,20 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // Every worker's crash becomes a local report (R3).
   const forkWorker = (serviceName: string) =>
     crashReports.watchWorker(electron.utilityProcess.fork(exportWorkerScript, [], { serviceName }));
-  // Every build gets only the code the open site's owner trusts (#649).
-  const trustedOnly = (snapshot: SiteSnapshot) =>
-    withTrustedCode(snapshot, projectSession.projectId(), codeTrust);
-
-  // The preview server (3.2): its builds in a worker of their own while a preview is open, so an
-  // export never waits behind one; opened in the default browser, which the site's scripts run in,
-  // never in an Electron window.
-  const preview = createPreview({
-    startServer: createPreviewServer,
-    // A preview's builds read the Media of the opening it was started for (#663).
-    startBuilder: (onBuilt, readMedia) =>
-      createPreviewBuilder(() => forkWorker("Webforge preview"), { readMedia, onBuilt }),
-    site: (sessionId) => projectSession.forSession(sessionId),
-    jobFor: async (sent) => {
-      const snapshot = await trustedOnly(sent);
-      return { type: "preview", snapshot, ...(await fonts.previewFontsOf(snapshot.theme)) };
-    },
-    // Only the preview's own address, which this process makes: never one from the renderer.
-    openInBrowser: async (url) => {
-      try {
-        await electron.shell.openExternal(url);
-        return true;
-      } catch {
-        return false;
-      }
-    },
-    networkAddress: phoneAddressFor(app.isPackaged),
-    hasAddress: (address) => hasAddress(networkInterfaces(), address),
-    phoneStopped: () =>
-      lifecycle.mainWindow()?.webContents.send(previewEvents.phoneStopped.channel),
-  });
-
-  // The export, whose runner Publish shares (ADR 0018 §1).
-  const exportFeature = createExportFeature({
-    dialogs: dialogs.export,
-    startWorker: () => forkWorker("Webforge export"),
-    fontsOf: fonts.fontsOf,
-    // Only the code the site's owner trusts (#649).
-    snapshotFor: trustedOnly,
-    sendProgress: (operationId, progress) =>
-      lifecycle
-        .mainWindow()
-        ?.webContents.send(siteEvents.exportProgress.channel, operationId, progress),
-    // The site each export call is for (#663): its Media and its export choices.
-    site: (sessionId) => projectSession.forSession(sessionId),
-    // Looked up as it's called: the E2E tests replace `shell.openPath`, so no browser opens.
+  // The site's preview, export and publishing (#985).
+  const output = siteOutput({
+    session: projectSession,
+    codeTrust,
+    fonts,
+    dialogs,
+    credentials,
+    forkWorker,
     shell: electron.shell,
+    packaged: app.isPackaged,
+    mainWindow: () => lifecycle.mainWindow(),
+    versionsKept,
+    flush: requestFlush,
   });
-  const publishSecrets = createPublishSecrets(credentials);
   // The canvas compiles its site CSS, and lists the classes the site supports (#276), in one
   // long-lived worker (1.12), started when first needed, or as the window opens with a site (#894).
   const canvasStyles = createCanvasStyles(
@@ -420,39 +318,11 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     myThemesFeature(myThemes),
     fonts,
     templates,
-    exportFeature,
-    previewFeature(preview),
+    output.export,
+    output.preview,
     codeTrustFeature(codeTrust, projectSession),
-    // The open site's publish destinations (4.4a): the list in its file, sign-ins in the keychain.
-    publishDestinationsFeature({
-      site: (sessionId) => projectSession.site(sessionId),
-      secrets: publishSecrets,
-      keys: keyFiles,
-      test: testSignIn,
-    }),
-    // Publish (4.5): read, gated, built and sent in the export worker, then saved as a version.
-    publishRunFeature({
-      site: (sessionId) => ({
-        ...projectSession.forSession(sessionId),
-        withStore: projectSession.site(sessionId).withStore,
-      }),
-      secrets: publishSecrets,
-      trusted: (projectId) => codeTrust.trusted(projectId),
-      fontsOf: fonts.fontsOf,
-      runner: exportFeature.runner,
-      sendProgress: (operationId, progress) =>
-        lifecycle
-          .mainWindow()
-          ?.webContents.send(publishEvents.progress.channel, operationId, progress),
-      versionsKept,
-      flush: requestFlush,
-      // So Clean up keeps what a publish under way reaches (4.6).
-      holdManifest: (manifest) => projectSession.holdManifest(manifest),
-      // Looked up as it's called, as the export's shell is.
-      openExternal: (url) => electron.shell.openExternal(url),
-      // Netlify's own API, or the E2E tests' mock in an unpackaged app (#70).
-      netlifyApi: netlifyApiFor(app.isPackaged),
-    }),
+    output.destinations,
+    output.publish,
     // Media's images and imports (1.16).
     mediaFeature({
       startWorker: () => forkWorker("Webforge thumbnails"),
@@ -507,21 +377,8 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       copySecret: (secret) => secretClipboard.copy(secret),
       choosePostFiles: dialogs.posts.choosePostFiles,
     }),
-    // File-transfer destinations' tests and key files (4.3).
-    publishCallsFeature(dialogs.publish, keyFiles),
-    // Netlify sign-in for publish destinations (4.2): the OAuth client ID is a build setting,
-    // empty until Webforge's Netlify app is registered, when only a pasted token works.
-    netlifyFeature({
-      signIns: createNetlifySignIns({
-        clientId: import.meta.env.MAIN_VITE_NETLIFY_CLIENT_ID,
-        // The E2E tests' stand-in for Netlify, in an app run from its build folder only.
-        apiBase: netlifyApiFor(app.isPackaged),
-        // Looked up as it's called: the E2E tests replace `shell.openExternal`.
-        openExternal: (url) => electron.shell.openExternal(url),
-      }),
-      site: (sessionId) => projectSession.site(sessionId),
-      secrets: publishSecrets,
-    }),
+    output.publishCalls,
+    output.netlify,
   ];
   for (const feature of features) {
     if (feature.site !== undefined) projectSession.listen(feature.site);

@@ -31,6 +31,9 @@ const FaqLayoutContext = createContext<FaqLayout>("accordion");
  */
 const hero = defineSection({
   label: t("section.hero"),
+  // Its title is the page's `<h1>` (`SectionTitle size="page"`).
+  mainHeading: { field: "title" },
+  studioSample: 1,
   name: "hero",
   // Its image field draws its own background, behind the text, with its own overlay.
   background: false,
@@ -232,6 +235,7 @@ const textImage = defineSection({
  */
 const callToAction = defineSection({
   label: t("section.callToAction"),
+  studioSample: 3,
   name: "cta",
   category: t("category.callToAction"),
   variants: CTA_LAYOUTS.map((value) => ({ label: t(`field.ctaLayout.${value}`), value })),

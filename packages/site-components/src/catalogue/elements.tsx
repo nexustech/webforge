@@ -324,6 +324,7 @@ const OUTLINE_HELD =
 /** A link drawn as a button: its text, where it goes, its style and size. */
 const button = defineComponent({
   label: t("element.button"),
+  themeControls: ["buttons"],
   category: t("category.basic"),
   fields: {
     label: { kind: "text", label: t("field.buttonLabel") },
