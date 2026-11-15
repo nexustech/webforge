@@ -1,4 +1,11 @@
-import type { ItemValue, MediaId, NodeDoc, SitePage, SiteSnapshot } from "@webforge/model";
+import {
+  COLLECTION_PRESETS,
+  type ItemValue,
+  type MediaId,
+  type NodeDoc,
+  type SitePage,
+  type SiteSnapshot,
+} from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
 import { describe, expect, it } from "vitest";
 import {
@@ -349,6 +356,14 @@ describe("a Blog's post (5.14, CC-6)", () => {
       headline: "Spring opening",
       publisher: { "@type": "Person", name: "Sam Jones" },
     });
+  });
+
+  it("takes every item for a Blog's post only while the Blog is the only kind of collection", () => {
+    expect(
+      COLLECTION_PRESETS,
+      "A new preset (Portfolio, Events: ADR 0025) must reach the snapshot, and structuredData " +
+        "must choose its schema.org type rather than write BlogPosting for its items",
+    ).toEqual(["blog"]);
   });
 
   it("writes none for a post kept from search engines, and nothing of the business", () => {

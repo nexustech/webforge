@@ -238,6 +238,8 @@ export function structuredData({
   library,
   shareImage,
 }: StructuredDataOptions): string[] {
+  // Every item is a Blog's post while the Blog is the only preset (a test checks it): another
+  // preset must reach the snapshot and choose its own schema.org type here.
   if (page.item !== undefined && searchable(page)) {
     const posting = blogPosting(site, page, shareImage);
     // A value the checks refuse leaves the post's data out rather than write something wrong.
