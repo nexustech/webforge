@@ -14,23 +14,10 @@ import { z } from "zod";
 import { type BusinessDetails, withBusiness } from "./business.js";
 import { TEMPLATE_CATEGORIES } from "./categories.js";
 import { choosePages, type PageChoices } from "./page-choices.js";
+import { TEMPLATE_IDS } from "./template-index.js";
 
-/**
- * The templates Webforge ships (2.14a, F-SITE-1, S2), by id: each a folder of this package's
- * `templates/` with its `template.json` and `images.json`. Their names and descriptions are
- * `t("template.<id>.name")` and `t("template.<id>.description")`; 2.15 adds its eight here, and
- * {@link BLANK_TEMPLATE_ID}.
- */
-export const TEMPLATE_IDS = [
-  "cafe",
-  "salon",
-  "trades",
-  "consultant",
-  "photographer",
-  "shop",
-  "personal",
-  "blank",
-] as const;
+// The templates' ids, generated from their folders (#983): `pnpm template-index`.
+export { TEMPLATE_IDS } from "./template-index.js";
 
 /** One of {@link TEMPLATE_IDS}. */
 export type TemplateId = (typeof TEMPLATE_IDS)[number];

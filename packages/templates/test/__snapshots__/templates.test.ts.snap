@@ -1,441 +1,458 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one 1`] = `
-{
-  "blank": [],
-  "cafe": [
-    {
-      "key": "cafe-menu",
-      "place": {
-        "kind": "page",
-        "pageId": "cafe-menu",
-      },
-      "values": {
-        "headings": 0,
-      },
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > blank 1`] = `[]`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > cafe 1`] = `
+[
+  {
+    "key": "cafe-menu",
+    "place": {
+      "kind": "page",
+      "pageId": "cafe-menu",
     },
-    {
-      "key": "cafe-about",
-      "place": {
-        "kind": "page",
-        "pageId": "cafe-about",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "cafe-visit",
-      "place": {
-        "kind": "page",
-        "pageId": "cafe-visit",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "cafe-about",
+    "place": {
+      "kind": "page",
+      "pageId": "cafe-about",
     },
-    {
-      "key": "recipe-food-events",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-food-events",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-food-private-hire",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-food-private-hire",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "cafe-visit",
+    "place": {
+      "kind": "page",
+      "pageId": "cafe-visit",
     },
-    {
-      "key": "recipe-food-reviews",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-food-reviews",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-  ],
-  "consultant": [
-    {
-      "key": "HPBEA4fY5A4bVDE0",
-      "place": {
-        "kind": "page",
-        "pageId": "HPBEA4fY5A4bVDE0",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-food-events",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-food-events",
     },
-    {
-      "key": "W6X2OTQVLebmagIt",
-      "place": {
-        "kind": "page",
-        "pageId": "W6X2OTQVLebmagIt",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "5pvnZYpDDLeQ1PJz",
-      "place": {
-        "kind": "page",
-        "pageId": "5pvnZYpDDLeQ1PJz",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-food-private-hire",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-food-private-hire",
     },
-    {
-      "key": "recipe-services-how-we-work",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-services-how-we-work",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-services-client-stories",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-services-client-stories",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-food-reviews",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-food-reviews",
     },
-    {
-      "key": "recipe-services-faq",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-services-faq",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-  ],
-  "personal": [
-    {
-      "key": "f6YidfNWtilI2x4W",
-      "place": {
-        "kind": "page",
-        "pageId": "f6YidfNWtilI2x4W",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+]
+`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > consultant 1`] = `
+[
+  {
+    "key": "HPBEA4fY5A4bVDE0",
+    "place": {
+      "kind": "page",
+      "pageId": "HPBEA4fY5A4bVDE0",
     },
-    {
-      "key": "GK87jx1B0n7wMn7F",
-      "place": {
-        "kind": "page",
-        "pageId": "GK87jx1B0n7wMn7F",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "nSol0HopYKvtpYSy",
-      "place": {
-        "kind": "page",
-        "pageId": "nSol0HopYKvtpYSy",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "W6X2OTQVLebmagIt",
+    "place": {
+      "kind": "page",
+      "pageId": "W6X2OTQVLebmagIt",
     },
-    {
-      "key": "recipe-personal-services",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-personal-services",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-personal-kind-words",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-personal-kind-words",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "5pvnZYpDDLeQ1PJz",
+    "place": {
+      "kind": "page",
+      "pageId": "5pvnZYpDDLeQ1PJz",
     },
-  ],
-  "photographer": [
-    {
-      "key": "fipURVrKOnLgfdI1",
-      "place": {
-        "kind": "page",
-        "pageId": "fipURVrKOnLgfdI1",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "WuVP9a7vXRsqtesp",
-      "place": {
-        "kind": "page",
-        "pageId": "WuVP9a7vXRsqtesp",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-services-how-we-work",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-services-how-we-work",
     },
-    {
-      "key": "SKDmn7x2HAgocDkQ",
-      "place": {
-        "kind": "page",
-        "pageId": "SKDmn7x2HAgocDkQ",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "ge5fzHNPTYnWir82",
-      "place": {
-        "kind": "page",
-        "pageId": "ge5fzHNPTYnWir82",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-services-client-stories",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-services-client-stories",
     },
-    {
-      "key": "recipe-creative-kind-words",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-creative-kind-words",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-creative-workshops",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-creative-workshops",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-services-faq",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-services-faq",
     },
-    {
-      "key": "recipe-creative-faq",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-creative-faq",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-  ],
-  "salon": [
-    {
-      "key": "salon-treatments",
-      "place": {
-        "kind": "page",
-        "pageId": "salon-treatments",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+]
+`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > personal 1`] = `
+[
+  {
+    "key": "f6YidfNWtilI2x4W",
+    "place": {
+      "kind": "page",
+      "pageId": "f6YidfNWtilI2x4W",
     },
-    {
-      "key": "salon-about",
-      "place": {
-        "kind": "page",
-        "pageId": "salon-about",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "salon-book",
-      "place": {
-        "kind": "page",
-        "pageId": "salon-book",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "GK87jx1B0n7wMn7F",
+    "place": {
+      "kind": "page",
+      "pageId": "GK87jx1B0n7wMn7F",
     },
-    {
-      "key": "recipe-beauty-prices",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-beauty-prices",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-beauty-reviews",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-beauty-reviews",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "nSol0HopYKvtpYSy",
+    "place": {
+      "kind": "page",
+      "pageId": "nSol0HopYKvtpYSy",
     },
-    {
-      "key": "recipe-beauty-gift-vouchers",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-beauty-gift-vouchers",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-  ],
-  "shop": [
-    {
-      "key": "Sz6KP5ZuACmyqmbf",
-      "place": {
-        "kind": "page",
-        "pageId": "Sz6KP5ZuACmyqmbf",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-personal-services",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-personal-services",
     },
-    {
-      "key": "i46n43SI6BqNiPF5",
-      "place": {
-        "kind": "page",
-        "pageId": "i46n43SI6BqNiPF5",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-shop-delivery",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-shop-delivery",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "recipe-personal-kind-words",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-personal-kind-words",
     },
-    {
-      "key": "recipe-shop-reviews",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-shop-reviews",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-shop-faq",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-shop-faq",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+]
+`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > photographer 1`] = `
+[
+  {
+    "key": "fipURVrKOnLgfdI1",
+    "place": {
+      "kind": "page",
+      "pageId": "fipURVrKOnLgfdI1",
     },
-  ],
-  "trades": [
-    {
-      "key": "trades-services",
-      "place": {
-        "kind": "page",
-        "pageId": "trades-services",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "trades-work",
-      "place": {
-        "kind": "page",
-        "pageId": "trades-work",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "WuVP9a7vXRsqtesp",
+    "place": {
+      "kind": "page",
+      "pageId": "WuVP9a7vXRsqtesp",
     },
-    {
-      "key": "trades-about",
-      "place": {
-        "kind": "page",
-        "pageId": "trades-about",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "trades-contact",
-      "place": {
-        "kind": "page",
-        "pageId": "trades-contact",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "SKDmn7x2HAgocDkQ",
+    "place": {
+      "kind": "page",
+      "pageId": "SKDmn7x2HAgocDkQ",
     },
-    {
-      "key": "recipe-trades-reviews",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-trades-reviews",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-    {
-      "key": "recipe-trades-areas",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-trades-areas",
-      },
-      "values": {
-        "headings": 0,
-      },
+  },
+  {
+    "key": "ge5fzHNPTYnWir82",
+    "place": {
+      "kind": "page",
+      "pageId": "ge5fzHNPTYnWir82",
     },
-    {
-      "key": "recipe-trades-faq",
-      "place": {
-        "kind": "page",
-        "pageId": "recipe-trades-faq",
-      },
-      "values": {
-        "headings": 0,
-      },
+    "values": {
+      "headings": 0,
     },
-  ],
-}
+  },
+  {
+    "key": "recipe-creative-kind-words",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-creative-kind-words",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-creative-workshops",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-creative-workshops",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-creative-faq",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-creative-faq",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+]
+`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > salon 1`] = `
+[
+  {
+    "key": "salon-treatments",
+    "place": {
+      "kind": "page",
+      "pageId": "salon-treatments",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "salon-about",
+    "place": {
+      "kind": "page",
+      "pageId": "salon-about",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "salon-book",
+    "place": {
+      "kind": "page",
+      "pageId": "salon-book",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-beauty-prices",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-beauty-prices",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-beauty-reviews",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-beauty-reviews",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-beauty-gift-vouchers",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-beauty-gift-vouchers",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+]
+`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > shop 1`] = `
+[
+  {
+    "key": "Sz6KP5ZuACmyqmbf",
+    "place": {
+      "kind": "page",
+      "pageId": "Sz6KP5ZuACmyqmbf",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "i46n43SI6BqNiPF5",
+    "place": {
+      "kind": "page",
+      "pageId": "i46n43SI6BqNiPF5",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-shop-delivery",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-shop-delivery",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-shop-reviews",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-shop-reviews",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-shop-faq",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-shop-faq",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+]
+`;
+
+exports[`every template's main headings (#982) > are counted as they were when Site Check named the components that write one > trades 1`] = `
+[
+  {
+    "key": "trades-services",
+    "place": {
+      "kind": "page",
+      "pageId": "trades-services",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "trades-work",
+    "place": {
+      "kind": "page",
+      "pageId": "trades-work",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "trades-about",
+    "place": {
+      "kind": "page",
+      "pageId": "trades-about",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "trades-contact",
+    "place": {
+      "kind": "page",
+      "pageId": "trades-contact",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-trades-reviews",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-trades-reviews",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-trades-areas",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-trades-areas",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+  {
+    "key": "recipe-trades-faq",
+    "place": {
+      "kind": "page",
+      "pageId": "recipe-trades-faq",
+    },
+    "values": {
+      "headings": 0,
+    },
+  },
+]
 `;
