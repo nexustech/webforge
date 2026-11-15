@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
@@ -227,6 +227,12 @@ function keepCopiedImage(userData: string): string {
 }
 
 describe("startApp", () => {
+  it("stays under 400 lines: what it wires lives in modules of its own (#985)", () => {
+    const source = readFileSync(new URL("./app.ts", import.meta.url), "utf8");
+
+    expect(source.split("\n").length).toBeLessThan(400);
+  });
+
   it("handles every channel of the IPC contract, and no other", async () => {
     const fake = fakeElectron();
 

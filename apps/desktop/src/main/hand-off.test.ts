@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectResult } from "../shared/ipc-contract.js";
-import { createHandOff, type HandOffOptions } from "./hand-off.js";
+import { createHandOff, type HandOffOptions, handOffWindow } from "./hand-off.js";
+import type { PreferencesStore } from "./preferences.js";
 
 const project = {
   name: "Florist",
@@ -100,5 +101,54 @@ describe("createHandOff", () => {
 
     expect(options.open).toHaveBeenCalledTimes(1);
     expect(options.open).toHaveBeenCalledWith("/sites/Two.wforge");
+  });
+});
+
+describe("handOffWindow (#985)", () => {
+  function window(lifecycle: { quitting?: boolean; open?: boolean } = {}) {
+    const reload = vi.fn();
+    const editor = { webContents: { reload } };
+    const preferences = {} as PreferencesStore;
+    const deps = {
+      lifecycle: {
+        quitting: lifecycle.quitting ?? false,
+        preferences,
+        mainWindow: () => (lifecycle.open === false ? undefined : editor),
+        focusMainWindow: () => (lifecycle.open === false ? undefined : editor),
+      },
+      openWindow: vi.fn(),
+      dialog: { showMessageBox: vi.fn(async () => ({ response: 0, checkboxChecked: false })) },
+    } as unknown as Parameters<typeof handOffWindow>[0];
+    return { parts: handOffWindow(deps), deps, reload, editor, preferences };
+  }
+
+  it("reloads the open window with the site handed over, and only shows it otherwise", () => {
+    const { parts, reload } = window();
+
+    parts.show(false);
+    expect(reload).not.toHaveBeenCalled();
+    parts.show(true);
+    expect(reload).toHaveBeenCalledOnce();
+  });
+
+  it("opens a window when none is open, but never while Webforge quits", () => {
+    const closed = window({ open: false });
+    closed.parts.show(true);
+    expect(closed.deps.openWindow).toHaveBeenCalledWith(closed.preferences);
+
+    const quitting = window({ open: false, quitting: true });
+    quitting.parts.show(true);
+    expect(quitting.deps.openWindow).not.toHaveBeenCalled();
+  });
+
+  it("tells the person why the site didn't open, over the window when there is one", async () => {
+    const { parts, deps, editor } = window();
+
+    await parts.failed("not-found");
+
+    expect(deps.dialog.showMessageBox).toHaveBeenCalledWith(
+      editor,
+      expect.objectContaining({ type: "warning" }),
+    );
   });
 });
