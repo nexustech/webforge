@@ -56,7 +56,8 @@ function LinkField({
           {summary}
         </span>
       </div>
-      <div className="flex gap-1">
+      {/* Wraps, so the two buttons never widen the panel (#1007). */}
+      <div className="flex flex-wrap gap-1">
         <Button
           size="sm"
           variant="secondary"

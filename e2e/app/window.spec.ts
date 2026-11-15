@@ -69,7 +69,9 @@ test.describe("window and canvas size", () => {
       // Programmatic changes don't report "resized"; the person's do.
       window?.emit("resized");
     });
-    await expect.poll(() => widthOf(".editor__canvas")).toBeGreaterThan(760);
+    // Half the window or more: two 300 px side columns (#1007) leave about 680 px, well over the
+    // 40% ADR 0008 keeps for it.
+    await expect.poll(() => widthOf(".editor__canvas")).toBeGreaterThan(640);
     await expect.poll(() => savedWindow()?.bounds?.width).toBe(1280);
     expect(savedWindow()?.maximized).toBe(false);
 

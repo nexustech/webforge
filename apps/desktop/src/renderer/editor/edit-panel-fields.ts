@@ -53,6 +53,9 @@ export function specOf(field: FieldDef): FieldSpec | undefined {
         kind: "text",
         label,
         maxLength: MAX_TEXT_LENGTH,
+        // Text the page shows, such as a title or a button's words: under its label, at the panel's
+        // width, as it runs long (#1007).
+        ...(field.inline === true ? { wide: true } : {}),
         // A date (#865): the browser's date picker, its value `YYYY-MM-DD`.
         ...(field.inputType === undefined ? {} : { inputType: field.inputType }),
       };
