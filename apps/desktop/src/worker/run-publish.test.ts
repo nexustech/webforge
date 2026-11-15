@@ -72,11 +72,12 @@ async function job(doc: SiteDoc): Promise<PublishJob> {
 
 /** A publisher that takes what it's given and says it went live, or throws `error`. */
 function fakePublisher(error?: PublishError) {
-  const sent: { files?: ReadonlyMap<string, Uint8Array> } = {};
+  const sent: { files?: ReadonlyMap<string, Uint8Array>; htaccess?: string | undefined } = {};
   const publisher: DestinationPublisher = {
     test: async () => ({ ok: true }),
     async *publish(build) {
       sent.files = build.files;
+      sent.htaccess = build.htaccess;
       yield { type: "preparing" };
       if (error !== undefined) throw error;
       yield { type: "uploading", path: "index.html", done: 1, total: 2 };
@@ -132,6 +133,23 @@ describe("runPublish (4.5, ADR 0018 §1)", () => {
     const home = new TextDecoder().decode(sent.files?.get("index.html"));
     expect(home).toContain("trusted()");
     expect(home).not.toContain("untrusted()");
+  }, 60_000);
+
+  it("sends the rules for a renamed page's old address an Apache host may take (5.15)", async () => {
+    const { sent, make } = fakePublisher();
+    const doc = site();
+    doc.settings.search.keptAddresses = [{ from: "old-home.html", page: doc.homePageId }];
+
+    await runPublish(await job(doc), loadResources, channel(make));
+
+    expect(sent.files?.has("old-home.html")).toBe(true);
+    expect(sent.htaccess).toContain("RewriteRule ^old-home(\\.html)?$ %1 [R=301,NC,L]");
+  }, 60_000);
+
+  it("sends no rules for a site with no old addresses", async () => {
+    const { sent, make } = fakePublisher();
+    await runPublish(await job(site()), loadResources, channel(make));
+    expect(sent.htaccess).toBeUndefined();
   }, 60_000);
 
   it("publishes to the API the job names: the E2E tests' mock Netlify (#70)", async () => {

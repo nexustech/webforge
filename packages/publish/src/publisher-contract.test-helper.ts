@@ -97,6 +97,28 @@ export function describePublisherContract<D extends FolderDestination>(
       expect(left).toEqual([]);
     });
 
+    it("writes its rules into the host's .htaccess when asked, keeping the host's own (5.15)", async () => {
+      const { publisher, destination, password } = under();
+      writeFileSync(join(under().siteFolder(), ".htaccess"), "Options -Indexes\n");
+      const rules = "<IfModule mod_rewrite.c>\nRewriteEngine On\n</IfModule>";
+      const publishRules = async (htaccess: string | undefined) => {
+        const output = { ...build(SITE), ...(htaccess === undefined ? {} : { htaccess }) };
+        const asked = { ...destination(), redirectRules: true };
+        const { error } = await run(
+          publisher(password).publish(output, asked, AbortSignal.timeout(30_000)),
+        );
+        if (error !== undefined) throw error;
+      };
+
+      await publishRules(rules);
+      expect(onHost(".htaccess")).toMatch(
+        /^# BEGIN Webforge redirects\n[\s\S]*RewriteEngine On\n<\/IfModule>\n# END Webforge redirects\n\nOptions -Indexes\n$/,
+      );
+      // No old addresses now: the block goes, and the host's own line stays.
+      await publishRules(undefined);
+      expect(onHost(".htaccess")).toBe("Options -Indexes\n");
+    });
+
     it("leaves files Webforge didn't put there alone", async () => {
       writeFileSync(join(under().siteFolder(), "their-notes.txt"), "keep me");
 
