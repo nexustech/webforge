@@ -7,7 +7,7 @@ import { TITLE_BAR_HEIGHT } from "../../shared/title-bar.js";
 import { AboutDialog } from "./AboutDialog.js";
 import { CommandRegistryProvider } from "./command-context.js";
 import { COMMAND_IDS } from "./command-ids.js";
-import { type CommandRegistry, createCommandRegistry } from "./commands.js";
+import { availability, type CommandRegistry, createCommandRegistry } from "./commands.js";
 import { TitleBar } from "./TitleBar.js";
 
 afterEach(() => cleanup());
@@ -125,6 +125,50 @@ describe("TitleBar", () => {
     expect((screen.getByRole("button", { name: "Redo" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("says in a disabled button's tooltip why it's disabled (#1010)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.undo,
+      label: "Undo",
+      enabled: false,
+      disabledReason: "Nothing to undo.",
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+
+    // A disabled button gets no pointer events: its wrapper has the tooltip.
+    const undo = screen.getByRole("button", { name: "Undo" });
+    await userEvent.hover(undo.parentElement ?? undo);
+
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Undo (Ctrl+Z)Nothing to undo.");
+  });
+
+  it("says a button's command needs a site while nobody has registered it (#1010)", async () => {
+    renderTitleBar();
+
+    const publish = screen.getByRole("button", { name: "Publish" });
+    await userEvent.hover(publish.parentElement ?? publish);
+
+    expect((await screen.findByRole("tooltip")).textContent).toBe("PublishOpen a site first.");
+  });
+
+  it("shows no reason once the command is enabled again (#1010)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.redo,
+      label: "Redo",
+      ...availability("Nothing to redo."),
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+    act(() => registry.update(COMMAND_IDS.redo, availability(undefined)));
+
+    const redo = screen.getByRole("button", { name: "Redo" });
+    await userEvent.hover(redo.parentElement ?? redo);
+
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Redo (Ctrl+Shift+Z)");
+  });
+
   it("lists commands in the app menu, by menu", async () => {
     const registry = createCommandRegistry();
     const exportSite = vi.fn();
@@ -147,12 +191,35 @@ describe("TitleBar", () => {
     expect(screen.getByRole("menuitem", { name: "Later" }).getAttribute("aria-disabled")).toBe(
       "true",
     );
+    // Without a reason, a disabled item is its name alone.
+    expect(screen.getByRole("menuitem", { name: "Later" }).textContent).toBe("Later");
     await userEvent.click(screen.getByRole("menuitem", { name: /Export Site…/ }));
 
     expect(exportSite).toHaveBeenCalledOnce();
     // Help holds About; menus without commands aren't shown.
     expect(screen.getByRole("menuitem", { name: "Help" })).toBeTruthy();
     expect(screen.queryByRole("menuitem", { name: "Edit" })).toBeNull();
+  });
+
+  it("says under a disabled menu item why it's disabled, describing it (#1010)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.stylesheet,
+      label: "Stylesheet",
+      menu: "view",
+      ...availability("Turn on Advanced mode to use the Stylesheet."),
+      run: vi.fn(),
+    });
+    renderTitleBar(registry);
+
+    await userEvent.click(screen.getByRole("menuitem", { name: "View" }));
+    const item = screen.getByRole("menuitem", { name: "Stylesheet" });
+
+    expect(item.getAttribute("aria-disabled")).toBe("true");
+    expect(item.getAttribute("aria-description")).toBe(
+      "Turn on Advanced mode to use the Stylesheet.",
+    );
+    expect(item.textContent).toBe("StylesheetTurn on Advanced mode to use the Stylesheet.");
   });
 
   it("shows the app's icon and version in Help → About Webforge (#454)", async () => {
@@ -263,5 +330,32 @@ describe("CommandBox", () => {
     await userEvent.keyboard("{Enter}");
     expect(showAbout).toHaveBeenCalledOnce();
     expect(addHero).not.toHaveBeenCalled();
+  });
+
+  it("lists a disabled command that says why, off and with why, and leaves out one that doesn't (#1010)", async () => {
+    const registry = createCommandRegistry();
+    registry.register({
+      id: COMMAND_IDS.undo,
+      label: "Undo",
+      ...availability("Nothing to undo."),
+      run: vi.fn(),
+    });
+    registry.register({ id: "a.disabled", label: "Later", enabled: false, run: vi.fn() });
+    renderTitleBar(registry);
+
+    act(() => {
+      registry.run("view.commandBox");
+    });
+    // Named by its label and its keys; the reason describes it.
+    const undo = await screen.findByRole("option", { name: /^Undo/ });
+
+    expect(undo.getAttribute("aria-disabled")).toBe("true");
+    expect(undo.getAttribute("aria-description")).toBe("Nothing to undo.");
+    expect(undo.textContent).toContain("Nothing to undo.");
+    expect(screen.queryByRole("option", { name: "Later" })).toBeNull();
+    // After the commands that can run, though registered first.
+    expect(
+      screen.getAllByRole("option").map((option) => option.getAttribute("data-value")),
+    ).toEqual(["help.about", COMMAND_IDS.undo]);
   });
 });
