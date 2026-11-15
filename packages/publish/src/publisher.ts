@@ -6,6 +6,11 @@ export { PUBLISH_ERROR_CODES, type PublishErrorCode } from "./codes.js";
 /** The files to publish: a build's output, by relative path (`index.html`, `assets/css/…`). */
 export type BuildOutput = {
   readonly files: ReadonlyMap<string, Uint8Array>;
+  /**
+   * The rules an Apache host needs for a real 301 at each old address (5.15, CC-7), which a
+   * file-transfer destination that asks writes into the host's `.htaccess`. None without any.
+   */
+  readonly htaccess?: string | undefined;
 };
 
 /** A publish that did not complete. Messages never contain credentials or site content. */

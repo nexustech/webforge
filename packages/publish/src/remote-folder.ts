@@ -1,3 +1,4 @@
+import { HTACCESS_FILE, withRedirectRules } from "./htaccess.js";
 import {
   diffManifest,
   type Manifest,
@@ -62,6 +63,12 @@ export type FolderPublish = {
   readonly site: PublishedSite;
   readonly url: string;
   readonly replaceOtherSite?: boolean;
+  /**
+   * The destination's *Redirects for Apache hosts* (5.15, CC-7): the build's rules for old
+   * addresses go into the host's `.htaccess`, in Webforge's block; without it, a block an earlier
+   * publish wrote is taken out.
+   */
+  readonly redirectRules?: boolean;
   /** The publish's time, for the manifest; now when left out. */
   readonly now?: () => Date;
 };
@@ -76,8 +83,30 @@ const encodeManifest = (manifest: Manifest) =>
   new TextEncoder().encode(`${JSON.stringify(manifest, null, 2)}\n`);
 
 /**
+ * Writes `rules` into the host's `.htaccess` in Webforge's block, or takes the block out without
+ * them, changing nothing else ({@link withRedirectRules}) and writing only when that changes it.
+ * A file that isn't text is left as it is.
+ */
+async function keepRedirectRules(folder: RemoteFolder, rules: string | undefined): Promise<void> {
+  const data = await folder.read(HTACCESS_FILE);
+  let existing: string | undefined;
+  try {
+    existing =
+      data === undefined ? undefined : new TextDecoder("utf-8", { fatal: true }).decode(data);
+  } catch {
+    return;
+  }
+  const next = withRedirectRules(existing, rules);
+  if (next === existing) return;
+  if (next === null || next === undefined) await folder.remove(HTACCESS_FILE);
+  else await folder.write(HTACCESS_FILE, new TextEncoder().encode(next));
+}
+
+/**
  * Publishes `build` to `folder` (08): only new and changed files are uploaded, assets first and
  * `index.html` last, then the files the site no longer has are removed, pages before assets.
+ * The host's `.htaccess` gets the build's rules for old addresses once the pages they go to are
+ * there, when the destination asks (`redirectRules`, 5.15), or loses a block it no longer wants.
  * Cancelling stops before the next file: the files already sent are whole, and the pages the
  * live site has still find their assets, so it stays usable.
  *
@@ -119,6 +148,15 @@ export async function* publishToFolder(
     yield { type: "uploading", path, done, total: diff.upload.length };
     const data = build.files.get(path);
     if (data !== undefined) await folder.write(path, data);
+  }
+  throwIfCancelled(signal);
+  const wanted = publishing.redirectRules === true;
+  try {
+    await keepRedirectRules(folder, wanted ? build.htaccess : undefined);
+  } catch (error) {
+    // Only a destination that asks for the rules fails for its host's .htaccess: one that doesn't
+    // only tidies away an old block, if the host lets it (SFTP refuses a file it may not read).
+    if (wanted) throw error;
   }
 
   if (diff.remove.length > 0) {

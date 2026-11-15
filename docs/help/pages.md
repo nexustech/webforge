@@ -4,7 +4,7 @@ id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
 related: [header-and-footer, links, site-settings, site-check, blog]
-updated: 2026-11-14
+updated: 2026-11-15
 ---
 
 # Pages and the menu
@@ -117,7 +117,7 @@ Once your site is published, people and search engines know your pages by their 
 
 So when you rename a page and its file name changes, **Keep the old address working** is ticked once you've published the site. Untick it if nobody uses the old address yet. Moving a page to a folder, making it the Home page or changing its file name in Page Settings keeps the old address too, once the site has been published, and so does an [AI app](ai-apps.md) that renames a page.
 
-At each old address, your site gets a small page that sends visitors and search engines straight on to the page's new address. On Netlify, the old address redirects for good. Renaming and keeping the old address is one step, so **Undo** takes back both.
+At each old address, your site gets a small page that sends visitors and search engines straight on to the page's new address. On Netlify, the old address redirects for good. On a host you publish to by FTP, FTPS or SFTP, it does too once you turn on **Redirect old addresses on Apache hosts** for that destination (see [Publish](publish.md#adding-your-web-host)), if your host runs Apache, as most do. Remove an old address and the next publish removes its redirect. Renaming and keeping the old address is one step, so **Undo** takes back both.
 
 A page with two old addresses sends both straight to where it is now. If you later give a page an address that was kept, the page takes it. If you delete a page, its old addresses go with it. You'll find them all in **Site Settings › Search engines**, where you can remove them.
 

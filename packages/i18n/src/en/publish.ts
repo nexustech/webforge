@@ -36,6 +36,10 @@ export const publish = {
   "publish.fileTransfer.url": "Web address",
   "publish.fileTransfer.url.help":
     "Where visitors find your site, such as https://www.example.com.",
+  // Real redirects on an Apache host (5.15, CC-7): off unless the person turns it on.
+  "publish.fileTransfer.redirectRules": "Redirect old addresses on Apache hosts (.htaccess)",
+  "publish.fileTransfer.redirectRules.help":
+    "Most hosts reached by FTP run Apache. Turn this on to send a renamed page's old address on with a permanent redirect, which search engines follow. {appName} writes only its own lines in your host's .htaccess file and leaves the rest alone.",
   // The site's publish destinations (4.4a): where the Publish button publishes to.
   "publish.destinations.title": "Publish",
   "publish.destinations.description":

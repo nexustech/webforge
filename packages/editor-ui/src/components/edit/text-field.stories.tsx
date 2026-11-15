@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { expect, userEvent, within } from "storybook/test";
-import type { EditPanelField } from "./edit-panel.js";
+import type { EditPanelField } from "./edit-panel-types.js";
 import { FieldStory, fieldStoryFrame } from "./field-story.js";
 
 /** A one-line text field (TextField). */

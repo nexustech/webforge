@@ -1,7 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { userEvent, within } from "storybook/test";
-import { EditPanel, type EditPanelField } from "./edit-panel.js";
+import { EditPanel } from "./edit-panel.js";
+import type { EditPanelField } from "./edit-panel-types.js";
 import type { ListChange } from "./field-spec.js";
 
 const meta = {
