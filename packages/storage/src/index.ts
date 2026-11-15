@@ -5,27 +5,7 @@ export {
   type VersionSpace,
 } from "./blob-reach.js";
 export { ProjectFileError, type ProjectFileErrorCode, ReadOnlyProjectError } from "./errors.js";
-export {
-  type AssetInfo,
-  type CreateProjectOptions,
-  type DocumentChange,
-  type NewAsset,
-  type NewVersion,
-  type OpenProjectOptions,
-  type ProjectInfo,
-  ProjectStore,
-  type SaveVersionOptions,
-  type SiteEditorMode,
-  type StoredBlob,
-  type StoredDocument,
-  VERSION_REASONS,
-  type VersionInfo,
-  type VersionKind,
-  type VersionManifest,
-  type VersionPublish,
-  type VersionReason,
-  versionPublishSchema,
-} from "./project-store.js";
+export { ProjectStore } from "./project-store.js";
 export { APPLICATION_ID, FORMAT_VERSION } from "./schema.js";
 export {
   type BlobAsset,
@@ -51,4 +31,24 @@ export {
   siteZipEntries,
   writeSiteZip,
 } from "./site-zip.js";
+export {
+  type AssetInfo,
+  type CreateProjectOptions,
+  type DocumentChange,
+  type NewAsset,
+  type NewVersion,
+  type OpenProjectOptions,
+  type ProjectInfo,
+  type SaveVersionOptions,
+  type SiteEditorMode,
+  type StoredBlob,
+  type StoredDocument,
+  VERSION_REASONS,
+  type VersionInfo,
+  type VersionKind,
+  type VersionManifest,
+  type VersionPublish,
+  type VersionReason,
+  versionPublishSchema,
+} from "./store-types.js";
 export { detectSyncFolder, type SyncService } from "./sync-folders.js";

@@ -27,7 +27,7 @@ When a site is open, the editor fills the window.
 
 ## Moving the panels
 
-- Drag the edges between columns to make a column wider or narrower.
+- Drag the edges between columns to make a column wider or narrower. The side columns start at 300 px, wide enough for every field in the Edit panel; a width you've chosen stays.
 - Collapse a side column with its button in the title bar. It leaves a strip of panel icons; click one to open the column again on that panel.
 - **View › Reset Panels** puts everything back as it was.
 

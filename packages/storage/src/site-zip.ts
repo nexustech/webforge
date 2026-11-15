@@ -17,12 +17,7 @@ import {
 import { unzipSync, Zip, ZipDeflate, ZipPassThrough } from "fflate/browser";
 import { z } from "zod";
 import { sha256 } from "./connection.js";
-import {
-  type NewVersion,
-  type ProjectStore,
-  reasonOfKind,
-  VERSION_REASONS,
-} from "./project-store.js";
+import type { ProjectStore } from "./project-store.js";
 import {
   fillFromSitePackage,
   packageBlobs,
@@ -30,6 +25,7 @@ import {
   type SitePackage,
   sitePackageProjectSchema,
 } from "./site-package.js";
+import { type NewVersion, reasonOfKind, VERSION_REASONS } from "./store-types.js";
 
 // A site as a ZIP file (4.7, F-SITE-5): its site package (A26) and its versions as plain JSON and
 // the original files, for backup or moving a site, which opens again as a new site with nothing
