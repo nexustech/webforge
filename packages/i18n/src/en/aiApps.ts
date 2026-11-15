@@ -110,6 +110,13 @@ export const aiApps = {
   "aiApps.bridge.keyRefused":
     "{appName} didn't take the key. In {appName}'s AI apps, remove Claude Desktop and add it again, then paste the new key into the extension's settings in Claude Desktop.",
   "aiApps.bridge.failed": "{appName} couldn't answer. Try again.",
+  // What the tools answer an AI app when the window can't, which the app may show (#1004).
+  "aiApps.answer.noSite": "No site is open in {appName}.",
+  "aiApps.answer.reloaded":
+    "{appName} reloaded the site before it answered: ask again once it has.",
+  "aiApps.answer.noAnswer": "{appName} didn't answer in time: try again.",
+  "aiApps.answer.tooMany":
+    "{appName} is still answering earlier requests: wait for their answers, then ask again.",
   "aiApps.cancel": "Cancel",
   "aiApps.indicator": "Connected AI apps: {names}. Open AI apps.",
   "aiApps.failed": "{appName} couldn't reach AI apps. Try again.",

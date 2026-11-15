@@ -3,7 +3,6 @@ import { t } from "@webforge/i18n";
 import { siteLibrary } from "@webforge/site-components";
 import { PanelBottomIcon, PanelLeftIcon, PanelRightIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createStore } from "zustand/vanilla";
 import type { AppInfo, Preferences, SiteUiState } from "../shared/ipc-contract.js";
 import { starterSite } from "../shared/starter-site.js";
 import type { WebforgeApi } from "../shared/webforge-api.js";
@@ -16,7 +15,6 @@ import { createCodeTrust } from "./editor/code-trust.js";
 import { Editor, type EditorProps } from "./editor/Editor.js";
 import { createEditorSession, type EditorSession } from "./editor/editor-session.js";
 import { createFirstTips } from "./editor/first-tips.js";
-import { createPublishRequests } from "./editor/publish-requests.js";
 import { createSettingsRegistry } from "./editor/settings-registry.js";
 import { useDocument } from "./editor/use-document.js";
 import { HelpCommands, HelpProvider, openHelpWith } from "./help/index.js";
@@ -71,10 +69,6 @@ export type AppProps = {
   /** The open site's editor state (Design or Content mode) as main loaded it; none for no site. */
   readonly uiState?: SiteUiState | null;
 };
-
-/** The local year `at`, an ISO time, falls in: the year an export then filled `{year}` in (F-CM-8). */
-const yearOf = (at: string | undefined) =>
-  at === undefined ? undefined : new Date(at).getFullYear();
 
 /** The perf check's hooks (ADR 0007), loaded only in perf builds. */
 const installPerf = (session: EditorSession) => {
@@ -133,7 +127,7 @@ export function App({
   // The window's areas (2.20, B1): the Site and Layers panels, Go to page, Open Crash Reports,
   // the View menu's zoom and device views, and Export, after the shell's own commands. Their
   // context is made once, so they register once; they reach main through its `api` (#668).
-  const [windowContext] = useState<WindowContext>(() => {
+  const [windowContext] = useState<Omit<WindowContext, "use">>(() => {
     // What the item previews draw with: the canvas's CSS compiler, as the Add panel's.
     const previewSource = {
       library: session.library,
@@ -153,6 +147,7 @@ export function App({
       canvasPointer,
       settings,
       appVersion: info.version,
+      siteUiState: uiState ?? undefined,
       windowDialogs,
       // Drawn by the canvas's CSS compiler, as the Add panel's previews are.
       itemPreviews: createItemPreviews(previewSource),
@@ -180,9 +175,6 @@ export function App({
             });
         },
       },
-      publishedYear: createStore<number | undefined>(() => yearOf(uiState?.lastPublishedAt)),
-      onNetlify: createStore<boolean>(() => uiState?.onNetlify === true),
-      publishing: createPublishRequests(),
       tips: createFirstTips(),
     };
   });

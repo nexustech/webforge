@@ -1,3 +1,4 @@
+import { t } from "@webforge/i18n";
 import type { IpcMain } from "electron";
 import { z } from "zod";
 import { type AiRequest, type AiResponse, aiEvents, aiRequestSchema } from "../shared/ipc/ai.js";
@@ -9,17 +10,13 @@ const QUERY_TIMEOUT_MS = 15_000;
 /** How long a command waits: a minute for the person to allow it (D7), then time to run. */
 const COMMAND_TIMEOUT_MS = 75_000;
 
-const NO_SITE: AiResponse = { status: "not-found", message: "No site is open in Webforge." };
-/** What a request waiting on the window gets once it reloads: its answer never comes (#663). */
-const RELOADED: AiResponse = {
-  status: "not-found",
-  message: "Webforge reloaded the site before it answered: ask again once it has.",
-};
+// What an AI app is told when the window can't answer, by the app's name (`{appName}`, #1004).
 
-const NO_ANSWER: AiResponse = {
-  status: "busy",
-  message: "Webforge didn't answer in time: try again.",
-};
+const noSite = (): AiResponse => ({ status: "not-found", message: t("aiApps.answer.noSite") });
+/** What a request waiting on the window gets once it reloads: its answer never comes (#663). */
+const reloaded = (): AiResponse => ({ status: "not-found", message: t("aiApps.answer.reloaded") });
+
+const noAnswer = (): AiResponse => ({ status: "busy", message: t("aiApps.answer.noAnswer") });
 
 /**
  * The most requests that wait on the window at once (S21): one command per app, as each waits for
@@ -27,10 +24,7 @@ const NO_ANSWER: AiResponse = {
  */
 const MAX_WAITING = { commandsPerApp: 1, commands: 4, queries: 4 } as const;
 
-const TOO_MANY: AiResponse = {
-  status: "busy",
-  message: "Webforge is still answering earlier requests: wait for their answers, then ask again.",
-};
+const tooManyWaiting = (): AiResponse => ({ status: "busy", message: t("aiApps.answer.tooMany") });
 
 /** The parts of the window an AI app's request goes to; a fake in tests. */
 export type AiWindow = {
@@ -136,7 +130,7 @@ export function registerAiHandlers(
     target.webContents.on("did-start-navigation", (details) => {
       if (!details.isMainFrame || details.isSameDocument) return;
       listening = undefined;
-      for (const { settle } of [...waiting.values()]) settle(RELOADED);
+      for (const { settle } of [...waiting.values()]) settle(reloaded());
     });
   };
 
@@ -168,9 +162,9 @@ export function registerAiHandlers(
         target === undefined ||
         target.webContents.isCrashed()
       ) {
-        return Promise.resolve(NO_SITE);
+        return Promise.resolve(noSite());
       }
-      if (tooMany(request)) return Promise.resolve(TOO_MANY);
+      if (tooMany(request)) return Promise.resolve(tooManyWaiting());
       const timeoutMs =
         request.kind === "query"
           ? (timeouts.queryMs ?? QUERY_TIMEOUT_MS)
@@ -182,7 +176,7 @@ export function registerAiHandlers(
           waiting.delete(id);
           resolve(response);
         };
-        const timer = setTimeout(() => settle(NO_ANSWER), timeoutMs);
+        const timer = setTimeout(() => settle(noAnswer()), timeoutMs);
         waiting.set(id, {
           settle,
           app: request.kind === "command" ? request.app : undefined,

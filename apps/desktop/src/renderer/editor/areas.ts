@@ -1,6 +1,7 @@
 import type { NodeDoc, Theme } from "@webforge/model";
 import type { ReactNode } from "react";
 import type { StoreApi } from "zustand/vanilla";
+import type { SiteUiState } from "../../shared/ipc-contract.js";
 import type { WebforgeApi } from "../../shared/webforge-api.js";
 import type { CanvasView } from "../shell/canvas-view.js";
 import type { CommandRegistry } from "../shell/commands.js";
@@ -18,7 +19,7 @@ import type { EngineHandle } from "./engine-host.js";
 import type { FirstTips } from "./first-tips.js";
 import type { ImagePickRequests } from "./image-picks.js";
 import type { Layer } from "./layers.js";
-import type { PublishRequests } from "./publish-requests.js";
+import { makeServices, type Provision, type Service, type ServiceUse } from "./services.js";
 
 /** An item drawn on Desktop or Mobile (3.13a), in the site's theme or in `theme` (4.10). */
 export type ItemPreviews = (
@@ -39,6 +40,13 @@ import type { CompileCanvasCss } from "./site-css.js";
 export type Area<Context> = {
   /** A name for the area, unique in its list. */
   readonly id: string;
+  /**
+   * The services it makes for the other areas (#984): each made once, before any area registers,
+   * as `provide(PublishedYear, (ctx) => …)`. Their tokens are in `editor/window-services.ts`.
+   */
+  readonly provides?: readonly Provision<Context>[];
+  /** The services it uses, through `ctx.use`: another area provides each. */
+  readonly uses?: readonly Service<unknown>[];
   /** Registers the area on `ctx`; returns how to remove what it registered. */
   readonly register: (ctx: Context) => () => void;
 };
@@ -62,55 +70,46 @@ type AreaContext = {
  * What the window gives the areas it registers (App): its own registries and stores, made once,
  * so its areas register once and a panel keeps what it shows (Layers' collapsed layers and filter).
  */
-export type WindowContext = AreaContext & {
-  /** Asks before what changes more than the page shown (D7); AI apps' changes too, and close it. */
-  readonly siteWide: Pick<
-    SiteWideConfirm,
-    | "confirmSiteWide"
-    | "current"
-    | "busy"
-    | "answer"
-    | "setBeforeSiteWideAction"
-    | "beforeUnaskedChange"
-  >;
-  /** The canvas toolbar's zoom and size readout (1.15). */
-  readonly canvasView: CanvasView;
-  /** What a panel points at on the canvas: an element to outline, a drop point (SP-8, SP-10). */
-  readonly canvasPointer: CanvasPointer;
-  /** The parts of the window's Settings dialog (LF-12). */
-  readonly settings: SettingsRegistry;
-  /** The running app's version (About's), which the update channel's default follows (5.2). */
-  readonly appVersion: string;
-  /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
-  readonly windowDialogs: WindowDialogRegistry;
-  /** The code trust step (#649): asks before the site's code runs, and keeps what's trusted. */
-  readonly codeTrust: CodeTrust;
-  /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
-  readonly siteCheckIgnored: {
-    readonly initial: readonly string[];
-    readonly save: (ignored: readonly string[]) => void;
+export type WindowContext = AreaContext &
+  ServiceUse & {
+    /** The open site's state in this window when it opened, as main kept it (R9); none for none. */
+    readonly siteUiState: SiteUiState | undefined;
+    /** Asks before what changes more than the page shown (D7); AI apps' changes too, and close it. */
+    readonly siteWide: Pick<
+      SiteWideConfirm,
+      | "confirmSiteWide"
+      | "current"
+      | "busy"
+      | "answer"
+      | "setBeforeSiteWideAction"
+      | "beforeUnaskedChange"
+    >;
+    /** The canvas toolbar's zoom and size readout (1.15). */
+    readonly canvasView: CanvasView;
+    /** What a panel points at on the canvas: an element to outline, a drop point (SP-8, SP-10). */
+    readonly canvasPointer: CanvasPointer;
+    /** The parts of the window's Settings dialog (LF-12). */
+    readonly settings: SettingsRegistry;
+    /** The running app's version (About's), which the update channel's default follows (5.2). */
+    readonly appVersion: string;
+    /** Dialogs the window draws once, whatever the panels show (Theme Studio, 2.3b). */
+    readonly windowDialogs: WindowDialogRegistry;
+    /** The code trust step (#649): asks before the site's code runs, and keeps what's trusted. */
+    readonly codeTrust: CodeTrust;
+    /** What the person ignored in Site Check for the open site (3.6), and how to remember a change. */
+    readonly siteCheckIgnored: {
+      readonly initial: readonly string[];
+      readonly save: (ignored: readonly string[]) => void;
+    };
+    /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). */
+    readonly tips: FirstTips;
+    /**
+     * The previews at the top of *Style this ‹kind›…* and Theme Studio (3.13a, CT-11): an item or a
+     * kind on Desktop or Mobile, in the site's theme or with a look not applied yet (4.10); none
+     * without a CSS compiler.
+     */
+    readonly itemPreviews?: ItemPreviews | undefined;
   };
-  /**
-   * The year the open site was last published in (F-CM-8), `undefined` when it hasn't been: as
-   * its versions record it when it opened, then each publish from this window (4.5).
-   */
-  readonly publishedYear: StoreApi<number | undefined>;
-  /**
-   * Whether the open site has a Netlify destination (4.2), for Site Settings' *Netlify Forms*: as
-   * the site's file said when it opened, then as Publish lists its destinations.
-   */
-  readonly onNetlify: StoreApi<boolean>;
-  /** Version History's requests to republish a version, and Publish's word that one went live. */
-  readonly publishing: PublishRequests;
-  /** Where areas say the person has reached a first-time tip's place (OB-4, 5.4a). */
-  readonly tips: FirstTips;
-  /**
-   * The previews at the top of *Style this ‹kind›…* and Theme Studio (3.13a, CT-11): an item or a
-   * kind on Desktop or Mobile, in the site's theme or with a look not applied yet (4.10); none
-   * without a CSS compiler.
-   */
-  readonly itemPreviews?: ItemPreviews | undefined;
-};
 
 /** What the editor gives the areas it registers, around its canvas (Editor). */
 export type EditorContext = AreaContext & {
@@ -149,11 +148,16 @@ export type EditorDialogs = {
 };
 
 /**
- * Registers `areas` on `ctx` in their order (2.20, B1); returns how to remove them all, in the
- * opposite order.
+ * Registers `areas` on `ctx` in their order (2.20, B1), once the services they provide are made
+ * (#984); returns how to remove them all, in the opposite order. Throws, before any registers, on a
+ * service no area provides, one provided twice, or providers that use each other in a cycle.
  */
-export function connectAreas<Context>(areas: readonly Area<Context>[], ctx: Context): () => void {
-  const removers = areas.map((area) => area.register(ctx));
+export function connectAreas<Context>(
+  areas: readonly Area<Context>[],
+  ctx: Omit<Context, keyof ServiceUse>,
+): () => void {
+  const contextOf = makeServices(areas, ctx);
+  const removers = areas.map((area) => area.register(contextOf(area)));
   return () => {
     for (const remove of removers.toReversed()) remove();
   };

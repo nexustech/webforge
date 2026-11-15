@@ -1,3 +1,4 @@
+import { type MessageKey, t } from "@webforge/i18n";
 import type { IpcMain, IpcMainInvokeEvent } from "electron";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { AiRequest } from "../shared/ipc/ai.js";
@@ -61,6 +62,17 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+/**
+ * An answer the bridge gives itself, worded by `key`: each names the app as it's called (#1004), so
+ * a renamed app's answers carry its new name.
+ */
+function said(status: string, key: MessageKey) {
+  const message = t(key);
+  expect(message).toContain(t("app.name"));
+  expect(message).not.toContain("{appName}");
+  return { status, message };
+}
+
 describe("registerAiHandlers", () => {
   it("forwards a request to the window and resolves with its answer", async () => {
     const { ai, sent, invoke } = bridge();
@@ -99,7 +111,7 @@ describe("registerAiHandlers", () => {
 
   it("says no site is open until the renderer listens, and after it stops or crashes", async () => {
     const { ai, sent, crashed, invoke } = bridge();
-    expect((await ai.ask(outline)).status).toBe("not-found");
+    expect(await ai.ask(outline)).toEqual(said("not-found", "aiApps.answer.noSite"));
     await invoke("ai:listening", SESSION, true);
     crashed.value = true;
     expect((await ai.ask(outline)).status).toBe("not-found");
@@ -123,8 +135,8 @@ describe("registerAiHandlers", () => {
     expect(sent).toHaveLength(2);
 
     load();
-    expect(await query).toMatchObject({ status: "not-found" });
-    expect(await command).toMatchObject({ status: "not-found" });
+    expect(await query).toEqual(said("not-found", "aiApps.answer.reloaded"));
+    expect(await command).toEqual(said("not-found", "aiApps.answer.reloaded"));
     // Its answers, if they come, change nothing; and nothing more is sent until it listens again.
     await invoke("ai:answer", 1, { status: "done", data: {} });
     expect((await ai.ask(outline)).status).toBe("not-found");
@@ -161,7 +173,7 @@ describe("registerAiHandlers", () => {
     const query = ai.ask(outline);
     const command = ai.ask(addHero);
     await vi.advanceTimersByTimeAsync(1_000);
-    expect((await query).status).toBe("busy");
+    expect(await query).toEqual(said("busy", "aiApps.answer.noAnswer"));
     await invoke("ai:answer", 2, { status: "declined", message: "No" });
     expect((await command).status).toBe("declined");
 
@@ -197,7 +209,7 @@ describe("registerAiHandlers", () => {
     await invoke("ai:listening", SESSION, true);
     const first = ai.ask(addHero);
     // The same app's next command waits for the first; another app's goes.
-    expect(await ai.ask(addHero)).toMatchObject({ status: "busy" });
+    expect(await ai.ask(addHero)).toEqual(said("busy", "aiApps.answer.tooMany"));
     void ai.ask({ ...addHero, app: "Copilot" });
     const queries = [0, 1, 2, 3].map(() => ai.ask(outline));
     expect(await ai.ask(outline)).toMatchObject({ status: "busy" });

@@ -7,11 +7,13 @@ import type { VersionSummary } from "../../shared/ipc/versions.js";
 import type { WindowContext } from "../editor/areas.js";
 import { createPublishRequests } from "../editor/publish-requests.js";
 import { createSettingsRegistry } from "../editor/settings-registry.js";
+import { Publishing } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createSiteWideConfirm } from "../shell/confirm-site-wide.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { fakePreloadApi } from "../testing/preload.js";
+import { servicesForTest } from "../testing/services.js";
 import { versionHistoryArea } from "./area.js";
 
 afterEach(cleanup);
@@ -50,7 +52,7 @@ function setUp() {
     windowDialogs,
     settings,
     siteWide,
-    publishing,
+    ...servicesForTest([Publishing, publishing]),
   } as unknown as WindowContext;
   const remove = versionHistoryArea.register(context);
   render(<WindowDialogs registry={windowDialogs} />);

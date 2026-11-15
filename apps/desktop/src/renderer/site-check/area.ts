@@ -2,6 +2,7 @@ import { toast } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import { createElement } from "react";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { OnNetlify, PublishedYear } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { siteSession } from "../storage/index.js";
 import { BundleDialog, createBundleConfirm } from "./bundle.js";
@@ -13,6 +14,7 @@ import { registerSiteCheckPanel } from "./register-site-check-panel.js";
  */
 export const siteCheckArea: Area<WindowContext> = {
   id: "siteCheck",
+  uses: [PublishedYear, OnNetlify],
   register: ({
     api,
     panels,
@@ -22,10 +24,11 @@ export const siteCheckArea: Area<WindowContext> = {
     siteCheckIgnored,
     windowDialogs,
     codeTrust,
-    publishedYear,
-    onNetlify,
     tips,
+    use,
   }) => {
+    const publishedYear = use(PublishedYear);
+    const onNetlify = use(OnNetlify);
     // Download and bundle's question (3.9), drawn once in the window.
     const question = createBundleConfirm();
     const removeDialog = windowDialogs.register({
