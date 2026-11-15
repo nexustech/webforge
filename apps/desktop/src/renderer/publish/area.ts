@@ -5,7 +5,9 @@ import { createElement } from "react";
 import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import type { Area, WindowContext } from "../editor/areas.js";
-import type { VersionToRepublish } from "../editor/publish-requests.js";
+import { createPublishRequests, type VersionToRepublish } from "../editor/publish-requests.js";
+import { provide } from "../editor/services.js";
+import { OnNetlify, PublishedYear, Publishing } from "../editor/window-services.js";
 import { reportFailure } from "../log.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { SITE_CHECK_PANEL_ID } from "../site-check/index.js";
@@ -15,6 +17,10 @@ import { PublishDialog } from "./PublishDialog.js";
 import { createPublishOutcomes, PublishOutcomeDialogs } from "./PublishOutcomeDialogs.js";
 import { type PublishFlow, publishTo, republishTo } from "./publish-flow.js";
 import { fillWebAddress } from "./web-address.js";
+
+/** The local year `at`, an ISO time, falls in: the year an export then filled `{year}` in (F-CM-8). */
+const yearOf = (at: string | undefined) =>
+  at === undefined ? undefined : new Date(at).getFullYear();
 
 /** Whether the destinations are shown, and the saved version they'd republish, if one (4.6b). */
 type Opened = { readonly open: boolean; readonly version?: VersionToRepublish };
@@ -28,17 +34,21 @@ type Opened = { readonly open: boolean; readonly version?: VersionToRepublish };
  */
 export const publishArea: Area<WindowContext> = {
   id: "publish",
-  register: ({
-    api,
-    commands,
-    session,
-    windowDialogs,
-    panels,
-    codeTrust,
-    publishedYear,
-    onNetlify,
-    publishing: requests,
-  }) => {
+  // What the site's UI state said when the window opened (R9), then what this window's publishes
+  // and destinations say.
+  provides: [
+    provide(PublishedYear, ({ siteUiState }: WindowContext) =>
+      createStore<number | undefined>(() => yearOf(siteUiState?.lastPublishedAt)),
+    ),
+    provide(OnNetlify, ({ siteUiState }: WindowContext) =>
+      createStore<boolean>(() => siteUiState?.onNetlify === true),
+    ),
+    provide(Publishing, () => createPublishRequests()),
+  ],
+  register: ({ api, commands, session, windowDialogs, panels, codeTrust, use }) => {
+    const publishedYear = use(PublishedYear);
+    const onNetlify = use(OnNetlify);
+    const requests = use(Publishing);
     const opened = createStore<Opened>(() => ({ open: false }));
     // Netlify destinations (4.4b): its calls for the open site, and whether this build can sign in
     // through Netlify's page, which its OAuth client ID decides (4.2).

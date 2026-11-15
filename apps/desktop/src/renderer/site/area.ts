@@ -1,5 +1,6 @@
 import { toast } from "@webforge/editor-ui";
 import type { Area, EditorContext, WindowContext } from "../editor/areas.js";
+import { PublishedYear } from "../editor/window-services.js";
 import { connectCanvasItem } from "./canvas-item.js";
 import { connectCanvasPosts } from "./canvas-posts.js";
 import { registerPageCommands } from "./page-commands.js";
@@ -23,8 +24,9 @@ export const canvasItemArea: Area<EditorContext> = {
 /** The Site panel's Pages and Menu (2.20, B1). */
 export const sitePanelArea: Area<WindowContext> = {
   id: "sitePanel",
-  register: ({ api, panels, session, siteWide, publishedYear }) =>
-    registerSitePanel(panels, session, siteWide, publishedYear, {
+  uses: [PublishedYear],
+  register: ({ api, panels, session, siteWide, use }) =>
+    registerSitePanel(panels, session, siteWide, use(PublishedYear), {
       chooseFiles: () => api.posts.chooseFiles(),
       notify: (message, failed) => (failed ? toast.error(message) : toast.success(message)),
     }),
@@ -33,7 +35,9 @@ export const sitePanelArea: Area<WindowContext> = {
 /** The command palette's Go to page (1.34, F-ED-26), and Page Settings… for the page shown (3.17). */
 export const pageCommandsArea: Area<WindowContext> = {
   id: "pageCommands",
-  register: ({ commands, session, windowDialogs, publishedYear }) => {
+  uses: [PublishedYear],
+  register: ({ commands, session, windowDialogs, use }) => {
+    const publishedYear = use(PublishedYear);
     const removeGoTo = registerPageCommands(commands, session);
     const removeSettings = registerPageSettingsCommand(
       commands,
