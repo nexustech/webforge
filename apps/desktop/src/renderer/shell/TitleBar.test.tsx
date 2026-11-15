@@ -355,5 +355,9 @@ describe("CommandBox", () => {
     expect(undo.getAttribute("aria-description")).toBe("Nothing to undo yet.");
     expect(undo.textContent).toContain("Nothing to undo yet.");
     expect(screen.queryByRole("option", { name: "Later" })).toBeNull();
+    // After the commands that can run, though registered first.
+    expect(
+      screen.getAllByRole("option").map((option) => option.getAttribute("data-value")),
+    ).toEqual(["help.about", COMMAND_IDS.undo]);
   });
 });

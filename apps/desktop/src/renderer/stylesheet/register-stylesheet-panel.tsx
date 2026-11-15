@@ -143,6 +143,8 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   // The commands work in Advanced mode only, as the panel is there.
   const advanced = () => preferences.getState().preferences.editorLevel === "advanced";
   let enabled = advanced();
+  // View › Stylesheet says why it's off in Simple mode (#1010). The other two say nothing, so the
+  // command box leaves their CSS words out of Simple mode.
   const available = () => availability(enabled ? undefined : t("stylesheet.advancedOnly"));
   const removeCommands = [
     commands.register({
@@ -156,14 +158,14 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
     commands.register({
       id: STYLESHEET_COMMANDS.target,
       label: t("stylesheet.target"),
-      ...available(),
+      enabled,
       keywords: ["CSS"],
       run: target,
     }),
     commands.register({
       id: STYLESHEET_COMMANDS.moveLook,
       label: t("stylesheet.move"),
-      ...available(),
+      enabled,
       keywords: ["CSS"],
       run: moveLook,
     }),
@@ -171,8 +173,9 @@ export function registerStylesheetPanel(options: StylesheetPanelOptions): () => 
   const stopFollowing = preferences.subscribe(() => {
     if (advanced() === enabled) return;
     enabled = !enabled;
-    for (const id of [COMMAND_IDS.stylesheet, ...Object.values(STYLESHEET_COMMANDS)]) {
-      commands.update(id, available());
+    commands.update(COMMAND_IDS.stylesheet, available());
+    for (const id of Object.values(STYLESHEET_COMMANDS)) {
+      commands.update(id, { enabled });
     }
   });
   return () => {

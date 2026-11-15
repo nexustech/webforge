@@ -73,8 +73,11 @@ export function CommandBox({ siteName }: CommandBoxProps) {
       !openers.has(command.id) &&
       (command.palette === "add" || command.enabled !== false || reasonOf(command) !== undefined),
   );
+  // Each group's commands that can run first, then those that say why not (#1010).
   const inGroup = (group: PaletteGroup | "commands") =>
-    shown.filter((command) => (command.palette ?? "commands") === group);
+    shown
+      .filter((command) => (command.palette ?? "commands") === group)
+      .toSorted((a, b) => Number(reasonOf(a) !== undefined) - Number(reasonOf(b) !== undefined));
   const item = (command: AppCommand) => (
     <CommandItem
       key={command.id}
