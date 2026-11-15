@@ -15,12 +15,12 @@ import { windowBackground } from "./window-options.js";
 /**
  * One Webforge at a time (1.8): whether this launch is the one that runs. A second launch, e.g. a
  * .wforge double-clicked in Explorer while Webforge is open, hands its command line to the running
- * one ("second-instance") and quits.
+ * one ("second-instance") and exits at once.
  */
 export function claimInstance(
   app: Pick<
     App,
-    "isPackaged" | "getPath" | "setName" | "setPath" | "requestSingleInstanceLock" | "quit"
+    "isPackaged" | "getPath" | "setName" | "setPath" | "requestSingleInstanceLock" | "exit"
   >,
 ): boolean {
   // In development the running bundle is Electron's own, named after the package: the app's name
@@ -34,7 +34,10 @@ export function claimInstance(
     app.setPath("userData", userData);
   }
   const primaryInstance = app.requestSingleInstanceLock();
-  if (!primaryInstance) app.quit();
+  // The running Webforge has the command line once the lock is refused, and this launch has
+  // nothing to save or close: it exits now. Quitting instead waits for Electron to be ready
+  // before it ends, which on a busy computer took 10 to 60 seconds after the hand-over (#1084).
+  if (!primaryInstance) app.exit(0);
   return primaryInstance;
 }
 
