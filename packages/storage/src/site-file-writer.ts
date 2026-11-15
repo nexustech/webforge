@@ -3,8 +3,8 @@ import { collectGarbage, type GarbageReport } from "./blob-reach.js";
 import { configureWrites, connect, INSERT_BLOB, sha256, UPSERT_ASSET } from "./connection.js";
 import { stamped } from "./content-check.js";
 import { ProjectFileError } from "./errors.js";
-import type { NewAsset } from "./project-store.js";
 import { APPLICATION_ID } from "./schema.js";
+import type { NewAsset } from "./store-types.js";
 
 /**
  * Space the file must have free before {@link SiteFileWriter.cleanUp} gives it back to the disk:

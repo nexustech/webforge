@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { existsSync, renameSync, rmSync } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { existsSync } from "node:fs";
 import {
   DEFAULT_EXPORT_CHOICES,
   type ExportChoices,
@@ -11,12 +10,11 @@ import {
   publishDestinationsFrom,
   publishDestinationsSchema,
   type SiteDoc,
-  type SiteDocumentChange,
   siteCheckIgnoredSchema,
   siteDocuments,
   siteFromDocuments,
 } from "@webforge/model";
-import Database from "better-sqlite3";
+import type Database from "better-sqlite3";
 import { z } from "zod";
 import {
   blobsReachedBy,
@@ -24,551 +22,55 @@ import {
   decodeDocument,
   type GarbageReport,
   type JsonValue,
-  type Manifest,
   parseDocument,
   parseManifest,
   type VersionSpace,
   versionSpace,
 } from "./blob-reach.js";
 import { configureWrites, connect, INSERT_BLOB, sha256, UPSERT_ASSET } from "./connection.js";
-import { checkContent, stampContent, stamped } from "./content-check.js";
+import { stamped } from "./content-check.js";
+import { createProjectFile, writeInPlace } from "./create-project.js";
 import { ProjectFileError, ReadOnlyProjectError } from "./errors.js";
+import { FORMAT_VERSION } from "./schema.js";
 import {
-  APPLICATION_ID,
-  FORMAT_VERSION,
-  SCHEMA,
-  SCHEMA_MIGRATIONS,
-  SCHEMAS,
-  V1_REASON,
-  V1_SITE_FORMAT,
-} from "./schema.js";
-
-/** One document of the working copy, e.g. a page, the header or the theme. */
-export type StoredDocument = {
-  /** Stable id, e.g. `page:home` or `layout:header`. */
-  readonly id: string;
-  /** What the document is, e.g. `page`, `layout` or `theme`. */
-  readonly kind: string;
-  readonly content: JsonValue;
-};
-
-/**
- * A change to the working copy, of a kind `@webforge/model` defines. One
- * {@link ProjectStore.commit} applies a list of them atomically. Put content is stored as JSON;
- * `undefined` properties are dropped, as `JSON.stringify` does.
- */
-export type DocumentChange = SiteDocumentChange;
-
-/** A binary blob, such as an image, stored once under the SHA-256 hash of its bytes. */
-export type StoredBlob = {
-  readonly mime: string;
-  readonly data: Uint8Array;
-};
-
-/** Who took a version: the user (`manual`) or Webforge (`auto`). */
-export type VersionKind = "manual" | "auto";
-
-/**
- * Why a version was saved (storage format 2, for 4.6): the person saved it (`manual`), or Webforge
- * did, once a day, before a restore, before a change to every page, or as the site went live.
- * Only `manual` ones are the person's: pruning never deletes them.
- */
-export const VERSION_REASONS = [
-  "manual",
-  "daily",
-  "before-restore",
-  "before-site-wide",
-  "on-publish",
-] as const;
-
-/** See {@link VERSION_REASONS}. */
-export type VersionReason = (typeof VERSION_REASONS)[number];
-
-/** Who saves a version for `reason`. */
-const kindOf = (reason: VersionReason): VersionKind => (reason === "manual" ? "manual" : "auto");
-
-/**
- * The reason a version gets when only who saved it is known: a format 1 version's, a version 1
- * ZIP's, or one a newer Webforge saved for a reason this one doesn't know. `V1_REASON` in the
- * schema is its SQL twin.
- */
-export const reasonOfKind = (kind: VersionKind): VersionReason =>
-  kind === "manual" ? "manual" : "daily";
-
-/**
- * Where a version was published, and what the live check found then (ADR 0018 §3): the last time,
- * when it has been republished.
- */
-export const versionPublishSchema = z.strictObject({
-  /** The site's publish destination (ADR 0018 §2). */
-  destinationId: z.string().min(1).max(100),
-  /** ISO 8601 timestamp (UTC). */
-  publishedAt: z.iso.datetime(),
-  /** The live check's answer (`@webforge/publish`'s `Verification`). */
-  check: z.enum(["live", "different", "unreachable", "unchecked"]),
-  /** The publisher's own name for what went live, such as Netlify's deploy id. */
-  deploy: z.string().min(1).max(200).optional(),
-});
-
-/** See {@link versionPublishSchema}. */
-export type VersionPublish = z.infer<typeof versionPublishSchema>;
-
-/**
- * The editor's mode for a site (M3, 1.10): Design changes the layout, Content edits text and
- * images only. Remembered per site, but UI state: not part of the site, never versioned or undone.
- */
-export type SiteEditorMode = "design" | "content";
-
-const siteEditorModeSchema = z.enum(["design", "content"]);
-
-/** A saved version of the project (snapshot of the working copy). */
-export type VersionInfo = {
-  readonly id: string;
-  readonly name: string;
-  /** Who saved it, which follows from why. */
-  readonly kind: VersionKind;
-  readonly reason: VersionReason;
-  /** ISO 8601 timestamp (UTC). */
-  readonly createdAt: string;
-  /** The site format its documents were saved in: {@link ProjectStore.readVersionSite} migrates. */
-  readonly siteFormat: number;
-  /** The SHA-256 of its picture, a blob, if it has one. */
-  readonly thumbnailHash: string | undefined;
-  readonly publishedTo: VersionPublish | undefined;
-};
-
-/** What {@link ProjectStore.addVersion} takes: a version as another project has it. */
-export type NewVersion = Pick<VersionInfo, "id" | "name" | "reason" | "createdAt">;
-
-/**
- * The working copy's documents as a version holds them, each one's id, kind and blob, from
- * {@link ProjectStore.readManifest}: what a publish builds is saved once it has gone live, from
- * the documents it read when it started (ADR 0018 §3).
- */
-export type VersionManifest = Manifest["documents"];
-
-/** What {@link ProjectStore.saveVersion} saves, besides a name and a reason. */
-export type SaveVersionOptions = {
-  /** Its documents, as {@link ProjectStore.readManifest} read them; the working copy's by default. */
-  readonly documents?: VersionManifest;
-  /** The SHA-256 of a blob holding its picture. */
-  readonly thumbnailHash?: string;
-  readonly publishedTo?: VersionPublish;
-};
-
-/** What {@link ProjectStore.putAsset} stores: an imported file's original bytes and facts. */
-export type NewAsset = {
-  /** The id of the site's Media item (`MediaId`). */
-  readonly mediaId: string;
-  readonly data: Uint8Array;
-  readonly mime: string;
-  /** Pixel size, for images. */
-  readonly width?: number | undefined;
-  readonly height?: number | undefined;
-  /** The file's name on the user's computer, e.g. `shop.jpg`. Never a path. */
-  readonly originalName: string;
-};
-
-/** An imported Media item's original, as recorded in the `assets` table. */
-export type AssetInfo = {
-  readonly mediaId: string;
-  /** SHA-256 of the original; {@link ProjectStore.readBlob} returns the bytes. */
-  readonly hash: string;
-  readonly mime: string;
-  readonly width: number | undefined;
-  readonly height: number | undefined;
-  readonly originalName: string;
-};
-
-/** Facts about an open project. */
-export type ProjectInfo = {
-  readonly projectId: string;
-  /** Site name chosen when the project was created. */
-  readonly name: string;
-  /**
-   * The storage format the file is in: an older one stays as it is until the first write, which
-   * brings it to {@link FORMAT_VERSION}.
-   */
-  readonly formatVersion: number;
-  /** ISO 8601 timestamp (UTC). */
-  readonly createdAt: string;
-  /** Opened without write access: on request, or because a newer Webforge saved it. */
-  readonly readOnly: boolean;
-  /** Saved by a newer Webforge (format above {@link FORMAT_VERSION}); the user should update. */
-  readonly newerFormat: boolean;
-};
-
-/** Options for {@link ProjectStore.open}. */
-export type OpenProjectOptions = {
-  /** Open without write access, e.g. to look inside a backup. */
-  readonly readOnly?: boolean;
-};
-
-/** Options for {@link ProjectStore.create}. */
-export type CreateProjectOptions = {
-  /** Site name, e.g. "Rosa's Bakery". */
-  readonly name: string;
-};
+  migrateSchema,
+  readRow,
+  reportDamageAsProjectFileError,
+  toProjectFileError,
+  validateProject,
+} from "./schema-check.js";
+import {
+  ASSET_COLUMNS,
+  blobRowSchema,
+  documentRowSchema,
+  siteFormatOf,
+  toAssetInfo,
+  toVersionInfo,
+  VERSION_COLUMNS,
+} from "./store-rows.js";
+import {
+  type AssetInfo,
+  type CreateProjectOptions,
+  type DocumentChange,
+  kindOf,
+  type MetaKey,
+  type NewAsset,
+  type NewVersion,
+  type OpenProjectOptions,
+  type ProjectInfo,
+  type SaveVersionOptions,
+  type SiteEditorMode,
+  type StoredBlob,
+  type StoredDocument,
+  siteEditorModeSchema,
+  type VersionInfo,
+  type VersionManifest,
+  type VersionPublish,
+  type VersionReason,
+  versionPublishSchema,
+} from "./store-types.js";
 
 const JSON_MIME = "application/json";
-
-const metaSchema = z.strictObject({
-  format_version: z
-    .string()
-    .regex(/^[1-9]\d*$/)
-    .transform(Number),
-  project_id: z.uuid(),
-  name: z.string().min(1),
-  created_at: z.iso.datetime(),
-  /** Checked when read (see `readEditorMode`), so a bad value never stops the file opening. */
-  editor_mode: z.string().optional(),
-  /** JSON, checked when read (see `readExportChoices`), likewise. */
-  export_choices: z.string().optional(),
-  /** JSON, checked when read (see `readSiteCheckIgnored`), likewise. */
-  site_check_ignored: z.string().optional(),
-  /** JSON, checked entry by entry when read (see `readPublishDestinations`), likewise. */
-  publish_destinations: z.string().optional(),
-  /** An ISO time, checked when read (see `readLastPublishedAt`), likewise. */
-  last_published_at: z.string().optional(),
-});
-
-const schemaRowSchema = z.object({
-  type: z.string(),
-  name: z.string(),
-  tbl_name: z.string(),
-  sql: z.string().nullable(),
-});
-
-const documentRowSchema = z.object({ id: z.string(), kind: z.string(), hash: z.string() });
-const blobRowSchema = z.object({ mime: z.string(), data: z.instanceof(Uint8Array) });
-const versionRowSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  kind: z.enum(["manual", "auto"]),
-  reason: z.string(),
-  created_at: z.string(),
-  site_format: z.number(),
-  thumbnail_hash: z.string().nullable(),
-  published_to: z.string().nullable(),
-});
-
-/**
- * `row`, read from the file, as `schema` takes it. A row the file holds in another shape (a version
- * whose kind isn't one, a blob that isn't bytes) is damage, reported as storage's own
- * {@link ProjectFileError} (#827, 5.6's fuzzing), as SQLite's own reports of damage are. Arguments
- * a caller passes are checked with `parse` as before: a wrong one is the caller's mistake.
- */
-function readRow<T>(schema: z.ZodType<T>, row: unknown): T {
-  const parsed = schema.safeParse(row);
-  if (!parsed.success) {
-    throw new ProjectFileError("corrupt", "A row of the project isn't in the shape it should be", {
-      cause: parsed.error,
-    });
-  }
-  return parsed.data;
-}
-
-/** A version's row as {@link VERSION_COLUMNS} reads it. */
-function toVersionInfo(row: unknown): VersionInfo {
-  const version = readRow(versionRowSchema, row);
-  // A newer Webforge may save for a reason this one doesn't know: who saved it is still known.
-  const reason = z.enum(VERSION_REASONS).safeParse(version.reason);
-  return {
-    id: version.id,
-    name: version.name,
-    kind: version.kind,
-    reason: reason.success ? reason.data : reasonOfKind(version.kind),
-    createdAt: version.created_at,
-    siteFormat: version.site_format,
-    thumbnailHash: version.thumbnail_hash ?? undefined,
-    publishedTo: publishOf(version.published_to),
-  };
-}
-
-/** What a version's `published_to` says, if it says it: a fact to show, never one to fail on. */
-function publishOf(text: string | null): VersionPublish | undefined {
-  if (text === null) return undefined;
-  try {
-    const parsed = versionPublishSchema.safeParse(JSON.parse(text));
-    return parsed.success ? parsed.data : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * The columns a version is read from: by name, so a newer format's added ones are never read. A
- * format 1 file, opened read-only, says why and in which site format as its migration would.
- */
-const VERSION_COLUMNS = (format: number) =>
-  format >= 2
-    ? "id, name, kind, reason, created_at, site_format, thumbnail_hash, published_to"
-    : `id, name, kind, ${V1_REASON} AS reason, created_at, ${V1_SITE_FORMAT} AS site_format,
-       NULL AS thumbnail_hash, NULL AS published_to`;
-
-/** The site format `documents`' `site` document records, or 1 when it records none. */
-function siteFormatOf(
-  documents: Iterable<{ readonly id: string; readonly content: unknown }>,
-): number {
-  for (const { id, content } of documents) {
-    if (id !== "site") continue;
-    const site = z.object({ formatVersion: z.int().positive() }).safeParse(content);
-    return site.success ? site.data.formatVersion : 1;
-  }
-  return 1;
-}
-
-const assetRowSchema = z.object({
-  media_id: z.string(),
-  blob_hash: z.string(),
-  mime: z.string(),
-  width: z.number().nullable(),
-  height: z.number().nullable(),
-  original_name: z.string(),
-});
-
-/** The columns an asset is read from: by name, so a newer format's added ones are never read. */
-const ASSET_COLUMNS = "media_id, blob_hash, mime, width, height, original_name";
-
-function toAssetInfo(row: unknown): AssetInfo {
-  const asset = readRow(assetRowSchema, row);
-  return {
-    mediaId: asset.media_id,
-    hash: asset.blob_hash,
-    mime: asset.mime,
-    width: asset.width ?? undefined,
-    height: asset.height ?? undefined,
-    originalName: asset.original_name,
-  };
-}
-
-/**
- * The file's `sqlite_schema`: its tables, indexes, views and triggers, each as one JSON line, in a
- * stable order for comparison. Reading it runs nothing stored in the file, so it is safe on any
- * file (S4). A row in another shape, its SQL stored as bytes say, is damage (#840).
- */
-function readSchema(db: Database.Database): string[] {
-  return db
-    .prepare("SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name")
-    .all()
-    .map((row) => JSON.stringify(readRow(schemaRowSchema, row)));
-}
-
-/** The tables every format has, whose rows the store reads: never a view, whatever the format. */
-const READ_TABLES = ["meta", "documents", "blobs", "assets", "versions"] as const;
-
-/**
- * Checks `schema` (from {@link readSchema}) before anything runs on the file's own tables (S4): a
- * view or trigger would run the file's SQL, which can loop for ever. `meta`, which says which
- * format the file is in, must be exactly the table every format defines. The other tables the
- * store reads must be plain tables, with no generated columns and no index on an expression or
- * with a condition, whose SQL would run as they are read; a file of a newer format may have no
- * views or triggers either. An older or the current format's whole schema is compared once `meta`
- * is read.
- */
-function checkTablesBeforeReading(db: Database.Database, schema: readonly string[]): void {
-  const parse = (line: string) => schemaRowSchema.parse(JSON.parse(line));
-  const rows = schema.map(parse);
-  // Names are unique in `sqlite_schema`, so there is one `meta` line at most in each.
-  const meta = schema[rows.findIndex((row) => row.name === "meta")];
-  const expectedMeta = getExpectedSchema(FORMAT_VERSION)?.find(
-    (line) => parse(line).name === "meta",
-  );
-  const refuse = (message: string) => {
-    throw new ProjectFileError("unexpected-schema", message);
-  };
-  if (meta === undefined || meta !== expectedMeta) {
-    refuse("The project's metadata table is not the one every format has");
-  }
-  for (const name of READ_TABLES) {
-    const row = rows.find((each) => each.name === name);
-    if (row === undefined || row.type !== "table" || !/^CREATE TABLE /.test(row.sql ?? "")) {
-      refuse(`The project's ${name} is not a plain table`);
-    }
-    // These read only what SQLite parsed from `sqlite_schema`: none of the file's SQL runs. What
-    // they report comes from the file too, so a row in another shape is damage (#840).
-    const generated = readRow(
-      z.array(z.object({ hidden: z.number() })),
-      db.pragma(`table_xinfo(${name})`),
-    ).some((column) => column.hidden >= 2);
-    const computedIndex = readRow(
-      z.array(z.object({ name: z.string(), partial: z.number() })),
-      db.pragma(`index_list(${name})`),
-    ).some(
-      (index) =>
-        index.partial !== 0 ||
-        // The index's name is the file's: bound, never written into the SQL.
-        readRow(
-          z.array(z.object({ cid: z.number() })),
-          db.prepare("SELECT cid FROM pragma_index_xinfo(?)").all(index.name),
-        ).some((column) => column.cid === -2),
-    );
-    if (generated || computedIndex) {
-      refuse(`The project's ${name} has columns or indexes of its own SQL`);
-    }
-  }
-  if (rows.some((row) => row.type === "view" || row.type === "trigger")) {
-    refuse("The project has views or triggers");
-  }
-}
-
-/** Whether `schema` is exactly what format `version` has. */
-function isSchemaOf(schema: readonly string[], version: number): boolean {
-  const expected = getExpectedSchema(version);
-  return (
-    expected !== undefined &&
-    schema.length === expected.length &&
-    schema.every((row, index) => row === expected[index])
-  );
-}
-
-const expectedSchemas = new Map<number, readonly string[]>();
-
-/**
- * What `sqlite_schema` of a valid project of format `version` looks like, read from an in-memory
- * database once per version, or `undefined` for a format this build doesn't know.
- */
-function getExpectedSchema(version: number): readonly string[] | undefined {
-  const statements = SCHEMAS[version];
-  if (statements === undefined) {
-    return undefined;
-  }
-  let expected = expectedSchemas.get(version);
-  if (expected === undefined) {
-    const db = new Database(":memory:");
-    try {
-      for (const statement of statements) {
-        db.exec(statement);
-      }
-      expected = readSchema(db);
-      expectedSchemas.set(version, expected);
-    } finally {
-      db.close();
-    }
-  }
-  return expected;
-}
-
-function sqliteErrorCode(error: unknown): string | undefined {
-  return error instanceof Database.SqliteError ? error.code : undefined;
-}
-
-/** Turns SQLite's errors about the file itself into {@link ProjectFileError}s. */
-function toProjectFileError(error: unknown): unknown {
-  const code = sqliteErrorCode(error);
-  if (code === "SQLITE_NOTADB") {
-    return new ProjectFileError("not-a-project", "The file is not an SQLite database", {
-      cause: error,
-    });
-  }
-  if (code?.startsWith("SQLITE_CORRUPT") === true) {
-    return new ProjectFileError("corrupt", "SQLite reports the database as corrupt", {
-      cause: error,
-    });
-  }
-  // A damaged header's schema format number, which SQLite reports as a plain error (5.6's fuzzing).
-  if (
-    code === "SQLITE_ERROR" &&
-    error instanceof Error &&
-    /unsupported file format/i.test(error.message)
-  ) {
-    return new ProjectFileError("corrupt", "SQLite can't read the database's schema format", {
-      cause: error,
-    });
-  }
-  return error;
-}
-
-function readMetaRows(db: Database.Database): Record<string, string> {
-  const rows = db.prepare("SELECT key, value FROM meta").all();
-  return Object.fromEntries(
-    rows.map((row) => {
-      const { key, value } = readRow(z.object({ key: z.string(), value: z.string() }), row);
-      return [key, value];
-    }),
-  );
-}
-
-/** What {@link validateProject} learns about a file. */
-type ValidatedProject = Omit<ProjectInfo, "readOnly">;
-
-/**
- * Checks that `db` is a Webforge project this build can open, and returns its metadata. A file of
- * an older format must have exactly that format's tables; a newer one only needs the metadata and
- * plain tables to read, with no views or triggers, since a newer Webforge may have added tables.
- * It is then only ever opened read-only. No SQL of the file's runs before its tables are checked.
- */
-function validateProject(db: Database.Database): ValidatedProject {
-  if (db.pragma("application_id", { simple: true }) !== APPLICATION_ID) {
-    throw new ProjectFileError("not-a-project", "The database is not a Webforge project");
-  }
-  // Its tables first, from SQLite's own record of them: nothing of the file's runs (S4).
-  const schema = readSchema(db);
-  checkTablesBeforeReading(db, schema);
-  // quick_check runs the tables' CHECK constraints, so only a schema this build writes, all of
-  // whose SQL is its own, is checked so. A file of a newer format opens read-only, and only its
-  // tables' named columns are read.
-  if (Object.keys(SCHEMAS).some((version) => isSchemaOf(schema, Number(version)))) {
-    const check = db.pragma("quick_check", { simple: true });
-    if (check !== "ok") {
-      throw new ProjectFileError("corrupt", "The project fails SQLite's integrity check");
-    }
-  }
-  let metaRows: Record<string, string>;
-  try {
-    metaRows = readMetaRows(db);
-  } catch (error) {
-    throw new ProjectFileError("unexpected-schema", "The project has no readable metadata", {
-      cause: error,
-    });
-  }
-  const version = metaSchema.shape.format_version.safeParse(metaRows.format_version);
-  const newerFormat = version.success && version.data > FORMAT_VERSION;
-  if (!newerFormat) {
-    if (!version.success || !isSchemaOf(schema, version.data)) {
-      throw new ProjectFileError(
-        "unexpected-schema",
-        "The project's tables do not match its format",
-      );
-    }
-  }
-  // A newer Webforge may also have added metadata keys.
-  const meta = (newerFormat ? metaSchema.loose() : metaSchema).safeParse(metaRows);
-  if (!meta.success) {
-    throw new ProjectFileError("unexpected-schema", "The project's metadata is invalid", {
-      cause: meta.error,
-    });
-  }
-  // A torn copy can pass quick_check (#295). A newer format's tables are its own to check.
-  if (!newerFormat) {
-    checkContent(db);
-  }
-  return {
-    projectId: meta.data.project_id,
-    name: meta.data.name,
-    formatVersion: meta.data.format_version,
-    createdAt: meta.data.created_at,
-    newerFormat,
-  };
-}
-
-/**
- * Brings an older file's tables up to {@link FORMAT_VERSION}, one format at a time, inside the
- * transaction of the first write to it (see `ProjectStore.#write`): after a crash the file is
- * either fully migrated, with that write, or untouched.
- */
-function migrateSchema(db: Database.Database, from: number): void {
-  for (let version = from; version < FORMAT_VERSION; version += 1) {
-    const step = SCHEMA_MIGRATIONS[version];
-    if (step === undefined) {
-      throw new ProjectFileError("unexpected-schema", `No migration from format ${version}`);
-    }
-    for (const statement of step) {
-      db.exec(statement);
-    }
-  }
-  db.prepare("UPDATE meta SET value = ? WHERE key = 'format_version'").run(String(FORMAT_VERSION));
-}
 
 /**
  * A `.wforge` project file: an SQLite database holding the working copy as JSON documents,
@@ -599,36 +101,7 @@ export class ProjectStore {
    * a half-created project.
    */
   static create(path: string, options: CreateProjectOptions): ProjectStore {
-    const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
-    try {
-      const db = connect(tempPath, { create: true });
-      try {
-        db.pragma(`application_id = ${APPLICATION_ID}`);
-        configureWrites(db);
-        const meta = {
-          format_version: String(FORMAT_VERSION),
-          project_id: randomUUID(),
-          name: options.name,
-          created_at: new Date().toISOString(),
-        };
-        db.transaction(() => {
-          for (const statement of SCHEMA) {
-            db.exec(statement);
-          }
-          const insert = db.prepare("INSERT INTO meta (key, value) VALUES (?, ?)");
-          for (const [key, value] of Object.entries(meta)) {
-            insert.run(key, value);
-          }
-          stampContent(db);
-        })();
-      } finally {
-        db.close();
-      }
-      renameSync(tempPath, path);
-    } catch (error) {
-      rmSync(tempPath, { force: true });
-      throw error;
-    }
+    createProjectFile(path, options.name);
     return ProjectStore.open(path);
   }
 
@@ -1067,14 +540,9 @@ export class ProjectStore {
    * opened, the app quit) while a backup is still running.
    */
   async backupTo(path: string): Promise<void> {
-    const tempPath = join(dirname(path), `.${basename(path)}.${randomUUID()}.tmp`);
     const source = connect(this.#db.name, { readOnly: true });
     try {
-      await source.backup(tempPath);
-      renameSync(tempPath, path);
-    } catch (error) {
-      rmSync(tempPath, { force: true });
-      throw error;
+      await writeInPlace(path, (temp) => source.backup(temp));
     } finally {
       source.close();
     }
@@ -1082,73 +550,37 @@ export class ProjectStore {
 
   /** The editor's mode for this site; Design until someone switches it. */
   readEditorMode(): SiteEditorMode {
-    const row = this.#prepare("SELECT value FROM meta WHERE key = 'editor_mode'").get() as
-      | { value: unknown }
-      | undefined;
-    const mode = siteEditorModeSchema.safeParse(row?.value);
+    const mode = siteEditorModeSchema.safeParse(this.#readMeta("editor_mode"));
     return mode.success ? mode.data : "design";
   }
 
   /** Remembers the editor's mode for this site. */
   writeEditorMode(mode: SiteEditorMode): void {
-    this.#write(() => {
-      this.#prepare(
-        `INSERT INTO meta (key, value) VALUES ('editor_mode', ?)
-         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      ).run(siteEditorModeSchema.parse(mode));
-    });
+    this.#writeMeta("editor_mode", siteEditorModeSchema.parse(mode));
   }
 
   /** What the person last chose when exporting this site; the defaults until then. */
   readExportChoices(): ExportChoices {
-    const row = this.#prepare("SELECT value FROM meta WHERE key = 'export_choices'").get() as
-      | { value: unknown }
-      | undefined;
-    let stored: unknown;
-    try {
-      stored = typeof row?.value === "string" ? JSON.parse(row.value) : undefined;
-    } catch {
-      stored = undefined;
-    }
-    const choices = exportChoicesSchema.safeParse(stored);
+    const choices = exportChoicesSchema.safeParse(this.#readMetaJson("export_choices"));
     return choices.success ? choices.data : DEFAULT_EXPORT_CHOICES;
   }
 
   /** Remembers what the person chose when exporting this site. */
   writeExportChoices(choices: ExportChoices): void {
     const value = JSON.stringify(exportChoicesSchema.parse(choices));
-    this.#write(() => {
-      this.#prepare(
-        `INSERT INTO meta (key, value) VALUES ('export_choices', ?)
-         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      ).run(value);
-    });
+    this.#writeMeta("export_choices", value);
   }
 
   /** What the person ignored in Site Check (3.6), by finding; nothing until then. */
   readSiteCheckIgnored(): string[] {
-    const row = this.#prepare("SELECT value FROM meta WHERE key = 'site_check_ignored'").get() as
-      | { value: unknown }
-      | undefined;
-    let stored: unknown;
-    try {
-      stored = typeof row?.value === "string" ? JSON.parse(row.value) : undefined;
-    } catch {
-      stored = undefined;
-    }
-    const ignored = siteCheckIgnoredSchema.safeParse(stored);
+    const ignored = siteCheckIgnoredSchema.safeParse(this.#readMetaJson("site_check_ignored"));
     return ignored.success ? ignored.data : [];
   }
 
   /** Remembers what the person ignored in Site Check, replacing what was remembered. */
   writeSiteCheckIgnored(ignored: readonly string[]): void {
     const value = JSON.stringify(siteCheckIgnoredSchema.parse(ignored));
-    this.#write(() => {
-      this.#prepare(
-        `INSERT INTO meta (key, value) VALUES ('site_check_ignored', ?)
-         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      ).run(value);
-    });
+    this.#writeMeta("site_check_ignored", value);
   }
 
   /**
@@ -1157,22 +589,14 @@ export class ProjectStore {
    * the year a published site shows (F-CM-8).
    */
   readLastPublishedAt(): string | undefined {
-    const row = this.#prepare("SELECT value FROM meta WHERE key = 'last_published_at'").get() as
-      | { value: unknown }
-      | undefined;
-    const at = z.iso.datetime().safeParse(row?.value);
+    const at = z.iso.datetime().safeParse(this.#readMeta("last_published_at"));
     return at.success ? at.data : undefined;
   }
 
   /** Remembers that this site went live at `at`, an ISO 8601 time in UTC. */
   writeLastPublishedAt(at: string): void {
     const value = z.iso.datetime().parse(at);
-    this.#write(() => {
-      this.#prepare(
-        `INSERT INTO meta (key, value) VALUES ('last_published_at', ?)
-         ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      ).run(value);
-    });
+    this.#writeMeta("last_published_at", value);
   }
 
   /**
@@ -1180,26 +604,40 @@ export class ProjectStore {
    * or copied into a version. A damaged entry is left out, keeping the others; none until then.
    */
   readPublishDestinations(): PublishDestination[] {
-    const row = this.#prepare("SELECT value FROM meta WHERE key = 'publish_destinations'").get() as
-      | { value: unknown }
-      | undefined;
-    let stored: unknown;
-    try {
-      stored = typeof row?.value === "string" ? JSON.parse(row.value) : undefined;
-    } catch {
-      stored = undefined;
-    }
-    return publishDestinationsFrom(stored);
+    return publishDestinationsFrom(this.#readMetaJson("publish_destinations"));
   }
 
   /** Remembers where this site is published to, replacing the list that was there. */
   writePublishDestinations(destinations: readonly PublishDestination[]): void {
     const value = JSON.stringify(publishDestinationsSchema.parse(destinations));
+    this.#writeMeta("publish_destinations", value);
+  }
+
+  /** Meta's value for `key` as the file holds it; `undefined` when it has none. */
+  #readMeta(key: MetaKey): unknown {
+    const row = this.#prepare("SELECT value FROM meta WHERE key = ?").get(key) as
+      | { value: unknown }
+      | undefined;
+    return row?.value;
+  }
+
+  /** Meta's value for `key` read as JSON; `undefined` when it has none, or it isn't JSON. */
+  #readMetaJson(key: MetaKey): unknown {
+    const value = this.#readMeta(key);
+    try {
+      return typeof value === "string" ? JSON.parse(value) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Sets meta's `key` to `value`, already checked, in a write of its own. */
+  #writeMeta(key: MetaKey, value: string): void {
     this.#write(() => {
       this.#prepare(
-        `INSERT INTO meta (key, value) VALUES ('publish_destinations', ?)
+        `INSERT INTO meta (key, value) VALUES (?, ?)
          ON CONFLICT (key) DO UPDATE SET value = excluded.value`,
-      ).run(value);
+      ).run(key, value);
     });
   }
 
@@ -1259,29 +697,4 @@ export class ProjectStore {
   }
 }
 
-/**
- * Every method of an open store reports a damaged file as {@link ProjectFileError}, as `open` does
- * (#807, 5.6's fuzzing). SQLite finds most damage only when a read reaches the damaged page, long
- * after the file opened: a version's manifest, a blob, an asset. Each method is wrapped once, here,
- * so one added later is covered too. Any other error is thrown as it was.
- */
-for (const name of Object.getOwnPropertyNames(ProjectStore.prototype)) {
-  const descriptor = Object.getOwnPropertyDescriptor(ProjectStore.prototype, name);
-  const method: unknown = descriptor?.value;
-  if (name === "constructor" || typeof method !== "function") continue;
-  Object.defineProperty(ProjectStore.prototype, name, {
-    ...descriptor,
-    value: function (this: ProjectStore, ...args: unknown[]): unknown {
-      try {
-        const result: unknown = method.apply(this, args);
-        return result instanceof Promise
-          ? result.catch((error: unknown) => {
-              throw toProjectFileError(error);
-            })
-          : result;
-      } catch (error) {
-        throw toProjectFileError(error);
-      }
-    },
-  });
-}
+reportDamageAsProjectFileError(ProjectStore);
