@@ -228,7 +228,8 @@ describe("the templates' styling (2.29, ST-8)", () => {
 describe("every template's main headings (#982)", () => {
   it("are counted as they were when Site Check named the components that write one", () => {
     // Each template with every recipe of its type, so every section a template can add is counted.
-    const found = templates.map(({ template, images }) => {
+    // One snapshot each: a new template's is written the first time `pnpm check` runs (#983).
+    for (const { template, images } of templates) {
       const site = siteFromTemplate(template, images, {
         name: template.site.settings.general.name,
         theme: template.site.theme,
@@ -238,9 +239,8 @@ describe("every template's main headings (#982)", () => {
       }
       const report = checkSite({ site, catalogue: CATALOGUE }, "export");
       const result = report.results.find((each) => each.rule === "mainHeading");
-      return [template.id, result?.findings ?? []] as const;
-    });
-    expect(Object.fromEntries(found)).toMatchSnapshot();
+      expect(result?.findings ?? []).toMatchSnapshot(template.id);
+    }
   });
 });
 
