@@ -1,6 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import type { PageId } from "@webforge/model";
-import { userEvent, within } from "storybook/test";
 import { DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { CanvasToolbar } from "./CanvasToolbar.js";
 
@@ -70,11 +69,3 @@ export const At478: Story = at(478);
 
 /** 384 px, the toolbar at the smallest window: the page list narrower. */
 export const AtSmallestWindow: Story = at(384);
-
-/** The View menu at the smallest window, holding what the toolbar has no room for. */
-export const ViewMenuAtSmallestWindow: Story = {
-  ...at(384),
-  play: async ({ canvasElement }) => {
-    await userEvent.click(within(canvasElement).getByRole("button", { name: "View" }));
-  },
-};
