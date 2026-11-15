@@ -6,6 +6,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
+  EmptyState,
   fieldControlClass,
   ScrollArea,
 } from "@webforge/editor-ui";
@@ -21,6 +22,7 @@ import {
   EyeClosedIcon,
   EyeIcon,
   EyeOffIcon,
+  LayersIcon,
   Link2Icon,
   LockIcon,
   PencilIcon,
@@ -392,9 +394,9 @@ export function LayersPanel({
 
   if (layers.length === 0) {
     return (
-      <div className="flex h-full items-center justify-center p-4 text-center text-xs text-muted-foreground">
+      <EmptyState icon={LayersIcon} className="h-full justify-center">
         {t("layers.empty")}
-      </div>
+      </EmptyState>
     );
   }
 
@@ -402,9 +404,7 @@ export function LayersPanel({
   return (
     <div className="flex h-full flex-col">
       <ScrollArea className="min-h-0 flex-1">
-        {rows.length === 0 ? (
-          <p className="p-4 text-center text-xs text-muted-foreground">{t("layers.noMatches")}</p>
-        ) : null}
+        {rows.length === 0 ? <EmptyState>{t("layers.noMatches")}</EmptyState> : null}
         <div
           ref={treeRef}
           role="tree"
@@ -616,7 +616,7 @@ export function LayersPanel({
       {/* Only the shared Header and Footer (#673), and a post's Blog design (#936): the page has no
       sections of its own yet. */}
       {layers.every((layer) => layer.region !== undefined || layer.design !== undefined) && (
-        <p className="m-0 shrink-0 px-2 pb-1 text-xs text-muted-foreground">{t("layers.empty")}</p>
+        <EmptyState className="shrink-0">{t("layers.empty")}</EmptyState>
       )}
 
       {/* While a layer is over a row it can't go to, why: browsers show no tooltips in a drag. */}

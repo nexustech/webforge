@@ -95,6 +95,25 @@ const CHROME_CSS = `
   outline: calc(2px / var(--wf-zoom, 1)) dashed #f59e0b;
   outline-offset: calc(-2px / var(--wf-zoom, 1));
 }
+/* An empty page's *Add Your First Section…* (#1012), where its sections would go. */
+.wf-empty-page {
+  display: flex;
+  justify-content: center;
+  padding: calc(48px / var(--wf-zoom, 1)) 16px;
+}
+.wf-empty-page__add {
+  padding: calc(8px / var(--wf-zoom, 1)) calc(14px / var(--wf-zoom, 1));
+  border: 0;
+  border-radius: calc(6px / var(--wf-zoom, 1));
+  background: var(--wf-primary);
+  color: var(--wf-primary-foreground);
+  font: 600 calc(14px / var(--wf-zoom, 1)) / 1.2 system-ui, sans-serif;
+  cursor: pointer;
+}
+.wf-empty-page__add:focus-visible {
+  outline: 2px solid var(--wf-outline-color);
+  outline-offset: 2px;
+}
 .wf-add:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 1px;

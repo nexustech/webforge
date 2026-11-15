@@ -70,6 +70,8 @@ export type AddPanelProps = {
   readonly onAdd: (type: string) => void;
   /** Whether a click on `type` has somewhere to add it. */
   readonly canAdd: (type: string) => boolean;
+  /** What the Elements tab says when no element can be added, and why (#1012). */
+  readonly noElementsHint?: string;
   /**
    * Set while the canvas's + waits for a section to add at its place: after the named section, or
    * at the top of the page (`null`).
@@ -264,6 +266,7 @@ export function AddPanel({
   onTabChange,
   onAdd,
   canAdd,
+  noElementsHint = t("add.noSection"),
   point,
   onCancelPoint,
   dragSource,
@@ -360,7 +363,7 @@ export function AddPanel({
 
   const elementsHint = elements.some((item) => canAdd(item.type))
     ? t("add.elementsHint")
-    : t("add.noSection");
+    : noElementsHint;
 
   return (
     <Tabs

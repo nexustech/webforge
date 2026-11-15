@@ -296,8 +296,27 @@ const faq = defineSection({
     title: { kind: "text", label: t("field.title"), inline: true },
     items: { kind: "slot", label: t("field.questions"), allow: ["FaqItem"] },
   },
-  // Its two columns were Wide before 3.21; format 10 keeps those saved then.
-  defaults: { title: t("starter.faqTitle"), contentWidth: "narrow", items: [] },
+  // Its two columns were Wide before 3.21; format 10 keeps those saved then. Three sample questions
+  // (#1012), so a new FAQ is edited rather than built.
+  defaults: {
+    title: t("starter.faqTitle"),
+    contentWidth: "narrow",
+    items: (
+      [
+        ["starter.faqQuestion", "starter.faqAnswer"],
+        ["starter.faqQuestion2", "starter.faqAnswer2"],
+        ["starter.faqQuestion3", "starter.faqAnswer3"],
+      ] as const
+    ).map(([question, answer], index) => ({
+      type: "FaqItem",
+      props: {
+        // Placing the section gives every question an id of its own.
+        id: `faq-item-${index}`,
+        question: t(question),
+        answer: `<p>${t(answer)}</p>`,
+      },
+    })),
+  },
   frame: () => "bg-base-100",
   render: ({ values, slots }) => {
     const Items = slots.items;

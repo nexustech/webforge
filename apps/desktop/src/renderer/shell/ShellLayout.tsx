@@ -1,5 +1,6 @@
 import {
   Button,
+  EmptyState,
   ResizableHandle,
   type ResizableLayout,
   ResizablePanel,
@@ -197,11 +198,7 @@ function PanelTabs({
     };
   }, [tabs, activeId]);
   if (first === undefined) {
-    return (
-      <div className="flex h-full items-center justify-center bg-panel p-4 text-center text-xs text-muted-foreground">
-        {t("panels.empty")}
-      </div>
-    );
+    return <EmptyState className="h-full justify-center bg-panel">{t("panels.empty")}</EmptyState>;
   }
   const active = panels.find((panel) => panel.id === chosen) ?? first;
   return (
