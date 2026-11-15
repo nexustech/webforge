@@ -127,7 +127,6 @@ export function CanvasToolbar({
               type="button"
               size="icon"
               variant="ghost"
-              className="shrink-0"
               aria-label={label}
               title={label}
               disabled={disabled}
@@ -140,7 +139,6 @@ export function CanvasToolbar({
             type="button"
             size="icon"
             variant="ghost"
-            className="shrink-0"
             aria-label={t("canvasToolbar.rotate")}
             title={t("canvasToolbar.rotate")}
             disabled={rotated === undefined}
@@ -182,8 +180,10 @@ export function CanvasToolbar({
           ...(fit >= FIT.zoom
             ? { zoom: { scale, onZoomChange }, rotate: { rotated, rotate } }
             : {}),
-          ...(fit >= FIT.width ? { width: { width, onViewportChange } } : {}),
+          ...(fit >= FIT.width ? { width: true } : {}),
         }}
+        width={width}
+        onViewportChange={onViewportChange}
       />
 
       {fit < FIT.width && (
@@ -275,10 +275,8 @@ type MovedControls = {
   readonly zoom?: { readonly scale: number; readonly onZoomChange: (zoom: CanvasZoom) => void };
   /** Rotate (F-ED-25, UX-8): off for a width that is no device's. */
   readonly rotate?: { readonly rotated: number | undefined; readonly rotate: () => void };
-  readonly width?: {
-    readonly width: number;
-    readonly onViewportChange: (viewport: Viewport) => void;
-  };
+  /** The width box, as *Canvas width…*. */
+  readonly width?: true;
 };
 
 /** The View menu (F-ED-25, UX-7): what the canvas shows besides the page. */
@@ -286,15 +284,21 @@ function ViewMenu({
   canvas,
   onCanvasChange,
   moved,
-}: Pick<CanvasToolbarProps, "canvas" | "onCanvasChange"> & { readonly moved: MovedControls }) {
+  width,
+  onViewportChange,
+}: Pick<CanvasToolbarProps, "canvas" | "onCanvasChange" | "onViewportChange"> & {
+  readonly moved: MovedControls;
+  /** The canvas's width now, for *Canvas width…*. */
+  readonly width: number;
+}) {
   const [widthOpen, setWidthOpen] = useState(false);
   const dialog = useMenuDialog<"width">(() => setWidthOpen(true));
-  const { zoom, rotate, width } = moved;
+  const { zoom, rotate } = moved;
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button type="button" size="sm" variant="ghost" className="shrink-0">
+          <Button type="button" size="sm" variant="ghost">
             {t("canvasToolbar.view")}
             <ChevronDownIcon aria-hidden />
           </Button>
@@ -321,12 +325,12 @@ function ViewMenu({
               {t("canvasToolbar.rotate")}
             </DropdownMenuItem>
           )}
-          {width !== undefined && (
+          {moved.width && (
             <DropdownMenuItem onSelect={() => dialog.choose("width")}>
               {t("canvasToolbar.widthItem")}
             </DropdownMenuItem>
           )}
-          {(zoom ?? rotate ?? width) !== undefined && <DropdownMenuSeparator />}
+          {(zoom !== undefined || rotate !== undefined || moved.width) && <DropdownMenuSeparator />}
           {VIEW_OPTIONS.map(({ key, label }) => (
             <DropdownMenuCheckboxItem
               key={key}
@@ -340,17 +344,16 @@ function ViewMenu({
           ))}
         </DropdownMenuContent>
       </DropdownMenu>
-      {width !== undefined && (
-        <WidthDialog
-          open={widthOpen}
-          width={width.width}
-          onShow={(next) => {
-            setWidthOpen(false);
-            if (next !== width.width) width.onViewportChange(viewportFor(next));
-          }}
-          onCancel={() => setWidthOpen(false)}
-        />
-      )}
+      {/* Mounted at every width: a window widened while it's open keeps it open (#1008). */}
+      <WidthDialog
+        open={widthOpen}
+        width={width}
+        onShow={(next) => {
+          setWidthOpen(false);
+          if (next !== width) onViewportChange(viewportFor(next));
+        }}
+        onCancel={() => setWidthOpen(false)}
+      />
     </>
   );
 }
@@ -395,7 +398,7 @@ function DeviceMenu({
             type="button"
             size={compact ? "icon" : "sm"}
             variant="ghost"
-            className="shrink-0 text-xs whitespace-nowrap tabular-nums"
+            className="text-xs whitespace-nowrap tabular-nums"
             title={compact ? (readout ?? t("canvasToolbar.devices")) : undefined}
             aria-label={
               readout === undefined

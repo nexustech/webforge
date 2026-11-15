@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import type { CanvasSize } from "@webforge/engine";
 import type { PageId } from "@webforge/model";
 import { siteLibrary } from "@webforge/site-components";
+import { cloneElement } from "react";
 import { afterEach, describe, expect, it, onTestFinished, vi } from "vitest";
+
 import { type CanvasPreferences, DEFAULT_PREFERENCES } from "../../shared/ipc/prefs.js";
 import { createPreviewStore } from "../editor/edit-previews.js";
 import { currentPage, type EditorSession } from "../editor/editor-session.js";
@@ -34,7 +36,7 @@ function setUp(
   const onViewportChange = vi.fn();
   const onZoomChange = vi.fn();
   const onCanvasChange = vi.fn();
-  render(
+  const toolbar = (
     <CanvasToolbar
       pages={[
         { id: HOME, title: "Home" },
@@ -49,10 +51,13 @@ function setUp(
       size={size}
       canvas={canvas}
       onCanvasChange={onCanvasChange}
-    />,
+    />
   );
+  const { rerender } = render(toolbar);
   const width = () => screen.getByRole("spinbutton", { name: "Canvas width in pixels" });
-  return { onShowPage, onViewportChange, onZoomChange, onCanvasChange, width };
+  /** Draws it again, as a new size from the canvas would: a copy, which React doesn't skip. */
+  const redraw = () => rerender(cloneElement(toolbar));
+  return { onShowPage, onViewportChange, onZoomChange, onCanvasChange, width, redraw };
 }
 
 describe("CanvasToolbar (F-ED-8)", () => {
@@ -347,23 +352,28 @@ describe("View menu and devices (F-ED-25)", () => {
 describe("a narrow toolbar (#1008)", () => {
   const user = () => userEvent.setup({ delay: null });
 
-  /** Every toolbar as narrow as `width`, its content `content` wide, however compact. */
+  /**
+   * Every toolbar as narrow as `width`, its content `content` wide, however compact; the returned
+   * function changes both, as a resized window would.
+   */
   function toolbarOf(width: number, content: number) {
+    const measures = { clientWidth: width, scrollWidth: content };
     // Over happy-dom's own getters, which measure nothing, for the toolbar only.
-    for (const [key, value] of [
-      ["clientWidth", width],
-      ["scrollWidth", content],
-    ] as const) {
+    for (const key of ["clientWidth", "scrollWidth"] as const) {
       Object.defineProperty(HTMLElement.prototype, key, {
         configurable: true,
         get(this: HTMLElement) {
-          return this.getAttribute("role") === "toolbar" ? value : 0;
+          return this.getAttribute("role") === "toolbar" ? measures[key] : 0;
         },
       });
       onTestFinished(() => {
         Reflect.deleteProperty(HTMLElement.prototype, key);
       });
     }
+    return (next: number) => {
+      measures.clientWidth = next;
+      measures.scrollWidth = Math.max(next, content);
+    };
   }
 
   it("keeps Desktop, Tablet and Mobile, and moves the rest into the View menu", async () => {
@@ -412,6 +422,31 @@ describe("a narrow toolbar (#1008)", () => {
     await user().click(dialog.getByRole("button", { name: "Show Width" }));
 
     expect(onViewportChange).toHaveBeenCalledExactlyOnceWith(900);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("keeps Canvas width… open as the window widens, and never opens it again unasked", async () => {
+    const resize = toolbarOf(380, 1000);
+    const { redraw } = setUp(375);
+    await user().click(screen.getByRole("button", { name: "View" }));
+    await user().click(screen.getByRole("menuitem", { name: "Canvas width…" }));
+    await openedDialog("Canvas width");
+
+    // Wide: the width box is back in the toolbar, and the dialog stays until it's answered.
+    resize(2000);
+    redraw();
+    // Behind the open dialog, which hides the rest from the accessibility tree.
+    expect(
+      screen.getByRole("spinbutton", { name: "Canvas width in pixels", hidden: true }),
+    ).toBeTruthy();
+    const dialog = screen.getByRole("dialog", { name: "Canvas width" });
+    await user().click(within(dialog).getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+
+    // Narrow again: no dialog opens by itself.
+    resize(380);
+    redraw();
+    expect(screen.queryByRole("spinbutton", { name: "Canvas width in pixels" })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
