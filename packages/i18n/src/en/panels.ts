@@ -83,7 +83,13 @@ export const panels = {
   "add.sectionsHint": "Click a section to add it after the selected one, or drag it onto the page.",
   "add.elementsHint":
     "Click an element to add it to the selected section, or drag it into a section.",
-  "add.noSection": "Add a section first: elements go inside sections.",
+  // Why no element can be added (#1012): the page has no sections; the selected one holds none; or
+  // none of the page's sections does.
+  "add.noSection":
+    "This page has no sections yet. Add a Section from Sections, then elements inside it.",
+  "add.noHolder.selected":
+    "The selected section, {section}, holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
+  "add.noHolder": "Elements go inside a Section, and this page has none. Add one from Sections.",
   "add.noMatch": "Nothing matches '{query}'.",
   "add.other": "Other",
   // The Sections tab's one list, A to Z (#523).
@@ -109,7 +115,7 @@ export const panels = {
   "add.point.cancel": "Cancel",
   // Layers (F-ED-12), in Simple and Advanced mode (ADR 0011).
   "layers.title": "Layers",
-  "layers.empty": "This page has no sections yet. Add one from the canvas.",
+  "layers.empty": "This page has no sections yet. Add one from the Add panel's Sections.",
   "layers.toolbar": "Layer actions",
   "layers.hide": "Don't publish {item}",
   "layers.show": "Show {item}",

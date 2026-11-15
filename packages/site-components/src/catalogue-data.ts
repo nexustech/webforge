@@ -19,6 +19,7 @@ import data from "./catalogue-data.json" with { type: "json" };
 export { fieldValueSchema } from "./field-values.js";
 // The fields a component's layout or values leave unused, as the Edit panel hides them (#670).
 export { hiddenFieldsOf, hideableFieldsOf } from "./hidden-fields.js";
+export { mainHeadingsOf } from "./main-heading.js";
 export { drawsPictureBehind } from "./picture-behind.js";
 // Rich text from outside the editor is cleaned as the editor's is (4.8).
 export { sanitizeStoredRichText } from "./rich-text-html.js";
@@ -142,6 +143,14 @@ export const catalogueComponentSchema = z.strictObject({
       z.enum(TEXT_STYLES),
       z.strictObject({ field: z.string(), styles: z.record(z.string(), z.enum(TEXT_STYLES)) }),
     ])
+    .optional(),
+  /** How it writes the page's main heading, `<h1>`, which Site Check counts: see `mainHeadingsOf`. */
+  mainHeading: z
+    .strictObject({
+      field: z.string(),
+      when: z.record(z.string(), z.string()).optional(),
+      html: z.literal(true).optional(),
+    })
     .optional(),
 });
 

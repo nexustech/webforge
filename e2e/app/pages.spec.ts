@@ -77,6 +77,24 @@ test.describe("Pages panel", () => {
     await expect(canvas().locator("h1")).toHaveCount(0);
   });
 
+  test("offers a blank page's first section on the canvas, which adds one at the top (#1012)", async () => {
+    await page.getByRole("button", { name: "Add Page" }).click();
+    await page.getByRole("menuitem", { name: "Blank Page…" }).click();
+    await page.getByRole("textbox", { name: "Page name" }).fill("About us");
+    await page.getByRole("dialog").getByRole("button", { name: "Add Page" }).click();
+    await expect(pageButton("About us")).toHaveAttribute("aria-current", "page");
+
+    // Where its sections would go, between the Header and the Footer.
+    const first = canvas().getByRole("button", { name: "Add Your First Section…" });
+    await first.click();
+    const left = page.getByRole("region", { name: "Left panels" });
+    await expect(left.getByText("Choose a section to add at the top of the page.")).toBeVisible();
+    await left.getByRole("button", { name: "Text", exact: true }).click();
+
+    await expect(first).toHaveCount(0);
+    await expect(canvas().getByText("Our story")).toBeVisible();
+  });
+
   test("shows another page when it is clicked, and 'Page not found' can't be deleted", async () => {
     await pageButton("Page not found").click();
     await expect(pageButton("Page not found")).toHaveAttribute("aria-current", "page");

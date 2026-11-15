@@ -18,6 +18,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  EmptyState,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import {
@@ -314,9 +315,7 @@ export function PublishDialog({
               {t("publish.destinations.loading")}
             </p>
           ) : listed.length === 0 ? (
-            <p role="status" className="text-sm text-muted-foreground">
-              {t("publish.destinations.empty")}
-            </p>
+            <EmptyState role="status">{t("publish.destinations.empty")}</EmptyState>
           ) : (
             <ul className="space-y-2">
               {listed.map((each) => (

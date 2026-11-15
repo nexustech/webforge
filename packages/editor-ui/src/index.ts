@@ -127,6 +127,7 @@ export {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "./components/ui/dropdown-menu.js";
+export { EmptyState, type EmptyStateProps } from "./components/ui/empty-state.js";
 export {
   ErrorBoundary,
   type ErrorBoundaryProps,

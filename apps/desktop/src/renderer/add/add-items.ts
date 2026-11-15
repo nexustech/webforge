@@ -234,6 +234,20 @@ function sectionTarget(
 }
 
 /**
+ * Why no element can be added to the shown page, for the Elements tab (#1012): it has no sections;
+ * the section holding the selection holds no elements, nor does any other on the page; or none of
+ * its sections does. Only a Section holds elements.
+ */
+export function noElementsHint(session: AddSession): string {
+  const content = currentPage(session)?.doc.content ?? [];
+  if (content.length === 0) return t("add.noSection");
+  const id = ownId(content, session.ui.getState().nodeId);
+  const top = id === null ? undefined : pathTo(content, id)?.[0]?.node;
+  const section = top === undefined ? undefined : session.library.components[top.type]?.label;
+  return section === undefined ? t("add.noHolder") : t("add.noHolder.selected", { section });
+}
+
+/**
  * Where a click adds a component of `type` to a page with top-level `content`:
  * - a section goes at the + button's `point` if there is one, else after the section that holds
  *   the selection, else at the end of the page;

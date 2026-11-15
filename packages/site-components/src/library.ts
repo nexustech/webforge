@@ -23,6 +23,7 @@ import {
 import { cloneElement, createElement, isValidElement, type ReactNode } from "react";
 import { isDocumentPath } from "./document-path.js";
 import { hiddenFieldsOf } from "./hidden-fields.js";
+import type { MainHeading } from "./main-heading.js";
 import type { PictureBehind } from "./picture-behind.js";
 import type {
   BehaviourName,
@@ -125,7 +126,25 @@ export type ComponentDef = {
    * one token decides them. The Edit panel names it (3.12, CT-3).
    */
   readonly themeCorners?: "box" | "field";
+  /**
+   * How it writes the page's main heading, `<h1>` (#982): Site Check counts one per page by it.
+   * None for a component that writes none.
+   */
+  readonly mainHeading?: MainHeading;
+  /**
+   * Its place on Theme Studio's sample page (CT-11, #982), from 1: the sections that between them
+   * show every colour role, text style, button and card.
+   */
+  readonly studioSample?: number;
+  /**
+   * The theme's controls Theme Studio shows with it (#982): `buttons`, the buttons' tokens beside
+   * its look; `cardStyle`, it's the section drawn for the theme's card style.
+   */
+  readonly themeControls?: readonly ThemeControl[];
 };
+
+/** One of {@link ComponentDef}'s `themeControls`. */
+export type ThemeControl = "buttons" | "cardStyle";
 
 /**
  * The class that gives an element the colour a colour field stores (1.37, ADR 0009): `prefix` and

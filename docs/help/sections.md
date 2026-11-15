@@ -5,7 +5,7 @@ title: Sections
 summary: Every section you can add to a page, what it's for and what you can change.
 components: [Section, Hero, TextSection, TextImage, CallToAction, Faq, FaqItem, Gallery, GalleryImage, Video, Map, ContactDetails, ContactForm, Newsletter, Features, Feature, Testimonials, Testimonial, Team, TeamMember, Pricing, PricingPlan, Logos, Logo, Stats, Stat]
 related: [elements, add-panel, edit-panel, forms, header-and-footer]
-updated: 2026-11-13
+updated: 2026-11-14
 ---
 
 # Sections
@@ -78,7 +78,7 @@ Your plans or a price list. Each **Plan** has a name, a price, what it's per ("a
 
 ## FAQ
 
-Questions and answers. **Layouts:**
+Questions and answers. A new FAQ comes with three sample questions to change, such as _When are you open?_ **Layouts:**
 
 - _Questions that open:_ visitors click a question to see its answer. This works even when the visitor's browser has scripts turned off.
 - _Two columns._

@@ -19,6 +19,7 @@ import {
   addTargetFor,
   forLevel,
   groupItems,
+  noElementsHint,
   presetKey,
   sharedSectionItems,
   suggestedItems,
@@ -190,6 +191,30 @@ function sessionWithContent(content: NodeDoc[]) {
   home.doc.content = content;
   return sessionWith(site);
 }
+
+describe("the Elements tab's hint when nothing can be added (#1012)", () => {
+  it("says the page has no sections yet", () => {
+    expect(noElementsHint(sessionWithContent([]))).toBe(
+      "This page has no sections yet. Add a Section from Sections, then elements inside it.",
+    );
+  });
+
+  it("says the selected section holds no elements, and where they go", () => {
+    const session = sessionWithContent([{ type: "Hero", props: { id: "hero" } }]);
+    session.select("hero");
+    expect(noElementsHint(session)).toBe(
+      "The selected section, Hero, holds no elements of its own. Elements go inside a Section: add one from Sections, or select one.",
+    );
+    expect(addTargetFor(session, "Heading")).toBeUndefined();
+  });
+
+  it("says none of the page's sections holds elements, with nothing selected", () => {
+    const session = sessionWithContent([{ type: "Hero", props: { id: "hero" } }]);
+    expect(noElementsHint(session)).toBe(
+      "Elements go inside a Section, and this page has none. Add one from Sections.",
+    );
+  });
+});
 
 describe("addComponent", () => {
   it("puts the Announcement bar above the Header on every page, once (6.4)", () => {

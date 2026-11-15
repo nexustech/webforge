@@ -8,6 +8,7 @@ import {
   pagePath,
   type SiteDoc,
 } from "@webforge/model";
+import { type Catalogue, mainHeadingsOf } from "@webforge/site-components/catalogue-data";
 import type { CheckRule, ContactField, Finding } from "../types.js";
 
 // Site Check's *Being found* group (3.17, SEO-7): what stops people finding the site, in plain
@@ -131,31 +132,17 @@ export const sameDescriptionsRule: CheckRule = {
     }),
 };
 
-/** `text` has words in it, formatting aside. */
-const hasWords = (text: unknown) =>
-  typeof text === "string" && text.replace(/<[^>]*>/g, "").trim() !== "";
-
-/** `<h1>` start tags in Custom Code's HTML. */
-const H1_TAG = /<h1[\s>]/gi;
-
 /**
- * How many main headings (`<h1>`) `nodes` show, at any depth, hidden ones left out. The components
- * that write one: a large Heading (`HEADING_TAG` in site-components' `basic.tsx`), a Hero's title
- * (`SectionTitle size="page"`), and Custom Code's own HTML.
+ * How many main headings (`<h1>`) `nodes` show, at any depth, hidden ones left out: each by its
+ * component's `mainHeading` in `catalogue` (#982), so a new component that writes one is counted.
  */
-function mainHeadings(nodes: readonly NodeDoc[]): number {
+function mainHeadings(nodes: readonly NodeDoc[], catalogue: Catalogue): number {
   let count = 0;
   for (const node of nodes) {
     if (node.props.hidden === true) continue;
-    if (node.type === "Heading" && node.props.size === "large" && hasWords(node.props.text)) {
-      count++;
-    } else if (node.type === "Hero" && hasWords(node.props.title)) {
-      count++;
-    } else if (node.type === "CustomCode" && typeof node.props.code === "string") {
-      count += node.props.code.match(H1_TAG)?.length ?? 0;
-    }
+    count += mainHeadingsOf(catalogue[node.type]?.mainHeading, node.props);
     for (const value of Object.values(node.props)) {
-      if (Array.isArray(value)) count += mainHeadings(value.filter(isNodeDoc));
+      if (Array.isArray(value)) count += mainHeadings(value.filter(isNodeDoc), catalogue);
     }
   }
   return count;
@@ -171,14 +158,14 @@ export const mainHeadingRule: CheckRule = {
   id: "mainHeading",
   level: "tip",
   group: "found",
-  check: ({ site }) =>
+  check: ({ site, catalogue }) =>
     listedPages(site).flatMap((page) => {
       const design = collectionOf(site, page)?.design;
       const count =
-        (page.settings.hideHeader ? 0 : mainHeadings(site.layout.header)) +
-        (design === undefined ? 0 : mainHeadings([...design.before, ...design.after])) +
-        mainHeadings(expandSharedCopies(page.doc.content, site.sharedSections)) +
-        (page.settings.hideFooter ? 0 : mainHeadings(site.layout.footer));
+        (page.settings.hideHeader ? 0 : mainHeadings(site.layout.header, catalogue)) +
+        (design === undefined ? 0 : mainHeadings([...design.before, ...design.after], catalogue)) +
+        mainHeadings(expandSharedCopies(page.doc.content, site.sharedSections), catalogue) +
+        (page.settings.hideFooter ? 0 : mainHeadings(site.layout.footer, catalogue));
       return count === 1
         ? []
         : [{ key: page.id, place: pagePlace(page.id), values: { headings: count } }];

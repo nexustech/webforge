@@ -82,6 +82,8 @@ function paddedColumn(values: { readonly contentWidth: string; readonly colors: 
 /** A heading; its size also sets the heading level. */
 const heading = defineComponent({
   label: t("element.heading"),
+  // A large Heading is the page's `<h1>` (`HEADING_TAG`).
+  mainHeading: { field: "text", when: { size: "large" } },
   category: t("category.text"),
   fields: {
     text: {

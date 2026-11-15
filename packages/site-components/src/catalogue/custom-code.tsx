@@ -30,6 +30,8 @@ const CONTAINED = { position: "relative", contain: "paint" } as const;
  */
 const customCode = defineComponent({
   label: t("element.customCode"),
+  // Its own HTML may hold the page's `<h1>`, or several.
+  mainHeading: { field: "code", html: true },
   category: t("category.advanced"),
   advancedOnly: true,
   fields: {

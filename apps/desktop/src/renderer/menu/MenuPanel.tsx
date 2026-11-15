@@ -6,6 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  EmptyState,
   useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
@@ -17,6 +18,7 @@ import {
   FileIcon,
   HashIcon,
   Link2Icon,
+  MenuIcon,
   MousePointerClickIcon,
   PlusIcon,
 } from "lucide-react";
@@ -265,7 +267,7 @@ export function MenuPanel({ site, linkContext, actions }: MenuPanelProps) {
         <p className="m-0 px-2 pb-1 text-xs text-muted-foreground">{t("menu.followsPages")}</p>
       )}
       {rows.length === 0 ? (
-        <p className="m-0 px-2 text-xs text-muted-foreground">{t("menu.empty")}</p>
+        <EmptyState icon={MenuIcon}>{t("menu.empty")}</EmptyState>
       ) : (
         <ul ref={listRef} aria-label={t("menu.items")} className="p-1">
           {rows.map((row) => itemRow(row))}

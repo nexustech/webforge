@@ -77,9 +77,18 @@ type Fields = Readonly<Record<string, FieldDef>>;
  */
 export type ComponentSpec<F extends Fields, Variant extends string = never> = Omit<
   ComponentDef,
-  "fields" | "defaults" | "render" | "textStyle" | "behaviours"
+  "fields" | "defaults" | "render" | "textStyle" | "behaviours" | "mainHeading"
 > & {
   readonly fields: F;
+  /**
+   * How it writes the page's main heading, `<h1>` (#982), by its own fields: from the text in
+   * `field` while those in `when` have those values, or each `<h1>` in `field`'s HTML (`html`).
+   */
+  readonly mainHeading?: {
+    readonly field: keyof F & string;
+    readonly when?: { readonly [name in keyof F & string]?: string };
+    readonly html?: true;
+  };
   readonly defaults: DefaultsOf<F>;
   readonly variants?: readonly {
     readonly label: string;
