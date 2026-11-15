@@ -150,7 +150,14 @@ export async function* publishToFolder(
     if (data !== undefined) await folder.write(path, data);
   }
   throwIfCancelled(signal);
-  await keepRedirectRules(folder, publishing.redirectRules === true ? build.htaccess : undefined);
+  const wanted = publishing.redirectRules === true;
+  try {
+    await keepRedirectRules(folder, wanted ? build.htaccess : undefined);
+  } catch (error) {
+    // Only a destination that asks for the rules fails for its host's .htaccess: one that doesn't
+    // only tidies away an old block, if the host lets it (SFTP refuses a file it may not read).
+    if (wanted) throw error;
+  }
 
   if (diff.remove.length > 0) {
     // The new files are all there; until the old ones are gone the manifest lists them too, so a

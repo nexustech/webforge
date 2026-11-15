@@ -276,6 +276,19 @@ describe("publishToFolder: the host's .htaccess (5.15, CC-7)", () => {
     expect(log).toContain("remove .htaccess");
   });
 
+  it("publishes without the option even when the host refuses its .htaccess, not with it", async () => {
+    const { folder } = memoryFolder();
+    const refusing: RemoteFolder = {
+      ...folder,
+      read: async (path) => {
+        if (path === ".htaccess") throw new Error("Permission denied");
+        return folder.read(path);
+      },
+    };
+    await expect(publishRules(refusing, RULES, publishing())).resolves.toBeUndefined();
+    await expect(publishRules(refusing, RULES, withRules)).rejects.toThrow("Permission denied");
+  });
+
   it("never touches a host's file it can't read as text, or one it isn't asked to", async () => {
     const binary = new Uint8Array([0xff, 0xfe, 0x00]);
     const { folder, stored, log } = memoryFolder();
