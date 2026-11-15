@@ -1,10 +1,5 @@
 import { createHash } from "node:crypto";
-import {
-  BuildError,
-  type Pipeline,
-  type PipelineResources,
-  type StoredMedia,
-} from "@webforge/pipeline";
+import type { Pipeline, PipelineResources, StoredMedia } from "@webforge/pipeline";
 import {
   PublishError,
   type PublishedEvent,
@@ -15,6 +10,7 @@ import { type ComponentLibrary, siteSnapshotFor } from "@webforge/site-component
 import { FONT_CATALOGUE } from "@webforge/themes";
 import type { PublishJob, PublishOutcome } from "../shared/export-worker-protocol.js";
 import type { PublishProgress } from "../shared/ipc/publish.js";
+import { buildFailureOf } from "./build-failure.js";
 
 /** What a publish reaches outside the worker: the site's stored bytes, a cancel, its pipeline. */
 export type PublishChannel = {
@@ -137,24 +133,5 @@ function failureOf(error: unknown): PublishOutcome {
     const { code } = error;
     return code === "cancelled" ? { type: "cancelled" } : { type: "failed", code, detail: code };
   }
-  if (error instanceof BuildError && error.code === "cancelled") return { type: "cancelled" };
-  if (error instanceof BuildError && error.code === "reserved-name") {
-    return {
-      type: "failed",
-      code: "reserved-name",
-      detail: error.code,
-      ...(error.page === undefined ? {} : { page: error.page }),
-    };
-  }
-  if (error instanceof BuildError && error.code === "unreadable-image") {
-    return {
-      type: "failed",
-      code: "unreadable-image",
-      detail: error.code,
-      ...(error.image === undefined ? {} : { image: error.image }),
-    };
-  }
-  if (error instanceof BuildError)
-    return { type: "failed", code: "build-failed", detail: error.code };
-  return { type: "failed", code: "failed", detail: "unexpected" };
+  return buildFailureOf(error) ?? { type: "failed", code: "failed", detail: "unexpected" };
 }

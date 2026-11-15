@@ -1,6 +1,3 @@
-import { randomBytes } from "node:crypto";
-import { open, rename, rm } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
 import { WebforgeError } from "@webforge/errors";
 import {
   migrateSite,
@@ -14,7 +11,7 @@ import {
 } from "@webforge/model";
 // Its browser build: the same synchronous API without the Node build's own `require`, which clashes
 // with the one the desktop app's main bundle declares in a chunk it shares.
-import { unzipSync, Zip, ZipDeflate, ZipPassThrough } from "fflate/browser";
+import { unzipSync } from "fflate/browser";
 import { z } from "zod";
 import { sha256 } from "./connection.js";
 import type { ProjectStore } from "./project-store.js";
@@ -26,6 +23,7 @@ import {
   sitePackageProjectSchema,
 } from "./site-package.js";
 import { type NewVersion, reasonOfKind, VERSION_REASONS } from "./store-types.js";
+import { fitsInZip, writeZipAtomically, ZIP_MAX_ENTRIES } from "./zip-writer.js";
 
 // A site as a ZIP file (4.7, F-SITE-5): its site package (A26) and its versions as plain JSON and
 // the original files, for backup or moving a site, which opens again as a new site with nothing
@@ -50,8 +48,6 @@ const SITE_ZIP_VERSION = 2;
  * than this.
  */
 export const SITE_ZIP_MAX_BYTES = 2 ** 31 - 1;
-/** The most entries a ZIP holds without ZIP64, which fflate doesn't write. */
-const SITE_ZIP_MAX_ENTRIES = 0xffff;
 /**
  * The most deflate can shrink data by. An entry claiming to unpack to more than this times its
  * size is lying, and fflate would allocate the size it claims before inflating it.
@@ -62,9 +58,6 @@ const MANIFEST_MAX_BYTES = 16 * 1024 * 1024;
 
 /** Entries already compressed (the media): stored as they are. */
 const STORED = /^(?:media|files)\//;
-
-/** Every entry's date: a fixed one, so the same site always makes the same ZIP. */
-const ENTRY_DATE = new Date(2000, 0, 1);
 
 /**
  * Why a ZIP can't be opened as a site, or a site can't be saved as one.
@@ -250,18 +243,6 @@ export function siteZipEntries(store: ProjectStore): Map<string, Uint8Array> {
   return new Map([[SITE_ZIP_MANIFEST, jsonEntry(manifest)], ...entries]);
 }
 
-/** Throws a `too-large` {@link SiteZipError} when `entries` won't fit in a ZIP. */
-function checkFits(entries: ReadonlyMap<string, Uint8Array>): void {
-  let bytes = 0;
-  for (const [path, data] of entries) {
-    // A local header and a central directory entry, each with the path.
-    bytes += data.byteLength + 76 + 2 * encoder.encode(path).byteLength;
-  }
-  if (entries.size > SITE_ZIP_MAX_ENTRIES || bytes > SITE_ZIP_MAX_BYTES) {
-    throw new SiteZipError("too-large", "The site is too large for a ZIP file");
-  }
-}
-
 /**
  * Saves the site in `store` as a ZIP at `destination`, a file the person chose in the save dialog
  * (which asked before replacing one). It's written beside the destination one entry at a time and
@@ -269,41 +250,11 @@ function checkFits(entries: ReadonlyMap<string, Uint8Array>): void {
  */
 export async function writeSiteZip(store: ProjectStore, destination: string): Promise<void> {
   const entries = siteZipEntries(store);
-  checkFits(entries);
-  const staging = join(
-    dirname(destination),
-    `.${basename(destination)}.webforge-new-${randomBytes(4).toString("hex")}`,
-  );
-  try {
-    const handle = await open(staging, "w");
-    try {
-      let written: Promise<unknown> = Promise.resolve();
-      let failed: Error | null = null;
-      const zip = new Zip((error, piece) => {
-        if (error !== null) failed = error;
-        else written = written.then(() => handle.write(piece));
-      });
-      for (const [path, data] of entries) {
-        const entry = STORED.test(path)
-          ? new ZipPassThrough(path)
-          : new ZipDeflate(path, { level: 6 });
-        entry.mtime = ENTRY_DATE;
-        zip.add(entry);
-        entry.push(data, true);
-        await written;
-        if (failed !== null) throw failed;
-      }
-      zip.end();
-      await written;
-      if (failed !== null) throw failed;
-    } finally {
-      await handle.close();
-    }
-    await rename(staging, destination);
-  } catch (error) {
-    await rm(staging, { force: true });
-    throw error;
+  if (!fitsInZip(entries, SITE_ZIP_MAX_BYTES)) {
+    throw new SiteZipError("too-large", "The site is too large for a ZIP file");
   }
+  // The media are compressed already: stored as they are.
+  await writeZipAtomically(entries, destination, { stored: (path) => STORED.test(path) });
 }
 
 /**
@@ -342,7 +293,7 @@ export function readSiteZip(data: Uint8Array): SiteZip {
   if (lying) {
     throw new SiteZipError("damaged", "An entry claims more than it can unpack to");
   }
-  if (entries > SITE_ZIP_MAX_ENTRIES || unpacked > SITE_ZIP_MAX_BYTES) {
+  if (entries > ZIP_MAX_ENTRIES || unpacked > SITE_ZIP_MAX_BYTES) {
     throw new SiteZipError("too-large", "The ZIP holds more than a site's ZIP can");
   }
   const manifestData = manifestEntry[SITE_ZIP_MANIFEST];
