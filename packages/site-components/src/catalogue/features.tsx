@@ -34,6 +34,9 @@ const STARTER_ICONS = ["sparkles", "heart-handshake", "clock"] as const;
  */
 const features = defineSection({
   label: t("section.features"),
+  studioSample: 2,
+  // Its features are cards: Theme Studio draws it for the theme's card style.
+  themeControls: ["cardStyle"],
   name: "features",
   category: t("category.features"),
   variants: FEATURES_LAYOUTS.map((value) => ({ label: t(`field.featuresLayout.${value}`), value })),

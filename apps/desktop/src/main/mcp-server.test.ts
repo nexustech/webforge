@@ -3,6 +3,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { AI_TOOLS, toMcpTool } from "@webforge/commands";
 import { t } from "@webforge/i18n";
+import { TEMPLATE_IDS } from "@webforge/templates";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { MAIN_TOOLS, WINDOW_TOOLS } from "../shared/ai-tools.js";
 import type { AiResponse } from "../shared/ipc/ai.js";
@@ -129,8 +130,17 @@ describe("the MCP server (4.9)", () => {
 
   it("lists the same tools, word for word, as before they were one definition (#981)", async () => {
     const tools = (await (await inMemory()).listTools()).tools;
-    await expect(`${JSON.stringify(tools, null, 2)}
-`).toMatchFileSnapshot("./__snapshots__/mcp-tools.json.snap");
+    // The templates a brief chooses from are the folders' (`pnpm new-template` adds one, #983):
+    // checked here, and kept out of the snapshot, so a new template doesn't change it.
+    const shown = structuredClone(tools);
+    const brief = shown.find((tool) => tool.name === "createSiteFromBrief")?.inputSchema;
+    const template = (brief?.properties as Record<string, { enum?: unknown }> | undefined)
+      ?.template;
+    expect(template?.enum).toEqual([...TEMPLATE_IDS]);
+    if (template !== undefined) template.enum = "TEMPLATE_IDS";
+    await expect(`${JSON.stringify(shown, null, 2)}\n`).toMatchFileSnapshot(
+      "./__snapshots__/mcp-tools.json.snap",
+    );
     const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
     await createAssistantMcpServer(INFO, ask).connect(serverSide);
     const assistant = new Client({ name: "test", version: "1" });

@@ -1322,3 +1322,34 @@ describe("createPuckEngine's error boundary (R3)", () => {
     element.remove();
   });
 });
+
+describe("createPuckEngine on a page with no sections (#1012)", () => {
+  it("offers the first section where the page's would go, and asks to add it at the top", async () => {
+    const element = document.createElement("div");
+    document.body.append(element);
+    const engine = createPuckEngine({ iframe: false });
+    const asked: { index: number }[] = [];
+    engine.onAddRequest((at) => asked.push(at));
+    await act(async () => {
+      engine.mount(element, { library, theme: { ...DEFAULT_THEME, preset: "test" } });
+      engine.loadPage({ root: { props: {} }, content: [] }, NO_LAYOUT);
+    });
+    await settle();
+    const add = () =>
+      [...element.querySelectorAll("button")].find(
+        (button) => button.textContent === "Add Your First Section…",
+      );
+
+    await act(async () => add()?.click());
+    expect(asked).toEqual([{ index: 0 }]);
+
+    // Once it has a section, the button goes.
+    await act(async () => engine.applyChange({ page }));
+    await settle();
+    expect(add()).toBeUndefined();
+
+    engine.destroy();
+    await settle();
+    element.remove();
+  });
+});

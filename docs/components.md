@@ -143,6 +143,21 @@ Every section and element has the same _Appearance_ group (2.22, ST-1), first in
 - **Running text:** `<BodyText>` for paragraphs (`BODY_TEXT_CLASSES`), with a placing class if needed (`className="mt-4"`).
 - **Buttons:** `<ButtonLink label link context kind>` for a link drawn as a button (nothing when its label is empty), or `BUTTON_CLASSES` for other buttons: `primary`, `primarySmall`, `primaryLarge`, and the icon buttons `icon`, `iconSmall` and `menu`. Placing classes come after them (`` `${BUTTON_CLASSES.primary} hidden md:inline-flex` ``).
 
+### What the editor and Site Check read from it
+
+Code outside the catalogue never names a component type (#982), so a new component is counted and shown as its definition says:
+
+- **`mainHeading`:** a component that writes the page's main heading, `<h1>`, says how, by its own fields. Site Check counts one per page by it (`mainHeadingsOf`). `pnpm catalogue-data` carries it into the catalogue as data.
+  - The text in `field` is the heading while the fields in `when` have those values: `{ field: "text", when: { size: "large" } }` on the Heading, `{ field: "title" }` on the Hero.
+  - With `html: true`, each `<h1>` in `field`'s own HTML counts: `{ field: "code", html: true }` on Custom Code.
+
+  A section that draws its title with `SectionTitle size="page"` writes one, and needs this. A test renders every component in each of its own options and fails when the `<h1>`s it draws aren't what its `mainHeading` says.
+- **`studioSample`:** its place, from 1, on Theme Studio's sample page, the sections drawn with a theme's colours, text and styles (the Hero, Features and Call to action).
+- **`themeControls`:** what Theme Studio shows with it.
+  - **`buttons`:** the buttons' tokens beside its look (the Button).
+  - **`cardStyle`:** it's the section drawn for the theme's card style (Features).
+- **The Header and Footer** are the `layout` place, which the commands read: neither can be removed.
+
 ### What `defineComponent` refuses
 
 As it types (R7), and again as the module loads for specs typed loosely:
@@ -250,3 +265,4 @@ export const Cards: Story = {
 - [ ] **Tests:** unit tests for anything its render works out. The export's golden files change only on purpose.
 - [ ] **Behaviours:** a new or changed script type-checks, has its unit test, and `pnpm behaviours` has been run.
 - [ ] **Edit panel:** each field shows in the Edit panel with a meaningful undo label ("Changed Cards layout").
+- [ ] **Main heading:** if it writes an `<h1>`, its `mainHeading` says how (#982).

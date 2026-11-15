@@ -6,6 +6,7 @@ import {
   type SharedSectionId,
   type SiteDoc,
 } from "@webforge/model";
+import { CATALOGUE, type Catalogue } from "@webforge/site-components/catalogue-data";
 import { describe, expect, it } from "vitest";
 import { element, findIn, siteWith } from "../test-site.test-helper.js";
 import {
@@ -184,6 +185,34 @@ describe("main headings (3.17)", () => {
       pageOf(draft, MENU).settings.hideHeader = true;
     });
     expect(counts(withLayout)).toEqual([[ABOUT, 2]]);
+  });
+
+  it("counts any component whose catalogue entry says it writes one, by no name of its own (#982)", () => {
+    // A section added after the rule was written: its title is the page's `<h1>`.
+    const banner = element("PageBanner", "banner", { heading: "Opening soon", tone: "loud" });
+    const quiet = element("PageBanner", "quiet", { heading: "Opening soon", tone: "calm" });
+    const catalogue = {
+      ...CATALOGUE,
+      PageBanner: {
+        label: "Page banner",
+        place: "section" as const,
+        fields: {},
+        defaults: {},
+        mainHeading: { field: "heading", when: { tone: "loud" } },
+      },
+    };
+    // The home page's count, with About's one heading and Menu's none.
+    const home = (nodes: NodeDoc[], from: Catalogue = catalogue) => {
+      const checked = site(nodes, [heading("a")]);
+      const found = findIn(mainHeadingRule, checked, { catalogue: from });
+      return found.find(({ key }) => key === checked.homePageId)?.values?.headings ?? 1;
+    };
+    expect(home([banner])).toBe(1);
+    expect(home([banner, heading("h1")])).toBe(2);
+    expect(home([quiet])).toBe(0);
+    // Without its entry, it writes nothing the rule knows of.
+    const { mainHeading: _flag, ...unflagged } = catalogue.PageBanner;
+    expect(home([banner], { ...catalogue, PageBanner: { ...unflagged } })).toBe(0);
   });
 });
 

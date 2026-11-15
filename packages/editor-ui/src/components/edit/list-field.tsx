@@ -3,6 +3,7 @@ import { ArrowDownIcon, ArrowUpIcon, ChevronRightIcon, PlusIcon, Trash2Icon } fr
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "../../lib/cn.js";
 import { Button } from "../ui/button.js";
+import { EmptyState } from "../ui/empty-state.js";
 import { drawField, useFieldRenderers } from "./field-context.js";
 import type {
   FieldRendererProps,
@@ -149,7 +150,7 @@ export function ListField({
       className="m-0 flex min-w-0 flex-col gap-1 border-0 p-0"
     >
       {items.length === 0 ? (
-        <p className="text-xs text-muted-foreground">{t("editPanel.list.empty")}</p>
+        <EmptyState className="py-2">{t("editPanel.list.empty")}</EmptyState>
       ) : (
         <ul className="flex flex-col gap-1">
           {items.map((entry, index) => {

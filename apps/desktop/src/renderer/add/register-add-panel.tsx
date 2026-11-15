@@ -19,6 +19,7 @@ import {
   addSharedCopy,
   addTargetFor,
   forLevel,
+  noElementsHint,
   sharedSectionItems,
   suggestedItems,
   suggestedTypes,
@@ -53,6 +54,8 @@ type AddView = {
   readonly after: string | null;
   /** The types a click can add now, as `type,type`. */
   readonly addable: string;
+  /** Why no element can be added now, if none can (#1012). */
+  readonly noElements: string;
   readonly favourites: readonly string[];
 };
 
@@ -198,6 +201,7 @@ export function registerAddPanel(
         .filter((item) => canAdd(item, point))
         .map((item) => item.type)
         .join(","),
+      noElements: noElementsHint(session),
       favourites: prefs().favourites,
     };
     if (
@@ -208,6 +212,7 @@ export function registerAddPanel(
       view.point?.index !== next.point?.index ||
       view.after !== next.after ||
       view.addable !== next.addable ||
+      view.noElements !== next.noElements ||
       view.favourites !== next.favourites
     ) {
       view = next;
@@ -265,6 +270,7 @@ export function registerAddPanel(
           if (item !== undefined && add(item, insertPoint(state.point))) setState({ point: null });
         }}
         canAdd={(type) => addable.has(type)}
+        noElementsHint={shown.noElements}
         point={shown.point === undefined ? null : { after: shown.after }}
         onCancelPoint={() => setState({ point: null })}
         dragSource={dragSource}

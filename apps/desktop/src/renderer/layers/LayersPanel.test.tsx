@@ -645,7 +645,7 @@ describe("LayersPanel's shared Header and Footer (#673)", () => {
 
     expect(shown()).toEqual(["On every page Header", "On every page Footer"]);
     expect(
-      screen.getByText("This page has no sections yet. Add one from the canvas."),
+      screen.getByText("This page has no sections yet. Add one from the Add panel's Sections."),
     ).toBeTruthy();
   });
 

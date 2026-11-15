@@ -233,7 +233,10 @@ export function createPuckEngine(options: PuckEngineOptions = {}): CanvasEngine 
 
   /** The Puck config for `library`, rendering with the current editor revisions and context. */
   const configFor = (forLibrary: ComponentLibrary) =>
-    toPuckConfig(forLibrary, (id) => editorRevisions.get(id) ?? 0, renderContext, richText.tools);
+    toPuckConfig(forLibrary, (id) => editorRevisions.get(id) ?? 0, renderContext, richText.tools, {
+      shown: () => page.docs().page.content.length === 0,
+      add: () => addRequests.emit({ index: 0 }),
+    });
 
   const render = () => {
     if (root === null || config === null) {

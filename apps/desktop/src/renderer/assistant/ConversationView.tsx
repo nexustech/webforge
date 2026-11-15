@@ -1,3 +1,4 @@
+import { EmptyState } from "@webforge/editor-ui";
 import { plural, t } from "@webforge/i18n";
 import type { ReactNode } from "react";
 import { ASSISTANT_ERRORS } from "../../shared/ipc/assistant.js";
@@ -147,7 +148,7 @@ export function errorKey(code: string | undefined) {
  */
 export function ConversationView({ turns, onOpenLink, afterReply }: ConversationViewProps) {
   if (turns.length === 0) {
-    return <p className="m-0 p-3 text-sm text-muted-foreground">{t("assistant.empty")}</p>;
+    return <EmptyState>{t("assistant.empty")}</EmptyState>;
   }
   return (
     // The log is the list's container: a list keeps its own role, for its items. Busy while a

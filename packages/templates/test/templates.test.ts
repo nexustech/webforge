@@ -225,6 +225,25 @@ describe("the templates' styling (2.29, ST-8)", () => {
   });
 });
 
+describe("every template's main headings (#982)", () => {
+  it("are counted as they were when Site Check named the components that write one", () => {
+    // Each template with every recipe of its type, so every section a template can add is counted.
+    // One snapshot each: a new template's is written the first time `pnpm check` runs (#983).
+    for (const { template, images } of templates) {
+      const site = siteFromTemplate(template, images, {
+        name: template.site.settings.general.name,
+        theme: template.site.theme,
+      });
+      for (const recipe of template.category === null ? [] : recipesFor(template.category)) {
+        insertRecipePage(site, `recipe-${recipe.id}` as PageId, recipe);
+      }
+      const report = checkSite({ site, catalogue: CATALOGUE }, "export");
+      const result = report.results.find((each) => each.rule === "mainHeading");
+      expect(result?.findings ?? []).toMatchSnapshot(template.id);
+    }
+  });
+});
+
 describe("the Blank template (2.15c)", () => {
   const blank = readTemplate(BLANK_TEMPLATE_ID);
 

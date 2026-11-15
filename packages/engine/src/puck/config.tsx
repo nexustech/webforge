@@ -1,5 +1,12 @@
-import type { ComponentConfig, Config, Field, PuckContext } from "@puckeditor/core";
+import {
+  type ComponentConfig,
+  type Config,
+  createUsePuck,
+  type Field,
+  type PuckContext,
+} from "@puckeditor/core";
 import type { Extensions } from "@tiptap/core";
+import { t } from "@webforge/i18n";
 import { HIDDEN_ATTRIBUTE, isNodeDoc, type NodeDoc } from "@webforge/model";
 import {
   type ComponentDef,
@@ -200,6 +207,33 @@ function withoutChildIds(defaults: Readonly<Record<string, unknown>>): Record<st
 }
 
 /**
+ * An empty page's next step on the canvas (#1012): whether the page shown has no sections, and what
+ * its *Add Your First Section…* button does.
+ */
+export type EmptyPage = { readonly shown: () => boolean; readonly add: () => void };
+
+/** No empty page's button: for a canvas that offers none. */
+const NO_EMPTY_PAGE: EmptyPage = { shown: () => false, add: () => undefined };
+
+const usePuckState = createUsePuck();
+
+/**
+ * *Add Your First Section…* on a page with no sections (#1012). Drawn again whenever Puck's
+ * content changes, which doesn't draw the page's root again by itself.
+ */
+function EmptyPageButton({ emptyPage }: { readonly emptyPage: EmptyPage }) {
+  usePuckState((state) => state.appState.data.content.length);
+  if (!emptyPage.shown()) return null;
+  return (
+    <div className="wf-empty-page">
+      <button type="button" className="wf-empty-page__add" onClick={emptyPage.add}>
+        {t("canvas.addFirstSection")}
+      </button>
+    </div>
+  );
+}
+
+/**
  * Translates Webforge's component library into a Puck config.
  *
  * `revision` keys each node's inline rich-text editors. Puck's editor ignores a value change from
@@ -217,6 +251,7 @@ export function toPuckConfig(
   revision: EditorRevision = () => 0,
   context: RenderContextSource = fixedRenderContext(() => EDITOR_RENDER_CONTEXT),
   richText: RichTextTools = DEFAULT_RICH_TEXT_TOOLS,
+  emptyPage: EmptyPage = NO_EMPTY_PAGE,
 ): Config {
   // The page's top level takes sections only (F-ED-1): elements go inside them, and the shared
   // Header and Footer and an FAQ's questions are never added there. Puck then shows no drop place
@@ -240,6 +275,10 @@ export function toPuckConfig(
                 className: SECTIONS_ZONE_CLASS,
               })
             : children}
+          {/* A page with no sections shows its next step where they'd go (#1012). */}
+          {puck.isEditing && emptyPage !== NO_EMPTY_PAGE ? (
+            <EmptyPageButton emptyPage={emptyPage} />
+          ) : null}
         </>
       ),
     },

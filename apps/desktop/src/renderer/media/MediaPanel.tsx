@@ -9,6 +9,7 @@ import {
   AlertDialogTitle,
   Button,
   cn,
+  EmptyState,
   fieldControlClass,
   ScrollArea,
   ToggleGroup,
@@ -17,7 +18,7 @@ import {
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
 import type { FileMeta, ImageMeta, MediaId, MediaMeta } from "@webforge/model";
-import { ImagePlusIcon } from "lucide-react";
+import { ImageIcon, ImagePlusIcon } from "lucide-react";
 import { type DragEvent, type KeyboardEvent, type PointerEvent, useId, useState } from "react";
 import { type MediaApi, mediaImageUrl } from "../../shared/ipc/media.js";
 import type { EditorSession } from "../editor/editor-session.js";
@@ -152,7 +153,7 @@ export function MediaPanel({
       </div>
       <ScrollArea className="min-h-0 flex-1">
         {list.length === 0 ? (
-          <p className="m-0 px-2 text-xs text-muted-foreground">{t("site.media.empty")}</p>
+          <EmptyState icon={ImageIcon}>{t("site.media.empty")}</EmptyState>
         ) : (
           <ul
             aria-label={t("site.media.list")}

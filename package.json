@@ -27,6 +27,8 @@
     "licence-check": "pnpm licenses list -r --json | node tools/src/check-licences.ts",
     "behaviours": "node tools/src/build-behaviours.ts && biome format --write packages/site-components/src/behaviours/index.ts",
     "new-component": "node tools/src/new-component.ts",
+    "new-template": "node tools/src/new-template.ts",
+    "template-index": "node tools/src/build-template-index.ts",
     "scaffold": "node tools/src/scaffold.ts",
     "catalogue-data": "pnpm --filter @webforge/site-components exec vitest run src/catalogue-data.test.ts -u -t \"is the library\"",
     "app-icons": "node tools/src/build-app-icons.ts",

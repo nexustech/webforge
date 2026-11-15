@@ -41,6 +41,7 @@ export type {
   ComponentLibrary,
   ComponentRenderProps,
   LinkAttributes,
+  ThemeControl,
 } from "./library.js";
 export {
   BOX_CLASS_SAFELIST,
@@ -67,6 +68,7 @@ export {
 } from "./library.js";
 export { ENLARGE_ATTRIBUTE, singleLightboxHtml } from "./lightbox.js";
 export { hrefFor } from "./links.js";
+export type { MainHeading } from "./main-heading.js";
 export {
   ENTRANCE_FIELDS,
   entranceAttributes,
