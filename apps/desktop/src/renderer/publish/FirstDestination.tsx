@@ -1,5 +1,6 @@
 import { t } from "@webforge/i18n";
 import type { PublishDestination } from "@webforge/model";
+import { type Ref, useEffect, useRef } from "react";
 import { useHelpAt } from "../help/index.js";
 
 /** A card: what it is and what it needs, the whole of it one button. */
@@ -7,14 +8,17 @@ function Card({
   title,
   description,
   onChoose,
+  ref,
 }: {
   readonly title: string;
   readonly description: string;
   readonly onChoose: () => void;
+  readonly ref?: Ref<HTMLButtonElement>;
 }) {
   return (
     <li>
       <button
+        ref={ref}
         type="button"
         className="flex w-full flex-col gap-0.5 rounded-md border border-border bg-panel p-3 text-left hover:border-border-strong focus-visible:outline-2 focus-visible:outline-ring"
         onClick={onChoose}
@@ -41,6 +45,10 @@ export function FirstDestination({
   readonly onAdd: (kind: PublishDestination["kind"]) => void;
 }) {
   const choosingHost = useHelpAt("publish.choosingHost");
+  // The first card has the focus as the cards appear: the dialog opened before the list was read,
+  // with its focus on Close.
+  const first = useRef<HTMLButtonElement>(null);
+  useEffect(() => first.current?.focus(), []);
   return (
     <section aria-labelledby="publish-first-question" className="grid gap-2">
       <h3 id="publish-first-question" className="m-0 text-sm font-medium">
@@ -48,6 +56,7 @@ export function FirstDestination({
       </h3>
       <ul className="m-0 flex list-none flex-col gap-2 p-0">
         <Card
+          ref={first}
           title={t("publish.first.fileTransfer")}
           description={t("publish.first.fileTransfer.description")}
           onChoose={() => onAdd("file-transfer")}

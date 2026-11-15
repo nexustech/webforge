@@ -138,7 +138,10 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     expect(
       await screen.findByRole("heading", { name: "Where is your website hosted?" }),
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: /^A web host with a control panel/ })).toBeTruthy();
+    // Focused, the dialog having opened before the list was read.
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /^A web host with a control panel/ }),
+    );
     // Netlify only where it's offered, Help only where it can open.
     expect(screen.queryByRole("button", { name: /^Netlify/ })).toBeNull();
     expect(screen.queryByRole("button", { name: /^I don't have a host yet/ })).toBeNull();
