@@ -47,6 +47,9 @@ async function addTestHost(page: Page, sftp: Awaited<ReturnType<typeof startSftp
   await form.getByLabel("User name", { exact: true }).fill("baker");
   await form.getByLabel("Password", { exact: true }).fill(PASSWORD);
   await form.getByLabel("Folder", { exact: true }).fill("/site");
+  // No web address, though the form starts with Site Settings' (#1014): the live check then
+  // reaches no other website.
+  await form.getByLabel("Web address", { exact: true }).fill("");
   await form.getByRole("button", { name: "Test Connection" }).click();
   await form.getByRole("button", { name: "Trust This Host" }).click();
   await expect(form.getByText(/Connected/)).toBeVisible();
