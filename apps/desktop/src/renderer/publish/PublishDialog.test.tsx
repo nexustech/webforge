@@ -127,7 +127,10 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
 
   it("says when there are none yet", async () => {
     setUp();
-    expect((await screen.findByRole("status")).textContent).toContain("No destinations yet");
+    // After the list has been read, which says so first.
+    await vi.waitFor(() =>
+      expect(screen.getByRole("status").textContent).toContain("No destinations yet"),
+    );
   });
 
   it("adds a destination with 4.3's form, and tells the window it was saved", async () => {

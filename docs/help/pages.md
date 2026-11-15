@@ -4,7 +4,7 @@ id: pages
 title: Pages and the menu
 summary: Add, rename, reorder and delete pages, set what the menu shows, and change each page's settings.
 related: [header-and-footer, links, site-settings, site-check, blog]
-updated: 2026-11-11
+updated: 2026-11-14
 ---
 
 # Pages and the menu
@@ -26,7 +26,7 @@ To jump to a page from anywhere, press Ctrl+P (Cmd+P on a Mac) and type its name
 
 Click **+** (**Add Page**):
 
-- **Blank Page…** asks for the page's name, and shows the file name it will have.
+- **Blank Page…** asks for the page's name, and shows the file name it will have. The new page has only the Header and the Footer: click **Add Your First Section…** between them to choose its first section.
 - **Privacy Page** adds a page that tells visitors what your site collects and what you do with it. See [A privacy page](#a-privacy-page).
 - **Terms Page** adds your terms for using the site and for booking or buying from you. See [Terms and cookie pages](#terms-and-cookie-pages).
 - **Blog** adds a blog, with a first post. Its posts are listed in a group of their own, with **New Post**. See [Your blog](blog.md).

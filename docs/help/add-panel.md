@@ -4,7 +4,7 @@ id: add-panel
 title: The Add panel
 summary: Find sections and elements and add them to your page.
 related: [sections, elements, header-and-footer, editing-on-the-page]
-updated: 2026-11-09
+updated: 2026-11-14
 ---
 
 # The Add panel
@@ -20,7 +20,7 @@ The **Add** panel, the first tab of the left column (the square with a plus), li
 - **Click** an element to add it to the selected section.
 - Or **drag** either one onto the page, to just where you want it.
 
-Items that can't go anywhere at the moment are greyed out. For example, elements need a section on the page first.
+Items that can't go anywhere at the moment are greyed out, and the Elements tab says why. Elements go inside a **Section**: a Hero, an FAQ and the other ready-made sections hold none of their own. So on a page with no Section, the elements are greyed out until you add one from **Sections**.
 
 Hover over a section to see a larger preview of it.
 

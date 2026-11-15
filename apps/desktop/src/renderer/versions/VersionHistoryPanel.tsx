@@ -13,6 +13,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  EmptyState,
   useMenuDialog,
 } from "@webforge/editor-ui";
 import { t } from "@webforge/i18n";
@@ -97,7 +98,7 @@ export function VersionHistoryPanel({ state, actions, onSave, locale }: VersionH
               : t("versionHistory.loadFailed")}
           </p>
         ) : state.versions.length === 0 ? (
-          <p className="m-0 p-3 text-xs text-muted-foreground">{t("versionHistory.empty")}</p>
+          <EmptyState icon={HistoryIcon}>{t("versionHistory.empty")}</EmptyState>
         ) : (
           <ol aria-label={t("versionHistory.list")} className="flex flex-col gap-0.5 p-1">
             {state.versions.map((version) => {
