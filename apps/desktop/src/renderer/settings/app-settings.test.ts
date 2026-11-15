@@ -24,7 +24,7 @@ describe("Settings › App › Interface › Text size (#1015)", () => {
   const output = (textSize: string) => {
     const { part } = appPart("interface", "1.0.0");
     const { spec, initial } = part.form;
-    return spec.schema.safeParse(spec.toModel({ ...initial, textSize }));
+    return spec.schema["~standard"].validate(spec.toModel({ ...initial, textSize }));
   };
 
   it("offers the interface zoom's levels, starting at the one in use", () => {
@@ -51,9 +51,9 @@ describe("Settings › App › Interface › Text size (#1015)", () => {
     });
   });
 
-  it("saves the level as the interface zoom, and nothing that isn't a level", () => {
-    expect(output("1.1")).toMatchObject({ success: true, data: { textSize: 1.1 } });
-    expect(output("1.2").success).toBe(false);
+  it("saves the level as the interface zoom, and nothing that isn't a level", async () => {
+    expect(await output("1.1")).toMatchObject({ value: { textSize: 1.1 } });
+    expect((await output("1.2")).issues).toHaveLength(1);
 
     const { part, preferences } = appPart("interface", "1.0.0");
     part.save({ ...part.form.initial, showAgain: false, showTips: true, textSize: 1.1 });
