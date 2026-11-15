@@ -69,7 +69,11 @@ function fakePublish(listed: ListedDestination[]) {
   } satisfies PublishDialogApi;
 }
 
-function setUp(listed: ListedDestination[] = [], publish = fakePublish(listed)) {
+function setUp(
+  listed: ListedDestination[] = [],
+  publish = fakePublish(listed),
+  webAddress?: string,
+) {
   const notify = vi.fn();
   const onSaved = vi.fn();
   const onPublish = vi.fn();
@@ -79,6 +83,7 @@ function setUp(listed: ListedDestination[] = [], publish = fakePublish(listed)) 
       publish={publish}
       sessionId={() => SESSION}
       notify={notify}
+      webAddress={() => webAddress}
       onSaved={onSaved}
       onPublish={onPublish}
       onClose={vi.fn()}
@@ -171,6 +176,27 @@ describe("the Publish dialog's destinations (4.4a, F-PB-1)", () => {
     await user.click(screen.getByRole("button", { name: "Add Destination" }));
     form = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
     expect((form.getByLabelText("Host", { exact: true }) as HTMLInputElement).value).toBe("");
+  });
+
+  it("starts a new destination at the site's web address, and an edited one at its own (#1014)", async () => {
+    const { user } = setUp(
+      [{ destination: old, signIn: "saved", trust: {} }],
+      undefined,
+      "https://www.rosasbakery.co.uk",
+    );
+    await user.click(await screen.findByRole("button", { name: "Add Destination" }));
+    const added = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    expect((added.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
+      "https://www.rosasbakery.co.uk",
+    );
+    await user.click(added.getByRole("button", { name: "Cancel" }));
+
+    await user.click(await screen.findByRole("button", { name: "Edit Old host" }));
+    const edited = within(await screen.findByRole("dialog", { name: "Publish to your web host" }));
+    // It has none of its own: the site's isn't put in its place.
+    expect((edited.getByLabelText("Web address", { exact: true }) as HTMLInputElement).value).toBe(
+      "",
+    );
   });
 
   it("edits a destination, keeping its saved password when none is typed", async () => {

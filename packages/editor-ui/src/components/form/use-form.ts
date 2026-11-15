@@ -1,7 +1,7 @@
 import { sameJson } from "@webforge/model";
 import { useState } from "react";
 import type { ListChange, ListItem } from "../edit/field-spec.js";
-import type { FormField, FormIssue, FormSpec, FormValues } from "./form-spec.js";
+import type { FormActions, FormField, FormIssue, FormSpec, FormValues } from "./form-spec.js";
 
 /** What saving a form gives: the checked value and the groups whose fields changed, or nothing. */
 export type FormSubmit<Out> =
@@ -9,13 +9,14 @@ export type FormSubmit<Out> =
   | { readonly ok: false };
 
 /** A form being edited: its spec, values, fields and problems, and what changes and saves it. */
-export type FormState<V extends FormValues, Out> = {
+export type FormState<V extends FormValues, Out> = FormActions & {
   readonly spec: FormSpec<V, Out>;
   readonly values: V;
   readonly fields: readonly FormField[];
   /**
    * The problems to show now (`validateOn`): none until Save is tried, or, checking as the person
-   * types, those of the fields they have changed; after a Save, all of them.
+   * types, those of the fields they have changed; after a Save, all of them, and after a
+   * `validate`, those it counts.
    */
   readonly issues: readonly FormIssue[];
   /** Whether the values pass now: a dialog checking as the person types keeps Save off until then. */
@@ -24,7 +25,10 @@ export type FormState<V extends FormValues, Out> = {
   readonly change: (name: string, value: unknown) => void;
   /** Checks the values; from now on their problems show as they change. */
   readonly submit: () => FormSubmit<Out>;
-  /** How many times Save was tried: the form shows the first problem after each failed one. */
+  /**
+   * How many times Save or `validate` was tried: the form shows, and focuses, the first problem
+   * after each failed one.
+   */
   readonly attempts: number;
 };
 
@@ -167,11 +171,15 @@ export function useForm<V extends FormValues, Out>(
   });
   const [first] = useState(initial);
   const [attempts, setAttempts] = useState(0);
+  // The problems a `validate` counts, until Save shows them all.
+  const [counts, setCounts] = useState<{ readonly only?: (issue: FormIssue) => boolean }>({});
   const fields = fieldsOf(spec, values);
   const all = checkForm(spec, values).issues;
   const issues =
     attempts > 0
-      ? all
+      ? counts.only === undefined
+        ? all
+        : all.filter(counts.only)
       : spec.validateOn === "change"
         ? all.filter((issue) =>
             fields.some(
@@ -196,13 +204,31 @@ export function useForm<V extends FormValues, Out>(
       return { values: adjusted, touched: new Set([...current.touched, ...moved]) };
     });
 
+  const validate = (only?: (issue: FormIssue) => boolean) => {
+    setAttempts(attempts + 1);
+    setCounts(only === undefined ? {} : { only });
+    const found = checkForm(spec, values).issues;
+    return only === undefined ? found : found.filter(only);
+  };
+
   const submit = (): FormSubmit<Out> => {
     setAttempts(attempts + 1);
+    setCounts({});
     const checked = checkForm(spec, values);
     return "output" in checked
       ? { ok: true, output: checked.output, changedGroups: changedGroups(spec, first, values) }
       : { ok: false };
   };
 
-  return { spec, values, fields, issues, valid: all.length === 0, change, submit, attempts };
+  return {
+    spec,
+    values,
+    fields,
+    issues,
+    valid: all.length === 0,
+    change,
+    submit,
+    validate,
+    attempts,
+  };
 }

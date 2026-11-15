@@ -210,7 +210,7 @@ describe("publishArea (4.4a)", () => {
     expect(screen.queryByRole("dialog", { name: "Publish" })).toBeNull();
     const operationId = vi.mocked(api.publish.publish).mock.calls[0]?.[2];
 
-    await user.click(live.getByRole("button", { name: "Open Site" }));
+    await user.click(live.getByRole("button", { name: "Open in Browser" }));
     expect(api.publish.openLive).toHaveBeenCalledWith(operationId);
     await user.click(live.getByRole("button", { name: "Copy Link" }));
     expect(api.clipboard.copyText).toHaveBeenCalledWith("https://www.rosasbakery.co.uk/");

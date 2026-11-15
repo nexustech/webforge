@@ -131,6 +131,7 @@ export const publishArea: Area<WindowContext> = {
         netlify: { ...netlify, canSignIn: signInOffered },
         sessionId: siteSession,
         notify: (message) => toast.error(message),
+        webAddress: () => session.history.document.getState().settings.address.url,
         onSaved: (destination) => {
           fillWebAddress(session, destination);
         },

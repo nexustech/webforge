@@ -77,7 +77,7 @@ test.describe("Export site", () => {
     await expect(
       page.locator("[data-sonner-toast]").getByRole("button", { name: "Cancel" }),
     ).toHaveCount(0);
-    await report.getByRole("button", { name: "Open Site" }).click();
+    await report.getByRole("button", { name: "Open in Browser" }).click();
     await expect.poll(opened).toEqual([`open ${join(folder, "index.html")}`]);
     await report.getByRole("button", { name: "Done" }).click();
     await expect(report).toBeHidden();
