@@ -177,8 +177,8 @@ describe("registerStyleCommands", () => {
     select("t");
     expect(command("edit.pasteStyle")).toMatchObject({
       enabled: false,
-      label: "Paste Style (onto a Heading)",
-      disabledReason: "Select a Heading to paste its style onto.",
+      label: "Paste Style (onto Another Heading)",
+      disabledReason: "Select another Heading to paste its style onto.",
     });
     select("plain");
     expect(command("edit.pasteStyle")).toMatchObject({ enabled: true, label: "Paste Style" });

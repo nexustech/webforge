@@ -46,7 +46,7 @@ export type Command = {
   /** Defaults to true; a disabled command is shown but can't run. */
   readonly enabled?: boolean;
   /**
-   * Why it's disabled, already translated, while it is (#1010): "Nothing to undo yet". The title
+   * Why it's disabled, already translated, while it is (#1010): "Nothing to undo". The title
    * bar's tooltip, the menus and the command box show it. {@link availability} sets both.
    */
   readonly disabledReason?: string | undefined;

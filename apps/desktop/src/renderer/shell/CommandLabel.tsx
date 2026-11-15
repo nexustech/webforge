@@ -21,7 +21,7 @@ export function reasonRowProps(command: Command): {
 
 /**
  * A command's name in a menu or the command box, with why it's disabled under it while it is
- * (#1010): "Undo", then "Nothing to undo yet." The row is described by the reason
+ * (#1010): "Undo", then "Nothing to undo." The row is described by the reason
  * ({@link reasonRowProps}), so it isn't part of the row's name.
  */
 export function CommandLabel({

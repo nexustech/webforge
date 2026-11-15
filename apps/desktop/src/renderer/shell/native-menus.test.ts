@@ -78,7 +78,7 @@ describe("macOS's menu bar (LF-13)", () => {
       id: "edit.undo",
       label: "Undo",
       menu: "edit",
-      ...availability("Nothing to undo yet."),
+      ...availability("Nothing to undo."),
       run: vi.fn(),
     });
     registry.register({
@@ -92,7 +92,7 @@ describe("macOS's menu bar (LF-13)", () => {
     const menus = nativeMenusOf(registry);
 
     expect(menus[0]?.items).toEqual([
-      expect.objectContaining({ id: "edit.undo", enabled: false, reason: "Nothing to undo yet." }),
+      expect.objectContaining({ id: "edit.undo", enabled: false, reason: "Nothing to undo." }),
       expect.not.objectContaining({ reason: expect.anything() }),
     ]);
     expect(appChannels.setNativeMenus.request.safeParse([menus]).success).toBe(true);

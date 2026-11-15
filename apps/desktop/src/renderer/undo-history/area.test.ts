@@ -44,7 +44,7 @@ describe("undoHistoryArea (#668)", () => {
     // Each says why it's off (#1010).
     const reason = (id: string) => registries.commands.get(id)?.disabledReason;
     expect([reason(COMMAND_IDS.undo), reason(COMMAND_IDS.redo)]).toEqual([
-      "Nothing to undo yet.",
+      "Nothing to undo.",
       "Nothing to redo.",
     ]);
 

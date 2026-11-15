@@ -3,7 +3,7 @@ export const shell = {
   "editor.undo": "Undo",
   "editor.redo": "Redo",
   // Why a command is disabled (#1010): under it in menus and the command box, in its tooltip.
-  "editor.undo.none": "Nothing to undo yet.",
+  "editor.undo.none": "Nothing to undo.",
   "editor.redo.none": "Nothing to redo.",
   // A title-bar button whose command isn't there yet, as on the start screen.
   "shell.disabled.noSite": "Open a site first.",
@@ -251,9 +251,9 @@ export const shell = {
   "edit.pasteLinked": "Paste as Linked Copy",
   "edit.copyStyle": "Copy Style",
   "edit.pasteStyle": "Paste Style",
-  "edit.pasteStyleOnto": "Paste Style (onto a {item})",
+  "edit.pasteStyleOnto": "Paste Style (onto Another {item})",
   "edit.pasteStyle.nothingCopied": "Copy a style first.",
-  "edit.pasteStyle.selectKind": "Select a {item} to paste its style onto.",
+  "edit.pasteStyle.selectKind": "Select another {item} to paste its style onto.",
   // Gives every other one of the selected kind its look (2.27, ST-4); "any" while none is selected.
   "edit.applyLook.page": "Apply Look to Every {item} on This Page",
   "edit.applyLook.page.any": "Apply Look to All Like It on This Page",

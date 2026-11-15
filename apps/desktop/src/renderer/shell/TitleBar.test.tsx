@@ -131,7 +131,7 @@ describe("TitleBar", () => {
       id: COMMAND_IDS.undo,
       label: "Undo",
       enabled: false,
-      disabledReason: "Nothing to undo yet.",
+      disabledReason: "Nothing to undo.",
       run: vi.fn(),
     });
     renderTitleBar(registry);
@@ -140,9 +140,7 @@ describe("TitleBar", () => {
     const undo = screen.getByRole("button", { name: "Undo" });
     await userEvent.hover(undo.parentElement ?? undo);
 
-    expect((await screen.findByRole("tooltip")).textContent).toBe(
-      "Undo (Ctrl+Z)Nothing to undo yet.",
-    );
+    expect((await screen.findByRole("tooltip")).textContent).toBe("Undo (Ctrl+Z)Nothing to undo.");
   });
 
   it("says a button's command needs a site while nobody has registered it (#1010)", async () => {
@@ -339,7 +337,7 @@ describe("CommandBox", () => {
     registry.register({
       id: COMMAND_IDS.undo,
       label: "Undo",
-      ...availability("Nothing to undo yet."),
+      ...availability("Nothing to undo."),
       run: vi.fn(),
     });
     registry.register({ id: "a.disabled", label: "Later", enabled: false, run: vi.fn() });
@@ -352,8 +350,8 @@ describe("CommandBox", () => {
     const undo = await screen.findByRole("option", { name: /^Undo/ });
 
     expect(undo.getAttribute("aria-disabled")).toBe("true");
-    expect(undo.getAttribute("aria-description")).toBe("Nothing to undo yet.");
-    expect(undo.textContent).toContain("Nothing to undo yet.");
+    expect(undo.getAttribute("aria-description")).toBe("Nothing to undo.");
+    expect(undo.textContent).toContain("Nothing to undo.");
     expect(screen.queryByRole("option", { name: "Later" })).toBeNull();
     // After the commands that can run, though registered first.
     expect(

@@ -58,14 +58,14 @@ describe("createCommandRegistry", () => {
     registry.register({
       id: "undo",
       label: "Undo",
-      ...availability("Nothing to undo yet."),
+      ...availability("Nothing to undo."),
       run: vi.fn(),
     });
     registry.subscribe(listener);
 
     expect(registry.get("undo")).toMatchObject({
       enabled: false,
-      disabledReason: "Nothing to undo yet.",
+      disabledReason: "Nothing to undo.",
     });
     registry.update("undo", availability("Something else."));
     expect(registry.get("undo")?.disabledReason).toBe("Something else.");

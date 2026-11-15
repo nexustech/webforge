@@ -25,7 +25,7 @@ When a site is open, the editor fills the window.
 - **Right column:** the [Edit panel](edit-panel.md) for whatever you've selected, with tabs beside it for **Site** ([Pages](pages.md) and the menu), [Media](media.md) and [Theme](themes.md).
 - **Bottom panel:** [Site Check](site-check.md). Show or hide it with Ctrl+J (Cmd+J on a Mac).
 
-A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo yet, for example, and Paste Style asks you to copy a style first.
+A button or menu item you can't use at the moment is greyed out, and most say why: hover over the button, or look under the item in a menu or in the command search. Undo says there's nothing to undo, for example, and Paste Style asks you to copy a style first.
 
 ## Moving the panels
 
