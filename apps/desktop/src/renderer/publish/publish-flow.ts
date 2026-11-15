@@ -29,12 +29,36 @@ export type LivePublish = Omit<Extract<PublishResult, { status: "published" }>, 
   readonly operationId: string;
 };
 
-/** What to tell the person about a publish that failed: what happened, and what to do. */
+/**
+ * Where a publish that stopped for no reason of its own had come to, by the last stage it reached
+ * (`undefined` before the first): what that means for the website, and what to do (#1014).
+ */
+function stageFailure(reached: PublishProgress["stage"] | undefined): string {
+  switch (reached) {
+    case "preparing":
+      return t("publish.failed.stage.connect");
+    case "uploading":
+      return t("publish.failed.stage.upload");
+    case "verifying":
+      return t("publish.failed.stage.verify");
+    default:
+      return t("publish.failed.stage.build");
+  }
+}
+
+/**
+ * What to tell the person about a publish that failed: what happened, and what to do. One that
+ * failed for no reason of its own is told by `reached`, the last stage it reached.
+ */
 export function publishFailure(
   result: Extract<PublishResult, { status: "failed" }>,
   site: SiteDoc,
+  reached?: PublishProgress["stage"],
 ): string {
   switch (result.reason) {
+    case "failed":
+    case "unknown":
+      return stageFailure(reached);
     case "reserved-name":
       return t("publish.failed.reserved-name", { page: result.page ?? "" });
     case "unreadable-image":
@@ -110,13 +134,19 @@ async function publishChecked(
     // This publish's own name, which its progress, its Cancel and its Open go by (A14).
     const operationId = crypto.randomUUID();
     const options = { replaceOtherSite, ...(versionId === undefined ? {} : { versionId }) };
+    // The last stage it reached, which a failure with no reason of its own is told by (#1014).
+    let reached: PublishProgress["stage"] | undefined;
     const { result, progress } = await runWithProgress<PublishProgress, PublishResult>({
       working: t("publish.run.working"),
       describe: publishProgressText,
       cancelLabel: t("publish.run.cancel"),
       cancelling: t("publish.run.cancelling"),
       cancel: () => flow.api.cancel(operationId),
-      run: (onProgress) => publishThrough(flow, destination.id, operationId, options, onProgress),
+      run: (onProgress) =>
+        publishThrough(flow, destination.id, operationId, options, (progress) => {
+          reached = progress.stage;
+          onProgress(progress);
+        }),
       failed: { status: "failed", reason: "unknown" },
       failureKey: "publish",
     });
@@ -155,7 +185,7 @@ async function publishChecked(
           replaceOtherSite = true;
           continue;
         }
-        fail(publishFailure(result, site));
+        fail(publishFailure(result, site, reached));
         return;
     }
   }
@@ -171,6 +201,8 @@ async function publishChecked(
  */
 export async function publishTo(flow: PublishFlow, destination: PublishDestination): Promise<void> {
   const site = flow.site();
+  // Whether it got as far as publishing: before, nothing was sent (#1014).
+  let started = false;
   try {
     const code = await flow.confirmCode(site);
     if (!code.go) return;
@@ -181,10 +213,11 @@ export async function publishTo(flow: PublishFlow, destination: PublishDestinati
       host: destination.kind === "netlify" ? ("netlify" as const) : undefined,
     };
     if (!gateOnSiteCheck(withKeptCode(flow.site(), code.keeps), "publish", gate)) return;
+    started = true;
     await publishChecked(flow, destination, { site });
   } catch (error) {
     reportFailure("publish", error);
-    toast.error(t("publish.failed.unknown"));
+    toast.error(t(started ? "publish.failed.unknown" : "publish.failed.start"));
   }
 }
 
@@ -217,14 +250,16 @@ export async function republishTo(
   destination: PublishDestination,
   version: VersionToRepublish,
 ): Promise<void> {
+  let started = false;
   try {
     const site = await versionSite(flow, version.id);
     if (site === undefined) return;
     const code = await flow.confirmCode(site);
     if (!code.go) return;
+    started = true;
     await publishChecked(flow, destination, { site, versionId: version.id });
   } catch (error) {
     reportFailure("publish", error);
-    toast.error(t("publish.failed.unknown"));
+    toast.error(t(started ? "publish.failed.unknown" : "publish.failed.start"));
   }
 }

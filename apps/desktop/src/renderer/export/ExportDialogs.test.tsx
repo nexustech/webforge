@@ -134,7 +134,7 @@ describe("ExportDialogs (3.3)", () => {
       expect((await screen.findByRole("dialog", { name: "Site exported" })).textContent).toContain(
         "Every link and image is in place.",
       );
-      expect(screen.getByRole("button", { name: "Open Site" })).toBeDefined();
+      expect(screen.getByRole("button", { name: "Open in Browser" })).toBeDefined();
     },
     SLOW,
   );

@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import type { FileTransferDestination, FileTransferTrust } from "@webforge/model";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -29,12 +29,14 @@ function setUp(
   destination?: FileTransferDestination,
   publish = fakePublish(),
   trust?: FileTransferTrust,
+  webAddress?: string,
 ) {
   const onSave = vi.fn();
   render(
     <FileTransferDestinationDialog
       open
       destination={destination}
+      webAddress={webAddress}
       trust={trust}
       publish={publish}
       onSave={onSave}
@@ -151,6 +153,37 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     expect(await screen.findByText(/doesn't offer FTPS/)).toBeTruthy();
   });
 
+  it("checks the form before Test Connection: what's missing is marked and focused, and nothing connects (#1014)", async () => {
+    const { field, testConnection, publish } = setUp();
+    await testConnection();
+
+    expect(publish.testConnection).not.toHaveBeenCalled();
+    expect(publish.readHostKey).not.toHaveBeenCalled();
+    // Each field says what to type, by name.
+    expect(screen.getByText("Enter your host's address, such as ftp.example.com.")).toBeTruthy();
+    expect(screen.getByText("Enter the user name your host gave you.")).toBeTruthy();
+    expect(screen.getByText("Type the password.")).toBeTruthy();
+    expect(field("Host").getAttribute("aria-invalid")).toBe("true");
+    await waitFor(() => expect(document.activeElement).toBe(field("Host")));
+    // Not a Save: the note about saving isn't shown.
+    expect(screen.queryByText(/before they can be saved/)).toBeNull();
+    expect(screen.queryByText("The connection didn't work.")).toBeNull();
+  });
+
+  it("names an emptied folder in its own words (#1014)", async () => {
+    const { user, field, save } = setUp();
+    await user.clear(field("Folder"));
+    await save();
+    expect(
+      screen.getByText("Enter the folder your host serves your site from, such as /public_html."),
+    ).toBeTruthy();
+  });
+
+  it("starts a new destination at the site's web address, from Site Settings (#1014)", () => {
+    const { field } = setUp(undefined, undefined, undefined, "https://www.rosasbakery.co.uk");
+    expect((field("Web address") as HTMLInputElement).value).toBe("https://www.rosasbakery.co.uk");
+  });
+
   it("warns once before plain FTP, and remembers it for the destination on this computer (S2)", async () => {
     const plain: FileTransferDestination = {
       protocol: "ftp",
@@ -158,12 +191,15 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
       user: "rosa",
       folder: "/httpdocs",
     };
-    const { user, fill, save, onSave } = setUp(plain);
+    const { user, fill, save, onSave, testConnection, publish } = setUp(plain);
     expect(screen.getByRole("alert").textContent).toContain("Plain FTP isn't encrypted");
 
     await fill("Password", "test-only-password");
     await save();
     expect(onSave).not.toHaveBeenCalled();
+    // Nor tested, sending the password unencrypted, until the warning is read (#1014).
+    await testConnection();
+    expect(publish.testConnection).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole("button", { name: "Use Plain FTP Anyway" }));
     expect(screen.queryByText("Plain FTP isn't encrypted")).toBeNull();
@@ -197,6 +233,8 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await testConnection();
     expect(publish.testConnection).not.toHaveBeenCalled();
     expect(await screen.findByText(HOST_KEY, { exact: false })).toBeTruthy();
+    // The key the test reads isn't a problem with the form while it's read (#1014).
+    expect(screen.queryByText("Test the connection to check this host first.")).toBeNull();
     await user.click(screen.getByRole("button", { name: "Trust This Host" }));
 
     expect(await screen.findByText(/Connected/)).toBeTruthy();
@@ -320,6 +358,19 @@ describe("a file-transfer publish destination (4.3, F-PB-1, B5)", () => {
     await user.click(screen.getByRole("button", { name: "Choose Key File…" }));
 
     expect((await screen.findByRole("alert")).textContent).toContain("isn't a private key");
+  });
+
+  it("keeps an edited destination's own web address, never the site's (#1014)", () => {
+    const destination: FileTransferDestination = {
+      protocol: "ftps",
+      host: "ftp.rosasbakery.co.uk",
+      user: "rosa",
+      folder: "/public_html",
+    };
+    expect(valuesOf(destination, "Rosa's", "https://www.rosasbakery.co.uk").url).toBe("");
+    expect(valuesOf(undefined, "", "https://www.rosasbakery.co.uk").url).toBe(
+      "https://www.rosasbakery.co.uk",
+    );
   });
 
   it("reads a destination back into the form, never its password", () => {

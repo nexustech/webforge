@@ -97,14 +97,16 @@ const NEW_VALUES: FileTransferValues = {
 };
 
 /**
- * The form's values for `destination`, called `name`. Never its password or passphrase: those stay
- * in the main process once saved (4.4a).
+ * The form's values for `destination`, called `name`; a new one's web address is the site's, from
+ * Site Settings (#1014). Never its password or passphrase: those stay in the main process once
+ * saved (4.4a).
  */
 export function valuesOf(
   destination: FileTransferDestination | undefined,
   name = "",
+  webAddress = "",
 ): FileTransferValues {
-  if (destination === undefined) return NEW_VALUES;
+  if (destination === undefined) return { ...NEW_VALUES, url: webAddress };
   const preset =
     (Object.entries(PRESET_FOLDER) as [Preset, string][]).find(
       ([, folder]) => folder === destination.folder,
@@ -169,6 +171,13 @@ const MESSAGES = {
   folder: "publish.fileTransfer.error.folder",
 } as const;
 
+/** The form's words for a field left empty, naming what to type (#1014). */
+const EMPTY = {
+  host: "publish.fileTransfer.error.host.empty",
+  user: "publish.fileTransfer.error.user.empty",
+  folder: "publish.fileTransfer.error.folder.empty",
+} as const;
+
 /**
  * The model's destination schema, with the form's words, and the sign-in checked by how the
  * destination signs in: a password, or a key file and, when it needs one, its passphrase.
@@ -186,14 +195,21 @@ function outputSchema(keyFile: KeyFile | undefined): FormSchema<FileTransferSave
             const own = Object.hasOwn(MESSAGES, field)
               ? MESSAGES[field as keyof typeof MESSAGES]
               : undefined;
+            const empty =
+              Object.hasOwn(EMPTY, field) &&
+              (destination as Readonly<Record<string, unknown>>)[field] === ""
+                ? EMPTY[field as keyof typeof EMPTY]
+                : undefined;
             issues.push({
               path: ["destination", ...issue.path],
               message:
-                // A host in the wrong form fails each of name, IPv4 and IPv6 (`invalid_union`).
-                (issue.code === "invalid_format" || issue.code === "invalid_union") &&
-                own !== undefined
-                  ? t(own)
-                  : issue.message,
+                empty !== undefined
+                  ? t(empty)
+                  : // A host in the wrong form fails each of name, IPv4 and IPv6 (`invalid_union`).
+                    (issue.code === "invalid_format" || issue.code === "invalid_union") &&
+                      own !== undefined
+                    ? t(own)
+                    : issue.message,
             });
           }
         }
@@ -261,7 +277,6 @@ function fieldsFor(
       label: t("publish.fileTransfer.name"),
       help: t("publish.fileTransfer.name.help"),
       maxLength: DESTINATION_NAME_MAX,
-      width: "md",
     },
     {
       kind: "select",
@@ -290,7 +305,6 @@ function fieldsFor(
       placeholder: t("publish.fileTransfer.host.placeholder"),
       path: "destination.host",
       maxLength: HOST_MAX,
-      width: "md",
     },
     {
       kind: "number",
@@ -308,7 +322,6 @@ function fieldsFor(
       label: t("publish.fileTransfer.user"),
       path: "destination.user",
       maxLength: FILE_TRANSFER_USER_MAX,
-      width: "md",
     },
     ...(sftp
       ? [
@@ -392,6 +405,8 @@ export type FileTransferDestinationDialogProps = {
   /** The destination to edit, and its name; a new one when left out. */
   readonly destination?: FileTransferDestination | undefined;
   readonly name?: string | undefined;
+  /** The site's web address, from Site Settings: a new destination's, to start with (#1014). */
+  readonly webAddress?: string | undefined;
   /**
    * Whether this computer has its sign-in saved for it as it is (4.4a): then an empty password, or
    * no key file chosen, keeps it, while the connection, user and host key stay the same (S2).
@@ -428,6 +443,7 @@ export function FileTransferDestinationDialog({
   open,
   destination,
   name,
+  webAddress,
   savedSignIn = false,
   trust,
   publish,
@@ -543,7 +559,7 @@ export function FileTransferDestinationDialog({
         ? [{ path: ["destination", "host"], message: t("publish.fileTransfer.error.hostKey") }]
         : []),
     ],
-    after: (values) => ({
+    after: (values, form) => ({
       protocol:
         values.protocol === "ftp" && !plainFtpWarned ? (
           <PlainFtpWarning onAccept={() => setPlainFtpWarned(true)} />
@@ -562,7 +578,13 @@ export function FileTransferDestinationDialog({
         <TestConnection
           // Only a test of the connection as it is now.
           state={test?.at === connectionOf(values) ? test : undefined}
-          onTest={() => void runTest(values, extraFor(values).hostKey)}
+          onTest={() => {
+            // The form first, as Save checks it (#1014): what's missing is marked, and nothing
+            // connects. An SFTP host's key the test is to read doesn't stop it.
+            const hostKey = t("publish.fileTransfer.error.hostKey");
+            if (form.validate((issue) => issue.message !== hostKey).length > 0) return;
+            void runTest(values, extraFor(values).hostKey);
+          }}
           onTrust={(hostKey) => {
             setTrusted({ at: connectionOf(values), hostKey });
             void runTest(values, hostKey);
@@ -579,7 +601,7 @@ export function FileTransferDestinationDialog({
       description={t("publish.fileTransfer.description")}
       confirm={t("publish.fileTransfer.confirm")}
       spec={spec}
-      initial={valuesOf(destination, name)}
+      initial={valuesOf(destination, name, webAddress)}
       size="lg"
       onSave={(saved) => onSave(saved)}
       onCancel={onCancel}
@@ -646,7 +668,14 @@ function TestConnection({
 }) {
   return (
     <div className="space-y-2 pt-2 text-sm">
-      <Button type="button" size="sm" disabled={state?.status === "testing"} onClick={onTest}>
+      {/* Secondary: Save is the form's one primary (#1014). */}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={state?.status === "testing"}
+        onClick={onTest}
+      >
         {t("publish.test.button")}
       </Button>
       <div role="status" aria-live="polite">

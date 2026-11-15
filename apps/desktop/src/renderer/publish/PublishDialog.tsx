@@ -109,6 +109,8 @@ export type PublishDialogProps = {
   readonly sessionId: () => string;
   /** Says what went wrong, in the window's toasts. */
   readonly notify: (message: string) => void;
+  /** The site's web address in Site Settings, which a new host destination starts with (#1014). */
+  readonly webAddress?: (() => string | undefined) | undefined;
   /** A destination was saved: Site Settings may take its web address. */
   readonly onSaved: (destination: PublishDestination) => void;
   /** The site's destinations, each time the dialog reads them: as it opens, and after a change. */
@@ -141,6 +143,7 @@ export function PublishDialog({
   netlify,
   sessionId,
   notify,
+  webAddress,
   onSaved,
   onListed,
   onPublish,
@@ -406,6 +409,7 @@ export function PublishDialog({
           open
           destination={editedSettings}
           name={edited?.destination.name}
+          webAddress={edited === undefined ? webAddress?.() : undefined}
           savedSignIn={edited?.signIn === "saved"}
           trust={edited?.trust}
           publish={publish}

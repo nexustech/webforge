@@ -25,10 +25,9 @@ Click **Add Destination**, choose **FTP, FTPS or SFTP…**, then fill in the det
 - **Host**, such as `ftp.example.com`, and the **Port**. Leave the port empty for the usual one.
 - **User name**, and sign in with **A password** or, for SFTP, **A private key file**.
 - **Folder:** the folder your host serves your website from, such as `/public_html`.
-- **Web address:** your site's address. If Site Settings has none yet, {appName} fills it in there too.
-- **Redirect old addresses on Apache hosts (.htaccess):** off unless you turn it on. Most hosts reached by FTP run Apache. Turn it on and each publish also sends a renamed page's old address on with a permanent redirect, which search engines follow, as Netlify does (see [Keeping old addresses working](pages.md#keeping-old-addresses-working)). {appName} writes only its own block of lines in your host's `.htaccess` file, between a `# BEGIN` line and an `# END` line with its name, and leaves everything else in the file as it is. Turn it off and the next publish takes the block out again.
+- **Web address:** your site's address. It starts as the one in Site Settings, if there is one. If Site Settings has none yet, {appName} fills it in there too.
 
-The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
+**Test Connection** checks the details first: anything missing is marked, and nothing connects until it's filled in. The first time you test or save an SFTP destination, {appName} shows the host's key and asks you to confirm it's your host.
 
 ## Adding Netlify
 
@@ -57,7 +56,7 @@ Click **Publish** beside a destination. {appName}:
 
 If the folder already has another site that {appName} published, it asks before replacing it.
 
-When it's done, **Your site is live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open Site** opens it in your browser and **Copy Link** copies its address. A new site can take a few minutes to appear.
+When it's done, **Your site is live** says where visitors can see it, and how many files were sent, unchanged and removed. **Open in Browser** opens it and **Copy Link** copies its address. A new site can take a few minutes to appear.
 
 Each publish is kept in [Version History](version-history.md) as _Published_. To put an earlier version back on your host, use its **Republish…** there: see [Publishing an earlier version](version-history.md#publishing-an-earlier-version).
 
@@ -65,7 +64,7 @@ Where your text uses `{year}`, your published site shows the year you published 
 
 ### If publishing doesn't work
 
-{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit**, or publishing again once your internet connection is back. Publishing again sends whatever didn't arrive.
+{appName} says what went wrong and what to do, such as checking the user name, password or folder in **Edit**, or publishing again once your internet connection is back. If it stopped for no reason it can name, it says how far it got: before anything was sent, while sending your files, or after sending them, while checking your site is live. Publishing again sends whatever didn't arrive.
 
 ## Testing, changing and removing
 

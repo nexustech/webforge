@@ -1944,6 +1944,10 @@ describe("buildSite: a Blog's posts (6.10a, ADR 0025)", () => {
       expect(html).toContain("We open on Saturday.");
       // An empty field shows nothing: no own text in its place.
       expect(html).not.toContain("Summary");
+      // Described to search engines as a post, from its fields, readable (5.14, CC-6).
+      expect(html).toContain('<script type="application/ld+json">\n{\n  "@context"');
+      expect(html).toContain('"@type": "BlogPosting",\n  "headline": "Spring opening"');
+      expect(html).toContain('"datePublished": "2026-11-10"');
       // Out of a menu that doesn't list it: the Blog lists its posts.
       expect(text(exported, "index.html")).not.toContain("spring-opening");
 
