@@ -7,10 +7,12 @@ import { createStore } from "zustand/vanilla";
 import type { PublishResult } from "../../shared/ipc/publish.js";
 import type { WindowContext } from "../editor/areas.js";
 import { createPublishRequests } from "../editor/publish-requests.js";
+import { OnNetlify, PublishedYear, Publishing } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { createWindowDialogs, WindowDialogs } from "../shell/window-dialogs.js";
 import { registriesForTest, sessionWith } from "../testing/fixtures.js";
 import { fakePreloadApi } from "../testing/preload.js";
+import { servicesForTest } from "../testing/services.js";
 import { publishArea } from "./area.js";
 
 afterEach(cleanup);
@@ -104,9 +106,11 @@ function setUp({
     session,
     windowDialogs,
     codeTrust,
-    publishedYear,
-    onNetlify,
-    publishing,
+    ...servicesForTest(
+      [PublishedYear, publishedYear],
+      [OnNetlify, onNetlify],
+      [Publishing, publishing],
+    ),
   } as unknown as WindowContext;
   const remove = publishArea.register(context);
   render(<WindowDialogs registry={windowDialogs} />);

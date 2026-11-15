@@ -5,6 +5,7 @@ import { useStore } from "zustand";
 import { createStore } from "zustand/vanilla";
 import { VERSION_NAME_MAX } from "../../shared/ipc/versions.js";
 import type { Area, WindowContext } from "../editor/areas.js";
+import { Publishing } from "../editor/window-services.js";
 import { COMMAND_IDS } from "../shell/command-ids.js";
 import { NameDialog } from "../shell/NameDialog.js";
 import { siteSession } from "../storage/index.js";
@@ -22,6 +23,7 @@ import { registerVersionSettings } from "./versions-settings.js";
  */
 export const versionHistoryArea: Area<WindowContext> = {
   id: "versionHistory",
+  uses: [Publishing],
   register: ({
     api,
     session,
@@ -31,8 +33,9 @@ export const versionHistoryArea: Area<WindowContext> = {
     windowDialogs,
     settings,
     preferences,
-    publishing,
+    use,
   }) => {
+    const publishing = use(Publishing);
     const list = createVersionList(() => api.versions.list(siteSession()));
     const actions = createVersionActions({
       versions: api.versions,
