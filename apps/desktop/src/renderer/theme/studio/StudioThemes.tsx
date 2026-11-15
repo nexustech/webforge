@@ -177,7 +177,7 @@ export function StudioThemes({
                         size="icon-sm"
                         variant="ghost"
                         aria-label={t("theme.own.rename", { name: each.own.name })}
-                        title={t("theme.own.rename", { name: each.own.name })}
+                        tooltip={t("theme.own.rename", { name: each.own.name })}
                         aria-haspopup="dialog"
                         onClick={() => onRename(each)}
                       >
@@ -190,7 +190,7 @@ export function StudioThemes({
                         size="icon-sm"
                         variant="ghost"
                         aria-label={t("theme.own.delete", { name: each.own.name })}
-                        title={t("theme.own.delete", { name: each.own.name })}
+                        tooltip={t("theme.own.delete", { name: each.own.name })}
                         aria-haspopup="dialog"
                         onClick={() => onDelete(each)}
                       >

@@ -42,7 +42,7 @@ export function AiAppsStatus({ mcp, onOpen }: AiAppsStatusProps) {
   if (connected.length === 0) return null;
   const label = t("aiApps.indicator", { names: connected.join(", ") });
   return (
-    <Button variant="ghost" size="sm" aria-label={label} title={label} onClick={onOpen}>
+    <Button variant="ghost" size="sm" aria-label={label} tooltip={label} onClick={onOpen}>
       <BotIcon className="text-primary" aria-hidden />
     </Button>
   );

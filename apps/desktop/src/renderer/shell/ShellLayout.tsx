@@ -224,7 +224,7 @@ function PanelTabs({
             size="icon-sm"
             className="mr-1"
             aria-label={t("panels.search", { panel: active.title })}
-            title={t("panels.search", { panel: active.title })}
+            tooltip={t("panels.search", { panel: active.title })}
             onClick={() => search.focus()}
           >
             <SearchIcon />
