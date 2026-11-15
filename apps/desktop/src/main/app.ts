@@ -1,18 +1,15 @@
 import { join, resolve } from "node:path";
 import { t } from "@webforge/i18n";
-import { MEDIA_SCHEME } from "../shared/ipc/media.js";
 import { DEFAULT_PREFERENCES } from "../shared/ipc/prefs.js";
 import { updatesEvents } from "../shared/ipc/updates.js";
-import { openFailureMessage } from "../shared/open-failure.js";
 import { updateChannelFor } from "../shared/update-channel.js";
-import { aiAppsFeature } from "./ai-apps-feature.js";
+import { aiFeatures } from "./ai-features.js";
 import { appCallsFeature } from "./app-calls.js";
 import type { AppFeature } from "./app-feature.js";
-import { AppLifecycle, closeThenExit } from "./app-lifecycle.js";
-import { applicationMenu } from "./app-menu.js";
+import { AppLifecycle, handleQuitting } from "./app-lifecycle.js";
 import { type AppElectron, type AppParts, testDialogAnswer } from "./app-parts.js";
-import { APP_SCHEME, APP_SCHEME_PRIVILEGES, appPageUrl, createAppResponder } from "./app-scheme.js";
-import { assistantFeature } from "./assistant-feature.js";
+import { appPageUrl } from "./app-scheme.js";
+import { claimInstance, helpWindowsFor, prepareRenderers, prepareSession } from "./app-setup.js";
 import { createBackupSchedule } from "./backup-schedule.js";
 import { createBackups } from "./backups.js";
 import { captureCanvas } from "./canvas-capture.js";
@@ -21,11 +18,8 @@ import { createElementClipboard, systemClipboard } from "./clipboard.js";
 import { createCodeTrust } from "./code-trust.js";
 import { createCredentialStore } from "./credential-store.js";
 import { createNativeDialogs } from "./dialogs.js";
-import { announceClosedForE2eTests } from "./e2e-closed.js";
 import { createFlushOnClose } from "./flush-on-close.js";
-import { FONT_SCHEME } from "./fonts.js";
-import { createHandOff } from "./hand-off.js";
-import { createHelpWindows } from "./help-window.js";
+import { createHandOff, handOffWindow } from "./hand-off.js";
 import { logFailure } from "./log.js";
 import { createMainWindows } from "./main-window.js";
 import { mediaFeature } from "./media-feature.js";
@@ -35,7 +29,7 @@ import { ProjectSession } from "./project-session.js";
 import { createRecentSites, recentSitesFeature } from "./recent-sites.js";
 import { openOrRecover } from "./recovery.js";
 import { createSecretClipboard, electronSecretClipboard } from "./secret-clipboard.js";
-import { hardenSession, hardenWebContents, isAppUrl } from "./security.js";
+import { isAppUrl } from "./security.js";
 import { siteCallsFeature } from "./site-calls.js";
 import { siteFontsOf } from "./site-fonts.js";
 import { siteOutput } from "./site-output.js";
@@ -48,8 +42,6 @@ import { myThemesFeature } from "./themes-ipc.js";
 import { codeTrustFeature } from "./trust-ipc.js";
 import { updatesSupported } from "./updates.js";
 import { createUpdates } from "./updates-ipc.js";
-import { versionsFeature } from "./versions-ipc.js";
-import { windowBackground } from "./window-options.js";
 
 // The app's wiring (R13c): Electron comes in as a parameter, so app.test.ts runs all of it against
 // a fake one, and the E2E tests against the real one. The logic lives in the modules it wires.
@@ -70,61 +62,21 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   // The packaged app's pages come from its own scheme, never `file://` (#652, S5, ADR 0023).
   const appUrl = devServerUrl ?? appPageUrl("index.html");
   // The Help window (5.4b, HP-10): its own page and preload, beside the editor's.
-  const helpWindows = createHelpWindows({
-    create: (options) => new BrowserWindow(options),
-    pageUrl:
-      devServerUrl === undefined
-        ? appPageUrl("help.html")
-        : new URL("help.html", devServerUrl).href,
-    preload: join(parts.dir, "../preload/help.cjs"),
-    title: t("help.window.title"),
-    theme: () => lifecycle.preferences?.get().theme ?? DEFAULT_PREFERENCES.theme,
-    background: windowBackground,
-    zoom: () => lifecycle.preferences?.get().interfaceZoom ?? DEFAULT_PREFERENCES.interfaceZoom,
-    onLoadFailed: (error) => logFailure("Webforge could not load the Help window", error),
-  });
+  const helpWindows = helpWindowsFor(
+    (options) => new BrowserWindow(options),
+    devServerUrl,
+    join(parts.dir, "../preload/help.cjs"),
+    () => lifecycle.preferences,
+  );
   // The editor's page only: on the dev server the Help page has the same origin, and it may make
   // only its own calls (`help-ipc.ts`).
   const isTrustedSender = (senderUrl: string) =>
     isAppUrl(senderUrl, appUrl) && !helpWindows.isHelpPage(senderUrl);
 
-  // In development the running bundle is Electron's own, named after the package: the app's name
-  // for the About panel and menus, as the packaged app has it from its bundle (#450). Its user data
-  // folder stays the one it had, named after the package (or `--user-data-dir`'s): named after the
-  // app, it would be the installed app's, sharing its single-instance lock below, its backups,
-  // recent sites, own themes and preferences.
-  if (!app.isPackaged) {
-    const userData = app.getPath("userData");
-    app.setName(t("app.name"));
-    app.setPath("userData", userData);
-  }
-
-  // One Webforge at a time (1.8): a second launch, e.g. a .wforge double-clicked in Explorer while
-  // Webforge is open, hands its command line to this one ("second-instance") and quits.
-  const primaryInstance = app.requestSingleInstanceLock();
-  if (!primaryInstance) {
-    app.quit();
-  }
-
+  const primaryInstance = claimInstance(app);
   // Local crash reports first, so even a failing start-up leaves one (F-SITE-7).
   const crashReports = parts.startCrashReports(primaryInstance);
-
-  // Sandbox every renderer, including any created later by dependencies.
-  app.enableSandbox();
-
-  // Media images (1.16) and the site's fonts (2.2) reach the editor through schemes of their own,
-  // which must be known before "ready". Fonts load in CORS mode; so can images, whose pixels Theme
-  // Studio reads for a palette from an image (2.3b, PG-2).
-  // The app's own pages have theirs too (#652).
-  protocol.registerSchemesAsPrivileged([
-    APP_SCHEME_PRIVILEGES,
-    { scheme: MEDIA_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
-    { scheme: FONT_SCHEME, privileges: { standard: true, secure: true, corsEnabled: true } },
-  ]);
-
-  app.on("web-contents-created", (_event, contents) => {
-    hardenWebContents(contents, appUrl);
-  });
+  prepareRenderers(app, protocol, appUrl);
 
   // The editor's window: never the Help window.
   const lifecycle = new AppLifecycle(() =>
@@ -184,31 +136,7 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     currentPath: () => projectSession.currentPath(),
     leaveSite: () => siteSwitch.leaveSite(),
     open: openSite,
-    focus: () => {
-      lifecycle.focusMainWindow();
-    },
-    show: (reload) => {
-      // A hand-off that finishes while the app quits must not bring a window back.
-      if (lifecycle.quitting) return;
-      const window = lifecycle.focusMainWindow();
-      if (window === undefined) {
-        // A new window loads the site that is open now.
-        if (lifecycle.preferences !== undefined) mainWindows.open(lifecycle.preferences);
-      } else if (reload) {
-        window.webContents.reload();
-      }
-    },
-    failed: async (reason) => {
-      const options = { type: "warning" as const, message: openFailureMessage(reason) };
-      const parent = lifecycle.mainWindow();
-      await (parent === undefined
-        ? dialog.showMessageBox(options)
-        : dialog.showMessageBox(parent, options));
-    },
-  });
-
-  app.on("before-quit", () => {
-    lifecycle.quitting = true;
+    ...handOffWindow({ lifecycle, openWindow: (prefs) => mainWindows.open(prefs), dialog }),
   });
 
   // Dialogs are modal to the focused window.
@@ -282,30 +210,25 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
       lifecycle.mainWindow()?.webContents.send(updatesEvents.status.channel, status),
     quitting: () => lifecycle.quitting,
   });
-  // Version History (4.6): its calls, and the versions main saves before AI apps' changes.
-  const versions = versionsFeature({
+  // Version History (4.6), AI apps (4.8, 4.9) and the assistant (6.9a), on AI apps' tools.
+  const ai = aiFeatures({
     session: projectSession,
     dialogs: dialogs.project,
     captureCanvas: () => captureCanvas(lifecycle.mainWindow()),
-    versionsKept: async () => versionsKept(),
+    versionsKept,
     beforeSwitch: () => siteSwitch.leaveSite(),
-    // Before main saves a version itself (`saveVersionBefore`, which 4.9's AI apps use).
     flush: requestFlush,
-  });
-  // AI apps on this computer (4.8, 4.9, ADR 0021): their requests go to the open site's window.
-  const aiApps = aiAppsFeature({
     userData: app.getPath("userData"),
     packaged: app.isPackaged,
-    bridgeFile: app.isPackaged
-      ? join(process.resourcesPath, "bridge", "webforge-bridge.mjs")
-      : join(app.getAppPath(), "out", "bridge", "webforge-bridge.mjs"),
+    resourcesPath: process.resourcesPath,
+    appPath: app.getAppPath(),
     info: { name: t("app.name"), version: app.getVersion() },
     window: () => lifecycle.mainWindow(),
     site: projectSession,
     credentials,
     templates: () => templates.briefTemplates(),
-    versions,
     shell: () => electron.shell,
+    electron: () => electron,
   });
   /**
    * The app's features (A12): each is told as sites open, are saved and close (a hand-off's
@@ -334,18 +257,9 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     canvasStylesFeature(canvasStyles, () => projectSession.current() !== null),
     // Webforge's own updates (0.5a): their state for the window. Quitting installs one, last.
     updates,
-    versions,
-    aiApps,
-    // The assistant (6.9a, ADR 0026), on AI apps' tools.
-    assistantFeature({
-      userData: app.getPath("userData"),
-      credentials,
-      electron: () => electron,
-      window: () => lifecycle.mainWindow(),
-      site: projectSession,
-      tools: aiApps,
-      versions,
-    }),
+    ai.versions,
+    ai.aiApps,
+    ai.assistant,
     // Its name and version, the macOS menu bar, spell check, failures, guides, Help and licences.
     appCallsFeature({
       app,
@@ -387,16 +301,14 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
   async function start(): Promise<void> {
     await app.whenReady();
     markStartup("ready");
-    // No default menu: its zoom and reload keys are the editor's (F-ED-27).
-    const menu = applicationMenu(process.platform, devServerUrl !== undefined);
-    Menu.setApplicationMenu(menu === null ? null : Menu.buildFromTemplate(menu));
-    hardenSession(session.defaultSession);
-    if (devServerUrl === undefined) {
-      session.defaultSession.protocol.handle(APP_SCHEME, createAppResponder(rendererDir));
-    }
-    session.defaultSession.protocol.handle(FONT_SCHEME, (request) =>
-      fonts.respondWithFont(request.url),
-    );
+    prepareSession({
+      menu: Menu,
+      platform: process.platform,
+      development: devServerUrl !== undefined,
+      session: session.defaultSession,
+      rendererDir,
+      fonts,
+    });
     const preferences = await openPreferencesStore(
       join(app.getPath("userData"), "preferences.json"),
     );
@@ -463,50 +375,17 @@ export function startApp(electron: AppElectron, parts: AppParts): Promise<void> 
     );
   });
 
-  // Closing the site waits for work on its file (at most a few seconds, R13b), so quitting waits
-  // for that, then exits. Not `app.quit()` again: once "will-quit" was held back, Electron ignores
-  // it, and every window is closed by now anyway.
-  app.on("will-quit", (event) => {
-    event.preventDefault();
-    if (lifecycle.exiting) return;
-    lifecycle.exiting = true;
-    // No site's images stay on disk outside it once Webforge has quit (R13d). Not a second launch's
-    // quit: the images are the running Webforge's, in the same user data.
-    if (primaryInstance) elementClipboard.forgetKept();
-    void closeThenExit({
-      // The MCP server first: no AI app's request reaches a site that is closing.
-      close: async () => {
-        // No AI app's key stays on the clipboard after Webforge has quit (4.9).
-        await secretClipboard
-          .clearIfHeld()
-          .catch((error: unknown) => logFailure("secret clipboard clear", error));
-        await aiApps.close();
-        await projectSession.close();
-      },
-      // Then each feature's last work, such as My themes' and the Recent list's last writes, and
-      // the preferences' last writes: a panel resized just before quitting keeps its size (#740).
-      features: [...features, { quit: async () => await lifecycle.preferences?.idle() }],
-      // Last, once all of that has finished: a downloaded update's installer (0.5a), which ends a
-      // Webforge still running.
-      install: () => updates.service()?.installOnQuit(),
-      // The site is saved and closed: a launch from now on opens Webforge itself, rather than
-      // handing its site to this one, which on a busy computer can take up to a minute more to
-      // end (#413).
-      releaseLock: () => {
-        if (primaryInstance) app.releaseSingleInstanceLock();
-      },
-      exit: (code) => {
-        // Closed: what's left is Electron's teardown, which the E2E tests needn't wait for (#534).
-        announceClosedForE2eTests(app.isPackaged);
-        app.exit(code);
-      },
-    });
-  });
-
-  // Webforge quits when its window closes, on macOS too (spec/02 §1, #287): it's a one-window
-  // app, and one left in the Dock with no window looks broken to the people it's for.
-  app.on("window-all-closed", () => {
-    app.quit();
+  // Quitting: the site closed, each feature's last work, then a downloaded update's installer.
+  handleQuitting({
+    app,
+    lifecycle,
+    primaryInstance,
+    elementClipboard,
+    secretClipboard,
+    aiApps: ai.aiApps,
+    session: projectSession,
+    features,
+    install: () => updates.service()?.installOnQuit(),
   });
 
   return started;

@@ -1,4 +1,8 @@
+import type { BrowserWindow, Dialog } from "electron";
 import type { ProjectFailureReason, ProjectResult } from "../shared/ipc-contract.js";
+import { openFailureMessage } from "../shared/open-failure.js";
+import type { AppLifecycle } from "./app-lifecycle.js";
+import type { PreferencesStore } from "./preferences.js";
 import { samePath } from "./site-paths.js";
 
 /** Options of {@link createHandOff}. */
@@ -53,6 +57,47 @@ export function createHandOff(options: HandOffOptions) {
       // A failed hand-off never blocks the next one; `failed` has told the user what it could.
       queue = queue.then(() => run(path)).catch(() => undefined);
       return queue;
+    },
+  };
+}
+
+/** What a hand-off shows in (#985): the editor's window, opened again if it was closed. */
+export type HandOffWindowDeps = {
+  readonly lifecycle: Pick<
+    AppLifecycle<BrowserWindow>,
+    "quitting" | "preferences" | "mainWindow" | "focusMainWindow"
+  >;
+  /** Opens the editor's window, which loads the site that is open now. */
+  readonly openWindow: (preferences: PreferencesStore) => void;
+  readonly dialog: Pick<Dialog, "showMessageBox">;
+};
+
+/** The window's part of a hand-off: {@link HandOffOptions}' `focus`, `show` and `failed`. */
+export function handOffWindow(
+  deps: HandOffWindowDeps,
+): Pick<HandOffOptions, "focus" | "show" | "failed"> {
+  const { lifecycle } = deps;
+  return {
+    focus: () => {
+      lifecycle.focusMainWindow();
+    },
+    show: (reload) => {
+      // A hand-off that finishes while the app quits must not bring a window back.
+      if (lifecycle.quitting) return;
+      const window = lifecycle.focusMainWindow();
+      if (window === undefined) {
+        // A new window loads the site that is open now.
+        if (lifecycle.preferences !== undefined) deps.openWindow(lifecycle.preferences);
+      } else if (reload) {
+        window.webContents.reload();
+      }
+    },
+    failed: async (reason) => {
+      const options = { type: "warning" as const, message: openFailureMessage(reason) };
+      const parent = lifecycle.mainWindow();
+      await (parent === undefined
+        ? deps.dialog.showMessageBox(options)
+        : deps.dialog.showMessageBox(parent, options));
     },
   };
 }
